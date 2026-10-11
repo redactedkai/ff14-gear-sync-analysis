@@ -62,11 +62,11 @@ export function restoreState(raw) {
       });
       if (Array.isArray(raw.pool)) {
         s.pool = raw.pool
-          .filter(i => i && i.id && i.stats && i.src !== 'preset' && SLOT_TYPES.includes(i.type))
+          .filter(i => i?.id && i.stats && i.src !== 'preset' && SLOT_TYPES.includes(i.type))
           .map(i => Object.assign(mkItem('', i.type, i.ilvl, {}), i));
       }
       had = true;
-    } catch (e) {
+    } catch {
       had = false;
     }
   }
@@ -84,7 +84,7 @@ export function restoreState(raw) {
   const okSub = v => job.substats.includes(v);
   const ds = defaultSubs(job);
   s.piece.subs = [0, 1, 2].map(i => {
-    const v = s.piece.subs && s.piece.subs[i];
+    const v = s.piece.subs?.[i];
     return okSub(v) ? v : i === 2 ? null : ds[i];
   });
   if (s.piece.subs[1] === s.piece.subs[0]) s.piece.subs[1] = ds[1];
@@ -117,7 +117,7 @@ export function loadSaved() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -125,7 +125,7 @@ export function loadSaved() {
 export function save(json) {
   try {
     localStorage.setItem(STORE_KEY, json);
-  } catch (e) {
+  } catch {
     /* storage unavailable */
   }
 }

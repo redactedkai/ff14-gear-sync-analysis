@@ -10,25 +10,25 @@ Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core spli
 
 | ID | Finding | Severity | Resolved? | Status | Notes / next step |
 | --- | --- | --- | :---: | --- | --- |
-| F1 | Ring pruning drops valid second rings | High | ❌ | **Open** | Re-checked on the new core: three Unique rings (10/9/5) still give 10 instead of 19. Fix during the testing phase, with regression and exhaustive-search tests |
+| F1 | Ring pruning drops valid second rings | High | ✅ | **Resolved** | An item is pruned only when the items beating it have enough copies to fill every slot of its type (2 for rings). Real-gear check: 0 of 9,800 runs off the exact optimum (was 360). Regression tests in `tests/unit/optimizer-exhaustive.test.js`. Same change turns pruning off when stat maximums are set, which it also got wrong |
 | F6 | Shared mutable globals carry the job context | High | ✅ | **Resolved** | Core functions take a frozen `JobContext` (`src/core/job-context.js`); the Alpine store holds the current one |
-| F9 | No check that the optimizer finds the true best | High | ❌ | **Open** | Add an exhaustive-search reference and a seeded property test |
+| F9 | No check that the optimizer finds the true best | High | ✅ | **Resolved** | Exhaustive-search reference compared with the optimizer on 400 seeded random pools (rings with 1 and 2 copies, tiebreaks, average item level and stat minimums) |
 | F2 | Switching jobs in the same role keeps gear the new job can't equip | Medium | ❌ | **Open** | Behaviour kept on purpose during the migration (`setJob` in `src/ui/store.js`). Needs a decision: reset or filter |
 | F7 | Modules have too many responsibilities | Medium | ✅ | **Resolved** | Core split into `src/core/*` (optimizer in 3 files); UI split into Alpine components under `src/ui/components/` |
-| F8 | The same facts kept in several places | Medium | ❌ | **Partly resolved** | Now single-source: slot percents, substat shares, the real-gear accuracy check (`src/core/validation.js`), the item level maximum (inputs bind `MAX_REAL`). Still duplicated: job order and slot codes in `scripts/data/gen_items.py` |
+| F8 | The same facts kept in several places | Medium | ✅ | **Resolved** | Single sources: slot percents and substat shares (`src/core/constants.js`), the real-gear accuracy check (`src/core/validation.js`), the item level maximum (`MAX_REAL`), and the data format (job bit order, stat order with sheet columns and BaseParam ids, slot codes) in `src/core/item-format.json`, read by both the page and the Python generators. Regenerating from the same CSVs gives byte-identical `items.js` and the same `item-level.js` values. `tests/unit/data-format.test.js` checks the data against the format |
 | F10 | Test structure (one script inside `new Function`) | Medium | ✅ | **Resolved** | `node:test`, one file per module in `tests/unit/` |
 | F11 | Uncovered areas (generators, saved state, filters, constraints, data integrity) | Medium | ❌ | **Open** | |
 | F12 | Smoke test robustness (fixed sleeps, prints instead of asserts) | Medium | ❌ | **Open** | Only paths updated (`tests/e2e/smoke.py`). Not run yet: Playwright isn't installed |
 | F13 | No CI, linting, formatting or pinned engines | Medium | ❌ | **Partly resolved** | Baseline committed, `engines` set to Node ≥ 22, `package-lock.json` committed. Still missing: CI, linter, formatter |
 | F15 | Documentation gaps | Medium | ❌ | **Partly resolved** | CLAUDE.md and README describe the new layout and architecture; core modules have header and function comments. Still missing: a standalone `docs/architecture.md` / data-format reference and full JSDoc |
-| F3 | Lexicographic score has an implicit size limit | Low | ❌ | **Open** | Now noted in a comment in `src/core/optimizer/candidates.js` |
+| F3 | Lexicographic score has an implicit size limit | Low | ✅ | **Resolved** | Score weights are derived from the pool (each lower-ranked stat's possible spread + 1), so the ranking is exact for any totals; `optimize()` throws a clear error if a score could exceed 2^53 (largest real score is about 2e11). Regression and 200-pool exhaustive tests added; timing unchanged |
 | F4 | Saved state merged without type checks | Low | ❌ | **Partly resolved** | All repair logic is now in one place (`restoreState` in `src/ui/state.js`). Type and range checks are still missing |
 | F5 | `build.py` could silently ship the Node export line | Low | ✅ | **Resolved** | `build.py` was removed. `scripts/build/build.mjs` uses real imports and fails loudly on missing markers or output |
 | F14 | Data provenance not recorded | Low | ❌ | **Open** | |
 | O1 | Accessibility: tabs lack `aria-controls` and keyboard navigation | Low | ❌ | **Open** | |
 | O2 | Data stored on a DOM node (`#b-addall._all`) | Low | ✅ | **Resolved** | Browse results live in the Alpine browser component |
 | O3 | `esc()` doesn't escape `'` | Low | ✅ | **Resolved** | `esc()` is gone: `x-text` escapes everything. The one `x-html` (chart) contains only numbers |
-| O4 | Python `open()` without `with` in the generators | Low | ❌ | **Open** | |
+| O4 | Python `open()` without `with` in the generators | Low | ✅ | **Resolved** | CSVs are read through `read_csv` in `scripts/data/item_format.py`, which closes the file |
 
 ## Summary
 

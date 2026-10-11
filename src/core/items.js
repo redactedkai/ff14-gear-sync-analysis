@@ -27,7 +27,7 @@ export function mkItem(name, type, ilvl, stats, extra) {
 export function genericItems(job, ilvl, subsAllowed, third, types) {
   const items = [];
   types.forEach(t => {
-    subsAllowed.forEach(a =>
+    subsAllowed.forEach(a => {
       subsAllowed.forEach(b => {
         if (a === b) return;
         const subs = [a, b];
@@ -35,8 +35,8 @@ export function genericItems(job, ilvl, subsAllowed, third, types) {
         const st = buildPiece(job, ilvl, t, subs);
         const nm = SLOT_LABEL[t] + ' ilvl ' + ilvl + ' · ' + job.short[a] + '/' + job.short[b] + (subs.length > 2 ? '/DH' : '');
         items.push(mkItem(nm, t, ilvl, st, { src: 'generated', copies: 2 }));
-      }),
-    );
+      });
+    });
   });
   return items;
 }

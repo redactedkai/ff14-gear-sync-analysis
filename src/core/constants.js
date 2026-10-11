@@ -1,6 +1,9 @@
 /* Static game and project constants. Nothing here changes at runtime.
    Internal stat keys are role-neutral: main (Str/Dex/Int/Mind), vit, crit, det, dh,
-   spd (Skill/Spell Speed), spec (Piety/Tenacity/none). A JobContext (job-context.js) maps them per job. */
+   spd (Skill/Spell Speed), spec (Piety/Tenacity/none). A JobContext (job-context.js) maps them per job.
+   The generated-data format (job bit order, raw stat order, slot codes) comes from item-format.json, which the
+   Python generators read too. */
+import ITEM_FORMAT from './item-format.json' with { type: 'json' };
 
 export const ALL_STATS = Object.freeze(['main', 'vit', 'crit', 'det', 'dh', 'spd', 'spec']);
 export const BASE_SUBSTATS = Object.freeze(['crit', 'det', 'dh', 'spd']);
@@ -56,33 +59,37 @@ export const PROFILES = Object.freeze({
   caster: Object.freeze({ label: 'Caster (Intelligence)', main: 'int', spd: 'sps', spec: null }),
 });
 
-/* [id, name, profile]. The ORDER defines the job bitmask in the item database: bit i = JOBS[i].
-   scripts/gen_items.py has the same list as JOB_ORDER; keep them in sync. */
+/* Name and role profile per job id. */
+const JOB_INFO = {
+  PLD: ['Paladin', 'tank'],
+  WAR: ['Warrior', 'tank'],
+  DRK: ['Dark Knight', 'tank'],
+  GNB: ['Gunbreaker', 'tank'],
+  WHM: ['White Mage', 'healer'],
+  SCH: ['Scholar', 'healer'],
+  AST: ['Astrologian', 'healer'],
+  SGE: ['Sage', 'healer'],
+  MNK: ['Monk', 'melee'],
+  DRG: ['Dragoon', 'melee'],
+  SAM: ['Samurai', 'melee'],
+  RPR: ['Reaper', 'melee'],
+  NIN: ['Ninja', 'dex'],
+  VPR: ['Viper', 'dex'],
+  BRD: ['Bard', 'dex'],
+  MCH: ['Machinist', 'dex'],
+  DNC: ['Dancer', 'dex'],
+  BLM: ['Black Mage', 'caster'],
+  SMN: ['Summoner', 'caster'],
+  RDM: ['Red Mage', 'caster'],
+  PCT: ['Pictomancer', 'caster'],
+  BLU: ['Blue Mage', 'caster'],
+};
+/* [id, name, profile], in item-format.json order, which is the job bitmask in the item database: bit i = JOBS[i]. */
 export const JOBS = Object.freeze(
-  [
-    ['PLD', 'Paladin', 'tank'],
-    ['WAR', 'Warrior', 'tank'],
-    ['DRK', 'Dark Knight', 'tank'],
-    ['GNB', 'Gunbreaker', 'tank'],
-    ['WHM', 'White Mage', 'healer'],
-    ['SCH', 'Scholar', 'healer'],
-    ['AST', 'Astrologian', 'healer'],
-    ['SGE', 'Sage', 'healer'],
-    ['MNK', 'Monk', 'melee'],
-    ['DRG', 'Dragoon', 'melee'],
-    ['SAM', 'Samurai', 'melee'],
-    ['RPR', 'Reaper', 'melee'],
-    ['NIN', 'Ninja', 'dex'],
-    ['VPR', 'Viper', 'dex'],
-    ['BRD', 'Bard', 'dex'],
-    ['MCH', 'Machinist', 'dex'],
-    ['DNC', 'Dancer', 'dex'],
-    ['BLM', 'Black Mage', 'caster'],
-    ['SMN', 'Summoner', 'caster'],
-    ['RDM', 'Red Mage', 'caster'],
-    ['PCT', 'Pictomancer', 'caster'],
-    ['BLU', 'Blue Mage', 'caster'],
-  ].map(j => Object.freeze(j)),
+  ITEM_FORMAT.jobs.map(id => {
+    if (!JOB_INFO[id]) throw new Error(`item-format.json lists job ${id}, which has no entry in JOB_INFO`);
+    return Object.freeze([id, ...JOB_INFO[id]]);
+  }),
 );
 export const DEFAULT_JOB = 'SGE';
 export const ONE_HANDED_JOBS = Object.freeze(['PLD']); /* 1H weapon + off-hand; everyone else uses a 2H weapon */
@@ -95,23 +102,12 @@ export const ROLE_GROUP = Object.freeze({
 });
 
 /* Item database rows (src/data/items.js): [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique] */
-export const ITEM_STAT_ORDER = Object.freeze(['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps']);
-export const RAW_MAIN_IDX = Object.freeze([0, 1, 2, 3]);
-export const RAW_VIT_IDX = 4;
-export const RAW_SUBSTAT_IDX = Object.freeze([5, 6, 7, 8, 9, 10, 11]);
+export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
+export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
+export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
+export const RAW_SUBSTAT_IDX = Object.freeze(ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX));
 /* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon */
-export const DB_SLOT_TYPE = Object.freeze([
-  'weapon',
-  'weapon',
-  'offhand',
-  'head',
-  'body',
-  'hands',
-  'legs',
-  'feet',
-  'ear',
-  'neck',
-  'wrist',
-  'ring',
-]);
-export const DB_SLOT_PCT = Object.freeze(DB_SLOT_TYPE.map((t, code) => (code === 1 ? WEAPON_PCT['1h+oh'] : BASE_SLOT_PCT[t])));
+export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
+export const DB_SLOT_PCT = Object.freeze(
+  ITEM_FORMAT.slots.map(s => (s.type === 'weapon' ? WEAPON_PCT[s.twoHanded ? '2h' : '1h+oh'] : BASE_SLOT_PCT[s.type])),
+);

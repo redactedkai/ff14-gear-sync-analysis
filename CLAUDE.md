@@ -18,7 +18,9 @@ src/
   styles.css          all CSS (tokenized light/dark themes)
   main.js             entry: restore saved state, register store + components, Alpine.start()
   core/               pure logic, no DOM, importable from Node
-    constants.js      slots, stat keys, profiles, JOBS (defines the item-database job bitmask), raw row layout
+    constants.js      slots, stat keys, profiles, JOBS, raw row layout (format facts read from item-format.json)
+    item-format.json  SINGLE SOURCE for the generated-data format: job bit order, raw stat order (+ sheet
+                      columns, BaseParam ids), slot codes. Read by constants.js and scripts/data/*.py
     tables.js         IL / PG / ITEMS re-exports, MAX_ILVL, MAX_REAL
     job-context.js    makeJobContext(jobId): frozen per-job description; slotActive, ilWeight, statColumn
     formulas.js       rounding, slot budgets, buildPiece, capsFor, syncStats, statDerivation, predictRaw
@@ -39,6 +41,7 @@ src/
 scripts/
   build/build.mjs     esbuild bundle + inline into dist/index.html
   build/dev.mjs       watch + local server
+  data/item_format.py  shared generator helpers: load item-format.json, read_csv
   data/fetch.py       sparse-clone the 6 needed CSVs from xivapi/ffxiv-datamining into data/
   data/gen_item_level.py  ItemLevel.csv + ParamGrow.csv -> src/data/item-level.js
   data/gen_items.py   Item.csv + EquipSlotCategory.csv + ClassJobCategory.csv -> src/data/items.js
@@ -89,8 +92,8 @@ Empirical or assumed (say so in the UI and in answers; never present as fact):
 ## Data facts
 
 - Source: xivapi/ffxiv-datamining CSVs (straight exports from the game client via XIVData Oxidizer; SaintCoinach before 2026). Nothing is derived by the miners.
-- `scripts/data/gen_items.py` keeps: gear with an equip slot (not belt, not soul crystal), a non-empty combat `ClassJobCategory` (22-job bitmask in the order of `JOBS` in `src/core/constants.js`; `JOB_ORDER` in the generator must match), item level >= 100, at least one stat. Stats are the item's own; **HQ bonus (`BaseParamValueSpecial`) is added only when `CanBeHq` is true**. `IsUnique` is carried so the optimizer allows only one copy of unique rings.
-- Slot codes in `src/data/items.js`: 0 = 2H weapon, 1 = 1H weapon, 2 = off-hand, 3 head, 4 body, 5 hands, 6 legs, 7 feet, 8 ear, 9 neck, 10 wrist, 11 ring.
+- `scripts/data/gen_items.py` keeps: gear with an equip slot (not belt, not soul crystal), a non-empty combat `ClassJobCategory` (22-job bitmask in the order of `jobs` in `src/core/item-format.json`), item level >= 100, at least one stat. Stats are the item's own; **HQ bonus (`BaseParamValueSpecial`) is added only when `CanBeHq` is true**. `IsUnique` is carried so the optimizer allows only one copy of unique rings.
+- Slot codes in `src/data/items.js` (defined in `src/core/item-format.json`): 0 = 2H weapon, 1 = 1H weapon, 2 = off-hand, 3 head, 4 body, 5 hands, 6 legs, 7 feet, 8 ear, 9 neck, 10 wrist, 11 ring.
 - The highest real item level is **795** (`MAX_REAL`, computed from the database). The `ItemLevel` sheet runs to 920 but rows 796 to 920 have no gear on them, so the UI caps item level inputs at `MAX_REAL`. Do not claim those rows are "placeholders" or "intentional"; the data only shows they are unused.
 - After a patch: `npm run fetch` (pulls the latest CSVs), `npm run regen`, `npm run check`. Expect some numbers in `tests/unit/` to need updating if new gear or table rows change them (for example the Dreadwyrm tests are tied to specific old items and should stay stable; generic-max and band-accuracy figures can move).
 
@@ -100,7 +103,7 @@ tank (Str, Skill Speed, Tenacity): PLD WAR DRK GNB. healer (Mind, Spell Speed, P
 
 ## Optimizer notes
 
-Branch-and-bound over slots with dominance pruning and a scalar lexicographic score (target, tiebreak 1, tiebreak 2 weighted 1e8 / 1e4 / 1). Handles two rings, Unique items, and an optional average-item-level requirement. Node limit 700k in the UI (150k for per-stat ceiling runs); the result reports when it was truncated. A 1,283-item Sage pool solves in about 0.2 s. If you change the scoring or pruning, keep the core tests green and re-time a large pool. Known bug: dominance pruning is unsafe for the two ring slots and can return a worse pair (docs/audit.md F1).
+Branch-and-bound over slots with dominance pruning and a scalar lexicographic score (target, tiebreak 1, tiebreak 2, with weights derived from the pool so a lower-ranked stat can never outweigh a higher one; `makeScorer` in `src/core/optimizer/candidates.js`). Handles two rings, Unique items, and an optional average-item-level requirement. Node limit 700k in the UI (150k for per-stat ceiling runs); the result reports when it was truncated. A 1,283-item Sage pool solves in about 0.2 s. If you change the scoring or pruning, keep the core tests green and re-time a large pool. Dominance pruning keeps an item unless the items beating it have enough copies to fill every slot of its type (2 for rings), and is off when stat maximums are set. `tests/unit/optimizer-exhaustive.test.js` checks the optimizer against trying every combination; keep it green.
 
 ## Page constraints
 

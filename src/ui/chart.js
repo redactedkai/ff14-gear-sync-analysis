@@ -6,7 +6,7 @@ import { clampIlvl } from '../core/formulas.js';
 
 function niceStep(max, n) {
   const raw = max / n,
-    mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    mag = 10 ** Math.floor(Math.log10(raw));
   const m = raw / mag;
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * mag;
 }
