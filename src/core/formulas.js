@@ -1,5 +1,5 @@
 /* Stat formulas: how item level becomes the stats on a piece, and what item level sync clamps.
-   See docs/findings.md sections 1 and 3 for the evidence behind each rule. */
+   See docs/math.md (sections 4 and 5) for each rule and docs/validation.md for the evidence. */
 import { ALL_STATS, SUB_WEIGHTS, ITEM_STAT_ORDER, RAW_MAIN_IDX, RAW_VIT_IDX, RAW_SUBSTAT_IDX, DB_SLOT_PCT } from './constants.js';
 import { IL, MAX_ILVL } from './tables.js';
 import { statColumn } from './job-context.js';

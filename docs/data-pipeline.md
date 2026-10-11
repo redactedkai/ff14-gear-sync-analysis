@@ -229,7 +229,7 @@ Since these rows are in the client's own data, they are not something the miners
 
 ## 8. Building the page
 
-The page bundle takes the page code, the stylesheet and both generated data files and writes them into one HTML file with no external references, so it opens from disk without a server. The data is part of the code bundle, not loaded at run time.
+The page bundle takes the page code, the stylesheet and both generated data files and writes them into one HTML file, so it opens from disk without a server. Its only external reference is the Google Fonts stylesheet; without a network connection the page falls back to system fonts. The data is part of the code bundle, not loaded at run time.
 
 | Part | Size |
 | --- | --- |

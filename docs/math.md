@@ -2,7 +2,7 @@
 
 This page explains how the stats on a piece of gear follow from its item level, and what item level sync does to them. It covers the formulas the tool uses, a worked example with real game data, and which parts are verified and which are inferred.
 
-Related pages: [optimizer.md](optimizer.md) (how the tool picks the best gear set) and [data-pipeline.md](data-pipeline.md) (where the game tables come from and how they are regenerated).
+Related pages: [optimizer.md](optimizer.md) (how the tool picks the best gear set), [data-pipeline.md](data-pipeline.md) (where the game tables come from and how they are regenerated) and [validation.md](validation.md) (how the model is checked against real items, the Wiki and AkhMorning).
 
 All numbers below come from the game tables in this repository (ffxiv-datamining commit `d9582a6`, 2026-09-30) or from running the tool's own code against them.
 
@@ -115,17 +115,7 @@ The game stores only the final numbers on each item. It does not store how a slo
 | Second | 70% |
 | Third (rare; mostly Direct Hit on healer gear) | 20% |
 
-**Inferred**: this is a measured pattern, not a game rule. To test it, we predicted the stats of every combat piece at item level 110 or above that has at least two substats. Main stat and Vitality are predicted at full share, and substats by rank. A piece counts as "exact" only if every stat matches:
-
-| Item level | Pieces | Exact | Within ±1 on every stat |
-| --- | --- | --- | --- |
-| 110–135 | 956 | 930 (97.3%) | 934 (97.7%) |
-| 136–300 | 3,773 | 3,748 (99.3%) | 3,756 (99.5%) |
-| 301–600 | 7,184 | 7,153 (99.6%) | 7,184 (100%) |
-| 601+ | 4,673 | 4,536 (97.1%) | 4,545 (97.3%) |
-| All | 16,586 | 16,367 (98.7%) | 16,419 (99.0%) |
-
-The remaining misses are not explained. Possible causes are hand-tuned values or pieces whose substat order breaks the rank rule; neither is confirmed.
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stat and Vitality at full share, substats by rank) reproduces 98.7% of them exactly (16,367 of 16,586), and 97.1% to 99.6% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
 Where the shares matter: the Piece lab, the generic-piece generator and hand-filled pieces use them. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 
@@ -186,17 +176,7 @@ For jobs with no special substat (melee, Dexterity and caster DPS), Piety or Ten
 
 ### Check against published caps
 
-The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The substat budget at 475 is 1,314, and the model reproduces every published value:
-
-| Slot | Share | $1314 \times p / 1000$ | Model | Wiki |
-| --- | --- | --- | --- | --- |
-| Accessory | 67 | 88.04 | 88 | 88 |
-| Head, hands, feet | 85 | 111.69 | 112 | 112 |
-| Body, legs | 135 | 177.39 | 177 | 177 |
-| One-handed weapon | 100 | 131.4 | 131 | 131 |
-| Shield | 40 | 52.56 | 53 | 53 |
-
-**Verified** (5 of 5; a unit test checks this).
+The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The clamp rule above reproduces all five published values (accessory 88, head 112, body 177, one-handed weapon 131, shield 53). **Verified**; the table and what it does not cover are in [validation.md, section 3](validation.md#3-published-sync-caps-at-item-level-475).
 
 ### What is assumed
 
@@ -205,7 +185,7 @@ The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The 
 - **Melds** (materia added to gear) are ignored on synced-down pieces. *Assumed.*
 - **No scaling up**: sync never raises a stat. *Assumed.*
 
-In-game captures under a known sync, such as a character sheet screenshot with the equipped gear listed, would settle the first two points.
+In-game captures under a known sync would settle the first two points; what to capture is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
 
 ## 6. Speed: GCD and DoT/HoT ticks
 
@@ -264,12 +244,7 @@ $$
 
 That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real gear set usually falls short of this, because a piece rarely has speed as its top substat in every slot.
 
-Verification status:
-
-- The level-100 examples from AkhMorning (gear speed 22 and 80 both give 2.49 s) are asserted in the unit tests.
-- So are the level-50 tiers at 150, 202, 307 and 349. The repository does not record where those level-50 thresholds came from.
-- The formulas themselves are a community reference, not game files.
-- Whether a particular action's recast is reduced by speed depends on the job, so the tool reports only the 2.5 s base GCD and the tick multiplier.
+Verification status: the formulas are a community reference, not game files. Which GCD values are asserted in tests, and which have a recorded source, is in [validation.md, section 5](validation.md#5-speed-and-gcd). Whether a particular action's recast is reduced by speed depends on the job, so the tool reports only the 2.5 s base GCD and the tick multiplier.
 
 ## 7. Verified and assumed
 
@@ -279,13 +254,13 @@ Verification status:
 | Slot shares 140/100/40/85/135/67 | Verified | `BaseParam.csv`, all 12 stats |
 | Two roundings, half up | Verified | 98.7% exact vs 79.1% with one rounding |
 | Vitality × 0.9 for Intelligence/Mind jobs | Verified | Reproduces real items (e.g. Dreadwyrm hood, Antiquated Atlas) |
-| Substat shares 100% / 70% / 20% by rank | Inferred (measured pattern) | 97–100% exact per item level band; not in game files |
+| Substat shares 100% / 70% / 20% by rank | Inferred (measured pattern) | 97.1–99.6% exact per item level band ([validation.md](validation.md)); not in game files |
 | Sync clamps each stat to the full-share same-slot value at the cap | Verified for substats | Wiki caps at 475, 5 of 5 |
 | Same clamp applies to main stat and Vitality | Inferred | No in-game capture |
 | Lower-ranked substats clamp against the full-share cap | Inferred | Consistent with Wiki's single cap per slot; no capture |
 | Melds ignored, no scaling up under sync | Assumed | – |
 | Two-handed weapon counts twice in average item level | Game convention, not checked here | – |
-| GCD and tick formulas | Community reference (AkhMorning) | Level-100 examples and level-50 tiers in tests |
+| GCD and tick formulas | Community reference (AkhMorning) | Level-100 examples in tests; level-50 tiers in tests without a recorded source |
 | Rows 796–920 carry no gear | Verified (data) | Highest real item level is 795 |
 
 ## 8. Where this lives

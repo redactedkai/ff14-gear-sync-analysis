@@ -4,7 +4,7 @@ Date: 2026-10-11. Scope: everything in the working tree at commit `8a09811` plus
 
 ## Status of findings
 
-Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core split and the Alpine UI migration. The detailed findings further down describe the code as originally audited, so their file names refer to the old layout (`core.js`, `ui.js`, `build.py`).
+Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core split and the Alpine UI migration. The detailed findings further down describe the code as originally audited, so their file names refer to the old layout (`core.js`, `ui.js`, `build.py`). `docs/findings.md`, mentioned below, has since been split into `math.md`, `data-pipeline.md`, `validation.md`, `roadmap.md` and `history.md` (see `docs/README.md`).
 
 "Resolved" means fixed on the `alpine-migration` branch, which isn't merged into `main` yet. ❌ covers open, partly resolved and in-progress items.
 
@@ -20,7 +20,7 @@ Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core spli
 | F11 | Uncovered areas (generators, saved state, filters, constraints, data integrity) | Medium | ✅ | **Resolved** | Python generator tests on fixture CSVs (`tests/data/`, 17 tests, `npm run test:py`, part of `npm run check`); `browseItems` filters and pool copies (`items.test.js`), sync edge cases and PLD Wiki caps (`sync.test.js`), optimizer minimums, maximums, average item level, truncation and empty pool against brute force (`optimizer-constraints.test.js`); saved state (`state.test.js`, F4) and data integrity (`data-format.test.js`, F8). Note: an empty pool returns `ok: true` with no picks |
 | F12 | Smoke test robustness (fixed sleeps, prints instead of asserts) | Medium | ✅ | **Resolved** | `tests/e2e/smoke.py` waits on concrete conditions (no fixed sleeps) and asserts external values: Wiki 475 caps, ilvl 123 caps per slot for six jobs, the Dreadwyrm hood formula, Dreadwyrm optimizer 171 / 176. Shown to fail on deliberately broken builds |
 | F13 | No linting, formatting or pinned engines | Medium | ✅ | **Resolved** | Linting and formatting: Biome (JS/JSON/CSS) and Ruff (Python), `npm run lint` / `format` / `format:check`, run first by `npm run check`; all clean. Engines: Node ≥ 22 enforced (`engine-strict`), `.nvmrc`, `.python-version`, pinned Python dev tools in `requirements-dev.txt`. CI is not a requirement (owner's decision) |
-| F15 | Documentation gaps | Medium | ❌ | **Partly resolved** | CLAUDE.md and README describe the new layout and architecture; core modules have header and function comments. Still missing: a standalone `docs/architecture.md` / data-format reference and full JSDoc |
+| F15 | Documentation gaps | Medium | ✅ | **Resolved** | `docs/` now has math, optimizer, data pipeline, validation, architecture, testing, glossary, roadmap and history pages with custom diagrams, indexed in `docs/README.md` and following `docs/diagrams/STYLE.md`. `findings.md` was split into them and removed; README and CLAUDE.md link into `docs/`. Function-level JSDoc was not added: the owner chose concept-level docs over code-level ones |
 | F3 | Lexicographic score has an implicit size limit | Low | ✅ | **Resolved** | Score weights are derived from the pool (each lower-ranked stat's possible spread + 1), so the ranking is exact for any totals; `optimize()` throws a clear error if a score could exceed 2^53 (largest real score is about 2e11). Regression and 200-pool exhaustive tests added; timing unchanged |
 | F4 | Saved state merged without type checks | Low | ✅ | **Resolved** | `restoreState` (`src/ui/state.js`) checks type and range of every saved field and pool item, falling back to the default per field. 14 tests in `tests/unit/state.test.js`, 8 of which fail on the old code. Key and saved shape unchanged |
 | F5 | `build.py` could silently ship the Node export line | Low | ✅ | **Resolved** | `build.py` was removed. `scripts/build/build.mjs` uses real imports and fails loudly on missing markers or output |
@@ -65,7 +65,7 @@ Findings are numbered F1 to F15 and sorted by severity within each section.
 
 ### F1. High: ring dominance pruning drops valid second rings
 
-`optimize()` in [core.js](../src/core.js) removes a candidate when another item in the same slot dominates it (at least as good on every dimension) and has at least as many copies (`if(A.copies < B.copies) continue;`). That reasoning only works for slots that take one item. The ring slot takes two items. If A dominates B and both are Unique (one copy each), B is pruned even though the best pair may be A + B.
+`optimize()` in `core.js` removes a candidate when another item in the same slot dominates it (at least as good on every dimension) and has at least as many copies (`if(A.copies < B.copies) continue;`). That reasoning only works for slots that take one item. The ring slot takes two items. If A dominates B and both are Unique (one copy each), B is pruned even though the best pair may be A + B.
 
 Evidence:
 
@@ -85,7 +85,7 @@ Fix: for the ring slot, treat B as dominated only when the dominators can fill b
 
 ### F2. Medium: switching jobs within a role keeps gear the new job can't equip
 
-`changeJob()` in [ui.js](../src/ui.js) clears the pool only when the role profile or weapon mode changes. Pool items don't record the job mask they came from (`poolItemFromRow` drops `p.mask`). So switching SGE to WHM keeps Sage-only weapons such as Grand Champion's Syrinxi, and the optimizer can pick them for a White Mage.
+`changeJob()` in `ui.js` clears the pool only when the role profile or weapon mode changes. Pool items don't record the job mask they came from (`poolItemFromRow` drops `p.mask`). So switching SGE to WHM keeps Sage-only weapons such as Grand Champion's Syrinxi, and the optimizer can pick them for a White Mage.
 
 Fix: store `mask` on pool items and either filter or flag items the current job can't use. Alternatively, always reset the pool on a job change (simpler, but loses the user's work).
 

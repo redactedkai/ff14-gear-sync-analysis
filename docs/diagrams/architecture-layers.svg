@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 580" role="img" aria-labelledby="t d">
+  <title id="t">Layers of the page and how they are tested and built</title>
+  <desc id="d">Four layers stacked from top to bottom: generated game data, pure core logic, UI state and the shared store, and the page components with their template. Each layer is used by the one below it. The bundler takes all layers, with styles and data, and writes one HTML file that a browser opens from disk. Python generator tests check the data pipeline, Node unit tests check the core logic and the saved-state repair, and a browser smoke test checks the finished HTML file.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .test { fill: #ece9dd; stroke: #8f5f0c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .gold { fill: #8f5f0c; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .check { fill: none; stroke: #8f5f0c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .head { fill: #0d6e72; }
+    .ghead { fill: #8f5f0c; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .test { fill: #1b2b2e; stroke: #e2b659; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .gold { fill: #e2b659; }
+      .flow { stroke: #4cc2b6; }
+      .check { stroke: #e2b659; }
+      .head { fill: #4cc2b6; }
+      .ghead { fill: #e2b659; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+    <marker id="garrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="ghead"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="580"/>
+
+  <!-- Layer 1: generated data -->
+  <rect class="box" x="20" y="30" width="420" height="72" rx="8"/>
+  <text class="fg t" x="230" y="57" text-anchor="middle">1. Generated game data</text>
+  <text class="muted s" x="230" y="76" text-anchor="middle">budget table, level data, item database</text>
+  <text class="muted s" x="230" y="92" text-anchor="middle">written by the data pipeline, never edited by hand</text>
+
+  <!-- Layer 2: core -->
+  <rect class="box" x="20" y="132" width="420" height="72" rx="8"/>
+  <text class="fg t" x="230" y="159" text-anchor="middle">2. Core logic</text>
+  <text class="muted s" x="230" y="178" text-anchor="middle">job context, stat formulas, sync, speed, items, optimizer</text>
+  <text class="muted s" x="230" y="194" text-anchor="middle">pure functions, no page access, runs in Node too</text>
+
+  <!-- Layer 3: UI state -->
+  <rect class="box" x="20" y="234" width="420" height="72" rx="8"/>
+  <text class="fg t" x="230" y="261" text-anchor="middle">3. UI state</text>
+  <text class="muted s" x="230" y="280" text-anchor="middle">one shared store: settings, pool, current job context</text>
+  <text class="muted s" x="230" y="296" text-anchor="middle">saved state restored and repaired at load</text>
+
+  <!-- Layer 4: components -->
+  <rect class="box" x="20" y="336" width="420" height="72" rx="8"/>
+  <text class="fg t" x="230" y="363" text-anchor="middle">4. Components and page template</text>
+  <text class="muted s" x="230" y="382" text-anchor="middle">one component per page area, each derives a view</text>
+  <text class="muted s" x="230" y="398" text-anchor="middle">the markup only displays views and calls store actions</text>
+
+  <line class="flow" x1="230" y1="102" x2="230" y2="130" marker-end="url(#arrow)"/>
+  <line class="flow" x1="230" y1="204" x2="230" y2="232" marker-end="url(#arrow)"/>
+  <line class="flow" x1="230" y1="306" x2="230" y2="334" marker-end="url(#arrow)"/>
+  <text class="muted s" x="240" y="122">used by</text>
+
+  <!-- Build row -->
+  <line class="flow" x1="120" y1="408" x2="120" y2="474" marker-end="url(#arrow)"/>
+  <text class="muted s" x="130" y="446">all layers, styles and data</text>
+
+  <rect class="box" x="20" y="476" width="200" height="72" rx="8"/>
+  <text class="fg t" x="120" y="503" text-anchor="middle">Bundler</text>
+  <text class="muted s" x="120" y="522" text-anchor="middle">joins all modules into</text>
+  <text class="muted s" x="120" y="538" text-anchor="middle">one script and one stylesheet</text>
+
+  <rect class="box" x="260" y="476" width="200" height="72" rx="8"/>
+  <text class="fg t" x="360" y="503" text-anchor="middle">One HTML file</text>
+  <text class="muted s" x="360" y="522" text-anchor="middle">code, styles and data inlined,</text>
+  <text class="muted s" x="360" y="538" text-anchor="middle">about 1.6 MB</text>
+
+  <rect class="box" x="500" y="476" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="503" text-anchor="middle">Browser</text>
+  <text class="muted s" x="600" y="522" text-anchor="middle">opens it from disk,</text>
+  <text class="muted s" x="600" y="538" text-anchor="middle">no server</text>
+
+  <line class="flow" x1="220" y1="512" x2="258" y2="512" marker-end="url(#arrow)"/>
+  <line class="flow" x1="460" y1="512" x2="498" y2="512" marker-end="url(#arrow)"/>
+
+  <!-- Tests column -->
+  <rect class="test" x="500" y="30" width="200" height="72" rx="8"/>
+  <text class="gold t" x="600" y="57" text-anchor="middle">Generator tests</text>
+  <text class="muted s" x="600" y="76" text-anchor="middle">Python, on small test CSVs</text>
+  <text class="muted s" x="600" y="92" text-anchor="middle">and the data format</text>
+  <line class="check" x1="500" y1="66" x2="442" y2="66" marker-end="url(#garrow)"/>
+
+  <rect class="test" x="500" y="132" width="200" height="174" rx="8"/>
+  <text class="gold t" x="600" y="200" text-anchor="middle">Unit tests</text>
+  <text class="muted s" x="600" y="219" text-anchor="middle">Node, one file per module</text>
+  <text class="muted s" x="600" y="235" text-anchor="middle">core logic, real items,</text>
+  <text class="muted s" x="600" y="251" text-anchor="middle">saved-state repair</text>
+  <line class="check" x1="500" y1="168" x2="442" y2="168" marker-end="url(#garrow)"/>
+  <line class="check" x1="500" y1="270" x2="442" y2="270" marker-end="url(#garrow)"/>
+
+  <rect class="test" x="500" y="336" width="200" height="72" rx="8"/>
+  <text class="gold t" x="600" y="363" text-anchor="middle">Smoke test</text>
+  <text class="muted s" x="600" y="382" text-anchor="middle">real browser, 6 jobs, every tab,</text>
+  <text class="muted s" x="600" y="398" text-anchor="middle">desktop and 400 px width</text>
+  <path class="check" d="M560,408 V442 H400 V474" marker-end="url(#garrow)"/>
+
+  <!-- legend -->
+  <line class="flow" x1="20" y1="566" x2="52" y2="566"/>
+  <text class="muted s" x="60" y="570">used by / built into</text>
+  <line class="check" x1="200" y1="566" x2="232" y2="566"/>
+  <text class="muted s" x="240" y="570">checked by</text>
+</svg>

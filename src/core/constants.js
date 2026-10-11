@@ -40,7 +40,7 @@ export const BASE_SLOT_PCT = Object.freeze({
   ring: 67,
 });
 
-/* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/findings.md). */
+/* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/math.md section 4; evidence in docs/validation.md). */
 export const SUB_WEIGHTS = Object.freeze([100, 70, 20]);
 
 export const MAIN_NAME = Object.freeze({ str: 'Strength', dex: 'Dexterity', int: 'Intelligence', mind: 'Mind' });
