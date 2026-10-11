@@ -1,0 +1,15 @@
+{
+  "name": "ff14-gear-sync-analysis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Item level sync calculator and gear optimizer for FFXIV (single-file HTML page)",
+  "scripts": {
+    "build": "python scripts/build.py",
+    "test": "node tests/core.test.js",
+    "smoke": "python tests/smoke.py",
+    "check": "npm run build && npm test && npm run smoke",
+    "fetch": "python scripts/fetch_data.py",
+    "regen": "python scripts/regen.py"
+  },
+  "license": "MIT"
+}
