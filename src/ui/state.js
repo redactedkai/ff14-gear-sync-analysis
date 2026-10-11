@@ -4,6 +4,12 @@ import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, DEFAULT_JOB } from '../core/constant
 import { makeJobContext } from '../core/job-context.js';
 import { reserveIds } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
+import { speedParams } from '../core/speed.js';
+
+/* Defaults come from the game, not from any one player's setup: the level cap, and the game's own sync item level
+   for that level (ParamGrow). */
+const DEFAULT_LEVEL = 100;
+const DEFAULT_CAP = speedParams(DEFAULT_LEVEL).sync;
 
 export const STORE_KEY = 'ilvl-stat-lab-v3';
 export const TABS = ['pool', 'opt', 'math'];
@@ -12,15 +18,15 @@ export const MATH_TABS = ['piece', 'sync'];
 export function defaultState() {
   return {
     job: DEFAULT_JOB,
-    cap: 123,
+    cap: DEFAULT_CAP,
     sync: true,
-    level: 50,
+    level: DEFAULT_LEVEL,
     tab: 'pool',
     mathTab: 'piece',
     syncIlvl: 475,
     piece: { ilvl: 475, slot: 'head', subs: ['spd', 'spec', 'dh'] },
     browse: { q: '', type: 'any', min: 100, max: '', lvl: 100, sort: 'ilvl' },
-    opt: { target: 'spd', tb: 'main', tb2: 'vit', avg: true, avgMin: 123 },
+    opt: { target: 'spd', tb: 'main', tb2: 'vit', avg: false, avgMin: DEFAULT_CAP },
     poolFilter: 'all',
     pool: [],
   };

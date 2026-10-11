@@ -2,10 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreState, defaultState, resetForJob, defaultSubs } from '../../src/ui/state.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { ALL_STATS } from '../../src/core/constants.js';
+import { ALL_STATS, DEFAULT_JOB } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
 import { newId } from '../../src/core/items.js';
 
+const D = defaultState();
 const clone = o => JSON.parse(JSON.stringify(o));
 const fresh = job => {
   const s = defaultState();
@@ -65,7 +66,7 @@ function expectFieldDefault(path, value, expected) {
 }
 
 test('null, undefined and non-object input give the defaults', () => {
-  const def = fresh('SGE');
+  const def = fresh(DEFAULT_JOB);
   for (const raw of [null, undefined, 0, 42, 'state', true, [], [1, 2]]) {
     assert.deepEqual(restoreState(raw), def, JSON.stringify(raw));
   }
@@ -79,28 +80,28 @@ test('a valid full saved state round-trips unchanged', () => {
 });
 
 test('an empty object gives the defaults for the default job', () => {
-  assert.deepEqual(restoreState({}), fresh('SGE'));
+  assert.deepEqual(restoreState({}), fresh(DEFAULT_JOB));
 });
 
 test('unknown job falls back to the default job, other fields kept', () => {
   const s = corrupt('job', 'XYZ');
-  assert.equal(s.job, 'SGE');
+  assert.equal(s.job, DEFAULT_JOB);
   assert.equal(s.cap, 290);
-  assert.equal(corrupt('job', 7).job, 'SGE');
+  assert.equal(corrupt('job', 7).job, DEFAULT_JOB);
 });
 
 test('top-level scalars of the wrong type or out of range fall back field by field', () => {
-  expectFieldDefault('cap', '123', 123);
-  expectFieldDefault('cap', null, 123);
-  expectFieldDefault('cap', Number.NaN, 123);
+  expectFieldDefault('cap', '123', D.cap);
+  expectFieldDefault('cap', null, D.cap);
+  expectFieldDefault('cap', Number.NaN, D.cap);
   expectFieldDefault('cap', -5, 1);
   expectFieldDefault('cap', 99999, MAX_REAL);
   expectFieldDefault('cap', 200.6, 201);
-  expectFieldDefault('sync', 'yes', true);
-  expectFieldDefault('sync', 1, true);
+  expectFieldDefault('sync', 'yes', D.sync);
+  expectFieldDefault('sync', 1, D.sync);
   expectFieldDefault('level', 9999, 100);
   expectFieldDefault('level', 0, 1);
-  expectFieldDefault('level', '50', 50);
+  expectFieldDefault('level', '50', D.level); // strings are not accepted here
   expectFieldDefault('syncIlvl', 5000, MAX_REAL);
   expectFieldDefault('syncIlvl', {}, 475);
   expectFieldDefault('poolFilter', 'offhand', 'all'); // not an active slot for a two-handed job
@@ -161,8 +162,8 @@ test('opt fields', () => {
   expectFieldDefault('opt.tb', 'nope', 'main');
   expectFieldDefault('opt.tb', null, 'main');
   expectFieldDefault('opt.tb2', 3, 'vit');
-  expectFieldDefault('opt.avg', 'true', true);
-  expectFieldDefault('opt.avgMin', 'abc', 123);
+  expectFieldDefault('opt.avg', 'true', D.opt.avg);
+  expectFieldDefault('opt.avgMin', 'abc', D.opt.avgMin);
   expectFieldDefault('opt.avgMin', 0, 1);
   expectFieldDefault('opt.avgMin', 99999, MAX_REAL);
 });

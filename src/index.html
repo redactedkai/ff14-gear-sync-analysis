@@ -60,7 +60,6 @@
 
 <!-- THE MATH -->
 <section class="tab" id="tab-math" role="tabpanel" hidden :hidden="$store.app.tab !== 'math'">
-<p class="small dim">Optional background. You don’t need this to use the optimizer: it explains where stats come from and what the sync cap does to them.</p>
 <nav class="subtabs" aria-label="Math views">
   <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece lab</button>
   <button data-sub="sync" type="button" :aria-pressed="String($store.app.mathTab === 'sync')" @click="$store.app.showSub('sync')">Sync caps</button>
@@ -171,7 +170,6 @@
 <section class="tab" id="tab-pool" role="tabpanel" hidden :hidden="$store.app.tab !== 'pool'">
   <div class="panel" x-data="browser">
     <h2>Browse real gear</h2>
-    <p class="small dim" id="b-lead" x-text="`Gear ${job.jobName} can equip, with the game’s own stats. Pick what you own or could get, and it goes into the pool the optimizer searches.`"></p>
     <div class="grid">
       <label class="f">Name contains<input type="text" id="b-q" placeholder="e.g. Earrings" autocomplete="off" x-model="$store.app.browse.q"></label>
       <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
@@ -206,7 +204,7 @@
         </template>
       </tbody></template>
     </table></div>
-    <p class="small dim">Stats are the item’s own (high-quality values for craftable gear). Shown as <span class="num">raw → synced</span> where the sync cap bites. Item data is from the game files; availability, vendors and drop sources are not included.</p>
+    <p class="small dim"><span class="num">raw → synced</span> where the sync cap bites. Craftable gear shows high-quality stats.</p>
   </div>
 
   <div class="panel" x-data="pool">
@@ -236,7 +234,7 @@
         <template x-if="view.hasHidden"><tr><td :colspan="job.stats.length + 5" class="dim small" x-text="`${view.hidden} more items not shown here (they are all still searched). Use the filter above to view them.`"></td></tr></template>
       </tbody></template>
     </table></div>
-    <p class="small dim">The optimizer picks one item per slot (two rings) from this list. “Copies” is how many you can wear at once, which matters for rings.</p>
+    <p class="small dim">“Copies”: how many you can wear at once (matters for rings).</p>
   </div>
 
 </section>
@@ -298,7 +296,7 @@
     <template x-if="view && view.error"><div class="panel"><h3>Ceiling per stat from this pool</h3><p class="small bad" x-text="view.error"></p></div></template>
     <template x-if="view && !view.error"><div class="panel">
       <h3>Ceiling per stat from this pool</h3>
-      <p class="small dim">The most of each stat the pool can give on its own, ignoring the other stats. “Unsynced” is the same pool without the cap, to show how much the cap removes.</p>
+      <p class="small dim">The most of each stat the pool can give on its own. “Unsynced” drops the cap.</p>
       <div class="tablewrap"><table>
         <thead><tr><th></th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
         <tbody>

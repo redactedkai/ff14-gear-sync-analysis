@@ -292,12 +292,12 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 | Item database generator | `scripts/data/gen_items.py` |
 | Item level table and level data generator | `scripts/data/gen_item_level.py` |
 | Source commit detection and file headers | `scripts/data/provenance.py` |
-| Regenerate everything | `scripts/data/regen.py` (`npm run regen`) |
+| Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
 | Generated data (never edit by hand) | `src/data/items.js`, `src/data/item-level.js` |
 | Tables, highest real item level, footer text | `src/core/tables.js` (`MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; hard-coded slot percentages | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
-| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/fixtures/` (`npm run test:py`) |
+| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/fixtures/` (part of `npm test`) |
 | Format and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
 | Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg` |

@@ -19,27 +19,34 @@ The page has two working tabs and one reference tab:
 2. **Optimizer**: picks one item per slot (two rings) from the pool to maximize one stat, with two tiebreakers and an optional average-item-level requirement.
 3. **How the math works** (reference): Piece lab (how a piece's stats come from its item level) and Sync caps (what the sync cap allows, checked against real gear and the Wiki).
 
+Set your job, sync cap (item level) and synced level at the top. A fresh page starts at the first job in the game's list, level 100 and that level's own sync item level (690). Your settings and pool are saved in the browser, so they come back on the next visit. Switching jobs clears the pool and job-specific settings, after a warning.
+
 ## Develop
 
 | Command | What it does |
 | --- | --- |
 | `npm run build` | Bundle everything into `dist/index.html` (opens straight from disk) |
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
-| `npm test` | Unit tests of the core math, the optimizer, the data and the saved state |
-| `npm run test:py` | Tests of the Python data generators |
+| `npm test` | Unit tests (core math, optimizer, data, saved state) and the Python data generator tests |
 | `npm run smoke` | Browser smoke test of the built page |
-| `npm run lint` | Biome (JavaScript, JSON, CSS) and Ruff (Python) lint |
-| `npm run format` | Format with Biome and Ruff (`format:check` only reports) |
-| `npm run check` | Lint, format check, build, all tests and the smoke test |
-| `npm run fetch` | Fetch the game data CSVs this project needs into `data/` |
-| `npm run regen` | Regenerate the data files from those CSVs and rebuild (after a game patch) |
+| `npm run lint` | Biome (JavaScript, JSON, CSS) and Ruff (Python): lint and format check |
+| `npm run format` | Format with Biome and Ruff |
+| `npm run check` | Lint (with format check), build, all tests and the smoke test. Run this before calling a change done |
+| `npm run update-data` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate the data files and rebuild |
 
 ## Requirements
 
 - Node 22 or later. Run `npm install` once.
-- Python 3.9 or later, only for the data pipeline, the generator tests and the smoke test: `python -m pip install -r requirements-dev.txt`, then once `python -m playwright install chromium`.
+- Python 3.9 or later, for the generator tests (part of `npm test`), the smoke test, linting and the data pipeline: `python -m pip install -r requirements-dev.txt`, then once `python -m playwright install chromium`. Building the page needs only Node.
 
 Run all commands from the repo root.
+
+## After a game patch
+
+1. `npm run update-data` fetches the newest CSVs, regenerates `src/data/` (recording the source commit) and rebuilds.
+2. `npm run check`, then review the diff of the two generated files.
+
+`docs/data-pipeline.md` section 9 lists which test numbers may change after a patch and which must not. To regenerate from the CSVs you already have (for example after changing a generator), run `python scripts/data/regen.py`. Never edit `src/data/*.js` by hand.
 
 ## Documentation
 

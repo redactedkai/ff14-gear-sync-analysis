@@ -6,7 +6,7 @@ built on the real header; ItemLevel values are synthetic (row * 1000 + column po
 wrong number. ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest edits copies of the fixtures to check that
 renamed columns and changed slot shares stop the generators.
 
-Run: npm run test:py
+Run: npm test (runs these after the unit tests)
 """
 
 import contextlib

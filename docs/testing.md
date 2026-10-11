@@ -74,14 +74,14 @@ Details of the rules being tested are in [data-pipeline.md, section 10](data-pip
 
 The smoke test opens the built page from a `file://` address in headless Chromium at 1000 × 900 and checks:
 
-- the page title and the default cap of 123;
+- the page title and the defaults: the first job in the game's order (Paladin), level 100 and that level's own sync item level 690, with the average item level requirement off;
 - **Piece lab**: an item level 130 head piece with Spell Speed, Piety and Direct Hit for Sage shows the stats of a real item level 130 healer head piece (Mind 33, Vitality 32, Spell Speed 31, Piety 22, Direct Hit 6) and its synced values (Mind 30, Spell Speed 29); the budget chart renders;
 - **Real-gear check panel**: every Wiki item level 475 cap row reads "match", and the accuracy table is not empty;
 - **Item pool and Optimizer**, for a healer and a tank: the browser is set to a real-gear window (Sage, item level 120 to 130; Warrior, 130 to 135; equip level 50 or below), its match count equals the core's (33 and 32 items), "Add all" adds them, and the page's best Spell or Skill Speed, synced to 123 and unsynced, equals the core's result for the same rows (currently Sage 247 / 255, Warrior 85 / 87). The expected values are computed by running the core optimizer and the brute force in Node, after checking that those two agree; the ceiling table renders;
 - **Job switch with a pool**: switching from Warrior to Gunbreaker (same role) shows the warning; Cancel keeps the job and the pool, Switch and clear empties it;
 - **Copies**: in a rings-only Sage pool (item level 140 to 150, equip level 60) whose best pair is one non-Unique ring worn twice, setting that ring's Copies to 1 lowers the synced Spell Speed total and setting it back to 2 restores it (currently 46 / 23 / 46; expected values from the core optimizer and the brute force in Node);
 - **Reload**: a non-default state (Dragoon, cap 130, level 60, sync off, a real-gear pool with one ring's copies cut to 1, optimizer target and tiebreaks, browse filter, Piece lab slot and item level, Optimizer tab open) is saved (the test waits for the debounced save to reach `localStorage`), and after a reload every input, the open tab, the pool row count, the edited copies and the optimizer total are the same;
-- **Corrupted storage**: invalid JSON, a JSON array, wrong-typed fields and a pool of broken items in the saved state each load as the defaults (Sage, cap 123, empty pool, Item pool tab) with no JavaScript error and no "undefined" / "NaN" / "null" text;
+- **Corrupted storage**: invalid JSON, a JSON array, wrong-typed fields and a pool of broken items in the saved state each load as the defaults (Paladin, cap 690, level 100, empty pool, Item pool tab) with no JavaScript error and no "undefined" / "NaN" / "null" text;
 - **Weapon mode**: Paladin's slot filter offers an off-hand, Warrior's does not;
 - **Every tab for six jobs** (Sage, Warrior, Paladin, Black Mage, Ninja, Dragoon), at 400 px width: the sync caps per slot at 123, the off-hand row only for Paladin, no "undefined", "NaN" or "null" text anywhere, and no horizontal page scroll.
 
@@ -93,13 +93,11 @@ Run from the repository root.
 
 | Command | What it runs |
 | --- | --- |
-| `npm test` | All unit tests (Node's built-in test runner) |
-| `npm run test:py` | Generator tests (Python `unittest`) |
+| `npm test` | All unit tests (Node's built-in test runner), then the generator tests (Python `unittest`) |
 | `npm run smoke` | Browser smoke test; build the page first; needs Node on the path for its expected values |
-| `npm run lint` | Biome lint (JavaScript, JSON, CSS) and Ruff check (Python) |
+| `npm run lint` | Biome and Ruff: lint, then report formatting differences without changing files |
 | `npm run format` | Rewrite files with Biome and Ruff formatting |
-| `npm run format:check` | Report formatting differences without changing files |
-| `npm run check` | Lint, format check, build, unit tests, generator tests, smoke test, in that order; stops at the first failure |
+| `npm run check` | Lint (with format check), build, unit and generator tests, smoke test, in that order; stops at the first failure |
 
 `npm run check` is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at about 400 px.
 
@@ -158,6 +156,6 @@ Refreshing the data can legitimately change some expected values and must not ch
 | Accuracy check shared by the page and the tests | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_generators.py`, `tests/data/fixtures/` |
 | Smoke test and its screenshots | `tests/e2e/smoke.py` (`check_real_gear_optimizer`, `check_piece_lab`), `tests/e2e/out/` (gitignored) |
-| Commands | `package.json` (`test`, `test:py`, `smoke`, `lint`, `format`, `format:check`, `check`) |
+| Commands | `package.json` (`test`, `smoke`, `lint`, `format`, `check`) |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |
 | Pinned Python tools | `requirements-dev.txt` |

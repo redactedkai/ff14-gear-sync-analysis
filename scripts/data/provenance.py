@@ -37,8 +37,8 @@ def make(commit, date):
 def header(source):
     """One-line JS comment naming the source commit."""
     if source is None:
-        return '/* GENERATED from xivapi/ffxiv-datamining (commit unknown). Do not edit; run npm run regen. */\n'
-    return f'/* GENERATED from {source["repo"]} {source["commit"]} ({source["date"]}). Do not edit; run npm run regen. */\n'
+        return '/* GENERATED from xivapi/ffxiv-datamining (commit unknown). Do not edit; see docs/data-pipeline.md. */\n'
+    return f'/* GENERATED from {source["repo"]} {source["commit"]} ({source["date"]}). Do not edit; see docs/data-pipeline.md. */\n'
 
 
 def add_cli_args(parser):

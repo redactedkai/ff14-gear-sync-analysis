@@ -34,6 +34,10 @@ BAD_WORDS = ['undefined', 'NaN', 'null']
 TIMEOUT = 10_000  # ms for any single wait
 STORE_KEY = 'ilvl-stat-lab-v3'  # localStorage key of the saved state (src/ui/state.js)
 
+# Defaults owe nothing to any player's setup: the first job in the game's order, the level cap, and the game's own
+# sync item level for that level (ParamGrow: 690 at level 100).
+DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL = 'PLD', '690', '100'
+
 # Sync caps at item level 123: slot -> (substat cap, main stat cap). Same for every job (slot shares are job-neutral).
 CAPS_123 = {
     'Head': (29, 30),
@@ -420,10 +424,8 @@ def check_reload_persists(pg):
     pg.select_option('#p-slot', 'body')
     pg.fill('#p-ilvl', '200')
     pg.locator('#p-ilvl').dispatch_event('change')
-    pg.fill('#cap', '130')
-    pg.locator('#cap').dispatch_event('change')
-    pg.fill('#level', '60')
-    pg.locator('#level').dispatch_event('change')
+    set_number(pg, '#cap', '130')
+    set_number(pg, '#level', '60')
     if pg.locator('#sync').is_checked():
         pg.locator('#sync').uncheck()
     wait_optimizer(pg)
@@ -505,8 +507,13 @@ BAD_STORAGE = [
             }
         ),
     ),
-    ('a pool of broken items', json.dumps({'job': 'SGE', 'pool': [None, 5, {'id': 3}, {'id': 'a', 'type': 'ring', 'ilvl': 'big'}]})),
+    ('a pool of broken items', json.dumps({'job': DEFAULT_JOB, 'pool': [None, 5, {'id': 3}, {'id': 'a', 'type': 'ring', 'ilvl': 'big'}]})),
 ]
+
+
+def set_number(pg, sel, value):
+    pg.fill(sel, value)
+    pg.locator(sel).dispatch_event('change')
 
 
 def check_corrupted_storage(pg):
@@ -515,7 +522,7 @@ def check_corrupted_storage(pg):
     page can overwrite it before the load."""
     blank = OUT / 'blank.html'
     blank.write_text('<!doctype html><title>blank</title>', encoding='utf-8')
-    defaults = {'#job': 'SGE', '#cap': '123', '#level': '50', '#b-min': '100', '#b-lvl': '100', '#o-target': 'spd'}
+    defaults = {'#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL, '#b-min': '100', '#b-lvl': '100', '#o-target': 'spd'}
     for what, raw in BAD_STORAGE:
         n_errors = len(errors)
         pg.goto(blank.as_uri())
@@ -531,7 +538,7 @@ def check_corrupted_storage(pg):
         check_no_bad_text(pg, f'page loaded from stored {what}')
         check(len(errors) == n_errors, f'stored {what}: JS errors on load: {errors[n_errors:]}')
         # the page repairs storage: the next save holds valid state
-        wait_saved(pg, "s => s.job === 'SGE' && Array.isArray(s.pool)")
+        wait_saved(pg, f"s => s.job === '{DEFAULT_JOB}' && Array.isArray(s.pool)")
 
 
 def check_pld_offhand(pg):
@@ -555,6 +562,8 @@ def check_no_bad_text(pg, where):
 def walk_jobs(pg):
     """Every tab for each job: no undefined/NaN/null text, correct sync caps, page fits 400 px."""
     pg.set_viewport_size({'width': 400, 'height': 800})
+    set_number(pg, '#cap', '123')  # check_sync_caps expects the item level 123 caps
+    set_number(pg, '#level', '50')
     for job in JOBS:
         set_job(pg, job)
         show_tab(pg, 'pool')
@@ -589,7 +598,9 @@ def main():
         pg.goto(PAGE.as_uri())
         wait_ready(pg)
         check(pg.title() == 'Item Level Stat Lab', f'title is {pg.title()!r}')
-        check(pg.input_value('#cap') == '123', f'default cap {pg.input_value("#cap")!r}, expected 123')
+        for sel, v in {'#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL}.items():
+            check(pg.input_value(sel) == v, f'default {sel} is {pg.input_value(sel)!r}, expected {v!r}')
+        check(not pg.locator('#o-avg').is_checked(), 'the average item level requirement is on by default')
 
         steps = [
             check_piece_lab,
@@ -603,6 +614,8 @@ def main():
             walk_jobs,
         ]
         set_job(pg, 'SGE')
+        set_number(pg, '#cap', '123')  # the checks below use the item level 123 caps
+        set_number(pg, '#level', '50')
         for step in steps:
             try:
                 step(pg)

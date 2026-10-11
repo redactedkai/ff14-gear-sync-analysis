@@ -84,7 +84,8 @@ export const JOBS = Object.freeze(
     return Object.freeze([id, ...JOB_INFO[id]]);
   }),
 );
-export const DEFAULT_JOB = 'SGE';
+/* The first job in the game's own order; no job is favoured. */
+export const DEFAULT_JOB = JOBS[0][0];
 export const ONE_HANDED_JOBS = Object.freeze(['PLD']); /* 1H weapon + off-hand; everyone else uses a 2H weapon */
 export const ROLE_GROUP = Object.freeze({
   tank: 'Tanks',

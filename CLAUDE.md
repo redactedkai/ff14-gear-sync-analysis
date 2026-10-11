@@ -48,13 +48,13 @@ scripts/
   data/provenance.py  source commit + file headers
   data/regen.py       both generators, then the build
 tests/
-  unit/*.test.js      node:test, one file per core module, plus state.test.js (npm test)
-  data/               Python generator tests on fixture CSVs (npm run test:py)
+  unit/*.test.js      node:test, one file per core module, plus state.test.js
+  data/               Python generator tests on fixture CSVs
   e2e/smoke.py        Playwright browser smoke test (npm run smoke)
 docs/                 see docs/README.md; style guide in docs/diagrams/STYLE.md
 ```
 
-`dist/`, `data/` and `tests/e2e/out/` are gitignored. **Never hand-edit `src/data/*.js`**; change the generators and re-run `npm run regen`.
+`dist/`, `data/` and `tests/e2e/out/` are gitignored. **Never hand-edit `src/data/*.js`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
 
 ## Commands (run from the repo root)
 
@@ -62,12 +62,11 @@ Requires Node 22+ (`npm install` once) and Python 3.9+ (data pipeline, generator
 
 - `npm run build` : assemble `dist/index.html`
 - `npm run dev` : rebuild on change and serve `dist/` locally
-- `npm test` : unit tests; every test must pass
-- `npm run test:py` : generator tests
+- `npm test` : unit tests and Python generator tests; every test must pass
 - `npm run smoke` : browser test; must print `no errors`
-- `npm run lint` / `npm run format` / `npm run format:check` : Biome (JS/JSON/CSS) and Ruff (Python)
-- `npm run check` : lint, format check, build, test, test:py, smoke
-- `npm run fetch` / `npm run regen` : refresh game data after a patch (`docs/data-pipeline.md` section 9)
+- `npm run lint` : Biome (JS/JSON/CSS) and Ruff (Python) lint plus format check; `npm run format` rewrites
+- `npm run check` : lint, build, test, smoke
+- `npm run update-data` : fetch the newest game CSVs and regenerate `src/data/` after a patch (`docs/data-pipeline.md` section 9)
 
 Always run `npm run check` before telling the owner something works. For UI changes also open `dist/index.html` and look at it at desktop width and ~400 px phone width.
 
@@ -100,7 +99,7 @@ Full rules, counts and provenance: `docs/data-pipeline.md`. Key facts:
 - `gen_items.py` keeps gear with a slot (no belt, no soul crystal), a combat-job `ClassJobCategory`, item level >= 100 and at least one stat. **HQ bonus only when `CanBeHq`**. `IsUnique` is carried so the optimizer allows only one copy of a Unique ring.
 - Job bit order, raw stat order and slot codes live in `src/core/item-format.json` only; a test checks the page against it. Changing it means regenerating the data.
 - The highest real item level is **795** (`MAX_REAL`, computed from the database). The `ItemLevel` sheet runs to 920 but rows 796 to 920 carry no gear, so item level inputs cap at `MAX_REAL`. Do not claim those rows are "placeholders" or "intentional"; the data only shows they are unused.
-- After a patch: `npm run fetch`, `npm run regen`, `npm run check`. Which test numbers may move and which must not is in `docs/data-pipeline.md` section 9 and `docs/testing.md` section 6.
+- After a patch: `npm run update-data`, then `npm run check`. Which test numbers may move and which must not is in `docs/data-pipeline.md` section 9 and `docs/testing.md` section 6.
 
 ## Job mapping
 
@@ -126,7 +125,7 @@ Timing (Node 22, full 2,033-item Sage pool): one run takes about 15 to 20 ms; th
 
 - Be concise and plain-spoken. The owner has said the UI felt "overwhelming" at one point, so favor a few clear tabs over many controls. Ask yourself whether each control earns its place; remove excess rather than explain it.
 - Validate against external truth whenever possible (game files, Wiki, real items) and show the result. Distinguish what is verified from what is inferred. Several earlier claims had to be retracted (`docs/history.md`); do not repeat an inference as a fact, and add an entry there when something is retracted.
-- Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
+- Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. Defaults come from the game, not the owner's setup: first job in game order, level 100, and its own sync item level (690). (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
 - When the owner reports a bug from a screenshot, reproduce it in the smoke test or a unit test first, fix, then add a regression check.
 - Prefer root causes. Example: the "undefined" in Piece lab came from using a job-specific key where a neutral one belonged, not from missing text.
 - esbuild is the only build tool and Alpine.js the only runtime dependency. Ask before adding any other dependency. The single self-contained output file is a feature. The one intentional exception is the Google Fonts stylesheet in `src/index.html` (owner's decision): keep it, and keep the page working without it.

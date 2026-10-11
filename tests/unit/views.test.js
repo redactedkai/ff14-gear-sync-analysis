@@ -52,10 +52,12 @@ test('gcdTierAt agrees with a step-by-step scan at every level', () => {
 });
 
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
-  const app = makeApp('BLM');
+  // a cap of 123 sits below the 125-135 window, so sync bites; require an average item level of at least 123
+  const app = makeApp('BLM', { cap: 123 });
   app.pool = windowPool(app.jobCtx);
-  const o = app.opt; // defaults: Spell Speed, tiebreaks main and Vitality, average item level >= 123
-  assert.deepEqual([o.target, o.tb, o.tb2, o.avg, o.avgMin], ['spd', 'main', 'vit', true, 123]);
+  const o = app.opt; // defaults: Spell Speed, tiebreaks main and Vitality
+  assert.deepEqual([o.target, o.tb, o.tb2], ['spd', 'main', 'vit']);
+  Object.assign(o, { avg: true, avgMin: 123 });
   const want = sync =>
     exhaustive(app.jobCtx, app.pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'], minAvgIlvl: 123 })[0];
   const v = optimizerView(app);
@@ -115,7 +117,7 @@ test('A5: optimizer errors become an error view instead of throwing', () => {
 });
 
 test('ceiling view: per-stat maxima, synced vs unsynced, equal brute force', () => {
-  const app = makeApp('WAR');
+  const app = makeApp('WAR', { cap: 123 }); // below the 125-135 window, so sync bites
   app.pool = windowPool(app.jobCtx);
   const job = app.jobCtx;
   const v = ceilingView(app);

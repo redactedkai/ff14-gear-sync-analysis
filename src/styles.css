@@ -61,7 +61,7 @@ body {
   padding-block: 20px 48px;
 }
 .wrap {
-  max-width: 1040px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
