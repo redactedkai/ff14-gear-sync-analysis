@@ -1,10 +1,13 @@
 /* Page root and the job / sync settings panel. Nested components inherit the root's `job` and helpers. */
 import { JOBS, ROLE_GROUP, SLOT_LABEL } from '../../core/constants.js';
 import { speedParams } from '../../core/speed.js';
+import { dataSourceLabel } from '../../core/tables.js';
 
 export function page() {
   return {
     slotLabel: SLOT_LABEL,
+    /* footer note naming the datamining commit; empty when unknown */
+    dataSource: dataSourceLabel(),
     /* the current JobContext */
     get job() {
       return this.$store.app.jobCtx;
