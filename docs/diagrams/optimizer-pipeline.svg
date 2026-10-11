@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 616" role="img" aria-label="Optimizer pipeline: pool, effective stats, per-slot candidate lists, dominance pruning, branch and bound, loadout, with numbers for a 2,033-item Sage pool synced to item level 123">
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .box-good { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .box-bad { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .box-accent { fill: #ece9dd; stroke: #0d6e72; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-fg { stroke: #1b2a2c; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-bad { stroke: #b0402c; }
+  .s-good { stroke: #25773a; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .b { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .box-good { fill: #1b2b2e; stroke: #6cc788; }
+    .box-bad { fill: #1b2b2e; stroke: #f08a74; }
+    .box-accent { fill: #1b2b2e; stroke: #4cc2b6; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-fg { stroke: #e5eeed; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-bad { stroke: #f08a74; }
+    .s-good { stroke: #6cc788; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+
+<rect class="bg" x="0" y="0" width="720" height="616"/>
+<text class="title fg" x="20" y="30">How the optimizer works</text>
+<text class="small muted" x="20" y="52">Right: one real run (Sage, target Spell Speed, synced to item level 123)</text>
+<text class="small b muted" x="20" y="84">Stage</text>
+<text class="small b muted" x="392" y="84">Example</text>
+<rect class="box" x="20" y="100" width="340" height="62" rx="8"/>
+<text class="fg b" x="34" y="125">Pool</text>
+<text class="small muted" x="34" y="146">items you added: slot, item level, stats, copies</text>
+<line class="s-muted" x1="368" y1="131.0" x2="386" y2="131.0" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num accent b" x="392" y="125">2,033 items</text>
+<text class="small fg" x="392" y="144">every piece Sage can equip, item level 100 and up</text>
+<line class="s-muted" x1="190" y1="164" x2="190" y2="183" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="186" width="340" height="62" rx="8"/>
+<text class="fg b" x="34" y="211">Effective stats</text>
+<text class="small muted" x="34" y="232">synced to the cap if sync is on, plus item level</text>
+<line class="s-muted" x1="368" y1="217.0" x2="386" y2="217.0" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num accent b" x="392" y="211">cap 123</text>
+<text class="small fg" x="392" y="230">pieces above 123 cut to the cap for their slot</text>
+<line class="s-muted" x1="190" y1="250" x2="190" y2="269" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="272" width="340" height="62" rx="8"/>
+<text class="fg b" x="34" y="297">Per-slot candidate lists</text>
+<text class="small muted" x="34" y="318">one list per slot; rings share one list</text>
+<line class="s-muted" x1="368" y1="303.0" x2="386" y2="303.0" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num accent b" x="392" y="297">11 slots</text>
+<text class="small fg" x="392" y="316">weapon 108, head 227, body 242, … ring 197 (×2)</text>
+<line class="s-muted" x1="190" y1="336" x2="190" y2="355" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box-accent" x="20" y="358" width="340" height="62" rx="8"/>
+<text class="fg b" x="34" y="383">Dominance pruning</text>
+<text class="small muted" x="34" y="404">drop items beaten everywhere by enough copies</text>
+<line class="s-muted" x1="368" y1="389.0" x2="386" y2="389.0" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num accent b" x="392" y="383">118 kept</text>
+<text class="small fg" x="392" y="402">weapon 5, head 13, body 13, hands 11, legs 13,</text>
+<text class="small fg" x="392" y="417">feet 13, ear 10, neck 11, wrist 11, ring 18</text>
+<line class="s-muted" x1="190" y1="422" x2="190" y2="441" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box-accent" x="20" y="444" width="340" height="62" rx="8"/>
+<text class="fg b" x="34" y="469">Branch and bound</text>
+<text class="small muted" x="34" y="490">depth-first; cut by score bound and constraints</text>
+<line class="s-muted" x1="368" y1="475.0" x2="386" y2="475.0" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num accent b" x="392" y="469">136 nodes</text>
+<text class="small fg" x="392" y="488">about 19 ms in Node</text>
+<line class="s-muted" x1="190" y1="508" x2="190" y2="527" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="530" width="340" height="62" rx="8"/>
+<text class="fg b" x="34" y="555">Loadout</text>
+<text class="small muted" x="34" y="576">one item per slot, totals, average item level</text>
+<line class="s-muted" x1="368" y1="561.0" x2="386" y2="561.0" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num gold b" x="392" y="555">344</text>
+<text class="small fg" x="392" y="574">Spell Speed, the most this pool allows at cap 123</text>
+</svg>

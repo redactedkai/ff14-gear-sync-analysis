@@ -49,6 +49,7 @@ scripts/
 tests/
   unit/*.test.js      node:test, one file per core module (npm test)
   e2e/smoke.py        Playwright browser smoke test (npm run smoke)
+  data/               Python unittest of the generators, fixture CSVs in data/fixtures/ (npm run test:py)
 docs/findings.md      domain notes, validation, open questions
 docs/audit.md         engineering audit with a status table
 ```
@@ -57,13 +58,15 @@ docs/audit.md         engineering audit with a status table
 
 ## Commands (run from the repo root)
 
-Requires Node 22+ (`npm install` once) and Python 3.9+ (data pipeline and smoke test only).
+Requires Node 22+ (`npm install` once; `.nvmrc`, enforced by `engine-strict`) and Python 3.9+ for the data pipeline, smoke test and Ruff (`python -m pip install -r requirements-dev.txt`, then `python -m playwright install chromium` once).
 
 - `npm run build` : assemble `dist/index.html`
 - `npm run dev` : rebuild on change and serve `dist/` locally
 - `npm test` : unit tests; every test must pass
 - `npm run smoke` : browser test; must print `no errors` (needs `pip install playwright && playwright install chromium`)
-- `npm run check` : build, test, smoke
+- `npm run lint` / `npm run format` / `npm run format:check` : Biome (JS, JSON, CSS) and Ruff (Python); config in `biome.json` and `pyproject.toml` (140-column lines)
+- `npm run test:py` : Python unittest of the data generators on fixture CSVs (`tests/data/`)
+- `npm run check` : lint, format check, build, test, test:py, smoke
 - `npm run fetch` / `npm run regen` : refresh game data after a patch (details below)
 
 Always run `npm run check` before telling the owner something works. For UI changes also open `dist/index.html` and look at it at desktop width and ~400 px phone width.

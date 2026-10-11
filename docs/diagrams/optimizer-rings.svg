@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-label="Three Unique rings with 10, 9 and 5 of the target stat. The old rule drops B and C because one better ring exists, leaving 10. The current rule keeps B because only one copy beats it while two ring slots must be filled, giving the best pair A plus B, 19.">
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .box-good { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .box-bad { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .box-accent { fill: #ece9dd; stroke: #0d6e72; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-fg { stroke: #1b2a2c; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-bad { stroke: #b0402c; }
+  .s-good { stroke: #25773a; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .b { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .box-good { fill: #1b2b2e; stroke: #6cc788; }
+    .box-bad { fill: #1b2b2e; stroke: #f08a74; }
+    .box-accent { fill: #1b2b2e; stroke: #4cc2b6; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-fg { stroke: #e5eeed; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-bad { stroke: #f08a74; }
+    .s-good { stroke: #6cc788; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="470"/>
+<text class="title fg" x="20" y="30">Why a beaten ring can still be needed</text>
+<text class="small muted" x="20" y="52">Three Unique rings (one copy each), no other stats. Two ring slots to fill.</text>
+
+<rect class="box" x="140" y="72" width="120" height="44" rx="8"/>
+<text class="fg b" x="160" y="99">A</text><text class="num gold b" x="240" y="99" text-anchor="end">10</text>
+<rect class="box" x="300" y="72" width="120" height="44" rx="8"/>
+<text class="fg b" x="320" y="99">B</text><text class="num gold b" x="400" y="99" text-anchor="end">9</text>
+<rect class="box" x="460" y="72" width="120" height="44" rx="8"/>
+<text class="fg b" x="480" y="99">C</text><text class="num gold b" x="560" y="99" text-anchor="end">5</text>
+<text class="small muted" x="360" y="140" text-anchor="middle">A beats B and C; B beats C</text>
+
+<!-- old rule -->
+<rect class="box-bad" x="20" y="160" width="330" height="290" rx="8"/>
+<text class="fg b" x="36" y="186">Old rule (before the F1 fix)</text>
+<text class="small muted" x="36" y="206">Drop an item if any single item with at least</text>
+<text class="small muted" x="36" y="222">as many copies beats it.</text>
+<text class="fg" x="36" y="258">A</text><text class="small muted" x="64" y="258">nothing beats it</text><text class="good b" x="334" y="258" text-anchor="end">kept</text>
+<text class="fg" x="36" y="288">B</text><text class="small muted" x="64" y="288">beaten by A (1 copy)</text><text class="bad b" x="334" y="288" text-anchor="end">dropped</text>
+<text class="fg" x="36" y="318">C</text><text class="small muted" x="64" y="318">beaten by A</text><text class="bad b" x="334" y="318" text-anchor="end">dropped</text>
+<line class="s-muted" x1="36" y1="340" x2="334" y2="340" stroke-width="1"/>
+<text class="small muted" x="36" y="364">Only A is left. A is Unique, so the</text>
+<text class="small muted" x="36" y="380">second ring slot stays empty.</text>
+<text class="fg" x="36" y="418">Best pair: A + empty =</text><text class="num bad b" x="334" y="418" text-anchor="end">10</text>
+
+<!-- new rule -->
+<rect class="box-good" x="370" y="160" width="330" height="290" rx="8"/>
+<text class="fg b" x="386" y="186">Current rule</text>
+<text class="small muted" x="386" y="206">Drop an item only if the items beating it have</text>
+<text class="small muted" x="386" y="222">at least 2 copies between them (2 ring slots).</text>
+<text class="fg" x="386" y="258">A</text><text class="small muted" x="414" y="258">nothing beats it</text><text class="good b" x="684" y="258" text-anchor="end">kept</text>
+<text class="fg" x="386" y="288">B</text><text class="small muted" x="414" y="288">beaten by A: 1 copy, fewer than 2</text><text class="good b" x="684" y="288" text-anchor="end">kept</text>
+<text class="fg" x="386" y="318">C</text><text class="small muted" x="414" y="318">beaten by A and B: 2 copies</text><text class="bad b" x="684" y="318" text-anchor="end">dropped</text>
+<line class="s-muted" x1="386" y1="340" x2="684" y2="340" stroke-width="1"/>
+<text class="small muted" x="386" y="364">Any pair using C can swap C for whichever</text>
+<text class="small muted" x="386" y="380">of A or B is not already worn.</text>
+<text class="fg" x="386" y="418">Best pair: A + B =</text><text class="num good b" x="684" y="418" text-anchor="end">19</text>
+</svg>

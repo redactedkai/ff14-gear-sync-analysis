@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-labelledby="t d">
+  <title id="t">Data pipeline: from the game client to the page</title>
+  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository as CSV files. A sparse clone fetches six of them. Two generators turn them into the item level table with level data, and the item database; both generators and the page code read one shared format definition. esbuild bundles code and data into one HTML file that the browser opens from disk.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .fmt { fill: #ece9dd; stroke: #8f5f0c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .gold { fill: #8f5f0c; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .read { fill: none; stroke: #8f5f0c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .head { fill: #0d6e72; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .fmt { fill: #1b2b2e; stroke: #e2b659; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .gold { fill: #e2b659; }
+      .flow { stroke: #4cc2b6; }
+      .read { stroke: #e2b659; }
+      .head { fill: #4cc2b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="560"/>
+
+  <!-- Row 1: source -->
+  <rect class="box" x="20" y="30" width="200" height="72" rx="8"/>
+  <text class="fg t" x="120" y="57" text-anchor="middle">Game client</text>
+  <text class="muted s" x="120" y="76" text-anchor="middle">data stored as sheets</text>
+  <text class="muted s" x="120" y="92" text-anchor="middle">(Item, ItemLevel, ...)</text>
+
+  <rect class="box" x="260" y="30" width="200" height="72" rx="8"/>
+  <text class="fg t" x="360" y="57" text-anchor="middle">Datamining repository</text>
+  <text class="muted s" x="360" y="76" text-anchor="middle">xivapi/ffxiv-datamining</text>
+  <text class="muted s" x="360" y="92" text-anchor="middle">one CSV per sheet, as exported</text>
+
+  <rect class="box" x="500" y="30" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="57" text-anchor="middle">Local sparse clone</text>
+  <text class="muted s" x="600" y="76" text-anchor="middle">6 CSVs, latest commit only</text>
+  <text class="muted s" x="600" y="92" text-anchor="middle">(fetch step)</text>
+
+  <line class="flow" x1="220" y1="66" x2="258" y2="66" marker-end="url(#arrow)"/>
+  <line class="flow" x1="460" y1="66" x2="498" y2="66" marker-end="url(#arrow)"/>
+
+  <!-- clone feeds both generators -->
+  <line class="flow" x1="600" y1="102" x2="600" y2="158" marker-end="url(#arrow)"/>
+  <path class="flow" d="M600,126 H120 V158" marker-end="url(#arrow)"/>
+
+  <!-- Row 2: generators and shared format -->
+  <rect class="box" x="20" y="160" width="200" height="72" rx="8"/>
+  <text class="fg t" x="120" y="187" text-anchor="middle">Item level generator</text>
+  <text class="muted s" x="120" y="206" text-anchor="middle">reads ItemLevel,</text>
+  <text class="muted s" x="120" y="222" text-anchor="middle">ParamGrow</text>
+
+  <rect class="fmt" x="260" y="160" width="200" height="72" rx="8"/>
+  <text class="gold t" x="360" y="187" text-anchor="middle">Shared format</text>
+  <text class="muted s" x="360" y="206" text-anchor="middle">job bit order, stat order,</text>
+  <text class="muted s" x="360" y="222" text-anchor="middle">slot codes</text>
+
+  <rect class="box" x="500" y="160" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="187" text-anchor="middle">Item database generator</text>
+  <text class="muted s" x="600" y="206" text-anchor="middle">reads Item, EquipSlotCategory,</text>
+  <text class="muted s" x="600" y="222" text-anchor="middle">ClassJobCategory</text>
+
+  <line class="read" x1="260" y1="196" x2="222" y2="196" marker-end="url(#arrow)"/>
+  <line class="read" x1="460" y1="196" x2="498" y2="196" marker-end="url(#arrow)"/>
+
+  <!-- Row 3: generated data -->
+  <line class="flow" x1="120" y1="232" x2="120" y2="278" marker-end="url(#arrow)"/>
+  <line class="flow" x1="600" y1="232" x2="600" y2="278" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="20" y="280" width="200" height="88" rx="8"/>
+  <text class="fg t" x="120" y="307" text-anchor="middle">Item level data</text>
+  <text class="muted s" x="120" y="326" text-anchor="middle">budgets for rows 0 to 920</text>
+  <text class="muted s" x="120" y="342" text-anchor="middle">speed data, levels 1 to 100</text>
+  <text class="muted s" x="120" y="358" text-anchor="middle">source commit and date</text>
+
+  <rect class="box" x="500" y="280" width="200" height="88" rx="8"/>
+  <text class="fg t" x="600" y="307" text-anchor="middle">Item database</text>
+  <text class="muted s" x="600" y="326" text-anchor="middle">17,579 gear rows</text>
+  <text class="muted s" x="600" y="342" text-anchor="middle">item level 100 to 795</text>
+  <text class="muted s" x="600" y="358" text-anchor="middle">about 1.4 MB</text>
+
+  <!-- format also read by page code -->
+  <line class="read" x1="330" y1="232" x2="330" y2="436" marker-end="url(#arrow)"/>
+  <text class="muted s" x="340" y="300">page code</text>
+  <text class="muted s" x="340" y="316">reads it too</text>
+
+  <!-- Row 4: bundle and browser -->
+  <path class="flow" d="M120,368 V474 H258" marker-end="url(#arrow)"/>
+  <path class="flow" d="M600,368 V400 H400 V436" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="260" y="438" width="200" height="72" rx="8"/>
+  <text class="fg t" x="360" y="465" text-anchor="middle">Page bundle (esbuild)</text>
+  <text class="muted s" x="360" y="484" text-anchor="middle">code, styles and data inlined</text>
+  <text class="muted s" x="360" y="500" text-anchor="middle">one HTML file, about 1.5 MB</text>
+
+  <line class="flow" x1="460" y1="474" x2="498" y2="474" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="500" y="438" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="465" text-anchor="middle">Browser</text>
+  <text class="muted s" x="600" y="484" text-anchor="middle">opens from disk, no server</text>
+  <text class="muted s" x="600" y="500" text-anchor="middle">footer names the source commit</text>
+
+  <!-- legend -->
+  <line class="flow" x1="20" y1="538" x2="52" y2="538"/>
+  <text class="muted s" x="60" y="542">data flow</text>
+  <line class="read" x1="150" y1="538" x2="182" y2="538"/>
+  <text class="muted s" x="190" y="542">reads the shared format</text>
+</svg>

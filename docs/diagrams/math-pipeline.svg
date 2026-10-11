@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 580" role="img" aria-label="Pipeline from item level to synced stat, with the Dreadwyrm Hood of Healing as an example">
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-fg { stroke: #1b2a2c; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-gold { stroke: #8f5f0c; }
+  .s-bad { stroke: #b0402c; }
+  .s-good { stroke: #25773a; }
+  .shade { fill: #586869; fill-opacity: 0.12; }
+  .bar-good { fill: #25773a; fill-opacity: 0.85; }
+  .bar-bad { fill: #b0402c; fill-opacity: 0.35; stroke: #b0402c; stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .clampbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-fg { stroke: #e5eeed; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-gold { stroke: #e2b659; }
+    .s-bad { stroke: #f08a74; }
+    .s-good { stroke: #6cc788; }
+    .shade { fill: #92a5a5; fill-opacity: 0.14; }
+    .bar-good { fill: #6cc788; }
+    .bar-bad { fill: #f08a74; stroke: #f08a74; }
+    .clampbox { fill: #1b2b2e; stroke: #f08a74; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="580"/>
+<text class="title fg" x="20" y="30">From item level to synced stat</text>
+<text class="small muted" x="20" y="52">Example: Dreadwyrm Hood of Healing (item level 130, head), synced to item level 123</text>
+<text class="fg" x="495" y="80" text-anchor="middle" font-weight="600">Spell Speed</text>
+<text class="fg" x="630" y="80" text-anchor="middle" font-weight="600">Piety</text>
+<rect class="box" x="20" y="92" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="113">Item level</text>
+<text class="small muted" x="34" y="131">an index into the budget table</text>
+<line class="s-muted" x1="358" y1="117" x2="425" y2="117" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num fg" x="495" y="122" text-anchor="middle">130</text>
+<text class="num fg" x="630" y="122" text-anchor="middle">130</text>
+<line class="s-muted" x1="185" y1="144" x2="185" y2="157" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="160" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="181">Look up the budget for this stat</text>
+<text class="small muted" x="34" y="199">ItemLevel sheet, row 130</text>
+<line class="s-muted" x1="358" y1="185" x2="425" y2="185" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num fg" x="495" y="190" text-anchor="middle">363</text>
+<text class="num fg" x="630" y="190" text-anchor="middle">363</text>
+<line class="s-muted" x1="185" y1="212" x2="185" y2="225" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="228" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="249">× slot share ÷ 1000</text>
+<text class="small muted" x="34" y="267">head: 85</text>
+<line class="s-muted" x1="358" y1="253" x2="425" y2="253" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num fg" x="495" y="258" text-anchor="middle">30.855</text>
+<text class="num fg" x="630" y="258" text-anchor="middle">30.855</text>
+<line class="s-muted" x1="185" y1="280" x2="185" y2="293" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="296" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="317">Round (first rounding)</text>
+<text class="small muted" x="34" y="335">the full-share slot budget</text>
+<line class="s-muted" x1="358" y1="321" x2="425" y2="321" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num fg" x="495" y="326" text-anchor="middle">31</text>
+<text class="num fg" x="630" y="326" text-anchor="middle">31</text>
+<line class="s-muted" x1="185" y1="348" x2="185" y2="361" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="364" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="385">× substat share by rank</text>
+<text class="small muted" x="34" y="403">rank 1: 100%, rank 2: 70%, rank 3: 20%</text>
+<line class="s-muted" x1="358" y1="389" x2="425" y2="389" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num fg" x="495" y="394" text-anchor="middle">× 1.0 = 31</text>
+<text class="num fg" x="630" y="394" text-anchor="middle">× 0.7 = 21.7</text>
+<line class="s-muted" x1="185" y1="416" x2="185" y2="429" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="432" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="453">Round (second rounding)</text>
+<text class="small muted" x="34" y="471">the stat printed on the item</text>
+<line class="s-muted" x1="358" y1="457" x2="425" y2="457" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num good" x="495" y="462" text-anchor="middle">31</text>
+<text class="num good" x="630" y="462" text-anchor="middle">22</text>
+<line class="s-muted" x1="185" y1="484" x2="185" y2="497" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="clampbox" x="20" y="500" width="330" height="50" rx="8"/>
+<text class="fg" x="34" y="521">Sync clamp: min(value, cap)</text>
+<text class="small muted" x="34" y="539">only if item level > cap; cap 123: 29</text>
+<line class="s-muted" x1="358" y1="525" x2="425" y2="525" stroke-width="1" stroke-dasharray="2 4"/>
+<text class="num bad" x="495" y="530" text-anchor="middle">29</text>
+<text class="num good" x="630" y="530" text-anchor="middle">22</text>
+<text class="small bad" x="495" y="547" text-anchor="middle">31 → 29, clamped</text>
+<text class="small good" x="630" y="547" text-anchor="middle">22 ≤ 29, kept</text>
+</svg>

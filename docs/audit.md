@@ -17,15 +17,14 @@ Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core spli
 | F7 | Modules have too many responsibilities | Medium | ✅ | **Resolved** | Core split into `src/core/*` (optimizer in 3 files); UI split into Alpine components under `src/ui/components/` |
 | F8 | The same facts kept in several places | Medium | ✅ | **Resolved** | Single sources: slot percents and substat shares (`src/core/constants.js`), the real-gear accuracy check (`src/core/validation.js`), the item level maximum (`MAX_REAL`), and the data format (job bit order, stat order with sheet columns and BaseParam ids, slot codes) in `src/core/item-format.json`, read by both the page and the Python generators. Regenerating from the same CSVs gives byte-identical `items.js` and the same `item-level.js` values. `tests/unit/data-format.test.js` checks the data against the format |
 | F10 | Test structure (one script inside `new Function`) | Medium | ✅ | **Resolved** | `node:test`, one file per module in `tests/unit/` |
-| F11 | Uncovered areas (generators, saved state, filters, constraints, data integrity) | Medium | ❌ | **Open** | |
-| F12 | Smoke test robustness (fixed sleeps, prints instead of asserts) | Medium | ❌ | **Open** | Only paths updated (`tests/e2e/smoke.py`). Not run yet: Playwright isn't installed |
-| F13 | No CI, linting, formatting or pinned engines | Medium | ❌ | **Partly resolved** | Baseline committed, `engines` set to Node ≥ 22, `package-lock.json` committed. Still missing: CI, linter, formatter |
+| F11 | Uncovered areas (generators, saved state, filters, constraints, data integrity) | Medium | ✅ | **Resolved** | Python generator tests on fixture CSVs (`tests/data/`, 17 tests, `npm run test:py`, part of `npm run check`); `browseItems` filters and pool copies (`items.test.js`), sync edge cases and PLD Wiki caps (`sync.test.js`), optimizer minimums, maximums, average item level, truncation and empty pool against brute force (`optimizer-constraints.test.js`); saved state (`state.test.js`, F4) and data integrity (`data-format.test.js`, F8). Note: an empty pool returns `ok: true` with no picks |
+| F12 | Smoke test robustness (fixed sleeps, prints instead of asserts) | Medium | ✅ | **Resolved** | `tests/e2e/smoke.py` waits on concrete conditions (no fixed sleeps) and asserts external values: Wiki 475 caps, ilvl 123 caps per slot for six jobs, the Dreadwyrm hood formula, Dreadwyrm optimizer 171 / 176. Shown to fail on deliberately broken builds |
+| F13 | No linting, formatting or pinned engines | Medium | ✅ | **Resolved** | Linting and formatting: Biome (JS/JSON/CSS) and Ruff (Python), `npm run lint` / `format` / `format:check`, run first by `npm run check`; all clean. Engines: Node ≥ 22 enforced (`engine-strict`), `.nvmrc`, `.python-version`, pinned Python dev tools in `requirements-dev.txt`. CI is not a requirement (owner's decision) |
 | F15 | Documentation gaps | Medium | ❌ | **Partly resolved** | CLAUDE.md and README describe the new layout and architecture; core modules have header and function comments. Still missing: a standalone `docs/architecture.md` / data-format reference and full JSDoc |
 | F3 | Lexicographic score has an implicit size limit | Low | ✅ | **Resolved** | Score weights are derived from the pool (each lower-ranked stat's possible spread + 1), so the ranking is exact for any totals; `optimize()` throws a clear error if a score could exceed 2^53 (largest real score is about 2e11). Regression and 200-pool exhaustive tests added; timing unchanged |
-| F4 | Saved state merged without type checks | Low | ❌ | **Partly resolved** | All repair logic is now in one place (`restoreState` in `src/ui/state.js`). Type and range checks are still missing |
+| F4 | Saved state merged without type checks | Low | ✅ | **Resolved** | `restoreState` (`src/ui/state.js`) checks type and range of every saved field and pool item, falling back to the default per field. 14 tests in `tests/unit/state.test.js`, 8 of which fail on the old code. Key and saved shape unchanged |
 | F5 | `build.py` could silently ship the Node export line | Low | ✅ | **Resolved** | `build.py` was removed. `scripts/build/build.mjs` uses real imports and fails loudly on missing markers or output |
-| F14 | Data provenance not recorded | Low | ❌ | **Open** | |
-| O1 | Accessibility: tabs lack `aria-controls` and keyboard navigation | Low | ❌ | **Open** | |
+| F14 | Data provenance not recorded | Low | ✅ | **Resolved** | `npm run regen` records the ffxiv-datamining commit and date in a header of both generated files and as `DATA_SOURCE` in `item-level.js`; the page footer shows it ("Game data: ffxiv-datamining d9582a6, 2026-09-30"). Item data otherwise byte-identical. Tested in `tests/unit/provenance.test.js` |
 | O2 | Data stored on a DOM node (`#b-addall._all`) | Low | ✅ | **Resolved** | Browse results live in the Alpine browser component |
 | O3 | `esc()` doesn't escape `'` | Low | ✅ | **Resolved** | `esc()` is gone: `x-text` escapes everything. The one `x-html` (chart) contains only numbers |
 | O4 | Python `open()` without `with` in the generators | Low | ✅ | **Resolved** | CSVs are read through `read_csv` in `scripts/data/item_format.py`, which closes the file |
@@ -38,14 +37,14 @@ The main problems:
 
 1. **The optimizer gives wrong answers in about 3.7% of real-gear runs.** The cause is a pruning bug with rings (F1). The current tests pass anyway.
 2. **The code relies on shared mutable globals.** `setJob()` rewrites module-level arrays and objects that almost every function reads. This is the main obstacle to testing and refactoring.
-3. **The tests are a single unstructured script.** There's no check against exhaustive search, no tests for the Python generators, and no CI. That is why F1 went unnoticed.
+3. **The tests are a single unstructured script.** There's no check against exhaustive search, and no tests for the Python generators. That is why F1 went unnoticed.
 
 | Area | Rating | Notes |
 | --- | --- | --- |
 | Correctness | Fair | One high-severity optimizer bug, one medium-severity state bug |
 | Architecture | Fair | Clear core/UI split, undermined by mutable globals and duplicated facts |
 | Testing | Weak | Good expected values, weak structure and coverage |
-| Tooling and process | Weak | No CI, linter, formatter, or engine pins; most files untracked |
+| Tooling and process | Weak | No linter, formatter, or engine pins; most files untracked |
 | Documentation | Good | Strong domain notes; missing architecture and contributor docs |
 | Data pipeline | Good | Simple and reproducible; data provenance not recorded |
 
@@ -210,14 +209,13 @@ Recommendation: wait for specific selectors and text, and assert key values (for
 
 ## 4. Tooling and process
 
-### F13. Medium: no CI, no linting, no formatting, no pinned engines
+### F13. Medium: no linting, no formatting, no pinned engines
 
-- No `.github/workflows`. Nothing runs `npm run check` on push or pull request.
 - No linter or formatter for JS (for example ESLint and Prettier as dev dependencies, or `node --check` at minimum) or for Python (`ruff` is a single binary).
 - `package.json` has no `engines` field. Scripts call `python`, which is `python3` on many macOS and Linux systems.
 - Most of the repo is untracked (only `LICENSE` and `README.md` are committed). Commit a baseline before any refactor so changes can be reviewed.
 
-Recommendation: a GitHub Actions workflow on Node 22 and Python 3.12 that runs build, test and smoke (installing Playwright there only). Add `engines` and use `python3` (or `py` on Windows). Formatter and linter adoption needs the owner's sign-off, since `CLAUDE.md` asks before adding dependencies. They would be dev-only and never ship in the page.
+Recommendation: add `engines` and use `python3` (or `py` on Windows). CI was considered and is not a requirement (owner's decision). Formatter and linter adoption needs the owner's sign-off, since `CLAUDE.md` asks before adding dependencies. They would be dev-only and never ship in the page.
 
 ### F14. Low: data provenance isn't recorded
 
@@ -244,7 +242,6 @@ Strengths: `docs/findings.md` is excellent, with evidence, separation of verifie
 ## 6. Other observations
 
 - **Performance:** fine. A 224-item pool optimizes in 3 ms. The 14-run ceiling table takes 26 ms. The page is 1.5 MB, almost all of it `items.js`. If a future expansion grows that file, consider a more compact encoding (for example, columnar arrays).
-- **O1. Accessibility:** the tabs have `role="tab"` but no `aria-controls` and no arrow-key navigation. The panels are `role="tabpanel"` without `aria-labelledby`. The chart has an `aria-label`, but there's no text alternative for its data.
 - **O3. Security:** item names are escaped before being inserted as HTML, and the page loads no third-party scripts. `esc()` doesn't escape `'`, which is safe only because every attribute uses double quotes. Worth a comment.
 - **O2. DOM as storage:** `$('#b-addall')._all` stores data on a DOM node. Move it into module state.
 - **O4. Resource handling in Python:** `open()` is called inside `csv.DictReader(...)` without `with`. It's harmless for a script, but easy to fix.
@@ -263,10 +260,10 @@ Strengths: `docs/findings.md` is excellent, with evidence, separation of verifie
 1. **Commit the current tree** as a baseline.
 2. **Fix F1** with a regression test, and add the exhaustive-search property test (F9). Small change, high value.
 3. **Restructure the tests** on `node:test` (F10), add generator tests and data-integrity tests (F11). This creates the safety net.
-4. **Add CI** (F13) so steps 5 and 6 are checked automatically.
+4. **Add linting, formatting and engine pins** (F13).
 5. **Refactor**: `JobContext` (F6), module split (F7), single sources of truth (F8), `sanitizeState` (F4), F2, F5.
 6. **Documentation**: architecture, data format, JSDoc, README (F15); provenance header (F14).
-7. Lower priority: F3, F12, accessibility, formatter and linter.
+7. Lower priority: F3, F12, formatter and linter.
 
 Decisions for the owner:
 - Can source files be split, with `build.py` still concatenating them?

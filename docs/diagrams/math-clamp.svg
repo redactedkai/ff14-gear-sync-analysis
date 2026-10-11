@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 390" role="img" aria-label="Bar chart of the Dreadwyrm Hood of Healing stats against the item level 123 head caps: Mind, Vitality and Spell Speed are clamped, Piety and Direct Hit are kept">
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-fg { stroke: #1b2a2c; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-gold { stroke: #8f5f0c; }
+  .s-bad { stroke: #b0402c; }
+  .s-good { stroke: #25773a; }
+  .shade { fill: #586869; fill-opacity: 0.12; }
+  .bar-good { fill: #25773a; fill-opacity: 0.85; }
+  .bar-bad { fill: #b0402c; fill-opacity: 0.35; stroke: #b0402c; stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .clampbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-fg { stroke: #e5eeed; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-gold { stroke: #e2b659; }
+    .s-bad { stroke: #f08a74; }
+    .s-good { stroke: #6cc788; }
+    .shade { fill: #92a5a5; fill-opacity: 0.14; }
+    .bar-good { fill: #6cc788; }
+    .bar-bad { fill: #f08a74; stroke: #f08a74; }
+    .clampbox { fill: #1b2b2e; stroke: #f08a74; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="390"/>
+<text class="title fg" x="20" y="30">Sync clamp on one piece</text>
+<text class="small muted" x="20" y="52">Dreadwyrm Hood of Healing (item level 130, head), synced to item level 123</text>
+<rect class="bar-good" x="20" y="66" width="18" height="12"/><text class="small fg" x="44" y="77">kept</text><rect class="bar-bad" x="94" y="66" width="18" height="12"/><text class="small fg" x="118" y="77">removed by sync</text><line class="s-bad" x1="240" y1="64" x2="240" y2="80" stroke-width="2"/><text class="small fg" x="248" y="77">cap for this stat at 123</text>
+<text class="fg" x="128" y="112" text-anchor="end">Mind</text>
+<rect class="bar-good" x="140" y="96" width="360" height="22"/>
+<rect class="bar-bad" x="500" y="96" width="36" height="22"/>
+<line class="s-bad" x1="500" y1="91" x2="500" y2="123" stroke-width="2"/>
+<text class="num bad" x="550" y="112">33 → 30</text>
+<text class="fg" x="128" y="158" text-anchor="end">Vitality</text>
+<rect class="bar-good" x="140" y="142" width="348" height="22"/>
+<rect class="bar-bad" x="488" y="142" width="36" height="22"/>
+<line class="s-bad" x1="488" y1="137" x2="488" y2="169" stroke-width="2"/>
+<text class="num bad" x="538" y="158">32 → 29</text>
+<text class="fg" x="128" y="204" text-anchor="end">Spell Speed</text>
+<rect class="bar-good" x="140" y="188" width="348" height="22"/>
+<rect class="bar-bad" x="488" y="188" width="24" height="22"/>
+<line class="s-bad" x1="488" y1="183" x2="488" y2="215" stroke-width="2"/>
+<text class="num bad" x="526" y="204">31 → 29</text>
+<text class="fg" x="128" y="250" text-anchor="end">Piety</text>
+<rect class="bar-good" x="140" y="234" width="264" height="22"/>
+<line class="s-bad" x1="488" y1="229" x2="488" y2="261" stroke-width="2"/>
+<text class="num good" x="502" y="250">22 (cap 29)</text>
+<text class="fg" x="128" y="296" text-anchor="end">Direct Hit</text>
+<rect class="bar-good" x="140" y="280" width="72" height="22"/>
+<line class="s-bad" x1="488" y1="275" x2="488" y2="307" stroke-width="2"/>
+<text class="num good" x="502" y="296">6 (cap 29)</text>
+<text class="small muted" x="140" y="340">Caps at 123 for a healer head piece: main stat 30, Vitality 29, substats 29.</text>
+<text class="small muted" x="140" y="360">Every stat is clamped against the 100%-share cap, whatever its rank on the piece.</text>
+</svg>
