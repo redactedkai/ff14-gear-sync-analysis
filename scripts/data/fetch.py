@@ -3,7 +3,9 @@
 
 Re-run after a game patch to pull the new sheets, then `python scripts/data/regen.py`.
 """
-import subprocess, sys
+
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -11,8 +13,10 @@ DEST = ROOT / 'data' / 'ffxiv-datamining'
 URL = 'https://github.com/xivapi/ffxiv-datamining.git'
 FILES = ['Item', 'ItemLevel', 'ParamGrow', 'BaseParam', 'ClassJobCategory', 'EquipSlotCategory']
 
+
 def git(*args, cwd=None):
     subprocess.run(['git', *args], cwd=cwd, check=True)
+
 
 def main():
     if not (DEST / '.git').exists():
@@ -25,6 +29,7 @@ def main():
     if missing:
         sys.exit(f'missing CSVs after fetch: {missing}')
     print('CSV dir:', DEST / 'csv' / 'en')
+
 
 if __name__ == '__main__':
     main()

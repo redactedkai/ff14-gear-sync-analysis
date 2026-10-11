@@ -3,7 +3,9 @@
 The generated-data format (job bit order, raw stat order, slot codes) lives in src/core/item-format.json,
 which the page's JavaScript reads too, so the two sides cannot drift apart.
 """
-import csv, json
+
+import csv
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
