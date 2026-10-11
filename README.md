@@ -10,7 +10,7 @@ It is a single self-contained HTML page. No server, no framework, no runtime dep
 python scripts/build.py     # builds dist/index.html
 ```
 
-Open `dist/index.html` in a browser. A published copy also lives on claude.ai as an Artifact (see `CLAUDE.md`).
+Open `dist/index.html` in a browser.
 
 The page has two working tabs and one reference tab:
 
@@ -22,7 +22,7 @@ The page has two working tabs and one reference tab:
 
 | Command | What it does |
 | --- | --- |
-| `npm run build` | Assemble `dist/page.html` (Artifact fragment) and `dist/index.html` (opens in a browser) |
+| `npm run build` | Assemble `dist/page.html` (fragment, no doctype) and `dist/index.html` (opens in a browser) |
 | `npm test` | Node tests of the core math, the optimizer and the formula's accuracy against every real item |
 | `npm run smoke` | Playwright browser smoke test (`pip install playwright && playwright install chromium` once) |
 | `npm run check` | build, test, smoke |

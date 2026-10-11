@@ -21,7 +21,7 @@ src/
   data.js      GENERATED: ItemLevel budget table (IL) and ParamGrow level data (PG)
   items.js     GENERATED: real gear database (ITEMS, 17,579 rows, ~1.4 MB)
 scripts/
-  build.py       src/* -> dist/page.html (Artifact fragment) and dist/index.html (browser-openable)
+  build.py       src/* -> dist/page.html (fragment, no doctype) and dist/index.html (browser-openable)
   fetch_data.py  sparse-clone the 6 needed CSVs from xivapi/ffxiv-datamining into data/
   gen_data.py    ItemLevel.csv + ParamGrow.csv -> src/data.js
   gen_items.py   Item.csv + EquipSlotCategory.csv + ClassJobCategory.csv -> src/items.js
@@ -81,17 +81,13 @@ tank (Str, Skill Speed, Tenacity): PLD WAR DRK GNB. healer (Mind, Spell Speed, P
 
 Branch-and-bound over slots with dominance pruning and a scalar lexicographic score (target, tiebreak 1, tiebreak 2 weighted 1e8 / 1e4 / 1). Handles two rings, Unique items, and an optional average-item-level requirement. Node limit 700k in the UI (150k for per-stat ceiling runs); the result reports when it was truncated. A 1,283-item Sage pool solves in about 0.2 s. If you change the scoring or pruning, keep the core tests green and re-time a large pool.
 
-## Artifact constraints (the page is also published on claude.ai)
+## Page constraints
 
-The page is published as a hand-built Artifact at https://claude.ai/artifact/6mqisYFXEQjH4FNiAm2HoK (private to the owner). Publish `dist/page.html` (the fragment), not `dist/index.html`. Rules the fragment must obey:
-- No `<!DOCTYPE>`, `<html>`, `<head>`, `<body>`; start with `<title>` and `<style>`. Keep the title `Item Level Stat Lab`.
+- Keep the title `Item Level Stat Lab`.
 - Colors only through CSS tokens on `:root`, redefined for dark mode under `@media (prefers-color-scheme: dark)` (guarded `:root:not([data-theme="light"])`) and `:root[data-theme="dark"]`. `body` has an explicit background.
-- External scripts only from the CSP allowlist (cdnjs, jsdelivr/npm, unpkg, tailwind, jquery) with exact pinned versions; stylesheets only from Google Fonts. The page currently loads no scripts, only Google Fonts. Everything else is inline.
 - `localStorage` only inside try/catch and only for per-viewer conveniences (the key is `ilvl-stat-lab-v3`). The page must render correctly without it. If the saved-state shape changes, bump the key suffix and keep `init()` sanitizing old values.
 - Works at ~400 px width with no horizontal page scroll (tables scroll in their own container).
-- Do not paste the artifact URL back to the owner after republishing; say in one sentence what changed.
-
-**Standing instruction from the owner: whenever the page changes, republish the artifact automatically** (same URL, using the Artifact tool, publishing `dist/page.html`) after `npm run check` passes. If your session has no Artifact tool, say so and mention that `dist/page.html` is ready to be republished from a claude.ai session.
+- The page is not published as a claude.ai Artifact. Do not use the Artifact tool for this project.
 
 ## Working agreements with the owner
 
