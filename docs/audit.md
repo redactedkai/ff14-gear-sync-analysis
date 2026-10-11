@@ -20,7 +20,7 @@ Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core spli
 | F11 | Uncovered areas (generators, saved state, filters, constraints, data integrity) | Medium | ❌ | **Open** | |
 | F12 | Smoke test robustness (fixed sleeps, prints instead of asserts) | Medium | ❌ | **Open** | Only paths updated (`tests/e2e/smoke.py`). Not run yet: Playwright isn't installed |
 | F13 | No CI, linting, formatting or pinned engines | Medium | ❌ | **Partly resolved** | Baseline committed, `engines` set to Node ≥ 22, `package-lock.json` committed. Still missing: CI, linter, formatter |
-| F15 | Documentation gaps | Medium | ❌ | **Open** | Planned as the last migration step: architecture, data format, JSDoc, README |
+| F15 | Documentation gaps | Medium | ❌ | **Partly resolved** | CLAUDE.md and README describe the new layout and architecture; core modules have header and function comments. Still missing: a standalone `docs/architecture.md` / data-format reference and full JSDoc |
 | F3 | Lexicographic score has an implicit size limit | Low | ❌ | **Open** | Now noted in a comment in `src/core/optimizer/candidates.js` |
 | F4 | Saved state merged without type checks | Low | ❌ | **Partly resolved** | All repair logic is now in one place (`restoreState` in `src/ui/state.js`). Type and range checks are still missing |
 | F5 | `build.py` could silently ship the Node export line | Low | ✅ | **Resolved** | `build.py` was removed. `scripts/build/build.mjs` uses real imports and fails loudly on missing markers or output |

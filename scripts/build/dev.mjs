@@ -21,5 +21,5 @@ const ctx = await esbuild.context({ ...esbuildOptions({ minify: false }), plugin
 await ctx.watch();
 // esbuild only watches files it imports; the HTML template is read separately
 watch(join(SRC, 'index.html'), () => ctx.rebuild().catch(() => {}));
-const { hosts, port } = await ctx.serve({ servedir: DIST });
-console.log(`serving http://${hosts[0] === '0.0.0.0' ? 'localhost' : hosts[0]}:${port}/`);
+const { hosts, port } = await ctx.serve({ servedir: DIST, host: '127.0.0.1' });
+console.log(`serving http://${hosts[0]}:${port}/`);
