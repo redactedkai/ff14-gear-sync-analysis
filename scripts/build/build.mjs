@@ -22,15 +22,20 @@ export function esbuildOptions({ minify = true } = {}) {
     minify,
     legalComments: 'none',
     write: false,
-    outdir: join(DIST, 'assets'),   // required for the separate CSS output; nothing is written there
+    outdir: join(DIST, 'assets'), // required for the separate CSS output; nothing is written there
     logLevel: 'warning',
   };
 }
 
 /* Inline the bundle outputs into the HTML template and write dist/index.html. Returns the byte size. */
 export function writePage(outputFiles) {
-  const pick = ext => outputFiles.filter(f => f.path.endsWith(ext)).map(f => f.text).join('\n');
-  const js = pick('.js'), css = pick('.css');
+  const pick = ext =>
+    outputFiles
+      .filter(f => f.path.endsWith(ext))
+      .map(f => f.text)
+      .join('\n');
+  const js = pick('.js'),
+    css = pick('.css');
   if (!js) throw new Error('esbuild produced no JavaScript output');
   if (/<\/script/i.test(js)) throw new Error('bundle contains "</script", which would end the inline script early');
   const template = readFileSync(join(SRC, 'index.html'), 'utf8');

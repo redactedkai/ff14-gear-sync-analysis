@@ -5,11 +5,16 @@ import { ITEMS } from './tables.js';
 import { blankStats, buildPiece } from './formulas.js';
 
 let nextId = 1;
-export function newId() { return 'i' + (nextId++); }
+export function newId() {
+  return 'i' + nextId++;
+}
 /* After restoring saved items, make sure new ids never collide with theirs. */
 export function reserveIds(ids) {
   let m = 0;
-  ids.forEach(id => { const n = parseInt(String(id).slice(1), 10); if (n > m) m = n; });
+  ids.forEach(id => {
+    const n = parseInt(String(id).slice(1), 10);
+    if (n > m) m = n;
+  });
   nextId = Math.max(nextId, m + 1);
 }
 
@@ -22,19 +27,23 @@ export function mkItem(name, type, ilvl, stats, extra) {
 export function genericItems(job, ilvl, subsAllowed, third, types) {
   const items = [];
   types.forEach(t => {
-    subsAllowed.forEach(a => subsAllowed.forEach(b => {
-      if (a === b) return;
-      const subs = [a, b];
-      if (third && a !== 'dh' && b !== 'dh') subs.push('dh');
-      const st = buildPiece(job, ilvl, t, subs);
-      const nm = SLOT_LABEL[t] + ' ilvl ' + ilvl + ' · ' + job.short[a] + '/' + job.short[b] + (subs.length > 2 ? '/DH' : '');
-      items.push(mkItem(nm, t, ilvl, st, { src: 'generated', copies: 2 }));
-    }));
+    subsAllowed.forEach(a =>
+      subsAllowed.forEach(b => {
+        if (a === b) return;
+        const subs = [a, b];
+        if (third && a !== 'dh' && b !== 'dh') subs.push('dh');
+        const st = buildPiece(job, ilvl, t, subs);
+        const nm = SLOT_LABEL[t] + ' ilvl ' + ilvl + ' · ' + job.short[a] + '/' + job.short[b] + (subs.length > 2 ? '/DH' : '');
+        items.push(mkItem(nm, t, ilvl, st, { src: 'generated', copies: 2 }));
+      }),
+    );
   });
   return items;
 }
 
-export function statIdx(key) { return ITEM_STAT_ORDER.indexOf(key); }
+export function statIdx(key) {
+  return ITEM_STAT_ORDER.indexOf(key);
+}
 
 /* A database row's 12 raw stats as this job's neutral keys. */
 export function dbStats(job, st12) {
@@ -44,12 +53,22 @@ export function dbStats(job, st12) {
 }
 
 export function parseRow(r) {
-  return { name: r[0], slotCode: r[1], type: DB_SLOT_TYPE[r[1]], ilvl: r[2], lvl: r[3], mask: r[4], st: r[5].split(',').map(Number), unique: !!r[6] };
+  return {
+    name: r[0],
+    slotCode: r[1],
+    type: DB_SLOT_TYPE[r[1]],
+    ilvl: r[2],
+    lvl: r[3],
+    mask: r[4],
+    st: r[5].split(',').map(Number),
+    unique: !!r[6],
+  };
 }
 
 /* Database rows this job can equip, matching the filter {q, type, ilvlMin, ilvlMax, lvlMax}. Returns parsed rows. */
 export function browseItems(job, f) {
-  const bit = 1 << job.jobIndex, out = [];
+  const bit = 1 << job.jobIndex,
+    out = [];
   const q = (f.q || '').trim().toLowerCase();
   const mainIdx = statIdx(job.profile.main);
   for (let k = 0; k < ITEMS.length; k++) {
@@ -64,7 +83,7 @@ export function browseItems(job, f) {
     if (f.lvlMax && r[3] > f.lvlMax) continue;
     if (q && r[0].toLowerCase().indexOf(q) < 0) continue;
     const p = parseRow(r);
-    if (!p.st[mainIdx]) continue;   // must carry this job's main stat
+    if (!p.st[mainIdx]) continue; // must carry this job's main stat
     out.push(p);
   }
   return out;
@@ -72,5 +91,5 @@ export function browseItems(job, f) {
 
 /* Non-unique rings can be worn twice. */
 export function poolItemFromRow(job, p) {
-  return mkItem(p.name, p.type, p.ilvl, dbStats(job, p.st), { src: 'game', copies: (p.type === 'ring' && !p.unique) ? 2 : 1 });
+  return mkItem(p.name, p.type, p.ilvl, dbStats(job, p.st), { src: 'game', copies: p.type === 'ring' && !p.unique ? 2 : 1 });
 }

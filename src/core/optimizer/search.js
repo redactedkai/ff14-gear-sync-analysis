@@ -6,10 +6,14 @@
 export function suffixBounds(posList, dims) {
   const n = posList.length;
   const remMax = {};
-  dims.forEach(d => { remMax[d] = new Array(n + 1).fill(0); });
+  dims.forEach(d => {
+    remMax[d] = new Array(n + 1).fill(0);
+  });
   const remSc = new Array(n + 1).fill(0);
   for (let i = n - 1; i >= 0; i--) {
-    dims.forEach(d => { remMax[d][i] = remMax[d][i + 1] + Math.max(0, ...posList[i].map(a => a.v[d])); });
+    dims.forEach(d => {
+      remMax[d][i] = remMax[d][i + 1] + Math.max(0, ...posList[i].map(a => a.v[d]));
+    });
     remSc[i] = remSc[i + 1] + Math.max(...posList[i].map(a => a.sc));
   }
   return { remMax, remSc };
@@ -21,19 +25,30 @@ export function suffixBounds(posList, dims) {
 export function branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, nodeLimit }) {
   const nSlots = slotList.length;
   const { remMax, remSc } = suffixBounds(posList, dims);
-  let best = null, bestSc = -Infinity, nodes = 0, truncated = false;
+  let best = null,
+    bestSc = -Infinity,
+    nodes = 0,
+    truncated = false;
   const cur = {};
-  dims.forEach(d => { cur[d] = 0; });
+  dims.forEach(d => {
+    cur[d] = 0;
+  });
   const chosen = new Array(nSlots).fill(null);
   const used = new Map();
 
   function dfs(pos, sc) {
     if (truncated) return;
-    if (++nodes > nodeLimit) { truncated = true; return; }
+    if (++nodes > nodeLimit) {
+      truncated = true;
+      return;
+    }
     if (pos === nSlots) {
       for (const s in need) if (cur[s] < need[s]) return;
       if (ilNeed && cur.ilw < ilNeed) return;
-      if (sc > bestSc) { bestSc = sc; best = chosen.slice(); }
+      if (sc > bestSc) {
+        bestSc = sc;
+        best = chosen.slice();
+      }
       return;
     }
     if (sc + remSc[pos] <= bestSc) return;
@@ -50,17 +65,29 @@ export function branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, no
       const u = used.get(a.it.id) || 0;
       if (u >= a.copies) continue;
       avail++;
-      if (isRing2) { const prev = chosen[pos - 1]; if (prev && prev.rank > k) continue; }
+      if (isRing2) {
+        const prev = chosen[pos - 1];
+        if (prev && prev.rank > k) continue;
+      }
       let ok = true;
-      for (const s in maxs) { if (maxs[s] != null && cur[s] + a.v[s] > maxs[s]) { ok = false; break; } }
+      for (const s in maxs) {
+        if (maxs[s] != null && cur[s] + a.v[s] > maxs[s]) {
+          ok = false;
+          break;
+        }
+      }
       if (!ok) continue;
-      dims.forEach(d => { cur[d] += a.v[d]; });
+      dims.forEach(d => {
+        cur[d] += a.v[d];
+      });
       used.set(a.it.id, u + 1);
       chosen[pos] = { a, rank: k };
       dfs(pos + 1, sc + a.sc);
       chosen[pos] = null;
       used.set(a.it.id, u);
-      dims.forEach(d => { cur[d] -= a.v[d]; });
+      dims.forEach(d => {
+        cur[d] -= a.v[d];
+      });
       if (truncated) return;
     }
     if (avail === 0) {

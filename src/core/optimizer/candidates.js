@@ -25,12 +25,16 @@ export function makeScorer(target, tiebreaks) {
 }
 
 /* Dimensions tracked per item: the job's stats plus `ilw` (item level x slot weight, for the average). */
-export function vectorDims(job) { return job.stats.concat(['ilw']); }
+export function vectorDims(job) {
+  return job.stats.concat(['ilw']);
+}
 
 function itemVector(job, item, sync) {
   const e = effStats(job, item, sync);
   const v = {};
-  job.stats.forEach(s => { v[s] = e[s] || 0; });
+  job.stats.forEach(s => {
+    v[s] = e[s] || 0;
+  });
   v.ilw = item.ilvl * ilWeight(job, item.type);
   return v;
 }
@@ -43,10 +47,18 @@ function pruneDominated(arr, dims) {
     let dom = false;
     for (let j = 0; j < arr.length && !dom; j++) {
       if (i === j) continue;
-      const A = arr[j], B = arr[i];
+      const A = arr[j],
+        B = arr[i];
       if (A.copies < B.copies) continue;
-      let ge = true, gt = false;
-      for (const d of dims) { if (A.v[d] < B.v[d]) { ge = false; break; } if (A.v[d] > B.v[d]) gt = true; }
+      let ge = true,
+        gt = false;
+      for (const d of dims) {
+        if (A.v[d] < B.v[d]) {
+          ge = false;
+          break;
+        }
+        if (A.v[d] > B.v[d]) gt = true;
+      }
       if (ge && (gt || j < i)) dom = true;
     }
     if (!dom) keep.push(arr[i]);
@@ -59,7 +71,9 @@ function pruneDominated(arr, dims) {
 export function buildCandidates(job, pool, sync, score) {
   const dims = vectorDims(job);
   const present = {};
-  SLOT_TYPES.forEach(t => { present[t] = slotActive(job, t) ? pool.filter(i => i.type === t) : []; });
+  SLOT_TYPES.forEach(t => {
+    present[t] = slotActive(job, t) ? pool.filter(i => i.type === t) : [];
+  });
   const slotList = [];
   SLOT_TYPES.forEach(t => {
     if (!present[t].length) return;
@@ -70,7 +84,9 @@ export function buildCandidates(job, pool, sync, score) {
   slotList.forEach(t => {
     if (cand[t]) return;
     const arr = present[t].map(it => ({ it, v: itemVector(job, it, sync), copies: it.copies || 1 }));
-    arr.forEach(a => { a.sc = score(a.v); });
+    arr.forEach(a => {
+      a.sc = score(a.v);
+    });
     const keep = pruneDominated(arr, dims);
     keep.sort((a, b) => b.sc - a.sc);
     cand[t] = keep;

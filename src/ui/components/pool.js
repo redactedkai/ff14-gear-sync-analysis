@@ -4,12 +4,14 @@ import { SLOT_TYPES, SLOT_LABEL } from '../../core/constants.js';
 import { effStats } from '../../core/optimizer/index.js';
 import { statCell, fmtInt } from '../helpers.js';
 
-export const POOL_ROWS = 400;   /* rows rendered; the rest are still searched */
+export const POOL_ROWS = 400; /* rows rendered; the rest are still searched */
 
 export function poolView(app) {
-  const job = app.jobCtx, filt = app.poolFilter;
+  const job = app.jobCtx,
+    filt = app.poolFilter;
   const ord = t => SLOT_TYPES.indexOf(t);
-  const items = app.pool.slice()
+  const items = app.pool
+    .slice()
     .sort((a, b) => ord(a.type) - ord(b.type) || b.ilvl - a.ilvl || a.name.localeCompare(b.name))
     .filter(i => filt === 'all' || filt === i.type || (filt === 'generated' && i.src === 'generated'));
   const sync = { cap: app.cap, sync: app.sync };
@@ -21,7 +23,9 @@ export function poolView(app) {
     rows,
     hidden: fmtInt(Math.max(0, items.length - POOL_ROWS)),
     hasHidden: items.length > POOL_ROWS,
-    countText: `${app.pool.length} items · ` + job.activeSlotTypes.map(t => `${SLOT_LABEL[t]} ${app.pool.filter(i => i.type === t).length}`).join(' · '),
+    countText:
+      `${app.pool.length} items · ` +
+      job.activeSlotTypes.map(t => `${SLOT_LABEL[t]} ${app.pool.filter(i => i.type === t).length}`).join(' · '),
   };
 }
 
@@ -31,12 +35,15 @@ export function pool() {
     init() {
       Alpine.effect(() => {
         const app = this.$store.app;
-        app.poolVersion;   // dependency: any pool change
+        app.poolVersion; // dependency: any pool change
         this.view = poolView(app);
       });
     },
     get filterOptions() {
-      return [['all', 'all items'], ['generated', 'hypothetical only']].concat(this.job.activeSlotTypes.map(t => [t, SLOT_LABEL[t]]));
+      return [
+        ['all', 'all items'],
+        ['generated', 'hypothetical only'],
+      ].concat(this.job.activeSlotTypes.map(t => [t, SLOT_LABEL[t]]));
     },
   };
 }

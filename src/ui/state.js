@@ -11,7 +11,13 @@ export const MATH_TABS = ['piece', 'sync'];
 
 export function defaultState() {
   return {
-    job: DEFAULT_JOB, cap: 123, sync: true, level: 50, tab: 'pool', mathTab: 'piece', syncIlvl: 475,
+    job: DEFAULT_JOB,
+    cap: 123,
+    sync: true,
+    level: 50,
+    tab: 'pool',
+    mathTab: 'piece',
+    syncIlvl: 475,
     piece: { ilvl: 475, slot: 'head', subs: ['spd', 'spec', 'dh'] },
     gen: { ilvl: 475, third: true, subs: [], types: [] },
     browse: { q: '', type: 'any', min: 100, max: '', lvl: 100, sort: 'ilvl' },
@@ -32,8 +38,12 @@ export function resetForJob(s, job) {
   s.gen.subs = job.substats.slice();
   s.gen.types = job.activeSlotTypes.slice();
   s.gen.third = job.profile.spec === 'piety';
-  s.opt.target = 'spd'; s.opt.tb = 'main'; s.opt.tb2 = 'vit';
-  s.browse.type = 'any'; s.browse.sort = 'ilvl'; s.poolFilter = 'all';
+  s.opt.target = 'spd';
+  s.opt.tb = 'main';
+  s.opt.tb2 = 'vit';
+  s.browse.type = 'any';
+  s.browse.sort = 'ilvl';
+  s.poolFilter = 'all';
   s.pool = [];
 }
 
@@ -44,15 +54,21 @@ export function restoreState(raw) {
   if (raw) {
     try {
       if (raw.job && JOBS.some(j => j[0] === raw.job)) s.job = raw.job;
-      ['cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'poolFilter'].forEach(k => { if (raw[k] != null) s[k] = raw[k]; });
-      ['piece', 'gen', 'browse', 'opt'].forEach(k => { if (raw[k]) Object.assign(s[k], raw[k]); });
+      ['cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'poolFilter'].forEach(k => {
+        if (raw[k] != null) s[k] = raw[k];
+      });
+      ['piece', 'gen', 'browse', 'opt'].forEach(k => {
+        if (raw[k]) Object.assign(s[k], raw[k]);
+      });
       if (Array.isArray(raw.pool)) {
         s.pool = raw.pool
           .filter(i => i && i.id && i.stats && i.src !== 'preset' && SLOT_TYPES.includes(i.type))
           .map(i => Object.assign(mkItem('', i.type, i.ilvl, {}), i));
       }
       had = true;
-    } catch (e) { had = false; }
+    } catch (e) {
+      had = false;
+    }
   }
 
   const job = makeJobContext(s.job);
@@ -67,7 +83,10 @@ export function restoreState(raw) {
   // drop saved selections that don't exist for this job
   const okSub = v => job.substats.includes(v);
   const ds = defaultSubs(job);
-  s.piece.subs = [0, 1, 2].map(i => { const v = s.piece.subs && s.piece.subs[i]; return okSub(v) ? v : (i === 2 ? null : ds[i]); });
+  s.piece.subs = [0, 1, 2].map(i => {
+    const v = s.piece.subs && s.piece.subs[i];
+    return okSub(v) ? v : i === 2 ? null : ds[i];
+  });
   if (s.piece.subs[1] === s.piece.subs[0]) s.piece.subs[1] = ds[1];
   if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
   s.piece.ilvl = Math.min(s.piece.ilvl, MAX_REAL);
@@ -82,7 +101,10 @@ export function restoreState(raw) {
   if (s.opt.tb2 && !job.stats.includes(s.opt.tb2)) s.opt.tb2 = 'vit';
   if (s.browse.sort !== 'ilvl' && !job.stats.includes(s.browse.sort)) s.browse.sort = 'ilvl';
   // older saved state used the sub-view names as tabs
-  if (MATH_TABS.includes(s.tab)) { s.mathTab = s.tab; s.tab = 'math'; }
+  if (MATH_TABS.includes(s.tab)) {
+    s.mathTab = s.tab;
+    s.tab = 'math';
+  }
   if (!TABS.includes(s.tab)) s.tab = 'pool';
   if (!MATH_TABS.includes(s.mathTab)) s.mathTab = 'piece';
 
@@ -95,9 +117,15 @@ export function loadSaved() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
+  } catch (e) {
+    return null;
+  }
 }
 
 export function save(json) {
-  try { localStorage.setItem(STORE_KEY, json); } catch (e) { /* storage unavailable */ }
+  try {
+    localStorage.setItem(STORE_KEY, json);
+  } catch (e) {
+    /* storage unavailable */
+  }
 }

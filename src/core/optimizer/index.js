@@ -18,14 +18,17 @@ export function optimize(job, pool, sync, opts) {
   opts = opts || {};
   const target = opts.target || 'spd';
   const tiebreak = (opts.tiebreak || []).filter(Boolean);
-  const mins = opts.mins || {}, maxs = opts.maxs || {};
+  const mins = opts.mins || {},
+    maxs = opts.maxs || {};
   const minAvg = opts.minAvgIlvl || 0;
   const nodeLimit = opts.nodeLimit || 1500000;
 
   const { slotList, posList, dims } = buildCandidates(job, pool, sync, makeScorer(target, tiebreak));
   const denom = slotList.reduce((a, t) => a + ilWeight(job, t), 0);
   const need = {};
-  job.stats.forEach(s => { if (mins[s] > 0) need[s] = mins[s]; });
+  job.stats.forEach(s => {
+    if (mins[s] > 0) need[s] = mins[s];
+  });
   const ilNeed = minAvg > 0 ? minAvg * denom : 0;
 
   const { best, nodes, truncated } = branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, nodeLimit });
@@ -33,11 +36,18 @@ export function optimize(job, pool, sync, opts) {
 
   const picks = [];
   const totals = {};
-  dims.forEach(d => { totals[d] = 0; });
+  dims.forEach(d => {
+    totals[d] = 0;
+  });
   best.forEach((c, i) => {
-    if (!c || !c.a) { picks.push({ type: slotList[i], item: null }); return; }
+    if (!c || !c.a) {
+      picks.push({ type: slotList[i], item: null });
+      return;
+    }
     picks.push({ type: slotList[i], item: c.a.it, eff: c.a.v });
-    dims.forEach(d => { totals[d] += c.a.v[d]; });
+    dims.forEach(d => {
+      totals[d] += c.a.v[d];
+    });
   });
   return { ok: true, picks, totals, truncated, nodes, denom, avgIlvl: denom ? totals.ilw / denom : 0 };
 }

@@ -1,0 +1,12 @@
+# Tool configuration only; the Python scripts are not a package.
+[tool.ruff]
+line-length = 140
+target-version = "py39"
+extend-exclude = ["data", "dist", "node_modules"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle errors/warnings, import order, bugbear, pyupgrade
+select = ["F", "E", "W", "I", "B", "UP"]

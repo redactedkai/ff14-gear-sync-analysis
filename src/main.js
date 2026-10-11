@@ -21,8 +21,9 @@ const app = Alpine.store('app');
 /* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only */
 Alpine.magic('num', () => (path, lo, hi) => storeNumberField(app, path, lo, hi));
 
-Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, browser, pool, generator, handEntry, optimizer, ceiling })
-  .forEach(([name, factory]) => Alpine.data(name, factory));
+Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, browser, pool, generator, handEntry, optimizer, ceiling }).forEach(
+  ([name, factory]) => Alpine.data(name, factory),
+);
 
 /* Save whenever any persisted field changes (serializing reads, and so tracks, all of them). */
 let saveTimer = null;

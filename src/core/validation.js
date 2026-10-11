@@ -6,7 +6,10 @@ import { rnd, predictRaw } from './formulas.js';
 
 export const ACCURACY_MIN_ILVL = 110;
 export const ACCURACY_BANDS = Object.freeze([
-  { label: '110–135', max: 135 }, { label: '136–300', max: 300 }, { label: '301–600', max: 600 }, { label: '601+', max: Infinity },
+  { label: '110–135', max: 135 },
+  { label: '136–300', max: 300 },
+  { label: '301–600', max: 600 },
+  { label: '601+', max: Infinity },
 ]);
 
 /* For every row with 2+ substats at item level >= 110: does predictRaw reproduce its stats?
@@ -30,14 +33,19 @@ export function bandAccuracy(items = ITEMS) {
 }
 
 /* Published substat caps at item level 475 (FFXIV Wiki, Item Level Sync page): [label, slot type, cap, slot share]. */
-export const WIKI475 = Object.freeze([
-  ['Accessory', 'ear', 88, 67], ['Head / hands / feet', 'head', 112, 85], ['Body / legs', 'body', 177, 135],
-  ['One-handed weapon', 'weapon', 131, 100], ['Off-hand (shield)', 'offhand', 53, 40],
-].map(r => Object.freeze(r)));
+export const WIKI475 = Object.freeze(
+  [
+    ['Accessory', 'ear', 88, 67],
+    ['Head / hands / feet', 'head', 112, 85],
+    ['Body / legs', 'body', 177, 135],
+    ['One-handed weapon', 'weapon', 131, 100],
+    ['Off-hand (shield)', 'offhand', 53, 40],
+  ].map(r => Object.freeze(r)),
+);
 
 export function wikiChecks() {
   return WIKI475.map(([label, type, published, share]) => {
-    const computed = rnd(IL.crit[475] * share / 1000);
+    const computed = rnd((IL.crit[475] * share) / 1000);
     return { label, type, published, share, computed, match: computed === published };
   });
 }

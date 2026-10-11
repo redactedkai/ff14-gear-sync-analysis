@@ -4,11 +4,12 @@ import { browseItems, dbStats } from '../../core/items.js';
 import { syncStats } from '../../core/formulas.js';
 import { statCell, fmtInt } from '../helpers.js';
 
-export const SHOW_LIMIT = 100;   /* rows rendered */
-export const ADD_LIMIT = 3000;   /* most rows "Add all" will take at once */
+export const SHOW_LIMIT = 100; /* rows rendered */
+export const ADD_LIMIT = 3000; /* most rows "Add all" will take at once */
 
 export function browseView(app) {
-  const job = app.jobCtx, b = app.browse;
+  const job = app.jobCtx,
+    b = app.browse;
   const rows = browseItems(job, { q: b.q, type: b.type, ilvlMin: +b.min || 0, ilvlMax: +b.max || 0, lvlMax: +b.lvl || 0 });
   const all = rows.map(r => {
     const raw = dbStats(job, r.st);
@@ -16,7 +17,10 @@ export function browseView(app) {
     return { r, raw, eff };
   });
   all.sort((x, y) => {
-    if (b.sort !== 'ilvl') { const d = (y.eff[b.sort] || 0) - (x.eff[b.sort] || 0); if (d) return d; }
+    if (b.sort !== 'ilvl') {
+      const d = (y.eff[b.sort] || 0) - (x.eff[b.sort] || 0);
+      if (d) return d;
+    }
     return y.r.ilvl - x.r.ilvl || x.r.name.localeCompare(y.r.name);
   });
   const shown = all.slice(0, SHOW_LIMIT).map(x => ({ ...x, cells: job.stats.map(s => statCell(x.raw[s], x.eff[s])) }));
@@ -39,8 +43,12 @@ export function browser() {
         this.notice = null;
       });
     },
-    get sortOptions() { return [['ilvl', 'Item level']].concat(this.job.stats.map(s => [s, 'Synced ' + this.job.label[s]])); },
-    get typeOptions() { return [['any', 'Any slot']].concat(this.slotOptions); },
+    get sortOptions() {
+      return [['ilvl', 'Item level']].concat(this.job.stats.map(s => [s, 'Synced ' + this.job.label[s]]));
+    },
+    get typeOptions() {
+      return [['any', 'Any slot']].concat(this.slotOptions);
+    },
     get countText() {
       const n = this.view ? this.view.all.length : 0;
       if (!n) return 'No matches';
@@ -54,7 +62,10 @@ export function browser() {
     addAll() {
       const all = this.view.all;
       if (!all.length) return;
-      if (all.length > ADD_LIMIT) { this.notice = { kind: 'toomany', n: fmtInt(all.length), limit: fmtInt(ADD_LIMIT) }; return; }
+      if (all.length > ADD_LIMIT) {
+        this.notice = { kind: 'toomany', n: fmtInt(all.length), limit: fmtInt(ADD_LIMIT) };
+        return;
+      }
       const n = this.$store.app.addRows(all.map(x => x.r));
       this.notice = { kind: 'added', n: fmtInt(n), plural: n === 1 ? '' : 's', skipped: n < all.length ? fmtInt(all.length - n) : '' };
     },

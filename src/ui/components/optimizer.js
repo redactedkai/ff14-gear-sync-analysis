@@ -11,24 +11,38 @@ export const CEILING_NODE_LIMIT = 150000;
 const DEBOUNCE_MS = 120;
 
 export function optimizerView(app) {
-  const job = app.jobCtx, o = app.opt;
+  const job = app.jobCtx,
+    o = app.opt;
   if (!app.pool.length) return { kind: 'empty' };
-  const res = optimize(job, app.pool, { cap: app.cap, sync: app.sync }, {
-    target: o.target, tiebreak: [o.tb, o.tb2], minAvgIlvl: o.avg ? +o.avgMin || 0 : 0, nodeLimit: NODE_LIMIT,
-  });
+  const res = optimize(
+    job,
+    app.pool,
+    { cap: app.cap, sync: app.sync },
+    {
+      target: o.target,
+      tiebreak: [o.tb, o.tb2],
+      minAvgIlvl: o.avg ? +o.avgMin || 0 : 0,
+      nodeLimit: NODE_LIMIT,
+    },
+  );
   if (!res.ok) return { kind: 'infeasible', truncated: res.truncated };
 
-  const t = res.totals, spd = t.spd;
+  const t = res.totals,
+    spd = t.spd;
   const tiers = gcdTiers(app.level);
   const cur = tiers.filter(x => x.spd <= spd).pop();
   const nxt = tiers.find(x => x.spd > spd);
   let ringN = 0;
   const rows = res.picks.map(p => {
     let label = SLOT_LABEL[p.type];
-    if (p.type === 'ring') { ringN++; label = 'Ring ' + ringN; }
+    if (p.type === 'ring') {
+      ringN++;
+      label = 'Ring ' + ringN;
+    }
     if (!p.item) return { label, item: null };
     return {
-      label, item: p.item,
+      label,
+      item: p.item,
       cells: job.stats.map(s => ({ value: p.eff[s] || 0, gold: s === o.target && !!p.eff[s] })),
     };
   });
@@ -63,7 +77,11 @@ export function ceilingView(app) {
   const unsynced = job.stats.map(s => best(false, s));
   const spdIdx = job.stats.indexOf('spd');
   return {
-    cap: app.cap, headers: job.stats.map(s => job.short[s]), spdIdx, synced, unsynced,
+    cap: app.cap,
+    headers: job.stats.map(s => job.short[s]),
+    spdIdx,
+    synced,
+    unsynced,
     gcd: synced[spdIdx] ? gcdFor(synced[spdIdx], app.level).toFixed(2) + 's' : '—',
   };
 }
@@ -72,15 +90,37 @@ export function optimizer() {
   return {
     view: null,
     init() {
-      debouncedEffect(Alpine, () => {
-        const app = this.$store.app;
-        // read every input synchronously so the effect tracks it
-        const deps = [app.tab, app.poolVersion, app.cap, app.sync, app.level, app.jobCtx, app.opt.target, app.opt.tb, app.opt.tb2, app.opt.avg, app.opt.avgMin];
-        return () => { if (deps[0] === 'opt') this.view = Object.freeze(optimizerView(app)); };
-      }, DEBOUNCE_MS);
+      debouncedEffect(
+        Alpine,
+        () => {
+          const app = this.$store.app;
+          // read every input synchronously so the effect tracks it
+          const deps = [
+            app.tab,
+            app.poolVersion,
+            app.cap,
+            app.sync,
+            app.level,
+            app.jobCtx,
+            app.opt.target,
+            app.opt.tb,
+            app.opt.tb2,
+            app.opt.avg,
+            app.opt.avgMin,
+          ];
+          return () => {
+            if (deps[0] === 'opt') this.view = Object.freeze(optimizerView(app));
+          };
+        },
+        DEBOUNCE_MS,
+      );
     },
-    get statOptions() { return this.job.stats.map(s => [s, this.job.label[s]]); },
-    get tiebreakOptions() { return [['', 'none']].concat(this.statOptions); },
+    get statOptions() {
+      return this.job.stats.map(s => [s, this.job.label[s]]);
+    },
+    get tiebreakOptions() {
+      return [['', 'none']].concat(this.statOptions);
+    },
   };
 }
 
@@ -88,11 +128,17 @@ export function ceiling() {
   return {
     view: null,
     init() {
-      debouncedEffect(Alpine, () => {
-        const app = this.$store.app;
-        const deps = [app.tab, app.poolVersion, app.cap, app.sync, app.level, app.jobCtx];
-        return () => { if (deps[0] === 'opt') this.view = ceilingView(app); };
-      }, DEBOUNCE_MS);
+      debouncedEffect(
+        Alpine,
+        () => {
+          const app = this.$store.app;
+          const deps = [app.tab, app.poolVersion, app.cap, app.sync, app.level, app.jobCtx];
+          return () => {
+            if (deps[0] === 'opt') this.view = ceilingView(app);
+          };
+        },
+        DEBOUNCE_MS,
+      );
     },
   };
 }

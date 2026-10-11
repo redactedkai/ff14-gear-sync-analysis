@@ -5,23 +5,35 @@ import { IL, MAX_REAL } from '../core/tables.js';
 import { clampIlvl } from '../core/formulas.js';
 
 function niceStep(max, n) {
-  const raw = max / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const raw = max / n,
+    mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const m = raw / mag;
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * mag;
 }
 
 export function budgetChartSvg(job, ilvl, cap) {
   const il = clampIlvl(ilvl);
-  const mainCol = statColumn(job, 'main'), subCol = IL.crit;
-  const x0 = 80, x1 = Math.min(MAX_REAL, Math.max(500, il + 30));
-  const W = 640, H = 250, L = 52, R = 14, T = 12, B = 30;
+  const mainCol = statColumn(job, 'main'),
+    subCol = IL.crit;
+  const x0 = 80,
+    x1 = Math.min(MAX_REAL, Math.max(500, il + 30));
+  const W = 640,
+    H = 250,
+    L = 52,
+    R = 14,
+    T = 12,
+    B = 30;
   let ymax = 0;
   for (let i = x0; i <= x1; i++) ymax = Math.max(ymax, subCol[i], mainCol[i]);
   const step = niceStep(ymax, 5);
   ymax = Math.ceil(ymax / step) * step;
-  const X = v => L + (v - x0) / (x1 - x0) * (W - L - R);
-  const Y = v => H - B - v / ymax * (H - B - T);
-  const line = arr => { let d = ''; for (let i = x0; i <= x1; i++) d += (i === x0 ? 'M' : 'L') + X(i).toFixed(1) + ' ' + Y(arr[i]).toFixed(1); return d; };
+  const X = v => L + ((v - x0) / (x1 - x0)) * (W - L - R);
+  const Y = v => H - B - (v / ymax) * (H - B - T);
+  const line = arr => {
+    let d = '';
+    for (let i = x0; i <= x1; i++) d += (i === x0 ? 'M' : 'L') + X(i).toFixed(1) + ' ' + Y(arr[i]).toFixed(1);
+    return d;
+  };
 
   let g = '';
   for (let v = 0; v <= ymax + 1e-9; v += step) {

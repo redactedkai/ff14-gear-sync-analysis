@@ -6,22 +6,33 @@ import { budgetChartSvg } from '../chart.js';
 
 /* "base × pct ÷ 1000 = 26.4 → 26; × 70% = 18.2 → 18" */
 function formulaText(steps) {
-  return steps.map(s => {
-    if (s.kind === 'slot') return `${s.base} × ${s.pct} ÷ 1000 = ${s.exact.toFixed(1)} → ${s.value}`;
-    if (s.kind === 'vit') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
-    return `× ${s.weight}% = ${s.exact.toFixed(1)} → ${s.value}`;
-  }).join('; ');
+  return steps
+    .map(s => {
+      if (s.kind === 'slot') return `${s.base} × ${s.pct} ÷ 1000 = ${s.exact.toFixed(1)} → ${s.value}`;
+      if (s.kind === 'vit') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
+      return `× ${s.weight}% = ${s.exact.toFixed(1)} → ${s.value}`;
+    })
+    .join('; ');
 }
 
 export function pieceView(app) {
-  const job = app.jobCtx, p = app.piece, il = clampIlvl(p.ilvl), t = p.slot;
+  const job = app.jobCtx,
+    p = app.piece,
+    il = clampIlvl(p.ilvl),
+    t = p.slot;
   const caps = capsFor(job, t, app.cap);
   const clampOn = app.sync && il > app.cap;
-  const lines = [{ stat: 'main', w: 100 }, { stat: 'vit', w: 100 }];
-  p.subs.forEach((s, i) => { if (s && (s !== 'spec' || job.profile.spec)) lines.push({ stat: s, w: SUB_WEIGHTS[i] }); });
+  const lines = [
+    { stat: 'main', w: 100 },
+    { stat: 'vit', w: 100 },
+  ];
+  p.subs.forEach((s, i) => {
+    if (s && (s !== 'spec' || job.profile.spec)) lines.push({ stat: s, w: SUB_WEIGHTS[i] });
+  });
   const rows = lines.map(({ stat, w }) => {
     const d = statDerivation(job, stat, il, t, w);
-    const raw = d.value, syn = clampOn ? Math.min(raw, caps[stat]) : raw;
+    const raw = d.value,
+      syn = clampOn ? Math.min(raw, caps[stat]) : raw;
     return { stat, w, label: job.label[stat], base: d.base, formula: formulaText(d.steps), raw, syn };
   });
   return {
@@ -38,9 +49,15 @@ export function pieceLab() {
   return {
     view: null,
     init() {
-      Alpine.effect(() => { this.view = pieceView(this.$store.app); });
+      Alpine.effect(() => {
+        this.view = pieceView(this.$store.app);
+      });
     },
-    setSub(i, value) { this.$store.app.piece.subs[i] = value || null; },
-    setFromRange(value) { this.$store.app.piece.ilvl = +value; },
+    setSub(i, value) {
+      this.$store.app.piece.subs[i] = value || null;
+    },
+    setFromRange(value) {
+      this.$store.app.piece.ilvl = +value;
+    },
   };
 }

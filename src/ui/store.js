@@ -5,7 +5,21 @@ import { poolItemFromRow } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
 import { resetForJob, TABS, MATH_TABS } from './state.js';
 
-export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'piece', 'gen', 'browse', 'opt', 'poolFilter', 'pool'];
+export const PERSISTED_KEYS = [
+  'job',
+  'cap',
+  'sync',
+  'level',
+  'tab',
+  'mathTab',
+  'syncIlvl',
+  'piece',
+  'gen',
+  'browse',
+  'opt',
+  'poolFilter',
+  'pool',
+];
 
 const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
@@ -30,10 +44,15 @@ export function createAppStore(initial) {
     },
 
     showTab(t) {
-      if (MATH_TABS.includes(t)) { this.mathTab = t; t = 'math'; }
+      if (MATH_TABS.includes(t)) {
+        this.mathTab = t;
+        t = 'math';
+      }
       this.tab = TABS.includes(t) ? t : 'pool';
     },
-    showSub(s) { this.mathTab = MATH_TABS.includes(s) ? s : 'piece'; },
+    showSub(s) {
+      this.mathTab = MATH_TABS.includes(s) ? s : 'piece';
+    },
 
     /* Add database rows (parsed) to the pool, skipping ones already there. Returns how many were added. */
     addRows(rows) {
@@ -49,20 +68,43 @@ export function createAppStore(initial) {
       if (added) this.poolVersion++;
       return added;
     },
-    isInPool(row) { const k = poolKey(row); return this.pool.some(p => poolKey(p) === k); },
-    addItem(item) { this.pool.push(item); this.poolVersion++; },
-    removeItem(id) { this.pool = this.pool.filter(i => i.id !== id); this.poolVersion++; },
+    isInPool(row) {
+      const k = poolKey(row);
+      return this.pool.some(p => poolKey(p) === k);
+    },
+    addItem(item) {
+      this.pool.push(item);
+      this.poolVersion++;
+    },
+    removeItem(id) {
+      this.pool = this.pool.filter(i => i.id !== id);
+      this.poolVersion++;
+    },
     setCopies(id, value) {
       const it = this.pool.find(i => i.id === id);
-      if (it) { it.copies = Math.min(2, Math.max(1, Math.round(+value || 1))); this.poolVersion++; }
+      if (it) {
+        it.copies = Math.min(2, Math.max(1, Math.round(+value || 1)));
+        this.poolVersion++;
+      }
     },
-    clearPool() { this.pool = []; this.poolVersion++; },
-    replaceGenerated(items) { this.pool = this.pool.filter(i => i.src !== 'generated').concat(items); this.poolVersion++; },
-    removeGenerated() { this.pool = this.pool.filter(i => i.src !== 'generated'); this.poolVersion++; },
+    clearPool() {
+      this.pool = [];
+      this.poolVersion++;
+    },
+    replaceGenerated(items) {
+      this.pool = this.pool.filter(i => i.src !== 'generated').concat(items);
+      this.poolVersion++;
+    },
+    removeGenerated() {
+      this.pool = this.pool.filter(i => i.src !== 'generated');
+      this.poolVersion++;
+    },
 
     persisted() {
       const o = {};
-      PERSISTED_KEYS.forEach(k => { o[k] = this[k]; });
+      PERSISTED_KEYS.forEach(k => {
+        o[k] = this[k];
+      });
       return o;
     },
   };

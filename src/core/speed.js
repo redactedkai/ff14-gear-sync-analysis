@@ -13,14 +13,14 @@ export function gcdFor(gearSpd, level, baseMs) {
   const { sub, div } = speedParams(level);
   baseMs = baseMs || 2500;
   const speed = sub + gearSpd;
-  const m = 1000 + Math.ceil(130 * (sub - speed) / div);
-  return Math.floor(baseMs * m / 10000) / 100;
+  const m = 1000 + Math.ceil((130 * (sub - speed)) / div);
+  return Math.floor((baseMs * m) / 10000) / 100;
 }
 
 /* DoT/HoT tick multiplier from gear speed, e.g. 1.012 */
 export function dotMult(gearSpd, level) {
   const { div } = speedParams(level);
-  return (1000 + Math.floor(130 * gearSpd / div)) / 1000;
+  return (1000 + Math.floor((130 * gearSpd) / div)) / 1000;
 }
 
 /* Every gear-speed value where the GCD drops a step, from 0 to 1200 speed. */
@@ -30,7 +30,10 @@ export function gcdTiers(level, baseMs) {
   out.push({ spd: 0, gcd: last });
   for (let s = 1; s <= 1200; s++) {
     const g = gcdFor(s, level, baseMs);
-    if (g < last - 1e-9) { out.push({ spd: s, gcd: g }); last = g; }
+    if (g < last - 1e-9) {
+      out.push({ spd: s, gcd: g });
+      last = g;
+    }
   }
   return out;
 }
