@@ -11,11 +11,12 @@
     "build": "node scripts/build/build.mjs",
     "dev": "node scripts/build/dev.mjs",
     "test": "node --test \"tests/unit/*.test.js\"",
+    "test:py": "python -m unittest discover -s tests/data -p \"test_*.py\"",
     "smoke": "python tests/e2e/smoke.py",
     "lint": "biome lint . && python -m ruff check .",
     "format": "biome format --write . && python -m ruff format .",
     "format:check": "biome format . && python -m ruff format --check .",
-    "check": "npm run lint && npm run format:check && npm run build && npm test && npm run smoke",
+    "check": "npm run lint && npm run format:check && npm run build && npm test && npm run test:py && npm run smoke",
     "fetch": "python scripts/data/fetch.py",
     "regen": "python scripts/data/regen.py"
   },
