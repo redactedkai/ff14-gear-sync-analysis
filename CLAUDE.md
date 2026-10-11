@@ -54,6 +54,8 @@ tests/
 docs/                 see docs/README.md; style guide in docs/diagrams/STYLE.md
 ```
 
+`.github/workflows/pages.yml` deploys to GitHub Pages on push to `main` (Node unit tests, build, publish `dist/`). It is the only workflow; there is no separate CI.
+
 `dist/`, `data/` and `tests/e2e/out/` are gitignored. **Never hand-edit `src/data/*.js`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
 
 ## Commands (run from the repo root)

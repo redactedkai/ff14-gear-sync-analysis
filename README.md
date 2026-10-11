@@ -41,6 +41,10 @@ Set your job, sync cap (item level) and synced level at the top. A fresh page st
 
 Run all commands from the repo root.
 
+## Deploy (GitHub Pages)
+
+`.github/workflows/pages.yml` runs the unit tests, builds `dist/index.html` and publishes it on every push to `main` (or by hand from the Actions tab). One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
+
 ## After a game patch
 
 1. `npm run update-data` fetches the newest CSVs, regenerates `src/data/` (recording the source commit) and rebuilds.
