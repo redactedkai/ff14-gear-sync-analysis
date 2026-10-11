@@ -10,7 +10,7 @@ Every count on this page was produced by running the generators' rules over the 
 
 The data comes from [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining), a public repository of the game client's data sheets saved as CSV files. A *sheet* is one of the game's internal data tables, for example `Item` (one row per item). The files are exported straight from the client, by XIVData Oxidizer since January 2026 and by SaintCoinach before that. The miners do not compute or derive anything: a row in a CSV is a row in the game's own data. **Verified**: the repository's own commit history shows the exporter change (commit `d3eb86d`, 4 January 2026, "Migrate to XIVData Oxidizer").
 
-The project fetches six sheets (English column names, `csv/en/`). Five of them are read by the generators. The sixth, `BaseParam`, is fetched but not read: the slot percentages it holds are written into the page code by hand.
+The project fetches six sheets (English column names, `csv/en/`). All six are read by the generators. Five supply data; the sixth, `BaseParam`, is only checked: the slot percentages the page uses are kept in the shared format definition (section 3), and the generator stops if `BaseParam` disagrees with them.
 
 | Sheet | Read by | What it contributes |
 | --- | --- | --- |
@@ -19,9 +19,11 @@ The project fetches six sheets (English column names, `csv/en/`). Five of them a
 | `ClassJobCategory` | item database generator | Which classes and jobs may equip an item (`True`/`False` per job). 206 rows. |
 | `ItemLevel` | item level generator | The stat budget of every stat at every item level. 921 rows, ids 0 to 920. |
 | `ParamGrow` | item level generator | Per character level data, including the speed constants. Rows 0 to 201; levels 1 to 100 are used. |
-| `BaseParam` | nobody (fetched only) | One row per stat, including the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, in thousandths). |
+| `BaseParam` | item level generator (check only) | One row per stat, including the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, in thousandths). |
 
-**Verified**: for all 12 stats the project uses, the slot percentages in `BaseParam.csv` equal the values hard-coded in the page (checked against this commit while writing this page). Nothing checks this automatically, so a patch that changed them would go unnoticed. See [math.md](math.md) for how the percentages are used.
+**Verified on every regeneration**: for all 12 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](math.md) for how the percentages are used.
+
+**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`) and the three `ParamGrow` columns. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
 
 ## 2. Fetching
 
@@ -58,7 +60,7 @@ PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8),
 | 10 | Skill Speed | SkillSpeed | 45 |
 | 11 | Spell Speed | SpellSpeed | 46 |
 
-**Slot codes.** Each code names a slot type and the `EquipSlotCategory` column that identifies it:
+**Slot codes.** Each code names a slot type and the `EquipSlotCategory` column that identifies it. Each slot also carries its share of the budget (`percent`, in thousandths) and the `BaseParam` column that holds it; the page reads its slot shares from here, and the item level generator checks them against `BaseParam` (section 1).
 
 | Code | Slot | Column | Code | Slot | Column |
 | --- | --- | --- | --- | --- | --- |
@@ -71,11 +73,11 @@ PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8),
 
 Belts (`Waist`) and soul crystals have no slot code, so items in those slots are dropped.
 
-Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order and slot table are exactly the ones in the file.
+Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
 
 ## 4. Item database generation
 
-![Worked example with Dreadwyrm Hood of Healing: each Item sheet column maps to a database field. Equip slot category 3 becomes slot code 3 (head); item level 130 is kept; job category 64 becomes job mask 240 (bits 4 to 7, WHM SCH AST SGE); five stat id and value pairs are placed into 12 stat positions by id; the HQ bonus is skipped because the item cannot be high quality; IsUnique becomes 1](diagrams/data-item-row.svg)
+![Worked example with Void Ark Helm of Fending, a tank head piece: each Item sheet column maps to a database field. Equip slot category 3 becomes slot code 3 (head); item level 200 is kept; job category 59 becomes job mask 15 (bits 0 to 3, PLD WAR DRK GNB); four stat id and value pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) are placed into 12 stat positions by id; the HQ bonus is skipped because the item cannot be high quality; IsUnique becomes 1](diagrams/data-item-row.svg)
 
 ### Selection
 
@@ -96,7 +98,8 @@ For the current data, each rule leaves:
 | resolves to a slot | 29,026 |
 | item level ≥ 100 | 19,843 |
 | a combat job can equip it | 17,627 |
-| at least one stat | **17,579** |
+| at least one stat | 17,579 |
+| occupies a single slot (multi-slot gear such as cloaks that also cover the head is left out) | **17,577** |
 
 The item level floor of 100 is a choice of this project, not a game rule; gear below it is not useful for the sync caps the page targets.
 
@@ -112,7 +115,7 @@ $$
 \text{mask} = \sum_{i=0}^{21} 2^{i}\,\bigl[\text{job}_i \text{ can equip the item}\bigr]
 $$
 
-"Can equip" means the job's column in the item's `ClassJobCategory` row is `True`. Base classes (Gladiator, Conjurer, ...) and crafting or gathering classes have no bit. In the example above, category 64 lists CNJ WHM SCH AST SGE, so bits 4 to 7 are set and $\text{mask} = 2^4 + 2^5 + 2^6 + 2^7 = 240$. An item every job can wear has $\text{mask} = 2^{22} - 1 = 4{,}194{,}303$ (1,079 rows).
+"Can equip" means the job's column in the item's `ClassJobCategory` row is `True`. Base classes (Gladiator, Conjurer, ...) and crafting or gathering classes have no bit. In the example above, category 59 lists GLA MRD PLD WAR DRK GNB; Gladiator and Marauder are base classes, so only bits 0 to 3 are set and $\text{mask} = 2^0 + 2^1 + 2^2 + 2^3 = 15$. An item every job can wear has $\text{mask} = 2^{22} - 1 = 4{,}194{,}303$ (1,079 rows).
 
 ### Stats and the HQ bonus
 
@@ -128,7 +131,7 @@ Melds (materia) are not part of the item data and are not included.
 
 ### Unique flag
 
-`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,579 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
+`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,577 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
 
 ### Row format and order
 
@@ -148,7 +151,7 @@ The example row is
 
 | name | slot | item level | equip level | job mask | stats | unique |
 | --- | --- | --- | --- | --- | --- | --- |
-| Dreadwyrm Hood of Healing | 3 | 130 | 50 | 240 | 0,0,0,33,32,22,0,6,0,0,0,31 | 1 |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0 | 1 |
 
 Rows are sorted by item level (highest first), then slot code, then name. The stats are stored as one string per row to keep the file small; the page splits it when it reads a row.
 
@@ -166,7 +169,7 @@ The second generator writes one file with three parts.
 | LevelModifier | the divisor in the speed formulas | 1900 | 2780 |
 | ItemLevelSync | the game's own sync item level for that level (shown on the page as information) | 660 | 690 |
 
-A missing level stops the generator with an error. The speed formulas are in [math.md](math.md).
+A missing level or column stops the generator with an error. The speed formulas are in [math.md](math.md).
 
 **Source record.** Which datamining commit the data came from (next section).
 
@@ -193,7 +196,7 @@ The recorded commit is the clone's newest commit, not the newest commit that cha
 
 | Fact | Value |
 | --- | --- |
-| Database rows | 17,579 |
+| Database rows | 17,577 |
 | Lowest / highest item level in the database | 100 / **795** (66 rows at 795) |
 | `ItemLevel` rows | 921 (ids 0 to 920) |
 | Level data | levels 1 to 100 |
@@ -233,9 +236,9 @@ The page bundle takes the page code, the stylesheet and both generated data file
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 1,395,448 bytes |
+| item database (generated file) | 1,395,284 bytes |
 | item level table and level data (generated file) | 51,962 bytes |
-| finished page, minified | 1,568,405 bytes at the last build (about 1.6 MB) |
+| finished page, minified | 1,569,699 bytes at the last build (about 1.6 MB) |
 
 The item database is close to 90% of the page.
 
@@ -244,7 +247,7 @@ The item database is close to 90% of the page.
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run both generators (they record the new commit) and rebuild the page.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,579 rows above.
+4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,577 rows above.
 
 Some test expectations are allowed to move, others must not:
 
@@ -252,12 +255,12 @@ Some test expectations are allowed to move, others must not:
 | --- | --- |
 | Highest real item level, row counts | Move when new gear is added. The page computes the highest item level itself. |
 | Formula accuracy per item level band (at least 95% exact, at least 96% within 1) | The shares can move as new gear arrives; the thresholds should still hold. A drop below them means the model needs a look, not a lower threshold. |
-| Dreadwyrm tests (item lookups and optimizer totals 171 / 176 Spell Speed) | Must not move. They use specific old items. |
+| Regression values tied to specific old items (item lookups and optimizer totals on them) | Must not move. Old items do not change. |
 | Wiki sync caps at item level 475 | Must not move. They are published numbers; a change means the game changed old `ItemLevel` rows. |
 | Generic maximum at cap 123 (296 Spell Speed, 2.22 s GCD) | Depends only on `ItemLevel` rows 123 and 475. Should not move unless those rows change; investigate if it does. |
 | Format, row shape and provenance tests, generator tests on test files | Must not move. They test the pipeline, not the game data. |
 
-If a patch adds a job or a stat, the shared format definition and the page's job table have to be extended first; the format test fails until both agree.
+If a patch adds a job or a stat, the shared format definition and the page's job table have to be extended first; the format test fails until both agree. If a patch renames a column the generators read, or changes a slot share in `BaseParam`, the regeneration stops with an error naming it (section 1); update the shared format definition (and, for a slot share, check the math) rather than working around it.
 
 ## 10. How the pipeline is tested
 
@@ -265,13 +268,17 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 
 - The test files use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
+- The `BaseParam` test file holds the real rows of the 12 stats.
 - They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 12 `ItemLevel` columns, levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
+- Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column and a missing stat row each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
 
 **Format tests** (Node, on the real generated data):
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has seven fields, a valid slot code, a job mask in $(0, 2^{22})$, 12 stats and a 0/1 Unique flag.
+- every database row has seven fields, a valid slot code, a job mask in $(0, 2^{22})$, 12 stats and a 0/1 Unique flag;
+- the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
+- every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
 **Provenance tests** (Node): the source record names the datamining repository, a full 40-character commit id and an ISO date; both generated files carry the same commit in their first line; the footer text is short and empty when the source is unknown.
 
@@ -281,7 +288,7 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 | --- | --- |
 | Fetch (sparse clone) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
-| Format loading and CSV reading for the generators | `scripts/data/item_format.py` |
+| Format loading, CSV reading and the column and slot share checks | `scripts/data/item_format.py` |
 | Item database generator | `scripts/data/gen_items.py` |
 | Item level table and level data generator | `scripts/data/gen_item_level.py` |
 | Source commit detection and file headers | `scripts/data/provenance.py` |

@@ -12,7 +12,7 @@ Each layer depends only on the layers above it:
 
 | Layer | What it holds | Depends on |
 | --- | --- | --- |
-| 1. Generated game data | The item level budget table, per-level speed data, and the item database (17,579 pieces of gear). Produced by the data pipeline and never edited by hand. | nothing |
+| 1. Generated game data | The item level budget table, per-level speed data, and the item database (17,577 pieces of gear). Produced by the data pipeline and never edited by hand. | nothing |
 | 2. Core logic | Stat formulas, sync caps, speed and GCD, item queries, the optimizer, and the accuracy checks. Pure functions: no page, no browser storage, no shared mutable state. They run unchanged in Node, which is how the unit tests use them. | data |
 | 3. UI state | The saved state (defaults, repair on load, browser storage) and one shared store that holds the current settings, the item pool, the current job context, and the actions that change them. | core |
 | 4. Components and template | One component per page area. Each turns the store into a ready-to-display "view". The HTML template binds to those views and to store actions. | UI state, core |
@@ -34,7 +34,7 @@ What a job context contains:
 
 Contexts are cached, so asking for the same job twice returns the same object, and frozen, so no caller can change one by accident. An unknown job id falls back to the default job.
 
-Why it is built this way: an earlier version kept the current job's stat mapping in shared mutable variables that every function read. Any code that forgot to update them, or ran between two updates, could see a mix of two jobs. Passing an explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. (Audit finding F6, [audit.md](audit.md).) The neutral names matter for the same reason: a Piece lab label once showed as "undefined" because shared code used a job-specific stat name where a neutral one belonged.
+Why it is built this way: an earlier version kept the current job's stat mapping in shared mutable variables that every function read. Any code that forgot to update them, or ran between two updates, could see a mix of two jobs. Passing an explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. The neutral names matter for the same reason: a Piece lab label once showed as "undefined" because shared code used a job-specific stat name where a neutral one belonged.
 
 The game database stores stats in a fixed raw order of 12 stats (all four main stats, Vitality, Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed). The context converts a raw row into the job's neutral stats in one place; nothing else reads raw stat positions.
 
@@ -51,11 +51,11 @@ All state that matters lives in one shared store: the saved settings and pool, p
 
 Changes go through store actions (set job, add rows, remove an item, set copies, clear, replace generated items, switch tab). Number inputs are bound to store fields through a helper that only commits whole numbers inside the allowed range; typing an out-of-range value is ignored rather than corrected under the user's cursor.
 
-**Changing the job.** If the new job has a different role profile or weapon mode, the role-dependent selections (Piece lab substats, generator settings, optimizer target and tiebreaks, browse slot and sort, pool filter) go back to their defaults for that job and the pool is emptied, because its items' stats were stored under the old job's mapping. A switch within the same role and weapon mode keeps everything. That means gear the new job cannot equip (another healer's weapon, for example) stays in the pool; this is a known open issue (F2 in [audit.md](audit.md)).
+**Changing the job.** Switching to any other job, even one in the same role, clears the pool and resets the job-specific selections (Piece lab substats, optimizer target and tiebreaks, browse slot and sort, pool filter) to the new job's defaults. The sync cap, synced level and sync switch are kept. This way the pool never holds gear the current job can't wear, and its stored stats always match the job's stat mapping. Because the pool is lost, the page asks first when the pool is not empty: a warning under the job menu names the new job and the number of items, with Switch and clear or Cancel; the menu keeps showing the current job until the switch is confirmed.
 
 ### Each area derives a view
 
-Every page area is a component that recomputes one **view** object from the store inside a reactive effect. The effect reads the store fields it needs, which registers them as dependencies, and runs again when any of them changes. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it; all logic stays in the component and the core.
+Every page area is a component that recomputes one **view** object from the store inside a reactive effect. The effect reads the store fields it needs, which registers them as dependencies, and runs again when any of them changes. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it. The functions that build views are pure and live apart from the components, with no dependency on the UI framework, so the unit tests check what each tab shows directly; the components only wire them to the store.
 
 Views are frozen before they are stored on the component, and large data never enters reactive state:
 
@@ -81,7 +81,7 @@ The debounce works by reading all inputs synchronously inside the effect (so the
 
 The page remembers the user's settings between visits in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync caps item level, Piece lab inputs, generator settings, browse filters and sort, optimizer target, tiebreaks and average item level requirement, the pool filter, and the pool itself (each item's name, slot, item level, stats, copies and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync caps item level, Piece lab inputs, browse filters and sort, optimizer target, tiebreaks and average item level requirement, the pool filter, and the pool itself (each item's name, slot, item level, stats, copies and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 
@@ -135,7 +135,8 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
 | Budget chart | `src/ui/chart.js` |
-| Components | `src/ui/components/` (`page.js`, `piece-lab.js`, `sync-caps.js`, `validation-panel.js`, `browser.js`, `pool.js`, `advanced.js`, `optimizer.js`) |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-caps.js`, `browse.js`, `pool.js`, `optimizer.js`) |
+| Components | `src/ui/components/` (`page.js`, `piece-lab.js`, `sync-caps.js`, `validation-panel.js`, `browser.js`, `pool.js`, `optimizer.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |

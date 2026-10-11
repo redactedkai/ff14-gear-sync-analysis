@@ -7,7 +7,7 @@ Related pages: [validation.md](validation.md) (evidence still missing), [optimiz
 ## Evidence
 
 - **Verify the sync assumptions with in-game captures.** The main stat and Vitality clamp, and the clamp for lower-ranked substats, are inferred. What a useful capture looks like is in [validation.md, section 8](validation.md#8-open-question-in-game-captures). This is the most valuable missing evidence.
-- **Diagnostics view for the pieces the formula misses.** About 1.3% of real pieces (219 of 16,586) do not match the formula exactly. Most belong to weapon lines with two equal substats ([validation.md, section 2](validation.md#what-the-misses-look-like)). A view listing them would make the remaining cases easier to study.
+- **Diagnostics view for the pieces the formula misses.** About 1.3% of real pieces (217 of 16,584) do not match the formula exactly. Most belong to weapon lines with two equal substats ([validation.md, section 2](validation.md#what-the-misses-look-like)). A view listing them would make the remaining cases easier to study.
 
 ## Optimizer
 

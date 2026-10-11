@@ -2,7 +2,7 @@
 
 An FFXIV calculator for understanding how item level sync and level sync work, with an optimizer that picks the gear combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity, and so on) under a sync cap. It works for every combat job and uses real item data from the game files.
 
-It builds to a single self-contained HTML page that needs no server.
+It builds to a single self-contained HTML page that needs no server. The only outside request is the Google Fonts stylesheet; offline, the page falls back to system fonts.
 
 ## Use it
 

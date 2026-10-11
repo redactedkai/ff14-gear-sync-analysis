@@ -32,11 +32,12 @@ src/
     store.js          Alpine.store('app'): state + actions (setJob, tabs, pool edits)
     helpers.js        formatting, stat cells, number-field binding, debounced effects
     chart.js          budget chart SVG
+    views/            pure view builders (no Alpine): what each tab shows, unit-tested in tests/unit/views.test.js
     components/       one Alpine.data() per page area (page/settings, piece-lab, sync-caps, validation-panel,
-                      browser, pool, advanced, optimizer)
+                      browser, pool, optimizer)
   data/
     item-level.js     GENERATED: ItemLevel budget table (IL), ParamGrow level data (PG), DATA_SOURCE
-    items.js          GENERATED: real gear database (ITEMS, 17,579 rows, ~1.4 MB)
+    items.js          GENERATED: real gear database (ITEMS, 17,577 rows, ~1.4 MB)
 scripts/
   build/build.mjs     esbuild bundle + inline into dist/index.html
   build/dev.mjs       watch + local server
@@ -87,7 +88,7 @@ Full derivation, worked example and verified/assumed table: `docs/math.md`. Evid
 - GCD and DoT/HoT tick scaling follow AkhMorning's formulas with `ParamGrow` constants.
 
 Empirical or assumed (say so in the UI and in answers; never present as fact):
-- The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: 97.1 to 99.6% exact per item level band, 98.7% overall. The Item pool and Optimizer use real item stats and do not depend on them; only Piece lab, the generator and hand-fill do.
+- The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: 97.1 to 99.6% exact per item level band, 98.7% overall. The Item pool and Optimizer use real item stats and do not depend on them; only Piece lab does.
 - The main stat / Vitality clamp under sync, and lower-ranked substats clamping to the full-share cap, are inferred, not confirmed in game.
 - Melds are ignored on synced-down gear; substats are never scaled up.
 
@@ -128,12 +129,12 @@ Timing (Node 22, full 2,033-item Sage pool): one run takes about 15 to 20 ms; th
 - Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
 - When the owner reports a bug from a screenshot, reproduce it in the smoke test or a unit test first, fix, then add a regression check.
 - Prefer root causes. Example: the "undefined" in Piece lab came from using a job-specific key where a neutral one belonged, not from missing text.
-- esbuild is the only build tool and Alpine.js the only runtime dependency. Ask before adding any other dependency. The single self-contained output file is a feature.
+- esbuild is the only build tool and Alpine.js the only runtime dependency. Ask before adding any other dependency. The single self-contained output file is a feature. The one intentional exception is the Google Fonts stylesheet in `src/index.html` (owner's decision): keep it, and keep the page working without it.
 - Do not commit or push unless the owner asks.
 
 ## Testing conventions
 
-Details: `docs/testing.md`. Add formula or optimizer checks to the matching `tests/unit/<module>.test.js` with `node:test` and `node:assert/strict`, importing from `src/core/`. Generator rules go in `tests/data/test_generators.py`. UI regressions go in `tests/e2e/smoke.py` (it scans six representative jobs across every tab for `undefined`, `NaN` and `null` text, and checks for JS errors and horizontal overflow at 400 px). Prefer real items and published numbers as expected values (the Dreadwyrm sets, the Wiki's item level 475 caps, AkhMorning's GCD examples) over numbers produced by the code being tested. Optimizer changes must agree with the exhaustive-search reference.
+Details: `docs/testing.md`. Add formula or optimizer checks to the matching `tests/unit/<module>.test.js` with `node:test` and `node:assert/strict`, importing from `src/core/`. Generator rules go in `tests/data/test_generators.py`. UI regressions go in `tests/e2e/smoke.py` (it scans six representative jobs across every tab for `undefined`, `NaN` and `null` text, and checks for JS errors and horizontal overflow at 400 px). Prefer real items and published numbers as expected values (specific real items from the game data, the Wiki's item level 475 caps, AkhMorning's GCD examples) over numbers produced by the code being tested. Optimizer changes must agree with the exhaustive-search reference.
 
 ## Documentation
 

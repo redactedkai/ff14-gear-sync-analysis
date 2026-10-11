@@ -29,7 +29,7 @@ The game's `ItemLevel` sheet has one row per item level (rows 0 to 920). Each ro
 
 - The four main-stat columns (Strength, Dexterity, Intelligence, Mind) are identical in every row.
 - Determination, Direct Hit, Skill Speed and Spell Speed are identical to Critical Hit in every row.
-- Piety and Tenacity match Critical Hit except in 6 rows (540, 565, 570, 590, 595, 596), where they are 1 to 8 higher.
+- Piety and Tenacity match Critical Hit except in 6 rows (540, 565, 570, 590, 595, 596), where they are 1 to 8 higher. The Math tab's Sync caps table adds a Piety or Tenacity cap column only when the cap item level is one of these rows and the cap differs in some slot.
 - Vitality has its own column.
 
 So in practice there are three curves: main stat, substat and Vitality. We write them as $\text{budget}_s(i)$ for stat $s$ at item level $i$.
@@ -67,7 +67,7 @@ Paladin is the only combat job with a one-handed weapon plus a shield (100 + 40)
 
 ## 4. The stats on a piece
 
-![Flow diagram of the seven steps from item level to synced stat, with Spell Speed and Piety values from the Dreadwyrm Hood of Healing. Spell Speed goes 363, 30.855, 31, then is clamped from 31 to 29 at cap 123. Piety goes 363, 30.855, 31, times 0.7 is 21.7, rounds to 22, and stays 22.](diagrams/math-pipeline.svg)
+![Flow diagram of the seven steps from item level to synced stat, with Spell Speed and Piety values from an item level 130 healer head piece. Spell Speed goes 363, 30.855, 31, then is clamped from 31 to 29 at cap 123. Piety goes 363, 30.855, 31, times 0.7 is 21.7, rounds to 22, and stays 22.](diagrams/math-pipeline.svg)
 
 ### The formula
 
@@ -95,7 +95,7 @@ For Strength and Dexterity jobs the factor is 1.
 
 **Rounding is half up**: $\operatorname{round}(x) = \lfloor x + 0.5 \rfloor$, so 31.5 becomes 32. The code adds a tiny epsilon so that floating-point noise such as 22.4999999 still rounds as 22.5 would.
 
-**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,116 of the 16,586 checked pieces exactly (79.1%). Rounding twice reproduces 16,367 (98.7%). Both figures come from running the model over the item database.
+**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,116 of the 16,584 checked pieces exactly (79.1%). Rounding twice reproduces 16,367 (98.7%). Both figures come from running the model over the item database.
 
 Example where it matters: Antiquated Atlas, a level 60 healer two-handed weapon at item level 200, has Piety 57. The substat budget at 200 is 587:
 
@@ -115,13 +115,13 @@ The game stores only the final numbers on each item. It does not store how a slo
 | Second | 70% |
 | Third (rare; mostly Direct Hit on healer gear) | 20% |
 
-**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stat and Vitality at full share, substats by rank) reproduces 98.7% of them exactly (16,367 of 16,586), and 97.1% to 99.6% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stat and Vitality at full share, substats by rank) reproduces 98.7% of them exactly (16,367 of 16,584), and 97.1% to 99.6% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
-Where the shares matter: the Piece lab, the generic-piece generator and hand-filled pieces use them. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
+Where the shares matter: the Piece lab uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 
-### Worked example: Dreadwyrm Hood of Healing
+### Worked example: a healer head piece at item level 130
 
-This is a real healer head piece at item level 130. In the game files it has Mind 33, Vitality 32, Spell Speed 31, Piety 22 and Direct Hit 6. Head share $p = 85$. Table values at row 130: main stat 385, Vitality 414, substats 363.
+Take a healer head piece at item level 130 with Spell Speed, Piety and Direct Hit, in that order. A real piece like this is in the game files with Mind 33, Vitality 32, Spell Speed 31, Piety 22 and Direct Hit 6 (**verified**: exactly one database row has all five values; two other item level 130 head pieces carry the same numbers on different substats). Head share $p = 85$. Table values at row 130: main stat 385, Vitality 414, substats 363.
 
 | Stat | Budget | $\times\,85/1000$ | Round | Share | Round | Game file |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -131,7 +131,7 @@ This is a real healer head piece at item level 130. In the game files it has Min
 | Piety (rank 2) | 363 | 30.855 | 31 | 70% = 21.7 | 22 | 22 |
 | Direct Hit (rank 3) | 363 | 30.855 | 31 | 20% = 6.2 | 6 | 6 |
 
-Every value matches the item. The Vitality line also shows the half-up rule at work: 31.5 rounds to 32.
+Every value matches the real piece. The Vitality line also shows the half-up rule at work: 31.5 rounds to 32.
 
 ## 5. Item level sync
 
@@ -155,7 +155,7 @@ $$
 
 Pieces at or below the cap are untouched. Above the cap, each stat is cut down to the cap value. Stats that are already below the cap stay as they are.
 
-![Bar chart of the Dreadwyrm Hood of Healing synced to item level 123. Mind is clamped from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety 22 and Direct Hit 6 are below the cap of 29 and are kept.](diagrams/math-clamp.svg)
+![Bar chart of the item level 130 healer head piece from the worked example synced to item level 123. Mind is clamped from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety 22 and Direct Hit 6 are below the cap of 29 and are kept.](diagrams/math-clamp.svg)
 
 ### Caps at item level 123
 
@@ -170,9 +170,11 @@ Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375.
 | One-handed weapon (Paladin) | 35 | 36 | 38 | – |
 | Shield (Paladin) | 14 | 14 | 15 | – |
 
-On the Dreadwyrm hood, cap 123 changes Mind from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety (22) and Direct Hit (6) stay as they are.
+On the worked example piece, cap 123 changes Mind from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety (22) and Direct Hit (6) stay as they are.
 
 For jobs with no special substat (melee, Dexterity and caster DPS), Piety or Tenacity on a piece is ignored, so its cap is 0.
+
+These caps are computed, not read off real gear: the game has no gear at item level 123 (the items jump from 120 to 125). A unit test derives every slot's cap from budget row 123 and the slot shares without calling the code, and checks the same rule against every real piece at item level 120 and 125 ([validation.md, section 3](validation.md#the-caps-at-item-level-123)).
 
 ### Check against published caps
 
@@ -253,9 +255,10 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Item level indexes the `ItemLevel` budget table | Verified | Game table; reproduces real items |
 | Slot shares 140/100/40/85/135/67 | Verified | `BaseParam.csv`, all 12 stats |
 | Two roundings, half up | Verified | 98.7% exact vs 79.1% with one rounding |
-| Vitality × 0.9 for Intelligence/Mind jobs | Verified | Reproduces real items (e.g. Dreadwyrm hood, Antiquated Atlas) |
+| Vitality × 0.9 for Intelligence/Mind jobs | Verified | Reproduces real items (e.g. the worked example piece, Antiquated Atlas) |
 | Substat shares 100% / 70% / 20% by rank | Inferred (measured pattern) | 97.1–99.6% exact per item level band ([validation.md](validation.md)); not in game files |
 | Sync clamps each stat to the full-share same-slot value at the cap | Verified for substats | Wiki caps at 475, 5 of 5 |
+| Caps at 123 (29 / 47 / 23 / 48; main stat 30 / 48 / 24 / 50) | Derived | No gear exists at item level 123; row 123 × slot share, the same rule real pieces at 120 and 125 follow in every slot |
 | Same clamp applies to main stat and Vitality | Inferred | No in-game capture |
 | Lower-ranked substats clamp against the full-share cap | Inferred | Consistent with Wiki's single cap per slot; no capture |
 | Melds ignored, no scaling up under sync | Assumed | – |

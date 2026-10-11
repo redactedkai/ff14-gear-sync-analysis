@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-11
 - **Commit audited:** `ee59287` (branch `alpine-migration`), checked out as a detached, read-only worktree so that doc edits happening in the main tree at the same time could not affect it.
-- **Method:** I read every source, script, test and doc file. I ran the full check, regenerated the data from the local CSVs (datamining `d9582a6`), and wrote throwaway Node and Python probes in a temp directory, none of them in the repo. The probes covered: the store and saved state driven from Node; an optimizer fuzz against my own brute force; timings; and generator runs on edited fixtures. Accessibility and CI were out of scope. I wrote down my findings before reading `docs/audit.md`, then used it only to label them. One disclosure: while grepping for `setJob` before that point, I saw the one-line F2 row of the table. I had already reproduced A1 with a probe by then.
+- **Method:** I read every source, script, test and doc file. I ran the full check, regenerated the data from the local CSVs (datamining `d9582a6`), and wrote throwaway Node and Python probes in a temp directory, none of them in the repo. The probes covered: the store and saved state driven from Node; an optimizer fuzz against my own brute force; timings; and generator runs on edited fixtures. Accessibility and CI were out of scope.
 - **Command results** (in the snapshot, after `npm ci`):
 
 | Command | Result |
@@ -18,26 +18,26 @@
 
 ## Summary
 
-| ID | Finding | Severity | Area | Status vs `docs/audit.md` | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| A1 | Switching jobs within a role keeps gear the new job can't wear, and the optimizer picks it | High | Correctness | tracked as F2 (rated Medium there; worse than F2 describes) | MNK→DRG: 6 of the 11 recommended pieces can't be worn by DRG |
-| A2 | Hand-entered pieces with item level blank, 0 or 796–920 are accepted, then silently deleted on reload | Medium | Correctness / state | new (side effect of the F4 fix) | Added at ilvl 0, 0, 850, 920 → after restore: `[]` |
-| A3 | GCD tier text is wrong above 1,200 gear speed | Medium | Correctness | new | Lv100 unsynced, 1839 SpS: "tier starts at 1134" (real: 1818, next 1904) |
-| A4 | Pure view builders can't be loaded in Node, so none of the page's computed output is unit-tested | Medium | Testing / architecture | new | Importing `ui/components/*.js` throws `MutationObserver is not defined` |
-| A5 | Optimizer errors are not caught in the UI; the old result stays on screen | Low | Correctness / UI | F3 marked resolved, but its new error path is unhandled in the UI | `makeScorer` throws; `optimizerView` and `debouncedEffect` have no try/catch |
-| A6 | Average item level is coloured good/bad against the sync cap, not the requirement the user set | Low | Correctness / UI | new (documented in `optimizer.md` §8) | `avgOk: res.avgIlvl >= app.cap` |
-| A7 | Ceiling table can be truncated without saying so | Low | Correctness / UI | new (documented in `optimizer.md` §8) | `ceilingView` ignores `r.truncated` |
-| A8 | Gear that occupies two slots is treated as one slot | Low | Data / model | new | 2 items: Vermilion Cloak of Casting/Healing (Body, blocks Head); BaseParam `ChestHeadPercent` = 220 |
-| A9 | Duplicate substat choices are allowed in Piece lab and in hand-entry "Fill" | Low | UI | new | `setSub` stores without a check; `fill()` with s1 = s2 overwrites the 100% value with the 70% one |
-| A10 | Sync caps view uses the Critical Hit column for every substat, but Piety/Tenacity differ at 6 rows | Low | Correctness (display) | new | Cap 540, ring: Piety cap 102, shown 101 |
-| A11 | Role change empties the pool with no warning or undo | Low | UX / data loss | new (behaviour is intended) | `resetForJob` sets `s.pool = []` |
-| A12 | Weak or self-referential test expectations in a few places | Low | Testing | new | Lv100 test asserts 2.49 twice; Dreadwyrm-129 test's expected value comes from `capsFor` |
-| A13 | Smoke test gaps: reload persistence, same-role job switch with a pool, hand entry, generator | Low | Testing | new (F12 resolved what it set out to do) | `tests/e2e/smoke.py` has no reload and no `#b-add` / `#b-gen` |
-| A14 | Generators don't fail when a job column is renamed or missing; BaseParam is fetched but never checked | Low | Data pipeline | new (BaseParam part documented in `data-pipeline.md`) | Fixture with `SGE`→`SAGE`: exit 0, 0 rows with the SGE bit |
-| A15 | Stale or wrong statements in docs and comments | Low | Documentation | related to F15 (partly resolved) | README `check` row; `findings.md` "tests/core.test.js"; `regen.py` "fetch_data.py"; `data-pipeline.md` "no external references" |
-| A16 | Page loads Google Fonts: one third-party request from a "self-contained" `file://` page | Low | Security / privacy | new | `dist/index.html` has one `https://fonts.googleapis.com/css2` link |
+Resolution columns updated 2026-10-11 after fixes on `alpine-migration` (✅ fixed and tested, ❌ open, ➡️ merged into another finding). The rest of this report describes commit `ee59287` as audited.
 
-I found no finding marked resolved in `docs/audit.md` that has come back. Partial cases: F3's new error is unhandled in the UI (A5). F15 is still partly open: new docs exist, but some older references are stale (A15).
+| ID | Finding | Severity | Area | Evidence | Resolved? | Resolution |
+| --- | --- | --- | --- | --- | :---: | --- |
+| A1 | Job changes handle the pool crudely: within a role, gear the new job can't wear is kept and the optimizer picks it; across roles, the whole pool is deleted with no undo (merged with A11) | High | Correctness | MNK→DRG: 6 of the 11 recommended pieces can't be worn by DRG | ✅ | Fixed (owner's choice): switching to any other job clears the pool and job-specific settings, after a warning with Switch and clear / Cancel when the pool is not empty. Tested in `tests/unit/store.test.js` and the smoke test |
+| A2 | Hand-entered pieces with item level blank, 0 or 796–920 are accepted, then silently deleted on reload | Medium | Correctness / state | Added at ilvl 0, 0, 850, 920 → after restore: `[]` | ✅ | Resolved by removing the feature: the Advanced section (hypothetical and hand-entered pieces) is gone; old saves drop such pieces on reload |
+| A3 | GCD tier text is wrong above 1,200 gear speed | Medium | Correctness | Lv100 unsynced, 1839 SpS: "tier starts at 1134" (real: 1818, next 1904) | ✅ | Fixed: current and next tier computed by binary search at any speed (`gcdTierAt`); tested at level 100 / 1,839 and against a step-by-step scan at all levels |
+| A4 | Pure view builders can't be loaded in Node, so none of the page's computed output is unit-tested | Medium | Testing / architecture | Importing `ui/components/*.js` throws `MutationObserver is not defined` | ✅ | Fixed: view builders moved to `src/ui/views/` (no Alpine import); `tests/unit/views.test.js` covers every tab |
+| A5 | Optimizer errors are not caught in the UI; the old result stays on screen | Low | Correctness / UI | `makeScorer` throws; `optimizerView` and `debouncedEffect` have no try/catch | ✅ | Fixed: optimizer and ceiling views catch errors and show them (hand entry, the only way to reach the error, has since been removed) |
+| A6 | Average item level is coloured good/bad against the sync cap, not the requirement the user set | Low | Correctness / UI | `avgOk: res.avgIlvl >= app.cap` | ✅ | Fixed: coloured against the user's requirement, uncoloured when it is off; the requirement is shown next to the value |
+| A7 | Ceiling table can be truncated without saying so | Low | Correctness / UI | `ceilingView` ignores `r.truncated` | ✅ | Fixed: truncated ceiling cells show "≥ value" with a footnote; tested on the 191,023-node NIN case |
+| A8 | Gear that occupies two slots is treated as one slot | Low | Data / model | 2 items: Vermilion Cloak of Casting/Healing (Body, blocks Head); BaseParam `ChestHeadPercent` = 220 | ✅ | Fixed: multi-slot gear is left out by the generator and listed when regenerating (2 Vermilion Cloaks); generator test added |
+| A9 | Duplicate substat choices are allowed in Piece lab (hand-entry "Fill" has since been removed) | Low | UI | `setSub` stores without a check; `fill()` with s1 = s2 overwrites the 100% value with the 70% one | ✅ | Fixed: choosing a substat already used in another Piece lab rank swaps the two, so none repeats (`withSub`, `tests/unit/piece-subs.test.js`); the hand-entry half went away with the Advanced section |
+| A10 | Sync caps view uses the Critical Hit column for every substat, but Piety/Tenacity differ at 6 rows | Low | Correctness (display) | Cap 540, ring: Piety cap 102, shown 101 | ✅ | Fixed: the view adds a Piety/Tenacity cap column (and uses the larger total in the readout) only when that cap differs; tested in `sync-caps-view.test.js` |
+| A11 | Role change empties the pool with no warning or undo (merged into A1) | Low | UX / data loss | `resetForJob` sets `s.pool = []` | ✅ | Fixed with A1: the pool is never cleared without a warning |
+| A12 | Weak or self-referential test expectations in a few places | Low | Testing | Lv100 test asserts 2.49 twice; the item level 129 real-item test's expected value comes from `capsFor` | ✅ | Fixed: speed tests assert AkhMorning's published tier tables at levels 50, 90 and 100 (level-50 thresholds now sourced); sync caps derived in the test from `ItemLevel` rows and the 85 ‰ share; the oracle's two policies documented and tested directly |
+| A13 | Smoke test gaps: reload persistence, same-role job switch with a pool, hand entry, generator | Low | Testing | `tests/e2e/smoke.py` has no reload and no `#b-add` / `#b-gen` | ✅ | Fixed: smoke test now checks reload persistence (every setting, pool, copies, open tab, optimizer total), copies editing changing the optimizer total, and corrupted saved state loading as defaults; same-role switch and multi-job optimizer were already covered, hand entry and the generator were removed |
+| A14 | Generators don't fail when a job column is renamed or missing; BaseParam is fetched but never checked | Low | Data pipeline | Fixture with `SGE`→`SAGE`: exit 0, 0 rows with the SGE bit | ✅ | Fixed: generators check every column they read and exit 1 naming sheet and column; slot shares moved to `item-format.json` and checked against BaseParam; drift and per-job coverage tests added |
+| A15 | Stale or wrong statements in docs and comments | Low | Documentation | README `check` row; `findings.md` "tests/core.test.js"; `regen.py` "fetch_data.py"; `data-pipeline.md` "no external references" | ✅ | Fixed: README, CLAUDE.md, regen.py and data-pipeline.md corrected; findings.md replaced by the new docs |
+| A16 | Page loads Google Fonts: one third-party request from a "self-contained" `file://` page | Low | Security / privacy | `dist/index.html` has one `https://fonts.googleapis.com/css2` link | ✅ | Resolved by owner decision: Google Fonts stays as an intentional exception, documented in README, CLAUDE.md, architecture.md and data-pipeline.md; the page still works offline |
 
 ## Detailed findings
 
@@ -54,7 +54,7 @@ NIN->BRD: 15 of 23 not wearable; picks: weapon Knives + head/body/hands/legs/fee
 WAR->GNB: 5 of 23 not wearable; picks: weapon War Axe
 ```
 
-**Impact:** F2 describes this as a weapon problem. For the Strength-melee and Dexterity profiles it is much larger. MNK/SAM wear Striking armor and DRG/RPR wear Maiming; NIN/VPR wear Scouting and BRD/MCH/DNC wear Aiming. In those cases most of the "best loadout" can't be equipped. Saved pools are also never checked against the restored job.
+**Impact:** It is not only a weapon problem. For the Strength-melee and Dexterity profiles it is much larger. MNK/SAM wear Striking armor and DRG/RPR wear Maiming; NIN/VPR wear Scouting and BRD/MCH/DNC wear Aiming. In those cases most of the "best loadout" can't be equipped. Saved pools are also never checked against the restored job.
 
 **Recommendation:** Store `mask` on `game` pool items, persist it, and repair it in `restoreState` for old saves by looking the item up by name. Then either filter non-wearable items out of the optimizer input (and show them dimmed in the pool), or reset the pool on every job change. Filtering keeps the user's work and also fixes restored pools. Add a unit test: MNK→DRG, then no pick lacks the DRG bit.
 
@@ -101,7 +101,7 @@ At level 100 the last tier the scan finds is 1134 (2.36 s), so any build above i
 
 ### A5. Low: optimizer exceptions are swallowed and the stale result stays
 
-**Where:** `src/core/optimizer/candidates.js:39-41` throws when a score could exceed 2^53 (the F3 fix). `src/ui/components/optimizer.js:110-111` and `src/ui/helpers.js:36-41` run it in a `setTimeout` with no try/catch.
+**Where:** `src/core/optimizer/candidates.js:39-41` throws when a score could exceed 2^53 (added to keep scores exact). `src/ui/components/optimizer.js:110-111` and `src/ui/helpers.js:36-41` run it in a `setTimeout` with no try/catch.
 
 **Evidence:** The unit test `a pool too large to score exactly throws` confirms the throw (stats around 1e6 with two tiebreaks). It is reachable from hand entry, which has no upper bound on stats. In the UI the exception escapes the timer, and `this.view` keeps the previous pool's loadout.
 
@@ -149,7 +149,9 @@ At level 100 the last tier the scan finds is 1134 (2.36 s), so any build above i
 
 **Recommendation:** Label the column "Critical Hit / Determination / Direct Hit / speed cap", or add a spec column for tanks and healers.
 
-### A11. Low: role change clears the pool with no undo
+### A11. Low: role change clears the pool with no undo (merged into A1)
+
+This has the same cause as A1, so it is tracked and fixed there: pool items keep only stats already mapped to the current job, so a job change can either keep them all (A1) or delete them all (this finding).
 
 **Where:** `src/ui/state.js:46`. Persisted 150 ms later by `src/main.js:31-36`.
 
@@ -163,6 +165,8 @@ At level 100 the last tier the scan finds is 1134 (2.36 s), so any build above i
 - The level-50 tier thresholds have no recorded source (`math.md` §6 says so).
 - `tests/unit/sync.test.js:37-41` computes the expected values with `capsFor`, the function under test. It only checks that `syncStats` equals `min(stat, capsFor)`.
 - The optimizer exhaustive oracle copies two engine policies ("single ring only when no pair exists", "a slot is never left empty to satisfy a maximum"). That is fine, but the tests then confirm those policies rather than question them. I checked the engine independently: 3,000 random pools over SGE/PLD/BLM with random sync, tiebreaks, minimums, maximums and average item level gave 0 mismatches against my own brute force.
+
+**Resolution:** `tests/unit/speed.test.js` now asserts tier starts (and the value one below each) plus DoT scalars read from AkhMorning's published tier tables (https://www.akhmorning.com/allagan-studies/stats/speed/, "2.5s Tiers" at levels 50, 90 and 100, read 2026-10-11): level 100 22 / 107 / 193 / 1,219 / 1,818 / 1,904 / 2,845, level 90 15 / 74 / 834 / 1,594, level 50 3 / 14 / 150 / 202 / 286 / 297 / 307 / 349. The level-50 thresholds match AkhMorning row for row, so they are external truth now, as is the views test's 1,818 / 1,904. `tests/unit/sync.test.js` no longer takes expected values from `capsFor`: the head caps at 123 and 129 are derived in the test from the raw `ItemLevel` rows and the 85 ‰ head share. The brute-force helper documents the two policies it copies, `docs/optimizer.md` section 2 and `docs/testing.md` section 2.1 state them, and two "policy:" tests in `optimizer-exhaustive.test.js` pin them on hand-made pools. Still regression values: the caps at 123 in the formula, views and smoke tests, and the 296 generic maximum (no published source for either).
 
 ### A13. Low: smoke test gaps
 
@@ -181,6 +185,8 @@ The smoke test is solid for what it covers, but it never:
 **Evidence:** I copied the fixtures and renamed the `SGE` column to `SAGE`. The generator exited 0 with 21 rows, and 0 of them had the SGE bit. The same applies if a patch renames a column. BaseParam is fetched but not read, so a change to slot shares would also go unnoticed (`data-pipeline.md` §1 already says this).
 
 **Recommendation:** Assert that every job in `item-format.json` is a column of `ClassJobCategory.csv`, and that every stat column exists in `ItemLevel.csv`. Read the 12 BaseParam rows and assert they equal `BASE_SLOT_PCT` (or generate them). Also add a unit test that every job has at least one item per active slot type.
+
+**Resolution:** `read_csv` in `scripts/data/item_format.py` takes the required columns and raises `SchemaError` naming the sheet and every missing column. Both generators pass the columns they read (jobs, `ItemLevel` stat columns, `EquipSlotCategory` slot columns plus `MainHand`/`OffHand`, the `Item` columns, `ParamGrow`) and exit with status 1 and a one-line message without writing a file. `gen_items.py` also fails when a job ends up with no item. The slot shares now live in `src/core/item-format.json` (`percent` and `baseParamColumn` per slot); `constants.js` derives `WEAPON_PCT`, `BASE_SLOT_PCT` and `DB_SLOT_PCT` from it, and `gen_item_level.py` checks all 12 stats' `BaseParam` rows against it (all match today). Tests: `SchemaDriftTest` in `tests/data/test_generators.py` (new `BaseParam.csv` fixture), and in `tests/unit/data-format.test.js` slot shares equal the format file and every job has an item for each active slot (Blue Mage weapons are a listed exception: they carry no stats in `Item.csv`). Regenerated data is byte-identical.
 
 ### A15. Low: stale or wrong statements
 

@@ -44,7 +44,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Piety.** The healers' special substat: faster mana regeneration. Healers only.
 
-**Pool.** The set of items the user has chosen as candidates for the optimizer: real gear from the item database, generated hypothetical pieces, or hand-entered ones.
+**Pool.** The set of items the user has chosen as candidates for the optimizer: real gear from the item database.
 
 **Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into both generated data files and shown in the page footer. See [data-pipeline.md, section 6](data-pipeline.md#6-provenance).
 
@@ -58,7 +58,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Substat.** Any stat other than the main stat and Vitality: Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety. A piece carries two or three substats.
 
-**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second, 20% for a third. This is a pattern measured on real items, not a value stored in the game files; it reproduces 97.1% to 99.6% of real pieces exactly, depending on the item level band. Only the hypothetical-piece tools depend on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
+**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second, 20% for a third. This is a pattern measured on real items, not a value stored in the game files; it reproduces 97.1% to 99.6% of real pieces exactly, depending on the item level band. Only the Piece lab depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
 
 **Tenacity.** The tanks' special substat: more damage dealt and less damage taken. Tanks only.
 

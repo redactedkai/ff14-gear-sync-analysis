@@ -8,7 +8,7 @@ Item Level Stat Lab is a single-page calculator for Final Fantasy XIV. Given a j
 2. The model: [math.md](math.md), then [validation.md](validation.md) for how well it matches real data.
 3. The gear search: [optimizer.md](optimizer.md).
 4. Working on the code: [architecture.md](architecture.md), [testing.md](testing.md), [data-pipeline.md](data-pipeline.md).
-5. Planning: [roadmap.md](roadmap.md), [history.md](history.md), and the audits.
+5. Planning: [roadmap.md](roadmap.md), [history.md](history.md), and the engineering audit.
 
 ## Pages
 
@@ -23,6 +23,5 @@ Item Level Stat Lab is a single-page calculator for Final Fantasy XIV. Given a j
 | [glossary.md](glossary.md) | FFXIV and project terms, with links to the page that explains each |
 | [roadmap.md](roadmap.md) | Ideas not yet built |
 | [history.md](history.md) | Claims and results that were corrected, and how the mistakes were found |
-| [audit.md](audit.md) | Engineering audit (findings F1 to F15) with a status table |
-| [audit-2.md](audit-2.md) | Independent follow-up audit |
+| [audit-2.md](audit-2.md) | Engineering audit, with a status table of what is resolved |
 | [diagrams/STYLE.md](diagrams/STYLE.md) | Style guide for these pages and their diagrams |

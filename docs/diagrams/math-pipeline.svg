@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 580" role="img" aria-label="Pipeline from item level to synced stat, with the Dreadwyrm Hood of Healing as an example">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 580" role="img" aria-label="Pipeline from item level to synced stat, with an item level 130 healer head piece (Spell Speed, Piety, Direct Hit) as an example">
 <style>
   .bg { fill: #fffdf7; }
   .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -50,7 +50,7 @@
 </defs>
 <rect class="bg" x="0" y="0" width="720" height="580"/>
 <text class="title fg" x="20" y="30">From item level to synced stat</text>
-<text class="small muted" x="20" y="52">Example: Dreadwyrm Hood of Healing (item level 130, head), synced to item level 123</text>
+<text class="small muted" x="20" y="52">Example: healer head piece, item level 130, synced to item level 123</text>
 <text class="fg" x="495" y="80" text-anchor="middle" font-weight="600">Spell Speed</text>
 <text class="fg" x="630" y="80" text-anchor="middle" font-weight="600">Piety</text>
 <rect class="box" x="20" y="92" width="330" height="50" rx="8"/>
