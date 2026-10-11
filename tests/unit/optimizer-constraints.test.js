@@ -3,78 +3,81 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { browseItems, poolItemFromRow } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
 const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');
 const NOSYNC = { cap: 123, sync: false };
 
-/* Warrior Dreadwyrm pool: one weapon and one piece per armor slot, but Fending/Slaying choices for each
-   accessory slot. Both rings are distinct Unique items, so both are worn. 8 combinations in all. */
-const dw = browseItems(war, { q: 'Dreadwyrm', lvlMax: 50 }).map(r => poolItemFromRow(war, r));
+/* Warrior real gear: every item a Warrior can equip at item level 130-135, equip level 50 or below. Six weapons
+   (two at 135), two pieces per armor slot and four per accessory slot, all item level 130; four rings, two of
+   them Unique. About 98,000 loadouts, so exhaustive() checks every answer. */
+const pool = gamePool(war, { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 });
+const brute = (target, constraints) => exhaustive(war, pool, NOSYNC, { target, ...constraints });
 
-/* Independent check: enumerate every ear/neck/wrist combination. */
-function bruteForce(target, mins = {}, maxs = {}) {
-  const fixed = dw.filter(i => !['ear', 'neck', 'wrist'].includes(i.type));
-  const of = t => dw.filter(i => i.type === t);
-  let best = null;
-  for (const e of of('ear'))
-    for (const n of of('neck'))
-      for (const w of of('wrist')) {
-        const tot = {};
-        for (const s of war.stats) tot[s] = [...fixed, e, n, w].reduce((a, i) => a + i.stats[s], 0);
-        if (Object.entries(mins).some(([s, m]) => tot[s] < m)) continue;
-        if (Object.entries(maxs).some(([s, m]) => tot[s] > m)) continue;
-        if (!best || tot[target] > best[target]) best = tot;
-      }
-  return best;
-}
-
-test('pool sanity: 14 Warrior Dreadwyrm pieces (level 50)', () => {
-  assert.equal(dw.length, 14);
+test('pool sanity: Warrior item level 130-135 gear', () => {
+  const of = t => pool.filter(i => i.type === t);
+  assert.ok(of('weapon').length >= 2);
+  assert.equal(Math.max(...of('weapon').map(i => i.ilvl)), 135);
+  for (const t of ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']) {
+    assert.ok(of(t).length >= 2, t);
+    assert.ok(
+      of(t).every(i => i.ilvl === 130),
+      t,
+    );
+  }
+  assert.ok(of('ring').some(i => i.copies === 1) && of('ring').some(i => i.copies === 2));
+  assert.ok(loadoutCount(war, pool) <= 200000);
 });
 
 test('unconstrained result matches brute force', () => {
-  const r = optimize(war, dw, NOSYNC, { target: 'spd' });
+  const r = optimize(war, pool, NOSYNC, { target: 'spd' });
   assert.ok(r.ok);
-  assert.equal(r.totals.spd, bruteForce('spd').spd);
+  assert.deepEqual([r.totals.spd], brute('spd'));
 });
 
 test('mins are honoured and change the answer when binding', () => {
-  const free = optimize(war, dw, NOSYNC, { target: 'spd' });
-  const need = free.totals.spec + 10;
-  const r = optimize(war, dw, NOSYNC, { target: 'spd', mins: { spec: need } });
+  const free = optimize(war, pool, NOSYNC, { target: 'spec' });
+  const need = free.totals.det + 10;
+  const r = optimize(war, pool, NOSYNC, { target: 'spec', mins: { det: need } });
   assert.ok(r.ok);
-  assert.ok(r.totals.spec >= need);
-  assert.equal(r.totals.spd, bruteForce('spd', { spec: need }).spd);
-  assert.ok(r.totals.spd < free.totals.spd);
+  assert.ok(r.totals.det >= need);
+  assert.deepEqual([r.totals.spec], brute('spec', { mins: { det: need } }));
+  assert.ok(r.totals.spec < free.totals.spec);
 });
 
 test('infeasible mins -> ok:false', () => {
-  const r = optimize(war, dw, NOSYNC, { target: 'spd', mins: { spec: 500 } });
+  assert.equal(brute('spd', { mins: { spec: 500 } }), null);
+  const r = optimize(war, pool, NOSYNC, { target: 'spd', mins: { spec: 500 } });
   assert.equal(r.ok, false);
   assert.equal(r.truncated, false);
 });
 
 test('maxs are honoured', () => {
-  const free = optimize(war, dw, NOSYNC, { target: 'spec' });
+  const free = optimize(war, pool, NOSYNC, { target: 'spec' });
   const cap = free.totals.dh - 1;
-  const r = optimize(war, dw, NOSYNC, { target: 'spec', maxs: { dh: cap } });
+  const r = optimize(war, pool, NOSYNC, { target: 'spec', maxs: { dh: cap } });
   assert.ok(r.ok);
   assert.ok(r.totals.dh <= cap);
-  assert.equal(r.totals.spec, bruteForce('spec', {}, { dh: cap }).spec);
+  assert.deepEqual([r.totals.spec], brute('spec', { maxs: { dh: cap } }));
+  assert.ok(r.totals.spec < free.totals.spec);
 });
 
 test('infeasible maxs -> ok:false', () => {
-  assert.equal(optimize(war, dw, NOSYNC, { target: 'spd', maxs: { spec: 10 } }).ok, false);
+  // every piece carries Vitality, so no loadout stays under 400
+  assert.equal(brute('spd', { maxs: { vit: 400 } }), null);
+  assert.equal(optimize(war, pool, NOSYNC, { target: 'spd', maxs: { vit: 400 } }).ok, false);
 });
 
 test('average item level requirement: met at 130, infeasible at 131', () => {
-  // weapon 135 counts twice, ten other pieces at 130: (2*135 + 10*130) / 12 = 130.83
-  const ok = optimize(war, dw, NOSYNC, { target: 'spd', minAvgIlvl: 130 });
+  // best is a 135 weapon (counts twice) and ten other pieces at 130: (2*135 + 10*130) / 12 = 130.83
+  const ok = optimize(war, pool, NOSYNC, { target: 'spd', minAvgIlvl: 130 });
   assert.ok(ok.ok);
   assert.equal(ok.denom, 12);
   assert.ok(Math.abs(ok.avgIlvl - 1570 / 12) < 1e-9);
-  assert.equal(optimize(war, dw, NOSYNC, { target: 'spd', minAvgIlvl: 131 }).ok, false);
+  assert.deepEqual([ok.totals.spd], brute('spd', { minAvgIlvl: 130 }));
+  assert.equal(brute('spd', { minAvgIlvl: 131 }), null);
+  assert.equal(optimize(war, pool, NOSYNC, { target: 'spd', minAvgIlvl: 131 }).ok, false);
 });
 
 test('nodeLimit: a large pool with a tiny limit reports truncation', () => {

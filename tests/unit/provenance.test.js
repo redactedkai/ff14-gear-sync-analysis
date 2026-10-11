@@ -1,4 +1,4 @@
-/* The committed game data records which xivapi/ffxiv-datamining commit it was generated from (audit F14). */
+/* The committed game data records which xivapi/ffxiv-datamining commit it was generated from. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

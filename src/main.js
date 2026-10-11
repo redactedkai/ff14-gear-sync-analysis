@@ -10,7 +10,6 @@ import { syncCaps } from './ui/components/sync-caps.js';
 import { validationPanel } from './ui/components/validation-panel.js';
 import { browser } from './ui/components/browser.js';
 import { pool } from './ui/components/pool.js';
-import { generator, handEntry } from './ui/components/advanced.js';
 import { optimizer, ceiling } from './ui/components/optimizer.js';
 
 const SAVE_DEBOUNCE_MS = 150;
@@ -21,11 +20,9 @@ const app = Alpine.store('app');
 /* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only */
 Alpine.magic('num', () => (path, lo, hi) => storeNumberField(app, path, lo, hi));
 
-Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, browser, pool, generator, handEntry, optimizer, ceiling }).forEach(
-  ([name, factory]) => {
-    Alpine.data(name, factory);
-  },
-);
+Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, browser, pool, optimizer, ceiling }).forEach(([name, factory]) => {
+  Alpine.data(name, factory);
+});
 
 /* Save whenever any persisted field changes (serializing reads, and so tracks, all of them). */
 let saveTimer = null;

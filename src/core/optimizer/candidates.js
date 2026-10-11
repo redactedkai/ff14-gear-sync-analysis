@@ -12,7 +12,7 @@ export function effStats(job, item, sync) {
 
 /* Lexicographic score [target, tiebreak 1, tiebreak 2] packed into one number, so the search can add and
    bound it like any sum. Fixed weights (1e8 / 1e4 / 1) are only lexicographic while tiebreak totals stay below
-   10,000 (docs/audit.md F3), so the weights are derived from the pool instead: with R2 = the range a loadout's
+   10,000 (docs/history.md), so the weights are derived from the pool instead: with R2 = the range a loadout's
    tiebreak-2 total can span (sum over slots of max - min, 0 included for an empty slot) and R1 likewise,
    W2 = 1, W1 = R2 + 1, W0 = R1 * W1 + R2 + 1. Then a tiebreak difference can never outweigh one unit of a
    higher key, for any totals. Stats are integers, so the scores are exact while they stay within
@@ -72,7 +72,7 @@ function itemVector(job, item, sync) {
    B can be dropped only when the items that beat it have enough copies between them to fill every slot of
    this type (`slotsOfType`: 1, or 2 for rings). Then any loadout using B can swap it for one of them without
    losing anything. For rings, a single better Unique ring is not enough: the best pair may be that ring plus B
-   (docs/audit.md F1). Dropped items' own beaters also beat B, so the kept set always has enough copies. */
+   (docs/history.md). Dropped items' own beaters also beat B, so the kept set always has enough copies. */
 function pruneDominated(arr, dims, slotsOfType) {
   const keep = [];
   for (let i = 0; i < arr.length; i++) {

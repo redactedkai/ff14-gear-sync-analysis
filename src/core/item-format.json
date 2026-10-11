@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.js: re-run `npm run regen` afterwards.",
+  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.js: re-run `npm run regen` afterwards. Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv.",
   "jobs": [
     "PLD",
     "WAR",
@@ -39,17 +39,31 @@
     { "key": "sps", "baseParam": 46, "itemLevelColumn": "SpellSpeed" }
   ],
   "slots": [
-    { "code": 0, "type": "weapon", "equipSlotColumn": "MainHand", "twoHanded": true },
-    { "code": 1, "type": "weapon", "equipSlotColumn": "MainHand", "twoHanded": false },
-    { "code": 2, "type": "offhand", "equipSlotColumn": "OffHand" },
-    { "code": 3, "type": "head", "equipSlotColumn": "Head" },
-    { "code": 4, "type": "body", "equipSlotColumn": "Body" },
-    { "code": 5, "type": "hands", "equipSlotColumn": "Gloves" },
-    { "code": 6, "type": "legs", "equipSlotColumn": "Legs" },
-    { "code": 7, "type": "feet", "equipSlotColumn": "Feet" },
-    { "code": 8, "type": "ear", "equipSlotColumn": "Ears" },
-    { "code": 9, "type": "neck", "equipSlotColumn": "Neck" },
-    { "code": 10, "type": "wrist", "equipSlotColumn": "Wrists" },
-    { "code": 11, "type": "ring", "equipSlotColumn": "FingerL" }
+    {
+      "code": 0,
+      "type": "weapon",
+      "equipSlotColumn": "MainHand",
+      "twoHanded": true,
+      "percent": 140,
+      "baseParamColumn": "TwoHandWeaponPercent"
+    },
+    {
+      "code": 1,
+      "type": "weapon",
+      "equipSlotColumn": "MainHand",
+      "twoHanded": false,
+      "percent": 100,
+      "baseParamColumn": "OneHandWeaponPercent"
+    },
+    { "code": 2, "type": "offhand", "equipSlotColumn": "OffHand", "percent": 40, "baseParamColumn": "OffHandPercent" },
+    { "code": 3, "type": "head", "equipSlotColumn": "Head", "percent": 85, "baseParamColumn": "HeadPercent" },
+    { "code": 4, "type": "body", "equipSlotColumn": "Body", "percent": 135, "baseParamColumn": "ChestPercent" },
+    { "code": 5, "type": "hands", "equipSlotColumn": "Gloves", "percent": 85, "baseParamColumn": "HandsPercent" },
+    { "code": 6, "type": "legs", "equipSlotColumn": "Legs", "percent": 135, "baseParamColumn": "LegsPercent" },
+    { "code": 7, "type": "feet", "equipSlotColumn": "Feet", "percent": 85, "baseParamColumn": "FeetPercent" },
+    { "code": 8, "type": "ear", "equipSlotColumn": "Ears", "percent": 67, "baseParamColumn": "EarringPercent" },
+    { "code": 9, "type": "neck", "equipSlotColumn": "Neck", "percent": 67, "baseParamColumn": "NecklacePercent" },
+    { "code": 10, "type": "wrist", "equipSlotColumn": "Wrists", "percent": 67, "baseParamColumn": "BraceletPercent" },
+    { "code": 11, "type": "ring", "equipSlotColumn": "FingerL", "percent": 67, "baseParamColumn": "RingPercent" }
   ]
 }

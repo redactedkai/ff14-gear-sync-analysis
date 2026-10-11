@@ -36,14 +36,13 @@ function validSave() {
     mathTab: 'sync',
     syncIlvl: 400,
     piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'det', 'spec'] },
-    gen: { ilvl: 200, third: false, subs: ['spd', 'det'], types: ['head', 'ring'] },
-    browse: { q: 'Dreadwyrm', type: 'body', min: 110, max: 140, lvl: 50, sort: 'spd' },
+    browse: { q: 'Robe', type: 'body', min: 110, max: 140, lvl: 50, sort: 'spd' },
     opt: { target: 'spec', tb: '', tb2: 'crit', avg: false, avgMin: 130 },
-    poolFilter: 'generated',
+    poolFilter: 'ring',
     pool: [
       item(),
-      item({ id: 'i2', name: 'Gen head', type: 'head', ilvl: 135, stats: stats({ main: 30, spd: 29 }), copies: 2, src: 'generated' }),
-      item({ id: 'i3', name: 'My body', type: 'body', ilvl: 125, stats: stats({ main: 47.5 }), copies: 1, src: 'custom' }),
+      item({ id: 'i2', name: 'Some head', type: 'head', ilvl: 135, stats: stats({ main: 30, spd: 29 }), copies: 1 }),
+      item({ id: 'i3', name: 'Some body', type: 'body', ilvl: 125, stats: stats({ main: 47.5 }), copies: 2 }),
     ],
   };
 }
@@ -142,18 +141,6 @@ test('piece fields', () => {
   expectFieldDefault('piece.subs', [1, 'det'], [ds[0], 'det', null]);
 });
 
-test('gen fields', () => {
-  const job = makeJobContext('WHM');
-  expectFieldDefault('gen.ilvl', '475', 475);
-  expectFieldDefault('gen.third', 'yes', true); // healer default
-  expectFieldDefault('gen.subs', 'crit', job.substats.slice());
-  expectFieldDefault('gen.subs', ['crit'], job.substats.slice());
-  expectFieldDefault('gen.subs', ['crit', 'nope', 'crit', 'det'], ['crit', 'det']);
-  expectFieldDefault('gen.types', 'head', job.activeSlotTypes.slice());
-  expectFieldDefault('gen.types', [], job.activeSlotTypes.slice());
-  expectFieldDefault('gen.types', ['head', 'offhand', 7], ['head']);
-});
-
 test('browse fields', () => {
   expectFieldDefault('browse.q', 5, '');
   expectFieldDefault('browse.type', 'belt', 'any');
@@ -198,14 +185,18 @@ test('pool: unusable items are dropped, usable ones repaired', () => {
     item({ id: 'i16', stats: stats({ spd: -1 }) }),
     item({ id: 'i17', stats: stats({ spd: Number.NaN }) }),
     item({ id: 'i18', src: 'preset' }),
+    // hypothetical and hand-entered pieces from the removed Advanced section
+    item({ id: 'i19', src: 'generated' }),
+    item({ id: 'i21', src: 'custom' }),
+    item({ id: 'i22', src: 'weird' }),
     item({ id: 'i1', name: 'duplicate id' }),
     // repaired, not dropped
-    item({ id: 'i20', stats: { main: 10, extra: 99 }, copies: 7, src: 'weird', name: undefined, foo: 1 }),
+    item({ id: 'i20', stats: { main: 10, extra: 99 }, copies: 7, name: undefined, foo: 1 }),
   ];
   const s = restoreState({ job: 'SGE', pool });
   assert.deepEqual(s.pool, [
     good,
-    { id: 'i20', name: 'Ring custom', type: 'ring', ilvl: 130, stats: stats({ main: 10 }), copies: 1, src: 'custom' },
+    { id: 'i20', name: 'Ring custom', type: 'ring', ilvl: 130, stats: stats({ main: 10 }), copies: 1, src: 'game' },
   ]);
   assert.deepEqual(restoreState({ job: 'SGE', pool: 'x' }).pool, []);
   assert.deepEqual(restoreState({ job: 'SGE', pool: { 0: good } }).pool, []);
@@ -221,7 +212,6 @@ test('a save from another role is repaired as before', () => {
   const raw = validSave();
   raw.job = 'WAR';
   const s = restoreState(raw);
-  const job = makeJobContext('WAR');
   assert.equal(s.job, 'WAR');
   assert.deepEqual(s.piece.subs, ['crit', 'det', 'spec']); // WAR has Tenacity as its spec
   // melee: no spec stat at all
@@ -230,18 +220,15 @@ test('a save from another role is repaired as before', () => {
   const mnk = makeJobContext('MNK');
   assert.deepEqual(m.piece.subs, ['crit', 'det', null]);
   assert.equal(m.opt.target, 'spd');
-  assert.deepEqual(m.gen.subs, ['spd', 'det']);
   // PLD keeps an off-hand piece slot, two-handed jobs do not
   raw.job = 'PLD';
   raw.piece.slot = 'offhand';
   raw.poolFilter = 'offhand';
-  raw.gen.types = ['offhand'];
   assert.equal(restoreState(raw).piece.slot, 'offhand');
   assert.equal(restoreState(raw).poolFilter, 'offhand');
   raw.job = 'WAR';
   const w = restoreState(raw);
   assert.equal(w.piece.slot, 'head');
   assert.equal(w.poolFilter, 'all');
-  assert.deepEqual(w.gen.types, job.activeSlotTypes.slice());
   assert.ok(!mnk.substats.includes('spec'));
 });

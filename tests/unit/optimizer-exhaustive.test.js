@@ -1,62 +1,13 @@
 /* The optimizer against a reference that tries every combination, on small pools. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext, ilWeight } from '../../src/core/job-context.js';
+import { makeJobContext } from '../../src/core/job-context.js';
 import { mkItem } from '../../src/core/items.js';
-import { optimize, effStats } from '../../src/core/optimizer/index.js';
+import { optimize } from '../../src/core/optimizer/index.js';
+import { exhaustive } from './helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');
 const NO_SYNC = { cap: 999, sync: false };
-
-/* Best [target, tiebreak1, tiebreak2] totals over every legal loadout, or null if none meets the constraints.
-   One item per slot that has items; two rings (the same item twice only if it has 2 copies, a single ring
-   only when no pair exists), matching the optimizer's rules. */
-function exhaustive(job, pool, sync, { target, tiebreak = [], minAvgIlvl = 0, mins = {} }) {
-  const keys = [target, ...tiebreak.filter(Boolean)];
-  const slots = job.activeSlotTypes.filter(t => pool.some(i => i.type === t));
-  const choices = slots.map(t => {
-    const items = pool.filter(i => i.type === t);
-    if (t !== 'ring') return items.map(i => [i]);
-    const pairs = [];
-    items.forEach((a, x) => {
-      items.forEach((b, y) => {
-        if (y < x || (x === y && (a.copies || 1) < 2)) return;
-        pairs.push([a, b]);
-      });
-    });
-    return pairs.length ? pairs : items.map(i => [i]);
-  });
-  const denom = slots.reduce((a, t) => a + ilWeight(job, t) * (t === 'ring' ? 2 : 1), 0);
-  let best = null;
-  const rec = (k, picked) => {
-    if (k === choices.length) {
-      const tot = {};
-      let ilw = 0;
-      picked.forEach(i => {
-        const e = effStats(job, i, sync);
-        job.stats.forEach(s => {
-          tot[s] = (tot[s] || 0) + (e[s] || 0);
-        });
-        ilw += i.ilvl * ilWeight(job, i.type);
-      });
-      if (minAvgIlvl && ilw < minAvgIlvl * denom) return;
-      if (Object.entries(mins).some(([s, m]) => (tot[s] || 0) < m)) return;
-      const v = keys.map(s => tot[s] || 0);
-      if (!best || lexGreater(v, best)) best = v;
-      return;
-    }
-    choices[k].forEach(c => {
-      rec(k + 1, picked.concat(c));
-    });
-  };
-  rec(0, []);
-  return best;
-}
-
-function lexGreater(a, b) {
-  const i = a.findIndex((x, k) => x !== b[k]);
-  return i >= 0 && a[i] > b[i];
-}
 
 function rng(seed) {
   return () => {
@@ -66,6 +17,29 @@ function rng(seed) {
 }
 
 const ring = (name, spd, copies) => mkItem(name, 'ring', 100, { spd }, { copies });
+
+/* The two policies the brute-force reference copies from the engine (helpers/exhaustive.js). Stated directly on
+   hand-made pools, so changing one is a deliberate decision, not a side effect of editing the reference. */
+test('policy: a single ring is worn only when no pair exists, even if a pair breaks a maximum', () => {
+  const pool = [ring('A', 10, 1), mkItem('B', 'ring', 100, { spd: 5, dh: 50 })];
+  // the only pair (A, B) has Direct Hit 50 > 40; ring A alone would meet the maximum but is not a legal loadout
+  assert.equal(optimize(sge, pool, NO_SYNC, { target: 'spd', maxs: { dh: 40 } }).ok, false);
+  assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'spd', maxs: { dh: 40 } }), null);
+  // with a single Unique ring there is no pair, so it is worn once and the second ring slot stays empty
+  const one = optimize(sge, [ring('A', 10, 1)], NO_SYNC, { target: 'spd' });
+  assert.equal(one.totals.spd, 10);
+  assert.deepEqual(
+    one.picks.filter(p => p.type === 'ring').map(p => p.item?.name ?? null),
+    ['A', null],
+  );
+});
+
+test('policy: a slot is never left empty to satisfy a maximum', () => {
+  const pool = [mkItem('H', 'head', 100, { spd: 10, crit: 50 }), mkItem('E', 'ear', 100, { spd: 3 })];
+  // leaving the head empty would give Critical Hit 0 <= 40 and Spell Speed 3, but that is not a legal loadout
+  assert.equal(optimize(sge, pool, NO_SYNC, { target: 'spd', maxs: { crit: 40 } }).ok, false);
+  assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'spd', maxs: { crit: 40 } }), null);
+});
 
 test('F1 regression: the second-best Unique ring is kept for the pair', () => {
   const pool = [ring('A', 10, 1), ring('B', 9, 1), ring('C', 5, 1)];

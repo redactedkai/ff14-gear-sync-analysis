@@ -19,7 +19,6 @@ export function defaultState() {
     mathTab: 'piece',
     syncIlvl: 475,
     piece: { ilvl: 475, slot: 'head', subs: ['spd', 'spec', 'dh'] },
-    gen: { ilvl: 475, third: true, subs: [], types: [] },
     browse: { q: '', type: 'any', min: 100, max: '', lvl: 100, sort: 'ilvl' },
     opt: { target: 'spd', tb: 'main', tb2: 'vit', avg: true, avgMin: 123 },
     poolFilter: 'all',
@@ -31,13 +30,10 @@ export function defaultSubs(job) {
   return ['spd', job.profile.spec ? 'spec' : 'crit', job.profile.spec === 'piety' ? 'dh' : null];
 }
 
-/* Selections that depend on the role or weapon mode go back to defaults, and the pool is emptied. */
+/* On a job change: job-specific selections go back to defaults, and the pool is emptied. */
 export function resetForJob(s, job) {
   s.piece.subs = defaultSubs(job);
   if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
-  s.gen.subs = job.substats.slice();
-  s.gen.types = job.activeSlotTypes.slice();
-  s.gen.third = job.profile.spec === 'piety';
   s.opt.target = 'spd';
   s.opt.tb = 'main';
   s.opt.tb2 = 'vit';
@@ -62,17 +58,17 @@ const optIntIn = (v, lo, hi, fallback) => {
 const bool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
 const str = (v, fallback) => (typeof v === 'string' ? v : fallback);
 const oneOf = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
-/** the allowed members of an array, without duplicates; null when `v` is not an array */
-const subsetOf = (v, allowed) => (Array.isArray(v) ? [...new Set(v.filter(x => allowed.includes(x)))] : null);
 const ilvlIn = (v, fallback) => intIn(v, 1, MAX_REAL, fallback);
 
-const POOL_SOURCES = ['game', 'generated', 'custom'];
+/* Pool items come only from the game database. Hypothetical and hand-entered pieces (a removed feature) are
+   dropped from older saves. */
+const POOL_SOURCES = ['game'];
 
 /* A saved pool item, or null when it cannot be used. Only the known fields are kept. */
 function restoreItem(i) {
   if (!isObj(i) || typeof i.id !== 'string' || !i.id || !SLOT_TYPES.includes(i.type)) return null;
   if (!Number.isInteger(i.ilvl) || i.ilvl < 1 || i.ilvl > MAX_REAL) return null;
-  if (!isObj(i.stats) || i.src === 'preset') return null;
+  if (!isObj(i.stats) || !POOL_SOURCES.includes(i.src)) return null;
   const stats = {};
   for (const k of ALL_STATS) {
     const v = i.stats[k] ?? 0;
@@ -86,7 +82,7 @@ function restoreItem(i) {
     ilvl: i.ilvl,
     stats,
     copies: oneOf(i.copies, [1, 2], 1),
-    src: oneOf(i.src, POOL_SOURCES, 'custom'),
+    src: i.src,
   };
 }
 
@@ -132,20 +128,12 @@ export function restoreState(raw) {
   s.level = intIn(r.level, 1, 100, s.level);
   s.syncIlvl = ilvlIn(r.syncIlvl, s.syncIlvl);
   restoreTabs(s, r);
-  s.poolFilter = oneOf(r.poolFilter, ['all', 'generated', ...job.activeSlotTypes], s.poolFilter);
+  s.poolFilter = oneOf(r.poolFilter, ['all', ...job.activeSlotTypes], s.poolFilter);
 
   const piece = isObj(r.piece) ? r.piece : {};
   s.piece.ilvl = ilvlIn(piece.ilvl, s.piece.ilvl);
   s.piece.slot = oneOf(piece.slot, job.activeSlotTypes, s.piece.slot);
   s.piece.subs = restorePieceSubs(piece.subs, job);
-
-  const gen = isObj(r.gen) ? r.gen : {};
-  s.gen.ilvl = ilvlIn(gen.ilvl, s.gen.ilvl);
-  s.gen.third = bool(gen.third, s.gen.third);
-  const gsubs = subsetOf(gen.subs, job.substats);
-  if (gsubs && gsubs.length >= 2) s.gen.subs = gsubs;
-  const gtypes = subsetOf(gen.types, job.activeSlotTypes);
-  if (gtypes?.length) s.gen.types = gtypes;
 
   const b = isObj(r.browse) ? r.browse : {};
   s.browse.q = str(b.q, s.browse.q);

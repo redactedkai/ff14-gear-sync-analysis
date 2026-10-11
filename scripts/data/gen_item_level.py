@@ -7,6 +7,9 @@ IL = per-stat budget by item level (index = item level, 921 rows as of patch 7.5
      in src/core/item-format.json.
 DATA_SOURCE = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown.
 PG = [[BaseSpeed, LevelModifier, ItemLevelSync]] for character levels 1..100 (index = level - 1).
+
+Also checks BaseParam.csv: every stat's slot shares must equal the slot `percent`s in src/core/item-format.json, which
+the page uses. Missing columns or a mismatch stop the generator with exit status 1.
 """
 
 import argparse
@@ -14,7 +17,7 @@ import json
 from pathlib import Path
 
 import provenance
-from item_format import load_format, read_csv
+from item_format import check_slot_percents, load_format, read_csv, run_main
 
 
 def main(csv_dir, out, source='detect'):
@@ -22,11 +25,13 @@ def main(csv_dir, out, source='detect'):
     if source == 'detect':
         source = provenance.detect(csv_dir)
     d = Path(csv_dir)
-    il_cols = {s['key']: s['itemLevelColumn'] for s in load_format()['stats']}
-    il_rows = read_csv(d / 'ItemLevel.csv')
+    fmt = load_format()
+    check_slot_percents(d / 'BaseParam.csv', fmt)
+    il_cols = {s['key']: s['itemLevelColumn'] for s in fmt['stats']}
+    il_rows = read_csv(d / 'ItemLevel.csv', ['#', *il_cols.values()])
     assert [int(r['#']) for r in il_rows] == list(range(len(il_rows))), 'ItemLevel ids not contiguous'
     IL = {k: [int(r[c]) for r in il_rows] for k, c in il_cols.items()}
-    pg_rows = {int(r['#']): r for r in read_csv(d / 'ParamGrow.csv')}
+    pg_rows = {int(r['#']): r for r in read_csv(d / 'ParamGrow.csv', ['#', 'BaseSpeed', 'LevelModifier', 'ItemLevelSync'])}
     PG = [[int(pg_rows[lvl]['BaseSpeed']), int(pg_rows[lvl]['LevelModifier']), int(pg_rows[lvl]['ItemLevelSync'])] for lvl in range(1, 101)]
     js = provenance.header(source)
     js += 'export const DATA_SOURCE=' + json.dumps(source, separators=(',', ':')) + ';\n'
@@ -41,4 +46,4 @@ if __name__ == '__main__':
     ap.add_argument('out', nargs='?', default='src/data/item-level.js')
     provenance.add_cli_args(ap)
     args = ap.parse_args()
-    main(args.csv_dir, args.out, provenance.from_args(args))
+    run_main(main, args.csv_dir, args.out, provenance.from_args(args))

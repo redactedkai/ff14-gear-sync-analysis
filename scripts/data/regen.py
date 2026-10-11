@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate src/data/item-level.js and src/data/items.js from data/ffxiv-datamining (see fetch_data.py), then rebuild dist/."""
+"""Regenerate src/data/item-level.js and src/data/items.js from data/ffxiv-datamining (see fetch.py), then rebuild dist/."""
 
 import subprocess
 import sys

@@ -23,6 +23,31 @@ export function page() {
 
 export function settings() {
   return {
+    /* job id waiting for confirmation, because switching would clear a non-empty pool */
+    pendingJob: null,
+    get pendingJobName() {
+      return JOBS.find(j => j[0] === this.pendingJob)?.[1] ?? '';
+    },
+    get poolSize() {
+      return this.$store.app.pool.length;
+    },
+    requestJob(id, select) {
+      const app = this.$store.app;
+      if (id === app.job) return;
+      if (!app.pool.length) {
+        app.setJob(id);
+        return;
+      }
+      this.pendingJob = id;
+      select.value = app.job; // the menu keeps showing the current job until the switch is confirmed
+    },
+    confirmJob() {
+      this.$store.app.setJob(this.pendingJob);
+      this.pendingJob = null;
+    },
+    cancelJob() {
+      this.pendingJob = null;
+    },
     jobGroups: Object.keys(ROLE_GROUP).map(role => ({ role, label: ROLE_GROUP[role], jobs: JOBS.filter(j => j[2] === role) })),
     get levelInfo() {
       const app = this.$store.app,

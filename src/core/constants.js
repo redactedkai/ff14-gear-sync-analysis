@@ -23,21 +23,14 @@ export const SLOT_LABEL = Object.freeze({
   ring: 'Ring',
 });
 
-/* Slot share of the ItemLevel budget, in thousandths (BaseParam sheet). The weapon value depends on the
-   weapon mode (WEAPON_PCT); BASE_SLOT_PCT.weapon is the two-handed value. */
-export const WEAPON_PCT = Object.freeze({ '2h': 140, '1h+oh': 100 });
+/* Slot share of the ItemLevel budget, in thousandths: `percent` per slot in item-format.json, which
+   gen_item_level.py checks against the BaseParam sheet. The weapon value depends on the weapon mode
+   (WEAPON_PCT); BASE_SLOT_PCT.weapon is the two-handed value. */
+const weaponSlotPct = twoHanded => ITEM_FORMAT.slots.find(s => s.type === 'weapon' && s.twoHanded === twoHanded).percent;
+export const WEAPON_PCT = Object.freeze({ '2h': weaponSlotPct(true), '1h+oh': weaponSlotPct(false) });
 export const BASE_SLOT_PCT = Object.freeze({
   weapon: WEAPON_PCT['2h'],
-  offhand: 40,
-  head: 85,
-  body: 135,
-  hands: 85,
-  legs: 135,
-  feet: 85,
-  ear: 67,
-  neck: 67,
-  wrist: 67,
-  ring: 67,
+  ...Object.fromEntries(ITEM_FORMAT.slots.filter(s => s.type !== 'weapon').map(s => [s.type, s.percent])),
 });
 
 /* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/math.md section 4; evidence in docs/validation.md). */
@@ -108,6 +101,4 @@ export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 export const RAW_SUBSTAT_IDX = Object.freeze(ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX));
 /* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon */
 export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
-export const DB_SLOT_PCT = Object.freeze(
-  ITEM_FORMAT.slots.map(s => (s.type === 'weapon' ? WEAPON_PCT[s.twoHanded ? '2h' : '1h+oh'] : BASE_SLOT_PCT[s.type])),
-);
+export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));

@@ -5,21 +5,7 @@ import { poolItemFromRow } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
 import { resetForJob, TABS, MATH_TABS } from './state.js';
 
-export const PERSISTED_KEYS = [
-  'job',
-  'cap',
-  'sync',
-  'level',
-  'tab',
-  'mathTab',
-  'syncIlvl',
-  'piece',
-  'gen',
-  'browse',
-  'opt',
-  'poolFilter',
-  'pool',
-];
+export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'piece', 'browse', 'opt', 'poolFilter', 'pool'];
 
 const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
@@ -32,15 +18,15 @@ export function createAppStore(initial) {
     poolVersion: 0,
 
     /* Changing role or weapon mode resets role-dependent selections and empties the pool. */
+    /* Switching to a different job clears the pool and the job-specific selections, so the pool never holds gear
+       the job can't wear (docs/audit-2.md A1). The page asks for confirmation first when the pool is not empty. */
     setJob(id) {
-      const before = this.jobCtx;
       const job = makeJobContext(id);
+      if (job.jobId === this.job) return;
       this.jobCtx = job;
       this.job = job.jobId;
-      if (job.profileId !== before.profileId || job.weaponMode !== before.weaponMode) {
-        resetForJob(this, job);
-        this.poolVersion++;
-      }
+      resetForJob(this, job);
+      this.poolVersion++;
     },
 
     showTab(t) {
@@ -72,10 +58,6 @@ export function createAppStore(initial) {
       const k = poolKey(row);
       return this.pool.some(p => poolKey(p) === k);
     },
-    addItem(item) {
-      this.pool.push(item);
-      this.poolVersion++;
-    },
     removeItem(id) {
       this.pool = this.pool.filter(i => i.id !== id);
       this.poolVersion++;
@@ -89,14 +71,6 @@ export function createAppStore(initial) {
     },
     clearPool() {
       this.pool = [];
-      this.poolVersion++;
-    },
-    replaceGenerated(items) {
-      this.pool = this.pool.filter(i => i.src !== 'generated').concat(items);
-      this.poolVersion++;
-    },
-    removeGenerated() {
-      this.pool = this.pool.filter(i => i.src !== 'generated');
       this.poolVersion++;
     },
 

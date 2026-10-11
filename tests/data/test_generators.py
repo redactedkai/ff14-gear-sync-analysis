@@ -1,9 +1,10 @@
 """Tests for the data generators (scripts/data/gen_items.py, scripts/data/gen_item_level.py).
 
 Fixtures in tests/data/fixtures/ use the real sheet headers from xivapi/ffxiv-datamining. EquipSlotCategory and
-ClassJobCategory rows are copied from the real sheets; Item rows are test items built on the real header; ItemLevel
-values are synthetic (row * 1000 + column position) so a wrong column shows up as a wrong number. ParamGrow
-(levels 0..100) is written in setUp.
+ClassJobCategory rows, and the BaseParam rows of the 12 stats, are copied from the real sheets; Item rows are test items
+built on the real header; ItemLevel values are synthetic (row * 1000 + column position) so a wrong column shows up as a
+wrong number. ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest edits copies of the fixtures to check that
+renamed columns and changed slot shares stop the generators.
 
 Run: npm run test:py
 """
@@ -13,6 +14,7 @@ import csv
 import io
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -24,6 +26,7 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
+from item_format import SchemaError  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
 STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps']
@@ -101,13 +104,18 @@ class GenItemsTest(unittest.TestCase):
         for name in ('Test Belt', 'Test Soul Crystal', 'Test Missing Slot Category', 'Test Non-gear'):
             self.assertNotIn(name, self.by_name)
 
+    def test_multi_slot_gear_excluded(self):
+        # Category 15: Body 1, Head -1 (a cloak that also covers the head). Left out rather than modelled as a body piece.
+        self.assertNotIn('Test Cloak', self.by_name)
+        self.assertIn('Test Robe', self.by_name)  # same item on a plain body category is kept
+
     def test_stat_mapping(self):
         self.assertEqual(self.row('Test Hood of Healing')[5], HEAL)
         self.assertEqual(self.row('Test Greataxe')[5], TANK)
         self.assertEqual(self.row('Test Sword')[5], stats(str=39, vit=42, crit=39, ten=27))
         self.assertEqual(self.row('Test Shield')[5], stats(str=16, vit=17, sks=15, det=11))
         self.assertEqual(self.row('Test Caster Hat')[5], stats(int=33, vit=32, sks=31, crit=22))
-        # BaseParam in slot 5 after empty slots 3-4 (real Dreadwyrm Ring of Fending layout)
+        # BaseParam in slot 5 after empty slots 3-4 (a layout real Unique rings use)
         self.assertEqual(self.row('Test Ring Unique')[5], stats(str=26, vit=28, crit=24, dh=17))
         self.assertEqual(self.row('Test Ring Plain')[5], stats(str=26, vit=28, ten=24, det=17))
 
@@ -217,6 +225,7 @@ class GenItemLevelTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
         shutil.copy(FIXTURES / 'ItemLevel.csv', self.dir / 'ItemLevel.csv')
+        shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
         write_param_grow(self.dir / 'ParamGrow.csv', range(0, 101))
         with open(FIXTURES / 'ItemLevel.csv', encoding='utf-8', newline='') as f:
             self.header = next(csv.reader(f))
@@ -253,6 +262,107 @@ class GenItemLevelTest(unittest.TestCase):
             csv.writer(f, lineterminator='\n').writerow(['9'] + ['0'] * (len(self.header) - 1))
         with self.assertRaises(AssertionError):
             self.generate()
+
+
+def edit_csv(path, fn):
+    """Rewrite a CSV in place: fn(rows) gets the rows as lists (header first) and changes them."""
+    with open(path, encoding='utf-8', newline='') as f:
+        rows = list(csv.reader(f))
+    fn(rows)
+    with open(path, 'w', encoding='utf-8', newline='') as f:
+        csv.writer(f, lineterminator='\n').writerows(rows)
+
+
+def rename_column(path, old, new):
+    def fn(rows):
+        rows[0][rows[0].index(old)] = new
+
+    edit_csv(path, fn)
+
+
+class SchemaDriftTest(unittest.TestCase):
+    """A game patch that renames or drops a column, or changes a slot share, must stop the generators (audit A14)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        for f in FIXTURES.glob('*.csv'):
+            shutil.copy(f, self.dir / f.name)
+        write_param_grow(self.dir / 'ParamGrow.csv', range(0, 101))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def assert_fails(self, gen, *needles):
+        with self.assertRaises(SchemaError) as cm:
+            run_quiet(gen.main, str(self.dir), str(self.dir / 'out.js'))
+        for n in needles:
+            self.assertIn(n, str(cm.exception))
+        self.assertFalse((self.dir / 'out.js').exists(), 'no output is written on a schema error')
+
+    def test_unmodified_fixtures_pass(self):
+        run_quiet(gen_items.main, str(self.dir), str(self.dir / 'items.js'))
+        run_quiet(gen_item_level.main, str(self.dir), str(self.dir / 'item-level.js'))
+
+    def test_renamed_job_column(self):
+        rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')
+        self.assert_fails(gen_items, 'ClassJobCategory.csv', 'SGE')
+
+    def test_changed_job_values(self):
+        def fn(rows):
+            for r in rows[1:]:
+                r[:] = ['1' if v == 'True' else v for v in r]
+
+        edit_csv(self.dir / 'ClassJobCategory.csv', fn)
+        self.assert_fails(gen_items, 'ClassJobCategory.csv', 'PLD', 'BLU')
+
+    def test_missing_equip_slot_column(self):
+        for col in ('Gloves', 'OffHand', 'MainHand', 'FingerL'):
+            with self.subTest(col=col):
+                shutil.copy(FIXTURES / 'EquipSlotCategory.csv', self.dir / 'EquipSlotCategory.csv')
+                rename_column(self.dir / 'EquipSlotCategory.csv', col, col + 'X')
+                self.assert_fails(gen_items, 'EquipSlotCategory.csv', col)
+
+    def test_missing_item_column(self):
+        cols = ('Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique')
+        cols += ('BaseParam[0]', 'BaseParamValue[5]', 'BaseParamSpecial[2]', 'BaseParamValueSpecial[5]')
+        for col in cols:
+            with self.subTest(col=col):
+                shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+                rename_column(self.dir / 'Item.csv', col, 'Renamed' + col)
+                self.assert_fails(gen_items, 'Item.csv', col)
+
+    def test_missing_item_level_stat_column(self):
+        rename_column(self.dir / 'ItemLevel.csv', 'DirectHitRate', 'DirectHit')
+        self.assert_fails(gen_item_level, 'ItemLevel.csv', 'DirectHitRate')
+
+    def test_missing_param_grow_column(self):
+        rename_column(self.dir / 'ParamGrow.csv', 'LevelModifier', 'LevelMod')
+        self.assert_fails(gen_item_level, 'ParamGrow.csv', 'LevelModifier')
+
+    def test_base_param_slot_share_mismatch(self):
+        def fn(rows):
+            col = rows[0].index('RingPercent')
+            next(r for r in rows if r[0] == '5')[col] = '70'  # Mind
+
+        edit_csv(self.dir / 'BaseParam.csv', fn)
+        self.assert_fails(gen_item_level, 'BaseParam.csv', 'mind RingPercent = 70, page uses 67')
+
+    def test_base_param_missing_column(self):
+        rename_column(self.dir / 'BaseParam.csv', 'TwoHandWeaponPercent', 'TwoHandPercent')
+        self.assert_fails(gen_item_level, 'BaseParam.csv', 'TwoHandWeaponPercent')
+
+    def test_base_param_missing_stat_row(self):
+        edit_csv(self.dir / 'BaseParam.csv', lambda rows: rows.remove(next(r for r in rows if r[0] == '46')))
+        self.assert_fails(gen_item_level, 'BaseParam.csv', 'no row 46 (sps)')
+
+    def test_command_line_exits_nonzero(self):
+        rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')
+        script = ROOT / 'scripts' / 'data' / 'gen_items.py'
+        p = subprocess.run([sys.executable, str(script), str(self.dir), str(self.dir / 'out.js')], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 1)
+        self.assertIn('SGE', p.stderr)
+        self.assertNotIn('Traceback', p.stderr)
 
 
 if __name__ == '__main__':

@@ -2,8 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
-import { JOBS, ITEM_STAT_ORDER, DB_SLOT_TYPE, SLOT_TYPES } from '../../src/core/constants.js';
+import { JOBS, ITEM_STAT_ORDER, DB_SLOT_TYPE, DB_SLOT_PCT, SLOT_TYPES, WEAPON_PCT, BASE_SLOT_PCT } from '../../src/core/constants.js';
 import { IL, PG, ITEMS } from '../../src/core/tables.js';
+import { makeJobContext } from '../../src/core/job-context.js';
 
 test('job bit order, stat order and slot codes come from item-format.json', () => {
   assert.deepEqual(
@@ -40,4 +41,55 @@ test('every item row has the documented shape', () => {
     assert.equal(r[5].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
     assert.ok(r[6] === 0 || r[6] === 1, 'unique flag ' + where);
   }
+});
+
+test('slot shares used by the page are the item-format.json percents (checked against BaseParam by the generator)', () => {
+  assert.deepEqual(
+    DB_SLOT_PCT,
+    ITEM_FORMAT.slots.map(s => s.percent),
+  );
+  // BaseParam values for every combat stat as of patch 7.50 (docs/math.md): 2H 140, 1H 100, off-hand 40, ...
+  assert.deepEqual(WEAPON_PCT, { '2h': 140, '1h+oh': 100 });
+  assert.deepEqual(BASE_SLOT_PCT, {
+    weapon: 140,
+    offhand: 40,
+    head: 85,
+    body: 135,
+    hands: 85,
+    legs: 135,
+    feet: 85,
+    ear: 67,
+    neck: 67,
+    wrist: 67,
+    ring: 67,
+  });
+  for (const [id] of JOBS) {
+    const job = makeJobContext(id);
+    for (const t of SLOT_TYPES) {
+      const code = t === 'weapon' ? (job.weaponMode === '2h' ? 0 : 1) : DB_SLOT_TYPE.indexOf(t);
+      assert.equal(job.slotPct[t], ITEM_FORMAT.slots[code].percent, `${id} ${t}`);
+    }
+  }
+});
+
+/* Known gaps in the game data, not pipeline faults: Blue Mage weapons exist in Item.csv (10 rows) but carry no stats,
+   so the generator drops them. */
+const NO_ITEMS_EXPECTED = { BLU: ['weapon'] };
+
+test('every job has at least one item for each of its active slots (a renamed job column would leave none)', () => {
+  JOBS.forEach(([id], bit) => {
+    const job = makeJobContext(id);
+    const codes = new Set(ITEMS.filter(r => r[4] & (1 << bit)).map(r => r[1]));
+    for (const t of job.activeSlotTypes) {
+      if (NO_ITEMS_EXPECTED[id]?.includes(t)) {
+        assert.ok(!ITEMS.some(r => r[4] & (1 << bit) && DB_SLOT_TYPE[r[1]] === t), `${id} ${t}: remove the exception`);
+        continue;
+      }
+      const want = t === 'weapon' ? [job.weaponMode === '2h' ? 0 : 1] : [DB_SLOT_TYPE.indexOf(t)];
+      assert.ok(
+        want.some(c => codes.has(c)),
+        `${id} has no ${t} item`,
+      );
+    }
+  });
 });

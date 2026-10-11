@@ -1,25 +1,90 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, poolItemFromRow, genericItems } from '../../src/core/items.js';
+import { genericItems } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { gcdFor } from '../../src/core/speed.js';
+import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');
-const dreadwyrm = browseItems(sge, { q: 'Dreadwyrm', type: 'any', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 })
-  .filter(r => /of Healing$/.test(r.name))
-  .map(r => poolItemFromRow(sge, r));
+const SYNC = { cap: 123, sync: true };
+const NOSYNC = { cap: 123, sync: false };
 
-test('Dreadwyrm healing pieces found', () => {
-  assert.equal(dreadwyrm.length, 9);
+/* Real gear pools, one job per role: every database item the job can equip in a small item level window
+   (equip level 50 or below), small enough that exhaustive() can try every loadout. The expected totals come
+   from that brute force, not from the optimizer. */
+const REAL_POOLS = [
+  ['WHM', { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 }],
+  ['SGE', { ilvlMin: 120, ilvlMax: 130, lvlMax: 50 }],
+  ['WAR', { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 }],
+  ['PLD', { ilvlMin: 128, ilvlMax: 132, lvlMax: 50 }],
+  ['DRG', { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 }],
+  ['BRD', { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 }],
+  ['BLM', { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 }],
+];
+
+for (const [jobId, filter] of REAL_POOLS) {
+  test(`${jobId} real gear (item level ${filter.ilvlMin}-${filter.ilvlMax}): optimizer equals brute force for every substat, synced and unsynced`, () => {
+    const job = makeJobContext(jobId);
+    const pool = gamePool(job, filter);
+    // a real choice in every slot the job's gear covers here, and a pool small enough to enumerate
+    const covered = job.activeSlotTypes.filter(t => pool.some(i => i.type === t));
+    assert.ok(covered.length >= 9, `${jobId}: only ${covered.join(', ')}`);
+    assert.ok(
+      covered.every(t => pool.filter(i => i.type === t).length >= 2 || t === 'offhand'),
+      `${jobId}: a slot has a single item`,
+    );
+    const n = loadoutCount(job, pool);
+    assert.ok(n >= 1000 && n <= 200000, `${jobId}: ${n} loadouts`);
+    for (const sync of [SYNC, NOSYNC]) {
+      for (const target of job.substats) {
+        const opts = { target, tiebreak: ['main', 'vit'] };
+        const r = optimize(job, pool, sync, opts);
+        const label = `${jobId} ${target} sync=${sync.sync}`;
+        assert.ok(r.ok && !r.truncated, label);
+        assert.deepEqual(
+          [target, 'main', 'vit'].map(s => r.totals[s]),
+          exhaustive(job, pool, sync, opts),
+          label,
+        );
+      }
+    }
+  });
+}
+
+/* The one item level 130 healer ring that is Unique (property, not name): with it as the only ring, the
+   loadout wears it once and leaves the second ring slot empty. */
+const healer130 = { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 };
+const uniqueRingPool = gamePool(sge, healer130, r => r.type !== 'ring' || r.unique);
+
+test('Unique ring pool: item level 130 Sage gear with its only ring Unique', () => {
+  const rings = uniqueRingPool.filter(i => i.type === 'ring');
+  assert.equal(rings.length, 1);
+  assert.equal(rings[0].copies, 1);
+  for (const t of ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist']) {
+    assert.ok(uniqueRingPool.filter(i => i.type === t).length >= 2, t);
+  }
 });
 
-test('Dreadwyrm synced Spell Speed (ring is Unique, so only one)', () => {
-  assert.equal(optimize(sge, dreadwyrm, { cap: 123, sync: true }, { target: 'spd' }).totals.spd, 171);
-});
+for (const sync of [SYNC, NOSYNC]) {
+  test(`a Unique ring is worn once (sync ${sync.sync ? 'on' : 'off'}), and a second copy would have been chosen`, () => {
+    const r = optimize(sge, uniqueRingPool, sync, { target: 'spd' });
+    const ringPicks = r.picks.filter(p => p.type === 'ring' && p.item);
+    assert.equal(ringPicks.length, 1);
+    assert.deepEqual([r.totals.spd], exhaustive(sge, uniqueRingPool, sync, { target: 'spd' }));
+    // the rule binds: the same ring with 2 copies would be worn twice, adding its Spell Speed again
+    const twice = uniqueRingPool.map(i => (i.type === 'ring' ? { ...i, copies: 2 } : i));
+    const r2 = optimize(sge, twice, sync, { target: 'spd' });
+    assert.equal(r2.picks.filter(p => p.type === 'ring' && p.item).length, 2);
+    assert.equal(r2.totals.spd, r.totals.spd + ringPicks[0].eff.spd);
+    assert.ok(ringPicks[0].eff.spd > 0);
+  });
+}
 
-test('Dreadwyrm unsynced Spell Speed (one ring)', () => {
-  assert.equal(optimize(sge, dreadwyrm, { cap: 123, sync: false }, { target: 'spd' }).totals.spd, 176);
+test('sync lowers the best Spell Speed of item level 130 gear under a 123 cap', () => {
+  const synced = optimize(sge, uniqueRingPool, SYNC, { target: 'spd' }).totals.spd;
+  const unsynced = optimize(sge, uniqueRingPool, NOSYNC, { target: 'spd' }).totals.spd;
+  assert.ok(synced < unsynced, `${synced} vs ${unsynced}`);
 });
 
 test('generic maximum under a 123 cap is 296 Spell Speed, 2.22 s GCD', () => {
