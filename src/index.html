@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Item Level Stat Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap">
+<!-- STYLES -->
+</head>
+<body>
+<!-- Dynamic <select>s render options with x-for and mark the current one with :selected (x-model on a select
+     whose options are created by x-for can miss the initial value). -->
+<div class="wrap" x-data="page">
+<header>
+  <div class="eyebrow">FFXIV · item level sync math</div>
+  <h1>Item Level Stat Lab</h1>
+  <p class="lede">Item level is an index into a stat-budget table. This page shows how each piece’s stats come from it, what level sync clamps, and which real gear combination maximizes the stat you care about, for any job.</p>
+</header>
+
+<section class="panel" aria-label="Job and sync settings" x-data="settings">
+  <div class="settings">
+    <label class="f">Job
+      <select id="job" @change="$store.app.setJob($event.target.value)">
+        <template x-for="g in jobGroups" :key="g.role">
+          <optgroup :label="g.label">
+            <template x-for="j in g.jobs" :key="j[0]">
+              <option :value="j[0]" x-text="j[1]" :selected="j[0] === job.jobId"></option>
+            </template>
+          </optgroup>
+        </template>
+      </select>
+    </label>
+    <label class="f">Sync cap (item level)
+      <input type="number" id="cap" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric" x-bind="$num('cap', 1, $store.app.maxReal)">
+    </label>
+    <label class="f">Synced level (for the speed → GCD conversion)
+      <input type="number" id="level" min="1" max="100" step="1" inputmode="numeric" x-bind="$num('level', 1, 100)">
+    </label>
+    <div class="f" style="gap:8px">
+      <label class="chk"><input type="checkbox" id="sync" x-model="$store.app.sync"> Item level sync active</label>
+      <span class="small dim" id="lvinfo" x-text="levelInfo"></span>
+    </div>
+  </div>
+  <p class="small dim" id="jobinfo" x-text="jobInfo"></p>
+</section>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" data-tab="pool" type="button" :aria-selected="String($store.app.tab === 'pool')" @click="$store.app.showTab('pool')"><span class="step">1</span> Item pool</button>
+  <button role="tab" data-tab="opt" type="button" :aria-selected="String($store.app.tab === 'opt')" @click="$store.app.showTab('opt')"><span class="step">2</span> Optimizer</button>
+  <button role="tab" data-tab="math" type="button" class="aside" :aria-selected="String($store.app.tab === 'math')" @click="$store.app.showTab('math')">How the math works</button>
+</nav>
+
+<!-- THE MATH -->
+<section class="tab" id="tab-math" role="tabpanel" hidden :hidden="$store.app.tab !== 'math'">
+<p class="small dim">Optional background. You don’t need this to use the optimizer: it explains where stats come from and what the sync cap does to them.</p>
+<nav class="subtabs" aria-label="Math views">
+  <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece lab</button>
+  <button data-sub="sync" type="button" :aria-pressed="String($store.app.mathTab === 'sync')" @click="$store.app.showSub('sync')">Sync caps</button>
+</nav>
+
+<!-- PIECE LAB -->
+<section class="subtab" id="tab-piece" x-data="pieceLab" :hidden="$store.app.mathTab !== 'piece'">
+  <div class="panel">
+    <div class="grid">
+      <label class="f">Item level
+        <input type="number" id="p-ilvl" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric" x-bind="$num('piece.ilvl', 1, $store.app.maxReal)">
+      </label>
+      <label class="f">Slot
+        <select id="p-slot" @change="$store.app.piece.slot = $event.target.value">
+          <template x-for="o in slotOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.slot"></option></template>
+        </select>
+      </label>
+      <label class="f">1st substat · 100%<select id="p-s1" @change="setSub(0, $event.target.value)">
+        <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[0] || 'spd')"></option></template>
+      </select></label>
+      <label class="f">2nd substat · 70%<select id="p-s2" @change="setSub(1, $event.target.value)">
+        <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || job.substats[1])"></option></template>
+      </select></label>
+      <label class="f">3rd substat · 20%<select id="p-s3" @change="setSub(2, $event.target.value)">
+        <template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[2] || '')"></option></template>
+      </select></label>
+    </div>
+    <input type="range" id="p-range" min="1" :max="$store.app.maxReal" step="1" aria-label="Item level slider" :value="view.rangeValue" @input="setFromRange($event.target.value)">
+    <div id="p-out">
+      <p class="small" style="margin-bottom:10px">
+        <span x-show="view.status === 'off'">Sync is off: stats are shown as on the item.</span>
+        <span x-show="view.status === 'below'" x-text="`This piece is at or below the cap (${$store.app.cap}), so sync leaves it untouched.`"></span>
+        <span x-show="view.status === 'above'">This piece is above the cap, so sync clamps each line to what a 100% stat on a <span x-text="slotLabel[$store.app.piece.slot]"></span> at item level <span x-text="$store.app.cap"></span> would have. <b class="bad" x-text="view.lost + ' points'"></b> of its raw stats are unused.</span>
+      </p>
+      <div class="tablewrap"><table class="compact">
+        <thead><tr><th>Stat</th><th class="n" x-text="'Table @ ilvl ' + view.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-text="'Synced to ' + $store.app.cap"></th></tr></thead>
+        <tbody>
+          <template x-for="(r, i) in view.rows" :key="i">
+            <tr>
+              <td><span x-text="r.label"></span> <span class="dim" x-text="r.w + '%'"></span></td>
+              <td class="n" x-text="r.base"></td>
+              <td class="formula" x-text="r.formula"></td>
+              <td class="n" x-text="r.raw"></td>
+              <td class="n" :class="{ clamp: r.syn < r.raw }"><span x-text="r.syn"></span><template x-if="r.syn < r.raw"><span class="small" x-text="` (−${r.raw - r.syn})`"></span></template></td>
+            </tr>
+          </template>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="note small" id="p-why">
+      <b>What are 100%, 70% and 20%?</b> They describe how a piece splits its stat budget between substats.
+      A piece’s strongest substat gets the full budget for its slot (the table value × the slot share, rounded), which is the <b>100%</b>.
+      The second substat is about <b>70%</b> of that rounded number, and a small third one (mostly Direct Hit on healer gear) is about <b>20%</b>, each rounded again.
+      Example: a head piece at item level 130 has a budget of 31, so its second substat is 31 × 70% ≈ 22 and its third is 31 × 20% ≈ 6.
+      The game files store only each item’s final stats, so these shares are a pattern measured from real gear, not a published rule. They reproduce about 97–99% of real pieces exactly (see “Checked against real gear” in the Sync caps view).
+      A piece with two substats just leaves the 3rd box on “none”. The Item pool and Optimizer use each item’s real stats and don’t depend on these shares.
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Substat and main-stat budget by item level</h3>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Substat column</span><span><i style="background:var(--gold)"></i>Main-stat column</span><span><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
+    <div id="p-chart" x-html="view.chartSvg"></div>
+    <p class="small dim">A stat on a piece = column value at the piece’s item level × slot share, rounded; the 2nd and 3rd substats are then 70% and 20% of the first, rounded again. The table is not linear: it is steep around 135–150 and flattens after, which is why very high item levels buy far more raw stats than you can use under a sync cap.</p>
+  </div>
+</section>
+
+<!-- SYNC CAPS -->
+<section class="subtab" id="tab-sync" x-data="syncCaps" hidden :hidden="$store.app.mathTab !== 'sync'">
+  <div class="panel">
+    <h2>What the sync cap allows</h2>
+    <label class="f" style="max-width:220px">Example high-ilvl piece<input type="number" id="s-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-bind="$num('syncIlvl', 1, $store.app.maxReal)"></label>
+    <p class="small dim" id="s-lead" x-text="`At sync cap ${view.cap}, a ${view.cap}-level piece defines the ceiling per slot. Anything above it is cut to this ceiling; anything below it keeps its own stats. The last two columns list a piece’s 1st / 2nd / 3rd substat (100 / 70 / 20% shares): one at item level ${view.cap}, and one at item level ${view.hil} after syncing.`"></p>
+    <div class="tablewrap"><table id="s-table" class="compact">
+      <thead><tr><th>Slot</th><th class="n">Share</th><th class="n">Substat cap</th><th class="n" x-text="job.short.main + ' cap'"></th><th class="n">Vit cap</th><th class="n" x-text="`Ilvl ${view.cap} piece`"></th><th class="n" x-text="`Ilvl ${view.hil} synced`"></th></tr></thead>
+      <tbody>
+        <template x-for="r in view.rows" :key="r.type">
+          <tr><td x-text="slotLabel[r.type] + (r.times > 1 ? ' ×2' : '')"></td><td class="n" x-text="r.pct + '%'"></td><td class="n" x-text="r.sub"></td><td class="n" x-text="r.main"></td><td class="n" x-text="r.vit"></td><td class="n" x-text="r.native"></td><td class="n" x-text="r.synced"></td></tr>
+        </template>
+        <tr class="total"><td>10 armor and accessory slots</td><td class="n"></td><td class="n" x-text="view.tot.c"></td><td class="n" x-text="view.tot.main"></td><td class="n" x-text="view.tot.vit"></td><td class="n" x-text="`${view.tot.n1} / ${view.tot.n2} / ${view.tot.n3}`"></td><td class="n" x-text="`${view.tot.h1} / ${view.tot.h2} / ${view.tot.h3}`"></td></tr>
+      </tbody>
+    </table></div>
+    <div id="s-sum"><div class="readout">
+      <div><b x-text="view.tot.c"></b><span>Most you can get of any one substat from the ten armor and accessory slots</span></div>
+      <div><b class="gold" x-text="(view.gain >= 0 ? '+' : '') + view.gain"></b><span x-text="`First two substats combined, item level ${view.hil} pieces vs native ${view.cap} pieces (${view.gainPct}%)`"></span></div>
+      <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD from ${view.spd} gear ${job.label.spd} (level ${$store.app.level}, 2.50 base)`"></span></div>
+      <div><b x-text="'+' + view.dot + '%'"></b><span x-text="`DoT/HoT tick scaling from ${view.spd} ${job.label.spd}`"></span></div>
+    </div></div>
+    <details id="s-valid" x-data="validationPanel" @toggle="onToggle($el.open)"><summary>Checked against real gear and published caps</summary><div id="s-valid-out" style="margin-top:10px">
+      <template x-if="view"><div>
+        <p class="small">For every combat piece in the game database with two or more substats and item level 110 or higher (<b x-text="view.total"></b> pieces, all jobs), the page’s formula <span class="num">round( round(table × slot share) × substat share )</span> was compared with the item’s real stats, assigning substat shares by rank (100%, 70%, 20%). Real stats are rounded twice: the slot budget first, then the share.</p>
+        <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Item level</th><th class="n">Pieces</th><th class="n">Exact</th><th class="n">Within ±1</th></tr></thead><tbody>
+          <template x-for="b in view.bands" :key="b.label"><tr><td x-text="b.label"></td><td class="n" x-text="b.n"></td><td class="n" x-text="b.exact"></td><td class="n" x-text="b.within1"></td></tr></template>
+        </tbody></table></div>
+        <p class="small" style="margin-top:12px"><b>Sync caps at item level 475</b>, published on the FFXIV Wiki’s Item Level Sync page, against this page’s formula:</p>
+        <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Gear type</th><th class="n">Wiki</th><th class="n">Formula</th><th></th></tr></thead><tbody>
+          <template x-for="c in view.wiki" :key="c.label"><tr><td x-text="c.label"></td><td class="n" x-text="c.published"></td><td class="n" x-text="c.computed"></td><td :class="c.match ? 'ok' : 'bad'" x-text="c.match ? 'match' : 'differs'"></td></tr></template>
+        </tbody></table></div>
+        <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are mostly shields and weapons whose substats don’t follow the 70% rule, and some crafted pieces below item level 110 that were tuned by hand.</p>
+      </div></template>
+    </div></details>
+    <div class="note small">Model assumptions: every stat on a synced-down piece is clamped to the value a 100%-share stat on a same-slot piece at the cap item level would have; stats on pieces at or below the cap are untouched; materia is ignored on synced-down gear. The main-stat and Vitality clamp is inferred and not confirmed in-game. Real pieces have fixed substat pairs; the formula reproduces about 97–99% of real pieces exactly.</div>
+  </div>
+</section>
+
+</section>
+
+<!-- ITEM POOL -->
+<section class="tab" id="tab-pool" role="tabpanel" hidden :hidden="$store.app.tab !== 'pool'">
+  <div class="panel" x-data="browser">
+    <h2>Browse real gear</h2>
+    <p class="small dim" id="b-lead" x-text="`Gear ${job.jobName} can equip, with the game’s own stats. Pick what you own or could get, and it goes into the pool the optimizer searches.`"></p>
+    <div class="grid">
+      <label class="f">Name contains<input type="text" id="b-q" placeholder="e.g. Dreadwyrm" autocomplete="off" x-model="$store.app.browse.q"></label>
+      <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
+        <template x-for="o in typeOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.type"></option></template>
+      </select></label>
+      <label class="f">Item level from<input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" x-model="$store.app.browse.min"></label>
+      <label class="f">Item level to<input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.browse.max"></label>
+      <label class="f">Equip level up to<input type="number" id="b-lvl" min="1" max="100" inputmode="numeric" x-model="$store.app.browse.lvl"></label>
+      <label class="f">Sort by<select id="b-sort" @change="$store.app.browse.sort = $event.target.value">
+        <template x-for="o in sortOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.sort"></option></template>
+      </select></label>
+    </div>
+    <div class="row">
+      <span class="small dim" id="b-count">
+        <template x-if="!notice"><span x-text="countText"></span></template>
+        <template x-if="notice && notice.kind === 'toomany'"><span><b class="bad" x-text="`${notice.n} matches is too many to add at once.`"></b> Narrow the filters to <span x-text="notice.limit"></span> or fewer (slot, item level range or name).</span></template>
+        <template x-if="notice && notice.kind === 'added'"><span><b class="ok" x-text="`Added ${notice.n} item${notice.plural} to the pool`"></b><span x-text="notice.skipped ? ` (${notice.skipped} already there)` : ''"></span>.</span></template>
+      </span>
+      <span style="flex:1"></span>
+      <button id="b-addall" type="button" :disabled="!view || !view.all.length" @click="addAll()">Add all matches to pool</button>
+    </div>
+    <div class="tablewrap tall"><table id="b-table">
+      <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters.</td></tr></tbody></template>
+      <template x-if="view && view.shown.length"><thead><tr><th>Item</th><th>Slot</th><th class="n">ilvl</th><th class="n">Lv</th><template x-for="s in job.stats" :key="s"><th class="n" x-text="job.short[s]"></th></template><th></th></tr></thead></template>
+      <template x-if="view && view.shown.length"><tbody>
+        <template x-for="(x, i) in view.shown" :key="i">
+          <tr>
+            <td x-text="x.r.name"></td><td x-text="slotLabel[x.r.type]"></td><td class="n" x-text="x.r.ilvl"></td><td class="n dim" x-text="x.r.lvl"></td>
+            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" x-text="c.text"></td></template>
+            <td><button type="button" :data-add="i" :disabled="!!rowStatus[i]" x-text="rowStatus[i] || 'Add'" @click="add(i)"></button></td>
+          </tr>
+        </template>
+      </tbody></template>
+    </table></div>
+    <p class="small dim">Stats are the item’s own (high-quality values for craftable gear). Shown as <span class="num">raw → synced</span> where the sync cap bites. Item data is from the game files; availability, vendors and drop sources are not included.</p>
+  </div>
+
+  <div class="panel" x-data="pool">
+    <div class="row">
+      <h3 style="margin-right:auto">Your pool</h3>
+      <button id="b-clear" type="button" @click="$store.app.clearPool()">Clear pool</button>
+    </div>
+    <div class="row"><span class="small dim" id="pool-count" x-text="view.countText"></span><span style="flex:1"></span>
+      <label class="f" style="flex-direction:row;align-items:center;gap:8px">Show <select id="pool-filter" style="width:auto" @change="$store.app.poolFilter = $event.target.value">
+        <template x-for="o in filterOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.poolFilter"></option></template>
+      </select></label>
+    </div>
+    <div class="tablewrap tall"><table id="pool-table">
+      <template x-if="!$store.app.pool.length"><tbody><tr><td class="empty">The pool is empty. Add gear from the browser above.</td></tr></tbody></template>
+      <template x-if="$store.app.pool.length"><thead><tr><th>Item</th><th>Slot</th><th class="n">ilvl</th><th class="n">Copies</th><template x-for="s in job.stats" :key="s"><th class="n" x-text="job.short[s]"></th></template><th></th></tr></thead></template>
+      <template x-if="$store.app.pool.length"><tbody>
+        <template x-for="row in view.rows" :key="row.item.id">
+          <tr>
+            <td><span x-text="row.item.name"></span><template x-if="row.item.src === 'generated'"><span class="dim small"> · hypothetical</span></template></td>
+            <td x-text="slotLabel[row.item.type]"></td>
+            <td class="n" x-text="row.item.ilvl"></td>
+            <td class="n"><input type="number" min="1" max="2" :value="row.item.copies || 1" :data-copies="row.item.id" @change="$store.app.setCopies(row.item.id, $event.target.value)" style="width:54px;padding:3px 5px" aria-label="Copies"></td>
+            <template x-for="(c, k) in row.cells" :key="k"><td :class="c.cls" x-text="c.text"></td></template>
+            <td><button class="x" type="button" :data-del="row.item.id" :aria-label="'Remove ' + row.item.name" @click="$store.app.removeItem(row.item.id)">✕</button></td>
+          </tr>
+        </template>
+        <template x-if="view.hasHidden"><tr><td :colspan="job.stats.length + 5" class="dim small" x-text="`${view.hidden} more items not shown here (they are all still searched). Use the filter above to view them.`"></td></tr></template>
+      </tbody></template>
+    </table></div>
+    <p class="small dim">The optimizer picks one item per slot (two rings) from this list. “Copies” is how many you can wear at once, which matters for rings.</p>
+  </div>
+
+  <details class="panel" id="adv">
+    <summary>Advanced: hypothetical and hand-entered pieces</summary>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+      <div style="display:contents" x-data="generator">
+        <h3>Generate hypothetical pieces</h3>
+        <div class="grid">
+          <label class="f">Item level<input type="number" id="g-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-bind="$num('gen.ilvl', 1, $store.app.maxReal)"></label>
+          <label class="f">Third substat (Direct Hit, 20%)<select id="g-third" @change="$store.app.gen.third = $event.target.value === '1'"><option value="0" :selected="!$store.app.gen.third">None</option><option value="1" :selected="$store.app.gen.third">Add Direct Hit</option></select></label>
+        </div>
+        <div class="row" id="g-subs">
+          <template x-for="s in job.substats" :key="s"><label class="chk"><input type="checkbox" :data-gsub="s" :checked="$store.app.gen.subs.includes(s)" @change="toggleSub(s, $event.target.checked)"> <span x-text="job.label[s]"></span></label></template>
+        </div>
+        <div class="row" id="g-types">
+          <template x-for="t in job.activeSlotTypes" :key="t"><label class="chk"><input type="checkbox" :data-gtype="t" :checked="$store.app.gen.types.includes(t)" @change="toggleType(t, $event.target.checked)"> <span x-text="slotLabel[t]"></span></label></template>
+        </div>
+        <div class="row">
+          <button class="primary" id="b-gen" type="button" @click="generate()">Generate (replaces earlier generated pieces)</button>
+          <button id="b-gen-clear" type="button" @click="$store.app.removeGenerated()">Remove generated</button>
+        </div>
+        <div class="note small">Hypothetical pieces cover every ordered pair of the chosen substats in every chosen slot. They answer “how high could this go?”, not “what can I obtain?”.</div>
+      </div>
+      <div style="display:contents" x-data="handEntry">
+        <h3>Add a piece by hand</h3>
+        <div class="grid">
+          <label class="f">Name<input type="text" id="c-name" placeholder="e.g. My custom piece" x-model="name"></label>
+          <label class="f">Slot<select id="c-slot" @change="slot = $event.target.value">
+            <template x-for="o in slotOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === slot"></option></template>
+          </select></label>
+          <label class="f">Item level<input type="number" id="c-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-model="ilvl"></label>
+          <label class="f">Copies you can wear<input type="number" id="c-copies" min="1" max="2" inputmode="numeric" x-model="copies"></label>
+        </div>
+        <div class="grid" id="c-stats">
+          <template x-for="s in job.stats" :key="s"><label class="f"><span x-text="job.label[s]"></span><input type="number" min="0" :data-cstat="s" inputmode="numeric" x-model="stats[s]"></label></template>
+        </div>
+        <div class="row">
+          <span class="small dim">Fill from the formula using:</span>
+          <select id="c-s1" style="width:auto" @change="s1 = $event.target.value"><template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === s1"></option></template></select>
+          <select id="c-s2" style="width:auto" @change="s2 = $event.target.value"><template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === s2"></option></template></select>
+          <select id="c-s3" style="width:auto" @change="s3 = $event.target.value"><template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === s3"></option></template></select>
+          <button id="b-fill" type="button" @click="fill()">Fill stats</button>
+          <button class="primary" id="b-add" type="button" @click="add()">Add to pool</button>
+        </div>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- OPTIMIZER -->
+<section class="tab" id="tab-opt" role="tabpanel" hidden :hidden="$store.app.tab !== 'opt'">
+  <div style="display:contents" x-data="optimizer">
+    <div class="panel">
+      <h2>Optimizer</h2>
+      <div class="grid">
+        <label class="f">Maximize<select id="o-target" @change="$store.app.opt.target = $event.target.value">
+          <template x-for="o in statOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.target"></option></template>
+        </select></label>
+        <label class="f">Tiebreak 1<select id="o-tb1" @change="$store.app.opt.tb = $event.target.value">
+          <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb"></option></template>
+        </select></label>
+        <label class="f">Tiebreak 2<select id="o-tb2" @change="$store.app.opt.tb2 = $event.target.value">
+          <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
+        </select></label>
+      </div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="o-avg" x-model="$store.app.opt.avg"> Require average item level ≥</label>
+        <input type="number" id="o-avgv" min="1" :max="$store.app.maxReal" style="width:90px" inputmode="numeric" x-init="$el.value = $store.app.opt.avgMin" @input="$store.app.opt.avgMin = +$event.target.value || 0">
+        <span class="small dim" id="o-avgnote" x-text="job.weaponMode === '2h' ? '(weapon counts twice)' : ''"></span>
+      </div>
+    </div>
+    <div id="o-out">
+      <template x-if="view && view.kind === 'empty'"><div class="panel"><div class="empty">Add gear to the pool first.<div class="row" style="justify-content:center;margin-top:10px"><button class="primary" data-act="browse" type="button" @click="$store.app.showTab('pool')">Browse real gear</button></div></div></div></template>
+      <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">No combination meets the average item level requirement</b><span x-text="view.truncated ? ' within the search limit' : ''"></span>.<br>Lower the requirement or add higher item level gear.</div></div></template>
+      <template x-if="view && view.kind === 'ok'"><div class="panel">
+        <h3 x-text="'Best loadout for ' + view.targetLabel"></h3>
+        <div class="readout">
+          <div><b x-text="view.total"></b><span x-text="`${view.targetLabel} (gear total${view.synced ? ', synced' : ''})`"></span></div>
+          <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD with ${view.spd} gear ${view.spdLabel} · ${view.tierText}`"></span></div>
+          <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
+          <div><b :class="view.avgOk ? 'ok' : 'bad'" x-text="view.avg"></b><span x-text="`Average item level over ${view.denom} slot-weights`"></span></div>
+        </div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Slot</th><th>Item</th><th class="n">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
+          <tbody>
+            <template x-for="(r, i) in view.rows" :key="i">
+              <tr>
+                <td x-text="r.label"></td>
+                <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2">empty (no copy left)</td></template>
+                <template x-if="r.item"><td x-text="r.item.name"></td></template>
+                <template x-if="r.item"><td class="n" x-text="r.item.ilvl"></td></template>
+                <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value"></span><span class="dim" x-show="!c.value">0</span></td></template>
+              </tr>
+            </template>
+            <tr class="total"><td>Total</td><td></td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+          </tbody>
+        </table></div>
+        <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Narrow the pool.</div></template>
+      </div></template>
+    </div>
+  </div>
+  <div id="o-ceil" x-data="ceiling">
+    <template x-if="view"><div class="panel">
+      <h3>Ceiling per stat from this pool</h3>
+      <p class="small dim">The most of each stat the pool can give on its own, ignoring the other stats. “Unsynced” is the same pool without the cap, to show how much the cap removes.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th></th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
+        <tbody>
+          <tr><td x-text="'Synced to ' + view.cap"></td><template x-for="(v, k) in view.synced" :key="k"><td class="n" x-text="v"></td></template></tr>
+          <tr><td>Unsynced</td><template x-for="(v, k) in view.unsynced" :key="k"><td class="n dim" x-text="v"></td></template></tr>
+          <tr class="total"><td>GCD at synced ceiling</td><template x-for="(h, k) in view.headers" :key="k"><td :class="k === view.spdIdx ? 'n' : ''" x-text="k === view.spdIdx ? view.gcd : ''"></td></template></tr>
+        </tbody>
+      </table></div>
+    </div></template>
+  </div>
+</section>
+
+<footer>
+  <span>Data: item-level budget table, slot shares, level modifiers and item stats from the FFXIV datamining sheets (ItemLevel, BaseParam, ParamGrow, Item). Speed formula: AkhMorning’s GCD and DoT scaling.</span>
+  <span>Gear speed here means summed gear stats; the character’s base stat is added internally. Melds are ignored. Whether a given action is affected by speed depends on the job.</span>
+</footer>
+</div>
+<!-- SCRIPT -->
+</body>
+</html>

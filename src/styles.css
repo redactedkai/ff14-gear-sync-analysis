@@ -1,6 +1,3 @@
-<title>Item Level Stat Lab</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap">
-<style>
 :root{
   --bg:#f4f2ea; --surface:#fffdf7; --surface2:#ece9dd; --fg:#1b2a2c; --muted:#586869; --line:#d6d1bf;
   --accent:#0d6e72; --accent-fg:#ffffff; --accent-soft:#d5ebe8; --gold:#8f5f0c; --good:#25773a; --bad:#b0402c; --warn-bg:#f6e8c8;
@@ -87,4 +84,4 @@ svg.chart text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
 details summary{cursor:pointer;font-weight:600}
 footer{font-size:.78rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 @media (max-width:520px){ h1{font-size:1.6rem} th,td{padding:6px 7px} table.compact{font-size:.78rem} table.compact th,table.compact td{padding:6px 5px} }
-</style>
+[x-cloak]{display:none!important}

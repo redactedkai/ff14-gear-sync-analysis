@@ -2,6 +2,34 @@
 
 Date: 2026-10-11. Scope: everything in the working tree at commit `8a09811` plus the untracked files (`src/`, `scripts/`, `tests/`, `docs/`, `CLAUDE.md`, `package.json`). Generated data (`src/data.js`, `src/items.js`) was reviewed for format only.
 
+## Status of findings
+
+Re-evaluated on 2026-10-11 against branch `alpine-migration` after the core split and the Alpine UI migration. The detailed findings further down describe the code as originally audited, so their file names refer to the old layout (`core.js`, `ui.js`, `build.py`).
+
+"Resolved" means fixed on the `alpine-migration` branch, which isn't merged into `main` yet. ❌ covers open, partly resolved and in-progress items.
+
+| ID | Finding | Severity | Resolved? | Status | Notes / next step |
+| --- | --- | --- | :---: | --- | --- |
+| F1 | Ring pruning drops valid second rings | High | ❌ | **Open** | Re-checked on the new core: three Unique rings (10/9/5) still give 10 instead of 19. Fix during the testing phase, with regression and exhaustive-search tests |
+| F6 | Shared mutable globals carry the job context | High | ✅ | **Resolved** | Core functions take a frozen `JobContext` (`src/core/job-context.js`); the Alpine store holds the current one |
+| F9 | No check that the optimizer finds the true best | High | ❌ | **Open** | Add an exhaustive-search reference and a seeded property test |
+| F2 | Switching jobs in the same role keeps gear the new job can't equip | Medium | ❌ | **Open** | Behaviour kept on purpose during the migration (`setJob` in `src/ui/store.js`). Needs a decision: reset or filter |
+| F7 | Modules have too many responsibilities | Medium | ✅ | **Resolved** | Core split into `src/core/*` (optimizer in 3 files); UI split into Alpine components under `src/ui/components/` |
+| F8 | The same facts kept in several places | Medium | ❌ | **Partly resolved** | Now single-source: slot percents, substat shares, the real-gear accuracy check (`src/core/validation.js`), the item level maximum (inputs bind `MAX_REAL`). Still duplicated: job order and slot codes in `scripts/data/gen_items.py` |
+| F10 | Test structure (one script inside `new Function`) | Medium | ✅ | **Resolved** | `node:test`, one file per module in `tests/unit/` |
+| F11 | Uncovered areas (generators, saved state, filters, constraints, data integrity) | Medium | ❌ | **Open** | |
+| F12 | Smoke test robustness (fixed sleeps, prints instead of asserts) | Medium | ❌ | **Open** | Only paths updated (`tests/e2e/smoke.py`). Not run yet: Playwright isn't installed |
+| F13 | No CI, linting, formatting or pinned engines | Medium | ❌ | **Partly resolved** | Baseline committed, `engines` set to Node ≥ 22, `package-lock.json` committed. Still missing: CI, linter, formatter |
+| F15 | Documentation gaps | Medium | ❌ | **Open** | Planned as the last migration step: architecture, data format, JSDoc, README |
+| F3 | Lexicographic score has an implicit size limit | Low | ❌ | **Open** | Now noted in a comment in `src/core/optimizer/candidates.js` |
+| F4 | Saved state merged without type checks | Low | ❌ | **Partly resolved** | All repair logic is now in one place (`restoreState` in `src/ui/state.js`). Type and range checks are still missing |
+| F5 | `build.py` could silently ship the Node export line | Low | ✅ | **Resolved** | `build.py` was removed. `scripts/build/build.mjs` uses real imports and fails loudly on missing markers or output |
+| F14 | Data provenance not recorded | Low | ❌ | **Open** | |
+| O1 | Accessibility: tabs lack `aria-controls` and keyboard navigation | Low | ❌ | **Open** | |
+| O2 | Data stored on a DOM node (`#b-addall._all`) | Low | ✅ | **Resolved** | Browse results live in the Alpine browser component |
+| O3 | `esc()` doesn't escape `'` | Low | ✅ | **Resolved** | `esc()` is gone: `x-text` escapes everything. The one `x-html` (chart) contains only numbers |
+| O4 | Python `open()` without `with` in the generators | Low | ❌ | **Open** | |
+
 ## Summary
 
 The project is in good shape for a first version. The domain model is carefully validated against outside sources, the build is simple, and the working notes (`CLAUDE.md`, `docs/findings.md`) are unusually honest about what is verified and what is inferred.
@@ -216,10 +244,10 @@ Strengths: `docs/findings.md` is excellent, with evidence, separation of verifie
 ## 6. Other observations
 
 - **Performance:** fine. A 224-item pool optimizes in 3 ms. The 14-run ceiling table takes 26 ms. The page is 1.5 MB, almost all of it `items.js`. If a future expansion grows that file, consider a more compact encoding (for example, columnar arrays).
-- **Accessibility:** the tabs have `role="tab"` but no `aria-controls` and no arrow-key navigation. The panels are `role="tabpanel"` without `aria-labelledby`. The chart has an `aria-label`, but there's no text alternative for its data.
-- **Security:** item names are escaped before being inserted as HTML, and the page loads no third-party scripts. `esc()` doesn't escape `'`, which is safe only because every attribute uses double quotes. Worth a comment.
-- **DOM as storage:** `$('#b-addall')._all` stores data on a DOM node. Move it into module state.
-- **Resource handling in Python:** `open()` is called inside `csv.DictReader(...)` without `with`. It's harmless for a script, but easy to fix.
+- **O1. Accessibility:** the tabs have `role="tab"` but no `aria-controls` and no arrow-key navigation. The panels are `role="tabpanel"` without `aria-labelledby`. The chart has an `aria-label`, but there's no text alternative for its data.
+- **O3. Security:** item names are escaped before being inserted as HTML, and the page loads no third-party scripts. `esc()` doesn't escape `'`, which is safe only because every attribute uses double quotes. Worth a comment.
+- **O2. DOM as storage:** `$('#b-addall')._all` stores data on a DOM node. Move it into module state.
+- **O4. Resource handling in Python:** `open()` is called inside `csv.DictReader(...)` without `with`. It's harmless for a script, but easy to fix.
 
 ## 7. What is already done well
 
