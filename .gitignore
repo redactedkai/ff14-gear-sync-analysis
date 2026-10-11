@@ -1,7 +1,7 @@
 # generated / local-only
-dist/
-data/
-tests/out/
+/dist/
+/data/
+/tests/e2e/out/
 node_modules/
 __pycache__/
 *.pyc

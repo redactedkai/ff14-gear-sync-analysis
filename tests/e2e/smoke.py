@@ -1,13 +1,13 @@
 """Browser smoke test (Playwright): loads dist/index.html, walks every tab for several jobs, fails on JS errors or stray undefined/NaN/null text.
 Setup once: pip install playwright && playwright install chromium
-Run: python tests/smoke.py
+Run: python tests/e2e/smoke.py
 """
 from playwright.sync_api import sync_playwright
 import os, sys
 from pathlib import Path
-ROOT = Path(__file__).resolve().parent.parent
-PAGE = ROOT / 'dist' / 'index.html'      # run `python scripts/build.py` first
-OUT = ROOT / 'tests' / 'out'; OUT.mkdir(exist_ok=True)   # screenshots (gitignored)
+ROOT = Path(__file__).resolve().parents[2]
+PAGE = ROOT / 'dist' / 'index.html'      # run `npm run build` first
+OUT = ROOT / 'tests' / 'e2e' / 'out'; OUT.mkdir(exist_ok=True)   # screenshots (gitignored)
 errs=[]
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1000,'height':900})

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Fetch only the datamining CSVs this project needs (sparse, shallow clone) into data/ffxiv-datamining.
 
-Re-run after a game patch to pull the new sheets, then `python scripts/regen.py`.
+Re-run after a game patch to pull the new sheets, then `python scripts/data/regen.py`.
 """
 import subprocess, sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 DEST = ROOT / 'data' / 'ffxiv-datamining'
 URL = 'https://github.com/xivapi/ffxiv-datamining.git'
 FILES = ['Item', 'ItemLevel', 'ParamGrow', 'BaseParam', 'ClassJobCategory', 'EquipSlotCategory']

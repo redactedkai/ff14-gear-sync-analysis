@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Build src/items.js (the real-gear database) from the datamining CSVs.
+"""Build src/data/items.js (the real-gear database) from the datamining CSVs.
 
-Usage: python scripts/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]
+Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]
 
 Row format: [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique]
   slotCode : 0=2H weapon 1=1H weapon 2=off-hand 3=head 4=body 5=hands 6=legs 7=feet 8=ear 9=neck 10=wrist 11=ring
-  jobMask  : bit i set when JOBS[i] (see core.js) can equip it
+  jobMask  : bit i set when JOBS[i] (see src/core/constants.js) can equip it
   stats    : str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps  (HQ values = NQ + BaseParamValueSpecial)
 """
 import csv, json, sys
@@ -57,8 +57,8 @@ def main(csv_dir, out):
         if not any(st): continue
         rows.append([r['Name'], slot, ilvl, int(r['LevelEquip']), mask, ','.join(map(str, st)), 1 if r['IsUnique'] == 'True' else 0])
     rows.sort(key=lambda x: (-x[2], x[1], x[0]))
-    Path(out).write_text('const ITEMS=' + json.dumps(rows, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
+    Path(out).write_text('export const ITEMS=' + json.dumps(rows, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
     print(f'{len(rows)} rows -> {out}')
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else 'src/items.js')
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else 'src/data/items.js')

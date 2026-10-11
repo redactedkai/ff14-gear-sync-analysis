@@ -3,13 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "description": "Item level sync calculator and gear optimizer for FFXIV (single-file HTML page)",
-  "scripts": {
-    "build": "python scripts/build.py",
-    "test": "node tests/core.test.js",
-    "smoke": "python tests/smoke.py",
-    "check": "npm run build && npm test && npm run smoke",
-    "fetch": "python scripts/fetch_data.py",
-    "regen": "python scripts/regen.py"
+  "type": "module",
+  "engines": {
+    "node": ">=22"
   },
-  "license": "MIT"
+  "scripts": {
+    "build": "node scripts/build/build.mjs",
+    "dev": "node scripts/build/dev.mjs",
+    "test": "node --test \"tests/unit/*.test.js\"",
+    "smoke": "python tests/e2e/smoke.py",
+    "check": "npm run build && npm test && npm run smoke",
+    "fetch": "python scripts/data/fetch.py",
+    "regen": "python scripts/data/regen.py"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "alpinejs": "3.17.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
 }
