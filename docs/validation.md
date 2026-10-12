@@ -161,7 +161,7 @@ None of these totals has been checked in game. They show the search returns the 
 Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)):
 
 1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job), with the factor-first cap order below; supported by second-hand in-game values;
-2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$);
+2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$); strongly supported by a player's in-game report and The Balance's thresholds (below);
 3. sync never raises a stat.
 
 Settled: melds (materia) are ignored on synced-down gear. The owner confirmed it in game: a piece is synced, and its materia stops counting, when its item level is above the duty's item level cap (with item level sync on) or its equip level is above the duty's level.
@@ -189,6 +189,17 @@ A capture in a level-synced duty with item level sync off (a roulette), with one
 - **Settles the cap order.** Every value fits the factor-first cap, $\operatorname{round}(\lfloor \lfloor B \times F/100 \rfloor \times p/100 \rfloor / 10)$; the item order misses three of them by 1 (in game Blue Mage is 1 lower, Red Mage and Azeyma's 1 higher). The model now computes caps factor first ([math.md, section 5](math.md#the-clamp-rule)). The Red Mage value also shows that a cap is not always what a same-slot piece at the cap carries: the native item level 530 head has Vitality 122.
 - **Item stats keep the item order.** For an item's own stats the item order is far better: it matches 5,820 of 5,842 Intelligence and Mind pieces on Vitality, against 4,639 for factor first. For a factor of 100 the two orders give the same number at every item level and slot share, so substat caps (and the Wiki check in section 3) are unaffected.
 - `tests/unit/sync-cap-order.test.js` turns every row of the table into a test case, on the real items where the note names one.
+
+**Evidence for question 2 (lower-ranked substats).** None of these are captures by this project. The numbers were checked against this project's data.
+
+| Source | What it shows | Full-share cap | Own-share alternative | Kind |
+| --- | --- | --- | --- | --- |
+| [Square Enix forum, thread 468769](https://forum.square-enix.com/ffxiv/threads/468769) (2022), Sigmascape V2.0 Savage at 345 | A 495 healing chest (Critical Hit 184, Determination 129; the post doesn't name it, but it matches the Bozjan Coat of Healing in the data) synced to 123 and 123 | 123 | 86 | A player's in-game report, no screenshot |
+| The Balance, [Dragonsong's Reprise guide](https://www.thebalanceffxiv.com/jobs/melee/reaper/fight-tips/dragonsong-war/) (sync 605) | Both substats cap from item level 725; Underkeep Earrings (725) have a lower substat of 129, the accessory cap at 605 | threshold 725 | no threshold (every piece above 605 the same) | Community gearing practice |
+| Console Games Wiki, [Level Sync](https://ffxiv.consolegameswiki.com/wiki/Level_Sync) | "any accessories with a higher item level will have both substats capped at 88" (475) | 88 / 88 | 88 / 62 | Wiki claim, no source |
+
+- **Strongly supports question 2.** The forum report is the only value where the two rules differ. Its poster asked Square Enix to switch to the own-share rule, which implies the game uses the full-share one. Nothing found contradicts it. Square Enix has not published how sync reduces individual stats.
+- Found by research on 2026-10-12 (notes in `docs/scratchpad/materia/report.md`, section 9).
 
 Captures from the game are **the single most valuable evidence the project does not have**. A useful capture is a character sheet screenshot taken under a known sync cap (the duty name, or the cap item level), with the equipped gear listed by name, and ideally the same character unsynced for comparison. One capture with a piece whose second substat is above the cap (for example a 70% substat of 30 or more on a head piece at cap 123) would settle point 2 directly; the main stat and Vitality on the same sheet would settle point 1. Each capture should become a test case with the screenshot's numbers as the expected values.
 

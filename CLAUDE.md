@@ -96,7 +96,7 @@ Full derivation, worked example and verified/assumed table: `docs/math.md`. Evid
 
 Empirical or assumed (say so in the UI and in answers; never present as fact):
 - The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: with equal substats sharing the higher rank (relic weapon steps carry two full substats), every main stat counted and the off-hand rule, 98.7 to 100.0% exact per item level band, 99.8% overall (16,561 of 16,601). The 40 misses are five small groups (docs/validation.md section 2). The Gear pool and Gear optimizer use real item stats and do not depend on them; only Piece stats does.
-- The main stat / Vitality clamp under sync is inferred, supported only by the second-hand in-game values above; lower-ranked substats clamping to the full-share cap is inferred, not confirmed in game.
+- The main stat / Vitality clamp under sync is inferred, supported only by the second-hand in-game values above; lower-ranked substats clamping to the full-share cap is strongly supported (a player's in-game test, The Balance's item level thresholds; docs/validation.md section 8) but not verified in game.
 - Melds are ignored on synced-down gear (verified by the owner in game: a piece is synced when its item level is above the duty's cap with item level sync on, or its equip level is above the duty's level); substats are never scaled up (assumed).
 
 ## Data
