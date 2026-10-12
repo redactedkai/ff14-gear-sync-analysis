@@ -257,6 +257,7 @@
         <template x-for="s in sources" :key="s.key">
           <label class="toggle"><input type="checkbox" role="switch" class="switch" :data-source="s.key" :checked="!excluded(s.key)" @change="setExcluded(s.key, !$event.target.checked)"><span x-text="s.label"></span></label>
         </template>
+        <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Melds</span></label>
       </div>
     </div>
     <div id="o-out">
@@ -277,7 +278,7 @@
               <tr>
                 <td x-text="r.label"></td>
                 <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.blockedBy ? 'covered by ' + r.blockedBy : 'empty (no copy left)'"></td></template>
-                <template x-if="r.item"><td x-text="r.item.name"></td></template>
+                <template x-if="r.item"><td><span x-text="r.item.name"></span><template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template></td></template>
                 <template x-if="r.item"><td class="n" x-text="r.item.ilvl"></td></template>
                 <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value"></span><span class="dim" x-show="!c.value">0</span></td></template>
               </tr>
@@ -286,6 +287,7 @@
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Narrow the pool.</div></template>
+        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Melds: the best stones each piece's item level allows, every slot filled and every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>
   </div>
@@ -293,7 +295,7 @@
     <template x-if="view && view.error"><div class="panel"><h3>Ceiling per stat from this pool</h3><p class="small bad" x-text="view.error"></p></div></template>
     <template x-if="view && !view.error"><div class="panel">
       <h3>Ceiling per stat from this pool</h3>
-      <p class="small dim">The most of each stat the pool can give on its own.<span x-show="view.synced"> “Unsynced” drops all sync.</span></p>
+      <p class="small dim">The most of each stat the pool can give on its own<span x-show="view.melds">, with melds</span>.<span x-show="view.synced"> “Unsynced” drops all sync.</span></p>
       <div class="tablewrap"><table>
         <thead><tr><th></th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
         <tbody>

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { exhaustive } from './helpers/exhaustive.js';
+import { exhaustive, gamePool } from './helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');
 const NO_SYNC = { cap: 999, sync: false };
@@ -155,4 +155,47 @@ test('optimizer matches exhaustive search on random pools with huge tiebreak sta
 test('a pool too large to score exactly throws instead of ranking wrongly', () => {
   const pool = [mkItem('H', 'head', 100, { spd: 1e6, main: 1e6, vit: 1e6 })];
   assert.throws(() => optimize(sge, pool, NO_SYNC, { target: 'spd', tiebreak: ['main', 'vit'] }), /too large/);
+});
+
+/* With melds: random small pools of real pieces (some meldable, some not, some synced), against the reference's own
+   enumeration of every stone placement (meldVectors in helpers/exhaustive.js), not bestMeld. Item level windows where
+   the stones differ: grade VI/V (290+), X/IX (560+), XII/XI (690+). */
+test('with melds, the optimizer matches exhaustive search on random real pools', () => {
+  const rand = rng(20261012),
+    int = n => Math.floor(rand() * n);
+  const windows = [
+    { ilvlMin: 290, ilvlMax: 345 },
+    { ilvlMin: 560, ilvlMax: 600 },
+    { ilvlMin: 690, ilvlMax: 730 },
+  ];
+  const types = ['head', 'body', 'neck', 'ring'];
+  let melded = 0;
+  for (let t = 0; t < 40; t++) {
+    const job = makeJobContext(['SGE', 'WAR', 'BLM'][int(3)]);
+    const all = gamePool(job, windows[int(windows.length)]);
+    const pool = [];
+    for (const ty of types) {
+      const of = all.filter(i => i.type === ty);
+      const n = ty === 'ring' ? 1 + int(3) : int(3);
+      // distinct pieces: the same object twice would be one Unique ring the reference could pair with itself
+      for (let i = 0; i < n && of.length; i++) pool.push(of.splice(int(of.length), 1)[0]);
+    }
+    if (!pool.length) continue;
+    const ilvls = pool.map(i => i.ilvl).sort((a, b) => a - b);
+    const sync = rand() < 0.5 ? NO_SYNC : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
+    const subs = job.substats;
+    const opts = { target: subs[int(subs.length)], tiebreak: [rand() < 0.6 ? subs[int(subs.length)] : ''], melds: true };
+    const want = exhaustive(job, pool, sync, opts);
+    const r = optimize(job, pool, sync, opts);
+    const label = `${job.jobId} pool #${t} ${JSON.stringify(opts)} ${JSON.stringify(sync)}`;
+    assert.ok(r.ok && !r.truncated, label);
+    const keys = [opts.target, ...opts.tiebreak.filter(Boolean)];
+    assert.deepEqual(
+      keys.map(s => r.totals[s]),
+      want,
+      label,
+    );
+    if (r.picks.some(p => p.meld)) melded++;
+  }
+  assert.ok(melded >= 20, `${melded} runs used melds`); // the test exercises melds, not just plain pools
 });

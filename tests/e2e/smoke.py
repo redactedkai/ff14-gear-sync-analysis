@@ -465,6 +465,58 @@ def check_exclude_sources(pg):
     set_number(pg, '#level', '50')
 
 
+MELDS_POOL = ('SGE', 300, 345, 100)  # unsynced, most pieces take grade VI stones: melds raise the best Critical Hit
+NODE_MELDS = """
+const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
+const { makeJobContext } = await import(%s);
+const { browseItems, poolItemFromRow } = await import(%s);
+const { optimize } = await import(%s);
+await import(%s);
+const job = makeJobContext(jobId);
+const pool = browseItems(job, { ilvlMin, ilvlMax, lvlMax }).map(r => poolItemFromRow(job, r));
+const best = melds => optimize(job, pool, { cap: null, sync: false, level: lvlMax }, { target: 'crit', melds }).totals.crit;
+console.log(JSON.stringify({ count: pool.length, on: best(true), off: best(false) }));
+"""
+
+
+def check_melds(pg):
+    """Melds are on by default: the total equals the core's with melds, and each melded pick names its stones; the
+    switch off gives the core's total without melds and no meld lines. The choice is saved."""
+    job, lo, hi, lvl = MELDS_POOL
+    want = run_node(NODE_MELDS, [job, lo, hi, lvl])
+    if not check(want['on'] > want['off'], f'{job} {lo}-{hi}: melds do not raise Critical Hit; pick another window'):
+        return
+    set_job(pg, job)
+    show_tab(pg, 'pool')
+    clear_pool(pg)
+    fill_browser(pg, lo, hi, lvl)
+    pg.click('#b-addall')
+    expect(pool_rows(pg)).to_have_count(want['count'])
+    wait_optimizer(pg)
+    if pg.locator('#sync').is_checked():
+        pg.locator('#sync').uncheck()
+    set_number(pg, '#level', str(lvl))
+    pg.select_option('#o-target', 'crit')
+    melds = pg.locator('#o-melds')
+    check(melds.is_checked(), 'melds are on by default')
+    expect(opt_total(pg)).to_have_text(str(want['on']))
+    expect(pg.locator('#o-result .meld').first).to_be_visible()
+    expect(pg.locator('#o-meld-note')).to_be_visible()
+    check_no_bad_text(pg, 'melds/on')
+    melds.uncheck()
+    expect(opt_total(pg)).to_have_text(str(want['off']))
+    expect(pg.locator('#o-result .meld')).to_have_count(0)
+    wait_saved(pg, 's => s.opt.melds === false')
+    melds.check()
+    expect(opt_total(pg)).to_have_text(str(want['on']))
+    # leave the target on the main stat: the result is only recomputed while this tab is open, and a later check that
+    # waits for a Critical Hit result would otherwise read this one
+    pg.select_option('#o-target', 'main')
+    expect(pg.locator('#o-result')).to_have_attribute('data-target', 'main')
+    pg.locator('#sync').check()
+    set_number(pg, '#level', '50')
+
+
 def wait_saved(pg, js_condition):
     """Wait until the (debounced) saved state satisfies a JS predicate over it, s => ..."""
     pg.wait_for_function(
@@ -817,6 +869,7 @@ def main():
             check_job_switch_clears_pool,
             check_ring_copies,
             check_exclude_sources,
+            check_melds,
             check_expansion_filter,
             check_reload_persists,
             check_corrupted_storage,

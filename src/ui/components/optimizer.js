@@ -27,6 +27,7 @@ export function optimizer() {
             app.opt.tb,
             app.opt.tb2,
             app.opt.exclude.join(),
+            app.opt.melds,
           ];
           return () => {
             if (deps[0] === 'opt') this.view = Object.freeze(optimizerView(app));
@@ -60,7 +61,7 @@ export function ceiling() {
         Alpine,
         () => {
           const app = this.$store.app;
-          const deps = [app.tab, app.poolVersion, app.cap, app.sync, app.level, app.jobCtx, app.opt.exclude.join()];
+          const deps = [app.tab, app.poolVersion, app.cap, app.sync, app.level, app.jobCtx, app.opt.exclude.join(), app.opt.melds];
           return () => {
             if (deps[0] === 'opt') this.view = ceilingView(app);
           };

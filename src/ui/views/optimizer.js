@@ -3,6 +3,7 @@
 import { SLOT_LABEL } from '../../core/constants.js';
 import { withoutSources, slotInfo, slotLabel } from '../../core/items.js';
 import { optimize, itemSyncIlvl } from '../../core/optimizer/index.js';
+import { meldText } from '../../core/meld.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
 import { syncSettings, syncLabel } from '../state.js';
 
@@ -46,6 +47,7 @@ function buildOptimizerView(app) {
     target: o.target,
     tiebreak: [o.tb, o.tb2],
     nodeLimit: NODE_LIMIT,
+    melds: !!o.melds,
   });
   if (!res.ok) return { kind: 'infeasible', truncated: res.truncated };
 
@@ -63,6 +65,7 @@ function buildOptimizerView(app) {
     return {
       label,
       item: p.item,
+      meld: meldText(job, p.meld),
       cells: job.stats.map(s => ({ value: p.eff[s] || 0, gold: s === o.target && !!p.eff[s] })),
     };
   });
@@ -81,6 +84,9 @@ function buildOptimizerView(app) {
     dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
     rows,
     truncated: res.truncated,
+    melds: !!o.melds,
+    melded: res.picks.filter(p => p.meld).length,
+    noMeldData: res.noMeldData,
   };
 }
 
@@ -97,7 +103,7 @@ export function ceilingView(app, nodeLimit = CEILING_NODE_LIMIT) {
     const sync = syncSettings(app);
     const none = { cap: null, sync: false, level: null };
     const best = (sy, s) => {
-      const r = optimize(job, pool, sy, { target: s, nodeLimit });
+      const r = optimize(job, pool, sy, { target: s, nodeLimit, melds: !!app.opt.melds });
       const value = r.ok ? r.totals[s] : 0;
       if (r.truncated) truncated = true;
       return { value, text: (r.truncated ? '≥ ' : '') + value };
@@ -113,6 +119,7 @@ export function ceilingView(app, nodeLimit = CEILING_NODE_LIMIT) {
       synced: synced ? synced.map(c => c.text) : null,
       unsynced: unsynced.map(c => c.text),
       truncated,
+      melds: !!app.opt.melds,
       gcd: spd ? gcdFor(spd, app.level).toFixed(2) + 's' : '—',
     };
   } catch (e) {

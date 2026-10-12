@@ -55,7 +55,7 @@ export function defaultState() {
     syncIlvl: 475,
     piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
     browse: { show: 'all', q: '', type: 'any', expOff: [], min: '', max: '', lvl: 100, sort: 'ilvl' }, // expOff: expansions switched off
-    opt: { target: 'main', tb: '', tb2: '', exclude: [] }, // exclude: SOURCES keys switched off (left out of the search); every group is included by default
+    opt: { target: 'main', tb: '', tb2: '', exclude: [], melds: true }, // exclude: SOURCES keys switched off (left out of the search); every group is included by default. melds: give pieces their best materia melds
     pool: [],
   };
 }
@@ -185,6 +185,7 @@ export function restoreState(raw) {
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
   s.opt.exclude = Array.isArray(o.exclude) ? SOURCES.map(x => x.key).filter(k => o.exclude.includes(k)) : [];
+  s.opt.melds = bool(o.melds, s.opt.melds);
 
   s.pool = restorePool(r.pool);
   reserveIds(s.pool.map(i => i.id));

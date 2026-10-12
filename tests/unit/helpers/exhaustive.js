@@ -1,8 +1,10 @@
 /* Shared test helpers: an exhaustive reference for the optimizer, and real-gear pools from the item database.
    The reference tries every legal loadout, so it is independent of the optimizer's pruning and scoring. */
 import { SLOT_TYPES } from '../../../src/core/constants.js';
-import { browseItems, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
-import { effStats } from '../../../src/core/optimizer/index.js';
+import { capsFor } from '../../../src/core/formulas.js';
+import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
+import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/index.js';
+import { MATERIA } from '../../../src/core/tables.js';
 
 /* Pool items for every database row this job can equip that matches the browse filter
    {q, type, ilvlMin, ilvlMax, lvlMax}, optionally narrowed by keep(row). */
@@ -36,6 +38,59 @@ function choicesFor(pool, t) {
   return pairs.length ? pairs : items.map(i => [i]);
 }
 
+/* Every effective stat vector a piece can reach with melds, written independently of src/core/meld.js: each slot gets
+   one of the job's substats or nothing, holding the most valuable grade that slot allows (guaranteed slots and the
+   first overmeld slot any grade the item level gate allows, later overmeld slots no high grade; a bigger stone never
+   lowers a stat, so smaller ones are never needed), and every stat is capped at the piece's own cap (capsFor at its item
+   level, share and factors) without lowering a stat already above it. Only vectors no other one beats on every `keys`
+   stat are kept: the objective adds keys across the loadout, so a beaten one never helps. A synced piece, or one with no
+   slot data, has only its own vector. */
+export function meldVectors(job, item, sync, keys) {
+  const base = effStats(job, item, sync);
+  const info = meldInfo(item);
+  if (itemSyncIlvl(item, sync) != null || !info || !info.slots) return [base];
+  const best = high => {
+    let v = 0;
+    MATERIA.values.forEach((x, i) => {
+      if (MATERIA.gate[i] <= item.ilvl && (high || !MATERIA.high.includes(i + 1))) v = Math.max(v, x);
+    });
+    return v;
+  };
+  const total = info.overmeld ? 5 : info.slots;
+  const slotValue = [...Array(total)].map((_, i) => best(i <= info.slots)); // index slots = the first overmeld slot
+  const s = slotInfo(job, item);
+  const caps = capsFor(job, item.type, item.ilvl, s.pct, s.factors);
+  const choices = [...job.substats, null];
+  const out = [];
+  const add = new Array(total).fill(null);
+  const rec = i => {
+    if (i === total) {
+      const v = { ...base };
+      for (const st of job.substats) {
+        const stones = add.reduce((n, a, k) => n + (a === st ? slotValue[k] : 0), 0);
+        if (stones) v[st] = Math.max(base[st] || 0, Math.min((base[st] || 0) + stones, caps[st]));
+      }
+      out.push(v);
+      return;
+    }
+    for (const c of choices) {
+      add[i] = c;
+      rec(i + 1);
+    }
+  };
+  rec(0);
+  const key = v => keys.map(k => v[k] || 0);
+  const ks = out.map(key);
+  const beaten = (a, b) => b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
+  const seen = new Set();
+  return out.filter((_v, i) => {
+    const id = ks[i].join();
+    if (seen.has(id) || ks.some(b => beaten(ks[i], b))) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 /* Best [target, tiebreak1, tiebreak2] totals over every legal loadout, or null if none meets the constraints.
    One item per slot that has items; two rings (the same item twice only if it has 2 copies).
 
@@ -51,22 +106,22 @@ function choicesFor(pool, t) {
 
    Effective (synced) stats come from the optimizer's own effStats, so this reference does not check the sync
    clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/testing.md). */
-export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null }) {
+export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, melds = false }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
   const stats = job.stats;
   const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
   const blockable = blockableTypes(job, pool);
   /* each choice (an item, a ring pair, or empty) as its effective stat totals in job.stats order and what it blocks */
+  // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones
+  const vectorsOf = i => (melds ? meldVectors(job, i, sync, keys) : [effStats(job, i, sync)]);
   const choices = slots.map(t => {
-    const list = choicesFor(pool, t).map(items => {
-      const v = stats.map(() => 0);
+    const list = choicesFor(pool, t).flatMap(items => {
+      const blocks = items.flatMap(i => slotInfo(job, i).blocks);
+      let sums = [stats.map(() => 0)];
       items.forEach(i => {
-        const e = effStats(job, i, sync);
-        stats.forEach((s, k) => {
-          v[k] += e[s] || 0;
-        });
+        sums = sums.flatMap(v => vectorsOf(i).map(e => v.map((x, k) => x + (e[stats[k]] || 0))));
       });
-      return { v, blocks: items.flatMap(i => slotInfo(job, i).blocks), empty: false };
+      return sums.map(v => ({ v, blocks, empty: false }));
     });
     if (blockable.has(t)) list.push({ v: stats.map(() => 0), blocks: [], empty: true });
     return list;
