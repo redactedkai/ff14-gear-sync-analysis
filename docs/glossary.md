@@ -40,6 +40,8 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Main stat.** A job's primary damage or healing stat: Strength (tanks and Strength melee), Dexterity (Ninja, Viper, ranged physical), Intelligence (casters) or Mind (healers). Gear for one main stat is useless to jobs that use another. See [math.md, section 1](math.md#1-terms).
 
+**Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [materia.md, section 5](materia.md#5-breakpoints).
+
 **Materia, melds.** Materia are stones that can be attached ("melded") to gear to add one combat substat each, in grades I to XII. A piece has up to 5 slots; crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot. Each substat on a piece is capped at the piece's own cap. On synced-down gear melds do not count (verified by the owner in game): a piece is synced when its item level is above the duty's cap or its equip level is above the duty's level. The gear optimizer gives each piece that is not synced its best melds (the "Melds" switch, on by default). See [materia.md](materia.md).
 
 **Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level; the Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123.

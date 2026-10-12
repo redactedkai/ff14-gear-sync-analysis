@@ -284,9 +284,12 @@
               </tr>
             </template>
             <tr class="total"><td>Total</td><td></td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim">gear only, no food</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" x-text="c ? c.effect : ''"></td></template></tr>
+            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n small" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Narrow the pool.</div></template>
+        <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. Gear only: food would move every total.</p>
         <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Melds: the best stones each piece's item level allows, every slot filled and every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>

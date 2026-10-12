@@ -94,7 +94,7 @@ The optimizer scores a loadout as the sum of per-piece scores, $\sigma(L) = \sum
 
 A substat's effect (critical rate, Determination multiplier, GCD) moves in steps, so points between two steps do nothing. The optimizer maximizes raw totals.
 - **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 full-pool runs.
-- **Tiebreaks:** in 200 of 572 two-key runs, another loadout keeps the target's step and puts the tiebreak a step higher. Mostly at level 100, where steps are 14 to 25 points wide; rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds. The tool keeps raw totals. **Measured** (an independent dynamic program; the formulas are the community ones from AkhMorning, matching xivgear, **inferred**).
+- **Tiebreaks:** in 200 of 572 two-key runs, another loadout keeps the target's step and puts the tiebreak a step higher. Mostly at level 100, where steps are 14 to 25 points wide; rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds. The tool keeps raw totals, and shows the steps instead: under the result, each substat's effect from gear (no food), the points above the start of its step and the points to the next. **Measured** (an independent dynamic program; the formulas are the community ones from AkhMorning, matching xivgear, **inferred**).
 
 ## 6. Checks
 

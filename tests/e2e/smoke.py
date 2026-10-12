@@ -502,6 +502,7 @@ def check_melds(pg):
     expect(opt_total(pg)).to_have_text(str(want['on']))
     expect(pg.locator('#o-result .meld').first).to_be_visible()
     expect(pg.locator('#o-meld-note')).to_be_visible()
+    expect(pg.locator('#o-effect')).to_contain_text('%')  # the tier rows: Critical Hit rate
     check_no_bad_text(pg, 'melds/on')
     melds.uncheck()
     expect(opt_total(pg)).to_have_text(str(want['off']))

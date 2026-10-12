@@ -67,6 +67,12 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
   const unsynced = optimizerView({ ...app, sync: false }).total;
   assert.equal(unsynced, want(false));
   assert.ok(v.total < unsynced);
+  // tier row: one entry per stat column, none for the main stat and Vitality; speed by its GCD, as in the readout
+  assert.equal(v.tiers.length, v.headers.length);
+  assert.deepEqual([v.tiers[0], v.tiers[1]], [null, null]);
+  const spd = v.tiers[app.jobCtx.stats.indexOf('spd')];
+  assert.equal(spd.effect, `${v.gcd}s`);
+  assert.ok(spd.spare >= 0 && spd.toNext > 0);
 });
 
 test('optimizer view: one Unique ring fills the first ring slot and leaves the second empty', () => {

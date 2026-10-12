@@ -25,6 +25,7 @@ src/
     formulas.js       rounding, slot budgets, buildPiece, capsFor, syncStats, statDerivation, predictRaw
     sync-target.js    levelSyncIlvl, syncTarget: which item level a piece is synced to (item level cap or level sync)
     speed.js          speedParams, gcdFor, dotMult, gcdTiers
+    tiers.js          statTier: a substat's effect from gear and its step (tier) start and next
     meld.js           materia melds: stoneValues, meldSlots, meldCaps, bestMeld (best melds of one piece), meldText
     items.js          pool items (mkItem, ids), genericItems, database rows (parseRow, dbStats, browseItems)
     optimizer/        candidates.js (vectors, scores, dominance) / search.js (branch-and-bound) / index.js (optimize)

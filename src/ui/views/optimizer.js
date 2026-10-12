@@ -4,6 +4,7 @@ import { SLOT_LABEL } from '../../core/constants.js';
 import { withoutSources, slotInfo, slotLabel } from '../../core/items.js';
 import { optimize, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
+import { statTier } from '../../core/tiers.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
 import { syncSettings, syncLabel } from '../state.js';
 
@@ -77,6 +78,12 @@ function buildOptimizerView(app) {
     spdLabel: job.label.spd,
     total: t[o.target],
     totals: job.stats.map(s => t[s]),
+    // each stat's effect from gear alone, the points above its tier start (spare) and the points to the next tier
+    tiers: job.stats.map(s => {
+      const tier = statTier(job, s, t[s], app.level);
+      if (!tier) return null;
+      return { effect: tier.effect, spare: t[s] - tier.start, toNext: tier.next == null ? null : tier.next - t[s] };
+    }),
     synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level).toFixed(2),
     spd,
