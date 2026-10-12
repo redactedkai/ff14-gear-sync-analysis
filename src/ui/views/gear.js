@@ -4,9 +4,10 @@
 import { SLOT_LABEL } from '../../core/constants.js';
 import { browseItems, dbStats, kindFactors, poolKey, slotInfo, slotLabel } from '../../core/items.js';
 import { syncStats } from '../../core/formulas.js';
+import { syncTarget } from '../../core/sync-target.js';
 import { effStats } from '../../core/optimizer/index.js';
 import { statCell, fmtInt } from '../helpers.js';
-import { syncActive } from '../state.js';
+import { syncSettings } from '../state.js';
 
 export const SHOW_LIMIT = 100; /* database rows rendered */
 export const POOL_ROWS = 400; /* pool rows rendered; the rest are still searched */
@@ -37,12 +38,11 @@ function poolMatches(app) {
 export function gearView(app) {
   const job = app.jobCtx,
     b = app.browse,
-    on = syncActive(app),
+    sync = syncSettings(app),
     showPool = b.show === 'pool';
   const inPool = new Map(app.pool.map(i => [poolKey(i), i]));
   let all;
   if (showPool) {
-    const sync = { cap: app.cap, sync: on };
     all = poolMatches(app).map(item => ({
       name: item.name,
       type: item.type,
@@ -67,6 +67,7 @@ export function gearView(app) {
     });
     all = rows.map(r => {
       const raw = dbStats(job, r.st);
+      const target = syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, syncOn: sync.sync, cap: sync.cap, syncedLevel: sync.level });
       return {
         name: r.name,
         type: r.type,
@@ -76,7 +77,7 @@ export function gearView(app) {
         copies: r.type === 'ring' && !r.unique ? 2 : 1, // as poolItemFromRow sets it
         blocks: r.blocks,
         raw,
-        eff: on ? syncStats(job, raw, r.type, app.cap, r.ilvl, r.pct, kindFactors(job, r.kind)) : raw,
+        eff: target == null ? raw : syncStats(job, raw, r.type, target, r.ilvl, r.pct, kindFactors(job, r.kind)),
         row: r,
         item: inPool.get(poolKey(r)) ?? null,
       };

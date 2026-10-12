@@ -3,7 +3,7 @@ import { PG } from './tables.js';
 import { EXPANSIONS } from './constants.js';
 
 /* sub = BaseSpeed (the character's own speed at this level), div = LevelModifier,
-   sync = the game's default sync item level for this level */
+   sync = the item level gear is synced to at this level (ParamGrow.ItemLevelSync; level sync, sync-target.js) */
 export function speedParams(level) {
   const r = PG[Math.max(1, Math.min(100, level | 0)) - 1];
   return { sub: r[0], div: r[1], sync: r[2] };

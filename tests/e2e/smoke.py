@@ -10,7 +10,10 @@ Expected values come from outside the code under test where possible:
     synced to 123 and unsynced, equals what src/core computes for the same rows, and a brute force over
     every loadout (tests/unit/helpers/exhaustive.js), run in Node;
   - a 130 head piece (Spell Speed / Piety / Direct Hit) reproducing a real item level 130 healer head piece
-    (Mind 33, Vitality 32, substats 31/22/6; tests/unit/views.test.js finds it in the item database).
+    (Mind 33, Vitality 32, substats 31/22/6; tests/unit/views.test.js finds it in the item database);
+  - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
+    head values (Mind 248; tests/unit/level-sync.test.js derives them from the ItemLevel row), and the Sync limits
+    tab at item level 660 (ParamGrow.ItemLevelSync for level 90).
 
 Setup once: pip install playwright && python -m playwright install chromium
 Run: npm run build && python tests/e2e/smoke.py
@@ -232,7 +235,7 @@ const filter = { ilvlMin, ilvlMax, lvlMax };
 const pool = gamePool(job, filter);
 const out = { count: browseItems(job, filter).length };
 for (const sync of [true, false]) {
-  const s = { cap: 123, sync };
+  const s = { cap: 123, sync, level: lvlMax };
   const opts = { target: 'spd', tiebreak: ['main', 'vit'] };
   out[sync ? 'synced' : 'unsynced'] = [optimize(job, pool, s, opts).totals.spd, exhaustive(job, pool, s, opts)[0]];
 }
@@ -411,7 +414,7 @@ def check_ring_copies(pg):
         check(False, f'{job}: optimizer total {total.inner_text()!r}, expected {want["two"][0]} with {want["ring"]} worn twice')
 
 
-EXCLUDE_POOL = ('SGE', 270, 290, 70)  # unsynced, the best main stat uses crafted pieces; without them it is lower
+EXCLUDE_POOL = ('SGE', 270, 290, 70)  # unsynced (synced level 70), the best main stat uses crafted pieces; without them it is lower
 NODE_EXCLUDE = """
 const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
 const { makeJobContext } = await import(%s);
@@ -447,6 +450,7 @@ def check_exclude_sources(pg):
     wait_optimizer(pg)
     if pg.locator('#sync').is_checked():
         pg.locator('#sync').uncheck()
+    set_number(pg, '#level', str(lvl))  # unsynced: at a lower level, level sync would cap the window's gear
     pg.select_option('#o-target', 'main')
     crafted = pg.locator('#o-exclude input[data-source="crafted"]')
     check(crafted.is_checked(), 'crafted gear is included by default')
@@ -457,6 +461,7 @@ def check_exclude_sources(pg):
     crafted.check()
     expect(opt_total(pg)).to_have_text(str(want['all']))
     pg.locator('#sync').check()
+    set_number(pg, '#level', '50')
 
 
 def wait_saved(pg, js_condition):
@@ -707,6 +712,51 @@ def check_pld_offhand(pg):
     check('Off-hand' not in opts, f'WAR slot filter offers Off-hand: {opts}')
 
 
+# Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
+# capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per
+# mille (level-sync.test.js).
+HEAD_MAIN_CAP_660 = 248
+HEAD_SUB_CAP_660 = '184'
+
+
+def check_level_sync(pg):
+    """Synced level 90 with item level sync off, at 400 px: the gear table shows the level-synced value, the ceiling
+    has a 'Synced to level 90' row, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll."""
+    pg.set_viewport_size({'width': 400, 'height': 800})
+    set_job(pg, 'SGE')
+    pg.locator('#sync').uncheck()
+    set_number(pg, '#level', '90')
+    show_tab(pg, 'pool')
+    clear_pool(pg)
+    fill_browser(pg, 780, '', 100, 'head')
+    row = pg.locator('#gear-table tbody tr[data-key]').first
+    expect(row).to_contain_text(f'→{HEAD_MAIN_CAP_660}')
+    check_no_bad_text(pg, 'level sync/pool')
+    row.locator('input[type=checkbox]').check()
+    wait_optimizer(pg)
+    expect(pg.locator('#o-ceil')).to_contain_text('Synced to level 90')
+    expect(opt_total(pg)).not_to_have_text('')
+    check_no_bad_text(pg, 'level sync/opt')
+    show_math(pg, 'sync')
+    expect(pg.locator('#s-lead')).to_contain_text('synced to item level 660')
+    head = next((r for r in table_rows(pg, '#s-table') if r[0] == 'Head'), None)
+    check(head is not None and head[2] == HEAD_SUB_CAP_660, f'level 90 head substat cap {head and head[2]!r}, expected {HEAD_SUB_CAP_660}')
+    show_math(pg, 'piece')
+    check_no_bad_text(pg, 'level sync/piece')
+    for where in ('pool', 'opt'):
+        show_tab(pg, where)
+        hs = pg.evaluate('document.documentElement.scrollWidth > document.documentElement.clientWidth')
+        check(not hs, f'level sync: horizontal page scroll at 400 px ({where})')
+    pg.screenshot(path=str(OUT / 'level-sync.png'), full_page=True)
+    # back to the shared setup: level 50, sync to 123, empty pool, no name filter
+    show_tab(pg, 'pool')
+    clear_pool(pg)
+    pg.select_option('#b-type', 'any')
+    set_number(pg, '#level', '50')
+    set_cap(pg, '123')
+    pg.set_viewport_size({'width': 1000, 'height': 900})
+
+
 def check_no_bad_text(pg, where):
     txt = pg.inner_text('body')
     for bad in BAD_WORDS:
@@ -771,6 +821,7 @@ def main():
             check_corrupted_storage,
             check_reset,
             check_pld_offhand,
+            check_level_sync,
             walk_jobs,
         ]
         set_job(pg, 'SGE')

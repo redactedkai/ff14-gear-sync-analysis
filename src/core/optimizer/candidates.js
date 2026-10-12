@@ -1,16 +1,30 @@
 /* Optimizer stage 1: turn a pool into per-slot candidate lists.
-   Each candidate carries its effective stat vector (synced if sync is on) and its scalar score.
+   Each candidate carries its effective stat vector (synced where item level or level sync applies) and its scalar score.
    Candidates dominated by another item in the same slot are dropped. */
 import { SLOT_TYPES } from '../constants.js';
 import { syncStats } from '../formulas.js';
-import { slotInfo } from '../items.js';
+import { equipLevel, slotInfo } from '../items.js';
+import { syncTarget } from '../sync-target.js';
 
-/* sync = {cap, sync}: the cap item level and whether sync is on. A piece is capped by its own slot share and stat
-   factors. */
+/* The item level a pool item is synced to, or null when it is untouched (syncTarget). sync = {cap, sync, level}: the
+   item level cap, whether item level sync is on (with a cap set), and the synced character level (null or missing: no
+   level sync). Only database pieces have an equip level, so only they can be level-synced. */
+export function itemSyncIlvl(item, sync) {
+  return syncTarget({
+    itemLevel: item.ilvl,
+    equipLevel: equipLevel(item),
+    syncOn: sync.sync,
+    cap: sync.cap,
+    syncedLevel: sync.level ?? null,
+  });
+}
+
+/* A pool item's stats after sync. A piece is capped by its own slot share and stat factors. */
 export function effStats(job, item, sync) {
-  if (!sync.sync) return item.stats;
+  const target = itemSyncIlvl(item, sync);
+  if (target == null) return item.stats;
   const s = slotInfo(job, item);
-  return syncStats(job, item.stats, item.type, sync.cap, item.ilvl, s.pct, s.factors);
+  return syncStats(job, item.stats, item.type, target, item.ilvl, s.pct, s.factors);
 }
 
 /* Lexicographic score [target, tiebreak 1, tiebreak 2] packed into one number, so the search can add and

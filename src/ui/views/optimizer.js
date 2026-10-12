@@ -2,9 +2,9 @@
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
 import { withoutSources, slotInfo, slotLabel } from '../../core/items.js';
-import { optimize } from '../../core/optimizer/index.js';
+import { optimize, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
-import { syncActive } from '../state.js';
+import { syncSettings, syncLabel } from '../state.js';
 
 export const NODE_LIMIT = 700000;
 export const CEILING_NODE_LIMIT = 150000;
@@ -18,6 +18,11 @@ export function tierText(spd, level) {
 /* The pool the optimizer searches: the gear pool minus the excluded sources. */
 export function searchPool(app) {
   return withoutSources(app.pool, app.opt.exclude || []);
+}
+
+/* Sync changes something in this pool: item level sync is on, or some piece is level-synced. */
+function poolSynced(pool, sync) {
+  return sync.sync || pool.some(i => itemSyncIlvl(i, sync) != null);
 }
 
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message
@@ -36,16 +41,12 @@ function buildOptimizerView(app) {
   if (!app.pool.length) return { kind: 'empty' };
   const pool = searchPool(app);
   if (!pool.length) return { kind: 'excluded' };
-  const res = optimize(
-    job,
-    pool,
-    { cap: app.cap, sync: syncActive(app) },
-    {
-      target: o.target,
-      tiebreak: [o.tb, o.tb2],
-      nodeLimit: NODE_LIMIT,
-    },
-  );
+  const sync = syncSettings(app);
+  const res = optimize(job, pool, sync, {
+    target: o.target,
+    tiebreak: [o.tb, o.tb2],
+    nodeLimit: NODE_LIMIT,
+  });
   if (!res.ok) return { kind: 'infeasible', truncated: res.truncated };
 
   const t = res.totals,
@@ -73,7 +74,7 @@ function buildOptimizerView(app) {
     spdLabel: job.label.spd,
     total: t[o.target],
     totals: job.stats.map(s => t[s]),
-    synced: syncActive(app),
+    synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level).toFixed(2),
     spd,
     tierText: tierText(spd, app.level),
@@ -83,7 +84,7 @@ function buildOptimizerView(app) {
   };
 }
 
-/* Per-stat ceiling of the searched pool, synced (only while sync is on) and unsynced. Returns null for an empty pool, {error} if the
+/* Per-stat ceiling of the searched pool, synced (only while sync changes something in it) and unsynced. Returns null for an empty pool, {error} if the
    optimizer throws. */
 export function ceilingView(app) {
   const job = app.jobCtx;
@@ -92,18 +93,20 @@ export function ceilingView(app) {
   try {
     // A search that hits its node limit only gives a lower bound: shown as "≥ value".
     let truncated = false;
-    const best = (sync, s) => {
-      const r = optimize(job, pool, { cap: app.cap, sync }, { target: s, nodeLimit: CEILING_NODE_LIMIT });
+    const sync = syncSettings(app);
+    const none = { cap: null, sync: false, level: null };
+    const best = (sy, s) => {
+      const r = optimize(job, pool, sy, { target: s, nodeLimit: CEILING_NODE_LIMIT });
       const value = r.ok ? r.totals[s] : 0;
       if (r.truncated) truncated = true;
       return { value, text: (r.truncated ? '≥ ' : '') + value };
     };
-    const synced = syncActive(app) ? job.stats.map(s => best(true, s)) : null;
-    const unsynced = job.stats.map(s => best(false, s));
+    const synced = poolSynced(pool, sync) ? job.stats.map(s => best(sync, s)) : null;
+    const unsynced = job.stats.map(s => best(none, s));
     const spdIdx = job.stats.indexOf('spd');
     const spd = (synced ?? unsynced)[spdIdx]?.value;
     return {
-      cap: app.cap,
+      label: syncLabel(app),
       headers: job.stats.map(s => job.short[s]),
       spdIdx,
       synced: synced ? synced.map(c => c.text) : null,

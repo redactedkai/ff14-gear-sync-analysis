@@ -11,6 +11,7 @@ All numbers below come from the game tables in this repository (ffxiv-datamining
 - **Item level**: a number on every piece of gear. It is not a strength rating by itself. It is a row number in a game table that holds a stat budget for each stat.
 - **Slot**: where the piece is worn: weapon, off-hand (shield), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings.
 - **Item level sync**: some content lowers your gear to a cap. For example, a duty run with the Minimum Item Level option and no Echo uses a fixed cap. Pieces above the cap lose stats; pieces at or below it are unchanged. The owner's main case is cap 123, but every formula here works for any cap.
+- **Level sync**: content for a lower character level lowers your level to match, and gear whose equip level is above that level is synced to an item level the game assigns to the level (section 5). Any duty can do both at once: T13 with Minimum Item Level is level 50 and item level 123.
 - **Stats.** Each of the 22 combat jobs uses one of five role profiles. The tool uses role-neutral names:
 
 | Neutral name | Meaning | Tank | Healer | Melee (Str) | Dexterity | Caster |
@@ -158,6 +159,49 @@ Every value matches the real piece. The Vitality line also shows the half-up rul
 
 ## 5. Item level sync
 
+### Which pieces are synced
+
+A piece is synced in two cases (**verified** by the owner in game):
+
+1. **Item level sync**: the duty has an item level cap $C$ (item level sync on) and the piece's item level is above $C$. The piece is synced to $C$.
+2. **Level sync**: the piece's equip level is above the synced character level $L$. The piece is synced to the item level the game assigns to $L$, $\text{sync}(L)$.
+
+$\text{sync}(L)$ is the `ItemLevelSync` column of the game's `ParamGrow` sheet (**verified**: read from the game file):
+
+| Synced level $L$ | 1 to 49 | 50 | 60 | 70 | 80 | 90 | 100 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| $\text{sync}(L)$ | $L$ | 130 | 270 | 400 | 530 | 660 | 690 |
+
+Between the level caps it rises in steps of 3 (54 → 133, ..., 59 → 148). No real piece has an equip level above 100, so at level 100 level sync never applies.
+
+When both apply, the **item level cap wins**, even where it is the higher of the two. In Aloalo Island (level 90, item level 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660; level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). *Second-hand*: a player's report quoted by xivgear, which applies the same order; not captured by this project. In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
+
+The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
+
+$$
+t =
+\begin{cases}
+C & \text{if item level sync is on and } i > C \\
+\text{sync}(L) & \text{else if } e > L \\
+\text{none (untouched)} & \text{otherwise}
+\end{cases}
+$$
+
+and the clamp below is applied with $t$ in place of $C$. A piece synced to an item level at or above its own keeps its stats; only its materia stops counting.
+
+- **Weapons.** The game file has one `ItemLevelSync` column for every slot. xivgear's sheet code uses a separate weapon table from its own data service for the sheet-wide target, but syncs each item with the one table. That weapons use the same value is *inferred*; the player report above saw level 100 weapons synced to item level 660 in a level 90 duty (P12S), which fits it at level 90.
+- **Pieces with no equip level.** Generated and hand-made pieces, and the Piece stats and Sync limits tabs (which have no item behind them), know only an item level. A generated or hand-made pool piece is synced only by the item level cap. Piece stats and Sync limits use the item level cap when item level sync is on; with it off and a synced level below 100, they show $\text{sync}(L)$, the cap a piece with a higher equip level gets.
+
+What changes at T13 (level 50, cap 123), measured on the current data: 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes; every other piece is synced exactly as by the cap alone. With item level sync off, level sync alone syncs these many of the 17,286 database pieces (a stat is lowered on every one above $\text{sync}(L)$ except 26 at level 50: low-stat level 60 crafted armor and item level 133 pieces whose stats equal the item level 130 caps):
+
+| Synced level | $\text{sync}(L)$ | Pieces synced | Above $\text{sync}(L)$ | With a stat lowered |
+| --- | --- | --- | --- | --- |
+| 50 | 130 | 16,188 | 15,975 | 15,949 |
+| 60 | 270 | 13,010 | 12,791 | 12,791 |
+| 70 | 400 | 9,500 | 9,275 | 9,275 |
+| 80 | 530 | 6,245 | 6,014 | 6,014 |
+| 90 | 660 | 3,265 | 3,034 | 3,034 |
+
 ### The clamp rule
 
 Let $C$ be the sync cap. Each piece has a **cap value** for each stat, computed from budget row $C$, the piece's slot share $p$ (‰) and its stat factor $F_s$ in percent (section 4; $F_s = 100 f_s$). The factor comes first and each step is floored; only the last step rounds:
@@ -237,7 +281,7 @@ Speed shortens the **global cooldown (GCD)**, the shared recast timer of most ac
 - $\text{sub}$ (`BaseSpeed`): the character's own speed at that level
 - $\text{div}$ (`LevelModifier`): the level's scaling divisor
 
-| Level | sub | div | Default sync item level |
+| Level | sub | div | Level sync item level (section 5) |
 | --- | --- | --- | --- |
 | 50 | 341 | 341 | 130 |
 | 60 | 354 | 600 | 270 |
@@ -308,6 +352,10 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Same clamp applies to main stat and Vitality | Inferred (supported second-hand) | The three in-game values above; no capture of this project's own; xivgear clamps them too |
 | Lower-ranked substats clamp against the full-share cap | Inferred | Consistent with Wiki's single cap per slot; no capture |
 | Melds ignored on synced-down pieces | Verified (owner, in game) | Item level above the duty's cap, or equip level above the duty's level |
+| Level sync: equip level above the synced level syncs the piece | Verified (owner, in game) | The same observation |
+| Level sync item level = `ParamGrow.ItemLevelSync` | Verified (game file) | 50 → 130, ..., 90 → 660 (xivgear's tests use 660 at level 90 too) |
+| Both triggers: the item level cap wins | Second-hand | A player's report in xivgear issue #317 (Aloalo Island, item level 665 at level 90); xivgear applies the same order |
+| Weapons use the same level sync item level | Inferred | One column in the game file; the same report fits it at level 90 |
 | No scaling up under sync | Assumed | – |
 | GCD and tick formulas | Community reference (AkhMorning) | Level-100 examples in tests; level-50 tiers in tests without a recorded source |
 | Rows 796–920 carry no gear | Verified (data) | Highest real item level is 795 |
@@ -322,6 +370,8 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Per-job stat mapping, the job's Vitality factor, weapon mode | `src/core/job-context.js` |
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats, caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation | `src/core/formulas.js` |
+| Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
+| The cap shown on Piece stats and Sync limits | `src/ui/state.js` (`shownSync`) |
 | GCD, tick multiplier, GCD tiers | `src/core/speed.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
-| Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |
+| Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `level-sync.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |

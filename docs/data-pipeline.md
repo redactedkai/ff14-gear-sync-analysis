@@ -214,7 +214,7 @@ The second generator writes one file with four parts.
 | --- | --- | --- | --- |
 | BaseSpeed | a character's own speed stat at that level, with no gear | 400 | 420 |
 | LevelModifier | the divisor in the speed formulas | 1900 | 2780 |
-| ItemLevelSync | the game's own sync item level for that level (shown on the page as information) | 660 | 690 |
+| ItemLevelSync | the item level gear is synced to when the character is synced to that level (level sync, [math.md, section 5](math.md#which-pieces-are-synced)) | 660 | 690 |
 
 A missing level or column stops the generator with an error. The speed formulas are in [math.md](math.md).
 

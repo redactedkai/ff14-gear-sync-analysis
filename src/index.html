@@ -104,11 +104,12 @@
     <div id="p-out">
       <p class="small" style="margin-bottom:10px">
         <span x-show="view.status === 'off'">No sync cap applies: stats are shown as on the item.</span>
-        <span x-show="view.status === 'below'" x-text="`This piece is at or below the cap (${$store.app.cap}), so sync leaves it untouched.`"></span>
-        <span x-show="view.status === 'above'">This piece is above the cap, so sync clamps each line to what a 100% stat on a <span x-text="slotLabel[$store.app.piece.slot]"></span> at item level <span x-text="$store.app.cap"></span> would have. <b class="bad" x-text="view.lost + ' points'"></b> of its raw stats are unused.</span>
+        <span x-show="view.byLevel" x-text="`Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}, used as the cap here.`"></span>
+        <span x-show="view.status === 'below'" x-text="`This piece is at or below the cap (${view.cap}), so sync leaves it untouched.`"></span>
+        <span x-show="view.status === 'above'">This piece is above the cap, so sync clamps each line to what a 100% stat on a <span x-text="slotLabel[$store.app.piece.slot]"></span> at item level <span x-text="view.cap"></span> would have. <b class="bad" x-text="view.lost + ' points'"></b> of its raw stats are unused.</span>
       </p>
       <div class="tablewrap"><table class="compact">
-        <thead><tr><th>Stat</th><th class="n" x-text="'Table @ ilvl ' + view.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-show="$store.app.syncActive" x-text="'Synced to ' + $store.app.cap"></th></tr></thead>
+        <thead><tr><th>Stat</th><th class="n" x-text="'Table @ ilvl ' + view.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-show="view.cap != null" x-text="'Synced to ' + view.cap"></th></tr></thead>
         <tbody>
           <template x-for="(r, i) in view.rows" :key="i">
             <tr>
@@ -116,7 +117,7 @@
               <td class="n" x-text="r.base"></td>
               <td class="formula" x-text="r.formula"></td>
               <td class="n" x-text="r.raw"></td>
-              <td class="n" x-show="$store.app.syncActive" :class="{ clamp: r.syn < r.raw }"><span x-text="r.syn"></span><template x-if="r.syn < r.raw"><span class="small" x-text="` (−${r.raw - r.syn})`"></span></template></td>
+              <td class="n" x-show="view.cap != null" :class="{ clamp: r.syn < r.raw }"><span x-text="r.syn"></span><template x-if="r.syn < r.raw"><span class="small" x-text="` (−${r.raw - r.syn})`"></span></template></td>
             </tr>
           </template>
         </tbody>
@@ -129,7 +130,7 @@
   </div>
   <div class="panel">
     <h3>Substat and main-stat budget by item level</h3>
-    <div class="legend"><span><i style="background:var(--accent)"></i>Substat column</span><span><i style="background:var(--gold)"></i>Main-stat column</span><span x-show="$store.app.syncActive"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Substat column</span><span><i style="background:var(--gold)"></i>Main-stat column</span><span x-show="view.cap != null"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
     <div id="p-chart" x-html="view.chartSvg"></div>
     <p class="small dim">A piece’s stats come from these two columns at its item level, scaled by its slot. Dotted lines split the expansions.</p>
   </div>
@@ -139,10 +140,10 @@
 <section class="subtab" id="tab-sync" x-data="syncCaps" hidden :hidden="$store.app.mathTab !== 'sync'">
   <div class="panel">
     <h2>What the sync cap allows</h2>
-    <p class="small dim" id="s-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what it allows.' : 'Item level sync is off. Turn it on at the top and enter a sync cap to see what it allows.'"></p>
+    <p class="small dim" id="s-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what it allows.' : 'No sync applies: item level sync is off and the synced level is the level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what it allows.'"></p>
     <template x-if="view"><div style="display:flex;flex-direction:column;gap:12px">
     <label class="f" style="max-width:220px">Example high-ilvl piece<input type="number" id="s-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-bind="$num('syncIlvl', 1, $store.app.maxReal)"></label>
-    <p class="small dim" id="s-lead" x-text="`At sync cap ${view.cap}, a ${view.cap}-level piece defines the ceiling per slot. Anything above it is cut to this ceiling; anything below it keeps its own stats. The last two columns list a piece’s 1st / 2nd / 3rd substat (100 / 70 / 20% shares): one at item level ${view.cap}, and one at item level ${view.hil} after syncing.`"></p>
+    <p class="small dim" id="s-lead" x-text="(view.byLevel ? `Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}. ` : '') + `At sync cap ${view.cap}, a ${view.cap}-level piece defines the ceiling per slot. Anything above it is cut to this ceiling; anything below it keeps its own stats. The last two columns list a piece’s 1st / 2nd / 3rd substat (100 / 70 / 20% shares): one at item level ${view.cap}, and one at item level ${view.hil} after syncing.`"></p>
     <div class="tablewrap"><table id="s-table" class="compact">
       <thead><tr><th>Slot</th><th class="n">Share</th><th class="n">Substat cap</th><th class="n" x-show="view.specLabel" x-text="view.specLabel + ' cap'"></th><th class="n" x-text="job.short.main + ' cap'"></th><th class="n">VIT cap</th><th class="n" x-text="`Ilvl ${view.cap} piece`"></th><th class="n" x-text="`Ilvl ${view.hil} synced`"></th></tr></thead>
       <tbody>
@@ -172,7 +173,7 @@
         <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), level-50 crafted HQ pieces whose Direct Hit gets no HQ bonus, two weapon and shield pairs, and two item level 595 legs; their causes are not known.</p>
       </div></template>
     </div></details>
-    <div class="note small">Model assumptions: every stat on a synced-down piece is clamped to the value a 100%-share stat on a piece of the same slot and kind at the cap item level would have (a real piece keeps its own stat factor from the game files, such as Vitality × 0.9 on Intelligence and Mind gear; for a cap the factor is applied first, which can move it by 1, as in-game values reported by xivgear show); stats on pieces at or below the cap are untouched; materia is ignored on synced-down gear. The main-stat and Vitality clamp is inferred, supported only by those second-hand values. Real pieces have fixed substat pairs; the formula reproduces 99.8% of real pieces exactly.</div>
+    <div class="note small">Model assumptions: every stat on a synced-down piece is clamped to the value a 100%-share stat on a piece of the same slot and kind at the cap item level would have (a real piece keeps its own stat factor from the game files, such as Vitality × 0.9 on Intelligence and Mind gear; for a cap the factor is applied first, which can move it by 1, as in-game values reported by xivgear show); stats on pieces at or below the cap are untouched; materia is ignored on synced-down gear. Level sync syncs gear whose equip level is above the synced level to that level’s item level from the game’s level table (one value for every slot; that weapons use it too is inferred). A piece above the item level cap is synced to the cap even when its equip level is also above the synced level (from a player’s report, not confirmed here). The main-stat and Vitality clamp is inferred, supported only by those second-hand values. Real pieces have fixed substat pairs; the formula reproduces 99.8% of real pieces exactly.</div>
   </div>
 </section>
 
@@ -233,7 +234,7 @@
         <template x-if="view.hidden"><tr><td :colspan="job.stats.length + 5" class="dim small" x-text="view.showPool ? `${view.hidden} more pool items not shown here (they are all still searched). Narrow the filters to view them.` : `${view.hidden} more matches not shown. Narrow the filters to view them.`"></td></tr></template>
       </tbody></template>
     </table></div>
-    <p class="small dim">A ring marked ×2 is not Unique, so it can be worn on both hands. <span class="num">raw → synced</span> where the sync cap bites; craftable gear shows high-quality stats.</p>
+    <p class="small dim">A ring marked ×2 is not Unique, so it can be worn on both hands. <span class="num">raw → synced</span> where sync bites (item level above the cap with item level sync on, or equip level above the synced level); craftable gear shows high-quality stats.</p>
   </div>
 
 </section>
@@ -295,11 +296,11 @@
     <template x-if="view && view.error"><div class="panel"><h3>Ceiling per stat from this pool</h3><p class="small bad" x-text="view.error"></p></div></template>
     <template x-if="view && !view.error"><div class="panel">
       <h3>Ceiling per stat from this pool</h3>
-      <p class="small dim">The most of each stat the pool can give on its own.<span x-show="view.synced"> “Unsynced” drops the cap.</span></p>
+      <p class="small dim">The most of each stat the pool can give on its own.<span x-show="view.synced"> “Unsynced” drops all sync.</span></p>
       <div class="tablewrap"><table>
         <thead><tr><th></th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
         <tbody>
-          <template x-if="view.synced"><tr><td x-text="'Synced to ' + view.cap"></td><template x-for="(v, k) in view.synced" :key="k"><td class="n" x-text="v"></td></template></tr></template>
+          <template x-if="view.synced"><tr><td x-text="'Synced to ' + view.label"></td><template x-for="(v, k) in view.synced" :key="k"><td class="n" x-text="v"></td></template></tr></template>
           <tr><td>Unsynced</td><template x-for="(v, k) in view.unsynced" :key="k"><td class="n" :class="{ dim: view.synced }" x-text="v"></td></template></tr>
           <tr class="total"><td x-text="view.synced ? 'GCD at synced ceiling' : 'GCD at ceiling'"></td><template x-for="(h, k) in view.headers" :key="k"><td :class="k === view.spdIdx ? 'n' : ''" x-text="k === view.spdIdx ? view.gcd : ''"></td></template></tr>
         </tbody>

@@ -3,7 +3,7 @@
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, statDerivation } from '../../core/formulas.js';
 import { budgetChartSvg } from '../chart.js';
-import { syncActive } from '../state.js';
+import { shownSync } from '../state.js';
 
 /* "base × pct ÷ 1000 = 26.4 → 26; × 70% = 18.2 → 18" */
 function formulaText(steps) {
@@ -22,9 +22,10 @@ export function pieceView(app) {
     p = app.piece,
     il = clampIlvl(p.ilvl),
     t = p.slot;
-  const on = syncActive(app);
-  const caps = on ? capsFor(job, t, app.cap) : null;
-  const clampOn = on && il > app.cap;
+  const sync = shownSync(app),
+    cap = sync?.cap ?? null;
+  const caps = sync ? capsFor(job, t, cap) : null;
+  const clampOn = !!sync && il > cap;
   const lines = [
     { stat: 'main', w: 100 },
     { stat: 'vit', w: 100 },
@@ -42,9 +43,12 @@ export function pieceView(app) {
     il,
     rows,
     lost: rows.reduce((a, r) => a + (r.raw - r.syn), 0),
-    status: !on ? 'off' : il <= app.cap ? 'below' : 'above',
+    cap,
+    byLevel: !!sync?.byLevel,
+    level: sync?.level ?? null,
+    status: !sync ? 'off' : il <= cap ? 'below' : 'above',
     rangeValue: Math.max(1, Math.min(app.maxReal, il)),
-    chartSvg: budgetChartSvg(job, il, on ? app.cap : null),
+    chartSvg: budgetChartSvg(job, il, cap),
   };
 }
 

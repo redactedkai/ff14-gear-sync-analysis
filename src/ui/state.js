@@ -3,7 +3,8 @@
 import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { reserveIds } from '../core/items.js';
-import { MAX_REAL } from '../core/tables.js';
+import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
+import { levelSyncIlvl } from '../core/sync-target.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
@@ -11,6 +12,32 @@ const DEFAULT_LEVEL = 100;
 /* Sync applies only when it is switched on and a cap is set. */
 export function syncActive(app) {
   return !!app.sync && app.cap != null;
+}
+
+/* Level sync can apply: the synced level is below the level cap, so gear with a higher equip level is synced to the
+   level's item level (core/sync-target.js). Independent of the item level sync switch. */
+export function levelSyncOn(app) {
+  return app.level != null && app.level < MAX_LEVEL;
+}
+
+/* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/optimizer/candidates.js). */
+export function syncSettings(app) {
+  return { cap: app.cap, sync: syncActive(app), level: app.level ?? null };
+}
+
+/* The cap for a piece whose equip level is not known (Piece stats, Sync limits): the item level cap while item level
+   sync is on (a piece above it is synced to it whatever its equip level); otherwise the synced level's item level
+   while level sync can apply, for gear with a higher equip level (byLevel). Null when neither.
+   {cap, level, byLevel} */
+export function shownSync(app) {
+  if (syncActive(app)) return { cap: app.cap, level: app.level, byLevel: false };
+  if (levelSyncOn(app)) return { cap: levelSyncIlvl(app.level), level: app.level, byLevel: true };
+  return null;
+}
+
+/* "level 50, item level 123": the sync settings in effect, for labels; '' when none. */
+export function syncLabel(app) {
+  return [levelSyncOn(app) ? `level ${app.level}` : '', syncActive(app) ? `item level ${app.cap}` : ''].filter(Boolean).join(', ');
 }
 
 export const STORE_KEY = 'ilvl-stat-lab-v3';

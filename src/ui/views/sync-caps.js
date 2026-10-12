@@ -3,13 +3,15 @@
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, pieceValue } from '../../core/formulas.js';
 import { gcdFor, dotMult } from '../../core/speed.js';
-import { syncActive } from '../state.js';
+import { shownSync } from '../state.js';
 
-/* null while sync is off or no cap is set */
+/* null while no sync applies (item level sync off or no cap set, and the synced level at the level cap). With level
+   sync the cap is the synced level's item level, for gear with a higher equip level (shownSync). */
 export function syncView(app) {
-  if (!syncActive(app)) return null;
+  const sync = shownSync(app);
+  if (!sync) return null;
   const job = app.jobCtx,
-    cap = app.cap,
+    cap = sync.cap,
     hil = clampIlvl(app.syncIlvl);
   const tot = { n1: 0, n2: 0, n3: 0, h1: 0, h2: 0, h3: 0, c: 0, spec: 0, main: 0, vit: 0 };
   /* "Substat cap" is the shared Critical Hit / Determination / Direct Hit / speed column. Piety and Tenacity have
@@ -51,6 +53,8 @@ export function syncView(app) {
     best = Math.max(tot.c, tot.spec);
   return {
     cap,
+    byLevel: sync.byLevel,
+    level: sync.level,
     hil,
     rows,
     tot,
