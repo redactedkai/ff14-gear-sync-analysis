@@ -10,8 +10,24 @@ const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');
 const names = rows => rows.map(r => r.name);
 
-/* Raw database stat order (CLAUDE.md, src/data/items.json): str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps */
-const RAW = { str: 0, dex: 1, int: 2, mind: 3, vit: 4, piety: 5, ten: 6, dh: 7, crit: 8, det: 9, sks: 10, sps: 11 };
+/* Raw database stat order (CLAUDE.md, src/data/items.json):
+   str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps,mainAttr,secAttr */
+const RAW = {
+  str: 0,
+  dex: 1,
+  int: 2,
+  mind: 3,
+  vit: 4,
+  piety: 5,
+  ten: 6,
+  dh: 7,
+  crit: 8,
+  det: 9,
+  sks: 10,
+  sps: 11,
+  mainAttr: 12,
+  secAttr: 13,
+};
 const rawStats = r => r[5].split(',').map(Number);
 const rowKey = r => `${r.name}|${r.slotCode}|${r.ilvl}|${r.mask}`;
 const rawKey = r => `${r[0]}|${r[1]}|${r[2]}|${r[4]}`;
@@ -54,13 +70,32 @@ test('job mask: a Warrior does not see healer (Mind) gear, a Sage does', () => {
   assert.ok(healer.every(r => !warKeys.has(rowKey(r))));
 });
 
+/* Pre-order earrings carry the game's generic "Main Attribute" and "Secondary Attribute" (BaseParam 55 and 56),
+   which become the wearer's main stat and its secondary stat: Piety for healers, Tenacity for tanks, Direct Hit
+   otherwise. Azeyma's Earrings (item level 560, all jobs): Main Attribute 115, Vitality 115, Secondary Attribute 111,
+   Determination 111 (Item.csv). */
+test("main and secondary attribute: Azeyma's Earrings give each job its own main stat and secondary stat", () => {
+  const nin = makeJobContext('NIN');
+  const expect = [
+    ['SGE', sge, { main: 115, vit: 115, det: 111, spec: 111, dh: 0 }],
+    ['WAR', war, { main: 115, vit: 115, det: 111, spec: 111, dh: 0 }],
+    ['NIN', nin, { main: 115, vit: 115, det: 111, spec: 0, dh: 111 }],
+  ];
+  for (const [id, job, want] of expect) {
+    const rows = browseItems(job, { q: "azeyma's earrings" });
+    assert.equal(rows.length, 1, `${id} sees the earrings`);
+    const st = poolItemFromRow(job, rows[0]).stats;
+    for (const [k, v] of Object.entries(want)) assert.equal(st[k], v, `${id} ${k}`);
+  }
+});
+
 test('main-stat filter: gear the job can equip but without its main stat is hidden', () => {
   const bit = 1 << war.jobIndex;
-  const noStr = ITEMS.filter(r => r[4] & bit && rawStats(r)[RAW.str] === 0);
+  const noStr = ITEMS.filter(r => r[4] & bit && rawStats(r)[RAW.str] === 0 && !rawStats(r)[RAW.mainAttr]);
   assert.ok(noStr.length > 0, 'the database has Warrior-equippable rows without Strength');
   const keys = new Set(browseItems(war, {}).map(rowKey));
   assert.ok(noStr.every(r => !keys.has(rawKey(r))));
-  assert.ok(browseItems(war, { ilvlMin: 700 }).every(r => r.st[RAW.str] > 0));
+  assert.ok(browseItems(war, { ilvlMin: 700 }).every(r => r.st[RAW.str] > 0 || r.st[RAW.mainAttr] > 0));
 });
 
 test('item level and equip level bounds', () => {
@@ -161,7 +196,7 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable, and a s
    (Bygone Brass), Mad Harlequin's Totem (Palazzo Diamond), a Savage raid book (Dark Horse Champion's, Dawntrail: current Savage;
    Genji, Stormblood: legacy Savage, in no group), the Bozja and Occult Crescent
    field operations (Bozjan, Phantom Vision: in the relic group) and a relic weapon (Phantom Gunblade); Mistwake gear
-   drops in a dungeon, which is in no group. */
+   drops in a dungeon, which is in no group; Lionsmane Armet is sold for Wolf Marks (PvP). */
 test('source flags of real items, and leaving sources out of a pool', () => {
   const find = name => {
     const r = ITEMS.find(x => x[0] === name);
@@ -178,6 +213,7 @@ test('source flags of real items, and leaving sources out of a pool', () => {
     'Phantom Vision Boots of Scouting': ['relic', 'NIN'],
     'Phantom Gunblade Obscurum': ['relic', 'GNB'],
     'Mistwake Visor of Fending': [null, 'WAR'],
+    'Lionsmane Armet': ['pvp', 'PLD'],
   };
   const pool = [];
   for (const [name, [src, jobId]] of Object.entries(cases)) {
@@ -192,7 +228,7 @@ test('source flags of real items, and leaving sources out of a pool', () => {
   pool.push(hand);
   assert.equal(withoutSources(pool, []), pool);
   assert.deepEqual(
-    withoutSources(pool, ['crafted', 'ultimate', 'relic']).map(i => i.name),
+    withoutSources(pool, ['crafted', 'ultimate', 'relic', 'pvp']).map(i => i.name),
     [
       'Bygone Brass Earrings of Casting',
       "Dark Horse Champion's Gloves of Scouting",
@@ -228,7 +264,8 @@ test('expansion of real pieces, and the browse filter by expansion', () => {
   const all = browseItems(whm, { type: 'any' });
   const only = short => browseItems(whm, { type: 'any', expOff: EXPANSIONS.map(e => e[0]).filter(k => k !== short) });
   const ew = only('EW');
-  assert.ok(ew.length > 0 && ew.every(r => r.lvl > 80 && r.lvl <= 90));
+  // level-1 pieces (pre-order earrings) go by item level, like Halone's and Menphina's above
+  assert.ok(ew.length > 0 && ew.every(r => (r.lvl > 80 && r.lvl <= 90) || (r.lvl === 1 && expansionOf(1, r.ilvl) === 'EW')));
   assert.equal(browseItems(whm, { type: 'any', expOff: [] }).length, all.length);
   const sum = EXPANSIONS.reduce((n, [s]) => n + only(s).length, 0);
   assert.equal(sum, all.length); // every piece lands in exactly one expansion

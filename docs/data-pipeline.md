@@ -25,7 +25,7 @@ The project fetches ten sheets (English column names, `csv/en/`). Eight supply d
 | `ClassJob` | fetch step (job icons) | One row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon. |
 | `BaseParam` | item level generator (slot shares checked, stat factors copied); item database generator (item kinds checked) | One row per stat, including the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, in thousandths) and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). |
 
-**Verified on every regeneration**: for all 12 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](math.md) for how the percentages are used.
+**Verified on every regeneration**: for all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](math.md) for how the percentages are used.
 
 **Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`), the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns. A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
 
@@ -53,7 +53,7 @@ The generators are written in Python; the page is JavaScript. Both have to agree
 
 PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8), DRG (9), SAM (10), RPR (11), NIN (12), VPR (13), BRD (14), MCH (15), DNC (16), BLM (17), SMN (18), RDM (19), PCT (20), BLU (21).
 
-**Stat order.** The 12 stats stored per item, each with its column in the `ItemLevel` sheet and its row id in `BaseParam` (the id the `Item` sheet uses to name a stat):
+**Stat order.** The 14 stats stored per item, each with its column in the `ItemLevel` sheet and its row id in `BaseParam` (the id the `Item` sheet uses to name a stat):
 
 | Position | Stat | `ItemLevel` column | `BaseParam` id |
 | --- | --- | --- | --- |
@@ -69,6 +69,11 @@ PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8),
 | 9 | Determination | Determination | 44 |
 | 10 | Skill Speed | SkillSpeed | 45 |
 | 11 | Spell Speed | SpellSpeed | 46 |
+| 12 | Main Attribute | Strength | 55 |
+| 13 | Secondary Attribute | DirectHitRate | 56 |
+
+- **Main Attribute and Secondary Attribute** are generic stats on 16 pieces (the pre-order earrings, the Occult accessories, Neophyte's Ring). The wearer gets Main Attribute as its own main stat, and Secondary Attribute as Piety (healers), Tenacity (tanks) or Direct Hit (everyone else). That mapping is xivgear's, with in-game values for a healer and a Ninja in its tests; the tank case is inferred.
+- They have no `ItemLevel` column, so they borrow the main-stat and Direct Hit columns. The four main-stat columns are equal at every item level (verified), and Direct Hit equals the common substat column.
 
 **Slot codes.** Each code names a slot type and the `EquipSlotCategory` column that identifies it. Each slot also carries its share of the budget (`percent`, in thousandths) and the `BaseParam` column that holds it; the page reads its slot shares from here, and the item level generator checks them against `BaseParam` (section 1).
 
@@ -99,7 +104,7 @@ An `Item` row becomes a database row when all of these hold:
 2. its equip slot category resolves to one of the 12 slot codes (below), which rules out belts, soul crystals and non-gear;
 3. its item level is at least 100;
 4. at least one of the 22 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
-5. at least one of its 12 stats is non-zero after the HQ rule below;
+5. at least one of its 14 stats is non-zero after the HQ rule below;
 6. it is not retired: the Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints how many pieces it left out.
 
 For the current data, each rule leaves:
@@ -149,9 +154,9 @@ Melds (materia) are not part of the item data and are not included.
 
 ### Sources
 
-Each row carries a bit mask of the five groups the optimizer can leave out: crafted, tomestone, ultimate, savage and relic. A gear piece can be in none, one or several. A group's bit is set from two signals:
+Each row carries a bit mask of the six groups the optimizer can leave out: crafted, tomestone, ultimate, savage, relic and PvP. A gear piece can be in none, one or several. A group's bit is set from two signals:
 
-- the piece's **category**, from `Item.SubcategorySort` and shop data (`gear_categories.py`; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)). Each group lists its categories in the shared format file: crafted ← crafted; tomestone ← tomestone; ultimate ← ultimate; savage ← savage, current expansion only; relic ← relic and field_op (Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones);
+- the piece's **category**, from `Item.SubcategorySort` and shop data (`gear_categories.py`; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)). Each group lists its categories in the shared format file: crafted ← crafted; tomestone ← tomestone; ultimate ← ultimate; savage ← savage, current expansion only; relic ← relic and field_op (Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones); pvp ← pvp (the item level 100 to 205 sets sold for Wolf Marks, still on sale and with normal stats outside PvP: **verified** on the Lodestone at patch 7.56);
 - the **shop and recipe flags** below, for crafted, tomestone and ultimate.
 
 The generator stops if a code has no known category, if a category named in the format file does not exist, or if the two signals contradict each other (a recipe result outside crafted, a totem purchase outside ultimate, a Savage armor piece or weapon without a dye slot).
@@ -160,7 +165,7 @@ The game files do not record dungeon drops: loot tables live on the game's serve
 
 The savage group is marked `currentOnly`: it takes only pieces whose equip level is the highest in the database (the level cap, 100 today), so legacy Savage gear, which is far easier to get now, stays in the pool, and the group moves on by itself when an expansion raises the cap. No item names are used.
 
-Counts in the current data: crafted 4,307, tomestone 2,947, ultimate 136, savage 231 (the three Dawntrail tiers; 886 legacy Savage pieces are in no group), relic 1,557.
+Counts in the current data: crafted 4,307, tomestone 2,947, ultimate 136, savage 231 (the three Dawntrail tiers; 886 legacy Savage pieces are in no group), relic 1,559, pvp 340.
 
 The shop and recipe flags:
 
@@ -201,7 +206,7 @@ Rows are sorted by item level (highest first), then slot code, then name. The st
 
 The second generator writes one file with four parts.
 
-**Stat budgets.** For each of the 12 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. For example, at item level 123: Mind 355, Vitality 375, Spell Speed 346. How a budget becomes the stat on a piece is in [math.md](math.md).
+**Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. For example, at item level 123: Mind 355, Vitality 375, Spell Speed 346. How a budget becomes the stat on a piece is in [math.md](math.md).
 
 **Level data.** For character levels 1 to 100, three `ParamGrow` columns:
 
@@ -313,15 +318,15 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 
 - The test files use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
-- The `BaseParam` test file holds the real rows of the 12 stats.
-- They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 12 `ItemLevel` columns, the stat factor kind of a few items and the stat factor table (the `BaseParam` test file holds the real rows), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
+- The `BaseParam` test file holds the real rows of the 14 stats.
+- They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind of a few items and the stat factor table (the `BaseParam` test file holds the real rows), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
 - Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0 and an item kind with no `MeldParam` column each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
 
 **Format tests** (Node, on the real generated data):
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has ten fields (the last an item kind below 13), a valid slot code, a job mask in $(0, 2^{22})$, 12 stats, 0/1 Unique and HQ flags and a source mask below 32; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has ten fields (the last an item kind below 13), a valid slot code, a job mask in $(0, 2^{22})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 32; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 

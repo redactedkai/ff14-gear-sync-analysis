@@ -116,7 +116,14 @@ export const JOB_ROWS = Object.freeze([
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
-export const RAW_SUBSTAT_IDX = Object.freeze(ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX));
+/* The game's generic "Main Attribute" and "Secondary Attribute" (pre-order earrings): the wearer's main stat, and its
+   secondary stat (Piety for healers, Tenacity for tanks, Direct Hit otherwise; see items.js dbStats). */
+export const RAW_MAIN_ATTR_IDX = ITEM_STAT_ORDER.indexOf('mainAttr');
+export const RAW_SEC_ATTR_IDX = ITEM_STAT_ORDER.indexOf('secAttr');
+/* Substats: every stat but the main stats, Vitality and Main Attribute (Secondary Attribute ranks as a substat). */
+export const RAW_SUBSTAT_IDX = Object.freeze(
+  ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX && i !== RAW_MAIN_ATTR_IDX),
+);
 /* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon, 12 = body that also covers the head */
 export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));

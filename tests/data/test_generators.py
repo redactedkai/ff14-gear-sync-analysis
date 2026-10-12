@@ -33,7 +33,7 @@ import gen_job_icons  # noqa: E402
 from item_format import SchemaError  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
-STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps']
+STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr']
 ALL_JOBS_MASK = (1 << 22) - 1
 
 
@@ -83,7 +83,7 @@ class GenItemsTest(unittest.TestCase):
             name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(13))
-            self.assertEqual(len(st.split(',')), 12)
+            self.assertEqual(len(st.split(',')), len(STAT_ORDER))
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
             self.assertIn(sources, range(32))
@@ -105,7 +105,7 @@ class GenItemsTest(unittest.TestCase):
 
     def test_sources(self):
         """Each SpecialShop and Recipe rule in the fixtures (scripts/data/gear_sources.py), plus the bits that come from
-        the category (gear_categories.py). Bits: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate."""
+        the category (gear_categories.py). Bits: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate, 32 pvp."""
         expect = {
             'Test Sallet HQ': 1,  # a recipe result
             'Test Hood of Healing': 2 | 8,  # type 4, code 1 (Poetics); code 20 with a dye slot: Savage
@@ -170,6 +170,8 @@ class GenItemsTest(unittest.TestCase):
         # BaseParam in slot 5 after empty slots 3-4 (a layout real Unique rings use)
         self.assertEqual(self.row('Test Ring Unique')[5], stats(str=26, vit=28, crit=24, dh=17))
         self.assertEqual(self.row('Test Ring Plain')[5], stats(str=26, vit=28, ten=24, det=17))
+        # the game's generic Main Attribute (55) and Secondary Attribute (56), as on the pre-order earrings
+        self.assertEqual(self.row('Test Preorder Earring')[5], stats(mainAttr=115, vit=115, secAttr=111, det=111))
 
     def test_hq_bonus_only_when_can_be_hq(self):
         # NQ str 23 vit 23 ten 24 det 17; HQ bonus str 3 vit 3 ten 3 det 2 plus Defense / Magic Defense (ignored)
@@ -233,6 +235,7 @@ class GenItemsTest(unittest.TestCase):
             'Test Tonban',
             'Test Shoes',
             'Test Earring',
+            'Test Preorder Earring',
             'Test Choker',
             'Test Bracelet',
             'Test Ring Plain',
@@ -258,6 +261,9 @@ ITEM_LEVEL_COLUMNS = {
     'det': 'Determination',
     'sks': 'SkillSpeed',
     'sps': 'SpellSpeed',
+    # no ItemLevel column of their own: the main-stat and substat columns (equal to Strength and Direct Hit)
+    'mainAttr': 'Strength',
+    'secAttr': 'DirectHitRate',
 }
 PARAM_GROW_HEADER = (
     '#,ExpToNext,MpModifier,BaseSpeed,LevelModifier,HuntingLogExpReward,MonsterNoteSeals,ScaledQuestXP,HpModifier,'

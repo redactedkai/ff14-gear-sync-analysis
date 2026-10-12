@@ -36,7 +36,9 @@
     { "key": "crit", "baseParam": 27, "itemLevelColumn": "CriticalHit" },
     { "key": "det", "baseParam": 44, "itemLevelColumn": "Determination" },
     { "key": "sks", "baseParam": 45, "itemLevelColumn": "SkillSpeed" },
-    { "key": "sps", "baseParam": 46, "itemLevelColumn": "SpellSpeed" }
+    { "key": "sps", "baseParam": 46, "itemLevelColumn": "SpellSpeed" },
+    { "key": "mainAttr", "baseParam": 55, "itemLevelColumn": "Strength" },
+    { "key": "secAttr", "baseParam": 56, "itemLevelColumn": "DirectHitRate" }
   ],
   "slots": [
     {
@@ -79,7 +81,8 @@
     { "key": "tomestone", "label": "Tomestone", "categories": ["tomestone"] },
     { "key": "relic", "label": "Relic", "categories": ["relic", "field_op"] },
     { "key": "savage", "label": "Current Savage", "categories": ["savage"], "currentOnly": true },
-    { "key": "ultimate", "label": "Ultimate", "categories": ["ultimate"] }
+    { "key": "ultimate", "label": "Ultimate", "categories": ["ultimate"] },
+    { "key": "pvp", "label": "PvP", "categories": ["pvp"] }
   ],
   "statFactor": {
     "_comment": "Per-item stat factor. The last field of an item row is the item's `itemColumn` (Item.csv), an index 0..count-1 into the `baseParamColumn`[0..count-1] columns of BaseParam.csv. Each stat's BaseParam row holds there the percent its full-share slot value is multiplied by on that kind of item (Vitality 90 on Intelligence/Mind gear, every main stat 90 on gear that carries all four). gen_item_level.py writes the table to item-level.json (MP); gen_items.py stops on an index outside it.",

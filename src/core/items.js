@@ -46,17 +46,30 @@ export function statIdx(key) {
   return ITEM_STAT_ORDER.indexOf(key);
 }
 
-/* A database row's 12 raw stats as this job's neutral keys. */
-export function dbStats(job, st12) {
-  const g = k => st12[statIdx(k)] || 0;
+/* A database row's raw stats as this job's neutral keys. The game's generic Main Attribute adds to the job's main stat;
+   Secondary Attribute adds to its secondary stat: Piety or Tenacity where the job has one (spec), Direct Hit otherwise
+   (xivgear's mapping, with in-game values for a healer and a Ninja; inferred for tanks). */
+export function dbStats(job, raw) {
+  const g = k => raw[statIdx(k)] || 0;
   const p = job.profile;
-  return { main: g(p.main), vit: g('vit'), crit: g('crit'), det: g('det'), dh: g('dh'), spd: g(p.spd), spec: p.spec ? g(p.spec) : 0 };
+  const sec = g('secAttr');
+  return {
+    main: g(p.main) + g('mainAttr'),
+    vit: g('vit'),
+    crit: g('crit'),
+    det: g('det'),
+    dh: g('dh') + (p.spec ? 0 : sec),
+    spd: g(p.spd),
+    spec: p.spec ? g(p.spec) + sec : 0,
+  };
 }
 
 const kindCache = new Map();
 /* The stat factors of a database item kind (a row's statFactor) as this job's neutral keys: MP[raw stat][kind] / 100
    (Vitality 0.9 on Int/Mind gear; every main stat 0.9 on pieces that carry all four). Null for an unknown kind, which
-   means the job's own factors (jobFactor in formulas.js). Frozen and cached per job and kind. */
+   means the job's own factors (jobFactor in formulas.js). Frozen and cached per job and kind. A piece whose main stat is
+   the generic Main Attribute still takes its kind's factor for the job's main stat under sync: Azeyma's Earrings
+   (kind 0) synced to item level 430 show main 71 in game (xivgear's test notes), the 0.9 cap, not the full 78. */
 export function kindFactors(job, kind) {
   if (kind == null || MP.vit[kind] == null) return null;
   const key = job.jobId + '|' + kind;
@@ -107,7 +120,8 @@ export function browseItems(job, f) {
   const bit = 1 << job.jobIndex,
     out = [];
   const q = (f.q || '').trim().toLowerCase();
-  const mainIdx = statIdx(job.profile.main);
+  const mainIdx = statIdx(job.profile.main),
+    attrIdx = statIdx('mainAttr');
   for (let k = 0; k < ITEMS.length; k++) {
     const r = ITEMS[k];
     if (!(r[4] & bit)) continue;
@@ -118,7 +132,7 @@ export function browseItems(job, f) {
     if (f.lvlMax && r[3] > f.lvlMax) continue;
     if (q && r[0].toLowerCase().indexOf(q) < 0) continue;
     const p = parseRow(r);
-    if (!p.st[mainIdx]) continue; // must carry this job's main stat
+    if (!p.st[mainIdx] && !p.st[attrIdx]) continue; // must carry this job's main stat, or Main Attribute
     out.push(p);
   }
   return out;

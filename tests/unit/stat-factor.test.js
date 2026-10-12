@@ -40,7 +40,7 @@ test("the job's own factor equals the game files' factor on every piece of its o
   }
 });
 
-test('the only pieces whose factors differ from the job rule carry all four main stats (kind 0, every stat x 0.9)', () => {
+test('the only pieces whose factors differ from the job rule are kind 0: the four-main-stat pieces and the Main Attribute pieces', () => {
   const odd = new Set();
   for (const [id] of JOBS) {
     const job = makeJobContext(id);
@@ -49,15 +49,21 @@ test('the only pieces whose factors differ from the job rule carry all four main
       if (f.main !== 1 || f.vit !== jobFactor(job, 'vit')) odd.add(p.name);
     }
   }
-  assert.equal(odd.size, 13);
-  for (const name of odd) {
-    const r = row(name);
-    assert.equal(r[9], 0, name);
-    assert.ok(
-      RAW_MAIN_IDX.every(i => stats(r)[i]),
-      name,
-    );
-  }
+  const fourMain = [...odd].filter(name => RAW_MAIN_IDX.every(i => stats(row(name))[i]));
+  const attr = [...odd].filter(name => stats(row(name))[ITEM_STAT_ORDER.indexOf('mainAttr')] > 0);
+  assert.equal(fourMain.length, 13);
+  // pre-order earrings and Neophyte's Ring carry Main Attribute and are kind 0 (all jobs): main stat and Vitality caps
+  // x 0.9 for every job; the 10 Occult accessories have their own kinds and match the job rule
+  assert.deepEqual(attr.sort(), [
+    'Aetheryte Earring',
+    "Azeyma's Earrings",
+    'Bozjan Earring',
+    "Halone's Earring",
+    "Menphina's Earring",
+    "Neophyte's Ring",
+  ]);
+  assert.equal(odd.size, fourMain.length + attr.length);
+  for (const name of odd) assert.equal(row(name)[9], 0, name);
 });
 
 test('pieces with all four main stats: every main stat and Vitality at the full value x 0.9', () => {

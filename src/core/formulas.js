@@ -5,6 +5,7 @@ import {
   SUB_WEIGHTS,
   ITEM_STAT_ORDER,
   RAW_MAIN_IDX,
+  RAW_MAIN_ATTR_IDX,
   RAW_VIT_IDX,
   RAW_SUBSTAT_IDX,
   DB_SLOT_PCT,
@@ -128,13 +129,13 @@ export function statDerivation(job, stat, ilvl, type, weight) {
 }
 
 /* Formula prediction from a database row's raw stat vector (any role) and its item kind (the row's statFactor). Used to
-   validate the model against real items: every main stat present (a few pieces carry both Strength and Dexterity) and
-   Vitality at 100%, substats ranked by size at 100/70/20%, where equal substats share the higher rank (relic weapon
-   steps carry two substats at 100%). Each stat's slot value is multiplied by the item's own stat factor (MP) before the
-   substat share, rounded after each step. An off-hand is the two-handed value minus the one-handed value
-   (isOffhand). */
+   validate the model against real items: every main stat present (a few pieces carry both Strength and Dexterity, and
+   some carry the game's generic Main Attribute) and Vitality at 100%, substats ranked by size at 100/70/20%, where equal
+   substats share the higher rank (relic weapon steps carry two substats at 100%). Each stat's slot value is multiplied
+   by the item's own stat factor (MP) before the substat share, rounded after each step. An off-hand is the two-handed
+   value minus the one-handed value (isOffhand). */
 export function predictRaw(il, slotCode, st, kind) {
-  const main = RAW_MAIN_IDX.filter(i => st[i]);
+  const main = [...RAW_MAIN_IDX, RAW_MAIN_ATTR_IDX].filter(i => st[i]);
   const col = k => IL[k][il];
   // a stat line at a slot share: slot value, times the item's stat factor, times the substat share; rounded each time
   const line = (k, pct, weight) => {

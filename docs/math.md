@@ -59,7 +59,7 @@ A slot does not get the whole budget. It gets a fraction of it, called its **slo
 | Body, legs | 135 |
 | Earring, necklace, bracelet, ring | 67 |
 
-**Verified**: these are the values in `BaseParam.csv` for all 12 stats. The sheet's waist column is 0; the game no longer has a belt slot.
+**Verified**: these are the values in `BaseParam.csv` for all 14 stats the database stores. The sheet's waist column is 0; the game no longer has a belt slot.
 
 Paladin is the only combat job with a one-handed weapon plus a shield (100 + 40). Every other job uses a two-handed weapon (140).
 
@@ -116,7 +116,7 @@ So for a piece with a single main stat the factor is exactly the old job rule: *
 
 **Rounding is half up**: $\operatorname{round}(x) = \lfloor x + 0.5 \rfloor$, so 31.5 becomes 32. The code adds a tiny epsilon so that floating-point noise such as 22.4999999 still rounds as 22.5 would.
 
-**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,272 of the 16,596 checked pieces exactly (80.0%). Rounding twice reproduces 16,560 (99.8%). Both figures come from running the model over the item database.
+**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,273 of the 16,601 checked pieces exactly (80.0%). Rounding twice reproduces 16,561 (99.8%). Both figures come from running the model over the item database.
 
 Example where it matters: Antiquated Atlas, a level 60 healer two-handed weapon at item level 200, has Piety 57. The substat budget at 200 is 587:
 
@@ -138,7 +138,7 @@ The game stores only the final numbers on each item. It does not store how a slo
 
 Two refinements, both read off real pieces: substats of **equal size share the higher rank** (the relic weapon steps Hyperconductive, Manderville, Amazing Manderville and Phantom carry two substats at 100%; 141 pieces), and **every main stat on a piece is at full share** (ten item level 110 pieces carry Strength and Dexterity at the same value).
 
-**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,560 of 16,596), and 98.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,561 of 16,601), and 98.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
 Where the shares matter: the Piece stats uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 

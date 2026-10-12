@@ -36,7 +36,7 @@ Contexts are cached, so asking for the same job twice returns the same object, a
 
 Why it is built this way: an earlier version kept the current job's stat mapping in shared mutable variables that every function read. Any code that forgot to update them, or ran between two updates, could see a mix of two jobs. Passing an explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. The neutral names matter for the same reason: a Piece stats label once showed as "undefined" because shared code used a job-specific stat name where a neutral one belonged.
 
-The game database stores stats in a fixed raw order of 12 stats (all four main stats, Vitality, Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed). The context converts a raw row into the job's neutral stats in one place; nothing else reads raw stat positions.
+The game database stores stats in a fixed raw order of 14 stats (all four main stats, Vitality, Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed, and the game's generic Main Attribute and Secondary Attribute). The context converts a raw row into the job's neutral stats in one place; nothing else reads raw stat positions.
 
 ## 3. The UI pattern
 
