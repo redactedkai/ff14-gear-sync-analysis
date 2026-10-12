@@ -58,6 +58,8 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Slot share.** The fraction of the budget a slot gets, in thousandths: two-handed weapon 140, one-handed weapon 100, shield 40 (its stats are the two-handed value minus the one-handed value), head, hands and feet 85, body and legs 135, accessories 67. Read from the game's `BaseParam` table. See [math.md, section 3](math.md#3-slot-shares).
 
+**Stat factor.** A percentage the game files attach to each stat of an item, by the item's kind (`BaseParam.MeldParam`, column `Item.BaseParamModifier`): the slot value is multiplied by it, then rounded. 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces that carry all four main stats. A real piece's sync cap uses its own factor; where no item is involved the page uses the job's (Vitality 0.9 for Intelligence and Mind jobs). See [math.md, section 4](math.md#the-stat-factor-of-an-item).
+
 **Substat.** Any stat other than the main stat and Vitality: Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety. A piece carries two or three substats.
 
 **Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second, 20% for a third. This is a pattern measured on real items, not a value stored in the game files; with equal substats sharing a rank, it reproduces 99.8% of real pieces exactly (98.7% to 100.0% per item level band). Only the Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
@@ -66,4 +68,4 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Unique.** An item that can be equipped only once at a time. It matters for rings: two copies of the same Unique ring cannot be worn together, while any other ring can fill both ring slots. See [optimizer.md, section 1](optimizer.md#1-the-problem).
 
-**Vitality.** The stat that sets maximum hit points. Every piece has it. For Intelligence and Mind jobs it is 90% of the budget value (rounded again), for Strength and Dexterity jobs 100%. See [math.md, section 4](math.md#4-the-stats-on-a-piece).
+**Vitality.** The stat that sets maximum hit points. Every piece has it. On Intelligence and Mind gear it is 90% of the slot value (rounded again), on Strength and Dexterity gear 100%: the piece's stat factor. See [math.md, section 4](math.md#the-stat-factor-of-an-item).

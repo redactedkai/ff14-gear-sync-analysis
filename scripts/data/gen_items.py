@@ -3,7 +3,7 @@
 
 Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
 
-Row format: [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique, hq, sources]
+Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources, statFactor]
   slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring,
              12=body that also covers the head)
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
@@ -11,6 +11,8 @@ Row format: [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique, hq, 
   hq       : 1 when the item can be high quality (CanBeHq), so its stats are the HQ ones
   sources  : bit i set when the item is in group `sources[i]` of item-format.json (crafted, tomestone, ultimate,
              savage, relic): from its category (gear_categories.py) and the shop and recipe flags (gear_sources.py)
+  statFactor : the item's BaseParamModifier, an index into the stat factor table MP of item-level.json (`statFactor` in
+             item-format.json): stat k's full-share value on this item is multiplied by MP[k][statFactor] / 100
 """
 
 import argparse
@@ -20,7 +22,7 @@ from pathlib import Path
 import gear_categories
 import provenance
 from gear_sources import sources as gear_sources
-from item_format import N_ITEM_PARAMS, SchemaError, item_columns, load_format, read_csv, run_main
+from item_format import N_ITEM_PARAMS, SchemaError, item_columns, load_format, read_csv, run_main, stat_factors
 
 MIN_ILVL = 100
 
@@ -33,6 +35,8 @@ def select(csv_dir):
     fmt = load_format()
     param_idx = {s['baseParam']: i for i, s in enumerate(fmt['stats'])}  # BaseParam row id -> stat index
     n_stats = len(fmt['stats'])
+    sf = fmt['statFactor']
+    n_kinds = len(next(iter(stat_factors(d / 'BaseParam.csv', fmt).values())))
 
     slot_cols = ['#', 'MainHand', 'OffHand', *(s['equipSlotColumn'] for s in fmt['slots'])]
     esc = {r['#']: r for r in read_csv(d / 'EquipSlotCategory.csv', slot_cols)}
@@ -67,7 +71,7 @@ def select(csv_dir):
 
     items = read_csv(d / 'Item.csv', ['#', *item_columns()])
     src = gear_sources(d, items)
-    kept, multi_slot = [], []
+    kept, multi_slot, bad_kind = [], [], []
     for r in items:
         if not r['Name']:
             continue
@@ -97,6 +101,10 @@ def select(csv_dir):
         if unsupported:
             multi_slot.append(f'{r["Name"]} (item level {ilvl})')
             continue
+        kind = r[sf['itemColumn']]
+        if not (kind.isdigit() and int(kind) < n_kinds):
+            bad_kind.append(f'{r["Name"]} ({kind})')
+            continue
         kept.append(
             (
                 r,
@@ -110,9 +118,14 @@ def select(csv_dir):
                     1 if r['IsUnique'] == 'True' else 0,
                     1 if r['CanBeHq'] == 'True' else 0,
                     src.get(int(r['#']), 0),
+                    int(kind),
                 ],
             )
         )
+    if bad_kind:
+        # an item kind BaseParam has no factor for: the page could not know the item's stat factors
+        cols = f'{sf["baseParamColumn"]}[0..{n_kinds - 1}]'
+        raise SchemaError(f'Item.csv {sf["itemColumn"]} outside BaseParam.csv {cols}: ' + ', '.join(bad_kind[:10]))
     return kept, multi_slot
 
 
@@ -130,7 +143,7 @@ def main(csv_dir, out, source='detect'):
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     masks = gear_categories.source_masks(kept, cats)
     retired = [r for r, _ in kept if cats[r['#']] in gear_categories.RETIRED]
-    rows = [[*row[:8], masks[r['#']]] for r, row in kept if cats[r['#']] not in gear_categories.RETIRED]
+    rows = [[*row[:8], masks[r['#']], row[9]] for r, row in kept if cats[r['#']] not in gear_categories.RETIRED]
     # A job no item is left for means the job columns or their values changed shape (e.g. 'True' became '1').
     seen = 0
     for r in rows:

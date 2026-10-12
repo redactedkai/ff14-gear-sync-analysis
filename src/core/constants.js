@@ -111,7 +111,8 @@ export const JOB_ROWS = Object.freeze([
   Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])]),
 ]);
 
-/* Item database rows (src/data/items.json): [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique, hq] */
+/* Item database rows (src/data/items.json): [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources,
+   statFactor] (statFactor: the item's kind, a column of the stat factor table MP in tables.js) */
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');

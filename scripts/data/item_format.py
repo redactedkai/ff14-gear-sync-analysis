@@ -46,7 +46,31 @@ def item_columns():
     pairs = [
         f'{c}[{i}]' for c in ('BaseParam', 'BaseParamValue', 'BaseParamSpecial', 'BaseParamValueSpecial') for i in range(N_ITEM_PARAMS)
     ]
-    return ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
+    cols = ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
+    return [*cols, load_format()['statFactor']['itemColumn']]
+
+
+def stat_factors(base_param_csv, fmt):
+    """The per-item stat factor table: {stat key: [percent for item kind 0..count-1]}, read from each stat's BaseParam
+    row (`statFactor` in item-format.json). An Item row's BaseParamModifier picks the kind. Raises SchemaError on a
+    missing column or stat row, or a value that is not a percent from 1 to 100."""
+    sf = fmt['statFactor']
+    cols = [f'{sf["baseParamColumn"]}[{i}]' for i in range(sf['count'])]
+    rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *cols])}
+    table, problems = {}, []
+    for st in fmt['stats']:
+        r = rows.get(str(st['baseParam']))
+        if r is None:
+            problems.append(f'no row {st["baseParam"]} ({st["key"]})')
+            continue
+        vals = [r[c] for c in cols]
+        if not all(v.isdigit() and 1 <= int(v) <= 100 for v in vals):
+            problems.append(f'{st["key"]} {sf["baseParamColumn"]} = {",".join(vals)}, expected percents 1 to 100')
+            continue
+        table[st['key']] = [int(v) for v in vals]
+    if problems:
+        raise SchemaError(f'{Path(base_param_csv).name} stat factors: ' + '; '.join(problems))
+    return table
 
 
 def check_slot_percents(base_param_csv, fmt):

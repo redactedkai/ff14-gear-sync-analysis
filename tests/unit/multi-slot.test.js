@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, slotInfo, slotLabel } from '../../src/core/items.js';
+import { browseItems, kindFactors, slotInfo, slotLabel } from '../../src/core/items.js';
 import { predictRaw, syncStats } from '../../src/core/formulas.js';
 import { optimize, effStats } from '../../src/core/optimizer/index.js';
 import { ITEMS } from '../../src/core/tables.js';
@@ -24,7 +24,7 @@ test('the cloaks and the Tidal Wave wand and shields: real stats equal the formu
   for (const name of ['Vermilion Cloak of Casting', 'Vermilion Cloak of Healing', 'Tidal Wave Wand']) {
     const r = row(name);
     const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st), st, name);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9]), st, name);
   }
   assert.equal(row('Vermilion Cloak of Casting')[1], 12);
 });
@@ -39,17 +39,17 @@ test('White Mage can browse its wand and shield as well as its two-handed weapon
 
 test('slot info: a piece is capped at its own slot share, and names what it covers', () => {
   const [cloak] = gamePool(blm, { q: 'Vermilion Cloak' });
-  assert.deepEqual(slotInfo(blm, cloak), { pct: 220, blocks: ['head'] });
+  assert.deepEqual(slotInfo(blm, cloak), { pct: 220, blocks: ['head'], factors: kindFactors(blm, row('Vermilion Cloak of Casting')[9]) });
   assert.equal(slotLabel(cloak.type, slotInfo(blm, cloak).blocks), 'Body + Head');
   // synced to 290, the cloak keeps a 220-share cap, well above a plain body piece's 135 share
   const sync = { cap: 290, sync: true };
   const eff = effStats(blm, cloak, sync);
-  assert.deepEqual(eff, syncStats(blm, cloak.stats, 'body', 290, 300, 220));
+  assert.deepEqual(eff, syncStats(blm, cloak.stats, 'body', 290, 300, 220, slotInfo(blm, cloak).factors));
   assert.ok(eff.main > syncStats(blm, cloak.stats, 'body', 290, 300).main);
   const [wand] = gamePool(whm, { q: 'Tidal Wave Wand' });
-  assert.deepEqual(slotInfo(whm, wand), { pct: 100, blocks: [] });
+  assert.deepEqual(slotInfo(whm, wand), { pct: 100, blocks: [], factors: kindFactors(whm, row('Tidal Wave Wand')[9]) });
   const [cane] = gamePool(whm, { q: 'Tidal Wave Cane' });
-  assert.deepEqual(slotInfo(whm, cane), { pct: 140, blocks: ['offhand'] });
+  assert.deepEqual(slotInfo(whm, cane), { pct: 140, blocks: ['offhand'], factors: kindFactors(whm, row('Tidal Wave Cane')[9]) });
 });
 
 /* Real pools with multi-slot choices; the brute force checks blocked slots on the whole loadout. */

@@ -10,11 +10,11 @@ Every count on this page was produced by running the generators' rules over the 
 
 The data comes from [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining), a public repository of the game client's data sheets saved as CSV files. A *sheet* is one of the game's internal data tables, for example `Item` (one row per item). The files are exported straight from the client, by XIVData Oxidizer since January 2026 and by SaintCoinach before that. The miners do not compute or derive anything: a row in a CSV is a row in the game's own data. **Verified**: the repository's own commit history shows the exporter change (commit `d3eb86d`, 4 January 2026, "Migrate to XIVData Oxidizer").
 
-The project fetches ten sheets (English column names, `csv/en/`). Eight supply data to the generators; `ClassJob` only tells the fetch step which icon belongs to which job (section 2); `BaseParam` is only checked: the slot percentages the page uses are kept in the shared format definition (section 3), and the generator stops if `BaseParam` disagrees with them.
+The project fetches ten sheets (English column names, `csv/en/`). Eight supply data to the generators; `ClassJob` only tells the fetch step which icon belongs to which job (section 2); from `BaseParam` the generators copy the stat factor table (section 5) and only check the slot percentages: those are kept in the shared format definition (section 3), and the generator stops if `BaseParam` disagrees with them.
 
 | Sheet | Read by | What it contributes |
 | --- | --- | --- |
-| `Item` | item database generator | One row per item: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`. 52,801 rows. |
+| `Item` | item database generator | One row per item: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table). 52,801 rows. |
 | `EquipSlotCategory` | item database generator | Which gear slots an item occupies (1) or blocks (−1). 25 rows. |
 | `ClassJobCategory` | item database generator | Which classes and jobs may equip an item (`True`/`False` per job). 206 rows. |
 | `ItemLevel` | item level generator | The stat budget of every stat at every item level. 921 rows, ids 0 to 920. |
@@ -23,11 +23,11 @@ The project fetches ten sheets (English column names, `csv/en/`). Eight supply d
 | `SpecialShop` | item database generator (sources) | Exchange shops: up to 60 listings each, with what a listing gives (`Item`) and costs (`ItemCost`), and the shop's `UseCurrencyType`. 1,489 rows. |
 | `TomestonesItem` | item database generator (sources) | The tomestone currencies and which are current (`Tomestones` 1 to 4). 24 rows. |
 | `ClassJob` | fetch step (job icons) | One row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon. |
-| `BaseParam` | item level generator (check only) | One row per stat, including the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, in thousandths). |
+| `BaseParam` | item level generator (slot shares checked, stat factors copied); item database generator (item kinds checked) | One row per stat, including the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, in thousandths) and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). |
 
 **Verified on every regeneration**: for all 12 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](math.md) for how the percentages are used.
 
-**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`) and the three `ParamGrow` columns. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
+**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`), the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns. A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
 
 ## 2. Fetching
 
@@ -82,6 +82,8 @@ PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8),
 | 5 | hands | Gloves | 11 | ring | FingerL |
 
 Belts (`Waist`) and soul crystals have no slot code, so items in those slots are dropped.
+
+**Stat factor.** The file also names where the stat factor comes from: the `Item` column that gives an item's kind (`BaseParamModifier`), the `BaseParam` columns that hold one percentage per kind (`MeldParam`) and how many there are (13). It is a separate entry at the end of the file, so it does not depend on the stat order.
 
 Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
 
@@ -166,9 +168,13 @@ The shop and recipe flags:
 - **Tomestone** (bit 1): an exchange listing costs a tomestone to get it, or it is made by trading in such a piece. 1,833 rows. Shops do not store most currency costs as item ids: a cost below 8 is a code, read through the shop's `UseCurrencyType` as SaintCoinach's shop reader does. Types 4 and 2: codes 1 to 4 are the current tomestones (code 1 is Poetics; SaintCoinach does not decode type 2, and the Lodestone shows its code 1 as Poetics, for example "Deepshadow Necklace of Healing ×1 + Allagan Tomestone of Poetics ×100"). Type 16: code 1 is Poetics; 2, 4, 6 and 7 are crafter and gatherer scrips. Type 8: gil. A tomestone's own item id as a cost also counts, and so does a listing that also takes a piece of gear in (augmentation and repair exchanges). A piece made by trading in tomestone gear counts too (for example Augmented Quetzalli, made from Quetzalli and Surgelight Twine), repeated until nothing changes. 1,768 of these are tomestone-category pieces; the other 65 are Heavensward artifact armor (item level 210) bought with Allagan Tomestones of Esoterics, which the group includes. The category adds 1,114 tomestone pieces with no current tomestone cost (retired sets). The piece traded in is not flagged by that trade: retired sets that are no longer sold (the un-augmented Ironworks, Shire, Lost Allagan, Scaevan, Deepshadow, Crystarium, Cryptlurker, Lunar Envoy and Credendum pieces, removed in patch 5.3 or later) carry no tomestone cost in the current game files, and no source checked (Lodestone, Garland Tools, the Console Games Wiki) records how they were sold. The flag therefore means *the game files sell it for tomestones, or it is made from such a piece*. A shop the game no longer uses can still be in the files: the Allagan Tomestones of Heliometry shop still sells Quetzalli gear, while the Lodestone shows only today's Sack of Nuts exchange.
 - **Ultimate** (bit 2): an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). 136 rows: the 16, 16, 18, 20, 22, 22 and 22 weapons of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
+### Stat factor kind
+
+`BaseParamModifier` becomes the last field: the item's kind, a number from 0 to 12 that picks a column of the stat factor table (section 5). On that item each stat's full-share slot value is multiplied by its percentage in that column ([math.md, section 4](math.md#the-stat-factor-of-an-item)). In the current data: kinds 1, 2, 3 and 10 are Strength gear (7,253 rows), 4, 11 and 12 Dexterity gear (4,136), 5 Intelligence (2,894), 6 Mind (2,949), 7 Strength and Dexterity (25), 8 Intelligence and Mind (5), 9 five Vitality-only pieces, and 0 the 13 pieces with all four main stats plus six earrings and rings with no main stat (19). The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
+
 ### Row format and order
 
-Each database row is a fixed list of nine fields:
+Each database row is a fixed list of ten fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -181,18 +187,19 @@ Each database row is a fixed list of nine fields:
 | unique | 0 or 1 | 1 when only one copy can be worn. |
 | hq | 0 or 1 | 1 when the item can be high quality (`CanBeHq`), so its stats are the HQ ones; the page marks it HQ. |
 | sources | integer 0 to 31 | Bit mask: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate (section *Sources*). |
+| stat factor kind | integer 0 to 12 | `BaseParamModifier`: the column of the stat factor table (section *Stat factor kind*). |
 
 The example row is
 
-| name | slot | item level | equip level | job mask | stats | unique | hq | sources |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0 | 1 | 0 | 0 |
+| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0 | 1 | 0 | 0 | 1 |
 
 Rows are sorted by item level (highest first), then slot code, then name. The stats are stored as one string per row to keep the file small; the page splits it when it reads a row.
 
 ## 5. Item level table and level data
 
-The second generator writes one file with three parts.
+The second generator writes one file with four parts.
 
 **Stat budgets.** For each of the 12 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. For example, at item level 123: Mind 355, Vitality 375, Spell Speed 346. How a budget becomes the stat on a piece is in [math.md](math.md).
 
@@ -205,6 +212,8 @@ The second generator writes one file with three parts.
 | ItemLevelSync | the game's own sync item level for that level (shown on the page as information) | 660 | 690 |
 
 A missing level or column stops the generator with an error. The speed formulas are in [math.md](math.md).
+
+**Stat factor table.** For each stat, its `BaseParam` row's 13 `MeldParam` columns, in percent: $f_s(k)$ for item kind $k = 0, \dots, 12$. For example Vitality is 90 in columns 0, 5, 6 and 8 and 100 elsewhere; each main stat is 90 in column 0, 100 in the columns of gear that carries it (and in column 9) and 70 in the rest; Critical Hit, Determination, Direct Hit, both speeds and Tenacity are 100 everywhere. How it is used is in [math.md, section 4](math.md#the-stat-factor-of-an-item).
 
 **Source record.** Which datamining commit the data came from (next section).
 
@@ -271,10 +280,10 @@ The page bundle takes the page code, the stylesheet and both generated data file
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 1,430,576 bytes |
-| item level table and level data (generated file) | 51,940 bytes |
+| item database (generated file) | 1,479,997 bytes |
+| item level table, level data and stat factor table (generated file) | 52,620 bytes |
 | job icons (generated file) | 206,351 bytes |
-| finished page, minified | 1,808,181 bytes at the last build (about 1.8 MB) |
+| finished page, minified | 1,866,151 bytes at the last build (about 1.9 MB) |
 
 The item database is close to 80% of the page, the icons about 12%.
 
@@ -305,14 +314,14 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 - The test files use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
 - The `BaseParam` test file holds the real rows of the 12 stats.
-- They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 12 `ItemLevel` columns, levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
-- Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column and a missing stat row each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
+- They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 12 `ItemLevel` columns, the stat factor kind of a few items and the stat factor table (the `BaseParam` test file holds the real rows), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
+- Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0 and an item kind with no `MeldParam` column each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
 
 **Format tests** (Node, on the real generated data):
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has nine fields, a valid slot code, a job mask in $(0, 2^{22})$, 12 stats, 0/1 Unique and HQ flags and a source mask below 8;
+- every database row has ten fields (the last an item kind below 13), a valid slot code, a job mask in $(0, 2^{22})$, 12 stats, 0/1 Unique and HQ flags and a source mask below 32; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
@@ -328,9 +337,9 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 | --- | --- |
 | Fetch (sparse clone and job icons) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
-| Format loading, CSV reading and the column and slot share checks | `scripts/data/item_format.py` |
+| Format loading, CSV reading, the column and slot share checks, the stat factor table | `scripts/data/item_format.py` (`stat_factors`) |
 | Item database generator | `scripts/data/gen_items.py` |
-| Item level table and level data generator | `scripts/data/gen_item_level.py` |
+| Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Source commit detection and the generated-file notice | `scripts/data/provenance.py` |
 | Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |

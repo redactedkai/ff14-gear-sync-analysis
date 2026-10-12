@@ -21,7 +21,7 @@ export function bandAccuracy(items = ITEMS) {
     if (il < ACCURACY_MIN_ILVL) continue;
     const st = r[5].split(',').map(Number);
     if (RAW_SUBSTAT_IDX.filter(i => st[i]).length < 2) continue;
-    const p = predictRaw(il, r[1], st);
+    const p = predictRaw(il, r[1], st, r[9]);
     if (!p) continue;
     const b = out[ACCURACY_BANDS.findIndex(x => il <= x.max)];
     const d = Math.max(...p.map((x, i) => Math.abs(x - st[i])));

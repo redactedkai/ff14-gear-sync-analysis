@@ -2,7 +2,7 @@
    `browse.show` picks the list: 'all' = database rows matching the filters, 'pool' = pool items matching them.
    Pure view builder: no Alpine import, so Node can load and test it. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { browseItems, dbStats, poolKey, slotInfo, slotLabel } from '../../core/items.js';
+import { browseItems, dbStats, kindFactors, poolKey, slotInfo, slotLabel } from '../../core/items.js';
 import { syncStats } from '../../core/formulas.js';
 import { effStats } from '../../core/optimizer/index.js';
 import { statCell, fmtInt } from '../helpers.js';
@@ -76,7 +76,7 @@ export function gearView(app) {
         copies: r.type === 'ring' && !r.unique ? 2 : 1, // as poolItemFromRow sets it
         blocks: r.blocks,
         raw,
-        eff: on ? syncStats(job, raw, r.type, app.cap, r.ilvl, r.pct) : raw,
+        eff: on ? syncStats(job, raw, r.type, app.cap, r.ilvl, r.pct, kindFactors(job, r.kind)) : raw,
         row: r,
         item: inPool.get(poolKey(r)) ?? null,
       };

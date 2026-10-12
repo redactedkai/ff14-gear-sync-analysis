@@ -79,14 +79,29 @@ class GenItemsTest(unittest.TestCase):
 
     def test_row_shape(self):
         for r in self.rows:
-            self.assertEqual(len(r), 9, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, sources = r
+            self.assertEqual(len(r), 10, r)
+            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(13))
             self.assertEqual(len(st.split(',')), 12)
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
             self.assertIn(sources, range(32))
+            self.assertIn(kind, range(13))
+
+    def test_stat_factor_kind(self):
+        """The last field is the item's BaseParamModifier as written in Item.csv (the fixture sets a few)."""
+        expect = {
+            'Test Hood of Healing': 6,  # Mind gear: Vitality 90
+            'Test Caster Hat': 5,  # Intelligence gear: Vitality 90
+            'Test Tank Helm': 1,  # Strength gear
+            'Test Earring': 8,  # Intelligence and Mind gear
+            'Test Greataxe': 2,
+            'Test Shoes': 0,  # all four main stats at 90
+        }
+        for name, kind in expect.items():
+            with self.subTest(name=name):
+                self.assertEqual(self.row(name)[9], kind)
 
     def test_sources(self):
         """Each SpecialShop and Recipe rule in the fixtures (scripts/data/gear_sources.py), plus the bits that come from
@@ -284,7 +299,7 @@ class GenItemLevelTest(unittest.TestCase):
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
         doc = json.loads(out.read_text(encoding='utf-8'))
-        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG'])
+        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG', 'MP'])
         self.assertIsNone(doc['source'])
         self.assertIn('commit unknown', doc['_generated'])
         src = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
@@ -292,6 +307,17 @@ class GenItemLevelTest(unittest.TestCase):
         doc = json.loads(out.read_text(encoding='utf-8'))
         self.assertEqual(doc['source'], src)
         self.assertIn('a' * 40, doc['_generated'])
+
+    def test_stat_factor_table(self):
+        """MP: each stat's BaseParam MeldParam[0..12] row (the fixture holds the real rows), keyed by stat."""
+        out = self.dir / 'item-level.json'
+        run_quiet(gen_item_level.main, str(self.dir), str(out))
+        mp = json.loads(out.read_text(encoding='utf-8'))['MP']
+        self.assertEqual(list(mp), STAT_ORDER)
+        self.assertEqual(mp['vit'], [90, 100, 100, 100, 100, 90, 90, 100, 90, 100, 100, 100, 100])
+        self.assertEqual(mp['mind'], [90, 70, 70, 70, 70, 70, 100, 70, 100, 100, 70, 70, 70])
+        self.assertEqual(mp['str'][0], 90)  # kind 0: all four main stats at 90
+        self.assertEqual(mp['crit'], [100] * 13)
 
     def test_item_level_columns(self):
         il, _ = self.generate()
@@ -622,6 +648,32 @@ class SchemaDriftTest(unittest.TestCase):
     def test_base_param_missing_stat_row(self):
         edit_csv(self.dir / 'BaseParam.csv', lambda rows: rows.remove(next(r for r in rows if r[0] == '46')))
         self.assert_fails(gen_item_level, 'BaseParam.csv', 'no row 46 (sps)')
+
+    def test_unknown_stat_factor_kind(self):
+        """An item kind (BaseParamModifier) with no MeldParam column stops gen_items: its stat factors are unknown."""
+
+        def fn(rows):
+            col = rows[0].index('BaseParamModifier')
+            next(r for r in rows if r[0] == '1015')[col] = '13'  # Test Tank Helm
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'BaseParamModifier', 'MeldParam[0..12]', 'Test Tank Helm (13)')
+
+    def test_stat_factor_columns(self):
+        rename_column(self.dir / 'BaseParam.csv', 'MeldParam[12]', 'MeldParam12')
+        self.assert_fails(gen_item_level, 'BaseParam.csv', 'MeldParam[12]')
+        self.assert_fails(gen_items, 'BaseParam.csv', 'MeldParam[12]')
+        shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
+        rename_column(self.dir / 'Item.csv', 'BaseParamModifier', 'Modifier')
+        self.assert_fails(gen_items, 'Item.csv', 'BaseParamModifier')
+
+    def test_stat_factor_not_a_percent(self):
+        def fn(rows):
+            col = rows[0].index('MeldParam[5]')
+            next(r for r in rows if r[0] == '3')[col] = '0'  # Vitality
+
+        edit_csv(self.dir / 'BaseParam.csv', fn)
+        self.assert_fails(gen_item_level, 'BaseParam.csv', 'vit MeldParam', 'percents 1 to 100')
 
     def test_command_line_exits_nonzero(self):
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')

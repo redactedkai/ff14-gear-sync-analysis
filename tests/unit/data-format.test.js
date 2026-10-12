@@ -12,7 +12,7 @@ import {
   WEAPON_PCT,
   BASE_SLOT_PCT,
 } from '../../src/core/constants.js';
-import { IL, PG, ITEMS } from '../../src/core/tables.js';
+import { IL, PG, ITEMS, MP } from '../../src/core/tables.js';
 import { JOB_ICONS } from '../../src/data/job-icons.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 
@@ -45,13 +45,25 @@ test('every item row has the documented shape', () => {
   const maxMask = 2 ** ITEM_FORMAT.jobs.length;
   for (const r of ITEMS) {
     const where = JSON.stringify(r).slice(0, 80);
-    assert.equal(r.length, 9, where);
+    assert.equal(r.length, 10, where);
     assert.ok(Number.isInteger(r[1]) && r[1] >= 0 && r[1] < ITEM_FORMAT.slots.length, 'slot code ' + where);
     assert.ok(r[4] > 0 && r[4] < maxMask, 'job mask ' + where);
     assert.equal(r[5].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
     assert.ok(r[6] === 0 || r[6] === 1, 'unique flag ' + where);
     assert.ok(r[7] === 0 || r[7] === 1, 'HQ flag ' + where);
     assert.ok(Number.isInteger(r[8]) && r[8] >= 0 && r[8] < 2 ** ITEM_FORMAT.sources.length, 'source mask ' + where);
+    assert.ok(Number.isInteger(r[9]) && r[9] >= 0 && r[9] < ITEM_FORMAT.statFactor.count, 'stat factor kind ' + where);
+  }
+});
+
+test('the stat factor table has one row of percents per stat, one column per item kind', () => {
+  assert.deepEqual(Object.keys(MP), ITEM_STAT_ORDER);
+  for (const k of ITEM_STAT_ORDER) {
+    assert.equal(MP[k].length, ITEM_FORMAT.statFactor.count, k);
+    assert.ok(
+      MP[k].every(v => Number.isInteger(v) && v >= 1 && v <= 100),
+      k,
+    );
   }
 });
 

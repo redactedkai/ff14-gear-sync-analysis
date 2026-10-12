@@ -37,6 +37,6 @@ test('the formula reproduces relic weapons with two full substats, two main stat
     const r = ITEMS.find(x => x[0] === name);
     assert.ok(r, name);
     const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st), st, name);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9]), st, name);
   }
 });

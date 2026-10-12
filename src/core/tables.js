@@ -7,6 +7,9 @@ export const DATA_SOURCE = ITEM_LEVEL_FILE.source ?? null;
 /* IL: per-stat budget by item level (ItemLevel sheet). PG: [BaseSpeed, LevelModifier, ItemLevelSync] per level 1..100. */
 export const IL = ITEM_LEVEL_FILE.IL;
 export const PG = ITEM_LEVEL_FILE.PG;
+/* MP: the per-item stat factor table (BaseParam MeldParam), {raw stat key: [percent per item kind]}. An item row's last
+   field (its BaseParamModifier) picks the kind: on that item a stat's full-share value is multiplied by the percent. */
+export const MP = ITEM_LEVEL_FILE.MP;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
 

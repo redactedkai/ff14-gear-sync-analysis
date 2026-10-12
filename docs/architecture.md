@@ -29,7 +29,7 @@ What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
 - **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin). This fixes the list of active slots for Piece stats and the sync caps table, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
-- **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise ([math.md, section 4](math.md#4-the-stats-on-a-piece)).
+- **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise: the factor the job's own gear carries, used only where no real item is involved (Sync caps, Piece stats). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](math.md#the-stat-factor-of-an-item)).
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
 Contexts are cached, so asking for the same job twice returns the same object, and frozen, so no caller can change one by accident. An unknown job id falls back to the default job.

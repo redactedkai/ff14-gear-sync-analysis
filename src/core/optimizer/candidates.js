@@ -5,9 +5,12 @@ import { SLOT_TYPES } from '../constants.js';
 import { syncStats } from '../formulas.js';
 import { slotInfo } from '../items.js';
 
-/* sync = {cap, sync}: the cap item level and whether sync is on. A piece is capped by its own slot share. */
+/* sync = {cap, sync}: the cap item level and whether sync is on. A piece is capped by its own slot share and stat
+   factors. */
 export function effStats(job, item, sync) {
-  return sync.sync ? syncStats(job, item.stats, item.type, sync.cap, item.ilvl, slotInfo(job, item).pct) : item.stats;
+  if (!sync.sync) return item.stats;
+  const s = slotInfo(job, item);
+  return syncStats(job, item.stats, item.type, sync.cap, item.ilvl, s.pct, s.factors);
 }
 
 /* Lexicographic score [target, tiebreak 1, tiebreak 2] packed into one number, so the search can add and

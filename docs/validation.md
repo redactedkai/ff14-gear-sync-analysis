@@ -12,7 +12,7 @@ All numbers were produced by running the code against the data in this repositor
 | --- | --- | --- |
 | Game item data (`Item` sheet) | The final stats on 17,286 real combat pieces | Accuracy of the per-piece formula (section 2), the worked piece (section 4), real-gear optimizer pools (section 6) |
 | FFXIV Wiki, Item Level Sync page | Published substat caps at item level 475 | The sync clamp rule (section 3) |
-| Game `BaseParam` sheet, `MeldParam` table | Per-item stat percentages (Vitality 90 on every Intelligence/Mind piece) | The 0.9 Vitality factor (section 2) |
+| Game `BaseParam` sheet, `MeldParam` table, and `Item.BaseParamModifier` | Per-item stat percentages: each item names a column (Vitality 90 on every Intelligence/Mind piece, every main stat 90 on four-main-stat pieces) | The stat factor, read per item (section 2) |
 | xivgear (community gear planner), [source at commit 6c3c878](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts) | How it computes sync caps, including shields (two-handed cap minus one-handed cap) | Agreement on the off-hand rule (section 2); a community reference, not external truth |
 | AkhMorning (community reference), [Skill and Spell Speed page](https://www.akhmorning.com/allagan-studies/stats/speed/) | GCD and DoT formula, and its published tier tables ("2.5s Tiers" for a chosen level) | Speed and GCD (section 5) |
 
@@ -25,7 +25,7 @@ Expected values in the tests are of three kinds, and each section below says whi
 
 ## 2. Every real piece, by item level band
 
-**What is compared.** For every database piece at item level 110 or above with at least two substats, the model predicts all its stats from its item level and slot alone: main stat and Vitality at full share, substats at 100% / 70% / 20% by their rank on the piece (see [math.md, section 4](math.md#4-the-stats-on-a-piece)). For predicted stats $\hat s_k$ and real stats $s_k$, a piece counts as
+**What is compared.** For every database piece at item level 110 or above with at least two substats, the model predicts all its stats from its item level, slot and item kind alone: main stats and Vitality at full share times the item's stat factor, substats at 100% / 70% / 20% by their rank on the piece (see [math.md, section 4](math.md#4-the-stats-on-a-piece)). For predicted stats $\hat s_k$ and real stats $s_k$, a piece counts as
 
 $$
 \text{exact if } \max_k |\hat s_k - s_k| = 0, \qquad \text{within 1 if } \max_k |\hat s_k - s_k| \le 1 .
@@ -38,12 +38,14 @@ Every stat on the piece has to match, not just one.
 | 110–135 | 956 | 944 (98.7%) | 944 (98.7%) |
 | 136–300 | 3,773 | 3,771 (99.9%) | 3,773 (100.0%) |
 | 301–600 | 7,184 | 7,162 (99.7%) | 7,184 (100.0%) |
-| 601+ | 4,673 | 4,673 (100.0%) | 4,673 (100.0%) |
-| All | 16,586 | 16,550 (99.8%) | 16,574 (99.9%) |
+| 601+ | 4,683 | 4,683 (100.0%) | 4,683 (100.0%) |
+| All | 16,596 | 16,560 (99.8%) | 16,584 (99.9%) |
 
 **Verified** (game data; external truth). What this does and does not show:
 
-- The budget table, the slot shares, the double rounding and the 0.9 Vitality factor are confirmed by these matches; the 0.9 factor is also in the game files (`BaseParam.MeldParam`: Vitality 90 for every Intelligence and Mind piece). With a single rounding the same check gives 80.0% exact (see [math.md, section 4](math.md#the-formula)).
+- The budget table, the slot shares, the double rounding and the stat factor are confirmed by these matches. The factor is read from the game files for each item (`BaseParam.MeldParam`, column `Item.BaseParamModifier`; [math.md, section 4](math.md#the-stat-factor-of-an-item)). With a single rounding the same check gives 80.0% exact (13,272; see [math.md, section 4](math.md#the-formula)).
+- Reading the factor from the item, instead of from the piece's main stat (Vitality × 0.9 when the main stat is Intelligence or Mind), changed no prediction on any piece that has a main stat, except to fix the 13 pieces with all four main stats (all five of their main-stat and Vitality lines were 10% too high). It also lets the check cover pieces with no main stat, which the old rule could not predict: the band table gains the ten Occult accessories at 745, all exact (it was 16,550 of 16,586 before). Over the whole database, 17,222 of 17,286 pieces are now exact (99.6%), against 17,197 of the 17,265 the old rule could predict.
+- Of the 21 pieces with no main stat, 12 are exact. The other nine carry at most one substat, so they are outside the band check: five Serpentskin pieces at 150 with Vitality only (14 and 22, far below any budget); Bozjan, Menphina's and Azeyma's earrings, whose Vitality is at the full value although their kind (0) says 90% (Halone's and Aetheryte earrings of the same kind follow it); and Neophyte's Ring, whose Determination is 25 where the full value is 35. Not explained.
 - The 100 / 70 / 20 substat shares remain an **inferred** pattern. They fit almost every piece, but the game files do not store them.
 - The model includes three refinements read off real pieces ([math.md, sections 3 and 4](math.md#4-the-stats-on-a-piece)): equal substats share the higher rank, every main stat counts, and an off-hand is the two-handed value minus the one-handed value. Before them the check gave 98.7% exact (16,369); they fix 141, 10 and 30 pieces. xivgear computes shield caps with the same off-hand rule (two-handed cap minus one-handed cap), which agrees with it but is not in-game evidence.
 - Only 601+ is 100.0% exact.
@@ -144,16 +146,17 @@ None of these totals has been checked in game. They show the search returns the 
 | Views unit test | Optimizer and ceiling views on real gear; a lone Unique ring; Piece stats on the real item level 130 head pieces; sync caps view; GCD tier text and tier lookup; browse and pool counts | Real gear: brute-force reference. Piece stats raw values: external truth (game data). Caps, 296: independent derivation (caps unit test). Tier at 1,839: external truth (AkhMorning). Tier lookup: independent scan |
 | Items unit test | Item browser filters, pool item mapping, copies of Unique rings | Real rows from the database, picked by properties |
 | Piece-subs unit test | Piece stats substat ranks never repeat | Rules of the page |
-| Data-format and provenance unit tests | Shape of the generated data; recorded data source | Format definition |
+| Stat-factor unit test | The job's factor equals the item factor on every single-main-stat piece of all 22 jobs; only the 13 four-main-stat pieces differ; those 13, the Occult "of Magic" and "of Blood" accessories (Vitality 307 / 341) and Alexandrian Earrings of Casting reproduced; a synced Field Commander's Coat capped at main stat 43 and Vitality 46 at 123 in the optimizer and the gear browser | Game data and independent derivation from `ItemLevel` rows; synced values: rules of the model |
+| Data-format and provenance unit tests | Shape of the generated data, including the stat factor table; recorded data source | Format definition |
 | State unit test | Saved page state is repaired field by field; removed hypothetical and hand-entered pieces are dropped | Rules of the page |
-| Generator tests (Python) | 18 tests on small CSV fixtures (slots, exclusions including multi-slot gear, stat placement, HQ rule, job mask, Unique flag, sort order, budget columns, level data) | Hand-built fixtures |
+| Generator tests (Python) | 50 tests on small CSV fixtures (slots, exclusions including multi-slot gear, stat placement, HQ rule, job mask, Unique flag, sort order, budget columns, level data, stat factor kind and table, schema errors) | Hand-built fixtures |
 | Smoke test (browser) | In the built page: caps at 123 for six jobs, Wiki 475 table, Piece stats head piece values, real-gear optimizer totals for Sage and Warrior synced and unsynced, Paladin off-hand; no `undefined`/`NaN`/`null` text, no JavaScript errors, no horizontal scroll at 400 px | Caps and Wiki: as in the unit tests. Piece stats raw values: external truth. Optimizer totals: computed by the core and the brute force in Node at test time |
 
 ## 8. Open question: in-game captures
 
 Three parts of the sync model have no direct evidence ([math.md, section 5](math.md#what-is-assumed)):
 
-1. the main stat and Vitality are clamped like substats (with the 0.9 Vitality factor for Intelligence and Mind jobs);
+1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job);
 2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$);
 3. sync never raises a stat.
 
@@ -170,6 +173,6 @@ Captures from the game are **the single most valuable evidence the project does 
 | GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | "Checked against real gear" panel | `src/ui/components/validation-panel.js` |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
-| Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
+| Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |
 | Smoke test | `tests/e2e/smoke.py` |

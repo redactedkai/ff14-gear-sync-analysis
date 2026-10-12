@@ -11,7 +11,7 @@ function formulaText(steps) {
     .map(s => {
       if (s.kind === 'offhand') return `two-handed ${s.two} − one-handed ${s.one} = ${s.value}`;
       if (s.kind === 'slot') return `${s.base} × ${s.pct} ÷ 1000 = ${s.exact.toFixed(1)} → ${s.value}`;
-      if (s.kind === 'vit') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
+      if (s.kind === 'factor') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
       return `× ${s.weight}% = ${s.exact.toFixed(1)} → ${s.value}`;
     })
     .join('; ');

@@ -85,19 +85,38 @@ $$
 
 where $w$ is the stat's **substat share** (next section). The main stat and Vitality always take $w = 1$.
 
-For Intelligence and Mind jobs, Vitality gets one more factor:
+### The stat factor of an item
+
+Some stats get one more factor $f_s$ between the slot budget and the substat share:
 
 $$
-\text{Vitality} = \operatorname{round}\big(0.9 \times B_{\text{vit}}(i)\big)
+\text{stat}_s = \operatorname{round}\Big(\operatorname{round}\big(B_s(i) \times f_s\big) \times w\Big) \qquad (\text{the inner rounding only when } f_s \ne 1)
 $$
 
-For Strength and Dexterity jobs the factor is 1.
+The factor belongs to the **item**, not to the job. The game files hold it: `BaseParam` has a table of percentages (`MeldParam`) with one row per stat and 13 columns, and each item names a column with `Item.BaseParamModifier` (its *kind*). The page keeps each item's kind and the table, and reads $f_s = \text{MeldParam}[s][\text{kind}] / 100$.
 
-**Verified** in the game files: `BaseParam` has a per-stat percentage table (`MeldParam`), and each item picks a row of it with `Item.BaseParamModifier`. Every Intelligence and Mind piece at item level 100 or above (5,939) points at a row whose Vitality entry is 90 and whose own main stat entry is 100; every Strength and Dexterity piece points at a row with Vitality 100, except 13 Strength pieces whose row is 90 for both. The order of the rounding (slot share first, then 0.9) is read off real items: applying the 90% first, as xivgear does for its sync caps, is right on only 18 Intelligence/Mind pieces where it differs and wrong on 1,199.
+| Kind of item (examples) | Main stat | Vitality | Pieces |
+| --- | --- | --- | --- |
+| Strength gear (kinds 1, 2, 3, 10), Dexterity gear (4, 11, 12) | 100% | 100% | 11,389 |
+| Intelligence gear (5), Mind gear (6) | 100% | 90% | 5,843 |
+| Strength + Dexterity (7) | 100% | 100% | 25 |
+| Intelligence + Mind (8) | 100% | 90% | 5 |
+| No main stat (9) | – | 100% | 5 |
+| All four main stats (0) | 90% | 90% | 19 |
+
+Kind 7 is the Gloam and High Allagan "of Striking" sets and the Occult "of Blood" accessories; kind 8 the Occult "of Magic" accessories; kind 9 five item level 150 Serpentskin pieces with Vitality only. Kind 0 is the Lieutenant's, Field Commander's and Warlord's sets, Proto Ultima Mesh (13 pieces with all four main stats) and six earrings and rings with Vitality and Determination only (Halone's, Azeyma's, Bozjan, Menphina's, Aetheryte, Neophyte's). Counts are database pieces.
+
+Every substat (Critical Hit, Determination, Direct Hit, both speeds, Tenacity) is 100% in every column. Piety is 70% or 90% in most columns, but no piece carries Piety in such a column, so it never applies.
+
+So for a piece with a single main stat the factor is exactly the old job rule: **Vitality × 0.9 on Intelligence and Mind gear, 1 everywhere else**. The difference shows on two kinds of piece. Pieces that carry all four main stats have every main stat and Vitality at 90% (Field Commander's Coat, item level 160 body: $\operatorname{round}(448 \times 135/1000) = 60$, $\times 0.9 = 54$, which is what it carries). And pieces with no main stat at all (the Occult accessories at 745) have the factor of their kind: "of Magic" Vitality 307, "of Blood" 341, from the same budget ($5085 \times 67/1000 = 340.695 \to 341$, $\times 0.9 = 306.9 \to 307$). An Intelligence earring every job can wear (Alexandrian Earrings of Casting) still has Vitality × 0.9, because the factor goes with the item.
+
+**Verified** in the game files: the table and the item column are read from the client data on every regeneration, and the generator stops if an item names a column the table does not have. The order of the rounding (slot share first, then the factor) is read off real items: applying the 90% first, as xivgear does for its sync caps, is right on only 18 Intelligence/Mind pieces where it differs and wrong on 1,199.
+
+**Where no item is involved** (the Sync caps tab and Piece stats, which describe a slot for a job), the page uses the factor the job's own gear carries: main stat 1, Vitality 0.9 for Intelligence and Mind jobs, 1 otherwise. A unit test checks this against the game files: every database piece a job can wear that carries that job's main stat and no other has exactly those factors, for all 22 jobs. Only the 13 four-main-stat pieces differ.
 
 **Rounding is half up**: $\operatorname{round}(x) = \lfloor x + 0.5 \rfloor$, so 31.5 becomes 32. The code adds a tiny epsilon so that floating-point noise such as 22.4999999 still rounds as 22.5 would.
 
-**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,262 of the 16,586 checked pieces exactly (80.0%). Rounding twice reproduces 16,550 (99.8%). Both figures come from running the model over the item database.
+**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,272 of the 16,596 checked pieces exactly (80.0%). Rounding twice reproduces 16,560 (99.8%). Both figures come from running the model over the item database.
 
 Example where it matters: Antiquated Atlas, a level 60 healer two-handed weapon at item level 200, has Piety 57. The substat budget at 200 is 587:
 
@@ -119,7 +138,7 @@ The game stores only the final numbers on each item. It does not store how a slo
 
 Two refinements, both read off real pieces: substats of **equal size share the higher rank** (the relic weapon steps Hyperconductive, Manderville, Amazing Manderville and Phantom carry two substats at 100%; 141 pieces), and **every main stat on a piece is at full share** (ten item level 110 pieces carry Strength and Dexterity at the same value).
 
-**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,550 of 16,586), and 98.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,560 of 16,596), and 98.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
 Where the shares matter: the Piece stats uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 
@@ -141,11 +160,13 @@ Every value matches the real piece. The Vitality line also shows the half-up rul
 
 ### The clamp rule
 
-Let $C$ be the sync cap. Each slot type has a **cap value** for each stat: the full-share value that stat would have on a piece in the same slot at item level $C$:
+Let $C$ be the sync cap. Each piece has a **cap value** for each stat: the full-share value that stat would have on a piece of the same slot and the same kind at item level $C$, with the piece's own stat factor $f_s$ (section 4):
 
 $$
-\text{cap}_s(C) = B_s(C) \quad\text{(with the 0.9 Vitality factor for Intelligence/Mind jobs)}
+\text{cap}_s(C) = \operatorname{round}\big(B_s(C) \times f_s\big)
 $$
+
+For a real piece $f_s$ is the piece's own factor. For the Sync caps table and Piece stats, which have no item behind them, it is the job's (Vitality 0.9 for Intelligence/Mind jobs). The two differ only for the 13 pieces with all four main stats: synced to 123, Field Commander's Coat (item level 160, body) is capped at main stat 43 and Vitality 46 ($\operatorname{round}(48 \times 0.9)$, $\operatorname{round}(51 \times 0.9)$) for every job, where the job rule gave a Warrior 48 and 51.
 
 Then, for a piece at item level $i$:
 
@@ -186,7 +207,7 @@ The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The 
 
 ### What is assumed
 
-- **Main stat and Vitality** are clamped the same way as substats, with the 0.9 Vitality factor for Intelligence/Mind jobs. *Inferred.* The Wiki table covers substats only, and this has not been confirmed in game. xivgear does the same: its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece to its cap, main stats and Vitality included, and exempts only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). That is agreement with the most used community gear planner, not in-game evidence. Its caps match this page's for main stats and substats at every item level and slot; for Intelligence and Mind Vitality it applies the 90% before the slot share, which gives a cap 1 lower than this page's in 1,089 of 4,770 item level and slot combinations. Which order the game uses for caps is not known (for item stats, this page's order is right; see section 4).
+- **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor (so a piece's cap is what a piece of its kind would carry at the cap). *Inferred*, and so is using the piece's factor rather than the job's; xivgear also takes the factor from the item (its caps use the item's `BaseParamModifier`). The Wiki table covers substats only, and this has not been confirmed in game. xivgear does the same: its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece to its cap, main stats and Vitality included, and exempts only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). That is agreement with the most used community gear planner, not in-game evidence. Its caps match this page's for main stats and substats at every item level and slot; for Intelligence and Mind Vitality it applies the 90% before the slot share, which gives a cap 1 lower than this page's in 1,089 of 4,770 item level and slot combinations. Which order the game uses for caps is not known (for item stats, this page's order is right; see section 4).
 - **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). *Inferred.* The model uses the full-share cap because the Wiki table lists a single cap per slot. No in-game capture confirms it for lower shares.
 - **Melds** (materia added to gear) are ignored on synced-down pieces: a piece is synced, and its materia stops counting, when its item level is above the duty's item level cap (with item level sync on) or its equip level is above the duty's level. **Verified** by the owner in game. The page models no melds at all, so this only matters for a future materia tab.
 - **No scaling up**: sync never raises a stat. *Assumed.*
@@ -259,7 +280,10 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Item level indexes the `ItemLevel` budget table | Verified | Game table; reproduces real items |
 | Slot shares 140/100/40/85/135/67 | Verified | `BaseParam.csv`, all 12 stats |
 | Two roundings, half up | Verified | 99.8% exact vs 80.0% with one rounding |
-| Vitality × 0.9 for Intelligence/Mind jobs | Verified | Game files (`BaseParam.MeldParam` Vitality 90 for every Intelligence/Mind piece) and real items (e.g. the worked example piece, Antiquated Atlas) |
+| Per-item stat factor (Vitality × 0.9 on Int/Mind gear, every main stat × 0.9 on four-main-stat gear) | Verified | Read from the game files (`BaseParam.MeldParam`, column `Item.BaseParamModifier`); reproduces real items, the 13 four-main-stat pieces included |
+| Rounding order: slot value first, then the factor | Verified (real items) | Factor first is wrong on 1,199 Int/Mind pieces |
+| Job's factor where no item is involved | Verified (game files) | Equals the item factor on every single-main-stat piece of each job |
+| Sync cap uses the piece's own factor | Inferred | xivgear does the same; no in-game capture |
 | Substat shares 100% / 70% / 20% by rank (equal substats share a rank) | Inferred (measured pattern) | 98.7–100.0% exact per item level band ([validation.md](validation.md)); not in game files |
 | Off-hand = two-handed value − one-handed value | Inferred (fits data) | 224 of 226 real off-hands, against 195 for the 40 ‰ share; xivgear uses the same rule for shield caps; sets the shield cap at 123 to 13 |
 | Sync clamps each stat to the full-share same-slot value at the cap | Verified for substats | Wiki caps at 475, 5 of 5 |
@@ -275,11 +299,12 @@ Verification status: the formulas are a community reference, not game files. Whi
 
 | Concept | File |
 | --- | --- |
-| Budget table and level data (generated) | `src/data/item-level.json` |
+| Budget table, level data and stat factor table (generated) | `src/data/item-level.json` |
 | Highest row, highest real item level | `src/core/tables.js` |
 | Slot shares, substat shares, role profiles | `src/core/constants.js` |
-| Per-job stat mapping, Vitality factor, weapon mode | `src/core/job-context.js` |
+| Per-job stat mapping, the job's Vitality factor, weapon mode | `src/core/job-context.js` |
+| An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats, caps, sync clamp, step-by-step derivation | `src/core/formulas.js` |
 | GCD, tick multiplier, GCD tiers | `src/core/speed.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
-| Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `speed.test.js`, `validation.test.js` |
+| Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |
