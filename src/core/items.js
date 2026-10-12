@@ -98,6 +98,8 @@ export function parseRow(r) {
     hq: !!r[7], // can be high quality: the stats are the HQ ones
     sources: r[8] | 0, // bit mask over SOURCES
     kind: r[9], // item kind: the column of the stat factor table MP (kindFactors)
+    meldSlots: r[10], // guaranteed materia slots
+    overmeld: !!r[11], // overmelding allowed
   };
 }
 
@@ -143,7 +145,7 @@ export function browseItems(job, f) {
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 let rowIndex = null;
-/* The database facts about a pool item ({sources, slotCode, kind, lvl}), looked up by its pool key, so saved pools need no
+/* The database facts about a pool item ({sources, slotCode, kind, lvl, slots, overmeld}), looked up by its pool key, so saved pools need no
    repair when a fact is added. Null for items not from the database (hand-made, generated). */
 function rowFacts(item) {
   if (item.src !== 'game') return null;
@@ -157,6 +159,8 @@ function rowFacts(item) {
         slotCode: f ? f.slotCode : r[1],
         kind: f ? f.kind : r[9],
         lvl: f ? f.lvl : r[3],
+        slots: f ? f.slots : r[10],
+        overmeld: f ? f.overmeld : !!r[11],
       });
     }
   }
@@ -171,6 +175,13 @@ export function sourceMask(item) {
 /* A pool item's equip level (the level a character needs to wear it), or null for items not from the database. */
 export function equipLevel(item) {
   return rowFacts(item)?.lvl ?? null;
+}
+
+/* A pool item's materia slots: {slots, overmeld} (guaranteed slots; whether overmelding is allowed), or null for items
+   not from the database (hand-made, generated) and saved items no database row matches any more. */
+export function meldInfo(item) {
+  const f = rowFacts(item);
+  return f ? { slots: f.slots, overmeld: f.overmeld } : null;
 }
 
 /* A pool item's slot share (pct, thousandths), the slot types it leaves empty (blocks) and its stat factors (factors,

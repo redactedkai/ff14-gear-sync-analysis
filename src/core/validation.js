@@ -1,6 +1,6 @@
 /* Validation of the stat model against external truth. Shared by the page ("Checked against real gear")
    and the unit tests, so both report the same numbers. */
-import { RAW_SUBSTAT_IDX, WEAPON_PCT } from './constants.js';
+import { RAW_SUBSTAT_IDX, RARITY_FIELD, WEAPON_PCT } from './constants.js';
 import { IL, ITEMS } from './tables.js';
 import { rnd, predictRaw } from './formulas.js';
 
@@ -12,6 +12,11 @@ export const ACCURACY_BANDS = Object.freeze([
   { label: '601+', max: Infinity },
 ]);
 
+/* The {hq, rarity} of a database row, as predictRaw takes it. */
+export function rowItem(r) {
+  return { hq: r[7] === 1, rarity: r[RARITY_FIELD] };
+}
+
 /* For every row with 2+ substats at item level >= 110: does predictRaw reproduce its stats?
    Returns [{label, n, exact, within1}] (counts) in ACCURACY_BANDS order. */
 export function bandAccuracy(items = ITEMS) {
@@ -21,7 +26,7 @@ export function bandAccuracy(items = ITEMS) {
     if (il < ACCURACY_MIN_ILVL) continue;
     const st = r[5].split(',').map(Number);
     if (RAW_SUBSTAT_IDX.filter(i => st[i]).length < 2) continue;
-    const p = predictRaw(il, r[1], st, r[9]);
+    const p = predictRaw(il, r[1], st, r[9], rowItem(r));
     if (!p) continue;
     const b = out[ACCURACY_BANDS.findIndex(x => il <= x.max)];
     const d = Math.max(...p.map((x, i) => Math.abs(x - st[i])));

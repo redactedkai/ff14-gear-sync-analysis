@@ -27,8 +27,8 @@ test('main-stat caps at sync 123 (head 30, body 48, accessory 24, 2H weapon 50)'
   }
 });
 
-test('item level 130 healer hood from the formula', () => {
-  assert.deepEqual(buildPiece(sge, 130, 'head', ['spd', 'spec', 'dh']), { main: 33, vit: 32, crit: 0, det: 0, dh: 6, spd: 31, spec: 22 });
+test('item level 130 healer hood from the formula (its fixed Direct Hit 6 is a real-item line, not a rank)', () => {
+  assert.deepEqual(buildPiece(sge, 130, 'head', ['spd', 'spec']), { main: 33, vit: 32, crit: 0, det: 0, dh: 0, spd: 31, spec: 22 });
 });
 
 test('Paladin uses a one-handed weapon plus off-hand', () => {

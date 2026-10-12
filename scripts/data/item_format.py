@@ -42,12 +42,24 @@ def read_csv(path, required=()):
 
 
 def item_columns():
-    """The Item.csv columns gen_items.py reads."""
+    """The Item.csv columns gen_items.py reads (read_csv raises SchemaError on any that is missing)."""
+    fmt = load_format()
     pairs = [
         f'{c}[{i}]' for c in ('BaseParam', 'BaseParamValue', 'BaseParamSpecial', 'BaseParamValueSpecial') for i in range(N_ITEM_PARAMS)
     ]
     cols = ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
-    return [*cols, load_format()['statFactor']['itemColumn']]
+    materia = fmt['materia']
+    return [*cols, fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn'], fmt['rarity']['itemColumn']]
+
+
+def meld_fields(row, fmt):
+    """(meldSlots, overmeld) of an Item.csv row: the guaranteed materia slots (0 to `maxSlots`) and 1 when overmelding is
+    allowed. None when either value is out of range or not of the expected form; the caller lists those and raises."""
+    m = fmt['materia']
+    slots, over = row[m['slotColumn']], row[m['overmeldColumn']]
+    if not (slots.isdigit() and int(slots) <= m['maxSlots']) or over not in ('True', 'False'):
+        return None
+    return int(slots), 1 if over == 'True' else 0
 
 
 def stat_factors(base_param_csv, fmt):

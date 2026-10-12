@@ -58,4 +58,4 @@ Run all commands from the repo root.
 
 ## Data
 
-Item stats, the item-level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data. The speed-to-GCD formulas follow AkhMorning's guide. The substat share rule (100/70/20%) is a pattern measured on real items, not something stored in the game files.
+Item stats, the item-level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data. The speed-to-GCD formulas follow AkhMorning's guide. The substat share rule (100/70%, plus a fixed 20% Direct Hit line on older healer gear) is a pattern measured on real items, not something stored in the game files.

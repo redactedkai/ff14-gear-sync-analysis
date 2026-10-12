@@ -125,7 +125,7 @@ $$
 \sum_{x \succ y} c(x) \ \ge\ k_t .
 $$
 
-For a single-slot type this means "something beats it". For rings it means "two copies beat it": one ring with 2 copies, or two different rings.
+For a single-slot type this means "something beats it". For rings it means "two copies beat it": one ring with 2 copies, or two different rings. Copies are counted once per item, so two candidate versions of one Unique ring are still one ring.
 
 ### Why one better ring is not enough
 
@@ -166,9 +166,9 @@ so if $\sigma + U_p \le \sigma^*$, nothing below this node can be strictly bette
 
 **Speed minimum.** If $T_{\text{spd}} + \sum_{i \ge p} \max\bigl(0, \max_{x \in P_{s_i}} v_{\text{spd}}(x)\bigr) < m$, the minimum can no longer be reached.
 
-**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 17,286 database rows), so the total can only grow along a branch.
+**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 17,281 database rows), so the total can only grow along a branch.
 
-Both bounds use the best value in each remaining slot independently. They ignore copy limits, so they can overestimate (for example, by counting the best Unique ring twice). Overestimating never cuts a branch that should be kept; it only makes the search visit more nodes.
+Both bounds use the best value in each remaining slot independently, except that the two ring slots are bounded together. At the first ring slot the two add at most the best **legal pair**: the best ring twice if it has 2 copies, otherwise the best ring plus the best ring of another item (the best alone if there is none). Every legal pair is at most this: a pair with the best ring adds the best other item at most, and a pair without it has both members at most the best other item. Counting the best Unique ring twice, as two independent slot bounds do, left the bound too high whenever the best ring was Unique, and the search could not cut the many near-ties below it (one real run fell from 80,290 nodes to 170). The bounds still ignore copies in other ways and can overestimate; overestimating never cuts a branch that should be kept, it only makes the search visit more nodes.
 
 **Ring symmetry.** The two ring slots share one list. Choosing (A, B) or (B, A) gives the same loadout, so the second ring's position in the sorted list must be at least the first ring's position. The same ring can fill both slots only if it has 2 copies.
 
@@ -180,7 +180,7 @@ Both bounds use the best value in each remaining slot independently. They ignore
 
 Below the main result, the Gear optimizer tab shows "Ceiling per stat from this pool". For each of the job's stats it runs the optimizer with that stat as the only target (no tiebreaks) twice: synced to the current cap, and unsynced. Each cell is the highest total of that one stat the pool can reach, ignoring all other stats. The last row converts the synced speed ceiling into a GCD.
 
-That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 1,988-item Sage pool they take about 0.27 s together.
+That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 1,999-item Sage pool they take about 0.29 s together.
 
 ## 7. Correctness and performance
 
@@ -201,27 +201,27 @@ The exhaustive and constraint tests run with `npm test`. If a change to scoring,
 
 ### Performance
 
-Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists. The pool is every piece Sage can equip at item level 100 and up (1,988 items).
+Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists. The pool is every piece Sage can equip at item level 100 and up (1,999 items). The node counts before the ring-pair bound (section 5) are in brackets; every result is the same.
 
 | Run | Nodes | Time |
 | --- | ---: | ---: |
-| Synced to 123, Spell Speed | 137 | ~22 ms |
-| Synced to 123, Spell Speed, tiebreaks Crit, Det | 137 | ~21 ms |
-| Unsynced, Spell Speed | 492 | ~16 ms |
-| Unsynced, Critical Hit, tiebreaks Det, Spell Speed | 5,657 | ~21 ms |
-| Unsynced, Critical Hit, Spell Speed at least 2,000 | 3,199 | ~18 ms |
-| Unsynced, Spell Speed, Critical Hit at most 1,000 (pruning off) | 40,289 | ~41 ms |
-| Ceiling table: 14 runs at 150,000 nodes each | | ~221 ms |
+| Synced to 123, Spell Speed | 137 (137) | ~25 ms |
+| Synced to 123, Spell Speed, tiebreaks Crit, Det | 137 (137) | ~23 ms |
+| Unsynced, Spell Speed | 194 (505) | ~17 ms |
+| Unsynced, Critical Hit, tiebreaks Det, Spell Speed | 194 (5,811) | ~17 ms |
+| Unsynced, Critical Hit, Spell Speed at least 2,000 | 2,645 (3,238) | ~19 ms |
+| Unsynced, Critical Hit, Spell Speed at most 1,000 (pruning off) | 2,194 (558,548) | ~7 ms (was ~450 ms) |
+| Ceiling table: 14 runs at 150,000 nodes each, synced to 123 at level 50 | | ~290 ms |
 
 Synced runs leave fewer candidates after pruning (119 against 167 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level.
 
-Across the 9,800 real-gear runs, the median is 72 nodes and the 99th percentile 18,561. The largest is 191,023 nodes (Ninja and Viper, items 600 to 640, unsynced, Skill Speed; 130 to 150 ms). There, most armor pieces have no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so the bound is 42 points too high and cannot cut those ties.
+Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149 and the largest 203 (Summoner, items 260 to 300, unsynced). Before the ring-pair bound they were 73, 18,178 and 191,023: the largest was Ninja and Viper, items 600 to 640, unsynced, Skill Speed, where most armor has no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so counting it twice left the bound 42 points too high to cut those ties. Rerun on 2026-10-12 with both searches side by side: the same total in all 9,800 runs, none truncated.
 
 ## 8. Known behaviours and limits
 
 - **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own empty-pool message first.
 - **Missing slot types** are left out of the loadout.
-- **Truncated results** may not be optimal, so the page marks them: a note under the main result, and "≥ value" plus a footnote in the ceiling table. The 191,023-node case above exceeds the ceiling limit of 150,000, so its cell is shown as a lower bound (it happens to be the correct 993 anyway).
+- **Truncated results** may not be optimal, so the page marks them: a note under the main result, and "≥ value" plus a footnote in the ceiling table. No run in the 9,800-run probe comes near the ceiling limit of 150,000 any more (before the ring-pair bound, the 191,023-node case did, and its cell showed a lower bound).
 - **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. The speed range is engine only, so this does not affect the page yet.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.

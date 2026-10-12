@@ -12,7 +12,7 @@ Each layer depends only on the layers above it:
 
 | Layer | What it holds | Depends on |
 | --- | --- | --- |
-| 1. Generated game data | The item level budget table, per-level speed data, and the item database (17,286 pieces of gear). Produced by the data pipeline and never edited by hand. | nothing |
+| 1. Generated game data | The item level budget table, per-level speed data, and the item database (17,281 pieces of gear). Produced by the data pipeline and never edited by hand. | nothing |
 | 2. Core logic | Stat formulas, sync caps, speed and GCD, item queries, the optimizer, and the accuracy checks. Pure functions: no page, no browser storage, no shared mutable state. They run unchanged in Node, which is how the unit tests use them. | data |
 | 3. UI state | The saved state (defaults, repair on load, browser storage) and one shared store that holds the current settings, the item pool, the current job context, and the actions that change them. | core |
 | 4. Components and template | One component per page area. Each turns the store into a ready-to-display "view". The HTML template binds to those views and to store actions. | UI state, core |
@@ -95,7 +95,7 @@ The page remembers the user's settings between visits in the browser's local sto
 
 An invalid field falls back to its default and the valid ones are kept. 14 unit tests cover this field by field.
 
-**Storage key versioning.** The key carries a version suffix (currently `-v3`). If the saved shape changes in a way old data cannot satisfy, bump the suffix, and keep the restore step repairing old values field by field rather than discarding them.
+**Storage key versioning.** The key carries a version suffix (currently `-v3`). While the site has no users, a new field needs no bump: the restore step defaults and repairs it. Once it has users, bump the suffix only when old data cannot be repaired field by field.
 
 ## 5. Build
 

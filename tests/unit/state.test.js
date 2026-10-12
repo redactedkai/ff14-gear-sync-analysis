@@ -38,7 +38,7 @@ function validSave() {
     tab: 'math',
     mathTab: 'sync',
     syncIlvl: 400,
-    piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'det', 'spec'] },
+    piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'spec'] },
     browse: { show: 'pool', q: 'Robe', type: 'body', expOff: ['ARR', 'SB'], min: 110, max: 140, lvl: 50, sort: 'spd' },
     opt: { target: 'spec', tb: '', tb2: 'crit', exclude: ['tomestone', 'ultimate'] },
     pool: [
@@ -135,13 +135,14 @@ test('piece fields', () => {
   expectFieldDefault('piece.slot', 'belt', 'head');
   expectFieldDefault('piece.slot', 'offhand', 'head');
   const ds = defaultSubs(makeJobContext('WHM'));
-  assert.deepEqual(ds, ['spec', null, null]); // the job's own substat first (Piety), ranks 2 and 3 empty
-  assert.deepEqual(defaultSubs(makeJobContext('MNK')), ['spd', null, null]); // no special substat: speed
+  assert.deepEqual(ds, ['spec', null]); // the job's own substat first (Piety), rank 2 empty
+  assert.deepEqual(defaultSubs(makeJobContext('MNK')), ['spd', null]); // no special substat: speed
   expectFieldDefault('piece.subs', 'crit', ds);
   expectFieldDefault('piece.subs', { 0: 'crit' }, ds);
-  expectFieldDefault('piece.subs', ['crit', 'crit', 'det'], ['crit', 'det', null]); // the repeat drops; rank 3 moves up
-  expectFieldDefault('piece.subs', ['crit', 'det', 'crit'], ['crit', 'det', null]);
-  expectFieldDefault('piece.subs', [1, 'det'], [ds[0], 'det', null]);
+  expectFieldDefault('piece.subs', ['crit', 'crit'], ['crit', null]); // the repeat drops
+  expectFieldDefault('piece.subs', [1, 'det'], [ds[0], 'det']);
+  // an older save's third rank (20%, removed) is dropped
+  expectFieldDefault('piece.subs', ['crit', 'det', 'dh'], ['crit', 'det']);
 });
 
 test('browse fields', () => {
@@ -218,12 +219,12 @@ test('a save from another role is repaired as before', () => {
   raw.job = 'WAR';
   const s = restoreState(raw);
   assert.equal(s.job, 'WAR');
-  assert.deepEqual(s.piece.subs, ['crit', 'det', 'spec']); // WAR has Tenacity as its spec
+  assert.deepEqual(s.piece.subs, ['crit', 'spec']); // WAR has Tenacity as its spec
   // melee: no spec stat at all
   raw.job = 'MNK';
   const m = restoreState(raw);
   const mnk = makeJobContext('MNK');
-  assert.deepEqual(m.piece.subs, ['crit', 'det', null]);
+  assert.deepEqual(m.piece.subs, ['crit', null]);
   assert.equal(m.opt.target, 'main');
   // PLD keeps an off-hand piece slot, two-handed jobs do not
   raw.job = 'PLD';

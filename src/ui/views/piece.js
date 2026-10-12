@@ -53,16 +53,14 @@ export function pieceView(app) {
 }
 
 /* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`. A substat can hold only one rank:
-   choosing one already used elsewhere swaps the two. Rank 1 is never empty; ranks 2 and 3 may
-   be, and an empty rank 2 pulls rank 3 up into it. */
+   choosing one already used elsewhere swaps the two. Rank 1 is never empty; rank 2 may be. */
 export function withSub(subs, i, value, substats) {
-  const out = subs.slice(0, 3);
-  while (out.length < 3) out.push(null);
+  const out = subs.slice(0, 2);
+  while (out.length < 2) out.push(null);
   const v = value || null;
   const j = v == null ? -1 : out.indexOf(v);
   if (j >= 0 && j !== i) out[j] = out[i];
   out[i] = v;
   if (out[0] == null) out[0] = substats.find(s => !out.includes(s)) ?? null;
-  if (out[1] == null) [out[1], out[2]] = [out[2], null]; // a 20% third needs a 70% second
   return out;
 }

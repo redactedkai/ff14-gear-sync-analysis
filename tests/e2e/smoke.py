@@ -9,8 +9,9 @@ Expected values come from outside the code under test where possible:
   - real gear pools (a healer and a tank, a small item level window each): the page's best Spell/Skill Speed,
     synced to 123 and unsynced, equals what src/core computes for the same rows, and a brute force over
     every loadout (tests/unit/helpers/exhaustive.js), run in Node;
-  - a 130 head piece (Spell Speed / Piety / Direct Hit) reproducing a real item level 130 healer head piece
-    (Mind 33, Vitality 32, substats 31/22/6; tests/unit/views.test.js finds it in the item database);
+  - a 130 head piece (Spell Speed / Piety) reproducing the ranked stats of a real item level 130 healer head piece
+    (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/views.test.js finds it in
+    the item database);
   - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
     head values (Mind 248; tests/unit/level-sync.test.js derives them from the ItemLevel row), and the Sync limits
     tab at item level 660 (ParamGrow.ItemLevelSync for level 90).
@@ -35,7 +36,7 @@ OUT = ROOT / 'tests' / 'e2e' / 'out'  # screenshots (gitignored)
 JOBS = ['SGE', 'WAR', 'PLD', 'BLM', 'NIN', 'DRG']
 BAD_WORDS = ['undefined', 'NaN', 'null']
 TIMEOUT = 10_000  # ms for any single wait
-STORE_KEY = 'ilvl-stat-lab-v3'  # localStorage key of the saved state (src/ui/state.js)
+STORE_KEY = 'ilvl-stat-lab-v4'  # localStorage key of the saved state (src/ui/state.js)
 
 # Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
 DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL = '', '', '100'
@@ -192,18 +193,18 @@ def check_wiki_validation(pg):
 
 
 def check_piece_lab(pg):
-    """SGE, ilvl 130 head, Spell Speed / Piety / Direct Hit = a real item level 130 healer head piece."""
+    """SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece."""
     show_math(pg, 'piece')
     pg.select_option('#p-slot', 'head')
     pg.select_option('#p-s1', 'spd')
     pg.select_option('#p-s2', 'spec')
-    pg.select_option('#p-s3', 'dh')
     pg.fill('#p-ilvl', '130')
     pg.locator('#p-ilvl').dispatch_event('change')
     head = pg.locator('#p-out thead')
     expect(head).to_contain_text('Table @ ilvl 130')
-    expect(pg.locator('#p-out tbody tr')).to_have_count(5)
-    expected = {'Mind': 33, 'Vitality': 32, 'Spell Speed': 31, 'Piety': 22, 'Direct Hit': 6}
+    expect(pg.locator('#p-out tbody tr')).to_have_count(4)
+    expect(pg.locator('#p-s3')).to_have_count(0)  # no third rank: a third line exists only as healer Direct Hit
+    expected = {'Mind': 33, 'Vitality': 32, 'Spell Speed': 31, 'Piety': 22}
     got = {}
     for r in table_rows(pg, '#p-out'):
         label = r[0].rsplit(' ', 1)[0]  # "Spell Speed 100%" -> "Spell Speed"

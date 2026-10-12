@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `npm run regen` afterwards. `sources`: bit i of an item row's source mask is sources[i], the groups the optimizer can leave out, in the order the page shows them: set when the piece's category (scripts/data/gear_categories.py) is in `categories`, or when gear_sources.py flags it (crafted, tomestone, ultimate). `currentOnly`: only pieces of the current expansion, whose equip level is the highest in the database. A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; a `twoHanded` weapon blocks the off-hand). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv.",
+  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `npm run regen` afterwards. `sources`: bit i of an item row's source mask is sources[i], the groups the optimizer can leave out, in the order the page shows them: set when the piece's category (scripts/data/gear_categories.py) is in `categories`, or when gear_sources.py flags it (crafted, tomestone, ultimate). `currentOnly`: only pieces of the current expansion, whose equip level is the highest in the database. A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; a `twoHanded` weapon blocks the off-hand). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv. `crafterGathererParams`: crafter and gatherer stats (BaseParam row id and name); gen_items.py leaves out any piece that carries one, normal or HQ, and stops if a row id no longer has that name.",
   "jobs": [
     "PLD",
     "WAR",
@@ -39,6 +39,14 @@
     { "key": "sps", "baseParam": 46, "itemLevelColumn": "SpellSpeed" },
     { "key": "mainAttr", "baseParam": 55, "itemLevelColumn": "Strength" },
     { "key": "secAttr", "baseParam": 56, "itemLevelColumn": "DirectHitRate" }
+  ],
+  "crafterGathererParams": [
+    { "baseParam": 10, "name": "GP" },
+    { "baseParam": 11, "name": "CP" },
+    { "baseParam": 70, "name": "Craftsmanship" },
+    { "baseParam": 71, "name": "Control" },
+    { "baseParam": 72, "name": "Gathering" },
+    { "baseParam": 73, "name": "Perception" }
   ],
   "slots": [
     {
@@ -84,6 +92,27 @@
     { "key": "ultimate", "label": "Ultimate", "categories": ["ultimate"] },
     { "key": "pvp", "label": "PvP", "categories": ["pvp"] }
   ],
+  "materia": {
+    "_comment": "Melding. Item rows carry two more fields at `rowFields`: meldSlots, the item's `slotColumn` (guaranteed slots, 0 to `maxSlots`; gen_items.py stops above it), and overmeld, 1 when its `overmeldColumn` is True (overmelding allowed). The materia table in items.json ({values, gate, high}, one entry per grade I to `grades`) comes from the `sheet` rows whose `statColumn` is one of `statKeys` (BaseParam row ids from `stats`) and whose `itemColumn`[0] is non-zero; rows with values but no items are decoys and are skipped. The rows must agree: values from `valueColumn`[0..grades-1], gate = the `gateColumn` (Item.csv) of each grade's materia item, item and value columns past the last grade all 0, gates non-decreasing. high: the grades whose `highColumn` in `gradeSheet` (row = grade - 1) is 0, which must be the grades worth more than each neighbouring grade.",
+    "sheet": "Materia",
+    "itemColumn": "Item",
+    "valueColumn": "Value",
+    "statColumn": "BaseParam",
+    "grades": 12,
+    "statKeys": ["piety", "ten", "dh", "crit", "det", "sks", "sps"],
+    "gateColumn": "LevelItem",
+    "gradeSheet": "MateriaGrade",
+    "highColumn": "OvermeldNQPercent[1]",
+    "slotColumn": "MateriaSlotCount",
+    "overmeldColumn": "IsAdvancedMeldingPermitted",
+    "maxSlots": 5,
+    "rowFields": { "meldSlots": 10, "overmeld": 11 }
+  },
+  "rarity": {
+    "_comment": "Item rows carry the item's `itemColumn` (Item.csv: 1 white, 2 green, 3 blue, 4 purple, 7 pink) at `rowField`; gen_items.py stops on a value that is not a whole number. Used by the accuracy check: green crafted healer gear carries its Direct Hit line at a higher share (formulas.js predictRaw).",
+    "itemColumn": "Rarity",
+    "rowField": 12
+  },
   "statFactor": {
     "_comment": "Per-item stat factor. The last field of an item row is the item's `itemColumn` (Item.csv), an index 0..count-1 into the `baseParamColumn`[0..count-1] columns of BaseParam.csv. Each stat's BaseParam row holds there the percent its full-share slot value is multiplied by on that kind of item (Vitality 90 on Intelligence/Mind gear, every main stat 90 on gear that carries all four). gen_item_level.py writes the table to item-level.json (MP); gen_items.py stops on an index outside it.",
     "itemColumn": "BaseParamModifier",

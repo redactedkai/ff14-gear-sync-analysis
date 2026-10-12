@@ -12,6 +12,13 @@ export const PG = ITEM_LEVEL_FILE.PG;
 export const MP = ITEM_LEVEL_FILE.MP;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
+/* MATERIA: the materia table, one entry per grade I to XII. values: what a grade adds to a combat substat; gate: the
+   lowest gear item level that takes it; high: the grades (1-based) that cannot go past the first overmeld slot. */
+export const MATERIA = Object.freeze({
+  values: Object.freeze([...ITEMS_FILE.materia.values]),
+  gate: Object.freeze([...ITEMS_FILE.materia.gate]),
+  high: Object.freeze([...ITEMS_FILE.materia.high]),
+});
 
 /* Short footer text naming the game-data source, or '' when unknown. */
 export function dataSourceLabel(src = DATA_SOURCE) {

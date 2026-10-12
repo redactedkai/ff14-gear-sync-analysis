@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bandAccuracy, wikiChecks } from '../../src/core/validation.js';
+import { bandAccuracy, wikiChecks, rowItem } from '../../src/core/validation.js';
 import { MAX_REAL, MAX_ILVL } from '../../src/core/tables.js';
 
 test('formula reproduces the Wiki sync caps at item level 475', () => {
@@ -38,5 +38,69 @@ test('the formula reproduces relic weapons with two full substats, two main stat
     assert.ok(r, name);
     const st = r[5].split(',').map(Number);
     assert.deepEqual(predictRaw(r[2], r[1], st, r[9]), st, name);
+  }
+});
+
+/* Direct Hit on gear whose only main stat is Mind is a fixed 20% line outside the substat ranking (the old healer
+   Accuracy): as the only substat, as the second, and as the third. Direct Hit on other gear ranks like any substat. */
+test('Direct Hit on Mind-only gear is a fixed 20% line; elsewhere it ranks normally', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  for (const name of [
+    'Omnilex Novus', // 110: Direct Hit 9, its only substat (20% of 44)
+    'Platinum Earrings of Healing', // 110: Direct Hit 4 below Critical Hit (20% of 21, not 70%)
+    'Dreadwyrm Cane', // 135: Direct Hit as the third line
+    'Augmented Ironworks Magitek Spear', // 130, Strength gear: Direct Hit at a normal rank
+  ]) {
+    const r = ITEMS.find(x => x[0] === name);
+    assert.ok(r, name);
+    const st = r[5].split(',').map(Number);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
+  }
+});
+
+/* The rule above replaces a general 20% third share: a third substat exists only as that Direct Hit line. A patch that
+   adds another kind of three-substat piece fails here. */
+test('every piece with three substats is Mind-only gear whose lowest line is Direct Hit', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { ITEM_STAT_ORDER, RAW_SUBSTAT_IDX, RAW_MAIN_IDX } = await import('../../src/core/constants.js');
+  const mind = ITEM_STAT_ORDER.indexOf('mind'),
+    dh = ITEM_STAT_ORDER.indexOf('dh');
+  let n = 0;
+  for (const r of ITEMS) {
+    const st = r[5].split(',').map(Number);
+    const subs = RAW_SUBSTAT_IDX.filter(i => st[i]).sort((a, b) => st[b] - st[a]);
+    if (subs.length < 3) continue;
+    n++;
+    assert.equal(subs.length, 3, r[0]);
+    assert.deepEqual(
+      RAW_MAIN_IDX.filter(i => st[i]),
+      [mind],
+      r[0],
+    );
+    assert.equal(subs[2], dh, r[0]);
+  }
+  assert.ok(n > 100, `three-substat pieces: ${n}`);
+});
+
+/* On green, HQ-able Mind-only pieces with three substats the Direct Hit line is 25% (eight item level 110 crafted
+   healer pieces, raised in patch 4.0); their blue crafted and green non-HQ siblings keep 20%. */
+test('green HQ-able healer pieces with three substats carry Direct Hit at 25%; their siblings at 20%', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const { RARITY_FIELD } = await import('../../src/core/constants.js');
+  for (const [name, rarity, hq] of [
+    ['Ebony Cane', 2, 1], // two-handed: Direct Hit 11 = 25% of 44
+    ['Arachne Robe', 2, 1], // body: 11 = 25% of 42 (10.5 rounds up)
+    ['Platinum Circlet of Healing', 2, 1], // head: 7 = 25% of 27
+    ["High Adjudicator's Gavel", 3, 1], // blue crafted sibling: 9 = 20% of 44
+    ["Bogatyr's Circlet of Healing", 2, 0], // green, not HQ-able: 20%
+  ]) {
+    const r = ITEMS.find(x => x[0] === name);
+    assert.ok(r, name);
+    assert.equal(r[RARITY_FIELD], rarity, name);
+    assert.equal(r[7], hq, name);
+    const st = r[5].split(',').map(Number);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
   }
 });

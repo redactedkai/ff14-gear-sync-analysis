@@ -199,7 +199,7 @@ def main(csv_dir):
     import gen_items  # here, so importing this module stays cheap
     from item_format import load_format
 
-    kept, _ = gen_items.select(csv_dir)
+    kept, *_ = gen_items.select(csv_dir)
     weapon_slots = {s['code'] for s in load_format()['slots'] if s['type'] in ('weapon', 'offhand')}
     cats = categorize(csv_dir, kept, weapon_slots)
     problems = check(kept, cats)

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, poolItemFromRow, parseRow, mkItem, sourceMask, withoutSources, expansionOf } from '../../src/core/items.js';
+import { browseItems, poolItemFromRow, parseRow, mkItem, sourceMask, withoutSources, expansionOf, meldInfo } from '../../src/core/items.js';
 import { SOURCES, EXPANSIONS } from '../../src/core/constants.js';
-import { ITEMS } from '../../src/core/tables.js';
+import { ITEMS, MATERIA } from '../../src/core/tables.js';
 
 const pld = makeJobContext('PLD');
 const war = makeJobContext('WAR');
@@ -271,4 +271,32 @@ test('expansion of real pieces, and the browse filter by expansion', () => {
   assert.equal(sum, all.length); // every piece lands in exactly one expansion
   const noEw = browseItems(whm, { type: 'any', expOff: ['EW'] });
   assert.equal(noEw.length, all.length - ew.length);
+});
+
+/* Materia slots of real pieces (Item.MateriaSlotCount, Item.IsAdvancedMeldingPermitted), read through a pool item. */
+test('meld slots and overmelding of real pieces; none for hand-made pieces', () => {
+  const meld = (name, job) => {
+    const r = ITEMS.filter(x => x[0] === name);
+    assert.equal(r.length, 1, name);
+    const p = parseRow(r[0]);
+    const info = meldInfo(poolItemFromRow(makeJobContext(job), p));
+    assert.deepEqual(info, { slots: p.meldSlots, overmeld: p.overmeld }, name);
+    return info;
+  };
+  assert.deepEqual(meld("Kirin's Osode of Fending", 'PLD'), { slots: 5, overmeld: false }); // Ornate gear: 5, no overmeld
+  assert.deepEqual(meld("Courtly Lover's Pendulums", 'SGE'), { slots: 2, overmeld: true }); // crafted
+  assert.deepEqual(meld('Rainbow Robe of Healing', 'WHM'), { slots: 2, overmeld: true }); // crafted
+  assert.deepEqual(meld('Dwarven Mythril Shield', 'PLD'), { slots: 0, overmeld: true }); // 0 slots, flagged anyway
+  assert.equal(meldInfo(mkItem('Hand-made', 'head', 700, { crit: 100 })), null);
+  assert.equal(meldInfo(mkItem('Generated', 'head', 700, {}, { src: 'generated' })), null);
+  assert.equal(meldInfo(mkItem('No such piece', 'head', 700, {}, { src: 'game' })), null);
+});
+
+/* The materia table against the game files' values (Materia sheet) and the Lodestone's item level requirements
+   (docs/scratchpad/materia/report.md sections 1 to 3). */
+test('materia table: values, item level gates and the grades limited to the first overmeld slot', () => {
+  assert.deepEqual(MATERIA.values, [1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54]);
+  assert.deepEqual(MATERIA.gate, [15, 30, 45, 70, 160, 290, 420, 420, 560, 560, 690, 690]);
+  assert.deepEqual(MATERIA.high, [6, 8, 10, 12]); // VI, VIII, X, XII
+  assert.ok(Object.isFrozen(MATERIA) && Object.isFrozen(MATERIA.values));
 });

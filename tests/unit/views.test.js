@@ -108,12 +108,15 @@ test('ceiling view: per-stat maxima, synced vs unsynced, equal brute force', () 
   assert.ok(+v.synced[spd] < +v.unsynced[spd]);
 });
 
+/* No real pool hits the page's ceiling limit since the ring-pair bound (Ninja 600-640 needed over 150,000 steps before
+   it), so the limit is lowered to force a truncated run. */
 test('A7: a ceiling search that hits its step limit is marked as a lower bound', () => {
   const app = makeApp('NIN');
   app.pool = browseItems(app.jobCtx, { q: '', type: 'any', ilvlMin: 600, ilvlMax: 640, lvlMax: 100 }).map(r =>
     poolItemFromRow(app.jobCtx, r),
   );
-  const v = ceilingView(app);
+  assert.equal(ceilingView(app).truncated, false);
+  const v = ceilingView(app, 20);
   assert.equal(v.truncated, true);
   assert.ok([...v.synced, ...v.unsynced].some(t => t.startsWith('≥ ')));
 });
@@ -133,7 +136,7 @@ test('sync caps view at 123: substat ceiling 296 over ten slots, 2.22 s GCD at l
   );
 });
 
-test('piece lab view: every real item level 130 Sage head piece with three substats, from the formula, synced to 123', () => {
+test('piece lab view: every real item level 130 Sage head piece with three substats, its two ranked ones from the formula, synced to 123', () => {
   const app = makeApp('SGE', { cap: 123, sync: true });
   const job = app.jobCtx;
   const heads = gamePool(job, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).filter(
@@ -142,7 +145,12 @@ test('piece lab view: every real item level 130 Sage head piece with three subst
   assert.ok(heads.length >= 2);
   const CAP = { main: 30, vit: 29, sub: 29 }; // head caps at item level 123: main stat 30, everything else 29
   for (const head of heads) {
-    const subs = job.substats.filter(s => head.stats[s] > 0).sort((a, b) => head.stats[b] - head.stats[a]);
+    // the third line is the fixed Direct Hit of Mind-only gear, which Piece stats does not model
+    const subs = job.substats
+      .filter(s => head.stats[s] > 0)
+      .sort((a, b) => head.stats[b] - head.stats[a])
+      .slice(0, 2);
+    assert.ok(!subs.includes('dh'), head.name);
     app.piece = { ilvl: 130, slot: 'head', subs };
     const v = pieceView(app);
     const want = ['main', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
@@ -212,7 +220,7 @@ test('sync off: the ceiling has no synced row and its GCD comes from the unsynce
 
 test('sync off: piece lab leaves stats as they are and draws no cap line', () => {
   const app = makeApp('SGE', { cap: 123, sync: false });
-  app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec', 'dh'] };
+  app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec'] };
   const v = pieceView(app);
   assert.equal(v.status, 'off');
   assert.ok(v.rows.every(r => r.syn === r.raw));

@@ -3,9 +3,11 @@
 
 Fixtures in tests/data/fixtures/ use the real sheet headers from xivapi/ffxiv-datamining. EquipSlotCategory and
 ClassJobCategory rows, and the BaseParam rows of the 12 stats, are copied from the real sheets; Item rows are test items
-built on the real header; ItemLevel values are synthetic (row * 1000 + column position) so a wrong column shows up as a
-wrong number. ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest edits copies of the fixtures to check that
-renamed columns and changed slot shares stop the generators.
+built on the real header, plus the 84 real materia items of the seven combat substats (text fields blanked). Materia
+holds the real rows 0, 2 (Strength: items, no values), the seven combat substats, 18 (a gathering stat) and two decoys
+(44, 48: values but no items); MateriaGrade is the whole real sheet. ItemLevel values are synthetic (row * 1000 + column
+position) so a wrong column shows up as a wrong number. ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest
+edits copies of the fixtures to check that renamed columns and changed slot shares stop the generators.
 
 Run: npm test (runs these after the unit tests)
 """
@@ -79,15 +81,45 @@ class GenItemsTest(unittest.TestCase):
 
     def test_row_shape(self):
         for r in self.rows:
-            self.assertEqual(len(r), 10, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind = r
+            self.assertEqual(len(r), 13, r)
+            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(13))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
-            self.assertIn(sources, range(32))
+            self.assertIn(sources, range(64))
             self.assertIn(kind, range(13))
+            self.assertIn(meld_slots, range(6))
+            self.assertIn(overmeld, (0, 1))
+            self.assertIsInstance(rarity, int)
+
+    def test_meld_fields(self):
+        """meldSlots and overmeld are Item.MateriaSlotCount and IsAdvancedMeldingPermitted, after the source mask and kind."""
+        expect = {
+            'Test Sallet HQ': (2, 1),
+            'Test Robe': (5, 0),
+            'Test Shield': (0, 1),  # no guaranteed slot, flagged anyway
+            'Test Hood of Healing': (2, 0),
+            'Test Greataxe': (0, 0),
+        }
+        for name, meld in expect.items():
+            with self.subTest(name=name):
+                self.assertEqual(tuple(self.row(name)[10:12]), meld)
+
+    def test_materia_table(self):
+        """The real values and gates (Materia sheet, materia items' LevelItem); the decoy rows are skipped."""
+        self.assertEqual(
+            self.doc['materia'],
+            {
+                'values': [1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54],
+                'gate': [15, 30, 45, 70, 160, 290, 420, 420, 560, 560, 690, 690],
+                'high': [6, 8, 10, 12],
+            },
+        )
+        _, decoys = gen_items.materia_table(FIXTURES, gen_items.load_format())
+        self.assertEqual(decoys, 2)
+        self.assertNotIn('Quicktongue Materia XII', self.by_name)  # materia items are not gear
 
     def test_stat_factor_kind(self):
         """The last field is the item's BaseParamModifier as written in Item.csv (the fixture sets a few)."""
@@ -158,7 +190,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.row('Test Robe')[1], 4)  # a plain body piece
         # Category 18: Legs 1, Feet -1 has no slot code: left out and listed
         self.assertNotIn('Test Flanchard', self.by_name)
-        _, multi_slot = gen_items.select(FIXTURES)
+        _, multi_slot, _ = gen_items.select(FIXTURES)
         self.assertEqual(multi_slot, ['Test Flanchard (item level 130)'])
 
     def test_stat_mapping(self):
@@ -214,6 +246,18 @@ class GenItemsTest(unittest.TestCase):
 
     def test_no_stats_excluded(self):
         for name in ('Test No Stats', 'Test Defense Only', 'Test No Stats Not HQ'):
+            self.assertNotIn(name, self.by_name)
+
+    def test_rarity(self):
+        # the last field is Item.Rarity as written in the fixture
+        self.assertEqual(self.row('Test Robe')[12], 2)
+        self.assertEqual(self.row('Test Hood of Healing')[12], 3)
+        self.assertEqual(self.row('Test Sword')[12], 0)
+
+    def test_crafter_gatherer_gear_excluded(self):
+        # All Classes pieces with a combat stat (Vitality) are still left out when they carry a crafter or gatherer
+        # stat, normal (Gathering) or HQ only (CP)
+        for name in ('Test Gatherer Hat', 'Test Crafter HQ Ring'):
             self.assertNotIn(name, self.by_name)
 
     def test_empty_name_excluded(self):
@@ -463,7 +507,7 @@ class GearCategoriesTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def categories(self):
-        kept, _ = gen_items.select(self.dir)
+        kept, *_ = gen_items.select(self.dir)
         cats = gear_categories.categorize(self.dir, kept, self.WEAPON_SLOTS)
         names = {r['#']: r['Name'] for r, _ in kept}
         return {names[i]: c for i, c in cats.items()}, kept, cats
@@ -607,7 +651,7 @@ class SchemaDriftTest(unittest.TestCase):
                 self.assert_fails(gen_items, 'EquipSlotCategory.csv', col)
 
     def test_missing_item_column(self):
-        cols = ('Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique')
+        cols = ('Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', 'Rarity')
         cols += ('BaseParam[0]', 'BaseParamValue[5]', 'BaseParamSpecial[2]', 'BaseParamValueSpecial[5]')
         for col in cols:
             with self.subTest(col=col):
@@ -655,6 +699,23 @@ class SchemaDriftTest(unittest.TestCase):
         edit_csv(self.dir / 'BaseParam.csv', lambda rows: rows.remove(next(r for r in rows if r[0] == '46')))
         self.assert_fails(gen_item_level, 'BaseParam.csv', 'no row 46 (sps)')
 
+    def test_rarity_not_a_number(self):
+        def fn(rows):
+            col = rows[0].index('Rarity')
+            next(r for r in rows if r[0] == '1005')[col] = 'green'  # Test Robe
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'Rarity', 'not a whole number', 'Test Robe')
+
+    def test_crafter_gatherer_param_renamed(self):
+        """A crafter/gatherer stat row id that now names something else stops gen_items (item-format.json is stale)."""
+
+        def fn(rows):
+            next(r for r in rows if r[0] == '72')[1] = 'Gathering Rate'
+
+        edit_csv(self.dir / 'BaseParam.csv', fn)
+        self.assert_fails(gen_items, 'BaseParam.csv', '72 (Gathering)', 'Gathering Rate')
+
     def test_unknown_stat_factor_kind(self):
         """An item kind (BaseParamModifier) with no MeldParam column stops gen_items: its stat factors are unknown."""
 
@@ -680,6 +741,83 @@ class SchemaDriftTest(unittest.TestCase):
 
         edit_csv(self.dir / 'BaseParam.csv', fn)
         self.assert_fails(gen_item_level, 'BaseParam.csv', 'vit MeldParam', 'percents 1 to 100')
+
+    def test_missing_meld_columns(self):
+        for col in ('MateriaSlotCount', 'IsAdvancedMeldingPermitted'):
+            with self.subTest(col=col):
+                shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+                rename_column(self.dir / 'Item.csv', col, col + 'X')
+                self.assert_fails(gen_items, 'Item.csv', col)
+        shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+        for sheet, col in (('Materia.csv', 'Item[11]'), ('Materia.csv', 'Value[0]'), ('MateriaGrade.csv', 'OvermeldNQPercent[1]')):
+            with self.subTest(col=col):
+                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+                rename_column(self.dir / sheet, col, col + 'X')
+                self.assert_fails(gen_items, sheet, col)
+                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+
+    def test_meld_slots_above_five(self):
+        def fn(rows):
+            col = rows[0].index('MateriaSlotCount')
+            next(r for r in rows if r[0] == '1005')[col] = '6'  # Test Robe
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'MateriaSlotCount 0 to 5', 'Test Robe (6, False)')
+
+    def test_bad_overmeld_value(self):
+        def fn(rows):
+            col = rows[0].index('IsAdvancedMeldingPermitted')
+            next(r for r in rows if r[0] == '1005')[col] = '1'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'IsAdvancedMeldingPermitted True or False', 'Test Robe (5, 1)')
+
+    def test_combat_materia_rows_disagree(self):
+        def fn(rows):
+            col = rows[0].index('Value[11]')
+            next(r for r in rows if r[0] == '15')[col] = '55'  # Critical Hit
+
+        edit_csv(self.dir / 'Materia.csv', fn)
+        self.assert_fails(gen_items, 'Materia.csv', 'crit values or gates differ from piety')
+
+    def test_materia_gate_disagrees(self):
+        """A materia item whose LevelItem differs from the other stats' item of that grade."""
+
+        def fn(rows):
+            col = rows[0].index('LevelItem')
+            next(r for r in rows if r[0] == '41782')[col] = '700'  # Quicktongue Materia XII
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'Materia.csv', 'values or gates differ')
+
+    def test_decoy_is_not_counted_but_a_second_item_row_is(self):
+        def fn(rows):
+            col = rows[0].index('Item[0]')
+            next(r for r in rows if r[0] == '44')[col] = '5629'  # the Direct Hit decoy gets an item
+
+        edit_csv(self.dir / 'Materia.csv', fn)
+        self.assert_fails(gen_items, 'Materia.csv', 'dh: 2 rows with items, expected 1')
+
+    def test_missing_combat_materia_row(self):
+        edit_csv(self.dir / 'Materia.csv', lambda rows: rows.remove(next(r for r in rows if r[0] == '24')))
+        self.assert_fails(gen_items, 'Materia.csv', 'sks: 0 rows with items')
+
+    def test_thirteenth_grade(self):
+        def fn(rows):
+            h = rows[0]
+            r = next(r for r in rows if r[0] == '7')  # Piety
+            r[h.index('Item[12]')], r[h.index('Value[12]')] = '41770', '60'
+
+        edit_csv(self.dir / 'Materia.csv', fn)
+        self.assert_fails(gen_items, 'more than 12 grades', 'Item[12]', 'Value[12]')
+
+    def test_high_grades_mismatch(self):
+        def fn(rows):
+            col = rows[0].index('OvermeldNQPercent[1]')
+            next(r for r in rows if r[0] == '5')[col] = '6'  # grade VI now allowed past the first overmeld slot
+
+        edit_csv(self.dir / 'MateriaGrade.csv', fn)
+        self.assert_fails(gen_items, 'MateriaGrade.csv', 'grades [8, 10, 12]', '[6, 8, 10, 12]')
 
     def test_command_line_exits_nonzero(self):
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')

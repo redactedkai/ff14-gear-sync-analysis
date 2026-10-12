@@ -10,11 +10,13 @@ Every count on this page was produced by running the generators' rules over the 
 
 The data comes from [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining), a public repository of the game client's data sheets saved as CSV files. A *sheet* is one of the game's internal data tables, for example `Item` (one row per item). The files are exported straight from the client, by XIVData Oxidizer since January 2026 and by SaintCoinach before that. The miners do not compute or derive anything: a row in a CSV is a row in the game's own data. **Verified**: the repository's own commit history shows the exporter change (commit `d3eb86d`, 4 January 2026, "Migrate to XIVData Oxidizer").
 
-The project fetches ten sheets (English column names, `csv/en/`). Eight supply data to the generators; `ClassJob` only tells the fetch step which icon belongs to which job (section 2); from `BaseParam` the generators copy the stat factor table (section 5) and only check the slot percentages: those are kept in the shared format definition (section 3), and the generator stops if `BaseParam` disagrees with them.
+The project fetches twelve sheets (English column names, `csv/en/`). Ten supply data to the generators; `ClassJob` only tells the fetch step which icon belongs to which job (section 2); from `BaseParam` the generators copy the stat factor table (section 5) and only check the slot percentages: those are kept in the shared format definition (section 3), and the generator stops if `BaseParam` disagrees with them.
 
 | Sheet | Read by | What it contributes |
 | --- | --- | --- |
-| `Item` | item database generator | One row per item: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table). 52,801 rows. |
+| `Item` | item database generator | One row per item: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table), `MateriaSlotCount` and `IsAdvancedMeldingPermitted` (materia slots). 52,801 rows. |
+| `Materia` | item database generator (materia table) | One row per stat: the materia item of each grade (`Item[0]` to `Item[15]`), what it adds (`Value[0]` to `Value[15]`) and the stat (`BaseParam`). 1,417 rows, ids 0 to 1416. |
+| `MateriaGrade` | item database generator (materia table) | One row per grade (I to XII): the overmeld success rates, `OvermeldNQPercent[0]` to `[3]` for the four overmeld slots. 12 rows. |
 | `EquipSlotCategory` | item database generator | Which gear slots an item occupies (1) or blocks (−1). 25 rows. |
 | `ClassJobCategory` | item database generator | Which classes and jobs may equip an item (`True`/`False` per job). 206 rows. |
 | `ItemLevel` | item level generator | The stat budget of every stat at every item level. 921 rows, ids 0 to 920. |
@@ -27,17 +29,17 @@ The project fetches ten sheets (English column names, `csv/en/`). Eight supply d
 
 **Verified on every regeneration**: for all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](math.md) for how the percentages are used.
 
-**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`), the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns. A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
+**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`, `MateriaSlotCount`, `IsAdvancedMeldingPermitted`), the `Materia` and `MateriaGrade` columns of the materia table (section 4), the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns. A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
 
 ## 2. Fetching
 
 The fetch step makes a **sparse, shallow, blobless** clone of the datamining repository into `data/ffxiv-datamining/` (gitignored):
 
 - *shallow*: only the latest commit, no history;
-- *sparse*: only the ten `csv/en/<Sheet>.csv` paths are checked out;
+- *sparse*: only the twelve `csv/en/<Sheet>.csv` paths are checked out;
 - *blobless*: file contents are downloaded only for those paths.
 
-For the current data that is about 7 MB of git data and 20 MB of CSV files on disk, mostly `Item.csv`, instead of the whole repository. Running the fetch again when the clone exists does a fast-forward pull, which picks up whatever the miners published since. The step fails if any of the ten files is missing afterwards.
+For the current data that is about 7 MB of git data and 20 MB of CSV files on disk, mostly `Item.csv`, instead of the whole repository. Running the fetch again when the clone exists does a fast-forward pull, which picks up whatever the miners published since. The step fails if any of the twelve files is missing afterwards. A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run; to add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
 
 ### Job icons
 
@@ -90,6 +92,8 @@ Belts (`Waist`) and soul crystals have no slot code, so items in those slots are
 
 **Stat factor.** The file also names where the stat factor comes from: the `Item` column that gives an item's kind (`BaseParamModifier`), the `BaseParam` columns that hold one percentage per kind (`MeldParam`) and how many there are (13). It is a separate entry at the end of the file, so it does not depend on the stat order.
 
+**Materia.** A separate entry names the `Item` columns of the two meld fields (`MateriaSlotCount`, `IsAdvancedMeldingPermitted`), the most guaranteed slots a piece may have (5), the positions of the two fields in a row (10 and 11), and where the materia table comes from: the `Materia` sheet and its columns, the number of grades (12), the seven combat substats whose rows are read (Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed), the `Item` column that gives each grade's item level gate (`LevelItem`) and the `MateriaGrade` column that marks the high grades (`OvermeldNQPercent[1]`).
+
 Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
 
 ## 4. Item database generation
@@ -105,7 +109,8 @@ An `Item` row becomes a database row when all of these hold:
 3. its item level is at least 100;
 4. at least one of the 22 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
 5. at least one of its 14 stats is non-zero after the HQ rule below;
-6. it is not retired: the Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints how many pieces it left out.
+6. it carries no crafter or gatherer stat (GP, CP, Craftsmanship, Control, Gathering, Perception), normal or HQ: such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in `item-format.json` (`crafterGathererParams`), and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality, which the formula could not predict because crafter and gatherer Vitality follows no share of the combat budget;
+7. it is not retired: the Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints how many pieces each of these two rules left out.
 
 For the current data, each rule leaves:
 
@@ -117,8 +122,9 @@ For the current data, each rule leaves:
 | item level ≥ 100 | 19,843 |
 | a combat job can equip it | 17,627 |
 | at least one stat | 17,579 |
-| its slots match a slot code (multi-slot combinations without one are left out and listed; none at item level 100 or above today) | 17,579 |
-| not retired (Diadem gear left out) | **17,286** |
+| no crafter or gatherer stat | 17,574 |
+| its slots match a slot code (multi-slot combinations without one are left out and listed; none at item level 100 or above today) | 17,574 |
+| not retired (Diadem gear left out) | **17,281** |
 
 The item level floor of 100 is a choice of this project, not a game rule; gear below it is not useful for the sync caps the page targets.
 
@@ -146,11 +152,11 @@ $$
 
 The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. Why the flag matters: 293 `Item` rows have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 290 of them pass the other selection rules. An earlier version added the bonus to every item and inflated their stats; the problem was found by diffing the two versions (**verified** by count: 290 now, "about 290" in the original finding). By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each). With the rule, the bonus is applied to 4,398 rows.
 
-Melds (materia) are not part of the item data and are not included.
+Melds (materia) are not part of these stats: a database row holds the item as it drops or is crafted. What a piece can take is in its two meld fields (section *Materia slots*).
 
 ### Unique flag
 
-`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,286 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
+`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,281 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
 
 ### Sources
 
@@ -175,30 +181,81 @@ The shop and recipe flags:
 
 ### Stat factor kind
 
-`BaseParamModifier` becomes the last field: the item's kind, a number from 0 to 12 that picks a column of the stat factor table (section 5). On that item each stat's full-share slot value is multiplied by its percentage in that column ([math.md, section 4](math.md#the-stat-factor-of-an-item)). In the current data: kinds 1, 2, 3 and 10 are Strength gear (7,253 rows), 4, 11 and 12 Dexterity gear (4,136), 5 Intelligence (2,894), 6 Mind (2,949), 7 Strength and Dexterity (25), 8 Intelligence and Mind (5), 9 five Vitality-only pieces, and 0 the 13 pieces with all four main stats plus six earrings and rings with no main stat (19). The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
+`BaseParamModifier` becomes the last field: the item's kind, a number from 0 to 12 that picks a column of the stat factor table (section 5). On that item each stat's full-share slot value is multiplied by its percentage in that column ([math.md, section 4](math.md#the-stat-factor-of-an-item)). In the current data: kinds 1, 2, 3 and 10 are Strength gear (7,253 rows), 4, 11 and 12 Dexterity gear (4,136), 5 Intelligence (2,894), 6 Mind (2,949), 7 Strength and Dexterity (25), 8 Intelligence and Mind (5), 9 crafter and gatherer gear (none left in the database), and 0 the 13 pieces with all four main stats plus six earrings and rings with no main stat (19). The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
+
+### Materia slots
+
+Two more fields record what a piece can be melded with. Both are copied from `Item`, not inferred (**verified**, game data):
+
+- **meld slots**: `MateriaSlotCount`, the guaranteed slots, 0 to 5. The generator stops on a value outside that range or that is not a whole number. No piece in the database has more than 5;
+- **overmeld**: 1 when `IsAdvancedMeldingPermitted` is `True` (overmelding allowed), 0 when `False`; any other value stops the generator.
+
+### Rarity
+
+The last field is `Item.Rarity`, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,078, 6,052, 8,559 and 592 rows in the current data. A value that is not a whole number stops the generator. Only the accuracy check reads it: Direct Hit on green, HQ-able healer pieces with three substats is 25%, not 20% ([math.md, section 4](math.md#substat-shares-empirical)).
+
+| Meld slots | Overmeld 0 | Overmeld 1 |
+| --- | --- | --- |
+| 0 | 2,494 | 15 |
+| 1 | 1,720 | 863 |
+| 2 | 8,723 | 2,776 |
+| 3 | 129 | 0 |
+| 5 | 561 | 0 |
+
+No piece has 4 slots. The 15 pieces with no slot but the overmeld flag are old crafted Paladin shields, item level 180 to 415 (for example Dwarven Mythril Shield). Whether they take any materia in game is not known (**inferred** that they take none: a piece overmelds only past its guaranteed slots, report in `docs/scratchpad/materia/`).
+
+### The materia table
+
+The item file also holds one small table, one entry per materia grade I to XII:
+
+| Grade | I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| value $v_g$ | 1 | 2 | 3 | 4 | 6 | 16 | 8 | 24 | 12 | 36 | 18 | 54 |
+| gate $L_g$ | 15 | 30 | 45 | 70 | 160 | 290 | 420 | 420 | 560 | 560 | 690 | 690 |
+| high | | | | | | ✓ | | ✓ | | ✓ | | ✓ |
+
+- **Value** $v_g$: what grade $g$ adds to a combat substat (`Materia`, `Value[g − 1]`). **Verified**, game data.
+- **Gate** $L_g$: the lowest gear item level that takes grade $g$, the `LevelItem` of the grade's materia item. **Verified** against the Lodestone, whose materia pages list "Base Item: Item Level $L_g$".
+- **High**: the grades that cannot go past the first overmeld slot, those whose `MateriaGrade` row has a 0% rate in the second overmeld slot (`OvermeldNQPercent[1]` = 0). **Verified**, game data and the materia's item text.
+
+How it is built:
+
+1. Take the `Materia` rows of the seven combat substats whose first materia item is not empty. Exactly one row per substat must be left.
+2. Each row must have 12 positive values and 12 materia items with a `LevelItem`, nothing in the item and value columns after the twelfth, and gates that never decrease from one grade to the next.
+3. All seven rows must agree on values and gates.
+4. The high grades must be exactly the grades worth more than each grade next to them: $v_g > v_{g-1}$ and $v_g > v_{g+1}$ where those exist (VI: 16 against 6 and 8). This ties the two sheets together; a patch that changed one without the other stops the generator.
+
+Any violation stops the generator with an error naming the rows; the table is printed in the run summary.
+
+**Decoy rows.** Most of the `Materia` sheet is rows with values but no materia items: 1,377 of its 1,417 rows, ids 39 to 1416, 1,372 of them for a combat substat (ids 44 to 1416; Determination and Critical Hit 259 each, Direct Hit 247, Skill Speed 181, Spell Speed 157, Tenacity 150, Piety 119). Their values do not follow the table (row 44, Direct Hit: 2, 3, 4 and then nothing). No materia item points to them, so they are not materia a player can meld; what the game uses them for is not known. Step 1 skips them by their empty first item, and the run summary counts them. Only 25 rows carry items: the seven combat substats; the main stat, Vitality and resistance rows (items, every value 0); six crafter and gatherer stats with their own values; and row 1, Cracked Materia (no stat).
 
 ### Row format and order
 
-Each database row is a fixed list of ten fields:
+Each database row is a fixed list of thirteen fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | name | text | Item name as in the English client. |
-| slot code | integer 0 to 11 | Slot, per the shared slot table. |
+| slot code | integer 0 to 12 | Slot, per the shared slot table. |
 | item level | integer | The item's own item level (`LevelItem`), 100 to 795 in the current data. |
 | equip level | integer | Character level needed to wear it (`LevelEquip`). |
 | job mask | integer, $0 < \text{mask} < 2^{22}$ | Who can equip it, as defined above. |
-| stats | 12 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
+| stats | 14 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
 | unique | 0 or 1 | 1 when only one copy can be worn. |
 | hq | 0 or 1 | 1 when the item can be high quality (`CanBeHq`), so its stats are the HQ ones; the page marks it HQ. |
-| sources | integer 0 to 31 | Bit mask: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate (section *Sources*). |
+| sources | integer 0 to 63 | Bit mask: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate, 32 PvP (section *Sources*). |
 | stat factor kind | integer 0 to 12 | `BaseParamModifier`: the column of the stat factor table (section *Stat factor kind*). |
+| meld slots | integer 0 to 5 | `MateriaSlotCount`: guaranteed materia slots (section *Materia slots*). |
+| overmeld | 0 or 1 | 1 when overmelding is allowed (`IsAdvancedMeldingPermitted`). |
+| rarity | integer | `Item.Rarity` (section *Rarity*). |
 
 The example row is
 
-| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0 | 1 | 0 | 0 | 1 |
+| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 |
+
+The file holds the rows and the materia table next to each other, under the same source record (section 6).
 
 Rows are sorted by item level (highest first), then slot code, then name. The stats are stored as one string per row to keep the file small; the page splits it when it reads a row.
 
@@ -245,7 +302,7 @@ The recorded commit is the clone's newest commit, not the newest commit that cha
 
 | Fact | Value |
 | --- | --- |
-| Database rows | 17,286 |
+| Database rows | 17,281 |
 | Lowest / highest item level in the database | 100 / **795** (66 rows at 795) |
 | `ItemLevel` rows | 921 (ids 0 to 920) |
 | Level data | levels 1 to 100 |
@@ -285,10 +342,10 @@ The page bundle takes the page code, the stylesheet and both generated data file
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 1,479,997 bytes |
-| item level table, level data and stat factor table (generated file) | 52,620 bytes |
+| item database (generated file) | 1,618,359 bytes |
+| item level table, level data and stat factor table (generated file) | 61,140 bytes |
 | job icons (generated file) | 206,351 bytes |
-| finished page, minified | 1,866,151 bytes at the last build (about 1.9 MB) |
+| finished page, minified | 2,017,420 bytes at the last build (about 2.0 MB) |
 
 The item database is close to 80% of the page, the icons about 12%.
 
@@ -297,7 +354,7 @@ The item database is close to 80% of the page, the icons about 12%.
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,286 rows above.
+4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,281 rows above.
 
 Some test expectations are allowed to move, others must not:
 
@@ -319,14 +376,14 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 - The test files use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
 - The `BaseParam` test file holds the real rows of the 14 stats.
-- They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind of a few items and the stat factor table (the `BaseParam` test file holds the real rows), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
-- Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0 and an item kind with no `MeldParam` column each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
+- They check slot detection (two-handed vs one-handed, every slot type), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind and the meld fields of a few items, the materia table (with two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats), the stat factor table (the `BaseParam` test file holds the real rows), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
+- Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0, an item kind with no `MeldParam` column, a missing meld column in `Item`, `Materia` or `MateriaGrade`, a slot count of 6, an overmeld value other than `True`/`False`, a rarity that is not a whole number, combat materia rows that disagree on a value or a gate, a decoy row that gains an item, a missing combat materia row, a thirteenth grade, and high grades that no longer match the values each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
 
 **Format tests** (Node, on the real generated data):
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has ten fields (the last an item kind below 13), a valid slot code, a job mask in $(0, 2^{22})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 32; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has thirteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag and a whole-number rarity last), a valid slot code, a job mask in $(0, 2^{22})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
@@ -343,13 +400,15 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 | Fetch (sparse clone and job icons) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
 | Format loading, CSV reading, the column and slot share checks, the stat factor table | `scripts/data/item_format.py` (`stat_factors`) |
-| Item database generator | `scripts/data/gen_items.py` |
+| Item database generator; materia table and decoy rows | `scripts/data/gen_items.py` (`materia_table`) |
+| Meld fields of an Item row | `scripts/data/item_format.py` (`meld_fields`), `materia` in `src/core/item-format.json` |
+| Meld fields of a pool item | `src/core/items.js` (`parseRow`, `meldInfo`) |
 | Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Source commit detection and the generated-file notice | `scripts/data/provenance.py` |
 | Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
 | Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/job-icons.js` |
-| Tables, highest real item level, footer text | `src/core/tables.js` (`MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
+| Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; hard-coded slot percentages | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
 | Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/fixtures/` (part of `npm test`) |

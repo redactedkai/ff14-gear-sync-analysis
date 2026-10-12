@@ -13,7 +13,7 @@ export function syncView(app) {
   const job = app.jobCtx,
     cap = sync.cap,
     hil = clampIlvl(app.syncIlvl);
-  const tot = { n1: 0, n2: 0, n3: 0, h1: 0, h2: 0, h3: 0, c: 0, spec: 0, main: 0, vit: 0 };
+  const tot = { n1: 0, n2: 0, h1: 0, h2: 0, c: 0, spec: 0, main: 0, vit: 0 };
   /* "Substat cap" is the shared Critical Hit / Determination / Direct Hit / speed column. Piety and Tenacity have
      their own column, which is higher at a few item levels (docs/math.md section 2); show it only where it differs. */
   let specDiffers = false;
@@ -25,10 +25,8 @@ export function syncView(app) {
     if (t !== 'weapon' && t !== 'offhand') {
       tot.n1 += n[0] * m;
       tot.n2 += n[1] * m;
-      tot.n3 += n[2] * m;
       tot.h1 += hi[0] * m;
       tot.h2 += hi[1] * m;
-      tot.h3 += hi[2] * m;
       tot.c += c.crit * m;
       tot.spec += c.spec * m;
       tot.main += c.main * m;

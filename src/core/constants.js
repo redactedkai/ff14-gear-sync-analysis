@@ -35,7 +35,16 @@ export const BASE_SLOT_PCT = Object.freeze({
 });
 
 /* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/math.md section 4; evidence in docs/validation.md). */
-export const SUB_WEIGHTS = Object.freeze([100, 70, 20]);
+export const SUB_WEIGHTS = Object.freeze([100, 70]);
+/* Direct Hit on gear whose only main stat is Mind (old healer Accuracy, item level 50 to 135) is a fixed line at this
+   share of its slot value, outside the ranking above. Measured, not in the game files (docs/math.md section 4). */
+export const MIND_DIRECT_HIT_SHARE = 20;
+/* The same line is at this share on green (RARITY_GREEN), HQ-able pieces with three substats: eight item level 110
+   crafted healer pieces, raised from 20% in patch 4.0. Measured; the owner accepted it as a rule (docs/math.md). */
+export const GREEN_CRAFTED_DIRECT_HIT_SHARE = 25;
+export const RARITY_GREEN = 2;
+/* Item row field of the item's rarity (`rarity` in item-format.json). */
+export const RARITY_FIELD = ITEM_FORMAT.rarity.rowField;
 
 export const MAIN_NAME = Object.freeze({ str: 'Strength', dex: 'Dexterity', int: 'Intelligence', mind: 'Mind' });
 /* Short names as xivgear writes them */
@@ -112,7 +121,8 @@ export const JOB_ROWS = Object.freeze([
 ]);
 
 /* Item database rows (src/data/items.json): [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources,
-   statFactor] (statFactor: the item's kind, a column of the stat factor table MP in tables.js) */
+   statFactor, meldSlots, overmeld] (statFactor: the item's kind, a column of the stat factor table MP in tables.js;
+   meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed; `materia` in item-format.json) */
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');

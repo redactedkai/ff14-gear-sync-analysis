@@ -10,7 +10,7 @@ How the project is tested: the three test layers, what each file covers, the com
 | Generator tests (Python) | The three data generators, run on small test CSV and icon files | Row selection, slot detection, multi-slot gear (a cloak kept on its own slot code, an unsupported combination left out), stat placement, the HQ rule, job mask, sort order, budget table and level data, stat factor kind and table, schema drift, job icon embedding and numbering | 50 tests |
 | Smoke test (browser) | The built page, opened from disk in headless Chromium | Known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, no sideways scroll at 400 px | one script, about 10 groups of checks |
 
-The unit tests need no browser because the core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects. They load the full item database, so they check the model against all 17,286 real pieces, not just hand-made examples.
+The unit tests need no browser because the core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects. They load the full item database, so they check the model against all 17,281 real pieces, not just hand-made examples.
 
 ## 2. What each file covers
 

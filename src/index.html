@@ -96,9 +96,6 @@
       <label class="f">2nd substat · 70%<select id="p-s2" @change="setSub(1, $event.target.value)">
         <template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
       </select></label>
-      <label class="f">3rd substat · 20%<select id="p-s3" @change="setSub(2, $event.target.value)">
-        <template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[2] || '')"></option></template>
-      </select></label>
     </div>
     <input type="range" id="p-range" min="1" :max="$store.app.maxReal" step="1" aria-label="Item level slider" :value="view.rangeValue" @input="setFromRange($event.target.value)">
     <div id="p-out">
@@ -124,7 +121,7 @@
       </table></div>
     </div>
     <div class="note small" id="p-why">
-      <b>What are 100%, 70% and 20%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second about <b>70%</b> of that, and a small third about <b>20%</b>.
+      <b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that. Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.
       This is a pattern measured on real gear (it matches 99.8% of pieces), not a rule from the game files. The Gear pool and Gear optimizer use each item’s real stats instead.
     </div>
   </div>
@@ -143,14 +140,14 @@
     <p class="small dim" id="s-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what it allows.' : 'No sync applies: item level sync is off and the synced level is the level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what it allows.'"></p>
     <template x-if="view"><div style="display:flex;flex-direction:column;gap:12px">
     <label class="f" style="max-width:220px">Example high-ilvl piece<input type="number" id="s-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-bind="$num('syncIlvl', 1, $store.app.maxReal)"></label>
-    <p class="small dim" id="s-lead" x-text="(view.byLevel ? `Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}. ` : '') + `At sync cap ${view.cap}, a ${view.cap}-level piece defines the ceiling per slot. Anything above it is cut to this ceiling; anything below it keeps its own stats. The last two columns list a piece’s 1st / 2nd / 3rd substat (100 / 70 / 20% shares): one at item level ${view.cap}, and one at item level ${view.hil} after syncing.`"></p>
+    <p class="small dim" id="s-lead" x-text="(view.byLevel ? `Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}. ` : '') + `At sync cap ${view.cap}, a ${view.cap}-level piece defines the ceiling per slot. Anything above it is cut to this ceiling; anything below it keeps its own stats. The last two columns list a piece’s 1st / 2nd substat (100 / 70% shares): one at item level ${view.cap}, and one at item level ${view.hil} after syncing.`"></p>
     <div class="tablewrap"><table id="s-table" class="compact">
       <thead><tr><th>Slot</th><th class="n">Share</th><th class="n">Substat cap</th><th class="n" x-show="view.specLabel" x-text="view.specLabel + ' cap'"></th><th class="n" x-text="job.short.main + ' cap'"></th><th class="n">VIT cap</th><th class="n" x-text="`Ilvl ${view.cap} piece`"></th><th class="n" x-text="`Ilvl ${view.hil} synced`"></th></tr></thead>
       <tbody>
         <template x-for="r in view.rows" :key="r.type">
           <tr><td x-text="slotLabel[r.type] + (r.times > 1 ? ' ×2' : '')"></td><td class="n" x-text="r.pct + '%'"></td><td class="n" x-text="r.sub"></td><td class="n" x-show="view.specLabel" x-text="r.spec"></td><td class="n" x-text="r.main"></td><td class="n" x-text="r.vit"></td><td class="n" x-text="r.native"></td><td class="n" x-text="r.synced"></td></tr>
         </template>
-        <tr class="total"><td>10 armor and accessory slots</td><td class="n"></td><td class="n" x-text="view.tot.c"></td><td class="n" x-show="view.specLabel" x-text="view.tot.spec"></td><td class="n" x-text="view.tot.main"></td><td class="n" x-text="view.tot.vit"></td><td class="n" x-text="`${view.tot.n1} / ${view.tot.n2} / ${view.tot.n3}`"></td><td class="n" x-text="`${view.tot.h1} / ${view.tot.h2} / ${view.tot.h3}`"></td></tr>
+        <tr class="total"><td>10 armor and accessory slots</td><td class="n"></td><td class="n" x-text="view.tot.c"></td><td class="n" x-show="view.specLabel" x-text="view.tot.spec"></td><td class="n" x-text="view.tot.main"></td><td class="n" x-text="view.tot.vit"></td><td class="n" x-text="`${view.tot.n1} / ${view.tot.n2}`"></td><td class="n" x-text="`${view.tot.h1} / ${view.tot.h2}`"></td></tr>
       </tbody>
     </table></div>
     <div id="s-sum"><div class="readout">
@@ -162,7 +159,7 @@
     </div></template>
     <details id="s-valid" x-data="validationPanel" @toggle="onToggle($el.open)"><summary>Checked against real gear and published caps</summary><div id="s-valid-out" style="margin-top:10px">
       <template x-if="view"><div>
-        <p class="small">For every combat piece in the game database with two or more substats and item level 110 or higher (<b x-text="view.total"></b> pieces, all jobs), the page’s formula <span class="num">round( round(table × slot share) × substat share )</span> was compared with the item’s real stats, assigning substat shares by rank (100%, 70%, 20%). Real stats are rounded twice: the slot budget first, then the share.</p>
+        <p class="small">For every combat piece in the game database with two or more substats and item level 110 or higher (<b x-text="view.total"></b> pieces, all jobs), the page’s formula <span class="num">round( round(table × slot share) × substat share )</span> was compared with the item’s real stats, assigning substat shares by rank (100%, 70%), with Direct Hit on Mind-only gear at 20% (25% on eight green crafted pieces). Real stats are rounded twice: the slot budget first, then the share.</p>
         <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Item level</th><th class="n">Pieces</th><th class="n">Exact</th><th class="n">Within ±1</th></tr></thead><tbody>
           <template x-for="b in view.bands" :key="b.label"><tr><td x-text="b.label"></td><td class="n" x-text="b.n"></td><td class="n" x-text="b.exact"></td><td class="n" x-text="b.within1"></td></tr></template>
         </tbody></table></div>
@@ -170,7 +167,7 @@
         <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Gear type</th><th class="n">Wiki</th><th class="n">Formula</th><th></th></tr></thead><tbody>
           <template x-for="c in view.wiki" :key="c.label"><tr><td x-text="c.label"></td><td class="n" x-text="c.published"></td><td class="n" x-text="c.computed"></td><td :class="c.match ? 'ok' : 'bad'" x-text="c.match ? 'match' : 'differs'"></td></tr></template>
         </tbody></table></div>
-        <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), level-50 crafted HQ pieces whose Direct Hit gets no HQ bonus, two weapon and shield pairs, and two item level 595 legs; their causes are not known.</p>
+        <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), two weapon and shield pairs, two item level 595 legs and four earrings every job can wear; their causes are not known.</p>
       </div></template>
     </div></details>
     <div class="note small">Model assumptions: every stat on a synced-down piece is clamped to the value a 100%-share stat on a piece of the same slot and kind at the cap item level would have (a real piece keeps its own stat factor from the game files, such as Vitality × 0.9 on Intelligence and Mind gear; for a cap the factor is applied first, which can move it by 1, as in-game values reported by xivgear show); stats on pieces at or below the cap are untouched; materia is ignored on synced-down gear. Level sync syncs gear whose equip level is above the synced level to that level’s item level from the game’s level table (one value for every slot; that weapons use it too is inferred). A piece above the item level cap is synced to the cap even when its equip level is also above the synced level (from a player’s report, not confirmed here). The main-stat and Vitality clamp is inferred, supported only by those second-hand values. Real pieces have fixed substat pairs; the formula reproduces 99.8% of real pieces exactly.</div>

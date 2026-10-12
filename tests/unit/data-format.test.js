@@ -12,7 +12,7 @@ import {
   WEAPON_PCT,
   BASE_SLOT_PCT,
 } from '../../src/core/constants.js';
-import { IL, PG, ITEMS, MP } from '../../src/core/tables.js';
+import { IL, PG, ITEMS, MP, MATERIA } from '../../src/core/tables.js';
 import { JOB_ICONS } from '../../src/data/job-icons.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 
@@ -45,7 +45,7 @@ test('every item row has the documented shape', () => {
   const maxMask = 2 ** ITEM_FORMAT.jobs.length;
   for (const r of ITEMS) {
     const where = JSON.stringify(r).slice(0, 80);
-    assert.equal(r.length, 10, where);
+    assert.equal(r.length, 13, where);
     assert.ok(Number.isInteger(r[1]) && r[1] >= 0 && r[1] < ITEM_FORMAT.slots.length, 'slot code ' + where);
     assert.ok(r[4] > 0 && r[4] < maxMask, 'job mask ' + where);
     assert.equal(r[5].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
@@ -53,7 +53,21 @@ test('every item row has the documented shape', () => {
     assert.ok(r[7] === 0 || r[7] === 1, 'HQ flag ' + where);
     assert.ok(Number.isInteger(r[8]) && r[8] >= 0 && r[8] < 2 ** ITEM_FORMAT.sources.length, 'source mask ' + where);
     assert.ok(Number.isInteger(r[9]) && r[9] >= 0 && r[9] < ITEM_FORMAT.statFactor.count, 'stat factor kind ' + where);
+    assert.ok(Number.isInteger(r[10]) && r[10] >= 0 && r[10] <= ITEM_FORMAT.materia.maxSlots, 'meld slots ' + where);
+    assert.ok(r[11] === 0 || r[11] === 1, 'overmeld flag ' + where);
+    assert.ok(Number.isInteger(r[12]) && r[12] >= 0, 'rarity ' + where);
   }
+});
+
+test('meld fields sit where item-format.json says; the materia table has one entry per grade', () => {
+  assert.deepEqual(ITEM_FORMAT.materia.rowFields, { meldSlots: 10, overmeld: 11 }); // parseRow reads r[10], r[11]
+  assert.equal(ITEM_FORMAT.rarity.rowField, 12); // the accuracy check reads r[12] (RARITY_FIELD)
+  const n = ITEM_FORMAT.materia.grades;
+  assert.equal(MATERIA.values.length, n);
+  assert.equal(MATERIA.gate.length, n);
+  assert.ok(MATERIA.values.every(v => Number.isInteger(v) && v > 0));
+  assert.ok(MATERIA.gate.every((g, i) => Number.isInteger(g) && (i === 0 || g >= MATERIA.gate[i - 1])));
+  assert.ok(MATERIA.high.every(g => Number.isInteger(g) && g >= 1 && g <= n));
 });
 
 test('the stat factor table has one row of percents per stat, one column per item kind', () => {

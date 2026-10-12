@@ -1,5 +1,5 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
-   The shape is what gets saved under STORE_KEY; change it only together with a key bump. */
+   The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
 import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { reserveIds } from '../core/items.js';
@@ -40,7 +40,7 @@ export function syncLabel(app) {
   return [levelSyncOn(app) ? `level ${app.level}` : '', syncActive(app) ? `item level ${app.cap}` : ''].filter(Boolean).join(', ');
 }
 
-export const STORE_KEY = 'ilvl-stat-lab-v3';
+export const STORE_KEY = 'ilvl-stat-lab-v4';
 export const TABS = ['pool', 'opt', 'math'];
 export const MATH_TABS = ['piece', 'sync'];
 
@@ -53,16 +53,16 @@ export function defaultState() {
     tab: 'pool',
     mathTab: 'piece',
     syncIlvl: 475,
-    piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null, null] }, // the highest real item level
+    piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
     browse: { show: 'all', q: '', type: 'any', expOff: [], min: '', max: '', lvl: 100, sort: 'ilvl' }, // expOff: expansions switched off
     opt: { target: 'main', tb: '', tb2: '', exclude: [] }, // exclude: SOURCES keys switched off (left out of the search); every group is included by default
     pool: [],
   };
 }
 
-/* The job's own special substat (Piety, Tenacity) first, or its speed stat when it has none; ranks 2 and 3 empty. */
+/* The job's own special substat (Piety, Tenacity) first, or its speed stat when it has none; rank 2 empty. */
 export function defaultSubs(job) {
-  return [job.profile.spec ? 'spec' : 'spd', null, null];
+  return [job.profile.spec ? 'spec' : 'spd', null];
 }
 
 /* On a job change: job-specific selections go back to defaults, and the pool is emptied. */
@@ -127,15 +127,14 @@ function restorePool(raw) {
   return raw.map(restoreItem).filter(i => i && !seen.has(i.id) && seen.add(i.id));
 }
 
-/* piece.subs: three ranked substats for this job; ranks 2 and 3 may be null, and rank 3 only with a rank 2.
-   Unknown or repeated ones fall back. */
+/* piece.subs: two ranked substats for this job (100% and 70%); rank 2 may be null. Unknown or repeated ones fall
+   back. Older saves had a third rank (20%); it is dropped, since real gear has a third line only as Direct Hit on
+   Mind-only gear (docs/math.md section 4). */
 function restorePieceSubs(raw, job) {
   const ds = defaultSubs(job);
   if (!Array.isArray(raw)) return ds;
-  const subs = [0, 1, 2].map(i => (job.substats.includes(raw[i]) ? raw[i] : i === 0 ? ds[0] : null));
+  const subs = [0, 1].map(i => (job.substats.includes(raw[i]) ? raw[i] : i === 0 ? ds[0] : null));
   if (subs[1] === subs[0]) subs[1] = null;
-  if (subs[2] === subs[0] || subs[2] === subs[1]) subs[2] = null;
-  if (subs[1] == null) [subs[1], subs[2]] = [subs[2], null];
   return subs;
 }
 

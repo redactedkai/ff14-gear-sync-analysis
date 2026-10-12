@@ -105,7 +105,7 @@ The factor belongs to the **item**, not to the job. The game files hold it: `Bas
 | No main stat (9) | – | 100% | 5 |
 | All four main stats (0) | 90% | 90% | 19 |
 
-Kind 7 is the Gloam and High Allagan "of Striking" sets and the Occult "of Blood" accessories; kind 8 the Occult "of Magic" accessories; kind 9 five item level 150 Serpentskin pieces with Vitality only. Kind 0 is the Lieutenant's, Field Commander's and Warlord's sets, Proto Ultima Mesh (13 pieces with all four main stats) and six earrings and rings with Vitality and Determination only (Halone's, Azeyma's, Bozjan, Menphina's, Aetheryte, Neophyte's). Counts are database pieces.
+Kind 7 is the Gloam and High Allagan "of Striking" sets and the Occult "of Blood" accessories; kind 8 the Occult "of Magic" accessories; kind 9 is crafter and gatherer gear, which the database leaves out. Kind 0 is the Lieutenant's, Field Commander's and Warlord's sets, Proto Ultima Mesh (13 pieces with all four main stats) and six earrings and rings with Vitality and Determination only (Halone's, Azeyma's, Bozjan, Menphina's, Aetheryte, Neophyte's). Counts are database pieces.
 
 Every substat (Critical Hit, Determination, Direct Hit, both speeds, Tenacity) is 100% in every column. Piety is 70% or 90% in most columns, but no piece carries Piety in such a column, so it never applies to an item's own stats. It does apply to a cap: a Secondary Attribute counts as Piety for a healer ([data-pipeline.md, section 3](data-pipeline.md#3-the-shared-format-definition)), and on a kind 0 earring it is capped at the 90% Piety cap (Azeyma's Earrings at 430: 71 for Sage in game, section 5).
 
@@ -117,7 +117,7 @@ So for a piece with a single main stat the factor is exactly the old job rule: *
 
 **Rounding is half up**: $\operatorname{round}(x) = \lfloor x + 0.5 \rfloor$, so 31.5 becomes 32. The code adds a tiny epsilon so that floating-point noise such as 22.4999999 still rounds as 22.5 would.
 
-**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,273 of the 16,601 checked pieces exactly (80.0%). Rounding twice reproduces 16,561 (99.8%). Both figures come from running the model over the item database.
+**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,280 of the 16,601 checked pieces exactly (80.0%). Rounding twice reproduces 16,573 (99.8%). Both figures come from running the model over the item database.
 
 Example where it matters: Antiquated Atlas, a level 60 healer two-handed weapon at item level 200, has Piety 57. The substat budget at 200 is 587:
 
@@ -135,17 +135,20 @@ The game stores only the final numbers on each item. It does not store how a slo
 | --- | --- |
 | Largest substat | 100% |
 | Second | 70% |
-| Third (rare; mostly Direct Hit on healer gear) | 20% |
+
+**Direct Hit on healer gear is a fixed 20% line, outside the ranking.** On gear whose only main stat is Mind, Direct Hit sits at 20% of its slot value whatever its size next to the other substats: as the third line (113 pieces), as the second (4), or as the only substat (8 early relic weapons). It is the old Accuracy stat, renamed Direct Hit in patch 4.0 ([validation.md, section 2](validation.md#what-the-misses-look-like)). It is the only third substat in the game: over every combat piece in `Item`, at any item level, the only pieces with three substats, and the only substat lines below half their slot value, are Direct Hit on Mind-only gear at item level 50 to 135. Strength, Dexterity and Intelligence gear never has a third substat, and Direct Hit on any other gear ranks like other substats. On HQ pieces the line gets no HQ bonus while the other substats do (all 16 HQ-able pieces). **Inferred** (measured; not in the game files). It used to be modelled as a general third rank at 20%; that fit the same pieces except the 12 where Direct Hit is not the smallest line.
+
+**On green crafted pieces the line is 25%.** Eight item level 110 crafted healer pieces (Ebony Cane, Kirimu Codex, Platinum Planisphere, Platinum Circlet, the Arachne Robe and Culottes, the Kirimu Gloves and Boots of Healing) carry Direct Hit at exactly 25% of the slot value. Before patch 4.0 they carried it at 20% (the Ebony Cane's Accuracy 9; [validation.md, section 2](validation.md#what-the-misses-look-like)), and 4.0 raised them. In the data they are exactly the Mind-only pieces with Direct Hit that are green (`Item.Rarity` 2), can be HQ and carry three substats; their blue crafted siblings (High Adjudicator's Gavel, Mighty Thunderdome, The Law of Levin First Edition) and green pieces that cannot be HQ stay at 20%. The model applies 25% under exactly that condition. **Inferred**, and fitted to these eight: no other piece matches it, and since gear above item level 135 never carries this line, no new piece will test it. Adopted by the owner because it changes no other piece.
 
 Two refinements, both read off real pieces: substats of **equal size share the higher rank** (the relic weapon steps Hyperconductive, Manderville, Amazing Manderville and Phantom carry two substats at 100%; 141 pieces), and **every main stat on a piece is at full share** (ten item level 110 pieces carry Strength and Dexterity at the same value).
 
-**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,561 of 16,601), and 98.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,573 of 16,601), and 99.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
 Where the shares matter: the Piece stats uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 
 ### Worked example: a healer head piece at item level 130
 
-Take a healer head piece at item level 130 with Spell Speed, Piety and Direct Hit, in that order. A real piece like this is in the game files with Mind 33, Vitality 32, Spell Speed 31, Piety 22 and Direct Hit 6 (**verified**: exactly one database row has all five values; two other item level 130 head pieces carry the same numbers on different substats). Head share $p = 85$. Table values at row 130: main stat 385, Vitality 414, substats 363.
+Take a healer head piece at item level 130 with Spell Speed and Piety, plus the fixed Direct Hit line of older healer gear. A real piece like this is in the game files with Mind 33, Vitality 32, Spell Speed 31, Piety 22 and Direct Hit 6 (**verified**: exactly one database row has all five values; two other item level 130 head pieces carry the same numbers on different substats). Head share $p = 85$. Table values at row 130: main stat 385, Vitality 414, substats 363.
 
 | Stat | Budget | $\times\,85/1000$ | Round | Share | Round | Game file |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -153,7 +156,7 @@ Take a healer head piece at item level 130 with Spell Speed, Piety and Direct Hi
 | Vitality | 414 | 35.19 | 35 | ×0.9 = 31.5 | 32 | 32 |
 | Spell Speed (rank 1) | 363 | 30.855 | 31 | 100% | 31 | 31 |
 | Piety (rank 2) | 363 | 30.855 | 31 | 70% = 21.7 | 22 | 22 |
-| Direct Hit (rank 3) | 363 | 30.855 | 31 | 20% = 6.2 | 6 | 6 |
+| Direct Hit (fixed line) | 363 | 30.855 | 31 | 20% = 6.2 | 6 | 6 |
 
 Every value matches the real piece. The Vitality line also shows the half-up rule at work: 31.5 rounds to 32.
 
@@ -192,11 +195,11 @@ and the clamp below is applied with $t$ in place of $C$. A piece synced to an it
 - **Weapons.** The game file has one `ItemLevelSync` column for every slot. xivgear's sheet code uses a separate weapon table from its own data service for the sheet-wide target, but syncs each item with the one table. That weapons use the same value is *inferred*; the player report above saw level 100 weapons synced to item level 660 in a level 90 duty (P12S), which fits it at level 90.
 - **Pieces with no equip level.** Generated and hand-made pieces, and the Piece stats and Sync limits tabs (which have no item behind them), know only an item level. A generated or hand-made pool piece is synced only by the item level cap. Piece stats and Sync limits use the item level cap when item level sync is on; with it off and a synced level below 100, they show $\text{sync}(L)$, the cap a piece with a higher equip level gets.
 
-What changes at T13 (level 50, cap 123), measured on the current data: 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes; every other piece is synced exactly as by the cap alone. With item level sync off, level sync alone syncs these many of the 17,286 database pieces (a stat is lowered on every one above $\text{sync}(L)$ except 26 at level 50: low-stat level 60 crafted armor and item level 133 pieces whose stats equal the item level 130 caps):
+What changes at T13 (level 50, cap 123), measured on the current data: 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes; every other piece is synced exactly as by the cap alone. With item level sync off, level sync alone syncs these many of the 17,281 database pieces (a stat is lowered on every one above $\text{sync}(L)$ except 21 at level 50: item level 133 pieces whose stats equal the item level 130 caps):
 
 | Synced level | $\text{sync}(L)$ | Pieces synced | Above $\text{sync}(L)$ | With a stat lowered |
 | --- | --- | --- | --- | --- |
-| 50 | 130 | 16,188 | 15,975 | 15,949 |
+| 50 | 130 | 16,183 | 15,970 | 15,949 |
 | 60 | 270 | 13,010 | 12,791 | 12,791 |
 | 70 | 400 | 9,500 | 9,275 | 9,275 |
 | 80 | 530 | 6,245 | 6,014 | 6,014 |
@@ -345,7 +348,9 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Rounding order of sync caps: factor first, floored, rounded once | Verified (three second-hand in-game values); inferred in general | Vitality 56 (Blue Mage head, 270), 123 (Red Mage head, 530), main stat 71 (Azeyma's Earrings, 430), from xivgear's tests; the item order gives 57, 122, 70. Same as the item order when the factor is 100 |
 | Job's factor where no item is involved | Verified (game files) | Equals the item factor on every single-main-stat piece of each job |
 | Sync cap uses the piece's own factor | Inferred (supported second-hand) | Azeyma's Earrings (kind 0) synced to 430 show main stat 71 for Ninja in game (xivgear's test note), the 90% cap of its kind, not the job's 78; xivgear does the same; no capture of this project's own |
-| Substat shares 100% / 70% / 20% by rank (equal substats share a rank) | Inferred (measured pattern) | 98.7–100.0% exact per item level band ([validation.md](validation.md)); not in game files |
+| Substat shares 100% / 70% by rank (equal substats share a rank) | Inferred (measured pattern) | 99.7–100.0% exact per item level band ([validation.md](validation.md)); not in game files |
+| Direct Hit on Mind-only gear is a fixed 20% line | Inferred (measured pattern) | 125 of 133 such pieces; the only third substat in the game |
+| That line is 25% on green, HQ-able pieces with three substats | Inferred (fitted to 8 pieces) | All 8 such pieces, no other; they were 20% before patch 4.0 raised them |
 | Off-hand = two-handed value − one-handed value | Inferred (fits data) | 224 of 226 real off-hands, against 195 for the 40 ‰ share; xivgear uses the same rule for shield caps; sets the shield cap at 123 to 13 |
 | Sync clamps each stat to its cap at the cap item level (for a factor of 100, the full-share same-slot value) | Verified for substats | Wiki caps at 475, 5 of 5 |
 | Caps at 123 (29 / 47 / 23 / 48; main stat 30 / 48 / 24 / 50; Int/Mind Vitality 29 / 45 / 23 / 47) | Derived | No gear exists at item level 123; row 123 × slot share, the same rule real pieces at 120 and 125 follow in every slot |

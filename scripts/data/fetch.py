@@ -20,7 +20,18 @@ from item_format import load_format, read_csv
 ROOT = Path(__file__).resolve().parents[2]
 DEST = ROOT / 'data' / 'ffxiv-datamining'
 URL = 'https://github.com/xivapi/ffxiv-datamining.git'
-FILES = ['Item', 'ItemLevel', 'ParamGrow', 'BaseParam', 'ClassJobCategory', 'EquipSlotCategory', 'ClassJob', *gear_sources.FILES]
+FILES = [
+    'Item',
+    'ItemLevel',
+    'ParamGrow',
+    'BaseParam',
+    'ClassJobCategory',
+    'EquipSlotCategory',
+    'ClassJob',
+    'Materia',
+    'MateriaGrade',
+    *gear_sources.FILES,
+]
 ICON_DIR = ROOT / 'data' / 'icons'
 USER_AGENT = 'ff14-gear-sync-analysis data fetch (+https://github.com/redactedkai/ff14-gear-sync-analysis)'
 FRAMED_JOB_ICON = 62100  # + ClassJob row
