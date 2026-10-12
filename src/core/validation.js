@@ -12,9 +12,9 @@ export const ACCURACY_BANDS = Object.freeze([
   { label: '601+', max: Infinity },
 ]);
 
-/* The {hq, rarity} of a database row, as predictRaw takes it. */
+/* The {name, hq, rarity} of a database row, as predictRaw takes it. */
 export function rowItem(r) {
-  return { hq: r[7] === 1, rarity: r[RARITY_FIELD] };
+  return { name: r[0], hq: r[7] === 1, rarity: r[RARITY_FIELD] };
 }
 
 /* For every row with 2+ substats at item level >= 110: does predictRaw reproduce its stats?

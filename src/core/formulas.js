@@ -6,6 +6,8 @@ import {
   MIND_DIRECT_HIT_SHARE,
   GREEN_CRAFTED_DIRECT_HIT_SHARE,
   RARITY_GREEN,
+  ATMA_NAME_SUFFIX,
+  ATMA_STAT_ILVL,
   ITEM_STAT_ORDER,
   RAW_MAIN_IDX,
   RAW_MAIN_ATTR_IDX,
@@ -167,10 +169,11 @@ function fixedDirectHitShare(st, item) {
    validate the model against real items: every main stat present (a few pieces carry both Strength and Dexterity, and
    some carry the game's generic Main Attribute) and Vitality at 100%, substats ranked by size at 100/70%, where equal
    substats share the higher rank (relic weapon steps carry two substats at 100%), and Direct Hit on Mind-only gear as
-   a fixed line (fixedDirectHitShare; `item` is {hq, rarity} of the row). Each stat's slot value is multiplied by the
-   item's own stat factor (MP) before the substat share, rounded after each step. An off-hand is the two-handed value
-   minus the one-handed value (isOffhand). */
+   a fixed line (fixedDirectHitShare; `item` is {name, hq, rarity} of the row). Each stat's slot value is multiplied
+   by the item's own stat factor (MP) before the substat share, rounded after each step. An off-hand is the two-handed
+   value minus the one-handed value (isOffhand). An Atma weapon is predicted at its Zenith item level (ATMA_STAT_ILVL). */
 export function predictRaw(il, slotCode, st, kind, item = {}) {
+  if (item.name?.endsWith(ATMA_NAME_SUFFIX)) il = ATMA_STAT_ILVL;
   const main = [...RAW_MAIN_IDX, RAW_MAIN_ATTR_IDX].filter(i => st[i]);
   const col = k => IL[k][il];
   // a stat line at a slot share: slot value, times the item's stat factor, times the substat share; rounded each time

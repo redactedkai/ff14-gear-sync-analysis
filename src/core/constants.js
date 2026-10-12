@@ -43,6 +43,11 @@ export const MIND_DIRECT_HIT_SHARE = 20;
    crafted healer pieces, raised from 20% in patch 4.0. Measured; the owner accepted it as a rule (docs/math.md). */
 export const GREEN_CRAFTED_DIRECT_HIT_SHARE = 25;
 export const RARITY_GREEN = 2;
+/* The Zodiac Atma weapons (item level 100) are copies of their Zenith step: the same stats and weapon damage, item
+   level 90's. Nothing in the data marks them but the name, so this one rule goes by name (owner's decision; all 11
+   end in " Atma"). Accuracy check only. */
+export const ATMA_NAME_SUFFIX = ' Atma';
+export const ATMA_STAT_ILVL = 90;
 /* Item row field of the item's rarity (`rarity` in item-format.json). */
 export const RARITY_FIELD = ITEM_FORMAT.rarity.rowField;
 

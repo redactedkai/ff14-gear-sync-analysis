@@ -104,3 +104,16 @@ test('green HQ-able healer pieces with three substats carry Direct Hit at 25%; t
     assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
   }
 });
+
+/* The 11 Zodiac Atma weapons (item level 100) carry their Zenith step's item level 90 stats; the Animus step at the
+   same item level carries item level 100 stats. */
+test('Atma weapons are predicted at item level 90; Animus at its own 100', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const atma = ITEMS.filter(r => r[0].endsWith(' Atma'));
+  assert.equal(atma.length, 11);
+  for (const r of [...atma, ...ITEMS.filter(x => ['Curtana Animus', 'Thyrus Animus'].includes(x[0]))]) {
+    const st = r[5].split(',').map(Number);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
+  }
+});
