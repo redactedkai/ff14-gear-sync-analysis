@@ -89,15 +89,18 @@ function itemVector(job, item, sync) {
    B can be dropped only when the items that beat it have enough copies between them to fill every slot of
    this type (`slotsOfType`: 1, or 2 for rings). Then any loadout using B can swap it for one of them without
    losing anything. For rings, a single better Unique ring is not enough: the best pair may be that ring plus B
-   (docs/history.md). Dropped items' own beaters also beat B, so the kept set always has enough copies. */
-function pruneDominated(arr, dims, slotsOfType) {
+   (docs/history.md). Dropped items' own beaters also beat B, so the kept set always has enough copies.
+   Copies are counted once per item: several candidates of one item (`it`) are still one item's copies. */
+export function pruneDominated(arr, dims, slotsOfType) {
   const keep = [];
   for (let i = 0; i < arr.length; i++) {
     const B = arr[i];
     let copies = 0;
+    const counted = new Set();
     for (let j = 0; j < arr.length && copies < slotsOfType; j++) {
       if (i === j) continue;
       const A = arr[j];
+      if (counted.has(A.it)) continue;
       if (!A.blocks.every(t => B.blocks.includes(t))) continue;
       let ge = true,
         gt = false;
@@ -108,7 +111,10 @@ function pruneDominated(arr, dims, slotsOfType) {
         }
         if (A.v[d] > B.v[d]) gt = true;
       }
-      if (ge && (gt || j < i)) copies += A.copies;
+      if (ge && (gt || j < i)) {
+        copies += A.copies;
+        counted.add(A.it);
+      }
     }
     if (copies < slotsOfType) keep.push(B);
   }

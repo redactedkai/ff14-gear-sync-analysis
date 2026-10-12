@@ -86,7 +86,8 @@ function buildOptimizerView(app) {
 
 /* Per-stat ceiling of the searched pool, synced (only while sync changes something in it) and unsynced. Returns null for an empty pool, {error} if the
    optimizer throws. */
-export function ceilingView(app) {
+/* nodeLimit: per-run search limit (tests lower it to force a truncated, lower-bound result). */
+export function ceilingView(app, nodeLimit = CEILING_NODE_LIMIT) {
   const job = app.jobCtx;
   const pool = searchPool(app);
   if (!pool.length) return null;
@@ -96,7 +97,7 @@ export function ceilingView(app) {
     const sync = syncSettings(app);
     const none = { cap: null, sync: false, level: null };
     const best = (sy, s) => {
-      const r = optimize(job, pool, sy, { target: s, nodeLimit: CEILING_NODE_LIMIT });
+      const r = optimize(job, pool, sy, { target: s, nodeLimit });
       const value = r.ok ? r.totals[s] : 0;
       if (r.truncated) truncated = true;
       return { value, text: (r.truncated ? '≥ ' : '') + value };

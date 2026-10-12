@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { genericItems } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { pruneDominated } from '../../src/core/optimizer/candidates.js';
+import { suffixBounds } from '../../src/core/optimizer/search.js';
 import { gcdFor } from '../../src/core/speed.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
@@ -91,4 +93,51 @@ test('generic maximum under a 123 cap is 296 Spell Speed, 2.22 s GCD', () => {
   const gen = genericItems(sge, 475, sge.substats, false, ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
   const r = optimize(sge, gen, { cap: 123, sync: true }, { target: 'spd' });
   assert.deepEqual([r.totals.spd, gcdFor(r.totals.spd, 50)], [296, 2.22]);
+});
+
+/* The two ring slots are bounded together by the best legal pair: a Unique ring is never counted twice. */
+test('ring-pair bound: the best ring twice only with 2 copies, else the best plus the best other item', () => {
+  const cand = (name, spd, copies) => ({ it: { id: name }, v: { spd }, sc: spd, copies });
+  const slots = ['ring', 'ring'];
+  const bound = list => suffixBounds(slots, [list, list], ['spd']);
+  const u = cand('U', 10, 1);
+  // Unique best ring: 10 + 6, not 20; the bound of the second ring slot alone stays the best single ring
+  let b = bound([u, cand('A', 6, 1), cand('B', 5, 1)]);
+  assert.deepEqual([b.remSc[0], b.remMax.spd[0], b.remSc[1]], [16, 16, 10]);
+  // two candidates of one Unique item are still one ring
+  b = bound([u, { ...u, v: { spd: 9 }, sc: 9 }, cand('A', 6, 1)]);
+  assert.equal(b.remSc[0], 16);
+  // a 2-copy best ring may be worn twice; a lone Unique ring is worn once
+  assert.equal(bound([cand('T', 10, 2), cand('A', 6, 1)]).remSc[0], 20);
+  assert.equal(bound([u]).remSc[0], 10);
+});
+
+/* Real full pool where counting the Unique best ring twice made the bound useless: 80,290 nodes before the pair
+   bound, 170 after (same result). */
+test('ring-pair bound keeps a full-pool search small: Sage, cap 660, Spell Speed > Critical Hit > Determination', () => {
+  const pool = gamePool(sge, {});
+  const r = optimize(sge, pool, { cap: 660, sync: true, level: 100 }, { target: 'spd', tiebreak: ['crit', 'det'] });
+  assert.ok(r.ok && !r.truncated);
+  assert.ok(r.nodes < 1000, `${r.nodes} nodes`);
+});
+
+/* Dominance counts copies per item: two candidates of one Unique ring are one ring, so a third ring they both beat
+   is still needed for the pair and must not be dropped. */
+test('dominance pruning counts the copies of one item once', () => {
+  const u = { id: 'U' };
+  const arr = [
+    { it: u, v: { spd: 10 }, copies: 1, blocks: [] },
+    { it: u, v: { spd: 9 }, copies: 1, blocks: [] },
+    { it: { id: 'C' }, v: { spd: 5 }, copies: 1, blocks: [] },
+  ];
+  assert.deepEqual(
+    pruneDominated(arr, ['spd'], 2).map(a => a.it.id),
+    ['U', 'U', 'C'],
+  );
+  // a second, different item that beats C does make it droppable
+  arr.push({ it: { id: 'D' }, v: { spd: 7 }, copies: 1, blocks: [] });
+  assert.deepEqual(
+    pruneDominated(arr, ['spd'], 2).map(a => a.it.id),
+    ['U', 'U', 'D'],
+  );
 });

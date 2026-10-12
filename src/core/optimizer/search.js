@@ -2,8 +2,24 @@
    Prunes on the score upper bound and on a speed minimum that the remaining
    slots can no longer reach. */
 
-/* remMax[d][i]: most of dimension d slots i.. can still add; remSc[i]: best score they can still add. */
-export function suffixBounds(posList, dims) {
+/* Most two rings can add together on f(a) >= 0: the best ring twice only if that item has 2 copies, otherwise the best
+   plus the best other item (the best alone when there is no other: the second ring slot stays empty). Any legal pair
+   containing the best item is at most this, and any pair without it is too, since its larger member is at most the
+   best other item. Candidates of one item share `it`, so a Unique ring is never counted twice. */
+function bestPair(list, f) {
+  let top = null;
+  for (const a of list) if (!top || f(a) > f(top)) top = a;
+  if (!top) return 0;
+  if (top.copies >= 2) return 2 * f(top);
+  let other = 0;
+  for (const a of list) if (a.it !== top.it) other = Math.max(other, f(a));
+  return f(top) + other;
+}
+
+/* remMax[d][i]: most of dimension d slots i.. can still add; remSc[i]: best score they can still add.
+   At the first of the two ring slots the two are bounded together by the best legal pair (bestPair); counting the
+   best ring twice, as a sum of single-slot bounds does, overstates the bound whenever that ring is Unique. */
+export function suffixBounds(slotList, posList, dims) {
   const n = posList.length;
   const remMax = {};
   dims.forEach(d => {
@@ -11,6 +27,14 @@ export function suffixBounds(posList, dims) {
   });
   const remSc = new Array(n + 1).fill(0);
   for (let i = n - 1; i >= 0; i--) {
+    if (slotList[i] === 'ring' && slotList[i + 1] === 'ring') {
+      const list = posList[i];
+      dims.forEach(d => {
+        remMax[d][i] = remMax[d][i + 2] + bestPair(list, a => Math.max(0, a.v[d]));
+      });
+      remSc[i] = remSc[i + 2] + bestPair(list, a => a.sc);
+      continue;
+    }
     dims.forEach(d => {
       remMax[d][i] = remMax[d][i + 1] + Math.max(0, ...posList[i].map(a => a.v[d]));
     });
@@ -27,7 +51,7 @@ export function suffixBounds(posList, dims) {
    bound still counted a head, was almost never pruned under sync). */
 export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLimit }) {
   const nSlots = slotList.length;
-  const { remMax, remSc } = suffixBounds(posList, dims);
+  const { remMax, remSc } = suffixBounds(slotList, posList, dims);
   let best = null,
     bestSc = -Infinity,
     nodes = 0,
