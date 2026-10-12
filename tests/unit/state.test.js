@@ -39,7 +39,7 @@ function validSave() {
     mathTab: 'sync',
     syncIlvl: 400,
     piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'det', 'spec'] },
-    browse: { show: 'pool', q: 'Robe', type: 'body', min: 110, max: 140, lvl: 50, sort: 'spd' },
+    browse: { show: 'pool', q: 'Robe', type: 'body', expOff: ['ARR', 'SB'], min: 110, max: 140, lvl: 50, sort: 'spd' },
     opt: { target: 'spec', tb: '', tb2: 'crit', exclude: ['tomestone', 'ultimate'] },
     pool: [
       item(),
@@ -156,6 +156,8 @@ test('browse fields', () => {
   expectFieldDefault('browse.lvl', 500, 100);
   expectFieldDefault('browse.lvl', true, 100);
   expectFieldDefault('browse.sort', 'nope', 'ilvl');
+  expectFieldDefault('browse.expOff', 'SB', []);
+  expectFieldDefault('browse.expOff', ['SB', 'XIV', 3, 'ARR'], ['ARR', 'SB']); // unknown values drop; EXPANSIONS order
 });
 
 test('opt fields', () => {

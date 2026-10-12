@@ -137,7 +137,7 @@ def wait_optimizer(pg):
 
 def table_rows(pg, selector):
     """Body rows of a table (CSS selector or Locator) as lists of the texts of its visible cells. Hidden cells (such as
-    the Sync caps special-substat column when it is not needed) are skipped, so positions match what a user sees."""
+    the Sync limits special-substat column when it is not needed) are skipped, so positions match what a user sees."""
     table = pg.locator(selector) if isinstance(selector, str) else selector
     return table.locator('tbody tr').evaluate_all(
         "rows => rows.map(r => Array.from(r.cells).filter(c => getComputedStyle(c).display !== 'none').map(c => c.innerText.trim()))"
@@ -148,25 +148,25 @@ def table_rows(pg, selector):
 
 
 def check_sync_caps(pg, job):
-    """Sync caps view at cap 123: substat and main-stat caps per slot match the known values."""
+    """Sync limits view at cap 123: substat and main-stat caps per slot match the known values."""
     show_math(pg, 'sync')
     expect(pg.locator('#s-table tbody tr').first).to_be_visible()
     rows = {r[0].replace(' ×2', ''): r for r in table_rows(pg, '#s-table')}  # "Ring ×2" -> "Ring"
     for slot, (sub, main) in CAPS_123.items():
         r = rows.get(slot)
         if r is None:
-            check(False, f'{job}: Sync caps has no {slot} row')
+            check(False, f'{job}: Sync limits has no {slot} row')
             continue
         check(r[2] == str(sub), f'{job}: {slot} substat cap {r[2]!r}, expected {sub}')
         check(r[3] == str(main), f'{job}: {slot} main stat cap {r[3]!r}, expected {main}')
     has_offhand = 'Off-hand' in rows
     if job == 'PLD':
-        check(has_offhand, 'PLD: Sync caps has no Off-hand row')
+        check(has_offhand, 'PLD: Sync limits has no Off-hand row')
     else:
-        check(not has_offhand, f'{job}: Sync caps shows an Off-hand row for a two-handed job')
+        check(not has_offhand, f'{job}: Sync limits shows an Off-hand row for a two-handed job')
         w = rows.get('Weapon')
         if w is None:
-            check(False, f'{job}: Sync caps has no Weapon row')
+            check(False, f'{job}: Sync limits has no Weapon row')
         else:
             check(
                 (w[2], w[3]) == tuple(map(str, CAPS_123_2H_WEAPON)),
@@ -206,12 +206,12 @@ def check_piece_lab(pg):
         label = r[0].rsplit(' ', 1)[0]  # "Spell Speed 100%" -> "Spell Speed"
         got[label] = r[3]
     for stat, v in expected.items():
-        check(got.get(stat) == str(v), f'Piece lab ilvl 130 head {stat} raw {got.get(stat)!r}, expected {v}')
+        check(got.get(stat) == str(v), f'Piece stats ilvl 130 head {stat} raw {got.get(stat)!r}, expected {v}')
     # 130 is above the 123 cap: the head caps (29 substat, 30 main) must apply in the synced column
     synced = {r[0].rsplit(' ', 1)[0]: r[4].split(' ')[0] for r in table_rows(pg, '#p-out')}
     check(
         synced.get('Mind') == '30' and synced.get('Spell Speed') == '29',
-        f'Piece lab synced Mind/Spell Speed {synced.get("Mind")}/{synced.get("Spell Speed")}, expected 30/29',
+        f'Piece stats synced Mind/Spell Speed {synced.get("Mind")}/{synced.get("Spell Speed")}, expected 30/29',
     )
     expect(pg.locator('#p-chart svg')).to_be_visible()
 
@@ -367,6 +367,7 @@ def fill_browser(pg, lo, hi, lvl, slot='any'):
     show_gear(pg, 'all')
     pg.fill('#b-q', '')
     pg.select_option('#b-type', slot)
+    all_expansions(pg)
     pg.fill('#b-min', str(lo))
     pg.fill('#b-max', str(hi))
     pg.fill('#b-lvl', str(lvl))
@@ -428,7 +429,8 @@ console.log(JSON.stringify({ count: pool.length, all: best([]), crafted: best(['
 
 
 def check_exclude_sources(pg):
-    """Leaving out crafted gear changes the optimizer total to what the core computes without it; the choice is saved."""
+    """Switching crafted gear off changes the optimizer total to what the core computes without it; the choice is
+    saved. Every group is switched on by default."""
     job, lo, hi, lvl = EXCLUDE_POOL
     want = run_node(NODE_EXCLUDE, [job, lo, hi, lvl])
     if not check(
@@ -447,12 +449,12 @@ def check_exclude_sources(pg):
         pg.locator('#sync').uncheck()
     pg.select_option('#o-target', 'main')
     crafted = pg.locator('#o-exclude input[data-source="crafted"]')
-    check(not crafted.is_checked(), 'crafted gear is left out by default')
+    check(crafted.is_checked(), 'crafted gear is included by default')
     expect(opt_total(pg)).to_have_text(str(want['all']))
-    crafted.check()
+    crafted.uncheck()
     expect(opt_total(pg)).to_have_text(str(want['crafted']))
     wait_saved(pg, "s => s.opt.exclude.join() === 'crafted'")
-    crafted.uncheck()
+    crafted.check()
     expect(opt_total(pg)).to_have_text(str(want['all']))
     pg.locator('#sync').check()
 
@@ -468,7 +470,7 @@ def wait_saved(pg, js_condition):
 
 def check_reload_persists(pg):
     """Build a non-default state (job, cap, sync off, level, pool, optimizer target and
-    tiebreaks, browse filter, Piece lab slot and item level, Gear optimizer tab open), reload, and every part comes back:
+    tiebreaks, browse filter, Piece stats slot and item level, Gear optimizer tab open), reload, and every part comes back:
     the inputs, the pool rows, the open tab and the same optimizer total."""
     job, lo, hi, lvl = 'DRG', 130, 135, 50  # not the default job, a different role from the other checks
     set_job(pg, job)
@@ -655,6 +657,44 @@ def check_cap_validation(pg):
     pg.locator('#sync').uncheck()
 
 
+def exp_boxes(pg):
+    """The Expansion dropdown's checkboxes, with the dropdown opened."""
+    if pg.locator('#b-exp').get_attribute('aria-expanded') != 'true':
+        pg.click('#b-exp')
+    return pg.locator('#b-exp-menu input')
+
+
+def all_expansions(pg):
+    """Tick every expansion in the gear browser again, then close the dropdown."""
+    for box in exp_boxes(pg).all():
+        if not box.is_checked():
+            box.check()
+    pg.keyboard.press('Escape')
+
+
+def check_expansion_filter(pg):
+    """Every expansion is ticked by default; with only Endwalker ticked, the browser keeps gear of its equip level band
+    (81 to 90) and the button names it; the choice is saved; the dropdown is hidden in the My pool view."""
+    set_job(pg, 'WHM')
+    fill_browser(pg, '', '', 100)
+    expect(pg.locator('#b-exp')).to_have_text('All expansions')
+    boxes = exp_boxes(pg)
+    check(boxes.count() == 6 and all(b.is_checked() for b in boxes.all()), 'every expansion is ticked by default')
+    for b in boxes.all():
+        if b.get_attribute('data-exp') != 'EW':
+            b.uncheck()
+    pg.keyboard.press('Escape')
+    expect(pg.locator('#b-exp-menu')).to_be_hidden()
+    expect(pg.locator('#b-exp')).to_have_text('Endwalker')
+    wait_saved(pg, "s => s.browse.expOff.join() === 'ARR,HW,SB,ShB,DT'")
+    lv = pg.locator('#gear-table tbody tr td:nth-child(4)').all_inner_texts()
+    check(lv and all(81 <= int(x) <= 90 for x in lv), f'Endwalker rows outside equip level 81-90: {sorted(set(lv))}')
+    show_gear(pg, 'pool')
+    expect(pg.locator('#b-exp')).to_be_hidden()
+    show_gear(pg, 'all')
+    all_expansions(pg)
+
+
 def check_pld_offhand(pg):
     """PLD (1H weapon + shield) offers an Off-hand slot in the browser; two-handed jobs do not."""
     set_job(pg, 'PLD')
@@ -726,6 +766,7 @@ def main():
             check_job_switch_clears_pool,
             check_ring_copies,
             check_exclude_sources,
+            check_expansion_filter,
             check_reload_persists,
             check_corrupted_storage,
             check_reset,

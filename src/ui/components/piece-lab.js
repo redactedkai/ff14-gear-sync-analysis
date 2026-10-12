@@ -1,4 +1,4 @@
-/* Piece lab: how one piece's stats come from its item level, line by line, and what sync does to them. */
+/* Piece stats: how one piece's stats come from its item level, line by line, and what sync does to them. */
 import Alpine from 'alpinejs';
 import { pieceView, withSub } from '../views/piece.js';
 export function pieceLab() {

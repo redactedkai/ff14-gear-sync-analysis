@@ -1,4 +1,4 @@
-/* Sync caps view: the special substat (Piety, Tenacity) has its own ItemLevel column, which
+/* Sync limits view: the special substat (Piety, Tenacity) has its own ItemLevel column, which
    differs from the shared substat column at a few rows. The view must show its cap where it differs, and only then. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

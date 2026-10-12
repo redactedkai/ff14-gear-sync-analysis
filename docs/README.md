@@ -17,6 +17,7 @@ Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a jo
 | [math.md](math.md) | The stat model: budget table, slot and substat shares, double rounding, the sync clamp, speed and GCD |
 | [optimizer.md](optimizer.md) | How the best gear set is found: lexicographic score, dominance pruning, branch and bound, correctness and timing |
 | [data-pipeline.md](data-pipeline.md) | Where the game data comes from, how it is generated, provenance, and the steps after a game patch |
+| [subcategory-sort-codes.md](subcategory-sort-codes.md) | What each `Item.SubcategorySort` code means for gear, how each was checked, and the category it maps to |
 | [validation.md](validation.md) | Every check of the model against external truth (real items, Wiki caps, speed examples) and what evidence is still missing |
 | [architecture.md](architecture.md) | Layers, the job context, the UI store and views, persistence, the single-file build, the dev loop |
 | [testing.md](testing.md) | Test layers, what each test file covers, commands, conventions, numbers that may move after a patch |

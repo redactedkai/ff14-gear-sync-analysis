@@ -20,6 +20,8 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Double rounding.** A stat on a piece is rounded twice: first the slot's share of the budget, then the substat's share of that. Rounding once gives the wrong value on about a fifth of real pieces. See [math.md, section 4](math.md#4-the-stats-on-a-piece) and [validation.md](validation.md).
 
+**Expansion (gear filter).** The Gear pool tab's Expansion dropdown has a checkbox per expansion (A Realm Reborn to Dawntrail, all ticked by default); unticking one hides its gear. A piece's expansion is the band its equip level falls in, since each expansion raised the level cap (50, 60, 70, 80, 90, 100); the five level-1 gift accessories go by their item level instead. **Inferred**: the game files have no expansion or patch field for items; checked against item ids, which run roughly in release order (the late ids in an old band are new jobs' weapons added to old content).
+
 **GCD (global cooldown).** The shared recast timer of most combat actions, 2.5 seconds by default. Every point of speed shortens it slightly. See [math.md, section 6](math.md#6-speed-gcd-and-dothot-ticks).
 
 **GCD tier.** Because the GCD is rounded down to hundredths of a second, it changes in steps: a range of speed values all give the same GCD, and the next step starts at a specific threshold. At level 50 a new tier starts about every 10.5 points of gear speed. See [math.md, section 6](math.md#6-speed-gcd-and-dothot-ticks).
@@ -38,7 +40,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Main stat.** A job's primary damage or healing stat: Strength (tanks and Strength melee), Dexterity (Ninja, Viper, ranged physical), Intelligence (casters) or Mind (healers). Gear for one main stat is useless to jobs that use another. See [math.md, section 1](math.md#1-terms).
 
-**Materia, melds.** Materia are stones that can be attached ("melded") to gear to add substats. They are not part of the item data. The tool ignores them, and assumes they do not apply on synced-down gear. See [math.md, section 5](math.md#what-is-assumed).
+**Materia, melds.** Materia are stones that can be attached ("melded") to gear to add substats. They are not part of the item data. The tool ignores them. On synced-down gear they do not count (verified by the owner in game): a piece is synced when its item level is above the duty's cap or its equip level is above the duty's level. See [math.md, section 5](math.md#what-is-assumed).
 
 **Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level; the Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123.
 
@@ -52,13 +54,13 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Skill Speed, Spell Speed.** The speed substat: Skill Speed for physical jobs (weaponskills), Spell Speed for casters and healers (spells). It shortens the GCD and strengthens DoT and HoT ticks. The project calls both "speed". See [math.md, section 6](math.md#6-speed-gcd-and-dothot-ticks).
 
-**Slot.** Where a piece is worn: weapon, off-hand (shield, Paladin only), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings. There is no belt slot in the current game.
+**Slot.** Where a piece is worn: weapon, off-hand (shield: Paladin, plus one White Mage shield at item level 100), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings. There is no belt slot in the current game. A few pieces take two slots: a two-handed weapon leaves the off-hand empty, and the Vermilion Cloaks (body) leave the head empty.
 
-**Slot share.** The fraction of the budget a slot gets, in thousandths: two-handed weapon 140, one-handed weapon 100, shield 40, head, hands and feet 85, body and legs 135, accessories 67. Read from the game's `BaseParam` table. See [math.md, section 3](math.md#3-slot-shares).
+**Slot share.** The fraction of the budget a slot gets, in thousandths: two-handed weapon 140, one-handed weapon 100, shield 40 (its stats are the two-handed value minus the one-handed value), head, hands and feet 85, body and legs 135, accessories 67. Read from the game's `BaseParam` table. See [math.md, section 3](math.md#3-slot-shares).
 
 **Substat.** Any stat other than the main stat and Vitality: Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety. A piece carries two or three substats.
 
-**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second, 20% for a third. This is a pattern measured on real items, not a value stored in the game files; it reproduces 97.1% to 99.6% of real pieces exactly, depending on the item level band. Only the Piece lab depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
+**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second, 20% for a third. This is a pattern measured on real items, not a value stored in the game files; with equal substats sharing a rank, it reproduces 99.8% of real pieces exactly (98.7% to 100.0% per item level band). Only the Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
 
 **Tenacity.** The tanks' special substat: more damage dealt and less damage taken. Tanks only.
 

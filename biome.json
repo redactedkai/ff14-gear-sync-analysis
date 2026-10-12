@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["**", "!src/data", "!dist", "!data", "!node_modules", "!tests/e2e/out", "!package-lock.json"]
+    "includes": ["**", "!src/data", "!dist", "!data", "!node_modules", "!tests/e2e/out", "!package-lock.json", "!docs/scratchpad"]
   },
   "formatter": {
     "enabled": true,

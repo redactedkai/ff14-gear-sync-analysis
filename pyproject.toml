@@ -2,10 +2,11 @@
 [tool.ruff]
 line-length = 140
 target-version = "py39"
-extend-exclude = ["./data", "./dist", "./node_modules"]
+extend-exclude = ["./data", "./dist", "./node_modules", "./docs/scratchpad"]
 
 [tool.ruff.format]
 quote-style = "single"
+line-ending = "lf"
 
 [tool.ruff.lint]
 # pyflakes, pycodestyle errors/warnings, import order, bugbear, pyupgrade

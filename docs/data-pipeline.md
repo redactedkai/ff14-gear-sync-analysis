@@ -97,7 +97,8 @@ An `Item` row becomes a database row when all of these hold:
 2. its equip slot category resolves to one of the 12 slot codes (below), which rules out belts, soul crystals and non-gear;
 3. its item level is at least 100;
 4. at least one of the 22 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
-5. at least one of its 12 stats is non-zero after the HQ rule below.
+5. at least one of its 12 stats is non-zero after the HQ rule below;
+6. it is not retired: the Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints how many pieces it left out.
 
 For the current data, each rule leaves:
 
@@ -109,13 +110,14 @@ For the current data, each rule leaves:
 | item level ≥ 100 | 19,843 |
 | a combat job can equip it | 17,627 |
 | at least one stat | 17,579 |
-| occupies a single slot (multi-slot gear such as cloaks that also cover the head is left out) | **17,577** |
+| its slots match a slot code (multi-slot combinations without one are left out and listed; none at item level 100 or above today) | 17,579 |
+| not retired (Diadem gear left out) | **17,286** |
 
 The item level floor of 100 is a choice of this project, not a game rule; gear below it is not useful for the sync caps the page targets.
 
 ### Slot
 
-The slot is the first slot code, in format order, whose `EquipSlotCategory` column is 1. A main-hand item is **two-handed when the same category also blocks the off-hand** (off-hand column $= -1$) and one-handed when the off-hand column is 0. Body pieces that also block other slots (robes that block the legs, for example) have Body = 1, so they become body pieces. Rings set both FingerL and FingerR to 1 and are matched by FingerL.
+The slot is the first slot code, in format order, whose `EquipSlotCategory` column is 1. A main-hand item is **two-handed when the same category also blocks the off-hand** (off-hand column $= -1$) and one-handed when the off-hand column is 0. A piece must also block (value $-1$) exactly the slots its slot code names: none for most codes, the off-hand for a two-handed weapon, and the head for code 12, a body piece that also covers the head (the two Vermilion Cloaks, item level 300; share 220 per mille, the `ChestHeadPercent` column of `BaseParam`, which reproduces both cloaks' stats exactly). Other multi-slot combinations (legs that cover the feet, a body that covers hands, legs and feet) exist only below item level 100; if one appears above it, the generator leaves it out and prints its name. Rings set both FingerL and FingerR to 1 and are matched by FingerL.
 
 ### Job mask
 
@@ -141,14 +143,27 @@ Melds (materia) are not part of the item data and are not included.
 
 ### Unique flag
 
-`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,577 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
+`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,286 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
 
 ### Sources
 
-Each row carries a bit mask of where the item comes from, as far as the game files can say. A gear piece can have none, one or several. The game files do not record dungeon drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: the loot-related sheets `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). Dungeon gear is therefore not flagged.
+Each row carries a bit mask of the five groups the optimizer can leave out: crafted, tomestone, ultimate, savage and relic. A gear piece can be in none, one or several. A group's bit is set from two signals:
 
-- **Crafted** (bit 0): the item is the `ItemResult` of a recipe. 3,450 rows. **Verified** against the Lodestone (section 10).
-- **Tomestone** (bit 1): an exchange listing costs a tomestone to get it, or it is made by trading in such a piece. 1,833 rows. Shops do not store most currency costs as item ids: a cost below 8 is a code, read through the shop's `UseCurrencyType` as SaintCoinach's shop reader does. Types 4 and 2: codes 1 to 4 are the current tomestones (code 1 is Poetics; SaintCoinach does not decode type 2, and the Lodestone shows its code 1 as Poetics, for example "Deepshadow Necklace of Healing ×1 + Allagan Tomestone of Poetics ×100"). Type 16: code 1 is Poetics; 2, 4, 6 and 7 are crafter and gatherer scrips. Type 8: gil. A tomestone's own item id as a cost also counts, and so does a listing that also takes a piece of gear in (augmentation and repair exchanges). A piece made by trading in tomestone gear counts too (for example Augmented Quetzalli, made from Quetzalli and Surgelight Twine), repeated until nothing changes. The piece traded in is not flagged by that trade: retired sets that are no longer sold (the un-augmented Ironworks, Shire, Lost Allagan, Scaevan, Deepshadow, Crystarium, Cryptlurker, Lunar Envoy and Credendum pieces, removed in patch 5.3 or later) carry no tomestone cost in the current game files, and no source checked (Lodestone, Garland Tools, the Console Games Wiki) records how they were sold. The flag therefore means *the game files sell it for tomestones, or it is made from such a piece*. A shop the game no longer uses can still be in the files: the Allagan Tomestones of Heliometry shop still sells Quetzalli gear, while the Lodestone shows only today's Sack of Nuts exchange.
+- the piece's **category**, from `Item.SubcategorySort` and shop data (`gear_categories.py`; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)). Each group lists its categories in the shared format file: crafted ← crafted; tomestone ← tomestone; ultimate ← ultimate; savage ← savage, current expansion only; relic ← relic and field_op (Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones);
+- the **shop and recipe flags** below, for crafted, tomestone and ultimate.
+
+The generator stops if a code has no known category, if a category named in the format file does not exist, or if the two signals contradict each other (a recipe result outside crafted, a totem purchase outside ultimate, a Savage armor piece or weapon without a dye slot).
+
+The game files do not record dungeon drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: the loot-related sheets `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). Dungeon gear can still be told apart by its code (270), but it is in no group.
+
+The savage group is marked `currentOnly`: it takes only pieces whose equip level is the highest in the database (the level cap, 100 today), so legacy Savage gear, which is far easier to get now, stays in the pool, and the group moves on by itself when an expansion raises the cap. No item names are used.
+
+Counts in the current data: crafted 4,307, tomestone 2,947, ultimate 136, savage 231 (the three Dawntrail tiers; 886 legacy Savage pieces are in no group), relic 1,557.
+
+The shop and recipe flags:
+
+- **Crafted** (bit 0): the item is the `ItemResult` of a recipe. 3,450 rows, all in the crafted category; the other 857 crafted pieces are augmented crafted gear bought with certificates (675) and pieces with no recipe of their own. **Verified** against the Lodestone (section 10).
+- **Tomestone** (bit 1): an exchange listing costs a tomestone to get it, or it is made by trading in such a piece. 1,833 rows. Shops do not store most currency costs as item ids: a cost below 8 is a code, read through the shop's `UseCurrencyType` as SaintCoinach's shop reader does. Types 4 and 2: codes 1 to 4 are the current tomestones (code 1 is Poetics; SaintCoinach does not decode type 2, and the Lodestone shows its code 1 as Poetics, for example "Deepshadow Necklace of Healing ×1 + Allagan Tomestone of Poetics ×100"). Type 16: code 1 is Poetics; 2, 4, 6 and 7 are crafter and gatherer scrips. Type 8: gil. A tomestone's own item id as a cost also counts, and so does a listing that also takes a piece of gear in (augmentation and repair exchanges). A piece made by trading in tomestone gear counts too (for example Augmented Quetzalli, made from Quetzalli and Surgelight Twine), repeated until nothing changes. 1,768 of these are tomestone-category pieces; the other 65 are Heavensward artifact armor (item level 210) bought with Allagan Tomestones of Esoterics, which the group includes. The category adds 1,114 tomestone pieces with no current tomestone cost (retired sets). The piece traded in is not flagged by that trade: retired sets that are no longer sold (the un-augmented Ironworks, Shire, Lost Allagan, Scaevan, Deepshadow, Crystarium, Cryptlurker, Lunar Envoy and Credendum pieces, removed in patch 5.3 or later) carry no tomestone cost in the current game files, and no source checked (Lodestone, Garland Tools, the Console Games Wiki) records how they were sold. The flag therefore means *the game files sell it for tomestones, or it is made from such a piece*. A shop the game no longer uses can still be in the files: the Allagan Tomestones of Heliometry shop still sells Quetzalli gear, while the Lodestone shows only today's Sack of Nuts exchange.
 - **Ultimate** (bit 2): an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). 136 rows: the 16, 16, 18, 20, 22, 22 and 22 weapons of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
 ### Row format and order
@@ -165,7 +180,7 @@ Each database row is a fixed list of nine fields:
 | stats | 12 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
 | unique | 0 or 1 | 1 when only one copy can be worn. |
 | hq | 0 or 1 | 1 when the item can be high quality (`CanBeHq`), so its stats are the HQ ones; the page marks it HQ. |
-| sources | integer 0 to 7 | Bit mask: 1 crafted, 2 tomestone, 4 ultimate (section *Sources*). |
+| sources | integer 0 to 31 | Bit mask: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate (section *Sources*). |
 
 The example row is
 
@@ -216,7 +231,7 @@ The recorded commit is the clone's newest commit, not the newest commit that cha
 
 | Fact | Value |
 | --- | --- |
-| Database rows | 17,577 |
+| Database rows | 17,286 |
 | Lowest / highest item level in the database | 100 / **795** (66 rows at 795) |
 | `ItemLevel` rows | 921 (ids 0 to 920) |
 | Level data | levels 1 to 100 |
@@ -268,7 +283,7 @@ The item database is close to 80% of the page, the icons about 12%.
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,577 rows above.
+4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,286 rows above.
 
 Some test expectations are allowed to move, others must not:
 

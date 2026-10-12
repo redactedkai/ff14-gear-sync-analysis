@@ -1,4 +1,4 @@
-/* Piece lab: how one piece's stats come from its item level, line by line, and what sync does to them. */
+/* Piece stats: how one piece's stats come from its item level, line by line, and what sync does to them. */
 /* Pure view builder: no Alpine import, so Node can load and test it. */
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, statDerivation } from '../../core/formulas.js';
@@ -9,6 +9,7 @@ import { syncActive } from '../state.js';
 function formulaText(steps) {
   return steps
     .map(s => {
+      if (s.kind === 'offhand') return `two-handed ${s.two} − one-handed ${s.one} = ${s.value}`;
       if (s.kind === 'slot') return `${s.base} × ${s.pct} ÷ 1000 = ${s.exact.toFixed(1)} → ${s.value}`;
       if (s.kind === 'vit') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
       return `× ${s.weight}% = ${s.exact.toFixed(1)} → ${s.value}`;
@@ -47,7 +48,7 @@ export function pieceView(app) {
   };
 }
 
-/* Piece lab substat ranks after choosing `value` (or '' for none) at rank `i`. A substat can hold only one rank:
+/* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`. A substat can hold only one rank:
    choosing one already used elsewhere swaps the two. Rank 1 is never empty; ranks 2 and 3 may
    be, and an empty rank 2 pulls rank 3 up into it. */
 export function withSub(subs, i, value, substats) {

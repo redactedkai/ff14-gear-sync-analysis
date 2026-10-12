@@ -4,11 +4,11 @@ Given a pool of items and a job, the optimizer picks one item per gear slot so t
 
 How a piece's stats are computed, and what level sync does to them, is in [math.md](math.md). Where the item data comes from is in [data-pipeline.md](data-pipeline.md).
 
-![The optimizer as six stages: pool, effective stats, per-slot candidate lists, dominance pruning, branch and bound, loadout. A real run with 2,033 Sage items synced to item level 123 keeps 118 candidates, visits 136 search nodes and returns 344 Spell Speed.](diagrams/optimizer-pipeline.svg)
+![The optimizer as six stages: pool, effective stats, per-slot candidate lists, dominance pruning, branch and bound, loadout. A real run with 1,988 Sage items synced to item level 123 keeps 119 candidates, visits 137 search nodes and returns 344 Spell Speed.](diagrams/optimizer-pipeline.svg)
 
 ## 1. The problem
 
-A character wears one item in each gear slot: weapon, head, body, hands, legs, feet, earrings, necklace, bracelets and **two** rings. Paladin carries a one-handed weapon plus a shield (the off-hand slot); every other job uses a two-handed weapon and has no off-hand.
+A character wears one item in each gear slot: weapon, head, body, hands, legs, feet, earrings, necklace, bracelets and **two** rings. Paladin carries a one-handed weapon plus a shield (the off-hand slot); every other job uses a two-handed weapon, which leaves the off-hand empty. White Mage has both kinds at item level 100 (one wand and shield pair from A Realm Reborn). A few body pieces (the Vermilion Cloaks) also cover the head and leave it empty.
 
 The user builds a **pool** of candidate items (real gear from the game data). The optimizer chooses a **loadout**, one item per slot, that:
 
@@ -23,13 +23,15 @@ Constraints:
 - **Copies.** Each pool item has a number of copies. A ring marked Unique in the game can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway). The copies come from the game data when an item is added and are not edited on the page; the gear table marks a 2-copy ring ×2.
 - **A speed range** (optional, engine only): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed), meant for a future "reach this GCD tier" control ([roadmap.md](roadmap.md)). Other stats have no limits. The page does not expose it yet; it is covered by tests.
 
-**Leaving out gear by source.** The page can leave crafted, tomestone or ultimate gear out of the search. This happens before the optimizer runs: such items are removed from the pool it is given (and from the ceiling table's pool), so the search itself is unchanged. An item's sources come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)); hand-made pieces have none and are never left out. Dungeon gear cannot be identified from the game files, so there is no toggle for it.
+**Leaving out gear by source.** Under *Include*, one switch per group (all on by default) can take crafted, tomestone, ultimate, current Savage or relic gear out of the search (current Savage is the current expansion's Savage gear only; relic includes the Eureka, Bozja and Occult Crescent armor). The groups are the gear that is hardest to get. This happens before the optimizer runs: such items are removed from the pool it is given (and from the ceiling table's pool), so the search itself is unchanged. An item's groups come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)); hand-made pieces have none and are never left out.
 
 The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](math.md#5-item-level-sync). Melds are ignored.
 
 ## 2. Formal statement
 
-**Slots.** Let $s_1, \dots, s_n$ be the slots to fill, in a fixed order: weapon, off-hand (Paladin only), head, body, hands, legs, feet, ear, neck, wrist, ring, ring. A slot type with no item in the pool is left out, so $n \le 12$. The ring type appears twice. For a slot type $t$, let $k_t$ be how many slots it has: $k_{\text{ring}} = 2$, otherwise $k_t = 1$.
+**Slots.** Let $s_1, \dots, s_n$ be the slots to fill, in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring, except that a slot some pool item can leave empty (the off-hand, and the head when a cloak is in the pool) moves to the end. A slot type with no item in the pool is left out, so $n \le 12$.
+
+**Blocked slots.** Each item $x$ has a set $B(x)$ of slot types it leaves empty: the off-hand for a two-handed weapon, the head for a cloak, nothing otherwise (from the item's slot code; a hand-made weapon on a two-handed job blocks the off-hand). A loadout is legal only if every slot in $B(x)$ of a chosen $x$ is empty. Because blockable slots come last, the search knows when it reaches one whether it is blocked; a blocked slot takes no item and adds 0, so it adds 0; while a chosen piece blocks a later slot, that slot's best score and speed come off the bounds below, so the cloak's branch is pruned like any other (without this, ceiling runs on the full Sage pool synced to 123 hit their 150,000-node limit; now the largest takes 181 nodes). Dominance also respects it: $A$ can only prune $B$ when $B(A) \subseteq B(B)$, so a cloak that beats a body piece on every stat never removes it (the head may be worth more). The ring type appears twice. For a slot type $t$, let $k_t$ be how many slots it has: $k_{\text{ring}} = 2$, otherwise $k_t = 1$.
 
 **Candidates.** $P_t$ is the set of pool items of type $t$. Each item $x$ has a number of copies $c(x) \in \{1, 2\}$.
 
@@ -88,11 +90,11 @@ In general $W_j = 1 + \sum_{l > j} R_l W_l$. If you use fewer keys, drop the mis
 
 **Why this is lexicographic.** Take two loadouts that first differ at key $j$, by at least 1 (stats are integers). The keys below $j$ can change the score difference by at most $\sum_{l > j} R_l W_l = W_j - 1$. So the score difference is at least $W_j - (W_j - 1) = 1 > 0$, and the loadout that is better on key $j$ always scores higher.
 
-Example (measured on the 2,033-item Sage pool, target Spell Speed, tiebreaks Critical Hit then Determination):
+Example (measured on the 1,988-item Sage pool, target Spell Speed, tiebreaks Critical Hit then Determination):
 
 | | $R_1$ (Crit) | $R_2$ (Det) | $W_0, W_1, W_2$ |
 | --- | ---: | ---: | --- |
-| Synced to item level 123 | 344 | 344 | 119,025 ; 345 ; 1 |
+| Synced to item level 123 | 344 | 373 | 129,030 ; 374 ; 1 |
 | Unsynced | 3,149 | 3,141 | 9,897,300 ; 3,142 ; 1 |
 
 **Exactness.** JavaScript numbers are exact for integers up to $2^{53} - 1 \approx 9.0 \times 10^{15}$. The engine bounds the largest possible score magnitude,
@@ -107,7 +109,7 @@ Before a fix (see [history.md](history.md)) the weights were fixed at $10^8, 10^
 
 ## 4. Fewer candidates: dominance pruning
 
-Most items in a large pool can never be part of a best loadout because another item in the same slot is at least as good in every way. Removing them before the search is what keeps it fast: the 2,033-item Sage pool shrinks to 118 distinct candidates synced to 123, and to 167 unsynced.
+Most items in a large pool can never be part of a best loadout because another item in the same slot is at least as good in every way. Removing them before the search is what keeps it fast: the 1,988-item Sage pool shrinks to 119 distinct candidates synced to 123, and to 167 unsynced.
 
 **Beats.** Within one slot type, item $x$ **beats** item $y$, written $x \succ y$, when
 
@@ -164,7 +166,7 @@ so if $\sigma + U_p \le \sigma^*$, nothing below this node can be strictly bette
 
 **Speed minimum.** If $T_{\text{spd}} + \sum_{i \ge p} \max\bigl(0, \max_{x \in P_{s_i}} v_{\text{spd}}(x)\bigr) < m$, the minimum can no longer be reached.
 
-**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 17,577 database rows), so the total can only grow along a branch.
+**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 17,286 database rows), so the total can only grow along a branch.
 
 Both bounds use the best value in each remaining slot independently. They ignore copy limits, so they can overestimate (for example, by counting the best Unique ring twice). Overestimating never cuts a branch that should be kept; it only makes the search visit more nodes.
 
@@ -178,7 +180,7 @@ Both bounds use the best value in each remaining slot independently. They ignore
 
 Below the main result, the Gear optimizer tab shows "Ceiling per stat from this pool". For each of the job's stats it runs the optimizer with that stat as the only target (no tiebreaks) twice: synced to the current cap, and unsynced. Each cell is the highest total of that one stat the pool can reach, ignoring all other stats. The last row converts the synced speed ceiling into a GCD.
 
-That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 2,033-item Sage pool they take about 0.22 s together.
+That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 1,988-item Sage pool they take about 0.27 s together.
 
 ## 7. Correctness and performance
 
@@ -199,19 +201,19 @@ The exhaustive and constraint tests run with `npm test`. If a change to scoring,
 
 ### Performance
 
-Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists. The pool is every piece Sage can equip at item level 100 and up (2,033 items).
+Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists. The pool is every piece Sage can equip at item level 100 and up (1,988 items).
 
 | Run | Nodes | Time |
 | --- | ---: | ---: |
-| Synced to 123, Spell Speed | 136 | ~19 ms |
-| Synced to 123, Spell Speed, tiebreaks Crit, Det | 136 | ~19 ms |
-| Unsynced, Spell Speed | 1,297 | ~14 ms |
-| Unsynced, Critical Hit, tiebreaks Det, Spell Speed | 8,343 | ~19 ms |
-| Unsynced, Spell Speed, Determination at least 2,500 | 15,400 | ~30 ms |
+| Synced to 123, Spell Speed | 137 | ~22 ms |
+| Synced to 123, Spell Speed, tiebreaks Crit, Det | 137 | ~21 ms |
+| Unsynced, Spell Speed | 492 | ~16 ms |
+| Unsynced, Critical Hit, tiebreaks Det, Spell Speed | 5,657 | ~21 ms |
+| Unsynced, Critical Hit, Spell Speed at least 2,000 | 3,199 | ~18 ms |
 | Unsynced, Spell Speed, Critical Hit at most 1,000 (pruning off) | 40,289 | ~41 ms |
 | Ceiling table: 14 runs at 150,000 nodes each | | ~221 ms |
 
-Synced runs leave fewer candidates after pruning (118 against 167 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level.
+Synced runs leave fewer candidates after pruning (119 against 167 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level.
 
 Across the 9,800 real-gear runs, the median is 72 nodes and the 99th percentile 18,561. The largest is 191,023 nodes (Ninja and Viper, items 600 to 640, unsynced, Skill Speed; 130 to 150 ms). There, most armor pieces have no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so the bound is 42 points too high and cannot cut those ties.
 

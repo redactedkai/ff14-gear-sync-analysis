@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, poolItemFromRow, parseRow, mkItem, sourceMask, withoutSources } from '../../src/core/items.js';
-import { SOURCES } from '../../src/core/constants.js';
+import { browseItems, poolItemFromRow, parseRow, mkItem, sourceMask, withoutSources, expansionOf } from '../../src/core/items.js';
+import { SOURCES, EXPANSIONS } from '../../src/core/constants.js';
 import { ITEMS } from '../../src/core/tables.js';
 
 const pld = makeJobContext('PLD');
@@ -158,8 +158,10 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable, and a s
 });
 
 /* Gear sources on real pieces whose Lodestone pages agree: a recipe (Ra'Kaznar), Allagan Tomestones of Mnemonics
-   (Bygone Brass), Mad Harlequin's Totem (Palazzo Diamond); Mistwake gear drops in a dungeon, which the game files do
-   not record. */
+   (Bygone Brass), Mad Harlequin's Totem (Palazzo Diamond), a Savage raid book (Dark Horse Champion's, Dawntrail: current Savage;
+   Genji, Stormblood: legacy Savage, in no group), the Bozja and Occult Crescent
+   field operations (Bozjan, Phantom Vision: in the relic group) and a relic weapon (Phantom Gunblade); Mistwake gear
+   drops in a dungeon, which is in no group. */
 test('source flags of real items, and leaving sources out of a pool', () => {
   const find = name => {
     const r = ITEMS.find(x => x[0] === name);
@@ -170,6 +172,11 @@ test('source flags of real items, and leaving sources out of a pool', () => {
     "Ra'Kaznar Helm of Fending": ['crafted', 'WAR'],
     'Bygone Brass Earrings of Casting': ['tomestone', 'BLM'],
     'Palazzo Diamond Codex': ['ultimate', 'SCH'],
+    "Dark Horse Champion's Gloves of Scouting": ['savage', 'NIN'],
+    'Genji Ring of Aiming': [null, 'BRD'],
+    'Bozjan Trousers of Casting': ['relic', 'BLM'],
+    'Phantom Vision Boots of Scouting': ['relic', 'NIN'],
+    'Phantom Gunblade Obscurum': ['relic', 'GNB'],
     'Mistwake Visor of Fending': [null, 'WAR'],
   };
   const pool = [];
@@ -185,11 +192,46 @@ test('source flags of real items, and leaving sources out of a pool', () => {
   pool.push(hand);
   assert.equal(withoutSources(pool, []), pool);
   assert.deepEqual(
-    withoutSources(pool, ['crafted', 'ultimate']).map(i => i.name),
-    ['Bygone Brass Earrings of Casting', 'Mistwake Visor of Fending', 'Hand-made'],
+    withoutSources(pool, ['crafted', 'ultimate', 'relic']).map(i => i.name),
+    [
+      'Bygone Brass Earrings of Casting',
+      "Dark Horse Champion's Gloves of Scouting",
+      'Genji Ring of Aiming',
+      'Mistwake Visor of Fending',
+      'Hand-made',
+    ],
   );
   assert.deepEqual(
-    withoutSources(pool, ['crafted', 'tomestone', 'ultimate']).map(i => i.name),
-    ['Mistwake Visor of Fending', 'Hand-made'], // no source known: never left out
+    withoutSources(
+      pool,
+      SOURCES.map(s => s.key),
+    ).map(i => i.name),
+    ['Genji Ring of Aiming', 'Mistwake Visor of Fending', 'Hand-made'], // in no group: never left out
   );
+});
+
+/* The expansion of a piece is its equip level band (the level caps 50, 60 ... 100). Real pieces on each side of a band
+   edge, and a level-1 gift earring that falls back to its item level band. */
+test('expansion of real pieces, and the browse filter by expansion', () => {
+  const lvl = name => {
+    const r = ITEMS.find(x => x[0] === name);
+    assert.ok(r, name);
+    return expansionOf(r[3], r[2]);
+  };
+  assert.equal(lvl('Dreadwyrm Cane'), 'ARR'); // equip level 50
+  assert.equal(lvl('Martial Codex'), 'HW'); // 51
+  assert.equal(lvl('Bardiche of Ascension'), 'EW'); // 90
+  assert.equal(lvl('Riversbreath Cane'), 'DT'); // 91
+  assert.equal(lvl("Halone's Earring"), 'DT'); // level 1, item level 690
+  assert.equal(lvl("Menphina's Earring"), 'ShB'); // level 1, item level 430
+  const whm = makeJobContext('WHM');
+  const all = browseItems(whm, { type: 'any' });
+  const only = short => browseItems(whm, { type: 'any', expOff: EXPANSIONS.map(e => e[0]).filter(k => k !== short) });
+  const ew = only('EW');
+  assert.ok(ew.length > 0 && ew.every(r => r.lvl > 80 && r.lvl <= 90));
+  assert.equal(browseItems(whm, { type: 'any', expOff: [] }).length, all.length);
+  const sum = EXPANSIONS.reduce((n, [s]) => n + only(s).length, 0);
+  assert.equal(sum, all.length); // every piece lands in exactly one expansion
+  const noEw = browseItems(whm, { type: 'any', expOff: ['EW'] });
+  assert.equal(noEw.length, all.length - ew.length);
 });

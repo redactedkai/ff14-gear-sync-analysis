@@ -182,7 +182,8 @@ th.n {
   gap: 14px 20px;
   align-items: end;
 }
-label.f {
+label.f,
+.f.multi {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -193,7 +194,8 @@ label.f {
 }
 input[type="number"],
 input[type="text"],
-select {
+select,
+.multi-btn {
   font: inherit;
   font-family: var(--mono);
   font-size: 0.92rem;
@@ -207,6 +209,66 @@ select {
 }
 select {
   font-family: var(--sans);
+}
+/* a dropdown of checkboxes (the gear browser's Expansion filter), drawn like a select */
+.f.multi {
+  position: relative;
+}
+.multi-btn {
+  font-family: var(--sans);
+  position: relative;
+  text-align: left;
+  padding-right: 28px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.multi-btn::after {
+  content: "";
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-75%) rotate(45deg);
+}
+.multi-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 4px;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.multi-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--fg);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.multi-opt:hover {
+  background: var(--surface2);
+}
+.multi-opt input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 input.invalid {
   border-color: var(--bad);
@@ -349,16 +411,9 @@ button.x {
   margin-top: 14px;
   gap: 8px 16px;
 }
-label.check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.88rem;
+.row.exclude .toggle {
+  min-height: 0;
   cursor: pointer;
-}
-label.check input {
-  accent-color: var(--accent);
-  margin: 0;
 }
 .tabs {
   display: flex;

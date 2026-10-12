@@ -4,18 +4,20 @@
 Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
 
 Row format: [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique, hq, sources]
-  slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring)
+  slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring,
+             12=body that also covers the head)
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
   stats    : in the order of `stats` in src/core/item-format.json  (HQ values = NQ + BaseParamValueSpecial)
   hq       : 1 when the item can be high quality (CanBeHq), so its stats are the HQ ones
-  sources  : bit i set when the item comes from `sources[i]` in item-format.json (crafted, tomestone, ultimate;
-             see gear_sources.py)
+  sources  : bit i set when the item is in group `sources[i]` of item-format.json (crafted, tomestone, ultimate,
+             savage, relic): from its category (gear_categories.py) and the shop and recipe flags (gear_sources.py)
 """
 
 import argparse
 import json
 from pathlib import Path
 
+import gear_categories
 import provenance
 from gear_sources import sources as gear_sources
 from item_format import N_ITEM_PARAMS, SchemaError, item_columns, load_format, read_csv, run_main
@@ -25,7 +27,8 @@ MIN_ILVL = 100
 
 def select(csv_dir):
     """The gear the database keeps: (kept, multi_slot), where kept is a list of (Item.csv row, database row) pairs in
-    Item.csv order and multi_slot names the pieces left out because they also block another slot."""
+    Item.csv order and multi_slot names the pieces left out because they block a combination of slots with no slot
+    code in item-format.json."""
     d = Path(csv_dir)
     fmt = load_format()
     param_idx = {s['baseParam']: i for i, s in enumerate(fmt['stats'])}  # BaseParam row id -> stat index
@@ -41,25 +44,26 @@ def select(csv_dir):
                 m |= 1 << i
         cjc[r['#']] = m
 
+    column = {s['type']: s['equipSlotColumn'] for s in fmt['slots']}
+
     def slot_of(e):
-        """First slot (in format order) whose EquipSlotCategory column is 1. A main-hand item is two-handed when
-        it also blocks the off-hand (OffHand == -1). Waist, soul crystal and non-gear return None."""
+        """First slot (in format order) whose EquipSlotCategory column is 1 and whose blocked slots (value -1) are
+        exactly the ones the format names: OffHand for a two-handed weapon, the `blocks` types otherwise (a cloak:
+        Head). Waist, soul crystal, non-gear and an unsupported multi-slot combination return None."""
         if e is None:
             return None
+        blocked = {c for c, v in e.items() if v == '-1'}
         for s in fmt['slots']:
             if e[s['equipSlotColumn']] != '1':
                 continue
-            if 'twoHanded' in s and s['twoHanded'] != (e['OffHand'] == '-1'):
-                continue
-            return s['code']
+            expect = {'OffHand'} if s.get('twoHanded') else {column[t] for t in s.get('blocks', [])}
+            if blocked == expect:
+                return s['code']
         return None
 
     def blocks_other_slots(e):
-        """True for gear that also occupies another slot (EquipSlotCategory value -1), e.g. a cloak that blocks the head.
-        A two-handed weapon blocking the off-hand is the one expected case."""
-        if e is None:
-            return False
-        return any(v == '-1' for c, v in e.items() if c not in ('#', 'OffHand')) or (e['OffHand'] == '-1' and e['MainHand'] != '1')
+        """True for gear that occupies another slot too (EquipSlotCategory value -1)."""
+        return e is not None and any(v == '-1' for c, v in e.items() if c != '#')
 
     items = read_csv(d / 'Item.csv', ['#', *item_columns()])
     src = gear_sources(d, items)
@@ -67,8 +71,10 @@ def select(csv_dir):
     for r in items:
         if not r['Name']:
             continue
-        slot = slot_of(esc.get(r['EquipSlotCategory']))
-        if slot is None:
+        e = esc.get(r['EquipSlotCategory'])
+        slot = slot_of(e)
+        unsupported = slot is None and blocks_other_slots(e)  # multi-slot gear with no slot code: listed, not kept
+        if slot is None and not unsupported:
             continue
         ilvl = int(r['LevelItem'])
         mask = cjc.get(r['ClassJobCategory'], 0)
@@ -86,9 +92,9 @@ def select(csv_dir):
                     st[param_idx[p]] += int(r[f'BaseParamValueSpecial[{i}]'])
         if not any(st):
             continue
-        # Multi-slot gear would need a summed slot share and a blocked slot in the optimizer; it is left out instead
-        # and listed, so a patch that adds more of it is noticed.
-        if blocks_other_slots(esc.get(r['EquipSlotCategory'])):
+        # Multi-slot gear needs its own slot code (summed slot share, blocked slots); a combination without one is
+        # left out and listed, so a patch that adds more of it is noticed.
+        if unsupported:
             multi_slot.append(f'{r["Name"]} (item level {ilvl})')
             continue
         kept.append(
@@ -117,7 +123,14 @@ def main(csv_dir, out, source='detect'):
         source = provenance.detect(csv_dir)
     fmt = load_format()
     kept, multi_slot = select(csv_dir)
-    rows = [row for _, row in kept]
+    weapon_slots = {s['code'] for s in fmt['slots'] if s['type'] in ('weapon', 'offhand')}
+    cats = gear_categories.categorize(csv_dir, kept, weapon_slots)
+    problems = gear_categories.check(kept, cats)
+    if problems:
+        raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
+    masks = gear_categories.source_masks(kept, cats)
+    retired = [r for r, _ in kept if cats[r['#']] in gear_categories.RETIRED]
+    rows = [[*row[:8], masks[r['#']]] for r, row in kept if cats[r['#']] not in gear_categories.RETIRED]
     # A job no item is left for means the job columns or their values changed shape (e.g. 'True' became '1').
     seen = 0
     for r in rows:
@@ -130,8 +143,10 @@ def main(csv_dir, out, source='detect'):
     doc = {'_generated': provenance.note(source), 'source': source, 'items': rows}
     provenance.write_generated(out, json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n')
     print(f'{len(rows)} rows -> {out}')
+    if retired:
+        print(f'left out {len(retired)} retired pieces ({", ".join(sorted(gear_categories.RETIRED))})')
     if multi_slot:
-        print(f'left out {len(multi_slot)} multi-slot pieces: ' + ', '.join(multi_slot))
+        print(f'left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
 
 
 if __name__ == '__main__':

@@ -3,11 +3,11 @@
    Candidates dominated by another item in the same slot are dropped. */
 import { SLOT_TYPES } from '../constants.js';
 import { syncStats } from '../formulas.js';
-import { slotActive } from '../job-context.js';
+import { slotInfo } from '../items.js';
 
-/* sync = {cap, sync}: the cap item level and whether sync is on */
+/* sync = {cap, sync}: the cap item level and whether sync is on. A piece is capped by its own slot share. */
 export function effStats(job, item, sync) {
-  return sync.sync ? syncStats(job, item.stats, item.type, sync.cap, item.ilvl) : item.stats;
+  return sync.sync ? syncStats(job, item.stats, item.type, sync.cap, item.ilvl, slotInfo(job, item).pct) : item.stats;
 }
 
 /* Lexicographic score [target, tiebreak 1, tiebreak 2] packed into one number, so the search can add and
@@ -67,7 +67,8 @@ function itemVector(job, item, sync) {
   return v;
 }
 
-/* A beats B when A is >= on every dimension and either > on one of them or, for an exact tie, comes first.
+/* A beats B when A is >= on every dimension and either > on one of them or, for an exact tie, comes first, and A
+   leaves no slot empty that B does not (a cloak covering the head never beats a plain body piece).
    B can be dropped only when the items that beat it have enough copies between them to fill every slot of
    this type (`slotsOfType`: 1, or 2 for rings). Then any loadout using B can swap it for one of them without
    losing anything. For rings, a single better Unique ring is not enough: the best pair may be that ring plus B
@@ -80,6 +81,7 @@ function pruneDominated(arr, dims, slotsOfType) {
     for (let j = 0; j < arr.length && copies < slotsOfType; j++) {
       if (i === j) continue;
       const A = arr[j];
+      if (!A.blocks.every(t => B.blocks.includes(t))) continue;
       let ge = true,
         gt = false;
       for (const d of dims) {
@@ -96,23 +98,26 @@ function pruneDominated(arr, dims, slotsOfType) {
   return keep;
 }
 
-/* objective = {target, tiebreak}. Returns {slotList, posList, dims}: slotList is the slot sequence to fill (active slots that have items,
-   'ring' twice); posList[i] is the candidate list for slotList[i], best score first. */
+/* objective = {target, tiebreak}. Returns {slotList, posList, dims}: slotList is the slot sequence to fill (slots that
+   have items, 'ring' twice); posList[i] is the candidate list for slotList[i], best score first. Each candidate lists
+   the slot types it leaves empty (`blocks`); a slot some candidate can block comes after every other slot, so the
+   search knows whether it is blocked when it gets there. The pool holds only gear the job can wear (it is emptied on a
+   job change), so an off-hand in it means the job can use one. */
 export function buildCandidates(job, pool, sync, { target, tiebreak = [] }, { prune = true } = {}) {
   const dims = vectorDims(job);
-  const present = {};
-  SLOT_TYPES.forEach(t => {
-    present[t] = slotActive(job, t) ? pool.filter(i => i.type === t) : [];
-  });
-  const slotList = [];
-  SLOT_TYPES.forEach(t => {
-    if (!present[t].length) return;
-    slotList.push(t);
-    if (t === 'ring') slotList.push('ring');
-  });
   const all = {};
   SLOT_TYPES.forEach(t => {
-    all[t] = present[t].map(it => ({ it, v: itemVector(job, it, sync), copies: it.copies || 1 }));
+    all[t] = pool
+      .filter(i => i.type === t)
+      .map(it => ({ it, v: itemVector(job, it, sync), copies: it.copies || 1, blocks: slotInfo(job, it).blocks }));
+  });
+  const blockable = new Set(SLOT_TYPES.flatMap(t => all[t].flatMap(a => a.blocks)));
+  const order = [...SLOT_TYPES.filter(t => !blockable.has(t)), ...SLOT_TYPES.filter(t => blockable.has(t))];
+  const slotList = [];
+  order.forEach(t => {
+    if (!all[t].length) return;
+    slotList.push(t);
+    if (t === 'ring') slotList.push('ring');
   });
   const score = makeScorer(
     target,

@@ -82,21 +82,21 @@ class GenItemsTest(unittest.TestCase):
             self.assertEqual(len(r), 9, r)
             name, slot, ilvl, lvl, mask, st, unique, hq, sources = r
             self.assertIsInstance(name, str)
-            self.assertIn(slot, range(12))
+            self.assertIn(slot, range(13))
             self.assertEqual(len(st.split(',')), 12)
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
-            self.assertIn(sources, range(8))
+            self.assertIn(sources, range(32))
 
     def test_sources(self):
-        """Each SpecialShop and Recipe rule in the fixtures (scripts/data/gear_sources.py). Bits: 1 crafted, 2 tomestone,
-        4 ultimate."""
+        """Each SpecialShop and Recipe rule in the fixtures (scripts/data/gear_sources.py), plus the bits that come from
+        the category (gear_categories.py). Bits: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate."""
         expect = {
             'Test Sallet HQ': 1,  # a recipe result
-            'Test Hood of Healing': 2,  # type 4, code 1 (Poetics)
+            'Test Hood of Healing': 2 | 8,  # type 4, code 1 (Poetics); code 20 with a dye slot: Savage
             'Test Alpha Mail': 2,  # type 4, code 2 (the second current tomestone)
-            'Test Sword': 4,  # Dreadwyrm Totem
-            'Test Gloves': 0,  # type 8: gil
+            'Test Sword': 16,  # Dreadwyrm Totem
+            'Test Gloves': 4,  # type 8: gil; code 10 armor: field_op, in the relic group
             'Test Tonban': 0,  # type 16, code 2: a crafter scrip
             'Test Shoes': 2,  # type 16, code 1 (Poetics)
             'Test Earring': 2,  # type 2, code 1 (Poetics) plus a piece traded in
@@ -108,7 +108,7 @@ class GenItemsTest(unittest.TestCase):
             'Test Zeta Helm': 2,  # Heliometry by item id, and Poetics plus Test Alpha Helm
             'Test Alpha Helm': 0,  # the base piece an exchange turns into Test Zeta Helm: not flagged
             'Test Tank Helm': 2,  # made by trading in Test Zeta Helm (tomestone gear) plus a non-gear item
-            'Test Greataxe': 0,  # in no shop and no recipe
+            'Test Greataxe': 4,  # in no shop and no recipe; code 10 weapon: relic
         }
         for name, bits in expect.items():
             with self.subTest(name=name):
@@ -137,10 +137,14 @@ class GenItemsTest(unittest.TestCase):
         for name in ('Test Belt', 'Test Soul Crystal', 'Test Missing Slot Category', 'Test Non-gear'):
             self.assertNotIn(name, self.by_name)
 
-    def test_multi_slot_gear_excluded(self):
-        # Category 15: Body 1, Head -1 (a cloak that also covers the head). Left out rather than modelled as a body piece.
-        self.assertNotIn('Test Cloak', self.by_name)
-        self.assertIn('Test Robe', self.by_name)  # same item on a plain body category is kept
+    def test_multi_slot_gear(self):
+        # Category 15: Body 1, Head -1 (a cloak that also covers the head) has its own slot code, 12
+        self.assertEqual(self.row('Test Cloak')[1], 12)
+        self.assertEqual(self.row('Test Robe')[1], 4)  # a plain body piece
+        # Category 18: Legs 1, Feet -1 has no slot code: left out and listed
+        self.assertNotIn('Test Flanchard', self.by_name)
+        _, multi_slot = gen_items.select(FIXTURES)
+        self.assertEqual(multi_slot, ['Test Flanchard (item level 130)'])
 
     def test_stat_mapping(self):
         self.assertEqual(self.row('Test Hood of Healing')[5], HEAL)
@@ -218,6 +222,7 @@ class GenItemsTest(unittest.TestCase):
             'Test Bracelet',
             'Test Ring Plain',
             'Test Ring Unique',
+            'Test Cloak',
             'Test Sallet HQ',
             'Test Sallet NoHQ',
             'Test Min Ilvl',
@@ -394,7 +399,12 @@ def rename_column(path, old, new):
 
 
 class GearCategoriesTest(unittest.TestCase):
-    """gear_categories.py on a copy of the fixtures with SubcategorySort codes, dye slots and a raid-book shop set."""
+    """gear_categories.py on a copy of the fixtures plus a raid-book shop set. The fixture Item.csv carries the codes
+    (SubcategorySort; the role prefix in front of the last three digits is ignored) and dye slots:
+    Test Greataxe 8010 (relic weapon), Test Sword 2060 (bought with a totem -> ultimate), Test Shield 2060 (trial),
+    Test Hood of Healing 47020 with a dye slot (Savage seed), Test Robe 47020 (raid, bought with a Normal token),
+    Test Gloves 8010 (not a weapon -> field_op), Test Earring 49020 (no dye, bought with the Savage book -> savage),
+    Test Sallet HQ 8320 (a recipe result -> crafted); every other piece 8270 (dungeon)."""
 
     WEAPON_SLOTS = {0, 1, 2}
 
@@ -403,23 +413,9 @@ class GearCategoriesTest(unittest.TestCase):
         self.dir = Path(self.tmp.name)
         for f in FIXTURES.glob('*.csv'):
             shutil.copy(f, self.dir / f.name)
-        # code (SubcategorySort; the role prefix in front of the last three digits is ignored) and dye slots per item
-        codes = {
-            '1001': ('8010', '0'),  # Test Greataxe: relic weapon
-            '1002': ('2060', '0'),  # Test Sword: bought with a totem (fixture shop) -> ultimate
-            '1003': ('2060', '0'),  # Test Shield: trial
-            '1004': ('47020', '1'),  # Test Hood of Healing: raid gear with a dye slot -> Savage seed
-            '1005': ('47020', '0'),  # Test Robe: raid gear without dye, bought with a Normal token -> raid
-            '1006': ('8010', '0'),  # Test Gloves: code 10, not a weapon -> field_op
-            '1009': ('49020', '0'),  # Test Earring: no dye, but bought with the Savage book -> savage
-            '1020': ('8320', '0'),  # Test Sallet HQ: a recipe result -> crafted
-        }
 
         def items(rows):
             h = rows[0]
-            sc, dye = h.index('SubcategorySort'), h.index('DyeCount')
-            for r in rows[1:]:
-                r[sc], r[dye] = codes.get(r[0], ('8270', '0'))  # everything else: dungeon
             book, token = list(rows[1]), list(rows[1])  # copies of the empty row 0, as non-gear items
             book[0], book[h.index('Name')] = '1098', 'Test Savage Book'
             token[0], token[h.index('Name')] = '1099', 'Test Normal Token'
@@ -457,6 +453,40 @@ class GearCategoriesTest(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(cats[name], cat)
         self.assertEqual(gear_categories.check(kept, ids), [])
+
+    def test_source_masks(self):
+        # category groups (item-format.json `sources`) on top of the shop and recipe flags; field_op is in the relic group
+        cats, kept, ids = self.categories()
+        names = {r['#']: r['Name'] for r, _ in kept}
+        masks = {names[i]: m for i, m in gear_categories.source_masks(kept, ids).items()}
+        expect = {
+            'Test Sallet HQ': 1,  # crafted
+            'Test Sword': 16,  # ultimate
+            'Test Earring': 2 | 8,  # tomestone flag, and savage (bought with the Savage book)
+            'Test Robe': 2,  # tomestone flag; Normal raid is in no group
+            'Test Greataxe': 4,  # relic
+            'Test Gloves': 4,  # field_op
+            'Test Shield': 2,  # tomestone flag; trial is in no group
+            'Test Tank Helm': 2,  # tomestone flag; dungeon is in no group
+        }
+        for name, mask in expect.items():
+            with self.subTest(name=name):
+                self.assertEqual(masks[name], mask)
+
+    def test_savage_group_takes_only_the_current_expansion(self):
+        # Savage is `currentOnly`: a Savage piece below the highest equip level in the data (an older expansion) is
+        # still categorized savage but left out of the group
+        def fn(rows):
+            lv = rows[0].index('LevelEquip')
+            next(r for r in rows if r[0] == '1009')[lv] = '40'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        cats, kept, ids = self.categories()
+        names = {r['#']: r['Name'] for r, _ in kept}
+        masks = {names[i]: m for i, m in gear_categories.source_masks(kept, ids).items()}
+        self.assertEqual(cats['Test Earring'], 'savage')
+        self.assertEqual(masks['Test Earring'], 2)  # tomestone flag only
+        self.assertEqual(masks['Test Hood of Healing'], 2 | 8)  # equip level 50, the highest: current
 
     def test_shared_shop_is_caught(self):
         # a Normal token taken by the Savage shop makes the Normal robe "savage"; the dye check reports it

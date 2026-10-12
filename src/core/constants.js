@@ -25,12 +25,13 @@ export const SLOT_LABEL = Object.freeze({
 
 /* Slot share of the ItemLevel budget, in thousandths: `percent` per slot in item-format.json, which
    gen_item_level.py checks against the BaseParam sheet. The weapon value depends on the weapon mode
-   (WEAPON_PCT); BASE_SLOT_PCT.weapon is the two-handed value. */
+   (WEAPON_PCT); BASE_SLOT_PCT.weapon is the two-handed value. Multi-slot codes (`blocks`, e.g. a cloak) have their own
+   share and do not set the type's. */
 const weaponSlotPct = twoHanded => ITEM_FORMAT.slots.find(s => s.type === 'weapon' && s.twoHanded === twoHanded).percent;
 export const WEAPON_PCT = Object.freeze({ '2h': weaponSlotPct(true), '1h+oh': weaponSlotPct(false) });
 export const BASE_SLOT_PCT = Object.freeze({
   weapon: WEAPON_PCT['2h'],
-  ...Object.fromEntries(ITEM_FORMAT.slots.filter(s => s.type !== 'weapon').map(s => [s.type, s.percent])),
+  ...Object.fromEntries(ITEM_FORMAT.slots.filter(s => s.type !== 'weapon' && !s.blocks).map(s => [s.type, s.percent])),
 });
 
 /* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/math.md section 4; evidence in docs/validation.md). */
@@ -115,8 +116,10 @@ export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 export const RAW_SUBSTAT_IDX = Object.freeze(ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX));
-/* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon */
+/* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon, 12 = body that also covers the head */
 export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
-/* Gear sources the game files identify (crafted, tomestone, ultimate): bit i of a row's source mask = SOURCES[i]. */
+/* slot code -> the slot types a piece in it leaves empty: the off-hand for a two-handed weapon, the head for a cloak */
+export const DB_SLOT_BLOCKS = Object.freeze(ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])));
+/* Gear groups the optimizer can leave out (crafted, tomestone, ultimate, savage, relic): bit i of a row's source mask = SOURCES[i]. */
 export const SOURCES = Object.freeze(ITEM_FORMAT.sources.map((s, i) => Object.freeze({ key: s.key, label: s.label, bit: 1 << i })));

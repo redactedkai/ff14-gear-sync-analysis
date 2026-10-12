@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `npm run regen` afterwards. `sources`: bit i of an item row's source mask is sources[i] (scripts/data/gear_sources.py). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv.",
+  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `npm run regen` afterwards. `sources`: bit i of an item row's source mask is sources[i], the groups the optimizer can leave out, in the order the page shows them: set when the piece's category (scripts/data/gear_categories.py) is in `categories`, or when gear_sources.py flags it (crafted, tomestone, ultimate). `currentOnly`: only pieces of the current expansion, whose equip level is the highest in the database. A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; a `twoHanded` weapon blocks the off-hand). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv.",
   "jobs": [
     "PLD",
     "WAR",
@@ -64,11 +64,21 @@
     { "code": 8, "type": "ear", "equipSlotColumn": "Ears", "percent": 67, "baseParamColumn": "EarringPercent" },
     { "code": 9, "type": "neck", "equipSlotColumn": "Neck", "percent": 67, "baseParamColumn": "NecklacePercent" },
     { "code": 10, "type": "wrist", "equipSlotColumn": "Wrists", "percent": 67, "baseParamColumn": "BraceletPercent" },
-    { "code": 11, "type": "ring", "equipSlotColumn": "FingerL", "percent": 67, "baseParamColumn": "RingPercent" }
+    { "code": 11, "type": "ring", "equipSlotColumn": "FingerL", "percent": 67, "baseParamColumn": "RingPercent" },
+    {
+      "code": 12,
+      "type": "body",
+      "equipSlotColumn": "Body",
+      "blocks": ["head"],
+      "percent": 220,
+      "baseParamColumn": "ChestHeadPercent"
+    }
   ],
   "sources": [
-    { "key": "crafted", "label": "Crafted" },
-    { "key": "tomestone", "label": "Tomestone" },
-    { "key": "ultimate", "label": "Ultimate" }
+    { "key": "crafted", "label": "Crafted", "categories": ["crafted"] },
+    { "key": "tomestone", "label": "Tomestone", "categories": ["tomestone"] },
+    { "key": "relic", "label": "Relic", "categories": ["relic", "field_op"] },
+    { "key": "savage", "label": "Current Savage", "categories": ["savage"], "currentOnly": true },
+    { "key": "ultimate", "label": "Ultimate", "categories": ["ultimate"] }
   ]
 }

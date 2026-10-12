@@ -2,7 +2,7 @@
    `browse.show` picks the list: 'all' = database rows matching the filters, 'pool' = pool items matching them.
    Pure view builder: no Alpine import, so Node can load and test it. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { browseItems, dbStats, poolKey } from '../../core/items.js';
+import { browseItems, dbStats, poolKey, slotInfo, slotLabel } from '../../core/items.js';
 import { syncStats } from '../../core/formulas.js';
 import { effStats } from '../../core/optimizer/index.js';
 import { statCell, fmtInt } from '../helpers.js';
@@ -50,13 +50,21 @@ export function gearView(app) {
       lvl: '',
       hq: !!item.hq,
       copies: item.copies || 1,
+      blocks: slotInfo(job, item).blocks,
       raw: item.stats,
       eff: effStats(job, item, sync),
       row: null,
       item,
     }));
   } else {
-    const rows = browseItems(job, { q: b.q, type: b.type, ilvlMin: +b.min || 0, ilvlMax: +b.max || 0, lvlMax: +b.lvl || 0 });
+    const rows = browseItems(job, {
+      q: b.q,
+      type: b.type,
+      expOff: b.expOff,
+      ilvlMin: +b.min || 0,
+      ilvlMax: +b.max || 0,
+      lvlMax: +b.lvl || 0,
+    });
     all = rows.map(r => {
       const raw = dbStats(job, r.st);
       return {
@@ -66,8 +74,9 @@ export function gearView(app) {
         lvl: r.lvl,
         hq: r.hq,
         copies: r.type === 'ring' && !r.unique ? 2 : 1, // as poolItemFromRow sets it
+        blocks: r.blocks,
         raw,
-        eff: on ? syncStats(job, raw, r.type, app.cap, r.ilvl) : raw,
+        eff: on ? syncStats(job, raw, r.type, app.cap, r.ilvl, r.pct) : raw,
         row: r,
         item: inPool.get(poolKey(r)) ?? null,
       };
@@ -78,7 +87,7 @@ export function gearView(app) {
   const shown = all.slice(0, limit).map(x => ({
     ...x,
     key: poolKey(x),
-    slot: SLOT_LABEL[x.type],
+    slot: slotLabel(x.type, x.blocks),
     cells: job.stats.map(s => statCell(x.raw[s], x.eff[s])),
   }));
   const n = all.length;

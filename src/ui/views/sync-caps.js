@@ -1,4 +1,4 @@
-/* Sync caps: the per-slot ceiling at the current cap, and what a high item level piece keeps after syncing. */
+/* Sync limits: the per-slot ceiling at the current cap, and what a high item level piece keeps after syncing. */
 /* Pure view builder: no Alpine import, so Node can load and test it. */
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, pieceValue } from '../../core/formulas.js';

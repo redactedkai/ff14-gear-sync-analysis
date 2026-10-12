@@ -69,10 +69,6 @@ export function makeJobContext(jobId) {
   return ctx;
 }
 
-export function slotActive(job, type) {
-  return type === 'offhand' ? job.weaponMode === '1h+oh' : true;
-}
-
 /* the ItemLevel budget column for a neutral stat key */
 export function statColumn(job, stat) {
   if (stat === 'main') return IL[job.profile.main];

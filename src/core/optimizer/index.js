@@ -11,7 +11,8 @@ export { effStats } from './candidates.js';
  * @param sync  {cap, sync}
  * @param opts  {target='spd', tiebreak=[], spdMin, spdMax, nodeLimit=1.5e6}
  * @returns {ok:false, truncated, nodes} when nothing is feasible, otherwise
- *          {ok:true, picks:[{type, item, eff}], totals, truncated, nodes}
+ *          {ok:true, picks:[{type, item, eff, blockedBy}], totals, truncated, nodes}; an empty pick has item null, and
+ *          blockedBy is the chosen item that leaves its slot empty (a cloak for the head), if any
  */
 export function optimize(job, pool, sync, opts) {
   opts = opts || {};
@@ -34,7 +35,7 @@ export function optimize(job, pool, sync, opts) {
   });
   best.forEach((c, i) => {
     if (!c?.a) {
-      picks.push({ type: slotList[i], item: null });
+      picks.push({ type: slotList[i], item: null, blockedBy: c?.blockedBy?.it ?? null });
       return;
     }
     picks.push({ type: slotList[i], item: c.a.it, eff: c.a.v });

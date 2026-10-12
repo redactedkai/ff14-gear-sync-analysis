@@ -74,8 +74,8 @@
 <!-- THE MATH -->
 <section class="tab" id="tab-math" role="tabpanel" hidden :hidden="$store.app.tab !== 'math'">
 <nav class="subtabs" aria-label="Math views">
-  <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece lab</button>
-  <button data-sub="sync" type="button" :aria-pressed="String($store.app.mathTab === 'sync')" @click="$store.app.showSub('sync')">Sync caps</button>
+  <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece stats</button>
+  <button data-sub="sync" type="button" :aria-pressed="String($store.app.mathTab === 'sync')" @click="$store.app.showSub('sync')">Sync limits</button>
 </nav>
 
 <!-- PIECE LAB -->
@@ -124,7 +124,7 @@
     </div>
     <div class="note small" id="p-why">
       <b>What are 100%, 70% and 20%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second about <b>70%</b> of that, and a small third about <b>20%</b>.
-      This is a pattern measured on real gear (it matches 97–99% of pieces), not a rule from the game files. The Gear pool and Gear optimizer use each item’s real stats instead.
+      This is a pattern measured on real gear (it matches 99.8% of pieces), not a rule from the game files. The Gear pool and Gear optimizer use each item’s real stats instead.
     </div>
   </div>
   <div class="panel">
@@ -169,10 +169,10 @@
         <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Gear type</th><th class="n">Wiki</th><th class="n">Formula</th><th></th></tr></thead><tbody>
           <template x-for="c in view.wiki" :key="c.label"><tr><td x-text="c.label"></td><td class="n" x-text="c.published"></td><td class="n" x-text="c.computed"></td><td :class="c.match ? 'ok' : 'bad'" x-text="c.match ? 'match' : 'differs'"></td></tr></template>
         </tbody></table></div>
-        <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are mostly shields and weapons whose substats don’t follow the 70% rule, and some crafted pieces below item level 110 that were tuned by hand.</p>
+        <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), level-50 crafted HQ pieces whose Direct Hit gets no HQ bonus, two weapon and shield pairs, and two item level 595 legs; their causes are not known.</p>
       </div></template>
     </div></details>
-    <div class="note small">Model assumptions: every stat on a synced-down piece is clamped to the value a 100%-share stat on a same-slot piece at the cap item level would have; stats on pieces at or below the cap are untouched; materia is ignored on synced-down gear. The main-stat and Vitality clamp is inferred and not confirmed in-game. Real pieces have fixed substat pairs; the formula reproduces about 97–99% of real pieces exactly.</div>
+    <div class="note small">Model assumptions: every stat on a synced-down piece is clamped to the value a 100%-share stat on a same-slot piece at the cap item level would have; stats on pieces at or below the cap are untouched; materia is ignored on synced-down gear. The main-stat and Vitality clamp is inferred and not confirmed in-game. Real pieces have fixed substat pairs; the formula reproduces 99.8% of real pieces exactly.</div>
   </div>
 </section>
 
@@ -193,6 +193,15 @@
       <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
         <template x-for="o in typeOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.type"></option></template>
       </select></label>
+      <div class="f multi" x-show="!view || !view.showPool" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+        <span id="b-exp-label">Expansion</span>
+        <button type="button" class="multi-btn" id="b-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="b-exp-label b-exp" @click="open = !open" x-text="expSummary"></button>
+        <div class="multi-menu" id="b-exp-menu" role="group" aria-labelledby="b-exp-label" x-show="open" x-cloak>
+          <template x-for="e in expansions" :key="e[0]">
+            <label class="multi-opt"><input type="checkbox" :data-exp="e[0]" :checked="expShown(e[0])" @change="setExpShown(e[0], $event.target.checked)"><span x-text="e[1]"></span></label>
+          </template>
+        </div>
+      </div>
       <label class="f">Item level from<input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.browse.min"></label>
       <label class="f">Item level to<input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.browse.max"></label>
       <label class="f" x-show="!view || !view.showPool">Equip level up to<input type="number" id="b-lvl" min="1" max="100" inputmode="numeric" x-model="$store.app.browse.lvl"></label>
@@ -246,14 +255,14 @@
         </select></label>
       </div>
       <div class="row exclude" id="o-exclude">
-        <span class="dim small">Leave out</span>
+        <span class="dim small">Include</span>
         <template x-for="s in sources" :key="s.key">
-          <label class="check"><input type="checkbox" :data-source="s.key" :checked="excluded(s.key)" @change="setExcluded(s.key, $event.target.checked)"><span x-text="s.label"></span></label>
+          <label class="toggle"><input type="checkbox" role="switch" class="switch" :data-source="s.key" :checked="!excluded(s.key)" @change="setExcluded(s.key, !$event.target.checked)"><span x-text="s.label"></span></label>
         </template>
       </div>
     </div>
     <div id="o-out">
-      <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">Every piece in the pool comes from a source you left out.</div></div></template>
+      <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">Every piece in the pool is in a group you switched off.</div></div></template>
       <template x-if="view && view.kind === 'empty'"><div class="panel"><div class="empty">Add gear to the pool first.<div class="row" style="justify-content:center;margin-top:10px"><button class="primary" data-act="browse" type="button" @click="$store.app.showTab('pool')">Browse gear</button></div></div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this pool.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Narrow the pool and try again.</div></div></template>
@@ -269,7 +278,7 @@
             <template x-for="(r, i) in view.rows" :key="i">
               <tr>
                 <td x-text="r.label"></td>
-                <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2">empty (no copy left)</td></template>
+                <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.blockedBy ? 'covered by ' + r.blockedBy : 'empty (no copy left)'"></td></template>
                 <template x-if="r.item"><td x-text="r.item.name"></td></template>
                 <template x-if="r.item"><td class="n" x-text="r.item.ilvl"></td></template>
                 <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value"></span><span class="dim" x-show="!c.value">0</span></td></template>

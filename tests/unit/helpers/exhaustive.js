@@ -1,6 +1,7 @@
 /* Shared test helpers: an exhaustive reference for the optimizer, and real-gear pools from the item database.
    The reference tries every legal loadout, so it is independent of the optimizer's pruning and scoring. */
-import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
+import { SLOT_TYPES } from '../../../src/core/constants.js';
+import { browseItems, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
 import { effStats } from '../../../src/core/optimizer/index.js';
 
 /* Pool items for every database row this job can equip that matches the browse filter
@@ -11,9 +12,15 @@ export function gamePool(job, filter, keep = () => true) {
     .map(r => poolItemFromRow(job, r));
 }
 
-/* How many loadouts exhaustive() will try for this pool (one item per slot that has items, ring pairs). */
+/* How many loadouts exhaustive() will try for this pool (one item per slot that has items, ring pairs, plus "empty"
+   for a slot some item can block). */
 export function loadoutCount(job, pool) {
-  return job.activeSlotTypes.reduce((n, t) => n * Math.max(1, choicesFor(pool, t).length), 1);
+  const blockable = blockableTypes(job, pool);
+  return SLOT_TYPES.reduce((n, t) => n * Math.max(1, choicesFor(pool, t).length + (blockable.has(t) ? 1 : 0)), 1);
+}
+
+function blockableTypes(job, pool) {
+  return new Set(pool.flatMap(i => slotInfo(job, i).blocks));
 }
 
 function choicesFor(pool, t) {
@@ -39,15 +46,19 @@ function choicesFor(pool, t) {
    - a slot is never left empty to satisfy a maximum (or any other constraint): every slot that has items gets one.
    Changing either rule means changing the engine, this oracle and those policy tests together.
 
+   Blocked slots are checked on the whole loadout, independently of the engine's slot order: a slot is empty exactly
+   when a chosen piece blocks it (a two-handed weapon blocks the off-hand, a cloak the head).
+
    Effective (synced) stats come from the optimizer's own effStats, so this reference does not check the sync
    clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/testing.md). */
 export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
   const stats = job.stats;
-  const slots = job.activeSlotTypes.filter(t => pool.some(i => i.type === t));
-  /* each choice (an item, or a ring pair) as its effective stat totals in job.stats order */
-  const choices = slots.map(t =>
-    choicesFor(pool, t).map(items => {
+  const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
+  const blockable = blockableTypes(job, pool);
+  /* each choice (an item, a ring pair, or empty) as its effective stat totals in job.stats order and what it blocks */
+  const choices = slots.map(t => {
+    const list = choicesFor(pool, t).map(items => {
       const v = stats.map(() => 0);
       items.forEach(i => {
         const e = effStats(job, i, sync);
@@ -55,13 +66,18 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
           v[k] += e[s] || 0;
         });
       });
-      return v;
-    }),
-  );
+      return { v, blocks: items.flatMap(i => slotInfo(job, i).blocks), empty: false };
+    });
+    if (blockable.has(t)) list.push({ v: stats.map(() => 0), blocks: [], empty: true });
+    return list;
+  });
   const tot = stats.map(() => 0);
+  const picked = [];
   let best = null;
   const rec = k => {
     if (k === choices.length) {
+      const blocked = new Set(picked.flatMap(c => c.blocks));
+      if (picked.some((c, i) => c.empty !== blocked.has(slots[i]))) return;
       const get = s => tot[stats.indexOf(s)] || 0;
       if (spdMin != null && get('spd') < spdMin) return;
       if (spdMax != null && get('spd') > spdMax) return;
@@ -69,12 +85,14 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
       if (!best || lexGreater(v, best)) best = v;
       return;
     }
-    for (const v of choices[k]) {
-      v.forEach((x, j) => {
+    for (const c of choices[k]) {
+      c.v.forEach((x, j) => {
         tot[j] += x;
       });
+      picked.push(c);
       rec(k + 1);
-      v.forEach((x, j) => {
+      picked.pop();
+      c.v.forEach((x, j) => {
         tot[j] -= x;
       });
     }

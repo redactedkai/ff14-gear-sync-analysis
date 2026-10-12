@@ -1,7 +1,7 @@
 /* Gear optimizer tab views: the best loadout for the chosen stat, and the per-stat ceiling of the pool.
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { withoutSources } from '../../core/items.js';
+import { withoutSources, slotInfo, slotLabel } from '../../core/items.js';
 import { optimize } from '../../core/optimizer/index.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
 import { syncActive } from '../state.js';
@@ -57,7 +57,8 @@ function buildOptimizerView(app) {
       ringN++;
       label = 'Ring ' + ringN;
     }
-    if (!p.item) return { label, item: null };
+    if (!p.item) return { label, item: null, blockedBy: p.blockedBy?.name ?? '' };
+    if (p.type !== 'ring') label = slotLabel(p.type, slotInfo(job, p.item).blocks);
     return {
       label,
       item: p.item,

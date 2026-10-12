@@ -22,8 +22,8 @@ import argparse
 from collections import Counter
 from pathlib import Path
 
-from gear_sources import ULTIMATE_TOTEMS, listing_count
-from item_format import SchemaError, read_csv
+from gear_sources import ULTIMATE_TOTEMS, bits, listing_count
+from item_format import SchemaError, load_format, read_csv
 
 # SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/subcategory-sort-codes.md).
 CATEGORY_BY_CODE = {
@@ -72,6 +72,9 @@ ITEM_OVERRIDES = {
     44410: ("Neophyte's Ring", 'quest'),  # code 370 (Occult Crescent), but the Hall of the Novice final reward
 }
 CATEGORIES = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op'})
+# Gear that can no longer be obtained, left out of the database: the Heavensward Diadem gear (code 250; checked on the
+# Console Games Wiki, docs/subcategory-sort-codes.md).
+RETIRED = frozenset({'diadem'})
 CODE_DIVISOR = 1000
 # a piece's SubcategorySort below 1000 has no job or role prefix; the code is still the last three digits
 
@@ -133,6 +136,7 @@ def categorize(csv_dir, kept, weapon_slots):
     gear = {r['#'] for r in items if r['EquipSlotCategory'] not in ('', '0')}
     savage, _ = savage_items(csv_dir, items, gear)
     overrides = override_items(csv_dir, items)
+    ultimate = bits()['ultimate']
     unknown = Counter()
     out = {}
     for r, row in kept:
@@ -145,7 +149,7 @@ def categorize(csv_dir, kept, weapon_slots):
             cat = 'field_op'
         elif code == 20 and r['#'] in savage:
             cat = 'savage'
-        elif code in (60, 61) and row[8] & 4:  # bought with an ultimate totem
+        elif code in (60, 61) and row[8] & ultimate:  # bought with an ultimate totem
             cat = 'ultimate'
         out[r['#']] = overrides.get(r['#'], cat)
     if unknown:
@@ -161,16 +165,34 @@ def check(kept, cats):
     """Cross-checks between the categories and the shop/recipe flags. Returns a list of problems (empty when fine).
     A Savage armor piece or weapon without a dye slot means a shop that sells Savage gear also took a currency used for
     other gear (for example a Normal-raid token), which the shop-level currency rule would wrongly treat as Savage."""
+    b = bits()
     problems = []
     for r, row in kept:
         cat, src = cats[r['#']], row[8]
         if cat == 'savage' and row[1] not in ACCESSORY_SLOTS and r['DyeCount'] in ('', '0'):
             problems.append(f'{r["Name"]}: categorized savage but has no dye slot (a currency shared with other gear?)')
-        if src & 4 and cat != 'ultimate':
+        if src & b['ultimate'] and cat != 'ultimate':
             problems.append(f'{r["Name"]}: bought with an ultimate totem but categorized {cat}')
-        if src & 1 and cat != 'crafted':
+        if src & b['crafted'] and cat != 'crafted':
             problems.append(f'{r["Name"]}: a recipe result but categorized {cat}')
     return problems
+
+
+def source_masks(kept, cats):
+    """{Item.csv id: source mask} over `sources` of item-format.json (the groups the optimizer can leave out): a group's
+    bit is set when the piece's category is one of the group's categories, or when gear_sources.py already flagged it
+    (the flags are kept: a tomestone purchase is tomestone gear whatever its code, such as Heavensward artifact armor
+    bought with Esoterics). A `currentOnly` group takes only current-expansion pieces: those whose equip level is the
+    highest of all kept gear (the level cap), so it moves on by itself when an expansion raises the cap."""
+    group, current = {}, {}
+    for i, s in enumerate(load_format()['sources']):
+        for c in s['categories']:
+            if c not in CATEGORIES:
+                raise SchemaError(f'item-format.json: source {s["key"]!r} names unknown category {c!r}')
+            target = current if s.get('currentOnly') else group
+            target[c] = target.get(c, 0) | 1 << i
+    cap = max(row[3] for _, row in kept) if kept else 0
+    return {r['#']: row[8] | group.get(cats[r['#']], 0) | (current.get(cats[r['#']], 0) if row[3] == cap else 0) for r, row in kept}
 
 
 def main(csv_dir):

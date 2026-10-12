@@ -29,7 +29,7 @@ The game's `ItemLevel` sheet has one row per item level (rows 0 to 920). Each ro
 
 - The four main-stat columns (Strength, Dexterity, Intelligence, Mind) are identical in every row.
 - Determination, Direct Hit, Skill Speed and Spell Speed are identical to Critical Hit in every row.
-- Piety and Tenacity match Critical Hit except in 6 rows (540, 565, 570, 590, 595, 596), where they are 1 to 8 higher. The Math tab's Sync caps table adds a Piety or Tenacity cap column only when the cap item level is one of these rows and the cap differs in some slot.
+- Piety and Tenacity match Critical Hit except in 6 rows (540, 565, 570, 590, 595, 596), where they are 1 to 8 higher. The Sync limits sub-tab's table adds a Piety or Tenacity cap column only when the cap item level is one of these rows and the cap differs in some slot.
 - Vitality has its own column.
 
 So in practice there are three curves: main stat, substat and Vitality. We write them as $\text{budget}_s(i)$ for stat $s$ at item level $i$.
@@ -63,6 +63,8 @@ A slot does not get the whole budget. It gets a fraction of it, called its **slo
 
 Paladin is the only combat job with a one-handed weapon plus a shield (100 + 40). Every other job uses a two-handed weapon (140).
 
+**The off-hand is the two-handed value minus the one-handed value.** Real shields do not follow the 40 ‰ share directly: each stat on an off-hand equals the two-handed weapon's value minus the one-handed weapon's value at the same item level and substat share, each computed with the formula below (140 − 100 = 40, but rounded as two weapons rather than once at 40). This reproduces 224 of 226 real off-hands exactly, against 195 for the 40 ‰ share (for example Vanguard Shield, item level 672: Critical Hit 63 = 218 − 155, where 40 ‰ gives 62; the item level 120 shields' Tenacity 13 = 47 − 34, where 40 ‰ gives 14). **Inferred**: it fits the data, but the game files do not say how shields are built. Sync uses it too, so a shield's caps are the two-handed cap minus the one-handed cap (section 5). xivgear computes shield caps the same way: its source says to ignore the off-hand percentage and take the two-handed cap minus the one-handed cap ([datamanager_new.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts#L118-L240), `substatCap`), so the rule is shared with the most used community gear planner, though still not confirmed in game.
+
 ## 4. The stats on a piece
 
 ![Flow diagram of the seven steps from item level to synced stat, with Spell Speed and Piety values from an item level 130 healer head piece. Spell Speed goes 363, 30.855, 31, then is clamped from 31 to 29 at cap 123. Piety goes 363, 30.855, 31, times 0.7 is 21.7, rounds to 22, and stays 22.](diagrams/math-pipeline.svg)
@@ -91,9 +93,11 @@ $$
 
 For Strength and Dexterity jobs the factor is 1.
 
+**Verified** in the game files: `BaseParam` has a per-stat percentage table (`MeldParam`), and each item picks a row of it with `Item.BaseParamModifier`. Every Intelligence and Mind piece at item level 100 or above (5,939) points at a row whose Vitality entry is 90 and whose own main stat entry is 100; every Strength and Dexterity piece points at a row with Vitality 100, except 13 Strength pieces whose row is 90 for both. The order of the rounding (slot share first, then 0.9) is read off real items: applying the 90% first, as xivgear does for its sync caps, is right on only 18 Intelligence/Mind pieces where it differs and wrong on 1,199.
+
 **Rounding is half up**: $\operatorname{round}(x) = \lfloor x + 0.5 \rfloor$, so 31.5 becomes 32. The code adds a tiny epsilon so that floating-point noise such as 22.4999999 still rounds as 22.5 would.
 
-**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,116 of the 16,584 checked pieces exactly (79.1%). Rounding twice reproduces 16,367 (98.7%). Both figures come from running the model over the item database.
+**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,262 of the 16,586 checked pieces exactly (80.0%). Rounding twice reproduces 16,550 (99.8%). Both figures come from running the model over the item database.
 
 Example where it matters: Antiquated Atlas, a level 60 healer two-handed weapon at item level 200, has Piety 57. The substat budget at 200 is 587:
 
@@ -113,9 +117,11 @@ The game stores only the final numbers on each item. It does not store how a slo
 | Second | 70% |
 | Third (rare; mostly Direct Hit on healer gear) | 20% |
 
-**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stat and Vitality at full share, substats by rank) reproduces 98.7% of them exactly (16,367 of 16,584), and 97.1% to 99.6% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+Two refinements, both read off real pieces: substats of **equal size share the higher rank** (the relic weapon steps Hyperconductive, Manderville, Amazing Manderville and Phantom carry two substats at 100%; 141 pieces), and **every main stat on a piece is at full share** (ten item level 110 pieces carry Strength and Dexterity at the same value).
 
-Where the shares matter: the Piece lab uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,550 of 16,586), and 98.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+
+Where the shares matter: the Piece stats uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 
 ### Worked example: a healer head piece at item level 130
 
@@ -166,7 +172,7 @@ Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375.
 | Earring, necklace, bracelet, ring | 23 | 24 | 25 | 23 |
 | Two-handed weapon | 48 | 50 | 53 | 48 |
 | One-handed weapon (Paladin) | 35 | 36 | 38 | – |
-| Shield (Paladin) | 14 | 14 | 15 | – |
+| Shield (Paladin) | 13 | 14 | 15 | – |
 
 On the worked example piece, cap 123 changes Mind from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety (22) and Direct Hit (6) stay as they are.
 
@@ -180,9 +186,9 @@ The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The 
 
 ### What is assumed
 
-- **Main stat and Vitality** are clamped the same way as substats, with the 0.9 Vitality factor for Intelligence/Mind jobs. *Inferred.* The Wiki table covers substats only, and this has not been confirmed in game.
+- **Main stat and Vitality** are clamped the same way as substats, with the 0.9 Vitality factor for Intelligence/Mind jobs. *Inferred.* The Wiki table covers substats only, and this has not been confirmed in game. xivgear does the same: its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece to its cap, main stats and Vitality included, and exempts only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). That is agreement with the most used community gear planner, not in-game evidence. Its caps match this page's for main stats and substats at every item level and slot; for Intelligence and Mind Vitality it applies the 90% before the slot share, which gives a cap 1 lower than this page's in 1,089 of 4,770 item level and slot combinations. Which order the game uses for caps is not known (for item stats, this page's order is right; see section 4).
 - **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). *Inferred.* The model uses the full-share cap because the Wiki table lists a single cap per slot. No in-game capture confirms it for lower shares.
-- **Melds** (materia added to gear) are ignored on synced-down pieces. *Assumed.*
+- **Melds** (materia added to gear) are ignored on synced-down pieces: a piece is synced, and its materia stops counting, when its item level is above the duty's item level cap (with item level sync on) or its equip level is above the duty's level. **Verified** by the owner in game. The page models no melds at all, so this only matters for a future materia tab.
 - **No scaling up**: sync never raises a stat. *Assumed.*
 
 In-game captures under a known sync would settle the first two points; what to capture is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
@@ -252,14 +258,16 @@ Verification status: the formulas are a community reference, not game files. Whi
 | --- | --- | --- |
 | Item level indexes the `ItemLevel` budget table | Verified | Game table; reproduces real items |
 | Slot shares 140/100/40/85/135/67 | Verified | `BaseParam.csv`, all 12 stats |
-| Two roundings, half up | Verified | 98.7% exact vs 79.1% with one rounding |
-| Vitality × 0.9 for Intelligence/Mind jobs | Verified | Reproduces real items (e.g. the worked example piece, Antiquated Atlas) |
-| Substat shares 100% / 70% / 20% by rank | Inferred (measured pattern) | 97.1–99.6% exact per item level band ([validation.md](validation.md)); not in game files |
+| Two roundings, half up | Verified | 99.8% exact vs 80.0% with one rounding |
+| Vitality × 0.9 for Intelligence/Mind jobs | Verified | Game files (`BaseParam.MeldParam` Vitality 90 for every Intelligence/Mind piece) and real items (e.g. the worked example piece, Antiquated Atlas) |
+| Substat shares 100% / 70% / 20% by rank (equal substats share a rank) | Inferred (measured pattern) | 98.7–100.0% exact per item level band ([validation.md](validation.md)); not in game files |
+| Off-hand = two-handed value − one-handed value | Inferred (fits data) | 224 of 226 real off-hands, against 195 for the 40 ‰ share; xivgear uses the same rule for shield caps; sets the shield cap at 123 to 13 |
 | Sync clamps each stat to the full-share same-slot value at the cap | Verified for substats | Wiki caps at 475, 5 of 5 |
 | Caps at 123 (29 / 47 / 23 / 48; main stat 30 / 48 / 24 / 50) | Derived | No gear exists at item level 123; row 123 × slot share, the same rule real pieces at 120 and 125 follow in every slot |
-| Same clamp applies to main stat and Vitality | Inferred | No in-game capture |
+| Same clamp applies to main stat and Vitality | Inferred | No in-game capture; xivgear clamps them too (its Int/Mind Vitality cap rounds differently, 1 lower in 1,089 of 4,770 item level and slot combinations) |
 | Lower-ranked substats clamp against the full-share cap | Inferred | Consistent with Wiki's single cap per slot; no capture |
-| Melds ignored, no scaling up under sync | Assumed | – |
+| Melds ignored on synced-down pieces | Verified (owner, in game) | Item level above the duty's cap, or equip level above the duty's level |
+| No scaling up under sync | Assumed | – |
 | GCD and tick formulas | Community reference (AkhMorning) | Level-100 examples in tests; level-50 tiers in tests without a recorded source |
 | Rows 796–920 carry no gear | Verified (data) | Highest real item level is 795 |
 

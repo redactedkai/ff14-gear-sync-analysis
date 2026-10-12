@@ -12,7 +12,7 @@ Each layer depends only on the layers above it:
 
 | Layer | What it holds | Depends on |
 | --- | --- | --- |
-| 1. Generated game data | The item level budget table, per-level speed data, and the item database (17,577 pieces of gear). Produced by the data pipeline and never edited by hand. | nothing |
+| 1. Generated game data | The item level budget table, per-level speed data, and the item database (17,286 pieces of gear). Produced by the data pipeline and never edited by hand. | nothing |
 | 2. Core logic | Stat formulas, sync caps, speed and GCD, item queries, the optimizer, and the accuracy checks. Pure functions: no page, no browser storage, no shared mutable state. They run unchanged in Node, which is how the unit tests use them. | data |
 | 3. UI state | The saved state (defaults, repair on load, browser storage) and one shared store that holds the current settings, the item pool, the current job context, and the actions that change them. | core |
 | 4. Components and template | One component per page area. Each turns the store into a ready-to-display "view". The HTML template binds to those views and to store actions. | UI state, core |
@@ -28,13 +28,13 @@ The tool computes all of that **once per job** into a *job context*: a small, fr
 What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
-- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin only). This fixes the list of active slots, and the weapon's slot share (140 or 100 per mille).
+- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin). This fixes the list of active slots for Piece stats and the sync caps table, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
 - **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise ([math.md, section 4](math.md#4-the-stats-on-a-piece)).
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
 Contexts are cached, so asking for the same job twice returns the same object, and frozen, so no caller can change one by accident. An unknown job id falls back to the default job.
 
-Why it is built this way: an earlier version kept the current job's stat mapping in shared mutable variables that every function read. Any code that forgot to update them, or ran between two updates, could see a mix of two jobs. Passing an explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. The neutral names matter for the same reason: a Piece lab label once showed as "undefined" because shared code used a job-specific stat name where a neutral one belonged.
+Why it is built this way: an earlier version kept the current job's stat mapping in shared mutable variables that every function read. Any code that forgot to update them, or ran between two updates, could see a mix of two jobs. Passing an explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. The neutral names matter for the same reason: a Piece stats label once showed as "undefined" because shared code used a job-specific stat name where a neutral one belonged.
 
 The game database stores stats in a fixed raw order of 12 stats (all four main stats, Vitality, Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed). The context converts a raw row into the job's neutral stats in one place; nothing else reads raw stat positions.
 
@@ -51,7 +51,7 @@ All state that matters lives in one shared store: the saved settings and pool, p
 
 Changes go through store actions (set job, add rows, remove an item, set copies, clear, replace generated items, switch tab). Number inputs are bound to store fields through a helper that only commits whole numbers inside the allowed range; typing an out-of-range value is ignored rather than corrected under the user's cursor.
 
-**Changing the job.** Switching to any other job, even one in the same role, clears the pool and resets the job-specific selections (Piece lab substats, optimizer target and tiebreaks, browse slot and sort, pool filter) to the new job's defaults. The sync cap, synced level and sync switch are kept. This way the pool never holds gear the current job can't wear, and its stored stats always match the job's stat mapping. Because the pool is lost, the page asks first when the pool is not empty: a warning under the job menu names the new job and the number of items, with Switch and clear or Cancel; the menu keeps showing the current job until the switch is confirmed.
+**Changing the job.** Switching to any other job, even one in the same role, clears the pool and resets the job-specific selections (Piece stats substats, optimizer target and tiebreaks, browse slot and sort, pool filter) to the new job's defaults. The sync cap, synced level and sync switch are kept. This way the pool never holds gear the current job can't wear, and its stored stats always match the job's stat mapping. Because the pool is lost, the page asks first when the pool is not empty: a warning under the job menu names the new job and the number of items, with Switch and clear or Cancel; the menu keeps showing the current job until the switch is confirmed.
 
 ### Each area derives a view
 
@@ -68,20 +68,20 @@ Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps ne
 
 | Page area | When it recomputes |
 | --- | --- |
-| Settings, Piece lab, Sync caps | On every relevant change (cheap: a few formulas) |
+| Settings, Piece stats, Sync limits | On every relevant change (cheap: a few formulas) |
 | Real-gear accuracy check | Once, the first time its panel is opened (it scans every item in the database) |
 | Gear table | On any change of its filters, list (All gear or My pool), the pool, job, cap or sync, but only while the Gear pool tab is open. Shows the first 100 database matches or 400 pool items; "Add all" takes at most 3,000 |
 | Pool table | On every pool change. Renders the first 400 rows; the optimizer still uses all of them |
 | Optimizer result | 120 ms after the last change of pool, job, cap, sync, level or optimizer settings, and only while the Gear optimizer tab is open. Node limit 700,000 |
 | Per-stat ceiling table | Same trigger and delay; 12 or 14 optimizer runs at 150,000 nodes each |
 
-The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. On a 2,033-item Sage pool one optimizer run takes about 15 to 20 ms and the full ceiling table about 0.23 s ([optimizer.md, section 7](optimizer.md#7-correctness-and-performance)).
+The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. On a 1,988-item Sage pool one optimizer run takes about 15 to 25 ms and the full ceiling table about 0.27 s ([optimizer.md, section 7](optimizer.md#7-correctness-and-performance)).
 
 ## 4. Persistence
 
 The page remembers the user's settings between visits in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync caps item level, Piece lab inputs, browse filters and sort, optimizer target and tiebreaks, and the pool itself (each item's name, slot, item level, stats, copies, HQ flag and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync limits item level, Piece stats inputs, browse filters and sort, optimizer target and tiebreaks, and the pool itself (each item's name, slot, item level, stats, copies, HQ flag and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 

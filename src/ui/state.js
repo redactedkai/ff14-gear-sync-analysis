@@ -1,6 +1,6 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; change it only together with a key bump. */
-import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES } from '../core/constants.js';
+import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { reserveIds } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
@@ -27,8 +27,8 @@ export function defaultState() {
     mathTab: 'piece',
     syncIlvl: 475,
     piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null, null] }, // the highest real item level
-    browse: { show: 'all', q: '', type: 'any', min: '', max: '', lvl: 100, sort: 'ilvl' },
-    opt: { target: 'main', tb: '', tb2: '', exclude: [] }, // exclude: SOURCES keys left out of the search
+    browse: { show: 'all', q: '', type: 'any', expOff: [], min: '', max: '', lvl: 100, sort: 'ilvl' }, // expOff: expansions switched off
+    opt: { target: 'main', tb: '', tb2: '', exclude: [] }, // exclude: SOURCES keys switched off (left out of the search); every group is included by default
     pool: [],
   };
 }
@@ -148,6 +148,7 @@ export function restoreState(raw) {
   s.browse.q = str(b.q, s.browse.q);
   s.browse.show = oneOf(b.show, ['all', 'pool'], s.browse.show);
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
+  s.browse.expOff = Array.isArray(b.expOff) ? EXPANSIONS.map(e => e[0]).filter(k => b.expOff.includes(k)) : [];
   s.browse.min = optIntIn(b.min, 0, MAX_REAL, s.browse.min);
   s.browse.max = optIntIn(b.max, 0, MAX_REAL, s.browse.max);
   s.browse.lvl = optIntIn(b.lvl, 1, 100, s.browse.lvl);

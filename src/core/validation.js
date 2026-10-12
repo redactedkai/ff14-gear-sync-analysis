@@ -1,6 +1,6 @@
 /* Validation of the stat model against external truth. Shared by the page ("Checked against real gear")
    and the unit tests, so both report the same numbers. */
-import { RAW_SUBSTAT_IDX } from './constants.js';
+import { RAW_SUBSTAT_IDX, WEAPON_PCT } from './constants.js';
 import { IL, ITEMS } from './tables.js';
 import { rnd, predictRaw } from './formulas.js';
 
@@ -45,7 +45,9 @@ export const WIKI475 = Object.freeze(
 
 export function wikiChecks() {
   return WIKI475.map(([label, type, published, share]) => {
-    const computed = rnd((IL.crit[475] * share) / 1000);
+    // the off-hand is the two-handed value minus the one-handed value (formulas.js isOffhand)
+    const full = pct => rnd((IL.crit[475] * pct) / 1000);
+    const computed = type === 'offhand' ? full(WEAPON_PCT['2h']) - full(WEAPON_PCT['1h+oh']) : full(share);
     return { label, type, published, share, computed, match: computed === published };
   });
 }

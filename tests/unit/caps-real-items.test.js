@@ -55,8 +55,10 @@ const ARMOR = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 
 
 // Half-up rounding in integers (round(a x p / 1000)); real items at an exact .5 round up (e.g. 1H swords at 780: 570.5 -> 571).
 const share = (a, pct) => Math.floor((a * pct + 500) / 1000);
+// An off-hand is the two-handed value minus the one-handed value (140 - 100 = 40 per mille; docs/math.md, section 3).
+const full = (a, slot) => (slot === 'offhand' ? share(a, PCT.weapon2h) - share(a, PCT.weapon1h) : share(a, PCT[slot]));
 // Every stat column of ItemLevel has the same value for all main stats and for all substats (checked below).
-const derived = (ilvl, slot) => ({ main: share(IL.str[ilvl], PCT[slot]), sub: share(IL.crit[ilvl], PCT[slot]) });
+const derived = (ilvl, slot) => ({ main: full(IL.str[ilvl], slot), sub: full(IL.crit[ilvl], slot) });
 
 function realPieces(ilvl, slot) {
   return ITEMS.filter(r => r[2] === ilvl && r[1] === SLOT_CODE[slot])
@@ -87,8 +89,8 @@ test('real pieces at 120 and 125 carry round(row x slot percent) as main stat an
       const want = derived(L, slot);
       for (const st of pieces) assert.equal(Math.max(...st.slice(0, 4)), want.main, `${slot} ${L}: main stat`);
       const top = Math.max(...pieces.map(st => Math.max(...st.slice(5))));
-      // The two item level 120 shields carry Tenacity 13 (not 14) and a 9: no 100%-share substat on either.
-      assert.equal(top, slot === 'offhand' && L === 120 ? want.sub - 1 : want.sub, `${slot} ${L}: largest substat`);
+      // the two item level 120 shields carry Tenacity 13: 2H 47 - 1H 34 (the plain 40 share would give 14)
+      assert.equal(top, want.sub, `${slot} ${L}: largest substat`);
     }
   }
 });
@@ -105,7 +107,7 @@ test('derived caps at 123: substats 29 / 47 / 23 / 48, main stat 30 / 48 / 24 / 
     [pick('weapon1h'), pick('offhand')],
     [
       [35, 36],
-      [14, 14],
+      [13, 14],
     ],
   ); // Paladin
 });

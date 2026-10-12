@@ -37,7 +37,7 @@ src/
                       gear, optimizer)
   data/
     item-level.json   GENERATED: ItemLevel budget table and ParamGrow level data ({_generated, source, IL, PG})
-    items.json        GENERATED: real gear database ({_generated, source, items}: 17,577 rows, ~1.4 MB)
+    items.json        GENERATED: real gear database ({_generated, source, items}: 17,286 rows, ~1.4 MB)
     job-icons.js      GENERATED: the game's framed job icons as PNG data URLs (JOB_ICONS, ~0.2 MB)
 scripts/
   build/build.mjs     esbuild bundle + inline into dist/index.html
@@ -46,7 +46,8 @@ scripts/
   data/item_format.py loads item-format.json, reads CSVs
   data/gen_item_level.py  ItemLevel.csv + ParamGrow.csv -> src/data/item-level.json
   data/gen_items.py   Item.csv + EquipSlotCategory.csv + ClassJobCategory.csv -> src/data/items.json
-  data/gear_sources.py  Recipe.csv + SpecialShop.csv + TomestonesItem.csv -> each item's source bits (crafted, tomestone, ultimate)
+  data/gear_sources.py  Recipe.csv + SpecialShop.csv + TomestonesItem.csv -> shop and recipe flags (crafted, tomestone, ultimate)
+  data/gear_categories.py  Item.SubcategorySort + shops -> each item's category (dungeon, savage, relic, ...); docs/subcategory-sort-codes.md
   data/gen_job_icons.py  data/icons/*.png (downloaded by fetch.py) -> src/data/job-icons.js
   data/provenance.py  source commit + file headers
   data/regen.py       both generators, then the build
@@ -87,36 +88,36 @@ UI: `Alpine.store('app')` holds the saved state plus `jobCtx` (the current conte
 
 Full derivation, worked example and verified/assumed table: `docs/math.md`. Evidence: `docs/validation.md`. Key rules:
 
-- Item level is a row of the `ItemLevel` budget table. A stat on a piece = `round( round(budget x slotPercent/1000) x share )`, rounded **twice**. Slot percents: 2H weapon 140, 1H 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67. No belt slot. Vitality for Int/Mind jobs x 0.9.
-- Sync caps each stat on a piece above the cap at the full-share value of a same-slot piece at the cap; pieces at or below are untouched. At 123: head/hands/feet 29 (main 30), body/legs 47 (48), accessories 23 (24), 2H weapon 48 (50). Reproduces the Wiki's item level 475 caps exactly.
+- Item level is a row of the `ItemLevel` budget table. A stat on a piece = `round( round(budget x slotPercent/1000) x share )`, rounded **twice**. Slot percents: 2H weapon 140, 1H 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67. An off-hand stat is not computed at 40: it is the 2H value minus the 1H value (inferred; fits 224 of 226 real off-hands, the plain 40 fits 195), so the shield substat cap at 123 is 13. No belt slot. Vitality for Int/Mind jobs x 0.9 (in the game files: `BaseParam.MeldParam` Vitality 90 on every Int/Mind piece), applied after the slot share. xivgear computes shield caps with the same 2H - 1H rule.
+- Sync caps each stat on a piece above the cap at the full-share value of a same-slot piece at the cap (the piece's own slot share: a 1H weapon 100, a cloak covering the head 220); pieces at or below are untouched. At 123: head/hands/feet 29 (main 30), body/legs 47 (48), accessories 23 (24), 2H weapon 48 (50). Reproduces the Wiki's item level 475 caps exactly.
 - GCD and DoT/HoT tick scaling follow AkhMorning's formulas with `ParamGrow` constants.
 
 Empirical or assumed (say so in the UI and in answers; never present as fact):
-- The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: 97.1 to 99.6% exact per item level band, 98.7% overall. The Gear pool and Gear optimizer use real item stats and do not depend on them; only Piece lab does.
+- The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: with equal substats sharing the higher rank (relic weapon steps carry two full substats), every main stat counted and the off-hand rule, 98.7 to 100.0% exact per item level band, 99.8% overall (16,550 of 16,586). The 36 misses are three small groups (docs/validation.md section 2). The Gear pool and Gear optimizer use real item stats and do not depend on them; only Piece stats does.
 - The main stat / Vitality clamp under sync, and lower-ranked substats clamping to the full-share cap, are inferred, not confirmed in game.
-- Melds are ignored on synced-down gear; substats are never scaled up.
+- Melds are ignored on synced-down gear (verified by the owner in game: a piece is synced when its item level is above the duty's cap with item level sync on, or its equip level is above the duty's level); substats are never scaled up (assumed).
 
 ## Data
 
 Full rules, counts and provenance: `docs/data-pipeline.md`. Key facts:
 
 - Source: xivapi/ffxiv-datamining CSVs (straight client exports; nothing derived by the miners). The commit is recorded in both generated files and shown in the page footer.
-- `gen_items.py` keeps gear with a slot (no belt, no soul crystal), a combat-job `ClassJobCategory`, item level >= 100 and at least one stat. **HQ bonus only when `CanBeHq`**. `IsUnique` is carried so the optimizer allows only one copy of a Unique ring. Each row also carries source bits from the game files: crafted (a recipe result), tomestone (a shop listing costs a tomestone, or it is made from such a piece; shop costs below 8 are currency codes read through `UseCurrencyType`; retired un-augmented sets are not flagged), ultimate (sold for one of seven ultimate totems). Dungeon loot is not in the game files. These flags were spot-checked against the Lodestone; the Lodestone only shows shops active today, so a retired shop still in the game files shows no tomestone there.
+- `gen_items.py` keeps gear with a slot (no belt, no soul crystal), a combat-job `ClassJobCategory`, item level >= 100 and at least one stat, and leaves out retired gear (`gear_categories.RETIRED`: the Heavensward Diadem gear, 293 pieces). **HQ bonus only when `CanBeHq`**. `IsUnique` is carried so the optimizer allows only one copy of a Unique ring. Each row also carries a mask of the five groups the optimizer can leave out (crafted, tomestone, ultimate, current Savage, relic; Savage counts only gear at the highest equip level in the data, the current expansion; relic includes the Eureka, Bozja and Occult Crescent field op armor). A group is set from the piece's category (`gear_categories.py`: `Item.SubcategorySort` % 1000 plus shop data, no item names; each code verified in `docs/subcategory-sort-codes.md`) or from the shop and recipe flags (`gear_sources.py`: recipe results; tomestone costs, where shop costs below 8 are currency codes read through `UseCurrencyType`; the seven ultimate totems). The generator stops on an unknown code or when the two signals contradict. Dungeon loot tables are not in the game files, but dungeon gear has its own code (270). Categories and flags were spot-checked against the Lodestone (0 wrong); the Lodestone only shows shops active today, so a retired shop still in the game files shows no tomestone there.
 - Job bit order, raw stat order and slot codes live in `src/core/item-format.json` only; a test checks the page against it. Changing it means regenerating the data.
 - The highest real item level is **795** (`MAX_REAL`, computed from the database). The `ItemLevel` sheet runs to 920 but rows 796 to 920 carry no gear, so item level inputs cap at `MAX_REAL`. Do not claim those rows are "placeholders" or "intentional"; the data only shows they are unused.
 - After a patch: `npm run update-data`, then `npm run check`. Which test numbers may move and which must not is in `docs/data-pipeline.md` section 9 and `docs/testing.md` section 6.
 
 ## Job mapping
 
-tank (Str, Skill Speed, Tenacity): PLD WAR DRK GNB. healer (Mind, Spell Speed, Piety): WHM SCH AST SGE. melee (Str, Skill Speed): MNK DRG SAM RPR. dex (Dex, Skill Speed): NIN VPR BRD MCH DNC. caster (Int, Spell Speed): BLM SMN RDM PCT BLU. PLD uses a 1H weapon (100%) plus a shield (off-hand 40%); every other job uses a 2H weapon (140%).
+tank (Str, Skill Speed, Tenacity): PLD WAR DRK GNB. healer (Mind, Spell Speed, Piety): WHM SCH AST SGE. melee (Str, Skill Speed): MNK DRG SAM RPR. dex (Dex, Skill Speed): NIN VPR BRD MCH DNC. caster (Int, Spell Speed): BLM SMN RDM PCT BLU. PLD uses a 1H weapon (100%) plus a shield (2H minus 1H value); every other job uses a 2H weapon (140%). Exception in the data: White Mage also has one A Realm Reborn wand and shield pair (Tidal Wave, item level 100), so the browser and optimizer go by each piece's own slot code, not the job's weapon mode.
 
 ## Optimizer
 
 Full description, proofs and measurements: `docs/optimizer.md`.
 
-Depth-first branch and bound over slots, after dominance pruning, with one integer score per item that encodes the lexicographic order (target, tiebreak 1, tiebreak 2). The weights are derived from the pool so a lower key can never outweigh a higher one; `optimize()` throws if a score could exceed 2^53. An item is pruned only when the items that dominate it have enough copies to fill every slot of its type (2 for rings), and pruning is off when a speed maximum is set. The only constraint is an optional speed range (engine only, for a future target-GCD control). Handles two rings and Unique items. Leaving out gear by source (crafted, tomestone, ultimate) filters the pool before the search. Node limit 700k in the UI (150k per ceiling run); the result reports truncation, the ceiling table does not.
+Depth-first branch and bound over slots, after dominance pruning, with one integer score per item that encodes the lexicographic order (target, tiebreak 1, tiebreak 2). The weights are derived from the pool so a lower key can never outweigh a higher one; `optimize()` throws if a score could exceed 2^53. An item is pruned only when the items that dominate it have enough copies to fill every slot of its type (2 for rings), and pruning is off when a speed maximum is set. The only constraint is an optional speed range (engine only, for a future target-GCD control). Handles two rings, Unique items and pieces that take more than one slot: a 2H weapon leaves the off-hand empty, a cloak (slot code 12, body share 220 = `ChestHeadPercent`) leaves the head empty; blockable slots are searched last and a piece never prunes one that blocks fewer slots. Leaving out gear by group (crafted, tomestone, ultimate, savage, relic) filters the pool before the search. Node limit 700k in the UI (150k per ceiling run); the result reports truncation, the ceiling table does not.
 
-Timing (Node 22, full 2,033-item Sage pool): one run takes about 15 to 20 ms; the 14-run ceiling table about 0.23 s. If you change scoring, pruning or the search, keep the exhaustive-search tests green and re-time a large pool.
+Timing (Node 22, full 1,988-item Sage pool): one run takes about 15 to 25 ms; the 14-run ceiling table about 0.27 s. If you change scoring, pruning or the search, keep the exhaustive-search tests green and re-time a large pool.
 
 ## Page constraints
 
@@ -130,9 +131,9 @@ Timing (Node 22, full 2,033-item Sage pool): one run takes about 15 to 20 ms; th
 
 - Be concise and plain-spoken. The owner has said the UI felt "overwhelming" at one point, so favor a few clear tabs over many controls. Ask yourself whether each control earns its place; remove excess rather than explain it.
 - Validate against external truth whenever possible (game files, Wiki, real items) and show the result. Distinguish what is verified from what is inferred. Several earlier claims had to be retracted (`docs/history.md`); do not repeat an inference as a fact, and add an entry there when something is retracted.
-- Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. Defaults favour no player's setup: no job chosen (the tabs wait for one), level 100, sync off with an empty cap; the optimizer maximizes the main stat with no tiebreaks; Piece lab at the highest real item level with the job's own substat first. (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
+- Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. Defaults favour no player's setup: no job chosen (the tabs wait for one), level 100, sync off with an empty cap; the optimizer maximizes the main stat with no tiebreaks; Piece stats at the highest real item level with the job's own substat first. (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
 - When the owner reports a bug from a screenshot, reproduce it in the smoke test or a unit test first, fix, then add a regression check.
-- Prefer root causes. Example: the "undefined" in Piece lab came from using a job-specific key where a neutral one belonged, not from missing text.
+- Prefer root causes. Example: the "undefined" in Piece stats came from using a job-specific key where a neutral one belonged, not from missing text.
 - esbuild is the only build tool and Alpine.js the only runtime dependency. Ask before adding any other dependency. The single self-contained output file is a feature. The one intentional exception is the Google Fonts stylesheet in `src/index.html` (owner's decision): keep it, and keep the page working without it.
 - Do not commit or push unless the owner asks.
 

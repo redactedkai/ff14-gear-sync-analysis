@@ -18,7 +18,7 @@
 | 140 | Field Op | 5 | Kirin's Osode | Eureka side set | ✅ Verified |
 | 150 | Field Op | 176 | Bozjan, Law's Order, Blade's | Bozja armor and accessories | ✅ Verified |
 | 210 / 220 / 230 | Grand Company | 17 each | Serpent / Storm / Flame | Twin Adder / Maelstrom / Immortal Flames gear (same as the `GrandCompany` column) | ✅ Verified |
-| 250 | Diadem | 293 | Mistfall, Sunburst, Coven | Heavensward Diadem gear, retired (random substats) | ✅ Verified |
+| 250 | Diadem | 293 | Mistfall, Sunburst, Coven | Heavensward Diadem gear, retired (random substats); left out of the database | ✅ Verified |
 | 270 | Dungeon | 3,391 | Ktiseos, Riversbreath, Mistwake | Dungeon drops | ✅ Verified |
 | 300 | Augmented crafted | 675 | Augmented Exarchic, Augmented Courtly Lover's | Crafted gear upgraded with certificates (ShB on) | ✅ Verified |
 | 310 | Wondrous Tails | 91 | Ornate … | Ornate copies of crafted body pieces | ✅ Verified |
