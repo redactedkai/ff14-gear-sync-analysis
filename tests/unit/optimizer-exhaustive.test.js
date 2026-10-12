@@ -21,10 +21,10 @@ const ring = (name, spd, copies) => mkItem(name, 'ring', 100, { spd }, { copies 
 /* The two policies the brute-force reference copies from the engine (helpers/exhaustive.js). Stated directly on
    hand-made pools, so changing one is a deliberate decision, not a side effect of editing the reference. */
 test('policy: a single ring is worn only when no pair exists, even if a pair breaks a maximum', () => {
-  const pool = [ring('A', 10, 1), mkItem('B', 'ring', 100, { spd: 5, dh: 50 })];
-  // the only pair (A, B) has Direct Hit 50 > 40; ring A alone would meet the maximum but is not a legal loadout
-  assert.equal(optimize(sge, pool, NO_SYNC, { target: 'spd', maxs: { dh: 40 } }).ok, false);
-  assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'spd', maxs: { dh: 40 } }), null);
+  const pool = [ring('A', 10, 1), ring('B', 5, 1)];
+  // the only pair (A, B) has Spell Speed 15 > 12; ring A alone would meet the maximum but is not a legal loadout
+  assert.equal(optimize(sge, pool, NO_SYNC, { target: 'crit', spdMax: 12 }).ok, false);
+  assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'crit', spdMax: 12 }), null);
   // with a single Unique ring there is no pair, so it is worn once and the second ring slot stays empty
   const one = optimize(sge, [ring('A', 10, 1)], NO_SYNC, { target: 'spd' });
   assert.equal(one.totals.spd, 10);
@@ -35,10 +35,10 @@ test('policy: a single ring is worn only when no pair exists, even if a pair bre
 });
 
 test('policy: a slot is never left empty to satisfy a maximum', () => {
-  const pool = [mkItem('H', 'head', 100, { spd: 10, crit: 50 }), mkItem('E', 'ear', 100, { spd: 3 })];
-  // leaving the head empty would give Critical Hit 0 <= 40 and Spell Speed 3, but that is not a legal loadout
-  assert.equal(optimize(sge, pool, NO_SYNC, { target: 'spd', maxs: { crit: 40 } }).ok, false);
-  assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'spd', maxs: { crit: 40 } }), null);
+  const pool = [mkItem('H', 'head', 100, { spd: 50, crit: 10 }), mkItem('E', 'ear', 100, { spd: 3, crit: 3 })];
+  // leaving the head empty would give Spell Speed 3 <= 40, but that is not a legal loadout
+  assert.equal(optimize(sge, pool, NO_SYNC, { target: 'crit', spdMax: 40 }).ok, false);
+  assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'crit', spdMax: 40 }), null);
 });
 
 test('F1 regression: the second-best Unique ring is kept for the pair', () => {
@@ -80,8 +80,8 @@ test('optimizer matches exhaustive search on 400 random small pools', () => {
     const opts = {
       target: ['spd', 'crit', 'det'][int(3)],
       tiebreak: [rand() < 0.6 ? 'main' : '', rand() < 0.5 ? 'crit' : ''],
-      minAvgIlvl: rand() < 0.3 ? 100 + int(40) : 0,
-      mins: rand() < 0.2 ? { det: 20 + int(40) } : {},
+      spdMin: rand() < 0.2 ? 20 + int(40) : null,
+      spdMax: rand() < 0.2 ? 60 + int(80) : null,
     };
     const want = exhaustive(sge, pool, sync, opts);
     const r = optimize(sge, pool, sync, opts);
@@ -102,9 +102,11 @@ test('optimizer matches exhaustive search on 400 random small pools', () => {
 
 test('maximum constraints are respected and still find the best loadout', () => {
   const pool = [ring('A', 10, 1), ring('B', 9, 1), ring('C', 5, 1)];
-  pool.push(mkItem('H1', 'head', 100, { spd: 20, crit: 30 }), mkItem('H2', 'head', 100, { spd: 15, crit: 5 }));
-  const r = optimize(sge, pool, NO_SYNC, { target: 'spd', maxs: { crit: 10 } });
-  assert.equal(r.totals.spd, 34); // H2 (crit 5) + A + B; H1 dominates H2 but breaks the crit maximum
+  pool.push(mkItem('H1', 'head', 100, { spd: 20, crit: 30 }), mkItem('H2', 'head', 100, { spd: 15, crit: 25 }));
+  const r = optimize(sge, pool, NO_SYNC, { target: 'crit', spdMax: 33 });
+  // H1 dominates H2, but H1 with any ring pair has Spell Speed 34 or more; H2 with A + C or B + C stays under
+  assert.equal(r.totals.crit, 25);
+  assert.ok(r.totals.spd <= 33);
 });
 
 test('F3 regression: a tiebreak total of 10,000 or more never outranks a higher key', () => {

@@ -51,10 +51,10 @@ export function makeJobContext(jobId) {
     },
     short: {
       main: MAIN_SHORT[profile.main],
-      vit: 'Vit',
-      crit: 'Crit',
-      det: 'Det',
-      dh: 'DH',
+      vit: 'VIT',
+      crit: 'CRT',
+      det: 'DET',
+      dh: 'DHT',
       spd: SPD_SHORT[profile.spd],
       spec: profile.spec ? SPEC_SHORT[profile.spec] : '',
     },
@@ -71,10 +71,6 @@ export function makeJobContext(jobId) {
 
 export function slotActive(job, type) {
   return type === 'offhand' ? job.weaponMode === '1h+oh' : true;
-}
-/* weight of a slot in the average item level: a two-handed weapon counts twice */
-export function ilWeight(job, type) {
-  return type === 'weapon' && job.weaponMode === '2h' ? 2 : 1;
 }
 
 /* the ItemLevel budget column for a neutral stat key */

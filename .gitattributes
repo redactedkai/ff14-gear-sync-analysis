@@ -1,4 +1,4 @@
 # the generated data files are huge single lines; keep them out of diffs and language stats
-src/data/items.js      -diff linguist-generated=true
-src/data/item-level.js -diff linguist-generated=true
+src/data/items.json    -diff linguist-generated=true
+src/data/item-level.json -diff linguist-generated=true
 * text=auto eol=lf

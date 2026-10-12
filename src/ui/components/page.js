@@ -1,6 +1,6 @@
 /* Page root and the job / sync settings panel. Nested components inherit the root's `job` and helpers. */
-import { JOBS, ROLE_GROUP, SLOT_LABEL } from '../../core/constants.js';
-import { speedParams } from '../../core/speed.js';
+import { JOBS, JOB_ROWS, SLOT_LABEL } from '../../core/constants.js';
+import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
 
 export function page() {
@@ -31,15 +31,14 @@ export function settings() {
     get poolSize() {
       return this.$store.app.pool.length;
     },
-    requestJob(id, select) {
+    requestJob(id) {
       const app = this.$store.app;
       if (id === app.job) return;
       if (!app.pool.length) {
         app.setJob(id);
         return;
       }
-      this.pendingJob = id;
-      select.value = app.job; // the menu keeps showing the current job until the switch is confirmed
+      this.pendingJob = id; // the current job stays selected until the switch is confirmed
     },
     confirmJob() {
       this.$store.app.setJob(this.pendingJob);
@@ -48,19 +47,40 @@ export function settings() {
     cancelJob() {
       this.pendingJob = null;
     },
-    jobGroups: Object.keys(ROLE_GROUP).map(role => ({ role, label: ROLE_GROUP[role], jobs: JOBS.filter(j => j[2] === role) })),
-    get levelInfo() {
+    /* the cap field holds text that is not a whole item level in range (the store keeps its last valid cap) */
+    capTypedBad: false,
+    init() {
+      this.$watch('$store.app.cap', () => {
+        this.capTypedBad = false; // changed from elsewhere (reset, or a valid entry)
+      });
+    },
+    onCapInput(text) {
       const app = this.$store.app,
-        sp = speedParams(app.level);
-      return `Lv ${app.level}: one ${this.job.label.spd} point is worth 130 ÷ ${sp.div} of a GCD step; the game’s own sync for this level is ${sp.sync}`;
+        v = Number(text);
+      if (text === '') app.cap = null; // an empty field means no cap
+      this.capTypedBad = text !== '' && !(Number.isInteger(v) && v >= 1 && v <= app.maxReal);
     },
-    get jobInfo() {
-      const j = this.job;
-      return (
-        `${j.jobName}: main stat ${j.label.main}, speed stat ${j.label.spd}` +
-        (j.profile.spec ? `, special substat ${j.label.spec}` : '') +
-        `. Weapon: ${j.weaponMode === '2h' ? 'two-handed (counts twice toward average item level)' : 'one-handed with an off-hand (each counts once)'}.`
-      );
+    /* shown under the cap field while sync is on */
+    get capError() {
+      const app = this.$store.app;
+      if (!app.sync) return '';
+      if (this.capTypedBad) return `Enter a whole item level from 1 to ${app.maxReal}`;
+      return app.cap == null ? 'Enter a sync cap' : '';
     },
+    /* true while the reset waits for confirmation (only asked when the pool is not empty) */
+    pendingReset: false,
+    requestReset() {
+      this.pendingJob = null;
+      if (this.$store.app.pool.length) this.pendingReset = true;
+      else this.$store.app.resetAll();
+    },
+    confirmReset() {
+      this.$store.app.resetAll();
+      this.pendingReset = false;
+    },
+    jobRows: JOB_ROWS.map(([label, ids]) => ({
+      label,
+      jobs: ids.map(id => ({ id, name: JOBS.find(j => j[0] === id)[1], icon: JOB_ICONS[id] })),
+    })),
   };
 }

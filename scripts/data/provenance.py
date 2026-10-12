@@ -34,11 +34,11 @@ def make(commit, date):
     return {'repo': REPO, 'commit': commit, 'date': date}
 
 
-def header(source):
-    """One-line JS comment naming the source commit."""
+def note(source):
+    """One-line notice naming the source commit, written as a generated JSON file's "_generated" field."""
     if source is None:
-        return '/* GENERATED from xivapi/ffxiv-datamining (commit unknown). Do not edit; see docs/data-pipeline.md. */\n'
-    return f'/* GENERATED from {source["repo"]} {source["commit"]} ({source["date"]}). Do not edit; see docs/data-pipeline.md. */\n'
+        return 'GENERATED from xivapi/ffxiv-datamining (commit unknown). Do not edit; see docs/data-pipeline.md.'
+    return f'GENERATED from {source["repo"]} {source["commit"]} ({source["date"]}). Do not edit; see docs/data-pipeline.md.'
 
 
 def add_cli_args(parser):

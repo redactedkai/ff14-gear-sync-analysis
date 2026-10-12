@@ -2,7 +2,7 @@
 
 A log of claims and results that turned out to be wrong, what replaced them, and how the mistake was found. Its purpose is to stop the same mistakes from coming back. Add an entry whenever a published number, a doc statement or a result of the tool has to be retracted.
 
-Related pages: [validation.md](validation.md) (current evidence), [math.md](math.md), [optimizer.md](optimizer.md), [data-pipeline.md](data-pipeline.md), [audit-2.md](audit-2.md) (engineering audit).
+Related pages: [validation.md](validation.md) (current evidence), [math.md](math.md), [optimizer.md](optimizer.md), [data-pipeline.md](data-pipeline.md).
 
 ## Lessons
 
@@ -25,6 +25,7 @@ Most entries below come from one of these patterns:
 | The level-50 GCD thresholds in the tests (150, 202, 307, 349) are reference values like AkhMorning's level-100 examples. | Their source was never recorded. They are regression values until matched against a published tier table. The 0 and 3 thresholds are not asserted at all. | Tracing each test value to a source during the doc rewrite (2026-10); see [validation.md, section 5](validation.md#5-speed-and-gcd). |
 | Item level rows 796 to 920 are an "unused placeholder". | They are unused by any current gear. The data cannot say why they exist; "budget room for future gear" is an inference. | Not recorded; the history of `ItemLevel.csv` is now in [data-pipeline.md, section 7](data-pipeline.md#item-levels-above-795). |
 | An item level slider maximum of 520. | Arbitrary. Replaced by the highest real item level (795), computed from the database rather than stored. | Not recorded. |
+| Gear sources (first draft): currency code 1 in a type-2 exchange shop is not a tomestone, and gear traded in to make tomestone gear is tomestone gear too. | Code 1 there is Allagan Tomestones of Poetics (the Lodestone shows the cost). The traded-in rule flagged pieces nothing shows were sold for tomestones (Weathered, Antiquated, Yasha) and depended on whether the old shop survived in the files, so it was dropped; only the forward direction (made from tomestone gear) is kept. The flag also briefly counted any listing whose second item slot was empty as a match (item id 0). | Spot-checking random pieces against Lodestone item pages (Augmented Deepshadow Necklace of Healing) and diffing the flags before and after each rule. |
 
 ## Results of the tool
 

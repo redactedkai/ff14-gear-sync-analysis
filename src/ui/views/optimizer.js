@@ -1,8 +1,10 @@
-/* Optimizer tab views: the best loadout for the chosen stat, and the per-stat ceiling of the pool.
-   Pure view builders: no Alpine import, so Node can load and test them (docs/audit-2.md A4). */
+/* Gear optimizer tab views: the best loadout for the chosen stat, and the per-stat ceiling of the pool.
+   Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
+import { withoutSources } from '../../core/items.js';
 import { optimize } from '../../core/optimizer/index.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
+import { syncActive } from '../state.js';
 
 export const NODE_LIMIT = 700000;
 export const CEILING_NODE_LIMIT = 150000;
@@ -13,8 +15,13 @@ export function tierText(spd, level) {
   return `tier starts at ${t.start}${t.next != null ? `, next at ${t.next} (+${t.next - spd})` : ''}`;
 }
 
+/* The pool the optimizer searches: the gear pool minus the excluded sources. */
+export function searchPool(app) {
+  return withoutSources(app.pool, app.opt.exclude || []);
+}
+
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message
-   instead of keeping a stale result (docs/audit-2.md A5). */
+   instead of keeping a stale result. */
 export function optimizerView(app) {
   try {
     return buildOptimizerView(app);
@@ -23,24 +30,19 @@ export function optimizerView(app) {
   }
 }
 
-/* The required average item level, or null when the requirement is off. */
-function avgRequired(o) {
-  const v = +o.avgMin || 0;
-  return o.avg && v > 0 ? v : null;
-}
-
 function buildOptimizerView(app) {
   const job = app.jobCtx,
     o = app.opt;
   if (!app.pool.length) return { kind: 'empty' };
+  const pool = searchPool(app);
+  if (!pool.length) return { kind: 'excluded' };
   const res = optimize(
     job,
-    app.pool,
-    { cap: app.cap, sync: app.sync },
+    pool,
+    { cap: app.cap, sync: syncActive(app) },
     {
       target: o.target,
       tiebreak: [o.tb, o.tb2],
-      minAvgIlvl: avgRequired(o) ?? 0,
       nodeLimit: NODE_LIMIT,
     },
   );
@@ -65,46 +67,45 @@ function buildOptimizerView(app) {
   return {
     kind: 'ok',
     headers: job.stats.map(s => job.short[s]),
+    target: o.target,
     targetLabel: job.label[o.target],
     spdLabel: job.label.spd,
     total: t[o.target],
     totals: job.stats.map(s => t[s]),
-    synced: app.sync,
+    synced: syncActive(app),
     gcd: gcdFor(spd, app.level).toFixed(2),
     spd,
     tierText: tierText(spd, app.level),
     dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
-    avg: res.avgIlvl.toFixed(1),
-    // coloured against the user's own requirement; no colour when the requirement is off (docs/audit-2.md A6)
-    avgClass: avgRequired(o) == null ? '' : res.avgIlvl >= avgRequired(o) ? 'ok' : 'bad',
-    avgText: `Average item level over ${res.denom} slot-weights` + (avgRequired(o) == null ? '' : ` (required ≥ ${avgRequired(o)})`),
     rows,
     truncated: res.truncated,
   };
 }
 
-/* Per-stat ceiling, synced and unsynced. Returns null for an empty pool, {error} if the optimizer throws. */
+/* Per-stat ceiling of the searched pool, synced (only while sync is on) and unsynced. Returns null for an empty pool, {error} if the
+   optimizer throws. */
 export function ceilingView(app) {
   const job = app.jobCtx;
-  if (!app.pool.length) return null;
+  const pool = searchPool(app);
+  if (!pool.length) return null;
   try {
-    // A search that hits its node limit only gives a lower bound: shown as "≥ value" (docs/audit-2.md A7).
+    // A search that hits its node limit only gives a lower bound: shown as "≥ value".
     let truncated = false;
     const best = (sync, s) => {
-      const r = optimize(job, app.pool, { cap: app.cap, sync }, { target: s, nodeLimit: CEILING_NODE_LIMIT });
+      const r = optimize(job, pool, { cap: app.cap, sync }, { target: s, nodeLimit: CEILING_NODE_LIMIT });
       const value = r.ok ? r.totals[s] : 0;
       if (r.truncated) truncated = true;
       return { value, text: (r.truncated ? '≥ ' : '') + value };
     };
-    const synced = job.stats.map(s => best(true, s));
+    const synced = syncActive(app) ? job.stats.map(s => best(true, s)) : null;
     const unsynced = job.stats.map(s => best(false, s));
     const spdIdx = job.stats.indexOf('spd');
-    const spd = synced[spdIdx]?.value;
+    const spd = (synced ?? unsynced)[spdIdx]?.value;
     return {
       cap: app.cap,
       headers: job.stats.map(s => job.short[s]),
       spdIdx,
-      synced: synced.map(c => c.text),
+      synced: synced ? synced.map(c => c.text) : null,
       unsynced: unsynced.map(c => c.text),
       truncated,
       gcd: spd ? gcdFor(spd, app.level).toFixed(2) + 's' : '—',

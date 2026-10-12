@@ -1,6 +1,5 @@
 /* Shared test helpers: an exhaustive reference for the optimizer, and real-gear pools from the item database.
    The reference tries every legal loadout, so it is independent of the optimizer's pruning and scoring. */
-import { ilWeight } from '../../../src/core/job-context.js';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
 import { effStats } from '../../../src/core/optimizer/index.js';
 
@@ -42,49 +41,45 @@ function choicesFor(pool, t) {
 
    Effective (synced) stats come from the optimizer's own effStats, so this reference does not check the sync
    clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/testing.md). */
-export function exhaustive(job, pool, sync, { target, tiebreak = [], minAvgIlvl = 0, mins = {}, maxs = {} }) {
+export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
   const stats = job.stats;
   const slots = job.activeSlotTypes.filter(t => pool.some(i => i.type === t));
-  const denom = slots.reduce((a, t) => a + ilWeight(job, t) * (t === 'ring' ? 2 : 1), 0);
-  /* each choice (an item, or a ring pair) as [effective stat totals in job.stats order, weighted item level] */
+  /* each choice (an item, or a ring pair) as its effective stat totals in job.stats order */
   const choices = slots.map(t =>
     choicesFor(pool, t).map(items => {
       const v = stats.map(() => 0);
-      let ilw = 0;
       items.forEach(i => {
         const e = effStats(job, i, sync);
         stats.forEach((s, k) => {
           v[k] += e[s] || 0;
         });
-        ilw += i.ilvl * ilWeight(job, i.type);
       });
-      return [v, ilw];
+      return v;
     }),
   );
   const tot = stats.map(() => 0);
   let best = null;
-  const rec = (k, ilw) => {
+  const rec = k => {
     if (k === choices.length) {
       const get = s => tot[stats.indexOf(s)] || 0;
-      if (minAvgIlvl && ilw < minAvgIlvl * denom) return;
-      if (Object.entries(mins).some(([s, m]) => get(s) < m)) return;
-      if (Object.entries(maxs).some(([s, m]) => get(s) > m)) return;
+      if (spdMin != null && get('spd') < spdMin) return;
+      if (spdMax != null && get('spd') > spdMax) return;
       const v = keys.map(get);
       if (!best || lexGreater(v, best)) best = v;
       return;
     }
-    for (const [v, w] of choices[k]) {
+    for (const v of choices[k]) {
       v.forEach((x, j) => {
         tot[j] += x;
       });
-      rec(k + 1, ilw + w);
+      rec(k + 1);
       v.forEach((x, j) => {
         tot[j] -= x;
       });
     }
   };
-  rec(0, 0);
+  rec(0);
   return best;
 }
 

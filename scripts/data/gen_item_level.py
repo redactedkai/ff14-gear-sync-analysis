@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Build src/data/item-level.js (ItemLevel budget table + ParamGrow level data) from the datamining CSVs.
+"""Build src/data/item-level.json (ItemLevel budget table + ParamGrow level data) from the datamining CSVs.
 
-Usage: python scripts/data/gen_item_level.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
+Usage: python scripts/data/gen_item_level.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
+Output: {"_generated": notice, "source": ..., "IL": ..., "PG": ...}
+_generated = one-line "do not edit" notice naming the source commit.
+source = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown (the page's DATA_SOURCE).
 IL = per-stat budget by item level (index = item level, 921 rows as of patch 7.50), one array per stat key
      in src/core/item-format.json.
-DATA_SOURCE = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown.
 PG = [[BaseSpeed, LevelModifier, ItemLevelSync]] for character levels 1..100 (index = level - 1).
 
 Also checks BaseParam.csv: every stat's slot shares must equal the slot `percent`s in src/core/item-format.json, which
@@ -33,17 +35,16 @@ def main(csv_dir, out, source='detect'):
     IL = {k: [int(r[c]) for r in il_rows] for k, c in il_cols.items()}
     pg_rows = {int(r['#']): r for r in read_csv(d / 'ParamGrow.csv', ['#', 'BaseSpeed', 'LevelModifier', 'ItemLevelSync'])}
     PG = [[int(pg_rows[lvl]['BaseSpeed']), int(pg_rows[lvl]['LevelModifier']), int(pg_rows[lvl]['ItemLevelSync'])] for lvl in range(1, 101)]
-    js = provenance.header(source)
-    js += 'export const DATA_SOURCE=' + json.dumps(source, separators=(',', ':')) + ';\n'
-    js += 'export const IL=' + json.dumps(IL, separators=(',', ':')) + ';\nexport const PG=' + json.dumps(PG, separators=(',', ':')) + ';\n'
-    provenance.write_generated(out, js)
+    # one line, compact: {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]]}
+    doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG}
+    provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')
     print(f'ItemLevel rows 0..{len(il_rows) - 1}, ParamGrow levels 1..100 -> {out}')
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('csv_dir')
-    ap.add_argument('out', nargs='?', default='src/data/item-level.js')
+    ap.add_argument('out', nargs='?', default='src/data/item-level.json')
     provenance.add_cli_args(ap)
     args = ap.parse_args()
     run_main(main, args.csv_dir, args.out, provenance.from_args(args))

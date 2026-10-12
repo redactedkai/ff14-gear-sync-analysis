@@ -11,10 +11,11 @@ test('DATA_SOURCE names the datamining repo, a full commit sha and an ISO date',
   assert.ok(!Number.isNaN(Date.parse(DATA_SOURCE.date)));
 });
 
-test('both generated files carry the same source commit in their header', () => {
-  for (const f of ['item-level.js', 'items.js']) {
-    const head = readFileSync(new URL(`../../src/data/${f}`, import.meta.url), 'utf8').split('\n', 1)[0];
-    assert.ok(head.includes(DATA_SOURCE.commit), `${f} header names ${DATA_SOURCE.commit}`);
+test('both generated data files name the same source commit', () => {
+  for (const name of ['item-level.json', 'items.json']) {
+    const doc = JSON.parse(readFileSync(new URL(`../../src/data/${name}`, import.meta.url), 'utf8'));
+    assert.deepEqual(doc.source, DATA_SOURCE, `${name} source`);
+    assert.ok(doc._generated.includes(DATA_SOURCE.commit), `${name} notice names ${DATA_SOURCE.commit}`);
   }
 });
 

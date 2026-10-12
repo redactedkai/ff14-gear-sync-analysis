@@ -1,13 +1,11 @@
 /* Alpine.store('app'): the saved state plus the actions that change it.
    Templates read it as $store.app.<field>; `job` is the current (frozen) JobContext. */
 import { makeJobContext } from '../core/job-context.js';
-import { poolItemFromRow } from '../core/items.js';
+import { poolItemFromRow, poolKey } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
-import { resetForJob, TABS, MATH_TABS } from './state.js';
+import { restoreState, resetForJob, syncActive, TABS, MATH_TABS } from './state.js';
 
-export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'piece', 'browse', 'opt', 'poolFilter', 'pool'];
-
-const poolKey = x => [x.name, x.type, x.ilvl].join('|');
+export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'piece', 'browse', 'opt', 'pool'];
 
 export function createAppStore(initial) {
   return {
@@ -16,16 +14,28 @@ export function createAppStore(initial) {
     maxReal: MAX_REAL,
     /* bumped on every pool change, so views can depend on "the pool changed" without walking it */
     poolVersion: 0,
+    /* sync is on and a cap is set */
+    get syncActive() {
+      return syncActive(this);
+    },
 
     /* Changing role or weapon mode resets role-dependent selections and empties the pool. */
     /* Switching to a different job clears the pool and the job-specific selections, so the pool never holds gear
-       the job can't wear (docs/audit-2.md A1). The page asks for confirmation first when the pool is not empty. */
+       the job can't wear. The page asks for confirmation first when the pool is not empty. */
     setJob(id) {
       const job = makeJobContext(id);
       if (job.jobId === this.job) return;
       this.jobCtx = job;
       this.job = job.jobId;
       resetForJob(this, job);
+      this.poolVersion++;
+    },
+
+    /* Every saved setting back to its default (no job) and an empty pool; the open tab stays. */
+    resetAll() {
+      const { tab, mathTab, ...d } = restoreState(null);
+      Object.assign(this, d);
+      this.jobCtx = makeJobContext(d.job);
       this.poolVersion++;
     },
 
@@ -61,13 +71,6 @@ export function createAppStore(initial) {
     removeItem(id) {
       this.pool = this.pool.filter(i => i.id !== id);
       this.poolVersion++;
-    },
-    setCopies(id, value) {
-      const it = this.pool.find(i => i.id === id);
-      if (it) {
-        it.copies = Math.min(2, Math.max(1, Math.round(+value || 1)));
-        this.poolVersion++;
-      }
     },
     clearPool() {
       this.pool = [];

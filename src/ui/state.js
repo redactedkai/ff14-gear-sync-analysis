@@ -1,15 +1,17 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; change it only together with a key bump. */
-import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, DEFAULT_JOB } from '../core/constants.js';
+import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { reserveIds } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
-import { speedParams } from '../core/speed.js';
 
-/* Defaults come from the game, not from any one player's setup: the level cap, and the game's own sync item level
-   for that level (ParamGrow). */
+/* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
-const DEFAULT_CAP = speedParams(DEFAULT_LEVEL).sync;
+
+/* Sync applies only when it is switched on and a cap is set. */
+export function syncActive(app) {
+  return !!app.sync && app.cap != null;
+}
 
 export const STORE_KEY = 'ilvl-stat-lab-v3';
 export const TABS = ['pool', 'opt', 'math'];
@@ -17,35 +19,34 @@ export const MATH_TABS = ['piece', 'sync'];
 
 export function defaultState() {
   return {
-    job: DEFAULT_JOB,
-    cap: DEFAULT_CAP,
-    sync: true,
+    job: null, // none until the user picks one
+    cap: null,
+    sync: false,
     level: DEFAULT_LEVEL,
     tab: 'pool',
     mathTab: 'piece',
     syncIlvl: 475,
-    piece: { ilvl: 475, slot: 'head', subs: ['spd', 'spec', 'dh'] },
-    browse: { q: '', type: 'any', min: 100, max: '', lvl: 100, sort: 'ilvl' },
-    opt: { target: 'spd', tb: 'main', tb2: 'vit', avg: false, avgMin: DEFAULT_CAP },
-    poolFilter: 'all',
+    piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null, null] }, // the highest real item level
+    browse: { show: 'all', q: '', type: 'any', min: '', max: '', lvl: 100, sort: 'ilvl' },
+    opt: { target: 'main', tb: '', tb2: '', exclude: [] }, // exclude: SOURCES keys left out of the search
     pool: [],
   };
 }
 
+/* The job's own special substat (Piety, Tenacity) first, or its speed stat when it has none; ranks 2 and 3 empty. */
 export function defaultSubs(job) {
-  return ['spd', job.profile.spec ? 'spec' : 'crit', job.profile.spec === 'piety' ? 'dh' : null];
+  return [job.profile.spec ? 'spec' : 'spd', null, null];
 }
 
 /* On a job change: job-specific selections go back to defaults, and the pool is emptied. */
 export function resetForJob(s, job) {
   s.piece.subs = defaultSubs(job);
   if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
-  s.opt.target = 'spd';
-  s.opt.tb = 'main';
-  s.opt.tb2 = 'vit';
+  s.opt.target = 'main';
+  s.opt.tb = '';
+  s.opt.tb2 = '';
   s.browse.type = 'any';
   s.browse.sort = 'ilvl';
-  s.poolFilter = 'all';
   s.pool = [];
 }
 
@@ -89,6 +90,7 @@ function restoreItem(i) {
     stats,
     copies: oneOf(i.copies, [1, 2], 1),
     src: i.src,
+    hq: bool(i.hq, false),
   };
 }
 
@@ -98,13 +100,15 @@ function restorePool(raw) {
   return raw.map(restoreItem).filter(i => i && !seen.has(i.id) && seen.add(i.id));
 }
 
-/* piece.subs: three ranked substats for this job; the third may be null. Unknown or repeated ones fall back. */
+/* piece.subs: three ranked substats for this job; ranks 2 and 3 may be null, and rank 3 only with a rank 2.
+   Unknown or repeated ones fall back. */
 function restorePieceSubs(raw, job) {
   const ds = defaultSubs(job);
   if (!Array.isArray(raw)) return ds;
-  const subs = [0, 1, 2].map(i => (job.substats.includes(raw[i]) ? raw[i] : i === 2 ? null : ds[i]));
-  if (subs[1] === subs[0]) subs[1] = ds[1];
+  const subs = [0, 1, 2].map(i => (job.substats.includes(raw[i]) ? raw[i] : i === 0 ? ds[0] : null));
+  if (subs[1] === subs[0]) subs[1] = null;
   if (subs[2] === subs[0] || subs[2] === subs[1]) subs[2] = null;
+  if (subs[1] == null) [subs[1], subs[2]] = [subs[2], null];
   return subs;
 }
 
@@ -124,17 +128,16 @@ function restoreTabs(s, raw) {
 export function restoreState(raw) {
   const s = defaultState();
   const r = isObj(raw) ? raw : null;
-  const job = makeJobContext(r && typeof r.job === 'string' ? r.job : s.job);
-  s.job = job.jobId;
+  s.job = r && JOBS.some(j => j[0] === r.job) ? r.job : null;
+  const job = makeJobContext(s.job ?? DEFAULT_JOB); // with no job: placeholder defaults, replaced when one is chosen
   resetForJob(s, job); // job-dependent defaults; saved values below replace them
   if (!r) return s;
 
-  s.cap = ilvlIn(r.cap, s.cap);
+  s.cap = r.cap === null ? null : ilvlIn(r.cap, s.cap);
   s.sync = bool(r.sync, s.sync);
   s.level = intIn(r.level, 1, 100, s.level);
   s.syncIlvl = ilvlIn(r.syncIlvl, s.syncIlvl);
   restoreTabs(s, r);
-  s.poolFilter = oneOf(r.poolFilter, ['all', ...job.activeSlotTypes], s.poolFilter);
 
   const piece = isObj(r.piece) ? r.piece : {};
   s.piece.ilvl = ilvlIn(piece.ilvl, s.piece.ilvl);
@@ -143,6 +146,7 @@ export function restoreState(raw) {
 
   const b = isObj(r.browse) ? r.browse : {};
   s.browse.q = str(b.q, s.browse.q);
+  s.browse.show = oneOf(b.show, ['all', 'pool'], s.browse.show);
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
   s.browse.min = optIntIn(b.min, 0, MAX_REAL, s.browse.min);
   s.browse.max = optIntIn(b.max, 0, MAX_REAL, s.browse.max);
@@ -153,8 +157,7 @@ export function restoreState(raw) {
   s.opt.target = oneOf(o.target, job.stats, s.opt.target);
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
-  s.opt.avg = bool(o.avg, s.opt.avg);
-  s.opt.avgMin = ilvlIn(o.avgMin, s.opt.avgMin);
+  s.opt.exclude = Array.isArray(o.exclude) ? SOURCES.map(x => x.key).filter(k => o.exclude.includes(k)) : [];
 
   s.pool = restorePool(r.pool);
   reserveIds(s.pool.map(i => i.id));

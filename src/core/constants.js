@@ -37,11 +37,12 @@ export const BASE_SLOT_PCT = Object.freeze({
 export const SUB_WEIGHTS = Object.freeze([100, 70, 20]);
 
 export const MAIN_NAME = Object.freeze({ str: 'Strength', dex: 'Dexterity', int: 'Intelligence', mind: 'Mind' });
-export const MAIN_SHORT = Object.freeze({ str: 'Str', dex: 'Dex', int: 'Int', mind: 'Mind' });
+/* Short names as xivgear writes them */
+export const MAIN_SHORT = Object.freeze({ str: 'STR', dex: 'DEX', int: 'INT', mind: 'MND' });
 export const SPD_NAME = Object.freeze({ sks: 'Skill Speed', sps: 'Spell Speed' });
 export const SPD_SHORT = Object.freeze({ sks: 'SkS', sps: 'SpS' });
 export const SPEC_NAME = Object.freeze({ piety: 'Piety', ten: 'Tenacity' });
-export const SPEC_SHORT = Object.freeze({ piety: 'Piety', ten: 'Ten' });
+export const SPEC_SHORT = Object.freeze({ piety: 'PIE', ten: 'TNC' });
 
 /* Role profiles: which raw stat each neutral key means. */
 export const PROFILES = Object.freeze({
@@ -84,18 +85,32 @@ export const JOBS = Object.freeze(
     return Object.freeze([id, ...JOB_INFO[id]]);
   }),
 );
-/* The first job in the game's own order; no job is favoured. */
+/* The job context used to render (hidden) job-dependent parts before a job is chosen, and the fallback for an unknown
+   id in makeJobContext. The page itself starts with no job. */
 export const DEFAULT_JOB = JOBS[0][0];
 export const ONE_HANDED_JOBS = Object.freeze(['PLD']); /* 1H weapon + off-hand; everyone else uses a 2H weapon */
-export const ROLE_GROUP = Object.freeze({
-  tank: 'Tanks',
-  healer: 'Healers',
-  melee: 'Melee DPS',
-  dex: 'Ranged and Dexterity DPS',
-  caster: 'Casters',
-});
+/* Expansions in order: [short name, full name, level cap]. The item level boundary after each one is the game's own
+   sync item level at its level cap (ParamGrow), see expansionBounds in speed.js. */
+export const EXPANSIONS = Object.freeze([
+  Object.freeze(['ARR', 'A Realm Reborn', 50]),
+  Object.freeze(['HW', 'Heavensward', 60]),
+  Object.freeze(['SB', 'Stormblood', 70]),
+  Object.freeze(['ShB', 'Shadowbringers', 80]),
+  Object.freeze(['EW', 'Endwalker', 90]),
+  Object.freeze(['DT', 'Dawntrail', 100]),
+]);
 
-/* Item database rows (src/data/items.js): [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique] */
+/* The job picker's rows, in the game's own role grouping and order. This is not the stat profile: Ninja and Viper are
+   melee here but use the Dexterity profile with the ranged jobs. */
+export const JOB_ROWS = Object.freeze([
+  Object.freeze(['Tanks', Object.freeze(['PLD', 'WAR', 'DRK', 'GNB'])]),
+  Object.freeze(['Healers', Object.freeze(['WHM', 'SCH', 'AST', 'SGE'])]),
+  Object.freeze(['Melee', Object.freeze(['MNK', 'DRG', 'NIN', 'SAM', 'RPR', 'VPR'])]),
+  Object.freeze(['Physical ranged', Object.freeze(['BRD', 'MCH', 'DNC'])]),
+  Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])]),
+]);
+
+/* Item database rows (src/data/items.json): [name, slotCode, ilvl, equipLevel, jobMask, "12 stats", unique, hq] */
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
@@ -103,3 +118,5 @@ export const RAW_SUBSTAT_IDX = Object.freeze(ITEM_STAT_ORDER.map((_, i) => i).fi
 /* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon */
 export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
+/* Gear sources the game files identify (crafted, tomestone, ultimate): bit i of a row's source mask = SOURCES[i]. */
+export const SOURCES = Object.freeze(ITEM_FORMAT.sources.map((s, i) => Object.freeze({ key: s.key, label: s.label, bit: 1 << i })));

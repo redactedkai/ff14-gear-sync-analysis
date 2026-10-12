@@ -1,11 +1,23 @@
 /* Speed stat -> GCD and DoT/HoT tick scaling (AkhMorning's formulas), using ParamGrow level data. */
 import { PG } from './tables.js';
+import { EXPANSIONS } from './constants.js';
 
 /* sub = BaseSpeed (the character's own speed at this level), div = LevelModifier,
    sync = the game's default sync item level for this level */
 export function speedParams(level) {
   const r = PG[Math.max(1, Math.min(100, level | 0)) - 1];
   return { sub: r[0], div: r[1], sync: r[2] };
+}
+
+/* Item level span of each expansion: from the previous expansion's level-cap sync item level to its own (the last
+   one is open-ended). [{short, name, from, to}], `from` of the first and `to` of the last are null. */
+export function expansionBounds() {
+  return EXPANSIONS.map(([short, name, cap], i) => ({
+    short,
+    name,
+    from: i ? speedParams(EXPANSIONS[i - 1][2]).sync : null,
+    to: i < EXPANSIONS.length - 1 ? speedParams(cap).sync : null,
+  }));
 }
 
 /* GCD in seconds for `gearSpd` speed from gear (the base `sub` is added here), base recast in ms. */
@@ -25,7 +37,7 @@ export function dotMult(gearSpd, level) {
 
 /* The GCD step that `gearSpd` falls in: {gcd, start, next, nextGcd}. `start` is the lowest gear speed with the same
    GCD, `next` the lowest with a shorter one (null if none within 100,000). The GCD never rises with more speed,
-   so both are found by binary search, at any speed (docs/audit-2.md A3: a fixed scan window used to stop at 1,200). */
+   so both are found by binary search, at any speed (an earlier fixed scan window stopped at 1,200). */
 export function gcdTierAt(gearSpd, level, baseMs) {
   const spd = Math.max(0, Math.floor(gearSpd));
   const gcd = gcdFor(spd, level, baseMs);

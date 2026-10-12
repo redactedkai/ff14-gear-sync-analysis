@@ -34,9 +34,8 @@ BAD_WORDS = ['undefined', 'NaN', 'null']
 TIMEOUT = 10_000  # ms for any single wait
 STORE_KEY = 'ilvl-stat-lab-v3'  # localStorage key of the saved state (src/ui/state.js)
 
-# Defaults owe nothing to any player's setup: the first job in the game's order, the level cap, and the game's own
-# sync item level for that level (ParamGrow: 690 at level 100).
-DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL = 'PLD', '690', '100'
+# Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
+DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL = '', '', '100'
 
 # Sync caps at item level 123: slot -> (substat cap, main stat cap). Same for every job (slot shares are job-neutral).
 CAPS_123 = {
@@ -66,21 +65,57 @@ def check(cond, msg):
 
 
 def wait_ready(pg):
-    """Alpine has rendered: the job select has options and the job info line is filled."""
-    expect(pg.locator('#job option').first).to_be_attached()
-    expect(pg.locator('#jobinfo')).not_to_have_text('')
+    """Alpine has rendered: the job picker has its buttons and the settings panel names the job (or "none chosen")."""
+    expect(pg.locator('[data-job-id]').first).to_be_attached()
+    expect(pg.locator('#job-name')).not_to_have_text('')
 
 
 def job_name(pg, job):
-    return pg.locator(f'#job option[value="{job}"]').inner_text().strip()
+    return pg.get_attribute(f'[data-job-id="{job}"]', 'aria-label')
+
+
+def current_job(pg):
+    """The job the picker shows as selected, '' when none is."""
+    sel = pg.locator('[data-job-id][aria-checked="true"]')
+    return sel.get_attribute('data-job-id') if sel.count() else ''
+
+
+def field_value(pg, sel):
+    """An input's value; '#job' means the job picker's selection."""
+    return current_job(pg) if sel == '#job' else pg.input_value(sel)
 
 
 def set_job(pg, job):
     """Switch job; when the pool is not empty the page asks first, and this confirms."""
-    pg.select_option('#job', job)
+    pg.click(f'[data-job-id="{job}"]')
     if pg.locator('#job-warning').count():
         pg.click('#job-confirm')
-    expect(pg.locator('#jobinfo')).to_contain_text(job_name(pg, job) + ':')
+    expect(pg.locator('[data-job]')).to_have_attribute('data-job', job)
+
+
+def show_gear(pg, which):
+    """The gear table's list: 'all' (database matches) or 'pool'."""
+    pg.click(f'#show-{which}')
+    expect(pg.locator(f'#show-{which}')).to_have_attribute('aria-pressed', 'true')
+
+
+def pool_rows(pg):
+    """Rows of the gear table in its My pool view (the browse filters apply)."""
+    show_gear(pg, 'pool')
+    return pg.locator('#gear-table tbody tr[data-key]')
+
+
+def expect_pool_empty(pg):
+    show_gear(pg, 'pool')
+    expect(pg.locator('#gear-table td.empty')).to_be_visible()
+    expect(pg.locator('#show-pool')).to_have_text('My pool (0)')
+
+
+def clear_pool(pg):
+    """Empty the pool (Clear pool is disabled when it already is), then show all gear."""
+    if pg.locator('#b-clear').is_enabled():
+        pg.click('#b-clear')
+    show_gear(pg, 'all')
 
 
 def show_tab(pg, tab):
@@ -235,7 +270,7 @@ def check_real_gear_optimizer(pg):
             check(want[key][0] == want[key][1], f'{job}: core optimizer {want[key][0]} != brute force {want[key][1]} ({key})')
         set_job(pg, job)
         show_tab(pg, 'pool')
-        pg.locator('#b-clear').click()
+        clear_pool(pg)
         pg.fill('#b-q', '')
         pg.select_option('#b-type', 'any')
         pg.fill('#b-min', str(lo))
@@ -244,12 +279,10 @@ def check_real_gear_optimizer(pg):
         expect(pg.locator('#b-count')).to_have_text(f'{want["count"]} matches')
         pg.click('#b-addall')
         expect(pg.locator('#b-count')).to_contain_text(f'Added {want["count"]} items')
-        expect(pg.locator('#pool-table tbody tr')).to_have_count(want['count'])
+        expect(pool_rows(pg)).to_have_count(want['count'])
 
         wait_optimizer(pg)
         pg.select_option('#o-target', 'spd')
-        if pg.locator('#o-avg').is_checked():  # compare without an average item level requirement
-            pg.locator('#o-avg').uncheck()
         speed = pg.locator('#o-target option[value="spd"]').inner_text().strip()
         total = pg.locator('#o-out .readout > div').first.locator('b')
         if not pg.locator('#sync').is_checked():
@@ -258,7 +291,8 @@ def check_real_gear_optimizer(pg):
             expect(total).to_have_text(str(want['synced'][0]))
         except AssertionError:
             check(False, f'{job} synced {speed} {total.inner_text()!r}, expected {want["synced"][0]}')
-        check(speed in pg.locator('#o-out h3').inner_text(), f'{job}: optimizer heading does not name {speed}')
+        expect(pg.locator('#o-result')).to_have_attribute('data-target', 'spd')
+        check(speed in pg.locator('#o-out .readout').inner_text(), f'{job}: optimizer result does not name {speed}')
         pg.screenshot(path=str(OUT / f'optimizer-{job}.png'), full_page=True)
 
         pg.locator('#sync').uncheck()
@@ -273,33 +307,32 @@ def check_real_gear_optimizer(pg):
 
 def check_job_switch_clears_pool(pg):
     """With gear in the pool, switching job (even within the same role) warns first; Cancel keeps the job and the
-    pool, confirming switches and clears the pool (docs/audit-2.md A1)."""
+    pool, confirming switches and clears the pool."""
     set_job(pg, 'WAR')
     show_tab(pg, 'pool')
-    if not pg.locator('#pool-table tbody tr td:not(.empty)').count():
+    if not pool_rows(pg).count():
+        show_gear(pg, 'all')
         pg.fill('#b-q', '')
         pg.fill('#b-min', '130')
         pg.fill('#b-max', '135')
         pg.fill('#b-lvl', '50')
         pg.click('#b-addall')
-    rows = pg.locator('#pool-table tbody tr').count()
+    rows = pool_rows(pg).count()
     check(rows > 0, 'pool is empty before the job switch check')
-    warrior = job_name(pg, 'WAR')
 
-    pg.select_option('#job', 'GNB')  # same role as WAR
+    pg.click('[data-job-id="GNB"]')  # same role as WAR
     expect(pg.locator('#job-warning')).to_be_visible()
     expect(pg.locator('#job-warning')).to_contain_text(job_name(pg, 'GNB'))
-    check(pg.input_value('#job') == 'WAR', f'job menu shows {pg.input_value("#job")!r} before the switch is confirmed')
+    check(current_job(pg) == 'WAR', f'job picker shows {current_job(pg)!r} before the switch is confirmed')
     pg.click('#job-cancel')
     expect(pg.locator('#job-warning')).to_have_count(0)
-    expect(pg.locator('#jobinfo')).to_contain_text(warrior + ':')
-    expect(pg.locator('#pool-table tbody tr')).to_have_count(rows)
+    expect(pg.locator('[data-job]')).to_have_attribute('data-job', 'WAR')
+    expect(pool_rows(pg)).to_have_count(rows)
 
-    pg.select_option('#job', 'GNB')
+    pg.click('[data-job-id="GNB"]')
     pg.click('#job-confirm')
-    expect(pg.locator('#jobinfo')).to_contain_text(job_name(pg, 'GNB') + ':')
-    expect(pg.locator('#pool-count')).to_contain_text('0 items')
-    expect(pg.locator('#pool-table td.empty')).to_be_visible()
+    expect(pg.locator('[data-job]')).to_have_attribute('data-job', 'GNB')
+    expect_pool_empty(pg)
 
 
 # Rings-only window for the copies check: (job, item level from, item level to, equip level up to).
@@ -331,6 +364,7 @@ console.log(JSON.stringify(out));
 def fill_browser(pg, lo, hi, lvl, slot='any'):
     """Set the browser filter to an item level window (name filter cleared)."""
     show_tab(pg, 'pool')
+    show_gear(pg, 'all')
     pg.fill('#b-q', '')
     pg.select_option('#b-type', slot)
     pg.fill('#b-min', str(lo))
@@ -338,57 +372,89 @@ def fill_browser(pg, lo, hi, lvl, slot='any'):
     pg.fill('#b-lvl', str(lvl))
 
 
-def copies_input(pg, name):
-    """The Copies field on the pool row whose item is `name`."""
-    cell = pg.locator('td:first-child').filter(has_text=re.compile('^' + re.escape(name) + '$'))
-    row = pg.locator('#pool-table tbody tr').filter(has=cell)
-    return row.locator('input[data-copies]')
-
-
-def set_copies(pg, name, n):
-    field = copies_input(pg, name)
-    field.fill(str(n))
-    field.dispatch_event('change')
+def ring_row(pg, name):
+    """The My pool row whose item is `name`."""
+    cell = pg.locator('td:nth-child(2)').filter(has_text=re.compile('^' + re.escape(name) + '(HQ)?$'))
+    return pool_rows(pg).filter(has=cell)
 
 
 def opt_total(pg):
     return pg.locator('#o-out .readout > div').first.locator('b')
 
 
-def check_copies_change_optimizer(pg):
-    """In a rings-only pool whose best pair is one non-Unique ring worn twice, cutting that ring to 1 copy lowers the
-    optimizer's total to what the core computes, and setting it back to 2 restores it."""
+def check_ring_copies(pg):
+    """In a rings-only pool whose best pair is one non-Unique ring worn twice: that ring is marked x2 and the
+    optimizer's total equals what the core computes with it worn on both hands."""
     job, lo, hi, lvl = COPIES_POOL
     want = run_node(NODE_COPIES, [job, lo, hi, lvl])
-    if not check(want['ring'], f'{job} rings {lo}-{hi}: no non-Unique ring whose copies change the best total; pick another window'):
+    if not check(want['ring'], f'{job} rings {lo}-{hi}: no non-Unique ring worn twice in the best pair; pick another window'):
         return
-    for key in ('two', 'one'):
-        check(want[key][0] == want[key][1], f'{job} rings: core optimizer {want[key][0]} != brute force {want[key][1]} ({key} copies)')
+    check(want['two'][0] == want['two'][1], f'{job} rings: core optimizer {want["two"][0]} != brute force {want["two"][1]}')
     set_job(pg, job)
     show_tab(pg, 'pool')
-    pg.locator('#b-clear').click()
+    clear_pool(pg)
     fill_browser(pg, lo, hi, lvl, 'ring')
     expect(pg.locator('#b-count')).to_have_text(f'{want["count"]} matches')
     pg.click('#b-addall')
-    expect(pg.locator('#pool-table tbody tr')).to_have_count(want['count'])
-    ring = want['ring']
-    expect(copies_input(pg, ring)).to_have_value('2')  # non-Unique rings are added with 2 copies
+    expect(pool_rows(pg)).to_have_count(want['count'])
+    expect(ring_row(pg, want['ring']).locator('.x2')).to_be_visible()  # non-Unique: worn on both hands
 
     wait_optimizer(pg)
-    if pg.locator('#o-avg').is_checked():
-        pg.locator('#o-avg').uncheck()
     if not pg.locator('#sync').is_checked():
         pg.locator('#sync').check()
+    pg.select_option('#o-target', 'spd')  # the expected total is the best speed stat
     total = opt_total(pg)
-    for n, key in ((2, 'two'), (1, 'one'), (2, 'two')):
-        show_tab(pg, 'pool')
-        set_copies(pg, ring, n)
-        expect(copies_input(pg, ring)).to_have_value(str(n))
-        wait_optimizer(pg)
-        try:
-            expect(total).to_have_text(str(want[key][0]))
-        except AssertionError:
-            check(False, f'{job}: {ring} at {n} copies, optimizer total {total.inner_text()!r}, expected {want[key][0]}')
+    try:
+        expect(total).to_have_text(str(want['two'][0]))
+    except AssertionError:
+        check(False, f'{job}: optimizer total {total.inner_text()!r}, expected {want["two"][0]} with {want["ring"]} worn twice')
+
+
+EXCLUDE_POOL = ('SGE', 270, 290, 70)  # unsynced, the best main stat uses crafted pieces; without them it is lower
+NODE_EXCLUDE = """
+const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
+const { makeJobContext } = await import(%s);
+const { browseItems, poolItemFromRow, withoutSources } = await import(%s);
+const { optimize } = await import(%s);
+await import(%s);
+const job = makeJobContext(jobId);
+const pool = browseItems(job, { ilvlMin, ilvlMax, lvlMax }).map(r => poolItemFromRow(job, r));
+const best = ex => {
+  const r = optimize(job, withoutSources(pool, ex), { cap: null, sync: false }, { target: 'main' });
+  return r.ok ? r.totals.main : null;
+};
+console.log(JSON.stringify({ count: pool.length, all: best([]), crafted: best(['crafted']) }));
+"""
+
+
+def check_exclude_sources(pg):
+    """Leaving out crafted gear changes the optimizer total to what the core computes without it; the choice is saved."""
+    job, lo, hi, lvl = EXCLUDE_POOL
+    want = run_node(NODE_EXCLUDE, [job, lo, hi, lvl])
+    if not check(
+        want['crafted'] is not None and want['crafted'] < want['all'],
+        f'{job} {lo}-{hi}: excluding crafted gear does not lower the total; pick another window',
+    ):
+        return
+    set_job(pg, job)
+    show_tab(pg, 'pool')
+    clear_pool(pg)
+    fill_browser(pg, lo, hi, lvl)
+    pg.click('#b-addall')
+    expect(pool_rows(pg)).to_have_count(want['count'])
+    wait_optimizer(pg)
+    if pg.locator('#sync').is_checked():
+        pg.locator('#sync').uncheck()
+    pg.select_option('#o-target', 'main')
+    crafted = pg.locator('#o-exclude input[data-source="crafted"]')
+    check(not crafted.is_checked(), 'crafted gear is left out by default')
+    expect(opt_total(pg)).to_have_text(str(want['all']))
+    crafted.check()
+    expect(opt_total(pg)).to_have_text(str(want['crafted']))
+    wait_saved(pg, "s => s.opt.exclude.join() === 'crafted'")
+    crafted.uncheck()
+    expect(opt_total(pg)).to_have_text(str(want['all']))
+    pg.locator('#sync').check()
 
 
 def wait_saved(pg, js_condition):
@@ -401,40 +467,33 @@ def wait_saved(pg, js_condition):
 
 
 def check_reload_persists(pg):
-    """Build a non-default state (job, cap, sync off, level, pool with one ring's copies edited, optimizer target and
-    tiebreaks, browse filter, Piece lab slot and item level, Optimizer tab open), reload, and every part comes back:
-    the inputs, the pool rows and copies, the open tab and the same optimizer total."""
+    """Build a non-default state (job, cap, sync off, level, pool, optimizer target and
+    tiebreaks, browse filter, Piece lab slot and item level, Gear optimizer tab open), reload, and every part comes back:
+    the inputs, the pool rows, the open tab and the same optimizer total."""
     job, lo, hi, lvl = 'DRG', 130, 135, 50  # not the default job, a different role from the other checks
     set_job(pg, job)
     show_tab(pg, 'pool')
-    pg.locator('#b-clear').click()
+    clear_pool(pg)
     fill_browser(pg, lo, hi, lvl)
     pg.click('#b-addall')
-    expect(pg.locator('#pool-table tbody tr td.empty')).to_have_count(0)
-    rows = pg.locator('#pool-table tbody tr').count()
-    rings = pg.locator('#pool-table input[data-copies]').evaluate_all('els => els.filter(e => e.value === "2").map(e => e.dataset.copies)')
-    if not check(rings, f'{job} {lo}-{hi}: no ring with 2 copies in the pool to edit'):
-        return
-    ring_id = rings[0]
-    field = pg.locator(f'#pool-table input[data-copies="{ring_id}"]')
-    field.fill('1')
-    field.dispatch_event('change')
+    expect(pool_rows(pg).first).to_be_visible()
+    rows = pool_rows(pg).count()
 
     show_math(pg, 'piece')
     pg.select_option('#p-slot', 'body')
     pg.fill('#p-ilvl', '200')
     pg.locator('#p-ilvl').dispatch_event('change')
-    set_number(pg, '#cap', '130')
+    set_cap(pg, '130')
     set_number(pg, '#level', '60')
     if pg.locator('#sync').is_checked():
         pg.locator('#sync').uncheck()
+    expect(pg.locator('#cap')).to_be_disabled()  # no sync, so no cap to set
     wait_optimizer(pg)
     pg.select_option('#o-tb1', 'det')
-    pg.select_option('#o-tb2', '')
-    pg.select_option('#o-target', 'crit')  # last, so the heading below shows a result that includes every change
-    # the result is debounced: wait until it names the new target before reading the total
-    crit = pg.locator('#o-target option[value="crit"]').inner_text().strip()
-    expect(pg.locator('#o-out h3')).to_have_text(f'Best loadout for {crit}')
+    pg.select_option('#o-tb2', 'vit')
+    pg.select_option('#o-target', 'crit')  # last, so the result below includes every change
+    # the result is debounced: wait until it is for the new target before reading the total
+    expect(pg.locator('#o-result')).to_have_attribute('data-target', 'crit')
     total = opt_total(pg)
     before = total.inner_text()
 
@@ -450,25 +509,24 @@ def check_reload_persists(pg):
         '#p-ilvl': '200',
         '#o-target': 'crit',
         '#o-tb1': 'det',
-        '#o-tb2': '',
+        '#o-tb2': 'vit',
     }
     for sel, v in inputs.items():
-        check(pg.input_value(sel) == v, f'reload setup: {sel} is {pg.input_value(sel)!r} before reload, expected {v!r}')
+        check(field_value(pg, sel) == v, f'reload setup: {sel} is {field_value(pg, sel)!r} before reload, expected {v!r}')
     # wait for the debounced save of the last change, rather than sleeping
     wait_saved(
         pg,
         f"""s => s.job === '{job}' && s.cap === 130 && s.level === 60 && s.sync === false && s.tab === 'opt'
-        && s.opt.target === 'crit' && s.opt.tb === 'det' && s.opt.tb2 === '' && s.piece.slot === 'body'
-        && s.piece.ilvl === 200 && Array.isArray(s.pool) && s.pool.length === {rows}
-        && s.pool.some(i => i.id === '{ring_id}' && i.copies === 1)""",
+        && s.opt.target === 'crit' && s.opt.tb === 'det' && s.opt.tb2 === 'vit' && s.piece.slot === 'body'
+        && s.piece.ilvl === 200 && Array.isArray(s.pool) && s.pool.length === {rows}""",
     )
 
     pg.reload()
     wait_ready(pg)
     selected = pg.get_attribute('[data-tab=opt]', 'aria-selected') == 'true'
-    check(selected and pg.locator('#tab-opt').is_visible(), 'after reload the Optimizer tab is not the open tab')
+    check(selected and pg.locator('#tab-opt').is_visible(), 'after reload the Gear optimizer tab is not the open tab')
     for sel, v in inputs.items():
-        got = pg.input_value(sel)
+        got = field_value(pg, sel)
         check(got == v, f'after reload {sel} is {got!r}, expected {v!r}')
     check(not pg.locator('#sync').is_checked(), 'after reload sync is on, expected off')
     wait_optimizer(pg)
@@ -478,11 +536,11 @@ def check_reload_persists(pg):
         got = total.inner_text() if total.count() else 'no result'
         check(False, f'after reload the optimizer total is {got!r}, expected {before!r} as before reload')
     show_tab(pg, 'pool')
-    got_rows = pg.locator('#pool-table tbody tr').count()
+    got_rows = pool_rows(pg).count()
     check(got_rows == rows, f'after reload the pool has {got_rows} rows, expected {rows}')
-    field = pg.locator(f'#pool-table input[data-copies="{ring_id}"]')
-    check(field.count() == 1 and field.input_value() == '1', 'after reload the edited ring copies is not 1')
     pg.locator('#sync').check()  # leave sync on for the later checks
+    expect(pg.locator('#cap')).to_be_enabled()
+    check(pg.input_value('#cap') == '130', f'the cap is {pg.input_value("#cap")!r} after sync came back on, expected 130')
 
 
 # Stored values that are not usable state: each must load as the defaults without a JS error.
@@ -501,13 +559,13 @@ BAD_STORAGE = [
                 'mathTab': {},
                 'piece': 'head',
                 'browse': [1],
-                'opt': {'target': 5, 'tb': None, 'avg': 'no', 'avgMin': 'x'},
+                'opt': {'target': 5, 'tb': None, 'tb2': 'x'},
                 'poolFilter': 3,
                 'pool': {'0': {'id': 'x'}},
             }
         ),
     ),
-    ('a pool of broken items', json.dumps({'job': DEFAULT_JOB, 'pool': [None, 5, {'id': 3}, {'id': 'a', 'type': 'ring', 'ilvl': 'big'}]})),
+    ('a pool of broken items', json.dumps({'job': 'SGE', 'pool': [None, 5, {'id': 3}, {'id': 'a', 'type': 'ring', 'ilvl': 'big'}]})),
 ]
 
 
@@ -516,29 +574,85 @@ def set_number(pg, sel, value):
     pg.locator(sel).dispatch_event('change')
 
 
+def set_cap(pg, value):
+    """Turn item level sync on (the cap field is disabled while it is off) and set the cap."""
+    if not pg.locator('#sync').is_checked():
+        pg.locator('#sync').check()
+    set_number(pg, '#cap', value)
+
+
 def check_corrupted_storage(pg):
     """Invalid JSON or wrong-typed saved values: the page loads with the default settings, an empty pool and no JS
     error. The bad value is written from a separate blank page (same file:// storage), so no pending save of this
     page can overwrite it before the load."""
     blank = OUT / 'blank.html'
     blank.write_text('<!doctype html><title>blank</title>', encoding='utf-8')
-    defaults = {'#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL, '#b-min': '100', '#b-lvl': '100', '#o-target': 'spd'}
     for what, raw in BAD_STORAGE:
+        want_job = 'SGE' if what == 'a pool of broken items' else DEFAULT_JOB  # only that case stores a valid job
+        defaults = {'#job': want_job, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL}
+        if want_job:
+            defaults.update({'#b-min': '', '#b-lvl': '100', '#o-target': 'main', '#o-tb1': '', '#o-tb2': ''})
         n_errors = len(errors)
         pg.goto(blank.as_uri())
         pg.evaluate('([k, v]) => localStorage.setItem(k, v)', [STORE_KEY, raw])
         pg.goto(PAGE.as_uri())
         wait_ready(pg)
-        expect(pg.locator('#tab-pool')).to_be_visible()
+        if want_job:
+            expect(pg.locator('#tab-pool')).to_be_visible()
+            expect_pool_empty(pg)
+        else:
+            expect(pg.locator('#no-job')).to_be_visible()
         for sel, v in defaults.items():
-            got = pg.input_value(sel)
+            got = field_value(pg, sel)
             check(got == v, f'stored {what}: {sel} is {got!r}, expected the default {v!r}')
-        check(pg.locator('#sync').is_checked(), f'stored {what}: sync is off, expected the default on')
-        expect(pg.locator('#pool-table td.empty')).to_be_visible()
+        check(not pg.locator('#sync').is_checked(), f'stored {what}: sync is on, expected the default off')
         check_no_bad_text(pg, f'page loaded from stored {what}')
         check(len(errors) == n_errors, f'stored {what}: JS errors on load: {errors[n_errors:]}')
         # the page repairs storage: the next save holds valid state
-        wait_saved(pg, f"s => s.job === '{DEFAULT_JOB}' && Array.isArray(s.pool)")
+        job_js = f"'{want_job}'" if want_job else 'null'
+        wait_saved(pg, f's => s.job === {job_js} && Array.isArray(s.pool)')
+
+
+def check_reset(pg):
+    """Reset to defaults: with gear in the pool it asks first; Cancel keeps everything, confirming restores every
+    default and empties the pool."""
+    set_job(pg, 'SGE')
+    show_tab(pg, 'pool')
+    set_cap(pg, '200')
+    show_gear(pg, 'all')
+    pg.fill('#b-q', 'Ring')
+    expect(pg.locator('#b-addall')).to_be_enabled()
+    pg.click('#b-addall')
+    expect(pool_rows(pg).first).to_be_visible()
+    pg.click('#reset')
+    expect(pg.locator('#reset-warning')).to_be_visible()
+    pg.click('#reset-cancel')
+    expect(pg.locator('#reset-warning')).to_have_count(0)
+    check(pg.input_value('#cap') == '200', 'Cancel changed the cap')
+    pg.click('#reset')
+    pg.click('#reset-confirm')
+    expect(pg.locator('#no-job')).to_be_visible()
+    check(current_job(pg) == '', f'after reset the job is {current_job(pg)!r}, expected none')
+    check(not pg.locator('#sync').is_checked(), 'after reset sync is on, expected off')
+    for sel, v in {'#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL}.items():
+        check(pg.input_value(sel) == v, f'after reset {sel} is {pg.input_value(sel)!r}, expected {v!r}')
+    set_job(pg, 'SGE')
+    for sel in ('#b-q', '#b-min'):
+        check(pg.input_value(sel) == '', f'after reset {sel} is {pg.input_value(sel)!r}, expected empty')
+    expect_pool_empty(pg)
+    set_cap(pg, '123')  # back to the caps the later checks expect
+    set_number(pg, '#level', '50')
+
+
+def check_cap_validation(pg):
+    """With sync on, the cap field asks for a cap while empty and for a whole item level in range."""
+    pg.locator('#sync').check()
+    expect(pg.locator('#cap-error')).to_have_text(' · Enter a sync cap')
+    pg.fill('#cap', '9999')
+    expect(pg.locator('#cap-error')).to_contain_text('Enter a whole item level from 1 to')
+    pg.fill('#cap', '123')
+    expect(pg.locator('#cap-error')).to_be_hidden()
+    pg.locator('#sync').uncheck()
 
 
 def check_pld_offhand(pg):
@@ -562,7 +676,7 @@ def check_no_bad_text(pg, where):
 def walk_jobs(pg):
     """Every tab for each job: no undefined/NaN/null text, correct sync caps, page fits 400 px."""
     pg.set_viewport_size({'width': 400, 'height': 800})
-    set_number(pg, '#cap', '123')  # check_sync_caps expects the item level 123 caps
+    set_cap(pg, '123')  # check_sync_caps expects the item level 123 caps
     set_number(pg, '#level', '50')
     for job in JOBS:
         set_job(pg, job)
@@ -597,24 +711,29 @@ def main():
         pg.on('console', lambda m: errors.append('console error: ' + m.text) if m.type == 'error' and 'ERR_' not in m.text else None)
         pg.goto(PAGE.as_uri())
         wait_ready(pg)
-        check(pg.title() == 'Item Level Stat Lab', f'title is {pg.title()!r}')
+        check(pg.title() == 'Gear Sync Analysis', f'title is {pg.title()!r}')
         for sel, v in {'#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL}.items():
-            check(pg.input_value(sel) == v, f'default {sel} is {pg.input_value(sel)!r}, expected {v!r}')
-        check(not pg.locator('#o-avg').is_checked(), 'the average item level requirement is on by default')
+            check(field_value(pg, sel) == v, f'default {sel} is {field_value(pg, sel)!r}, expected {v!r}')
+        check(not pg.locator('#sync').is_checked(), 'sync is on by default')
+        check(pg.locator('#cap').is_disabled(), 'the cap field is enabled while sync is off')
+        expect(pg.locator('#no-job')).to_be_visible()  # no job yet: no gear table
+        check_cap_validation(pg)
 
         steps = [
             check_piece_lab,
             check_wiki_validation,
             check_real_gear_optimizer,
             check_job_switch_clears_pool,
-            check_copies_change_optimizer,
+            check_ring_copies,
+            check_exclude_sources,
             check_reload_persists,
             check_corrupted_storage,
+            check_reset,
             check_pld_offhand,
             walk_jobs,
         ]
         set_job(pg, 'SGE')
-        set_number(pg, '#cap', '123')  # the checks below use the item level 123 caps
+        set_cap(pg, '123')  # the checks below use the item level 123 caps
         set_number(pg, '#level', '50')
         for step in steps:
             try:

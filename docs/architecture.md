@@ -28,7 +28,7 @@ The tool computes all of that **once per job** into a *job context*: a small, fr
 What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
-- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin only). This fixes the list of active slots, the weapon's slot share (140 or 100 per mille) and how much the weapon counts in the average item level (twice or once).
+- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin only). This fixes the list of active slots, and the weapon's slot share (140 or 100 per mille).
 - **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise ([math.md, section 4](math.md#4-the-stats-on-a-piece)).
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
@@ -70,9 +70,9 @@ Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps ne
 | --- | --- |
 | Settings, Piece lab, Sync caps | On every relevant change (cheap: a few formulas) |
 | Real-gear accuracy check | Once, the first time its panel is opened (it scans every item in the database) |
-| Gear browser | On any change of its filters, job, cap or sync, but only while the Item pool tab is open. Shows the first 100 matches; "Add all" takes at most 3,000 |
+| Gear table | On any change of its filters, list (All gear or My pool), the pool, job, cap or sync, but only while the Gear pool tab is open. Shows the first 100 database matches or 400 pool items; "Add all" takes at most 3,000 |
 | Pool table | On every pool change. Renders the first 400 rows; the optimizer still uses all of them |
-| Optimizer result | 120 ms after the last change of pool, job, cap, sync, level or optimizer settings, and only while the Optimizer tab is open. Node limit 700,000 |
+| Optimizer result | 120 ms after the last change of pool, job, cap, sync, level or optimizer settings, and only while the Gear optimizer tab is open. Node limit 700,000 |
 | Per-stat ceiling table | Same trigger and delay; 12 or 14 optimizer runs at 150,000 nodes each |
 
 The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. On a 2,033-item Sage pool one optimizer run takes about 15 to 20 ms and the full ceiling table about 0.23 s ([optimizer.md, section 7](optimizer.md#7-correctness-and-performance)).
@@ -81,7 +81,7 @@ The debounce works by reading all inputs synchronously inside the effect (so the
 
 The page remembers the user's settings between visits in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync caps item level, Piece lab inputs, browse filters and sort, optimizer target, tiebreaks and average item level requirement, the pool filter, and the pool itself (each item's name, slot, item level, stats, copies and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync caps item level, Piece lab inputs, browse filters and sort, optimizer target and tiebreaks, and the pool itself (each item's name, slot, item level, stats, copies, HQ flag and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 
@@ -93,7 +93,7 @@ The page remembers the user's settings between visits in the browser's local sto
 - pool items are dropped if their slot, item level or stats are unusable, unknown fields are discarded, duplicate ids are removed, and the restored ids are reserved so new items never reuse them;
 - older saves that stored the math sub-view as the tab are translated.
 
-An invalid field falls back to its default and the valid ones are kept. 14 unit tests cover this field by field (audit finding F4).
+An invalid field falls back to its default and the valid ones are kept. 14 unit tests cover this field by field.
 
 **Storage key versioning.** The key carries a version suffix (currently `-v3`). If the saved shape changes in a way old data cannot satisfy, bump the suffix, and keep the restore step repairing old values field by field rather than discarding them.
 
@@ -124,7 +124,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 
 | Concept | File |
 | --- | --- |
-| Generated data (never edit by hand) | `src/data/item-level.js`, `src/data/items.js` |
+| Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/job-icons.js` |
 | Tables and limits derived from the data | `src/core/tables.js` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, `slotActive`, `ilWeight`, `statColumn`) |
@@ -135,8 +135,8 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
 | Budget chart | `src/ui/chart.js` |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-caps.js`, `browse.js`, `pool.js`, `optimizer.js`) |
-| Components | `src/ui/components/` (`page.js`, `piece-lab.js`, `sync-caps.js`, `validation-panel.js`, `browser.js`, `pool.js`, `optimizer.js`) |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-caps.js`, `gear.js`, `optimizer.js`) |
+| Components | `src/ui/components/` (`page.js`, `piece-lab.js`, `sync-caps.js`, `validation-panel.js`, `gear.js`, `optimizer.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |

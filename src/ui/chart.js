@@ -1,8 +1,12 @@
-/* SVG line chart of the main-stat and substat budget columns by item level, with the sync cap marked.
+/* SVG line chart of the main-stat and substat budget columns by item level, with expansion dividers and the sync
+   cap marked.
    Returns markup built only from numbers, so it is safe to insert with x-html. */
 import { statColumn } from '../core/job-context.js';
 import { IL, MAX_REAL } from '../core/tables.js';
 import { clampIlvl } from '../core/formulas.js';
+import { expansionBounds } from '../core/speed.js';
+
+const EXP = expansionBounds();
 
 function niceStep(max, n) {
   const raw = max / n,
@@ -39,12 +43,22 @@ export function budgetChartSvg(job, ilvl, cap) {
   for (let v = 0; v <= ymax + 1e-9; v += step) {
     g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
   }
-  const xs = niceStep(x1 - x0, 6);
-  for (let v = Math.ceil(x0 / xs) * xs; v <= x1; v += xs) {
+  // x-axis numbers at the expansion breakpoints
+  for (const e of EXP) {
+    const v = e.to;
+    if (v == null || v <= x0 || v >= x1) continue;
     g += `<line x1="${X(v)}" x2="${X(v)}" y1="${H - B}" y2="${H - B + 4}" stroke="var(--muted)"/><text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`;
   }
-  if (cap >= x0 && cap <= x1) {
-    g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3" stroke-width="1.5"/><text x="${X(cap) + 4}" y="${T + 10}" style="fill:var(--bad)">cap ${cap}</text>`;
+  for (const e of EXP) {
+    const a = Math.max(x0, e.from ?? x0),
+      b = Math.min(x1, e.to ?? x1);
+    if (a >= b) continue;
+    if (e.to != null && e.to < x1)
+      g += `<line x1="${X(e.to)}" x2="${X(e.to)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="1 3" stroke-width="1"/>`;
+    g += `<text x="${(X(a) + X(b)) / 2}" y="${T + 8}" text-anchor="middle" class="exp"><title>${e.name}</title>${e.short}</text>`;
+  }
+  if (cap != null && cap >= x0 && cap <= x1) {
+    g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T + 12}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3" stroke-width="1.5"/><text x="${X(cap) + 4}" y="${T + 24}" style="fill:var(--bad)">cap ${cap}</text>`;
   }
   g += `<path d="${line(mainCol)}" fill="none" stroke="var(--gold)" stroke-width="2"/><path d="${line(subCol)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
   if (il >= x0 && il <= x1) {

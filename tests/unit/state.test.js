@@ -8,10 +8,11 @@ import { newId } from '../../src/core/items.js';
 
 const D = defaultState();
 const clone = o => JSON.parse(JSON.stringify(o));
+/* Defaults for `job`, or with no job chosen (null): placeholder job-dependent defaults from DEFAULT_JOB. */
 const fresh = job => {
   const s = defaultState();
   s.job = job;
-  resetForJob(s, makeJobContext(job));
+  resetForJob(s, makeJobContext(job ?? DEFAULT_JOB));
   return s;
 };
 const stats = o => Object.assign(Object.fromEntries(ALL_STATS.map(k => [k, 0])), o);
@@ -23,6 +24,7 @@ const item = o => ({
   stats: stats({ main: 20, vit: 21, spd: 18 }),
   copies: 2,
   src: 'game',
+  hq: false,
   ...o,
 });
 
@@ -37,9 +39,8 @@ function validSave() {
     mathTab: 'sync',
     syncIlvl: 400,
     piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'det', 'spec'] },
-    browse: { q: 'Robe', type: 'body', min: 110, max: 140, lvl: 50, sort: 'spd' },
-    opt: { target: 'spec', tb: '', tb2: 'crit', avg: false, avgMin: 130 },
-    poolFilter: 'ring',
+    browse: { show: 'pool', q: 'Robe', type: 'body', min: 110, max: 140, lvl: 50, sort: 'spd' },
+    opt: { target: 'spec', tb: '', tb2: 'crit', exclude: ['tomestone', 'ultimate'] },
     pool: [
       item(),
       item({ id: 'i2', name: 'Some head', type: 'head', ilvl: 135, stats: stats({ main: 30, spd: 29 }), copies: 1 }),
@@ -66,7 +67,7 @@ function expectFieldDefault(path, value, expected) {
 }
 
 test('null, undefined and non-object input give the defaults', () => {
-  const def = fresh(DEFAULT_JOB);
+  const def = fresh(null);
   for (const raw of [null, undefined, 0, 42, 'state', true, [], [1, 2]]) {
     assert.deepEqual(restoreState(raw), def, JSON.stringify(raw));
   }
@@ -79,15 +80,15 @@ test('a valid full saved state round-trips unchanged', () => {
   assert.deepEqual(restoreState(clone(restoreState(clone(raw)))), raw);
 });
 
-test('an empty object gives the defaults for the default job', () => {
-  assert.deepEqual(restoreState({}), fresh(DEFAULT_JOB));
+test('an empty object gives the defaults, with no job chosen', () => {
+  assert.deepEqual(restoreState({}), fresh(null));
 });
 
-test('unknown job falls back to the default job, other fields kept', () => {
+test('unknown job means no job chosen, other fields kept', () => {
   const s = corrupt('job', 'XYZ');
-  assert.equal(s.job, DEFAULT_JOB);
+  assert.equal(s.job, null);
   assert.equal(s.cap, 290);
-  assert.equal(corrupt('job', 7).job, DEFAULT_JOB);
+  assert.equal(corrupt('job', 7).job, null);
 });
 
 test('top-level scalars of the wrong type or out of range fall back field by field', () => {
@@ -104,8 +105,6 @@ test('top-level scalars of the wrong type or out of range fall back field by fie
   expectFieldDefault('level', '50', D.level); // strings are not accepted here
   expectFieldDefault('syncIlvl', 5000, MAX_REAL);
   expectFieldDefault('syncIlvl', {}, 475);
-  expectFieldDefault('poolFilter', 'offhand', 'all'); // not an active slot for a two-handed job
-  expectFieldDefault('poolFilter', 3, 'all');
 });
 
 test('tab and mathTab', () => {
@@ -130,14 +129,17 @@ test('nested objects that are not objects fall back to their defaults', () => {
 });
 
 test('piece fields', () => {
-  expectFieldDefault('piece.ilvl', 'abc', 475);
+  assert.equal(D.piece.ilvl, MAX_REAL); // the highest real item level
+  expectFieldDefault('piece.ilvl', 'abc', MAX_REAL);
   expectFieldDefault('piece.ilvl', 900, MAX_REAL);
   expectFieldDefault('piece.slot', 'belt', 'head');
   expectFieldDefault('piece.slot', 'offhand', 'head');
   const ds = defaultSubs(makeJobContext('WHM'));
+  assert.deepEqual(ds, ['spec', null, null]); // the job's own substat first (Piety), ranks 2 and 3 empty
+  assert.deepEqual(defaultSubs(makeJobContext('MNK')), ['spd', null, null]); // no special substat: speed
   expectFieldDefault('piece.subs', 'crit', ds);
   expectFieldDefault('piece.subs', { 0: 'crit' }, ds);
-  expectFieldDefault('piece.subs', ['crit', 'crit', 'det'], ['crit', ds[1], 'det']);
+  expectFieldDefault('piece.subs', ['crit', 'crit', 'det'], ['crit', 'det', null]); // the repeat drops; rank 3 moves up
   expectFieldDefault('piece.subs', ['crit', 'det', 'crit'], ['crit', 'det', null]);
   expectFieldDefault('piece.subs', [1, 'det'], [ds[0], 'det', null]);
 });
@@ -147,7 +149,7 @@ test('browse fields', () => {
   expectFieldDefault('browse.type', 'belt', 'any');
   expectFieldDefault('browse.min', '', '');
   expectFieldDefault('browse.min', '120', 120); // number inputs bound with x-model save strings
-  expectFieldDefault('browse.min', 'abc', 100);
+  expectFieldDefault('browse.min', 'abc', D.browse.min);
   expectFieldDefault('browse.min', -10, 0);
   expectFieldDefault('browse.max', 5000, MAX_REAL);
   expectFieldDefault('browse.max', null, '');
@@ -157,15 +159,15 @@ test('browse fields', () => {
 });
 
 test('opt fields', () => {
-  expectFieldDefault('opt.target', 'nope', 'spd');
-  expectFieldDefault('opt.target', '', 'spd');
-  expectFieldDefault('opt.tb', 'nope', 'main');
-  expectFieldDefault('opt.tb', null, 'main');
-  expectFieldDefault('opt.tb2', 3, 'vit');
-  expectFieldDefault('opt.avg', 'true', D.opt.avg);
-  expectFieldDefault('opt.avgMin', 'abc', D.opt.avgMin);
-  expectFieldDefault('opt.avgMin', 0, 1);
-  expectFieldDefault('opt.avgMin', 99999, MAX_REAL);
+  assert.deepEqual([D.opt.target, D.opt.tb, D.opt.tb2], ['main', '', '']); // main stat first, no tiebreaks
+  expectFieldDefault('opt.target', 'nope', D.opt.target);
+  expectFieldDefault('opt.target', '', D.opt.target);
+  expectFieldDefault('opt.tb', 'nope', D.opt.tb);
+  expectFieldDefault('opt.tb', null, D.opt.tb);
+  expectFieldDefault('opt.tb2', 3, D.opt.tb2);
+  assert.deepEqual(D.opt.exclude, []); // every source searched
+  expectFieldDefault('opt.exclude', 'ultimate', []);
+  expectFieldDefault('opt.exclude', ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
 });
 
 test('pool: unusable items are dropped, usable ones repaired', () => {
@@ -197,7 +199,7 @@ test('pool: unusable items are dropped, usable ones repaired', () => {
   const s = restoreState({ job: 'SGE', pool });
   assert.deepEqual(s.pool, [
     good,
-    { id: 'i20', name: 'Ring custom', type: 'ring', ilvl: 130, stats: stats({ main: 10 }), copies: 1, src: 'game' },
+    { id: 'i20', name: 'Ring custom', type: 'ring', ilvl: 130, stats: stats({ main: 10 }), copies: 1, src: 'game', hq: false },
   ]);
   assert.deepEqual(restoreState({ job: 'SGE', pool: 'x' }).pool, []);
   assert.deepEqual(restoreState({ job: 'SGE', pool: { 0: good } }).pool, []);
@@ -220,16 +222,13 @@ test('a save from another role is repaired as before', () => {
   const m = restoreState(raw);
   const mnk = makeJobContext('MNK');
   assert.deepEqual(m.piece.subs, ['crit', 'det', null]);
-  assert.equal(m.opt.target, 'spd');
+  assert.equal(m.opt.target, 'main');
   // PLD keeps an off-hand piece slot, two-handed jobs do not
   raw.job = 'PLD';
   raw.piece.slot = 'offhand';
-  raw.poolFilter = 'offhand';
   assert.equal(restoreState(raw).piece.slot, 'offhand');
-  assert.equal(restoreState(raw).poolFilter, 'offhand');
   raw.job = 'WAR';
   const w = restoreState(raw);
   assert.equal(w.piece.slot, 'head');
-  assert.equal(w.poolFilter, 'all');
   assert.ok(!mnk.substats.includes('spec'));
 });

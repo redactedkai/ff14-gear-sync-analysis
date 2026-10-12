@@ -1,15 +1,14 @@
-/* Sync caps view (docs/audit-2.md A10): the special substat (Piety, Tenacity) has its own ItemLevel column, which
+/* Sync caps view: the special substat (Piety, Tenacity) has its own ItemLevel column, which
    differs from the shared substat column at a few rows. The view must show its cap where it differs, and only then. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { MAX_REAL } from '../../src/core/tables.js';
-import { IL } from '../../src/data/item-level.js';
+import { IL, MAX_REAL } from '../../src/core/tables.js';
 import { restoreState } from '../../src/ui/state.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 
 function makeApp(job, patch = {}) {
-  const s = restoreState({ job });
+  const s = restoreState({ job, sync: true });
   return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL, poolVersion: 0 }, patch);
 }
 
@@ -36,8 +35,8 @@ const expectedCap = (column, ilvl, type, oneHanded) => {
 const ARMOR = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'];
 
 for (const [job, column, short, oneHanded] of [
-  ['SGE', 'piety', 'Piety', false],
-  ['PLD', 'ten', 'Ten', true],
+  ['SGE', 'piety', 'PIE', false],
+  ['PLD', 'ten', 'TNC', true],
 ]) {
   test(`${job} at cap 540 shows the ${short} cap from its own ItemLevel column`, () => {
     const v = syncView(makeApp(job, { cap: 540 }));

@@ -1,6 +1,6 @@
 /* Optimizer stage 2: depth-first branch-and-bound over the slot sequence.
-   Prunes on the score upper bound and on constraints (stat minimums, average item level) that the
-   remaining slots can no longer satisfy. */
+   Prunes on the score upper bound and on a speed minimum that the remaining
+   slots can no longer reach. */
 
 /* remMax[d][i]: most of dimension d slots i.. can still add; remSc[i]: best score they can still add. */
 export function suffixBounds(posList, dims) {
@@ -19,10 +19,10 @@ export function suffixBounds(posList, dims) {
   return { remMax, remSc };
 }
 
-/* need: {stat: minimum total}; ilNeed: minimum summed `ilw` (0 = none); maxs: {stat: maximum total}.
+/* spdMin, spdMax: optional bounds on the speed total (null for none).
    Returns {best, nodes, truncated}; best[i] = {a: candidate | null, rank} or best = null if nothing is feasible.
    A slot is left empty only when every candidate's copies are used up. */
-export function branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, nodeLimit }) {
+export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLimit }) {
   const nSlots = slotList.length;
   const { remMax, remSc } = suffixBounds(posList, dims);
   let best = null,
@@ -43,8 +43,7 @@ export function branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, no
       return;
     }
     if (pos === nSlots) {
-      for (const s in need) if (cur[s] < need[s]) return;
-      if (ilNeed && cur.ilw < ilNeed) return;
+      if (spdMin != null && cur.spd < spdMin) return;
       if (sc > bestSc) {
         bestSc = sc;
         best = chosen.slice();
@@ -52,8 +51,7 @@ export function branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, no
       return;
     }
     if (sc + remSc[pos] <= bestSc) return;
-    for (const s in need) if (cur[s] + remMax[s][pos] < need[s]) return;
-    if (ilNeed && cur.ilw + remMax.ilw[pos] < ilNeed) return;
+    if (spdMin != null && cur.spd + remMax.spd[pos] < spdMin) return;
 
     const t = slotList[pos];
     const list = posList[pos];
@@ -69,14 +67,7 @@ export function branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, no
         const prev = chosen[pos - 1];
         if (prev && prev.rank > k) continue;
       }
-      let ok = true;
-      for (const s in maxs) {
-        if (maxs[s] != null && cur[s] + a.v[s] > maxs[s]) {
-          ok = false;
-          break;
-        }
-      }
-      if (!ok) continue;
+      if (spdMax != null && cur.spd + a.v.spd > spdMax) continue;
       dims.forEach(d => {
         cur[d] += a.v[d];
       });

@@ -20,9 +20,10 @@ This is a lexicographic order: a tiebreak only matters between loadouts that are
 
 Constraints:
 
-- **Copies.** Each pool item has a number of copies. A ring marked Unique in the game can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway).
-- **Minimum average item level** (optional, shown on the page). The average item level of a loadout must reach a given value. A two-handed weapon counts twice in this average.
-- **Per-stat minimums and maximums** (optional, engine only). The page does not expose them; they exist in the engine and are covered by tests.
+- **Copies.** Each pool item has a number of copies. A ring marked Unique in the game can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway). The copies come from the game data when an item is added and are not edited on the page; the gear table marks a 2-copy ring ×2.
+- **A speed range** (optional, engine only): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed), meant for a future "reach this GCD tier" control ([roadmap.md](roadmap.md)). Other stats have no limits. The page does not expose it yet; it is covered by tests.
+
+**Leaving out gear by source.** The page can leave crafted, tomestone or ultimate gear out of the search. This happens before the optimizer runs: such items are removed from the pool it is given (and from the ceiling table's pool), so the search itself is unchanged. An item's sources come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)); hand-made pieces have none and are never left out. Dungeon gear cannot be identified from the game files, so there is no toggle for it.
 
 The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](math.md#5-item-level-sync). Melds are ignored.
 
@@ -32,12 +33,7 @@ The stats used are the **effective** stats: the synced stats when sync is on, th
 
 **Candidates.** $P_t$ is the set of pool items of type $t$. Each item $x$ has a number of copies $c(x) \in \{1, 2\}$.
 
-**Vectors.** Each item has an integer vector $v(x)$ with one entry per dimension:
-
-- the job's stats: main stat, Vitality, Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety;
-- an item level weight $w(x) = \text{item level}(x) \cdot \omega(t)$, where $\omega(t) = 2$ for a two-handed weapon and $1$ for every other slot.
-
-Stat entries are the effective stats. The item level weight uses the item's own item level, even when sync is on.
+**Vectors.** Each item has an integer vector $v(x)$ with one entry per dimension: the job's stats (main stat, Vitality, Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety). The entries are the effective stats.
 
 **Loadouts.** A loadout is $L = (x_1, \dots, x_n)$ with $x_i \in P_{s_i}$, or $x_i = \varnothing$ (empty), such that no item is used more often than its copies:
 
@@ -62,13 +58,11 @@ $$
 
 in lexicographic order.
 
-**Constraints.** Minimums $m_d$, maximums $M_d$ and a minimum average item level $a$:
+**Constraints** (engine only). A speed minimum $m$ and maximum $M$, either optional:
 
 $$
-T_d(L) \ge m_d, \qquad T_d(L) \le M_d, \qquad \frac{T_w(L)}{D} \ge a, \qquad D = \sum_{i=1}^{n} \omega(s_i).
+m \le T_{\text{spd}}(L) \le M.
 $$
-
-$D$ counts only the slots in the loadout. A full non-Paladin set has $D = 2 + 10 = 12$ (the two-handed weapon counts twice), and a full Paladin set also has $D = 12$ (weapon plus shield). For example, a two-handed weapon at item level 135 and ten pieces at 130 average $(2 \cdot 135 + 10 \cdot 130)/12 = 130.83$.
 
 ## 3. Turning the lexicographic order into one number
 
@@ -121,7 +115,7 @@ $$
 v_d(x) \ge v_d(y) \ \text{for every dimension } d, \quad\text{and}\quad \bigl(v(x) \ne v(y) \ \text{or } x \text{ comes before } y \text{ in the pool}\bigr).
 $$
 
-Every dimension includes all of the job's stats and the item level weight $w$, not just the target and tiebreaks. That way an item kept for its item level (for the average requirement) or for a stat that may become a minimum is not thrown away. The tie rule makes $\succ$ a strict order: it is transitive and never cyclic.
+Every dimension includes all of the job's stats, not just the target and tiebreaks. That way an item kept for its speed, which may have a minimum, is not thrown away. The tie rule makes $\succ$ a strict order: it is transitive and never cyclic.
 
 **Drop rule.** Drop $y$ only if the items beating it have enough copies between them to fill every slot of its type:
 
@@ -146,11 +140,11 @@ Two facts together show that pruning never removes every best loadout.
 **2. Any loadout using a dropped item can swap it for a kept one without getting worse.** Let $L$ use dropped item $y$ in a slot of type $t$. The kept beaters of $y$ have at least $k_t$ copies. The other $k_t - 1$ slots of that type use at most $k_t - 1$ of those copies, so at least one copy of a kept beater $x$ is free. Replace $y$ by $x$. Since $v(x) \ge v(y)$ in every dimension:
 
 - every total stays the same or rises, so the score does not drop (all weights are positive);
-- every minimum and the average item level requirement that held before still hold.
+- a speed minimum that held before still holds.
 
 Repeat until no dropped item is used. This ends, because each swap moves to an item higher in the strict order $\succ$. The result uses only kept items and is at least as good as $L$.
 
-**Pruning is turned off when any maximum is set.** Step 2 assumes that more of a stat never hurts. A maximum breaks that: in the tested example, head H1 (20 Spell Speed, 30 Crit) beats H2 (15, 5), but with "Crit at most 10" only H2 is allowed. Without pruning the optimizer finds H2 + A + B = 34, which is the correct answer (**verified** by test).
+**Pruning is turned off when a speed maximum is set.** Step 2 assumes that more of a stat never hurts. A maximum breaks that: in the tested example, head H1 (20 Spell Speed, 30 Crit) beats H2 (15, 25), and rings A, B, C carry 10, 9 and 5 Spell Speed. With "Spell Speed at most 33" every loadout with H1 reaches 34 or more, so only H2 is allowed. Without pruning the optimizer finds Critical Hit 25 (H2 with two of the rings), which is the correct answer (**verified** by test).
 
 ## 5. The search: depth-first branch and bound
 
@@ -168,23 +162,21 @@ $$
 
 so if $\sigma + U_p \le \sigma^*$, nothing below this node can be strictly better. (A loadout only replaces the best one if it scores strictly higher, so among equal scores the first one found is kept.)
 
-**Minimums.** If, for some stat with a minimum, $T_d + \sum_{i \ge p} \max\bigl(0, \max_{x \in P_{s_i}} v_d(x)\bigr) < m_d$, the minimum can no longer be reached.
+**Speed minimum.** If $T_{\text{spd}} + \sum_{i \ge p} \max\bigl(0, \max_{x \in P_{s_i}} v_{\text{spd}}(x)\bigr) < m$, the minimum can no longer be reached.
 
-**Average item level.** Likewise if $T_w + \sum_{i \ge p} \max_{x} w(x) < a \cdot D$.
-
-**Maximums.** A candidate is skipped if adding it would push a stat past its maximum. All real item stats are non-negative (checked over all 17,577 database rows), so a total can only grow along a branch.
+**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 17,577 database rows), so the total can only grow along a branch.
 
 Both bounds use the best value in each remaining slot independently. They ignore copy limits, so they can overestimate (for example, by counting the best Unique ring twice). Overestimating never cuts a branch that should be kept; it only makes the search visit more nodes.
 
 **Ring symmetry.** The two ring slots share one list. Choosing (A, B) or (B, A) gives the same loadout, so the second ring's position in the sorted list must be at least the first ring's position. The same ring can fill both slots only if it has 2 copies.
 
-**Empty slot.** A slot is left empty only when no candidate for it has a copy left. Candidates skipped by the ring symmetry rule or by a maximum still count as available here.
+**Empty slot.** A slot is left empty only when no candidate for it has a copy left. Candidates skipped by the ring symmetry rule or by the speed maximum still count as available here.
 
 **Node limit.** Every visited node counts. When the count passes the limit, the search stops, returns the best loadout found so far and marks the result as **truncated**. A truncated result may not be the best one. The page uses a limit of 700,000 nodes for the main result and 150,000 for each ceiling run (section 6), and says so when a result was truncated: the main result shows a note, and a ceiling cell shows "≥ value" with a footnote. The engine's own default, when no limit is given, is 1,500,000.
 
 ## 6. The per-stat ceiling table
 
-Below the main result, the Optimizer tab shows "Ceiling per stat from this pool". For each of the job's stats it runs the optimizer with that stat as the only target (no tiebreaks, no average item level requirement) twice: synced to the current cap, and unsynced. Each cell is the highest total of that one stat the pool can reach, ignoring all other stats. The last row converts the synced speed ceiling into a GCD.
+Below the main result, the Gear optimizer tab shows "Ceiling per stat from this pool". For each of the job's stats it runs the optimizer with that stat as the only target (no tiebreaks) twice: synced to the current cap, and unsynced. Each cell is the highest total of that one stat the pool can reach, ignoring all other stats. The last row converts the synced speed ceiling into a GCD.
 
 That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 2,033-item Sage pool they take about 0.22 s together.
 
@@ -194,14 +186,14 @@ That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 2,033-item Sage poo
 
 | Check | What it compares | Result |
 | --- | --- | --- |
-| Exhaustive search, random pools (test) | 400 seeded random pools: rings with 1 and 2 copies, Unique items, empty slot types, sync on/off, tiebreaks, average item level, minimums. Optimizer vs trying every legal loadout | all equal |
+| Exhaustive search, random pools (test) | 400 seeded random pools: rings with 1 and 2 copies, Unique items, empty slot types, sync on/off, tiebreaks, speed minimums and maximums. Optimizer vs trying every legal loadout | all equal |
 | Exhaustive search, huge tiebreak values (test) | 200 random pools with tiebreak stats up to 50,000 per item | all equal |
-| Constraints (test) | A small pool of real items: minimums, maximums, average item level, infeasible cases, against an independent brute force | all equal |
-| Regressions (test) | F1 ring pools (19, 20, 20), F3 large tiebreaks, the maximum example of section 4 | pass |
+| Constraints (test) | A small pool of real items: speed minimum, maximum and range, infeasible cases, against an independent brute force | all equal |
+| Regressions (test) | F1 ring pools (19, 20, 20), F3 large tiebreaks, the speed maximum example of section 4 | pass |
 | Known values (test) | Generic item level 475 gear synced to 123: 296 Spell Speed, 2.22 s GCD at level 50 | pass |
 | Real gear, exact optimum (probe, not a committed test) | 22 jobs × 35 item level windows $[\ell, \ell + 40]$ for $\ell = 100, 120, \dots, 780$ × sync on/off at cap 123 × every stat as target = **9,800 runs**. Reference: with one target and no constraints the best loadout is just the best item per slot (best ring pair respecting copies) | **0 misses** |
 
-The real-gear probe was rerun for this page with the current code. Run with the old ring rule plugged into the same search, it misses in **360 of 9,800** runs, which matches the number in the audit, including its example (Paladin, items 160 to 200, synced, Critical Hit: 322 instead of 345). With the cap set to the middle of each window instead of 123, the current code again misses 0, the old rule 590.
+The real-gear probe was rerun for this page with the current code. Run with the old ring rule plugged into the same search, it misses in **360 of 9,800** runs, which matches the number recorded in [history.md](history.md#results-of-the-tool), including its example (Paladin, items 160 to 200, synced, Critical Hit: 322 instead of 345). With the cap set to the middle of each window instead of 123, the current code again misses 0, the old rule 590.
 
 The exhaustive and constraint tests run with `npm test`. If a change to scoring, pruning or the search makes any of them disagree with the reference, the test fails and names the pool.
 
@@ -225,12 +217,11 @@ Across the 9,800 real-gear runs, the median is 72 nodes and the 99th percentile 
 
 ## 8. Known behaviours and limits
 
-- **Empty pool:** the result is "ok" with no picks, all totals 0 and average item level 0 (**verified** by test). The page shows its own empty-pool message first.
-- **Missing slot types** are left out of the loadout and of the average's denominator $D$, so the average is over the slots you supplied.
-- **Average item level uses real item levels**, not synced ones. When the average item level requirement is on, the page colours the average as good when it meets that requirement and as bad otherwise; with the requirement off it is not coloured.
+- **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own empty-pool message first.
+- **Missing slot types** are left out of the loadout.
 - **Truncated results** may not be optimal, so the page marks them: a note under the main result, and "≥ value" plus a footnote in the ceiling table. The 191,023-node case above exceeds the ceiling limit of 150,000, so its cell is shown as a lower bound (it happens to be the correct 993 anyway).
 - **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
-- **A maximum never empties a slot.** If every candidate in a slot would break a maximum, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. Maximums are engine only, so this does not affect the page.
+- **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. The speed range is engine only, so this does not affect the page yet.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
 - **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](math.md) (verified against the Wiki's item level 475 caps); melds are ignored (assumed). Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
 
@@ -240,8 +231,8 @@ Across the 9,800 real-gear runs, the median is 72 nodes and the 99th percentile 
 | --- | --- |
 | Effective stats, item vectors, score weights, dominance pruning, candidate lists | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `pruneDominated`, `buildCandidates`) |
 | Bounds and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `branchAndBound`) |
-| Entry point, pruning switch for maximums, average item level denominator | `src/core/optimizer/index.js` (`optimize`) |
-| Slot weight in the average, which slots a job uses | `src/core/job-context.js` (`ilWeight`, `slotActive`) |
+| Entry point, pruning switch for a speed maximum | `src/core/optimizer/index.js` (`optimize`) |
+| Which slots a job uses | `src/core/job-context.js` (`slotActive`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
 | Page use: node limits, main result, ceiling table | `src/ui/views/optimizer.js` (`NODE_LIMIT`, `CEILING_NODE_LIMIT`, `optimizerView`, `ceilingView`) |

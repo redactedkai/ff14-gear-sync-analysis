@@ -36,48 +36,56 @@ test('unconstrained result matches brute force', () => {
   assert.deepEqual([r.totals.spd], brute('spd'));
 });
 
-test('mins are honoured and change the answer when binding', () => {
+test('a speed minimum is honoured and changes the answer when binding', () => {
   const free = optimize(war, pool, NOSYNC, { target: 'spec' });
-  const need = free.totals.det + 10;
-  const r = optimize(war, pool, NOSYNC, { target: 'spec', mins: { det: need } });
+  const spdMin = free.totals.spd + 10;
+  const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMin });
   assert.ok(r.ok);
-  assert.ok(r.totals.det >= need);
-  assert.deepEqual([r.totals.spec], brute('spec', { mins: { det: need } }));
+  assert.ok(r.totals.spd >= spdMin);
+  assert.deepEqual([r.totals.spec], brute('spec', { spdMin }));
   assert.ok(r.totals.spec < free.totals.spec);
 });
 
-test('infeasible mins -> ok:false', () => {
-  assert.equal(brute('spd', { mins: { spec: 500 } }), null);
-  const r = optimize(war, pool, NOSYNC, { target: 'spd', mins: { spec: 500 } });
+test('an unreachable speed minimum -> ok:false', () => {
+  const most = optimize(war, pool, NOSYNC, { target: 'spd' }).totals.spd;
+  assert.equal(brute('spec', { spdMin: most + 1 }), null);
+  const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMin: most + 1 });
   assert.equal(r.ok, false);
   assert.equal(r.truncated, false);
 });
 
-test('maxs are honoured', () => {
+test('a speed maximum is honoured', () => {
   const free = optimize(war, pool, NOSYNC, { target: 'spec' });
-  const cap = free.totals.dh - 1;
-  const r = optimize(war, pool, NOSYNC, { target: 'spec', maxs: { dh: cap } });
+  const spdMax = free.totals.spd - 1;
+  const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMax });
   assert.ok(r.ok);
-  assert.ok(r.totals.dh <= cap);
-  assert.deepEqual([r.totals.spec], brute('spec', { maxs: { dh: cap } }));
+  assert.ok(r.totals.spd <= spdMax);
+  assert.deepEqual([r.totals.spec], brute('spec', { spdMax }));
   assert.ok(r.totals.spec < free.totals.spec);
 });
 
-test('infeasible maxs -> ok:false', () => {
-  // every piece carries Vitality, so no loadout stays under 400
-  assert.equal(brute('spd', { maxs: { vit: 400 } }), null);
-  assert.equal(optimize(war, pool, NOSYNC, { target: 'spd', maxs: { vit: 400 } }).ok, false);
+test('a speed range agrees with brute force', () => {
+  const most = optimize(war, pool, NOSYNC, { target: 'spd' }).totals.spd;
+  for (const [spdMin, spdMax] of [
+    [most - 20, most - 10],
+    [most - 40, most - 30],
+    [most - 5, most],
+  ]) {
+    const want = brute('spec', { spdMin, spdMax });
+    const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMin, spdMax });
+    if (!want) {
+      assert.equal(r.ok, false);
+      continue;
+    }
+    assert.ok(r.ok && r.totals.spd >= spdMin && r.totals.spd <= spdMax);
+    assert.deepEqual([r.totals.spec], want);
+  }
 });
 
-test('average item level requirement: met at 130, infeasible at 131', () => {
-  // best is a 135 weapon (counts twice) and ten other pieces at 130: (2*135 + 10*130) / 12 = 130.83
-  const ok = optimize(war, pool, NOSYNC, { target: 'spd', minAvgIlvl: 130 });
-  assert.ok(ok.ok);
-  assert.equal(ok.denom, 12);
-  assert.ok(Math.abs(ok.avgIlvl - 1570 / 12) < 1e-9);
-  assert.deepEqual([ok.totals.spd], brute('spd', { minAvgIlvl: 130 }));
-  assert.equal(brute('spd', { minAvgIlvl: 131 }), null);
-  assert.equal(optimize(war, pool, NOSYNC, { target: 'spd', minAvgIlvl: 131 }).ok, false);
+test('an impossible speed maximum -> ok:false', () => {
+  // the lowest speed any loadout can have is above 0 only if every slot forces speed; -1 is always impossible
+  assert.equal(brute('spec', { spdMax: -1 }), null);
+  assert.equal(optimize(war, pool, NOSYNC, { target: 'spec', spdMax: -1 }).ok, false);
 });
 
 test('nodeLimit: a large pool with a tiny limit reports truncation', () => {
@@ -96,6 +104,5 @@ test('empty pool: no picks, zero totals, no error', () => {
   assert.equal(r.ok, true);
   assert.deepEqual(r.picks, []);
   assert.equal(r.totals.spd, 0);
-  assert.equal(r.avgIlvl, 0);
   assert.equal(r.truncated, false);
 });

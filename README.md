@@ -15,11 +15,11 @@ Open `dist/index.html` in a browser. For development, `npm run dev` rebuilds on 
 
 The page has two working tabs and one reference tab:
 
-1. **Item pool**: browse real gear (filtered by the selected job) and add pieces to your pool.
-2. **Optimizer**: picks one item per slot (two rings) from the pool to maximize one stat, with two tiebreakers and an optional average-item-level requirement.
+1. **Gear pool**: one table of real gear for the selected job. Tick a row to add it to your pool; switch between **All gear** and **My pool**. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2.
+2. **Gear optimizer**: picks one item per slot (two rings) from the pool to maximize one stat, with two optional tiebreakers. It can leave out crafted, tomestone or ultimate gear.
 3. **How the math works** (reference): Piece lab (how a piece's stats come from its item level) and Sync caps (what the sync cap allows, checked against real gear and the Wiki).
 
-Set your job, sync cap (item level) and synced level at the top. A fresh page starts at the first job in the game's list, level 100 and that level's own sync item level (690). Your settings and pool are saved in the browser, so they come back on the next visit. Switching jobs clears the pool and job-specific settings, after a warning.
+Pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings and pool are saved in the browser, so they come back on the next visit. Switching jobs clears the pool and job-specific settings, after a warning.
 
 ## Develop
 

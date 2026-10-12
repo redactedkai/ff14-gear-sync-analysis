@@ -1,6 +1,6 @@
 # Documentation
 
-Item Level Stat Lab is a single-page calculator for Final Fantasy XIV. Given a job and an item level sync cap, it shows what the stats on a piece of gear become under sync, and it searches real gear from the game files for the combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity and so on). It covers all 22 combat jobs and ships as one HTML file that opens from disk. These pages explain the model behind it, the evidence for that model, and how the code is built and tested. Each page separates what is verified (game files, the FFXIV Wiki, real items, tests) from what is inferred.
+Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a job and an item level sync cap, it shows what the stats on a piece of gear become under sync, and it searches real gear from the game files for the combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity and so on). It covers all 22 combat jobs and ships as one HTML file that opens from disk. These pages explain the model behind it, the evidence for that model, and how the code is built and tested. Each page separates what is verified (game files, the FFXIV Wiki, real items, tests) from what is inferred.
 
 ## Reading order
 
@@ -8,7 +8,7 @@ Item Level Stat Lab is a single-page calculator for Final Fantasy XIV. Given a j
 2. The model: [math.md](math.md), then [validation.md](validation.md) for how well it matches real data.
 3. The gear search: [optimizer.md](optimizer.md).
 4. Working on the code: [architecture.md](architecture.md), [testing.md](testing.md), [data-pipeline.md](data-pipeline.md).
-5. Planning: [roadmap.md](roadmap.md), [history.md](history.md), and the engineering audit.
+5. Planning: [roadmap.md](roadmap.md) and [history.md](history.md).
 
 ## Pages
 
@@ -23,5 +23,4 @@ Item Level Stat Lab is a single-page calculator for Final Fantasy XIV. Given a j
 | [glossary.md](glossary.md) | FFXIV and project terms, with links to the page that explains each |
 | [roadmap.md](roadmap.md) | Ideas not yet built |
 | [history.md](history.md) | Claims and results that were corrected, and how the mistakes were found |
-| [audit-2.md](audit-2.md) | Engineering audit, with a status table of what is resolved |
 | [diagrams/STYLE.md](diagrams/STYLE.md) | Style guide for these pages and their diagrams |

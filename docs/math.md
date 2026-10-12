@@ -63,8 +63,6 @@ A slot does not get the whole budget. It gets a fraction of it, called its **slo
 
 Paladin is the only combat job with a one-handed weapon plus a shield (100 + 40). Every other job uses a two-handed weapon (140).
 
-**Average item level.** The tool computes it over 12 positions. A two-handed weapon counts twice, since it fills both the main-hand and off-hand positions. A one-handed weapon and shield count once each. The other ten are head, body, hands, legs, feet, earring, necklace, bracelet and two rings. This follows the game's convention, but this project has not checked it against game data.
-
 ## 4. The stats on a piece
 
 ![Flow diagram of the seven steps from item level to synced stat, with Spell Speed and Piety values from an item level 130 healer head piece. Spell Speed goes 363, 30.855, 31, then is clamped from 31 to 29 at cap 123. Piety goes 363, 30.855, 31, times 0.7 is 21.7, rounds to 22, and stays 22.](diagrams/math-pipeline.svg)
@@ -262,7 +260,6 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Same clamp applies to main stat and Vitality | Inferred | No in-game capture |
 | Lower-ranked substats clamp against the full-share cap | Inferred | Consistent with Wiki's single cap per slot; no capture |
 | Melds ignored, no scaling up under sync | Assumed | – |
-| Two-handed weapon counts twice in average item level | Game convention, not checked here | – |
 | GCD and tick formulas | Community reference (AkhMorning) | Level-100 examples in tests; level-50 tiers in tests without a recorded source |
 | Rows 796–920 carry no gear | Verified (data) | Highest real item level is 795 |
 
@@ -270,10 +267,10 @@ Verification status: the formulas are a community reference, not game files. Whi
 
 | Concept | File |
 | --- | --- |
-| Budget table and level data (generated) | `src/data/item-level.js` |
+| Budget table and level data (generated) | `src/data/item-level.json` |
 | Highest row, highest real item level | `src/core/tables.js` |
 | Slot shares, substat shares, role profiles | `src/core/constants.js` |
-| Per-job stat mapping, Vitality factor, weapon mode, average item level weight | `src/core/job-context.js` |
+| Per-job stat mapping, Vitality factor, weapon mode | `src/core/job-context.js` |
 | Rounding, slot budget, piece stats, caps, sync clamp, step-by-step derivation | `src/core/formulas.js` |
 | GCD, tick multiplier, GCD tiers | `src/core/speed.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |

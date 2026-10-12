@@ -1,6 +1,5 @@
 /* Gear optimizer: pick one item per slot (two rings) from a pool to maximize a target stat,
-   with up to two tiebreak stats and optional constraints. */
-import { ilWeight } from '../job-context.js';
+   with up to two tiebreak stats and an optional speed range (to reach a GCD tier without overshooting it). */
 import { buildCandidates } from './candidates.js';
 import { branchAndBound } from './search.js';
 
@@ -10,30 +9,22 @@ export { effStats } from './candidates.js';
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync}
- * @param opts  {target='spd', tiebreak=[], mins={}, maxs={}, minAvgIlvl=0, nodeLimit=1.5e6}
+ * @param opts  {target='spd', tiebreak=[], spdMin, spdMax, nodeLimit=1.5e6}
  * @returns {ok:false, truncated, nodes} when nothing is feasible, otherwise
- *          {ok:true, picks:[{type, item, eff}], totals, truncated, nodes, denom, avgIlvl}
+ *          {ok:true, picks:[{type, item, eff}], totals, truncated, nodes}
  */
 export function optimize(job, pool, sync, opts) {
   opts = opts || {};
   const target = opts.target || 'spd';
   const tiebreak = (opts.tiebreak || []).filter(Boolean);
-  const mins = opts.mins || {},
-    maxs = opts.maxs || {};
-  const minAvg = opts.minAvgIlvl || 0;
+  const spdMin = opts.spdMin > 0 ? opts.spdMin : null;
+  const spdMax = opts.spdMax != null ? opts.spdMax : null;
   const nodeLimit = opts.nodeLimit || 1500000;
 
-  // Dominance assumes more of a stat never hurts, which a maximum breaks, so pruning is off when maxs are set.
-  const prune = !Object.values(maxs).some(m => m != null);
+  // Dominance assumes more of a stat never hurts, which a maximum breaks, so pruning is off with a speed maximum.
+  const prune = spdMax == null;
   const { slotList, posList, dims } = buildCandidates(job, pool, sync, { target, tiebreak }, { prune });
-  const denom = slotList.reduce((a, t) => a + ilWeight(job, t), 0);
-  const need = {};
-  job.stats.forEach(s => {
-    if (mins[s] > 0) need[s] = mins[s];
-  });
-  const ilNeed = minAvg > 0 ? minAvg * denom : 0;
-
-  const { best, nodes, truncated } = branchAndBound({ slotList, posList, dims, need, ilNeed, maxs, nodeLimit });
+  const { best, nodes, truncated } = branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLimit });
   if (!best) return { ok: false, truncated, nodes };
 
   const picks = [];
@@ -51,5 +42,5 @@ export function optimize(job, pool, sync, opts) {
       totals[d] += c.a.v[d];
     });
   });
-  return { ok: true, picks, totals, truncated, nodes, denom, avgIlvl: denom ? totals.ilw / denom : 0 };
+  return { ok: true, picks, totals, truncated, nodes };
 }

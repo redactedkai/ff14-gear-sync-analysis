@@ -57,3 +57,18 @@ test('gcdTiers at level 50 lists the AkhMorning tier starts', () => {
   const tiers = new Map(gcdTiers(50, 2500).map(x => [x.spd, x.gcd]));
   for (const [spd, gcd] of AKH[50]) assert.equal(tiers.get(spd), gcd, `tier at ${spd}`);
 });
+
+test("expansion boundaries are the game's own sync item level at each level cap (ParamGrow)", async () => {
+  const { expansionBounds } = await import('../../src/core/speed.js');
+  assert.deepEqual(
+    expansionBounds().map(e => [e.short, e.from, e.to]),
+    [
+      ['ARR', null, 130],
+      ['HW', 130, 270],
+      ['SB', 270, 400],
+      ['ShB', 400, 530],
+      ['EW', 530, 660],
+      ['DT', 660, null],
+    ],
+  );
+});

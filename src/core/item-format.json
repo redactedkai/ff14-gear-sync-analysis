@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.js: re-run `npm run regen` afterwards. Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv.",
+  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `npm run regen` afterwards. `sources`: bit i of an item row's source mask is sources[i] (scripts/data/gear_sources.py). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv.",
   "jobs": [
     "PLD",
     "WAR",
@@ -65,5 +65,10 @@
     { "code": 9, "type": "neck", "equipSlotColumn": "Neck", "percent": 67, "baseParamColumn": "NecklacePercent" },
     { "code": 10, "type": "wrist", "equipSlotColumn": "Wrists", "percent": 67, "baseParamColumn": "BraceletPercent" },
     { "code": 11, "type": "ring", "equipSlotColumn": "FingerL", "percent": 67, "baseParamColumn": "RingPercent" }
+  ],
+  "sources": [
+    { "key": "crafted", "label": "Crafted" },
+    { "key": "tomestone", "label": "Tomestone" },
+    { "key": "ultimate", "label": "Ultimate" }
   ]
 }

@@ -1,4 +1,5 @@
-"""Tests for the data generators (scripts/data/gen_items.py, scripts/data/gen_item_level.py).
+"""Tests for the data generators (scripts/data/gen_items.py, gen_item_level.py, gen_job_icons.py), the gear categories
+(gear_categories.py) and the job icon numbering in fetch.py.
 
 Fixtures in tests/data/fixtures/ use the real sheet headers from xivapi/ffxiv-datamining. EquipSlotCategory and
 ClassJobCategory rows, and the BaseParam rows of the 12 stats, are copied from the real sheets; Item rows are test items
@@ -24,8 +25,11 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).resolve().parent / 'fixtures'
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 
+import fetch  # noqa: E402
+import gear_categories  # noqa: E402
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
+import gen_job_icons  # noqa: E402
 from item_format import SchemaError  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
@@ -59,9 +63,10 @@ class GenItemsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
-        out = Path(cls.tmp.name) / 'items.js'
+        out = Path(cls.tmp.name) / 'items.json'
         run_quiet(gen_items.main, str(FIXTURES), str(out))
-        cls.rows = read_export(out, 'ITEMS')
+        cls.doc = json.loads(out.read_text(encoding='utf-8'))
+        cls.rows = cls.doc['items']
         cls.by_name = {r[0]: r for r in cls.rows}
 
     @classmethod
@@ -74,12 +79,40 @@ class GenItemsTest(unittest.TestCase):
 
     def test_row_shape(self):
         for r in self.rows:
-            self.assertEqual(len(r), 7, r)
-            name, slot, ilvl, lvl, mask, st, unique = r
+            self.assertEqual(len(r), 9, r)
+            name, slot, ilvl, lvl, mask, st, unique, hq, sources = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(12))
             self.assertEqual(len(st.split(',')), 12)
             self.assertIn(unique, (0, 1))
+            self.assertIn(hq, (0, 1))
+            self.assertIn(sources, range(8))
+
+    def test_sources(self):
+        """Each SpecialShop and Recipe rule in the fixtures (scripts/data/gear_sources.py). Bits: 1 crafted, 2 tomestone,
+        4 ultimate."""
+        expect = {
+            'Test Sallet HQ': 1,  # a recipe result
+            'Test Hood of Healing': 2,  # type 4, code 1 (Poetics)
+            'Test Alpha Mail': 2,  # type 4, code 2 (the second current tomestone)
+            'Test Sword': 4,  # Dreadwyrm Totem
+            'Test Gloves': 0,  # type 8: gil
+            'Test Tonban': 0,  # type 16, code 2: a crafter scrip
+            'Test Shoes': 2,  # type 16, code 1 (Poetics)
+            'Test Earring': 2,  # type 2, code 1 (Poetics) plus a piece traded in
+            'Test Choker': 0,  # the piece traded in: not flagged
+            'Test Bracelet': 2,  # type 2, code 2
+            'Test Ring Plain': 0,  # traded in for Test Bracelet: not flagged
+            'Test Shield': 2,  # Poetics by item id
+            'Test Robe': 2,  # an old tomestone by item id
+            'Test Zeta Helm': 2,  # Heliometry by item id, and Poetics plus Test Alpha Helm
+            'Test Alpha Helm': 0,  # the base piece an exchange turns into Test Zeta Helm: not flagged
+            'Test Tank Helm': 2,  # made by trading in Test Zeta Helm (tomestone gear) plus a non-gear item
+            'Test Greataxe': 0,  # in no shop and no recipe
+        }
+        for name, bits in expect.items():
+            with self.subTest(name=name):
+                self.assertEqual(self.row(name)[8], bits)
 
     def test_slot_detection(self):
         expect = {
@@ -123,6 +156,9 @@ class GenItemsTest(unittest.TestCase):
         # NQ str 23 vit 23 ten 24 det 17; HQ bonus str 3 vit 3 ten 3 det 2 plus Defense / Magic Defense (ignored)
         self.assertEqual(self.row('Test Sallet HQ')[5], stats(str=26, vit=26, ten=27, det=19))
         self.assertEqual(self.row('Test Sallet NoHQ')[5], stats(str=23, vit=23, ten=24, det=17))
+        # the HQ flag (last field) follows CanBeHq, so the page can mark rows whose stats are the HQ ones
+        self.assertEqual(self.row('Test Sallet HQ')[7], 1)
+        self.assertEqual(self.row('Test Sallet NoHQ')[7], 0)
 
     def test_minimum_item_level(self):
         self.assertEqual(self.row('Test Min Ilvl')[2], 100)
@@ -234,9 +270,23 @@ class GenItemLevelTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def generate(self):
-        out = self.dir / 'item-level.js'
+        out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
-        return read_export(out, 'IL'), read_export(out, 'PG')
+        doc = json.loads(out.read_text(encoding='utf-8'))
+        return doc['IL'], doc['PG']
+
+    def test_provenance_fields(self):
+        out = self.dir / 'item-level.json'
+        run_quiet(gen_item_level.main, str(self.dir), str(out), None)
+        doc = json.loads(out.read_text(encoding='utf-8'))
+        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG'])
+        self.assertIsNone(doc['source'])
+        self.assertIn('commit unknown', doc['_generated'])
+        src = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
+        run_quiet(gen_item_level.main, str(self.dir), str(out), src)
+        doc = json.loads(out.read_text(encoding='utf-8'))
+        self.assertEqual(doc['source'], src)
+        self.assertIn('a' * 40, doc['_generated'])
 
     def test_item_level_columns(self):
         il, _ = self.generate()
@@ -264,6 +314,69 @@ class GenItemLevelTest(unittest.TestCase):
             self.generate()
 
 
+def fake_png(width=64, height=64):
+    """The first bytes of a PNG: signature and IHDR chunk with the given size (enough for gen_job_icons' check)."""
+    return b'\x89PNG\r\n\x1a\n' + b'\x00\x00\x00\x0dIHDR' + width.to_bytes(4, 'big') + height.to_bytes(4, 'big') + b'\x08\x06\x00\x00\x00'
+
+
+JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']
+
+
+class GenJobIconsTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self.icons = self.tmp / 'icons'
+        self.icons.mkdir()
+        for i, job in enumerate(JOBS):
+            (self.icons / f'{job}.png').write_bytes(fake_png() + bytes([i]))  # a different file per job
+        self.out = self.tmp / 'job-icons.js'
+
+    def test_every_job_embedded_as_its_own_png(self):
+        run_quiet(gen_job_icons.main, self.icons, self.out)
+        icons = read_export(self.out, 'JOB_ICONS')
+        self.assertEqual(list(icons), JOBS)
+        for job, url in icons.items():
+            self.assertTrue(url.startswith('data:image/png;base64,'), job)
+            data = __import__('base64').b64decode(url.split(',', 1)[1])
+            self.assertEqual(data, (self.icons / f'{job}.png').read_bytes(), job)
+
+    def test_missing_icon_fails(self):
+        (self.icons / 'SGE.png').unlink()
+        with self.assertRaisesRegex(SchemaError, 'SGE: no SGE.png'):
+            gen_job_icons.main(self.icons, self.out)
+        self.assertFalse(self.out.exists())
+
+    def test_wrong_size_or_not_png_fails(self):
+        (self.icons / 'PLD.png').write_bytes(fake_png(40, 40))
+        (self.icons / 'WAR.png').write_bytes(b'<html>error page</html>')
+        with self.assertRaisesRegex(SchemaError, r'PLD: PLD.png is 40 x 40, expected 64 x 64; WAR: WAR.png is not a PNG'):
+            gen_job_icons.main(self.icons, self.out)
+
+    def test_icon_number_is_62100_plus_class_job_row(self):
+        # ClassJob rows from the real sheet: Paladin is row 19, Sage 40 (icons 062119 and 062140)
+        rows = {'PLD': 19, 'WAR': 21, 'SGE': 40}
+        with open(self.tmp / 'ClassJob.csv', 'w', encoding='utf-8', newline='') as f:
+            w = csv.writer(f)
+            w.writerow(['#', 'Name', 'Abbreviation'])
+            for k, job in enumerate(JOBS):
+                w.writerow([rows.get(job, 100 + k), job.lower(), job])
+        numbers = fetch.job_icon_numbers(self.tmp)
+        self.assertEqual([numbers['PLD'], numbers['WAR'], numbers['SGE']], [62119, 62121, 62140])
+        self.assertEqual(fetch.icon_url(62119), 'https://v2.xivapi.com/api/asset?path=ui/icon/062000/062119_hr1.tex&format=png')
+
+
+def add_shop(rows, shop_id, listings):
+    """Append a SpecialShop row selling each (item, cost item) pair; rows is the CSV as lists, header first."""
+    h = rows[0]
+    row = ['0'] * len(h)
+    row[h.index('#')], row[h.index('Name')] = shop_id, f'Test Shop {shop_id}'
+    for k, (give, cost) in enumerate(listings):
+        row[h.index(f'Item[{k}].Item[0]')] = give
+        row[h.index(f'Item[{k}].ItemCost[0]')] = cost
+    rows.append(row)
+
+
 def edit_csv(path, fn):
     """Rewrite a CSV in place: fn(rows) gets the rows as lists (header first) and changes them."""
     with open(path, encoding='utf-8', newline='') as f:
@@ -280,8 +393,116 @@ def rename_column(path, old, new):
     edit_csv(path, fn)
 
 
+class GearCategoriesTest(unittest.TestCase):
+    """gear_categories.py on a copy of the fixtures with SubcategorySort codes, dye slots and a raid-book shop set."""
+
+    WEAPON_SLOTS = {0, 1, 2}
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        for f in FIXTURES.glob('*.csv'):
+            shutil.copy(f, self.dir / f.name)
+        # code (SubcategorySort; the role prefix in front of the last three digits is ignored) and dye slots per item
+        codes = {
+            '1001': ('8010', '0'),  # Test Greataxe: relic weapon
+            '1002': ('2060', '0'),  # Test Sword: bought with a totem (fixture shop) -> ultimate
+            '1003': ('2060', '0'),  # Test Shield: trial
+            '1004': ('47020', '1'),  # Test Hood of Healing: raid gear with a dye slot -> Savage seed
+            '1005': ('47020', '0'),  # Test Robe: raid gear without dye, bought with a Normal token -> raid
+            '1006': ('8010', '0'),  # Test Gloves: code 10, not a weapon -> field_op
+            '1009': ('49020', '0'),  # Test Earring: no dye, but bought with the Savage book -> savage
+            '1020': ('8320', '0'),  # Test Sallet HQ: a recipe result -> crafted
+        }
+
+        def items(rows):
+            h = rows[0]
+            sc, dye = h.index('SubcategorySort'), h.index('DyeCount')
+            for r in rows[1:]:
+                r[sc], r[dye] = codes.get(r[0], ('8270', '0'))  # everything else: dungeon
+            book, token = list(rows[1]), list(rows[1])  # copies of the empty row 0, as non-gear items
+            book[0], book[h.index('Name')] = '1098', 'Test Savage Book'
+            token[0], token[h.index('Name')] = '1099', 'Test Normal Token'
+            rows += [book, token]
+
+        # as in the game, Savage gear (raid books) and Normal gear (tokens) are sold in separate shops
+        edit_csv(self.dir / 'SpecialShop.csv', lambda rows: add_shop(rows, '1769098', [('1004', '1098'), ('1009', '1098')]))
+        edit_csv(self.dir / 'SpecialShop.csv', lambda rows: add_shop(rows, '1769099', [('1005', '1099')]))
+
+        edit_csv(self.dir / 'Item.csv', items)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def categories(self):
+        kept, _ = gen_items.select(self.dir)
+        cats = gear_categories.categorize(self.dir, kept, self.WEAPON_SLOTS)
+        names = {r['#']: r['Name'] for r, _ in kept}
+        return {names[i]: c for i, c in cats.items()}, kept, cats
+
+    def test_rules(self):
+        cats, kept, ids = self.categories()
+        expect = {
+            'Test Greataxe': 'relic',
+            'Test Gloves': 'field_op',
+            'Test Sword': 'ultimate',
+            'Test Shield': 'trial',
+            'Test Hood of Healing': 'savage',
+            'Test Earring': 'savage',
+            'Test Robe': 'raid',
+            'Test Sallet HQ': 'crafted',
+            'Test Tank Helm': 'dungeon',
+        }
+        for name, cat in expect.items():
+            with self.subTest(name=name):
+                self.assertEqual(cats[name], cat)
+        self.assertEqual(gear_categories.check(kept, ids), [])
+
+    def test_shared_shop_is_caught(self):
+        # a Normal token taken by the Savage shop makes the Normal robe "savage"; the dye check reports it
+        edit_csv(self.dir / 'SpecialShop.csv', lambda rows: add_shop(rows, '1769097', [('1004', '1099')]))
+        cats, kept, ids = self.categories()
+        self.assertEqual(cats['Test Robe'], 'savage')
+        self.assertTrue(any('Test Robe' in p and 'dye' in p for p in gear_categories.check(kept, ids)))
+
+    def test_currency_override(self):
+        # gear bought with Proto Ultima Heat Shielding is alliance raid gear whatever its code says
+        edit_csv(self.dir / 'SpecialShop.csv', lambda rows: add_shop(rows, '1769096', [('1003', '17521')]))
+        cats, _, _ = self.categories()
+        self.assertEqual(cats['Test Shield'], 'alliance_raid')  # code 60 would make it trial
+
+    def test_override_id_with_a_new_name_stops(self):
+        def fn(rows):
+            n = rows[0].index('Name')
+            next(r for r in rows if r[0] == '17521')[n] = 'Something Else'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        with self.assertRaises(SchemaError) as cm:
+            self.categories()
+        self.assertIn('Proto Ultima Heat Shielding', str(cm.exception))
+
+    def test_unknown_code_stops(self):
+        def fn(rows):
+            sc = rows[0].index('SubcategorySort')
+            next(r for r in rows if r[0] == '1015')[sc] = '8999'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        with self.assertRaises(SchemaError) as cm:
+            self.categories()
+        self.assertIn('999 (1 pieces)', str(cm.exception))
+
+    def test_cross_check_flags_a_recipe_result_outside_crafted(self):
+        def fn(rows):
+            sc = rows[0].index('SubcategorySort')
+            next(r for r in rows if r[0] == '1020')[sc] = '8270'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        _, kept, ids = self.categories()
+        self.assertTrue(any('Test Sallet HQ' in p for p in gear_categories.check(kept, ids)))
+
+
 class SchemaDriftTest(unittest.TestCase):
-    """A game patch that renames or drops a column, or changes a slot share, must stop the generators (audit A14)."""
+    """A game patch that renames or drops a column, or changes a slot share, must stop the generators."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -301,8 +522,8 @@ class SchemaDriftTest(unittest.TestCase):
         self.assertFalse((self.dir / 'out.js').exists(), 'no output is written on a schema error')
 
     def test_unmodified_fixtures_pass(self):
-        run_quiet(gen_items.main, str(self.dir), str(self.dir / 'items.js'))
-        run_quiet(gen_item_level.main, str(self.dir), str(self.dir / 'item-level.js'))
+        run_quiet(gen_items.main, str(self.dir), str(self.dir / 'items.json'))
+        run_quiet(gen_item_level.main, str(self.dir), str(self.dir / 'item-level.json'))
 
     def test_renamed_job_column(self):
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')
@@ -331,6 +552,22 @@ class SchemaDriftTest(unittest.TestCase):
                 shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
                 rename_column(self.dir / 'Item.csv', col, 'Renamed' + col)
                 self.assert_fails(gen_items, 'Item.csv', col)
+
+    def test_changed_totem_id(self):
+        def fn(rows):
+            col = rows[0].index('Name')
+            next(r for r in rows if r[0] == '44743')[col] = 'Something Else'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'ultimate totem', 'Oracle Totem')
+
+    def test_missing_source_columns(self):
+        for sheet, col in (('Recipe.csv', 'ItemResult'), ('SpecialShop.csv', 'UseCurrencyType'), ('TomestonesItem.csv', 'Item')):
+            with self.subTest(col=col):
+                shutil.copy(FIXTURES / sheet, self.dir / sheet)
+                rename_column(self.dir / sheet, col, col + 'X')
+                self.assert_fails(gen_items, sheet, col)
+                shutil.copy(FIXTURES / sheet, self.dir / sheet)
 
     def test_missing_item_level_stat_column(self):
         rename_column(self.dir / 'ItemLevel.csv', 'DirectHitRate', 'DirectHit')

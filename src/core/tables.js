@@ -1,9 +1,14 @@
 /* Generated game tables plus the limits derived from them. */
-import { DATA_SOURCE, IL, PG } from '../data/item-level.js';
-import { ITEMS } from '../data/items.js';
+import ITEM_LEVEL_FILE from '../data/item-level.json' with { type: 'json' };
+import ITEMS_FILE from '../data/items.json' with { type: 'json' };
 
-/* DATA_SOURCE: {repo, commit, date} of the xivapi/ffxiv-datamining commit the tables were generated from, or null when unknown. */
-export { DATA_SOURCE, IL, PG, ITEMS };
+/* {repo, commit, date} of the xivapi/ffxiv-datamining commit the tables were generated from, or null when unknown. */
+export const DATA_SOURCE = ITEM_LEVEL_FILE.source ?? null;
+/* IL: per-stat budget by item level (ItemLevel sheet). PG: [BaseSpeed, LevelModifier, ItemLevelSync] per level 1..100. */
+export const IL = ITEM_LEVEL_FILE.IL;
+export const PG = ITEM_LEVEL_FILE.PG;
+/* ITEMS: the real-gear database rows (format in constants.js). */
+export const ITEMS = ITEMS_FILE.items;
 
 /* Short footer text naming the game-data source, or '' when unknown. */
 export function dataSourceLabel(src = DATA_SOURCE) {

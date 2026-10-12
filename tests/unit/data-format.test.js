@@ -2,8 +2,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
-import { JOBS, ITEM_STAT_ORDER, DB_SLOT_TYPE, DB_SLOT_PCT, SLOT_TYPES, WEAPON_PCT, BASE_SLOT_PCT } from '../../src/core/constants.js';
+import {
+  JOBS,
+  JOB_ROWS,
+  ITEM_STAT_ORDER,
+  DB_SLOT_TYPE,
+  DB_SLOT_PCT,
+  SLOT_TYPES,
+  WEAPON_PCT,
+  BASE_SLOT_PCT,
+} from '../../src/core/constants.js';
 import { IL, PG, ITEMS } from '../../src/core/tables.js';
+import { JOB_ICONS } from '../../src/data/job-icons.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 
 test('job bit order, stat order and slot codes come from item-format.json', () => {
@@ -35,11 +45,13 @@ test('every item row has the documented shape', () => {
   const maxMask = 2 ** ITEM_FORMAT.jobs.length;
   for (const r of ITEMS) {
     const where = JSON.stringify(r).slice(0, 80);
-    assert.equal(r.length, 7, where);
+    assert.equal(r.length, 9, where);
     assert.ok(Number.isInteger(r[1]) && r[1] >= 0 && r[1] < ITEM_FORMAT.slots.length, 'slot code ' + where);
     assert.ok(r[4] > 0 && r[4] < maxMask, 'job mask ' + where);
     assert.equal(r[5].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
     assert.ok(r[6] === 0 || r[6] === 1, 'unique flag ' + where);
+    assert.ok(r[7] === 0 || r[7] === 1, 'HQ flag ' + where);
+    assert.ok(Number.isInteger(r[8]) && r[8] >= 0 && r[8] < 2 ** ITEM_FORMAT.sources.length, 'source mask ' + where);
   }
 });
 
@@ -92,4 +104,14 @@ test('every job has at least one item for each of its active slots (a renamed jo
       );
     }
   });
+});
+
+test('job picker: every job appears exactly once, each with an embedded 64 x 64 PNG icon', () => {
+  const picked = JOB_ROWS.flatMap(([, ids]) => ids);
+  assert.deepEqual([...picked].sort(), JOBS.map(j => j[0]).sort());
+  for (const id of picked) {
+    const png = Buffer.from(JOB_ICONS[id].replace(/^data:image\/png;base64,/, ''), 'base64');
+    assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG', id);
+    assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [64, 64], id);
+  }
 });

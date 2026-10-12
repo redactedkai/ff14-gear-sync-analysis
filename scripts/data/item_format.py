@@ -3,7 +3,7 @@
 The generated-data format (job bit order, raw stat order, slot codes, slot shares) lives in src/core/item-format.json,
 which the page's JavaScript reads too, so the two sides cannot drift apart.
 
-The generators check the CSVs against that format before using them (docs/audit-2.md A14): a column renamed or dropped
+The generators check the CSVs against that format before using them: a column renamed or dropped
 by a game patch, or a slot share in BaseParam that no longer matches the page, stops the generator with a SchemaError
 instead of producing quietly wrong data.
 """

@@ -6,7 +6,7 @@ import { genericItems } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { gcdFor } from '../../src/core/speed.js';
 import { IL } from '../../src/core/tables.js';
-import { ITEMS } from '../../src/data/items.js';
+import { ITEMS } from '../../src/core/tables.js';
 
 /* The sync caps at item level 123, checked against game data without calling capsFor.
 

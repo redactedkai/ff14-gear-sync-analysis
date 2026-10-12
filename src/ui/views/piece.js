@@ -1,8 +1,9 @@
 /* Piece lab: how one piece's stats come from its item level, line by line, and what sync does to them. */
-/* Pure view builder: no Alpine import, so Node can load and test it (docs/audit-2.md A4). */
+/* Pure view builder: no Alpine import, so Node can load and test it. */
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, statDerivation } from '../../core/formulas.js';
 import { budgetChartSvg } from '../chart.js';
+import { syncActive } from '../state.js';
 
 /* "base × pct ÷ 1000 = 26.4 → 26; × 70% = 18.2 → 18" */
 function formulaText(steps) {
@@ -20,8 +21,9 @@ export function pieceView(app) {
     p = app.piece,
     il = clampIlvl(p.ilvl),
     t = p.slot;
-  const caps = capsFor(job, t, app.cap);
-  const clampOn = app.sync && il > app.cap;
+  const on = syncActive(app);
+  const caps = on ? capsFor(job, t, app.cap) : null;
+  const clampOn = on && il > app.cap;
   const lines = [
     { stat: 'main', w: 100 },
     { stat: 'vit', w: 100 },
@@ -39,15 +41,15 @@ export function pieceView(app) {
     il,
     rows,
     lost: rows.reduce((a, r) => a + (r.raw - r.syn), 0),
-    status: !app.sync ? 'off' : il <= app.cap ? 'below' : 'above',
+    status: !on ? 'off' : il <= app.cap ? 'below' : 'above',
     rangeValue: Math.max(1, Math.min(app.maxReal, il)),
-    chartSvg: budgetChartSvg(job, il, app.cap),
+    chartSvg: budgetChartSvg(job, il, on ? app.cap : null),
   };
 }
 
 /* Piece lab substat ranks after choosing `value` (or '' for none) at rank `i`. A substat can hold only one rank:
-   choosing one already used elsewhere swaps the two (docs/audit-2.md A9). Ranks 1 and 2 are never empty; if a swap
-   would empty one, it gets the first of the job's substats not used by the other ranks. */
+   choosing one already used elsewhere swaps the two. Rank 1 is never empty; ranks 2 and 3 may
+   be, and an empty rank 2 pulls rank 3 up into it. */
 export function withSub(subs, i, value, substats) {
   const out = subs.slice(0, 3);
   while (out.length < 3) out.push(null);
@@ -55,8 +57,7 @@ export function withSub(subs, i, value, substats) {
   const j = v == null ? -1 : out.indexOf(v);
   if (j >= 0 && j !== i) out[j] = out[i];
   out[i] = v;
-  for (const k of [0, 1]) {
-    if (out[k] == null) out[k] = substats.find(s => !out.includes(s)) ?? null;
-  }
+  if (out[0] == null) out[0] = substats.find(s => !out.includes(s)) ?? null;
+  if (out[1] == null) [out[1], out[2]] = [out[2], null]; // a 20% third needs a 70% second
   return out;
 }

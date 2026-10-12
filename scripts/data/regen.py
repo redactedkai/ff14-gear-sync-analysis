@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Regenerate src/data/item-level.js and src/data/items.js from data/ffxiv-datamining (see fetch.py), then rebuild dist/."""
+"""Regenerate src/data/item-level.json, src/data/items.json and src/data/job-icons.js from what fetch.py saved in data/, then
+rebuild dist/."""
 
 import subprocess
 import sys
@@ -19,7 +20,10 @@ print(f'Data source: {src["repo"]} {src["commit"]} ({src["date"]})')
 prov = ['--source-commit', src['commit'], '--source-date', src['date']]
 py = sys.executable
 subprocess.run(
-    [py, str(ROOT / 'scripts' / 'data' / 'gen_item_level.py'), str(CSV), str(ROOT / 'src' / 'data' / 'item-level.js'), *prov], check=True
+    [py, str(ROOT / 'scripts' / 'data' / 'gen_item_level.py'), str(CSV), str(ROOT / 'src' / 'data' / 'item-level.json'), *prov], check=True
 )
-subprocess.run([py, str(ROOT / 'scripts' / 'data' / 'gen_items.py'), str(CSV), str(ROOT / 'src' / 'data' / 'items.js'), *prov], check=True)
+subprocess.run(
+    [py, str(ROOT / 'scripts' / 'data' / 'gen_items.py'), str(CSV), str(ROOT / 'src' / 'data' / 'items.json'), *prov], check=True
+)
+subprocess.run([py, str(ROOT / 'scripts' / 'data' / 'gen_job_icons.py')], check=True)
 subprocess.run(['node', str(ROOT / 'scripts' / 'build' / 'build.mjs')], check=True)

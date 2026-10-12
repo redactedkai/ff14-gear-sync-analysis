@@ -10,12 +10,12 @@ import { restoreState } from '../../src/ui/state.js';
 import { optimizerView, ceilingView, tierText } from '../../src/ui/views/optimizer.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
-import { poolView } from '../../src/ui/views/pool.js';
-import { browseView } from '../../src/ui/views/browse.js';
+import { gearView } from '../../src/ui/views/gear.js';
+import { poolKey } from '../../src/core/items.js';
 
-/* A store-shaped state object, as the Alpine store holds it. */
+/* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. */
 function makeApp(job = 'SGE', patch = {}) {
-  const s = restoreState({ job });
+  const s = restoreState({ job, sync: true, cap: 123 });
   return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL, poolVersion: 0 }, patch);
 }
 
@@ -52,14 +52,12 @@ test('gcdTierAt agrees with a step-by-step scan at every level', () => {
 });
 
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
-  // a cap of 123 sits below the 125-135 window, so sync bites; require an average item level of at least 123
+  // a cap of 123 sits below the 125-135 window, so sync bites
   const app = makeApp('BLM', { cap: 123 });
   app.pool = windowPool(app.jobCtx);
-  const o = app.opt; // defaults: Spell Speed, tiebreaks main and Vitality
-  assert.deepEqual([o.target, o.tb, o.tb2], ['spd', 'main', 'vit']);
-  Object.assign(o, { avg: true, avgMin: 123 });
-  const want = sync =>
-    exhaustive(app.jobCtx, app.pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'], minAvgIlvl: 123 })[0];
+  const o = app.opt;
+  Object.assign(o, { target: 'spd', tb: 'main', tb2: 'vit' });
+  const want = sync => exhaustive(app.jobCtx, app.pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'] })[0];
   const v = optimizerView(app);
   assert.equal(v.kind, 'ok');
   assert.equal(v.total, want(true));
@@ -71,37 +69,17 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
   assert.ok(v.total < unsynced);
 });
 
-test('A6: average item level is coloured against the requirement, not the cap', () => {
+test('optimizer view: one Unique ring fills the first ring slot and leaves the second empty', () => {
   const app = makeApp('SGE');
-  app.pool = uniqueRingPool(app.jobCtx); // every piece is item level 130
-  assert.ok(app.pool.every(i => i.ilvl === 130 && i.type !== 'weapon'));
+  assert.equal(optimizerView(app).kind, 'empty');
+  app.pool = uniqueRingPool(app.jobCtx);
   assert.equal(app.pool.filter(i => i.type === 'ring').length, 1);
-  app.cap = 200;
-  app.opt.avg = false;
-  assert.equal(optimizerView(app).avgClass, ''); // requirement off: no colour, even though 130 < cap 200
-  // Nine item level 130 pieces fill 9 of the 10 slot weights (the one Unique ring leaves the second ring slot
-  // empty), so the average is 117.0.
-  app.opt.avg = true;
-  app.opt.avgMin = 110;
   const v = optimizerView(app);
-  assert.equal(v.avg, '117.0');
+  assert.equal(v.kind, 'ok');
   assert.deepEqual(
     v.rows.filter(r => r.label.startsWith('Ring')).map(r => !!r.item),
     [true, false],
   );
-  assert.equal(v.avgClass, 'ok'); // meets the 110 requirement although it is below the cap of 200
-  assert.match(v.avgText, /required ≥ 110/);
-  app.opt.avgMin = 120;
-  assert.equal(optimizerView(app).kind, 'infeasible');
-});
-
-test('optimizer view: empty pool and infeasible requirement', () => {
-  const app = makeApp('SGE');
-  assert.equal(optimizerView(app).kind, 'empty');
-  app.pool = uniqueRingPool(app.jobCtx); // all item level 130: an average of 131 is out of reach
-  app.opt.avg = true;
-  app.opt.avgMin = 131;
-  assert.equal(optimizerView(app).kind, 'infeasible');
 });
 
 test('A5: optimizer errors become an error view instead of throwing', () => {
@@ -109,7 +87,7 @@ test('A5: optimizer errors become an error view instead of throwing', () => {
   app.pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
     mkItem(t, t, 130, { spd: 9e5, main: 9e5, vit: 9e5 }),
   );
-  app.opt.avg = false;
+  Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' }); // tiebreaks make the scores large
   app.sync = false; // with sync on these stats would be clamped to normal values
   const v = optimizerView(app);
   assert.equal(v.kind, 'error');
@@ -193,17 +171,51 @@ test('piece lab view: every real item level 130 Sage head piece with three subst
   );
 });
 
-test('pool and browse views', () => {
+test('gear view: all matches, each marked when it is in the pool; the pool view lists only pool items', () => {
   const app = makeApp('SGE');
   app.browse = { ...app.browse, q: '', min: 130, max: 130, lvl: 50 };
-  const b = browseView(app);
   const rows = browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 });
   assert.ok(rows.length >= 9);
-  assert.equal(b.all.length, rows.length);
+  let v = gearView(app);
+  assert.equal(v.showPool, false);
+  assert.equal(v.all.length, rows.length);
+  assert.ok(v.shown.every(x => x.item === null));
   app.pool = uniqueRingPool(app.jobCtx);
   const n = app.pool.length;
   assert.equal(n, rows.length - rows.filter(r => r.type === 'ring' && !r.unique).length);
-  const p = poolView(app);
-  assert.equal(p.rows.length, n);
-  assert.match(p.countText, new RegExp(`^${n} items · `));
+  v = gearView(app);
+  const inPool = new Set(app.pool.map(poolKey));
+  assert.ok(v.shown.every(x => !!x.item === inPool.has(x.key)));
+  assert.equal(v.shown.filter(x => x.item).length, n);
+  app.browse.show = 'pool';
+  v = gearView(app);
+  assert.equal(v.showPool, true);
+  assert.equal(v.shown.length, n);
+  assert.ok(v.shown.every(x => x.item));
+  assert.match(v.countText, new RegExp(`^${n} items · `));
+  // the same filters narrow the pool view
+  app.browse.type = 'ring';
+  v = gearView(app);
+  assert.equal(v.shown.length, 1);
+  assert.match(v.countText, /1 match the filters$/);
+});
+
+test('sync off: the ceiling has no synced row and its GCD comes from the unsynced ceiling', () => {
+  const app = makeApp('WAR', { cap: 123, sync: false });
+  app.pool = windowPool(app.jobCtx);
+  const v = ceilingView(app);
+  assert.equal(v.synced, null);
+  const spd = v.headers.indexOf('SkS');
+  assert.equal(v.gcd, gcdFor(+v.unsynced[spd], app.level).toFixed(2) + 's');
+  assert.deepEqual(v.unsynced, ceilingView({ ...app, sync: true }).unsynced);
+});
+
+test('sync off: piece lab leaves stats as they are and draws no cap line', () => {
+  const app = makeApp('SGE', { cap: 123, sync: false });
+  app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec', 'dh'] };
+  const v = pieceView(app);
+  assert.equal(v.status, 'off');
+  assert.ok(v.rows.every(r => r.syn === r.raw));
+  assert.doesNotMatch(v.chartSvg, /cap 123/);
+  assert.match(pieceView({ ...app, sync: true }).chartSvg, /cap 123/);
 });

@@ -3,7 +3,7 @@
    Candidates dominated by another item in the same slot are dropped. */
 import { SLOT_TYPES } from '../constants.js';
 import { syncStats } from '../formulas.js';
-import { slotActive, ilWeight } from '../job-context.js';
+import { slotActive } from '../job-context.js';
 
 /* sync = {cap, sync}: the cap item level and whether sync is on */
 export function effStats(job, item, sync) {
@@ -53,9 +53,9 @@ export function makeScorer(target, tiebreaks, slotVectors) {
   };
 }
 
-/* Dimensions tracked per item: the job's stats plus `ilw` (item level x slot weight, for the average). */
+/* Dimensions tracked per item: the job's stats. */
 export function vectorDims(job) {
-  return job.stats.concat(['ilw']);
+  return job.stats.slice();
 }
 
 function itemVector(job, item, sync) {
@@ -64,7 +64,6 @@ function itemVector(job, item, sync) {
   job.stats.forEach(s => {
     v[s] = e[s] || 0;
   });
-  v.ilw = item.ilvl * ilWeight(job, item.type);
   return v;
 }
 

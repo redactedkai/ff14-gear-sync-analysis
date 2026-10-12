@@ -1,6 +1,6 @@
-/* Pool items and the real-item database (src/data/items.js).
+/* Pool items and the real-item database (src/data/items.json).
    A pool item: {id, name, type, ilvl, stats (neutral keys), copies, src: 'game' | 'generated' | 'custom'}. */
-import { SLOT_LABEL, ITEM_STAT_ORDER, DB_SLOT_TYPE } from './constants.js';
+import { SLOT_LABEL, ITEM_STAT_ORDER, DB_SLOT_TYPE, SOURCES } from './constants.js';
 import { ITEMS } from './tables.js';
 import { blankStats, buildPiece } from './formulas.js';
 
@@ -62,6 +62,8 @@ export function parseRow(r) {
     mask: r[4],
     st: r[5].split(',').map(Number),
     unique: !!r[6],
+    hq: !!r[7], // can be high quality: the stats are the HQ ones
+    sources: r[8] | 0, // bit mask over SOURCES
   };
 }
 
@@ -90,6 +92,30 @@ export function browseItems(job, f) {
 }
 
 /* Non-unique rings can be worn twice. */
+/* Identity of a piece in the pool: the same name, slot and item level is the same piece. */
+export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
+
+let sourceIndex = null;
+/* The source bit mask (SOURCES) of a pool item, looked up in the database by its pool key, so pools saved before the
+   flags existed need no repair. Items not from the database (hand-made, generated) have none. */
+export function sourceMask(item) {
+  if (item.src !== 'game') return 0;
+  if (!sourceIndex) {
+    sourceIndex = new Map();
+    for (const r of ITEMS) {
+      const k = poolKey({ name: r[0], type: DB_SLOT_TYPE[r[1]], ilvl: r[2] });
+      sourceIndex.set(k, (sourceIndex.get(k) || 0) | (r[8] | 0));
+    }
+  }
+  return sourceIndex.get(poolKey(item)) || 0;
+}
+
+/* The pool without items from any excluded source (a list of SOURCES keys). */
+export function withoutSources(pool, exclude) {
+  const mask = SOURCES.filter(s => exclude.includes(s.key)).reduce((m, s) => m | s.bit, 0);
+  return mask ? pool.filter(i => !(sourceMask(i) & mask)) : pool;
+}
+
 export function poolItemFromRow(job, p) {
-  return mkItem(p.name, p.type, p.ilvl, dbStats(job, p.st), { src: 'game', copies: p.type === 'ring' && !p.unique ? 2 : 1 });
+  return mkItem(p.name, p.type, p.ilvl, dbStats(job, p.st), { src: 'game', hq: !!p.hq, copies: p.type === 'ring' && !p.unique ? 2 : 1 });
 }

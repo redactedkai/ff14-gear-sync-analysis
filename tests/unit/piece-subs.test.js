@@ -1,4 +1,4 @@
-/* Piece lab substat ranks: a substat holds at most one rank (docs/audit-2.md A9). */
+/* Piece lab substat ranks: a substat holds at most one rank. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';

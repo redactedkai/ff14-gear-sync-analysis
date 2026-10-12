@@ -19,7 +19,7 @@ src/
   main.js             entry: restore saved state, register store + components, save effect, Alpine.start()
   core/               pure logic, no DOM, importable from Node
     constants.js      slots, stat keys, profiles, JOBS, slot percents, substat shares
-    item-format.json  shared data format (job bit order, raw stat order, slot codes), read by JS and the Python generators
+    item-format.json  shared data format (job bit order, raw stat order, slot codes, gear sources), read by JS and the Python generators
     tables.js         IL / PG / ITEMS / DATA_SOURCE re-exports, MAX_ILVL, MAX_REAL, footer label
     job-context.js    makeJobContext(jobId): frozen per-job description; slotActive, ilWeight, statColumn
     formulas.js       rounding, slot budgets, buildPiece, capsFor, syncStats, statDerivation, predictRaw
@@ -34,17 +34,20 @@ src/
     chart.js          budget chart SVG
     views/            pure view builders (no Alpine): what each tab shows, unit-tested in tests/unit/views.test.js
     components/       one Alpine.data() per page area (page/settings, piece-lab, sync-caps, validation-panel,
-                      browser, pool, optimizer)
+                      gear, optimizer)
   data/
-    item-level.js     GENERATED: ItemLevel budget table (IL), ParamGrow level data (PG), DATA_SOURCE
-    items.js          GENERATED: real gear database (ITEMS, 17,577 rows, ~1.4 MB)
+    item-level.json   GENERATED: ItemLevel budget table and ParamGrow level data ({_generated, source, IL, PG})
+    items.json        GENERATED: real gear database ({_generated, source, items}: 17,577 rows, ~1.4 MB)
+    job-icons.js      GENERATED: the game's framed job icons as PNG data URLs (JOB_ICONS, ~0.2 MB)
 scripts/
   build/build.mjs     esbuild bundle + inline into dist/index.html
   build/dev.mjs       watch + local server
-  data/fetch.py       sparse-clone the 6 needed CSVs from xivapi/ffxiv-datamining into data/
+  data/fetch.py       sparse-clone the 10 needed CSVs from xivapi/ffxiv-datamining into data/, download job icons into data/icons/
   data/item_format.py loads item-format.json, reads CSVs
-  data/gen_item_level.py  ItemLevel.csv + ParamGrow.csv -> src/data/item-level.js
-  data/gen_items.py   Item.csv + EquipSlotCategory.csv + ClassJobCategory.csv -> src/data/items.js
+  data/gen_item_level.py  ItemLevel.csv + ParamGrow.csv -> src/data/item-level.json
+  data/gen_items.py   Item.csv + EquipSlotCategory.csv + ClassJobCategory.csv -> src/data/items.json
+  data/gear_sources.py  Recipe.csv + SpecialShop.csv + TomestonesItem.csv -> each item's source bits (crafted, tomestone, ultimate)
+  data/gen_job_icons.py  data/icons/*.png (downloaded by fetch.py) -> src/data/job-icons.js
   data/provenance.py  source commit + file headers
   data/regen.py       both generators, then the build
 tests/
@@ -56,7 +59,7 @@ docs/                 see docs/README.md; style guide in docs/diagrams/STYLE.md
 
 `.github/workflows/pages.yml` deploys to GitHub Pages on push to `main` (Node unit tests, build, publish `dist/`). It is the only workflow; there is no separate CI.
 
-`dist/`, `data/` and `tests/e2e/out/` are gitignored. **Never hand-edit `src/data/*.js`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
+`dist/`, `data/` and `tests/e2e/out/` are gitignored. **Never hand-edit `src/data/*`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
 
 ## Commands (run from the repo root)
 
@@ -78,7 +81,7 @@ Details and diagrams: `docs/architecture.md`.
 
 Core functions never read global job state. Everything job-dependent comes from a **JobContext** passed as the first argument (`makeJobContext('SGE')`, cached and frozen). It holds role-neutral stat keys and how they map for the job: `main` (Str/Dex/Int/Mind), `vit`, `crit`, `det`, `dh`, `spd` (Skill/Spell Speed), `spec` (Piety/Tenacity/none), plus `stats`, `substats`, `label`, `short`, `weaponMode`, `slotPct`, `activeSlotTypes`, `vitFactor`. Raw database rows use the 12-stat order `str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps` and are converted with `dbStats(job, st)`. Do not use job-specific keys (`sps`, `piety`, `mind`) in shared logic or UI; map through the context.
 
-UI: `Alpine.store('app')` holds the saved state plus `jobCtx` (the current context) and `poolVersion` (bumped on every pool change). Each component recomputes a `view` object in an effect from the store; templates only display it. Keep large data (the item database, browse results) out of reactive state (plain or frozen objects). The optimizer and ceiling run debounced (120 ms) and only while the Optimizer tab is open; the gear browser only while the Item pool tab is open. Persisting to localStorage is one debounced effect in `main.js`. Dynamic `<select>`s render options with `x-for` and mark the current one with `:selected`.
+UI: `Alpine.store('app')` holds the saved state plus `jobCtx` (the current context) and `poolVersion` (bumped on every pool change). Each component recomputes a `view` object in an effect from the store; templates only display it. Keep large data (the item database, browse results) out of reactive state (plain or frozen objects). The optimizer and ceiling run debounced (120 ms) and only while the Gear optimizer tab is open; the gear browser only while the Gear pool tab is open. Persisting to localStorage is one debounced effect in `main.js`. Dynamic `<select>`s render options with `x-for` and mark the current one with `:selected`.
 
 ## The model
 
@@ -89,7 +92,7 @@ Full derivation, worked example and verified/assumed table: `docs/math.md`. Evid
 - GCD and DoT/HoT tick scaling follow AkhMorning's formulas with `ParamGrow` constants.
 
 Empirical or assumed (say so in the UI and in answers; never present as fact):
-- The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: 97.1 to 99.6% exact per item level band, 98.7% overall. The Item pool and Optimizer use real item stats and do not depend on them; only Piece lab does.
+- The 100% / 70% / 20% substat shares are a **measured pattern, not in the game files**: 97.1 to 99.6% exact per item level band, 98.7% overall. The Gear pool and Gear optimizer use real item stats and do not depend on them; only Piece lab does.
 - The main stat / Vitality clamp under sync, and lower-ranked substats clamping to the full-share cap, are inferred, not confirmed in game.
 - Melds are ignored on synced-down gear; substats are never scaled up.
 
@@ -98,26 +101,26 @@ Empirical or assumed (say so in the UI and in answers; never present as fact):
 Full rules, counts and provenance: `docs/data-pipeline.md`. Key facts:
 
 - Source: xivapi/ffxiv-datamining CSVs (straight client exports; nothing derived by the miners). The commit is recorded in both generated files and shown in the page footer.
-- `gen_items.py` keeps gear with a slot (no belt, no soul crystal), a combat-job `ClassJobCategory`, item level >= 100 and at least one stat. **HQ bonus only when `CanBeHq`**. `IsUnique` is carried so the optimizer allows only one copy of a Unique ring.
+- `gen_items.py` keeps gear with a slot (no belt, no soul crystal), a combat-job `ClassJobCategory`, item level >= 100 and at least one stat. **HQ bonus only when `CanBeHq`**. `IsUnique` is carried so the optimizer allows only one copy of a Unique ring. Each row also carries source bits from the game files: crafted (a recipe result), tomestone (a shop listing costs a tomestone, or it is made from such a piece; shop costs below 8 are currency codes read through `UseCurrencyType`; retired un-augmented sets are not flagged), ultimate (sold for one of seven ultimate totems). Dungeon loot is not in the game files. These flags were spot-checked against the Lodestone; the Lodestone only shows shops active today, so a retired shop still in the game files shows no tomestone there.
 - Job bit order, raw stat order and slot codes live in `src/core/item-format.json` only; a test checks the page against it. Changing it means regenerating the data.
 - The highest real item level is **795** (`MAX_REAL`, computed from the database). The `ItemLevel` sheet runs to 920 but rows 796 to 920 carry no gear, so item level inputs cap at `MAX_REAL`. Do not claim those rows are "placeholders" or "intentional"; the data only shows they are unused.
 - After a patch: `npm run update-data`, then `npm run check`. Which test numbers may move and which must not is in `docs/data-pipeline.md` section 9 and `docs/testing.md` section 6.
 
 ## Job mapping
 
-tank (Str, Skill Speed, Tenacity): PLD WAR DRK GNB. healer (Mind, Spell Speed, Piety): WHM SCH AST SGE. melee (Str, Skill Speed): MNK DRG SAM RPR. dex (Dex, Skill Speed): NIN VPR BRD MCH DNC. caster (Int, Spell Speed): BLM SMN RDM PCT BLU. PLD uses a 1H weapon (100%) plus a shield (off-hand 40%); every other job uses a 2H weapon (140%), which counts twice toward average item level.
+tank (Str, Skill Speed, Tenacity): PLD WAR DRK GNB. healer (Mind, Spell Speed, Piety): WHM SCH AST SGE. melee (Str, Skill Speed): MNK DRG SAM RPR. dex (Dex, Skill Speed): NIN VPR BRD MCH DNC. caster (Int, Spell Speed): BLM SMN RDM PCT BLU. PLD uses a 1H weapon (100%) plus a shield (off-hand 40%); every other job uses a 2H weapon (140%).
 
 ## Optimizer
 
 Full description, proofs and measurements: `docs/optimizer.md`.
 
-Depth-first branch and bound over slots, after dominance pruning, with one integer score per item that encodes the lexicographic order (target, tiebreak 1, tiebreak 2). The weights are derived from the pool so a lower key can never outweigh a higher one; `optimize()` throws if a score could exceed 2^53. An item is pruned only when the items that dominate it have enough copies to fill every slot of its type (2 for rings), and pruning is off when stat maximums are set. Handles two rings, Unique items, and an optional average-item-level requirement. Node limit 700k in the UI (150k per ceiling run); the result reports truncation, the ceiling table does not.
+Depth-first branch and bound over slots, after dominance pruning, with one integer score per item that encodes the lexicographic order (target, tiebreak 1, tiebreak 2). The weights are derived from the pool so a lower key can never outweigh a higher one; `optimize()` throws if a score could exceed 2^53. An item is pruned only when the items that dominate it have enough copies to fill every slot of its type (2 for rings), and pruning is off when a speed maximum is set. The only constraint is an optional speed range (engine only, for a future target-GCD control). Handles two rings and Unique items. Leaving out gear by source (crafted, tomestone, ultimate) filters the pool before the search. Node limit 700k in the UI (150k per ceiling run); the result reports truncation, the ceiling table does not.
 
 Timing (Node 22, full 2,033-item Sage pool): one run takes about 15 to 20 ms; the 14-run ceiling table about 0.23 s. If you change scoring, pruning or the search, keep the exhaustive-search tests green and re-time a large pool.
 
 ## Page constraints
 
-- Keep the title `Item Level Stat Lab`.
+- Keep the title `Gear Sync Analysis` (renamed from Item Level Stat Lab at the owner's request).
 - Colors only through CSS tokens on `:root`, redefined for dark mode under `@media (prefers-color-scheme: dark)` (guarded `:root:not([data-theme="light"])`) and `:root[data-theme="dark"]`. `body` has an explicit background.
 - `localStorage` only inside try/catch and only for per-viewer conveniences (the key is `ilvl-stat-lab-v3`). The page must render correctly without it. If the saved-state shape changes, bump the key suffix and keep `restoreState()` (src/ui/state.js) repairing old values.
 - Works at ~400 px width with no horizontal page scroll (tables scroll in their own container).
@@ -127,7 +130,7 @@ Timing (Node 22, full 2,033-item Sage pool): one run takes about 15 to 20 ms; th
 
 - Be concise and plain-spoken. The owner has said the UI felt "overwhelming" at one point, so favor a few clear tabs over many controls. Ask yourself whether each control earns its place; remove excess rather than explain it.
 - Validate against external truth whenever possible (game files, Wiki, real items) and show the result. Distinguish what is verified from what is inferred. Several earlier claims had to be retracted (`docs/history.md`); do not repeat an inference as a fact, and add an entry there when something is retracted.
-- Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. Defaults come from the game, not the owner's setup: first job in game order, level 100, and its own sync item level (690). (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
+- Everything should be job-agnostic. No hard-coded Sage assumptions in labels, defaults, tests of shared logic, or copy. Defaults favour no player's setup: no job chosen (the tabs wait for one), level 100, sync off with an empty cap; the optimizer maximizes the main stat with no tiebreaks; Piece lab at the highest real item level with the job's own substat first. (Sage-specific facts, such as Eukrasian spells, were removed from the page on purpose.)
 - When the owner reports a bug from a screenshot, reproduce it in the smoke test or a unit test first, fix, then add a regression check.
 - Prefer root causes. Example: the "undefined" in Piece lab came from using a job-specific key where a neutral one belonged, not from missing text.
 - esbuild is the only build tool and Alpine.js the only runtime dependency. Ask before adding any other dependency. The single self-contained output file is a feature. The one intentional exception is the Google Fonts stylesheet in `src/index.html` (owner's decision): keep it, and keep the page working without it.

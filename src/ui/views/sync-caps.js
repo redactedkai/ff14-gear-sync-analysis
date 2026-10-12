@@ -1,10 +1,13 @@
 /* Sync caps: the per-slot ceiling at the current cap, and what a high item level piece keeps after syncing. */
-/* Pure view builder: no Alpine import, so Node can load and test it (docs/audit-2.md A4). */
+/* Pure view builder: no Alpine import, so Node can load and test it. */
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, pieceValue } from '../../core/formulas.js';
 import { gcdFor, dotMult } from '../../core/speed.js';
+import { syncActive } from '../state.js';
 
+/* null while sync is off or no cap is set */
 export function syncView(app) {
+  if (!syncActive(app)) return null;
   const job = app.jobCtx,
     cap = app.cap,
     hil = clampIlvl(app.syncIlvl);

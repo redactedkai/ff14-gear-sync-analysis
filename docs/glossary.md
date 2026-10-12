@@ -2,7 +2,7 @@
 
 Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play the game. Each entry is short and links to the page that explains it in depth. Game terms describe the game as this project models it; where the model rests on an inference rather than game data, the linked page says so.
 
-**Average item level.** The mean item level of everything a character wears, over 12 positions. A two-handed weapon counts twice (it fills the main-hand and off-hand positions); a one-handed weapon and a shield count once each. The optimizer can require a minimum average. It uses each item's own item level, not its synced one. See [math.md, section 3](math.md#3-slot-shares) and [optimizer.md, section 2](optimizer.md#2-formal-statement).
+**Average item level.** The mean item level of everything a character wears, over 12 positions. A two-handed weapon counts twice (it fills the main-hand and off-hand positions); a one-handed weapon and a shield count once each. The page does not use it: Minimum IL syncs everyone to the duty's level anyway. See [math.md, section 3](math.md#3-slot-shares).
 
 **Branch and bound.** The search method the optimizer uses: fill one slot at a time, trying the best candidates first, and abandon a partial gear set as soon as an upper bound shows it cannot beat the best complete set found so far. The answer is exact unless the search hits its node limit. See [optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound).
 

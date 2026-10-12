@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, poolItemFromRow, parseRow } from '../../src/core/items.js';
+import { browseItems, poolItemFromRow, parseRow, mkItem, sourceMask, withoutSources } from '../../src/core/items.js';
+import { SOURCES } from '../../src/core/constants.js';
 import { ITEMS } from '../../src/core/tables.js';
 
 const pld = makeJobContext('PLD');
@@ -9,7 +10,7 @@ const war = makeJobContext('WAR');
 const sge = makeJobContext('SGE');
 const names = rows => rows.map(r => r.name);
 
-/* Raw database stat order (CLAUDE.md, src/data/items.js): str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps */
+/* Raw database stat order (CLAUDE.md, src/data/items.json): str,dex,int,mind,vit,piety,ten,dh,crit,det,sks,sps */
 const RAW = { str: 0, dex: 1, int: 2, mind: 3, vit: 4, piety: 5, ten: 6, dh: 7, crit: 8, det: 9, sks: 10, sps: 11 };
 const rawStats = r => r[5].split(',').map(Number);
 const rowKey = r => `${r.name}|${r.slotCode}|${r.ilvl}|${r.mask}`;
@@ -135,4 +136,60 @@ test('poolItemFromRow copies: a Unique ring once, a non-unique ring twice', () =
   // non-ring, non-unique pieces are still a single copy
   const synthetic = parseRow(['Test Earring', 8, 130, 50, 1 << war.jobIndex, '26,0,0,0,28,0,24,0,0,17,0,0', 0]);
   assert.equal(poolItemFromRow(war, synthetic).copies, 1);
+});
+
+test('HQ flag: a pool item keeps whether its database row is HQ-capable, and a save restores it', async () => {
+  const { restoreState } = await import('../../src/ui/state.js');
+  const job = makeJobContext('SGE');
+  const rows = browseItems(job, { q: '', type: 'any', ilvlMin: 0, ilvlMax: 0, lvlMax: 0 });
+  const hq = rows.find(r => r.hq),
+    nq = rows.find(r => !r.hq);
+  assert.ok(hq && nq);
+  const items = [poolItemFromRow(job, hq), poolItemFromRow(job, nq)];
+  assert.deepEqual(
+    items.map(i => i.hq),
+    [true, false],
+  );
+  const back = restoreState(JSON.parse(JSON.stringify({ job: 'SGE', pool: items }))).pool;
+  assert.deepEqual(
+    back.map(i => i.hq),
+    [true, false],
+  );
+});
+
+/* Gear sources on real pieces whose Lodestone pages agree: a recipe (Ra'Kaznar), Allagan Tomestones of Mnemonics
+   (Bygone Brass), Mad Harlequin's Totem (Palazzo Diamond); Mistwake gear drops in a dungeon, which the game files do
+   not record. */
+test('source flags of real items, and leaving sources out of a pool', () => {
+  const find = name => {
+    const r = ITEMS.find(x => x[0] === name);
+    assert.ok(r, name);
+    return parseRow(r);
+  };
+  const cases = {
+    "Ra'Kaznar Helm of Fending": ['crafted', 'WAR'],
+    'Bygone Brass Earrings of Casting': ['tomestone', 'BLM'],
+    'Palazzo Diamond Codex': ['ultimate', 'SCH'],
+    'Mistwake Visor of Fending': [null, 'WAR'],
+  };
+  const pool = [];
+  for (const [name, [src, jobId]] of Object.entries(cases)) {
+    const row = find(name);
+    const bit = src ? SOURCES.find(s => s.key === src).bit : 0;
+    assert.equal(row.sources, bit, name);
+    const it = poolItemFromRow(makeJobContext(jobId), row);
+    assert.equal(sourceMask(it), bit, name);
+    pool.push(it);
+  }
+  const hand = mkItem('Hand-made', 'head', 700, { spd: 10 });
+  pool.push(hand);
+  assert.equal(withoutSources(pool, []), pool);
+  assert.deepEqual(
+    withoutSources(pool, ['crafted', 'ultimate']).map(i => i.name),
+    ['Bygone Brass Earrings of Casting', 'Mistwake Visor of Fending', 'Hand-made'],
+  );
+  assert.deepEqual(
+    withoutSources(pool, ['crafted', 'tomestone', 'ultimate']).map(i => i.name),
+    ['Mistwake Visor of Fending', 'Hand-made'], // no source known: never left out
+  );
 });

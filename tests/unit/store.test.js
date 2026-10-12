@@ -17,16 +17,14 @@ test('A1: switching to another job in the same role clears the pool and job-spec
   const store = storeWithPool('SGE');
   store.opt.target = 'crit';
   store.browse.sort = 'det';
-  store.poolFilter = 'ring';
   store.cap = 200;
   const version = store.poolVersion;
   store.setJob('WHM');
   assert.equal(store.job, 'WHM');
   assert.equal(store.jobCtx.jobId, 'WHM');
   assert.deepEqual(store.pool, []);
-  assert.equal(store.opt.target, 'spd');
+  assert.equal(store.opt.target, 'main');
   assert.equal(store.browse.sort, 'ilvl');
-  assert.equal(store.poolFilter, 'all');
   assert.equal(store.cap, 200); // not job-specific: kept
   assert.ok(store.poolVersion > version);
 });
@@ -43,4 +41,22 @@ test('choosing the current job again changes nothing', () => {
   const before = store.pool.length;
   store.setJob('DRG');
   assert.equal(store.pool.length, before);
+});
+
+test('reset to defaults: every saved setting back to its default, no job, the pool empty, the open tab kept', () => {
+  const store = storeWithPool('SGE');
+  Object.assign(store, { cap: 123, level: 50, sync: false, tab: 'opt' });
+  store.browse.q = 'Dread';
+  store.browse.min = 100;
+  store.opt.target = 'crit';
+  const version = store.poolVersion;
+  store.resetAll();
+  const { tab, ...want } = restoreState(null);
+  const got = store.persisted();
+  assert.equal(got.tab, 'opt');
+  delete got.tab;
+  assert.deepEqual(got, want);
+  assert.equal(want.job, null);
+  assert.equal(store.job, null);
+  assert.ok(store.poolVersion > version);
 });

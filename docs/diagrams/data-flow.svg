@@ -46,7 +46,7 @@
 
   <rect class="box" x="500" y="30" width="200" height="72" rx="8"/>
   <text class="fg t" x="600" y="57" text-anchor="middle">Local sparse clone</text>
-  <text class="muted s" x="600" y="76" text-anchor="middle">6 CSVs, latest commit only</text>
+  <text class="muted s" x="600" y="76" text-anchor="middle">7 CSVs (latest commit) + job icons</text>
   <text class="muted s" x="600" y="92" text-anchor="middle">(fetch step)</text>
 
   <line class="flow" x1="220" y1="66" x2="258" y2="66" marker-end="url(#arrow)"/>
@@ -87,7 +87,7 @@
 
   <rect class="box" x="500" y="280" width="200" height="88" rx="8"/>
   <text class="fg t" x="600" y="307" text-anchor="middle">Item database</text>
-  <text class="muted s" x="600" y="326" text-anchor="middle">17,579 gear rows</text>
+  <text class="muted s" x="600" y="326" text-anchor="middle">17,577 gear rows</text>
   <text class="muted s" x="600" y="342" text-anchor="middle">item level 100 to 795</text>
   <text class="muted s" x="600" y="358" text-anchor="middle">about 1.4 MB</text>
 
@@ -102,8 +102,8 @@
 
   <rect class="box" x="260" y="438" width="200" height="72" rx="8"/>
   <text class="fg t" x="360" y="465" text-anchor="middle">Page bundle (esbuild)</text>
-  <text class="muted s" x="360" y="484" text-anchor="middle">code, styles and data inlined</text>
-  <text class="muted s" x="360" y="500" text-anchor="middle">one HTML file, about 1.5 MB</text>
+  <text class="muted s" x="360" y="484" text-anchor="middle">code, styles, data, icons inlined</text>
+  <text class="muted s" x="360" y="500" text-anchor="middle">one HTML file, about 1.8 MB</text>
 
   <line class="flow" x1="460" y1="474" x2="498" y2="474" marker-end="url(#arrow)"/>
 
