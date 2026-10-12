@@ -140,6 +140,7 @@ None of these totals has been checked in game. They show the search returns the 
 | Validation unit test | Band accuracy thresholds; Wiki 475 caps; highest real item level inside the budget table | External truth (game data, Wiki) |
 | Formulas unit test | Caps at 123 per slot; the item level 130 healer head piece from the formula; Paladin weapon mode | Head piece: external truth (game data). Caps at 123: the values the caps unit test derives |
 | Caps unit test (`caps-real-items`) | No gear exists at item level 123; real pieces at 120 and 125 in every slot carry round(row × share) as main stat and largest substat; the page's caps at 123 equal caps derived from `ItemLevel` row 123 and the `BaseParam` shares (Sage, Warrior, Paladin); the ten armor and accessory caps sum to 296, 2.22 s at level 50, and the generic-piece optimizer reaches that sum | Pieces at 120 and 125: external truth (game data). Caps at 123 and 296: independent derivation. 2.22 s: external truth (AkhMorning) |
+| Level-sync unit test | `ParamGrow.ItemLevelSync` at each level cap and 1 to 49; the two triggers, the order when both apply, no equip level; no real piece level-synced at level 100; T13 (level 50, cap 123): exactly 71 pieces newly synced, to 130, none loses a stat; level 90 roulette: level 100 head pieces capped at the item level 660 head values; optimizer equals the brute force under level sync (Sage, Warrior, Paladin); the views under level sync | Level item levels: game file. Head caps at 660: independent derivation from `ItemLevel` row 660 and the 85 ‰ share. Order: second-hand in-game report (xivgear issue #317). Optimizer: brute-force reference |
 | Sync unit test | Clamp edge cases on a real item level 130 head piece (at, below, one above the cap; unknown item level; no special substat; missing stats); Paladin Wiki 475 caps | Wiki rows: external truth. Head caps at 123 and 129: independent derivation from `ItemLevel` and the 85 ‰ share (not `capsFor`). Edge cases: rules of the model |
 | Speed unit test | GCD tier starts and DoT scalars at levels 50, 90 and 100; 2.50 s with no gear speed; `gcdTiers` at level 50 | External truth (AkhMorning tier tables) |
 | Optimizer unit test | Seven real-gear pools, every substat, synced and unsynced; Unique ring worn once; generic maximum 296 / 2.22 s | Pools and rings: brute-force reference. Generic maximum: independent derivation (caps unit test) |
@@ -164,6 +165,15 @@ Three parts of the sync model have no direct evidence ([math.md, section 5](math
 
 Settled: melds (materia) are ignored on synced-down gear. The owner confirmed it in game: a piece is synced, and its materia stops counting, when its item level is above the duty's item level cap (with item level sync on) or its equip level is above the duty's level.
 
+**Level sync is now modelled** ([math.md, section 5](math.md#which-pieces-are-synced)). What each part rests on:
+
+- the trigger (equip level above the synced level, independent of item level sync): **verified** by the owner in game;
+- the item level a level syncs to: **read from the game file** (`ParamGrow.ItemLevelSync`: 50 → 130, 60 → 270, 70 → 400, 80 → 530, 90 → 660, 100 → 690; levels 1 to 49 map to themselves). xivgear's tests use 660 at level 90 too;
+- when both triggers apply, the item level cap wins: **second-hand**, a player's in-game report in [xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317) (Aloalo Island, level 90 and item level 665: level 95 and 96 gear at 666 and 669 showed item level 665 stats);
+- weapons use the same value: **inferred** (one column in the game file; the same report saw level 100 weapons synced to 660 in P12S, a level 90 duty).
+
+A capture in a level-synced duty with item level sync off (a roulette), with one piece above the level's item level, would check the level item level directly; one in a duty whose item level cap is above that level's item level, with a piece above both, would check the order.
+
 **Second-hand in-game values (xivgear's test notes).** Azeyma's Earrings (item level 560, item kind 0) synced to item level 430 showed main stat 71, Vitality 72, Direct Hit (Ninja) or Piety (Sage) 79 and Determination 79 in game ([xivgear `item_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/item_stats_tests.ts)). Not captured by this project; quoted from xivgear's code comments.
 
 - **Supports question 1.** The main stat and Vitality are clamped, at the cap of the item's kind: 90% of the full accessory value (78 and 80 at 430), not the full value.
@@ -178,9 +188,10 @@ Captures from the game are **the single most valuable evidence the project does 
 | --- | --- |
 | Band accuracy, Wiki 475 table (shared by page and tests) | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`, `WIKI475`) |
 | Prediction of a real piece's stats | `src/core/formulas.js` (`predictRaw`) |
+| Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js` (`syncTarget`, `levelSyncIlvl`) |
 | GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | "Checked against real gear" panel | `src/ui/components/validation-panel.js` |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
-| Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
+| Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `level-sync.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |
 | Smoke test | `tests/e2e/smoke.py` |

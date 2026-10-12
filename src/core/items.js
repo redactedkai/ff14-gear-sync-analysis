@@ -143,7 +143,7 @@ export function browseItems(job, f) {
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 let rowIndex = null;
-/* The database facts about a pool item ({sources, slotCode, kind}), looked up by its pool key, so saved pools need no
+/* The database facts about a pool item ({sources, slotCode, kind, lvl}), looked up by its pool key, so saved pools need no
    repair when a fact is added. Null for items not from the database (hand-made, generated). */
 function rowFacts(item) {
   if (item.src !== 'game') return null;
@@ -152,7 +152,12 @@ function rowFacts(item) {
     for (const r of ITEMS) {
       const k = poolKey({ name: r[0], type: DB_SLOT_TYPE[r[1]], ilvl: r[2] });
       const f = rowIndex.get(k);
-      rowIndex.set(k, { sources: (f?.sources || 0) | (r[8] | 0), slotCode: f ? f.slotCode : r[1], kind: f ? f.kind : r[9] });
+      rowIndex.set(k, {
+        sources: (f?.sources || 0) | (r[8] | 0),
+        slotCode: f ? f.slotCode : r[1],
+        kind: f ? f.kind : r[9],
+        lvl: f ? f.lvl : r[3],
+      });
     }
   }
   return rowIndex.get(poolKey(item)) || null;
@@ -161,6 +166,11 @@ function rowFacts(item) {
 /* The source bit mask (SOURCES) of a pool item. Items not from the database have none. */
 export function sourceMask(item) {
   return rowFacts(item)?.sources || 0;
+}
+
+/* A pool item's equip level (the level a character needs to wear it), or null for items not from the database. */
+export function equipLevel(item) {
+  return rowFacts(item)?.lvl ?? null;
 }
 
 /* A pool item's slot share (pct, thousandths), the slot types it leaves empty (blocks) and its stat factors (factors,

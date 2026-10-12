@@ -34,7 +34,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Job.** A character's combat class, such as Sage, Warrior or Black Mage. The project supports all 22 combat jobs. A job decides the main stat, the speed stat, the special substat and the weapon type. In the code, everything job-dependent is computed once per job into a *job context*. See [architecture.md, section 2](architecture.md#2-the-job-context).
 
-**Level sync.** Content designed for a lower character level lowers the character's level to match. Character level matters here because the speed formulas use per-level constants (level 50 for the owner's case). The game also has its own item level for each synced level, shown on the page for information. See [math.md, section 6](math.md#6-speed-gcd-and-dothot-ticks).
+**Level sync.** Content designed for a lower character level lowers the character's level to match (the page's "Synced level"). Gear whose equip level is above it is synced to the item level the game assigns to that level (`ParamGrow.ItemLevelSync`: 130 at level 50, 660 at level 90), whether or not item level sync is on; when a piece is also above the item level cap, the cap is used. The level also sets the speed formulas' per-level constants. See [math.md, section 5](math.md#which-pieces-are-synced) and [section 6](math.md#6-speed-gcd-and-dothot-ticks).
 
 **Loadout.** One item per gear slot (two rings), the optimizer's answer. See [optimizer.md, section 2](optimizer.md#2-formal-statement).
 

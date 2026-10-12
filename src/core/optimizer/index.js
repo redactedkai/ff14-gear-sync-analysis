@@ -3,12 +3,12 @@
 import { buildCandidates } from './candidates.js';
 import { branchAndBound } from './search.js';
 
-export { effStats } from './candidates.js';
+export { effStats, itemSyncIlvl } from './candidates.js';
 
 /**
  * @param job   JobContext
  * @param pool  pool items
- * @param sync  {cap, sync}
+ * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl)
  * @param opts  {target='spd', tiebreak=[], spdMin, spdMax, nodeLimit=1.5e6}
  * @returns {ok:false, truncated, nodes} when nothing is feasible, otherwise
  *          {ok:true, picks:[{type, item, eff, blockedBy}], totals, truncated, nodes}; an empty pick has item null, and

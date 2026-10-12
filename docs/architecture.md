@@ -70,7 +70,7 @@ Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps ne
 | --- | --- |
 | Settings, Piece stats, Sync limits | On every relevant change (cheap: a few formulas) |
 | Real-gear accuracy check | Once, the first time its panel is opened (it scans every item in the database) |
-| Gear table | On any change of its filters, list (All gear or My pool), the pool, job, cap or sync, but only while the Gear pool tab is open. Shows the first 100 database matches or 400 pool items; "Add all" takes at most 3,000 |
+| Gear table | On any change of its filters, list (All gear or My pool), the pool, job, cap, sync or level, but only while the Gear pool tab is open. Shows the first 100 database matches or 400 pool items; "Add all" takes at most 3,000 |
 | Pool table | On every pool change. Renders the first 400 rows; the optimizer still uses all of them |
 | Optimizer result | 120 ms after the last change of pool, job, cap, sync, level or optimizer settings, and only while the Gear optimizer tab is open. Node limit 700,000 |
 | Per-stat ceiling table | Same trigger and delay; 12 or 14 optimizer runs at 150,000 nodes each |
@@ -129,7 +129,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, `slotActive`, `ilWeight`, `statColumn`) |
 | Raw row to neutral stats, item filters | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
-| Other core modules | `src/core/formulas.js`, `speed.js`, `validation.js`, `optimizer/` |
+| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `restoreState`, `STORE_KEY`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |

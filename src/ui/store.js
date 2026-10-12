@@ -3,7 +3,7 @@
 import { makeJobContext } from '../core/job-context.js';
 import { poolItemFromRow, poolKey } from '../core/items.js';
 import { MAX_REAL } from '../core/tables.js';
-import { restoreState, resetForJob, syncActive, TABS, MATH_TABS } from './state.js';
+import { restoreState, resetForJob, TABS, MATH_TABS } from './state.js';
 
 export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'piece', 'browse', 'opt', 'pool'];
 
@@ -14,10 +14,6 @@ export function createAppStore(initial) {
     maxReal: MAX_REAL,
     /* bumped on every pool change, so views can depend on "the pool changed" without walking it */
     poolVersion: 0,
-    /* sync is on and a cap is set */
-    get syncActive() {
-      return syncActive(this);
-    },
 
     /* Changing role or weapon mode resets role-dependent selections and empties the pool. */
     /* Switching to a different job clears the pool and the job-specific selections, so the pool never holds gear
