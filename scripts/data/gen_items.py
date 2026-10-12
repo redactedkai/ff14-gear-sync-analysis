@@ -264,7 +264,6 @@ def main(csv_dir, out, source='detect'):
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     masks = gear_categories.source_masks(kept, cats)
-    retired = [r for r, _ in kept if cats[r['#']] in gear_categories.RETIRED]
     rows = [[*row[:8], masks[r['#']], *row[9:]] for r, row in kept if cats[r['#']] not in gear_categories.RETIRED]
     # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields, rarity.rowField)
     fields = {**fmt['materia']['rowFields'], 'rarity': fmt['rarity']['rowField']}
@@ -282,15 +281,9 @@ def main(csv_dir, out, source='detect'):
     # one line, compact: {"_generated": notice, "source": provenance, "materia": table, "items": [rows]}
     doc = {'_generated': provenance.note(source), 'source': source, 'materia': materia, 'items': rows}
     provenance.write_generated(out, json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n')
-    print(f'{len(rows)} rows -> {out}')
-    print(f'materia values {materia["values"]}, gates {materia["gate"]}, high grades {materia["high"]}', end='')
-    print(f' ({decoys} decoy rows with values but no items skipped)')
-    if retired:
-        print(f'left out {len(retired)} retired pieces ({", ".join(sorted(gear_categories.RETIRED))})')
-    if crafter_gatherer:
-        print(f'left out {len(crafter_gatherer)} pieces with crafter or gatherer stats: ' + ', '.join(crafter_gatherer))
+    # the one message: gear of a new kind a patch added that the format cannot place yet (none today)
     if multi_slot:
-        print(f'left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
+        print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
 
 
 if __name__ == '__main__':

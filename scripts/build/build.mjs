@@ -54,5 +54,5 @@ export function writePage(outputFiles) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const result = await esbuild.build(esbuildOptions());
   const size = writePage(result.outputFiles);
-  console.log(`dist/index.html ${size.toLocaleString('en-US')} bytes`);
+  console.log(`Built dist/index.html (${(size / 1e6).toFixed(1)} MB)`);
 }

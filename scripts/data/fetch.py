@@ -15,6 +15,7 @@ import urllib.request
 from pathlib import Path
 
 import gear_sources
+import progress
 from item_format import load_format, read_csv
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -57,25 +58,25 @@ def job_icon_numbers(csv_dir):
 
 def fetch_icons(csv_dir):
     ICON_DIR.mkdir(parents=True, exist_ok=True)
-    for job, icon in job_icon_numbers(csv_dir).items():
+    icons = job_icon_numbers(csv_dir).items()
+    for job, icon in progress.bar(icons, 'Downloading the job icons', unit='icon'):
         req = urllib.request.Request(icon_url(icon), headers={'User-Agent': USER_AGENT})  # the default one is refused
         with urllib.request.urlopen(req, timeout=30) as r:
             (ICON_DIR / f'{job}.png').write_bytes(r.read())
-    print('Icon dir:', ICON_DIR)
 
 
 def main():
+    print('Fetching the game data...', flush=True)
     if not (DEST / '.git').exists():
         DEST.parent.mkdir(exist_ok=True)
-        git('clone', '--depth', '1', '--filter=blob:none', '--sparse', URL, str(DEST))
+        git('clone', '--quiet', '--depth', '1', '--filter=blob:none', '--sparse', URL, str(DEST))
     else:
-        git('pull', '--ff-only', cwd=DEST)
+        git('pull', '--quiet', '--ff-only', cwd=DEST)
     # every run, so a clone made before a sheet was added to FILES picks it up
     git('sparse-checkout', 'set', '--no-cone', *[f'/csv/en/{f}.csv' for f in FILES], cwd=DEST)
     missing = [f for f in FILES if not (DEST / 'csv' / 'en' / f'{f}.csv').exists()]
     if missing:
         sys.exit(f'missing CSVs after fetch: {missing}')
-    print('CSV dir:', DEST / 'csv' / 'en')
     fetch_icons(DEST / 'csv' / 'en')
 
 

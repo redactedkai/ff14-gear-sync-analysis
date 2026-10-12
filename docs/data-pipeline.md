@@ -110,7 +110,7 @@ An `Item` row becomes a database row when all of these hold:
 4. at least one of the 22 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
 5. at least one of its 14 stats is non-zero after the HQ rule below;
 6. it carries no crafter or gatherer stat (GP, CP, Craftsmanship, Control, Gathering, Perception), normal or HQ: such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in `item-format.json` (`crafterGathererParams`), and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality, which the formula could not predict because crafter and gatherer Vitality follows no share of the combat budget;
-7. it is not retired: the Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints how many pieces each of these two rules left out.
+7. it is not retired: the Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints nothing about them; the counts are in the table below.
 
 For the current data, each rule leaves:
 
@@ -225,7 +225,7 @@ How it is built:
 3. All seven rows must agree on values and gates.
 4. The high grades must be exactly the grades worth more than each grade next to them: $v_g > v_{g-1}$ and $v_g > v_{g+1}$ where those exist (VI: 16 against 6 and 8). This ties the two sheets together; a patch that changed one without the other stops the generator.
 
-Any violation stops the generator with an error naming the rows; the table is printed in the run summary.
+Any violation stops the generator with an error naming the rows.
 
 **Decoy rows.** Most of the `Materia` sheet is rows with values but no materia items: 1,377 of its 1,417 rows, ids 39 to 1416, 1,372 of them for a combat substat (ids 44 to 1416; Determination and Critical Hit 259 each, Direct Hit 247, Skill Speed 181, Spell Speed 157, Tenacity 150, Piety 119). Their values do not follow the table (row 44, Direct Hit: 2, 3, 4 and then nothing). No materia item points to them, so they are not materia a player can meld; what the game uses them for is not known. Step 1 skips them by their empty first item, and the run summary counts them. Only 25 rows carry items: the seven combat substats; the main stat, Vitality and resistance rows (items, every value 0); six crafter and gatherer stats with their own values; and row 1, Cracked Materia (no stat).
 
@@ -342,17 +342,17 @@ The page bundle takes the page code, the stylesheet and both generated data file
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 1,618,359 bytes |
+| item database (generated file) | 1,652,921 bytes |
 | item level table, level data and stat factor table (generated file) | 61,140 bytes |
 | job icons (generated file) | 206,351 bytes |
-| finished page, minified | 2,017,420 bytes at the last build (about 2.0 MB) |
+| finished page, minified | 2,054,797 bytes at the last build (about 2.1 MB) |
 
 The item database is close to 80% of the page, the icons about 12%.
 
 ## 9. Updating after a game patch
 
 1. **Fetch**: pull the newest CSVs into the local clone.
-2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page.
+2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page. Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
 4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,281 rows above.
 
@@ -407,6 +407,7 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Source commit detection and the generated-file notice | `scripts/data/provenance.py` |
 | Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
+| Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
 | Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/job-icons.js` |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; hard-coded slot percentages | `src/core/constants.js` |

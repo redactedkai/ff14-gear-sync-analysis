@@ -49,7 +49,6 @@ def main(icon_dir, out):
         raise SchemaError('job icons: ' + '; '.join(problems) + '. Run: python scripts/data/fetch.py')
     js = HEADER + 'export const JOB_ICONS=' + json.dumps(icons, separators=(',', ':')) + ';\n'
     provenance.write_generated(out, js)
-    print(f'{len(icons)} job icons -> {out}')
 
 
 if __name__ == '__main__':

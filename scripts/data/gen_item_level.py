@@ -41,7 +41,6 @@ def main(csv_dir, out, source='detect'):
     # one line, compact: {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]}}
     doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP}
     provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')
-    print(f'ItemLevel rows 0..{len(il_rows) - 1}, ParamGrow levels 1..100 -> {out}')
 
 
 if __name__ == '__main__':
