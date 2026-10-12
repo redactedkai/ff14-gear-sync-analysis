@@ -117,3 +117,18 @@ test('Atma weapons are predicted at item level 90; Animus at its own 100', async
     assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
   }
 });
+
+/* The all-jobs earrings and rings (kind 0 with Main Attribute) were edited by hand; each is predicted exactly with its
+   own factors, and the table lists exactly these pieces (a new one after a patch needs an entry). */
+test('all-jobs accessories: the factor table covers exactly them, each predicted exactly', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const { ALL_JOBS_ACCESSORY_FACTORS, ITEM_STAT_ORDER } = await import('../../src/core/constants.js');
+  const ma = ITEM_STAT_ORDER.indexOf('mainAttr');
+  const rows = ITEMS.filter(r => r[9] === 0 && r[5].split(',').map(Number)[ma]);
+  assert.deepEqual(rows.map(r => r[0]).sort(), Object.keys(ALL_JOBS_ACCESSORY_FACTORS).sort());
+  for (const r of rows) {
+    const st = r[5].split(',').map(Number);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
+  }
+});

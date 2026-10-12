@@ -62,7 +62,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Substat.** Any stat other than the main stat and Vitality: Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety. A piece carries two or three substats.
 
-**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files; with equal substats sharing a rank, it reproduces 99.8% of real pieces exactly (98.7% to 100.0% per item level band). Only the Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
+**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files; with equal substats sharing a rank, it reproduces 99.9% of real pieces exactly (99.7% to 100.0% per item level band). Only the Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](math.md#substat-shares-empirical) and [validation.md](validation.md).
 
 **Tenacity.** The tanks' special substat: more damage dealt and less damage taken. Tanks only.
 

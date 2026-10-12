@@ -117,7 +117,7 @@ So for a piece with a single main stat the factor is exactly the old job rule: *
 
 **Rounding is half up**: $\operatorname{round}(x) = \lfloor x + 0.5 \rfloor$, so 31.5 becomes 32. The code adds a tiny epsilon so that floating-point noise such as 22.4999999 still rounds as 22.5 would.
 
-**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,280 of the 16,601 checked pieces exactly (80.0%). Rounding twice reproduces 16,573 (99.8%). Both figures come from running the model over the item database.
+**Rounding happens twice**: once for the slot budget, then again after the share. Rounding only once at the end reproduces 13,280 of the 16,601 checked pieces exactly (80.0%). Rounding twice reproduces 16,577 (99.9%). Both figures come from running the model over the item database.
 
 Example where it matters: Antiquated Atlas, a level 60 healer two-handed weapon at item level 200, has Piety 57. The substat budget at 200 is 587:
 
@@ -142,9 +142,11 @@ The game stores only the final numbers on each item. It does not store how a slo
 
 **Atma weapons carry their Zenith stats.** The 11 Zodiac Atma weapons (item level 100) are exact copies of their Zenith step (item level 90): the same main stat, Vitality, substats and weapon damage (**verified**, `Item`; Curtana Zenith and Curtana Atma both carry Strength 22, Vitality 24, Direct Hit 26, Tenacity 18 and damage 61). The following Animus step, also item level 100, carries item level 100 stats. The model predicts an Atma weapon at item level 90. Nothing in the data marks these pieces, so this one rule goes by name: an item whose name ends in " Atma" (exactly these 11; owner's decision). It only affects the accuracy check; they are below the page check's item level 110.
 
+**The all-jobs earrings and rings carry their own factors.** The six pieces of stat factor kind 0 with Main Attribute (Neophyte's Ring and the Aetheryte, Bozjan, Menphina's, Azeyma's and Halone's earrings) were edited by hand patch by patch (**verified**, datamining history), so their main stat and Vitality follow no one factor: Main Attribute full and Vitality 90% (Neophyte's, Aetheryte), both full (Bozjan, Menphina's, Azeyma's), both 90% (Halone's). The model gives each its own pair of factors, by name (owner's decision). This applies to stored stats only: synced, the game applies the file's 90% (second-hand in-game values; [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band)).
+
 Two refinements, both read off real pieces: substats of **equal size share the higher rank** (the relic weapon steps Hyperconductive, Manderville, Amazing Manderville and Phantom carry two substats at 100%; 141 pieces), and **every main stat on a piece is at full share** (ten item level 110 pieces carry Strength and Dexterity at the same value).
 
-**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.8% of them exactly (16,573 of 16,601), and 99.7% to 100.0% per item level band. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
+**Inferred**: this is a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, off-hands as in section 3) reproduces 99.9% of them exactly (16,577 of 16,601), 99.7% to 100.0% per item level band, and every one within 1. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
 Where the shares matter: the Piece stats uses them, and so does the "generic maximum" below, which is built from formula pieces. The item pool and the optimizer read each real item's own stats, so they do not depend on the shares.
 
@@ -344,7 +346,7 @@ Verification status: the formulas are a community reference, not game files. Whi
 | --- | --- | --- |
 | Item level indexes the `ItemLevel` budget table | Verified | Game table; reproduces real items |
 | Slot shares 140/100/40/85/135/67 | Verified | `BaseParam.csv`, all 12 stats |
-| Two roundings, half up | Verified | 99.8% exact vs 80.0% with one rounding |
+| Two roundings, half up | Verified | 99.9% exact vs 80.0% with one rounding |
 | Per-item stat factor (Vitality × 0.9 on Int/Mind gear, every main stat × 0.9 on four-main-stat gear) | Verified | Read from the game files (`BaseParam.MeldParam`, column `Item.BaseParamModifier`); reproduces real items, the 13 four-main-stat pieces included |
 | Rounding order of item stats: slot value first, then the factor | Verified (real items) | Factor first is wrong on 1,199 Int/Mind pieces |
 | Rounding order of sync caps: factor first, floored, rounded once | Verified (three second-hand in-game values); inferred in general | Vitality 56 (Blue Mage head, 270), 123 (Red Mage head, 530), main stat 71 (Azeyma's Earrings, 430), from xivgear's tests; the item order gives 57, 122, 70. Same as the item order when the factor is 100 |
@@ -354,6 +356,7 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Direct Hit on Mind-only gear is a fixed 20% line | Inferred (measured pattern) | 125 of 133 such pieces; the only third substat in the game |
 | That line is 25% on green, HQ-able pieces with three substats | Inferred (fitted to 8 pieces) | All 8 such pieces, no other; they were 20% before patch 4.0 raised them |
 | Atma weapons carry item level 90 stats | Verified (game data); applied by name | Each of the 11 equals its Zenith step stat for stat |
+| All-jobs earrings and rings carry their own factors | Verified (datamining history); applied by name | Stats edited by hand across patches; each of the 6 exact with its own factors |
 | Off-hand = two-handed value − one-handed value | Inferred (fits data) | 224 of 226 real off-hands, against 195 for the 40 ‰ share; xivgear uses the same rule for shield caps; sets the shield cap at 123 to 13 |
 | Sync clamps each stat to its cap at the cap item level (for a factor of 100, the full-share same-slot value) | Verified for substats | Wiki caps at 475, 5 of 5 |
 | Caps at 123 (29 / 47 / 23 / 48; main stat 30 / 48 / 24 / 50; Int/Mind Vitality 29 / 45 / 23 / 47) | Derived | No gear exists at item level 123; row 123 × slot share, the same rule real pieces at 120 and 125 follow in every slot |

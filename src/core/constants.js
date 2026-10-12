@@ -48,6 +48,18 @@ export const RARITY_GREEN = 2;
    end in " Atma"). Accuracy check only. */
 export const ATMA_NAME_SUFFIX = ' Atma';
 export const ATMA_STAT_ILVL = 90;
+/* The all-jobs earrings and rings (pre-order bonuses, Bozja, Hall of the Novice): every piece of stat factor kind 0
+   with Main Attribute. Their stats were edited by hand patch by patch (datamining history), so their main stat and
+   Vitality follow no one factor; this is the factor each one carries (the file's is 90 for both), by name (owner's
+   decision). Stored stats only: synced, the game applies the file's factor (xivgear's in-game values). */
+export const ALL_JOBS_ACCESSORY_FACTORS = Object.freeze({
+  "Neophyte's Ring": { mainAttr: 100, vit: 90 },
+  'Aetheryte Earring': { mainAttr: 100, vit: 90 },
+  'Bozjan Earring': { mainAttr: 100, vit: 100 },
+  "Menphina's Earring": { mainAttr: 100, vit: 100 },
+  "Azeyma's Earrings": { mainAttr: 100, vit: 100 },
+  "Halone's Earring": { mainAttr: 90, vit: 90 },
+});
 /* Item row field of the item's rarity (`rarity` in item-format.json). */
 export const RARITY_FIELD = ITEM_FORMAT.rarity.rowField;
 
