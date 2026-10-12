@@ -94,7 +94,7 @@ export function meldVectors(job, item, sync, keys) {
 /* Best [target, tiebreak1, tiebreak2] totals over every legal loadout, or null if none meets the constraints.
    One item per slot that has items; two rings (the same item twice only if it has 2 copies).
 
-   Two engine policies are copied here on purpose, not derived independently (docs/optimizer.md, section 5,
+   Two engine policies are copied here on purpose, not derived independently (docs/engineering/optimizer.md, section 5,
    "Empty slot"; each has a direct test in optimizer-exhaustive.test.js, "policy:"):
    - a single ring only when no pair exists: if any legal pair exists, a loadout with one ring is not considered,
      even when a pair breaks a maximum and one ring alone would not;
@@ -105,7 +105,7 @@ export function meldVectors(job, item, sync, keys) {
    when a chosen piece blocks it (a two-handed weapon blocks the off-hand, a cloak the head).
 
    Effective (synced) stats come from the optimizer's own effStats, so this reference does not check the sync
-   clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/testing.md). */
+   clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md). */
 export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, melds = false }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
   const stats = job.stats;

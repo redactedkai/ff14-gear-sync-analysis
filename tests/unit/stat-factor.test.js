@@ -1,4 +1,4 @@
-/* The per-item stat factor (BaseParam MeldParam, picked by the item's BaseParamModifier; docs/math.md section 4).
+/* The per-item stat factor (BaseParam MeldParam, picked by the item's BaseParamModifier; docs/mechanics/math.md section 4).
    Expected values are real items from the game data and derivations from raw ItemLevel rows, never the code under
    test. */
 import { test } from 'node:test';
@@ -103,7 +103,7 @@ test('an Intelligence accessory every job can wear still has Vitality x 0.9', ()
 });
 
 test("sync: a real piece is capped by its own factors; a piece with no item behind it by the job's", () => {
-  // cap 123, body (135), caps take the factor first (docs/math.md section 5): main floor(355 x 0.9) = 319,
+  // cap 123, body (135), caps take the factor first (docs/mechanics/math.md section 5): main floor(355 x 0.9) = 319,
   // floor(319 x 1.35) = 430, 43.0 -> 43; Vitality floor(375 x 0.9) = 337, floor(337 x 1.35) = 454, 45.4 -> 45
   const war = makeJobContext('WAR'),
     sge = makeJobContext('SGE');

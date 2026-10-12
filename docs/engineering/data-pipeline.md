@@ -1,8 +1,8 @@
 # Data pipeline
 
-How game data gets from the game client into the page. This page covers where the data comes from, which rules turn it into the two data tables the page uses, and how to refresh it after a game patch. How the numbers are then used is in [math.md](math.md) (stat budgets, sync caps, speed) and [optimizer.md](optimizer.md) (gear search).
+How game data gets from the game client into the page. This page covers where the data comes from, which rules turn it into the two data tables the page uses, and how to refresh it after a game patch. How the numbers are then used is in [math.md](../mechanics/math.md) (stat budgets, sync caps, speed) and [optimizer.md](optimizer.md) (gear search).
 
-![Flow from the game client through the datamining repository, a sparse clone of seven CSV files plus the job icons, two generators that share one format definition, the item level data and item database, the esbuild page bundle, and finally the browser](diagrams/data-flow.svg)
+![Flow from the game client through the datamining repository, a sparse clone of seven CSV files plus the job icons, two generators that share one format definition, the item level data and item database, the esbuild page bundle, and finally the browser](../diagrams/data-flow.svg)
 
 Every count on this page was produced by running the generators' rules over the CSVs in the local clone, or by importing the generated tables in Node. They describe datamining commit `d9582a6` (30 September 2026).
 
@@ -27,7 +27,7 @@ The project fetches twelve sheets (English column names, `csv/en/`). Ten supply 
 | `ClassJob` | fetch step (job icons) | One row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon. |
 | `BaseParam` | item level generator (slot shares checked, stat factors copied); item database generator (item kinds checked) | One row per stat, including the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, in thousandths) and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). |
 
-**Verified on every regeneration**: for all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](math.md) for how the percentages are used.
+**Verified on every regeneration**: for all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the percentage the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). With the current data all 12 rows match. The `BaseParam` columns are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent` and `RingPercent`. The sheet has more columns for gear that covers several slots (for example `ChestHeadPercent` = 220); the project leaves that gear out (section 4), so they are not checked. See [math.md](../mechanics/math.md) for how the percentages are used.
 
 **Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed in the table above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`, `MateriaSlotCount`, `IsAdvancedMeldingPermitted`), the `Materia` and `MateriaGrade` columns of the materia table (section 4), the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns. A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
 
@@ -98,7 +98,7 @@ Changing any order in this file changes the meaning of the already generated ite
 
 ## 4. Item database generation
 
-![Worked example with Void Ark Helm of Fending, a tank head piece: each Item sheet column maps to a database field. Equip slot category 3 becomes slot code 3 (head); item level 200 is kept; job category 59 becomes job mask 15 (bits 0 to 3, PLD WAR DRK GNB); four stat id and value pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) are placed into 12 stat positions by id; the HQ bonus is skipped because the item cannot be high quality; IsUnique becomes 1](diagrams/data-item-row.svg)
+![Worked example with Void Ark Helm of Fending, a tank head piece: each Item sheet column maps to a database field. Equip slot category 3 becomes slot code 3 (head); item level 200 is kept; job category 59 becomes job mask 15 (bits 0 to 3, PLD WAR DRK GNB); four stat id and value pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) are placed into 12 stat positions by id; the HQ bonus is skipped because the item cannot be high quality; IsUnique becomes 1](../diagrams/data-item-row.svg)
 
 ### Selection
 
@@ -181,7 +181,7 @@ The shop and recipe flags:
 
 ### Stat factor kind
 
-`BaseParamModifier` becomes the last field: the item's kind, a number from 0 to 12 that picks a column of the stat factor table (section 5). On that item each stat's full-share slot value is multiplied by its percentage in that column ([math.md, section 4](math.md#the-stat-factor-of-an-item)). In the current data: kinds 1, 2, 3 and 10 are Strength gear (7,253 rows), 4, 11 and 12 Dexterity gear (4,136), 5 Intelligence (2,894), 6 Mind (2,949), 7 Strength and Dexterity (25), 8 Intelligence and Mind (5), 9 crafter and gatherer gear (none left in the database), and 0 the 13 pieces with all four main stats plus six earrings and rings with no main stat (19). The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
+`BaseParamModifier` becomes the last field: the item's kind, a number from 0 to 12 that picks a column of the stat factor table (section 5). On that item each stat's full-share slot value is multiplied by its percentage in that column ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)). In the current data: kinds 1, 2, 3 and 10 are Strength gear (7,253 rows), 4, 11 and 12 Dexterity gear (4,136), 5 Intelligence (2,894), 6 Mind (2,949), 7 Strength and Dexterity (25), 8 Intelligence and Mind (5), 9 crafter and gatherer gear (none left in the database), and 0 the 13 pieces with all four main stats plus six earrings and rings with no main stat (19). The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
 
 ### Materia slots
 
@@ -192,7 +192,7 @@ Two more fields record what a piece can be melded with. Both are copied from `It
 
 ### Rarity
 
-The last field is `Item.Rarity`, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,078, 6,052, 8,559 and 592 rows in the current data. A value that is not a whole number stops the generator. Only the accuracy check reads it: Direct Hit on green, HQ-able healer pieces with three substats is 25%, not 20% ([math.md, section 4](math.md#substat-shares-empirical)).
+The last field is `Item.Rarity`, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,078, 6,052, 8,559 and 592 rows in the current data. A value that is not a whole number stops the generator. Only the accuracy check reads it: Direct Hit on green, HQ-able healer pieces with three substats is 25%, not 20% ([math.md, section 4](../mechanics/math.md#substat-shares-empirical)).
 
 | Meld slots | Overmeld 0 | Overmeld 1 |
 | --- | --- | --- |
@@ -263,7 +263,7 @@ Rows are sorted by item level (highest first), then slot code, then name. The st
 
 The second generator writes one file with four parts.
 
-**Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. For example, at item level 123: Mind 355, Vitality 375, Spell Speed 346. How a budget becomes the stat on a piece is in [math.md](math.md).
+**Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. For example, at item level 123: Mind 355, Vitality 375, Spell Speed 346. How a budget becomes the stat on a piece is in [math.md](../mechanics/math.md).
 
 **Level data.** For character levels 1 to 100, three `ParamGrow` columns:
 
@@ -271,11 +271,11 @@ The second generator writes one file with four parts.
 | --- | --- | --- | --- |
 | BaseSpeed | a character's own speed stat at that level, with no gear | 400 | 420 |
 | LevelModifier | the divisor in the speed formulas | 1900 | 2780 |
-| ItemLevelSync | the item level gear is synced to when the character is synced to that level (level sync, [math.md, section 5](math.md#which-pieces-are-synced)) | 660 | 690 |
+| ItemLevelSync | the item level gear is synced to when the character is synced to that level (level sync, [math.md, section 5](../mechanics/math.md#which-pieces-are-synced)) | 660 | 690 |
 
-A missing level or column stops the generator with an error. The speed formulas are in [math.md](math.md).
+A missing level or column stops the generator with an error. The speed formulas are in [math.md](../mechanics/math.md).
 
-**Stat factor table.** For each stat, its `BaseParam` row's 13 `MeldParam` columns, in percent: $f_s(k)$ for item kind $k = 0, \dots, 12$. For example Vitality is 90 in columns 0, 5, 6 and 8 and 100 elsewhere; each main stat is 90 in column 0, 100 in the columns of gear that carries it (and in column 9) and 70 in the rest; Critical Hit, Determination, Direct Hit, both speeds and Tenacity are 100 everywhere. How it is used is in [math.md, section 4](math.md#the-stat-factor-of-an-item).
+**Stat factor table.** For each stat, its `BaseParam` row's 13 `MeldParam` columns, in percent: $f_s(k)$ for item kind $k = 0, \dots, 12$. For example Vitality is 90 in columns 0, 5, 6 and 8 and 100 elsewhere; each main stat is 90 in column 0, 100 in the columns of gear that carries it (and in column 9) and 70 in the rest; Critical Hit, Determination, Direct Hit, both speeds and Tenacity are 100 everywhere. How it is used is in [math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item).
 
 **Source record.** Which datamining commit the data came from (next section).
 
@@ -391,7 +391,7 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 
 **Provenance tests** (Node): the source record names the datamining repository, a full 40-character commit id and an ISO date; both generated data files carry the same source record and name its commit in their notice; the footer text is short and empty when the source is unknown.
 
-**Source flags against the Lodestone** (a manual check, not part of the test suite): 175 randomly chosen pieces (two samples: 15 and 20 per flag plus twice as many unflagged pieces), each compared with its Lodestone item page at one request every 2.5 seconds. A page counts as crafted when it links a recipe, tomestone when a shop cost is an Allagan Tomestone, ultimate when a cost is an ultimate totem. 167 agree. All 8 differences are tomestone pieces the page shows no tomestone for, and each has a known cause: the game files still hold a retired tomestone shop that sells it (Quetzalli, Moonward: the page shows only today's Sack of Nuts exchange; Radiant's: the page lists no source at all), or the piece is made from tomestone gear (Augmented Bygone Brass from Bygone Brass plus a glaze or twine, Exquisite Isnae Phis from Augmented Isnae Phis plus an Elevated Ester). No crafted, ultimate or unflagged piece disagrees. The first sample found two generator bugs, both fixed (see [history.md](history.md)).
+**Source flags against the Lodestone** (a manual check, not part of the test suite): 175 randomly chosen pieces (two samples: 15 and 20 per flag plus twice as many unflagged pieces), each compared with its Lodestone item page at one request every 2.5 seconds. A page counts as crafted when it links a recipe, tomestone when a shop cost is an Allagan Tomestone, ultimate when a cost is an ultimate totem. 167 agree. All 8 differences are tomestone pieces the page shows no tomestone for, and each has a known cause: the game files still hold a retired tomestone shop that sells it (Quetzalli, Moonward: the page shows only today's Sack of Nuts exchange; Radiant's: the page lists no source at all), or the piece is made from tomestone gear (Augmented Bygone Brass from Bygone Brass plus a glaze or twine, Exquisite Isnae Phis from Augmented Isnae Phis plus an Elevated Ester). No crafted, ultimate or unflagged piece disagrees. The first sample found two generator bugs, both fixed (see [history.md](../history.md)).
 
 ## Where this lives
 

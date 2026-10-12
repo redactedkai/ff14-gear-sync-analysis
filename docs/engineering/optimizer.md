@@ -2,9 +2,9 @@
 
 Given a pool of items and a job, the optimizer picks one item per gear slot so that a chosen stat is as high as possible, with up to two tiebreak stats. This page explains how it does that and why the answer is exact (unless the search hits its node limit).
 
-How a piece's stats are computed, and what level sync does to them, is in [math.md](math.md). Where the item data comes from is in [data-pipeline.md](data-pipeline.md).
+How a piece's stats are computed, and what level sync does to them, is in [math.md](../mechanics/math.md). Where the item data comes from is in [data-pipeline.md](data-pipeline.md).
 
-![The optimizer as six stages: pool, effective stats, per-slot candidate lists, dominance pruning, branch and bound, loadout. A real run with 1,988 Sage items synced to item level 123 keeps 119 candidates, visits 137 search nodes and returns 344 Spell Speed.](diagrams/optimizer-pipeline.svg)
+![The optimizer as six stages: pool, effective stats, per-slot candidate lists, dominance pruning, branch and bound, loadout. A real run with 1,988 Sage items synced to item level 123 keeps 119 candidates, visits 137 search nodes and returns 344 Spell Speed.](../diagrams/optimizer-pipeline.svg)
 
 ## 1. The problem
 
@@ -21,11 +21,11 @@ This is a lexicographic order: a tiebreak only matters between loadouts that are
 Constraints:
 
 - **Copies.** Each pool item has a number of copies. A ring marked Unique in the game can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway). The copies come from the game data when an item is added and are not edited on the page; the gear table marks a 2-copy ring ×2.
-- **A speed range** (optional, engine only): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed), meant for a future "reach this GCD tier" control ([roadmap.md](roadmap.md)). Other stats have no limits. The page does not expose it yet; it is covered by tests.
+- **A speed range** (optional, engine only): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed), meant for a future "reach this GCD tier" control ([roadmap.md](../roadmap.md)). Other stats have no limits. The page does not expose it yet; it is covered by tests.
 
 **Leaving out gear by source.** Under *Include*, one switch per group (all on by default) can take crafted, tomestone, ultimate, current Savage, relic or PvP gear out of the search (current Savage is the current expansion's Savage gear only; relic includes the Eureka, Bozja and Occult Crescent armor). The groups are the gear that is hardest to get. This happens before the optimizer runs: such items are removed from the pool it is given (and from the ceiling table's pool), so the search itself is unchanged. An item's groups come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)); hand-made pieces have none and are never left out.
 
-The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](math.md#5-item-level-sync). With **melds** on (the page's default), every piece that is not synced first gets its best materia melds for the objective, and its vector includes them. One melded version per piece is enough, as [materia.md, section 4](materia.md#4-why-one-melded-version-per-piece-is-exact) shows, so the search itself does not change. Melds cannot be combined with a speed range (the engine refuses).
+The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](../mechanics/math.md#5-item-level-sync). With **melds** on (the page's default), every piece that is not synced first gets its best materia melds for the objective, and its vector includes them. One melded version per piece is enough, as [materia.md, section 4](../mechanics/materia.md#4-why-one-melded-version-per-piece-is-exact) shows, so the search itself does not change. Melds cannot be combined with a speed range (the engine refuses).
 
 ## 2. Formal statement
 
@@ -105,7 +105,7 @@ $$
 
 and refuses to run (it raises an error saying the totals are too large to rank exactly) if $B$ or any weight exceeds $2^{53} - 1$. It does not fall back to an approximate ranking. Measured over every combat job's full real-gear pool, unsynced, for every choice of three different keys: the largest $B$ is $1.27 \times 10^{11}$ (Ninja, main stat / Vitality / Critical Hit), about 70,000 times below the limit.
 
-Before a fix (see [history.md](history.md)) the weights were fixed at $10^8, 10^4, 1$, which stops being lexicographic once a tiebreak total reaches 10,000. **Verified** by test: a head piece with 20,000 of a tiebreak stat used to outrank one with a higher target stat; now it does not.
+Before a fix (see [history.md](../history.md)) the weights were fixed at $10^8, 10^4, 1$, which stops being lexicographic once a tiebreak total reaches 10,000. **Verified** by test: a head piece with 20,000 of a tiebreak stat used to outrank one with a higher target stat; now it does not.
 
 ## 4. Fewer candidates: dominance pruning
 
@@ -131,7 +131,7 @@ For a single-slot type this means "something beats it". For rings it means "two 
 
 ### Why one better ring is not enough
 
-![Three Unique rings A, B and C with 10, 9 and 5 of the target stat. The old rule drops B and C because A beats both, so the best pair it can find is A plus an empty slot, 10. The current rule keeps B because only one copy beats it, finds A plus B, 19, and drops only C, which two copies beat.](diagrams/optimizer-rings.svg)
+![Three Unique rings A, B and C with 10, 9 and 5 of the target stat. The old rule drops B and C because A beats both, so the best pair it can find is A plus an empty slot, 10. The current rule keeps B because only one copy beats it, finds A plus B, 19, and drops only C, which two copies beat.](../diagrams/optimizer-rings.svg)
 
 Before the F1 fix, an item was dropped if any single item with at least as many copies beat it. That is safe for one slot, not for two. With three Unique rings worth 10, 9 and 5, ring A beats both others, so B and C were dropped and the optimizer returned A plus an empty slot (10) instead of A + B (19). **Verified** by tests for this pool, for two identical Unique rings (now 20, was 10), and for a 2-copy ring that still correctly beats two worse Unique rings (20).
 
@@ -154,7 +154,7 @@ Repeat until no dropped item is used. This ends, because each swap moves to an i
 
 After pruning, each slot's candidate list is sorted by score, best first (ties keep pool order). The search fills slots one at a time in the fixed order of section 2, trying candidates best first. It keeps the best complete loadout found so far, with score $\sigma^*$.
 
-![A three-slot example: heads H1 and H2, bodies B1 and B2, necks N1 and N2. The first descent H1, B1, N1 gives 43. N2 gives 41. Body B2 is pruned because 34 + 8 cannot beat 43, and head H2 because 12 + 23 cannot. Seven of fifteen nodes are visited.](diagrams/optimizer-search-tree.svg)
+![A three-slot example: heads H1 and H2, bodies B1 and B2, necks N1 and N2. The first descent H1, B1, N1 gives 43. N2 gives 41. Body B2 is pruned because 34 + 8 cannot beat 43, and head H2 because 12 + 23 cannot. Seven of fifteen nodes are visited.](../diagrams/optimizer-search-tree.svg)
 
 At a node where slots $1, \dots, p-1$ are filled, with partial score $\sigma$ and partial totals $T_d$, the search stops exploring if any of these holds:
 
@@ -195,11 +195,11 @@ That is 12 or 14 runs (6 or 7 stats, two sync modes); with melds on, each run so
 | Constraints (test) | A small pool of real items: speed minimum, maximum and range, infeasible cases, against an independent brute force | all equal |
 | Regressions (test) | F1 ring pools (19, 20, 20), F3 large tiebreaks, the speed maximum example of section 4 | pass |
 | Known values (test) | Generic item level 475 gear synced to 123: 296 Spell Speed, 2.22 s GCD at level 50 | pass |
-| Exhaustive search with melds (test) | 40 random pools of real pieces (some meldable, some synced), against a reference that enumerates every stone placement on its own ([materia.md](materia.md)) | all equal |
-| Melds against xivgear (probe) | Meld caps, stones, sync decisions and the target after melds on 10,534 real pieces ([materia.md, section 6](materia.md#6-checks)) | all equal (the target once xivgear's 2-point overcap allowance is lifted) |
+| Exhaustive search with melds (test) | 40 random pools of real pieces (some meldable, some synced), against a reference that enumerates every stone placement on its own ([materia.md](../mechanics/materia.md)) | all equal |
+| Melds against xivgear (probe) | Meld caps, stones, sync decisions and the target after melds on 10,534 real pieces ([materia.md, section 6](../mechanics/materia.md#6-checks)) | all equal (the target once xivgear's 2-point overcap allowance is lifted) |
 | Real gear, exact optimum (probe, not a committed test) | 22 jobs × 35 item level windows $[\ell, \ell + 40]$ for $\ell = 100, 120, \dots, 780$ × sync on/off at cap 123 × every stat as target = **9,800 runs**. Reference: with one target and no constraints the best loadout is just the best item per slot (best ring pair respecting copies) | **0 misses** |
 
-The real-gear probe was rerun for this page with the current code. Run with the old ring rule plugged into the same search, it misses in **360 of 9,800** runs, which matches the number recorded in [history.md](history.md#results-of-the-tool), including its example (Paladin, items 160 to 200, synced, Critical Hit: 322 instead of 345). With the cap set to the middle of each window instead of 123, the current code again misses 0, the old rule 590.
+The real-gear probe was rerun for this page with the current code. Run with the old ring rule plugged into the same search, it misses in **360 of 9,800** runs, which matches the number recorded in [history.md](../history.md#results-of-the-tool), including its example (Paladin, items 160 to 200, synced, Critical Hit: 322 instead of 345). With the cap set to the middle of each window instead of 123, the current code again misses 0, the old rule 590.
 
 The exhaustive and constraint tests run with `npm test`. If a change to scoring, pruning or the search makes any of them disagree with the reference, the test fails and names the pool.
 
@@ -229,7 +229,7 @@ Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149
 - **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. The speed range is engine only, so this does not affect the page yet.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
-- **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](math.md) (verified against the Wiki's item level 475 caps); melds follow [materia.md](materia.md), with every meld assumed to succeed. Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
+- **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](../mechanics/math.md) (verified against the Wiki's item level 475 caps); melds follow [materia.md](../mechanics/materia.md), with every meld assumed to succeed. Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
 
 ## Where this lives
 

@@ -36,7 +36,7 @@ const SLOT_CODE = {
   wrist: 10,
   ring: 11,
 };
-// BaseParam slot percents (per mille) for every combat stat, as of patch 7.50 (docs/math.md, section 2).
+// BaseParam slot percents (per mille) for every combat stat, as of patch 7.50 (docs/mechanics/math.md, section 2).
 const PCT = {
   weapon2h: 140,
   weapon1h: 100,
@@ -55,7 +55,7 @@ const ARMOR = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 
 
 // Half-up rounding in integers (round(a x p / 1000)); real items at an exact .5 round up (e.g. 1H swords at 780: 570.5 -> 571).
 const share = (a, pct) => Math.floor((a * pct + 500) / 1000);
-// An off-hand is the two-handed value minus the one-handed value (140 - 100 = 40 per mille; docs/math.md, section 3).
+// An off-hand is the two-handed value minus the one-handed value (140 - 100 = 40 per mille; docs/mechanics/math.md, section 3).
 const full = (a, slot) => (slot === 'offhand' ? share(a, PCT.weapon2h) - share(a, PCT.weapon1h) : share(a, PCT[slot]));
 // Every stat column of ItemLevel has the same value for all main stats and for all substats (checked below).
 const derived = (ilvl, slot) => ({ main: full(IL.str[ilvl], slot), sub: full(IL.crit[ilvl], slot) });
@@ -97,7 +97,7 @@ test('real pieces at 120 and 125 carry round(row x slot percent) as main stat an
 
 const CAPS_123 = Object.fromEntries(Object.keys(PCT).map(slot => [slot, derived(123, slot)]));
 
-test('derived caps at 123: substats 29 / 47 / 23 / 48, main stat 30 / 48 / 24 / 50 (docs/math.md)', () => {
+test('derived caps at 123: substats 29 / 47 / 23 / 48, main stat 30 / 48 / 24 / 50 (docs/mechanics/math.md)', () => {
   const pick = s => [CAPS_123[s].sub, CAPS_123[s].main];
   assert.deepEqual(['head', 'hands', 'feet'].map(pick), Array(3).fill([29, 30]));
   assert.deepEqual(['body', 'legs'].map(pick), Array(2).fill([47, 48]));

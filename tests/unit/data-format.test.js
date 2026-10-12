@@ -86,7 +86,7 @@ test('slot shares used by the page are the item-format.json percents (checked ag
     DB_SLOT_PCT,
     ITEM_FORMAT.slots.map(s => s.percent),
   );
-  // BaseParam values for every combat stat as of patch 7.50 (docs/math.md): 2H 140, 1H 100, off-hand 40, ...
+  // BaseParam values for every combat stat as of patch 7.50 (docs/mechanics/math.md): 2H 140, 1H 100, off-hand 40, ...
   assert.deepEqual(WEAPON_PCT, { '2h': 140, '1h+oh': 100 });
   assert.deepEqual(BASE_SLOT_PCT, {
     weapon: 140,

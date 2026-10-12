@@ -34,13 +34,13 @@ export const BASE_SLOT_PCT = Object.freeze({
   ...Object.fromEntries(ITEM_FORMAT.slots.filter(s => s.type !== 'weapon' && !s.blocks).map(s => [s.type, s.percent])),
 });
 
-/* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/math.md section 4; evidence in docs/validation.md). */
+/* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/mechanics/math.md section 4; evidence in docs/mechanics/validation.md). */
 export const SUB_WEIGHTS = Object.freeze([100, 70]);
 /* Direct Hit on gear whose only main stat is Mind (old healer Accuracy, item level 50 to 135) is a fixed line at this
-   share of its slot value, outside the ranking above. Measured, not in the game files (docs/math.md section 4). */
+   share of its slot value, outside the ranking above. Measured, not in the game files (docs/mechanics/math.md section 4). */
 export const MIND_DIRECT_HIT_SHARE = 20;
 /* The same line is at this share on green (RARITY_GREEN), HQ-able pieces with three substats: eight item level 110
-   crafted healer pieces, raised from 20% in patch 4.0. Measured; the owner accepted it as a rule (docs/math.md). */
+   crafted healer pieces, raised from 20% in patch 4.0. Measured; the owner accepted it as a rule (docs/mechanics/math.md). */
 export const GREEN_CRAFTED_DIRECT_HIT_SHARE = 25;
 export const RARITY_GREEN = 2;
 /* The Zodiac Atma weapons (item level 100) are copies of their Zenith step: the same stats and weapon damage, item

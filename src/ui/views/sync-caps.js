@@ -15,7 +15,7 @@ export function syncView(app) {
     hil = clampIlvl(app.syncIlvl);
   const tot = { n1: 0, n2: 0, h1: 0, h2: 0, c: 0, spec: 0, main: 0, vit: 0 };
   /* "Substat cap" is the shared Critical Hit / Determination / Direct Hit / speed column. Piety and Tenacity have
-     their own column, which is higher at a few item levels (docs/math.md section 2); show it only where it differs. */
+     their own column, which is higher at a few item levels (docs/mechanics/math.md section 2); show it only where it differs. */
   let specDiffers = false;
   const rows = job.activeSlotTypes.map(t => {
     const c = capsFor(job, t, cap),

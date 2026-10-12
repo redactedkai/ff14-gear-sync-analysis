@@ -1,5 +1,5 @@
 /* Stat formulas: how item level becomes the stats on a piece, and what item level sync clamps.
-   See docs/math.md (sections 4 and 5) for each rule and docs/validation.md for the evidence. */
+   See docs/mechanics/math.md (sections 4 and 5) for each rule and docs/mechanics/validation.md for the evidence. */
 import {
   ALL_STATS,
   SUB_WEIGHTS,
@@ -56,7 +56,7 @@ export function slotBudget(job, stat, ilvl, type, pct = job.slotPct[type], facto
 
 /* An off-hand (shield) is not its own 40-per-mille share: each of its stats is the two-handed weapon's value minus the
    one-handed weapon's, both computed in full (140 - 100 = 40). Inferred from real gear: it reproduces 224 of 226
-   off-hands, the plain 40 share 195 (docs/math.md, section 3). `pct` is the piece's share, null for the type's own. */
+   off-hands, the plain 40 share 195 (docs/mechanics/math.md, section 3). `pct` is the piece's share, null for the type's own. */
 export function isOffhand(type, pct) {
   return type === 'offhand' && (pct == null || pct === BASE_SLOT_PCT.offhand);
 }
@@ -88,7 +88,7 @@ export function buildPiece(job, ilvl, type, subs) {
    (slotBudget, pieceValue) round the slot share first and then apply the factor, which fits real items far better. The
    cap order reproduces three in-game sync values quoted second-hand in xivgear's tests: Vitality 56 on a Blue Mage head
    at item level 270, Vitality 123 on a Red Mage head at 530 (the native 530 head carries 122) and main stat 71 on
-   Azeyma's Earrings at 430 (docs/math.md, section 5). For a factor of 1 both orders give the same number. `pct` and
+   Azeyma's Earrings at 430 (docs/mechanics/math.md, section 5). For a factor of 1 both orders give the same number. `pct` and
    `factor` as in slotBudget; an off-hand is the two-handed cap minus the one-handed cap (isOffhand). */
 export function capValue(job, stat, ilvl, type, pct, factor = null) {
   if (isOffhand(type, pct)) {

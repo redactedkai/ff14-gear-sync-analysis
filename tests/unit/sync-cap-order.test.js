@@ -1,4 +1,4 @@
-/* The rounding order of sync caps (docs/math.md, section 5). A cap takes the stat factor first and floors each step:
+/* The rounding order of sync caps (docs/mechanics/math.md, section 5). A cap takes the stat factor first and floors each step:
    round(floor(floor(B x f / 100) x pct / 100) / 10). An item's own stats keep the other order (slot share rounded
    first, then the factor), which fits real items far better (validation.test.js).
 

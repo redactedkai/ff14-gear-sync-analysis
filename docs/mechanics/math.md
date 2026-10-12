@@ -2,7 +2,7 @@
 
 This page explains how the stats on a piece of gear follow from its item level, and what item level sync does to them. It covers the formulas the tool uses, a worked example with real game data, and which parts are verified and which are inferred.
 
-Related pages: [optimizer.md](optimizer.md) (how the tool picks the best gear set), [data-pipeline.md](data-pipeline.md) (where the game tables come from and how they are regenerated) and [validation.md](validation.md) (how the model is checked against real items, the Wiki and AkhMorning).
+Related pages: [optimizer.md](../engineering/optimizer.md) (how the tool picks the best gear set), [data-pipeline.md](../engineering/data-pipeline.md) (where the game tables come from and how they are regenerated) and [validation.md](validation.md) (how the model is checked against real items, the Wiki and AkhMorning).
 
 All numbers below come from the game tables in this repository (ffxiv-datamining commit `d9582a6`, 2026-09-30) or from running the tool's own code against them.
 
@@ -35,7 +35,7 @@ The game's `ItemLevel` sheet has one row per item level (rows 0 to 920). Each ro
 
 So in practice there are three curves: main stat, substat and Vitality. We write them as $\text{budget}_s(i)$ for stat $s$ at item level $i$.
 
-![Two line charts of the main-stat and substat budgets by item level. The top chart covers rows 1 to 920 and shades rows 796 to 920 as having no gear. The bottom chart zooms on item levels 100 to 200, marks the cap 123 (main stat 355, substat 346), and shades 135 to 150, where the substat budget rises steeply.](diagrams/math-budget.svg)
+![Two line charts of the main-stat and substat budgets by item level. The top chart covers rows 1 to 920 and shades rows 796 to 920 as having no gear. The bottom chart zooms on item levels 100 to 200, marks the cap 123 (main stat 355, substat 346), and shades 135 to 150, where the substat budget rises steeply.](../diagrams/math-budget.svg)
 
 What the curve looks like (read from the table):
 
@@ -68,7 +68,7 @@ Paladin is the only combat job with a one-handed weapon plus a shield (100 + 40)
 
 ## 4. The stats on a piece
 
-![Flow diagram of the seven steps from item level to synced stat, with Spell Speed and Piety values from an item level 130 healer head piece. Spell Speed goes 363, 30.855, 31, then is clamped from 31 to 29 at cap 123. Piety goes 363, 30.855, 31, times 0.7 is 21.7, rounds to 22, and stays 22.](diagrams/math-pipeline.svg)
+![Flow diagram of the seven steps from item level to synced stat, with Spell Speed and Piety values from an item level 130 healer head piece. Spell Speed goes 363, 30.855, 31, then is clamped from 31 to 29 at cap 123. Piety goes 363, 30.855, 31, times 0.7 is 21.7, rounds to 22, and stays 22.](../diagrams/math-pipeline.svg)
 
 ### The formula
 
@@ -107,7 +107,7 @@ The factor belongs to the **item**, not to the job. The game files hold it: `Bas
 
 Kind 7 is the Gloam and High Allagan "of Striking" sets and the Occult "of Blood" accessories; kind 8 the Occult "of Magic" accessories; kind 9 is crafter and gatherer gear, which the database leaves out. Kind 0 is the Lieutenant's, Field Commander's and Warlord's sets, Proto Ultima Mesh (13 pieces with all four main stats) and six earrings and rings with Vitality and Determination only (Halone's, Azeyma's, Bozjan, Menphina's, Aetheryte, Neophyte's). Counts are database pieces.
 
-Every substat (Critical Hit, Determination, Direct Hit, both speeds, Tenacity) is 100% in every column. Piety is 70% or 90% in most columns, but no piece carries Piety in such a column, so it never applies to an item's own stats. It does apply to a cap: a Secondary Attribute counts as Piety for a healer ([data-pipeline.md, section 3](data-pipeline.md#3-the-shared-format-definition)), and on a kind 0 earring it is capped at the 90% Piety cap (Azeyma's Earrings at 430: 71 for Sage in game, section 5).
+Every substat (Critical Hit, Determination, Direct Hit, both speeds, Tenacity) is 100% in every column. Piety is 70% or 90% in most columns, but no piece carries Piety in such a column, so it never applies to an item's own stats. It does apply to a cap: a Secondary Attribute counts as Piety for a healer ([data-pipeline.md, section 3](../engineering/data-pipeline.md#3-the-shared-format-definition)), and on a kind 0 earring it is capped at the 90% Piety cap (Azeyma's Earrings at 430: 71 for Sage in game, section 5).
 
 So for a piece with a single main stat the factor is exactly the old job rule: **Vitality × 0.9 on Intelligence and Mind gear, 1 everywhere else**. The difference shows on two kinds of piece. Pieces that carry all four main stats have every main stat and Vitality at 90% (Field Commander's Coat, item level 160 body: $\operatorname{round}(448 \times 135/1000) = 60$, $\times 0.9 = 54$, which is what it carries). And pieces with no main stat at all (the Occult accessories at 745) have the factor of their kind: "of Magic" Vitality 307, "of Blood" 341, from the same budget ($5085 \times 67/1000 = 340.695 \to 341$, $\times 0.9 = 306.9 \to 307$). An Intelligence earring every job can wear (Alexandrian Earrings of Casting) still has Vitality × 0.9, because the factor goes with the item.
 
@@ -247,7 +247,7 @@ $$
 
 Pieces at or below the cap are untouched. Above the cap, each stat is cut down to the cap value. Stats that are already below the cap stay as they are.
 
-![Bar chart of the item level 130 healer head piece from the worked example synced to item level 123. Mind is clamped from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety 22 and Direct Hit 6 are below the cap of 29 and are kept.](diagrams/math-clamp.svg)
+![Bar chart of the item level 130 healer head piece from the worked example synced to item level 123. Mind is clamped from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety 22 and Direct Hit 6 are below the cap of 29 and are kept.](../diagrams/math-clamp.svg)
 
 ### Caps at item level 123
 

@@ -129,7 +129,7 @@ function restorePool(raw) {
 
 /* piece.subs: two ranked substats for this job (100% and 70%); rank 2 may be null. Unknown or repeated ones fall
    back. Older saves had a third rank (20%); it is dropped, since real gear has a third line only as Direct Hit on
-   Mind-only gear (docs/math.md section 4). */
+   Mind-only gear (docs/mechanics/math.md section 4). */
 function restorePieceSubs(raw, job) {
   const ds = defaultSubs(job);
   if (!Array.isArray(raw)) return ds;

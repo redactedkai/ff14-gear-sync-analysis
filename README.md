@@ -50,7 +50,7 @@ Run all commands from the repo root.
 1. `npm run update-data` fetches the newest CSVs, regenerates `src/data/` (recording the source commit) and rebuilds.
 2. `npm run check`, then review the diff of the two generated files.
 
-`docs/data-pipeline.md` section 9 lists which test numbers may change after a patch and which must not. To regenerate from the CSVs you already have (for example after changing a generator), run `python scripts/data/regen.py`. Never edit `src/data/*.js` by hand.
+`docs/engineering/data-pipeline.md` section 9 lists which test numbers may change after a patch and which must not. To regenerate from the CSVs you already have (for example after changing a generator), run `python scripts/data/regen.py`. Never edit `src/data/*.js` by hand.
 
 ## Documentation
 

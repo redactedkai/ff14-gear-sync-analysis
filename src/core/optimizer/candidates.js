@@ -79,7 +79,7 @@ export function vectorDims(job) {
 /* A pool item's candidate: its effective stat vector and, when `keys` is given (melds on) and the piece is not synced,
    its best melds for the objective (bestMeld), already added to the vector. One melded version per piece is exact:
    the loadout score is a sum of per-piece terms, and copies and blocked slots depend on the item, not on its melds, so
-   giving every worn piece its own best melds never lowers a loadout (docs/optimizer.md, section 4). A synced piece
+   giving every worn piece its own best melds never lowers a loadout (docs/engineering/optimizer.md, section 4). A synced piece
    keeps no melds (verified in game by the owner). */
 function itemCandidate(job, item, sync, keys) {
   const e = effStats(job, item, sync);

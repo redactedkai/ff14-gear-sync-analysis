@@ -5,23 +5,35 @@ Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a jo
 ## Reading order
 
 1. New to the game: [glossary.md](glossary.md) first.
-2. The model: [math.md](math.md), then [validation.md](validation.md) for how well it matches real data.
-3. The gear search: [optimizer.md](optimizer.md), then [materia.md](materia.md) for melds.
-4. Working on the code: [architecture.md](architecture.md), [testing.md](testing.md), [data-pipeline.md](data-pipeline.md).
+2. The model: [math.md](mechanics/math.md), then [validation.md](mechanics/validation.md) for how well it matches real data.
+3. The gear search: [optimizer.md](engineering/optimizer.md), then [materia.md](mechanics/materia.md) for melds.
+4. Working on the code: [architecture.md](engineering/architecture.md), [testing.md](engineering/testing.md), [data-pipeline.md](engineering/data-pipeline.md).
 5. Planning: [roadmap.md](roadmap.md) and [history.md](history.md).
 
 ## Pages
 
+**Mechanics** (`mechanics/`): how the game works and the evidence for it.
+
 | Page | What it covers |
 | --- | --- |
-| [math.md](math.md) | The stat model: budget table, slot and substat shares, double rounding, the sync clamp, speed and GCD |
-| [optimizer.md](optimizer.md) | How the best gear set is found: lexicographic score, dominance pruning, branch and bound, correctness and timing |
-| [materia.md](materia.md) | Materia melds: the rules, the best melds of one piece, why one melded version per piece is exact, checks against xivgear |
-| [data-pipeline.md](data-pipeline.md) | Where the game data comes from, how it is generated, provenance, and the steps after a game patch |
-| [subcategory-sort-codes.md](subcategory-sort-codes.md) | What each `Item.SubcategorySort` code means for gear, how each was checked, and the category it maps to |
-| [validation.md](validation.md) | Every check of the model against external truth (real items, Wiki caps, speed examples) and what evidence is still missing |
-| [architecture.md](architecture.md) | Layers, the job context, the UI store and views, persistence, the single-file build, the dev loop |
-| [testing.md](testing.md) | Test layers, what each test file covers, commands, conventions, numbers that may move after a patch |
+| [math.md](mechanics/math.md) | The stat model: budget table, slot and substat shares, double rounding, the sync clamp, speed and GCD |
+| [validation.md](mechanics/validation.md) | Every check of the model against external truth (real items, Wiki caps, speed examples) and what evidence is still missing |
+| [materia.md](mechanics/materia.md) | Materia melds: the rules, the best melds of one piece, why one melded version per piece is exact, checks against xivgear |
+
+**Engineering** (`engineering/`): how the code is built, fed and tested.
+
+| Page | What it covers |
+| --- | --- |
+| [architecture.md](engineering/architecture.md) | Layers, the job context, the UI store and views, persistence, the single-file build, the dev loop |
+| [optimizer.md](engineering/optimizer.md) | How the best gear set is found: lexicographic score, dominance pruning, branch and bound, correctness and timing |
+| [data-pipeline.md](engineering/data-pipeline.md) | Where the game data comes from, how it is generated, provenance, and the steps after a game patch |
+| [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) | What each `Item.SubcategorySort` code means for gear, how each was checked, and the category it maps to |
+| [testing.md](engineering/testing.md) | Test layers, what each test file covers, commands, conventions, numbers that may move after a patch |
+
+**Shared** (this folder):
+
+| Page | What it covers |
+| --- | --- |
 | [glossary.md](glossary.md) | FFXIV and project terms, with links to the page that explains each |
 | [roadmap.md](roadmap.md) | Ideas not yet built |
 | [history.md](history.md) | Claims and results that were corrected, and how the mistakes were found |

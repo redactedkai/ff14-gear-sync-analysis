@@ -4,7 +4,7 @@
 Usage: python scripts/data/gear_categories.py <path-to-ffxiv-datamining>/csv/en   (prints a report)
 
 The main signal is Item.SubcategorySort, an undocumented column: on gear, its last three digits group pieces by source.
-Each code's meaning was checked against the Console Games Wiki and the Lodestone (docs/subcategory-sort-codes.md).
+Each code's meaning was checked against the Console Games Wiki and the Lodestone (docs/engineering/subcategory-sort-codes.md).
 Shop data refines it where the code is not enough:
 - ultimate: bought with an ultimate totem (gear_sources.py); these weapons share code 60 with trial gear;
 - savage: code 20 (8-player raids) holds Normal and Savage together. From Heavensward on, Savage armor and weapons have
@@ -25,7 +25,7 @@ from pathlib import Path
 from gear_sources import ULTIMATE_TOTEMS, bits, listing_count
 from item_format import SchemaError, load_format, read_csv
 
-# SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/subcategory-sort-codes.md).
+# SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/engineering/subcategory-sort-codes.md).
 CATEGORY_BY_CODE = {
     10: 'relic',  # weapons; non-weapons are field_op (see module docstring)
     11: 'relic',
@@ -73,7 +73,7 @@ ITEM_OVERRIDES = {
 }
 CATEGORIES = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op'})
 # Gear that can no longer be obtained, left out of the database: the Heavensward Diadem gear (code 250; checked on the
-# Console Games Wiki, docs/subcategory-sort-codes.md).
+# Console Games Wiki, docs/engineering/subcategory-sort-codes.md).
 RETIRED = frozenset({'diadem'})
 CODE_DIVISOR = 1000
 # a piece's SubcategorySort below 1000 has no job or role prefix; the code is still the last three digits
@@ -154,7 +154,9 @@ def categorize(csv_dir, kept, weapon_slots):
         out[r['#']] = overrides.get(r['#'], cat)
     if unknown:
         listed = ', '.join(f'{c} ({n} pieces)' for c, n in sorted(unknown.items()))
-        raise SchemaError(f'Item.csv: SubcategorySort code(s) with no known category: {listed}. See docs/subcategory-sort-codes.md.')
+        raise SchemaError(
+            f'Item.csv: SubcategorySort code(s) with no known category: {listed}. See docs/engineering/subcategory-sort-codes.md.'
+        )
     return out
 
 

@@ -1,12 +1,12 @@
 # Architecture
 
-How the page is put together: the layers, how job-dependent behaviour is passed around, how the UI keeps itself up to date, what is saved in the browser, and how everything becomes one HTML file. The math itself is in [math.md](math.md), the gear search in [optimizer.md](optimizer.md), and where the game data comes from in [data-pipeline.md](data-pipeline.md). Unfamiliar game terms are in the [glossary](glossary.md).
+How the page is put together: the layers, how job-dependent behaviour is passed around, how the UI keeps itself up to date, what is saved in the browser, and how everything becomes one HTML file. The math itself is in [math.md](../mechanics/math.md), the gear search in [optimizer.md](optimizer.md), and where the game data comes from in [data-pipeline.md](data-pipeline.md). Unfamiliar game terms are in the [glossary](../glossary.md).
 
 ## 1. The system at a glance
 
 The tool is a single web page with no server. Everything it needs, including the game data, is inside one HTML file that a browser opens straight from disk.
 
-![Four layers stacked top to bottom: generated game data, core logic, UI state, and components with the page template; each is used by the one below. A bundler joins all layers into one HTML file that a browser opens from disk. Generator tests check the data layer, unit tests check the core logic and UI state, and a smoke test checks the finished HTML file in a real browser.](diagrams/architecture-layers.svg)
+![Four layers stacked top to bottom: generated game data, core logic, UI state, and components with the page template; each is used by the one below. A bundler joins all layers into one HTML file that a browser opens from disk. Generator tests check the data layer, unit tests check the core logic and UI state, and a smoke test checks the finished HTML file in a real browser.](../diagrams/architecture-layers.svg)
 
 Each layer depends only on the layers above it:
 
@@ -21,7 +21,7 @@ The page uses one runtime library, Alpine.js, for reactivity and templating. The
 
 ## 2. The job context
 
-Almost everything depends on the selected job: which stat is the main stat, which speed stat applies, whether there is a special substat (Piety, Tenacity or none), whether the weapon is two-handed or a one-handed weapon plus shield, which gear slots exist, and how Vitality is scaled. The 22 combat jobs fall into five role profiles that decide most of this (table in [math.md, section 1](math.md#1-terms)).
+Almost everything depends on the selected job: which stat is the main stat, which speed stat applies, whether there is a special substat (Piety, Tenacity or none), whether the weapon is two-handed or a one-handed weapon plus shield, which gear slots exist, and how Vitality is scaled. The 22 combat jobs fall into five role profiles that decide most of this (table in [math.md, section 1](../mechanics/math.md#1-terms)).
 
 The tool computes all of that **once per job** into a *job context*: a small, frozen description of the job. Every core function that needs job information takes the context as its first argument. Nothing in the core reads "the current job" from anywhere else.
 
@@ -29,7 +29,7 @@ What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
 - **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin). This fixes the list of active slots for Piece stats and the sync caps table, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
-- **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise: the factor the job's own gear carries, used only where no real item is involved (Sync caps, Piece stats). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](math.md#the-stat-factor-of-an-item)).
+- **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise: the factor the job's own gear carries, used only where no real item is involved (Sync caps, Piece stats). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
 Contexts are cached, so asking for the same job twice returns the same object, and frozen, so no caller can change one by accident. An unknown job id falls back to the default job.
@@ -40,7 +40,7 @@ The game database stores stats in a fixed raw order of 14 stats (all four main s
 
 ## 3. The UI pattern
 
-![At page load the saved state is read from browser storage, repaired, and becomes the shared store. A change in the store re-runs each component effect that read it; the effect calls the core logic and derives a frozen view, which the template displays. User input calls store actions, which change the store again. The store is saved back to browser storage 150 ms after the last change.](diagrams/architecture-ui-flow.svg)
+![At page load the saved state is read from browser storage, repaired, and becomes the shared store. A change in the store re-runs each component effect that read it; the effect calls the core logic and derives a frozen view, which the template displays. User input calls store actions, which change the store again. The store is saved back to browser storage 150 ms after the last change.](../diagrams/architecture-ui-flow.svg)
 
 ### One shared store
 

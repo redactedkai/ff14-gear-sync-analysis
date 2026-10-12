@@ -11,7 +11,7 @@ Shared by every page in `docs/`. Keep pages consistent with it.
 - Plain, concise sentences. Headings in sentence case. No marketing tone.
 
 ## Diagrams
-- Hand-made SVG files in `docs/diagrams/`, embedded with `![alt text](diagrams/name.svg)`. Alt text describes what the diagram shows.
+- Hand-made SVG files in `docs/diagrams/`, embedded with `![alt text](../diagrams/name.svg)` from a page in `mechanics/` or `engineering/` (`diagrams/name.svg` from a top-level page). Alt text describes what the diagram shows.
 - `viewBox` width 720 (height as needed), no fixed `width`/`height` attributes, generous whitespace, nothing smaller than 12px text.
 - Text is real `<text>` (not paths), font-family `system-ui, -apple-system, "Segoe UI", sans-serif`; monospace (`ui-monospace, Consolas, monospace`) only for numbers in tables.
 - Colours come from CSS classes in an inline `<style>` with a `@media (prefers-color-scheme: dark)` block, so the diagram follows the reader's theme. Palette:

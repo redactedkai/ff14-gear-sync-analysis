@@ -21,7 +21,7 @@ test('highest real item level is inside the ItemLevel table', () => {
   assert.ok(MAX_REAL <= MAX_ILVL);
 });
 
-/* Real pieces that the three refinements of the formula reproduce (docs/math.md, section 4): equal substats share the
+/* Real pieces that the three refinements of the formula reproduce (docs/mechanics/math.md, section 4): equal substats share the
    higher rank (relic weapon steps with two full substats), every main stat counts (a few pieces carry Strength and
    Dexterity), and an off-hand is the two-handed value minus the one-handed value. */
 test('the formula reproduces relic weapons with two full substats, two main stats, and off-hands', async () => {

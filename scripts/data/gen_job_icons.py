@@ -20,7 +20,8 @@ from item_format import ROOT, SchemaError, load_format, run_main
 SIZE = 64
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 HEADER = (
-    "/* GENERATED from the game's framed job icons (icon 062100 + ClassJob row, via xivapi). Do not edit; see docs/data-pipeline.md. */\n"
+    "/* GENERATED from the game's framed job icons (icon 062100 + ClassJob row, via xivapi). Do not edit; see "
+    'docs/engineering/data-pipeline.md. */\n'
 )
 
 

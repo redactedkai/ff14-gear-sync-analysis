@@ -1,5 +1,5 @@
 /* Which item level a piece is synced to: the duty's item level cap, the item level its level allows, or none.
-   See docs/math.md, section 5 ("Which pieces are synced"). How a stat is capped at that item level is formulas.js. */
+   See docs/mechanics/math.md, section 5 ("Which pieces are synced"). How a stat is capped at that item level is formulas.js. */
 import { speedParams } from './speed.js';
 
 /* The item level a piece is synced to by level sync at character level `level`: ParamGrow.ItemLevelSync (levels 1 to

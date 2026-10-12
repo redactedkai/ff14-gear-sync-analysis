@@ -2,7 +2,7 @@
 
 The gear optimizer can give each piece its best materia melds for the chosen objective, together with the choice of gear. This page states the meld rules, how the best melds of one piece are found, why choosing them piece by piece is exact, and how the results were checked.
 
-Related pages: [optimizer.md](optimizer.md) (the search), [math.md](math.md) (caps and sync), [glossary.md](glossary.md).
+Related pages: [optimizer.md](../engineering/optimizer.md) (the search), [math.md](math.md) (caps and sync), [glossary.md](../glossary.md).
 
 ## 1. Terms
 
@@ -44,7 +44,7 @@ and without overmelding $B = g$, $S = 0$.
 
 In the item data, no piece has 4 guaranteed slots or more than 5. 15 Paladin shields have no guaranteed slot but allow overmelding. The tool gives them no melds. That is **inferred**: xivgear gives them 5 slots, and no source says which is right.
 
-![The five meld slots of an overmeldable earring, filled in order](diagrams/materia-slots.svg)
+![The five meld slots of an overmeldable earring, filled in order](../diagrams/materia-slots.svg)
 
 **Cap.** On each piece, each substat is capped at that piece's own sync cap: the cap of its slot share and stat factor at its own item level (math.md, section 5). This is **verified**: the top substat of real pieces equals it, and the Wiki's Kirin's Osode of Fending (item level 300 body) caps at 110 with its 77 melded up to 110. A stone's points above the cap are lost. With $x_k$ the piece's own value of substat $k$ and $C_k$ its cap, the room left is
 
@@ -83,7 +83,7 @@ Over every meldable piece of all 22 jobs and every ordered pair of substats (615
 
 ## 4. Why one melded version per piece is exact
 
-The optimizer scores a loadout as the sum of per-piece scores, $\sigma(L) = \sum_i \sigma(x_i)$, with the weights of [optimizer.md, section 3](optimizer.md#3-turning-the-lexicographic-order-into-one-number). Those weights are derived from the vectors the search can use, so they are computed after melding.
+The optimizer scores a loadout as the sum of per-piece scores, $\sigma(L) = \sum_i \sigma(x_i)$, with the weights of [optimizer.md, section 3](../engineering/optimizer.md#3-turning-the-lexicographic-order-into-one-number). Those weights are derived from the vectors the search can use, so they are computed after melding.
 
 - **Melds belong to one piece.** A piece's melds change only that piece's vector. Copies (a Unique ring is worn once) and blocked slots (a cloak empties the head) depend on the item, not on its melds.
 - **The best version wins every swap.** Take any legal loadout and replace one worn piece's melds with that piece's best plan. The loadout stays legal, and its score can only go up, because $\sigma$ restricted to one piece orders plans exactly as their lexicographic gain tuples. Repeat for every piece.

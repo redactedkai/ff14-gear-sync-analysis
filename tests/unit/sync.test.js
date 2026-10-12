@@ -11,12 +11,12 @@ const pld = makeJobContext('PLD');
 
 /* A real item level 130 healer head piece from the game files, chosen by its properties: Spell Speed above the
    head cap at 123 (29) and at least one substat below it, so the clamp both applies and leaves a stat alone. */
-const HEAD_CAP_123 = { sub: 29, main: 30 }; // head caps at item level 123 (substat, main stat), docs/math.md
+const HEAD_CAP_123 = { sub: 29, main: 30 }; // head caps at item level 123 (substat, main stat), docs/mechanics/math.md
 
 /* Head caps derived here, independently of capsFor / pieceValue: the raw ItemLevel row times the head slot share
    (85 per mille, BaseParam; the Wiki's item level 475 head cap 112 = round(1314 x 0.085) confirms it), rounded.
    Vitality for an Int/Mind job takes its 90% first: floor(row x 0.9), then floor(x 85 / 100), then / 10 rounded
-   (the cap order of in-game sync values; docs/math.md section 5). Only the healer's columns are needed here. */
+   (the cap order of in-game sync values; docs/mechanics/math.md section 5). Only the healer's columns are needed here. */
 const HEAD_PCT = 85;
 const headCap = (col, ilvl) => Math.round((IL[col][ilvl] * HEAD_PCT) / 1000);
 const headCapFactor = (col, ilvl, f) => Math.round(Math.floor((Math.floor((IL[col][ilvl] * f) / 100) * HEAD_PCT) / 100) / 10);
