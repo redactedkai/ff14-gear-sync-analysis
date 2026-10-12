@@ -25,7 +25,7 @@ Constraints:
 
 **Leaving out gear by source.** Under *Include*, one switch per group (all on by default) can take crafted, tomestone, ultimate, current Savage, relic or PvP gear out of the search (current Savage is the current expansion's Savage gear only; relic includes the Eureka, Bozja and Occult Crescent armor). The groups are the gear that is hardest to get. This happens before the optimizer runs: such items are removed from the pool it is given (and from the ceiling table's pool), so the search itself is unchanged. An item's groups come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)); hand-made pieces have none and are never left out.
 
-The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](math.md#5-item-level-sync). Melds are ignored.
+The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](math.md#5-item-level-sync). With **melds** on (the page's default), every piece that is not synced first gets its best materia melds for the objective, and its vector includes them. One melded version per piece is enough, as [materia.md, section 4](materia.md#4-why-one-melded-version-per-piece-is-exact) shows, so the search itself does not change. Melds cannot be combined with a speed range (the engine refuses).
 
 ## 2. Formal statement
 
@@ -109,7 +109,7 @@ Before a fix (see [history.md](history.md)) the weights were fixed at $10^8, 10^
 
 ## 4. Fewer candidates: dominance pruning
 
-Most items in a large pool can never be part of a best loadout because another item in the same slot is at least as good in every way. Removing them before the search is what keeps it fast: the 1,988-item Sage pool shrinks to 119 distinct candidates synced to 123, and to 167 unsynced.
+Most items in a large pool can never be part of a best loadout because another item in the same slot is at least as good in every way. Removing them before the search is what keeps it fast: the 1,999-item Sage pool shrinks to 119 distinct candidates synced to 123, and to 169 unsynced (129 and 207 with melds).
 
 **Beats.** Within one slot type, item $x$ **beats** item $y$, written $x \succ y$, when
 
@@ -126,6 +126,8 @@ $$
 $$
 
 For a single-slot type this means "something beats it". For rings it means "two copies beat it": one ring with 2 copies, or two different rings. Copies are counted once per item, so two candidate versions of one Unique ring are still one ring.
+
+**Computing it.** The candidates are sorted by score, then by the sum of their stats, with exact ties in pool order. A beater scores at least as much as what it beats (every weight is positive) and, unless it is an exact tie, has a larger stat sum, so every beater of $y$ comes before $y$. Each candidate is then compared only with the candidates already kept: by the argument below, the kept beaters always have enough copies, so this drops exactly the same candidates as comparing with all of them. On 23,652 real slot lists (22 jobs, six item level ranges, three sync settings, melds on and off, three objectives) both ways kept the same candidates, and the kept-only scan was 7 times faster. **Verified**.
 
 ### Why one better ring is not enough
 
@@ -180,7 +182,7 @@ Both bounds use the best value in each remaining slot independently, except that
 
 Below the main result, the Gear optimizer tab shows "Ceiling per stat from this pool". For each of the job's stats it runs the optimizer with that stat as the only target (no tiebreaks) twice: synced to the current cap, and unsynced. Each cell is the highest total of that one stat the pool can reach, ignoring all other stats. The last row converts the synced speed ceiling into a GCD.
 
-That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 1,999-item Sage pool they take about 0.29 s together.
+That is 12 or 14 runs (6 or 7 stats, two sync modes); with melds on, each run solves its own melds for its stat. On the 1,999-item Sage pool they take about 0.13 s together (0.18 s with melds).
 
 ## 7. Correctness and performance
 
@@ -193,6 +195,8 @@ That is 12 or 14 runs (6 or 7 stats, two sync modes). On the 1,999-item Sage poo
 | Constraints (test) | A small pool of real items: speed minimum, maximum and range, infeasible cases, against an independent brute force | all equal |
 | Regressions (test) | F1 ring pools (19, 20, 20), F3 large tiebreaks, the speed maximum example of section 4 | pass |
 | Known values (test) | Generic item level 475 gear synced to 123: 296 Spell Speed, 2.22 s GCD at level 50 | pass |
+| Exhaustive search with melds (test) | 40 random pools of real pieces (some meldable, some synced), against a reference that enumerates every stone placement on its own ([materia.md](materia.md)) | all equal |
+| Melds against xivgear (probe) | Meld caps, stones, sync decisions and the target after melds on 10,534 real pieces ([materia.md, section 6](materia.md#6-checks)) | all equal (the target once xivgear's 2-point overcap allowance is lifted) |
 | Real gear, exact optimum (probe, not a committed test) | 22 jobs × 35 item level windows $[\ell, \ell + 40]$ for $\ell = 100, 120, \dots, 780$ × sync on/off at cap 123 × every stat as target = **9,800 runs**. Reference: with one target and no constraints the best loadout is just the best item per slot (best ring pair respecting copies) | **0 misses** |
 
 The real-gear probe was rerun for this page with the current code. Run with the old ring rule plugged into the same search, it misses in **360 of 9,800** runs, which matches the number recorded in [history.md](history.md#results-of-the-tool), including its example (Paladin, items 160 to 200, synced, Critical Hit: 322 instead of 345). With the cap set to the middle of each window instead of 123, the current code again misses 0, the old rule 590.
@@ -201,19 +205,19 @@ The exhaustive and constraint tests run with `npm test`. If a change to scoring,
 
 ### Performance
 
-Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists. The pool is every piece Sage can equip at item level 100 and up (1,999 items). The node counts before the ring-pair bound (section 5) are in brackets; every result is the same.
+Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists (2026-10-12, with the kept-only pruning of section 4). The pool is every piece Sage can equip at item level 100 and up (1,999 items). The node counts before the ring-pair bound (section 5) are in brackets; every result is the same. Melds cannot be combined with a speed range, hence "–".
 
-| Run | Nodes | Time |
-| --- | ---: | ---: |
-| Synced to 123, Spell Speed | 137 (137) | ~25 ms |
-| Synced to 123, Spell Speed, tiebreaks Crit, Det | 137 (137) | ~23 ms |
-| Unsynced, Spell Speed | 194 (505) | ~17 ms |
-| Unsynced, Critical Hit, tiebreaks Det, Spell Speed | 194 (5,811) | ~17 ms |
-| Unsynced, Critical Hit, Spell Speed at least 2,000 | 2,645 (3,238) | ~19 ms |
-| Unsynced, Critical Hit, Spell Speed at most 1,000 (pruning off) | 2,194 (558,548) | ~7 ms (was ~450 ms) |
-| Ceiling table: 14 runs at 150,000 nodes each, synced to 123 at level 50 | | ~290 ms |
+| Run | Nodes | Time | With melds |
+| --- | ---: | ---: | ---: |
+| Synced to 123, Spell Speed | 137 (137) | ~13 ms | 148 nodes, ~14 ms |
+| Synced to 123, Spell Speed, tiebreaks Crit, Det | 137 (137) | ~12 ms | 148 nodes, ~13 ms |
+| Unsynced, Spell Speed | 194 (505) | ~8 ms | 234 nodes, ~15 ms |
+| Unsynced, Critical Hit, tiebreaks Det, Spell Speed | 194 (5,811) | ~9 ms | 233 nodes, ~17 ms |
+| Unsynced, Critical Hit, Spell Speed at least 2,000 | 2,645 (3,238) | ~10 ms | – |
+| Unsynced, Critical Hit, Spell Speed at most 1,000 (pruning off) | 2,194 (558,548) | ~7 ms (was ~450 ms) | – |
+| Ceiling table: 14 runs at 150,000 nodes each, synced to 123 at level 50 | | ~133 ms | ~184 ms |
 
-Synced runs leave fewer candidates after pruning (119 against 167 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level.
+Synced runs leave fewer candidates after pruning (119 against 169 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level. Across the Sage and Warrior full pools, caps 123 to 660 and no sync, and five objectives, the slowest run takes about 20 ms without melds and 42 ms with them; the Warrior ceiling table takes about 0.16 s without and 0.22 s with.
 
 Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149 and the largest 203 (Summoner, items 260 to 300, unsynced). Before the ring-pair bound they were 73, 18,178 and 191,023: the largest was Ninja and Viper, items 600 to 640, unsynced, Skill Speed, where most armor has no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so counting it twice left the bound 42 points too high to cut those ties. Rerun on 2026-10-12 with both searches side by side: the same total in all 9,800 runs, none truncated.
 
@@ -225,13 +229,14 @@ Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149
 - **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. The speed range is engine only, so this does not affect the page yet.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
-- **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](math.md) (verified against the Wiki's item level 475 caps); melds are ignored (assumed). Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
+- **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](math.md) (verified against the Wiki's item level 475 caps); melds follow [materia.md](materia.md), with every meld assumed to succeed. Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
 
 ## Where this lives
 
 | Concept | File |
 | --- | --- |
 | Effective stats, item vectors, score weights, dominance pruning, candidate lists | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `pruneDominated`, `buildCandidates`) |
+| Best melds of a piece | `src/core/meld.js` (`bestMeld`) |
 | Bounds and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `branchAndBound`) |
 | Entry point, pruning switch for a speed maximum | `src/core/optimizer/index.js` (`optimize`) |
 | Which slots a job uses | `src/core/job-context.js` (`slotActive`) |

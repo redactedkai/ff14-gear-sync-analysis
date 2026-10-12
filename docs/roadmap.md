@@ -6,9 +6,9 @@ Related pages: [validation.md](validation.md), [optimizer.md](optimizer.md), [ma
 
 | When | Idea | Notes |
 | --- | --- | --- |
-| Next | Materia and food optimizer, as a third tab | Pick melds (on gear at or below the cap) and food to reach a stat target or a GCD tier. Scope still to be settled. |
-| Next | Target GCD in the optimizer | "Reach this GCD tier, then maximize the target", through the engine's existing speed range. May fit best with the materia and food tab. |
-| Later | Verify the sync assumptions in game | The main stat and Vitality clamp, the lower-substat clamp (strongly supported, see validation.md), the shield cap (two-handed minus one-handed) and the cap of pieces with their own slot share (one-handed weapon 100, cloak 220) are inferred. See [validation.md, section 8](validation.md#8-open-question-in-game-captures). |
+| Next | Stat breakpoint visualizer | Show, for each stat in the result, its effect, the points above its tier start and the points to the next tier (gear only, no food). Builds on the GCD tier math the page already has; tier-aware tiebreaks could follow ([materia.md, section 5](materia.md#5-breakpoints)). |
+| Later | Target GCD in the optimizer | "Reach this GCD tier, then maximize the target", through the engine's existing speed range. Melds would then need every meld version of each piece that no other beats, not one best version; the engine refuses melds with a speed range today ([materia.md, section 4](materia.md#4-why-one-melded-version-per-piece-is-exact)). |
+| Later | Verify the sync assumptions in game | The main stat and Vitality clamp, the lower-substat clamp (strongly supported, see validation.md), the shield cap (two-handed minus one-handed) and the cap of pieces with their own slot share (one-handed weapon 100, cloak 220) are inferred, and so is "no melds" on the 15 Paladin shields with 0 slots but overmelding allowed ([materia.md, section 2](materia.md#2-the-rules)). See [validation.md, section 8](validation.md#8-open-question-in-game-captures). |
 | Later | Diagnostics view for the pieces the formula misses | 40 of 16,601 pieces; see [validation.md, section 2](validation.md#what-the-misses-look-like). |
-| Later | Stat breakpoint visualizer | Show where each substat's next step (tier) is from the current gear, repurposed from AkhMorning's stat tier tables. Builds on the GCD tier math the page already has. |
+| Later | Food | Add food to the totals and the tiers; it shifts every tier, so it matters most for the breakpoint view. |
 | Later | Save and share a pool or a result | By a JSON file or a URL; check URL length, since pools can be large. |

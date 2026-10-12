@@ -1,5 +1,5 @@
 /* Materia melds: the best stones a piece can take for an objective. Pure; never reads sync state (whether a piece keeps
-   its melds is the optimizer's call, itemSyncIlvl). Rules and sources: docs/math.md, section 6.
+   its melds is the optimizer's call, itemSyncIlvl). Rules, sources and the exactness argument: docs/materia.md.
    - A grade fits gear whose item level is at least its gate (MATERIA.gate). The best "big" stone is the most valuable
      grade the gate allows; the best "small" stone the most valuable grade that is not high (MATERIA.high: VI, VIII, X,
      XII cannot go past the first overmeld slot). Values are not in grade order (VI 16, VII 8).

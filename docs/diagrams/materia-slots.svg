@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="t d">
+  <title id="t">The five meld slots of an overmeldable earring, filled in order</title>
+  <desc id="d">Courtly Lover's Earrings of Healing, item level 770, one guaranteed slot plus overmelding: five slots in melding order. Slot 1 (guaranteed) and slot 2 (first overmeld) take any grade, including the high grades VI, VIII, X and XII; slots 3 to 5 (later overmelds) refuse the high grades, so their best stone is XI. The best melds for Critical Hit then Determination are XII Critical Hit, XII Determination, XI Critical Hit, XI Determination, XI Determination: Critical Hit goes from 142 to its cap of 203 (72 added, 11 lost to the cap) and Determination gains 90. Filling greedily, both XII into Critical Hit, also reaches 203 but leaves only three XI, 54, for Determination.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    .brA { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .brB { fill: none; stroke: #b0402c; stroke-width: 1.5; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .big { font-size: 20px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+      .brA { stroke: #4cc2b6; }
+      .brB { stroke: #f08a74; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="360"/>
+
+  <text class="t fg" x="28" y="32">Courtly Lover's Earrings of Healing (item level 770): 1 guaranteed slot + overmelding</text>
+
+  <!-- group brackets -->
+  <path class="brA" d="M28,70 v-8 h256 v8"/>
+  <text class="s accent" x="156" y="54" text-anchor="middle">any grade allowed (up to XII, +54)</text>
+  <path class="brB" d="M300,70 v-8 h392 v8"/>
+  <text class="s bad" x="496" y="54" text-anchor="middle">no VI, VIII, X or XII: best is XI (+18)</text>
+
+  <!-- slots: width 120, gap 16, start 28 -->
+  <rect class="box" x="28" y="80" width="120" height="96" rx="8"/>
+  <text class="s muted" x="88" y="100" text-anchor="middle">1 · guaranteed</text>
+  <text class="big fg" x="88" y="134" text-anchor="middle">XII</text>
+  <text class="s fg" x="88" y="160" text-anchor="middle">Critical Hit</text>
+
+  <rect class="box" x="164" y="80" width="120" height="96" rx="8"/>
+  <text class="s muted" x="224" y="100" text-anchor="middle">2 · overmeld 1</text>
+  <text class="big fg" x="224" y="134" text-anchor="middle">XII</text>
+  <text class="s fg" x="224" y="160" text-anchor="middle">Determination</text>
+
+  <rect class="box" x="300" y="80" width="120" height="96" rx="8"/>
+  <text class="s muted" x="360" y="100" text-anchor="middle">3 · overmeld 2</text>
+  <text class="big fg" x="360" y="134" text-anchor="middle">XI</text>
+  <text class="s fg" x="360" y="160" text-anchor="middle">Critical Hit</text>
+
+  <rect class="box" x="436" y="80" width="120" height="96" rx="8"/>
+  <text class="s muted" x="496" y="100" text-anchor="middle">4 · overmeld 3</text>
+  <text class="big fg" x="496" y="134" text-anchor="middle">XI</text>
+  <text class="s fg" x="496" y="160" text-anchor="middle">Determination</text>
+
+  <rect class="box" x="572" y="80" width="120" height="96" rx="8"/>
+  <text class="s muted" x="632" y="100" text-anchor="middle">5 · overmeld 4</text>
+  <text class="big fg" x="632" y="134" text-anchor="middle">XI</text>
+  <text class="s fg" x="632" y="160" text-anchor="middle">Determination</text>
+
+  <!-- result -->
+  <text class="t good" x="28" y="216">Best for Critical Hit, then Determination</text>
+  <text class="s fg" x="28" y="240">Critical Hit 142 → 203, its cap: XII + XI add 72 for 61 of room (11 lost)</text>
+  <text class="s fg" x="28" y="260">Determination 0 → 90: XII + XI + XI</text>
+
+  <text class="t bad" x="28" y="298">Greedy (biggest stone into the first stat with room)</text>
+  <text class="s fg" x="28" y="322">Critical Hit 142 → 203 with XII + XII (108 for 61 of room, 47 lost)</text>
+  <text class="s fg" x="28" y="342">Determination 0 → 54: only XI + XI + XI are left</text>
+</svg>

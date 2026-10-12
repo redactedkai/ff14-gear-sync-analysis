@@ -6,7 +6,7 @@ Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a jo
 
 1. New to the game: [glossary.md](glossary.md) first.
 2. The model: [math.md](math.md), then [validation.md](validation.md) for how well it matches real data.
-3. The gear search: [optimizer.md](optimizer.md).
+3. The gear search: [optimizer.md](optimizer.md), then [materia.md](materia.md) for melds.
 4. Working on the code: [architecture.md](architecture.md), [testing.md](testing.md), [data-pipeline.md](data-pipeline.md).
 5. Planning: [roadmap.md](roadmap.md) and [history.md](history.md).
 
@@ -16,6 +16,7 @@ Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a jo
 | --- | --- |
 | [math.md](math.md) | The stat model: budget table, slot and substat shares, double rounding, the sync clamp, speed and GCD |
 | [optimizer.md](optimizer.md) | How the best gear set is found: lexicographic score, dominance pruning, branch and bound, correctness and timing |
+| [materia.md](materia.md) | Materia melds: the rules, the best melds of one piece, why one melded version per piece is exact, checks against xivgear |
 | [data-pipeline.md](data-pipeline.md) | Where the game data comes from, how it is generated, provenance, and the steps after a game patch |
 | [subcategory-sort-codes.md](subcategory-sort-codes.md) | What each `Item.SubcategorySort` code means for gear, how each was checked, and the category it maps to |
 | [validation.md](validation.md) | Every check of the model against external truth (real items, Wiki caps, speed examples) and what evidence is still missing |

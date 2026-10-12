@@ -129,7 +129,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, `slotActive`, `ilWeight`, `statColumn`) |
 | Raw row to neutral stats, item filters | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
-| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `validation.js`, `optimizer/` |
+| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `meld.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `restoreState`, `STORE_KEY`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
