@@ -30,7 +30,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Item level.** A number on every piece of gear. It is not a strength rating in itself: it is a row number in the budget table, and the piece's stats follow from that row and its slot. Real gear goes from 1 to 795 (the project's data starts at 100). See [math.md, section 2](math.md#2-the-budget-table).
 
-**Item level sync, sync cap.** Some content lowers gear to a fixed item level, the sync cap. Each stat on a piece above the cap is limited to what a full-share piece of the same slot at the cap would have; pieces at or below the cap are unchanged. The owner's main case is cap 123. See [math.md, section 5](math.md#5-item-level-sync).
+**Item level sync, sync cap.** Some content lowers gear to a fixed item level, the sync cap. Each stat on a piece above the cap is limited to its cap: what a full-share piece of the same slot at the cap would have, except that for a stat with a factor below 100% the cap applies the factor first and can differ from such a piece by 1; pieces at or below the cap are unchanged. The owner's main case is cap 123. See [math.md, section 5](math.md#5-item-level-sync).
 
 **Job.** A character's combat class, such as Sage, Warrior or Black Mage. The project supports all 22 combat jobs. A job decides the main stat, the speed stat, the special substat and the weapon type. In the code, everything job-dependent is computed once per job into a *job context*. See [architecture.md, section 2](architecture.md#2-the-job-context).
 
@@ -58,7 +58,7 @@ Final Fantasy XIV (FFXIV) terms and project terms, for readers who do not play t
 
 **Slot share.** The fraction of the budget a slot gets, in thousandths: two-handed weapon 140, one-handed weapon 100, shield 40 (its stats are the two-handed value minus the one-handed value), head, hands and feet 85, body and legs 135, accessories 67. Read from the game's `BaseParam` table. See [math.md, section 3](math.md#3-slot-shares).
 
-**Stat factor.** A percentage the game files attach to each stat of an item, by the item's kind (`BaseParam.MeldParam`, column `Item.BaseParamModifier`): the slot value is multiplied by it, then rounded. 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces that carry all four main stats. A real piece's sync cap uses its own factor; where no item is involved the page uses the job's (Vitality 0.9 for Intelligence and Mind jobs). See [math.md, section 4](math.md#the-stat-factor-of-an-item).
+**Stat factor.** A percentage the game files attach to each stat of an item, by the item's kind (`BaseParam.MeldParam`, column `Item.BaseParamModifier`): the slot value is multiplied by it, then rounded. 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces that carry all four main stats. A real piece's sync cap uses its own factor, applied before the slot share (the reverse of the item's own stats; see [math.md, section 5](math.md#the-clamp-rule)); where no item is involved the page uses the job's (Vitality 0.9 for Intelligence and Mind jobs). See [math.md, section 4](math.md#the-stat-factor-of-an-item).
 
 **Substat.** Any stat other than the main stat and Vitality: Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety. A piece carries two or three substats.
 

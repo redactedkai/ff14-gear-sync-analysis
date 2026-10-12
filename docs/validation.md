@@ -141,6 +141,7 @@ None of these totals has been checked in game. They show the search returns the 
 | Formulas unit test | Caps at 123 per slot; the item level 130 healer head piece from the formula; Paladin weapon mode | Head piece: external truth (game data). Caps at 123: the values the caps unit test derives |
 | Caps unit test (`caps-real-items`) | No gear exists at item level 123; real pieces at 120 and 125 in every slot carry round(row × share) as main stat and largest substat; the page's caps at 123 equal caps derived from `ItemLevel` row 123 and the `BaseParam` shares (Sage, Warrior, Paladin); the ten armor and accessory caps sum to 296, 2.22 s at level 50, and the generic-piece optimizer reaches that sum | Pieces at 120 and 125: external truth (game data). Caps at 123 and 296: independent derivation. 2.22 s: external truth (AkhMorning) |
 | Sync unit test | Clamp edge cases on a real item level 130 head piece (at, below, one above the cap; unknown item level; no special substat; missing stats); Paladin Wiki 475 caps | Wiki rows: external truth. Head caps at 123 and 129: independent derivation from `ItemLevel` and the 85 ‰ share (not `capsFor`). Edge cases: rules of the model |
+| Sync-cap-order unit test | The cap order on the in-game values of section 8 (Blue Mage head Vitality 56 at 270, Red Mage head 123 at 530, Azeyma's and Menphina's earrings at 430 and 425), on the real items where named; with a factor of 100 the cap order equals the item order at every item level 1 to 795 and every slot share; an off-hand cap is the two-handed minus the one-handed cap | In-game values: external truth, second-hand (xivgear's test notes). Budgets: game data. Equal orders: independent comparison |
 | Speed unit test | GCD tier starts and DoT scalars at levels 50, 90 and 100; 2.50 s with no gear speed; `gcdTiers` at level 50 | External truth (AkhMorning tier tables) |
 | Optimizer unit test | Seven real-gear pools, every substat, synced and unsynced; Unique ring worn once; generic maximum 296 / 2.22 s | Pools and rings: brute-force reference. Generic maximum: independent derivation (caps unit test) |
 | Optimizer-exhaustive unit test | Optimizer equals the brute force on random pools; ring and score-weight regressions; too-large scores throw; the two policies the brute force copies (a single ring only when no pair exists; a slot is never left empty to meet the speed maximum) on hand-made pools | Brute-force reference. Policies: rules of the engine |
@@ -148,7 +149,7 @@ None of these totals has been checked in game. They show the search returns the 
 | Views unit test | Optimizer and ceiling views on real gear; a lone Unique ring; Piece stats on the real item level 130 head pieces; sync caps view; GCD tier text and tier lookup; browse and pool counts | Real gear: brute-force reference. Piece stats raw values: external truth (game data). Caps, 296: independent derivation (caps unit test). Tier at 1,839: external truth (AkhMorning). Tier lookup: independent scan |
 | Items unit test | Item browser filters, pool item mapping, copies of Unique rings | Real rows from the database, picked by properties |
 | Piece-subs unit test | Piece stats substat ranks never repeat | Rules of the page |
-| Stat-factor unit test | The job's factor equals the item factor on every single-main-stat piece of all 22 jobs; only the 13 four-main-stat pieces differ; those 13, the Occult "of Magic" and "of Blood" accessories (Vitality 307 / 341) and Alexandrian Earrings of Casting reproduced; a synced Field Commander's Coat capped at main stat 43 and Vitality 46 at 123 in the optimizer and the gear browser | Game data and independent derivation from `ItemLevel` rows; synced values: rules of the model |
+| Stat-factor unit test | The job's factor equals the item factor on every single-main-stat piece of all 22 jobs; only the 13 four-main-stat pieces differ; those 13, the Occult "of Magic" and "of Blood" accessories (Vitality 307 / 341) and Alexandrian Earrings of Casting reproduced; a synced Field Commander's Coat capped at main stat 43 and Vitality 45 at 123 in the optimizer and the gear browser | Game data and independent derivation from `ItemLevel` rows; synced values: rules of the model |
 | Data-format and provenance unit tests | Shape of the generated data, including the stat factor table; recorded data source | Format definition |
 | State unit test | Saved page state is repaired field by field; removed hypothetical and hand-entered pieces are dropped | Rules of the page |
 | Generator tests (Python) | 50 tests on small CSV fixtures (slots, exclusions including multi-slot gear, stat placement, HQ rule, job mask, Unique flag, sort order, budget columns, level data, stat factor kind and table, schema errors) | Hand-built fixtures |
@@ -156,19 +157,28 @@ None of these totals has been checked in game. They show the search returns the 
 
 ## 8. Open question: in-game captures
 
-Three parts of the sync model have no direct evidence ([math.md, section 5](math.md#what-is-assumed)):
+Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)):
 
-1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job);
+1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job), with the factor-first cap order below; supported by second-hand in-game values;
 2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$);
 3. sync never raises a stat.
 
 Settled: melds (materia) are ignored on synced-down gear. The owner confirmed it in game: a piece is synced, and its materia stops counting, when its item level is above the duty's item level cap (with item level sync on) or its equip level is above the duty's level.
 
-**Second-hand in-game values (xivgear's test notes).** Azeyma's Earrings (item level 560, item kind 0) synced to item level 430 showed main stat 71, Vitality 72, Direct Hit (Ninja) or Piety (Sage) 79 and Determination 79 in game ([xivgear `item_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/item_stats_tests.ts)). Not captured by this project; quoted from xivgear's code comments.
+**Second-hand in-game values (xivgear's test notes).** Not captured by this project; quoted from code comments in xivgear's tests (commit `6c3c878`, [`sync_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/stats/sync_stats_tests.ts), [`item_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/item_stats_tests.ts)). The budgets are this project's `ItemLevel` rows.
 
-- **Supports question 1.** The main stat and Vitality are clamped, at the cap of the item's kind: 90% of the full accessory value (78 and 80 at 430), not the full value.
-- **Disagrees by 1 on the main stat.** This model computes the cap as $\operatorname{round}(\operatorname{round}(1170 \times 67/1000) \times 0.9) = \operatorname{round}(78 \times 0.9) = 70$, where the game showed 71. xivgear's order, the factor first with floors ($\operatorname{round}(\lfloor \lfloor 1170 \times 90/100 \rfloor \times 67/100 \rfloor / 10) = 71$), gives 71. Vitality (72), Direct Hit and Determination (79) agree under both orders.
-- **The orders split.** For an item's own stats, this model's order is far better: it matches 5,820 of 5,842 Intelligence and Mind pieces on Vitality, against 4,639 for xivgear's. Whether sync caps use a different order from item stats is **open**; one second-hand value is not enough to change every Intelligence and Mind Vitality cap.
+| In game | Budget | Cap, factor first | Cap, item order |
+| --- | --- | --- | --- |
+| Blue Mage head (Edenmorn Hat of Casting, 530) at 270: Vitality 56, "Verified in-game by Xi" | 736 | 56 | 57 |
+| Red Mage head at 530: Vitality 123, "600 item synced down gives us 123? tested in game" | 1,603 | 123 | 122 |
+| Azeyma's Earrings (560, kind 0) at 430, Ninja and Sage: main stat 71 | 1,170 | 71 | 70 |
+| the same: Vitality 72, Determination 79, Direct Hit 79 (Ninja), Piety 71 (Sage) | 1,197 / 1,175 | 72 / 79 / 79 / 71 | same |
+| Menphina's Earring (430, kind 0) at 425, Sage: Vitality 72, Mind 69, Determination 78, Piety 70 | 1,193 / 1,150 / 1,160 | 72 / 69 / 78 / 70 | same |
+
+- **Supports question 1.** The main stat and Vitality are clamped, at the cap of the item's kind: 90% of the full accessory value on the kind 0 earrings (78 and 80 at 430), not the full value. A Secondary Attribute counted as Piety is capped at the 90% Piety cap (71), not the substat cap (79).
+- **Settles the cap order.** Every value fits the factor-first cap, $\operatorname{round}(\lfloor \lfloor B \times F/100 \rfloor \times p/100 \rfloor / 10)$; the item order misses three of them by 1 (in game Blue Mage is 1 lower, Red Mage and Azeyma's 1 higher). The model now computes caps factor first ([math.md, section 5](math.md#the-clamp-rule)). The Red Mage value also shows that a cap is not always what a same-slot piece at the cap carries: the native item level 530 head has Vitality 122.
+- **Item stats keep the item order.** For an item's own stats the item order is far better: it matches 5,820 of 5,842 Intelligence and Mind pieces on Vitality, against 4,639 for factor first. For a factor of 100 the two orders give the same number at every item level and slot share, so substat caps (and the Wiki check in section 3) are unaffected.
+- `tests/unit/sync-cap-order.test.js` turns every row of the table into a test case, on the real items where the note names one.
 
 Captures from the game are **the single most valuable evidence the project does not have**. A useful capture is a character sheet screenshot taken under a known sync cap (the duty name, or the cap item level), with the equipped gear listed by name, and ideally the same character unsynced for comparison. One capture with a piece whose second substat is above the cap (for example a 70% substat of 30 or more on a head piece at cap 123) would settle point 2 directly; the main stat and Vitality on the same sheet would settle point 1. Each capture should become a test case with the screenshot's numbers as the expected values.
 
@@ -181,6 +191,6 @@ Captures from the game are **the single most valuable evidence the project does 
 | GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | "Checked against real gear" panel | `src/ui/components/validation-panel.js` |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
-| Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
+| Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |
 | Smoke test | `tests/e2e/smoke.py` |

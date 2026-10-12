@@ -14,14 +14,16 @@ const pld = makeJobContext('PLD');
 const HEAD_CAP_123 = { sub: 29, main: 30 }; // head caps at item level 123 (substat, main stat), docs/math.md
 
 /* Head caps derived here, independently of capsFor / pieceValue: the raw ItemLevel row times the head slot share
-   (85 per mille, BaseParam; the Wiki's item level 475 head cap 112 = round(1314 x 0.085) confirms it), rounded;
-   Vitality for an Int/Mind job is then x 0.9 and rounded again. Only the healer's columns are needed here. */
+   (85 per mille, BaseParam; the Wiki's item level 475 head cap 112 = round(1314 x 0.085) confirms it), rounded.
+   Vitality for an Int/Mind job takes its 90% first: floor(row x 0.9), then floor(x 85 / 100), then / 10 rounded
+   (the cap order of in-game sync values; docs/math.md section 5). Only the healer's columns are needed here. */
 const HEAD_PCT = 85;
 const headCap = (col, ilvl) => Math.round((IL[col][ilvl] * HEAD_PCT) / 1000);
+const headCapFactor = (col, ilvl, f) => Math.round(Math.floor((Math.floor((IL[col][ilvl] * f) / 100) * HEAD_PCT) / 100) / 10);
 function healerHeadCaps(ilvl) {
   return {
     main: headCap('mind', ilvl),
-    vit: Math.round(headCap('vit', ilvl) * 0.9),
+    vit: headCapFactor('vit', ilvl, 90),
     crit: headCap('crit', ilvl),
     det: headCap('det', ilvl),
     dh: headCap('dh', ilvl),
@@ -67,8 +69,10 @@ test('one item level above the cap clamps every stat (head at cap 123: substats 
 });
 
 test('the head piece one item level below its own: capped at the 129 values (from the raw table, not capsFor)', () => {
-  const c = healerHeadCaps(129); // main 32, Vitality 32, substats 31
-  assert.deepEqual([c.main, c.vit, c.spd], [32, 32, 31]);
+  // main 32, Vitality 31 (floor(409 x 0.9) = 368, floor(368 x 0.85) = 312, 31.2 -> 31; the item-stat order gives 32),
+  // substats 31
+  const c = healerHeadCaps(129);
+  assert.deepEqual([c.main, c.vit, c.spd], [32, 31, 31]);
   const out = syncStats(sge, hood, 'head', 129, 130);
   for (const k of Object.keys(hood)) assert.equal(out[k], Math.min(hood[k], c[k]), k);
 });

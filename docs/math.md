@@ -106,7 +106,7 @@ The factor belongs to the **item**, not to the job. The game files hold it: `Bas
 
 Kind 7 is the Gloam and High Allagan "of Striking" sets and the Occult "of Blood" accessories; kind 8 the Occult "of Magic" accessories; kind 9 five item level 150 Serpentskin pieces with Vitality only. Kind 0 is the Lieutenant's, Field Commander's and Warlord's sets, Proto Ultima Mesh (13 pieces with all four main stats) and six earrings and rings with Vitality and Determination only (Halone's, Azeyma's, Bozjan, Menphina's, Aetheryte, Neophyte's). Counts are database pieces.
 
-Every substat (Critical Hit, Determination, Direct Hit, both speeds, Tenacity) is 100% in every column. Piety is 70% or 90% in most columns, but no piece carries Piety in such a column, so it never applies.
+Every substat (Critical Hit, Determination, Direct Hit, both speeds, Tenacity) is 100% in every column. Piety is 70% or 90% in most columns, but no piece carries Piety in such a column, so it never applies to an item's own stats. It does apply to a cap: a Secondary Attribute counts as Piety for a healer ([data-pipeline.md, section 3](data-pipeline.md#3-the-shared-format-definition)), and on a kind 0 earring it is capped at the 90% Piety cap (Azeyma's Earrings at 430: 71 for Sage in game, section 5).
 
 So for a piece with a single main stat the factor is exactly the old job rule: **Vitality × 0.9 on Intelligence and Mind gear, 1 everywhere else**. The difference shows on two kinds of piece. Pieces that carry all four main stats have every main stat and Vitality at 90% (Field Commander's Coat, item level 160 body: $\operatorname{round}(448 \times 135/1000) = 60$, $\times 0.9 = 54$, which is what it carries). And pieces with no main stat at all (the Occult accessories at 745) have the factor of their kind: "of Magic" Vitality 307, "of Blood" 341, from the same budget ($5085 \times 67/1000 = 340.695 \to 341$, $\times 0.9 = 306.9 \to 307$). An Intelligence earring every job can wear (Alexandrian Earrings of Casting) still has Vitality × 0.9, because the factor goes with the item.
 
@@ -160,13 +160,29 @@ Every value matches the real piece. The Vitality line also shows the half-up rul
 
 ### The clamp rule
 
-Let $C$ be the sync cap. Each piece has a **cap value** for each stat: the full-share value that stat would have on a piece of the same slot and the same kind at item level $C$, with the piece's own stat factor $f_s$ (section 4):
+Let $C$ be the sync cap. Each piece has a **cap value** for each stat, computed from budget row $C$, the piece's slot share $p$ (‰) and its stat factor $F_s$ in percent (section 4; $F_s = 100 f_s$). The factor comes first and each step is floored; only the last step rounds:
 
 $$
-\text{cap}_s(C) = \operatorname{round}\big(B_s(C) \times f_s\big)
+\text{cap}_s(C) = \operatorname{round}\!\left(\frac{1}{10}\left\lfloor \frac{\lfloor \text{budget}_s(C) \times F_s / 100 \rfloor \times p}{100} \right\rfloor\right)
 $$
 
-For a real piece $f_s$ is the piece's own factor. For the Sync caps table and Piece stats, which have no item behind them, it is the job's (Vitality 0.9 for Intelligence/Mind jobs). The two differ only for the 13 pieces with all four main stats: synced to 123, Field Commander's Coat (item level 160, body) is capped at main stat 43 and Vitality 46 ($\operatorname{round}(48 \times 0.9)$, $\operatorname{round}(51 \times 0.9)$) for every job, where the job rule gave a Warrior 48 and 51.
+**This is not the order of an item's own stats.** A piece's stats round the slot budget first and apply the factor after (section 4), and that order is the right one for items: it fits 5,820 of 5,842 Intelligence and Mind pieces on Vitality, the factor-first order 4,639. Caps follow the factor-first order because the game's sync values do (below).
+
+**With $F_s = 100$ the two orders give the same number**, so every cap of a stat without a factor (all substats, the main stat on single-main-stat gear, Vitality on Strength and Dexterity gear) is the full-share value of a piece of the same slot at item level $C$, $B_s(C)$. Write $x = \text{budget}_s(C) \times p / 100$. Then $\lfloor x \rfloor / 10$ is a multiple of 0.1 at most 0.1 below $x / 10$, so no rounding threshold ($k + 0.5$) lies between them, and $\operatorname{round}(\lfloor x \rfloor / 10) = \operatorname{round}(x / 10) = B_s(C)$. A unit test checks this at every item level 1 to 795 for every slot share and the off-hand.
+
+**With a factor below 100 the orders differ**, and the cap can be 1 above or 1 below what a same-slot piece of the same kind carries at $C$. For Intelligence and Mind Vitality (factor 90) that happens in 1,159 of 4,770 item level and slot combinations (item levels 1 to 795; head, body, accessory, two-handed and one-handed weapon, off-hand): 405 times 1 higher, 754 times 1 lower. The same holds for the main stat, Vitality and Piety (factor 90) of the kind 0 pieces (all four main stats, and the pre-order earrings): about one item level in four per slot changes.
+
+For a real piece $F_s$ is the piece's own factor. For the Sync caps table and Piece stats, which have no item behind them, it is the job's (Vitality 90 for Intelligence/Mind jobs). The two differ only for the kind 0 pieces: synced to 123, Field Commander's Coat (item level 160, body) is capped at main stat 43 and Vitality 45 ($\lfloor 355 \times 0.9 \rfloor = 319$, $\lfloor 319 \times 1.35 \rfloor = 430$, $43.0 \to 43$; $\lfloor 375 \times 0.9 \rfloor = 337$, $\lfloor 337 \times 1.35 \rfloor = 454$, $45.4 \to 45$) for every job, where the job rule gives a Warrior 48 and 51.
+
+**Evidence for the cap order: three in-game values, second-hand.** xivgear computes caps this way (`statCapWithJob`, [xivmath.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/xivmath.ts#L647-L649)), and its tests quote values seen in game. This project has not captured them itself:
+
+| In-game value (xivgear test note) | Budget | Factor-first cap | Item-stat order |
+| --- | --- | --- | --- |
+| Blue Mage head at 270, Vitality 56 ("Verified in-game by Xi") | 736 | $\lfloor 662 \times 0.85 \rfloor = 562 \to$ **56** | $\operatorname{round}(62.56) = 63$, $\times 0.9 \to 57$ |
+| Red Mage head at 530, Vitality 123 ("tested in game") | 1,603 | $\lfloor 1442 \times 0.85 \rfloor = 1225 \to$ **123** | $\operatorname{round}(136.26) = 136$, $\times 0.9 \to 122$ |
+| Azeyma's Earrings at 430, main stat 71 (Ninja and Sage) | 1,170 | $\lfloor 1053 \times 0.67 \rfloor = 705 \to$ **71** | $\operatorname{round}(78.39) = 78$, $\times 0.9 \to 70$ |
+
+The same notes give the rest of the Azeyma's sheet (Vitality 72, Determination 79, Direct Hit 79 for Ninja, Piety 71 for Sage) and Menphina's Earring at 425 for Sage (Vitality 72, Mind 69, Determination 78, Piety 70); both orders give all of those. The Red Mage value is the clearest: a piece synced to 530 keeps Vitality 123, one more than the native item level 530 head carries (Edenmorn Hat of Casting, 122), so a cap is not always what a same-slot piece at the cap carries. **Verified** by three second-hand in-game values; for the other factor-below-100 caps the order is **inferred** from them.
 
 Then, for a piece at item level $i$:
 
@@ -184,14 +200,14 @@ Pieces at or below the cap are untouched. Above the cap, each stat is cut down t
 
 ### Caps at item level 123
 
-Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375.
+Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375. The Intelligence/Mind Vitality column takes the 90% factor first (the clamp rule above): $\lfloor 375 \times 0.9 \rfloor = 337$, then body $\lfloor 337 \times 1.35 \rfloor = 454 \to 45$ and two-handed weapon $\lfloor 337 \times 1.40 \rfloor = 471 \to 47$, one below what a native piece of the slot carries ($\operatorname{round}(51 \times 0.9) = 46$, $\operatorname{round}(53 \times 0.9) = 48$). Head and accessories come out the same either way.
 
 | Slot | Substat cap | Main-stat cap | Vitality cap (Str/Dex) | Vitality cap (Int/Mind) |
 | --- | --- | --- | --- | --- |
 | Head, hands, feet | 29 | 30 | 32 | 29 |
-| Body, legs | 47 | 48 | 51 | 46 |
+| Body, legs | 47 | 48 | 51 | 45 |
 | Earring, necklace, bracelet, ring | 23 | 24 | 25 | 23 |
-| Two-handed weapon | 48 | 50 | 53 | 48 |
+| Two-handed weapon | 48 | 50 | 53 | 47 |
 | One-handed weapon (Paladin) | 35 | 36 | 38 | – |
 | Shield (Paladin) | 13 | 14 | 15 | – |
 
@@ -207,7 +223,7 @@ The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The 
 
 ### What is assumed
 
-- **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor (so a piece's cap is what a piece of its kind would carry at the cap). *Inferred*, and so is using the piece's factor rather than the job's; xivgear also takes the factor from the item (its caps use the item's `BaseParamModifier`). The Wiki table covers substats only, and this has not been confirmed in game. xivgear does the same: its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece to its cap, main stats and Vitality included, and exempts only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). That is agreement with the most used community gear planner, not in-game evidence. Its caps match this page's for main stats and substats at every item level and slot; for Intelligence and Mind Vitality it applies the 90% before the slot share, which gives a cap 1 lower than this page's in 1,089 of 4,770 item level and slot combinations. Which order the game uses for caps is not known (for item stats, this page's order is right; see section 4).
+- **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor. The Wiki table covers substats only. The three second-hand in-game values above (Vitality 56 and 123, main stat 71 on a kind 0 earring, with its kind's 90%) support it; this project has no capture of its own, so it stays *inferred* in general, and so does using the piece's factor rather than the job's (xivgear also takes the factor from the item: its caps use the item's `BaseParamModifier`). xivgear clamps the same way: its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece to its cap, main stats and Vitality included, and exempts only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). With the factor-first order, its cap formula (`statCapWithJob`) and this page's are the same.
 - **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). *Inferred.* The model uses the full-share cap because the Wiki table lists a single cap per slot. No in-game capture confirms it for lower shares.
 - **Melds** (materia added to gear) are ignored on synced-down pieces: a piece is synced, and its materia stops counting, when its item level is above the duty's item level cap (with item level sync on) or its equip level is above the duty's level. **Verified** by the owner in game. The page models no melds at all, so this only matters for a future materia tab.
 - **No scaling up**: sync never raises a stat. *Assumed.*
@@ -281,14 +297,15 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Slot shares 140/100/40/85/135/67 | Verified | `BaseParam.csv`, all 12 stats |
 | Two roundings, half up | Verified | 99.8% exact vs 80.0% with one rounding |
 | Per-item stat factor (Vitality × 0.9 on Int/Mind gear, every main stat × 0.9 on four-main-stat gear) | Verified | Read from the game files (`BaseParam.MeldParam`, column `Item.BaseParamModifier`); reproduces real items, the 13 four-main-stat pieces included |
-| Rounding order: slot value first, then the factor | Verified (real items) | Factor first is wrong on 1,199 Int/Mind pieces |
+| Rounding order of item stats: slot value first, then the factor | Verified (real items) | Factor first is wrong on 1,199 Int/Mind pieces |
+| Rounding order of sync caps: factor first, floored, rounded once | Verified (three second-hand in-game values); inferred in general | Vitality 56 (Blue Mage head, 270), 123 (Red Mage head, 530), main stat 71 (Azeyma's Earrings, 430), from xivgear's tests; the item order gives 57, 122, 70. Same as the item order when the factor is 100 |
 | Job's factor where no item is involved | Verified (game files) | Equals the item factor on every single-main-stat piece of each job |
-| Sync cap uses the piece's own factor | Inferred | xivgear does the same; no in-game capture |
+| Sync cap uses the piece's own factor | Inferred (supported second-hand) | Azeyma's Earrings (kind 0) synced to 430 show main stat 71 for Ninja in game (xivgear's test note), the 90% cap of its kind, not the job's 78; xivgear does the same; no capture of this project's own |
 | Substat shares 100% / 70% / 20% by rank (equal substats share a rank) | Inferred (measured pattern) | 98.7–100.0% exact per item level band ([validation.md](validation.md)); not in game files |
 | Off-hand = two-handed value − one-handed value | Inferred (fits data) | 224 of 226 real off-hands, against 195 for the 40 ‰ share; xivgear uses the same rule for shield caps; sets the shield cap at 123 to 13 |
-| Sync clamps each stat to the full-share same-slot value at the cap | Verified for substats | Wiki caps at 475, 5 of 5 |
-| Caps at 123 (29 / 47 / 23 / 48; main stat 30 / 48 / 24 / 50) | Derived | No gear exists at item level 123; row 123 × slot share, the same rule real pieces at 120 and 125 follow in every slot |
-| Same clamp applies to main stat and Vitality | Inferred | No in-game capture; xivgear clamps them too (its Int/Mind Vitality cap rounds differently, 1 lower in 1,089 of 4,770 item level and slot combinations) |
+| Sync clamps each stat to its cap at the cap item level (for a factor of 100, the full-share same-slot value) | Verified for substats | Wiki caps at 475, 5 of 5 |
+| Caps at 123 (29 / 47 / 23 / 48; main stat 30 / 48 / 24 / 50; Int/Mind Vitality 29 / 45 / 23 / 47) | Derived | No gear exists at item level 123; row 123 × slot share, the same rule real pieces at 120 and 125 follow in every slot |
+| Same clamp applies to main stat and Vitality | Inferred (supported second-hand) | The three in-game values above; no capture of this project's own; xivgear clamps them too |
 | Lower-ranked substats clamp against the full-share cap | Inferred | Consistent with Wiki's single cap per slot; no capture |
 | Melds ignored on synced-down pieces | Verified (owner, in game) | Item level above the duty's cap, or equip level above the duty's level |
 | No scaling up under sync | Assumed | – |
@@ -304,7 +321,7 @@ Verification status: the formulas are a community reference, not game files. Whi
 | Slot shares, substat shares, role profiles | `src/core/constants.js` |
 | Per-job stat mapping, the job's Vitality factor, weapon mode | `src/core/job-context.js` |
 | An item's stat factors (from its kind) | `src/core/items.js` |
-| Rounding, slot budget, piece stats, caps, sync clamp, step-by-step derivation | `src/core/formulas.js` |
+| Rounding, slot budget, piece stats, caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation | `src/core/formulas.js` |
 | GCD, tick multiplier, GCD tiers | `src/core/speed.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
-| Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |
+| Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |

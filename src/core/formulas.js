@@ -76,13 +76,32 @@ export function buildPiece(job, ilvl, type, subs) {
   return st;
 }
 
-/* Per-stat ceiling under sync: the 100%-share value of a same-slot piece of the same kind at the cap item level.
-   `pct`: the piece's own slot share, if not the job's share for the type. `factors`: the piece's own stat factors
+/* The sync cap of one stat for a slot at the cap item level, rounded in a different order from an item's own stats:
+   the stat factor first, then the slot share, flooring both and rounding once at the end,
+   round(floor(floor(B x f) x pct / 100) / 10) with f in percent and pct in thousandths. An item's own stats
+   (slotBudget, pieceValue) round the slot share first and then apply the factor, which fits real items far better. The
+   cap order reproduces three in-game sync values quoted second-hand in xivgear's tests: Vitality 56 on a Blue Mage head
+   at item level 270, Vitality 123 on a Red Mage head at 530 (the native 530 head carries 122) and main stat 71 on
+   Azeyma's Earrings at 430 (docs/math.md, section 5). For a factor of 1 both orders give the same number. `pct` and
+   `factor` as in slotBudget; an off-hand is the two-handed cap minus the one-handed cap (isOffhand). */
+export function capValue(job, stat, ilvl, type, pct, factor = null) {
+  if (isOffhand(type, pct)) {
+    const two = capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['2h'], factor);
+    return two - capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['1h+oh'], factor);
+  }
+  const base = statColumn(job, stat)[clampIlvl(ilvl)];
+  const f = Math.round((factor ?? jobFactor(job, stat)) * 100);
+  const share = pct ?? job.slotPct[type];
+  return rnd(Math.floor((Math.floor((base * f) / 100) * share) / 100) / 10);
+}
+
+/* Per-stat ceiling under sync: each stat's capValue for the piece's slot and kind at the cap item level. `pct`: the
+   piece's own slot share, if not the job's share for the type. `factors`: the piece's own stat factors
    ({neutral stat: factor}, kindFactors in items.js) for a real item; null for the job's (jobFactor). */
 export function capsFor(job, type, capIlvl, pct, factors = null) {
   const c = {};
   ALL_STATS.forEach(s => {
-    c[s] = s === 'spec' && !job.profile.spec ? 0 : pieceValue(job, s, capIlvl, type, 100, pct, factors?.[s]);
+    c[s] = s === 'spec' && !job.profile.spec ? 0 : capValue(job, s, capIlvl, type, pct, factors?.[s]);
   });
   return c;
 }

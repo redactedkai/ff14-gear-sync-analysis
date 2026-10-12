@@ -103,17 +103,18 @@ test('an Intelligence accessory every job can wear still has Vitality x 0.9', ()
 });
 
 test("sync: a real piece is capped by its own factors; a piece with no item behind it by the job's", () => {
-  // cap 123, body (135): main row 355 -> 47.925 -> 48, x 0.9 = 43.2 -> 43; Vitality 375 -> 50.625 -> 51, x 0.9 = 45.9 -> 46
+  // cap 123, body (135), caps take the factor first (docs/math.md section 5): main floor(355 x 0.9) = 319,
+  // floor(319 x 1.35) = 430, 43.0 -> 43; Vitality floor(375 x 0.9) = 337, floor(337 x 1.35) = 454, 45.4 -> 45
   const war = makeJobContext('WAR'),
     sge = makeJobContext('SGE');
   const sync = { cap: 123, sync: true };
   const [coatWar] = browseItems(war, { q: "Field Commander's Coat" }).map(p => poolItemFromRow(war, p));
-  assert.deepEqual([effStats(war, coatWar, sync).main, effStats(war, coatWar, sync).vit], [43, 46]);
+  assert.deepEqual([effStats(war, coatWar, sync).main, effStats(war, coatWar, sync).vit], [43, 45]);
   const [coatSge] = browseItems(sge, { q: "Field Commander's Coat" }).map(p => poolItemFromRow(sge, p));
-  assert.deepEqual([effStats(sge, coatSge, sync).main, effStats(sge, coatSge, sync).vit], [43, 46]);
-  // the same stats as a hand-made piece (no database row): the job's caps, main 48, Vitality 51 / 46
+  assert.deepEqual([effStats(sge, coatSge, sync).main, effStats(sge, coatSge, sync).vit], [43, 45]);
+  // the same stats as a hand-made piece (no database row): the job's caps, main 48, Vitality 51 / 45
   assert.deepEqual([capsFor(war, 'body', 123).main, capsFor(war, 'body', 123).vit], [48, 51]);
-  assert.deepEqual([capsFor(sge, 'body', 123).main, capsFor(sge, 'body', 123).vit], [48, 46]);
+  assert.deepEqual([capsFor(sge, 'body', 123).main, capsFor(sge, 'body', 123).vit], [48, 45]);
   const handMade = { ...coatWar, src: 'custom' };
   assert.equal(effStats(war, handMade, sync).main, 48);
   // the gear browser shows the same synced values as the optimizer uses
@@ -121,7 +122,7 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   app.browse = { ...app.browse, q: "Field Commander's Coat" };
   const v = gearView(app);
   assert.equal(v.all.length, 1);
-  assert.deepEqual([v.all[0].eff.main, v.all[0].eff.vit], [43, 46]);
+  assert.deepEqual([v.all[0].eff.main, v.all[0].eff.vit], [43, 45]);
   // a piece of the job's own kind is unchanged by the switch: same caps as before
   const helm = ITEMS.find(r => r[1] === 3 && r[2] === 130 && r[9] === 6);
   const p = browseItems(sge, { q: helm[0], ilvlMin: 130, ilvlMax: 130 }).find(x => x.slotCode === 3);
