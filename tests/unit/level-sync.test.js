@@ -14,7 +14,7 @@ import { restoreState } from '../../src/ui/state.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
-import { ceilingView, optimizerView } from '../../src/ui/views/optimizer.js';
+import { optimizerView } from '../../src/ui/views/optimizer.js';
 
 const sge = makeJobContext('SGE');
 const ROWS = ITEMS.map(parseRow);
@@ -173,7 +173,7 @@ test('views: level sync with item level sync off shows the level item level as t
   assert.equal(syncView(makeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
 });
 
-test('views: the gear browser, the optimizer and the ceiling apply level sync per piece', () => {
+test('views: the gear browser and the optimizer apply level sync per piece', () => {
   const app = makeApp({ sync: false, cap: null, level: 90 });
   Object.assign(app.browse, { show: 'all', q: '', type: 'head', min: 780, max: '', lvl: 100 });
   const g = gearView(app);
@@ -187,12 +187,7 @@ test('views: the gear browser, the optimizer and the ceiling apply level sync pe
   assert.equal(o.kind, 'ok');
   assert.equal(o.synced, true);
   assert.equal(o.total, exhaustive(sge, app.pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
-  const c = ceilingView(app);
-  assert.equal(c.label, 'level 90');
-  const k = sge.stats.indexOf('main');
-  assert.equal(c.synced[k], String(exhaustive(sge, app.pool, sync, { target: 'main' })[0]));
-  assert.equal(c.unsynced[k], String(exhaustive(sge, app.pool, { cap: null, sync: false, level: 100 }, { target: 'main' })[0]));
-  // a pool no piece of which is synced at this level has no synced ceiling row
+  // a pool no piece of which is synced at this level is not marked synced
   app.pool = gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 });
-  assert.equal(ceilingView(app).synced, null);
+  assert.equal(optimizerView(app).synced, false);
 });

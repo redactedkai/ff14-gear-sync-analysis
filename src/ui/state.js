@@ -54,8 +54,9 @@ export function defaultState() {
     mathTab: 'piece',
     syncIlvl: 475,
     piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
-    browse: { show: 'all', q: '', type: 'any', expOff: [], min: '', max: '', lvl: 100, sort: 'ilvl' }, // expOff: expansions switched off
-    opt: { target: 'main', tb: '', tb2: '', exclude: [], melds: true }, // exclude: SOURCES keys switched off (left out of the search); every group is included by default. melds: give pieces their best materia melds
+    // expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the gear table and the search
+    browse: { show: 'all', q: '', type: 'any', expOff: [], exclude: [], min: '', max: '', lvl: 100, sort: 'ilvl' },
+    opt: { target: 'main', tb: '', tb2: '', melds: true }, // melds: give pieces their best materia melds
     pool: [],
   };
 }
@@ -175,6 +176,7 @@ export function restoreState(raw) {
   s.browse.show = oneOf(b.show, ['all', 'pool'], s.browse.show);
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
   s.browse.expOff = Array.isArray(b.expOff) ? EXPANSIONS.map(e => e[0]).filter(k => b.expOff.includes(k)) : [];
+  s.browse.exclude = Array.isArray(b.exclude) ? SOURCES.map(x => x.key).filter(k => b.exclude.includes(k)) : [];
   s.browse.min = optIntIn(b.min, 0, MAX_REAL, s.browse.min);
   s.browse.max = optIntIn(b.max, 0, MAX_REAL, s.browse.max);
   s.browse.lvl = optIntIn(b.lvl, 1, 100, s.browse.lvl);
@@ -184,7 +186,6 @@ export function restoreState(raw) {
   s.opt.target = oneOf(o.target, job.stats, s.opt.target);
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
-  s.opt.exclude = Array.isArray(o.exclude) ? SOURCES.map(x => x.key).filter(k => o.exclude.includes(k)) : [];
   s.opt.melds = bool(o.melds, s.opt.melds);
 
   s.pool = restorePool(r.pool);

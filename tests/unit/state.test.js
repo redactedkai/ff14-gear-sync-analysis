@@ -39,8 +39,18 @@ function validSave() {
     mathTab: 'sync',
     syncIlvl: 400,
     piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'spec'] },
-    browse: { show: 'pool', q: 'Robe', type: 'body', expOff: ['ARR', 'SB'], min: 110, max: 140, lvl: 50, sort: 'spd' },
-    opt: { target: 'spec', tb: '', tb2: 'crit', exclude: ['tomestone', 'ultimate'], melds: false },
+    browse: {
+      show: 'pool',
+      q: 'Robe',
+      type: 'body',
+      expOff: ['ARR', 'SB'],
+      exclude: ['tomestone', 'ultimate'],
+      min: 110,
+      max: 140,
+      lvl: 50,
+      sort: 'spd',
+    },
+    opt: { target: 'spec', tb: '', tb2: 'crit', melds: false },
     pool: [
       item(),
       item({ id: 'i2', name: 'Some head', type: 'head', ilvl: 135, stats: stats({ main: 30, spd: 29 }), copies: 1 }),
@@ -168,9 +178,9 @@ test('opt fields', () => {
   expectFieldDefault('opt.tb', 'nope', D.opt.tb);
   expectFieldDefault('opt.tb', null, D.opt.tb);
   expectFieldDefault('opt.tb2', 3, D.opt.tb2);
-  assert.deepEqual(D.opt.exclude, []); // every source searched
-  expectFieldDefault('opt.exclude', 'ultimate', []);
-  expectFieldDefault('opt.exclude', ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
+  assert.deepEqual(D.browse.exclude, []); // no group excluded
+  expectFieldDefault('browse.exclude', 'ultimate', []);
+  expectFieldDefault('browse.exclude', ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
   assert.equal(D.opt.melds, true); // melds on by default
   expectFieldDefault('opt.melds', 'yes', true);
   expectFieldDefault('opt.melds', null, true);

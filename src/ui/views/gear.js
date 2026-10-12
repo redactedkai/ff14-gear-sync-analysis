@@ -1,8 +1,9 @@
 /* Gear: one table for browsing the item database and for the pool the optimizer searches.
    `browse.show` picks the list: 'all' = database rows matching the filters, 'pool' = pool items matching them.
+   Gear in an excluded group (`browse.exclude`) is left out of both lists and of the optimizer's search.
    Pure view builder: no Alpine import, so Node can load and test it. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { browseItems, dbStats, kindFactors, poolKey, slotInfo, slotLabel } from '../../core/items.js';
+import { browseItems, dbStats, kindFactors, poolKey, slotInfo, slotLabel, sourcesMask, withoutSources } from '../../core/items.js';
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { effStats } from '../../core/optimizer/index.js';
@@ -23,13 +24,14 @@ function byOrder(sort) {
   };
 }
 
-/* Pool items matching the browse filters (name, slot, item level range; pool items carry no equip level). */
+/* Pool items matching the browse filters (name, slot, item level range, excluded groups; pool items carry no equip
+   level). */
 function poolMatches(app) {
   const b = app.browse,
     q = (b.q || '').trim().toLowerCase(),
     lo = +b.min || 0,
     hi = +b.max || 0;
-  return app.pool.filter(
+  return withoutSources(app.pool, b.exclude || []).filter(
     i =>
       (!q || i.name.toLowerCase().includes(q)) && (b.type === 'any' || i.type === b.type) && (!lo || i.ilvl >= lo) && (!hi || i.ilvl <= hi),
   );
@@ -65,7 +67,8 @@ export function gearView(app) {
       ilvlMax: +b.max || 0,
       lvlMax: +b.lvl || 0,
     });
-    all = rows.map(r => {
+    const mask = sourcesMask(b.exclude || []);
+    all = (mask ? rows.filter(r => !(r.sources & mask)) : rows).map(r => {
       const raw = dbStats(job, r.st);
       const target = syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, syncOn: sync.sync, cap: sync.cap, syncedLevel: sync.level });
       return {
@@ -92,6 +95,7 @@ export function gearView(app) {
     cells: job.stats.map(s => statCell(x.raw[s], x.eff[s])),
   }));
   const n = all.length;
+  const excluded = app.pool.length - withoutSources(app.pool, b.exclude || []).length;
   return Object.freeze({
     showPool,
     all: Object.freeze(all),
@@ -99,7 +103,8 @@ export function gearView(app) {
     countText: showPool
       ? `${fmtInt(app.pool.length)} items · ` +
         job.activeSlotTypes.map(t => `${SLOT_LABEL[t]} ${app.pool.filter(i => i.type === t).length}`).join(' · ') +
-        (n < app.pool.length ? ` · ${fmtInt(n)} match the filters` : '')
+        (excluded ? ` · ${fmtInt(excluded)} in excluded groups, not searched` : '') +
+        (n < app.pool.length - excluded ? ` · ${fmtInt(n)} match the filters` : '')
       : n
         ? `${fmtInt(n)} matches${n > limit ? `, showing the first ${limit}` : ''}`
         : 'No matches',

@@ -207,6 +207,12 @@
         <template x-for="o in sortOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.sort"></option></template>
       </select></label>
     </div>
+    <div class="row exclude" id="b-exclude" role="group" aria-labelledby="b-exclude-label">
+      <span class="dim small" id="b-exclude-label">Exclude</span>
+      <template x-for="s in sources" :key="s.key">
+        <label class="toggle"><input type="checkbox" :data-source="s.key" :checked="excluded(s.key)" @change="setExcluded(s.key, $event.target.checked)"><span x-text="s.label"></span></label>
+      </template>
+    </div>
     <div class="row">
       <span class="small dim" id="b-count">
         <template x-if="!notice"><span x-text="view ? view.countText : ''"></span></template>
@@ -252,16 +258,12 @@
           <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
         </select></label>
       </div>
-      <div class="row exclude" id="o-exclude">
-        <span class="dim small">Include</span>
-        <template x-for="s in sources" :key="s.key">
-          <label class="toggle"><input type="checkbox" role="switch" class="switch" :data-source="s.key" :checked="!excluded(s.key)" @change="setExcluded(s.key, !$event.target.checked)"><span x-text="s.label"></span></label>
-        </template>
-        <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Melds</span></label>
+      <div class="row exclude">
+        <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Materia</span></label>
       </div>
     </div>
     <div id="o-out">
-      <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">Every piece in the pool is in a group you switched off.</div></div></template>
+      <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">Every piece in the pool is in an excluded group (Gear pool tab).</div></div></template>
       <template x-if="view && view.kind === 'empty'"><div class="panel"><div class="empty">Add gear to the pool first.<div class="row" style="justify-content:center;margin-top:10px"><button class="primary" data-act="browse" type="button" @click="$store.app.showTab('pool')">Browse gear</button></div></div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this pool.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Narrow the pool and try again.</div></div></template>
@@ -284,31 +286,15 @@
               </tr>
             </template>
             <tr class="total"><td>Total</td><td></td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
-            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim">gear only, no food</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" x-text="c ? c.effect : ''"></td></template></tr>
-            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n small" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim">gear only, no food</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
+            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n small" :class="{ dim: c && c.zero }" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Narrow the pool.</div></template>
         <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. Gear only: food would move every total.</p>
-        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Melds: the best stones each piece's item level allows, every slot filled and every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
+        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, every slot filled and every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>
-  </div>
-  <div id="o-ceil" x-data="ceiling">
-    <template x-if="view && view.error"><div class="panel"><h3>Ceiling per stat from this pool</h3><p class="small bad" x-text="view.error"></p></div></template>
-    <template x-if="view && !view.error"><div class="panel">
-      <h3>Ceiling per stat from this pool</h3>
-      <p class="small dim">The most of each stat the pool can give on its own<span x-show="view.melds">, with melds</span>.<span x-show="view.synced"> “Unsynced” drops all sync.</span></p>
-      <div class="tablewrap"><table>
-        <thead><tr><th></th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
-        <tbody>
-          <template x-if="view.synced"><tr><td x-text="'Synced to ' + view.label"></td><template x-for="(v, k) in view.synced" :key="k"><td class="n" x-text="v"></td></template></tr></template>
-          <tr><td>Unsynced</td><template x-for="(v, k) in view.unsynced" :key="k"><td class="n" :class="{ dim: view.synced }" x-text="v"></td></template></tr>
-          <tr class="total"><td x-text="view.synced ? 'GCD at synced ceiling' : 'GCD at ceiling'"></td><template x-for="(h, k) in view.headers" :key="k"><td :class="k === view.spdIdx ? 'n' : ''" x-text="k === view.spdIdx ? view.gcd : ''"></td></template></tr>
-        </tbody>
-      </table></div>
-      <template x-if="view.truncated"><p class="small dim">≥ marks a search that hit its step limit: the true maximum may be higher.</p></template>
-    </div></template>
   </div>
 </section>
 </div></template>

@@ -9,7 +9,7 @@ import { pieceLab } from './ui/components/piece-lab.js';
 import { syncCaps } from './ui/components/sync-caps.js';
 import { validationPanel } from './ui/components/validation-panel.js';
 import { gear } from './ui/components/gear.js';
-import { optimizer, ceiling } from './ui/components/optimizer.js';
+import { optimizer } from './ui/components/optimizer.js';
 
 const SAVE_DEBOUNCE_MS = 150;
 
@@ -19,7 +19,7 @@ const app = Alpine.store('app');
 /* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only */
 Alpine.magic('num', () => (path, lo, hi) => storeNumberField(app, path, lo, hi));
 
-Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, gear, optimizer, ceiling }).forEach(([name, factory]) => {
+Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, gear, optimizer }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });
 

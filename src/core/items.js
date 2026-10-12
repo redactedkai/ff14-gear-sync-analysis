@@ -202,9 +202,14 @@ export function slotLabel(type, blocks) {
   return [SLOT_LABEL[type], ...blocks.filter(t => t !== 'offhand').map(t => SLOT_LABEL[t])].join(' + ');
 }
 
+/* The source bit mask of a list of SOURCES keys. */
+export function sourcesMask(keys) {
+  return SOURCES.filter(s => keys.includes(s.key)).reduce((m, s) => m | s.bit, 0);
+}
+
 /* The pool without items from any excluded source (a list of SOURCES keys). */
 export function withoutSources(pool, exclude) {
-  const mask = SOURCES.filter(s => exclude.includes(s.key)).reduce((m, s) => m | s.bit, 0);
+  const mask = sourcesMask(exclude);
   return mask ? pool.filter(i => !(sourceMask(i) & mask)) : pool;
 }
 

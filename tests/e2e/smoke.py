@@ -305,8 +305,6 @@ def check_real_gear_optimizer(pg):
         except AssertionError:
             check(False, f'{job} unsynced {speed} {total.inner_text()!r}, expected {want["unsynced"][0]}')
         pg.locator('#sync').check()
-        # the ceiling table renders for a non-empty pool
-        expect(pg.locator('#o-ceil table')).to_be_visible()
 
 
 def check_job_switch_clears_pool(pg):
@@ -433,8 +431,8 @@ console.log(JSON.stringify({ count: pool.length, all: best([]), crafted: best(['
 
 
 def check_exclude_sources(pg):
-    """Switching crafted gear off changes the optimizer total to what the core computes without it; the choice is
-    saved. Every group is switched on by default."""
+    """Excluding crafted gear in the Gear pool tab changes the optimizer total to what the core computes without it
+    and hides it from the pool list; the choice is saved. No group is excluded by default."""
     job, lo, hi, lvl = EXCLUDE_POOL
     want = run_node(NODE_EXCLUDE, [job, lo, hi, lvl])
     if not check(
@@ -453,13 +451,18 @@ def check_exclude_sources(pg):
         pg.locator('#sync').uncheck()
     set_number(pg, '#level', str(lvl))  # unsynced: at a lower level, level sync would cap the window's gear
     pg.select_option('#o-target', 'main')
-    crafted = pg.locator('#o-exclude input[data-source="crafted"]')
-    check(crafted.is_checked(), 'crafted gear is included by default')
     expect(opt_total(pg)).to_have_text(str(want['all']))
-    crafted.uncheck()
-    expect(opt_total(pg)).to_have_text(str(want['crafted']))
-    wait_saved(pg, "s => s.opt.exclude.join() === 'crafted'")
+    show_tab(pg, 'pool')
+    crafted = pg.locator('#b-exclude input[data-source="crafted"]')
+    check(not crafted.is_checked(), 'crafted gear is not excluded by default')
     crafted.check()
+    wait_saved(pg, "s => s.browse.exclude.join() === 'crafted'")
+    expect(pg.locator('#b-count')).to_contain_text('in excluded groups, not searched')
+    wait_optimizer(pg)
+    expect(opt_total(pg)).to_have_text(str(want['crafted']))
+    show_tab(pg, 'pool')
+    crafted.uncheck()
+    wait_optimizer(pg)
     expect(opt_total(pg)).to_have_text(str(want['all']))
     pg.locator('#sync').check()
     set_number(pg, '#level', '50')
@@ -774,8 +777,8 @@ HEAD_SUB_CAP_660 = '184'
 
 
 def check_level_sync(pg):
-    """Synced level 90 with item level sync off, at 400 px: the gear table shows the level-synced value, the ceiling
-    has a 'Synced to level 90' row, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll."""
+    """Synced level 90 with item level sync off, at 400 px: the gear table shows the level-synced value, the optimizer
+    total is marked synced, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll."""
     pg.set_viewport_size({'width': 400, 'height': 800})
     set_job(pg, 'SGE')
     pg.locator('#sync').uncheck()
@@ -788,7 +791,7 @@ def check_level_sync(pg):
     check_no_bad_text(pg, 'level sync/pool')
     row.locator('input[type=checkbox]').check()
     wait_optimizer(pg)
-    expect(pg.locator('#o-ceil')).to_contain_text('Synced to level 90')
+    expect(pg.locator('#o-out .readout')).to_contain_text('synced')
     expect(opt_total(pg)).not_to_have_text('')
     check_no_bad_text(pg, 'level sync/opt')
     show_math(pg, 'sync')

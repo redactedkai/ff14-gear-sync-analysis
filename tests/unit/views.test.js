@@ -3,11 +3,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { MAX_REAL } from '../../src/core/tables.js';
-import { browseItems, poolItemFromRow, mkItem } from '../../src/core/items.js';
+import { browseItems, mkItem } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { gcdFor, gcdTierAt } from '../../src/core/speed.js';
 import { restoreState } from '../../src/ui/state.js';
-import { optimizerView, ceilingView, tierText } from '../../src/ui/views/optimizer.js';
+import { optimizerView, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
@@ -100,33 +100,6 @@ test('A5: optimizer errors become an error view instead of throwing', () => {
   assert.match(v.message, /too large/);
 });
 
-test('ceiling view: per-stat maxima, synced vs unsynced, equal brute force', () => {
-  const app = makeApp('WAR', { cap: 123 }); // below the 125-135 window, so sync bites
-  app.pool = windowPool(app.jobCtx);
-  const job = app.jobCtx;
-  const v = ceilingView(app);
-  assert.equal(v.truncated, false);
-  job.stats.forEach((s, k) => {
-    assert.equal(v.synced[k], String(exhaustive(job, app.pool, { cap: app.cap, sync: true }, { target: s })[0]), s);
-    assert.equal(v.unsynced[k], String(exhaustive(job, app.pool, { cap: app.cap, sync: false }, { target: s })[0]), s);
-  });
-  const spd = v.headers.indexOf('SkS');
-  assert.ok(+v.synced[spd] < +v.unsynced[spd]);
-});
-
-/* No real pool hits the page's ceiling limit since the ring-pair bound (Ninja 600-640 needed over 150,000 steps before
-   it), so the limit is lowered to force a truncated run. */
-test('A7: a ceiling search that hits its step limit is marked as a lower bound', () => {
-  const app = makeApp('NIN');
-  app.pool = browseItems(app.jobCtx, { q: '', type: 'any', ilvlMin: 600, ilvlMax: 640, lvlMax: 100 }).map(r =>
-    poolItemFromRow(app.jobCtx, r),
-  );
-  assert.equal(ceilingView(app).truncated, false);
-  const v = ceilingView(app, 20);
-  assert.equal(v.truncated, true);
-  assert.ok([...v.synced, ...v.unsynced].some(t => t.startsWith('≥ ')));
-});
-
 test('sync caps view at 123: substat ceiling 296 over ten slots, 2.22 s GCD at level 50', () => {
   const v = syncView(makeApp('SGE', { cap: 123, level: 50 }));
   assert.equal(v.tot.c, 296);
@@ -214,14 +187,31 @@ test('gear view: all matches, each marked when it is in the pool; the pool view 
   assert.match(v.countText, /1 match the filters$/);
 });
 
-test('sync off: the ceiling has no synced row and its GCD comes from the unsynced ceiling', () => {
-  const app = makeApp('WAR', { cap: 123, sync: false });
+/* Excluded gear groups (Gear pool tab) leave the database list, the pool list and the optimizer's search. */
+test('excluded groups: left out of both gear lists and the search, counted in the pool line', async () => {
+  const { sourceMask } = await import('../../src/core/items.js');
+  const { SOURCES } = await import('../../src/core/constants.js');
+  const tome = SOURCES.find(s => s.key === 'tomestone').bit; // the window has tomestone gear, no crafted
+  const app = makeApp('WAR', { cap: 123 });
   app.pool = windowPool(app.jobCtx);
-  const v = ceilingView(app);
-  assert.equal(v.synced, null);
-  const spd = v.headers.indexOf('SkS');
-  assert.equal(v.gcd, gcdFor(+v.unsynced[spd], app.level).toFixed(2) + 's');
-  assert.deepEqual(v.unsynced, ceilingView({ ...app, sync: true }).unsynced);
+  const nTome = app.pool.filter(i => sourceMask(i) & tome).length;
+  assert.ok(nTome > 0 && nTome < app.pool.length);
+  Object.assign(app.browse, { show: 'all', min: 125, max: 135, lvl: 50 });
+  const allBefore = gearView(app).all.length;
+  app.browse.exclude = ['tomestone'];
+  const all = gearView(app).all;
+  assert.ok(all.length < allBefore && all.every(x => !(x.row.sources & tome)));
+  app.browse.show = 'pool';
+  const g = gearView(app);
+  assert.equal(g.all.length, app.pool.length - nTome);
+  assert.match(g.countText, new RegExp(`${nTome} in excluded groups, not searched`));
+  assert.equal(searchPool(app).length, app.pool.length - nTome);
+  const o = optimizerView(app);
+  assert.equal(o.kind, 'ok');
+  assert.equal(o.total, exhaustive(app.jobCtx, searchPool(app), { cap: 123, sync: true }, { target: app.opt.target })[0]);
+  app.browse.exclude = SOURCES.map(s => s.key);
+  app.pool = app.pool.filter(i => sourceMask(i) & tome);
+  assert.equal(optimizerView(app).kind, 'excluded');
 });
 
 test('sync off: piece lab leaves stats as they are and draws no cap line', () => {

@@ -2,7 +2,7 @@
 import Alpine from 'alpinejs';
 import { gearView, ADD_LIMIT } from '../views/gear.js';
 import { fmtInt } from '../helpers.js';
-import { EXPANSIONS } from '../../core/constants.js';
+import { EXPANSIONS, SOURCES } from '../../core/constants.js';
 
 export function gear() {
   return {
@@ -36,6 +36,15 @@ export function gear() {
     setExpShown(short, on) {
       const off = this.$store.app.browse.expOff.filter(k => k !== short);
       this.$store.app.browse.expOff = on ? off : EXPANSIONS.map(e => e[0]).filter(k => k === short || off.includes(k));
+    },
+    /* gear groups that can be left out (crafted, tomestone, ...): a ticked box excludes the group */
+    sources: SOURCES,
+    excluded(key) {
+      return this.$store.app.browse.exclude.includes(key);
+    },
+    setExcluded(key, on) {
+      const ex = this.$store.app.browse.exclude.filter(k => k !== key);
+      this.$store.app.browse.exclude = on ? SOURCES.map(s => s.key).filter(k => k === key || ex.includes(k)) : ex;
     },
     get typeOptions() {
       return [['any', 'Any slot']].concat(this.slotOptions);
