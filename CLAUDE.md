@@ -67,6 +67,16 @@ docs/                 see docs/README.md; style guide in docs/diagrams/STYLE.md
 
 `.github/workflows/pages.yml` deploys to GitHub Pages on push to `main` (Node unit tests, build, publish `dist/`). It is the only workflow; there is no separate CI.
 
+## Branches
+
+Three long-lived branches (set up 2026-10-14):
+
+- `dev`: day-to-day work. Commit here, or on a short-lived feature branch cut from `dev` and merged back.
+- `staging`: the next release. Merge `dev` into it when a batch of work is done, run `npm run check` and look at the page (desktop and ~400 px).
+- `main`: what is live. Pushing to `main` deploys the page (above). Only `staging` merges into it, after its check passed.
+
+Changes flow one way: feature branch -> `dev` -> `staging` -> `main`. Prefer fast-forward merges; never commit directly on `staging` or `main`. A hotfix branches from `main`, then merges into `main`, `staging` and `dev`. Delete feature branches once merged. Committing, merging and pushing still happen only when the owner asks (working agreements below).
+
 `dist/`, `data/`, `tests/e2e/out/` and `scripts/perf/out/` are gitignored. **Never hand-edit `src/data/*`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
 
 ## Commands (run from the repo root)
