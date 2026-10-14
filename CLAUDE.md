@@ -21,7 +21,7 @@ src/
     constants.js      slots, stat keys, profiles, JOBS, slot percents, substat shares
     item-format.json  shared data format (job bit order, raw stat order, slot codes, gear sources), read by JS and the Python generators
     tables.js         IL / PG / ITEMS / DATA_SOURCE re-exports, MAX_ILVL, MAX_REAL, footer label
-    job-context.js    makeJobContext(jobId): frozen per-job description; slotActive, ilWeight, statColumn
+    job-context.js    makeJobContext(jobId): frozen per-job description (activeSlotTypes, vitFactor, ...); statColumn
     formulas.js       rounding, slot budgets, buildPiece, capsFor, syncStats, statDerivation, predictRaw
     sync-target.js    levelSyncIlvl, syncTarget: which item level a piece is synced to (item level cap or level sync)
     speed.js          speedParams, gcdFor, dotMult, gcdTiers
@@ -45,7 +45,7 @@ src/
 scripts/
   build/build.mjs     esbuild bundle + inline into dist/index.html
   build/dev.mjs       watch + local server
-  data/fetch.py       sparse-clone the 10 needed CSVs from xivapi/ffxiv-datamining into data/, download job icons into data/icons/
+  data/fetch.py       sparse-clone the 12 needed CSVs from xivapi/ffxiv-datamining into data/, download job icons into data/icons/
   data/item_format.py loads item-format.json, reads CSVs
   data/gen_item_level.py  ItemLevel.csv + ParamGrow.csv -> src/data/item-level.json
   data/gen_items.py   Item.csv + EquipSlotCategory.csv + ClassJobCategory.csv -> src/data/items.json
@@ -53,7 +53,7 @@ scripts/
   data/gear_categories.py  Item.SubcategorySort + shops -> each item's category (dungeon, savage, relic, ...); docs/engineering/subcategory-sort-codes.md
   data/gen_job_icons.py  data/icons/*.png (downloaded by fetch.py) -> src/data/job-icons.js
   data/provenance.py  source commit + file headers
-  data/regen.py       both generators, then the build
+  data/regen.py       the three generators, then the build
 tests/
   unit/*.test.js      node:test, one file per core module, plus state.test.js
   data/               Python generator tests on fixture CSVs
@@ -94,7 +94,7 @@ UI: `Alpine.store('app')` holds the saved state plus `jobCtx` (the current conte
 
 Full derivation, worked example and verified/assumed table: `docs/mechanics/math.md`. Evidence: `docs/mechanics/validation.md`. Key rules:
 
-- Item level is a row of the `ItemLevel` budget table. A stat on a piece = `round( round(budget x slotPercent/1000) x share )`, rounded **twice**. Slot percents: 2H weapon 140, 1H 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67. An off-hand stat is not computed at 40: it is the 2H value minus the 1H value (inferred; fits 224 of 226 real off-hands, the plain 40 fits 195), so the shield substat cap at 123 is 13. No belt slot. Each stat also has a **per-item stat factor** read from the game files (`BaseParam.MeldParam[stat][Item.BaseParamModifier]`, carried as the last field of each item row, table `MP` in item-level.json): Vitality x 0.9 on Int/Mind gear, every main stat and Vitality x 0.9 on the 13 four-main-stat pieces, 1 otherwise; for item stats applied after the slot share (`round(round(slot value) x factor)`; the factor-first order is wrong on real items). Real pieces use their own factor, in predictRaw and in their sync caps; where no item is involved (Sync caps tab, Piece stats) the job's factor (`vitFactor`: 0.9 for Int/Mind jobs) is used, which equals the game files' value on every single-main-stat piece. xivgear computes shield caps with the same 2H - 1H rule.
+- Item level is a row of the `ItemLevel` budget table. A stat on a piece = `round( round(budget x slotPercent/1000) x share )`, rounded **twice**. Slot percents: 2H weapon 140, 1H 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67. An off-hand stat is not computed at 40: it is the 2H value minus the 1H value (inferred; fits 224 of 226 real off-hands, the plain 40 fits 195), so the shield substat cap at 123 is 13. No belt slot. Each stat also has a **per-item stat factor** read from the game files (`BaseParam.MeldParam[stat][Item.BaseParamModifier]`, carried as the last field of each item row, table `MP` in item-level.json): Vitality x 0.9 on Int/Mind gear, every main stat and Vitality x 0.9 on the 13 four-main-stat pieces, 1 otherwise; for item stats applied after the slot share (`round(round(slot value) x factor)`; the factor-first order is wrong on real items). Real pieces use their own factor, in predictRaw and in their sync caps; where no item is involved (Sync limits tab, Piece stats) the job's factor (`vitFactor`: 0.9 for Int/Mind jobs) is used, which equals the game files' value on every single-main-stat piece. xivgear computes shield caps with the same 2H - 1H rule.
 - Sync caps each stat on a piece above the cap at its cap for the piece's own slot share (a 1H weapon 100, a cloak covering the head 220) and kind; pieces at or below are untouched. A cap rounds in a **different order from item stats**: factor first, floored, rounded once, `round(floor(floor(budget x factor%/100) x slotPercent/100) / 10)` (`capValue`); off-hand caps are 2H cap - 1H cap. With factor 100 this equals the full-share value of a same-slot piece at the cap (same number at every item level and share); with a factor below 100 it can differ by 1 either way. The order is verified by three second-hand in-game values from xivgear's tests (BLU head Vitality 56 at 270, RDM head 123 at 530 where the native 530 head has 122, Azeyma's Earrings main 71 at 430; the item order gives 57, 122, 70) and inferred elsewhere. At 123: head/hands/feet 29 (main 30), body/legs 47 (48), accessories 23 (24), 2H weapon 48 (50); Int/Mind Vitality 29 / 45 / 23 / 47. Reproduces the Wiki's item level 475 caps exactly.
 - Which item level a piece is synced to (`syncTarget`): the item level cap if item level sync is on and the piece is above it; else, if its equip level is above the synced level (app.level), `ParamGrow.ItemLevelSync` of that level (50 -> 130, 60 -> 270, 70 -> 400, 80 -> 530, 90 -> 660, 100 -> 690; 1-49 map to themselves), independent of the item level sync switch; else untouched. Trigger verified by the owner; the mapping is the game file; "item level cap first when both apply" is second-hand (a player's report, xivgear issue #317); weapons using the same column is inferred. Only database pieces have an equip level (looked up by pool key, `equipLevel` in items.js, so the saved pool shape is unchanged); generated and hand-made pieces get only the item level cap. Piece stats and Sync limits (no equip level) show the item level cap, or with item level sync off and a level below 100 the level's item level. At T13 (level 50, cap 123) level sync adds 71 pieces (equip level 51, item level 120), synced to 130, no stat changes.
 - GCD and DoT/HoT tick scaling follow AkhMorning's formulas with `ParamGrow` constants.

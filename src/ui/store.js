@@ -15,7 +15,6 @@ export function createAppStore(initial) {
     /* bumped on every pool change, so views can depend on "the pool changed" without walking it */
     poolVersion: 0,
 
-    /* Changing role or weapon mode resets role-dependent selections and empties the pool. */
     /* Switching to a different job clears the pool and the job-specific selections, so the pool never holds gear
        the job can't wear. The page asks for confirmation first when the pool is not empty. */
     setJob(id) {
