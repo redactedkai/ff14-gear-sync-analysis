@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restoreState, defaultState, resetForJob, defaultSubs } from '../../src/ui/state.js';
+import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE } from '../../src/ui/state.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { ALL_STATS, DEFAULT_JOB } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
@@ -178,8 +178,14 @@ test('opt fields', () => {
   expectFieldDefault('opt.tb', 'nope', D.opt.tb);
   expectFieldDefault('opt.tb', null, D.opt.tb);
   expectFieldDefault('opt.tb2', 3, D.opt.tb2);
-  assert.deepEqual(D.browse.exclude, []); // no group excluded
-  expectFieldDefault('browse.exclude', 'ultimate', []);
+  assert.deepEqual(D.browse.exclude, ['savage', 'ultimate', 'pvp']); // Current Savage, Ultimate and PvP excluded
+  assert.deepEqual(DEFAULT_EXCLUDE, D.browse.exclude);
+  expectFieldDefault('browse.exclude', 'ultimate', D.browse.exclude); // not a list: the default
+  expectFieldDefault('browse.exclude', null, D.browse.exclude);
+  expectFieldDefault('browse.exclude', [], []); // every group ticked back in: kept, not the default
+  const older = validSave();
+  delete older.browse.exclude; // a save from before the field existed
+  assert.deepEqual(restoreState(older).browse.exclude, D.browse.exclude);
   expectFieldDefault('browse.exclude', ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
   assert.equal(D.opt.melds, true); // melds on by default
   expectFieldDefault('opt.melds', 'yes', true);

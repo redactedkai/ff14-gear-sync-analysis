@@ -25,7 +25,7 @@ Pick your job from the icons at the top, then set the synced level, and turn on 
 Once a job is chosen, the page has two working tabs and one reference tab:
 
 1. **Gear pool**: one table of real gear for the selected job. Tick a row to add it to your pool; switch between **All gear** and **My pool**. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2.
-2. **Gear optimizer**: picks one item per slot (two rings) from the pool to maximize one stat, with two optional tiebreakers. A Materia switch (on by default) gives each piece its best melds. In the Gear pool tab, ticked groups (crafted, tomestone, relic, current Savage, ultimate, PvP) are excluded from the lists and the search.
+2. **Gear optimizer**: picks one item per slot (two rings) from the pool to maximize one stat, with two optional tiebreakers. A Materia switch (on by default) gives each piece its best melds. In the Gear pool tab, ticked groups (crafted, tomestone, relic, current Savage, ultimate, PvP) are excluded from the lists and the search; current Savage, ultimate and PvP are ticked by default.
 3. **How the math works** (reference): Piece stats (how a piece's stats come from its item level) and Sync limits (what the sync cap allows, checked against real gear and the Wiki).
 
 ## Develop

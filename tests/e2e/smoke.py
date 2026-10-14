@@ -41,6 +41,8 @@ STORE_KEY = 'ilvl-stat-lab-v4'  # localStorage key of the saved state (src/ui/st
 
 # Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
 DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL = '', '', '100'
+# Gear groups excluded by default in the Gear pool tab (owner's decision; DEFAULT_EXCLUDE in src/ui/state.js).
+DEFAULT_EXCLUDE = ['savage', 'ultimate', 'pvp']
 
 # Sync caps at item level 123: slot -> (substat cap, main stat cap). Same for every job (slot shares are job-neutral).
 CAPS_123 = {
@@ -227,15 +229,15 @@ OPT_POOLS = [('SGE', 120, 130, 50), ('WAR', 130, 135, 50)]
 # Node script: the browse rows for one window and the best speed stat synced to 123 and unsynced, from src/core
 # (optimize) and from the exhaustive reference. Prints JSON.
 NODE_EXPECT = """
-const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
+const [jobId, ilvlMin, ilvlMax, lvlMax, def] = %s;
 const { makeJobContext } = await import(%s);
-const { browseItems } = await import(%s);
+const { sourcesMask } = await import(%s);
 const { optimize } = await import(%s);
 const { exhaustive, gamePool } = await import(%s);
 const job = makeJobContext(jobId);
 const filter = { ilvlMin, ilvlMax, lvlMax };
-const pool = gamePool(job, filter);
-const out = { count: browseItems(job, filter).length };
+const pool = gamePool(job, filter, r => !(r.sources & sourcesMask(def))); // the groups the page excludes by default
+const out = { count: pool.length };
 for (const sync of [true, false]) {
   const s = { cap: 123, sync, level: lvlMax };
   const opts = { target: 'spd', tiebreak: ['main', 'vit'] };
@@ -263,7 +265,7 @@ def run_node(script, args):
 
 def core_expectation(job, lo, hi, lvl):
     """Expected values for one window, computed by src/core in Node (independent of the page)."""
-    return run_node(NODE_EXPECT, [job, lo, hi, lvl])
+    return run_node(NODE_EXPECT, [job, lo, hi, lvl, DEFAULT_EXCLUDE])
 
 
 def check_real_gear_optimizer(pg):
@@ -344,18 +346,18 @@ COPIES_POOL = ('SGE', 140, 150, 60)
 # Node script: for the rings in one window, the best synced Spell/Skill Speed as added (non-Unique rings get 2 copies)
 # and with one non-Unique ring cut to 1 copy, chosen so the total changes; each from optimize() and the brute force.
 NODE_COPIES = """
-const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
+const [jobId, ilvlMin, ilvlMax, lvlMax, def] = %s;
 const { makeJobContext } = await import(%s);
-const { browseItems } = await import(%s);
+const { sourcesMask } = await import(%s);
 const { optimize } = await import(%s);
 const { exhaustive, gamePool } = await import(%s);
 const job = makeJobContext(jobId);
 const filter = { type: 'ring', ilvlMin, ilvlMax, lvlMax };
-const pool = gamePool(job, filter);
+const pool = gamePool(job, filter, r => !(r.sources & sourcesMask(def))); // the groups the page excludes by default
 const s = { cap: 123, sync: true };
 const opts = { target: 'spd', tiebreak: ['main', 'vit'] };
 const best = p => [optimize(job, p, s, opts).totals.spd, exhaustive(job, p, s, opts)[0]];
-const out = { count: browseItems(job, filter).length, two: best(pool), ring: null };
+const out = { count: pool.length, two: best(pool), ring: null };
 for (const r of pool.filter(i => i.copies === 2 && pool.filter(j => j.name === i.name).length === 1)) {
   const one = best(pool.map(i => (i === r ? { ...i, copies: 1 } : i)));
   if (one[0] !== out.two[0]) { Object.assign(out, { ring: r.name, one }); break; }
@@ -390,7 +392,7 @@ def check_ring_copies(pg):
     """In a rings-only pool whose best pair is one non-Unique ring worn twice: that ring is marked x2 and the
     optimizer's total equals what the core computes with it worn on both hands."""
     job, lo, hi, lvl = COPIES_POOL
-    want = run_node(NODE_COPIES, [job, lo, hi, lvl])
+    want = run_node(NODE_COPIES, [job, lo, hi, lvl, DEFAULT_EXCLUDE])
     if not check(want['ring'], f'{job} rings {lo}-{hi}: no non-Unique ring worn twice in the best pair; pick another window'):
         return
     check(want['two'][0] == want['two'][1], f'{job} rings: core optimizer {want["two"][0]} != brute force {want["two"][1]}')
@@ -416,13 +418,14 @@ def check_ring_copies(pg):
 
 EXCLUDE_POOL = ('SGE', 270, 290, 70)  # unsynced (synced level 70), the best main stat uses crafted pieces; without them it is lower
 NODE_EXCLUDE = """
-const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
+const [jobId, ilvlMin, ilvlMax, lvlMax, def] = %s;
 const { makeJobContext } = await import(%s);
 const { browseItems, poolItemFromRow, withoutSources } = await import(%s);
 const { optimize } = await import(%s);
 await import(%s);
 const job = makeJobContext(jobId);
-const pool = browseItems(job, { ilvlMin, ilvlMax, lvlMax }).map(r => poolItemFromRow(job, r));
+// the page's Add all adds the shown rows, which leave out the groups excluded by default (def)
+const pool = withoutSources(browseItems(job, { ilvlMin, ilvlMax, lvlMax }).map(r => poolItemFromRow(job, r)), def);
 const best = ex => {
   const r = optimize(job, withoutSources(pool, ex), { cap: null, sync: false }, { target: 'main' });
   return r.ok ? r.totals.main : null;
@@ -433,9 +436,10 @@ console.log(JSON.stringify({ count: pool.length, all: best([]), crafted: best(['
 
 def check_exclude_sources(pg):
     """Excluding crafted gear in the Gear pool tab changes the optimizer total to what the core computes without it
-    and hides it from the pool list; the choice is saved. No group is excluded by default."""
+    and hides it from the pool list; the choice is saved. By default only Current Savage, Ultimate and PvP are
+    excluded; the core side leaves out the same groups."""
     job, lo, hi, lvl = EXCLUDE_POOL
-    want = run_node(NODE_EXCLUDE, [job, lo, hi, lvl])
+    want = run_node(NODE_EXCLUDE, [job, lo, hi, lvl, DEFAULT_EXCLUDE])
     if not check(
         want['crafted'] is not None and want['crafted'] < want['all'],
         f'{job} {lo}-{hi}: excluding crafted gear does not lower the total; pick another window',
@@ -454,10 +458,11 @@ def check_exclude_sources(pg):
     pg.select_option('#o-target', 'main')
     expect(opt_total(pg)).to_have_text(str(want['all']))
     show_tab(pg, 'pool')
+    ticked = [b.get_attribute('data-source') for b in pg.locator('#b-exclude input:checked').all()]
+    check(ticked == DEFAULT_EXCLUDE, f'excluded by default: {ticked}, expected {DEFAULT_EXCLUDE}')
     crafted = pg.locator('#b-exclude input[data-source="crafted"]')
-    check(not crafted.is_checked(), 'crafted gear is not excluded by default')
     crafted.check()
-    wait_saved(pg, "s => s.browse.exclude.join() === 'crafted'")
+    wait_saved(pg, f's => s.browse.exclude.join() === {json.dumps(",".join(["crafted", *DEFAULT_EXCLUDE]))}')
     expect(pg.locator('#b-count')).to_contain_text('in excluded groups, not searched')
     wait_optimizer(pg)
     expect(opt_total(pg)).to_have_text(str(want['crafted']))
@@ -471,13 +476,13 @@ def check_exclude_sources(pg):
 
 MELDS_POOL = ('SGE', 300, 345, 100)  # unsynced, most pieces take grade VI stones: melds raise the best Critical Hit
 NODE_MELDS = """
-const [jobId, ilvlMin, ilvlMax, lvlMax] = %s;
+const [jobId, ilvlMin, ilvlMax, lvlMax, def] = %s;
 const { makeJobContext } = await import(%s);
-const { browseItems, poolItemFromRow } = await import(%s);
+const { browseItems, poolItemFromRow, withoutSources } = await import(%s);
 const { optimize } = await import(%s);
 await import(%s);
 const job = makeJobContext(jobId);
-const pool = browseItems(job, { ilvlMin, ilvlMax, lvlMax }).map(r => poolItemFromRow(job, r));
+const pool = withoutSources(browseItems(job, { ilvlMin, ilvlMax, lvlMax }).map(r => poolItemFromRow(job, r)), def);
 const best = melds => optimize(job, pool, { cap: null, sync: false, level: lvlMax }, { target: 'crit', melds }).totals.crit;
 console.log(JSON.stringify({ count: pool.length, on: best(true), off: best(false) }));
 """
@@ -487,7 +492,7 @@ def check_melds(pg):
     """Melds are on by default: the total equals the core's with melds, and each melded pick names its stones; the
     switch off gives the core's total without melds and no meld lines. The choice is saved."""
     job, lo, hi, lvl = MELDS_POOL
-    want = run_node(NODE_MELDS, [job, lo, hi, lvl])
+    want = run_node(NODE_MELDS, [job, lo, hi, lvl, DEFAULT_EXCLUDE])
     if not check(want['on'] > want['off'], f'{job} {lo}-{hi}: melds do not raise Critical Hit; pick another window'):
         return
     set_job(pg, job)
@@ -710,9 +715,17 @@ def check_reset(pg):
 
 
 def check_cap_validation(pg):
-    """With sync on, the cap field asks for a cap while empty and for a whole item level in range."""
+    """With sync on, the cap field asks for a cap while empty and for a whole item level in range. The message sits
+    under the field, so the label stays on one line and the cap input lines up with the synced level input."""
     pg.locator('#sync').check()
-    expect(pg.locator('#cap-error')).to_have_text(' · Enter a sync cap')
+    expect(pg.locator('#cap-error')).to_have_text('Enter a sync cap')
+    check(pg.get_attribute('#cap', 'aria-invalid') == 'true', 'an empty cap with sync on is not marked invalid')
+    lay = pg.evaluate("""() => {
+      const lab = document.querySelector('label[for=cap]'), top = s => document.querySelector(s).getBoundingClientRect().top;
+      return { em: lab.getBoundingClientRect().height / parseFloat(getComputedStyle(lab).fontSize), dy: top('#cap') - top('#level') };
+    }""")
+    check(lay['em'] < 2, f'the sync cap label wraps ({lay["em"]:.1f} em high) while it asks for a cap')
+    check(abs(lay['dy']) < 1, f'the cap input is {lay["dy"]:.0f} px off the synced level input')
     pg.fill('#cap', '9999')
     expect(pg.locator('#cap-error')).to_contain_text('Enter a whole item level from 1 to')
     pg.fill('#cap', '123')

@@ -180,9 +180,10 @@ th.n {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px 20px;
-  align-items: end;
+  align-items: start; /* labels and inputs line up at the top; a field's error line grows it downward */
 }
 label.f,
+.f.field,
 .f.multi {
   display: flex;
   flex-direction: column;
