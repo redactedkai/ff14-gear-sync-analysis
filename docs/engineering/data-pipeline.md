@@ -58,17 +58,19 @@ For the current data that is about 7 MB of git data and 20 MB of CSV files on di
 
 ### Job icons
 
-The job picker shows the game's framed, role-coloured job icons. The CSVs hold no images, so the fetch step downloads them from xivapi's asset endpoint, which converts the game's own icon textures to PNG, into `data/icons/<JOB>.png` (gitignored). Each job's icon number is $62100 + r$, where $r$ is the job's row in `ClassJob` (Paladin, row 19, is icon 062119). **Verified** by looking at all 22 icons; the rule itself is a numbering pattern of the game's icon files, not a column in any sheet. The high-resolution versions (64 × 64 pixels) are used.
+The job picker shows the game's framed, role-coloured job icons. The CSVs hold no images, so the fetch step downloads them from xivapi's asset endpoint, which converts the game's own icon textures to PNG, into `data/icons/<JOB>.png` (gitignored). Each job's icon number is $62100 + r$, where $r$ is the job's row in `ClassJob` (Paladin, row 19, is icon 062119). **Verified** by looking at all 23 icons; the rule itself is a numbering pattern of the game's icon files, not a column in any sheet. The high-resolution versions (64 × 64 pixels) are used.
 
-The icon generator embeds the 22 PNG files in `src/data/job-icons.js` as data URLs, so the page still makes no image requests. It stops with an error if a job's icon is missing or is not a 64 × 64 PNG. FINAL FANTASY XIV icons © SQUARE ENIX; the page footer says so.
+The icon generator embeds the 23 PNG files in `src/data/job-icons.js` as data URLs, so the page still makes no image requests. It stops with an error if a job's icon is missing or is not a 64 × 64 PNG. FINAL FANTASY XIV icons © SQUARE ENIX; the page footer says so.
 
 ## 3. The shared format definition
 
 The generators are written in Python; the page is JavaScript. Both have to agree on what the numbers in a generated row mean. That agreement lives in one JSON file that both sides read, so they cannot drift apart. It defines three orders:
 
-**Job order.** The 22 combat jobs, in this order (bit index $i$ in parentheses):
+**Job order.** The 23 combat jobs, in this order (bit index $i$ in parentheses):
 
-PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8), DRG (9), SAM (10), RPR (11), NIN (12), VPR (13), BRD (14), MCH (15), DNC (16), BLM (17), SMN (18), RDM (19), PCT (20), BLU (21).
+PLD (0), WAR (1), DRK (2), GNB (3), WHM (4), SCH (5), AST (6), SGE (7), MNK (8), DRG (9), SAM (10), RPR (11), NIN (12), VPR (13), BRD (14), MCH (15), DNC (16), BLM (17), SMN (18), RDM (19), PCT (20), BLU (21), BST (22).
+
+Beastmaster (patch 7.56) was appended at the end, so no other job's bit moved. The job picker shows the jobs in the game's own order instead (Beastmaster ends the melee row).
 
 **Stat order.** The 14 stats stored per item, each with its column in the `ItemLevel` sheet and its row id in `BaseParam` (the id the `Item` sheet uses to name a stat):
 
@@ -129,7 +131,7 @@ An `Item` row becomes a database row when all of these hold:
 1. it has a name;
 2. its equip slot category resolves to a slot (section *Slot*), which rules out belts, soul crystals and non-gear;
 3. its item level is at least 100;
-4. at least one of the 22 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
+4. at least one of the 23 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
 5. at least one of its 14 stats is non-zero after the HQ rule below;
 6. it carries no crafter or gatherer stat (GP, CP, Craftsmanship, Control, Gathering, Perception), normal or HQ;
 7. its slots match a slot code: a piece that blocks a combination of slots with no code is left out and its name printed;
@@ -149,11 +151,11 @@ For the current data, each rule leaves:
 | has a name | 50,880 |
 | resolves to a slot | 29,026 |
 | item level ≥ 100 | 19,843 |
-| a combat job can equip it | 17,627 |
-| at least one stat | 17,579 |
-| no crafter or gatherer stat | 17,574 |
-| its slots match a slot code | 17,574 |
-| not retired (Diadem gear left out) | **17,281** |
+| a combat job can equip it | 17,662 |
+| at least one stat | 17,614 |
+| no crafter or gatherer stat | 17,609 |
+| its slots match a slot code | 17,609 |
+| not retired (Diadem gear left out) | **17,316** |
 
 The item level floor of 100 is a choice of this project, not a game rule; gear below it is not useful for the sync caps the page targets.
 
@@ -166,10 +168,10 @@ The slot is the first slot code, in format order, whose `EquipSlotCategory` colu
 The job mask packs "who can equip this" into one integer. With $\text{job}_i$ the $i$-th job of the shared order and $[\cdot]$ equal to 1 when the condition is true and 0 otherwise:
 
 $$
-\text{mask} = \sum_{i=0}^{21} 2^{i}\,\bigl[\text{job}_i \text{ can equip the item}\bigr]
+\text{mask} = \sum_{i=0}^{22} 2^{i}\,\bigl[\text{job}_i \text{ can equip the item}\bigr]
 $$
 
-"Can equip" means the job's column in the item's `ClassJobCategory` row is `True`. Base classes (Gladiator, Conjurer, ...) and crafting or gathering classes have no bit. In the example above, category 59 lists GLA MRD PLD WAR DRK GNB; Gladiator and Marauder are base classes, so only bits 0 to 3 are set and $\text{mask} = 2^0 + 2^1 + 2^2 + 2^3 = 15$. An item every job can wear has $\text{mask} = 2^{22} - 1 = 4{,}194{,}303$ (1,079 rows).
+"Can equip" means the job's column in the item's `ClassJobCategory` row is `True`. Base classes (Gladiator, Conjurer, ...) and crafting or gathering classes have no bit. In the example above, category 59 lists GLA MRD PLD WAR DRK GNB; Gladiator and Marauder are base classes, so only bits 0 to 3 are set and $\text{mask} = 2^0 + 2^1 + 2^2 + 2^3 = 15$. An item every job can wear has $\text{mask} = 2^{23} - 1 = 8{,}388{,}607$ (974 rows); Beastmaster's own gear has $\text{mask} = 2^{22}$ (35 rows).
 
 ### Stats and the HQ bonus
 
@@ -179,13 +181,13 @@ $$
 \text{stat}_k = \sum_{j=0}^{5} \bigl[\text{id}_j = \text{id}(k)\bigr]\,\text{value}_j \;+\; \bigl[\text{can be HQ}\bigr] \sum_{j=0}^{5} \bigl[\text{id}^{\text{HQ}}_j = \text{id}(k)\bigr]\,\text{value}^{\text{HQ}}_j
 $$
 
-The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. Why the flag matters: 293 `Item` rows have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 290 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" matches ([history.md](../history.md)). By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each). With the rule, the bonus is applied to 4,398 rows.
+The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. Why the flag matters: 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)). By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each) and Beastmaster's own 35 pieces. Beastmaster's carry its Crucible bonus there (Strength and Vitality, `ItemSpecialBonus` 11; +9 / +9 on Guttler), which the game applies only inside the Crucible of the Unbroken (**second-hand**, Console Games Wiki); the tool leaves it out, as it does the Eureka and Bozja bonuses. With the rule, the bonus is applied to 4,398 rows.
 
 Melds (materia) are not part of these stats: a database row holds the item as it drops or is crafted. What a piece can take is in its two meld fields (section *Materia slots*).
 
 ### Unique flag
 
-`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,780 of the 17,281 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
+`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,815 of the 17,316 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
 
 ### Sources
 
@@ -273,7 +275,7 @@ Each database row is a fixed list of thirteen fields:
 | slot code | integer 0 to 12 | Slot, per the shared slot table. |
 | item level | integer | The item's own item level (`LevelItem`), 100 to 795 in the current data. |
 | equip level | integer | Character level needed to wear it (`LevelEquip`). |
-| job mask | integer, $0 < \text{mask} < 2^{22}$ | Who can equip it, as defined above. |
+| job mask | integer, $0 < \text{mask} < 2^{23}$ | Who can equip it, as defined above. |
 | stats | 14 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
 | unique | 0 or 1 | 1 when only one copy can be worn. |
 | hq | 0 or 1 | 1 when the item can be high quality (`CanBeHq`), so its stats are the HQ ones; the page marks it HQ. |
@@ -336,12 +338,12 @@ The recorded commit is the clone's newest commit, not the newest commit that cha
 
 | Fact | Value |
 | --- | --- |
-| Database rows | 17,281 |
+| Database rows | 17,316 |
 | Lowest / highest item level in the database | 100 / **795** (66 rows at 795) |
 | `ItemLevel` rows | 921 (ids 0 to 920) |
 | Level data | levels 1 to 100 |
-| Unique rows | 12,780 |
-| Rows wearable by every job | 1,079 |
+| Unique rows | 12,815 |
+| Rows wearable by every job | 974 |
 
 Rows per slot:
 
@@ -390,7 +392,7 @@ One command, `npm run update-data`, does steps 1 and 2.
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page. Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,281 rows above.
+4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,316 rows above.
 
 Some test expectations are allowed to move after a patch and others must not; the list is in [testing.md, section 6](testing.md#6-after-a-game-patch).
 
@@ -410,7 +412,7 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has thirteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag and a whole-number rarity last), a valid slot code, a job mask in $(0, 2^{22})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has thirteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag and a whole-number rarity last), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 

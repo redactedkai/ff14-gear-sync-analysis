@@ -22,7 +22,8 @@
     "SMN",
     "RDM",
     "PCT",
-    "BLU"
+    "BLU",
+    "BST"
   ],
   "stats": [
     { "key": "str", "baseParam": 1, "itemLevelColumn": "Strength" },

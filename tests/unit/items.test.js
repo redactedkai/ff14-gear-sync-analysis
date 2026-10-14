@@ -113,6 +113,45 @@ test('item level and equip level bounds', () => {
   assert.equal(browseItems(war, { ...lvl50, lvlMax: 49 }).length, 0);
 });
 
+test('level cap: Beastmaster and Blue Mage never see gear above their cap, whatever the equip level filter says', () => {
+  for (const [id, cap] of [
+    ['BST', 50],
+    ['BLU', 80],
+  ]) {
+    const job = makeJobContext(id);
+    const bit = 1 << job.jobIndex;
+    const above = ITEMS.filter(r => r[4] & bit && r[3] > cap);
+    assert.ok(above.length > 0, `${id} has database gear above its cap`); // so the filter is tested
+    for (const f of [{}, { lvlMax: 100 }]) {
+      const rows = browseItems(job, f);
+      assert.ok(rows.length > 0 && rows.every(r => r.lvl <= cap), id);
+      assert.ok(
+        rows.some(r => r.lvl === cap),
+        id,
+      );
+    }
+    assert.ok(browseItems(job, { lvlMax: cap - 1 }).every(r => r.lvl <= cap - 1));
+  }
+  // a job without a cap of its own still sees level 100 gear
+  assert.ok(browseItems(war, {}).some(r => r.lvl === 100));
+});
+
+test("Beastmaster's own gear (job mask 1 << 22): Guttler and Kornago Hoplon, its one-handed weapon and shield", () => {
+  const bst = makeJobContext('BST');
+  const rows = browseItems(bst, { ilvlMin: 135, ilvlMax: 135 });
+  const guttler = rows.find(r => r.name === 'Guttler');
+  const hoplon = rows.find(r => r.name === 'Kornago Hoplon');
+  assert.ok(guttler && hoplon);
+  assert.equal(guttler.mask, 1 << 22);
+  assert.deepEqual([guttler.type, guttler.slotCode, guttler.lvl], ['weapon', 1, 50]);
+  assert.deepEqual([hoplon.type, hoplon.slotCode, hoplon.lvl], ['offhand', 2, 50]);
+  // Item.csv: Strength 39, Vitality 42, Direct Hit 39, Determination 27; its Crucible bonus (+9 / +9, ItemSpecialBonus 11,
+  // not HQ-able) is not carried
+  assert.deepEqual(poolItemFromRow(bst, guttler).stats, { main: 39, vit: 42, crit: 0, det: 27, dh: 39, spd: 0, spec: 0 });
+  // a Monk cannot equip it
+  assert.ok(!browseItems(makeJobContext('MNK'), { ilvlMin: 135, ilvlMax: 135 }).some(r => r.name === 'Guttler'));
+});
+
 test('name query is case-insensitive and trimmed', () => {
   const word = browseItems(war, lvl50)[0].name.split(' ').pop().toLowerCase(); // a word from a real item name
   const a = names(browseItems(war, { q: word }));

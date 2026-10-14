@@ -41,6 +41,20 @@ test('the formula reproduces relic weapons with two full substats, two main stat
   }
 });
 
+/* Beastmaster's own gear (job mask exactly its bit), weapons and shields included, follows the same rules exactly. */
+test("the formula reproduces every piece of Beastmaster's own gear", async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const { makeJobContext } = await import('../../src/core/job-context.js');
+  const bit = 1 << makeJobContext('BST').jobIndex;
+  const own = ITEMS.filter(r => r[4] === bit);
+  assert.ok(own.length >= 30 && own.some(r => r[1] === 1) && own.some(r => r[1] === 2));
+  for (const r of own) {
+    const st = r[5].split(',').map(Number);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
+  }
+});
+
 /* Direct Hit on gear whose only main stat is Mind is a fixed 20% line outside the substat ranking (the old healer
    Accuracy): as the only substat, as the second, and as the third. Direct Hit on other gear ranks like any substat. */
 test('Direct Hit on Mind-only gear is a fixed 20% line; elsewhere it ranks normally', async () => {

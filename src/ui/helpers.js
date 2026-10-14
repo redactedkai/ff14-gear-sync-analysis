@@ -11,7 +11,9 @@ export function statCell(raw, synced) {
 }
 
 /* x-bind object for a number input that only commits whole, in-range values (out-of-range typing is ignored,
-   not corrected). While the field has focus and already shows the stored value, the typed text is left alone. */
+   not corrected). While the field has focus and already shows the stored value, the typed text is left alone. A bound
+   may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap). */
+const bound = b => (typeof b === 'function' ? b() : b);
 export function numberField(get, set, lo, hi) {
   return {
     ':value'() {
@@ -22,7 +24,7 @@ export function numberField(get, set, lo, hi) {
     '@input'(e) {
       const raw = e.target.value,
         v = +raw;
-      if (raw !== '' && v >= lo && v <= hi) set(Math.round(v));
+      if (raw !== '' && v >= bound(lo) && v <= bound(hi)) set(Math.round(v));
     },
   };
 }

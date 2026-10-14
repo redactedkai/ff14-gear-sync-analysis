@@ -4,7 +4,7 @@ import { restoreState, defaultState, resetForJob, defaultSubs } from '../../src/
 import { makeJobContext } from '../../src/core/job-context.js';
 import { ALL_STATS, DEFAULT_JOB } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
-import { newId } from '../../src/core/items.js';
+import { newId, browseItems, poolItemFromRow } from '../../src/core/items.js';
 
 const D = defaultState();
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -247,4 +247,26 @@ test('a save from another role is repaired as before', () => {
   const w = restoreState(raw);
   assert.equal(w.piece.slot, 'head');
   assert.ok(!mnk.substats.includes('spec'));
+});
+
+test("a saved level above the job's level cap is clamped to it, and pool pieces above the cap are dropped", () => {
+  const bst = makeJobContext('BST');
+  const rows = browseItems(makeJobContext('MNK'), { ilvlMin: 130, ilvlMax: 135 }).filter(r => r.mask & (1 << bst.jobIndex));
+  const low = rows.find(r => r.lvl <= 50);
+  const high = rows.find(r => r.lvl > 50); // Monk gear Beastmaster's mask allows, above its level cap
+  assert.ok(low && high);
+  const pool = [low, high].map(r => ({ ...poolItemFromRow(bst, r), id: newId() }));
+  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 }, pool });
+  assert.equal(s.level, 50);
+  assert.equal(s.browse.lvl, 50);
+  assert.deepEqual(
+    s.pool.map(i => i.name),
+    [low.name],
+  );
+  // a level at or below the cap is kept; Blue Mage caps at 80
+  assert.equal(restoreState({ job: 'BST', level: 30 }).level, 30);
+  assert.equal(restoreState({ job: 'BLU', level: 100 }).level, 80);
+  assert.equal(restoreState({ job: 'BLU' }).level, 80); // the default (100) too
+  // with no job chosen the game's cap applies
+  assert.equal(restoreState({ level: 100 }).level, 100);
 });

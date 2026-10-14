@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { MAX_REAL } from '../../src/core/tables.js';
-import { browseItems, mkItem } from '../../src/core/items.js';
+import { browseItems, mkItem, poolItemFromRow } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { gcdFor, gcdTierAt } from '../../src/core/speed.js';
 import { restoreState } from '../../src/ui/state.js';
@@ -212,6 +212,30 @@ test('excluded groups: left out of both gear lists and the search, counted in th
   app.browse.exclude = SOURCES.map(s => s.key);
   app.pool = app.pool.filter(i => sourceMask(i) & tome);
   assert.equal(optimizerView(app).kind, 'excluded');
+});
+
+test('level cap: the optimizer searches no pool piece above the job cap, and level sync at the cap is off', () => {
+  const app = makeApp('BLU', { sync: false, cap: null, level: 80 });
+  // two pieces per slot (small enough for the exhaustive reference), all at equip level 80 or below
+  const all = gamePool(app.jobCtx, { ilvlMin: 520, ilvlMax: 560 });
+  const wearableRows = all.filter(i => all.filter(j => j.type === i.type).indexOf(i) < 2);
+  // pieces this job's mask allows but its level cap does not (not from the browser: a pool built another way)
+  const above = browseItems(makeJobContext('BLM'), { ilvlMin: 520, ilvlMax: 560 })
+    .filter(r => r.lvl > 80 && r.mask & (1 << app.jobCtx.jobIndex))
+    .map(r => poolItemFromRow(app.jobCtx, r));
+  assert.ok(wearableRows.length > 0 && above.length > 0);
+  app.pool = [...wearableRows, ...above];
+  assert.equal(searchPool(app).length, wearableRows.length);
+  const o = optimizerView(app);
+  assert.equal(o.kind, 'ok');
+  assert.equal(o.total, exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0]);
+  // at the job's own cap no gear it can wear is level-synced: Piece stats and Sync limits show no sync
+  assert.equal(pieceView(app).status, 'off');
+  assert.equal(syncView(app), null);
+  const bst = makeApp('BST', { sync: false, cap: null, level: 50 });
+  assert.equal(syncView(bst), null);
+  // below the cap, level sync applies as for any job
+  assert.equal(syncView({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
 });
 
 test('sync off: piece lab leaves stats as they are and draws no cap line', () => {

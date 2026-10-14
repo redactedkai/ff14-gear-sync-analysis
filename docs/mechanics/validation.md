@@ -10,7 +10,7 @@ All numbers were produced by running the code against the data in this repositor
 
 | Source | What it gives | Used for |
 | --- | --- | --- |
-| Game item data (`Item` sheet) | Final stats of 17,281 real combat pieces | Sections 2, 4 and 6 |
+| Game item data (`Item` sheet) | Final stats of 17,316 real combat pieces | Sections 2, 4 and 6 |
 | FFXIV Wiki, Item Level Sync page | Substat caps at item level 475 | The sync clamp (section 3) |
 | Game `BaseParam` sheet (`MeldParam`) and `Item.BaseParamModifier` | Per-item stat percentages | The stat factor (section 2) |
 | xivgear (community gear planner), [source at commit 6c3c878](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts) | Its sync cap code and in-game notes in its tests | Off-hand rule, cap order (section 8) |
@@ -45,18 +45,18 @@ Every stat on the piece has to match, not just one.
 
 | Item level | Pieces | Exact | Within ±1 on every stat |
 | --- | ---: | ---: | ---: |
-| 110–135 | 956 | 956 (100.0%) | 956 (100.0%) |
+| 110–135 | 984 | 984 (100.0%) | 984 (100.0%) |
 | 136–300 | 3,774 | 3,772 (99.9%) | 3,774 (100.0%) |
 | 301–600 | 7,187 | 7,165 (99.7%) | 7,187 (100.0%) |
 | 601+ | 4,684 | 4,684 (100.0%) | 4,684 (100.0%) |
-| All | 16,601 | 16,577 (99.9%) | 16,601 (100.0%) |
+| All | 16,629 | 16,605 (99.9%) | 16,629 (100.0%) |
 
 **Verified** (game data; external truth). What this does and does not show:
 
-- **The budget table, the slot shares, the double rounding and the stat factor** are confirmed by these matches. The factor is read from the game files for each item ([math.md, section 4](math.md#the-stat-factor-of-an-item)). With a single rounding the same check gives 80.0% exact (13,280; [math.md, section 4](math.md#the-formula)).
+- **The budget table, the slot shares, the double rounding and the stat factor** are confirmed by these matches. The factor is read from the game files for each item ([math.md, section 4](math.md#the-stat-factor-of-an-item)). With a single rounding the same check gives 80.0% exact (13,306; [math.md, section 4](math.md#the-formula)).
 - **Main Attribute and Secondary Attribute.** Sixteen pieces carry the game's generic Main Attribute and Secondary Attribute (`BaseParam` 55 and 56) instead of a named main stat: the ten Occult accessories, the five pre-order earrings and Neophyte's Ring. The check counts Main Attribute as a main stat and Secondary Attribute as a substat, each with its own factor (100 for every item kind). The ten Occult accessories at 745 are exact with the file's factors. The six all-jobs earrings and rings are exact with their own factors (below); Neophyte's Ring's Determination 25 is the 70% share next to Secondary Attribute 35 (**verified**).
-- **Whole database** (17,281 pieces, every item level, outside the band table): 17,257 exact (99.9%), 24 off by 1 (the misses below) and none off by more. The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
-- **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
+- **Whole database** (17,316 pieces, every item level, outside the band table): 17,292 exact (99.9%), 24 off by 1 (the misses below) and none off by more. The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
+- **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4](../engineering/data-pipeline.md#stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.\n- **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
 - **The shares stay inferred.** The 100 / 70 substat shares and the fixed 20% Direct Hit line on Mind-only gear remain an **inferred** pattern. They fit almost every piece, but the game files do not store them. Why the relic weapon steps carry two full substats is **not known**; the data only shows the pattern.
 - Every piece is within 1 on every stat; 110–135 and 601+ are 100.0% exact.
 
@@ -121,7 +121,7 @@ The caps at 123 ([math.md, caps at item level 123](math.md#caps-at-item-level-12
 - **Shields** follow the off-hand rule: the two item level 120 shields carry Tenacity 13 (47 − 34; the 40 ‰ share would give 14) and the item level 125 shield 14 (49 − 35).
 - **Half-up rounding** at an exact .5 (which Paladin's one-handed main-stat cap, 35.5 → 36, depends on) matches 125 of 126 real pieces whose main stat lands on an exact half.
 
-So the caps at 123 are an **independent derivation** backed by real pieces at the neighbouring rows, not external truth. The formula unit test, the sync caps view test and the smoke test (six jobs: Sage, Warrior, Paladin, Black Mage, Ninja, Dragoon) assert the same numbers.
+So the caps at 123 are an **independent derivation** backed by real pieces at the neighbouring rows, not external truth. The formula unit test, the sync caps view test and the smoke test (eight jobs: Sage, Warrior, Paladin, Black Mage, Ninja, Dragoon, Beastmaster, Blue Mage) assert the same numbers.
 
 The sync unit test also derives the head caps at 123 and 129 itself, from the `ItemLevel` rows and the 85 ‰ head share, and clamps a real item level 130 head piece against them ([testing.md, section 2](../engineering/testing.md#2-what-each-file-covers)). That checks the code against the rule; it is still not evidence that the game applies the rule at 123 (only the Wiki rows at 475 are).
 
@@ -197,9 +197,9 @@ Notes:
 5. A real item level 130 head piece at, below and one above the cap; unknown item level; no special substat; missing stats. Wiki rows are external truth; head caps at 123 and 129 are derived from `ItemLevel` and the 85 ‰ share; the edge cases are rules of the model.
 6. The in-game values of section 8 (xivgear's test notes), on the real items where named; with a factor of 100 the cap order equals the item order at every item level 1 to 795 and every slot share; an off-hand cap is the two-handed minus the one-handed cap. Budgets are game data; equal orders are an independent comparison.
 7. Real gear: brute-force reference. Piece stats raw values: external truth (game data). Caps, 296: independent derivation (caps unit test). Tier at 1,839: external truth (AkhMorning). Tier lookup: independent scan.
-8. The job's factor equals the item factor on every single-main-stat piece of all 22 jobs; the only pieces that differ are of kind 0 (the 13 four-main-stat pieces and the six all-jobs earrings and rings). Those 13, the Occult "of Magic" and "of Blood" accessories (Vitality 307 / 341) and Alexandrian Earrings of Casting are reproduced; a synced Field Commander's Coat is capped at main stat 43 and Vitality 45 at 123 in the optimizer and the gear browser (rules of the model).
+8. The job's factor equals the item factor on every single-main-stat piece of all 23 jobs; the only pieces that differ are of kind 0 (the 13 four-main-stat pieces and the six all-jobs earrings and rings). Those 13, the Occult "of Magic" and "of Blood" accessories (Vitality 307 / 341) and Alexandrian Earrings of Casting are reproduced; a synced Field Commander's Coat is capped at main stat 43 and Vitality 45 at 123 in the optimizer and the gear browser (rules of the model).
 9. Slots, exclusions including multi-slot gear, stat placement, HQ rule, job mask, Unique flag, sort order, budget columns, level data, stat factor kind and table, schema errors.
-10. Caps at 123 for six jobs and the Wiki 475 table (as in the unit tests); Piece stats head piece values (external truth); real-gear optimizer totals for Sage and Warrior synced and unsynced (computed by the core and the brute force in Node at test time); Paladin off-hand; no "undefined" / "NaN" / "null" text, no JavaScript errors, no horizontal scroll at 400 px.
+10. Caps at 123 for eight jobs and the Wiki 475 table (as in the unit tests); Piece stats head piece values (external truth); real-gear optimizer totals for Sage and Warrior synced and unsynced (computed by the core and the brute force in Node at test time); Paladin off-hand; no "undefined" / "NaN" / "null" text, no JavaScript errors, no horizontal scroll at 400 px.
 
 ## 8. Open question: in-game captures
 

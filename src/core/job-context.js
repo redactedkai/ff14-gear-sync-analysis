@@ -5,6 +5,7 @@ import {
   JOBS,
   DEFAULT_JOB,
   ONE_HANDED_JOBS,
+  JOB_LEVEL_CAPS,
   PROFILES,
   SLOT_TYPES,
   BASE_SLOT_PCT,
@@ -17,7 +18,7 @@ import {
   SPEC_NAME,
   SPEC_SHORT,
 } from './constants.js';
-import { IL } from './tables.js';
+import { IL, MAX_LEVEL } from './tables.js';
 
 const cache = new Map();
 
@@ -63,6 +64,8 @@ export function makeJobContext(jobId) {
     activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || weaponMode === '1h+oh'),
     /* Vitality for Int/Mind jobs is the Vit budget x 0.9 (rounded again) */
     vitFactor: profile.main === 'mind' || profile.main === 'int' ? 0.9 : 1,
+    /* the job's level cap: limited jobs stop below the game's (JOB_LEVEL_CAPS); it cannot wear gear of a higher equip level */
+    maxLevel: JOB_LEVEL_CAPS[id] ?? MAX_LEVEL,
   };
   deepFreeze(ctx);
   cache.set(id, ctx);

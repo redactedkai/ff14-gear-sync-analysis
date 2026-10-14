@@ -36,6 +36,23 @@ test('switching to another role clears the pool too', () => {
   assert.equal(store.jobCtx.weaponMode, '2h');
 });
 
+test('switching to a job with a lower level cap clamps the synced level and the equip level filter to it', () => {
+  const store = createAppStore(restoreState({ job: 'SGE', level: 90, browse: { lvl: 100 } }));
+  store.setJob('BLU');
+  assert.equal(store.level, 80);
+  assert.equal(store.browse.lvl, 80);
+  store.setJob('BST');
+  assert.equal(store.level, 50);
+  assert.equal(store.browse.lvl, 50);
+  store.setJob('WAR'); // a higher cap keeps the lower level
+  assert.equal(store.level, 50);
+  store.level = 40;
+  store.browse.lvl = '';
+  store.setJob('BST'); // below the cap, and an empty filter: untouched
+  assert.equal(store.level, 40);
+  assert.equal(store.browse.lvl, '');
+});
+
 test('choosing the current job again changes nothing', () => {
   const store = storeWithPool('DRG');
   const before = store.pool.length;

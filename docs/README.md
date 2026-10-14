@@ -1,6 +1,6 @@
 # Documentation
 
-Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a job and an item level sync cap, it shows what the stats on a piece of gear become under sync, and it searches real gear from the game files for the combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity and so on). It covers all 22 combat jobs and ships as one HTML file that opens from disk.
+Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a job and an item level sync cap, it shows what the stats on a piece of gear become under sync, and it searches real gear from the game files for the combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity and so on). It covers all 23 combat jobs and ships as one HTML file that opens from disk.
 
 These pages explain the model behind it, the evidence for that model, and how the code is built and tested. Every claim is marked verified (game files, the FFXIV Wiki, real items, tests) or inferred. How to build and run the page is in the [root README](../README.md); the rules for working in the repo are in [CLAUDE.md](../CLAUDE.md).
 

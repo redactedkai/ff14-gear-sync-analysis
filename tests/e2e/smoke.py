@@ -33,7 +33,8 @@ ROOT = Path(__file__).resolve().parents[2]
 PAGE = ROOT / 'dist' / 'index.html'  # run `npm run build` first
 OUT = ROOT / 'tests' / 'e2e' / 'out'  # screenshots (gitignored)
 
-JOBS = ['SGE', 'WAR', 'PLD', 'BLM', 'NIN', 'DRG']
+JOBS = ['SGE', 'WAR', 'PLD', 'BLM', 'NIN', 'DRG', 'BST', 'BLU']
+ONE_HANDED = {'PLD', 'BST'}  # one-handed weapon + shield
 BAD_WORDS = ['undefined', 'NaN', 'null']
 TIMEOUT = 10_000  # ms for any single wait
 STORE_KEY = 'ilvl-stat-lab-v4'  # localStorage key of the saved state (src/ui/state.js)
@@ -164,8 +165,8 @@ def check_sync_caps(pg, job):
         check(r[2] == str(sub), f'{job}: {slot} substat cap {r[2]!r}, expected {sub}')
         check(r[3] == str(main), f'{job}: {slot} main stat cap {r[3]!r}, expected {main}')
     has_offhand = 'Off-hand' in rows
-    if job == 'PLD':
-        check(has_offhand, 'PLD: Sync limits has no Off-hand row')
+    if job in ONE_HANDED:
+        check(has_offhand, f'{job}: Sync limits has no Off-hand row')
     else:
         check(not has_offhand, f'{job}: Sync limits shows an Off-hand row for a two-handed job')
         w = rows.get('Weapon')
@@ -814,6 +815,30 @@ def check_level_sync(pg):
     pg.set_viewport_size({'width': 1000, 'height': 900})
 
 
+def check_job_level_cap(pg):
+    """Limited jobs: picking Blue Mage (level cap 80) or Beastmaster (50) clamps the synced level and the equip level
+    filter to the cap, both inputs' maximum follows it, and a typed level above the cap is not taken."""
+    set_job(pg, 'SGE')
+    show_tab(pg, 'pool')
+    show_gear(pg, 'all')
+    set_number(pg, '#level', '100')
+    set_number(pg, '#b-lvl', '100')
+    for job, cap in (('BLU', '80'), ('BST', '50')):
+        set_job(pg, job)
+        for sel in ('#level', '#b-lvl'):
+            expect(pg.locator(sel)).to_have_value(cap)
+            check(pg.get_attribute(sel, 'max') == cap, f'{job}: {sel} max is {pg.get_attribute(sel, "max")!r}, expected {cap}')
+    wait_saved(pg, "s => s.job === 'BST' && s.level === 50")
+    set_number(pg, '#level', '70')
+    pg.wait_for_timeout(400)  # longer than the save debounce
+    level = pg.evaluate(f'JSON.parse(localStorage.getItem("{STORE_KEY}")).level')
+    check(level == 50, f'BST: a typed level 70 was taken (saved level {level!r})')
+    set_number(pg, '#level', '40')
+    wait_saved(pg, 's => s.level === 40')
+    set_number(pg, '#level', '50')  # the shared setup
+    set_job(pg, 'SGE')
+
+
 def check_no_bad_text(pg, where):
     txt = pg.inner_text('body')
     for bad in BAD_WORDS:
@@ -880,6 +905,7 @@ def main():
             check_reset,
             check_pld_offhand,
             check_level_sync,
+            check_job_level_cap,
             walk_jobs,
         ]
         set_job(pg, 'SGE')

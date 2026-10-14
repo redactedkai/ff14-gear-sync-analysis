@@ -16,7 +16,8 @@ const SAVE_DEBOUNCE_MS = 150;
 Alpine.store('app', createAppStore(restoreState(loadSaved())));
 const app = Alpine.store('app');
 
-/* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only */
+/* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only (a bound
+   that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)) */
 Alpine.magic('num', () => (path, lo, hi) => storeNumberField(app, path, lo, hi));
 
 Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, gear, optimizer }).forEach(([name, factory]) => {

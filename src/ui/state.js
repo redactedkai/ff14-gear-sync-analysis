@@ -2,7 +2,7 @@
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
 import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
-import { reserveIds } from '../core/items.js';
+import { reserveIds, wearable } from '../core/items.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { levelSyncIlvl } from '../core/sync-target.js';
 
@@ -14,10 +14,11 @@ export function syncActive(app) {
   return !!app.sync && app.cap != null;
 }
 
-/* Level sync can apply: the synced level is below the level cap, so gear with a higher equip level is synced to the
-   level's item level (core/sync-target.js). Independent of the item level sync switch. */
+/* Level sync can apply: the synced level is below the job's level cap (MAX_LEVEL before a job context exists), so gear
+   the job can wear with a higher equip level is synced to the level's item level (core/sync-target.js). Independent of
+   the item level sync switch. */
 export function levelSyncOn(app) {
-  return app.level != null && app.level < MAX_LEVEL;
+  return app.level != null && app.level < (app.jobCtx?.maxLevel ?? MAX_LEVEL);
 }
 
 /* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/optimizer/candidates.js). */
@@ -66,8 +67,16 @@ export function defaultSubs(job) {
   return [job.profile.spec ? 'spec' : 'spd', null];
 }
 
-/* On a job change: job-specific selections go back to defaults, and the pool is emptied. */
+/* The synced level and the "Equip level up to" filter held to the job's level cap. */
+export function clampLevels(s, job) {
+  if (s.level > job.maxLevel) s.level = job.maxLevel;
+  if (s.browse.lvl !== '' && s.browse.lvl > job.maxLevel) s.browse.lvl = job.maxLevel;
+}
+
+/* On a job change: job-specific selections go back to defaults, the levels are held to the job's cap, and the pool is
+   emptied. */
 export function resetForJob(s, job) {
+  clampLevels(s, job);
   s.piece.subs = defaultSubs(job);
   if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
   s.opt.target = 'main';
@@ -162,7 +171,7 @@ export function restoreState(raw) {
 
   s.cap = r.cap === null ? null : ilvlIn(r.cap, s.cap);
   s.sync = bool(r.sync, s.sync);
-  s.level = intIn(r.level, 1, 100, s.level);
+  s.level = intIn(r.level, 1, job.maxLevel, s.level);
   s.syncIlvl = ilvlIn(r.syncIlvl, s.syncIlvl);
   restoreTabs(s, r);
 
@@ -179,7 +188,7 @@ export function restoreState(raw) {
   s.browse.exclude = Array.isArray(b.exclude) ? SOURCES.map(x => x.key).filter(k => b.exclude.includes(k)) : [];
   s.browse.min = optIntIn(b.min, 0, MAX_REAL, s.browse.min);
   s.browse.max = optIntIn(b.max, 0, MAX_REAL, s.browse.max);
-  s.browse.lvl = optIntIn(b.lvl, 1, 100, s.browse.lvl);
+  s.browse.lvl = optIntIn(b.lvl, 1, job.maxLevel, s.browse.lvl);
   s.browse.sort = oneOf(b.sort, ['ilvl', ...job.stats], s.browse.sort);
 
   const o = isObj(r.opt) ? r.opt : {};
@@ -188,7 +197,7 @@ export function restoreState(raw) {
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
   s.opt.melds = bool(o.melds, s.opt.melds);
 
-  s.pool = restorePool(r.pool);
+  s.pool = restorePool(r.pool).filter(i => wearable(job, i)); // a job's cap can be newer than the save
   reserveIds(s.pool.map(i => i.id));
   return s;
 }

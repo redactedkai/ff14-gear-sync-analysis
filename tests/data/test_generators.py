@@ -36,7 +36,7 @@ from item_format import SchemaError  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
 STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr']
-ALL_JOBS_MASK = (1 << 22) - 1
+ALL_JOBS_MASK = (1 << 23) - 1
 
 
 def stats(**kw):

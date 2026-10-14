@@ -18,7 +18,7 @@ How to read the table:
 | 40 | Alliance raid | 625 | Void Ark, Ivalician, Ark Angel's, Vana'dielian | Alliance raid armor (incl. Chaotic: Clouddark) | ✅ Verified |
 | 60 | Trial; Ultimate (by shop) | 876 | Expanse, Ruby, Skyruin, Ultimate …, Palazzo Diamond | Extreme and Minstrel's Ballad trials, plus ultimate weapons (bought with an ultimate totem). Exception: the 21 Proto Ultima pieces are alliance raid gear (bought with Proto Ultima Heat Shielding from the Shadow of Mhach quest; overridden by that currency) | ✅ Verified |
 | 61 | Trial; Ultimate (by shop) | 16 | Thunderstrike, Adjudicator's | Ramuh Extreme weapons | ✅ Verified |
-| 80 | Artifact | 703 | Antiquated, Weathered, Idealized, Caballarius | Job (artifact) gear, plus Blue Mage sets | ✅ Verified |
+| 80 | Artifact | 738 | Antiquated, Weathered, Idealized, Caballarius | Job (artifact) gear, plus the Blue Mage and Beastmaster sets (Guttler and Kornago Hoplon, called relic weapons on the Console Games Wiki, are artifact gear by code, so the Relic box does not hide them) | ✅ Verified |
 | 100 | Tomestone | 2,882 | Ironworks, Shire, Credendum, Quetzalli, Bygone Brass | Tomestone gear, incl. retired and augmented sets | ✅ Verified |
 | 130 | Deep dungeon | 154 | Padjali, Empyrean, Orthos, Sacramental | Deep dungeon weapons | ✅ Verified |
 | 140 | Field Op | 7 | Kirin's Osode, Vermilion Cloak | The five Kirin's Osode (Eureka side set) and the two Vermilion Cloaks (body covering the head) | ✅ Verified (Kirin's Osode; the cloaks' origin not checked) |

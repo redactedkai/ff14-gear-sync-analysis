@@ -112,7 +112,8 @@ export function expansionOf(lvl, ilvl) {
 }
 
 /* Database rows this job can equip, matching the filter {q, type, expOff, ilvlMin, ilvlMax, lvlMax} (expOff: the
-   EXPANSIONS short names to hide). Returns parsed rows.
+   EXPANSIONS short names to hide). Returns parsed rows. Rows above the job's level cap (job.maxLevel) are left out
+   whatever lvlMax says: the job can never wear them.
    The job mask alone decides the weapon kind: Paladin has only one-handed weapons and shields, and White Mage also has
    an A Realm Reborn wand and shield (Tidal Wave, item level 100) besides its two-handed weapons. */
 export function browseItems(job, f) {
@@ -128,7 +129,7 @@ export function browseItems(job, f) {
     if (f.expOff?.length && f.expOff.includes(expansionOf(r[3], r[2]))) continue;
     if (f.ilvlMin && r[2] < f.ilvlMin) continue;
     if (f.ilvlMax && r[2] > f.ilvlMax) continue;
-    if (f.lvlMax && r[3] > f.lvlMax) continue;
+    if (r[3] > job.maxLevel || (f.lvlMax && r[3] > f.lvlMax)) continue;
     if (q && r[0].toLowerCase().indexOf(q) < 0) continue;
     const p = parseRow(r);
     if (!p.st[mainIdx] && !p.st[attrIdx]) continue; // must carry this job's main stat, or Main Attribute
@@ -172,6 +173,12 @@ export function sourceMask(item) {
 /* A pool item's equip level (the level a character needs to wear it), or null for items not from the database. */
 export function equipLevel(item) {
   return rowFacts(item)?.lvl ?? null;
+}
+
+/* The job can wear the pool item: its equip level is at most the job's level cap. Items not from the database (no
+   equip level) count as wearable. */
+export function wearable(job, item) {
+  return (equipLevel(item) ?? 0) <= job.maxLevel;
 }
 
 /* A pool item's materia slots: {slots, overmeld} (guaranteed slots; whether overmelding is allowed), or null for items

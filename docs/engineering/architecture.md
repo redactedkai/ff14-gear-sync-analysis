@@ -28,16 +28,16 @@ The page uses one runtime library, Alpine.js, for reactivity and templating. The
 
 ## 2. The job context
 
-Almost everything depends on the selected job: which stat is the main stat, which speed stat applies, whether there is a special substat (Piety, Tenacity or none), whether the weapon is two-handed or a one-handed weapon plus shield, which gear slots exist, and how Vitality is scaled. The 22 combat jobs fall into five role profiles that decide most of this (table in [math.md, section 1](../mechanics/math.md#1-terms)).
+Almost everything depends on the selected job: which stat is the main stat, which speed stat applies, whether there is a special substat (Piety, Tenacity or none), whether the weapon is two-handed or a one-handed weapon plus shield, which gear slots exist, and how Vitality is scaled. The 23 combat jobs fall into five role profiles that decide most of this (table in [math.md, section 1](../mechanics/math.md#1-terms)).
 
 The tool computes all of that **once per job** into a *job context*: a small, frozen description of the job. Every core function that needs job information takes the context as its first argument. Nothing in the core reads "the current job" from anywhere else.
 
 What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
-- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin). This fixes the list of active slots for Piece stats, the sync caps table and the slot filter, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
+- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin, Beastmaster). This fixes the list of active slots for Piece stats, the sync caps table and the slot filter, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
 - **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise. This is the factor the job's own gear carries. It is used only where no real item is involved (Sync caps, Piece stats). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
-- **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
+- **Level cap.** 100, or the limited job's own: Blue Mage 80, Beastmaster 50 (a constant from the Lodestone patch notes; the game files have none, [math.md, section 1](../mechanics/math.md#1-terms)). The synced level and the equip level filter stop there, and gear above it is left out of the gear list and the search.\n- **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
 Contexts are cached, so asking for the same job twice returns the same object. They are frozen, so no caller can change one by accident. An unknown job id gets the default job's context.
 
@@ -150,11 +150,11 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/job-icons.js` |
 | Tables and limits derived from the data | `src/core/tables.js` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
-| Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes` and `vitFactor`; `statColumn`) |
+| Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
 | Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`, `reserveIds`) |
 | Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
-| Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `restoreState`, `STORE_KEY`) |
+| Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
 | Budget chart | `src/ui/chart.js` |

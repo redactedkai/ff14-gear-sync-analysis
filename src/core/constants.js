@@ -104,6 +104,7 @@ const JOB_INFO = {
   RDM: ['Red Mage', 'caster'],
   PCT: ['Pictomancer', 'caster'],
   BLU: ['Blue Mage', 'caster'],
+  BST: ['Beastmaster', 'melee'],
 };
 /* [id, name, profile], in item-format.json order, which is the job bitmask in the item database: bit i = JOBS[i]. */
 export const JOBS = Object.freeze(
@@ -115,7 +116,15 @@ export const JOBS = Object.freeze(
 /* The job context used to render (hidden) job-dependent parts before a job is chosen, and the fallback for an unknown
    id in makeJobContext. The page itself starts with no job. */
 export const DEFAULT_JOB = JOBS[0][0];
-export const ONE_HANDED_JOBS = Object.freeze(['PLD']); /* 1H weapon + off-hand; everyone else uses a 2H weapon */
+export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']); /* 1H weapon + shield; everyone else uses a 2H weapon */
+/* Limited jobs stop below the game's level cap. The game files hold no level cap (ClassJob has no such column; its
+   IsLimitedJob flag marks exactly these two jobs), so these come from the official patch notes on the Lodestone:
+   Blue Mage "The level cap for blue mage has been increased to 80" (Patch 6.45 Notes,
+   https://na.finalfantasyxiv.com/lodestone/topics/detail/2a6c65f39b5b16b58bd4f0d9b1edaa8c0b7ec4f3), Beastmaster "begins at
+   level 1 with a maximum level of 50" (Patch 7.56 Notes,
+   https://na.finalfantasyxiv.com/lodestone/topics/detail/a8a526ad64db45c8ca8d1c7fdcce8a5eedaa18bc). Every other job caps
+   at the highest equip level in the item database (MAX_LEVEL in tables.js, 100). */
+export const JOB_LEVEL_CAPS = Object.freeze({ BLU: 80, BST: 50 });
 /* Expansions in order: [short name, full name, level cap]. The item level boundary after each one is the game's own
    sync item level at its level cap (ParamGrow), see expansionBounds in speed.js. */
 export const EXPANSIONS = Object.freeze([
@@ -132,7 +141,7 @@ export const EXPANSIONS = Object.freeze([
 export const JOB_ROWS = Object.freeze([
   Object.freeze(['Tanks', Object.freeze(['PLD', 'WAR', 'DRK', 'GNB'])]),
   Object.freeze(['Healers', Object.freeze(['WHM', 'SCH', 'AST', 'SGE'])]),
-  Object.freeze(['Melee', Object.freeze(['MNK', 'DRG', 'NIN', 'SAM', 'RPR', 'VPR'])]),
+  Object.freeze(['Melee', Object.freeze(['MNK', 'DRG', 'NIN', 'SAM', 'RPR', 'VPR', 'BST'])]),
   Object.freeze(['Physical ranged', Object.freeze(['BRD', 'MCH', 'DNC'])]),
   Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])]),
 ]);

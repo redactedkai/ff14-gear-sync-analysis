@@ -35,7 +35,7 @@
       </div>
     </div>
     <label class="f">Synced level
-      <input type="number" id="level" min="1" max="100" step="1" inputmode="numeric" x-bind="$num('level', 1, 100)">
+      <input type="number" id="level" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" x-bind="$num('level', 1, () => $store.app.jobCtx.maxLevel)">
     </label>
     <label class="f"><span>Sync cap (item level)<span class="field-error" id="cap-error" x-show="capError" x-text="' · ' + capError"></span></span>
       <input type="number" id="cap" :disabled="!$store.app.sync" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric"
@@ -137,7 +137,7 @@
 <section class="subtab" id="tab-sync" x-data="syncCaps" hidden :hidden="$store.app.mathTab !== 'sync'">
   <div class="panel">
     <h2>What the sync cap allows</h2>
-    <p class="small dim" id="s-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what it allows.' : 'No sync applies: item level sync is off and the synced level is the level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what it allows.'"></p>
+    <p class="small dim" id="s-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what it allows.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what it allows.'"></p>
     <template x-if="view"><div style="display:flex;flex-direction:column;gap:12px">
     <label class="f" style="max-width:220px">Example high-ilvl piece<input type="number" id="s-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-bind="$num('syncIlvl', 1, $store.app.maxReal)"></label>
     <p class="small dim" id="s-lead" x-text="(view.byLevel ? `Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}. ` : '') + `At sync cap ${view.cap}, a ${view.cap}-level piece defines the ceiling per slot. Anything above it is cut to this ceiling; anything below it keeps its own stats. The last two columns list a piece’s 1st / 2nd substat (100 / 70% shares): one at item level ${view.cap}, and one at item level ${view.hil} after syncing.`"></p>
@@ -202,7 +202,7 @@
       </div>
       <label class="f">Item level from<input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.browse.min"></label>
       <label class="f">Item level to<input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.browse.max"></label>
-      <label class="f" x-show="!view || !view.showPool">Equip level up to<input type="number" id="b-lvl" min="1" max="100" inputmode="numeric" x-model="$store.app.browse.lvl"></label>
+      <label class="f" x-show="!view || !view.showPool">Equip level up to<input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model="$store.app.browse.lvl"></label>
       <label class="f">Sort by<select id="b-sort" @change="$store.app.browse.sort = $event.target.value">
         <template x-for="o in sortOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.sort"></option></template>
       </select></label>

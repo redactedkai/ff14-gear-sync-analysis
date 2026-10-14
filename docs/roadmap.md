@@ -11,3 +11,4 @@ Related pages: [optimizer.md](engineering/optimizer.md), [materia.md](mechanics/
 | Later | Target GCD | "Reach this GCD tier, then maximize the target", through the engine's speed range. Needs every unbeaten meld version per piece; the engine refuses melds with a speed range today ([optimizer.md, section 6](engineering/optimizer.md#why-one-melded-version-per-piece-is-exact)). |
 | Later | Food | Add food to the totals and tiers. It shifts every tier. |
 | Later | Save and share a pool or result | As a JSON file or a URL. Pools can be large, so check URL length. |
+| Later | Sets for comparison | Keep several optimizer results side by side (for example the same pool under different targets or tiebreaks) and compare their stats and tiers. |

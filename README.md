@@ -1,6 +1,6 @@
 # Gear Sync Analysis
 
-An FFXIV calculator for understanding how item level sync and level sync work, with an optimizer that picks the gear combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity, and so on) under a sync cap. It works for all 22 combat jobs and uses real item data from the game files.
+An FFXIV calculator for understanding how item level sync and level sync work, with an optimizer that picks the gear combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity, and so on) under a sync cap. It works for all 23 combat jobs and uses real item data from the game files.
 
 It builds to a single self-contained HTML page, `dist/index.html`, that opens from disk with no server. The only outside request is the Google Fonts stylesheet; offline, the page falls back to system fonts. The npm package is named `ff14-gear-sync-analysis`.
 

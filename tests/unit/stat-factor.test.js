@@ -96,7 +96,7 @@ test('Occult accessories at 745: "of Magic" Vitality 307 (x 0.9), "of Blood" 341
 test('an Intelligence accessory every job can wear still has Vitality x 0.9', () => {
   // Alexandrian Earrings of Casting, item level 270: Vitality row 736 x 67 / 1000 = 49.3 -> 49; x 0.9 = 44.1 -> 44
   const r = row('Alexandrian Earrings of Casting');
-  assert.equal(r[4], 2 ** 22 - 1);
+  assert.equal(r[4], 2 ** 23 - 1);
   assert.equal(at(r, 'vit'), 44);
   assert.equal(rnd(rnd((IL.vit[270] * 67) / 1000) * 0.9), 44);
   assert.deepEqual(predictRaw(r[2], r[1], stats(r), r[9]), stats(r));

@@ -1,7 +1,7 @@
 /* Gear optimizer tab view: the best loadout for the chosen stat.
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { withoutSources, slotInfo, slotLabel } from '../../core/items.js';
+import { withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
 import { optimize, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
@@ -16,9 +16,10 @@ export function tierText(spd, level) {
   return `tier starts at ${t.start}${t.next != null ? `, next at ${t.next} (+${t.next - spd})` : ''}`;
 }
 
-/* The pool the optimizer searches: the gear pool minus the groups excluded in the Gear pool tab. */
+/* The pool the optimizer searches: the gear pool minus the groups excluded in the Gear pool tab and any piece above the
+   job's level cap (the browser never adds one; this guards pools built another way). */
 export function searchPool(app) {
-  return withoutSources(app.pool, app.browse.exclude || []);
+  return withoutSources(app.pool, app.browse.exclude || []).filter(i => wearable(app.jobCtx, i));
 }
 
 /* Sync changes something in this pool: item level sync is on, or some piece is level-synced. */
