@@ -649,6 +649,23 @@ details summary {
   cursor: pointer;
   font-weight: 600;
 }
+/* dev and staging builds only (scripts/build/build.mjs, buildMarks) */
+.build-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  background: var(--warn-bg);
+  color: var(--gold);
+  font: 600 0.75rem var(--mono);
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+.build-info {
+  font-family: var(--mono);
+  color: var(--gold);
+}
 footer {
   font-size: 0.78rem;
   color: var(--muted);

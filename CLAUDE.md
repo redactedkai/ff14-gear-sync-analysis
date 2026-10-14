@@ -77,6 +77,8 @@ Three long-lived branches (set up 2026-10-14):
 
 Changes flow one way: feature branch -> `dev` -> `staging` -> `main`. Prefer fast-forward merges; never commit directly on `staging` or `main`. A hotfix branches from `main`, then merges into `main`, `staging` and `dev`. Delete feature branches once merged. Committing, merging and pushing still happen only when the owner asks (working agreements below).
 
+A build knows its branch (`scripts/build/build.mjs`, `buildMarks`): on `staging` the page shows a "STAGING" badge by the title, on any other branch but `main` a "DEV" badge, both with the branch and commit in the footer, so a test build is never mistaken for the live page. `main` builds have no marks.
+
 `dist/`, `data/`, `tests/e2e/out/` and `scripts/perf/out/` are gitignored. **Never hand-edit `src/data/*`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
 
 ## Commands (run from the repo root)
