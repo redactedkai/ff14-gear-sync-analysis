@@ -20,7 +20,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Direct Hit.** A substat that raises the chance of a "direct hit", which adds damage. Every job has it on gear; it does nothing for healing.
 
-**DoT / HoT ticks.** Damage over time and heal over time: effects that deal damage or heal every 3 seconds for a while. The speed stat makes each tick stronger by a small multiplier. See [math.md, section 6](mechanics/math.md#6-speed-gcd-and-dothot-ticks).
+**DoT / HoT ticks.** Damage over time and heal over time: effects that deal damage or heal every 3 seconds for a while. The speed stat makes each tick stronger by a small multiplier. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
 **Duty.** One piece of instanced content: a dungeon, trial or raid. A duty can sync the character's level, the gear's item level, or both. See [math.md, section 1](mechanics/math.md#1-terms).
 
@@ -30,25 +30,25 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Field operations (Field Op).** Large open zones with their own gear and relic grind: Eureka (Stormblood), Bozja (Shadowbringers) and the Occult Crescent (Dawntrail). See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md#field-op-gear).
 
-**GCD (global cooldown).** The shared recast timer of most combat actions, 2.5 seconds by default. Every point of speed shortens it slightly. See [math.md, section 6](mechanics/math.md#6-speed-gcd-and-dothot-ticks).
+**GCD (global cooldown).** The shared recast timer of most combat actions, 2.5 seconds by default. Every point of speed shortens it slightly. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
-**GCD tier.** Because the GCD is rounded down to hundredths of a second, it changes in steps: a range of speed values all give the same GCD, and the next step starts at a specific threshold. At level 50 a new tier starts about every 10.5 points of gear speed. See [math.md, section 6](mechanics/math.md#6-speed-gcd-and-dothot-ticks).
+**GCD tier.** Because the GCD is rounded down to hundredths of a second, it changes in steps: a range of speed values all give the same GCD, and the next step starts at a specific threshold. At level 50 a new tier starts about every 10.5 points of gear speed. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
 **HQ / NQ.** High quality and normal quality. A crafted item can come out HQ, with bonus stats on top of the NQ version. The item database stores the HQ stats for every item that can be HQ and the only version of everything else. See [data-pipeline.md, section 4](engineering/data-pipeline.md#stats-and-the-hq-bonus).
 
 **Item level.** A number on every piece of gear. It is not a strength rating in itself: it is a row number in the budget table, and the piece's stats follow from that row and its slot. Real gear goes from 1 to 795 (the project's data starts at 100). See [math.md, section 2](mechanics/math.md#2-the-budget-table).
 
-**Item level sync, sync cap.** Some content lowers gear to a fixed item level, the **sync cap**. Each stat on a piece above the cap is cut to that stat's cap; pieces at or below the cap are unchanged. For substats the cap is what a full-share piece of the same slot at the cap carries (**verified**: the Wiki's caps at item level 475). For a stat with a factor below 100% the cap rounds in another order and can differ from such a piece by 1 (three second-hand in-game values; **inferred** elsewhere). That the main stat and Vitality are clamped the same way is **inferred**. The owner's main case is cap 123. See [math.md, section 5](mechanics/math.md#5-item-level-sync).
+**Item level sync, sync cap.** Some content lowers gear to a fixed item level, the **sync cap**. Each stat on a piece above the cap is cut to that stat's cap; pieces at or below the cap are unchanged. For substats the cap is what a full-share piece of the same slot at the cap carries (**verified**: the Wiki's caps at item level 475); for a stat with a factor below 100% it can differ by 1 (**verified** by three second-hand in-game values; **inferred** in general). That the main stat and Vitality are clamped the same way is **inferred**. The owner's main case is cap 123. See [math.md, section 5](mechanics/math.md#5-item-level-sync); the evidence is in [validation.md, section 8](mechanics/validation.md#8-open-question-in-game-captures).
 
 **Job.** A character's combat class, such as Sage, Warrior or Black Mage. The project supports all 22 combat jobs. A job decides the main stat, the speed stat, the special substat and the weapon type. See [math.md, section 1](mechanics/math.md#1-terms).
 
-**Level sync.** Content designed for a lower character level lowers the character's level to match (the page's "Synced level"). Gear whose equip level is above it is synced to the item level the game assigns to that level (`ParamGrow.ItemLevelSync`: 130 at level 50, 660 at level 90), whether or not item level sync is on (**verified** by the owner in game; the mapping is the game file). When a piece is also above the item level cap, the cap is used (**second-hand**: a player's report, xivgear issue #317). The level also sets the speed formulas' per-level constants. See [math.md, section 5](mechanics/math.md#which-pieces-are-synced) and [section 6](mechanics/math.md#6-speed-gcd-and-dothot-ticks).
+**Level sync.** Content designed for a lower character level lowers the character's level to match (the page's "Synced level"). Gear whose equip level is above it is synced to the item level the game assigns to that level (for example 130 at level 50), whether or not item level sync is on (**verified**). When a piece is also above the item level cap, the cap is used (**second-hand**). The level also sets the speed formulas' per-level constants. See [math.md, section 5](mechanics/math.md#which-pieces-are-synced) and [section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
 **Main Attribute, Secondary Attribute.** Generic stats that 16 pieces carry instead of a named main stat (the pre-order earrings, the Occult accessories, Neophyte's Ring). The wearer gets Main Attribute as its own main stat, and Secondary Attribute as Piety (healers), Tenacity (tanks) or Direct Hit (everyone else). That mapping is xivgear's, backed by in-game values for a healer and a Ninja; the tank case is **inferred**. See [data-pipeline.md, section 3](engineering/data-pipeline.md#3-the-shared-format-definition).
 
 **Main stat.** A job's primary damage or healing stat: Strength (tanks and Strength melee), Dexterity (Ninja, Viper, ranged physical), Intelligence (casters) or Mind (healers). Gear for one main stat is useless to jobs that use another. See [math.md, section 1](mechanics/math.md#1-terms).
 
-**Materia, melds.** Materia are stones that can be attached ("melded") to gear to add one combat substat each, in grades I to XII. A piece has up to 5 slots; crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot. Each substat on a piece is capped at the piece's own cap. On synced-down gear melds do not count (verified by the owner in game): a piece is synced when its item level is above the duty's cap or its equip level is above the duty's level. The gear optimizer gives each piece that is not synced its best melds (the "Materia" switch, on by default). See [materia.md](mechanics/materia.md).
+**Materia, melds.** Materia are stones that can be attached ("melded") to gear to add one combat substat each, in grades I to XII. A piece has up to 5 slots; crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot. Each substat on a piece is capped at the piece's own cap. On synced-down gear melds do not count (**verified** by the owner in game). The gear optimizer gives each piece that is not synced its best melds (the "Materia" switch, on by default). See [materia.md](mechanics/materia.md).
 
 **Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level; the Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123. See [math.md, section 1](mechanics/math.md#1-terms).
 
@@ -68,7 +68,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Savage.** The hard version of an eight-player raid tier, with its own gear. Normal and Savage gear share one source code in the game files; the generator tells them apart by dye slots and shop currency. See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md#savage-versus-normal-code-20).
 
-**Skill Speed, Spell Speed.** The speed substat: Skill Speed for physical jobs (weaponskills), Spell Speed for casters and healers (spells). It shortens the GCD and strengthens DoT and HoT ticks. The project calls both "speed". See [math.md, section 6](mechanics/math.md#6-speed-gcd-and-dothot-ticks).
+**Skill Speed, Spell Speed.** The speed substat: Skill Speed for physical jobs (weaponskills), Spell Speed for casters and healers (spells). It shortens the GCD and strengthens DoT and HoT ticks. The project calls both "speed". See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
 **Slot.** Where a piece is worn: weapon, off-hand (shield: Paladin, plus one White Mage shield at item level 100), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings. There is no belt slot in the current game. A few pieces take two slots: a two-handed weapon leaves the off-hand empty, and the two Vermilion Cloaks (body) leave the head empty. See [math.md, section 3](mechanics/math.md#3-slot-shares).
 
@@ -110,7 +110,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Generated piece, hand-made piece.** A pool piece built by the formula rather than read from the database. It has no equip level, so only the item level cap syncs it. Old saves drop the hypothetical and hand-entered pieces of the removed Advanced section ([testing.md, section 2](engineering/testing.md#2-what-each-file-covers)). See [math.md, section 5](mechanics/math.md#which-pieces-are-synced).
 
-**Generic maximum.** The most speed gear can give under cap 123 with full-share speed in every armor and accessory slot: 296, a 2.22 s GCD at level 50. It is derived from budget row 123, since no gear exists at item level 123. See [math.md, section 6](mechanics/math.md#6-speed-gcd-and-dothot-ticks).
+**Generic maximum.** The most speed gear can give under cap 123 with full-share speed in every armor and accessory slot: 296, a 2.22 s GCD at level 50. It is derived from budget row 123, since no gear exists at item level 123. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
 **Job context.** Everything job-dependent (stat mapping, weapon mode, active slots, the job's Vitality factor), computed once per job into a frozen object that every core function takes as its first argument. See [architecture.md, section 2](engineering/architecture.md#2-the-job-context).
 
@@ -126,7 +126,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Pool.** The items the user has picked, on the Gear pool tab, for the optimizer to choose from: real gear from the item database. Switching to any other job, even one in the same role, empties it after a warning. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
-**Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 7](engineering/optimizer.md#7-correctness-and-performance).
+**Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
 **Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into both generated data files and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
 
@@ -134,23 +134,23 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Slot code.** The number, 0 to 12, that names a piece's slot type in the database; 12 is a body piece that also covers the head. See [data-pipeline.md, section 4](engineering/data-pipeline.md#slot).
 
-**Slot share.** The fraction of the budget a slot gets, in thousandths: two-handed weapon 140, one-handed weapon 100, shield 40, head, hands and feet 85, body and legs 135, accessories 67, and 220 for a body piece that also covers the head. Read from the game's `BaseParam` sheet (**verified**). A shield's stats are not computed at 40: they are the two-handed value minus the one-handed value (**inferred**; fits 224 of 226 real off-hands). See [math.md, section 3](mechanics/math.md#3-slot-shares).
+**Slot share.** The fraction of the budget a slot gets, in thousandths, for example 135 for body and legs. Read from the game's `BaseParam` sheet (**verified**). A shield's stats are not computed from its own share: they are the two-handed value minus the one-handed value (**inferred**). See [math.md, section 3](mechanics/math.md#3-slot-shares).
 
 **Smoke test.** The browser test of the built page (`npm run smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 400 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
 
 **Speed range.** An optional minimum and maximum for the speed stat in the optimizer engine. The page does not offer it yet; it is meant for a target-GCD control ([roadmap.md](roadmap.md)). See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
-**Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded. It is 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats (**verified**, game files). Sync caps apply the factor in the other order, before the slot share (three second-hand in-game values; **inferred** elsewhere), and use the piece's own factor (**inferred**, supported second-hand). Where no item is involved, the page uses the job's factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule).
+**Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded. It is 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats (**verified**, game files). Sync caps apply the factor in the other order, before the slot share (**verified** by three second-hand in-game values; **inferred** in general), and use the piece's own factor (**inferred**). Where no item is involved, the page uses the job's factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule).
 
 **Store, view.** The page's UI pattern: one shared store holds the settings, the pool and the current job context; each page area derives a frozen view from it, and the template only displays the view. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
-**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files (**inferred**); with equal substats sharing a rank, it reproduces 99.9% of real pieces exactly (99.7% to 100.0% per item level band). Only Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md).
+**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files (**inferred**); it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md).
 
 **Tabs.** The page has two working tabs, **Gear pool** and **Gear optimizer**, and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (a piece built from its item level and slot by the formula) and **Sync limits** (what a cap allows per slot, with the "Checked against real gear and published caps" panel). Some pages call Sync limits "Sync caps". See the [root README](../README.md).
 
 **Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
 
-**Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [materia.md, section 5](mechanics/materia.md#5-breakpoints).
+**Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints).
 
 ## Outside sources
 

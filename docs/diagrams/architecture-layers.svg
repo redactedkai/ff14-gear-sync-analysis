@@ -79,7 +79,7 @@
   <rect class="box" x="260" y="476" width="200" height="72" rx="8"/>
   <text class="fg t" x="360" y="503" text-anchor="middle">One HTML file</text>
   <text class="muted s" x="360" y="522" text-anchor="middle">code, styles and data inlined,</text>
-  <text class="muted s" x="360" y="538" text-anchor="middle">about 1.6 MB</text>
+  <text class="muted s" x="360" y="538" text-anchor="middle">about 2.1 MB</text>
 
   <rect class="box" x="500" y="476" width="200" height="72" rx="8"/>
   <text class="fg t" x="600" y="503" text-anchor="middle">Browser</text>

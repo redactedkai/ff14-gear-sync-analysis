@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 736" role="img" aria-labelledby="t d">
   <title id="t">How one Item sheet row becomes an item database row</title>
-  <desc id="d">Worked example with Void Ark Helm of Fending, a tank head piece. Each Item sheet column on the left maps to a field of the database row on the right: name copied, equip slot category 3 becomes slot code 3 (head), item level 200 kept because it is at least 100, equip level 60 copied, job category 59 becomes job mask 15, four stat id and value pairs are placed into a 12-position stat vector, the HQ bonus is skipped because the item cannot be high quality, and the Unique flag becomes 1. Below, the 12 stat positions with their BaseParam ids and values, and the 22 job bits with PLD, WAR, DRK and GNB set.</desc>
+  <desc id="d">Worked example with Void Ark Helm of Fending, a tank head piece. Each Item sheet column on the left maps to a field of the database row on the right: name copied, equip slot category 3 becomes slot code 3 (head), item level 200 kept because it is at least 100, equip level 60 copied, job category 59 becomes job mask 15, four stat id and value pairs are placed into a 14-position stat vector, the HQ bonus is skipped because the item cannot be high quality, and the Unique flag becomes 1. The row has more fields after these (gear groups, stat factor kind, materia slots, rarity; data-pipeline.md section 4). Below, the 14 stat positions (the 12 named stats, then the generic Main and Secondary Attribute) with their BaseParam ids and values, and the 22 job bits with PLD, WAR, DRK and GNB set.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -35,7 +35,7 @@
   </defs>
   <rect class="bg" x="0" y="0" width="720" height="736"/>
   <text class="fg h" x="20" y="36">Item sheet row (columns used)</text>
-  <text class="fg h" x="470" y="36">Database row</text>
+  <text class="fg h" x="470" y="36">Database row (first fields)</text>
   <rect class="box" x="20" y="52" width="250" height="36" rx="8"/>
   <text class="muted s" x="32" y="74.5">Name</text>
   <text class="fg" x="258" y="74.5" text-anchor="end">Void Ark Helm of Fending</text>
@@ -83,7 +83,7 @@
   <text class="muted s" x="370.0" y="284.0" text-anchor="middle">placed by id, see below</text>
   <rect class="box" x="470" y="272" width="230" height="36" rx="8"/>
   <text class="muted s" x="482" y="294.5">stats</text>
-  <text class="fg" x="688" y="294.5" text-anchor="end">12 numbers</text>
+  <text class="fg" x="688" y="294.5" text-anchor="end">14 numbers</text>
   <rect class="box" x="20" y="316" width="250" height="36" rx="8"/>
   <text class="muted s" x="32" y="338.5">CanBeHq</text>
   <text class="fg" x="258" y="338.5" text-anchor="end">False</text>
@@ -102,54 +102,62 @@
   <text class="fg" x="688" y="382.5" text-anchor="end">1</text>
   <text class="fg h" x="20" y="432">Stats: each BaseParam id has a fixed position in the shared stat order</text>
   <text class="muted s" x="20" y="452">This item lists Strength 46 (id 1), Vitality 45 (id 3), Skill Speed 50 (id 45), Determination 35 (id 44).</text>
-  <rect class="on" x="26.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="52.0" y="486" text-anchor="middle">str</text>
-  <text class="accent num" x="52.0" y="508" text-anchor="middle">46</text>
-  <text class="muted nums" x="52.0" y="536" text-anchor="middle">id 1</text>
-  <rect class="box" x="82.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="108.0" y="486" text-anchor="middle">dex</text>
-  <text class="muted num" x="108.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="108.0" y="536" text-anchor="middle">id 2</text>
-  <rect class="box" x="138.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="164.0" y="486" text-anchor="middle">int</text>
-  <text class="muted num" x="164.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="164.0" y="536" text-anchor="middle">id 4</text>
-  <rect class="box" x="194.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="220.0" y="486" text-anchor="middle">mind</text>
-  <text class="muted num" x="220.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="220.0" y="536" text-anchor="middle">id 5</text>
-  <rect class="on" x="250.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="276.0" y="486" text-anchor="middle">vit</text>
-  <text class="accent num" x="276.0" y="508" text-anchor="middle">45</text>
-  <text class="muted nums" x="276.0" y="536" text-anchor="middle">id 3</text>
-  <rect class="box" x="306.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="332.0" y="486" text-anchor="middle">piety</text>
-  <text class="muted num" x="332.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="332.0" y="536" text-anchor="middle">id 6</text>
-  <rect class="box" x="362.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="388.0" y="486" text-anchor="middle">ten</text>
-  <text class="muted num" x="388.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="388.0" y="536" text-anchor="middle">id 19</text>
-  <rect class="box" x="418.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="444.0" y="486" text-anchor="middle">dh</text>
-  <text class="muted num" x="444.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="444.0" y="536" text-anchor="middle">id 22</text>
-  <rect class="box" x="474.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="500.0" y="486" text-anchor="middle">crit</text>
-  <text class="muted num" x="500.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="500.0" y="536" text-anchor="middle">id 27</text>
-  <rect class="on" x="530.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="556.0" y="486" text-anchor="middle">det</text>
-  <text class="accent num" x="556.0" y="508" text-anchor="middle">35</text>
-  <text class="muted nums" x="556.0" y="536" text-anchor="middle">id 44</text>
-  <rect class="on" x="586.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="612.0" y="486" text-anchor="middle">sks</text>
-  <text class="accent num" x="612.0" y="508" text-anchor="middle">50</text>
-  <text class="muted nums" x="612.0" y="536" text-anchor="middle">id 45</text>
-  <rect class="box" x="642.0" y="466" width="52" height="52" rx="8"/>
-  <text class="muted s" x="668.0" y="486" text-anchor="middle">sps</text>
-  <text class="muted num" x="668.0" y="508" text-anchor="middle">0</text>
-  <text class="muted nums" x="668.0" y="536" text-anchor="middle">id 46</text>
+  <rect class="on" x="26.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="48.0" y="486" text-anchor="middle">str</text>
+  <text class="accent num" x="48.0" y="508" text-anchor="middle">46</text>
+  <text class="muted nums" x="48.0" y="536" text-anchor="middle">id 1</text>
+  <rect class="box" x="74.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="96.0" y="486" text-anchor="middle">dex</text>
+  <text class="muted num" x="96.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="96.0" y="536" text-anchor="middle">id 2</text>
+  <rect class="box" x="122.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="144.0" y="486" text-anchor="middle">int</text>
+  <text class="muted num" x="144.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="144.0" y="536" text-anchor="middle">id 4</text>
+  <rect class="box" x="170.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="192.0" y="486" text-anchor="middle">mind</text>
+  <text class="muted num" x="192.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="192.0" y="536" text-anchor="middle">id 5</text>
+  <rect class="on" x="218.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="240.0" y="486" text-anchor="middle">vit</text>
+  <text class="accent num" x="240.0" y="508" text-anchor="middle">45</text>
+  <text class="muted nums" x="240.0" y="536" text-anchor="middle">id 3</text>
+  <rect class="box" x="266.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="288.0" y="486" text-anchor="middle">piety</text>
+  <text class="muted num" x="288.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="288.0" y="536" text-anchor="middle">id 6</text>
+  <rect class="box" x="314.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="336.0" y="486" text-anchor="middle">ten</text>
+  <text class="muted num" x="336.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="336.0" y="536" text-anchor="middle">id 19</text>
+  <rect class="box" x="362.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="384.0" y="486" text-anchor="middle">dh</text>
+  <text class="muted num" x="384.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="384.0" y="536" text-anchor="middle">id 22</text>
+  <rect class="box" x="410.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="432.0" y="486" text-anchor="middle">crit</text>
+  <text class="muted num" x="432.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="432.0" y="536" text-anchor="middle">id 27</text>
+  <rect class="on" x="458.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="480.0" y="486" text-anchor="middle">det</text>
+  <text class="accent num" x="480.0" y="508" text-anchor="middle">35</text>
+  <text class="muted nums" x="480.0" y="536" text-anchor="middle">id 44</text>
+  <rect class="on" x="506.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="528.0" y="486" text-anchor="middle">sks</text>
+  <text class="accent num" x="528.0" y="508" text-anchor="middle">50</text>
+  <text class="muted nums" x="528.0" y="536" text-anchor="middle">id 45</text>
+  <rect class="box" x="554.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="576.0" y="486" text-anchor="middle">sps</text>
+  <text class="muted num" x="576.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="576.0" y="536" text-anchor="middle">id 46</text>
+  <rect class="box" x="602.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="624.0" y="486" text-anchor="middle">mAttr</text>
+  <text class="muted num" x="624.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="624.0" y="536" text-anchor="middle">id 55</text>
+  <rect class="box" x="650.0" y="466" width="44" height="52" rx="8"/>
+  <text class="muted s" x="672.0" y="486" text-anchor="middle">sAttr</text>
+  <text class="muted num" x="672.0" y="508" text-anchor="middle">0</text>
+  <text class="muted nums" x="672.0" y="536" text-anchor="middle">id 56</text>
   <text class="fg h" x="20" y="574">Job mask: bit i is set when job i (in the shared job order) can equip the item</text>
   <text class="muted s" x="20" y="594">Category 59 lists GLA MRD PLD WAR DRK GNB. GLA and MRD are base classes, not among the 22 jobs, so they set no bit.</text>
   <text class="accent s" x="45.0" y="614" text-anchor="middle">PLD</text>

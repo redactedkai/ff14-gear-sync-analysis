@@ -23,18 +23,15 @@ export function mkItem(name, type, ilvl, stats, extra) {
   return Object.assign({ id: newId(), name, type, ilvl, stats: Object.assign(blankStats(), stats), copies: 1, src: 'custom' }, extra || {});
 }
 
-/* Generic pieces: every ordered pair (A, B) of allowed substats per slot type, with an optional
-   Direct Hit third substat (healer-style gear). */
-export function genericItems(job, ilvl, subsAllowed, third, types) {
+/* Generic pieces: every ordered pair (A, B) of allowed substats per slot type. */
+export function genericItems(job, ilvl, subsAllowed, types) {
   const items = [];
   types.forEach(t => {
     subsAllowed.forEach(a => {
       subsAllowed.forEach(b => {
         if (a === b) return;
-        const subs = [a, b];
-        if (third && a !== 'dh' && b !== 'dh') subs.push('dh');
-        const st = buildPiece(job, ilvl, t, subs);
-        const nm = SLOT_LABEL[t] + ' ilvl ' + ilvl + ' · ' + job.short[a] + '/' + job.short[b] + (subs.length > 2 ? '/DH' : '');
+        const st = buildPiece(job, ilvl, t, [a, b]);
+        const nm = SLOT_LABEL[t] + ' ilvl ' + ilvl + ' · ' + job.short[a] + '/' + job.short[b];
         items.push(mkItem(nm, t, ilvl, st, { src: 'generated', copies: 2 }));
       });
     });

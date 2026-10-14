@@ -91,7 +91,7 @@ Notes:
 - **Gear table**: one table shows either the database matches or the pool. It recomputes on any change of its filters (including the excluded gear groups), the list shown, the pool, job, cap, sync or level. It shows the first 100 database matches or the first 400 pool items; the optimizer still uses the whole pool. "Add all" refuses more than 3,000 matches.
 - **Optimizer result**: triggered by a change of pool, excluded groups, job, cap, sync, level or optimizer settings. Node limit 700,000.
 
-The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. Run times are in [optimizer.md, section 7](optimizer.md#7-correctness-and-performance).
+The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
 ## 4. Persistence
 

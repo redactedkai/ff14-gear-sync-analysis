@@ -1,6 +1,6 @@
 /* Substat tiers: each substat's effect moves in steps, so the points between two steps do nothing. For a total of
    gear points g at a level, the effect is floor(c x g / div) per mille, with div = ParamGrow.LevelModifier and a step
-   size c per effect (AkhMorning's formulas, which xivgear's xivmath matches; docs/mechanics/materia.md, section 5):
+   size c per effect (AkhMorning's formulas, which xivgear's xivmath matches; docs/mechanics/math.md, section 6):
      Critical Hit rate 200 (plus a base 5%), Determination 140, Direct Hit 550, Tenacity damage 112, Piety 150 (MP per
      tick, not per mille); Skill/Spell Speed by its GCD (speed.js).
    The character's base value of each stat cancels out of these formulas, so the tier depends on the gear points alone.

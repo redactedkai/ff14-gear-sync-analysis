@@ -21,14 +21,14 @@ How to read the table:
 | 80 | Artifact | 703 | Antiquated, Weathered, Idealized, Caballarius | Job (artifact) gear, plus Blue Mage sets | ✅ Verified |
 | 100 | Tomestone | 2,882 | Ironworks, Shire, Credendum, Quetzalli, Bygone Brass | Tomestone gear, incl. retired and augmented sets | ✅ Verified |
 | 130 | Deep dungeon | 154 | Padjali, Empyrean, Orthos, Sacramental | Deep dungeon weapons | ✅ Verified |
-| 140 | Field Op | 5 | Kirin's Osode | Eureka side set | ✅ Verified |
+| 140 | Field Op | 7 | Kirin's Osode, Vermilion Cloak | The five Kirin's Osode (Eureka side set) and the two Vermilion Cloaks (body covering the head) | ✅ Verified (Kirin's Osode; the cloaks' origin not checked) |
 | 150 | Field Op | 176 | Bozjan, Law's Order, Blade's | Bozja armor and accessories | ✅ Verified |
 | 210 / 220 / 230 | Grand Company | 17 each | Serpent / Storm / Flame | Twin Adder / Maelstrom / Immortal Flames gear (same as the `GrandCompany` column) | ✅ Verified |
 | 250 | Diadem | 293 | Mistfall, Sunburst, Coven | Heavensward Diadem gear, retired (random substats); left out of the database | ✅ Verified |
-| 270 | Dungeon | 3,391 | Ktiseos, Riversbreath, Mistwake | Dungeon drops | ✅ Verified |
+| 270 | Dungeon | 3,387 | Ktiseos, Riversbreath, Mistwake | Dungeon drops | ✅ Verified |
 | 300 | Crafted (augmented) | 675 | Augmented Exarchic, Augmented Courtly Lover's | Crafted gear upgraded with certificates (ShB on) | ✅ Verified |
 | 310 | Wondrous Tails | 91 | Ornate … | Ornate copies of crafted body pieces | ✅ Verified |
-| 320 | Crafted | 3,632 | Archeo, Ceremonial, Courtly | Crafted gear, and gear exchanged for crafted gear. The 182 without a recipe: 38 Paladin swords and shields (the recipe makes a "Paladin's … Arms" set holding both), 71 Yama (traded for Rakshasa Tokens from turning in crafted gear), 73 pre-ShB augmented crafted | ✅ Verified |
+| 320 | Crafted | 3,627 | Archeo, Ceremonial, Courtly | Crafted gear, and gear exchanged for crafted gear. The 182 without a recipe: 38 Paladin swords and shields (the recipe makes a "Paladin's … Arms" set holding both), 71 Yama (traded for Rakshasa Tokens from turning in crafted gear), 73 pre-ShB augmented crafted | ✅ Verified |
 | 350 | FATE | 1 | Kidomaru | FATE reward | ✅ Verified |
 | 370 | Field Op | 11 | Occult …, Neophyte's Ring | Occult Crescent accessories. Exception: Neophyte's Ring is a Hall of the Novice reward (filed under Quest, overridden by item id) | ✅ Verified |
 | 410 | PvP | 340 | Hellwolf, Werewolf, Battleliege, Althyk's | PvP gear (item level 100–205) | ✅ Verified (game shop data: all 340 sold for Wolf Marks) |

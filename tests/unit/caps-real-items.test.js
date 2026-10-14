@@ -137,7 +137,7 @@ test('generic maximum at 123: ten armor and accessory caps sum to 296, a 2.22 s 
   assert.equal(gcdFor(sum, 50), 2.22);
   for (const id of ['SGE', 'WAR']) {
     const job = makeJobContext(id);
-    const gen = genericItems(job, 475, job.substats, false, ARMOR);
+    const gen = genericItems(job, 475, job.substats, ARMOR);
     const r = optimize(job, gen, { cap: 123, sync: true }, { target: 'spd' });
     assert.equal(r.totals.spd, sum, id);
   }

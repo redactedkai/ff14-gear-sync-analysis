@@ -71,7 +71,7 @@ There are 24 misses in total (0, 2, 22 and 0 per band), all off by 1, in three g
 - **4 pieces in two weapon-and-shield pairs** (Alexandrian Metal Blade and Buckler, item level 275; Palaka Shamshir and Pelta, 536). Each pair adds up to the two-handed value, but one stat is split 1 off between them.
 - **2 at item level 595** (Troian legs). Tenacity and Piety follow the common substat column of the budget table, not their own (1 lower). Not adopted into the model.
 
-These misses are not explained. A diagnostics view for them is on the [roadmap](../roadmap.md).
+These misses are not explained. They affect only Piece stats: the Gear pool and the optimizer use each item's real stats.
 
 **Explained exceptions, now in the model.** Two groups that used to miss have a known cause and a rule in the model ([math.md, section 4](math.md#substat-shares-empirical)):
 
@@ -123,7 +123,7 @@ The caps at 123 ([math.md, caps at item level 123](math.md#caps-at-item-level-12
 
 So the caps at 123 are an **independent derivation** backed by real pieces at the neighbouring rows, not external truth. The formula unit test, the sync caps view test and the smoke test (six jobs: Sage, Warrior, Paladin, Black Mage, Ninja, Dragoon) assert the same numbers.
 
-The sync unit test derives the head caps itself from `ItemLevel` row 123 (substat 346, main stat 355, Vitality 375) and the head share of 85 ‰, without calling the code under test: $\operatorname{round}(346 \times 0.085) = 29$, $\operatorname{round}(355 \times 0.085) = 30$. It then clamps a real item level 130 head piece one item level above the cap and expects every stat to equal the smaller of its own value and that derived cap (Spell Speed 29, main stat 30). It does the same at cap 129 (main stat 32, Vitality 31, substats 31). That checks the code against the rule; it is still not evidence that the game applies the rule at 123 (only the Wiki rows at 475 are).
+The sync unit test also derives the head caps at 123 and 129 itself, from the `ItemLevel` rows and the 85 ‰ head share, and clamps a real item level 130 head piece against them ([testing.md, section 2](../engineering/testing.md#2-what-each-file-covers)). That checks the code against the rule; it is still not evidence that the game applies the rule at 123 (only the Wiki rows at 475 are).
 
 ## 4. The worked piece: an item level 130 healer head piece
 
@@ -135,7 +135,7 @@ A real item level 130 healer head piece has, in the game data, Mind 33, Vitality
 
 ## 5. Speed and GCD
 
-The GCD and DoT/HoT formulas are AkhMorning's community formulas, not game files ([math.md, section 6](math.md#6-speed-gcd-and-dothot-ticks)). Their inputs, $\text{sub}$ and $\text{div}$ per level, come from the game's `ParamGrow` sheet.
+The GCD and DoT/HoT formulas are AkhMorning's community formulas, not game files ([math.md, section 6](math.md#6-speed-and-substat-tiers)). Their inputs, $\text{sub}$ and $\text{div}$ per level, come from the game's `ParamGrow` sheet.
 
 AkhMorning's [Skill and Spell Speed page](https://www.akhmorning.com/allagan-studies/stats/speed/) publishes tier tables: pick a level under "Show data for level" and the view "2.5s Tiers". Each row is the first speed of a new GCD tier, with its delta from the level's base (that delta is gear speed here) and the DoT scalar. The values below were read from that page on 2026-10-11 at levels 50, 90 and 100. The page text adds that at level 100 "2.49 happens at the 1st [tier], then 2.48s at the 5th, 2.47s at the 9th", one tier every 2780 / 130 = 21.38 points.
 
@@ -155,18 +155,11 @@ Notes:
 
 - All tier values come from AkhMorning's tier tables. The speed unit test asserts each tier start, one point below it still on the previous tier, and the DoT scalar; at level 50 it also checks that the tool's tier scan lists them. The level 50 thresholds match AkhMorning's level 50 table row for row.
 - The tier lookup check compares the fast lookup with a step-by-step scan of the GCD formula, at 5 seeded speeds per level from 1 to 100. It confirms the lookup agrees with the formula; it says nothing about whether the formula matches the game.
-- The generic maximum 296 is an independent derivation: the sum of the ten armor and accessory substat caps at 123 ([math.md, section 6](math.md#6-speed-gcd-and-dothot-ticks)), from `ItemLevel` row 123 and the `BaseParam` shares; no real gear exists at 123. Its 2.22 s is external truth from AkhMorning's level 50 table (tiers at 286 and 297). The caps unit test derives the sum without calling the code, checks its GCD, and checks that the generic-piece optimizer for Sage and Warrior reaches it.
+- The generic maximum 296 is an independent derivation: the sum of the ten armor and accessory substat caps at 123 ([math.md, section 6](math.md#6-speed-and-substat-tiers)), from `ItemLevel` row 123 and the `BaseParam` shares; no real gear exists at 123. Its 2.22 s is external truth from AkhMorning's level 50 table (tiers at 286 and 297). The caps unit test derives the sum without calling the code, checks its GCD, and checks that the generic-piece optimizer for Sage and Warrior reaches it.
 
 ## 6. The optimizer against the true best
 
-The optimizer works on real item stats, so it does not depend on the substat shares. Its checks compare it with a brute force that tries every legal loadout, not with outside data. The brute force shares the optimizer's rule for a piece's synced stats, so these checks test the search, not the clamp (the clamp is section 3). In short (details and numbers in [optimizer.md, section 7](../engineering/optimizer.md#7-correctness-and-performance) and [testing.md, section 2.1](../engineering/testing.md#21-the-brute-force-reference-and-the-real-gear-pools)):
-
-- **Real-gear pools** (brute-force reference): seven jobs, one or two per role (White Mage, Sage, Warrior, Paladin, Dragoon, Bard, Black Mage), each with every item it can equip in a small item level window between 120 and 135 (3,072 to 147,456 loadouts). For every substat as the target, synced to 123 and unsynced, the optimizer's target, main stat and Vitality totals equal the brute force.
-- **Unique rings** (brute-force reference): item level 130 Sage gear whose only ring is Unique wears it once (235 Spell Speed synced, 243 unsynced); with two copies allowed the same ring is worn twice (258 / 267).
-- **Constraints** (brute-force reference): Warrior gear at item level 130 to 135 (32 items, 98,304 loadouts): speed minimums, maximums and ranges, and infeasible requirements.
-- **Random pools** (brute-force reference): 400 seeded random pools (rings with 1 and 2 copies, Unique items, tiebreaks, speed ranges) and 200 pools with very large tiebreak values; regressions for the ring pruning bug and the score weights ([history.md](../history.md)).
-- **Page views and the built page** (brute-force reference): the optimizer view on real Black Mage gear, and the smoke test's Sage and Warrior pools (Spell Speed 247 / 255, Skill Speed 85 / 87), equal the brute force.
-- **Real-gear probe** (run for the docs, not a committed test): 22 jobs × 35 item level windows × sync on and off × every stat as target = 9,800 runs, each against the exact optimum. The current code misses 0 (for the earlier ring rule it caught, see [history.md](../history.md)).
+The optimizer works on real item stats, so it does not depend on the substat shares. Its checks compare it with a brute force that tries every legal loadout (seven real-gear pools, Unique rings, speed constraints, 600 random pools, the page views) and with a 9,800-run probe on real gear; it equals the brute force in every case. The brute force shares the optimizer's rule for a piece's synced stats, so these checks test the search, not the clamp (the clamp is section 3). Details and numbers: [optimizer.md, section 8](../engineering/optimizer.md#8-correctness-and-performance).
 
 None of these totals has been checked in game. They show the search returns the best loadout for the model's synced stats; whether the game syncs those pieces to the same values is the open question in section 8.
 

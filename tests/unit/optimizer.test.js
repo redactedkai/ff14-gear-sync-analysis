@@ -90,7 +90,7 @@ test('sync lowers the best Spell Speed of item level 130 gear under a 123 cap', 
 });
 
 test('generic maximum under a 123 cap is 296 Spell Speed, 2.22 s GCD', () => {
-  const gen = genericItems(sge, 475, sge.substats, false, ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
+  const gen = genericItems(sge, 475, sge.substats, ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
   const r = optimize(sge, gen, { cap: 123, sync: true }, { target: 'spd' });
   assert.deepEqual([r.totals.spd, gcdFor(r.totals.spd, 50)], [296, 2.22]);
 });

@@ -266,7 +266,7 @@ $$
 \lfloor 355 \times 0.9 \rfloor = 319,\ \lfloor 319 \times 1.35 \rfloor = 430,\ 43.0 \to 43; \qquad \lfloor 375 \times 0.9 \rfloor = 337,\ \lfloor 337 \times 1.35 \rfloor = 454,\ 45.4 \to 45
 $$
 
-**Evidence for the cap order: three in-game values, second-hand.** xivgear computes caps this way (`statCapWithJob`, [xivmath.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/xivmath.ts#L647-L649)), and its tests quote values seen in game, which this project has not captured itself. Three of them fit the factor-first cap and not the item order: Vitality 56 on a Blue Mage head at 270 (item order 57), Vitality 123 on a Red Mage head at 530 (122) and main stat 71 on Azeyma's Earrings at 430 (70). The other values in those notes fit both orders. The table, the arithmetic and the sources are in [validation.md, section 8](validation.md#8-open-question-in-game-captures). The Red Mage value is the clearest: a piece synced to 530 keeps Vitality 123, one more than the native item level 530 head carries (Edenmorn Hat of Casting, 122), so a cap is not always what a same-slot piece at the cap carries. **Verified** by three second-hand in-game values; for the other factor-below-100 caps the order is **inferred** from them.
+**Evidence for the cap order.** xivgear computes caps this way (`statCapWithJob`, [xivmath.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/xivmath.ts#L647-L649)), and three in-game values quoted in its tests fit the factor-first cap and miss the item order by 1; the values, the arithmetic and the sources are in [validation.md, section 8](validation.md#8-open-question-in-game-captures). **Verified** by these three second-hand in-game values; for the other factor-below-100 caps the order is **inferred** from them.
 
 Then, for a piece at item level $i$:
 
@@ -307,13 +307,13 @@ The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The 
 
 ### What is assumed
 
-- **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor. The Wiki table covers substats only. The three second-hand in-game values above (Vitality 56 and 123, main stat 71 on a kind 0 earring, with its kind's 90%) support it. This project has no capture of its own, so it stays *inferred* in general, and so does using the piece's factor rather than the job's. xivgear does the same: its caps take the factor from the item (`BaseParamModifier`), and its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece, main stats and Vitality included, exempting only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). With the factor-first order, its cap formula and this page's are the same.
+- **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor. The Wiki table covers substats only. The three second-hand in-game values of the clamp rule above (two Vitality caps and a kind 0 earring's main stat at its kind's 90%; [validation.md, section 8](validation.md#8-open-question-in-game-captures)) support it. This project has no capture of its own, so it stays *inferred* in general, and so does using the piece's factor rather than the job's. xivgear does the same: its caps take the factor from the item (`BaseParamModifier`), and its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece, main stats and Vitality included, exempting only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). With the factor-first order, its cap formula and this page's are the same.
 - **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). *Inferred, strongly supported*: a player's in-game report shows a lower substat clamped to the full cap, and The Balance's item level thresholds for "both substats capped" only make sense under this rule. Nothing contradicts it, but this project has no capture of its own. The evidence is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
 - **No scaling up**: sync never raises a stat. *Assumed.*
 
 In-game captures under a known sync would settle the first two points; what to capture is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
 
-## 6. Speed: GCD and DoT/HoT ticks
+## 6. Speed and substat tiers
 
 Speed shortens the **global cooldown (GCD)**, the shared recast timer of most actions, normally 2.5 s. It also makes damage-over-time (DoT) and heal-over-time (HoT) effects tick harder. The tool uses AkhMorning's community formulas with two per-level values from the game's `ParamGrow` sheet:
 
@@ -372,6 +372,16 @@ That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real
 
 Verification status: the formulas are a community reference, not game files. Which GCD values are asserted in tests, and their sources, is in [validation.md, section 5](validation.md#5-speed-and-gcd). Whether a particular action's recast is reduced by speed depends on the job, so the tool reports only the 2.5 s base GCD and the tick multiplier.
 
+### Substat tiers (breakpoints)
+
+Like the GCD, every other substat's effect moves in steps (critical rate, Determination multiplier, Direct Hit rate, Tenacity, Piety), because its formula floors too, so points between two steps do nothing. The optimizer maximizes raw totals, not effects ([optimizer.md](../engineering/optimizer.md)). What that means for its answers:
+
+- **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 optimizer runs on full pools.
+- **Tiebreaks:** in 200 of 572 runs with a target and one tiebreak, another loadout keeps the target's step and puts the tiebreak a step higher. This happens mostly at level 100, where steps are 14 to 25 points wide, and rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds ([materia.md](materia.md)).
+- **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect from gear (no food), the points above the start of its step and the points to the next. Ranking tiebreaks by step instead is not planned (owner's decision): raw totals already reach the target's best step, the tiebreak gain is about one step, food shifts every step, and it would need the same engine changes as a target GCD.
+
+**Measured** by an independent dynamic program. The step formulas are the community ones from AkhMorning, matching xivgear (**inferred**).
+
 ## 7. Verified and assumed
 
 | Claim | Status | Evidence |
@@ -407,10 +417,10 @@ Notes:
 
 1. Vitality × 0.9 on Intelligence/Mind gear, every main stat and Vitality × 0.9 on four-main-stat gear; read from `BaseParam.MeldParam`, column `Item.BaseParamModifier`. Reproduces real items, the 13 four-main-stat pieces included.
 2. On the 1,199 Intelligence/Mind pieces where the two orders differ and the item order is right; factor first is right on 18.
-3. Vitality 56 (Blue Mage head, 270), 123 (Red Mage head, 530), main stat 71 (Azeyma's Earrings, 430); the item order gives 57, 122, 70. With a factor of 100 the two orders are the same.
-4. Azeyma's Earrings (kind 0) synced to 430 show main stat 71 for Ninja in game (xivgear's test note): the 90% cap of its kind, not the job's 78. xivgear does the same; no capture of this project's own.
+3. Three in-game values quoted in xivgear's tests fit factor first and not the item order ([validation.md, section 8](validation.md#8-open-question-in-game-captures)). With a factor of 100 the two orders are the same.
+4. Azeyma's Earrings (kind 0) synced to 430 show the 90% main-stat cap of its kind for Ninja in game, not the job's full cap (xivgear's test note; [validation.md, section 8](validation.md#8-open-question-in-game-captures)). xivgear does the same; no capture of this project's own.
 5. Against 195 for the 40 ‰ share. xivgear uses the same rule for shield caps. It sets the shield cap at 123 to 13.
-6. Substat 29 / 47 / 23 / 48, main stat 30 / 48 / 24 / 50, Int/Mind Vitality 29 / 45 / 23 / 47 (head, body, accessory, two-handed weapon). No gear exists at item level 123; real pieces at 120 and 125 follow the same rule in every slot.
+6. The table in [Caps at item level 123](#caps-at-item-level-123). No gear exists at item level 123; real pieces at 120 and 125 follow the same rule in every slot ([validation.md, section 3](validation.md#the-caps-at-item-level-123)).
 7. The three values in note 3. No capture of this project's own; xivgear clamps them too.
 8. A player's in-game report (Determination 129 → 123 at 345, not 86), The Balance's thresholds and the Wiki ([validation.md, section 8](validation.md#8-open-question-in-game-captures)). No capture of this project's own.
 9. Level 50, 90 and 100 tier tables, asserted in tests ([validation.md, section 5](validation.md#5-speed-and-gcd)).

@@ -39,7 +39,7 @@ Notes:
 - **`TomestonesItem`**: the tomestone currencies and which are current (`Tomestones` 1 to 4).
 - **`ItemLevel`**: the stat budget of every stat at every item level. Ids 0 to 920.
 - **`ParamGrow`**: per character level data, including the speed constants. Rows 0 to 201; levels 1 to 100 are used.
-- **`BaseParam`**: one row per stat. It holds the share of the budget each slot gets (two-handed weapon 140, one-handed 100, off-hand 40, head/hands/feet 85, body/legs 135, accessories 67, a body that covers the head 220, in thousandths) and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). The item level generator copies the stat factors (section 5) and only checks the slot shares, which are kept in the shared format definition (section 3). The item database generator checks the item kinds and the names of the crafter and gatherer stats.
+- **`BaseParam`**: one row per stat. It holds the share of the budget each slot gets, in thousandths (values in [math.md, section 3](../mechanics/math.md#3-slot-shares)), and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). The item level generator copies the stat factors (section 5) and only checks the slot shares, which are kept in the shared format definition (section 3). The item database generator checks the item kinds and the names of the crafter and gatherer stats.
 - **`ClassJob`**: one row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon.
 
 **Verified on every regeneration**: for all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the share the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). The columns checked are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent`, `RingPercent` and `ChestHeadPercent` (the body that covers the head, section 4). The sheet has more columns for other multi-slot gear; the project has no slot code for that gear, so they are not checked. See [math.md](../mechanics/math.md) for how the shares are used.
@@ -246,17 +246,11 @@ The last field (position 12) is `Item.Rarity`, copied as is (1 white, 2 green, 3
 
 ### The materia table
 
-The item file also holds one small table, one entry per materia grade I to XII:
+The item file also holds one small table, one entry per materia grade I to XII, with three fields per grade. The values, gates and high grades themselves, and their evidence, are in [materia.md, section 2](../mechanics/materia.md#2-the-rules).
 
-| Grade | I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| value $v_g$ | 1 | 2 | 3 | 4 | 6 | 16 | 8 | 24 | 12 | 36 | 18 | 54 |
-| gate $L_g$ | 15 | 30 | 45 | 70 | 160 | 290 | 420 | 420 | 560 | 560 | 690 | 690 |
-| high | | | | | | ✓ | | ✓ | | ✓ | | ✓ |
-
-- **Value** $v_g$: what grade $g$ adds to a combat substat (`Materia`, `Value[g − 1]`). **Verified**, game data.
-- **Gate** $L_g$: the lowest gear item level that takes grade $g$, the `LevelItem` of the grade's materia item. **Verified** against the Lodestone, whose materia pages list "Base Item: Item Level $L_g$".
-- **High**: the grades that cannot go past the first overmeld slot, those whose `MateriaGrade` row has a 0% rate in the second overmeld slot (`OvermeldNQPercent[1]` = 0). **Verified**, game data and the materia's item text.
+- **Value** $v_g$: what grade $g$ adds to a combat substat, read from `Materia`, `Value[g − 1]`.
+- **Gate** $L_g$: the lowest gear item level that takes grade $g$, read as the `LevelItem` of the grade's materia item.
+- **High**: whether the grade cannot go past the first overmeld slot, read as a 0% rate in the second overmeld slot of its `MateriaGrade` row (`OvermeldNQPercent[1]` = 0).
 
 How it is built:
 
@@ -303,17 +297,17 @@ Rows are sorted by item level (highest first), then slot code, then name. The st
 
 The second generator writes one file with four parts.
 
-**Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. For example, at item level 123: Mind 355, Vitality 375, Spell Speed 346. How a budget becomes the stat on a piece is in [math.md](../mechanics/math.md).
+**Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. The budget curves and example values are in [math.md, section 2](../mechanics/math.md#2-the-budget-table); how a budget becomes the stat on a piece is in [math.md, section 4](../mechanics/math.md#4-the-stats-on-a-piece).
 
-**Level data.** For character levels 1 to 100, three `ParamGrow` columns:
+**Level data.** For character levels 1 to 100, three `ParamGrow` columns, each stored as a list indexed by level:
 
-| Column | Meaning | Level 90 | Level 100 |
-| --- | --- | --- | --- |
-| BaseSpeed | a character's own speed stat at that level, with no gear | 400 | 420 |
-| LevelModifier | the divisor in the speed formulas | 1900 | 2780 |
-| ItemLevelSync | the item level gear is synced to when the character is synced to that level (level sync, [math.md, section 5](../mechanics/math.md#which-pieces-are-synced)) | 660 | 690 |
+| Column | Meaning | Used in |
+| --- | --- | --- |
+| BaseSpeed | a character's own speed stat, no gear | [speed](../mechanics/math.md#6-speed-and-substat-tiers) |
+| LevelModifier | the divisor in the speed formulas | [speed](../mechanics/math.md#6-speed-and-substat-tiers) |
+| ItemLevelSync | item level gear is synced to at that level | [level sync](../mechanics/math.md#which-pieces-are-synced) |
 
-A missing level or column stops the generator with an error. The speed formulas are in [math.md](../mechanics/math.md).
+A missing level or column stops the generator with an error. The values at levels 90 and 100 are in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers); the `ItemLevelSync` mapping and when a piece is synced are in [math.md, section 5](../mechanics/math.md#which-pieces-are-synced).
 
 **Stat factor table.** For each stat, its `BaseParam` row's 13 `MeldParam` columns, in percent: $f_s(k)$ for item kind $k = 0, \dots, 12$. For example Vitality is 90 in columns 0, 5, 6 and 8 and 100 elsewhere; each main stat is 90 in column 0, 100 in the columns of gear that carries it (and in column 9) and 70 in the rest; Critical Hit, Determination, Direct Hit, both speeds and Tenacity are 100 everywhere. How it is used is in [math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item).
 
