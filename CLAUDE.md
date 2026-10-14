@@ -54,6 +54,7 @@ scripts/
   data/gen_job_icons.py  data/icons/*.png (downloaded by fetch.py) -> src/data/job-icons.js
   data/provenance.py  source commit + file headers
   data/regen.py       the three generators, then the build
+  perf/               optimizer performance scripts (bench, split, adversarial, browser.py, compare, memory); output in perf/out/
 tests/
   unit/*.test.js      node:test, one file per core module, plus state.test.js
   data/               Python generator tests on fixture CSVs
@@ -66,7 +67,7 @@ docs/                 see docs/README.md; style guide in docs/diagrams/STYLE.md
 
 `.github/workflows/pages.yml` deploys to GitHub Pages on push to `main` (Node unit tests, build, publish `dist/`). It is the only workflow; there is no separate CI.
 
-`dist/`, `data/` and `tests/e2e/out/` are gitignored. **Never hand-edit `src/data/*`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
+`dist/`, `data/`, `tests/e2e/out/` and `scripts/perf/out/` are gitignored. **Never hand-edit `src/data/*`**; change the generators and re-run `python scripts/data/regen.py` (regenerates from the local CSVs without fetching).
 
 ## Commands (run from the repo root)
 
@@ -126,7 +127,7 @@ Full description, proofs and measurements: `docs/engineering/optimizer.md`.
 
 Depth-first branch and bound over slots, after dominance pruning, with one integer score per item that encodes the lexicographic order (target, tiebreak 1, tiebreak 2). The weights are derived from the pool so a lower key can never outweigh a higher one; `optimize()` throws if a score could exceed 2^53. An item is pruned only when the items that dominate it have enough copies to fill every slot of its type (2 for rings; copies counted once per item), and pruning is off when a speed maximum is set. The two ring slots are bounded together by the best legal pair, so a Unique best ring is never counted twice. The only constraint is an optional speed range (engine only, for a future target-GCD control). Handles two rings, Unique items and pieces that take more than one slot: a 2H weapon leaves the off-hand empty, a cloak (slot code 12, body share 220 = `ChestHeadPercent`) leaves the head empty; blockable slots are searched last and a piece never prunes one that blocks fewer slots. Excluding gear groups (crafted, tomestone, ultimate, savage, relic, PvP; ticked boxes in the Gear pool tab, `browse.exclude`) hides them from both gear lists and filters the pool before the search. Melds (`optimize({melds})`, off in the engine, on by default on the page via the "Materia" switch, `opt.melds`): each piece that is not synced gets its best melds for the objective (`bestMeld`, an exact search over big and small stone splits; greedy is wrong on 2.2% of real cases) before scoring; one version per piece is exact (docs/mechanics/materia.md section 4), and melds with a speed range throw. Pruning compares each candidate only with the kept ones (sorted by score, then stat sum). Node limit 700k in the UI; a truncated result is marked with a note under it.
 
-Timing (Node 22, full 1,999-item Sage pool): one run takes about 8 to 13 ms without melds and 13 to 17 ms with them (slowest across Sage and Warrior full pools: ~20 ms / ~42 ms). Across 9,800 real-gear runs the largest search is 203 nodes. A stress-test plan is in docs/scratchpad/perf/plan.md. If you change scoring, pruning or the search, keep the exhaustive-search tests green and re-time a large pool.
+Timing (stress test 2026-10-14, Node 22, every job's full pool, 18 sync settings, ~40 objectives, 27,936 runs): median 9 ms without melds and 15 ms with them, 95th percentile 13 / 20 ms; largest search 1,209 nodes, none truncated; the first run in a fresh process ~80 ms. In the browser (largest pool, Paladin): 33 ms cold, 18 ms warm, ~4-5x that with the CPU throttled 4x. Hostile pools never exceed ~700 nodes; only the engine's speed range can reach the 700k limit (~0.5 s). The optimizer reads `Alpine.raw` store data, and the save effect serializes only when the save fires: both were measured as the page's main costs on slow CPUs; keep them. Scripts: `npm run perf`, `perf:full`, `perf:adversarial`, `perf:browser` (`scripts/perf/`, not part of `check`); details in docs/engineering/optimizer.md section 8. If you change scoring, pruning or the search, keep the exhaustive-search tests green and re-run `npm run perf`.
 
 ## Page constraints
 

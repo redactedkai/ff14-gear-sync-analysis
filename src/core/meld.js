@@ -74,6 +74,11 @@ function compositions(n, k) {
 
 const memo = new Map();
 
+/* Cache sizes, for the performance scripts (scripts/perf): {memo, compositions}. */
+export function meldCacheStats() {
+  return { memo: memo.size, compositions: compCache.size };
+}
+
 /* Best split of `big` stones of value bv and `small` stones of value sv among the stats with headrooms `heads` (in
    objective order) plus a spare bucket: the gains, compared lexicographically in objective order; among equal gains,
    the split whose spare stones are worth the most (they go to the job's other substats). Greedy filling is not enough: Courtly Lover's Earrings of Healing (Critical Hit

@@ -28,7 +28,12 @@ export function optimizer() {
             app.opt.melds,
           ];
           return () => {
-            if (deps[0] === 'opt') this.view = Object.freeze(optimizerView(app));
+            if (deps[0] !== 'opt') return;
+            const t0 = performance.now();
+            // the plain store: read through Alpine's reactive proxies, the pool's thousands of stat reads cost about
+            // twice the run itself (this runs later, outside the effect, so nothing here needs tracking)
+            this.view = Object.freeze(optimizerView(Alpine.raw(app)));
+            performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.py
           };
         },
         DEBOUNCE_MS,

@@ -287,11 +287,42 @@ Synced runs leave fewer candidates after pruning (119 against 169 unsynced): syn
 
 Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149 and the largest 203 (Summoner, items 260 to 300, unsynced). Before the ring-pair bound they were 73, 18,178 and 191,023. The largest was Ninja and Viper, items 600 to 640, unsynced, Skill Speed: most armor there has no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so counting it twice left the bound 42 points too high to cut those ties. Rerun on 2026-10-12 with both searches side by side: the same total in all 9,800 runs, none truncated.
 
+### Stress test (2026-10-14)
+
+Measured on the same PC before Beastmaster was added (22 jobs), with the scripts listed in [testing.md, section 3](testing.md#3-commands).
+
+**Every job's full pool.** Each of the 22 jobs with every piece it can equip (1,899 to 2,641 items), 18 sync settings (none; item level caps 123 to 795; level sync at 50 to 90; five level and cap pairs) and about 40 objectives (every single target, every target and tiebreak pair of substats, and random three-key orders), with melds off and on: 27,936 runs, each timed as the median of 3 calls.
+
+| | Melds off | Melds on |
+| --- | ---: | ---: |
+| Median | 9.2 ms | 14.8 ms |
+| 95th percentile | 13.3 ms | 20.1 ms |
+| Largest search | 452 nodes | 1,209 nodes |
+| Truncated | 0 | 0 |
+
+- About 1 run in 400 takes 40 to 80 ms. These are pauses for garbage collection and compiling, not cost: the slowest (Dark Knight, cap 530, Critical Hit then Skill Speed, 78 ms) takes 19.5 ms when rerun alone.
+- The searches above 1,000 nodes are healers at level 60 with the main stat as the target and Vitality as a tiebreak (many near-ties); the search itself takes 1.4 ms of the run.
+- Building the candidate lists is most of a run: syncing, choosing melds, building the vectors and pruning take about 90%, the search under 10%.
+- The very first run in a fresh process is the slowest: 75 to 79 ms on the largest pool (Paladin, melds on), then about 29, 24 and 20 ms as the code is compiled and the per-item caches fill.
+
+**Hostile pools.** 3,000 random pools of real pieces with random stats (near-ties, cloaks, two-handed weapons, shields, up to 200 Unique rings), then 600 steps that mutate the worst pool to grow its search: median 186 nodes, largest 700 (4.5 ms). Without a speed range the bound of section 5 is exact (the slots left are independent, the ring pair and blocked slots are bounded exactly), so the search grows with the pool, not exponentially. With the engine's speed range, real full pools stay below about 11,000 nodes; reaching the page's 700,000-node limit took a synthetic pool where every piece trades Critical Hit for speed, and stopped there after about 0.5 s.
+
+**The page.** In Chromium, every piece a job can equip added to the pool, opened cold from a saved state, at normal speed and with the CPU slowed 4 and 6 times (Chrome's slow-device emulation). Two fixes came out of it, both leaving every result the same: the optimizer reads the pool without Alpine's reactive proxies, and saving serializes the state only when the save runs instead of on every change.
+
+| Paladin, 2,641 items | Normal | 4× slower | 6× slower |
+| --- | ---: | ---: | ---: |
+| First run after opening the page | 33 ms | 157 ms | 307 ms |
+| Later runs | 18 ms | 103 ms | 174 ms |
+| Change to result shown, after the 120 ms wait | 38 ms | 215 ms | 468 ms |
+| Page open to result | 0.7 s | 1.9 s | 3.3 s |
+
+Before the fixes the same rows were 54, 55, 133 ms and 0.64 s at normal speed, and the change-to-result time was 523 ms at 4× and 1,169 ms at 6×. Memory stays flat over 100 changes (14.5 MB). What remains slow is outside the optimizer: opening the page (2 MB of page and item data) and adding a whole job's database to the pool at once (about 1.2 s at 4×).
+
 ## 9. Known behaviours and limits
 
 - **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own empty-pool message first.
 - **Missing slot types** are left out of the loadout.
-- **Truncated results** may not be optimal, so the page puts a note under them. No run in the 9,800-run probe comes near the page's limit of 700,000 (the largest is 203 nodes).
+- **Truncated results** may not be optimal, so the page puts a note under them. No real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); only the engine's speed range can reach it (section 8).
 - **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. The speed range is engine only, so this does not affect the page yet.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
@@ -308,5 +339,7 @@ Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
-| Page use: node limits, main result, ceiling table | `src/ui/views/optimizer.js` (`NODE_LIMIT`, `optimizerView`, `searchPool`) |
+| Page use: node limit, result | `src/ui/views/optimizer.js` (`NODE_LIMIT`, `optimizerView`, `searchPool`) |
+| Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
+| Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.py`, `compare.mjs`, `memory.mjs`, `workloads.mjs`) |
 | Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js` |

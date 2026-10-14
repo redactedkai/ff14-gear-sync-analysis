@@ -140,6 +140,10 @@ Run from the repository root.
 | `npm run lint` | Biome and Ruff, no file changes |
 | `npm run format` | Rewrite files with Biome and Ruff |
 | `npm run check` | Lint, build, tests, smoke test |
+| `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min) |
+| `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
+| `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
+| `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
 
 Notes:
 
@@ -147,6 +151,8 @@ Notes:
 - **`npm run smoke`** needs the page built first, and Node on the path for its expected values.
 - **`npm run lint`** lints, then reports formatting differences without changing files.
 - **`npm run check`** runs lint (with format check), build, unit and generator tests and the smoke test, in that order, and stops at the first failure. It is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at about 400 px.
+
+- **The `perf` commands** are performance measurements, not pass/fail tests, and are not part of `npm run check`. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a saved copy of `src/`.
 
 Running a subset:
 

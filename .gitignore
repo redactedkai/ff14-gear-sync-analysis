@@ -2,6 +2,7 @@
 /dist/
 /data/
 /tests/e2e/out/
+/scripts/perf/out/
 node_modules/
 __pycache__/
 *.pyc

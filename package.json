@@ -15,7 +15,11 @@
     "lint": "biome lint . && biome format . && python -m ruff check . && python -m ruff format --check .",
     "format": "biome format --write . && python -m ruff format .",
     "check": "npm run lint && npm run build && npm test && npm run smoke",
-    "update-data": "python scripts/data/fetch.py && python scripts/data/regen.py"
+    "update-data": "python scripts/data/fetch.py && python scripts/data/regen.py",
+    "perf": "node scripts/perf/bench.mjs --quick --repeats 1",
+    "perf:full": "node scripts/perf/bench.mjs --repeats 3",
+    "perf:adversarial": "node scripts/perf/adversarial.mjs",
+    "perf:browser": "npm run build && python scripts/perf/browser.py"
   },
   "license": "MIT",
   "dependencies": {
