@@ -1,7 +1,7 @@
-/* Gear optimizer tab view: the best loadout for the chosen stat.
+/* Gear optimizer tab view: the best loadout for the chosen stat, searched over every piece the job can wear.
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
+import { browseItems, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
 import { optimize, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
@@ -16,10 +16,19 @@ export function tierText(spd, level) {
   return `tier starts at ${t.start}${t.next != null ? `, next at ${t.next} (+${t.next - spd})` : ''}`;
 }
 
-/* The pool the optimizer searches: the gear pool minus the groups excluded in the Gear pool tab and any piece above the
-   job's level cap (the browser never adds one; this guards pools built another way). */
-export function searchPool(app) {
-  return withoutSources(app.pool, app.browse.exclude || []).filter(i => wearable(app.jobCtx, i));
+/* Every database piece the job can wear (browseItems leaves out gear above its level cap), as pool items. Built once per
+   job and kept while the job stays (~5-10 ms to build): the per-item meld cap cache (core/meld.js) is keyed by these
+   objects, so it stays warm from run to run. */
+let gearCache = { job: null, gear: null };
+export function jobGear(job) {
+  if (gearCache.job !== job) gearCache = { job, gear: Object.freeze(browseItems(job, {}).map(r => poolItemFromRow(job, r))) };
+  return gearCache.gear;
+}
+
+/* The pool the optimizer searches: the gear (every piece the job can wear, unless a test passes its own) minus the gear
+   groups left out (opt.exclude) and any piece above the job's level cap (jobGear has none; this guards gear passed in). */
+export function searchPool(app, gear = jobGear(app.jobCtx)) {
+  return withoutSources(gear, app.opt.exclude || []).filter(i => wearable(app.jobCtx, i));
 }
 
 /* Sync changes something in this pool: item level sync is on, or some piece is level-synced. */
@@ -27,21 +36,26 @@ function poolSynced(pool, sync) {
   return sync.sync || pool.some(i => itemSyncIlvl(i, sync) != null);
 }
 
+/* {searched, left}: how many pieces are searched and how many the left-out groups hold, for the line under them. */
+export function searchCount(app, gear = jobGear(app.jobCtx)) {
+  const searched = searchPool(app, gear).length;
+  return { searched, left: gear.length - searched };
+}
+
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message
-   instead of keeping a stale result. */
-export function optimizerView(app) {
+   instead of keeping a stale result. `gear`: as for searchPool. */
+export function optimizerView(app, gear) {
   try {
-    return buildOptimizerView(app);
+    return buildOptimizerView(app, gear);
   } catch (e) {
     return { kind: 'error', message: e?.message || String(e) };
   }
 }
 
-function buildOptimizerView(app) {
+function buildOptimizerView(app, gear) {
   const job = app.jobCtx,
     o = app.opt;
-  if (!app.pool.length) return { kind: 'empty' };
-  const pool = searchPool(app);
+  const pool = searchPool(app, gear);
   if (!pool.length) return { kind: 'excluded' };
   const sync = syncSettings(app);
   const res = optimize(job, pool, sync, {

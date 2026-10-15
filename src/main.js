@@ -24,20 +24,15 @@ Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, gear, opti
   Alpine.data(name, factory);
 });
 
-/* Save whenever any persisted field changes. The effect tracks every field but the pool by serializing them (small),
-   and the pool by poolVersion, which every pool change bumps (pool items are never edited in place): serializing a
-   full pool takes ~40 ms (~280 ms on a 4x slower CPU), so it happens once, when the save runs, not on every change. */
+/* Save whenever any persisted field changes: the effect tracks every field by serializing them (small; the gear pool
+   that once made this costly is gone), and the save runs once the changes settle. */
 let saveTimer = null;
 Alpine.effect(() => {
-  const { pool, ...rest } = app.persisted();
-  JSON.stringify([rest, app.poolVersion, pool.length]);
+  const t0 = performance.now();
+  const json = JSON.stringify(app.persisted());
+  performance.measure('save', { start: t0 }); // read by scripts/perf/browser.py
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    const t0 = performance.now();
-    const json = JSON.stringify(Alpine.raw(app).persisted());
-    performance.measure('save', { start: t0 }); // read by scripts/perf/browser.py
-    save(json);
-  }, SAVE_DEBOUNCE_MS);
+  saveTimer = setTimeout(() => save(json), SAVE_DEBOUNCE_MS);
 });
 
 Alpine.start();

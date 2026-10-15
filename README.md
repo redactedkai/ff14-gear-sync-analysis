@@ -20,12 +20,12 @@ npm run build     # builds dist/index.html
 
 Open `dist/index.html` in a browser. For development, `npm run dev` rebuilds on every change and serves the page locally.
 
-Pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings and pool are saved in the browser, so they come back on the next visit. Switching jobs clears the pool and job-specific settings, after a warning.
+Pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs resets the job-specific settings (the optimizer's target and tiebreaks, the browser's slot and sort).
 
 Once a job is chosen, the page has two working tabs and one reference tab:
 
-1. **Gear pool**: one table of real gear for the selected job. Tick a row to add it to your pool; switch between **All gear** and **My pool**. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2.
-2. **Gear optimizer**: picks one item per slot (two rings) from the pool to maximize one stat, with two optional tiebreakers. A Materia switch (on by default) gives each piece its best melds. In the Gear pool tab, ticked groups (crafted, tomestone, relic, current Savage, ultimate, PvP) are excluded from the lists and the search; current Savage, ultimate and PvP are ticked by default.
+1. **Gear optimizer** (opens first): picks one item per slot (two rings) from every piece the job can wear to maximize one stat, with two optional tiebreakers. A Materia switch (on by default) gives each piece its best melds. Under **Gear to search**, unticking a group (crafted, tomestone, relic, current Savage, ultimate, PvP) leaves its gear out; current Savage, ultimate and PvP are left out by default.
+2. **Gear browser**: one table of real gear for the selected job, with filters and its synced stats, for looking gear up. It has its own gear group boxes. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2.
 3. **How the math works** (reference): Piece stats (how a piece's stats come from its item level) and Sync limits (what the sync cap allows, checked against real gear and the Wiki).
 
 ## Develop
@@ -60,4 +60,4 @@ Which test numbers may change after a patch and which must not is in [data-pipel
 
 ## Data
 
-Item stats, the item level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data; the page footer names the commit used. The speed-to-GCD formulas follow AkhMorning's guide, a community reference rather than game files. The substat share rule (100/70%, plus a fixed 20% Direct Hit line on older healer gear) is inferred: a pattern measured on real items, not something stored in the game files. Only Piece stats depends on it; the gear pool and the optimizer use each item's real stats.
+Item stats, the item level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data; the page footer names the commit used. The speed-to-GCD formulas follow AkhMorning's guide, a community reference rather than game files. The substat share rule (100/70%, plus a fixed 20% Direct Hit line on older healer gear) is inferred: a pattern measured on real items, not something stored in the game files. Only Piece stats depends on it; the optimizer and the gear browser use each item's real stats.

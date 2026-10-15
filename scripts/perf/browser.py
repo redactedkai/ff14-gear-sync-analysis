@@ -3,10 +3,10 @@
 Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures:
 'optimizer' (one optimizer run: src/ui/components/optimizer.js) and 'save' (serializing the saved state: src/main.js).
 
-  1. seed: picks a job, adds every database piece it can wear ("Add all matches", the largest pool), opens the Gear
-     optimizer; then switches to the next job and does it again (a job switch with add-all). Keeps each saved state.
+  1. seed: picks a job on the Gear optimizer tab, which searches every database piece the job can wear; then switches
+     to the next job (a job switch). Keeps each saved state.
   2. cold: a fresh browser context per run, with the saved state already in localStorage, so the page opens straight
-     on the optimizer with a full pool: the first optimizer run is fully cold (no compiled code, no caches).
+     on the optimizer: the first optimizer run is fully cold (no compiled code, no caches, the job's gear not built).
   3. warm: in that page, cycles the target stat and times each run, and the settle time (change -> result shown,
      minus the 120 ms debounce).
   4. memory: 100 target changes, JS heap before and after (with garbage collection).
@@ -56,48 +56,32 @@ def wait_measure(pg, name, count):
     pg.wait_for_function(f"performance.getEntriesByName('{name}').length >= {count}", timeout=TIMEOUT)
 
 
-def show_tab(pg, tab):
-    pg.click(f'[data-tab={tab}]')
-    expect(pg.locator(f'#tab-{tab}')).to_be_visible()
-
-
 def set_job(pg, job):
     pg.click(f'[data-job-id="{job}"]')
-    if pg.locator('#job-warning').count():
-        pg.click('#job-confirm')
     expect(pg.locator('[data-job]')).to_have_attribute('data-job', job)
 
 
-def add_all(pg):
-    """Every database piece the job can wear: no filter, then Add all. Returns (pool size, ms from click to the
-    pool count shown)."""
-    show_tab(pg, 'pool')
-    pg.click('#show-all')
-    pg.fill('#b-q', '')
-    pg.select_option('#b-type', 'any')
-    for sel in ('#b-min', '#b-max', '#b-lvl'):
-        pg.fill(sel, '')
-    expect(pg.locator('#b-addall')).to_be_enabled()
-    t0 = pg.evaluate('performance.now()')
-    pg.click('#b-addall')
-    pg.wait_for_function("!/\\(0\\)/.test(document.querySelector('#show-pool').textContent)", timeout=TIMEOUT)
-    t1 = pg.evaluate('performance.now()')
-    n = int(pg.locator('#show-pool').inner_text().split('(')[1].rstrip(')').replace(',', ''))
-    return n, t1 - t0
+def searched(pg):
+    """The pieces the optimizer searches, from its count line ("Searching 1,939 pieces ...")."""
+    return int(pg.locator('#o-count').inner_text().split()[1].replace(',', ''))
 
 
-def saved_state(pg, n):
-    """The saved state once the save debounce has written the full pool."""
+def saved_state(pg, job):
+    """The saved state once the save debounce has written the job."""
     check = (
         f"(() => {{ try {{ const s = JSON.parse(localStorage.getItem('{STORE_KEY}')); "
-        f"return s.pool.length === {n} && s.tab === 'opt'; }} catch (e) {{ return false; }} }})()"
+        f"return s.job === '{job}' && s.tab === 'opt'; }} catch (e) {{ return false; }} }})()"
     )
     pg.wait_for_function(check, timeout=TIMEOUT)
     return pg.evaluate(f"localStorage.getItem('{STORE_KEY}')")
 
 
+def job_label(pg, job):
+    return pg.get_attribute(f'[data-job-id="{job}"]', 'aria-label')
+
+
 def seed(browser, jobs, rate):
-    """Fill each job's full pool through the UI; the second job onward is a job switch with add-all."""
+    """Pick each job through the UI on the optimizer tab; the second job onward is a job switch."""
     ctx = browser.new_context(viewport={'width': 1280, 'height': 900})
     ctx.add_init_script(LONGTASKS)
     pg = ctx.new_page()
@@ -106,20 +90,16 @@ def seed(browser, jobs, rate):
     expect(pg.locator('[data-job-id]').first).to_be_attached()
     states, rows = {}, []
     for job in jobs:
-        # from the pool tab, so the optimizer does not also run on the pool the job switch empties
-        if pg.locator('[data-tab=pool]').is_visible():  # no tabs before the first job is picked
-            show_tab(pg, 'pool')
-        t_job = pg.evaluate('performance.now()')
-        set_job(pg, job)
-        n, add_ms = add_all(pg)
         before = len(measures(pg, 'optimizer'))
-        show_tab(pg, 'opt')
+        t_job = pg.evaluate('performance.now()')
+        set_job(pg, job)  # the page opens on the optimizer tab, which runs as soon as a job is picked
         wait_measure(pg, 'optimizer', before + 1)
+        pg.wait_for_function(f"document.querySelector('#o-count')?.textContent.includes({json.dumps(job_label(pg, job))})")
         expect(pg.locator('#o-out .panel')).to_be_visible()
         total = pg.evaluate('performance.now()') - t_job
         opt = measures(pg, 'optimizer')[-1]
-        rows.append({'job': job, 'pool': n, 'add_all_ms': add_ms, 'optimizer_ms': opt, 'switch_total_ms': total})
-        states[job] = saved_state(pg, n)
+        rows.append({'job': job, 'pieces': searched(pg), 'optimizer_ms': opt, 'switch_total_ms': total})
+        states[job] = saved_state(pg, job)
     save = max(measures(pg, 'save') or [0])
     long_max = max(pg.evaluate('window.__long') or [0])
     ctx.close()
@@ -189,7 +169,7 @@ def main():
             _, rows, save, long_max = seed(browser, jobs, rate)
             for r in rows:
                 print(
-                    f'  job switch to {r["job"]} + add all ({r["pool"]:,} pieces): add all {r["add_all_ms"]:.0f} ms, '
+                    f'  pick {r["job"]} ({r["pieces"]:,} pieces searched): '
                     f'optimizer {r["optimizer_ms"]:.0f} ms, click to result {r["switch_total_ms"]:.0f} ms'
                 )
             print(f'  slowest save {save:.0f} ms, longest blocked main thread {long_max:.0f} ms')

@@ -3,36 +3,27 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreState } from '../../src/ui/state.js';
 import { createAppStore } from '../../src/ui/store.js';
-import { browseItems } from '../../src/core/items.js';
-import { makeJobContext } from '../../src/core/job-context.js';
 
-function storeWithPool(job) {
-  const store = createAppStore(restoreState({ job }));
-  store.addRows(browseItems(makeJobContext(job), { q: '', type: 'any', ilvlMin: 130, ilvlMax: 135, lvlMax: 50 }));
-  assert.ok(store.pool.length > 0);
-  return store;
-}
+const storeFor = job => createAppStore(restoreState({ job }));
 
-test('A1: switching to another job in the same role clears the pool and job-specific settings', () => {
-  const store = storeWithPool('SGE');
+test('A1: switching to another job in the same role resets the job-specific settings and keeps the rest', () => {
+  const store = storeFor('SGE');
   store.opt.target = 'crit';
+  store.opt.exclude = ['crafted'];
   store.browse.sort = 'det';
   store.cap = 200;
-  const version = store.poolVersion;
   store.setJob('WHM');
   assert.equal(store.job, 'WHM');
   assert.equal(store.jobCtx.jobId, 'WHM');
-  assert.deepEqual(store.pool, []);
   assert.equal(store.opt.target, 'main');
   assert.equal(store.browse.sort, 'ilvl');
   assert.equal(store.cap, 200); // not job-specific: kept
-  assert.ok(store.poolVersion > version);
+  assert.deepEqual(store.opt.exclude, ['crafted']); // gear groups are not job-specific: kept
 });
 
-test('switching to another role clears the pool too', () => {
-  const store = storeWithPool('WAR');
+test('switching to another role gives that role its weapon mode', () => {
+  const store = storeFor('WAR');
   store.setJob('BLM');
-  assert.deepEqual(store.pool, []);
   assert.equal(store.jobCtx.weaponMode, '2h');
 });
 
@@ -54,26 +45,35 @@ test('switching to a job with a lower level cap clamps the synced level and the 
 });
 
 test('choosing the current job again changes nothing', () => {
-  const store = storeWithPool('DRG');
-  const before = store.pool.length;
+  const store = storeFor('DRG');
+  store.opt.target = 'crit';
   store.setJob('DRG');
-  assert.equal(store.pool.length, before);
+  assert.equal(store.opt.target, 'crit');
 });
 
-test('reset to defaults: every saved setting back to its default, no job, the pool empty, the open tab kept', () => {
-  const store = storeWithPool('SGE');
-  Object.assign(store, { cap: 123, level: 50, sync: false, tab: 'opt' });
+test('reset to defaults: every saved setting back to its default, no job, the open tab kept', () => {
+  const store = storeFor('SGE');
+  Object.assign(store, { cap: 123, level: 50, sync: false, tab: 'browse' });
   store.browse.q = 'Dread';
   store.browse.min = 100;
   store.opt.target = 'crit';
-  const version = store.poolVersion;
+  store.opt.exclude = [];
   store.resetAll();
   const { tab, ...want } = restoreState(null);
   const got = store.persisted();
-  assert.equal(got.tab, 'opt');
+  assert.equal(got.tab, 'browse');
   delete got.tab;
   assert.deepEqual(got, want);
   assert.equal(want.job, null);
   assert.equal(store.job, null);
-  assert.ok(store.poolVersion > version);
+});
+
+test('tabs: an unknown tab opens the optimizer; a math sub-view opens the math tab on it', () => {
+  const store = storeFor('SGE');
+  store.showTab('browse');
+  assert.equal(store.tab, 'browse');
+  store.showTab('pool'); // the old Gear pool tab no longer exists
+  assert.equal(store.tab, 'opt');
+  store.showTab('sync');
+  assert.deepEqual([store.tab, store.mathTab], ['math', 'sync']);
 });

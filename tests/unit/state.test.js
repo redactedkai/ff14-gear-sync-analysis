@@ -2,9 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE } from '../../src/ui/state.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { ALL_STATS, DEFAULT_JOB } from '../../src/core/constants.js';
+import { DEFAULT_JOB } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
-import { newId, browseItems, poolItemFromRow } from '../../src/core/items.js';
 
 const D = defaultState();
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -15,19 +14,6 @@ const fresh = job => {
   resetForJob(s, makeJobContext(job ?? DEFAULT_JOB));
   return s;
 };
-const stats = o => Object.assign(Object.fromEntries(ALL_STATS.map(k => [k, 0])), o);
-const item = o => ({
-  id: 'i1',
-  name: 'Ring A',
-  type: 'ring',
-  ilvl: 130,
-  stats: stats({ main: 20, vit: 21, spd: 18 }),
-  copies: 2,
-  src: 'game',
-  hq: false,
-  ...o,
-});
-
 /* A full, valid healer save that differs from the defaults in every field. */
 function validSave() {
   return {
@@ -40,7 +26,6 @@ function validSave() {
     syncIlvl: 400,
     piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'spec'] },
     browse: {
-      show: 'pool',
       q: 'Robe',
       type: 'body',
       expOff: ['ARR', 'SB'],
@@ -50,12 +35,7 @@ function validSave() {
       lvl: 50,
       sort: 'spd',
     },
-    opt: { target: 'spec', tb: '', tb2: 'crit', melds: false },
-    pool: [
-      item(),
-      item({ id: 'i2', name: 'Some head', type: 'head', ilvl: 135, stats: stats({ main: 30, spd: 29 }), copies: 1 }),
-      item({ id: 'i3', name: 'Some body', type: 'body', ilvl: 125, stats: stats({ main: 47.5 }), copies: 2 }),
-    ],
+    opt: { target: 'spec', tb: '', tb2: 'crit', melds: false, exclude: ['crafted', 'pvp'] },
   };
 }
 
@@ -118,8 +98,10 @@ test('top-level scalars of the wrong type or out of range fall back field by fie
 });
 
 test('tab and mathTab', () => {
-  expectFieldDefault('tab', 42, 'pool');
-  expectFieldDefault('tab', 'nope', 'pool');
+  assert.equal(D.tab, 'opt'); // the optimizer opens first
+  expectFieldDefault('tab', 42, 'opt');
+  expectFieldDefault('tab', 'nope', 'opt');
+  expectFieldDefault('tab', 'pool', 'browse'); // the old Gear pool tab is now the Gear browser
   expectFieldDefault('mathTab', 'nope', 'piece');
   // older saves used the sub-view names as tabs
   const s = corrupt('tab', 'piece');
@@ -178,58 +160,39 @@ test('opt fields', () => {
   expectFieldDefault('opt.tb', 'nope', D.opt.tb);
   expectFieldDefault('opt.tb', null, D.opt.tb);
   expectFieldDefault('opt.tb2', 3, D.opt.tb2);
-  assert.deepEqual(D.browse.exclude, ['savage', 'ultimate', 'pvp']); // Current Savage, Ultimate and PvP excluded
-  assert.deepEqual(DEFAULT_EXCLUDE, D.browse.exclude);
-  expectFieldDefault('browse.exclude', 'ultimate', D.browse.exclude); // not a list: the default
-  expectFieldDefault('browse.exclude', null, D.browse.exclude);
-  expectFieldDefault('browse.exclude', [], []); // every group ticked back in: kept, not the default
+  // Current Savage, Ultimate and PvP left out by default, in the optimizer and the browser, each its own list
+  assert.deepEqual(DEFAULT_EXCLUDE, ['savage', 'ultimate', 'pvp']);
+  assert.deepEqual(D.browse.exclude, DEFAULT_EXCLUDE);
+  assert.deepEqual(D.opt.exclude, DEFAULT_EXCLUDE);
+  assert.notEqual(D.opt.exclude, D.browse.exclude);
+  for (const part of ['browse', 'opt']) {
+    expectFieldDefault(`${part}.exclude`, 'ultimate', DEFAULT_EXCLUDE); // not a list: the default
+    expectFieldDefault(`${part}.exclude`, [], []); // every group ticked back in: kept, not the default
+    expectFieldDefault(`${part}.exclude`, ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
+  }
+  expectFieldDefault('browse.exclude', null, DEFAULT_EXCLUDE);
   const older = validSave();
   delete older.browse.exclude; // a save from before the field existed
-  assert.deepEqual(restoreState(older).browse.exclude, D.browse.exclude);
-  expectFieldDefault('browse.exclude', ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
+  delete older.opt.exclude;
+  assert.deepEqual(restoreState(older).browse.exclude, DEFAULT_EXCLUDE);
+  assert.deepEqual(restoreState(older).opt.exclude, DEFAULT_EXCLUDE);
+  // saves from the gear pool days had one list, browse.exclude, for both: the optimizer starts from it
+  const shared = validSave();
+  delete shared.opt.exclude;
+  assert.deepEqual(restoreState(shared).opt.exclude, ['tomestone', 'ultimate']);
   assert.equal(D.opt.melds, true); // melds on by default
   expectFieldDefault('opt.melds', 'yes', true);
   expectFieldDefault('opt.melds', null, true);
 });
 
-test('pool: unusable items are dropped, usable ones repaired', () => {
-  const good = item();
-  const pool = [
-    good,
-    null,
-    'item',
-    item({ id: 5 }),
-    item({ id: '' }),
-    item({ id: 'i9', type: 'belt' }),
-    item({ id: 'i10', ilvl: -3 }),
-    item({ id: 'i11', ilvl: 5000 }),
-    item({ id: 'i12', ilvl: 130.5 }),
-    item({ id: 'i13', ilvl: '130' }),
-    item({ id: 'i14', stats: null }),
-    item({ id: 'i15', stats: stats({ spd: 'x' }) }),
-    item({ id: 'i16', stats: stats({ spd: -1 }) }),
-    item({ id: 'i17', stats: stats({ spd: Number.NaN }) }),
-    item({ id: 'i18', src: 'preset' }),
-    // hypothetical and hand-entered pieces from the removed Advanced section
-    item({ id: 'i19', src: 'generated' }),
-    item({ id: 'i21', src: 'custom' }),
-    item({ id: 'i22', src: 'weird' }),
-    item({ id: 'i1', name: 'duplicate id' }),
-    // repaired, not dropped
-    item({ id: 'i20', stats: { main: 10, extra: 99 }, copies: 7, name: undefined, foo: 1 }),
-  ];
-  const s = restoreState({ job: 'SGE', pool });
-  assert.deepEqual(s.pool, [
-    good,
-    { id: 'i20', name: 'Ring custom', type: 'ring', ilvl: 130, stats: stats({ main: 10 }), copies: 1, src: 'game', hq: false },
-  ]);
-  assert.deepEqual(restoreState({ job: 'SGE', pool: 'x' }).pool, []);
-  assert.deepEqual(restoreState({ job: 'SGE', pool: { 0: good } }).pool, []);
-});
-
-test('restored item ids are reserved', () => {
-  restoreState({ job: 'SGE', pool: [item({ id: 'i90000' })] });
-  assert.ok(+newId().slice(1) > 90000);
+test("a save from the gear pool days: the pool and the browser's list switch are dropped, the rest kept", () => {
+  const raw = validSave();
+  raw.pool = [{ id: 'i1', name: 'Ring A', type: 'ring', ilvl: 130, stats: { main: 20 }, copies: 2, src: 'game' }];
+  raw.browse.show = 'pool';
+  const s = restoreState(raw);
+  assert.equal('pool' in s, false);
+  assert.equal('show' in s.browse, false);
+  assert.deepEqual(s, restoreState(validSave()));
 });
 
 test('a save from another role is repaired as before', () => {
@@ -255,20 +218,10 @@ test('a save from another role is repaired as before', () => {
   assert.ok(!mnk.substats.includes('spec'));
 });
 
-test("a saved level above the job's level cap is clamped to it, and pool pieces above the cap are dropped", () => {
-  const bst = makeJobContext('BST');
-  const rows = browseItems(makeJobContext('MNK'), { ilvlMin: 130, ilvlMax: 135 }).filter(r => r.mask & (1 << bst.jobIndex));
-  const low = rows.find(r => r.lvl <= 50);
-  const high = rows.find(r => r.lvl > 50); // Monk gear Beastmaster's mask allows, above its level cap
-  assert.ok(low && high);
-  const pool = [low, high].map(r => ({ ...poolItemFromRow(bst, r), id: newId() }));
-  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 }, pool });
+test("a saved level above the job's level cap is clamped to it", () => {
+  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 } });
   assert.equal(s.level, 50);
   assert.equal(s.browse.lvl, 50);
-  assert.deepEqual(
-    s.pool.map(i => i.name),
-    [low.name],
-  );
   // a level at or below the cap is kept; Blue Mage caps at 80
   assert.equal(restoreState({ job: 'BST', level: 30 }).level, 30);
   assert.equal(restoreState({ job: 'BLU', level: 100 }).level, 80);

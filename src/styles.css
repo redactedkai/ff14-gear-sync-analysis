@@ -172,10 +172,6 @@ th.n {
     0 0 0 2px var(--accent),
     0 0 10px var(--accent);
 }
-.jobbtn.pending {
-  opacity: 1;
-  box-shadow: 0 0 0 2px var(--gold);
-}
 .settings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -208,8 +204,32 @@ select,
   min-width: 0;
   width: 100%;
 }
+/* selects draw their own chevron, inset from the right edge like the multi-select's (the native arrow sits against
+   the border); two diagonal strokes in the text colour, so it follows the theme */
 select {
   font-family: var(--sans);
+  appearance: none;
+  padding-right: 34px;
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.8px),
+      currentColor calc(50% - 0.8px),
+      currentColor calc(50% + 0.8px),
+      transparent calc(50% + 0.8px)
+    ),
+    linear-gradient(
+      135deg,
+      transparent calc(50% - 0.8px),
+      currentColor calc(50% - 0.8px),
+      currentColor calc(50% + 0.8px),
+      transparent calc(50% + 0.8px)
+    );
+  background-size: 4.5px 4.5px;
+  background-repeat: no-repeat;
+  background-position:
+    calc(100% - 18.5px) calc(50% + 1px),
+    calc(100% - 14px) calc(50% + 1px);
 }
 /* a dropdown of checkboxes (the gear browser's Expansion filter), drawn like a select */
 .f.multi {
@@ -219,7 +239,7 @@ select {
   font-family: var(--sans);
   position: relative;
   text-align: left;
-  padding-right: 28px;
+  padding-right: 34px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -228,7 +248,7 @@ select {
 .multi-btn::after {
   content: "";
   position: absolute;
-  right: 11px;
+  right: 15px;
   top: 50%;
   width: 6px;
   height: 6px;
@@ -393,11 +413,6 @@ button.chip {
   font-size: 0.78rem;
   border-radius: 99px;
 }
-button.chip[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-}
 button.x {
   padding: 2px 8px;
   color: var(--bad);
@@ -408,12 +423,35 @@ button.x {
   gap: 8px;
   align-items: center;
 }
-.row.exclude {
-  margin-top: 14px;
+/* the optimizer's two control cards, Goal and Gear to search: side by side, stacked on narrow screens */
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+}
+@media (max-width: 760px) {
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* gear-group checkboxes: two aligned columns, filled top to bottom (three rows for the six groups) */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  gap: 8px 32px;
+}
+.switches {
+  gap: 4px 28px;
+}
+.toggle.off {
+  color: var(--muted);
+}
+.groups-row {
   gap: 8px 16px;
 }
-.row.exclude .toggle {
-  min-height: 0;
+.chk {
   cursor: pointer;
 }
 .tabs {
@@ -445,23 +483,6 @@ button.x {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-}
-.tabs .step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35em;
-  height: 1.35em;
-  border-radius: 99px;
-  background: var(--surface2);
-  border: 1px solid var(--line);
-  font-size: 0.78rem;
-  margin-right: 6px;
-}
-.tabs button[aria-selected="true"] .step {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
 }
 .tabs button.aside {
   margin-left: auto;
@@ -691,7 +712,4 @@ footer {
 }
 [x-cloak] {
   display: none !important;
-}
-tr.inpool td {
-  background: var(--accent-soft);
 }

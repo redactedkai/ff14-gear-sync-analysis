@@ -26,7 +26,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Equip level.** The character level a piece needs before it can be worn. Level sync compares it with the synced level. See [math.md, section 5](mechanics/math.md#which-pieces-are-synced).
 
-**Expansion, level cap.** The game's major releases. Each raised the **level cap**, the highest character level: A Realm Reborn (ARR, 50), Heavensward (60), Stormblood (SB, 70), Shadowbringers (ShB, 80), Endwalker (EW, 90), Dawntrail (100). The Gear pool tab's Expansion dropdown has a checkbox per expansion, all ticked by default; unticking one hides its gear. A piece belongs to the expansion whose level band its equip level falls in; the five level-1 gift accessories go by their item level instead. **Inferred**: the game files have no expansion or patch field for items; checked against item ids, which run roughly in release order (the late ids in an old band are new jobs' weapons added to old content).
+**Expansion, level cap.** The game's major releases. Each raised the **level cap**, the highest character level: A Realm Reborn (ARR, 50), Heavensward (60), Stormblood (SB, 70), Shadowbringers (ShB, 80), Endwalker (EW, 90), Dawntrail (100). The Gear browser's Expansion dropdown has a checkbox per expansion, all ticked by default; unticking one hides its gear. A piece belongs to the expansion whose level band its equip level falls in; the five level-1 gift accessories go by their item level instead. **Inferred**: the game files have no expansion or patch field for items; checked against item ids, which run roughly in release order (the late ids in an old band are new jobs' weapons added to old content).
 
 **Field operations (Field Op).** Large open zones with their own gear and relic grind: Eureka (Stormblood), Bozja (Shadowbringers) and the Occult Crescent (Dawntrail). See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md#field-op-gear).
 
@@ -126,7 +126,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Owner.** The repository's owner. "Verified by the owner in game" means the owner checked it in game; it counts as verified.
 
-**Pool.** The items the user has picked, on the Gear pool tab, for the optimizer to choose from: real gear from the item database. Switching to any other job, even one in the same role, empties it after a warning. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, minus the gear groups left out under Gear to search; the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
@@ -144,11 +144,11 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded. It is 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats (**verified**, game files). Sync caps apply the factor in the other order, before the slot share (**verified** by three second-hand in-game values; **inferred** in general), and use the piece's own factor (**inferred**). Where no item is involved, the page uses the job's factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule).
 
-**Store, view.** The page's UI pattern: one shared store holds the settings, the pool and the current job context; each page area derives a frozen view from it, and the template only displays the view. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Store, view.** The page's UI pattern: one shared store holds the settings and the current job context; each page area derives a frozen view from it, and the template only displays the view. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files (**inferred**); it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md).
 
-**Tabs.** The page has two working tabs, **Gear pool** and **Gear optimizer**, and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (a piece built from its item level and slot by the formula) and **Sync limits** (what a cap allows per slot, with the "Checked against real gear and published caps" panel). Some pages call Sync limits "Sync caps". See the [root README](../README.md).
+**Tabs.** The page has two working tabs, **Gear optimizer** (opened by default) and **Gear browser** (looking gear up), and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (a piece built from its item level and slot by the formula) and **Sync limits** (what a cap allows per slot, with the "Checked against real gear and published caps" panel). Some pages call Sync limits "Sync caps". See the [root README](../README.md).
 
 **Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
 

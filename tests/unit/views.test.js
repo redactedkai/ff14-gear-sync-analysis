@@ -7,20 +7,23 @@ import { browseItems, mkItem, poolItemFromRow } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { gcdFor, gcdTierAt } from '../../src/core/speed.js';
 import { restoreState } from '../../src/ui/state.js';
-import { optimizerView, searchPool, tierText } from '../../src/ui/views/optimizer.js';
+import { jobGear, optimizerView, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
-import { poolKey } from '../../src/core/items.js';
+import { JOBS, SOURCES } from '../../src/core/constants.js';
+import { sourceMask, withoutSources } from '../../src/core/items.js';
+import { optimize } from '../../src/core/optimizer/index.js';
+import { DEFAULT_EXCLUDE, syncSettings } from '../../src/ui/state.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. */
 function makeApp(job = 'SGE', patch = {}) {
   const s = restoreState({ job, sync: true, cap: 123 });
-  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL, poolVersion: 0 }, patch);
+  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL }, patch);
 }
 
-/* Real gear, chosen by properties. A small item level window (with weapons) whose best loadouts exhaustive() can
-   check; and item level 130 Sage gear (no weapon: Sage gear starts at level 70) keeping only Unique rings, which
+/* Real gear, chosen by properties, passed to the optimizer view in place of every piece the job can wear. A small item
+   level window (with weapons) whose best loadouts exhaustive() can check; and item level 130 Sage gear (no weapon: Sage gear starts at level 70) keeping only Unique rings, which
    leaves exactly one ring, so the second ring slot stays empty. */
 const WINDOW = { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 };
 const windowPool = job => gamePool(job, WINDOW);
@@ -54,17 +57,17 @@ test('gcdTierAt agrees with a step-by-step scan at every level', () => {
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
   // a cap of 123 sits below the 125-135 window, so sync bites
   const app = makeApp('BLM', { cap: 123 });
-  app.pool = windowPool(app.jobCtx);
+  const pool = windowPool(app.jobCtx);
   const o = app.opt;
   Object.assign(o, { target: 'spd', tb: 'main', tb2: 'vit' });
-  const want = sync => exhaustive(app.jobCtx, app.pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'] })[0];
-  const v = optimizerView(app);
+  const want = sync => exhaustive(app.jobCtx, pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'] })[0];
+  const v = optimizerView(app, pool);
   assert.equal(v.kind, 'ok');
   assert.equal(v.total, want(true));
   assert.equal(v.targetLabel, 'Spell Speed');
   assert.equal(v.rows.filter(r => r.label.startsWith('Ring')).length, 2);
   assert.ok(v.rows.every(r => r.item));
-  const unsynced = optimizerView({ ...app, sync: false }).total;
+  const unsynced = optimizerView({ ...app, sync: false }, pool).total;
   assert.equal(unsynced, want(false));
   assert.ok(v.total < unsynced);
   // tier row: one entry per stat column, none for the main stat and Vitality; speed by its GCD, as in the readout
@@ -77,10 +80,9 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
 
 test('optimizer view: one Unique ring fills the first ring slot and leaves the second empty', () => {
   const app = makeApp('SGE');
-  assert.equal(optimizerView(app).kind, 'empty');
-  app.pool = uniqueRingPool(app.jobCtx);
-  assert.equal(app.pool.filter(i => i.type === 'ring').length, 1);
-  const v = optimizerView(app);
+  const pool = uniqueRingPool(app.jobCtx);
+  assert.equal(pool.filter(i => i.type === 'ring').length, 1);
+  const v = optimizerView(app, pool);
   assert.equal(v.kind, 'ok');
   assert.deepEqual(
     v.rows.filter(r => r.label.startsWith('Ring')).map(r => !!r.item),
@@ -90,12 +92,12 @@ test('optimizer view: one Unique ring fills the first ring slot and leaves the s
 
 test('A5: optimizer errors become an error view instead of throwing', () => {
   const app = makeApp('SGE');
-  app.pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
+  const pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
     mkItem(t, t, 130, { spd: 9e5, main: 9e5, vit: 9e5 }),
   );
   Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' }); // tiebreaks make the scores large
   app.sync = false; // with sync on these stats would be clamped to normal values
-  const v = optimizerView(app);
+  const v = optimizerView(app, pool);
   assert.equal(v.kind, 'error');
   assert.match(v.message, /too large/);
 });
@@ -158,75 +160,84 @@ test('piece lab view: every real item level 130 Sage head piece with three subst
   );
 });
 
-test('gear view: all matches, each marked when it is in the pool; the pool view lists only pool items', () => {
+/* With no gear passed in, the optimizer searches every database piece the job can wear, minus its own left-out groups
+   (Current Savage, Ultimate and PvP by default), and finds the same loadout as optimize() on that pool. */
+test('optimizer view: every job searches all the gear it can wear, minus its left-out groups', () => {
+  for (const [id] of JOBS) {
+    const app = makeApp(id, { level: Math.min(50, makeJobContext(id).maxLevel) });
+    const job = app.jobCtx;
+    const all = browseItems(job, {});
+    assert.equal(jobGear(job).length, all.length, id);
+    assert.equal(jobGear(job), jobGear(job), `${id}: built once per job`);
+    const searched = withoutSources(jobGear(job), [...DEFAULT_EXCLUDE]);
+    assert.deepEqual(searchCount(app), { searched: searched.length, left: all.length - searched.length }, id);
+    assert.ok(searched.length > 100, id);
+    const v = optimizerView(app);
+    assert.equal(v.kind, 'ok', id);
+    const want = optimize(job, searched, syncSettings(app), { target: app.opt.target, melds: app.opt.melds });
+    assert.equal(v.total, want.totals[app.opt.target], id);
+  }
+});
+
+/* The browser's list: database rows matching its filters, minus its own left-out groups; no pool. */
+test('gear view: every match of the filters, with its synced stats', () => {
   const app = makeApp('SGE');
-  app.browse = { ...app.browse, q: '', min: 130, max: 130, lvl: 50 };
+  app.browse = { ...app.browse, q: '', min: 130, max: 130, lvl: 50, exclude: [] };
   const rows = browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 });
   assert.ok(rows.length >= 9);
-  let v = gearView(app);
-  assert.equal(v.showPool, false);
-  assert.equal(v.all.length, rows.length);
-  assert.ok(v.shown.every(x => x.item === null));
-  app.pool = uniqueRingPool(app.jobCtx);
-  const n = app.pool.length;
-  assert.equal(n, rows.length - rows.filter(r => r.type === 'ring' && !r.unique).length);
-  v = gearView(app);
-  const inPool = new Set(app.pool.map(poolKey));
-  assert.ok(v.shown.every(x => !!x.item === inPool.has(x.key)));
-  assert.equal(v.shown.filter(x => x.item).length, n);
-  app.browse.show = 'pool';
-  v = gearView(app);
-  assert.equal(v.showPool, true);
-  assert.equal(v.shown.length, n);
-  assert.ok(v.shown.every(x => x.item));
-  assert.match(v.countText, new RegExp(`^${n} items · `));
-  // the same filters narrow the pool view
-  app.browse.type = 'ring';
-  v = gearView(app);
-  assert.equal(v.shown.length, 1);
-  assert.match(v.countText, /1 match the filters$/);
+  const v = gearView(app);
+  assert.equal(v.shown.length, rows.length);
+  assert.equal(v.countText, `${rows.length} matches`);
+  // item level 130 is above the cap of 123: every stat is shown raw → synced where the cap bites
+  assert.ok(v.shown.some(x => x.cells.some(c => c.text.includes('→'))));
 });
 
-/* Excluded gear groups (Gear pool tab) leave the database list, the pool list and the optimizer's search. */
-test('excluded groups: left out of both gear lists and the search, counted in the pool line', async () => {
-  const { sourceMask } = await import('../../src/core/items.js');
-  const { SOURCES } = await import('../../src/core/constants.js');
+/* The optimizer and the browser each have their own list of left-out gear groups. */
+test('left-out groups: the optimizer and the browser each go by their own list', () => {
   const tome = SOURCES.find(s => s.key === 'tomestone').bit; // the window has tomestone gear, no crafted
   const app = makeApp('WAR', { cap: 123 });
-  app.pool = windowPool(app.jobCtx);
-  const nTome = app.pool.filter(i => sourceMask(i) & tome).length;
-  assert.ok(nTome > 0 && nTome < app.pool.length);
-  Object.assign(app.browse, { show: 'all', min: 125, max: 135, lvl: 50 });
-  const allBefore = gearView(app).all.length;
+  const pool = windowPool(app.jobCtx);
+  const nTome = pool.filter(i => sourceMask(i) & tome).length;
+  assert.ok(nTome > 0 && nTome < pool.length);
+  Object.assign(app.browse, { min: 125, max: 135, lvl: 50, exclude: [] });
+  app.opt.exclude = [];
+  const listed = gearView(app).shown.length;
+  assert.equal(searchPool(app, pool).length, pool.length);
+  // leaving tomestone gear out of the browser changes nothing in the optimizer, and the other way round
   app.browse.exclude = ['tomestone'];
-  const all = gearView(app).all;
-  assert.ok(all.length < allBefore && all.every(x => !(x.row.sources & tome)));
-  app.browse.show = 'pool';
-  const g = gearView(app);
-  assert.equal(g.all.length, app.pool.length - nTome);
-  assert.match(g.countText, new RegExp(`${nTome} in excluded groups, not searched`));
-  assert.equal(searchPool(app).length, app.pool.length - nTome);
-  const o = optimizerView(app);
+  assert.ok(gearView(app).shown.length < listed);
+  assert.equal(searchPool(app, pool).length, pool.length);
+  app.browse.exclude = [];
+  app.opt.exclude = ['tomestone'];
+  assert.equal(gearView(app).shown.length, listed);
+  assert.equal(searchPool(app, pool).length, pool.length - nTome);
+  assert.deepEqual(searchCount(app, pool), { searched: pool.length - nTome, left: nTome });
+  const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
-  assert.equal(o.total, exhaustive(app.jobCtx, searchPool(app), { cap: 123, sync: true }, { target: app.opt.target })[0]);
-  app.browse.exclude = SOURCES.map(s => s.key);
-  app.pool = app.pool.filter(i => sourceMask(i) & tome);
-  assert.equal(optimizerView(app).kind, 'excluded');
+  assert.equal(o.total, exhaustive(app.jobCtx, searchPool(app, pool), { cap: 123, sync: true }, { target: app.opt.target })[0]);
+  app.opt.exclude = SOURCES.map(s => s.key);
+  assert.equal(
+    optimizerView(
+      app,
+      pool.filter(i => sourceMask(i) & tome),
+    ).kind,
+    'excluded',
+  );
 });
 
-test('level cap: the optimizer searches no pool piece above the job cap, and level sync at the cap is off', () => {
+test('level cap: the optimizer searches no piece above the job cap, and level sync at the cap is off', () => {
   const app = makeApp('BLU', { sync: false, cap: null, level: 80 });
   // two pieces per slot (small enough for the exhaustive reference), all at equip level 80 or below
   const all = gamePool(app.jobCtx, { ilvlMin: 520, ilvlMax: 560 });
   const wearableRows = all.filter(i => all.filter(j => j.type === i.type).indexOf(i) < 2);
-  // pieces this job's mask allows but its level cap does not (not from the browser: a pool built another way)
+  // pieces this job's mask allows but its level cap does not (jobGear never has them; gear passed in might)
   const above = browseItems(makeJobContext('BLM'), { ilvlMin: 520, ilvlMax: 560 })
     .filter(r => r.lvl > 80 && r.mask & (1 << app.jobCtx.jobIndex))
     .map(r => poolItemFromRow(app.jobCtx, r));
   assert.ok(wearableRows.length > 0 && above.length > 0);
-  app.pool = [...wearableRows, ...above];
-  assert.equal(searchPool(app).length, wearableRows.length);
-  const o = optimizerView(app);
+  const pool = [...wearableRows, ...above];
+  assert.equal(searchPool(app, pool).length, wearableRows.length);
+  const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
   assert.equal(o.total, exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0]);
   // at the job's own cap no gear it can wear is level-synced: Piece stats and Sync limits show no sync

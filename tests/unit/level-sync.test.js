@@ -154,7 +154,7 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
 
 function makeApp(patch) {
   const s = restoreState({ job: 'SGE' });
-  return Object.assign(s, { jobCtx: sge, maxReal: MAX_REAL, poolVersion: 0 }, patch);
+  return Object.assign(s, { jobCtx: sge, maxReal: MAX_REAL }, patch);
 }
 
 test('views: level sync with item level sync off shows the level item level as the cap', () => {
@@ -175,19 +175,18 @@ test('views: level sync with item level sync off shows the level item level as t
 
 test('views: the gear browser and the optimizer apply level sync per piece', () => {
   const app = makeApp({ sync: false, cap: null, level: 90 });
-  Object.assign(app.browse, { show: 'all', q: '', type: 'head', min: 780, max: '', lvl: 100 });
+  Object.assign(app.browse, { q: '', type: 'head', min: 780, max: '', lvl: 100 });
   const g = gearView(app);
-  const lv100 = g.all.filter(x => x.lvl === 100);
+  const lv100 = g.shown.filter(x => x.lvl === 100);
   assert.ok(lv100.length >= 2);
   for (const x of lv100) assert.ok(x.eff.main === 248 && x.raw.main > 248, x.name);
-  app.pool = gamePool(sge, WINDOW);
+  const pool = gamePool(sge, WINDOW);
   Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' });
   const sync = { cap: null, sync: false, level: 90 };
-  const o = optimizerView(app);
+  const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
   assert.equal(o.synced, true);
-  assert.equal(o.total, exhaustive(sge, app.pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
-  // a pool no piece of which is synced at this level is not marked synced
-  app.pool = gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 });
-  assert.equal(optimizerView(app).synced, false);
+  assert.equal(o.total, exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
+  // gear no piece of which is synced at this level is not marked synced
+  assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
 });

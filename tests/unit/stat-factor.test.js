@@ -118,11 +118,11 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   const handMade = { ...coatWar, src: 'custom' };
   assert.equal(effStats(war, handMade, sync).main, 48);
   // the gear browser shows the same synced values as the optimizer uses
-  const app = Object.assign(restoreState({ job: 'WAR', sync: true, cap: 123 }), { jobCtx: war, maxReal: MAX_REAL, poolVersion: 0 });
+  const app = Object.assign(restoreState({ job: 'WAR', sync: true, cap: 123 }), { jobCtx: war, maxReal: MAX_REAL });
   app.browse = { ...app.browse, q: "Field Commander's Coat" };
   const v = gearView(app);
-  assert.equal(v.all.length, 1);
-  assert.deepEqual([v.all[0].eff.main, v.all[0].eff.vit], [43, 45]);
+  assert.equal(v.shown.length, 1);
+  assert.deepEqual([v.shown[0].eff.main, v.shown[0].eff.vit], [43, 45]);
   // a piece of the job's own kind is unchanged by the switch: same caps as before
   const helm = ITEMS.find(r => r[1] === 3 && r[2] === 130 && r[9] === 6);
   const p = browseItems(sge, { q: helm[0], ilvlMin: 130, ilvlMax: 130 }).find(x => x.slotCode === 3);

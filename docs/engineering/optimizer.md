@@ -23,7 +23,7 @@ Constraints:
 - **Copies.** Each pool item has a number of copies. A ring marked Unique in the game can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway). The copies come from the game data when an item is added and are not edited on the page; the gear table marks a 2-copy ring ×2.
 - **A speed range** (optional, engine only): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed), meant for a future "reach this GCD tier" control ([roadmap.md](../roadmap.md)). Other stats have no limits. The page does not expose it yet; it is covered by tests.
 
-**Excluded gear groups** are removed from the pool before the optimizer runs, so the search itself is unchanged (section 7).
+**The pool** on the page is every piece the job can wear, minus the gear groups the user leaves out; they are removed before the optimizer runs, so the search itself is unchanged (section 7).
 
 The stats used are the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. Sync caps each stat on a piece above the cap item level; see [math.md, section 5](../mechanics/math.md#5-item-level-sync). With **melds** on (the page's default), every piece that is not synced first gets its best materia melds for the objective, and its vector includes them. One melded version per piece is enough, as section 6 shows, so the search itself does not change. Melds cannot be combined with a speed range (the engine refuses).
 
@@ -226,9 +226,11 @@ The optimizer scores a loadout as the sum of per-piece scores, $\sigma(L) = \sum
 - **So one version per piece is enough.** Some best loadout uses only best-melded pieces, so each meldable piece enters the search as one candidate and the search itself is unchanged. This holds even for two copies of one ring, since each copy takes the same best plan.
 - **It does not hold with a speed range.** Under a speed minimum or maximum, a piece's best melds depend on the rest of the loadout. The engine therefore refuses melds together with a speed range rather than risk a wrong answer. The page sets no speed range.
 
-## 7. Excluded gear groups
+## 7. The page's pool and its gear groups
 
-In the Gear pool tab, one checkbox per group excludes crafted, tomestone, relic, current Savage, ultimate or PvP gear. Current Savage, ultimate and PvP are ticked by default (the owner's decision, 2026-10-14); a saved choice, including every box unticked, is kept. Current Savage is the current expansion's Savage gear only; relic includes the Eureka, Bozja and Occult Crescent armor. The groups are the gear that is hardest to get. An excluded piece leaves both gear lists (All gear and My pool), and the pool line counts the pool pieces it hides. The optimizer gets the pool without them, so the search itself is unchanged. An item's groups come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)); hand-made pieces have none and are never excluded.
+The page has no pool for the user to build: the optimizer searches every database piece the job can wear (built once per job, about 5 to 10 ms), minus the gear groups left out. Until 2026-10-15 the user picked pieces into a pool on a Gear pool tab first (often with "Add all"); the owner dropped that step once searching everything proved as fast. A sweep then compared that with era gear only (pieces the sync leaves untouched, which keep their materia): over 1,971 runs (every job, 17 sync settings, every target, materia on), searching every piece gave a better target total in 70% of runs (median +2%, at most +35%), never a worse one (era gear is a subset), and its best loadouts are about three quarters synced high-level pieces (docs/scratchpad/gear-merge, era-vs-synced).
+
+Under **Gear to search**, one checkbox per group (two columns: crafted, tomestone, relic; current Savage, ultimate, PvP) leaves crafted, tomestone, relic, current Savage, ultimate or PvP gear out when unticked. Current Savage, ultimate and PvP are left out by default (the owner's decision, 2026-10-14); a saved choice, including every box ticked, is kept. Current Savage is the current expansion's Savage gear only (labelled with its patch series, 7.x); relic includes the Eureka, Bozja and Occult Crescent armor. The groups are the gear that is hardest to get. A line under the boxes counts the pieces searched out of every piece the job can wear. The Gear browser has its own boxes, so looking gear up never changes the search. An item's groups come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)).
 
 The page used to show a per-stat ceiling table below the result (each stat's best total from the pool, synced and unsynced). It was removed on 2026-10-12 (owner's decision): it repeated the main result per target and the Sync limits tab, and cost 12 or 14 extra searches on every change.
 
@@ -307,20 +309,25 @@ Measured on the same PC before Beastmaster was added (22 jobs), with the scripts
 
 **Hostile pools.** 3,000 random pools of real pieces with random stats (near-ties, cloaks, two-handed weapons, shields, up to 200 Unique rings), then 600 steps that mutate the worst pool to grow its search: median 186 nodes, largest 700 (4.5 ms). Without a speed range the bound of section 5 is exact (the slots left are independent, the ring pair and blocked slots are bounded exactly), so the search grows with the pool, not exponentially. With the engine's speed range, real full pools stay below about 11,000 nodes; reaching the page's 700,000-node limit took a synthetic pool where every piece trades Critical Hit for speed, and stopped there after about 0.5 s.
 
-**The page.** In Chromium, every piece a job can equip added to the pool, opened cold from a saved state, at normal speed and with the CPU slowed 4 and 6 times (Chrome's slow-device emulation). Two fixes came out of it, both leaving every result the same: the optimizer reads the pool without Alpine's reactive proxies, and saving serializes the state only when the save runs instead of on every change.
+**The page.** In Chromium, opened cold from a saved state on the Gear optimizer tab, at normal speed and with the CPU slowed 4 and 6 times (Chrome's slow-device emulation). Two fixes came out of the first run (2026-10-14), both leaving every result the same: the optimizer reads the store without Alpine's reactive proxies, and saving serialized the then large state (with its pool) only when the save ran. Rerun on 2026-10-15 after the pool step was dropped, against the previous build on the same machine, median of 3:
 
-| Paladin, 2,641 items | Normal | 4× slower | 6× slower |
+| Paladin, 2,534 pieces searched | Normal | 4× slower | 6× slower |
 | --- | ---: | ---: | ---: |
-| First run after opening the page | 33 ms | 157 ms | 307 ms |
-| Later runs | 18 ms | 103 ms | 174 ms |
-| Change to result shown, after the 120 ms wait | 38 ms | 215 ms | 468 ms |
-| Page open to result | 0.7 s | 1.9 s | 3.3 s |
+| First run after opening the page | 54 ms | 242 ms | 423 ms |
+| Later runs | 21 ms | 138 ms | 262 ms |
+| Change to result shown, after the 120 ms wait | 43 ms | 253 ms | 500 ms |
+| Page open to result | 0.7 s | 2.4 s | 4.0 s |
+| Pick the job to result | 0.27 s | 1.1 s | 2.0 s |
 
-Before the fixes the same rows were 54, 55, 133 ms and 0.64 s at normal speed, and the change-to-result time was 523 ms at 4× and 1,169 ms at 6×. Memory stays flat over 100 changes (14.5 MB). What remains slow is outside the optimizer: opening the page (2 MB of page and item data) and adding a whole job's database to the pool at once (about 1.2 s at 4×).
+Notes:
+- **First run:** it now builds the job's gear (it used to be restored from the saved pool): 24, 136 and 302 ms before.
+- **Later runs and changes:** within the noise of the previous build (23, 129, 208 ms; 56, 251, 413 ms).
+- **Pick the job to result:** before, a job switch plus "Add all" took 1.1, 3.9 and 6.3 s to reach a result. Saving now takes at most 1 ms (before, up to 16 ms at 6× with a full pool).
+- **Memory** stays flat over 100 changes (14.5 MB). What remains slow is outside the optimizer: opening the page (2 MB of page and item data).
 
 ## 9. Known behaviours and limits
 
-- **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own empty-pool message first.
+- **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own message instead ("No gear to search") when the gear groups left out leave nothing.
 - **Missing slot types** are left out of the loadout.
 - **Truncated results** may not be optimal, so the page puts a note under them. No real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); only the engine's speed range can reach it (section 8).
 - **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
@@ -339,7 +346,7 @@ Before the fixes the same rows were 54, 55, 133 ms and 0.64 s at normal speed, a
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
-| Page use: node limit, result | `src/ui/views/optimizer.js` (`NODE_LIMIT`, `optimizerView`, `searchPool`) |
+| Page use: the job's gear, gear groups, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `NODE_LIMIT`, `optimizerView`) |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.py`, `compare.mjs`, `memory.mjs`, `workloads.mjs`) |
 | Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js` |

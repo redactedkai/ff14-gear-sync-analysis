@@ -71,7 +71,7 @@ There are 24 misses in total (0, 2, 22 and 0 per band), all off by 1, in three g
 - **4 pieces in two weapon-and-shield pairs** (Alexandrian Metal Blade and Buckler, item level 275; Palaka Shamshir and Pelta, 536). Each pair adds up to the two-handed value, but one stat is split 1 off between them.
 - **2 at item level 595** (Troian legs). Tenacity and Piety follow the common substat column of the budget table, not their own (1 lower). Not adopted into the model.
 
-These misses are not explained. They affect only Piece stats: the Gear pool and the optimizer use each item's real stats.
+These misses are not explained. They affect only Piece stats: the optimizer and the gear browser use each item's real stats.
 
 **Explained exceptions, now in the model.** Two groups that used to miss have a known cause and a rule in the model ([math.md, section 4](math.md#substat-shares-empirical)):
 

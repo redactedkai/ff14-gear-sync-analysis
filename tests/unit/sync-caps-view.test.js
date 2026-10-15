@@ -9,7 +9,7 @@ import { syncView } from '../../src/ui/views/sync-caps.js';
 
 function makeApp(job, patch = {}) {
   const s = restoreState({ job, sync: true });
-  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL, poolVersion: 0 }, patch);
+  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL }, patch);
 }
 
 /* Slot shares in per mille, from the BaseParam sheet (see CLAUDE.md), and an independent round half up. */

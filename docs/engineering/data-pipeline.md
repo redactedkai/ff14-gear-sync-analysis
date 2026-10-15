@@ -191,7 +191,7 @@ Melds (materia) are not part of these stats: a database row holds the item as it
 
 ### Sources
 
-Each row carries a bit mask of the six groups the Gear pool tab can exclude: crafted, tomestone, ultimate, savage, relic and PvP. A gear piece can be in none, one or several. A group's bit is set from two signals:
+Each row carries a bit mask of the six gear groups the page can leave out (in the optimizer and the gear browser): crafted, tomestone, ultimate, savage, relic and PvP. A gear piece can be in none, one or several. A group's bit is set from two signals:
 
 - the piece's **category**, from `Item.SubcategorySort` and shop data (`gear_categories.py`; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)). Each group lists its categories in the shared format file: crafted ← crafted; tomestone ← tomestone; ultimate ← ultimate; savage ← savage, current expansion only; relic ← relic and field_op (Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones); pvp ← pvp (the item level 100 to 205 sets sold for Wolf Marks, still on sale and with normal stats outside PvP: **verified** on the Lodestone at patch 7.56);
 - the **shop and recipe flags** below, for crafted, tomestone and ultimate.

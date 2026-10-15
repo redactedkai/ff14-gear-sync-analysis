@@ -23,29 +23,8 @@ export function page() {
 
 export function settings() {
   return {
-    /* job id waiting for confirmation, because switching would clear a non-empty pool */
-    pendingJob: null,
-    get pendingJobName() {
-      return JOBS.find(j => j[0] === this.pendingJob)?.[1] ?? '';
-    },
-    get poolSize() {
-      return this.$store.app.pool.length;
-    },
     requestJob(id) {
-      const app = this.$store.app;
-      if (id === app.job) return;
-      if (!app.pool.length) {
-        app.setJob(id);
-        return;
-      }
-      this.pendingJob = id; // the current job stays selected until the switch is confirmed
-    },
-    confirmJob() {
-      this.$store.app.setJob(this.pendingJob);
-      this.pendingJob = null;
-    },
-    cancelJob() {
-      this.pendingJob = null;
+      this.$store.app.setJob(id); // job-specific settings reset (resetForJob); nothing else is lost, so no confirmation
     },
     /* the cap field holds text that is not a whole item level in range (the store keeps its last valid cap) */
     capTypedBad: false,
@@ -67,16 +46,9 @@ export function settings() {
       if (this.capTypedBad) return `Enter a whole item level from 1 to ${app.maxReal}`;
       return app.cap == null ? 'Enter a sync cap' : '';
     },
-    /* true while the reset waits for confirmation (only asked when the pool is not empty) */
-    pendingReset: false,
+    /* every setting back to its default, after the browser's own confirmation dialog */
     requestReset() {
-      this.pendingJob = null;
-      if (this.$store.app.pool.length) this.pendingReset = true;
-      else this.$store.app.resetAll();
-    },
-    confirmReset() {
-      this.$store.app.resetAll();
-      this.pendingReset = false;
+      if (window.confirm('Reset every setting to its default?')) this.$store.app.resetAll();
     },
     jobRows: JOB_ROWS.map(([label, ids]) => ({
       label,

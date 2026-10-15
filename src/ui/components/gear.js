@@ -1,21 +1,17 @@
-/* Gear: browse the item database and manage the pool in one table (see views/gear.js). */
+/* Gear browser: look up the item database with filters (see views/gear.js). Recomputed only while its tab is open. */
 import Alpine from 'alpinejs';
-import { gearView, ADD_LIMIT } from '../views/gear.js';
-import { fmtInt } from '../helpers.js';
-import { EXPANSIONS, SOURCES } from '../../core/constants.js';
+import { gearView } from '../views/gear.js';
+import { gearGroupToggles } from '../helpers.js';
+import { EXPANSIONS } from '../../core/constants.js';
 
 export function gear() {
   return {
     view: null,
-    /* replaces the count after "Add all": {kind: 'added' | 'toomany', n, skipped} */
-    notice: null,
     init() {
       Alpine.effect(() => {
         const app = this.$store.app;
-        if (app.tab !== 'pool') return;
-        app.poolVersion; // dependency: any pool change
+        if (app.tab !== 'browse') return;
         this.view = gearView(app);
-        this.notice = null;
       });
     },
     get sortOptions() {
@@ -37,39 +33,10 @@ export function gear() {
       const off = this.$store.app.browse.expOff.filter(k => k !== short);
       this.$store.app.browse.expOff = on ? off : EXPANSIONS.map(e => e[0]).filter(k => k === short || off.includes(k));
     },
-    /* gear groups that can be left out (crafted, tomestone, ...): a ticked box excludes the group */
-    sources: SOURCES,
-    excluded(key) {
-      return this.$store.app.browse.exclude.includes(key);
-    },
-    setExcluded(key, on) {
-      const ex = this.$store.app.browse.exclude.filter(k => k !== key);
-      this.$store.app.browse.exclude = on ? SOURCES.map(s => s.key).filter(k => k === key || ex.includes(k)) : ex;
-    },
+    /* gear groups listed (ticked) or left out: the browser's own list, browse.exclude */
+    ...gearGroupToggles('browse'),
     get typeOptions() {
       return [['any', 'Any slot']].concat(this.slotOptions);
-    },
-    show(which) {
-      this.$store.app.browse.show = which;
-    },
-    /* the row's "In pool" checkbox */
-    toggle(x) {
-      const app = this.$store.app;
-      if (x.item) app.removeItem(x.item.id);
-      else if (x.row) app.addRows([x.row]);
-    },
-    addAll() {
-      const all = this.view.all;
-      if (!all.length) return;
-      if (all.length > ADD_LIMIT) {
-        this.notice = { kind: 'toomany', n: fmtInt(all.length), limit: fmtInt(ADD_LIMIT) };
-        return;
-      }
-      const n = this.$store.app.addRows(all.map(x => x.row));
-      // set after the pool change has recomputed the view (which clears the notice)
-      this.$nextTick(() => {
-        this.notice = { kind: 'added', n: fmtInt(n), plural: n === 1 ? '' : 's', skipped: n < all.length ? fmtInt(all.length - n) : '' };
-      });
     },
   };
 }

@@ -52,10 +52,9 @@
 
   <rect class="hub" x="270" y="152" width="180" height="120" rx="8"/>
   <text class="accent t" x="360" y="182" text-anchor="middle">Shared store</text>
-  <text class="muted s" x="360" y="204" text-anchor="middle">settings and pool</text>
-  <text class="muted s" x="360" y="220" text-anchor="middle">current job context</text>
-  <text class="muted s" x="360" y="236" text-anchor="middle">pool change counter</text>
-  <text class="muted s" x="360" y="252" text-anchor="middle">actions</text>
+  <text class="muted s" x="360" y="212" text-anchor="middle">saved settings</text>
+  <text class="muted s" x="360" y="228" text-anchor="middle">current job context</text>
+  <text class="muted s" x="360" y="244" text-anchor="middle">actions</text>
 
   <rect class="box" x="520" y="152" width="180" height="120" rx="8"/>
   <text class="fg t" x="610" y="182" text-anchor="middle">Component effect</text>

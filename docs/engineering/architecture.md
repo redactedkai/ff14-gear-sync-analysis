@@ -21,7 +21,7 @@ Notes:
 
 - **Data.** The item level budget table, per-level speed data, stat factor table, materia table, item database and job icons. Produced by the data pipeline and never edited by hand. Row counts are in [data-pipeline.md, section 7](data-pipeline.md#7-facts-about-the-current-data).
 - **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches. The core runs unchanged in Node, which is how the unit tests use it.
-- **UI state.** The saved state (defaults, repair on load, browser storage) and one shared store that holds the current settings, the item pool, the current job context, and the actions that change them.
+- **UI state.** The saved state (defaults, repair on load, browser storage) and one shared store that holds the current settings, the current job context, and the actions that change them.
 - **Components.** Each turns the store into a ready-to-display "view". The HTML template binds to those views and to store actions.
 
 The page uses one runtime library, Alpine.js, for reactivity and templating. The build uses one tool, esbuild. Adding any other dependency is a decision for the owner (see `CLAUDE.md`).
@@ -51,16 +51,15 @@ The game database stores stats in a fixed raw order of 14 stats (all four main s
 
 ### One shared store
 
-All state that matters lives in one shared store: the saved settings and pool, plus two derived values that are not saved:
+All state that matters lives in one shared store: the saved settings, plus one derived value that is not saved, the **current job context**, replaced whenever the job changes. Until the user picks a job, the default job's context stands in.
 
-- the **current job context**, replaced whenever the job changes. Until the user picks a job, the default job's context stands in;
-- a **pool change counter**, increased by every action that changes the pool. A view that depends on the pool reads this one number instead of walking every item, so it re-runs exactly when the pool changes and costs nothing to track.
+There is no gear pool to keep: the optimizer searches every piece the job can wear (section 3), so the store holds only settings. Until 2026-10-15 the user built a pool on a Gear pool tab first; dropping that step costs nothing in speed (building a job's gear takes about 5 to 10 ms, docs/scratchpad/gear-merge).
 
-Changes go through store actions: set job, reset everything, switch tab or math sub-tab, add rows, remove an item, clear the pool. Number inputs are bound to store fields through a helper that commits a value only when it is inside the allowed range, rounded to a whole number. An out-of-range value is ignored rather than corrected under the user's cursor.
+Changes go through store actions: set job, reset everything, switch tab or math sub-tab. Number inputs are bound to store fields through a helper that commits a value only when it is inside the allowed range, rounded to a whole number. An out-of-range value is ignored rather than corrected under the user's cursor. A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 does not recompute every view for 1 and 12 first; the gear browser's typed filters wait the same way.
 
-**Changing the job.** Switching to any other job, even one in the same role, clears the pool and resets the job-specific selections to the new job's defaults: the Piece stats substats (and its slot, if the new job lacks it), the optimizer target and tiebreaks, and the browse slot and sort. Other settings are kept, including the sync cap, synced level and sync switch. This way the pool never holds gear the current job can't wear, and its stored stats always match the job's stat mapping.
+**Changing the job.** Switching to any other job, even one in the same role, resets the job-specific selections to the new job's defaults: the Piece stats substats (and its slot, if the new job lacks it), the optimizer target and tiebreaks, and the browse slot and sort. Other settings are kept, including the sync cap, synced level, sync switch and the gear groups left out. Nothing else is lost, so the page switches at once, without asking.
 
-Because the pool is lost, the page asks first when the pool is not empty. A warning under the job menu names the new job and the number of items, with Switch and clear or Cancel. The menu keeps showing the current job until the switch is confirmed.
+**Reset to defaults** puts every setting back, with no job chosen, after the browser's own confirmation dialog.
 
 ### Each area derives a view
 
@@ -71,7 +70,8 @@ The functions that build views are pure and live apart from the components, with
 Large data never enters reactive state:
 
 - The item database is a plain module-level constant that the core reads directly. It is never placed in the store.
-- The views with long lists (the gear table with its browse results, the optimizer result, the accuracy panel) are frozen before they are stored on the component.
+- The views with long lists (the gear browser's rows, the optimizer result, the accuracy panel) are frozen before they are stored on the component.
+- The job's gear the optimizer searches is built once per job, frozen, and kept in a module-level cache outside the store. The optimizer reads the store through `Alpine.raw`, without the proxies.
 
 Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps nested objects as they are read. A frozen object is left as it is. Keeping big lists frozen or outside the store avoids wrapping thousands of rows on every recompute.
 
@@ -81,15 +81,15 @@ Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps ne
 | --- | --- |
 | Settings, Piece stats, Sync limits | On every relevant change |
 | Real-gear accuracy check | Once, when its panel is first opened |
-| Gear table (All gear or My pool) | On a relevant change, while the Gear pool tab is open |
+| Gear browser | On a relevant change, while the Gear browser tab is open |
 | Optimizer result | 120 ms after the last change, while the Gear optimizer tab is open |
 
 Notes:
 
 - **Settings, Piece stats, Sync limits** are cheap: a few formulas.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
-- **Gear table**: one table shows either the database matches or the pool. It recomputes on any change of its filters (including the excluded gear groups), the list shown, the pool, job, cap, sync or level. It shows the first 100 database matches or the first 400 pool items; the optimizer still uses the whole pool. "Add all" refuses more than 3,000 matches.
-- **Optimizer result**: triggered by a change of pool, excluded groups, job, cap, sync, level or optimizer settings. Node limit 700,000.
+- **Gear browser**: the database matches of its filters (including its own left-out gear groups), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
+- **Optimizer result**: every piece the job can wear minus the gear groups left out under Gear to search (the optimizer's own list). Triggered by a change of those groups, job, cap, sync, level or optimizer settings. Node limit 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
 The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
@@ -97,7 +97,7 @@ The debounce works by reading all inputs synchronously inside the effect (so the
 
 The page remembers the user's settings between visits in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync limits item level, Piece stats inputs, browse filters and sort, the optimizer settings, and the pool itself (each item's id, name, slot, item level, stats, copies, HQ flag and source). The job context, the pool change counter, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync limits item level, Piece stats inputs, browse filters and sort, the optimizer settings with its gear groups. The job context, the job's gear, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 
@@ -106,8 +106,7 @@ The page remembers the user's settings between visits in the browser's local sto
 - numbers are rounded and clamped (item levels to 1 to 795, the highest real item level; character level to 1 to 100);
 - choices (tab, slot, stat, sort, filter) must be one of the values valid for this job;
 - substat lists drop unknown or repeated entries, and an older third substat rank is dropped;
-- pool items are dropped if their id, slot, item level or stats are unusable, or if they are not game items (the hypothetical and hand-entered pieces of a removed feature). Unknown fields are discarded, duplicate ids removed, and the restored ids reserved so new items never reuse them;
-- older saves that stored the math sub-view as the tab are translated.
+- older saves are translated: the math sub-view stored as the tab, the Gear pool tab (now the Gear browser), and the one gear-group list the pool days had for both tabs (the optimizer starts from it). A saved pool is ignored.
 
 An invalid field falls back to its default and the valid ones are kept. The state unit tests cover this field by field ([testing.md, section 2](testing.md#2-what-each-file-covers)).
 
@@ -151,7 +150,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Tables and limits derived from the data | `src/core/tables.js` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
-| Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`, `reserveIds`) |
+| Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
 | Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
@@ -159,7 +158,8 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
 | Budget chart | `src/ui/chart.js` |
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-caps.js`, `gear.js`, `optimizer.js`) |
-| Gear table limits | `src/ui/views/gear.js` (`SHOW_LIMIT`, `POOL_ROWS`, `ADD_LIMIT`) |
+| Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
+| The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
 | Components | `src/ui/components/` (`page.js`, `piece-lab.js`, `sync-caps.js`, `validation-panel.js`, `gear.js`, `optimizer.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |

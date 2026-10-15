@@ -9,15 +9,6 @@ let nextId = 1;
 export function newId() {
   return 'i' + nextId++;
 }
-/* After restoring saved items, make sure new ids never collide with theirs. */
-export function reserveIds(ids) {
-  let m = 0;
-  ids.forEach(id => {
-    const n = parseInt(String(id).slice(1), 10);
-    if (n > m) m = n;
-  });
-  nextId = Math.max(nextId, m + 1);
-}
 
 export function mkItem(name, type, ilvl, stats, extra) {
   return Object.assign({ id: newId(), name, type, ilvl, stats: Object.assign(blankStats(), stats), copies: 1, src: 'custom' }, extra || {});

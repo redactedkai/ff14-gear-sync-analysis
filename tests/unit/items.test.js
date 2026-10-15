@@ -212,8 +212,7 @@ test('poolItemFromRow copies: a Unique ring once, a non-unique ring twice', () =
   assert.equal(poolItemFromRow(war, synthetic).copies, 1);
 });
 
-test('HQ flag: a pool item keeps whether its database row is HQ-capable, and a save restores it', async () => {
-  const { restoreState } = await import('../../src/ui/state.js');
+test('HQ flag: a pool item keeps whether its database row is HQ-capable', () => {
   const job = makeJobContext('SGE');
   const rows = browseItems(job, { q: '', type: 'any', ilvlMin: 0, ilvlMax: 0, lvlMax: 0 });
   const hq = rows.find(r => r.hq),
@@ -222,11 +221,6 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable, and a s
   const items = [poolItemFromRow(job, hq), poolItemFromRow(job, nq)];
   assert.deepEqual(
     items.map(i => i.hq),
-    [true, false],
-  );
-  const back = restoreState(JSON.parse(JSON.stringify({ job: 'SGE', pool: items }))).pool;
-  assert.deepEqual(
-    back.map(i => i.hq),
     [true, false],
   );
 });

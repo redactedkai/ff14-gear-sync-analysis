@@ -1,16 +1,15 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
-import { SLOT_TYPES, SLOT_LABEL, ALL_STATS, JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
+import { JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
-import { reserveIds, wearable } from '../core/items.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { levelSyncIlvl } from '../core/sync-target.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
 
-/* Gear groups excluded until the user ticks them back in: Current Savage, Ultimate and PvP (owner's decision,
-   2026-10-14). In SOURCES order. */
+/* Gear groups left out until the user ticks them back in, in the optimizer and the gear browser alike: Current Savage,
+   Ultimate and PvP (owner's decision, 2026-10-14). In SOURCES order. */
 export const DEFAULT_EXCLUDE = Object.freeze(['savage', 'ultimate', 'pvp']);
 
 /* Sync applies only when it is switched on and a cap is set. */
@@ -46,7 +45,7 @@ export function syncLabel(app) {
 }
 
 export const STORE_KEY = 'ilvl-stat-lab-v4';
-export const TABS = ['pool', 'opt', 'math'];
+export const TABS = ['opt', 'browse', 'math'];
 export const MATH_TABS = ['piece', 'sync'];
 
 export function defaultState() {
@@ -55,14 +54,15 @@ export function defaultState() {
     cap: null,
     sync: false,
     level: DEFAULT_LEVEL,
-    tab: 'pool',
+    tab: 'opt',
     mathTab: 'piece',
     syncIlvl: 475,
     piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
-    // expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the gear table and the search
-    browse: { show: 'all', q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
-    opt: { target: 'main', tb: '', tb2: '', melds: true }, // melds: give pieces their best materia melds
-    pool: [],
+    // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
+    browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
+    // melds: give pieces their best materia melds. exclude: gear groups left out of the search (its own list, not the
+    // browser's)
+    opt: { target: 'main', tb: '', tb2: '', melds: true, exclude: [...DEFAULT_EXCLUDE] },
   };
 }
 
@@ -77,8 +77,7 @@ export function clampLevels(s, job) {
   if (s.browse.lvl !== '' && s.browse.lvl > job.maxLevel) s.browse.lvl = job.maxLevel;
 }
 
-/* On a job change: job-specific selections go back to defaults, the levels are held to the job's cap, and the pool is
-   emptied. */
+/* On a job change: job-specific selections go back to defaults and the levels are held to the job's cap. */
 export function resetForJob(s, job) {
   clampLevels(s, job);
   s.piece.subs = defaultSubs(job);
@@ -88,7 +87,6 @@ export function resetForJob(s, job) {
   s.opt.tb2 = '';
   s.browse.type = 'any';
   s.browse.sort = 'ilvl';
-  s.pool = [];
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */
@@ -108,39 +106,6 @@ const str = (v, fallback) => (typeof v === 'string' ? v : fallback);
 const oneOf = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
 const ilvlIn = (v, fallback) => intIn(v, 1, MAX_REAL, fallback);
 
-/* Pool items come only from the game database. Hypothetical and hand-entered pieces (a removed feature) are
-   dropped from older saves. */
-const POOL_SOURCES = ['game'];
-
-/* A saved pool item, or null when it cannot be used. Only the known fields are kept. */
-function restoreItem(i) {
-  if (!isObj(i) || typeof i.id !== 'string' || !i.id || !SLOT_TYPES.includes(i.type)) return null;
-  if (!Number.isInteger(i.ilvl) || i.ilvl < 1 || i.ilvl > MAX_REAL) return null;
-  if (!isObj(i.stats) || !POOL_SOURCES.includes(i.src)) return null;
-  const stats = {};
-  for (const k of ALL_STATS) {
-    const v = i.stats[k] ?? 0;
-    if (!isNum(v) || v < 0) return null;
-    stats[k] = v;
-  }
-  return {
-    id: i.id,
-    name: str(i.name, SLOT_LABEL[i.type] + ' custom'),
-    type: i.type,
-    ilvl: i.ilvl,
-    stats,
-    copies: oneOf(i.copies, [1, 2], 1),
-    src: i.src,
-    hq: bool(i.hq, false),
-  };
-}
-
-function restorePool(raw) {
-  if (!Array.isArray(raw)) return [];
-  const seen = new Set();
-  return raw.map(restoreItem).filter(i => i && !seen.has(i.id) && seen.add(i.id));
-}
-
 /* piece.subs: two ranked substats for this job (100% and 70%); rank 2 may be null. Unknown or repeated ones fall
    back. Older saves had a third rank (20%); it is dropped, since real gear has a third line only as Direct Hit on
    Mind-only gear (docs/mechanics/math.md section 4). */
@@ -152,15 +117,21 @@ function restorePieceSubs(raw, job) {
   return subs;
 }
 
-/* tab and mathTab; older saved state used the sub-view names as tabs */
+/* tab and mathTab; older saved state used the sub-view names as tabs, and 'pool' for the gear tab (now the browser) */
 function restoreTabs(s, raw) {
   if (MATH_TABS.includes(raw.tab)) {
     s.mathTab = raw.tab;
     s.tab = 'math';
   } else {
-    s.tab = oneOf(raw.tab, TABS, s.tab);
+    s.tab = raw.tab === 'pool' ? 'browse' : oneOf(raw.tab, TABS, s.tab);
     s.mathTab = oneOf(raw.mathTab, MATH_TABS, s.mathTab);
   }
+}
+
+/* A saved gear-group list (SOURCES keys), in SOURCES order. A saved list is kept as it is, an empty one too (every group
+   ticked back in); only a missing one gets the fallback. */
+function restoreExclude(raw, fallback) {
+  return Array.isArray(raw) ? SOURCES.map(x => x.key).filter(k => raw.includes(k)) : fallback;
 }
 
 /* Build a valid state from parsed localStorage JSON (or null). Every field is checked for type and range;
@@ -186,11 +157,9 @@ export function restoreState(raw) {
 
   const b = isObj(r.browse) ? r.browse : {};
   s.browse.q = str(b.q, s.browse.q);
-  s.browse.show = oneOf(b.show, ['all', 'pool'], s.browse.show);
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
   s.browse.expOff = Array.isArray(b.expOff) ? EXPANSIONS.map(e => e[0]).filter(k => b.expOff.includes(k)) : [];
-  // a saved list is kept as it is, an empty one too (every group ticked back in); only a missing one gets the default
-  s.browse.exclude = Array.isArray(b.exclude) ? SOURCES.map(x => x.key).filter(k => b.exclude.includes(k)) : s.browse.exclude;
+  s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);
   s.browse.min = optIntIn(b.min, 0, MAX_REAL, s.browse.min);
   s.browse.max = optIntIn(b.max, 0, MAX_REAL, s.browse.max);
   s.browse.lvl = optIntIn(b.lvl, 1, job.maxLevel, s.browse.lvl);
@@ -201,9 +170,10 @@ export function restoreState(raw) {
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
   s.opt.melds = bool(o.melds, s.opt.melds);
-
-  s.pool = restorePool(r.pool).filter(i => wearable(job, i)); // a job's cap can be newer than the save
-  reserveIds(s.pool.map(i => i.id));
+  // a save from before the optimizer had its own list (the gear pool days, when the browser's list served both)
+  // starts from the browser's
+  const oldSave = isObj(r.opt) && !('exclude' in r.opt);
+  s.opt.exclude = restoreExclude(oldSave ? b.exclude : o.exclude, s.opt.exclude);
   return s;
 }
 
