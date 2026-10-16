@@ -207,6 +207,18 @@
             </select></label>
           </template>
         </div>
+        <div class="gcd-row" id="o-gcd-row">
+          <label class="f" for="o-gcd" x-text="view?.gcdUi?.label || 'Target GCD'"></label>
+          <div class="row">
+            <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-model.debounce.300ms="$store.app.opt.gcd">
+            <div class="seg" id="o-gcd-mode" role="radiogroup" aria-label="Target GCD mode" :class="{ off: $store.app.opt.target === 'spd' }">
+              <label><input type="radio" name="o-gcd-mode" value="exact" :disabled="$store.app.opt.target === 'spd'" :checked="$store.app.opt.gcdMode === 'exact'" @change="$store.app.opt.gcdMode = 'exact'">exactly</label>
+              <label><input type="radio" name="o-gcd-mode" value="min" :disabled="$store.app.opt.target === 'spd'" :checked="$store.app.opt.gcdMode === 'min'" @change="$store.app.opt.gcdMode = 'min'">or faster</label>
+            </div>
+            <span class="small dim" id="o-gcd-hint" x-text="view?.gcdUi?.hint || ''"></span>
+          </div>
+        </div>
+        <template x-if="view?.gcdLine"><div class="gcd-line" id="o-gcd-line" :class="{ bad: view.gcdLine.bad }" x-text="view.gcdLine.text"></div></template>
         <div class="row switches">
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Materia</span></label>
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-food" :checked="$store.app.opt.food" @change="$store.app.opt.food = $event.target.checked"><span>Food</span></label>
@@ -216,11 +228,12 @@
     <div id="o-out">
       <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
+      <template x-if="view && view.kind === 'nogcd'"><div class="panel"><div class="empty" id="o-nogcd">No set fits this GCD.</div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>
       <template x-if="view && view.kind === 'ok'"><div class="panel" id="o-result" :data-target="view.target">
         <div class="readout">
           <div><b x-text="view.total"></b><span x-text="view.totalLabel"></span></div>
-          <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD with ${view.spdText} · ${view.tierText}`"></span></div>
+          <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD${view.hasteText} with ${view.spdText} · ${view.tierText}`"></span></div>
           <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
         </div>
         <p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p>
@@ -251,7 +264,7 @@
         <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
         <p class="small dim" id="o-total-note">Total and With food are what the character panel shows at this level for every substat: the level's base plus gear (and food). <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span>: the panel adds your job's and clan's own base to them.</p>
         <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. <span x-text="view.food ? 'Counted with food.' : 'Gear only: food moves every total (switch Food on).'"></span></p>
-        <template x-if="view.food"><p class="small dim" id="o-food-note">Food: a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. This is the community formula (xivgear, Ariyala), not from the game files. Vitality from food is not counted. The gear set is the same with any meal.</p></template>
+        <template x-if="view.food"><p class="small dim" id="o-food-note">Food: a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. This is the community formula (xivgear, Ariyala), not from the game files. Vitality from food is not counted.<span x-show="!view.gcdOn"> The gear set is the same with any meal.</span></p></template>
         <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, only where they raise the target or a tiebreak, every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>

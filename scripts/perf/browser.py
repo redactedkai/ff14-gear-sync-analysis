@@ -62,8 +62,9 @@ def set_job(pg, job):
 
 
 def searched(pg):
-    """The pieces the optimizer searches, from its count line ("Searching 1,939 pieces ...")."""
-    return int(pg.locator('#o-count').inner_text().split()[1].replace(',', ''))
+    """The pieces the optimizer searches, from the count in its heading ("· searching 1,939 of 2,013 pieces")."""
+    words = pg.locator('#o-count').inner_text().split()
+    return int(words[words.index('searching') + 1].replace(',', ''))
 
 
 def saved_state(pg, job):
@@ -74,10 +75,6 @@ def saved_state(pg, job):
     )
     pg.wait_for_function(check, timeout=TIMEOUT)
     return pg.evaluate(f"localStorage.getItem('{STORE_KEY}')")
-
-
-def job_label(pg, job):
-    return pg.get_attribute(f'[data-job-id="{job}"]', 'aria-label')
 
 
 def seed(browser, jobs, rate):
@@ -94,7 +91,11 @@ def seed(browser, jobs, rate):
         t_job = pg.evaluate('performance.now()')
         set_job(pg, job)  # the page opens on the optimizer tab, which runs as soon as a job is picked
         wait_measure(pg, 'optimizer', before + 1)
-        pg.wait_for_function(f"document.querySelector('#o-count')?.textContent.includes({json.dumps(job_label(pg, job))})")
+        # the count names no job since the one-panel layout (fc426a5): wait for the job switch and a count
+        pg.wait_for_function(
+            f"document.querySelector('[data-job]')?.dataset.job === {json.dumps(job)}"
+            " && (document.querySelector('#o-count')?.textContent || '').includes('searching')"
+        )
         expect(pg.locator('#o-out .panel')).to_be_visible()
         total = pg.evaluate('performance.now()') - t_job
         opt = measures(pg, 'optimizer')[-1]

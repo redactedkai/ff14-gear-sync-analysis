@@ -44,8 +44,22 @@ function choicesFor(pool, t) {
    lowers a stat, so smaller ones are never needed), and every stat is capped at the piece's own cap (capsFor at its item
    level, share and factors) without lowering a stat already above it. Only vectors no other one beats on every `keys`
    stat are kept: the objective adds keys across the loadout, so a beaten one never helps. A synced piece, or one with no
-   slot data, has only its own vector. */
-export function meldVectors(job, item, sync, keys) {
+   slot data, has only its own vector. `exactSpd` (a speed maximum: more speed can break it): a vector is beaten only by
+   one with the same speed, so vectors with less speed are kept too. */
+const vectorCache = new WeakMap();
+export function meldVectors(job, item, sync, keys, { exactSpd = false } = {}) {
+  // cached per piece: the reference asks for the same piece in every loadout run (each meal, each speed rule)
+  const ck = `${job.jobId}|${sync.cap}|${sync.sync}|${sync.level}|${keys.join('+')}|${exactSpd}`;
+  let byKey = vectorCache.get(item);
+  if (!byKey) {
+    byKey = new Map();
+    vectorCache.set(item, byKey);
+  }
+  if (!byKey.has(ck)) byKey.set(ck, enumerateVectors(job, item, sync, keys, exactSpd));
+  return byKey.get(ck);
+}
+
+function enumerateVectors(job, item, sync, keys, exactSpd) {
   const base = effStats(job, item, sync);
   const info = meldInfo(item);
   if (itemSyncIlvl(item, sync) != null || !info || !info.slots) return [base];
@@ -81,7 +95,8 @@ export function meldVectors(job, item, sync, keys) {
   rec(0);
   const key = v => keys.map(k => v[k] || 0);
   const ks = out.map(key);
-  const beaten = (a, b) => b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
+  const si = keys.indexOf('spd');
+  const beaten = (a, b) => (!exactSpd || si < 0 || a[si] === b[si]) && b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
   const seen = new Set();
   return out.filter((_v, i) => {
     const id = ks[i].join();
@@ -112,8 +127,11 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
   const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
   const blockable = blockableTypes(job, pool);
   /* each choice (an item, a ring pair, or empty) as its effective stat totals in job.stats order and what it blocks */
-  // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones
-  const vectorsOf = i => (melds ? meldVectors(job, i, sync, keys) : [effStats(job, i, sync)]);
+  // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones.
+  // With a speed rule speed is one of the meld keys, and with a maximum more speed is not always better
+  const ranged = spdMin != null || spdMax != null;
+  const meldKeys = ranged ? [...keys, 'spd'] : keys;
+  const vectorsOf = i => (melds ? meldVectors(job, i, sync, meldKeys, { exactSpd: spdMax != null }) : [effStats(job, i, sync)]);
   const choices = slots.map(t => {
     const list = choicesFor(pool, t).flatMap(items => {
       const blocks = items.flatMap(i => slotInfo(job, i).blocks);

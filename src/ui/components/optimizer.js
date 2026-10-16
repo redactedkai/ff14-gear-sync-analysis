@@ -37,6 +37,8 @@ export function optimizer() {
             app.opt.melds,
             app.opt.food,
             app.opt.foodPair,
+            app.opt.gcd,
+            app.opt.gcdMode,
           ];
           return () => {
             if (deps[0] !== 'opt') return;

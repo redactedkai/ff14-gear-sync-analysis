@@ -119,9 +119,15 @@ test('melds count only on pieces that are not synced', () => {
   assert.equal(det({ cap: 300, sync: true, level: 70 }), 110);
 });
 
-test('melds cannot be combined with a speed range', () => {
+/* With a speed range a piece brings every meld split worth keeping (meldVersions): the piece has no Skill Speed, so a
+   minimum is met only by melding some. Its Determination is 33 below its cap, so the slots past that take Skill Speed
+   and Determination still reaches 110. */
+test('melds with a speed range: a speed minimum is met by melds', () => {
   const it = piece(war, "Kirin's Osode of Fending");
-  assert.throws(() => optimize(war, [it], { cap: null, sync: false }, { target: 'det', melds: true, spdMin: 10 }), /speed range/);
+  const r = optimize(war, [it], { cap: null, sync: false }, { target: 'det', melds: true, spdMin: 10 });
+  assert.ok(r.ok);
+  assert.ok(r.totals.spd >= 10);
+  assert.equal(r.totals.det, 110);
   assert.equal(optimize(war, [it], { cap: null, sync: false }, { target: 'det', spdMin: 10, spdMax: 999 }).ok, false);
 });
 
@@ -164,4 +170,42 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
     }
   }
   assert.ok(checked > 10000, `${checked} melds checked`);
+});
+
+/* meldVersions (Target GCD). Kirin's Osode of Fending (item level 300, no Skill Speed, Determination 77 of a 110 cap):
+   with a speed minimum only, more speed is always better, so every kept version melds speed into the slots that
+   Determination does not fill; with a maximum (exactSpd), versions with less speed must survive too, down to none, or a
+   band below the piece's full speed could be missed. */
+test('meld versions: with a speed maximum, versions with less speed are kept', async () => {
+  const { meldVersions } = await import('../../src/core/meld.js');
+  const it = piece(war, "Kirin's Osode of Fending");
+  const gains = vs => vs.map(m => [m?.gain.det || 0, m?.gain.spd || 0]);
+  const min = gains(meldVersions(war, it, ['det', 'spd']));
+  const exact = gains(meldVersions(war, it, ['det', 'spd'], { exactSpd: true }));
+  for (const v of min)
+    assert.ok(
+      exact.some(w => w[0] === v[0] && w[1] === v[1]),
+      `${v} kept with a maximum`,
+    );
+  assert.ok(exact.length > min.length);
+  assert.ok(
+    exact.some(([det, spd]) => det === 33 && spd === 0),
+    'Determination to its cap and no speed',
+  );
+  assert.ok(!min.some(([det, spd]) => det === 33 && spd === 0), 'beaten by more speed without a maximum');
+  // no version beats another on both stats at the same speed (exact) or at all (min)
+  const beats = (a, b) => a[0] >= b[0] && a[1] >= b[1] && (a[0] > b[0] || a[1] > b[1]);
+  for (const a of min) for (const b of min) assert.ok(!beats(a, b), `${a} beats ${b}`);
+  for (const a of exact) for (const b of exact) assert.ok(a[1] !== b[1] || !beats(a, b), `${a} beats ${b}`);
+  // every gain stays within the cap and comes from legal stones
+  for (const m of meldVersions(war, it, ['det', 'spd'], { exactSpd: true })) {
+    if (!m) continue;
+    assert.ok((m.gain.det || 0) <= 33);
+    assert.ok((m.gain.spd || 0) <= 110);
+  }
+});
+
+test('meld versions: a piece that takes no stones has one version, no melds', async () => {
+  const { meldVersions } = await import('../../src/core/meld.js');
+  assert.deepEqual(meldVersions(sge, mkItem('H', 'head', 300, { crit: 10 }), ['crit', 'spd']), [null]);
 });

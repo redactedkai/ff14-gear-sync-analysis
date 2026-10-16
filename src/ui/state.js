@@ -69,7 +69,8 @@ export function defaultState() {
     browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
     // melds: give pieces their best materia melds. expOff, exclude, min, max, lvl: Gear to search, the browser's
     // filters with their own values. food: add a meal to the result; foodPair: its key in foodChoices (core/food.js),
-    // '' = best for the goal
+    // '' = best for the goal. gcd: the Target GCD in seconds, '' for any; gcdMode: 'exact' (exactly that GCD) or 'min'
+    // (that GCD or faster); exact by default, like xivgear (owner's decision 2026-10-16)
     opt: {
       target: 'main',
       tb: '',
@@ -82,6 +83,8 @@ export function defaultState() {
       lvl: 100,
       food: false,
       foodPair: '',
+      gcd: '',
+      gcdMode: 'exact',
     },
   };
 }
@@ -106,11 +109,18 @@ export function resetForJob(s, job) {
   s.opt.tb = '';
   s.opt.tb2 = '';
   s.opt.foodPair = '';
+  s.opt.gcd = ''; // the GCDs a job can reach depend on its haste
   s.browse.type = 'any';
   s.browse.sort = 'ilvl';
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */
+/** a Target GCD: '' or a number of seconds from 0.5 to 2.5 (a numeric string too: x-model on a number input), to 0.01 */
+const gcdIn = (v, fallback) => {
+  if (v === '') return '';
+  const n = typeof v === 'string' && v.trim() !== '' ? Number(v) : v;
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0.5 && n <= 2.5 ? Math.round(n * 100) / 100 : fallback;
+};
 const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -198,6 +208,8 @@ export function restoreState(raw) {
   s.opt.melds = bool(o.melds, s.opt.melds);
   s.opt.food = bool(o.food, s.opt.food);
   s.opt.foodPair = oneOf(o.foodPair, ['', ...foodChoices(job).map(c => c.key)], s.opt.foodPair);
+  s.opt.gcd = gcdIn(o.gcd, s.opt.gcd);
+  s.opt.gcdMode = oneOf(o.gcdMode, ['exact', 'min'], s.opt.gcdMode);
   // a save from before the optimizer had its own list (the gear pool days, when the browser's list served both)
   // starts from the browser's
   const oldSave = isObj(r.opt) && !('exclude' in r.opt);

@@ -520,6 +520,64 @@ button.x {
   gap: 8px 16px;
 }
 /* phones: the gear groups in two even columns under their label */
+/* Target GCD: the box, the exactly / or faster buttons and the range, on a dashed line under the Goal grid */
+.gcd-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px dashed var(--line);
+  padding-top: 12px;
+}
+.gcd-row .row {
+  gap: 8px 16px;
+}
+.gcd-row input[type="number"] {
+  width: 150px;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface2);
+}
+.seg label {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  color: var(--fg);
+  cursor: pointer;
+}
+.seg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.seg label:has(input:checked) {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.seg label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.seg.off {
+  opacity: 0.45;
+}
+.seg.off label {
+  cursor: not-allowed;
+}
+.gcd-line {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  font-size: 0.88rem;
+}
+.gcd-line.bad {
+  background: var(--warn-bg);
+}
 @media (max-width: 560px) {
   .groups-row {
     display: grid;

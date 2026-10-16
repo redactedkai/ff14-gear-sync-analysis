@@ -110,6 +110,6 @@ Under sync, a piece above the cap gets its stats lowered to the cap and loses it
 | --- | --- |
 | Stones by item level, slots, caps, best melds, meld text | `src/core/meld.js` (`stoneValues`, `meldSlots`, `meldCaps`, `bestMeld`, `meldText`) |
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.js` (`meldInfo`), `src/core/tables.js` (`MATERIA`) |
-| Melds in the candidate lists; speed-range refusal | `src/core/optimizer/candidates.js` (`itemCandidate`), `src/core/optimizer/index.js` |
+| Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |
 | The Materia switch, meld line and note | `src/ui/views/optimizer.js`, `src/index.html` |
 | Tests | `tests/unit/meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/optimizer-exhaustive.test.js` |

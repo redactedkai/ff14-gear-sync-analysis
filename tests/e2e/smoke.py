@@ -566,6 +566,50 @@ def check_food(pg):
     expect(pg.locator('#o-result')).to_have_attribute('data-target', 'main')
 
 
+def check_target_gcd(pg):
+    """Target GCD: the box is empty (any GCD) with no line; a GCD one step from the free result is met exactly, the
+    result's GCD is the one typed and the line gives the speed on the character panel; "or faster" and the GCD are
+    saved; the goal speed disables the box; a hasted job names its haste, a job switch clears the box, and a GCD the
+    job cannot have says why."""
+    set_job(pg, 'SGE')
+    pg.locator('#sync').uncheck()
+    set_number(pg, '#level', '100')
+    wait_optimizer(pg)
+    pg.select_option('#o-target', 'crit')
+    expect(pg.locator('#o-result')).to_have_attribute('data-target', 'crit')
+    box = pg.locator('#o-gcd')
+    check(box.input_value() == '' and box.is_enabled(), 'the Target GCD box is not empty and enabled by default')
+    expect(pg.locator('#o-gcd-line')).to_have_count(0)
+    gcd_card = pg.locator('#o-out .readout > div').nth(1).locator('b')
+    free = float(gcd_card.inner_text().rstrip('s'))
+    asked = round(free - 0.01 if free >= 2.5 else free + 0.01, 2)
+    set_number(pg, '#o-gcd', f'{asked:.2f}')
+    expect(pg.locator('#o-gcd-line')).to_contain_text('Needs Spell Speed')
+    expect(pg.locator('#o-gcd-line')).to_contain_text('on the character panel')
+    expect(gcd_card).to_have_text(f'{asked:.2f}s')
+    pg.locator('#o-gcd-mode label', has_text='or faster').click()
+    expect(pg.locator('#o-gcd-line')).to_be_visible()
+    wait_saved(pg, f"s => s.opt.gcd == {asked} && s.opt.gcdMode === 'min'")
+    check_no_bad_text(pg, 'target gcd')
+    pg.select_option('#o-target', 'spd')
+    expect(box).to_be_disabled()
+    expect(pg.locator('#o-gcd-line')).to_have_count(0)
+    expect(pg.locator('#o-gcd-hint')).to_have_text('off: the goal is speed')
+    set_job(pg, 'NIN')
+    wait_optimizer(pg)
+    check(box.input_value() == '', 'a job switch kept the Target GCD')
+    expect(pg.locator('#o-gcd-row')).to_contain_text('Target GCD (Increase Attack Speed 15%)')
+    pg.select_option('#o-target', 'crit')
+    pg.locator('#o-gcd-mode label', has_text='exactly').click()
+    set_number(pg, '#o-gcd', '2.40')
+    expect(pg.locator('#o-gcd-line')).to_contain_text("Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)")
+    expect(pg.locator('#o-nogcd')).to_be_visible()
+    check_no_bad_text(pg, 'target gcd/none')
+    set_number(pg, '#o-gcd', '')
+    expect(pg.locator('#o-result')).to_be_visible()
+    pg.screenshot(path=str(OUT / 'target-gcd.png'), full_page=True)
+
+
 def wait_saved(pg, js_condition):
     """Wait until the (debounced) saved state satisfies a JS predicate over it, s => ..."""
     pg.wait_for_function(
@@ -968,6 +1012,7 @@ def main():
             check_level_sync,
             check_job_level_cap,
             check_food,
+            check_target_gcd,
             walk_jobs,
         ]
         set_job(pg, 'SGE')

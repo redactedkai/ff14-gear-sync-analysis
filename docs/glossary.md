@@ -30,9 +30,11 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Field operations (Field Op).** Large open zones with their own gear and relic grind: Eureka (Stormblood), Bozja (Shadowbringers) and the Occult Crescent (Dawntrail). See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md#field-op-gear).
 
-**Food.** A meal that raises one or two substats (and Vitality) for 30 minutes, by a percentage of the stat up to a maximum. The tool counts HQ meals only, offers one choice per stat pair, and can pick the one that best serves the goal. Food never changes which gear the optimizer picks. See [math.md, section 6](mechanics/math.md#food).
+**Food.** A meal that raises one or two substats (and Vitality) for 30 minutes, by a percentage of the stat up to a maximum. The tool counts HQ meals only, offers one choice per stat pair, and can pick the one that best serves the goal. Without a target GCD, food never changes which gear the optimizer picks; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together. See [math.md, section 6](mechanics/math.md#food).
 
 **GCD (global cooldown).** The shared recast timer of most combat actions, 2.5 seconds by default. Every point of speed shortens it slightly. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
+
+**Haste.** A percentage that shortens the GCD on top of speed. The target GCD counts only haste that is up all fight: Monk, Ninja, Samurai and Viper, by level. Short buffs are not counted. See [math.md, section 6](mechanics/math.md#haste).
 
 **GCD tier.** Because the GCD is rounded down to hundredths of a second, it changes in steps: a range of speed values all give the same GCD, and the next step starts at a specific threshold. At level 50 a new tier starts about every 10.5 points of gear speed. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
@@ -142,7 +144,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Smoke test.** The browser test of the built page (`npm run smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 960 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
 
-**Speed range.** An optional minimum and maximum for the speed stat in the optimizer engine. The page does not offer it yet; it is meant for a target-GCD control ([roadmap.md](roadmap.md)). See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
+**Speed range.** An optional minimum and maximum for the speed stat in the optimizer engine, set from a target GCD. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
 **Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded. It is 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats (**verified**, game files). Sync caps apply the factor in the other order, before the slot share (**verified** by three second-hand in-game values; **inferred** in general), and use the piece's own factor (**inferred**). Where no item is involved, the page uses the job's factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule).
 
@@ -151,6 +153,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 **Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files (**inferred**); it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md).
 
 **Tabs.** The page has two working tabs, **Gear optimizer** (opened by default) and **Gear browser** (looking gear up), and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (a piece built from its item level and slot by the formula) and **Sync limits** (what a cap allows per slot, with the "Checked against real gear and published caps" panel). Some pages call Sync limits "Sync caps". See the [root README](../README.md).
+
+**Target GCD.** A GCD the optimizer must reach, "exactly" or "or faster", counted with food and haste. It becomes a speed range, and the best set by the goal within it wins. On the page it is a box under the Goal grid, empty by default. See [math.md, section 6](mechanics/math.md#target-gcd) and [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
 **Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
 

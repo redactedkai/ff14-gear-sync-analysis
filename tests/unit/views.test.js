@@ -414,3 +414,86 @@ test('optimizer totals are character panel numbers for substats', () => {
   assert.match(v.totalLabel, /^Spell Speed \(base \+ gear \+ food, synced\)$/);
   assert.equal(v.spdText, `${v.food.totals[spd]} Spell Speed (341 base, ${gear[spd]} gear, ${v.food.cells[spd]?.value ?? 0} food)`);
 });
+
+/* Target GCD on the page: the view equals the core's optimizeGcd on the same gear, counts the job's haste in its GCD
+   and label, gives the speed band as the character panel shows it (base + gear + food), and says why no set fits. */
+test('optimizer view with a Target GCD equals the core, with haste, food and the band on the character panel', async () => {
+  const { optimizeGcd } = await import('../../src/core/target-gcd.js');
+  const { foodChoices, statBase } = await import('../../src/core/food.js');
+  const { hasteFor } = await import('../../src/core/speed.js');
+  const window = { type: 'any', ilvlMin: 700, ilvlMax: 730, lvlMax: 100 };
+  for (const [jobId, food] of [
+    ['SGE', false],
+    ['SAM', true],
+  ]) {
+    const job = makeJobContext(jobId);
+    const pool = gamePool(job, window);
+    const app = makeApp(jobId, { sync: false, cap: null, level: 100 });
+    Object.assign(app.opt, { target: 'crit', tb: 'det', food, melds: true, exclude: [], expOff: [], min: '', max: '', lvl: 100 });
+    const pct = hasteFor(jobId, 100)?.pct ?? 0;
+    const free = optimizerView(app, pool);
+    assert.equal(free.gcdLine, null, 'an empty box: no line');
+    assert.equal(free.gcdUi.label, pct ? 'Target GCD (Fuka 13%)' : 'Target GCD');
+    assert.equal(free.gcd, gcdFor(free.spd, 100, 2500, pct).toFixed(2));
+    if (pct) assert.equal(free.hasteText, ` (Fuka 13%; ${gcdFor(free.spd, 100).toFixed(2)} without)`);
+    else assert.equal(free.hasteText, '');
+    // the Effect row's speed cell is the same GCD as the card, haste included
+    assert.equal(free.tiers[job.stats.indexOf('spd')].effect, `${free.gcd}s`);
+    // one tier slower than the free result (the drift case, which "exactly" must meet with less speed), or faster when
+    // the free result is already the slowest GCD
+    const top = gcdFor(0, 100, 2500, pct);
+    const asked = Math.round((Number(free.gcd) + (Number(free.gcd) < top ? 0.01 : -0.01)) * 100) / 100;
+    let met = 0;
+    for (const mode of ['exact', 'min']) {
+      Object.assign(app.opt, { gcd: asked, gcdMode: mode });
+      const v = optimizerView(app, pool);
+      const r = optimizeGcd(
+        job,
+        pool,
+        { cap: null, sync: false, level: 100 },
+        {
+          target: 'crit',
+          tiebreak: ['det', ''],
+          melds: true,
+          gcd: asked,
+          mode,
+          food: food ? 'best' : null,
+          level: 100,
+        },
+      );
+      assert.equal(v.kind, r.ok ? 'ok' : 'nogcd', `${jobId} ${mode}`);
+      if (!r.ok) continue;
+      met++;
+      assert.deepEqual(
+        v.totals,
+        job.stats.map(s => r.totals[s] + panelBase(job, s, 100)),
+        `${jobId} ${mode}: the core's gear, in panel numbers`,
+      );
+      assert.equal(v.gcd, r.gcd.toFixed(2));
+      if (mode === 'exact') assert.equal(v.gcd, asked.toFixed(2));
+      const base = statBase(job, 'spd', 100);
+      if (r.faster) assert.match(v.gcdLine.text, /faster than asked/);
+      else {
+        const need = mode === 'exact' ? `${base + r.band.min} to ${base + r.band.max}` : `${base + r.band.min} or more`;
+        assert.equal(v.gcdLine.text, `Needs ${job.label.spd} ${need} on the character panel.`);
+      }
+      if (food) assert.equal(v.food?.name, r.food?.name, 'the meal chosen with the gear');
+    }
+    assert.equal(met, 2, `${jobId}: both modes find a set`);
+    app.opt.gcd = '';
+    assert.ok(foodChoices(job).length);
+  }
+  // impossible for the job: a Ninja's GCD is 2.12 at most at level 100 (15% haste)
+  const nin = makeApp('NIN', { sync: false, cap: null, level: 100 });
+  Object.assign(nin.opt, { target: 'crit', gcd: 2.4, gcdMode: 'exact', exclude: [], lvl: 100 });
+  const no = optimizerView(nin, gamePool(makeJobContext('NIN'), window));
+  assert.equal(no.kind, 'nogcd');
+  assert.ok(no.gcdLine.bad);
+  assert.match(no.gcdLine.text, /^Ninja's GCD is 2\.12 at most \(Increase Attack Speed 15%\)\. Fastest with this gear: \d\.\d\d\.$/);
+  // the goal is speed: the box is off, the GCD typed is ignored
+  Object.assign(nin.opt, { target: 'spd' });
+  const spd = optimizerView(nin, gamePool(makeJobContext('NIN'), window));
+  assert.equal(spd.kind, 'ok');
+  assert.equal(spd.gcdLine, null);
+  assert.equal(spd.gcdUi.off, true);
+});

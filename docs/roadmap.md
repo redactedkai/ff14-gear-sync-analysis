@@ -8,7 +8,7 @@ Related pages: [optimizer.md](engineering/optimizer.md), [materia.md](mechanics/
 
 | ID | Idea | Built | Priority | Notes |
 | --- | --- | --- | --- | --- |
-| A1 | Target GCD | ❌ | 1 | "Reach this GCD tier, then maximize the target", through the engine's speed range. Needs every unbeaten meld version per piece; the engine refuses melds with a speed range today ([optimizer.md, section 6](engineering/optimizer.md#why-one-melded-version-per-piece-is-exact)). |
+| A1 | Target GCD | ❌ | 1 | "Reach this GCD tier, then maximize the target", through the engine's speed range. "Exactly" or "or faster", with food and haste. Built on `feature/target-gcd` (engine and page), merging next ([optimizer.md, section 2](engineering/optimizer.md#target-gcd-from-a-gcd-to-a-speed-range)). |
 | A7 | Rank tiebreaks by tier | ❌ | 2 | After A1: hold the target at the start of its best tier, counted with food, then maximize the tiebreaks, each held at its best tier in turn. Exact with the engine's stat minimums; gear points for a total with food come from `gearNeeded` (core/food.js). Owner's go, 2026-10-15 (it had been dropped on 2026-10-14 until food and stat minimums existed). |
 | A4 | Gear sets and comparison | ❌ | 3 | Keep several gear sets side by side and compare their stats and tiers: optimizer results under different targets or tiebreaks, and sets the player enters (the gear they own). Could also limit the optimizer to owned gear (it searches every piece the job can wear since the gear pool step was dropped, 2026-10-15). |
 | A3 | Save and share a result | ❌ | 4 | As a JSON file or a URL. After A1, A7 and A4, so it saves their settings and sets too. |

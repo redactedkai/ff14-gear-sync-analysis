@@ -76,7 +76,7 @@ const memo = new Map();
 
 /* Cache sizes, for the performance scripts (scripts/perf): {memo, compositions}. */
 export function meldCacheStats() {
-  return { memo: memo.size, compositions: compCache.size };
+  return { memo: memo.size, versions: versionMemo.size, compositions: compCache.size };
 }
 
 /* Best split of `big` stones of value bv and `small` stones of value sv among the stats with headrooms `heads` (in
@@ -119,6 +119,14 @@ function bestSplit(big, small, bv, sv, heads) {
    `stones` is in slot order, the order they are melded in: the stones for the guaranteed slots and the first overmeld
    slot first, then those for the later overmeld slots, which refuse VI, VIII, X and XII. */
 export function bestMeld(job, item, keys) {
+  const m = meldSetup(job, item, keys);
+  if (!m) return null;
+  return meldFromSplit(m, bestSplit(m.nBig, m.nSmall, m.bv, m.sv, m.heads));
+}
+
+/* What bestMeld and meldVersions share: the piece's stones and the room under each cap, or null when it takes none or
+   no key is a meldable substat. */
+function meldSetup(job, item, keys) {
   const { big: nBig, small: nSmall } = meldSlots(item);
   if (!nBig) return null;
   const meldable = [...new Set(keys)].filter(k => job.substats.includes(k));
@@ -128,9 +136,58 @@ export function bestMeld(job, item, keys) {
   const bv = big.value,
     sv = nSmall ? small.value : 0;
   const caps = meldCaps(job, item);
-  const head = s => Math.max(0, caps[s] - (item.stats[s] || 0));
-  const split = bestSplit(nBig, nSmall, bv, sv, meldable.map(head));
+  const heads = meldable.map(s => Math.max(0, caps[s] - (item.stats[s] || 0)));
+  return { nBig, nSmall, big, small, bv, sv, meldable, heads };
+}
 
+/* Every split worth keeping when the loadout has a speed rule (Target GCD), as bestMeld results. With a speed minimum or
+   maximum, one best split per piece is no longer exact: the best melds of a piece depend on how much speed the rest of
+   the loadout has. So every split that no other split beats on the keys is kept (each a version of the piece). `keys`
+   must include 'spd'. With `exactSpd` (a speed maximum: more speed can break it), a split beats another only at the same
+   speed, so splits with less speed survive too. Among splits with the same gains, the one that leaves the most slots
+   empty, then whose stones are worth the least, as in bestMeld. A piece that takes no stones has one version, no melds:
+   [null]. Cached by stones and room under the caps; room beyond what all stones can add changes nothing, so it is
+   clamped first and more pieces share one list. */
+const versionMemo = new Map();
+export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
+  const m = meldSetup(job, item, keys);
+  if (!m) return [null];
+  const most = m.nBig * m.bv + m.nSmall * m.sv;
+  const heads = m.heads.map(h => Math.min(h, most));
+  const si = m.meldable.indexOf('spd');
+  const key = `${m.nBig},${m.nSmall},${m.bv},${m.sv},${heads.join(',')},${si},${exactSpd ? 1 : 0}`;
+  let splits = versionMemo.get(key);
+  if (!splits) {
+    const k = heads.length;
+    // the best split for each gain vector (same tie rule as bestSplit)
+    const byGain = new Map();
+    for (const b of compositions(m.nBig, k + 1)) {
+      for (const s of compositions(m.nSmall, k + 1)) {
+        const gain = heads.map((h, j) => Math.min(h, b[j] * m.bv + s[j] * m.sv));
+        const g = gain.join(',');
+        const empty = b[k] + s[k],
+          spare = b[k] * m.bv + s[k] * m.sv;
+        const cur = byGain.get(g);
+        if (cur && (empty < cur.empty || (empty === cur.empty && spare >= cur.spare))) continue;
+        byGain.set(g, { big: b.slice(0, k), small: s.slice(0, k), gain, empty, spare, spareBig: b[k], spareSmall: s[k] });
+      }
+    }
+    // unbeaten gain vectors: by total, highest first, a split can only be beaten by one already kept (all distinct)
+    const all = [...byGain.values()];
+    const total = x => x.gain.reduce((a, b) => a + b, 0);
+    all.sort((x, y) => total(y) - total(x));
+    splits = [];
+    for (const g of all) {
+      const beaten = splits.some(h => (!exactSpd || si < 0 || h.gain[si] === g.gain[si]) && h.gain.every((x, j) => x >= g.gain[j]));
+      if (!beaten) splits.push(g);
+    }
+    versionMemo.set(key, splits);
+  }
+  return splits.map(split => meldFromSplit(m, split));
+}
+
+/* A split as a bestMeld result: {gain, stones, free}. */
+function meldFromSplit({ big, small, meldable }, split) {
   const gain = {};
   // two lists, one per kind of slot; below item level 290 both kinds take the same grade, so they form one list
   const bigStones = [];

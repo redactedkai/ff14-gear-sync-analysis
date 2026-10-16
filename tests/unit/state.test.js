@@ -47,6 +47,8 @@ function validSave() {
       lvl: 60,
       food: true,
       foodPair: 'det+crit',
+      gcd: 2.4,
+      gcdMode: 'min',
     },
   };
 }
@@ -206,6 +208,16 @@ test('opt fields', () => {
   assert.equal(D.opt.melds, true); // melds on by default
   expectFieldDefault('opt.melds', 'yes', true);
   expectFieldDefault('opt.melds', null, true);
+  // Target GCD: empty (any GCD) and "exactly" by default; a number of seconds, a numeric string (x-model on a number
+  // input) taken to 0.01, anything else the default
+  assert.deepEqual([D.opt.gcd, D.opt.gcdMode], ['', 'exact']);
+  expectFieldDefault('opt.gcd', '', '');
+  expectFieldDefault('opt.gcd', '2.456', 2.46);
+  expectFieldDefault('opt.gcd', 'fast', D.opt.gcd);
+  expectFieldDefault('opt.gcd', 3, D.opt.gcd);
+  expectFieldDefault('opt.gcd', 0, D.opt.gcd);
+  expectFieldDefault('opt.gcd', null, D.opt.gcd);
+  expectFieldDefault('opt.gcdMode', 'faster', D.opt.gcdMode);
 });
 
 test("a save from the gear pool days: the pool and the browser's list switch are dropped, the rest kept", () => {

@@ -50,7 +50,7 @@ Details: `docs/mechanics/math.md`, evidence in `docs/mechanics/validation.md`, m
 - Item stat: `round(round(round(budget × slotPercent / 1000) × factor) × share)`, rounded after each step; the factor is the item's own stat factor. Off-hand = 2H value − 1H value.
 - Sync cap: `round(floor(floor(budget × factor% / 100) × slotPercent / 100) / 10)`, using the piece's own slot share. It matches the Wiki's item level 475 caps.
 - Synced item level: the item level cap first; otherwise, if the equip level is above the synced level, that level's `ParamGrow.ItemLevelSync`. Gear that scales with the wearer (`Item.SubStatCategory` 2) always follows the level, whatever its equip level (math.md section 5).
-- Food: HQ only. It never changes which gear wins.
+- Food: HQ only. Without a Target GCD it never changes which gear wins; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together.
 
 **These are guesses, not facts; say so in the UI and in answers:** the 100%/70% substat shares, the main stat and Vitality clamp under sync, the off-hand rule, the food formula, every meld succeeding, and substats never scaling up.
 
@@ -79,7 +79,7 @@ PLD and BST use a 1H weapon and a shield; the rest use 2H. Level caps: BLU 80, B
 
 Details: `docs/engineering/optimizer.md`.
 
-Branch and bound over slots, after removing dominated items. Each item gets one integer score for (goal, tiebreak 1, tiebreak 2). It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. **If you change scoring, pruning or the search, keep the exhaustive-search tests passing and re-run `npm run perf`.**
+Branch and bound over slots, after removing dominated items. Each item gets one integer score for (goal, tiebreak 1, tiebreak 2). It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. A Target GCD (`src/core/target-gcd.js`) becomes a speed band, counting food and the always-on haste of MNK, NIN, SAM and VPR. **If you change scoring, pruning or the search, keep the exhaustive-search tests passing and re-run `npm run perf`.**
 
 ## Page rules
 

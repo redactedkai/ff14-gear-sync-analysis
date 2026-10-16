@@ -12,12 +12,16 @@ test('A1: switching to another job in the same role resets the job-specific sett
   store.opt.exclude = ['crafted'];
   store.browse.sort = 'det';
   store.cap = 200;
+  store.opt.gcd = 2.45;
+  store.opt.gcdMode = 'min';
   store.setJob('WHM');
   assert.equal(store.job, 'WHM');
   assert.equal(store.jobCtx.jobId, 'WHM');
   assert.equal(store.opt.target, 'main');
   assert.equal(store.browse.sort, 'ilvl');
   assert.equal(store.cap, 200); // not job-specific: kept
+  assert.equal(store.opt.gcd, ''); // the GCDs a job can reach depend on its haste: cleared
+  assert.equal(store.opt.gcdMode, 'min'); // the mode is a preference: kept
   assert.deepEqual(store.opt.exclude, ['crafted']); // gear groups are not job-specific: kept
 });
 

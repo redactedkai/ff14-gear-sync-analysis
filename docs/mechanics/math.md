@@ -378,6 +378,35 @@ $$
 
 That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real gear set usually falls short of this, because a piece rarely has speed as its top substat in every slot.
 
+### Haste
+
+Four jobs run faster all fight, from a trait or a buff kept up the whole time. The Target GCD counts their haste $h$ (percent), so the box takes the GCD their guides give. Short buffs (Presence of Mind, Ley Lines, Army's Paeon, Inspiration) and party buffs are not counted (owner's decision, 2026-10-15). xivgear counts the same four jobs.
+
+| Job | Source | Haste | From level |
+| --- | --- | --- | --- |
+| Monk | Greased Lightning (trait) | 5 / 10 / 15 / 20% | 1 / 20 / 40 / 76 |
+| Ninja | Increase Attack Speed (trait) | 15% | 45 |
+| Samurai | Fuka (buff) | 10 / 13% | 18 / 78 |
+| Viper | Swiftscaled (buff) | 15% | 20 |
+
+Percentages and levels are from the official job guides (**verified**). xivgear applies the Ninja and Viper haste at every level.
+
+Haste applies after the speed step, then the result is rounded down again (xivgear's formula, **inferred**):
+
+$$
+t = \left\lfloor \frac{b \cdot m}{1000} \right\rfloor \ \text{ms}, \qquad \text{GCD} = \frac{1}{100}\left\lfloor \frac{t\,(100 - h)}{1000} \right\rfloor \ \text{seconds}
+$$
+
+With $h = 0$ this equals the formula above at every speed (tested to 3,000). Example: a level 100 Samurai with 1,000 gear speed has $m = 1000 - \lfloor 130 \times 1000 / 2780 \rfloor = 954$, $t = 2385$ ms, and with Fuka $\lfloor 2385 \times 87 / 1000 \rfloor = 207$: 2.07 s (2.38 s without). With no speed at level 100 the GCD is 2.17 s for Samurai, 2.12 s for Ninja and Viper, and 2.00 s for Monk. These are the tiers in xivgear's curated best-in-slot set names (tested).
+
+### Target GCD
+
+A target GCD $G$ asks for a band of speed: the gear plus food speeds whose GCD is exactly $G$, from $m_G$ to $M_G$. "Or faster" uses only $m_G$. Example at level 100, no haste: exactly 2.45 s is 364 to 449, and 2.49 s is 22 to 106 (AkhMorning's level 100 table starts 2.49 at 22 and 2.48 at 107).
+
+- **No value is skipped.** With or without haste, one more point of speed lowers the GCD by at most 0.01 s (tested to 6,000 at levels 50, 90 and 100, hastes 0 to 20%). So every GCD between the one with no speed and the fastest has a band.
+- **Slower than no speed:** exactly a GCD slower than the GCD with no speed (2.40 for a level 100 Ninja) has no band. That GCD or faster is met by any set.
+- **Food counts:** the band is on gear plus food. Since gear plus food rises with every gear point (below), each meal turns it into a band on gear speed alone. That is how the optimizer searches it ([optimizer.md, section 2](../engineering/optimizer.md#2-formal-statement)).
+
 Verification status: the formulas are a community reference, not game files. Which GCD values are asserted in tests, and their sources, is in [validation.md, section 5](validation.md#5-speed-and-gcd). Whether a particular action's recast is reduced by speed depends on the job, so the tool reports only the 2.5 s base GCD and the tick multiplier.
 
 ### Substat tiers (breakpoints)
@@ -416,7 +445,7 @@ At low levels the percentage, not the maximum, is what limits food. At level 50 
 
 **Which meals.** The tool models HQ meals only (owner's decision). Within one ordered stat pair (primary, secondary), a newer meal never has a lower maximum (all 255 two-substat meals), so each pair is represented by its newest meal. A meal is left out when another one has each of its stats at an equal or higher maximum (an old Critical Hit + Determination meal next to a new Determination + Critical Hit one), so a job has 7 to 13 choices. Vitality from food is not counted: it has no tier, and its base needs the job and clan modifiers.
 
-**Food does not change the gear.** For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged. "Best for the goal" keeps the optimizer's gear and takes the meal that gives the highest target, then tiebreak 1, then tiebreak 2, with food added. A test checks this against every (gear set, meal) pair of a small pool.
+**Food does not change the gear** (with no target GCD). For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged. With a target GCD the meal does change which gear fits, since its speed counts toward the GCD; meal and gear are then chosen together ([Target GCD](#target-gcd)). "Best for the goal" keeps the optimizer's gear and takes the meal that gives the highest target, then tiebreak 1, then tiebreak 2, with food added. A test checks this against every (gear set, meal) pair of a small pool.
 
 ## 7. Verified and assumed
 
@@ -448,6 +477,8 @@ At low levels the percentage, not the maximum, is what limits food. At level 50 
 | Weapons use the same level sync item level | Inferred | One column; same report |
 | No scaling up under sync | Assumed | – |
 | GCD and tick formulas | Community reference (AkhMorning) | AkhMorning tier tables (9) |
+| Haste percentages and levels | Verified (official job guides) | [Haste](#haste) |
+| Haste applied after the speed step, rounded down again | Inferred (xivgear's formula) | Its best-in-slot GCD tiers |
 | Food percentages and maximums | Verified (game files) | `ItemFood`, HQ columns |
 | Food: of base plus gear, floored, capped; unchanged under sync | Inferred (community tools, player reports) | [Food](#food) |
 | Main stat base per level (Determination and Piety food) | Inferred (AkhMorning table) | Its `ParamGrow` columns match, 100 of 100 |
@@ -479,7 +510,8 @@ Notes:
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
 | The cap shown on Piece stats and Sync limits; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
-| GCD, tick multiplier, GCD tiers | `src/core/speed.js` |
+| GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
+| Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
 | Food: bonus, base, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json`; main stat base `LEVEL_MAIN` in `src/core/constants.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
