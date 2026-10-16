@@ -30,7 +30,7 @@ let saveTimer = null;
 Alpine.effect(() => {
   const t0 = performance.now();
   const json = JSON.stringify(app.persisted());
-  performance.measure('save', { start: t0 }); // read by scripts/perf/browser.py
+  performance.measure('save', { start: t0 }); // read by scripts/perf/browser.mjs
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(json), SAVE_DEBOUNCE_MS);
 });

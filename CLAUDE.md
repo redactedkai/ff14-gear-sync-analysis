@@ -14,24 +14,24 @@ The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23
 - `src/ui/`: state, Alpine store, view builders (`views/`, unit-tested), components.
 - `src/data/`: **generated, never edit by hand.** Change `scripts/data/` and run `python scripts/data/regen.py`.
 - `scripts/`: build, data generators, perf, and validation against ffxiv-gearing and xivgear (run by hand).
-- `tests/`: `unit/`, `data/` (generators), `e2e/smoke.py`.
+- `tests/`: `unit/`, `data/` (generators), `e2e/smoke.mjs`.
 - `docs/`: `mechanics/` (the game), `engineering/` (the code), plus glossary, roadmap, history.
 
 Pushing to `main` deploys to GitHub Pages (the only workflow).
 
 ## Branches
 
-Feature branch → `dev` → `staging` → `main`, one way, fast-forward when possible. Never commit on `staging` or `main` directly. Before merging to `main`, run `npm run check` on `staging` and look at the page. Hotfixes branch from `main` and merge into all three. Non-`main` builds show a DEV/STAGING badge.
+Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. Non-`main` builds show a DEV badge. CI runs `npm run check` on `dev`, `main` and PRs, and deploys only from `main`.
 
 ## Commands
 
-Needs Node 22+ and Python 3.9+ (`pip install -r requirements-dev.txt`, `python -m playwright install chromium`).
+Needs Node 22+ (`npm install`, then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests.
 
 - `npm run build`, `npm run dev`
-- `npm test`: all must pass
+- `npm test`: Node unit tests, all must pass (`npm run test:data`: Python generator tests)
 - `npm run smoke`: must print `no errors`
-- `npm run lint`, `npm run format`
-- `npm run check`: all of the above. **Run it before saying something works.** For UI changes, also look at the page at full width and at 960 px.
+- `npm run lint`, `npm run format` (Biome; `lint:py` and `format:py` for Ruff)
+- `npm run check`: lint, build, test, smoke; no Python needed. **Run it before saying something works.** Run `npm run check:all` (adds `lint:py`, `test:data`) when touching `scripts/data/` or after `update-data`. For UI changes, also look at the page at full width and at 960 px.
 - `npm run update-data`: after a game patch (see `docs/engineering/data-pipeline.md` section 9)
 
 ## Code rules
@@ -101,5 +101,5 @@ Branch and bound over slots, after removing dominated items. Each item gets one 
 
 ## Tests and docs
 
-- Details: `docs/engineering/testing.md`. Formula and optimizer tests go in `tests/unit/<module>.test.js`, generator tests in `tests/data/test_generators.py`, UI regressions in `tests/e2e/smoke.py`. Use real items and published numbers as expected values.
+- Details: `docs/engineering/testing.md`. Formula and optimizer tests go in `tests/unit/<module>.test.js`, generator tests in `tests/data/test_generators.py`, UI regressions in `tests/e2e/smoke.mjs`. Use real items and published numbers as expected values.
 - Docs follow `docs/diagrams/STYLE.md`. If a change alters a documented number or rule, update the doc.

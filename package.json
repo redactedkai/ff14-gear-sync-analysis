@@ -10,16 +10,20 @@
   "scripts": {
     "build": "node scripts/build/build.mjs",
     "dev": "node scripts/build/dev.mjs",
-    "test": "node --test \"tests/unit/*.test.js\" && python -m unittest discover -s tests/data -p \"test_*.py\"",
-    "smoke": "python tests/e2e/smoke.py",
-    "lint": "biome lint . && biome format . && python -m ruff check . && python -m ruff format --check .",
-    "format": "biome format --write . && python -m ruff format .",
+    "test": "node --test \"tests/unit/*.test.js\"",
+    "test:data": "python -m unittest discover -s tests/data -p \"test_*.py\"",
+    "smoke": "node tests/e2e/smoke.mjs",
+    "lint": "biome lint . && biome format .",
+    "lint:py": "python -m ruff check . && python -m ruff format --check .",
+    "format": "biome format --write .",
+    "format:py": "python -m ruff format .",
     "check": "npm run lint && npm run build && npm test && npm run smoke",
+    "check:all": "npm run check && npm run lint:py && npm run test:data",
     "update-data": "python scripts/data/fetch.py && python scripts/data/regen.py",
     "perf": "node scripts/perf/bench.mjs --quick --repeats 1",
     "perf:full": "node scripts/perf/bench.mjs --repeats 3",
     "perf:adversarial": "node scripts/perf/adversarial.mjs",
-    "perf:browser": "npm run build && python scripts/perf/browser.py"
+    "perf:browser": "npm run build && node scripts/perf/browser.mjs"
   },
   "license": "MIT",
   "dependencies": {
@@ -27,6 +31,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0"
   }
 }

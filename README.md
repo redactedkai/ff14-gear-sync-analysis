@@ -6,8 +6,8 @@ It builds to a single self-contained HTML page, `dist/index.html`, that opens fr
 
 ## Requirements
 
-- Node 22 or later. Run `npm install` once. Building the page needs only Node.
-- Python 3.9 or later, for the generator tests (part of `npm test`), the smoke test, linting and the data pipeline: `python -m pip install -r requirements-dev.txt`, then once `python -m playwright install chromium`.
+- Node 22 or later. Run `npm install` once, and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
+- Python 3.9 or later, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`.
 
 Run all commands from the repo root.
 
@@ -34,11 +34,14 @@ Once a job is chosen, the page has two working tabs and one reference tab:
 | --- | --- |
 | `npm run build` | Bundle everything into `dist/index.html` (opens straight from disk) |
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
-| `npm test` | Unit tests (core logic, page views, data format, saved state) and the Python data generator tests |
+| `npm test` | Unit tests (core logic, page views, data format, saved state) |
+| `npm run test:data` | The Python data generator tests |
 | `npm run smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
-| `npm run lint` | Biome (JavaScript, JSON, CSS) and Ruff (Python): lint and format check |
-| `npm run format` | Rewrite files with Biome and Ruff formatting |
-| `npm run check` | Lint (with format check), build, all tests and the smoke test, in that order. Run this before calling a change done |
+| `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check |
+| `npm run lint:py` | Ruff (Python): lint and format check |
+| `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
+| `npm run check` | Lint (with format check), build, unit tests and the smoke test, in that order; no Python needed. Run this before calling a change done |
+| `npm run check:all` | `check`, then `lint:py` and `test:data`. Run it when touching `scripts/data/` or after `update-data` |
 | `npm run update-data` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
 
 For a UI change, also open `dist/index.html` and look at it at desktop width and at 960 px. Test layers and conventions are in [docs/engineering/testing.md](docs/engineering/testing.md).

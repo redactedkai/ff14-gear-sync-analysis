@@ -351,6 +351,6 @@ Report with charts: `docs/scratchpad/xivgear-validation/report.html` (not commit
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
 | Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `caps-real-items.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `level-sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |
-| Smoke test | `tests/e2e/smoke.py` |
-| Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.py --site local\|live` compares, `ours.js` is this project's side) |
+| Smoke test | `tests/e2e/smoke.mjs` |
+| Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.mjs --site local\|live` compares, `ours.js` is this project's side) |
 | Check against xivgear (section 10) | `scripts/validate/xivgear/` (`fetch.py` clones it and installs its dependencies, `run.py` compares, `xg_sync_test.ts` runs in its test runner, `ours.js` is this project's side and the corrections) |

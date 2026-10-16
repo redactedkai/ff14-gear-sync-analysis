@@ -812,7 +812,7 @@ details summary {
   cursor: pointer;
   font-weight: 600;
 }
-/* dev and staging builds only (scripts/build/build.mjs, buildMarks) */
+/* dev builds only (scripts/build/build.mjs, buildMarks) */
 .build-badge {
   display: inline-block;
   margin-left: 10px;
