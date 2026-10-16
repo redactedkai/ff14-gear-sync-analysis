@@ -16,7 +16,7 @@ New to FFXIV: read the [glossary](glossary.md) first, or keep it open.
 
 1. **Mechanics**: [math.md](mechanics/math.md), then [validation.md](mechanics/validation.md), then [materia.md](mechanics/materia.md).
 2. **Engineering**: [architecture.md](engineering/architecture.md), [data-pipeline.md](engineering/data-pipeline.md), [optimizer.md](engineering/optimizer.md), [testing.md](engineering/testing.md). [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) is a reference table; open it when you need a code.
-3. **Before changing anything**: [history.md](history.md) (mistakes not to repeat) and [roadmap.md](roadmap.md) (ideas not yet built).
+3. **Before changing anything**: [history.md](history.md) (mistakes not to repeat) and [roadmap.md](roadmap.md) (feature ideas and which are built).
 
 Shorter paths:
 
@@ -49,6 +49,6 @@ Shorter paths:
 | Page | What it covers |
 | --- | --- |
 | [glossary.md](glossary.md) | FFXIV terms, project terms and outside sources, each linked to the page that explains it |
-| [roadmap.md](roadmap.md) | Feature ideas not yet built |
+| [roadmap.md](roadmap.md) | Feature ideas, each marked built or not |
 | [history.md](history.md) | Claims and results that were corrected: what replaced them, how the mistake was found, and when |
 | [diagrams/STYLE.md](diagrams/STYLE.md) | Where a page goes, how to link, how to write and mark claims, how to draw a diagram |
