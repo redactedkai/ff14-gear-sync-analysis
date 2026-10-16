@@ -1,7 +1,7 @@
 """Browser smoke test (Playwright) for dist/index.html, loaded from file://.
 
 Fails (exit 1) on JS errors, console errors, wrong numbers in the page, stray undefined/NaN/null text,
-or horizontal page scroll at 400 px. Prints 'no errors' on success.
+or horizontal page scroll at 960 px (NARROW). Prints 'no errors' on success.
 
 Expected values come from outside the code under test where possible:
   - sync caps at item level 123 (head/hands/feet 29, body/legs 47, accessories 23, 2H weapon 48;
@@ -37,6 +37,9 @@ JOBS = ['SGE', 'WAR', 'PLD', 'BLM', 'NIN', 'DRG', 'BST', 'BLU']
 ONE_HANDED = {'PLD', 'BST'}  # one-handed weapon + shield
 BAD_WORDS = ['undefined', 'NaN', 'null']
 TIMEOUT = 10_000  # ms for any single wait
+# The narrowest window the page must fit with no sideways page scroll: half of a 1920 screen, the tool beside the game.
+# There is no phone layout (owner's decision, 2026-10-15).
+NARROW = {'width': 960, 'height': 900}
 STORE_KEY = 'ilvl-stat-lab-v4'  # localStorage key of the saved state (src/ui/state.js)
 
 # Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
@@ -383,10 +386,10 @@ GROUPS_CASE = ('SGE', {'cap': None, 'sync': False, 'level': 100}, 'crit')
 
 
 def check_gear_groups(pg):
-    """Gear to search: six gear groups in one row after their label (two even columns under it at 400 px), every group
-    but Current Savage, Ultimate and PvP ticked (searched) by default. Unticking crafted
-    gear changes the total to what the core computes without it and the count in the heading with it; the choice is
-    saved. The browser has its own groups: the optimizer's choice does not change them."""
+    """Gear to search: six gear groups in one row after their label, every group but Current Savage, Ultimate and PvP
+    ticked (searched) by default. Unticking crafted gear changes the total to what the core computes without it and the
+    count in the heading with it; the choice is saved. The browser has its own groups: the optimizer's choice does not
+    change them."""
     job, sync, target = GROUPS_CASE
     want = core_gear(job, sync, target, ['crafted'])
     if not check(want['without'] < want['on'], f'{job}: leaving crafted gear out does not lower the total; pick another case'):
@@ -408,14 +411,6 @@ def check_gear_groups(pg):
 
     row = boxes()
     check(len(row) == 6 and len({t for _, t in row}) == 1, f'gear groups are not one row: {row}')
-    pg.set_viewport_size({'width': 400, 'height': 900})
-    grid = boxes()
-    lefts, tops = [x for x, _ in grid], [t for _, t in grid]
-    check(
-        len(set(lefts[::2])) == 1 and len(set(lefts[1::2])) == 1 and lefts[1] > lefts[0] and tops[::2] == tops[1::2],
-        f'gear groups at 400 px are not two even columns: {grid}',
-    )
-    pg.set_viewport_size({'width': 1000, 'height': 900})
     expect_total(pg, want['on'], f'{job} {target}, default groups')
     crafted = group_box(pg, 'o-gear', 'crafted')
     crafted.uncheck()
@@ -841,9 +836,9 @@ HEAD_SUB_CAP_660 = '184'
 
 
 def check_level_sync(pg):
-    """Synced level 90 with item level sync off, at 400 px: the gear browser shows the level-synced value, the
+    """Synced level 90 with item level sync off, at NARROW width: the gear browser shows the level-synced value, the
     optimizer total is marked synced, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll."""
-    pg.set_viewport_size({'width': 400, 'height': 800})
+    pg.set_viewport_size(NARROW)
     set_job(pg, 'SGE')
     pg.locator('#sync').uncheck()
     set_number(pg, '#level', '90')
@@ -863,7 +858,7 @@ def check_level_sync(pg):
     for where in ('browse', 'opt'):
         show_tab(pg, where)
         hs = pg.evaluate('document.documentElement.scrollWidth > document.documentElement.clientWidth')
-        check(not hs, f'level sync: horizontal page scroll at 400 px ({where})')
+        check(not hs, f'level sync: horizontal page scroll at {NARROW["width"]} px ({where})')
     pg.screenshot(path=str(OUT / 'level-sync.png'), full_page=True)
     # back to the shared setup: level 50, sync to 123, no browser filters
     fill_browser(pg, '', '', 100)
@@ -902,8 +897,8 @@ def check_no_bad_text(pg, where):
 
 
 def walk_jobs(pg):
-    """Every tab for each job: no undefined/NaN/null text, correct sync caps, page fits 400 px."""
-    pg.set_viewport_size({'width': 400, 'height': 800})
+    """Every tab for each job: no undefined/NaN/null text, correct sync caps, page fits NARROW width."""
+    pg.set_viewport_size(NARROW)
     set_cap(pg, '123')  # check_sync_caps expects the item level 123 caps
     set_number(pg, '#level', '50')
     for job in JOBS:
@@ -921,8 +916,8 @@ def walk_jobs(pg):
         check_sync_caps(pg, job)
         check_no_bad_text(pg, f'{job}/math:sync')
         hs = pg.evaluate('document.documentElement.scrollWidth > document.documentElement.clientWidth')
-        check(not hs, f'{job}: horizontal page scroll at 400 px')
-    pg.screenshot(path=str(OUT / 'phone.png'), full_page=True)
+        check(not hs, f'{job}: horizontal page scroll at {NARROW["width"]} px')
+    pg.screenshot(path=str(OUT / 'narrow.png'), full_page=True)
 
 
 def main():

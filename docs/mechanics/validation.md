@@ -201,7 +201,7 @@ Notes:
 7. Real gear: brute-force reference. Piece stats raw values: external truth (game data). Caps, 296: independent derivation (caps unit test). Tier at 1,839: external truth (AkhMorning). Tier lookup: independent scan.
 8. The job's factor equals the item factor on every single-main-stat piece of all 23 jobs; the only pieces that differ are of kind 0 (the 13 four-main-stat pieces and the six all-jobs earrings and rings). Those 13, the Occult "of Magic" and "of Blood" accessories (Vitality 307 / 341) and Alexandrian Earrings of Casting are reproduced; a synced Field Commander's Coat is capped at main stat 43 and Vitality 45 at 123 in the optimizer and the gear browser (rules of the model).
 9. Slots, exclusions including multi-slot gear, stat placement, HQ rule, job mask, Unique flag, sort order, budget columns, level data, stat factor kind and table, schema errors.
-10. Caps at 123 for eight jobs and the Wiki 475 table (as in the unit tests); Piece stats head piece values (external truth); real-gear optimizer totals for Sage and Warrior synced and unsynced (computed by the core and the brute force in Node at test time); Paladin off-hand; no "undefined" / "NaN" / "null" text, no JavaScript errors, no horizontal scroll at 400 px.
+10. Caps at 123 for eight jobs and the Wiki 475 table (as in the unit tests); Piece stats head piece values (external truth); real-gear optimizer totals for Sage and Warrior synced and unsynced (computed by the core and the brute force in Node at test time); Paladin off-hand; no "undefined" / "NaN" / "null" text, no JavaScript errors, no horizontal scroll at 960 px.
 
 ## 8. Open question: in-game captures
 

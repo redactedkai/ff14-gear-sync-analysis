@@ -448,6 +448,77 @@ button.x {
 .groups-row {
   gap: 8px 16px;
 }
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+.chk input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+button {
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--fg);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+button:hover {
+  border-color: var(--accent);
+}
+button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+button.chip {
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  border-radius: 99px;
+}
+button.x {
+  padding: 2px 8px;
+  color: var(--bad);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+/* the optimizer's controls: one panel, Gear to search, then Goal under a rule */
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.part + .part {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+/* the count after a tab's or part's heading ("· searching 1,939 of 1,999 pieces") */
+.count {
+  display: inline-block; /* wraps as one piece under a long heading */
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.switches {
+  gap: 4px 28px;
+}
+.groups-row {
+  gap: 8px 16px;
+}
 /* phones: the gear groups in two even columns under their label */
 @media (max-width: 560px) {
   .groups-row {
@@ -706,22 +777,6 @@ footer {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-@media (max-width: 520px) {
-  h1 {
-    font-size: 1.6rem;
-  }
-  th,
-  td {
-    padding: 6px 7px;
-  }
-  table.compact {
-    font-size: 0.78rem;
-  }
-  table.compact th,
-  table.compact td {
-    padding: 6px 5px;
-  }
 }
 [x-cloak] {
   display: none !important;

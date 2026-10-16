@@ -76,7 +76,7 @@ docs/                 see docs/README.md; style guide in docs/diagrams/STYLE.md
 Three long-lived branches (set up 2026-10-14):
 
 - `dev`: day-to-day work. Commit here, or on a short-lived feature branch cut from `dev` and merged back.
-- `staging`: the next release. Merge `dev` into it when a batch of work is done, run `npm run check` and look at the page (desktop and ~400 px).
+- `staging`: the next release. Merge `dev` into it when a batch of work is done, run `npm run check` and look at the page (desktop and 960 px).
 - `main`: what is live. Pushing to `main` deploys the page (above). Only `staging` merges into it, after its check passed.
 
 Changes flow one way: feature branch -> `dev` -> `staging` -> `main`. Prefer fast-forward merges; never commit directly on `staging` or `main`. A hotfix branches from `main`, then merges into `main`, `staging` and `dev`. Delete feature branches once merged. Committing, merging and pushing still happen only when the owner asks (working agreements below).
@@ -97,7 +97,7 @@ Requires Node 22+ (`npm install` once) and Python 3.9+ (data pipeline, generator
 - `npm run check` : lint, build, test, smoke
 - `npm run update-data` : fetch the newest game CSVs and regenerate `src/data/` after a patch (`docs/engineering/data-pipeline.md` section 9)
 
-Always run `npm run check` before telling the owner something works. For UI changes also open `dist/index.html` and look at it at desktop width and ~400 px phone width.
+Always run `npm run check` before telling the owner something works. For UI changes also open `dist/index.html` and look at it at desktop width and at 960 px.
 
 ## Architecture
 
@@ -151,7 +151,7 @@ Timing (stress test 2026-10-14, Node 22, every job's full pool, 18 sync settings
 - Keep the title `Gear Sync Analysis` (renamed from Item Level Stat Lab at the owner's request).
 - Colors only through CSS tokens on `:root`, redefined for dark mode under `@media (prefers-color-scheme: dark)` (guarded `:root:not([data-theme="light"])`) and `:root[data-theme="dark"]`. `body` has an explicit background.
 - `localStorage` only inside try/catch and only for per-viewer conveniences (the key is `ilvl-stat-lab-v4`). The page must render correctly without it. The site has no users yet (owner, 2026-10-12), so a saved-state shape change does not need a key bump: add the field and have `restoreState()` (src/ui/state.js) default and repair it. Bump the key suffix only once the site has users and old saves cannot be repaired field by field.
-- Works at ~400 px width with no horizontal page scroll (tables scroll in their own container).
+- Desktop only (owner's decision, 2026-10-15: raid leaders don't plan gear on a phone). It must work down to 960 px wide, half of a 1920 screen beside the game, with no horizontal page scroll (tables scroll in their own container). There is no phone layout: no rules for widths below that.
 - The page is not published as a claude.ai Artifact. Do not use the Artifact tool for this project.
 
 ## Working agreements with the owner

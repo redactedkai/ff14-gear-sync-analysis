@@ -140,7 +140,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Slot share.** The fraction of the budget a slot gets, in thousandths, for example 135 for body and legs. Read from the game's `BaseParam` sheet (**verified**). A shield's stats are not computed from its own share: they are the two-handed value minus the one-handed value (**inferred**). See [math.md, section 3](mechanics/math.md#3-slot-shares).
 
-**Smoke test.** The browser test of the built page (`npm run smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 400 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
+**Smoke test.** The browser test of the built page (`npm run smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 960 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
 
 **Speed range.** An optional minimum and maximum for the speed stat in the optimizer engine. The page does not offer it yet; it is meant for a target-GCD control ([roadmap.md](roadmap.md)). See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 

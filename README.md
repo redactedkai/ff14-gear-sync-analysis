@@ -41,7 +41,7 @@ Once a job is chosen, the page has two working tabs and one reference tab:
 | `npm run check` | Lint (with format check), build, all tests and the smoke test, in that order. Run this before calling a change done |
 | `npm run update-data` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
 
-For a UI change, also open `dist/index.html` and look at it at desktop width and at about 400 px. Test layers and conventions are in [docs/engineering/testing.md](docs/engineering/testing.md).
+For a UI change, also open `dist/index.html` and look at it at desktop width and at 960 px. Test layers and conventions are in [docs/engineering/testing.md](docs/engineering/testing.md).
 
 ## After a game patch
 

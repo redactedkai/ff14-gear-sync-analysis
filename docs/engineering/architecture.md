@@ -131,7 +131,7 @@ Why one file: the owner opens it locally and can keep or share it as a single fi
 | Install once | `npm install` | Installs esbuild, Biome and Alpine |
 | Work | `npm run dev` | Rebuilds on change and serves the page |
 | Check | `npm run check` | Lint, build, all tests |
-| Look | open the built page | Desktop width and about 400 px |
+| Look | open the built page | Desktop width and 960 px |
 
 Notes:
 
