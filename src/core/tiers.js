@@ -15,6 +15,7 @@ function stepOf(job, stat) {
   return STEP[stat] ?? null;
 }
 
+/* A per mille value as a percent with one decimal: 193 -> "19.3%". */
 const pct = n => `${(n / 10).toFixed(1)}%`;
 
 /* The tier of `stat` with `points` from gear at character `level`: {effect, start, next}, or null for a stat without
@@ -22,21 +23,25 @@ const pct = n => `${(n / 10).toFixed(1)}%`;
    next: the fewest with a better one (null if none). So points - start can be spent elsewhere without losing the
    effect, and next - points are needed for the next step. */
 export function statTier(job, stat, points, level) {
-  const g = Math.max(0, Math.floor(points || 0));
+  const gear = Math.max(0, Math.floor(points || 0));
+  // speed's effect is its GCD, which has its own steps (speed.js)
   if (stat === 'spd') {
-    const t = gcdTierAt(g, level);
+    const t = gcdTierAt(gear, level);
     return { effect: `${t.gcd.toFixed(2)}s`, start: t.start, next: t.next };
   }
-  const c = stepOf(job, stat);
-  if (c == null) return null;
+  const step = stepOf(job, stat);
+  if (step == null) return null;
   const { div } = speedParams(level);
-  const t = Math.floor((c * g) / div);
-  const start = Math.ceil((t * div) / c);
-  const next = Math.ceil(((t + 1) * div) / c);
+  // the effect in per mille (MP for Piety), and the fewest points that give it and the next one: the smallest g with
+  // floor(step x g / div) >= tier, and >= tier + 1
+  const tier = Math.floor((step * gear) / div);
+  const start = Math.ceil((tier * div) / step);
+  const next = Math.ceil(((tier + 1) * div) / step);
   let effect;
-  if (stat === 'crit') effect = pct(t + 50);
-  else if (stat === 'dh') effect = pct(t);
-  else if (stat === 'spec' && job.profile.spec === 'piety') effect = `+${t} MP`;
-  else effect = `+${pct(t)}`; // Determination, Tenacity: damage
+  if (stat === 'crit')
+    effect = pct(tier + 50); // the rate starts at 5% (50 per mille)
+  else if (stat === 'dh') effect = pct(tier);
+  else if (stat === 'spec' && job.profile.spec === 'piety') effect = `+${tier} MP`;
+  else effect = `+${pct(tier)}`; // Determination, Tenacity: damage
   return { effect, start, next };
 }

@@ -97,7 +97,7 @@ test('generic maximum under a 123 cap is 296 Spell Speed, 2.22 s GCD', () => {
 
 /* The two ring slots are bounded together by the best legal pair: a Unique ring is never counted twice. */
 test('ring-pair bound: the best ring twice only with 2 copies, else the best plus the best other item', () => {
-  const cand = (name, spd, copies) => ({ it: { id: name }, v: { spd }, sc: spd, copies });
+  const cand = (name, spd, copies) => ({ item: { id: name }, eff: { spd }, score: spd, copies });
   const slots = ['ring', 'ring'];
   const bound = list => suffixBounds(slots, [list, list], ['spd']);
   const u = cand('U', 10, 1);
@@ -105,7 +105,7 @@ test('ring-pair bound: the best ring twice only with 2 copies, else the best plu
   let b = bound([u, cand('A', 6, 1), cand('B', 5, 1)]);
   assert.deepEqual([b.remSc[0], b.remMax.spd[0], b.remSc[1]], [16, 16, 10]);
   // two candidates of one Unique item are still one ring
-  b = bound([u, { ...u, v: { spd: 9 }, sc: 9 }, cand('A', 6, 1)]);
+  b = bound([u, { ...u, eff: { spd: 9 }, score: 9 }, cand('A', 6, 1)]);
   assert.equal(b.remSc[0], 16);
   // a 2-copy best ring may be worn twice; a lone Unique ring is worn once
   assert.equal(bound([cand('T', 10, 2), cand('A', 6, 1)]).remSc[0], 20);
@@ -126,18 +126,18 @@ test('ring-pair bound keeps a full-pool search small: Sage, cap 660, Spell Speed
 test('dominance pruning counts the copies of one item once', () => {
   const u = { id: 'U' };
   const arr = [
-    { it: u, v: { spd: 10 }, copies: 1, blocks: [] },
-    { it: u, v: { spd: 9 }, copies: 1, blocks: [] },
-    { it: { id: 'C' }, v: { spd: 5 }, copies: 1, blocks: [] },
+    { item: u, eff: { spd: 10 }, copies: 1, blocks: [] },
+    { item: u, eff: { spd: 9 }, copies: 1, blocks: [] },
+    { item: { id: 'C' }, eff: { spd: 5 }, copies: 1, blocks: [] },
   ];
   assert.deepEqual(
-    pruneDominated(arr, ['spd'], 2).map(a => a.it.id),
+    pruneDominated(arr, ['spd'], 2).map(a => a.item.id),
     ['U', 'U', 'C'],
   );
   // a second, different item that beats C does make it droppable
-  arr.push({ it: { id: 'D' }, v: { spd: 7 }, copies: 1, blocks: [] });
+  arr.push({ item: { id: 'D' }, eff: { spd: 7 }, copies: 1, blocks: [] });
   assert.deepEqual(
-    pruneDominated(arr, ['spd'], 2).map(a => a.it.id),
+    pruneDominated(arr, ['spd'], 2).map(a => a.item.id),
     ['U', 'U', 'D'],
   );
 });

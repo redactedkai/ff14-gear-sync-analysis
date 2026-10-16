@@ -1,13 +1,13 @@
 /* Gear optimizer tab view: the best loadout for the chosen stat, searched over every piece the job can wear.
    Pure view builders: no Alpine import, so Node can load and test them. */
-import { SLOT_LABEL } from '../../core/constants.js';
+import { GCD_FLOOR_MS, SLOT_LABEL } from '../../core/constants.js';
 import { browseItems, filterGear, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
-import { gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
+import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
 import { gearFilter, syncSettings } from '../state.js';
 
 export const NODE_LIMIT = 700000;
@@ -16,7 +16,7 @@ export const NODE_LIMIT = 700000;
    use the same): "tier starts at 2238, next at 2324 (+65)" for 1,839 gear speed at level 100; `haste` in percent
    (hasteFor), for the hasted steps. */
 export function tierText(spd, level, haste = 0) {
-  const t = gcdTierAt(spd, level, 2500, haste),
+  const t = gcdTierAt(spd, level, BASE_GCD_MS, haste),
     sub = speedParams(level).sub;
   return `tier starts at ${t.start + sub}${t.next != null ? `, next at ${t.next + sub} (+${t.next - spd})` : ''}`;
 }
@@ -87,7 +87,7 @@ function gcdFood(app) {
    food only). Keyed by the settings that shape the pool; gear passed in by a test is never cached. */
 let prepCache = { key: null, prep: null };
 let fastCache = { key: null, gcd: null };
-function poolKey(app, gear) {
+function poolSettingsKey(app, gear) {
   const o = app.opt;
   if (gear && gear !== jobGear(app.jobCtx)) return null;
   return [app.jobCtx.jobId, JSON.stringify(syncSettings(app)), o.exclude.join(), o.expOff.join(), o.min, o.max, o.lvl, !!o.melds].join('|');
@@ -98,9 +98,9 @@ function gcdControls(app, pool, gear) {
   const job = app.jobCtx,
     o = app.opt;
   const haste = hasteFor(job.jobId, app.level);
-  const top = gcdFor(0, app.level, 2500, haste?.pct ?? 0);
-  const pk = poolKey(app, gear);
-  const key = pk == null ? null : `${pk}|${JSON.stringify(gcdFood(app))}`;
+  const top = gcdFor(0, app.level, BASE_GCD_MS, haste?.pct ?? 0);
+  const settingsKey = poolSettingsKey(app, gear);
+  const key = settingsKey == null ? null : `${settingsKey}|${JSON.stringify(gcdFood(app))}`;
   let fastest;
   if (key != null && fastCache.key === key) fastest = fastCache.gcd;
   else {
@@ -121,6 +121,9 @@ function gcdControls(app, pool, gear) {
    panel, or why no set fits. The fastest GCD the gear reaches is already in the range beside the box. */
 function gcdLine(job, r, ui, level) {
   const base = statBase(job, 'spd', level);
+  if (r.reason === 'unreachable' && r.asked < GCD_FLOOR_MS / 1000) {
+    return { bad: true, text: `The GCD can't go below ${(GCD_FLOOR_MS / 1000).toFixed(2)}` };
+  }
   if (r.reason === 'unreachable') {
     const why = ui.haste ? `${ui.haste.name} ${ui.haste.pct}%` : 'no speed';
     return { bad: true, text: `${job.jobName}'s GCD is ${ui.top.toFixed(2)} at most (${why})` };
@@ -145,17 +148,21 @@ export function optimizerView(app, gear) {
 function buildOptimizerView(app, gear) {
   const job = app.jobCtx,
     o = app.opt;
+  // 1. the gear to search and the Target GCD box's state
   const pool = searchPool(app, gear);
   if (!pool.length) return { kind: 'excluded' };
   const sync = syncSettings(app);
   const ui = gcdControls(app, pool, gear);
   const pct = ui.haste?.pct ?? 0;
   const asked = askedGcd(app);
+  // 2. the search: with a Target GCD, gear and meal are chosen together (optimizeGcd); without one, the gear first and
+  // the meal after (it never changes which gear wins)
   let res, food, bonus, line;
   if (asked != null) {
     const goal = { target: o.target, tiebreak: [o.tb, o.tb2], melds: !!o.melds, mode: o.gcdMode };
-    const pk = poolKey(app, gear);
-    const key = pk == null ? null : `${pk}|${goal.target},${goal.tiebreak.join()},${goal.mode}`;
+    // the candidates depend on the pool settings, the goal and the mode, not on the GCD: reuse them while only it changes
+    const settingsKey = poolSettingsKey(app, gear);
+    const key = settingsKey == null ? null : `${settingsKey}|${goal.target},${goal.tiebreak.join()},${goal.mode}`;
     const prep = key != null && prepCache.key === key ? prepCache.prep : null;
     const r = optimizeGcd(job, pool, sync, { ...goal, gcd: asked, food: gcdFood(app), nodeLimit: NODE_LIMIT, level: app.level }, prep);
     if (key != null && r.prep) prepCache = { key, prep: r.prep };
@@ -176,13 +183,15 @@ function buildOptimizerView(app, gear) {
     bonus = food ? foodBonus(job, food, res.totals, app.level) : {};
   }
 
-  const gearT = res.totals;
+  // 3. totals: gear only, with food, and as the character panel shows them
+  const gearTotals = res.totals;
   // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
-  const t = withFood(gearT, bonus),
+  const t = withFood(gearTotals, bonus),
     spd = t.spd;
   // the character panel's numbers: substats with the level's base added, main stat and Vitality as gear points
   const panel = s => t[s] + panelBase(job, s, app.level),
     base = s => panelBase(job, s, app.level);
+  // 4. one row per slot, in the character panel's order; rings are numbered
   const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
   const rows = res.picks.map(p => {
@@ -192,6 +201,7 @@ function buildOptimizerView(app, gear) {
       label = 'Ring ' + ringN;
     }
     if (!p.item) return { label, item: null, blockedBy: p.blockedBy?.name ?? '' };
+    // a piece covering more than one slot says so ("Body + Head")
     if (p.type !== 'ring') label = slotLabel(p.type, slotInfo(job, p.item).blocks);
     const caps = itemCaps(job, p.item, sync);
     return {
@@ -205,6 +215,7 @@ function buildOptimizerView(app, gear) {
       }),
     };
   });
+  // 5. everything the template shows
   return {
     kind: 'ok',
     gcdUi: ui,
@@ -215,7 +226,7 @@ function buildOptimizerView(app, gear) {
     spdLabel: job.label.spd,
     total: panel(o.target),
     totalLabel: `${job.label[o.target]} (${[base(o.target) && 'base', 'gear', food && 'food'].filter(Boolean).join(' + ')}${poolSynced(pool, sync) ? ', synced' : ''})`,
-    totals: job.stats.map(s => gearT[s] + base(s)),
+    totals: job.stats.map(s => gearTotals[s] + base(s)),
     // the Food row and the totals with it; null with Food off
     food: food && {
       name: food.name,
@@ -230,17 +241,17 @@ function buildOptimizerView(app, gear) {
     // each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier
     tiers: job.stats.map(s => {
       // speed with the job's haste: its GCD and steps are the hasted ones, as in the GCD card
-      const g = s === 'spd' && pct ? gcdTierAt(t[s] || 0, app.level, 2500, pct) : null;
+      const g = s === 'spd' && pct ? gcdTierAt(t[s] || 0, app.level, BASE_GCD_MS, pct) : null;
       const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, t[s], app.level);
       if (!tier) return null;
       return { effect: tier.effect, spare: t[s] - tier.start, toNext: tier.next == null ? null : tier.next - t[s], zero: !t[s] };
     }),
     synced: poolSynced(pool, sync),
-    gcd: gcdFor(spd, app.level, 2500, pct).toFixed(2),
+    gcd: gcdFor(spd, app.level, BASE_GCD_MS, pct).toFixed(2),
     // hasted jobs: the haste and the GCD without it (owner's decision 2026-10-16: both, labelled)
     hasteText: ui.haste ? ` (${ui.haste.name} ${pct}%; ${gcdFor(spd, app.level).toFixed(2)} without)` : '',
     spd,
-    spdText: `${panel('spd')} ${job.label.spd} (${base('spd')} base, ${gearT.spd} gear${bonus.spd ? `, ${bonus.spd.bonus} food` : ''})`,
+    spdText: `${panel('spd')} ${job.label.spd} (${base('spd')} base, ${gearTotals.spd} gear${bonus.spd ? `, ${bonus.spd.bonus} food` : ''})`,
     tierText: tierText(spd, app.level, pct),
     dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
     rows,

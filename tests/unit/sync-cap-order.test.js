@@ -14,11 +14,11 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { capValue, capsFor, pieceValue, syncStats } from '../../src/core/formulas.js';
 import { browseItems, kindFactors, poolItemFromRow } from '../../src/core/items.js';
-import { ALL_STATS } from '../../src/core/constants.js';
+import { ALL_STATS, ROW } from '../../src/core/constants.js';
 import { IL, ITEMS, MAX_REAL } from '../../src/core/tables.js';
 
 const row = name => {
-  const r = ITEMS.find(x => x[0] === name);
+  const r = ITEMS.find(x => x[ROW.name] === name);
   assert.ok(r, name);
   return r;
 };
@@ -45,7 +45,7 @@ test('Red Mage head at item level 530: Vitality cap 123 (in game), one above the
   assert.equal(capsFor(rdm, 'head', 530).vit, 123);
   assert.equal(row('Edenmorn Hat of Casting')[5].split(',').map(Number)[4], 122); // the native 530 head
   // a higher Intelligence head synced to 530 keeps 123
-  const high = ITEMS.find(r => r[1] === 3 && r[2] >= 600 && r[9] === row('Edenmorn Hat of Casting')[9]);
+  const high = ITEMS.find(r => r[ROW.slotCode] === 3 && r[ROW.ilvl] >= 600 && r[ROW.kind] === row('Edenmorn Hat of Casting')[9]);
   assert.ok(high);
   assert.equal(synced(rdm, high[0], 530).vit, 123);
 });

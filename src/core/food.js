@@ -23,6 +23,7 @@ function neutralOf(job, raw) {
    Piety (LEVEL_MAIN), ParamGrow BaseSpeed for the others. */
 export function statBase(job, stat, level) {
   const lv = Math.max(1, Math.min(100, level | 0));
+  // Determination and Piety start from the main stat base, the other substats from the speed base
   if (stat === 'det' || (stat === 'spec' && job.profile.spec === 'piety')) return LEVEL_MAIN[lv - 1];
   return speedParams(lv).sub;
 }
@@ -42,6 +43,7 @@ function covers(a, b) {
 const choiceCache = new Map();
 export function foodChoices(job) {
   if (choiceCache.has(job.jobId)) return choiceCache.get(job.jobId);
+  // FOODS is sorted by item level, so a later meal with the same stats replaces an older one
   const byKey = new Map();
   for (const [name, ilvl, stats] of FOODS) {
     const mapped = stats.map(([raw, pct, max]) => ({ stat: neutralOf(job, raw), pct, max }));
@@ -49,8 +51,9 @@ export function foodChoices(job) {
     byKey.set(mapped.map(s => s.stat).join('+'), { name, ilvl, stats: mapped });
   }
   const all = [...byKey].map(([key, f]) => ({ key, ...f }));
-  // of two that cover each other (the same stats and maxima), the first is kept
+  // drop a choice another one covers; of two that cover each other, the later one goes
   const kept = all.filter((c, i) => !all.some((d, j) => j !== i && covers(d, c) && !(covers(c, d) && j > i)));
+  // sort: primary stat in the job's substat order, single-stat meals before pairs, then the second stat
   const rank = s => job.substats.indexOf(s);
   const out = kept
     .map(f => Object.freeze({ ...f, stats: Object.freeze(f.stats.map(s => Object.freeze(s))) }))
@@ -73,8 +76,8 @@ export function foodLabel(job, food) {
 export function foodBonus(job, food, totals, level) {
   const out = {};
   for (const s of food.stats) {
-    const pctOf = Math.floor((s.pct * (statBase(job, s.stat, level) + (totals[s.stat] || 0))) / 100);
-    out[s.stat] = { bonus: Math.min(s.max, pctOf), capped: pctOf >= s.max };
+    const uncapped = Math.floor((s.pct * (statBase(job, s.stat, level) + (totals[s.stat] || 0))) / 100);
+    out[s.stat] = { bonus: Math.min(s.max, uncapped), capped: uncapped >= s.max };
   }
   return out;
 }
@@ -86,20 +89,37 @@ export function withFood(totals, bonus) {
   return t;
 }
 
+/* How a meal ranks for the objective `keys` (non-empty target and tiebreak keys): the totals with food on each key, then
+   the food points in all. Ranked by betterRank. */
+export function mealRank(keys, totalsWithFood, bonus) {
+  return [...keys.map(k => totalsWithFood[k] || 0), Object.values(bonus).reduce((n, b) => n + b.bonus, 0)];
+}
+
+/* True when rank vector `a` beats `b`: higher at the first position where they differ (equal vectors: false, so the
+   earlier choice keeps a tie). `b` null: always true. */
+export function betterRank(a, b) {
+  if (!b) return true;
+  const i = a.findIndex((v, j) => v !== b[j]);
+  return i >= 0 && a[i] > b[i];
+}
+
+/* The meals to try for a `food` option: [null] for none, every choice of the job for 'best', else that one meal. */
+export function mealsFor(job, food) {
+  return food == null ? [null] : food === 'best' ? foodChoices(job) : [food];
+}
+
 /* The choice that gives the highest totals with food for `keys` (target, tiebreak 1, tiebreak 2; empty ones ignored),
    compared in that order; then the most food points in all; then the first in `choices`. Null when there are none. */
 export function bestFood(job, choices, totals, level, keys) {
   const ks = keys.filter(Boolean);
   let best = null,
-    bestVals = null;
+    bestRank = null;
   for (const c of choices) {
     const bonus = foodBonus(job, c, totals, level);
-    const t = withFood(totals, bonus);
-    const vals = [...ks.map(k => t[k] || 0), Object.values(bonus).reduce((n, b) => n + b.bonus, 0)];
-    const i = bestVals ? vals.findIndex((v, j) => v !== bestVals[j]) : 0;
-    if (!bestVals || (i >= 0 && vals[i] > bestVals[i])) {
+    const rank = mealRank(ks, withFood(totals, bonus), bonus);
+    if (betterRank(rank, bestRank)) {
       best = c;
-      bestVals = vals;
+      bestRank = rank;
     }
   }
   return best;
@@ -109,14 +129,16 @@ export function bestFood(job, choices, totals, level, keys) {
    rises with every gear point, so a binary search finds it; for Target GCD and tier ranking, which set minimums on
    totals with food while the optimizer works on gear points. */
 export function gearNeeded(job, food, stat, total, level) {
-  const s = food?.stats.find(x => x.stat === stat);
-  if (!s || total <= 0) return Math.max(0, total);
-  const reach = g => g + foodBonus(job, { stats: [s] }, { [stat]: g }, level)[stat].bonus >= total;
+  const line = food?.stats.find(x => x.stat === stat);
+  // no food for this stat: the gear has to bring the whole total
+  if (!line || total <= 0) return Math.max(0, total);
+  const reachesTotal = g => g + foodBonus(job, { stats: [line] }, { [stat]: g }, level)[stat].bonus >= total;
+  // binary search for the fewest gear points that reach it (gear alone always does at g = total)
   let lo = 0,
     hi = total;
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (reach(mid)) hi = mid;
+    if (reachesTotal(mid)) hi = mid;
     else lo = mid + 1;
   }
   return lo;

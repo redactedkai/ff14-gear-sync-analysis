@@ -1,8 +1,9 @@
 /* Validation of the stat model against external truth. Shared by the page ("Checked against real gear")
    and the unit tests, so both report the same numbers. */
-import { RAW_SUBSTAT_IDX, RARITY_FIELD, WEAPON_PCT } from './constants.js';
+import { RAW_SUBSTAT_IDX, ROW, WEAPON_PCT } from './constants.js';
 import { IL, ITEMS } from './tables.js';
 import { rnd, predictRaw } from './formulas.js';
+import { rowStats } from './items.js';
 
 /* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).
    The database starts lower (item level 15, gen_items.py MIN_ILVL) for gear worn in low-level duties; below this its
@@ -18,7 +19,7 @@ export const ACCURACY_BANDS = Object.freeze([
 
 /* The {name, hq, rarity} of a database row, as predictRaw takes it. */
 export function rowItem(r) {
-  return { name: r[0], hq: r[7] === 1, rarity: r[RARITY_FIELD] };
+  return { name: r[ROW.name], hq: r[ROW.hq] === 1, rarity: r[ROW.rarity] };
 }
 
 /* For every row with 2+ substats at item level >= 110: does predictRaw reproduce its stats?
@@ -26,11 +27,11 @@ export function rowItem(r) {
 export function bandAccuracy(items = ITEMS) {
   const out = ACCURACY_BANDS.map(b => ({ label: b.label, n: 0, exact: 0, within1: 0 }));
   for (const r of items) {
-    const il = r[2];
+    const il = r[ROW.ilvl];
     if (il < ACCURACY_MIN_ILVL) continue;
-    const st = r[5].split(',').map(Number);
+    const st = rowStats(r);
     if (RAW_SUBSTAT_IDX.filter(i => st[i]).length < 2) continue;
-    const p = predictRaw(il, r[1], st, r[9], rowItem(r));
+    const p = predictRaw(il, r[ROW.slotCode], st, r[ROW.kind], rowItem(r));
     if (!p) continue;
     const b = out[ACCURACY_BANDS.findIndex(x => il <= x.max)];
     const d = Math.max(...p.map((x, i) => Math.abs(x - st[i])));

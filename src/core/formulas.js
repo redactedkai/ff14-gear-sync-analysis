@@ -27,11 +27,13 @@ import { statColumn } from './job-context.js';
 export function rnd(x) {
   return Math.floor(x + 0.5 + 1e-9);
 }
+/* Any input (number or typed text) as a whole item level inside the ItemLevel table, 0 to MAX_ILVL. */
 export function clampIlvl(i) {
   i = Math.round(+i || 0);
   return Math.max(0, Math.min(MAX_ILVL, i));
 }
 
+/* A stat object with every neutral stat at 0. */
 export function blankStats() {
   return { main: 0, vit: 0, crit: 0, det: 0, dh: 0, spd: 0, spec: 0 };
 }
@@ -49,10 +51,10 @@ export function jobFactor(job, stat) {
    covering the head). `factor`: the piece's own stat factor (a real item's, see kindFactors in items.js); null for the
    job's (jobFactor). */
 export function slotBudget(job, stat, ilvl, type, pct = job.slotPct[type], factor = null) {
-  const base = statColumn(job, stat)[clampIlvl(ilvl)];
-  const f = factor ?? jobFactor(job, stat);
-  const v = rnd((base * pct) / 1000);
-  return f === 1 ? v : rnd(v * f);
+  const base = statColumn(job, stat)[clampIlvl(ilvl)]; // the ItemLevel table's budget for this stat
+  const fraction = factor ?? jobFactor(job, stat); // 1, or 0.9 for Vitality on Int/Mind gear
+  const full = rnd((base * pct) / 1000); // step 1: the slot's share of the budget (pct is per mille)
+  return fraction === 1 ? full : rnd(full * fraction); // step 2: the stat factor, rounded again
 }
 
 /* An off-hand (shield) is not its own 40-per-mille share: each of its stats is the two-handed weapon's value minus the
@@ -64,23 +66,26 @@ export function isOffhand(type, pct) {
 
 /* A stat at a given substat share (percent). 100 or null means the full slot budget. `factor` as in slotBudget. */
 export function pieceValue(job, stat, ilvl, type, weight, pct, factor = null) {
+  // a shield: the two-handed weapon's value minus the one-handed weapon's (isOffhand)
   if (isOffhand(type, pct)) {
     const two = pieceValue(job, stat, ilvl, 'weapon', weight, WEAPON_PCT['2h'], factor);
     return two - pieceValue(job, stat, ilvl, 'weapon', weight, WEAPON_PCT['1h+oh'], factor);
   }
-  const v = slotBudget(job, stat, ilvl, type, pct, factor);
-  return weight == null || weight === 100 ? v : rnd((v * weight) / 100);
+  const full = slotBudget(job, stat, ilvl, type, pct, factor);
+  // step 3: the substat share (70 for the second substat), rounded once more
+  return weight == null || weight === 100 ? full : rnd((full * weight) / 100);
 }
 
 /* Generic piece: full main stat and Vitality, substats `subs` at the ranked shares (100/70). */
 export function buildPiece(job, ilvl, type, subs) {
-  const st = blankStats();
-  st.main = pieceValue(job, 'main', ilvl, type, 100);
-  st.vit = pieceValue(job, 'vit', ilvl, type, 100);
-  subs.forEach((s, i) => {
-    if (s) st[s] = pieceValue(job, s, ilvl, type, SUB_WEIGHTS[i]);
+  const stats = blankStats();
+  stats.main = pieceValue(job, 'main', ilvl, type, 100);
+  stats.vit = pieceValue(job, 'vit', ilvl, type, 100);
+  // subs[0] at the first share (100%), subs[1] at the second (70%); an empty rank adds nothing
+  subs.forEach((stat, rank) => {
+    if (stat) stats[stat] = pieceValue(job, stat, ilvl, type, SUB_WEIGHTS[rank]);
   });
-  return st;
+  return stats;
 }
 
 /* The sync cap of one stat for a slot at the cap item level, rounded in a different order from an item's own stats:
@@ -97,31 +102,35 @@ export function capValue(job, stat, ilvl, type, pct, factor = null) {
     return two - capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['1h+oh'], factor);
   }
   const base = statColumn(job, stat)[clampIlvl(ilvl)];
-  const f = Math.round((factor ?? jobFactor(job, stat)) * 100);
-  const share = pct ?? job.slotPct[type];
-  return rnd(Math.floor((Math.floor((base * f) / 100) * share) / 100) / 10);
+  const factorPct = Math.round((factor ?? jobFactor(job, stat)) * 100); // 0.9 -> 90, so the arithmetic stays integer
+  const share = pct ?? job.slotPct[type]; // per mille
+  // the factor first, floored; then the slot share, floored, in tenths of a point; then rounded to whole points
+  const afterFactor = Math.floor((base * factorPct) / 100);
+  return rnd(Math.floor((afterFactor * share) / 100) / 10);
 }
 
 /* Per-stat ceiling under sync: each stat's capValue for the piece's slot and kind at the cap item level. `pct`: the
    piece's own slot share, if not the job's share for the type. `factors`: the piece's own stat factors
    ({neutral stat: factor}, kindFactors in items.js) for a real item; null for the job's (jobFactor). */
 export function capsFor(job, type, capIlvl, pct, factors = null) {
-  const c = {};
+  const caps = {};
   ALL_STATS.forEach(s => {
-    c[s] = s === 'spec' && !job.profile.spec ? 0 : capValue(job, s, capIlvl, type, pct, factors?.[s]);
+    // a job without Piety or Tenacity has no `spec` stat, so nothing to cap
+    caps[s] = s === 'spec' && !job.profile.spec ? 0 : capValue(job, s, capIlvl, type, pct, factors?.[s]);
   });
-  return c;
+  return caps;
 }
 
 /* Stats after sync. Pieces at or below the cap are untouched; above it every stat is clamped to capsFor. */
 export function syncStats(job, stats, type, capIlvl, itemIlvl, pct, factors = null) {
   if (itemIlvl != null && itemIlvl <= capIlvl) return Object.assign({}, stats);
-  const c = capsFor(job, type, capIlvl, pct, factors),
-    o = {};
+  const caps = capsFor(job, type, capIlvl, pct, factors),
+    out = {};
+  // sync only lowers: a stat already under its cap keeps its value (substats never scale up)
   ALL_STATS.forEach(s => {
-    o[s] = Math.min(stats[s] || 0, c[s]);
+    out[s] = Math.min(stats[s] || 0, caps[s]);
   });
-  return o;
+  return out;
 }
 
 /* Step-by-step derivation of one stat line, for display. Each step keeps the exact value and its rounding. An off-hand
@@ -133,25 +142,29 @@ export function statDerivation(job, stat, ilvl, type, weight) {
     const value = two.value - one.value;
     return { base: two.base, steps: [{ kind: 'offhand', two: two.value, one: one.value, value }], value };
   }
-  const il = clampIlvl(ilvl);
-  const base = statColumn(job, stat)[il],
+  // 'weapon2h' and 'weapon1h' are this function's own types, for the two halves of an off-hand above
+  const base = statColumn(job, stat)[clampIlvl(ilvl)],
     pct = type === 'weapon2h' ? WEAPON_PCT['2h'] : type === 'weapon1h' ? WEAPON_PCT['1h+oh'] : job.slotPct[type];
   const steps = [];
-  const exact = (base * pct) / 1000;
-  let v = rnd(exact);
-  steps.push({ kind: 'slot', base, pct, exact, value: v });
-  const f = jobFactor(job, stat);
-  if (f !== 1) {
-    const e = v * f;
-    v = rnd(e);
-    steps.push({ kind: 'factor', factor: f, exact: e, value: v });
+
+  // the same three steps as slotBudget and pieceValue, each kept with its unrounded value
+  const slotExact = (base * pct) / 1000;
+  let value = rnd(slotExact);
+  steps.push({ kind: 'slot', base, pct, exact: slotExact, value });
+
+  const factor = jobFactor(job, stat);
+  if (factor !== 1) {
+    const exact = value * factor;
+    value = rnd(exact);
+    steps.push({ kind: 'factor', factor, exact, value });
   }
+
   if (weight !== 100) {
-    const e = (v * weight) / 100;
-    v = rnd(e);
-    steps.push({ kind: 'share', weight, exact: e, value: v });
+    const exact = (value * weight) / 100;
+    value = rnd(exact);
+    steps.push({ kind: 'share', weight, exact, value });
   }
-  return { base, steps, value: v };
+  return { base, steps, value };
 }
 
 const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind'),
@@ -160,13 +173,14 @@ const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind'),
 /* The share of a fixed Direct Hit line on this raw stat vector, or 0 when it has none: Direct Hit on gear whose only
    main stat is Mind sits at MIND_DIRECT_HIT_SHARE, outside the substat ranking (the old healer Accuracy, converted in
    patch 4.0), or at GREEN_CRAFTED_DIRECT_HIT_SHARE on a green HQ-able piece with three substats (`item`: {hq, rarity}). */
-function fixedDirectHitShare(st, item) {
-  const onlyMind = st[RAW_MIND_IDX] && RAW_MAIN_IDX.every(i => i === RAW_MIND_IDX || !st[i]);
-  if (!onlyMind || !st[RAW_DH_IDX]) return 0;
-  // a Direct Hit line above another substat is ranked like any substat (Wolf Ringbands, PvP item level 55)
-  if (RAW_SUBSTAT_IDX.some(i => st[i] && st[i] < st[RAW_DH_IDX])) return 0;
-  const three = RAW_SUBSTAT_IDX.filter(i => st[i]).length === 3;
-  return three && item.hq && item.rarity === RARITY_GREEN ? GREEN_CRAFTED_DIRECT_HIT_SHARE : MIND_DIRECT_HIT_SHARE;
+function fixedDirectHitShare(raw, item) {
+  const onlyMind = raw[RAW_MIND_IDX] && RAW_MAIN_IDX.every(i => i === RAW_MIND_IDX || !raw[i]);
+  if (!onlyMind || !raw[RAW_DH_IDX]) return 0;
+  // a fixed line is always the piece's smallest substat; a Direct Hit line above another substat is ranked like any
+  // substat (Wolf Ringbands, PvP item level 55)
+  if (RAW_SUBSTAT_IDX.some(i => raw[i] && raw[i] < raw[RAW_DH_IDX])) return 0;
+  const hasThreeSubs = RAW_SUBSTAT_IDX.filter(i => raw[i]).length === 3;
+  return hasThreeSubs && item.hq && item.rarity === RARITY_GREEN ? GREEN_CRAFTED_DIRECT_HIT_SHARE : MIND_DIRECT_HIT_SHARE;
 }
 
 /* Formula prediction from a database row's raw stat vector (any role) and its item kind (the row's statFactor). Used to
@@ -178,38 +192,51 @@ function fixedDirectHitShare(st, item) {
    value minus the one-handed value (isOffhand). An Atma weapon is predicted at its Zenith item level (ATMA_STAT_ILVL);
    an all-jobs accessory with its own factors (ALL_JOBS_ACCESSORY_FACTORS); 18 dungeon pieces with reduced stats at the
    end (REDUCED_STAT_PIECES). */
-export function predictRaw(il, slotCode, st, kind, item = {}) {
+export function predictRaw(il, slotCode, raw, kind, item = {}) {
+  // named exceptions first: the Atma weapons carry an older item level's stats, the all-jobs accessories their own factors
   if (item.name?.endsWith(ATMA_NAME_SUFFIX)) il = ATMA_STAT_ILVL;
-  const own = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '') ? ALL_JOBS_ACCESSORY_FACTORS[item.name] : {};
-  const main = [...RAW_MAIN_IDX, RAW_MAIN_ATTR_IDX].filter(i => st[i]);
-  const col = k => IL[k][il];
-  // a stat line at a slot share: slot value, times the item's stat factor, times the substat share; rounded each time
-  const line = (k, pct, weight) => {
-    const f = own[k] ?? MP[k][kind];
-    let v = rnd((col(k) * pct) / 1000);
-    if (f !== 100) v = rnd((v * f) / 100);
+  const accessoryFactors = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '') ? ALL_JOBS_ACCESSORY_FACTORS[item.name] : {};
+
+  // one stat line at a slot share (per mille): the slot value, times the item's stat factor (percent), times the
+  // substat share (percent); rounded after each step
+  const line = (key, pct, weight) => {
+    const factorPct = accessoryFactors[key] ?? MP[key][kind];
+    let v = rnd((IL[key][il] * pct) / 1000);
+    if (factorPct !== 100) v = rnd((v * factorPct) / 100);
     return weight === 100 ? v : rnd((v * weight) / 100);
   };
-  const off = isOffhand(DB_SLOT_TYPE[slotCode], DB_SLOT_PCT[slotCode]);
-  const value = (k, weight) =>
-    off ? line(k, WEAPON_PCT['2h'], weight) - line(k, WEAPON_PCT['1h+oh'], weight) : line(k, DB_SLOT_PCT[slotCode], weight);
-  const out = new Array(st.length).fill(0);
-  for (const m of main) out[m] = value(ITEM_STAT_ORDER[m], 100);
-  if (st[RAW_VIT_IDX]) out[RAW_VIT_IDX] = value('vit', 100);
-  const dhShare = fixedDirectHitShare(st, item);
-  const fixed = dhShare ? RAW_DH_IDX : -1;
+  // the line on this piece's slot; a shield is the two-handed line minus the one-handed line (isOffhand)
+  const isShield = isOffhand(DB_SLOT_TYPE[slotCode], DB_SLOT_PCT[slotCode]);
+  const value = (key, weight) =>
+    isShield ? line(key, WEAPON_PCT['2h'], weight) - line(key, WEAPON_PCT['1h+oh'], weight) : line(key, DB_SLOT_PCT[slotCode], weight);
+
+  const out = new Array(raw.length).fill(0);
+
+  // every main stat the piece carries, and Vitality, at the full share
+  const mainIdx = [...RAW_MAIN_IDX, RAW_MAIN_ATTR_IDX].filter(i => raw[i]);
+  for (const i of mainIdx) out[i] = value(ITEM_STAT_ORDER[i], 100);
+  if (raw[RAW_VIT_IDX]) out[RAW_VIT_IDX] = value('vit', 100);
+
+  // a fixed Direct Hit line on Mind-only gear, outside the ranking below
+  const dhShare = fixedDirectHitShare(raw, item);
+  const fixedDhIdx = dhShare ? RAW_DH_IDX : -1;
   if (dhShare) out[RAW_DH_IDX] = value('dh', dhShare);
-  const subs = RAW_SUBSTAT_IDX.filter(i => st[i] && i !== fixed).sort((a, b) => st[b] - st[a]);
+
+  // the other substats, largest first, at the ranked shares (100, 70). Ties share a rank and the next value skips past
+  // them (a, a, b: ranks 0, 0, 2), so a substat past the last share counts only when it ties with the one before
+  // (Herklaedi: three substats, two at 70%)
+  const subs = RAW_SUBSTAT_IDX.filter(i => raw[i] && i !== fixedDhIdx).sort((a, b) => raw[b] - raw[a]);
   let rank = 0;
-  // a substat past the last share counts only when it ties with the one before (Herklaedi: three substats, two at 70%)
-  for (const [k, i] of subs.entries()) {
-    if (k > 0 && st[i] !== st[subs[k - 1]]) rank = k;
+  for (const [pos, i] of subs.entries()) {
+    if (pos > 0 && raw[i] !== raw[subs[pos - 1]]) rank = pos;
     if (rank >= SUB_WEIGHTS.length) break;
     out[i] = value(ITEM_STAT_ORDER[i], SUB_WEIGHTS[rank]);
   }
+
+  // the 18 reduced-stat dungeon pieces: main stats at 90%, everything else at 80%, of the usual values
   if (REDUCED_STAT_PIECES.names.has(item.name)) {
-    const { main: m, rest } = REDUCED_STAT_PIECES;
-    return out.map((v, i) => rnd((v * (main.includes(i) ? m : rest)) / 100));
+    const { main: mainPct, rest: restPct } = REDUCED_STAT_PIECES;
+    return out.map((v, i) => rnd((v * (mainIdx.includes(i) ? mainPct : restPct)) / 100));
   }
   return out;
 }

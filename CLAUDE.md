@@ -43,6 +43,16 @@ Details: `docs/engineering/architecture.md`.
 - Dynamic `<select>`s use `x-for` with `:selected`. Reset to defaults asks first; switching job does not.
 - Use each piece's own slot code, not the job's weapon type (White Mage has one wand and shield).
 
+## Readability
+
+The owner reads this code as a maintainer; write for a reader new to it.
+
+- Names say what they hold. Single letters only for loop indices, sort comparators and one-line lambdas. Put the unit in the name or the comment where it is ambiguous: a slot share is per mille, haste and food are percent, a stat factor is a fraction (0.9) except in `MP` and `predictRaw` (90).
+- Read database rows through `ROW` (`row[ROW.ilvl]`, `rowStats(row)`), never `row[2]`. A number with a meaning gets a named constant (`BASE_GCD_MS`).
+- Every exported function has a comment above it: what it returns and the shape of any object parameter, then the sources and decisions. Keep a comment next to the code it describes; move it with the code.
+- Write a rule once. Two copies drift (the meld tie-break did); share a helper.
+- In a long function, separate the steps with blank lines and a one-line comment for each step.
+
 ## The model
 
 Details: `docs/mechanics/math.md`, evidence in `docs/mechanics/validation.md`, materia in `docs/mechanics/materia.md`.

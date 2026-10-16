@@ -48,6 +48,11 @@ test('gcdTierAt agrees with a step-by-step scan at every level', () => {
       const t = gcdTierAt(spd, level);
       let start = spd;
       while (start > 0 && gcdFor(start - 1, level) === t.gcd) start--;
+      // at the 1.50 s floor no speed shortens it: no next step
+      if (t.gcd === 1.5) {
+        assert.deepEqual([t.start, t.next, t.nextGcd], [start, null, null], `level ${level}, speed ${spd} (floor)`);
+        continue;
+      }
       let next = spd + 1;
       while (gcdFor(next, level) === t.gcd) next++;
       assert.deepEqual([t.start, t.next, t.nextGcd], [start, next, gcdFor(next, level)], `level ${level}, speed ${spd}`);
@@ -422,7 +427,9 @@ test('panel numbers give AkhMorning effects at every level in their table', () =
     det: (v, [main, , div]) => `+${pctOf(Math.floor((140 * (v - main)) / div))}`,
     ten: (v, [, sub, div]) => `+${pctOf(Math.floor((112 * (v - sub)) / div))}`,
     piety: (v, [main, , div]) => `+${Math.floor((150 * (v - main)) / div)} MP`,
-    spd: (v, [, sub, div]) => `${(Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
+    // AkhMorning's table has no floor: the game's 1.50 s (GCD_FLOOR_MS) is applied on top
+    spd: (v, [, sub, div]) =>
+      `${Math.max(1.5, Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
   };
   for (const id of ['SGE', 'WAR']) {
     const job = makeJobContext(id);
@@ -431,8 +438,6 @@ test('panel numbers give AkhMorning effects at every level in their table', () =
         const key = s === 'spec' ? job.profile.spec : s;
         const base = panelBase(job, s, +lv);
         for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
-          // at low levels this much speed would take the GCD below zero, where only the rounding of negatives differs
-          if (key === 'spd' && gcdFor(gear, +lv) <= 0) continue;
           assert.equal(statTier(job, s, gear, +lv).effect, akh[key](base + gear, row), `${id} ${s} level ${lv}, gear ${gear}`);
         }
       }
@@ -536,6 +541,11 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
   assert.equal(no.kind, 'nogcd');
   assert.ok(no.gcdLine.bad);
   assert.equal(no.gcdLine.text, "Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)");
+  // below the game's 1.50 s floor nothing can be had, whatever the gear
+  nin.opt.gcd = 1.4;
+  const floor = optimizerView(nin, gamePool(makeJobContext('NIN'), window));
+  assert.equal(floor.kind, 'nogcd');
+  assert.equal(floor.gcdLine.text, "The GCD can't go below 1.50");
   // the goal is speed: the box is off, the GCD typed is ignored
   Object.assign(nin.opt, { target: 'spd' });
   const spd = optimizerView(nin, gamePool(makeJobContext('NIN'), window));

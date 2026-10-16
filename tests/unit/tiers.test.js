@@ -53,9 +53,14 @@ test('start and next bound the step exactly, at every level', () => {
         const t = statTier(job, stat, g, level);
         const effect = x => statTier(job, stat, x, level).effect;
         const label = `${job.jobId} ${stat} ${g} at ${level}`;
-        assert.ok(t.start <= g && g < t.next, label);
+        assert.ok(t.start <= g && (t.next == null || g < t.next), label);
         assert.equal(effect(t.start), t.effect, label);
         if (t.start > 0) assert.notEqual(effect(t.start - 1), t.effect, label);
+        // the GCD's last step is the game's 1.50 s floor: nothing comes after it
+        if (t.next == null) {
+          assert.equal(t.effect, '1.50s', label);
+          continue;
+        }
         assert.equal(effect(t.next - 1), t.effect, label);
         assert.notEqual(effect(t.next), t.effect, label);
       }

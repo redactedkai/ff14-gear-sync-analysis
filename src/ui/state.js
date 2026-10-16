@@ -25,13 +25,13 @@ export function levelSyncOn(app) {
   return app.level != null && app.level < (app.jobCtx?.maxLevel ?? MAX_LEVEL);
 }
 
-/* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/optimizer/candidates.js). */
 /* The gear filters of the browser (app.browse) or the optimizer (app.opt) as browseItems and filterGear take them
    (core/items.js); an empty field is no limit. */
 export function gearFilter(f) {
   return { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 };
 }
 
+/* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/optimizer/candidates.js). */
 export function syncSettings(app) {
   return { cap: app.cap, sync: syncActive(app), level: app.level ?? null };
 }
@@ -44,11 +44,6 @@ export function shownSync(app) {
   if (syncActive(app)) return { cap: app.cap, level: app.level, byLevel: false };
   if (levelSyncOn(app)) return { cap: levelSyncIlvl(app.level), level: app.level, byLevel: true };
   return null;
-}
-
-/* "level 50, item level 123": the sync settings in effect, for labels; '' when none. */
-export function syncLabel(app) {
-  return [levelSyncOn(app) ? `level ${app.level}` : '', syncActive(app) ? `item level ${app.cap}` : ''].filter(Boolean).join(', ');
 }
 
 export const STORE_KEY = 'ilvl-stat-lab-v4';

@@ -17,7 +17,7 @@
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/candidates.js';
-import { DB_SLOT_PCT, DB_SLOT_TYPE } from '../../../src/core/constants.js';
+import { DB_SLOT_PCT, DB_SLOT_TYPE, ROW } from '../../../src/core/constants.js';
 import { capValue } from '../../../src/core/formulas.js';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.js';
 
@@ -75,7 +75,7 @@ async function setup(store, game, jobId) {
   let notWearable = 0;
   const notWearableExamples = {};
   for (const r of ITEMS) {
-    if (!(r[4] & bit)) continue;
+    if (!(r[ROW.jobMask] & bit)) continue;
     const row = parseRow(r);
     const item = poolItemFromRow(job, row);
     if (!wearable(job, item)) continue;

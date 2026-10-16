@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { bandAccuracy, wikiChecks, rowItem } from '../../src/core/validation.js';
 import { MAX_REAL, MAX_ILVL } from '../../src/core/tables.js';
+import { ROW } from '../../src/core/constants.js';
+import { rowStats } from '../../src/core/items.js';
 
 test('formula reproduces the Wiki sync caps at item level 475', () => {
   for (const c of wikiChecks()) assert.equal(c.computed, c.published, c.label);
@@ -34,10 +36,10 @@ test('the formula reproduces relic weapons with two full substats, two main stat
     'Vanguard Shield', // 672: Critical Hit 63 = 218 - 155
     'Ironworks Magitek Shield', // 120: Tenacity 13 = 47 - 34
   ]) {
-    const r = ITEMS.find(x => x[0] === name);
+    const r = ITEMS.find(x => x[ROW.name] === name);
     assert.ok(r, name);
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9]), st, name);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind]), st, name);
   }
 });
 
@@ -47,11 +49,11 @@ test("the formula reproduces every piece of Beastmaster's own gear", async () =>
   const { predictRaw } = await import('../../src/core/formulas.js');
   const { makeJobContext } = await import('../../src/core/job-context.js');
   const bit = 1 << makeJobContext('BST').jobIndex;
-  const own = ITEMS.filter(r => r[4] === bit);
-  assert.ok(own.length >= 30 && own.some(r => r[1] === 1) && own.some(r => r[1] === 2));
+  const own = ITEMS.filter(r => r[ROW.jobMask] === bit);
+  assert.ok(own.length >= 30 && own.some(r => r[ROW.slotCode] === 1) && own.some(r => r[ROW.slotCode] === 2));
   for (const r of own) {
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)), st, r[ROW.name]);
   }
 });
 
@@ -66,10 +68,10 @@ test('Direct Hit on Mind-only gear is a fixed 20% line; elsewhere it ranks norma
     'Dreadwyrm Cane', // 135: Direct Hit as the third line
     'Augmented Ironworks Magitek Spear', // 130, Strength gear: Direct Hit at a normal rank
   ]) {
-    const r = ITEMS.find(x => x[0] === name);
+    const r = ITEMS.find(x => x[ROW.name] === name);
     assert.ok(r, name);
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)), st, name);
   }
 });
 
@@ -83,18 +85,18 @@ test('every piece with three substats is Mind-only gear whose lowest line is Dir
     dh = ITEM_STAT_ORDER.indexOf('dh');
   let n = 0;
   for (const r of ITEMS) {
-    if (r[2] < MODEL_MIN_ILVL) continue;
-    const st = r[5].split(',').map(Number);
+    if (r[ROW.ilvl] < MODEL_MIN_ILVL) continue;
+    const st = rowStats(r);
     const subs = RAW_SUBSTAT_IDX.filter(i => st[i]).sort((a, b) => st[b] - st[a]);
     if (subs.length < 3) continue;
     n++;
-    assert.equal(subs.length, 3, r[0]);
+    assert.equal(subs.length, 3, r[ROW.name]);
     assert.deepEqual(
       RAW_MAIN_IDX.filter(i => st[i]),
       [mind],
-      r[0],
+      r[ROW.name],
     );
-    assert.equal(subs[2], dh, r[0]);
+    assert.equal(subs[2], dh, r[ROW.name]);
   }
   assert.ok(n > 100, `three-substat pieces: ${n}`);
 });
@@ -104,7 +106,6 @@ test('every piece with three substats is Mind-only gear whose lowest line is Dir
 test('green HQ-able healer pieces with three substats carry Direct Hit at 25%; their siblings at 20%', async () => {
   const { ITEMS } = await import('../../src/core/tables.js');
   const { predictRaw } = await import('../../src/core/formulas.js');
-  const { RARITY_FIELD } = await import('../../src/core/constants.js');
   for (const [name, rarity, hq] of [
     ['Ebony Cane', 2, 1], // two-handed: Direct Hit 11 = 25% of 44
     ['Arachne Robe', 2, 1], // body: 11 = 25% of 42 (10.5 rounds up)
@@ -112,12 +113,12 @@ test('green HQ-able healer pieces with three substats carry Direct Hit at 25%; t
     ["High Adjudicator's Gavel", 3, 1], // blue crafted sibling: 9 = 20% of 44
     ["Bogatyr's Circlet of Healing", 2, 0], // green, not HQ-able: 20%
   ]) {
-    const r = ITEMS.find(x => x[0] === name);
+    const r = ITEMS.find(x => x[ROW.name] === name);
     assert.ok(r, name);
-    assert.equal(r[RARITY_FIELD], rarity, name);
-    assert.equal(r[7], hq, name);
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
+    assert.equal(r[ROW.rarity], rarity, name);
+    assert.equal(r[ROW.hq], hq, name);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)), st, name);
   }
 });
 
@@ -126,11 +127,11 @@ test('green HQ-able healer pieces with three substats carry Direct Hit at 25%; t
 test('Atma weapons are predicted at item level 90; Animus at its own 100', async () => {
   const { ITEMS } = await import('../../src/core/tables.js');
   const { predictRaw } = await import('../../src/core/formulas.js');
-  const atma = ITEMS.filter(r => r[0].endsWith(' Atma'));
+  const atma = ITEMS.filter(r => r[ROW.name].endsWith(' Atma'));
   assert.equal(atma.length, 11);
-  for (const r of [...atma, ...ITEMS.filter(x => ['Curtana Animus', 'Thyrus Animus'].includes(x[0]))]) {
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
+  for (const r of [...atma, ...ITEMS.filter(x => ['Curtana Animus', 'Thyrus Animus'].includes(x[ROW.name]))]) {
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)), st, r[ROW.name]);
   }
 });
 
@@ -141,11 +142,11 @@ test('all-jobs accessories: the factor table covers exactly them, each predicted
   const { predictRaw } = await import('../../src/core/formulas.js');
   const { ALL_JOBS_ACCESSORY_FACTORS, ITEM_STAT_ORDER } = await import('../../src/core/constants.js');
   const ma = ITEM_STAT_ORDER.indexOf('mainAttr');
-  const rows = ITEMS.filter(r => r[9] === 0 && r[5].split(',').map(Number)[ma]);
-  assert.deepEqual(rows.map(r => r[0]).sort(), Object.keys(ALL_JOBS_ACCESSORY_FACTORS).sort());
+  const rows = ITEMS.filter(r => r[ROW.kind] === 0 && rowStats(r)[ma]);
+  assert.deepEqual(rows.map(r => r[ROW.name]).sort(), Object.keys(ALL_JOBS_ACCESSORY_FACTORS).sort());
   for (const r of rows) {
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)), st, r[ROW.name]);
   }
 });
 
@@ -156,10 +157,10 @@ test('below item level 100: Direct Hit above another substat ranks, a tied third
   const { predictRaw } = await import('../../src/core/formulas.js');
   const names = ['Wolf Ringbands', 'Herklaedi', 'Gridanian Ring', 'Lominsan Ring', "Ul'dahn Ring"];
   for (const name of names) {
-    const r = ITEMS.find(x => x[0] === name);
+    const r = ITEMS.find(x => x[ROW.name] === name);
     assert.ok(r, name);
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)), st, name);
   }
 });
 
@@ -167,14 +168,14 @@ test('reduced-stat dungeon pieces: the list matches the data, each within 1, all
   const { ITEMS } = await import('../../src/core/tables.js');
   const { predictRaw } = await import('../../src/core/formulas.js');
   const { REDUCED_STAT_PIECES } = await import('../../src/core/constants.js');
-  const rows = ITEMS.filter(r => REDUCED_STAT_PIECES.names.has(r[0]));
+  const rows = ITEMS.filter(r => REDUCED_STAT_PIECES.names.has(r[ROW.name]));
   assert.equal(rows.length, REDUCED_STAT_PIECES.names.size);
   let exact = 0;
   for (const r of rows) {
-    assert.equal(r[2], 46, r[0]);
-    const st = r[5].split(',').map(Number);
-    const d = Math.max(...predictRaw(r[2], r[1], st, r[9], rowItem(r)).map((x, i) => Math.abs(x - st[i])));
-    assert.ok(d <= 1, r[0]);
+    assert.equal(r[ROW.ilvl], 46, r[ROW.name]);
+    const st = rowStats(r);
+    const d = Math.max(...predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)).map((x, i) => Math.abs(x - st[i])));
+    assert.ok(d <= 1, r[ROW.name]);
     if (d === 0) exact++;
   }
   assert.equal(exact, rows.length - 1);
@@ -185,12 +186,12 @@ test('every piece below item level 100 is predicted within 1', async () => {
   const { predictRaw } = await import('../../src/core/formulas.js');
   const { MODEL_MIN_ILVL } = await import('../../src/core/validation.js');
   const off = ITEMS.filter(r => {
-    if (r[2] >= MODEL_MIN_ILVL) return false;
-    const st = r[5].split(',').map(Number);
-    return predictRaw(r[2], r[1], st, r[9], rowItem(r)).some((x, i) => Math.abs(x - st[i]) > 1);
+    if (r[ROW.ilvl] >= MODEL_MIN_ILVL) return false;
+    const st = rowStats(r);
+    return predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)).some((x, i) => Math.abs(x - st[i]) > 1);
   });
   assert.deepEqual(
-    off.map(r => r[0]),
+    off.map(r => r[ROW.name]),
     [],
   );
 });

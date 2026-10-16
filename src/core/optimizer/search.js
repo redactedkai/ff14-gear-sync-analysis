@@ -6,14 +6,14 @@
 /* Most two rings can add together on f(a) >= 0: the best ring twice only if that item has 2 copies, otherwise the best
    plus the best other item (the best alone when there is no other: the second ring slot stays empty). Any legal pair
    containing the best item is at most this, and any pair without it is too, since its larger member is at most the
-   best other item. Candidates of one item share `it`, so a Unique ring is never counted twice. */
+   best other item. Candidates of one item share `item`, so a Unique ring is never counted twice. */
 function bestPair(list, f) {
   let top = null;
   for (const a of list) if (!top || f(a) > f(top)) top = a;
   if (!top) return 0;
   if (top.copies >= 2) return 2 * f(top);
   let other = 0;
-  for (const a of list) if (a.it !== top.it) other = Math.max(other, f(a));
+  for (const a of list) if (a.item !== top.item) other = Math.max(other, f(a));
   return f(top) + other;
 }
 
@@ -36,28 +36,31 @@ export function suffixBounds(slotList, posList, dims) {
   });
   const remSc = new Array(n + 1).fill(0);
   const slotSc = new Array(n).fill(0);
+
+  // from the last slot back, so the bound for slots i.. adds slot i's to the one for i + 1..
   for (let i = n - 1; i >= 0; i--) {
     const list = posList[i];
     if (slotList[i] === 'ring' && slotList[i + 1] === 'ring') {
       dims.forEach(d => {
-        remMax[d][i] = remMax[d][i + 2] + bestPair(list, a => Math.max(0, a.v[d]));
+        remMax[d][i] = remMax[d][i + 2] + bestPair(list, a => Math.max(0, a.eff[d]));
       });
-      remSc[i] = remSc[i + 2] + bestPair(list, a => a.sc);
+      remSc[i] = remSc[i + 2] + bestPair(list, a => a.score);
       continue;
     }
+
     // the bound of one piece here, less the bounds of the later slots it blocks
     const own = (a, value, bounds) => (a.blocks || []).reduce((x, b) => (posOf.get(b) > i ? x - bounds[posOf.get(b)] : x), value);
     dims.forEach(d => {
-      slotMax[d][i] = Math.max(0, ...list.map(a => own(a, a.v[d], slotMax[d])));
+      slotMax[d][i] = Math.max(0, ...list.map(a => own(a, a.eff[d], slotMax[d])));
       remMax[d][i] = remMax[d][i + 1] + slotMax[d][i];
     });
-    slotSc[i] = Math.max(0, ...list.map(a => own(a, a.sc, slotSc)));
+    slotSc[i] = Math.max(0, ...list.map(a => own(a, a.score, slotSc)));
     remSc[i] = remSc[i + 1] + slotSc[i];
   }
   return { remMax, remSc, slotMax, slotSc };
 }
 
-/* Speed tables: rest(i, c) = an upper bound on the score slots i.. can still add when the speed so far is c, given the
+/* Speed tables: bound(i, c) = an upper bound on the score slots i.. can still add when the speed so far is c, given the
    speed rule. Each slot on its own: copy limits are ignored (a Unique ring may count twice) and a slot some piece can
    block may stay empty, so the bound never falls below what a legal loadout can add, and the search stays exact.
    - Minimum only: need[i][r] = most score slots i.. add while adding at least r speed (r up to the minimum), built on
@@ -72,119 +75,146 @@ export function suffixBounds(slotList, posList, dims) {
 export function speedTables(slotList, posList, spdMin, spdMax, empty = null) {
   const n = slotList.length;
   const lo = spdMin > 0 ? spdMin : 0;
-  const blockable = new Set(posList.flatMap(l => l.flatMap(a => a.blocks)));
-  const spdOf = a => Math.max(0, a.v.spd || 0);
+  const blockable = new Set(posList.flatMap(list => list.flatMap(a => a.blocks)));
+  const spdOf = a => Math.max(0, a.eff.spd || 0);
+
   // slots a legal loadout can leave empty: a blockable slot, a slot with no candidates, and a ring slot when the ring
   // list cannot fill both (copies of distinct items below 2: a lone Unique ring is worn once). Counting a piece in such a
   // slot would add speed a loadout may not have, which a maximum can then wrongly reject
-  const off = i => !!empty && empty.has(i); // blocked by a piece already chosen: only empty
+  const blockedNow = i => !!empty && empty.has(i); // blocked by a piece already chosen: only empty
   const canEmpty = i => {
-    const l = posList[i];
-    if (blockable.has(slotList[i]) || !l.length) return true;
+    const list = posList[i];
+    if (blockable.has(slotList[i]) || !list.length) return true;
     if (slotList[i] !== 'ring') return false;
     const copies = new Map();
-    for (const a of l) copies.set(a.it, a.copies);
-    let n = 0;
-    for (const c of copies.values()) n += c;
-    return n < 2;
+    for (const a of list) copies.set(a.item, a.copies);
+    let total = 0;
+    for (const c of copies.values()) total += c;
+    return total < 2;
   };
+
   // a maximum no loadout can pass is no rule at all, and the table for it would be needlessly long
-  const most = posList.reduce((s, l, i) => s + (off(i) ? 0 : Math.max(0, ...l.map(spdOf))), 0);
-  if (spdMax != null && spdMax >= most) spdMax = null;
+  const mostSpd = posList.reduce((sum, list, i) => sum + (blockedNow(i) ? 0 : Math.max(0, ...list.map(spdOf))), 0);
+  if (spdMax != null && spdMax >= mostSpd) spdMax = null;
   if (!lo && spdMax == null) return null;
+
   if (spdMax == null) {
-    const R = lo;
+    // need[i][r]: the most score slots i.. add while adding at least r more speed (r = 0..lo)
     const need = new Array(n + 1);
-    need[n] = new Float64Array(R + 1).fill(-Infinity);
+    need[n] = new Float64Array(lo + 1).fill(-Infinity);
     need[n][0] = 0;
     for (let i = n - 1; i >= 0; i--) {
       const next = need[i + 1];
-      const raw = off(i) ? [] : posList[i].map(a => [a.sc, spdOf(a)]);
-      if (off(i) || canEmpty(i)) raw.push([0, 0]);
-      raw.sort((x, y) => y[1] - x[1] || y[0] - x[0]);
-      const opts = [];
-      let top = -Infinity;
-      for (const o of raw) {
-        if (o[0] > top) {
-          opts.push(o);
-          top = o[0];
+
+      // this slot's choices as [score, speed], fastest first; the frontier keeps one only if it outscores every faster one
+      const choices = blockedNow(i) ? [] : posList[i].map(a => [a.score, spdOf(a)]);
+      if (blockedNow(i) || canEmpty(i)) choices.push([0, 0]);
+      choices.sort((x, y) => y[1] - x[1] || y[0] - x[0]);
+      const frontier = [];
+      let topScore = -Infinity;
+      for (const c of choices) {
+        if (c[0] > topScore) {
+          frontier.push(c);
+          topScore = c[0];
         }
       }
-      const row = new Float64Array(R + 1);
-      for (let r = 0; r <= R; r++) {
-        let m = -Infinity;
-        for (const [sc, sp] of opts) {
-          const v = sc + next[r > sp ? r - sp : 0];
-          if (v > m) m = v;
+
+      // the most this slot and the ones after it add while adding at least r: the best frontier choice plus what the
+      // later slots add for the speed still needed after it
+      const row = new Float64Array(lo + 1);
+      for (let r = 0; r <= lo; r++) {
+        let most = -Infinity;
+        for (const [score, spd] of frontier) {
+          const v = score + next[r > spd ? r - spd : 0];
+          if (v > most) most = v;
         }
-        row[r] = m;
+        row[r] = most;
       }
       need[i] = row;
     }
-    const f = (i, c) => {
-      const r = R - c;
+
+    const bound = (i, spdSoFar) => {
+      const r = lo - spdSoFar;
       return need[i][r > 0 ? r : 0];
     };
-    f.top = i => need[i][0]; // the most at any speed so far (need is highest with nothing more needed)
-    return f;
+    bound.top = i => need[i][0]; // the most at any speed so far (need is highest with nothing more needed)
+    return bound;
   }
-  const M = spdMax;
-  if (M < lo) return Object.assign(() => -Infinity, { top: () => -Infinity });
-  const B = M - lo;
-  const pre = new Array(n + 1),
-    win = new Array(n + 1);
-  const fill = (i, f) => {
-    const p = new Float64Array(M + 1);
-    let m = -Infinity;
-    for (let x = 0; x <= M; x++) p[x] = m = f[x] > m ? f[x] : m;
-    pre[i] = p;
-    // window maximum over [x, x + B] in blocks of B + 1: the suffix maximum inside x's block and the prefix maximum
-    // inside the block of x + B cover the window between them; a window cut short by M is the maximum over [x, M]
-    const k = B + 1,
-      L = new Float64Array(M + 1),
-      S = new Float64Array(M + 1),
-      w = new Float64Array(M + 1);
-    for (let x = 0; x <= M; x++) L[x] = x % k === 0 ? f[x] : Math.max(L[x - 1], f[x]);
-    for (let x = M; x >= 0; x--) S[x] = x === M || (x + 1) % k === 0 ? f[x] : Math.max(S[x + 1], f[x]);
+
+  // a band (a maximum too)
+  const max = spdMax;
+  if (max < lo) return Object.assign(() => -Infinity, { top: () => -Infinity });
+  const width = max - lo; // the band's width: a speed so far of c still lands in it with lo - c to max - c more
+
+  // per slot i, from exact[i] (exact[i][x]: the most score slots i.. add with exactly x more speed):
+  // prefixMax[i][x] = the most with at most x more, windowMax[i][x] = the most with x to x + width more
+  const prefixMax = new Array(n + 1),
+    windowMax = new Array(n + 1);
+  const storeMaxima = (i, exact) => {
+    const prefix = new Float64Array(max + 1);
+    let most = -Infinity;
+    for (let x = 0; x <= max; x++) prefix[x] = most = exact[x] > most ? exact[x] : most;
+    prefixMax[i] = prefix;
+
+    // window maximum over [x, x + width] in blocks of width + 1: the suffix maximum inside x's block and the prefix
+    // maximum inside the block of x + width cover the window between them; a window cut short by max is the maximum
+    // over [x, max]
+    const block = width + 1,
+      blockPrefix = new Float64Array(max + 1),
+      blockSuffix = new Float64Array(max + 1),
+      win = new Float64Array(max + 1);
+    for (let x = 0; x <= max; x++) blockPrefix[x] = x % block === 0 ? exact[x] : Math.max(blockPrefix[x - 1], exact[x]);
+    for (let x = max; x >= 0; x--) {
+      blockSuffix[x] = x === max || (x + 1) % block === 0 ? exact[x] : Math.max(blockSuffix[x + 1], exact[x]);
+    }
     let tail = -Infinity;
-    for (let x = M; x >= 0; x--) {
-      tail = f[x] > tail ? f[x] : tail;
-      w[x] = x + B <= M ? Math.max(S[x], L[x + B]) : tail;
+    for (let x = max; x >= 0; x--) {
+      tail = exact[x] > tail ? exact[x] : tail;
+      win[x] = x + width <= max ? Math.max(blockSuffix[x], blockPrefix[x + width]) : tail;
     }
-    win[i] = w;
+    windowMax[i] = win;
   };
-  let f = new Float64Array(M + 1).fill(-Infinity);
-  f[0] = 0;
-  fill(n, f);
+
+  // exact rows from the last slot back: slot i's best score at each speed, plus the later slots' row
+  let exact = new Float64Array(max + 1).fill(-Infinity);
+  exact[0] = 0;
+  storeMaxima(n, exact);
   for (let i = n - 1; i >= 0; i--) {
+    // this slot's best score at each speed it can add
     const bestAt = new Map();
-    for (const a of off(i) ? [] : posList[i]) {
-      const sp = spdOf(a);
-      if (sp <= M && !(bestAt.get(sp) >= a.sc)) bestAt.set(sp, a.sc);
+    for (const a of blockedNow(i) ? [] : posList[i]) {
+      const spd = spdOf(a);
+      if (spd <= max && !(bestAt.get(spd) >= a.score)) bestAt.set(spd, a.score);
     }
-    if ((off(i) || canEmpty(i)) && !(bestAt.get(0) >= 0)) bestAt.set(0, 0);
-    const g = new Float64Array(M + 1).fill(-Infinity);
-    for (const [sp, sc] of bestAt) {
-      for (let x = sp; x <= M; x++) {
-        const v = sc + f[x - sp];
-        if (v > g[x]) g[x] = v;
+    if ((blockedNow(i) || canEmpty(i)) && !(bestAt.get(0) >= 0)) bestAt.set(0, 0);
+
+    const prev = exact;
+    exact = new Float64Array(max + 1).fill(-Infinity);
+    for (const [spd, score] of bestAt) {
+      for (let x = spd; x <= max; x++) {
+        const v = score + prev[x - spd];
+        if (v > exact[x]) exact[x] = v;
       }
     }
-    f = g;
-    fill(i, f);
+    storeMaxima(i, exact);
   }
-  const look = (i, c) => {
-    const hi = M - c;
-    if (hi < 0) return -Infinity;
-    const l = lo - c;
-    return l <= 0 ? pre[i][hi] : win[i][l];
+
+  const bound = (i, spdSoFar) => {
+    const roomLeft = max - spdSoFar;
+    if (roomLeft < 0) return -Infinity;
+    const stillNeeded = lo - spdSoFar;
+    return stillNeeded <= 0 ? prefixMax[i][roomLeft] : windowMax[i][stillNeeded];
   };
-  look.top = i => pre[i][M]; // the most at any speed so far
-  return look;
+  bound.top = i => prefixMax[i][max]; // the most at any speed so far
+  return bound;
 }
 
+/* A search this small is over before a speed table for its blocked slots would pay for itself (one table takes 1 to
+   50 ms; WHM at level 100 with sync off needs a few hundred nodes, synced searches 100,000 and more without them). */
+const LAZY_TABLES = 2000;
+
 /* spdMin, spdMax: optional bounds on the speed total (null for none).
-   Returns {best, nodes, truncated}; best[i] = {a: candidate | null, rank, blockedBy?} or best = null if nothing is
+   Returns {best, nodes, truncated}; best[i] = {cand: candidate | null, rank, blockedBy?} or best = null if nothing is
    feasible. A slot is left empty when a chosen piece blocks it (blockedBy: that candidate; buildCandidates puts
    blockable slots last) or when every candidate's copies are used up. A blocked slot adds 0, so while a chosen piece
    blocks a later slot, that slot's best score and speed come off the bounds (without this a cloak's branch, whose
@@ -199,188 +229,212 @@ export function speedTables(slotList, posList, spdMin, spdMax, empty = null) {
    - the memo: two partial loadouts at the same slot with the same speed total (a total past a minimum with no maximum
      counts as the minimum: nothing after it can tell them apart), the same blocked slots and, at the second ring slot,
      the same first ring have the same completions, so the later one is cut unless it scores more. */
-/* A search this small is over before a speed table for its blocked slots would pay for itself (one table takes 1 to
-   50 ms; WHM at level 100 with sync off needs a few hundred nodes, synced searches 100,000 and more without them). */
-const LAZY_TABLES = 2000;
-
 export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLimit, plain = false, lazyTables = LAZY_TABLES }) {
   const nSlots = slotList.length;
   const { remMax, remSc, slotMax, slotSc } = suffixBounds(slotList, posList, dims);
+
   // `plain` (tests and perf scripts only): none of the speed-rule extras, to check them against the plain search
-  const rest = !plain && dims.includes('spd') ? speedTables(slotList, posList, spdMin, spdMax) : null;
-  const posOf = new Map(slotList.map((t, i) => [t, i])); // blockable slots appear once (rings are never blocked)
+  const speedBound = !plain && dims.includes('spd') ? speedTables(slotList, posList, spdMin, spdMax) : null;
+  const posOf = new Map(slotList.map((slotType, i) => [slotType, i])); // blockable slots appear once (rings are never blocked)
   // the slots a candidate blocks, as a bit mask of positions
-  const maskOf = blocks => blocks.reduce((m, b) => (posOf.has(b) ? m | (1 << posOf.get(b)) : m), 0);
-  const bmOf = new Map(posList.flatMap(l => l.map(a => [a, maskOf(a.blocks)])));
-  // speed tables for each set of blocked slots (rest is the one for none), built when first needed: once a chosen
+  const maskOf = blocks => blocks.reduce((mask, b) => (posOf.has(b) ? mask | (1 << posOf.get(b)) : mask), 0);
+  const blockMaskOf = new Map(posList.flatMap(list => list.map(a => [a, maskOf(a.blocks)])));
+
+  // speed tables for each set of blocked slots (speedBound is the one for none), built when first needed: once a chosen
   // piece blocks a slot (a two-handed weapon the off-hand, a cloak the head) that slot adds nothing, while the table
   // for none still counts its best piece. Below LAZY_TABLES nodes the table for none stands in (a looser bound)
-  const tables = new Map([[0, rest]]);
-  const restFor = m => {
-    let f = tables.get(m);
-    if (f === undefined) {
-      if (nodes < lazyTables) return rest;
+  let nodes = 0; // search nodes so far (also read by speedBoundFor)
+  const tables = new Map([[0, speedBound]]);
+  const speedBoundFor = mask => {
+    let table = tables.get(mask);
+    if (table === undefined) {
+      if (nodes < lazyTables) return speedBound;
       const empty = new Set();
-      for (let i = 0; i < slotList.length; i++) if (m & (1 << i)) empty.add(i);
-      f = speedTables(slotList, posList, spdMin, spdMax, empty) || rest;
-      tables.set(m, f);
+      for (let i = 0; i < slotList.length; i++) if (mask & (1 << i)) empty.add(i);
+      table = speedTables(slotList, posList, spdMin, spdMax, empty) || speedBound;
+      tables.set(mask, table);
     }
-    return f;
+    return table;
   };
-  let bm = 0; // blocked slots now, as a mask
+
+  // search state, changed by tryChild and restored when it returns
+  let blockedMask = 0; // blocked slots now, as a mask
   let best = null,
-    bestSc = -Infinity,
-    nodes = 0,
+    bestScore = -Infinity,
     truncated = false;
-  const cur = {};
+  const totals = {};
   dims.forEach(d => {
-    cur[d] = 0;
+    totals[d] = 0;
   });
   const chosen = new Array(nSlots).fill(null);
   const used = new Map();
   const blockedBy = new Map(); // slot type -> the chosen candidate that leaves it empty
+
   // per-slot bounds (suffixBounds) of the slots a chosen piece blocks come off the remaining bound
-  const maxSc = slotSc;
-  const maxSpd = dims.includes('spd') ? slotMax.spd : new Array(nSlots).fill(0);
+  const slotSpd = dims.includes('spd') ? slotMax.spd : new Array(nSlots).fill(0);
   let blockedSc = 0, // bounds of the later slots currently blocked
     blockedSpd = 0;
 
-  // groups[pos]: the slot's candidates of one speed, [rank, candidate] by score, highest first
-  const groups = rest
+  // groups[pos]: the slot's candidates split by (speed, blocked slots), each group's [rank, candidate] list by score,
+  // highest first, and the groups by their best score, highest first; `i` keeps a group's first-seen order for ties
+  const groups = speedBound
     ? posList.map(list => {
-        const m = new Map();
-        list.forEach((a, k) => {
-          const sp = Math.max(0, a.v.spd || 0);
-          const mk = bmOf.get(a);
-          const key = `${sp}|${mk}`;
-          if (!m.has(key)) m.set(key, { spd: sp, mask: mk, list: [] });
-          m.get(key).list.push([k, a]);
+        const byKey = new Map();
+        list.forEach((a, rank) => {
+          const spd = Math.max(0, a.eff.spd || 0);
+          const mask = blockMaskOf.get(a);
+          const key = `${spd}|${mask}`;
+          if (!byKey.has(key)) byKey.set(key, { spd, mask, list: [] });
+          byKey.get(key).list.push([rank, a]);
         });
-        const gs = [...m.values()].map((g, i) => ({ ...g, i, list: g.list.sort((x, y) => y[1].sc - x[1].sc) }));
-        return gs.sort((x, y) => y.list[0][1].sc - x.list[0][1].sc);
+        const slotGroups = [...byKey.values()].map((g, i) => ({ ...g, i, list: g.list.sort((x, y) => y[1].score - x[1].score) }));
+        return slotGroups.sort((x, y) => y.list[0][1].score - x.list[0][1].score);
       })
     : null;
-  const seen = rest ? new Map() : null;
+
+  // the memo (see "the memo" above): best score seen per state
+  const seen = speedBound ? new Map() : null;
   const memoSpd = spdMax == null && spdMin > 0 ? s => (s < spdMin ? s : spdMin) : s => s;
 
-  // put candidate a (rank k) in slot pos and search on; false when it is not allowed there
-  function tryChild(pos, k, a, isRing2, sc) {
-    const u = used.get(a.it.id) || 0;
-    if (u >= a.copies) return false;
+  // put candidate a (at `rank` in its slot's list) in slot pos and search on; false when it is not allowed there
+  function tryChild(pos, rank, a, isRing2, scoreSoFar) {
+    const usedCount = used.get(a.item.id) || 0;
+    if (usedCount >= a.copies) return false;
     if (isRing2) {
       const prev = chosen[pos - 1];
-      if (prev && prev.rank > k) return false;
+      if (prev && prev.rank > rank) return false;
     }
-    if (spdMax != null && cur.spd + a.v.spd > spdMax) return false;
+    if (spdMax != null && totals.spd + a.eff.spd > spdMax) return false;
+
+    // wear it
     dims.forEach(d => {
-      cur[d] += a.v[d];
+      totals[d] += a.eff[d];
     });
-    used.set(a.it.id, u + 1);
-    const later = a.blocks.map(b => posOf.get(b)).filter(p => p > pos);
+    used.set(a.item.id, usedCount + 1);
+    const laterBlocked = a.blocks.map(b => posOf.get(b)).filter(p => p > pos);
     for (const b of a.blocks) blockedBy.set(b, a);
-    for (const p of later) {
-      blockedSc += maxSc[p];
-      blockedSpd += maxSpd[p];
+    for (const p of laterBlocked) {
+      blockedSc += slotSc[p];
+      blockedSpd += slotSpd[p];
     }
-    const bm0 = bm;
-    bm |= bmOf.get(a);
-    chosen[pos] = { a, rank: k };
-    dfs(pos + 1, sc + a.sc);
+    const prevMask = blockedMask;
+    blockedMask |= blockMaskOf.get(a);
+    chosen[pos] = { cand: a, rank };
+
+    dfs(pos + 1, scoreSoFar + a.score);
+
+    // take it off again
     chosen[pos] = null;
-    bm = bm0;
-    for (const p of later) {
-      blockedSc -= maxSc[p];
-      blockedSpd -= maxSpd[p];
+    blockedMask = prevMask;
+    for (const p of laterBlocked) {
+      blockedSc -= slotSc[p];
+      blockedSpd -= slotSpd[p];
     }
     for (const b of a.blocks) blockedBy.delete(b);
-    used.set(a.it.id, u);
+    used.set(a.item.id, usedCount);
     dims.forEach(d => {
-      cur[d] -= a.v[d];
+      totals[d] -= a.eff[d];
     });
     return true;
   }
 
-  function dfs(pos, sc) {
+  function dfs(pos, scoreSoFar) {
     if (truncated) return;
     if (++nodes > nodeLimit) {
       truncated = true;
       return;
     }
     if (pos === nSlots) {
-      if (spdMin != null && cur.spd < spdMin) return;
-      if (sc > bestSc) {
-        bestSc = sc;
+      if (spdMin != null && totals.spd < spdMin) return;
+      if (scoreSoFar > bestScore) {
+        bestScore = scoreSoFar;
         best = chosen.slice();
       }
       return;
     }
-    if (sc + remSc[pos] - blockedSc <= bestSc) return;
-    if (spdMin != null && cur.spd + remMax.spd[pos] - blockedSpd < spdMin) return;
-    if (rest && sc + restFor(bm)(pos, cur.spd) <= bestSc) return;
+
+    // cut: even the best the remaining slots can add does not beat the best loadout so far, or cannot reach the minimum
+    if (scoreSoFar + remSc[pos] - blockedSc <= bestScore) return;
+    if (spdMin != null && totals.spd + remMax.spd[pos] - blockedSpd < spdMin) return;
+    if (speedBound && scoreSoFar + speedBoundFor(blockedMask)(pos, totals.spd) <= bestScore) return;
     if (seen && pos > 0) {
       const prev = slotList[pos] === 'ring' && slotList[pos - 1] === 'ring' ? chosen[pos - 1] : null;
-      const key = (((prev ? prev.rank + 1 : 0) * 4096 + bm) * 32 + pos) * 1e5 + memoSpd(cur.spd) + 5e4; // exact below 2^53: rank < 256, 12 slots, |speed| < 50,000
+      // the state packed into one integer, exact below 2^53: the first ring's rank + 1 at the second ring slot, else 0
+      // (< 256); the blocked-slot mask (12 slots, < 4096); the position (< 32); the speed so far plus 50,000 (< 1e5)
+      const key = (((prev ? prev.rank + 1 : 0) * 4096 + blockedMask) * 32 + pos) * 1e5 + memoSpd(totals.spd) + 5e4;
       const was = seen.get(key);
-      if (was !== undefined && was >= sc) return;
-      seen.set(key, sc);
+      if (was !== undefined && was >= scoreSoFar) return;
+      seen.set(key, scoreSoFar);
     }
 
-    const t = slotList[pos];
-    if (blockedBy.has(t)) {
-      blockedSc -= maxSc[pos];
-      blockedSpd -= maxSpd[pos];
-      chosen[pos] = { a: null, rank: -1, blockedBy: blockedBy.get(t) };
-      dfs(pos + 1, sc);
+    // a slot a chosen piece blocks stays empty
+    const slotType = slotList[pos];
+    if (blockedBy.has(slotType)) {
+      blockedSc -= slotSc[pos];
+      blockedSpd -= slotSpd[pos];
+      chosen[pos] = { cand: null, rank: -1, blockedBy: blockedBy.get(slotType) };
+      dfs(pos + 1, scoreSoFar);
       chosen[pos] = null;
-      blockedSc += maxSc[pos];
-      blockedSpd += maxSpd[pos];
+      blockedSc += slotSc[pos];
+      blockedSpd += slotSpd[pos];
       return;
     }
+
     const list = posList[pos];
     // the two ring slots share one list; the 2nd ring never ranks before the 1st, so each pair is tried once
-    const isRing2 = t === 'ring' && pos > 0 && slotList[pos - 1] === 'ring';
+    const isRing2 = slotType === 'ring' && pos > 0 && slotList[pos - 1] === 'ring';
+
+    // with a speed rule: try the groups (same speed, same blocked slots) best bound first
     if (groups) {
-      const gs = groups[pos];
+      const slotGroups = groups[pos];
       // only the groups that can still beat the best so far (the loop below skips the others anyway); groups come by
       // top score, highest first, so once even the table's most at any speed cannot lift one past it, none can
       const order = [];
-      const top = rest.top(pos + 1);
-      for (let i = 0; i < gs.length; i++) {
-        const head = sc + gs[i].list[0][1].sc;
-        if (head + top <= bestSc) break;
-        const e = restFor(bm | gs[i].mask)(pos + 1, cur.spd + gs[i].spd);
-        if (head + e > bestSc) order.push([i, e]);
+      const top = speedBound.top(pos + 1);
+      for (let i = 0; i < slotGroups.length; i++) {
+        const head = scoreSoFar + slotGroups[i].list[0][1].score;
+        if (head + top <= bestScore) break;
+        const restBound = speedBoundFor(blockedMask | slotGroups[i].mask)(pos + 1, totals.spd + slotGroups[i].spd);
+        if (head + restBound > bestScore) order.push([i, restBound]);
       }
+
       // by bound, ties in the groups' first-seen order (as the stable sort over that order did)
-      order.sort((x, y) => y[1] + gs[y[0]].list[0][1].sc - (x[1] + gs[x[0]].list[0][1].sc) || gs[x[0]].i - gs[y[0]].i);
-      for (const [g, extra] of order) {
-        const gl = gs[g].list;
-        if (sc + gl[0][1].sc + extra <= bestSc) continue;
-        for (const [k, a] of gl) {
-          if (sc + a.sc + extra <= bestSc) break;
-          tryChild(pos, k, a, isRing2, sc);
+      order.sort(
+        (x, y) =>
+          y[1] + slotGroups[y[0]].list[0][1].score - (x[1] + slotGroups[x[0]].list[0][1].score) || slotGroups[x[0]].i - slotGroups[y[0]].i,
+      );
+      for (const [g, restBound] of order) {
+        const groupList = slotGroups[g].list;
+        if (scoreSoFar + groupList[0][1].score + restBound <= bestScore) continue;
+        for (const [rank, a] of groupList) {
+          if (scoreSoFar + a.score + restBound <= bestScore) break;
+          tryChild(pos, rank, a, isRing2, scoreSoFar);
           if (truncated) return;
         }
       }
+
       // empty only when no candidate has a copy left (the cuts above say nothing about copies)
-      if (!list.some(a => (used.get(a.it.id) || 0) < a.copies)) {
-        chosen[pos] = { a: null, rank: -1 };
-        dfs(pos + 1, sc);
+      if (!list.some(a => (used.get(a.item.id) || 0) < a.copies)) {
+        chosen[pos] = { cand: null, rank: -1 };
+        dfs(pos + 1, scoreSoFar);
         chosen[pos] = null;
       }
       return;
     }
+
+    // without one: every candidate in score order
     let avail = 0;
-    for (let k = 0; k < list.length; k++) {
-      const a = list[k];
-      if ((used.get(a.it.id) || 0) >= a.copies) continue;
+    for (let rank = 0; rank < list.length; rank++) {
+      const a = list[rank];
+      if ((used.get(a.item.id) || 0) >= a.copies) continue;
       avail++;
-      tryChild(pos, k, a, isRing2, sc);
+      tryChild(pos, rank, a, isRing2, scoreSoFar);
       if (truncated) return;
     }
+    // empty only when no candidate has a copy left
     if (avail === 0) {
-      chosen[pos] = { a: null, rank: -1 };
-      dfs(pos + 1, sc);
+      chosen[pos] = { cand: null, rank: -1 };
+      dfs(pos + 1, scoreSoFar);
       chosen[pos] = null;
     }
   }

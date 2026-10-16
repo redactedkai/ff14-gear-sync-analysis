@@ -1,7 +1,7 @@
 /* Gear browser: the item database rows the job can wear that match the filters, with their synced stats.
    Gear in a group the browser leaves out (`browse.exclude`, its own list; the optimizer has `opt.exclude`) is not listed.
    Pure view builder: no Alpine import, so Node can load and test it. */
-import { browseItems, dbStats, kindFactors, poolKey, slotLabel, sourcesMask } from '../../core/items.js';
+import { browseItems, copiesOf, dbStats, kindFactors, poolKey, slotLabel, sourcesMask } from '../../core/items.js';
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { statCell, fmtInt } from '../helpers.js';
@@ -41,7 +41,7 @@ export function gearView(app) {
       ilvl: r.ilvl,
       lvl: r.lvl,
       hq: r.hq,
-      copies: r.type === 'ring' && !r.unique ? 2 : 1, // as poolItemFromRow sets it
+      copies: copiesOf(r.type, r.unique),
       blocks: r.blocks,
       raw,
       eff: target == null ? raw : syncStats(job, raw, r.type, target, r.ilvl, r.pct, kindFactors(job, r.kind)),
