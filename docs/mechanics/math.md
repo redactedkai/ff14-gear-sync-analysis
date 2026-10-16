@@ -149,15 +149,15 @@ $$
 
 | Kind of item | Main stat | Vitality | Pieces |
 | --- | --- | --- | --- |
-| Strength (1, 2, 3, 10), Dexterity (4, 11, 12) | 100% | 100% | 11,389 |
-| Intelligence (5), Mind (6) | 100% | 90% | 5,843 |
-| Strength + Dexterity (7) | 100% | 100% | 25 |
-| Intelligence + Mind (8) | 100% | 90% | 5 |
-| All four main stats (0) | 90% | 90% | 19 |
+| Strength (1, 2, 3, 10), Dexterity (4, 11, 12) | 100% | 100% | 12,733 |
+| Intelligence (5), Mind (6) | 100% | 90% | 6,528 |
+| Strength + Dexterity (7) | 100% | 100% | 411 |
+| Intelligence + Mind (8) | 100% | 90% | 297 |
+| All four main stats (0) | 90% | 90% | 62 |
 
-Counts are database pieces. Notes on the kinds:
+Counts are database pieces (item level 15 and up, data `d9582a6`, 2026-10-16). Notes on the kinds, at item level 100 and up (60, 5 and 19 pieces of kinds 7, 8 and 0; below 100 they also cover older sets, such as the Replica Allagan "of Striking" gear and the Grand Company Elite sets):
 
-- Kind 7 is the Gloam and High Allagan "of Striking" sets and the Occult "of Blood" accessories. Kind 8 is the Occult "of Magic" accessories. (Occult accessories are item level 745 field operation gear.)
+- Kind 7 is the Beastmaster gear (its job sets, Guttler, the Beastliege's and Kornago weapons and shields), the Gloam, High Allagan and Guardian's "of Striking" sets and the Occult "of Blood" accessories. Kind 8 is the Occult "of Magic" accessories. (Occult accessories are item level 745 field operation gear.)
 - Kind 9 is crafter and gatherer gear, which the database leaves out.
 - Kind 0 is the Lieutenant's, Field Commander's and Warlord's sets and Proto Ultima Mesh (13 pieces with all four main stats), plus six earrings and rings every job can wear, which carry the game's generic Main Attribute (Halone's, Azeyma's, Bozjan, Menphina's, Aetheryte, Neophyte's).
 
@@ -170,7 +170,7 @@ Counts are database pieces. Notes on the kinds:
 
 An Intelligence earring every job can wear (Alexandrian Earrings of Casting) still has Vitality × 0.9, because the factor goes with the item.
 
-**Verified** in the game files: the table and the item column are read from the client data on every regeneration, and the generator stops if an item names a column the table does not have. The order of the rounding (slot share first, then the factor) is read off real items. Applying the 90% first, as xivgear does for its sync caps, is right on only 18 Intelligence/Mind pieces where the two orders differ, and wrong on 1,199.
+**Verified** in the game files: the table and the item column are read from the client data on every regeneration, and the generator stops if an item names a column the table does not have. The order of the rounding (slot share first, then the factor) is read off real items. Applying the 90% first, as xivgear does for its sync caps, is right on only 18 Intelligence/Mind pieces where the two orders differ, and wrong on 1,349 (data `d9582a6`, 2026-10-16).
 
 **Where no item is involved** (How the math works, which describes a slot for a job), the page uses the factor the job's own gear carries: main stat 1, Vitality 0.9 for Intelligence and Mind jobs, 1 otherwise. A unit test checks this against the game files for all 23 jobs: every database piece a job can wear that carries that job's main stat and no other has exactly those factors. The only pieces whose factors differ from the job's are of kind 0: the 13 four-main-stat pieces and the six all-jobs earrings and rings.
 
@@ -244,7 +244,7 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 
 **Gear that scales with the wearer.** A third kind of piece follows the level whatever its equip level: gear whose item level **scales with the wearer** (`Item.SubStatCategory` 2; 260 pieces: the level 89 and 99 boost gear at item level 560 and 690, and six all-jobs earrings and rings such as Menphina's Earring).
 
-- The game's own description says so: "IL and attributes synced to current job level." (241 pieces), or that attributes and item level vary with the current level (the six accessories) (**verified**, game data).
+- The game's own description says so: "IL and attributes synced to current job level." (242 pieces), or that attributes and item level vary with the current level (the six accessories); the Pictomancer and Viper starting sets (12 pieces) have no text (**verified**, game data `d9582a6`, recounted 2026-10-16).
 - That the target is $\text{sync}(L)$ at every level is *inferred*: it gives the Wiki's artifact armor item levels (548 at level 89, 678 at level 99; *second-hand*), and ffxiv-gearing applies the same rule at levels 50 to 90 ([validation.md, section 9](validation.md#9-against-another-tool-ffxiv-gearing)).
 
 **The level sync table.** $\text{sync}(L)$ is the `ItemLevelSync` column of the game's `ParamGrow` sheet (**verified**: read from the game file):
@@ -334,7 +334,7 @@ $$
 \text{cap}_s(C) = \operatorname{round}\!\left(\frac{1}{10}\left\lfloor \frac{\lfloor \text{budget}_s(C) \times F_s / 100 \rfloor \times p}{100} \right\rfloor\right)
 $$
 
-**This is not the order of an item's own stats** (section 4), which is right for items: it fits 5,820 of 5,842 Intelligence and Mind pieces on Vitality, the factor-first order 4,639. Caps follow the factor-first order because the game's sync values do (below).
+**This is not the order of an item's own stats** (section 4), which is right for items: it fits 6,492 of 6,515 Intelligence and Mind pieces on Vitality, the factor-first order 5,161 (data `d9582a6`, 2026-10-16). Caps follow the factor-first order because the game's sync values do (below).
 
 ![Side-by-side comparison of the two orders for Intelligence/Mind Vitality on a body piece at item level 123 (budget 375, share 135 per mille, factor 90%). Item stats: 375 times 135/1000 is 50.625, rounded 51; times 0.9 is 45.9, rounded 46, what a native body piece carries. Sync cap: 375 times 90/100 is 337.5, floored 337; times 135/100 is 454.95, floored 454; divided by 10 is 45.4, rounded 45. With a factor of 100 both orders agree.](../diagrams/math-round-order.svg)
 
@@ -530,7 +530,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 | Slot shares 140/100/40/85/135/220/67 | Verified | `BaseParam.csv`, all 14 stats |
 | Two roundings, half up | Verified | 99.9% exact; 80.0% with one |
 | Per-item stat factor | Verified | Game files; real items (1) |
-| Item stats: slot value first, then the factor | Verified (real items) | Factor first: 1,199 wrong (2) |
+| Item stats: slot value first, then the factor | Verified (real items) | Factor first: 1,349 wrong (2) |
 | Sync caps: factor first, floored, rounded once | Verified (three second-hand in-game values); inferred in general | xivgear's test notes (3) |
 | Job's factor where no item is involved | Verified (game files) | Every single-main-stat piece |
 | Sync cap uses the piece's own factor | Inferred (supported second-hand) | Azeyma's Earrings (4) |
@@ -562,7 +562,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 Notes:
 
 1. Vitality × 0.9 on Intelligence/Mind gear, every main stat and Vitality × 0.9 on four-main-stat gear; read from `BaseParam.MeldParam`, column `Item.BaseParamModifier`. Reproduces real items, the 13 four-main-stat pieces included.
-2. On the 1,199 Intelligence/Mind pieces where the two orders differ and the item order is right; factor first is right on 18.
+2. On the 1,349 Intelligence/Mind pieces where the two orders differ and the item order is right; factor first is right on 18.
 3. Three in-game values quoted in xivgear's tests fit factor first and not the item order ([validation.md, section 8](validation.md#8-open-question-in-game-captures)). With a factor of 100 the two orders are the same.
 4. Azeyma's Earrings (kind 0) synced to 430 show the 90% main-stat cap of its kind for Ninja in game, not the job's full cap (xivgear's test note; [validation.md, section 8](validation.md#8-open-question-in-game-captures)). xivgear does the same; no capture of this project's own.
 5. Against 195 for the 40 ‰ share. xivgear uses the same rule for shield caps. It sets the shield cap at 123 to 13.
