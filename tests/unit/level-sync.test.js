@@ -243,7 +243,8 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
   const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
   assert.equal(o.synced, true);
-  assert.equal(o.total, exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
+  // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear
+  assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
   // gear no piece of which is synced at this level is not marked synced
   assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
 });

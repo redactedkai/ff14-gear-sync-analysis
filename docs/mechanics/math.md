@@ -337,7 +337,7 @@ Speed shortens the **global cooldown (GCD)**, the shared recast timer of most ac
 | 90 | 400 | 1900 |
 | 100 | 420 | 2780 |
 
-**Gear speed** $g$ is the sum of Skill Speed or Spell Speed on the gear. **Total speed** is $\text{sub} + g$; at level 50, 296 gear speed is 637 total. The tool shows gear speed and adds sub internally. AkhMorning writes the formula with total speed:
+**Gear speed** $g$ is the sum of Skill Speed or Spell Speed on the gear. **Total speed** is $\text{sub} + g$; at level 50, 296 gear speed is 637 total. The optimizer's Total and With food rows, and the GCD line under the result, show total speed, the number on the character panel (since 2026-10-16; before, gear speed). AkhMorning writes the formula with total speed:
 
 $$
 m = 1000 + \left\lceil \frac{130\,(\text{sub} - \text{total speed})}{\text{div}} \right\rceil = 1000 - \left\lfloor \frac{130\, g}{\text{div}} \right\rfloor
@@ -389,6 +389,10 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 - **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next. Ranking tiebreaks by step is planned after food and a target GCD ([roadmap.md](../roadmap.md)): fix the target at the start of its best step, then maximize the tiebreaks.
 
 **Measured** by an independent dynamic program. The step formulas are the community ones from AkhMorning, matching xivgear (**inferred**).
+
+### Totals as on the character panel
+
+The result's Total and With food rows show each substat as the character panel does: the level's base plus gear (plus food). The base is $\text{sub}$ for Critical Hit, Direct Hit, Skill or Spell Speed and Tenacity, and the level's base main stat (AkhMorning's table, in no game sheet; **inferred**) for Determination and Piety: at level 50, 341 and 202; at level 100, 420 and 440. The effects and tiers come out the same either way, since each formula subtracts that base again. The main stat and Vitality stay gear points: their panel base also depends on the job and clan, which the page does not ask for (owner's decision, 2026-10-16). AkhMorning's level table equals the tool's at all 100 levels, and its effect formulas on panel numbers equal the tool's ([validation.md, section 5](validation.md#5-speed-and-gcd)).
 
 ### Food
 

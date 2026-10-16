@@ -203,16 +203,20 @@ def check_piece_lab(pg):
 
 # The optimizer searches every piece the job can wear, minus the gear groups unticked under Gear to search (Current
 # Savage, Ultimate and PvP by default). Node scripts compute the same from src/core and print JSON; run_node fills in
-# the JSON args and the module URLs (job-context, items, optimizer).
+# the JSON args and the module URLs (job-context, items, optimizer, optimizer view). Totals are character panel numbers
+# as the page shows them: the level's base added for a substat (panelBase; its values are checked against AkhMorning in
+# tests/unit/views.test.js).
 NODE_GEAR = """
 const [jobId, sync, target, def, extra] = %s;
 const { makeJobContext } = await import(%s);
 const { browseItems, poolItemFromRow, withoutSources } = await import(%s);
 const { optimize } = await import(%s);
+const { panelBase } = await import(%s);
 const job = makeJobContext(jobId);
 const gear = browseItems(job, {}).map(r => poolItemFromRow(job, r));
 const pool = withoutSources(gear, def);
-const best = (p, melds) => optimize(job, p, sync, { target, melds }).totals[target];
+const base = panelBase(job, target, sync.level ?? 100);
+const best = (p, melds) => optimize(job, p, sync, { target, melds }).totals[target] + base;
 console.log(JSON.stringify({
   all: gear.length, searched: pool.length, on: best(pool, true), off: best(pool, false),
   without: best(withoutSources(pool, extra), true),
@@ -227,22 +231,21 @@ const [jobId, sync, target, def, f] = %s;
 const { makeJobContext } = await import(%s);
 const { browseItems, poolItemFromRow, withoutSources } = await import(%s);
 const { optimize } = await import(%s);
+const { panelBase } = await import(%s);
 const job = makeJobContext(jobId);
 const all = browseItems(job, {}).length;
 const pool = withoutSources(browseItems(job, f).map(r => poolItemFromRow(job, r)), def);
-console.log(JSON.stringify({ all, searched: pool.length, on: optimize(job, pool, sync, { target, melds: true }).totals[target] }));
+const on = optimize(job, pool, sync, { target, melds: true }).totals[target] + panelBase(job, target, sync.level ?? 100);
+console.log(JSON.stringify({ all, searched: pool.length, on }));
 """
 
 
 def run_node(script, args):
     """Run a Node ES module script (formatted with the JSON args and the core module URLs) and parse its JSON output."""
     mod = lambda rel: json.dumps((ROOT / rel).as_uri())  # noqa: E731
-    script = script % (
-        json.dumps(args),
-        mod('src/core/job-context.js'),
-        mod('src/core/items.js'),
-        mod('src/core/optimizer/index.js'),
-    )
+    mods = ['src/core/job-context.js', 'src/core/items.js', 'src/core/optimizer/index.js', 'src/ui/views/optimizer.js']
+    # each script imports the first n of these, in this order
+    script = script % (json.dumps(args), *[mod(m) for m in mods[: script.count('%s') - 1]])
     out = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT, capture_output=True, text=True)
     if out.returncode:
         raise AssertionError(f'node expectation script failed: {out.stderr.strip().splitlines()[-1:]}')
@@ -545,7 +548,10 @@ def check_food(pg):
     bonus = column_values(pg, '#o-food-row', 'SpS')
     with_food = column_values(pg, '#o-food-total', 'SpS')
     check(bonus > 0 and with_food == gear_spd + bonus, f'Spell Speed with food {with_food} is not {gear_spd} + {bonus}')
-    expect(pg.locator('#o-result .readout')).to_contain_text(f'{with_food} Spell Speed ({gear_spd} gear, {bonus} food)')
+    # the Total row is the character panel's number: level 50 base speed 341 (AkhMorning) plus gear
+    base = 341
+    expect(pg.locator('#o-result .readout')).to_contain_text(f'{with_food} Spell Speed ({base} base, {gear_spd - base} gear, {bonus} food)')
+    expect(pg.locator('#o-total-note')).to_contain_text('MND and VIT are gear only')
     expect(pg.locator('#o-effect')).to_contain_text('gear and food')
     expect(pg.locator('#o-food-note')).to_be_visible()
     wait_saved(pg, "s => s.opt.food === true && s.opt.foodPair === ''")

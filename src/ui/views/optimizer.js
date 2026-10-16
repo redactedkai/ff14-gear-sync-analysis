@@ -5,16 +5,24 @@ import { browseItems, filterGear, poolItemFromRow, withoutSources, slotInfo, slo
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
-import { bestFood, foodBonus, foodChoices, foodLabel, withFood } from '../../core/food.js';
-import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
+import { bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
+import { gcdFor, dotMult, gcdTierAt, speedParams } from '../../core/speed.js';
 import { gearFilter, syncSettings } from '../state.js';
 
 export const NODE_LIMIT = 700000;
 
-/* "tier starts at 1818, next at 1904 (+65)" */
+/* The GCD step of `spd` speed from gear, in character panel numbers (the level's base speed added; AkhMorning's tables
+   use the same): "tier starts at 2238, next at 2324 (+65)" for 1,839 gear speed at level 100. */
 export function tierText(spd, level) {
-  const t = gcdTierAt(spd, level);
-  return `tier starts at ${t.start}${t.next != null ? `, next at ${t.next} (+${t.next - spd})` : ''}`;
+  const t = gcdTierAt(spd, level),
+    sub = speedParams(level).sub;
+  return `tier starts at ${t.start + sub}${t.next != null ? `, next at ${t.next + sub} (+${t.next - spd})` : ''}`;
+}
+
+/* What the character panel adds to a stat: the level's base for a substat (statBase), 0 for the main stat and
+   Vitality (their base depends on the job and clan, which the page does not ask for; owner's decision 2026-10-16). */
+export function panelBase(job, stat, level) {
+  return job.substats.includes(stat) ? statBase(job, stat, level) : 0;
 }
 
 /* The meal the result shows, or null with Food off: the chosen pair (opt.foodPair), or with '' the one that raises the
@@ -86,6 +94,9 @@ function buildOptimizerView(app, gear) {
   // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
   const t = withFood(gearT, bonus),
     spd = t.spd;
+  // the character panel's numbers: substats with the level's base added, main stat and Vitality as gear points
+  const panel = s => t[s] + panelBase(job, s, app.level),
+    base = s => panelBase(job, s, app.level);
   const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
   const rows = res.picks.map(p => {
@@ -114,9 +125,9 @@ function buildOptimizerView(app, gear) {
     target: o.target,
     targetLabel: job.label[o.target],
     spdLabel: job.label.spd,
-    total: t[o.target],
-    totalLabel: `${job.label[o.target]} (${food ? 'gear and food' : 'gear total'}${poolSynced(pool, sync) ? ', synced' : ''})`,
-    totals: job.stats.map(s => gearT[s]),
+    total: panel(o.target),
+    totalLabel: `${job.label[o.target]} (${[base(o.target) && 'base', 'gear', food && 'food'].filter(Boolean).join(' + ')}${poolSynced(pool, sync) ? ', synced' : ''})`,
+    totals: job.stats.map(s => gearT[s] + base(s)),
     // the Food row and the totals with it; null with Food off
     food: food && {
       name: food.name,
@@ -124,7 +135,7 @@ function buildOptimizerView(app, gear) {
       label: foodLabel(job, food),
       best: !o.foodPair,
       cells: job.stats.map(s => (bonus[s] ? { value: bonus[s].bonus, capped: bonus[s].capped } : null)),
-      totals: job.stats.map(s => t[s]),
+      totals: job.stats.map(panel),
     },
     // each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier
     tiers: job.stats.map(s => {
@@ -135,7 +146,7 @@ function buildOptimizerView(app, gear) {
     synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level).toFixed(2),
     spd,
-    spdText: bonus.spd ? `${spd} ${job.label.spd} (${gearT.spd} gear, ${bonus.spd.bonus} food)` : `${spd} gear ${job.label.spd}`,
+    spdText: `${panel('spd')} ${job.label.spd} (${base('spd')} base, ${gearT.spd} gear${bonus.spd ? `, ${bonus.spd.bonus} food` : ''})`,
     tierText: tierText(spd, app.level),
     dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
     rows,

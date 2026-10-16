@@ -264,7 +264,7 @@ test('saved state: Food off by default; the meal choice is repaired per job and 
 });
 
 test('optimizer view: Food adds a meal row and the totals with it, counts tiers and the GCD with food, keeps the gear', async () => {
-  const { optimizerView } = await import('../../src/ui/views/optimizer.js');
+  const { optimizerView, panelBase } = await import('../../src/ui/views/optimizer.js');
   const { gamePool } = await import('./helpers/exhaustive.js');
   const { gcdFor } = await import('../../src/core/speed.js');
   const { statTier } = await import('../../src/core/tiers.js');
@@ -273,8 +273,12 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   const pool = gamePool(SGE, { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 }).map(i => i);
   const off = optimizerView(app, pool);
   assert.equal(off.food, null);
-  assert.match(off.totalLabel, /^Spell Speed \(gear total, synced\)$/);
-  assert.equal(off.spdText, `${off.spd} gear Spell Speed`);
+  // character panel numbers: level 50 base speed 341 (AkhMorning) plus gear
+  const i = SGE.stats.indexOf('spd');
+  const gearSpd = off.totals[i] - 341;
+  assert.equal(off.spd, gearSpd);
+  assert.match(off.totalLabel, /^Spell Speed \(base \+ gear, synced\)$/);
+  assert.equal(off.spdText, `${off.totals[i]} Spell Speed (341 base, ${gearSpd} gear)`);
 
   app.opt.food = true; // best for the goal
   const on = optimizerView(app, pool);
@@ -284,17 +288,16 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
     'the same gear with food',
   );
   assert.deepEqual(on.totals, off.totals, 'the gear totals row is unchanged');
-  const meal = bestFood(SGE, foodChoices(SGE), Object.fromEntries(SGE.stats.map((s, i) => [s, off.totals[i]])), 50, ['spd', 'crit', '']);
+  const gearTotals = Object.fromEntries(SGE.stats.map((s, k) => [s, off.totals[k] - panelBase(SGE, s, 50)]));
+  const meal = bestFood(SGE, foodChoices(SGE), gearTotals, 50, ['spd', 'crit', '']);
   assert.equal(on.food.name, meal.name);
   assert.equal(on.food.best, true);
-  const i = SGE.stats.indexOf('spd');
-  const gearSpd = off.totals[i];
   const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'spd').max, Math.floor((341 + gearSpd) / 10));
-  assert.equal(on.food.totals[i], want);
-  assert.equal(on.total, want);
-  assert.match(on.totalLabel, /gear and food, synced/);
+  assert.equal(on.food.totals[i], 341 + want);
+  assert.equal(on.total, 341 + want);
+  assert.match(on.totalLabel, /base \+ gear \+ food, synced/);
   assert.equal(on.gcd, gcdFor(want, 50).toFixed(2));
-  assert.equal(on.spdText, `${want} Spell Speed (${gearSpd} gear, ${want - gearSpd} food)`);
+  assert.equal(on.spdText, `${341 + want} Spell Speed (341 base, ${gearSpd} gear, ${want - gearSpd} food)`);
   assert.equal(on.tiers[i].effect, statTier(SGE, 'spd', want, 50).effect);
   // main stat and Vitality get no food cell
   assert.deepEqual([on.food.cells[0], on.food.cells[1]], [null, null]);
@@ -302,6 +305,6 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   app.opt.foodPair = 'det+crit'; // a chosen meal
   const det = optimizerView(app, pool);
   assert.equal(det.food.best, false);
-  assert.equal(det.food.totals[i], gearSpd, 'no speed on this meal');
+  assert.equal(det.food.totals[i], 341 + gearSpd, 'no speed on this meal');
   assert.ok(det.food.cells[SGE.stats.indexOf('det')].value > 0);
 });

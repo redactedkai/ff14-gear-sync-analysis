@@ -72,3 +72,15 @@ test("expansion boundaries are the game's own sync item level at each level cap 
     ],
   );
 });
+
+/* AkhMorning's level 100 speed table, as the page's script computes it (https://www.akhmorning.com/allagan-studies/
+   stats/speed/, read 2026-10-16): for full speed S from 420 to 420 + 3,365, speedMod = trunc(130 (420 - S) / 2780) +
+   1000 and GCD = trunc(recast x speedMod / 10000) / 100, for recasts 1.5 to 4.0 s. Our GCD takes gear speed S - 420. */
+test('GCD equals AkhMorning speed table at level 100, every speed and recast', () => {
+  for (const ms of [1500, 2000, 2500, 2800, 3000, 3500, 4000]) {
+    for (let S = 420; S <= 420 + 3365; S++) {
+      const mod = Math.trunc((130 * (420 - S)) / 2780) + 1000;
+      assert.equal(gcdFor(S - 420, 100, ms), Math.trunc((ms * mod) / 10000) / 100, `speed ${S}, recast ${ms}`);
+    }
+  }
+});

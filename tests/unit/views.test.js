@@ -5,9 +5,10 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { MAX_REAL } from '../../src/core/tables.js';
 import { browseItems, mkItem, poolItemFromRow } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
-import { gcdFor, gcdTierAt } from '../../src/core/speed.js';
+import { gcdFor, gcdTierAt, speedParams } from '../../src/core/speed.js';
+import { statTier } from '../../src/core/tiers.js';
 import { restoreState } from '../../src/ui/state.js';
-import { jobGear, optimizerView, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
+import { jobGear, optimizerView, panelBase, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
@@ -29,10 +30,10 @@ const WINDOW = { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 };
 const windowPool = job => gamePool(job, WINDOW);
 const uniqueRingPool = job => gamePool(job, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }, r => r.type !== 'ring' || r.unique);
 
-/* 1,818 (2.28 s) and 1,904 (2.27 s) are tier starts in AkhMorning's level 100 2.5s tier table
-   (https://www.akhmorning.com/allagan-studies/stats/speed/; see tests/unit/speed.test.js). */
-test('A3: tier text is right above 1,200 gear speed (level 100, 1,839 speed)', () => {
-  assert.equal(tierText(1839, 100), 'tier starts at 1818, next at 1904 (+65)');
+/* 2,238 (2.28 s) and 2,324 (2.27 s) are tier starts in AkhMorning's level 100 2.5s tier table, which lists full speed
+   (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, speed.test.js). */
+test('A3: tier text is right above 1,200 gear speed (level 100, 1,839 gear speed), in panel numbers', () => {
+  assert.equal(tierText(1839, 100), 'tier starts at 2238, next at 2324 (+65)');
 });
 
 test('gcdTierAt agrees with a step-by-step scan at every level', () => {
@@ -63,12 +64,14 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
   const want = sync => exhaustive(app.jobCtx, pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'] })[0];
   const v = optimizerView(app, pool);
   assert.equal(v.kind, 'ok');
-  assert.equal(v.total, want(true));
+  const base = panelBase(app.jobCtx, 'spd', app.level);
+  assert.equal(base, 420);
+  assert.equal(v.total, want(true) + base);
   assert.equal(v.targetLabel, 'Spell Speed');
   assert.equal(v.rows.filter(r => r.label.startsWith('Ring')).length, 2);
   assert.ok(v.rows.every(r => r.item));
   const unsynced = optimizerView({ ...app, sync: false }, pool).total;
-  assert.equal(unsynced, want(false));
+  assert.equal(unsynced, want(false) + base);
   assert.ok(v.total < unsynced);
   // tier row: one entry per stat column, none for the main stat and Vitality; speed by its GCD, as in the readout
   assert.equal(v.tiers.length, v.headers.length);
@@ -325,4 +328,89 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
     [synced.cells[k].value, synced.cells[k].atCap, synced.cells[det].value, synced.cells[det].atCap],
     [210, true, 210, true],
   );
+});
+
+/* Character panel numbers against AkhMorning (Allagan Studies). Their Level Modifiers table, read from the page's
+   script (https://www.akhmorning.com/allagan-studies/modifiers/levelmods/), 2026-10-16: [MAIN, SUB, DIV] by level.
+   All 100 rows equal ours (checked once; these are a sample). */
+const AKH_LEVEL = {
+  1: [20, 56, 56],
+  15: [46, 96, 96],
+  30: [97, 173, 173],
+  50: [202, 341, 341],
+  60: [218, 354, 600],
+  70: [292, 364, 900],
+  80: [340, 380, 1300],
+  90: [390, 400, 1900],
+  100: [440, 420, 2780],
+};
+
+test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB)', () => {
+  for (const [id, stats] of [
+    ['SGE', ['crit', 'det', 'dh', 'spd', 'spec']],
+    ['WAR', ['crit', 'det', 'dh', 'spd', 'spec']],
+    ['BLM', ['crit', 'det', 'dh', 'spd']],
+  ]) {
+    const job = makeJobContext(id);
+    for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
+      assert.equal(speedParams(+lv).div, div, `level ${lv} DIV`);
+      for (const s of stats) {
+        const fromMain = s === 'det' || (s === 'spec' && job.profile.spec === 'piety');
+        assert.equal(panelBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);
+      }
+      assert.equal(panelBase(job, 'main', +lv), 0, 'main stat stays gear points');
+      assert.equal(panelBase(job, 'vit', +lv), 0, 'Vitality stays gear points');
+    }
+  }
+});
+
+/* AkhMorning's formulas on full (panel) stats: Critical Hit rate floor(200 (CRT - SUB) / DIV + 50) / 10 %, Direct Hit
+   floor(550 (DH - SUB) / DIV) / 10 %, Determination floor(140 (DET - MAIN) / DIV) / 10 %, Tenacity floor(112 (TEN - SUB)
+   / DIV) / 10 %, Piety floor(150 (PIE - MAIN) / DIV) MP; the GCD as their speed table computes it. The page's effect
+   from gear points (panel - base) must agree at every level in the table. */
+test('panel numbers give AkhMorning effects at every level in their table', () => {
+  const pctOf = n => `${(n / 10).toFixed(1)}%`;
+  const akh = {
+    crit: (v, [, sub, div]) => pctOf(Math.floor((200 * (v - sub)) / div) + 50),
+    dh: (v, [, sub, div]) => pctOf(Math.floor((550 * (v - sub)) / div)),
+    det: (v, [main, , div]) => `+${pctOf(Math.floor((140 * (v - main)) / div))}`,
+    ten: (v, [, sub, div]) => `+${pctOf(Math.floor((112 * (v - sub)) / div))}`,
+    piety: (v, [main, , div]) => `+${Math.floor((150 * (v - main)) / div)} MP`,
+    spd: (v, [, sub, div]) => `${(Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
+  };
+  for (const id of ['SGE', 'WAR']) {
+    const job = makeJobContext(id);
+    for (const [lv, row] of Object.entries(AKH_LEVEL)) {
+      for (const s of job.substats) {
+        const key = s === 'spec' ? job.profile.spec : s;
+        const base = panelBase(job, s, +lv);
+        for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
+          // at low levels this much speed would take the GCD below zero, where only the rounding of negatives differs
+          if (key === 'spd' && gcdFor(gear, +lv) <= 0) continue;
+          assert.equal(statTier(job, s, gear, +lv).effect, akh[key](base + gear, row), `${id} ${s} level ${lv}, gear ${gear}`);
+        }
+      }
+    }
+  }
+});
+
+/* The page's Total and With food rows equal gear (and food) plus the level's base for substats, gear only for the main
+   stat and Vitality; at level 50 Sage that is base 341 for Critical Hit, Direct Hit and Spell Speed, 202 for
+   Determination and Piety (AkhMorning). */
+test('optimizer totals are character panel numbers for substats', () => {
+  const app = makeApp('SGE', { level: 50 });
+  Object.assign(app.opt, { target: 'spd', food: true });
+  const v = optimizerView(app, windowPool(app.jobCtx));
+  assert.equal(v.kind, 'ok');
+  const job = app.jobCtx;
+  const gear = job.stats.map((s, k) => v.rows.reduce((a, r) => a + (r.cells?.[k].value ?? 0), 0));
+  const want = { main: 0, vit: 0, crit: 341, det: 202, dh: 341, spd: 341, spec: 202 };
+  job.stats.forEach((s, k) => {
+    assert.equal(v.totals[k], gear[k] + want[s], s);
+    assert.equal(v.food.totals[k], gear[k] + want[s] + (v.food.cells[k]?.value ?? 0), `${s} with food`);
+  });
+  const spd = job.stats.indexOf('spd');
+  assert.equal(v.total, v.food.totals[spd]);
+  assert.match(v.totalLabel, /^Spell Speed \(base \+ gear \+ food, synced\)$/);
+  assert.equal(v.spdText, `${v.food.totals[spd]} Spell Speed (341 base, ${gear[spd]} gear, ${v.food.cells[spd]?.value ?? 0} food)`);
 });

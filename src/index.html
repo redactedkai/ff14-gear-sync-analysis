@@ -236,12 +236,12 @@
                 <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
               </tr>
             </template>
-            <tr class="total"><td>Total</td><td></td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
             <template x-if="view.food">
               <tr class="food" id="o-food-row"><td>Food</td><td><span x-text="view.food.name"></span><div class="small dim" x-text="`HQ${view.food.best ? ', best for the goal' : ''}`"></div></td><td class="n" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
             </template>
             <template x-if="view.food">
-              <tr class="total" id="o-food-total"><td>With food</td><td></td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
             </template>
             <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
             <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n small" :class="{ dim: c && c.zero }" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
@@ -249,6 +249,7 @@
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
         <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
+        <p class="small dim" id="o-total-note">Total and With food are what the character panel shows at this level for every substat: the level's base plus gear (and food). <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span>: the panel adds your job's and clan's own base to them.</p>
         <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. <span x-text="view.food ? 'Counted with food.' : 'Gear only: food moves every total (switch Food on).'"></span></p>
         <template x-if="view.food"><p class="small dim" id="o-food-note">Food: a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. This is the community formula (xivgear, Ariyala), not from the game files. Vitality from food is not counted. The gear set is the same with any meal.</p></template>
         <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, only where they raise the target or a tiebreak, every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
