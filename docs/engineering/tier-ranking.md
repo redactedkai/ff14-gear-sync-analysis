@@ -8,9 +8,11 @@ Related pages: [optimizer.md](optimizer.md) (the model and the search this build
 
 What does "rank by tiers" mean, and why is it a different objective from the plain optimizer's?
 
-**Tiers.** A secondary stat's effect moves in steps. Critical Hit's rate, for example, is $\lfloor 200\, g / \text{div} \rfloor$ per mille plus a base 5%, where $g$ is the gear's points of the stat (plus food) and $\text{div}$ a constant per character level (community reference: AkhMorning, matched by xivgear). At level 90 one step is about 14 points, so 2,309 and 2,317 Critical Hit give the same 29.3%: the points between two steps do nothing. Speed's effect is the GCD (the global cooldown, the time between most actions), which drops 0.01 s at a time. Main stat and Vitality have no useful steps here; every point counts.
+**Tiers.** A secondary stat's effect moves in steps. Critical Hit's rate is $5\% + \lfloor 200\, g / \text{div} \rfloor$ per mille, where $g$ is the gear's points of the stat (plus food) and $\text{div}$ a constant per character level (community reference: AkhMorning, matched by xivgear). Speed's effect is the GCD (the global cooldown, the time between most actions), which drops 0.01 s at a time. Main stat and Vitality have no useful steps here; every point counts.
 
-Write $\tau_d(T)$ for the tier of stat $d$ at total $T$, and $\text{start}_d(t)$ for the least total in tier $t$. Every $\tau_d$ is a **non-decreasing step function** of the total: a floor of an increasing function, and for speed, the GCD only shortens with more speed.
+![Critical Hit rate against its total at level 90, where div is 1,900 and one step is 9 or 10 points: 29.2% from 2,299, 29.3% from 2,309, 29.4% from 2,318, so every total from 2,309 to 2,317 gives 29.3% and the points between two steps do nothing. Tier ranking holds the stat at the tier's start plus one, 2,310, so that a one-point error in the model does not drop the tier.](../diagrams/tier-ranking-tiers.svg)
+
+Write $\tau_d(T)$ for the tier of stat $d$ at total $T$, and $\text{start}_d(t)$ for its least total. Every $\tau_d$ is a **non-decreasing step function**: a floor of an increasing function, or for speed, a GCD that only shortens with more speed.
 
 **Raw order versus tier order.** The plain optimizer ([optimizer.md, section 2](optimizer.md#2-formal-statement)) solves $\operatorname{lex\,max}\,(T_{k_0}, T_{k_1}, T_{k_2})$ over the target $k_0$ and tiebreaks $k_1, k_2$. Its target always lands in its best tier, but a tiebreak can end a few points under its next step while points sit unused above a step of the target. Tier ranking solves
 
@@ -28,11 +30,10 @@ The step functions make the first three criteria non-linear in $x$, so the weigh
 | --- | --- |
 | Default | On, for now; a later comparison with raw ranking may change it |
 | Leftover points | To the target (order A above) |
-| Where a key is held | One point above its tier start |
+| Where a key is held | One point above its tier start, so a one-point model error does not drop the tier |
 | Speed's tier | The GCD step |
 | Tenacity's tier | Its mitigation step |
 
-- **Hold:** one point above the start, so a one-point error in the model does not drop the tier.
 - **Speed:** the GCD step, not the finer step of damage-over-time ticks.
 - **Tenacity:** its mitigation step ($\lfloor 200\, g / \text{div} \rfloor$), since players stack Tenacity for damage taken; the result table's Tier row still shows the damage step.
 
@@ -96,7 +97,7 @@ The difficulty is the optimality proof, not finding the optimum: the seed is usu
 
 Which variables can be fixed to 0 before the search? Two fixing arguments, applied in turn: one from the minimum rows alone, one from a Lagrangian bound against the seed.
 
-![The filters on the example's third search: 11,045 candidates, 137 after the shortfall filter, 120 after pruning against the set in hand; Pareto fronts then settle it, the largest holding 6,958 partial sets.](../diagrams/tier-ranking-filters.svg)
+![The filters on the example's third search: 11,045 candidates, 137 after the shortfall filter (a budget of 5 points of Critical Hit), 120 after pruning against the set in hand from search 2; the shortfall filter runs again after each fixing until nothing more drops. Pareto fronts then settle it, the largest holding 6,958 partial sets (265 ms); past 150,000 entries in one front or 1,000,000 extensions in all, the branch and bound runs instead with the same set in hand and lists.](../diagrams/tier-ranking-filters.svg)
 
 ### 4.1 The shortfall filter
 
@@ -148,7 +149,7 @@ $$
 L(\lambda, \mu) - \bigl(A_s - a(i)\bigr) \;\le\; \sigma^\star ,
 $$
 
-no feasible set with $x_{s,i} = 1$ beats the seed, and $x_{s,i}$ is fixed to 0 (the standard argument, as in Crowder, Johnson and Padberg 1983, *Operations Research*). After it, the shortfall filter runs again, since the $u_{d,s}$ may have dropped.
+no feasible set with $x_{s,i} = 1$ beats the seed, and $x_{s,i}$ is fixed to 0 (the standard argument, as in Crowder, Johnson and Padberg 1983, *Operations Research*).
 
 The same bound also fathoms nodes inside the branch and bound, with the multipliers fixed at the root.
 

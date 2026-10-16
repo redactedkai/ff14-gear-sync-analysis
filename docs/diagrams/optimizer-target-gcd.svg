@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 500" role="img" aria-labelledby="t d">
+  <title id="t">Target GCD: from a GCD to the searches</title>
+  <desc id="d">A level 100 Sage asks for a GCD of exactly 2.45 s with food set to Best for the goal. Step 1: that GCD needs a total speed, gear plus food, of 364 to 449 ("or faster" needs only 364). Step 2: each meal turns the band into a band of gear speed. No meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370. Equal bands share a search, so the 10 meals run 2 searches. Step 3: the best meal has the highest target with food, then tiebreak 1 and tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by every search and every new GCD.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .inner { fill: #fffdf7; stroke: #0d6e72; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .good { fill: #25773a; }
+    .accentStroke { stroke: #0d6e72; stroke-width: 1.5; fill: none; }
+    .mutedStroke { stroke: #586869; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    .num { fill: #fffdf7; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .small { font-size: 13px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .head { font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .inner { fill: #142023; stroke: #4cc2b6; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .good { fill: #6cc788; }
+      .accentStroke { stroke: #4cc2b6; }
+      .mutedStroke { stroke: #92a5a5; }
+      .num { fill: #142023; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="accent"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="500"/>
+
+  <text class="fg title" x="40" y="36">Target GCD: a GCD becomes one search per distinct gear band</text>
+  <text class="muted small" x="40" y="58">Sage, level 100, GCD exactly 2.45 s, food “Best for the goal” (10 meals).</text>
+
+  <!-- step 1 -->
+  <rect class="box" x="40" y="78" width="640" height="66" rx="8"/>
+  <circle class="accent" cx="70" cy="104" r="14"/>
+  <text class="num head" x="70" y="109" text-anchor="middle">1</text>
+  <text class="fg head" x="96" y="109">A band of total speed (gear + food)</text>
+  <text class="fg small" x="96" y="131">Exactly 2.45 s: <tspan class="gold head">364 to 449</tspan>. “Or faster” keeps only the minimum, 364.</text>
+
+  <path class="accentStroke" d="M360,144 L360,170" marker-end="url(#arrow)"/>
+
+  <!-- step 2 -->
+  <rect class="box" x="40" y="174" width="640" height="150" rx="8"/>
+  <circle class="accent" cx="70" cy="200" r="14"/>
+  <text class="num head" x="70" y="205" text-anchor="middle">2</text>
+  <text class="fg head" x="96" y="205">One band of gear speed per meal; equal bands share a search</text>
+
+  <rect class="inner" x="64" y="222" width="290" height="84" rx="8"/>
+  <text class="fg head small" x="80" y="246">No meal, or one of 6 without speed</text>
+  <text class="fg small" x="80" y="268">Gear speed <tspan class="gold head">364 to 449</tspan></text>
+  <text class="accent head small" x="80" y="291">Search 1</text>
+
+  <rect class="inner" x="366" y="222" width="290" height="84" rx="8"/>
+  <text class="fg head small" x="382" y="246">4 meals with speed</text>
+  <text class="fg small" x="382" y="268">+10% of (base 420 + gear): gear <tspan class="gold head">293 to 370</tspan></text>
+  <text class="accent head small" x="382" y="291">Search 2</text>
+
+  <path class="accentStroke" d="M209,306 L209,350" marker-end="url(#arrow)"/>
+  <path class="accentStroke" d="M511,306 L511,350" marker-end="url(#arrow)"/>
+
+  <!-- step 3 -->
+  <rect class="box" x="40" y="354" width="640" height="66" rx="8"/>
+  <circle class="good" cx="70" cy="380" r="14"/>
+  <text class="num head" x="70" y="385" text-anchor="middle">3</text>
+  <text class="fg head" x="96" y="385">The best meal, compared with food included</text>
+  <text class="fg small" x="96" y="407">Target, then tiebreak 1, then tiebreak 2, then most food points, then the job’s food order.</text>
+
+  <!-- shared candidate lists -->
+  <rect x="40" y="440" width="640" height="44" rx="8" class="mutedStroke"/>
+  <text class="muted small" x="56" y="467">Candidate lists (section 4) are built once and reused by both searches and by every new GCD.</text>
+</svg>

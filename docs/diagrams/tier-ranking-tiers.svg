@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-labelledby="t d">
+  <title id="t">A tier is a step</title>
+  <desc id="d">Critical Hit rate against the total of Critical Hit (gear points plus food) at level 90, where the rate is 5% plus floor(200 g / 1,900) per mille. The rate is a step function: 29.1% from 2,290, 29.2% from 2,299, 29.3% from 2,309, 29.4% from 2,318, 29.5% from 2,328. Every total from 2,309 to 2,317 gives the same 29.3%, so the points past a tier's start can go elsewhere. The tier's start is 2,309; tier ranking holds the stat at the start plus one, 2,310, so that a one-point error in the model does not drop the tier.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; }
+    .fg { fill: #1b2a2c; }
+    .axis { stroke: #586869; stroke-width: 1.5; fill: none; }
+    .grid { stroke: #586869; stroke-width: 1; stroke-dasharray: 2 4; fill: none; opacity: 0.5; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .step { stroke: #0d6e72; stroke-width: 2.5; fill: none; }
+    .gold { fill: #8f5f0c; }
+    .goldStroke { stroke: #8f5f0c; stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .small { font-size: 13px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .head { font-weight: 600; }
+    .mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; }
+      .fg { fill: #e5eeed; }
+      .axis { stroke: #92a5a5; }
+      .grid { stroke: #92a5a5; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .step { stroke: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .goldStroke { stroke: #e2b659; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="400"/>
+
+  <text class="fg title" x="40" y="36">A tier is a step: Critical Hit at level 90</text>
+  <text class="muted small" x="40" y="58">Rate = 5% + ⌊200 g / 1,900⌋ per mille, where g is the total: gear points plus food.</text>
+
+  <!-- x(T) = 100 + (T - 2290) x 14; y: 29.1% = 290, step 40 per 0.1% -->
+  <!-- the tier 2,309 to 2,317 -->
+  <rect class="box" x="366" y="80" width="126" height="220"/>
+  <text class="fg head small" x="429" y="98" text-anchor="middle">29.3% for every total</text>
+  <text class="fg head small" x="429" y="116" text-anchor="middle">from 2,309 to 2,317</text>
+
+  <!-- grid and axes -->
+  <path class="grid" d="M100,250 L660,250 M100,210 L660,210 M100,170 L660,170 M100,130 L660,130"/>
+  <path class="axis" d="M100,300 L660,300 M100,300 L100,120"/>
+  <text class="muted mono" x="90" y="294" text-anchor="end">29.1%</text>
+  <text class="muted mono" x="90" y="254" text-anchor="end">29.2%</text>
+  <text class="muted mono" x="90" y="214" text-anchor="end">29.3%</text>
+  <text class="muted mono" x="90" y="174" text-anchor="end">29.4%</text>
+  <text class="muted mono" x="90" y="134" text-anchor="end">29.5%</text>
+
+  <!-- the step function -->
+  <path class="step" d="M100,290 L226,290 L226,250 L366,250 L366,210 L492,210 L492,170 L632,170 L632,130 L660,130"/>
+  <circle class="accent" cx="226" cy="250" r="4.5"/>
+  <circle class="accent" cx="366" cy="210" r="4.5"/>
+  <circle class="accent" cx="492" cy="170" r="4.5"/>
+  <circle class="accent" cx="632" cy="130" r="4.5"/>
+
+  <!-- the hold -->
+  <path class="goldStroke" d="M380,210 L380,300"/>
+  <text class="gold head small" x="388" y="244">hold ≥ 2,310</text>
+  <text class="gold small" x="388" y="262">start + 1</text>
+
+  <!-- x ticks: the tier starts -->
+  <path class="axis" d="M226,300 L226,306 M366,300 L366,306 M492,300 L492,306 M632,300 L632,306"/>
+  <text class="muted mono" x="100" y="322" text-anchor="middle">2,290</text>
+  <text class="muted mono" x="226" y="322" text-anchor="middle">2,299</text>
+  <text class="fg mono" x="366" y="322" text-anchor="middle">2,309</text>
+  <text class="muted mono" x="492" y="322" text-anchor="middle">2,318</text>
+  <text class="muted mono" x="632" y="322" text-anchor="middle">2,328</text>
+  <text class="muted small" x="380" y="344" text-anchor="middle">total Critical Hit (a dot marks each tier's start, its least total)</text>
+
+  <text class="fg small" x="40" y="376">τ(T), the tier at total T, never falls as T grows; start(t) is the least total in tier t.</text>
+</svg>

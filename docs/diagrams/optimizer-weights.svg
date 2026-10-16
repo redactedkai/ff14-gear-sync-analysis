@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 380" role="img" aria-labelledby="t d">
+  <title id="t">Exact weights for the lexicographic objective</title>
+  <desc id="d">Sage pool synced to item level 123, target Spell Speed, tiebreaks Critical Hit then Determination. The score is 129,030 times Spell Speed plus 374 times Critical Hit plus 1 times Determination. One more point of Spell Speed is worth 129,030. The most the tiebreaks can move the score between two loadouts is the Critical Hit range, 344 times 374 = 128,656, plus the Determination range, 373 times 1 = 373: 129,029 in all, one less than a point of Spell Speed. The weights are W2 = 1, W1 = R2 + 1 = 374, W0 = (R1 + 1)(R2 + 1) = 345 times 374 = 129,030. Bars are to scale.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .good { fill: #25773a; }
+    .fgStroke { stroke: #1b2a2c; stroke-width: 1.5; fill: none; }
+    .mutedStroke { stroke: #586869; stroke-width: 1.5; fill: none; }
+    .num { fill: #fffdf7; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .mono { font-family: ui-monospace, Consolas, monospace; }
+    .small { font-size: 13px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .head { font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .good { fill: #6cc788; }
+      .fgStroke { stroke: #e5eeed; }
+      .mutedStroke { stroke: #92a5a5; }
+      .num { fill: #142023; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="380"/>
+
+  <text class="fg title" x="40" y="36">Weights that make one score lexicographic</text>
+  <text class="muted small" x="40" y="58">Sage pool synced to item level 123: Spell Speed, then Critical Hit, then Determination.</text>
+
+  <text class="fg" x="40" y="96">score =
+    <tspan class="gold head">129,030</tspan> × Spell Speed +
+    <tspan class="accent head">374</tspan> × Critical Hit +
+    <tspan class="head">1</tspan> × Determination</text>
+
+  <!-- bar 1: one target point (560 px = 129,030) -->
+  <text class="fg small" x="80" y="136">One more point of Spell Speed</text>
+  <rect class="gold" x="80" y="146" width="560" height="30" rx="4"/>
+  <text class="num head mono small" x="360" y="166" text-anchor="middle">W₀ = 129,030</text>
+
+  <!-- bar 2: tiebreak swing, to scale -->
+  <text class="fg small" x="80" y="216">The most the tiebreaks can move the score between two loadouts</text>
+  <rect class="accent" x="80" y="226" width="558.3" height="30" rx="4"/>
+  <text class="num head mono small" x="360" y="246" text-anchor="middle">Critical Hit: R₁ × W₁ = 344 × 374 = 128,656</text>
+  <rect class="fg" x="638.3" y="226" width="1.7" height="30"/>
+  <path class="mutedStroke" d="M639,258 L639,276"/>
+  <text class="fg small mono" x="630" y="292" text-anchor="end">Determination: R₂ × W₂ = 373 × 1 = 373</text>
+
+  <!-- the gap of one -->
+  <path class="mutedStroke" d="M640,140 L640,320" stroke-dasharray="4 4"/>
+  <path class="fgStroke" d="M80,312 L80,320 L638,320 L638,312"/>
+  <text class="fg small" x="80" y="342">Sum <tspan class="mono head">129,029</tspan>: one less than a point of Spell Speed, so one more point of the target always wins.</text>
+  <text class="muted small mono" x="80" y="366">W₂ = 1 · W₁ = R₂ + 1 = 374 · W₀ = (R₁ + 1)(R₂ + 1) = 345 × 374 = 129,030</text>
+</svg>

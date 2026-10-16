@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 410" role="img" aria-labelledby="t d">
+  <title id="t">Pruning with a speed range</title>
+  <desc id="d">Two plots of score (here Critical Hit, the target) against speed (Spell Speed), with head H2 at speed 15, score 25 and head H1 at speed 20, score 30. Left, speed minimum only: an item beats H2 when it has at least H2's score and at least its speed, the quadrant above and to the right of H2. H1 lies in it, so H1 beats H2 and H2 can be dropped. Right, a speed maximum too: a beater must have exactly H2's speed, the vertical ray above H2. H1 has more speed, so H2 is kept, as the "Spell Speed at most 33" example needs. On the full Sage pool, unsynced, Critical Hit then Determination, full dominance keeps 212 candidates, a speed minimum 38 and a speed maximum 702.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .shade { fill: #0d6e72; fill-opacity: 0.16; }
+    .good { fill: #25773a; }
+    .bad { fill: #b0402c; }
+    .axis { stroke: #1b2a2c; stroke-width: 1.5; fill: none; }
+    .grid { stroke: #586869; stroke-width: 1; stroke-dasharray: 3 4; fill: none; }
+    .ray { stroke: #0d6e72; stroke-width: 5; fill: none; stroke-linecap: round; }
+    .goodStroke { stroke: #25773a; stroke-width: 2; fill: none; }
+    .badStroke { stroke: #b0402c; stroke-width: 2; fill: none; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .mono { font-family: ui-monospace, Consolas, monospace; }
+    .small { font-size: 13px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .head { font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .shade { fill: #4cc2b6; fill-opacity: 0.2; }
+      .good { fill: #6cc788; }
+      .bad { fill: #f08a74; }
+      .axis { stroke: #e5eeed; }
+      .grid { stroke: #92a5a5; }
+      .ray { stroke: #4cc2b6; }
+      .goodStroke { stroke: #6cc788; }
+      .badStroke { stroke: #f08a74; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="410"/>
+
+  <text class="fg title" x="40" y="36">Pruning with a speed range: which items can beat H2</text>
+  <text class="muted small" x="40" y="58">Only score σ and speed are compared. Heads from the section 4 example; the target is Critical Hit.</text>
+
+  <!-- ===== left panel: minimum only. plot x 90..340 (speed 0..25, 10 px/unit), y 330..120 (score 0..35, 6 px/unit) ===== -->
+  <text class="fg head" x="90" y="100">Speed minimum only</text>
+  <rect class="shade" x="240" y="120" width="100" height="100"/>
+  <path class="grid" d="M240,220 L240,270 M90,220 L240,220 M290,170 L290,270 M90,170 L290,170"/>
+  <path class="axis" d="M90,120 L90,270 L340,270"/>
+  <text class="muted small mono" x="240" y="288" text-anchor="middle">15</text>
+  <text class="muted small mono" x="290" y="288" text-anchor="middle">20</text>
+  <text class="muted small mono" x="82" y="224" text-anchor="end">25</text>
+  <text class="muted small mono" x="82" y="174" text-anchor="end">30</text>
+  <text class="muted small" x="340" y="308" text-anchor="end">speed →</text>
+  <text class="muted small" x="96" y="132">↑ score σ</text>
+  <circle class="good" cx="290" cy="170" r="6"/>
+  <text class="fg head small" x="300" y="165">H1</text>
+  <circle cx="240" cy="220" r="6" class="bg"/>
+  <circle cx="240" cy="220" r="6" class="badStroke"/>
+  <text class="fg head small" x="226" y="240" text-anchor="end">H2</text>
+  <text class="fg small" x="90" y="338">Beaters: the quadrant above and right of H2.</text>
+  <text class="fg small" x="90" y="358">H1 is in it: <tspan class="bad head">H2 dropped</tspan>.</text>
+
+  <!-- ===== right panel: with a maximum. plot x 430..680 ===== -->
+  <text class="fg head" x="430" y="100">Speed maximum too</text>
+  <path class="grid" d="M580,220 L580,270 M430,220 L580,220 M630,170 L630,270 M430,170 L630,170"/>
+  <path class="ray" d="M580,220 L580,122"/>
+  <path class="axis" d="M430,120 L430,270 L680,270"/>
+  <text class="muted small mono" x="580" y="288" text-anchor="middle">15</text>
+  <text class="muted small mono" x="630" y="288" text-anchor="middle">20</text>
+  <text class="muted small mono" x="422" y="224" text-anchor="end">25</text>
+  <text class="muted small mono" x="422" y="174" text-anchor="end">30</text>
+  <text class="muted small" x="680" y="308" text-anchor="end">speed →</text>
+  <text class="muted small" x="436" y="132">↑ score σ</text>
+  <circle class="fg" cx="630" cy="170" r="6"/>
+  <text class="fg head small" x="640" y="165">H1</text>
+  <circle class="good" cx="580" cy="220" r="6"/>
+  <text class="fg head small" x="566" y="240" text-anchor="end">H2</text>
+  <text class="fg small" x="430" y="338">Beaters: the ray above H2, same speed only.</text>
+  <text class="fg small" x="430" y="358">H1 has more speed: <tspan class="good head">H2 kept</tspan>.</text>
+
+  <text class="muted small" x="40" y="392">Full Sage pool, unsynced: full dominance keeps 212 candidates, a minimum 38, a maximum 702.</text>
+</svg>

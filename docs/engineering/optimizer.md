@@ -94,25 +94,27 @@ The brute-force reference in the tests copies both rules, so each also has a dir
 
 ### Target GCD: from a GCD to a speed range
 
-A player thinks in GCDs, not speed points, so the Target GCD layer takes a GCD $G$ and one of two modes, and sets $m$ and $M$ from them. The optimizer is then run as a small parametric family: one search per distinct speed interval, with the meal chosen outside the searches.
+A player thinks in GCDs, not speed points, so the Target GCD layer takes a GCD $G$ and one of two modes, sets $m$ and $M$ from them, and runs the optimizer as a small parametric family: one search per distinct speed interval, with the meal chosen outside the searches.
 
 - **"Exactly"** (xivgear's meld solver): the GCD must be $G$. Some jobs want this because their cooldowns drift at a faster GCD (The Balance's Dragoon, Dark Knight and Gunbreaker guides).
 - **"Or faster":** the GCD must be $G$ or shorter. The result can come out faster than asked, but only when that set ties or wins on the target and tiebreaks.
 
-The GCD falls in steps of 0.01 s as speed rises, so each GCD value corresponds to an interval of speed. Steps:
+![Target GCD in three steps, for a level 100 Sage at exactly 2.45 s with food "Best for the goal" (10 meals). Step 1: the GCD needs 364 to 449 total speed, gear plus food ("or faster" keeps only the minimum, 364). Step 2: no meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370; equal bands share a search, so 2 searches run. Step 3: the best meal has the highest target with food, then tiebreak 1, then tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by both searches and every new GCD.](../diagrams/optimizer-target-gcd.svg)
 
-1. **A band of speed.** Each GCD value is reached by a band of speed $[m_G, M_G]$, counted as gear plus [food](../glossary.md#game-terms), with the job's always-on [haste](../glossary.md#game-terms) ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)). "Exactly" uses both ends, "or faster" only $m_G$. Example: a level 100 Sage at exactly 2.45 s needs 364 to 449 speed.
-2. **One band of gear speed per meal.** A meal adds $f(g)$ speed, and $g + f(g)$ rises with every gear point, so the gear speeds whose total lands in the band form an interval. With the Sage example, a meal with no speed asks for 364 to 449 from gear; every speed meal at its maximum asks for 293 to 370. Meals that ask for the same interval share one search, so "Best for the goal" over 10 Sage meals runs 2 searches.
-3. **The best meal.** Among the meals' results, the highest target with food wins, then tiebreak 1 and tiebreak 2 with food, then the most food points, then the job's food order. Food is chosen with the gear here: unlike a plain run ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)), the meal changes which gear fits.
+The GCD falls in steps of 0.01 s as speed rises, so each GCD value is reached by an interval of speed. The steps, as in the diagram:
+
+1. **A band of speed** $[m_G, M_G]$, counted as gear plus [food](../glossary.md#game-terms), with the job's always-on [haste](../glossary.md#game-terms) ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)). "Exactly" uses both ends, "or faster" only $m_G$.
+2. **One band of gear speed per meal.** A meal adds $f(g)$ speed, and $g + f(g)$ rises with every gear point, so the gear speeds whose total lands in the band form an interval. Meals that ask for the same interval share one search.
+3. **The best meal,** compared with food included. Food is chosen with the gear here: unlike a plain run ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)), the meal changes which gear fits.
 4. **No answer.** "Exactly" a GCD slower than the GCD with no speed (2.40 for a level 100 Ninja, whose GCD with no speed is 2.12) is **unreachable**, and no search runs. When the searches find no set, the answer is **none**. Both report the fastest GCD the pool can reach.
 
-The candidate lists of section 4 depend on the objective and on the kind of rule (none, minimum, or band), not on $m$ and $M$. So they are built once and reused for every meal and every new GCD. A list built for a band also serves a minimum.
+The candidate lists of section 4 depend on the objective and on the kind of rule (none, minimum, or band), not on $m$ and $M$, so one build serves every meal and every new GCD; a list built for a band also serves a minimum.
 
 ## 3. Turning the lexicographic order into one number
 
 The branch and bound needs one scalar objective that is linear in $x$. A preemptive objective over bounded integer criteria has an exact weighted-sum equivalent when each weight exceeds the largest swing all lower-ranked criteria can produce (Sherali 1982, *European Journal of Operational Research*, on equivalent weights for lexicographic programs). The engine derives such weights from the pool, so the scalarization is exact, not a big-$M$ guess.
 
-**Example.** On the Sage pool synced to item level 123 (target Spell Speed, tiebreaks Critical Hit then Determination), a loadout's Critical Hit total can span at most $R_1 = 344$ points and its Determination total at most $R_2 = 373$. The weights are $W_2 = 1$, $W_1 = 374$ and $W_0 = 129{,}030$. Between two loadouts, the tiebreaks can move the score by at most $344 \times 374 + 373 = 129{,}029$, one less than a single point of Spell Speed is worth. So one more point of the target always wins.
+![The weights on the Sage pool synced to item level 123, target Spell Speed, tiebreaks Critical Hit then Determination, drawn to scale. A loadout's Critical Hit total can span at most R1 = 344 points and its Determination total at most R2 = 373; the weights are W2 = 1, W1 = 374 and W0 = 129,030. Between two loadouts the tiebreaks can move the score by at most 344 × 374 + 373 = 129,029, one less than a single point of Spell Speed is worth, so one more point of the target always wins.](../diagrams/optimizer-weights.svg)
 
 **The rule.** Each item gets a score, and the objective becomes $\max \sum_{s,i} \sigma(i)\, x_{s,i}$:
 
@@ -207,7 +209,9 @@ With a speed range the search looks at only two numbers per candidate: its score
 - **Minimum only** (a covering row: more weight is better): $i$ beats $j$ when $\sigma(i) \ge \sigma(j)$, $v_{\text{spd}}(i) \ge v_{\text{spd}}(j)$ and $B(i) \subseteq B(j)$, with the same tie rule as above.
 - **A maximum too:** the same, but with $v_{\text{spd}}(i) = v_{\text{spd}}(j)$. Candidates with different speeds never prune each other.
 
-The drop rule and both steps of the proof carry over. In step 2, a swap does not lower the score, and the speed total rises (minimum only) or stays the same (with a maximum), so the speed rule still holds. In the example above, H1 has more speed than H2, so it no longer removes it.
+![Two plots of score against speed for the heads of the example above, H2 at speed 15 and score 25, H1 at speed 20 and score 30 (the target is Critical Hit). With a speed minimum only, H2's beaters are the quadrant above and to the right of it; H1 is in it, so H2 is dropped. With a maximum too, they are only the ray above H2 at the same speed; H1 has more speed, so H2 is kept. On the full Sage pool, unsynced, full dominance keeps 212 candidates, a minimum 38, a maximum 702.](../diagrams/optimizer-dominance-speed.svg)
+
+The drop rule and both steps of the proof carry over. In step 2, a swap does not lower the score, and the speed total rises (minimum only) or stays the same (with a maximum), so the speed rule still holds.
 
 The other stats play no part, so a minimum keeps far fewer candidates than full dominance, and a maximum far more. Example: the full Sage pool (2,422 pieces on data `d9582a6`), unsynced, Critical Hit then Determination, counting the ring list once per ring slot (rerun 2026-10-16):
 
