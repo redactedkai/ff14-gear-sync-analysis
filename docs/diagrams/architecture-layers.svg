@@ -106,8 +106,8 @@
 
   <rect class="test" x="500" y="336" width="200" height="72" rx="8"/>
   <text class="gold t" x="600" y="363" text-anchor="middle">Smoke test</text>
-  <text class="muted s" x="600" y="382" text-anchor="middle">real browser, 6 jobs, every tab,</text>
-  <text class="muted s" x="600" y="398" text-anchor="middle">desktop and 400 px width</text>
+  <text class="muted s" x="600" y="382" text-anchor="middle">real browser, 8 jobs, every tab,</text>
+  <text class="muted s" x="600" y="398" text-anchor="middle">desktop and 960 px width</text>
   <path class="check" d="M560,408 V442 H400 V474" marker-end="url(#garrow)"/>
 
   <!-- legend -->

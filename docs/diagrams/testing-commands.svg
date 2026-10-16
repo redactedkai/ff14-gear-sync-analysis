@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" role="img" aria-labelledby="t d">
+  <title id="t">What npm run check and npm run check:all run</title>
+  <desc id="d">npm run check runs four steps in order: lint (Biome, with a format check), build (the one HTML page), test (the unit tests in Node) and smoke (the built page in headless Chromium). It needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:data (the generator tests in Python); run it when touching scripts/data/ or after update-data. Both stop at the first failure. The perf commands, the Target GCD sweep and the ffxiv-gearing and xivgear checks are run by hand and are not part of either.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .py { fill: #ece9dd; stroke: #8f5f0c; stroke-width: 1.5; }
+    .brace { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .gbrace { fill: none; stroke: #8f5f0c; stroke-width: 1.5; }
+    .hand { fill: none; stroke: #586869; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .bad { fill: #b0402c; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .head { fill: #0d6e72; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .py { fill: #1b2b2e; stroke: #e2b659; }
+      .brace { stroke: #4cc2b6; }
+      .gbrace { stroke: #e2b659; }
+      .hand { stroke: #92a5a5; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .bad { fill: #f08a74; }
+      .flow { stroke: #4cc2b6; }
+      .head { fill: #4cc2b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="330"/>
+
+  <!-- check:all bracket (outer, top) -->
+  <text class="gold t" x="20" y="30">npm run check:all</text>
+  <text class="muted s" x="160" y="30">when touching scripts/data/ or after update-data</text>
+  <path class="gbrace" d="M20,52 V42 H700 V52"/>
+
+  <!-- check bracket (inner) -->
+  <text class="accent t" x="20" y="76">npm run check</text>
+  <text class="muted s" x="130" y="76">no Python; the bar for calling a change done</text>
+  <path class="brace" d="M20,98 V88 H452 V98"/>
+
+  <!-- Steps: 6 boxes, width 96, gap 16 -->
+  <rect class="box" x="20" y="108" width="96" height="72" rx="8"/>
+  <text class="fg t" x="68" y="135" text-anchor="middle">lint</text>
+  <text class="muted s" x="68" y="154" text-anchor="middle">Biome, with</text>
+  <text class="muted s" x="68" y="170" text-anchor="middle">format check</text>
+
+  <rect class="box" x="132" y="108" width="96" height="72" rx="8"/>
+  <text class="fg t" x="180" y="135" text-anchor="middle">build</text>
+  <text class="muted s" x="180" y="154" text-anchor="middle">the one</text>
+  <text class="muted s" x="180" y="170" text-anchor="middle">HTML page</text>
+
+  <rect class="box" x="244" y="108" width="96" height="72" rx="8"/>
+  <text class="fg t" x="292" y="135" text-anchor="middle">test</text>
+  <text class="muted s" x="292" y="154" text-anchor="middle">unit tests,</text>
+  <text class="muted s" x="292" y="170" text-anchor="middle">Node</text>
+
+  <rect class="box" x="356" y="108" width="96" height="72" rx="8"/>
+  <text class="fg t" x="404" y="135" text-anchor="middle">smoke</text>
+  <text class="muted s" x="404" y="154" text-anchor="middle">the built page</text>
+  <text class="muted s" x="404" y="170" text-anchor="middle">in Chromium</text>
+
+  <rect class="py" x="492" y="108" width="96" height="72" rx="8"/>
+  <text class="fg t" x="540" y="135" text-anchor="middle">lint:py</text>
+  <text class="muted s" x="540" y="154" text-anchor="middle">Ruff</text>
+
+  <rect class="py" x="604" y="108" width="96" height="72" rx="8"/>
+  <text class="fg t" x="652" y="135" text-anchor="middle">test:data</text>
+  <text class="muted s" x="652" y="154" text-anchor="middle">generator</text>
+  <text class="muted s" x="652" y="170" text-anchor="middle">tests, Python</text>
+
+  <line class="flow" x1="116" y1="144" x2="130" y2="144" marker-end="url(#arrow)"/>
+  <line class="flow" x1="228" y1="144" x2="242" y2="144" marker-end="url(#arrow)"/>
+  <line class="flow" x1="340" y1="144" x2="354" y2="144" marker-end="url(#arrow)"/>
+  <line class="flow" x1="452" y1="144" x2="490" y2="144" marker-end="url(#arrow)"/>
+  <line class="flow" x1="588" y1="144" x2="602" y2="144" marker-end="url(#arrow)"/>
+
+  <text class="bad s" x="20" y="206">Each arrow is taken only on success: both commands stop at the first failure.</text>
+
+  <!-- Run by hand -->
+  <rect class="hand" x="20" y="230" width="680" height="76" rx="8"/>
+  <text class="fg t" x="40" y="256">Run by hand, never part of check</text>
+  <text class="muted s" x="40" y="278">perf, perf:full, perf:adversarial, perf:browser (measurements, not pass/fail)</text>
+  <text class="muted s" x="40" y="295">Target GCD sweep; the checks against ffxiv-gearing and xivgear</text>
+</svg>

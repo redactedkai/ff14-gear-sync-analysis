@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 512" role="img" aria-labelledby="t d">
+<title id="t">Real pieces against the formula</title>
+<desc id="d">Every database piece predicted from the formula (ffxiv-datamining d9582a6). Item level 100 and up: 17,316 pieces, 17,292 exact (99.9%), 24 off by 1 and none off by more. The 24 unexplained misses: 18 at item level 380 (Intelligence and Mind head, hands and feet carry Vitality 80 where the formula gives 79), 4 in two weapon-and-shield pairs (item levels 275 and 536), 2 Troian legs at item level 595. Counted as exact because the model now has a rule for them: 8 green HQ healer pieces at item level 110 (Direct Hit 25%), the 6 all-jobs earrings and rings, and the 11 Atma weapons (predicted at item level 90). Below item level 100: 2,715 pieces (item level 15 to 99), 2,695 exact (99.3%), 20 off by 1. There were 42 misses on 2026-10-16; three general rules (5 pieces) and the reduced-stat list (17 of 18 pieces at item level 46) fixed 22. The 20 left: 13 Replica High Allagan and Dreadwyrm healer pieces (item level 50), 3 crafted weapons (item level 30), the Plundered Earrings and Ear Cuffs (item level 17), the Midnight Egg Cap, and Harlequin's Acton (item level 46).</desc>
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .goodbox { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .badbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-muted { stroke: #586869; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .big { font-size: 22px; font-weight: 600; }
+  .small { font-size: 12px; }
+  .list { font-size: 13px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .head { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .goodbox { fill: #1b2b2e; stroke: #6cc788; }
+    .badbox { fill: #1b2b2e; stroke: #f08a74; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-muted { stroke: #92a5a5; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="512"/>
+<text class="title fg" x="20" y="30">Real pieces against the formula</text>
+<text class="small muted" x="20" y="52">Every database piece (ffxiv-datamining d9582a6). A piece is exact only if every stat matches.</text>
+
+<!-- Row 1: item level 100 and up -->
+<text class="head accent" x="20" y="88">Item level 100 and up</text>
+<rect class="box" x="20" y="100" width="150" height="130" rx="8"/>
+<text class="num big fg" x="95" y="160" text-anchor="middle">17,316</text>
+<text class="fg" x="95" y="184" text-anchor="middle">pieces</text>
+<line class="s-muted" x1="170" y1="126" x2="198" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-muted" x1="170" y1="204" x2="198" y2="204" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="goodbox" x="200" y="100" width="170" height="52" rx="8"/>
+<text class="good head" x="285" y="122" text-anchor="middle"><tspan class="num">17,292</tspan> exact</text>
+<text class="small muted" x="285" y="142" text-anchor="middle">99.9%</text>
+<rect class="badbox" x="200" y="178" width="170" height="52" rx="8"/>
+<text class="bad head" x="285" y="200" text-anchor="middle"><tspan class="num">24</tspan> off by 1</text>
+<text class="small muted" x="285" y="220" text-anchor="middle">none off by more</text>
+<line class="s-muted" x1="370" y1="204" x2="398" y2="204" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="badbox" x="400" y="100" width="300" height="130" rx="8"/>
+<text class="head fg" x="416" y="126">Unexplained, left as they are</text>
+<text class="list fg" x="416" y="156"><tspan class="num">18</tspan> at item level 380 (Vitality 80, formula 79)</text>
+<text class="list fg" x="416" y="182"><tspan class="num">4</tspan> in two weapon-and-shield pairs (275, 536)</text>
+<text class="list fg" x="416" y="208"><tspan class="num">2</tspan> Troian legs at item level 595</text>
+<text class="small muted" x="20" y="254">Exact because the model has a rule for them: 8 green HQ healer pieces at 110 (Direct Hit 25%),</text>
+<text class="small muted" x="20" y="270">the 6 all-jobs earrings and rings, the 11 Atma weapons (predicted at item level 90).</text>
+
+<!-- Row 2: below item level 100 -->
+<text class="head accent" x="20" y="310">Below item level 100</text>
+<rect class="box" x="20" y="322" width="150" height="130" rx="8"/>
+<text class="num big fg" x="95" y="382" text-anchor="middle">2,715</text>
+<text class="fg" x="95" y="406" text-anchor="middle">pieces, 15 to 99</text>
+<line class="s-muted" x1="170" y1="348" x2="198" y2="348" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line class="s-muted" x1="170" y1="426" x2="198" y2="426" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="goodbox" x="200" y="322" width="170" height="52" rx="8"/>
+<text class="good head" x="285" y="344" text-anchor="middle"><tspan class="num">2,695</tspan> exact</text>
+<text class="small muted" x="285" y="364" text-anchor="middle">99.3%</text>
+<rect class="badbox" x="200" y="400" width="170" height="52" rx="8"/>
+<text class="bad head" x="285" y="422" text-anchor="middle"><tspan class="num">20</tspan> off by 1</text>
+<text class="small muted" x="285" y="442" text-anchor="middle">none off by more</text>
+<line class="s-muted" x1="370" y1="426" x2="398" y2="426" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="badbox" x="400" y="322" width="300" height="130" rx="8"/>
+<text class="head fg" x="416" y="346">Unexplained, left as they are</text>
+<text class="list fg" x="416" y="370"><tspan class="num">13</tspan> Replica High Allagan, Dreadwyrm (50)</text>
+<text class="list fg" x="416" y="390"><tspan class="num">3</tspan> crafted weapons (item level 30)</text>
+<text class="list fg" x="416" y="410"><tspan class="num">2</tspan> Plundered Earrings, Ear Cuffs (17)</text>
+<text class="list fg" x="416" y="430">Midnight Egg Cap; Harlequin's Acton (46)</text>
+<text class="small muted" x="20" y="476">42 misses on 2026-10-16; three general rules (5 pieces) and the reduced-stat list</text>
+<text class="small muted" x="20" y="492">(17 of 18 pieces at item level 46) fixed 22.</text>
+</svg>

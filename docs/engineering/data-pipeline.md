@@ -4,9 +4,9 @@ How game data gets from the game client into the page. The page needs, for every
 
 Related pages: [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [architecture.md](architecture.md), [testing.md](testing.md), [subcategory-sort-codes.md](subcategory-sort-codes.md), [glossary.md](../glossary.md).
 
-**The whole pipeline in one picture.** A fetch step copies the needed tables (as CSV files) and the job icons to this machine. Generators written in Python turn them into four generated files: the item database, the item level table, the food table and the job icons. A JSON file that both the Python generators and the JavaScript page read defines what each number in a generated row means. The page bundler then packs the generated files into the single HTML page, so the browser never loads data at run time.
+**The whole pipeline in one picture.** A JSON file that both the Python generators and the JavaScript page read (the shared format) defines what each number in a generated row means. The browser never loads data at run time.
 
-![Flow from the game client through the datamining repository, a sparse clone of the needed CSV files plus the job icons, the generators that share one format definition, the item level data and item database, the esbuild page bundle, and finally the browser](../diagrams/data-flow.svg)
+![Flow from the game client through the datamining repository to the fetch step, which copies the 14 needed CSV files and the 23 job icons to this machine. Four Python generators, all reading the shared format, write four generated files: the item database (20,031 rows, item level 15 to 795), the item level table, the food table (296 meals) and the job icons. The esbuild page bundle, which also reads the shared format, packs code, styles and the generated files into one HTML file that the browser opens from disk; the footer names the source commit](../diagrams/data-flow.svg)
 
 **Which data.** Every count on this page was produced by running the generators' rules over the CSVs in the local clone, or by importing the generated tables in Node. They describe datamining commit `d9582a6` (30 September 2026).
 
@@ -169,39 +169,18 @@ The figure follows one real piece, Void Ark Helm of Fending (a tank head piece),
 
 ### Selection
 
-An `Item` row becomes a database row when all of these hold:
+An `Item` row becomes a database row when it passes all eight rules below, applied in order. The figure shows how many rows of the current data each rule leaves.
 
-1. it has a name;
-2. its equip slot category resolves to a slot (section *Slot*), which rules out belts, soul crystals and non-gear;
-3. its item level is at least 15;
-4. at least one of the 23 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
-5. at least one of its 14 stats is non-zero after the HQ rule below;
-6. it carries no crafter or gatherer stat (GP, CP, Craftsmanship, Control, Gathering, Perception), normal or HQ;
-7. its slots match a slot code: a piece that blocks a combination of slots with no code is left out and its name printed;
-8. it is not retired.
+![Funnel of the eight selection rules over the 52,801 Item rows, with the rows left after each: 1, has a name, 50,880; 2, its equip slot category resolves to a slot (section Slot), which rules out belts, soul crystals and non-gear, 29,026; 3, item level at least 15, 24,778; 4, at least one of the 23 combat jobs may equip it (job mask above 0), which rules out crafter and gatherer gear and gear only a base class such as Gladiator can wear, 22,155; 5, at least one of its 14 stats is non-zero after the HQ rule below, 20,817; 6, no crafter or gatherer stat, normal or HQ, 20,812; 7, its slots match a slot code, else the piece is left out and its name printed, 20,812; 8, not retired (Diadem, Aetherial and legacy gear left out), 20,031](../diagrams/data-selection.svg)
 
 Notes on the rules:
 
-- **Rule 6.** Such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in the shared format file, and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality. The formula could not predict them, because crafter and gatherer Vitality follows no share of the combat budget.
+- **Rule 6.** The crafter and gatherer stats are GP, CP, Craftsmanship, Control, Gathering and Perception. Such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in the shared format file, and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality. The formula could not predict them, because crafter and gatherer Vitality follows no share of the combat budget.
 - **Rule 7.** There is no such piece today: the two shapes below item level 100 have slot codes (section *Slot*).
 - **Rule 8.** Three categories are left out (checked on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)):
   - Code 250 gear has random secondary attributes, so the stats in the game files are not what a piece has (**second-hand**: the item text, which the export does not carry). That is the Heavensward Diadem gear (equip level 60, 293 pieces, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below, 487 pieces).
   - Code 990 is gear that can no longer be obtained (1 piece reaches this rule, the Chocobo Mask; the version 1.0 "Dated" gear has no combat stats and stops earlier).
-  - The generator prints nothing about them; the counts are in the table below.
-
-For the current data, each rule leaves:
-
-| Step | Rows left |
-| --- | --- |
-| all `Item` rows | 52,801 |
-| has a name | 50,880 |
-| resolves to a slot | 29,026 |
-| item level ≥ 15 | 24,778 |
-| a combat job can equip it | 22,155 |
-| at least one stat | 20,817 |
-| no crafter or gatherer stat | 20,812 |
-| its slots match a slot code | 20,812 |
-| not left out (Diadem, Aetherial and legacy gear) | **20,031** |
+  - The generator prints nothing about them; the counts are in the figure (781 rows: 293 + 487 + 1).
 
 **Why item level 15.** The floor is a choice of this project (**owner's decision**, 2026-10-15), not a game rule. Sastasha, the lowest dungeon, opens at level 15 and syncs to level 18 with no item level requirement or item level sync (`ContentFinderCondition`, **verified**), so gear from item level 15 up can be worn there. Until then the floor was 100. Below 100 the database carries each piece's own stats, but the stat model's patterns (substat shares, factors) were measured at 100 and up only ([validation.md](../mechanics/validation.md)), and the item stat accuracy check starts at 110.
 
@@ -263,24 +242,18 @@ Melds (materia) are not part of these stats: a database row holds the item as it
 
 *Where does a piece come from, so the page can leave out gear that is hard to get?* Each row carries a bit mask of the six gear groups the page can leave out (in the optimizer and the gear browser): crafted, tomestone, ultimate, savage, relic and PvP. A gear piece can be in none, one or several. (The groups are game terms: [Savage](../glossary.md#game-terms) and [Ultimate](../glossary.md#game-terms) are hard raids, [tomestones](../glossary.md#game-terms) are a currency, a [relic](../glossary.md#game-terms) is a weapon upgraded through a long grind.)
 
-**Two signals.** A group's bit is set from:
+**Two signals.** A group's bit is set from the piece's **category**, from `Item.SubcategorySort` and shop data (the generator's category rules; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)), and for crafted, tomestone and ultimate also from the **shop and recipe flags** below. Each group lists its categories in the shared format file. The figure shows which signals feed each group, with the counts in the current data (2026-10-16).
 
-- the piece's **category**, from `Item.SubcategorySort` and shop data (the generator's category rules; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)). Each group lists its categories in the shared format file:
-  - crafted ← crafted;
-  - tomestone ← tomestone;
-  - ultimate ← ultimate;
-  - savage ← savage, current expansion only;
-  - relic ← relic and field_op (Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones);
-  - pvp ← pvp (the item level 100 to 205 sets sold for Wolf Marks, still on sale and with normal stats outside PvP: **verified** on the Lodestone at patch 7.56);
-- the **shop and recipe flags** below, for crafted, tomestone and ultimate.
+![Which gear categories and flags set each source group bit, with rows in the current data: the crafted category (5,243) and the recipe flag set crafted, bit 1 (5,243 rows); the tomestone category (2,882) and the tomestone flag (1,833) set tomestone, bit 2 (2,947); the relic (748) and field op (856) categories set relic, bit 4 (1,604); the Savage category (1,117) sets savage, bit 8 (231, the three Dawntrail tiers), only at equip level 100, the level cap, so 886 legacy Savage pieces are in no group; the ultimate category (136) and the totem flag (136) set ultimate, bit 16 (136); the PvP category (532) sets PvP, bit 32 (532); dungeon gear (3,942) and the 16 other categories set no bit](../diagrams/data-sources.svg)
+
+- **field_op** is Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones.
+- **pvp** is the item level 100 to 205 sets sold for Wolf Marks, still on sale and with normal stats outside PvP (**verified** on the Lodestone at patch 7.56).
 
 **Consistency checks.** The generator stops if a code has no known category, if a category named in the format file does not exist, or if the two signals contradict each other (a recipe result outside crafted, a totem purchase outside ultimate, a Savage armor piece or weapon without a dye slot).
 
 **Dungeon gear is in no group.** The game files do not record dungeon drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: the loot-related sheets `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). Dungeon gear can still be told apart by its code (270), but it is in no group.
 
 **Savage is current-only.** The savage group takes only pieces whose equip level is the highest in the database (the level cap, 100 today). Legacy Savage gear, which is far easier to get now, stays in the pool, and the group moves on by itself when an expansion raises the cap. No item names are used.
-
-Counts in the current data (2026-10-16): crafted 5,243, tomestone 2,947, ultimate 136, savage 231 (the three Dawntrail tiers; 886 legacy Savage pieces are in no group), relic 1,604, pvp 532.
 
 The shop and recipe flags:
 
@@ -522,12 +495,13 @@ The page bundle takes the page code, the stylesheet and the generated data files
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 1,652,933 bytes |
+| item database (generated file) | 2,090,977 bytes |
 | item level table, level data and stat factor table (generated file) | 61,152 bytes |
-| job icons (generated file) | 206,363 bytes |
-| finished page, minified | 2,055,877 bytes at the last build (about 2.1 MB) |
+| job icons (generated file) | 216,622 bytes |
+| food (generated file) | 15,573 bytes |
+| finished page, minified | 2,576,604 bytes at the last build, 2026-10-16 (about 2.6 MB) |
 
-The item database is close to 80% of the page, the icons about 10%.
+The item database is about 81% of the page, the icons about 8%.
 
 ## 9. Updating after a game patch
 
@@ -634,4 +608,4 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:data`) |
 | Format and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
-| Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg` |
+| Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg`, `docs/diagrams/data-selection.svg`, `docs/diagrams/data-sources.svg` |

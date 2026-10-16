@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-labelledby="t d">
+<title id="t">Two cap orders, one in-game value</title>
+<desc id="d">Blue Mage head synced to item level 270 (the Edenmorn Hat of Casting, item level 530): Vitality budget 736, stat factor 90%, head share 85 per mille. Factor first (the model): 736 times 0.9 floored is 662, times 0.85 floored is 562 tenths, rounded 56. Item order (as an item's own stats): 736 times 85 / 1000 is 62.56, rounded 63, times 0.9 is 56.7, rounded 57. In game: 56, quoted second-hand from xivgear's tests. The same check on the Red Mage head at 530 (in game 123): factor first 1442, 1225, 123; item order 136.26, 136, 122. On Azeyma's Earrings at 430 (main stat 71 in game): factor first 1053, 705, 71; item order 78.39, 78, 70. With a factor of 100 the two orders give the same number.</desc>
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .goodbox { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .badbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-muted { stroke: #586869; }
+  .s-gold { stroke: #8f5f0c; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .val { font-size: 16px; font-weight: 600; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .head { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .goodbox { fill: #1b2b2e; stroke: #6cc788; }
+    .badbox { fill: #1b2b2e; stroke: #f08a74; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-muted { stroke: #92a5a5; }
+    .s-gold { stroke: #e2b659; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="300"/>
+<text class="title fg" x="20" y="30">Two cap orders, one in-game value</text>
+<text class="small muted" x="20" y="52">Blue Mage head synced to item level 270: Vitality budget 736, stat factor 90%, head share 85 ‰</text>
+
+<!-- Row A: factor first -->
+<text class="head accent" x="20" y="124">Factor first</text>
+<text class="small muted" x="20" y="142">the model</text>
+<rect class="box" x="150" y="106" width="76" height="40" rx="8"/>
+<text class="num val fg" x="188" y="132" text-anchor="middle">736</text>
+<text class="small muted" x="267" y="98" text-anchor="middle">× 0.9, floor</text>
+<line class="s-muted" x1="226" y1="126" x2="306" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="308" y="106" width="76" height="40" rx="8"/>
+<text class="num val fg" x="346" y="132" text-anchor="middle">662</text>
+<text class="small muted" x="425" y="98" text-anchor="middle">× 0.85, floor</text>
+<line class="s-muted" x1="384" y1="126" x2="464" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="466" y="106" width="76" height="40" rx="8"/>
+<text class="num val fg" x="504" y="132" text-anchor="middle">562</text>
+<text class="small muted" x="504" y="162" text-anchor="middle">tenths</text>
+<text class="small muted" x="583" y="98" text-anchor="middle">÷ 10, round</text>
+<line class="s-muted" x1="542" y1="126" x2="622" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="goodbox" x="624" y="106" width="76" height="40" rx="8"/>
+<text class="num val good" x="662" y="132" text-anchor="middle">56</text>
+
+<!-- Row B: item order -->
+<text class="head accent" x="20" y="214">Item order</text>
+<text class="small muted" x="20" y="232">as an item's own stats</text>
+<rect class="box" x="150" y="196" width="76" height="40" rx="8"/>
+<text class="num val fg" x="188" y="222" text-anchor="middle">736</text>
+<text class="small muted" x="346" y="188" text-anchor="middle">× 85 / 1000 = 62.56, round</text>
+<line class="s-muted" x1="226" y1="216" x2="464" y2="216" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="466" y="196" width="76" height="40" rx="8"/>
+<text class="num val fg" x="504" y="222" text-anchor="middle">63</text>
+<text class="small muted" x="583" y="188" text-anchor="middle">× 0.9 = 56.7, round</text>
+<line class="s-muted" x1="542" y1="216" x2="622" y2="216" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="badbox" x="624" y="196" width="76" height="40" rx="8"/>
+<text class="num val bad" x="662" y="222" text-anchor="middle">57</text>
+
+<!-- In-game value -->
+<line class="s-gold" x1="150" y1="262" x2="700" y2="262" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text class="gold head" x="20" y="284">In game</text>
+<text class="fg" x="150" y="284">Vitality <tspan class="num gold head">56</tspan> (second-hand: xivgear's tests). Factor first matches; item order is 1 high.</text>
+</svg>

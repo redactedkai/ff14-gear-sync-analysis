@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 390" role="img" aria-labelledby="t d">
+  <title id="t">The best big and small stone by gear item level</title>
+  <desc id="d">A step chart of stone value against gear item level, from 100 (the lowest item level in the database) to 795. The big stone (any slot) and the small stone (no VI, VIII, X or XII) are the same below 290: IV (+4) from 100 to 159 and V (+6) from 160 to 289. From 290 they split: 290 to 419 big VI (+16), small V (+6); 420 to 559 big VIII (+24), small VII (+8); 560 to 689 big X (+36), small IX (+12); 690 and up big XII (+54), small XI (+18).</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .axis { stroke: #1b2a2c; stroke-width: 1.5; fill: none; }
+    .grid { stroke: #586869; stroke-width: 1; stroke-dasharray: 2 4; fill: none; }
+    .lineBig { stroke: #0d6e72; stroke-width: 3; fill: none; }
+    .lineSmall { stroke: #8f5f0c; stroke-width: 3; stroke-dasharray: 7 4; fill: none; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .axis { stroke: #e5eeed; }
+      .grid { stroke: #92a5a5; }
+      .lineBig { stroke: #4cc2b6; }
+      .lineSmall { stroke: #e2b659; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="390"/>
+
+  <text class="t fg" x="28" y="30">Best stone by gear item level (points per stone)</text>
+
+  <!-- legend -->
+  <path class="lineBig" d="M28,52 h32"/>
+  <text class="s fg" x="68" y="56">big stone (any slot)</text>
+  <path class="lineSmall" d="M220,52 h32"/>
+  <text class="s fg" x="260" y="56">small stone (no VI, VIII, X or XII)</text>
+
+  <!-- plot: x(il) = 70 + (il - 100) * 620 / 695 ; y(v) = 320 - v * 260 / 60 -->
+  <!-- y ticks at 20 and 40 points; vertical grid at the gates -->
+  <path class="axis" d="M64,233.3 H70 M64,146.7 H70"/>
+  <path class="grid" d="M123.5,320 V70 M239.5,320 V70 M355.5,320 V70 M480.4,320 V70 M596.3,320 V70"/>
+  <text class="s muted" x="58" y="324" text-anchor="end">0</text>
+  <text class="s muted" x="58" y="237" text-anchor="end">20</text>
+  <text class="s muted" x="58" y="151" text-anchor="end">40</text>
+
+  <!-- steps: small first, big on top (they coincide below 290) -->
+  <path class="lineSmall" d="M239.5,294 H355.5 V285.3 H480.4 V268 H596.3 V242 H690"/>
+  <path class="lineBig" d="M70,302.7 H123.5 V294 H239.5 V250.7 H355.5 V216 H480.4 V164 H596.3 V86 H690"/>
+
+  <!-- shared labels below 290 -->
+  <text class="lbl fg" x="97" y="294" text-anchor="middle">IV +4</text>
+  <text class="lbl fg" x="181.5" y="285" text-anchor="middle">V +6</text>
+  <text class="s muted" x="181.5" y="268" text-anchor="middle">both the same</text>
+
+  <!-- big labels (above line) -->
+  <text class="lbl accent" x="297.5" y="242" text-anchor="middle">VI +16</text>
+  <text class="lbl accent" x="418" y="207" text-anchor="middle">VIII +24</text>
+  <text class="lbl accent" x="538.4" y="155" text-anchor="middle">X +36</text>
+  <text class="lbl accent" x="643.2" y="77" text-anchor="middle">XII +54</text>
+
+  <!-- small labels (below line) -->
+  <text class="lbl gold" x="297.5" y="312" text-anchor="middle">V +6</text>
+  <text class="lbl gold" x="418" y="303" text-anchor="middle">VII +8</text>
+  <text class="lbl gold" x="538.4" y="286" text-anchor="middle">IX +12</text>
+  <text class="lbl gold" x="643.2" y="260" text-anchor="middle">XI +18</text>
+
+  <!-- axes -->
+  <path class="axis" d="M70,70 V320 H690"/>
+  <text class="s fg" x="70" y="340" text-anchor="middle">100</text>
+  <text class="s fg" x="123.5" y="340" text-anchor="middle">160</text>
+  <text class="s fg" x="239.5" y="340" text-anchor="middle">290</text>
+  <text class="s fg" x="355.5" y="340" text-anchor="middle">420</text>
+  <text class="s fg" x="480.4" y="340" text-anchor="middle">560</text>
+  <text class="s fg" x="596.3" y="340" text-anchor="middle">690</text>
+  <text class="s fg" x="690" y="340" text-anchor="middle">795</text>
+  <text class="s muted" x="380" y="368" text-anchor="middle">Gear item level (100 is the lowest in the database, 795 the highest)</text>
+</svg>

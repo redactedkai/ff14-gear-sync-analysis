@@ -245,7 +245,6 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 **Gear that scales with the wearer.** A third kind of piece follows the level whatever its equip level: gear whose item level **scales with the wearer** (`Item.SubStatCategory` 2; 260 pieces: the level 89 and 99 boost gear at item level 560 and 690, and six all-jobs earrings and rings such as Menphina's Earring).
 
 - The game's own description says so: "IL and attributes synced to current job level." (241 pieces), or that attributes and item level vary with the current level (the six accessories) (**verified**, game data).
-- Such a piece is synced to $\text{sync}(L)$ whenever that is below its own item level, or to the item level cap where that is lower still.
 - That the target is $\text{sync}(L)$ at every level is *inferred*: it gives the Wiki's artifact armor item levels (548 at level 89, 678 at level 99; *second-hand*), and ffxiv-gearing applies the same rule at levels 50 to 90 ([validation.md, section 9](validation.md#9-against-another-tool-ffxiv-gearing)).
 
 **The level sync table.** $\text{sync}(L)$ is the `ItemLevelSync` column of the game's `ParamGrow` sheet (**verified**: read from the game file):
@@ -275,7 +274,7 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 
 Below level 100 no duty's cap is more than 5 above $\text{sync}(L)$; the 7 that are above it are the level 90 Mount Rokkon and Aloalo Island duties (665) and Second Master's Board (level 50, 135).
 
-A higher cap still computes as typed, since the cap wins (the owner's decision: warn only). The page notes under the cap field that no duty at that level has such a cap (the warning starts above $\text{sync}(L) + 5$, none at level 100). Such settings give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6; without the floor it would be about 0.50 s), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
+A higher cap still computes as typed, since the cap wins (the owner's decision: warn only). The page notes under the cap field that no duty at that level has such a cap (the warning starts above $\text{sync}(L) + 5$, none at level 100). Such settings give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
 
 **The rule in one formula.** The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 
@@ -290,7 +289,9 @@ C & \text{else if item level sync is on and } i > C \\
 \end{cases}
 $$
 
-The cases are tried top to bottom; the first that holds decides. The clamp below is applied with $t$ in place of $C$. A piece synced to an item level at or above its own keeps its stats; only its materia stops counting.
+![Decision flow for the synced item level, tried top to bottom, first yes decides. A piece that scales with the wearer, with sync(L) below its item level, goes to sync(L), or to the cap C where lower (with item level sync on and the item level above C); at T13 (level 50, cap 123, sync(50) = 130) a scaling earring at 560 goes to 123. Otherwise, with item level sync on and the item level above C, it goes to C, even above sync(L); the worked example head at 130 goes to 123. Otherwise, with the equip level above the synced level, it goes to sync(L); item level 120, equip level 51 goes to 130. Otherwise it is untouched (item level 120, equip level 50). Each stat is then clamped at the target; a target at or above the piece's own item level keeps its stats, and only its materia stops counting.](../diagrams/math-sync-target.svg)
+
+The clamp below is applied with $t$ in place of $C$.
 
 **Two edge cases.**
 
@@ -333,7 +334,9 @@ $$
 \text{cap}_s(C) = \operatorname{round}\!\left(\frac{1}{10}\left\lfloor \frac{\lfloor \text{budget}_s(C) \times F_s / 100 \rfloor \times p}{100} \right\rfloor\right)
 $$
 
-**This is not the order of an item's own stats.** A piece's stats round the slot budget first and apply the factor after (section 4), and that order is the right one for items: it fits 5,820 of 5,842 Intelligence and Mind pieces on Vitality, the factor-first order 4,639. Caps follow the factor-first order because the game's sync values do (below).
+**This is not the order of an item's own stats** (section 4), which is right for items: it fits 5,820 of 5,842 Intelligence and Mind pieces on Vitality, the factor-first order 4,639. Caps follow the factor-first order because the game's sync values do (below).
+
+![Side-by-side comparison of the two orders for Intelligence/Mind Vitality on a body piece at item level 123 (budget 375, share 135 per mille, factor 90%). Item stats: 375 times 135/1000 is 50.625, rounded 51; times 0.9 is 45.9, rounded 46, what a native body piece carries. Sync cap: 375 times 90/100 is 337.5, floored 337; times 135/100 is 454.95, floored 454; divided by 10 is 45.4, rounded 45. With a factor of 100 both orders agree.](../diagrams/math-round-order.svg)
 
 **With $F_s = 100$ the two orders give the same number**, so every cap of a stat without a factor (all substats, the main stat on single-main-stat gear, Vitality on Strength and Dexterity gear) is the full-share value of a piece of the same slot at item level $C$, $B_s(C)$. Why: write $x = \text{budget}_s(C) \times p / 100$. Then $\lfloor x \rfloor / 10$ is a multiple of 0.1 at most 0.1 below $x / 10$, so no rounding threshold ($k + 0.5$) lies between them, and $\operatorname{round}(\lfloor x \rfloor / 10) = \operatorname{round}(x / 10) = B_s(C)$. A unit test checks this at every item level 1 to 795 for every slot share and the off-hand.
 
@@ -352,7 +355,7 @@ $$
 
 ### Caps at item level 123
 
-Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375. The Intelligence/Mind Vitality column takes the 90% factor first (the clamp rule above): $\lfloor 375 \times 0.9 \rfloor = 337$, then body $\lfloor 337 \times 1.35 \rfloor = 454 \to 45$ and two-handed weapon $\lfloor 337 \times 1.40 \rfloor = 471 \to 47$. Both are one below what a native piece of the slot carries ($\operatorname{round}(51 \times 0.9) = 46$, $\operatorname{round}(53 \times 0.9) = 48$). Head and accessories come out the same either way.
+Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375. The Intelligence/Mind Vitality column takes the 90% factor first ($\lfloor 375 \times 0.9 \rfloor = 337$): body 45 (the diagram in the clamp rule above) and two-handed weapon $\lfloor 337 \times 1.40 \rfloor = 471 \to 47$, each one below a native piece of the slot (46, and $\operatorname{round}(53 \times 0.9) = 48$). Head and accessories come out the same either way.
 
 | Slot | Substat cap | Main-stat cap | Vitality cap (Str/Dex) | Vitality cap (Int/Mind) |
 | --- | --- | --- | --- | --- |
@@ -426,20 +429,9 @@ $$
 
 Example at level 50 with $g = 296$: $\lfloor 130 \times 296 / 341 \rfloor = \lfloor 112.85 \rfloor = 112$, so $m = 888$. That gives $\lfloor 2500 \times 888 / 10000 \rfloor = 222$, a 2.22 s GCD, and a tick multiplier of 1.112.
 
-**GCD tiers at level 50.** Because of the floors, the GCD drops in steps. The tool finds them by scanning gear speed from 0 to 1,200:
+**GCD tiers at level 50.** Because of the floors, the GCD drops in steps. The tool finds them by scanning gear speed from 0 to 1,200; after 3, a new tier starts about every 10.5 points.
 
-| Gear speed | GCD |
-| --- | --- |
-| 0 | 2.50 s |
-| 3 | 2.49 s |
-| 150 | 2.35 s |
-| 202 | 2.30 s |
-| 286 | 2.22 s |
-| 297 | 2.21 s |
-| 307 | 2.20 s |
-| 349 | 2.16 s |
-
-After 3, a new tier starts about every 10.5 points of gear speed.
+![Step chart of the level 50 GCD against gear speed 0 to 360, no haste: 2.50 s at 0, 2.49 s from 3, 2.35 s from 150, 2.30 s from 202, 2.22 s from 286, 2.21 s from 297, 2.20 s from 307, 2.16 s from 349. Marked: 296, the generic maximum under cap 123 without the weapon, at 2.22 s, one point below the 2.21 s tier; and 344 with the weapon, at 2.17 s.](../diagrams/math-gcd-tiers.svg)
 
 **Generic maximum under cap 123.** What is the most speed gear can give at cap 123? Give every armor and accessory slot the full-share speed cap: head, hands and feet at 29 each, body and legs at 47 each, and five accessories (earring, necklace, bracelet, two rings) at 23 each (weapon excluded):
 
@@ -447,8 +439,8 @@ $$
 3 \times 29 + 2 \times 47 + 5 \times 23 = 87 + 94 + 115 = 296
 $$
 
-- That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real gear set usually falls short of this, because a piece rarely has speed as its top substat in every slot.
-- With the weapon too (48 on a two-handed weapon, and the same on a one-handed weapon and shield together) it is 344, a 2.17 s GCD; 685 on the character panel.
+- 2.22 s, one point below the 2.21 s tier. A real set usually falls short, because a piece rarely has speed as its top substat in every slot.
+- With the weapon (48 on a two-handed weapon, and the same on a one-handed weapon and shield together): 344, 2.17 s; 685 on the character panel.
 
 ### Haste
 

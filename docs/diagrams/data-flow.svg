@@ -1,16 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 620" role="img" aria-labelledby="t d">
   <title id="t">Data pipeline: from the game client to the page</title>
-  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository as CSV files. A sparse clone fetches twelve of them, plus the job icons. Generators turn them into the item level table with level data, the item database and the job icons; the generators and the page code read one shared format definition. esbuild bundles code and data into one HTML file that the browser opens from disk.</desc>
+  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the fourteen CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,031 rows, item level 15 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
     .fmt { fill: #ece9dd; stroke: #8f5f0c; stroke-width: 1.5; }
+    .frame { fill: none; stroke: #586869; stroke-width: 1.5; stroke-dasharray: 2 4; }
     .fg { fill: #1b2a2c; }
     .muted { fill: #586869; }
     .gold { fill: #8f5f0c; }
     .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
     .read { fill: none; stroke: #8f5f0c; stroke-width: 1.5; stroke-dasharray: 5 4; }
     .head { fill: #0d6e72; }
+    .headg { fill: #8f5f0c; }
     text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
     .t { font-size: 14px; font-weight: 600; }
     .s { font-size: 12px; }
@@ -18,22 +20,27 @@
       .bg { fill: #142023; }
       .box { fill: #1b2b2e; stroke: #e5eeed; }
       .fmt { fill: #1b2b2e; stroke: #e2b659; }
+      .frame { stroke: #92a5a5; }
       .fg { fill: #e5eeed; }
       .muted { fill: #92a5a5; }
       .gold { fill: #e2b659; }
       .flow { stroke: #4cc2b6; }
       .read { stroke: #e2b659; }
       .head { fill: #4cc2b6; }
+      .headg { fill: #e2b659; }
     }
   </style>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" class="head"/>
     </marker>
+    <marker id="arrowg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="headg"/>
+    </marker>
   </defs>
-  <rect class="bg" x="0" y="0" width="720" height="560"/>
+  <rect class="bg" x="0" y="0" width="720" height="620"/>
 
-  <!-- Row 1: source -->
+  <!-- Row 1: source and fetch -->
   <rect class="box" x="20" y="30" width="200" height="72" rx="8"/>
   <text class="fg t" x="120" y="57" text-anchor="middle">Game client</text>
   <text class="muted s" x="120" y="76" text-anchor="middle">data stored as sheets</text>
@@ -45,76 +52,80 @@
   <text class="muted s" x="360" y="92" text-anchor="middle">one CSV per sheet, as exported</text>
 
   <rect class="box" x="500" y="30" width="200" height="72" rx="8"/>
-  <text class="fg t" x="600" y="57" text-anchor="middle">Local sparse clone</text>
-  <text class="muted s" x="600" y="76" text-anchor="middle">12 CSVs (latest commit) + job icons</text>
-  <text class="muted s" x="600" y="92" text-anchor="middle">(fetch step)</text>
+  <text class="fg t" x="600" y="57" text-anchor="middle">Fetch step</text>
+  <text class="muted s" x="600" y="76" text-anchor="middle">14 CSVs, latest commit</text>
+  <text class="muted s" x="600" y="92" text-anchor="middle">+ 23 job icons (PNG)</text>
 
   <line class="flow" x1="220" y1="66" x2="258" y2="66" marker-end="url(#arrow)"/>
   <line class="flow" x1="460" y1="66" x2="498" y2="66" marker-end="url(#arrow)"/>
+  <line class="flow" x1="600" y1="102" x2="600" y2="140" marker-end="url(#arrow)"/>
 
-  <!-- clone feeds both generators -->
-  <line class="flow" x1="600" y1="102" x2="600" y2="158" marker-end="url(#arrow)"/>
-  <path class="flow" d="M600,126 H120 V158" marker-end="url(#arrow)"/>
+  <!-- Row 2: shared format and the four generators -->
+  <rect class="fmt" x="20" y="150" width="200" height="124" rx="8"/>
+  <text class="gold t" x="120" y="177" text-anchor="middle">Shared format</text>
+  <text class="muted s" x="120" y="198" text-anchor="middle">job, stat and slot orders,</text>
+  <text class="muted s" x="120" y="214" text-anchor="middle">gear categories, food rules</text>
+  <text class="muted s" x="120" y="240" text-anchor="middle">read by every generator</text>
+  <text class="muted s" x="120" y="256" text-anchor="middle">and by the page code</text>
 
-  <!-- Row 2: generators and shared format -->
-  <rect class="box" x="20" y="160" width="200" height="72" rx="8"/>
-  <text class="fg t" x="120" y="187" text-anchor="middle">Item level generator</text>
-  <text class="muted s" x="120" y="206" text-anchor="middle">reads ItemLevel,</text>
-  <text class="muted s" x="120" y="222" text-anchor="middle">ParamGrow</text>
+  <line class="read" x1="220" y1="212" x2="258" y2="212" marker-end="url(#arrowg)"/>
 
-  <rect class="fmt" x="260" y="160" width="200" height="72" rx="8"/>
-  <text class="gold t" x="360" y="187" text-anchor="middle">Shared format</text>
-  <text class="muted s" x="360" y="206" text-anchor="middle">job bit order, stat order,</text>
-  <text class="muted s" x="360" y="222" text-anchor="middle">slot codes</text>
+  <rect class="frame" x="260" y="142" width="440" height="140" rx="8"/>
+  <text class="fg t" x="276" y="165">Generators (Python)</text>
+  <rect class="box" x="276" y="176" width="196" height="44" rx="8"/>
+  <text class="fg t" x="374" y="195" text-anchor="middle">Item database</text>
+  <text class="muted s" x="374" y="211" text-anchor="middle">Item, slots, jobs, shops, materia</text>
+  <rect class="box" x="488" y="176" width="196" height="44" rx="8"/>
+  <text class="fg t" x="586" y="195" text-anchor="middle">Item level</text>
+  <text class="muted s" x="586" y="211" text-anchor="middle">ItemLevel, ParamGrow, BaseParam</text>
+  <rect class="box" x="276" y="226" width="196" height="44" rx="8"/>
+  <text class="fg t" x="374" y="245" text-anchor="middle">Food</text>
+  <text class="muted s" x="374" y="261" text-anchor="middle">Item, ItemAction, ItemFood</text>
+  <rect class="box" x="488" y="226" width="196" height="44" rx="8"/>
+  <text class="fg t" x="586" y="245" text-anchor="middle">Job icons</text>
+  <text class="muted s" x="586" y="261" text-anchor="middle">checks 23 PNGs, 64 × 64</text>
 
-  <rect class="box" x="500" y="160" width="200" height="72" rx="8"/>
-  <text class="fg t" x="600" y="187" text-anchor="middle">Item database generator</text>
-  <text class="muted s" x="600" y="206" text-anchor="middle">reads Item, slots, jobs, BaseParam,</text>
-  <text class="muted s" x="600" y="222" text-anchor="middle">recipes, shops, materia</text>
+  <line class="flow" x1="480" y1="282" x2="480" y2="318" marker-end="url(#arrow)"/>
 
-  <line class="read" x1="260" y1="196" x2="222" y2="196" marker-end="url(#arrow)"/>
-  <line class="read" x1="460" y1="196" x2="498" y2="196" marker-end="url(#arrow)"/>
-
-  <!-- Row 3: generated data -->
-  <line class="flow" x1="120" y1="232" x2="120" y2="278" marker-end="url(#arrow)"/>
-  <line class="flow" x1="600" y1="232" x2="600" y2="278" marker-end="url(#arrow)"/>
-
-  <rect class="box" x="20" y="280" width="200" height="88" rx="8"/>
-  <text class="fg t" x="120" y="307" text-anchor="middle">Item level data</text>
-  <text class="muted s" x="120" y="326" text-anchor="middle">budgets for rows 0 to 920</text>
-  <text class="muted s" x="120" y="342" text-anchor="middle">speed data, levels 1 to 100</text>
-  <text class="muted s" x="120" y="358" text-anchor="middle">source commit and date</text>
-
-  <rect class="box" x="500" y="280" width="200" height="88" rx="8"/>
-  <text class="fg t" x="600" y="307" text-anchor="middle">Item database</text>
-  <text class="muted s" x="600" y="326" text-anchor="middle">17,281 gear rows</text>
-  <text class="muted s" x="600" y="342" text-anchor="middle">item level 100 to 795</text>
-  <text class="muted s" x="600" y="358" text-anchor="middle">about 1.7 MB</text>
-
-  <!-- format also read by page code -->
-  <line class="read" x1="330" y1="232" x2="330" y2="436" marker-end="url(#arrow)"/>
-  <text class="muted s" x="340" y="300">page code</text>
-  <text class="muted s" x="340" y="316">reads it too</text>
+  <!-- Row 3: the four generated files -->
+  <rect class="frame" x="20" y="320" width="680" height="128" rx="8"/>
+  <text class="fg t" x="36" y="343">Generated files (never edited by hand)</text>
+  <rect class="box" x="36" y="356" width="150" height="76" rx="8"/>
+  <text class="fg t" x="111" y="379" text-anchor="middle">Item database</text>
+  <text class="muted s" x="111" y="399" text-anchor="middle">20,031 rows</text>
+  <text class="muted s" x="111" y="415" text-anchor="middle">item level 15 to 795</text>
+  <rect class="box" x="202" y="356" width="150" height="76" rx="8"/>
+  <text class="fg t" x="277" y="379" text-anchor="middle">Item level table</text>
+  <text class="muted s" x="277" y="399" text-anchor="middle">budgets, 0 to 920</text>
+  <text class="muted s" x="277" y="415" text-anchor="middle">levels 1 to 100, factors</text>
+  <rect class="box" x="368" y="356" width="150" height="76" rx="8"/>
+  <text class="fg t" x="443" y="379" text-anchor="middle">Food table</text>
+  <text class="muted s" x="443" y="399" text-anchor="middle">296 meals</text>
+  <rect class="box" x="534" y="356" width="150" height="76" rx="8"/>
+  <text class="fg t" x="609" y="379" text-anchor="middle">Job icons</text>
+  <text class="muted s" x="609" y="399" text-anchor="middle">23 PNGs</text>
+  <text class="muted s" x="609" y="415" text-anchor="middle">as data URLs</text>
 
   <!-- Row 4: bundle and browser -->
-  <path class="flow" d="M120,368 V474 H258" marker-end="url(#arrow)"/>
-  <path class="flow" d="M600,368 V400 H400 V436" marker-end="url(#arrow)"/>
+  <line class="flow" x1="360" y1="448" x2="360" y2="494" marker-end="url(#arrow)"/>
+  <path class="read" d="M20,262 H8 V532 H258" marker-end="url(#arrowg)"/>
+  <text class="muted s" x="20" y="524">page code reads the format</text>
 
-  <rect class="box" x="260" y="438" width="200" height="72" rx="8"/>
-  <text class="fg t" x="360" y="465" text-anchor="middle">Page bundle (esbuild)</text>
-  <text class="muted s" x="360" y="484" text-anchor="middle">code, styles, data, icons inlined</text>
-  <text class="muted s" x="360" y="500" text-anchor="middle">one HTML file, about 2.1 MB</text>
+  <rect class="box" x="260" y="496" width="200" height="72" rx="8"/>
+  <text class="fg t" x="360" y="523" text-anchor="middle">Page bundle (esbuild)</text>
+  <text class="muted s" x="360" y="542" text-anchor="middle">code, styles, data inlined</text>
+  <text class="muted s" x="360" y="558" text-anchor="middle">one HTML file</text>
 
-  <line class="flow" x1="460" y1="474" x2="498" y2="474" marker-end="url(#arrow)"/>
+  <line class="flow" x1="460" y1="532" x2="498" y2="532" marker-end="url(#arrow)"/>
 
-  <rect class="box" x="500" y="438" width="200" height="72" rx="8"/>
-  <text class="fg t" x="600" y="465" text-anchor="middle">Browser</text>
-  <text class="muted s" x="600" y="484" text-anchor="middle">opens from disk, no server</text>
-  <text class="muted s" x="600" y="500" text-anchor="middle">footer names the source commit</text>
+  <rect class="box" x="500" y="496" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="523" text-anchor="middle">Browser</text>
+  <text class="muted s" x="600" y="542" text-anchor="middle">opens from disk, no server</text>
+  <text class="muted s" x="600" y="558" text-anchor="middle">footer names the source commit</text>
 
   <!-- legend -->
-  <line class="flow" x1="20" y1="538" x2="52" y2="538"/>
-  <text class="muted s" x="60" y="542">data flow</text>
-  <line class="read" x1="150" y1="538" x2="182" y2="538"/>
-  <text class="muted s" x="190" y="542">reads the shared format</text>
+  <line class="flow" x1="20" y1="598" x2="52" y2="598"/>
+  <text class="muted s" x="60" y="602">data flow</text>
+  <line class="read" x1="150" y1="598" x2="182" y2="598"/>
+  <text class="muted s" x="190" y="602">reads the shared format</text>
 </svg>

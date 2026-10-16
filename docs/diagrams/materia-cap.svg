@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" role="img" aria-labelledby="t d">
+  <title id="t">Melds fill a substat up to the piece's own cap</title>
+  <desc id="d">Kirin's Osode of Fending, an item level 300 body piece for tanks, caps every substat at 110. Critical Hit is 110, already at the cap, so melds add nothing to it. Determination is 77, leaving 33 points of room: two VI and one V (16 + 16 + 6 = 38) fill it to 110, and 5 points are lost above the cap.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .stone { fill: #fffdf7; stroke: #0d6e72; stroke-width: 1.5; }
+    .lost { fill: #b0402c; fill-opacity: 0.25; stroke: #b0402c; stroke-width: 1.5; }
+    .capline { stroke: #b0402c; stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+    .brace { stroke: #0d6e72; stroke-width: 1.5; fill: none; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .stone { fill: #142023; stroke: #4cc2b6; }
+      .lost { fill: #f08a74; stroke: #f08a74; }
+      .capline { stroke: #f08a74; }
+      .brace { stroke: #4cc2b6; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="280"/>
+
+  <text class="t fg" x="28" y="30">Kirin's Osode of Fending (item level 300, tanks): cap 110 on every substat</text>
+
+  <!-- scale: x(p) = 160 + p * 4.2 -->
+  <!-- cap line at 110 -->
+  <path class="capline" d="M622,58 V218"/>
+  <text class="lbl bad" x="622" y="52" text-anchor="middle">cap 110</text>
+
+  <!-- Critical Hit -->
+  <text class="lbl fg" x="148" y="99" text-anchor="end">Critical Hit</text>
+  <rect class="box" x="160" y="76" width="462" height="36" rx="8"/>
+  <text class="s fg" x="391" y="98" text-anchor="middle">own 110</text>
+  <text class="s muted" x="636" y="99">no room:</text>
+  <text class="s muted" x="636" y="115">adds 0</text>
+
+  <!-- Determination -->
+  <text class="lbl fg" x="148" y="175" text-anchor="end">Determination</text>
+  <rect class="box" x="160" y="152" width="323.4" height="36" rx="8"/>
+  <text class="s fg" x="321.7" y="174" text-anchor="middle">own 77</text>
+  <rect class="stone" x="483.4" y="152" width="67.2" height="36"/>
+  <text class="lbl accent" x="517" y="175" text-anchor="middle">VI +16</text>
+  <rect class="stone" x="550.6" y="152" width="67.2" height="36"/>
+  <text class="lbl accent" x="584.2" y="175" text-anchor="middle">VI +16</text>
+  <rect class="stone" x="617.8" y="152" width="4.2" height="36"/>
+  <rect class="lost" x="622" y="152" width="21" height="36"/>
+  <text class="lbl accent" x="650" y="146">V +6</text>
+  <text class="s bad" x="652" y="175">5 lost</text>
+
+  <!-- room bracket -->
+  <path class="brace" d="M483.4,196 v8 h138.6 v-8"/>
+  <text class="s accent" x="552.7" y="220" text-anchor="middle">room 33</text>
+
+  <text class="s fg" x="28" y="256">Determination 77 → 110: VI + VI + V add 38 for 33 points of room, so 5 points are lost.</text>
+</svg>

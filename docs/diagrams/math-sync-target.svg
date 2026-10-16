@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 570" role="img" aria-label="Decision flow for the item level a piece is synced to: scaling gear first, then the item level cap, then level sync, else untouched, with T13 examples">
+<desc>Tried top to bottom, the first yes decides. 1: the piece scales with the wearer and sync(L) is below its item level i: synced to sync(L), or to the cap C where that is lower (C counts only with item level sync on and i above C); at T13 a scaling earring at item level 560 goes to 123. 2: item level sync is on and i is above C: synced to C, even where C is above sync(L); at T13 the worked example head piece at 130 goes to 123. 3: the equip level e is above the synced level L: synced to sync(L); at T13 a piece of item level 120 and equip level 51 goes to 130. Otherwise untouched; at T13 a piece of item level 120 and equip level 50. T13 is level 50 with cap 123, and sync(50) is 130. Each stat is then clamped to its cap at the target; a target at or above the piece’s own item level keeps its stats, and only its materia stops counting.</desc>
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .goodbox { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .clampbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-gold { stroke: #8f5f0c; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .strong { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .goodbox { fill: #1b2b2e; stroke: #6cc788; }
+    .clampbox { fill: #1b2b2e; stroke: #f08a74; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-gold { stroke: #e2b659; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="570"/>
+<text class="title fg" x="20" y="30">Which item level a piece is synced to</text>
+<text class="small muted" x="20" y="52">Tried top to bottom; the first yes decides. i = item level, e = equip level, L = synced level,</text>
+<text class="small muted" x="20" y="68">C = item level cap, sync(L) = the item level the game assigns to level L.</text>
+<text class="small accent" x="20" y="86">Examples at T13: L = 50, C = 123, sync(50) = 130.</text>
+<rect class="box" x="20" y="106" width="280" height="80" rx="8"/>
+<text class="fg" x="36" y="141">Scales with the wearer</text>
+<text class="fg" x="36" y="161">and sync(L) &lt; i?</text>
+<rect class="box" x="380" y="106" width="320" height="80" rx="8"/>
+<text class="fg strong" x="396" y="132">sync(L), or C where lower</text>
+<text class="small muted" x="396" y="152">C only with item level sync on and i &gt; C</text>
+<text class="small accent" x="396" y="172">T13: scaling earring, item level 560 → 123</text>
+<line class="s-muted" x1="302" y1="146" x2="377" y2="146" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="small good" x="340" y="138" text-anchor="middle">yes</text>
+<line class="s-muted" x1="160" y1="188" x2="160" y2="219" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="small muted" x="170" y="209">no</text>
+<rect class="box" x="20" y="222" width="280" height="80" rx="8"/>
+<text class="fg" x="36" y="257">Item level sync on</text>
+<text class="fg" x="36" y="277">and i &gt; C?</text>
+<rect class="box" x="380" y="222" width="320" height="80" rx="8"/>
+<text class="fg strong" x="396" y="248">C</text>
+<text class="small muted" x="396" y="268">even where C is above sync(L)</text>
+<text class="small accent" x="396" y="288">T13: worked example head, 130 → 123</text>
+<line class="s-muted" x1="302" y1="262" x2="377" y2="262" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="small good" x="340" y="254" text-anchor="middle">yes</text>
+<line class="s-muted" x1="160" y1="304" x2="160" y2="335" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="small muted" x="170" y="325">no</text>
+<rect class="box" x="20" y="338" width="280" height="80" rx="8"/>
+<text class="fg" x="36" y="373">Equip level above the</text>
+<text class="fg" x="36" y="393">synced level: e &gt; L?</text>
+<rect class="box" x="380" y="338" width="320" height="80" rx="8"/>
+<text class="fg strong" x="396" y="364">sync(L)</text>
+<text class="small muted" x="396" y="384">ParamGrow.ItemLevelSync of level L</text>
+<text class="small accent" x="396" y="404">T13: item level 120, equip level 51 → 130</text>
+<line class="s-muted" x1="302" y1="378" x2="377" y2="378" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="small good" x="340" y="370" text-anchor="middle">yes</text>
+<line class="s-muted" x1="160" y1="420" x2="160" y2="451" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="small muted" x="170" y="441">no</text>
+<rect class="goodbox" x="20" y="454" width="280" height="80" rx="8"/>
+<text class="fg strong" x="36" y="480">Untouched</text>
+<text class="small muted" x="36" y="500">stats and melds as on the item</text>
+<text class="small accent" x="36" y="520">T13: item level 120, equip level 50</text>
+<text class="small muted" x="380" y="480">Then each stat is clamped to its cap at the</text>
+<text class="small muted" x="380" y="498">target (the clamp rule). A target at or above i</text>
+<text class="small muted" x="380" y="516">keeps the stats; only the materia stops counting.</text>
+</svg>

@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 514" role="img" aria-labelledby="t d">
+  <title id="t">How the generator turns SubcategorySort into a category</title>
+  <desc id="d">Five steps, each traced for three real pieces. Step 1, SubcategorySort: Curtana Zenith 1010, Ironworks Robe of Healing 47100, Neophyte's Ring 49370. Step 2, the code is SubcategorySort mod 1000, the last three digits: 10, 100, 370. Step 3, look the code up in the table: Relic, Tomestone, Field Op; a code missing from the table stops the run, so a new kind of gear after a patch is noticed. Step 4, codes 10, 20, 60, 61 and 250 are split further: Curtana Zenith is a weapon, so it stays Relic; the other two are not split. Step 5, single pieces are overridden by item id or by currency: Neophyte's Ring is overridden by item id to Quest. Result: Relic, Tomestone, Quest. Game data d9582a6.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .on { fill: #ece9dd; stroke: #0d6e72; stroke-width: 2; }
+    .kept { fill: #ece9dd; stroke: #25773a; stroke-width: 2; }
+    .stop { fill: #ece9dd; stroke: #b0402c; stroke-width: 2; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .rule { fill: none; stroke: #586869; stroke-width: 1; stroke-dasharray: 2 4; }
+    .head { fill: #0d6e72; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .s { font-size: 12px; }
+    .h { font-size: 14px; font-weight: 600; }
+    .num { font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .on { fill: #1b2b2e; stroke: #4cc2b6; }
+      .kept { fill: #1b2b2e; stroke: #6cc788; }
+      .stop { fill: #1b2b2e; stroke: #f08a74; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+      .flow { stroke: #4cc2b6; }
+      .rule { stroke: #92a5a5; }
+      .head { fill: #4cc2b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="514"/>
+  <text class="fg h" x="20" y="34">Step</text>
+  <text class="fg h" x="326" y="30" text-anchor="middle">Curtana Zenith</text>
+  <text class="muted s" x="326" y="50" text-anchor="middle">relic weapon</text>
+  <text class="fg h" x="478" y="30" text-anchor="middle">Ironworks Robe</text>
+  <text class="muted s" x="478" y="50" text-anchor="middle">of Healing</text>
+  <text class="fg h" x="630" y="30" text-anchor="middle">Neophyte's Ring</text>
+  <text class="muted s" x="630" y="50" text-anchor="middle">ring</text>
+  <rect class="on" x="20" y="72" width="220" height="48" rx="8"/>
+  <text class="fg" x="32" y="93">1. SubcategorySort</text>
+  <text class="muted s" x="32" y="111">a number on every item</text>
+  <line class="flow" x1="130" y1="122" x2="130" y2="135" marker-end="url(#arrow)"/>
+  <rect class="box" x="256" y="72" width="140" height="48" rx="8"/>
+  <text class="num fg" x="326" y="101" text-anchor="middle">1010</text>
+  <rect class="box" x="408" y="72" width="140" height="48" rx="8"/>
+  <text class="num fg" x="478" y="101" text-anchor="middle">47100</text>
+  <rect class="box" x="560" y="72" width="140" height="48" rx="8"/>
+  <text class="num fg" x="630" y="101" text-anchor="middle">49370</text>
+  <rect class="on" x="20" y="138" width="220" height="48" rx="8"/>
+  <text class="fg" x="32" y="159">2. Code = last three digits</text>
+  <text class="muted s" x="32" y="177">SubcategorySort mod 1000</text>
+  <line class="flow" x1="130" y1="188" x2="130" y2="201" marker-end="url(#arrow)"/>
+  <rect class="box" x="256" y="138" width="140" height="48" rx="8"/>
+  <text class="num accent" x="326" y="167" text-anchor="middle">10</text>
+  <rect class="box" x="408" y="138" width="140" height="48" rx="8"/>
+  <text class="num accent" x="478" y="167" text-anchor="middle">100</text>
+  <rect class="box" x="560" y="138" width="140" height="48" rx="8"/>
+  <text class="num accent" x="630" y="167" text-anchor="middle">370</text>
+  <rect class="on" x="20" y="204" width="220" height="48" rx="8"/>
+  <text class="fg" x="32" y="225">3. Look the code up</text>
+  <text class="muted s" x="32" y="243">in the table of "The codes"</text>
+  <line class="flow" x1="130" y1="254" x2="130" y2="267" marker-end="url(#arrow)"/>
+  <rect class="box" x="256" y="204" width="140" height="48" rx="8"/>
+  <text class="fg" x="326" y="233" text-anchor="middle">Relic</text>
+  <rect class="box" x="408" y="204" width="140" height="48" rx="8"/>
+  <text class="fg" x="478" y="233" text-anchor="middle">Tomestone</text>
+  <rect class="box" x="560" y="204" width="140" height="48" rx="8"/>
+  <text class="fg" x="630" y="233" text-anchor="middle">Field Op</text>
+  <rect class="on" x="20" y="270" width="220" height="48" rx="8"/>
+  <text class="fg" x="32" y="291">4. Split some codes further</text>
+  <text class="muted s" x="32" y="309">codes 10, 20, 60, 61, 250</text>
+  <line class="flow" x1="130" y1="320" x2="130" y2="333" marker-end="url(#arrow)"/>
+  <rect class="box" x="256" y="270" width="140" height="48" rx="8"/>
+  <text class="muted s" x="326" y="291" text-anchor="middle">weapon:</text>
+  <text class="fg" x="326" y="309" text-anchor="middle">stays Relic</text>
+  <rect class="box" x="408" y="270" width="140" height="48" rx="8"/>
+  <text class="muted" x="478" y="299" text-anchor="middle">not split</text>
+  <rect class="box" x="560" y="270" width="140" height="48" rx="8"/>
+  <text class="muted" x="630" y="299" text-anchor="middle">not split</text>
+  <rect class="on" x="20" y="336" width="220" height="48" rx="8"/>
+  <text class="fg" x="32" y="357">5. Override single pieces</text>
+  <text class="muted s" x="32" y="375">by item id or by currency</text>
+  <line class="flow" x1="130" y1="386" x2="130" y2="399" marker-end="url(#arrow)"/>
+  <rect class="box" x="256" y="336" width="140" height="48" rx="8"/>
+  <text class="muted" x="326" y="365" text-anchor="middle">none</text>
+  <rect class="box" x="408" y="336" width="140" height="48" rx="8"/>
+  <text class="muted" x="478" y="365" text-anchor="middle">none</text>
+  <rect class="box" x="560" y="336" width="140" height="48" rx="8"/>
+  <text class="muted s" x="630" y="357" text-anchor="middle">by item id:</text>
+  <text class="gold" x="630" y="375" text-anchor="middle">Quest</text>
+  <rect class="kept" x="20" y="402" width="220" height="48" rx="8"/>
+  <text class="fg h" x="32" y="423">Category</text>
+  <text class="muted s" x="32" y="441">the piece is filed under</text>
+  <rect class="kept" x="256" y="402" width="140" height="48" rx="8"/>
+  <text class="good h" x="326" y="431" text-anchor="middle">Relic</text>
+  <rect class="kept" x="408" y="402" width="140" height="48" rx="8"/>
+  <text class="good h" x="478" y="431" text-anchor="middle">Tomestone</text>
+  <rect class="kept" x="560" y="402" width="140" height="48" rx="8"/>
+  <text class="good h" x="630" y="431" text-anchor="middle">Quest</text>
+  <text class="bad s" x="20" y="484">Step 3 stops the run on a code missing from the table, so a new kind of gear after a patch is noticed.</text>
+  <text class="muted s" x="20" y="502">SubcategorySort read from Item.csv at game data d9582a6.</text>
+</svg>

@@ -25,14 +25,11 @@ $$
 
 Outside gear, the same digits mean other things. Nothing in the game documents these codes: every meaning below was inferred from the pieces that carry the code and then checked against the wiki or the Lodestone (the official site).
 
-**How the generator uses a code.** For each piece it keeps:
+**How the generator uses a code.** For each piece it keeps, the generator takes the steps below; a code that is not in the table stops the run, so a new kind of gear after a patch is noticed rather than filed under a wrong category.
 
-1. It looks the code up in the table below and files the piece under that category.
-2. A few codes are split further: code 10 by slot (weapons and shields are Relic, the rest Field Op), code 20 by dye slots and shop currency (Savage or Raid), codes 60 and 61 by shop currency (Ultimate or Trial), code 250 by equip level (Diadem or Aetherial).
-3. A short list of single pieces whose code says the wrong thing is overridden, by item id or by the currency that buys them.
-4. A code that is not in the table stops the run, so a new kind of gear after a patch is noticed rather than filed under a wrong category.
+![Five steps traced for three real pieces at game data d9582a6. SubcategorySort: Curtana Zenith 1010, Ironworks Robe of Healing 47100, Neophyte's Ring 49370. Code, SubcategorySort mod 1000: 10, 100, 370. Look up the code in the table: Relic, Tomestone, Field Op; a code missing from the table stops the run. Split codes 10, 20, 60, 61 and 250 further: Curtana Zenith is a weapon, so it stays Relic; the other two are not split. Override single pieces by item id or currency: Neophyte's Ring becomes Quest by item id. Categories: Relic, Tomestone, Quest.](../diagrams/subcategory-code-steps.svg)
 
-Here "shop data" means the game's exchange shops: which items each shop sells, and for which currency.
+The splits in step 4: code 10 by slot (weapons and shields are Relic, the rest Field Op), code 20 by dye slots and shop currency (Savage or Raid), codes 60 and 61 by shop currency (Ultimate or Trial), code 250 by equip level (Diadem or Aetherial). Step 5 covers a short list of single pieces whose code says the wrong thing. Here "shop data" means the game's exchange shops: which items each shop sells, and for which currency.
 
 ## The codes
 
@@ -118,7 +115,11 @@ Code 20 holds every 8-player raid piece. Each raid tier comes in a Normal and a 
 
 Each signal alone falls short: dye slots miss the accessories, and the currencies need a token-to-difficulty list the game files do not have. Together they need neither.
 
-**The rule the generator uses.** Dyeable code-20 armor and weapons are Savage. Every shop that sells one of them shows the Savage currencies (the raid books), and anything bought with those currencies is Savage too, accessories included. The generator needs no token-to-difficulty list. Stated precisely, with $\text{dye}(i)$ the number of dye slots:
+**The rule the generator uses.** Dyeable armor and weapons seed the Savage set; the shops that sell them reveal the Savage currencies (the raid books); anything bought with those is Savage too, accessories included. No token-to-difficulty list is needed.
+
+![Code 20 split in three steps, with one Dawntrail tier at game data d9582a6. 1, seed: code-20 armor and weapons with a dye slot, such as Grand Champion's Coat of Aiming, item level 790, 2 dye slots. 2, Savage currencies: every cost in a shop that sells a seed piece, such as the raid book AAC Illustrated: HW Edition I. 3, Savage: the seed plus every piece sold for a Savage currency, such as Grand Champion's Ring of Aiming, item level 790, no dye slot. Every other code-20 piece is Raid, such as Heavyweight Gloves of Healing, item level 770, no dye slot, bought with Heavy Hologauntlets; the Coils have no dye slots and no shops. Cross-check: a Savage armor piece or weapon with no dye slot stops the run.](../diagrams/subcategory-savage.svg)
+
+Stated precisely, with $\text{dye}(i)$ the number of dye slots:
 
 $$
 S_0 = \{\, i : \text{code}(i) = 20,\ \text{dye}(i) \ge 1 \,\}, \qquad
@@ -127,7 +128,7 @@ $$
 
 and a code-20 piece is Savage when it is in $S_0$ or some shop sells it for a currency in $C$.
 
-**Why this is safe.** It can only go wrong if a shop that sells Savage gear also takes a currency used for other gear (a Normal-raid token, say); then the Normal pieces bought with that token would be called Savage. Such a mistake would show up as armor or a weapon filed as Savage with no dye slot. So, as a cross-check, a Savage armor piece or weapon without a dye slot stops the run: it would mean a Savage shop also takes a currency used for other gear. The Coils have no dye slots and no shops, so their gear stays Raid.
+**Why this is safe.** It can only go wrong if a shop that sells Savage gear also takes a currency used for other gear (a Normal-raid token, say); the Normal pieces bought with it would then be called Savage, and would show up as armor or a weapon filed as Savage with no dye slot. That is exactly what the cross-check stops the run on. The Coils have no dye slots and no shops, so their gear stays Raid.
 
 ## Relic weapon steps by code
 

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-labelledby="t d">
+  <title id="t">Which of several equal melds is shown</title>
+  <desc id="d">Kirin's Osode of Fending with Determination as the target: 33 points of room, five slots. Two VI add 32 and lose on rule 1 (less gain). One VI and three V add 33 with four stones and lose on rule 2 (more stones). Three VI add 33 with three stones, three of them big, and lose on rule 3 (more big stones). Two VI and one V add 33 with three stones, two of them big: this meld is shown, with 2 slots empty.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .chipBig { fill: #ece9dd; stroke: #0d6e72; stroke-width: 1.5; }
+    .chipSmall { fill: #ece9dd; stroke: #8f5f0c; stroke-width: 1.5; }
+    .rowGood { fill: none; stroke: #25773a; stroke-width: 1.5; }
+    .rule { stroke: #586869; stroke-width: 1; fill: none; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .h { font-size: 12px; font-weight: 600; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    .num { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .chipBig { fill: #1b2b2e; stroke: #4cc2b6; }
+      .chipSmall { fill: #1b2b2e; stroke: #e2b659; }
+      .rowGood { stroke: #6cc788; }
+      .rule { stroke: #92a5a5; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="300"/>
+
+  <text class="t fg" x="28" y="30">Kirin's Osode of Fending, target Determination: 33 points of room, 5 slots</text>
+
+  <!-- header -->
+  <text class="h muted" x="28" y="66">Stones in Determination</text>
+  <text class="h muted" x="310" y="66" text-anchor="end">Gain</text>
+  <text class="h muted" x="370" y="66" text-anchor="end">Stones</text>
+  <text class="h muted" x="440" y="66" text-anchor="end">Big (VI)</text>
+  <text class="h muted" x="470" y="66">Result</text>
+  <path class="rule" d="M28,76 H692"/>
+
+  <!-- chips: width 48, gap 8, height 28 -->
+  <!-- row 1: VI VI -->
+  <rect class="chipBig" x="28" y="88" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="52" y="107" text-anchor="middle">VI</text>
+  <rect class="chipBig" x="84" y="88" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="108" y="107" text-anchor="middle">VI</text>
+  <text class="num fg" x="310" y="107" text-anchor="end">+32</text>
+  <text class="num fg" x="370" y="107" text-anchor="end">2</text>
+  <text class="num fg" x="440" y="107" text-anchor="end">2</text>
+  <text class="s bad" x="470" y="107">out at rule 1: less gain</text>
+
+  <!-- row 2: VI V V V -->
+  <rect class="chipBig" x="28" y="132" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="52" y="151" text-anchor="middle">VI</text>
+  <rect class="chipSmall" x="84" y="132" width="48" height="28" rx="8"/>
+  <text class="lbl gold" x="108" y="151" text-anchor="middle">V</text>
+  <rect class="chipSmall" x="140" y="132" width="48" height="28" rx="8"/>
+  <text class="lbl gold" x="164" y="151" text-anchor="middle">V</text>
+  <rect class="chipSmall" x="196" y="132" width="48" height="28" rx="8"/>
+  <text class="lbl gold" x="220" y="151" text-anchor="middle">V</text>
+  <text class="num fg" x="310" y="151" text-anchor="end">+33</text>
+  <text class="num fg" x="370" y="151" text-anchor="end">4</text>
+  <text class="num fg" x="440" y="151" text-anchor="end">1</text>
+  <text class="s bad" x="470" y="151">out at rule 2: more stones</text>
+
+  <!-- row 3: VI VI VI -->
+  <rect class="chipBig" x="28" y="176" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="52" y="195" text-anchor="middle">VI</text>
+  <rect class="chipBig" x="84" y="176" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="108" y="195" text-anchor="middle">VI</text>
+  <rect class="chipBig" x="140" y="176" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="164" y="195" text-anchor="middle">VI</text>
+  <text class="num fg" x="310" y="195" text-anchor="end">+33</text>
+  <text class="num fg" x="370" y="195" text-anchor="end">3</text>
+  <text class="num fg" x="440" y="195" text-anchor="end">3</text>
+  <text class="s bad" x="470" y="195">out at rule 3: more big stones</text>
+
+  <!-- row 4: VI VI V (shown) -->
+  <rect class="rowGood" x="20" y="214" width="680" height="44" rx="8"/>
+  <rect class="chipBig" x="28" y="222" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="52" y="241" text-anchor="middle">VI</text>
+  <rect class="chipBig" x="84" y="222" width="48" height="28" rx="8"/>
+  <text class="lbl accent" x="108" y="241" text-anchor="middle">VI</text>
+  <rect class="chipSmall" x="140" y="222" width="48" height="28" rx="8"/>
+  <text class="lbl gold" x="164" y="241" text-anchor="middle">V</text>
+  <text class="num fg" x="310" y="241" text-anchor="end">+33</text>
+  <text class="num fg" x="370" y="241" text-anchor="end">3</text>
+  <text class="num fg" x="440" y="241" text-anchor="end">2</text>
+  <text class="lbl good" x="470" y="241">shown, 2 slots empty</text>
+
+  <text class="s muted" x="28" y="280">VI (+16) is the big stone at item level 300, V (+6) the small one.</text>
+</svg>

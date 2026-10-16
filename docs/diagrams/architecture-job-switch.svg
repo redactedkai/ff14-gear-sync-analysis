@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-labelledby="t d">
+  <title id="t">What a job switch resets and what it keeps</title>
+  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal choice (best for the goal), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the gear groups left out in both lists, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .good { fill: #25773a; }
+    .rule { stroke: #586869; stroke-width: 1; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .l { font-size: 12px; font-weight: 600; }
+    .s { font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .good { fill: #6cc788; }
+      .rule { stroke: #92a5a5; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="470"/>
+
+  <text class="fg t" x="20" y="30">Switching to any other job, even one in the same role</text>
+  <text class="muted s" x="20" y="50">Happens at once, without asking: only the selections in the first column go back to defaults.</text>
+
+  <!-- Column 1: reset -->
+  <rect class="box" x="20" y="70" width="250" height="380" rx="8"/>
+  <text class="accent t" x="36" y="96">Reset to the new job's defaults</text>
+  <line class="rule" x1="36" y1="108" x2="254" y2="108"/>
+  <text class="fg l" x="36" y="130">Piece stats substats</text>
+  <text class="muted s" x="36" y="146">Critical Hit, then speed</text>
+  <text class="fg l" x="36" y="172">Piece stats slot</text>
+  <text class="muted s" x="36" y="188">head, only if the new job lacks it</text>
+  <text class="fg l" x="36" y="214">Optimizer target</text>
+  <text class="muted s" x="36" y="230">main stat</text>
+  <text class="fg l" x="36" y="256">Tiebreaks 1 and 2</text>
+  <text class="muted s" x="36" y="272">none</text>
+  <text class="fg l" x="36" y="298">Meal</text>
+  <text class="muted s" x="36" y="314">best for the goal</text>
+  <text class="fg l" x="36" y="340">Target GCD</text>
+  <text class="muted s" x="36" y="356">any</text>
+  <text class="fg l" x="36" y="382">Gear browser slot</text>
+  <text class="muted s" x="36" y="398">any slot</text>
+  <text class="fg l" x="36" y="424">Gear browser sort</text>
+  <text class="muted s" x="36" y="440">item level</text>
+
+  <!-- Column 2: held to the level cap -->
+  <rect class="box" x="290" y="70" width="200" height="210" rx="8"/>
+  <text class="gold t" x="306" y="96">Held to the level cap</text>
+  <line class="rule" x1="306" y1="108" x2="474" y2="108"/>
+  <text class="fg l" x="306" y="130">Synced level</text>
+  <text class="fg l" x="306" y="156">Equip level filter,</text>
+  <text class="fg l" x="306" y="172">Gear browser</text>
+  <text class="fg l" x="306" y="198">Equip level filter,</text>
+  <text class="fg l" x="306" y="214">Gear to search</text>
+  <text class="muted s" x="306" y="244">lowered only if above the cap:</text>
+  <text class="muted s" x="306" y="260">90 becomes 80 for Blue Mage</text>
+
+  <!-- Column 3: kept -->
+  <rect class="box" x="510" y="70" width="190" height="250" rx="8"/>
+  <text class="good t" x="526" y="96">Kept</text>
+  <line class="rule" x1="526" y1="108" x2="684" y2="108"/>
+  <text class="fg s" x="526" y="130">Sync cap and sync switch</text>
+  <text class="fg s" x="526" y="156">Gear groups left out</text>
+  <text class="muted s" x="526" y="172">(both lists)</text>
+  <text class="fg s" x="526" y="198">Expansion and</text>
+  <text class="fg s" x="526" y="214">item level filters</text>
+  <text class="fg s" x="526" y="240">Materia, food on or off</text>
+  <text class="fg s" x="526" y="266">Piece stats item level</text>
+  <text class="fg s" x="526" y="292">Open tab, search text</text>
+</svg>

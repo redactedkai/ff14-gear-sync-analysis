@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-labelledby="t d">
+  <title id="t">Differential testing of the optimizer against the brute-force reference</title>
+  <desc id="d">Two kinds of small pool feed the test: real-gear pools (seven jobs covering every role, 24 to 33 items, 3,072 to 147,456 loadouts) and random pools drawn from fixed seeds, so every run tests the same pools. Each pool goes to both the optimizer, a branch and bound search with pruning and bounds, and the brute-force reference, which enumerates every legal loadout, drops those outside the speed range and keeps the lexicographically best totals (goal stat, then tiebreak 1, then tiebreak 2), with no pruning and no score weighting. The two results are compared on every substat: equal passes, any difference fails and names a pool that can be reproduced. Three rules are shared by both sides, so this comparison does not check them: the rule for a piece's effective (synced) stats, checked instead by the sync tests and the caps at item level 475 and 123; a single ring only when no ring pair exists; and no slot left empty to meet a constraint. The two policies are tested directly on two-item pools.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .ref { fill: #ece9dd; stroke: #0d6e72; stroke-width: 1.5; }
+    .shared { fill: none; stroke: #586869; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .good { fill: #25773a; }
+    .bad { fill: #b0402c; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .head { fill: #0d6e72; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .ref { fill: #1b2b2e; stroke: #4cc2b6; }
+      .shared { stroke: #92a5a5; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .good { fill: #6cc788; }
+      .bad { fill: #f08a74; }
+      .flow { stroke: #4cc2b6; }
+      .head { fill: #4cc2b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="560"/>
+
+  <!-- Row 1: pool sources -->
+  <rect class="box" x="40" y="24" width="300" height="76" rx="8"/>
+  <text class="fg t" x="190" y="50" text-anchor="middle">Real-gear pools</text>
+  <text class="muted s" x="190" y="70" text-anchor="middle">7 jobs, every role</text>
+  <text class="muted s" x="190" y="87" text-anchor="middle">24–33 items, 3,072–147,456 loadouts</text>
+
+  <rect class="box" x="380" y="24" width="300" height="76" rx="8"/>
+  <text class="fg t" x="530" y="50" text-anchor="middle">Random pools</text>
+  <text class="muted s" x="530" y="70" text-anchor="middle">drawn from fixed seeds,</text>
+  <text class="muted s" x="530" y="87" text-anchor="middle">so every run tests the same pools</text>
+
+  <!-- Bus: every pool goes to both sides -->
+  <line class="flow" x1="190" y1="100" x2="190" y2="128"/>
+  <line class="flow" x1="530" y1="100" x2="530" y2="128"/>
+  <line class="flow" x1="190" y1="128" x2="530" y2="128"/>
+  <line class="flow" x1="190" y1="128" x2="190" y2="156" marker-end="url(#arrow)"/>
+  <line class="flow" x1="530" y1="128" x2="530" y2="156" marker-end="url(#arrow)"/>
+  <rect class="bg" x="290" y="118" width="140" height="20"/>
+  <text class="muted s" x="360" y="132" text-anchor="middle">same pool to both</text>
+
+  <!-- Row 2: the two sides -->
+  <rect class="box" x="40" y="158" width="300" height="126" rx="8"/>
+  <text class="fg t" x="190" y="186" text-anchor="middle">Optimizer</text>
+  <text class="muted s" x="190" y="208" text-anchor="middle">branch and bound search</text>
+  <text class="muted s" x="190" y="226" text-anchor="middle">with pruning and bounds</text>
+  <text class="bad s" x="190" y="254" text-anchor="middle">a wrong bound silently returns</text>
+  <text class="bad s" x="190" y="271" text-anchor="middle">a worse loadout</text>
+
+  <rect class="ref" x="380" y="158" width="300" height="126" rx="8"/>
+  <text class="accent t" x="530" y="186" text-anchor="middle">Brute-force reference</text>
+  <text class="muted s" x="530" y="208" text-anchor="middle">1. every legal loadout</text>
+  <text class="muted s" x="530" y="226" text-anchor="middle">2. drop those outside the speed range</text>
+  <text class="muted s" x="530" y="244" text-anchor="middle">3. keep the best (goal, tiebreak 1, tiebreak 2)</text>
+  <text class="muted s" x="530" y="271" text-anchor="middle">no pruning, no score weighting</text>
+
+  <!-- Into the comparison -->
+  <path class="flow" d="M190,284 V318 H268" marker-end="url(#arrow)"/>
+  <path class="flow" d="M530,284 V318 H452" marker-end="url(#arrow)"/>
+
+  <!-- Row 3: compare -->
+  <rect class="box" x="270" y="300" width="180" height="72" rx="8"/>
+  <text class="fg t" x="360" y="327" text-anchor="middle">Compare</text>
+  <text class="muted s" x="360" y="346" text-anchor="middle">every substat</text>
+  <text class="muted s" x="360" y="362" text-anchor="middle">(not pinned totals)</text>
+
+  <text class="good s" x="40" y="342">equal: pass</text>
+  <text class="bad s" x="680" y="334" text-anchor="end">any difference: fail,</text>
+  <text class="bad s" x="680" y="351" text-anchor="end">naming a reproducible pool</text>
+  <line class="flow" x1="268" y1="338" x2="118" y2="338" marker-end="url(#arrow)"/>
+  <line class="flow" x1="452" y1="338" x2="526" y2="338" marker-end="url(#arrow)"/>
+
+  <!-- Row 4: shared rules -->
+  <rect class="shared" x="40" y="400" width="640" height="136" rx="8"/>
+  <text class="fg t" x="60" y="426">Shared by both sides, so this comparison does not check them</text>
+  <text class="fg s" x="60" y="454">effective (synced) stats of a piece</text>
+  <text class="muted s" x="384" y="454">→ sync tests, caps at item level 475 and 123</text>
+  <text class="fg s" x="60" y="480">policy 1: a single ring only when no pair exists</text>
+  <text class="muted s" x="384" y="480">→ "policy: ..." tests on two-item pools</text>
+  <text class="fg s" x="60" y="506">policy 2: no slot left empty for a constraint</text>
+  <text class="muted s" x="384" y="506">→ "policy: ..." tests on two-item pools</text>
+</svg>

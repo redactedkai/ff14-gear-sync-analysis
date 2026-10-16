@@ -86,14 +86,16 @@ Every stat on the piece has to match, not just one.
 - **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4](../engineering/data-pipeline.md#stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.
 - **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
 
-Two wider checks fall outside the band table:
+Two wider checks fall outside the band table, the whole database at item level 100 and up and the pieces below it:
 
-- **Whole database at item level 100 and up** (17,316 pieces): 17,292 exact (99.9%), 24 off by 1 (the misses below) and none off by more. The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
-- **Below item level 100** (2,715 pieces, item level 15 to 99, in the database since 2026-10-15): 2,695 exact (99.3%), every piece within 1 (a unit test checks it). Examined 2026-10-16 ("Below item level 100" below). The stat factor, three-substat and four-main-stat tests stop at 100.
+![Two flows of real pieces. Item level 100 and up: 17,316 pieces, 17,292 exact (99.9%), 24 off by 1 and none off by more: 18 at item level 380, 4 in two weapon-and-shield pairs (275, 536), 2 Troian legs at 595. Exact because the model has a rule for them: 8 green HQ healer pieces at 110, the 6 all-jobs earrings and rings, the 11 Atma weapons. Below item level 100: 2,715 pieces, 2,695 exact (99.3%), 20 off by 1: 13 Replica High Allagan and Dreadwyrm pieces, 3 crafted weapons, the Plundered Earrings and Ear Cuffs, the Midnight Egg Cap and Harlequin's Acton. Of 42 misses on 2026-10-16, three general rules and the reduced-stat list fixed 22.](../diagrams/validation-funnel.svg)
+
+- The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
+- The pieces below item level 100 (in the database since 2026-10-15) are all within 1 (a unit test checks it); examined 2026-10-16 ("Below item level 100" below). The stat factor, three-substat and four-main-stat tests stop at 100.
 
 ### What the misses look like
 
-There are 24 misses in total (0, 2, 22 and 0 per band), all off by 1, in three groups (a probe run for this page, not a committed test):
+The 24 misses in the diagram, 0, 2, 22 and 0 per band (a probe run for this page, not a committed test):
 
 - **18 at item level 380.** Intelligence and Mind head, hands and feet carry Vitality 80 where the formula gives 79 ($1040 \times 85 / 1000 = 88.4 \to 88$, $\times 0.9 = 79.2 \to 79$; a single rounding would give 80). These 18 are every Intelligence and Mind head, hands and feet piece at 380 (Elemental, Omicron and Rakshasa); Strength and Dexterity head pieces there carry 88, as the formula says.
   - It is not a rounding error in the formula. Of eight rounding orders tried, every one that gives 80 here is wrong on at least 1,017 other Intelligence and Mind pieces. No other budget value fits either: the head needs a Vitality budget of 1,042 or more, the body 1,040 or less.
@@ -123,20 +125,14 @@ Two groups that used to miss have a known cause and a rule in the model ([math.m
 
 ### Below item level 100
 
-The 2,715 pieces below item level 100 had 42 misses (2026-10-16). Three rules that hold for all gear, and one list of names, fixed 22 of them; no piece at 100 and up changed (every piece's prediction compared before and after):
+Three rules that hold for all gear, and one list of names, fixed 22 of the 42 misses (diagram above); no piece at 100 and up changed (every piece's prediction compared before and after):
 
 - **Direct Hit above another substat ranks like any substat.** Wolf Ringbands (PvP, item level 55, Mind only) carry Direct Hit 15 and Piety 11: Direct Hit at 100%, Piety at 70%, not the fixed line. Everywhere else the fixed line is the smallest substat.
 - **A third substat tied with the second also takes 70%.** Herklaedi (item level 50, a body piece covering hands, legs and feet) carry Tenacity 75, Determination 53 and Skill Speed 53. It is the only piece with three ranked substats.
 - **Vitality only where the piece carries it.** The three starting city rings (Gridanian, Lominsan, Ul'dahn; item level 15) carry only Direct Hit 1.
 - **18 dungeon pieces at item level 46 carry reduced stats** (equip level 44; Buccaneer's, Harlequin's, Sentinel's, Templar's and Coliseum head, body, hands, legs and feet): each main stat at 90% of the usual value, Vitality and substats at 80%, rounded after. That fits 17 exactly; Harlequin's Acton's Intelligence stays 1 off. Before, they were off by up to 4. The other 26 pieces of their sets at that level follow the usual rule and nothing in the data marks the 18, so the model lists them by name (owner's decision). **Inferred**, fitted to these 18.
 
-The 20 that still miss are all off by 1 and are left as they are:
-
-- the 13 Replica High Allagan and Dreadwyrm healer pieces (item level 50) carry Direct Hit at 25%, like the eight green pieces in "Explained exceptions" above, but nothing separates them from the blue crafted pieces at 20%;
-- three item level 30 crafted weapons (Steel Claymore, Steel-barreled Carbine, Star Globe);
-- the Midnight Egg Cap (seasonal event, four main stats);
-- the Plundered Earrings and Ear Cuffs (item level 17);
-- Harlequin's Acton (above).
+The 20 that still miss (listed in the diagram) are left as they are. The 13 Replica High Allagan and Dreadwyrm healer pieces carry Direct Hit at 25%, like the eight green pieces in "Explained exceptions" above, but nothing separates them from the blue crafted pieces at 20%. The three crafted weapons are the Steel Claymore, Steel-barreled Carbine and Star Globe; the Midnight Egg Cap is a seasonal event piece with four main stats.
 
 ### Tests for this section
 
@@ -289,7 +285,9 @@ Which parts of the sync model rest on no capture of the game by this project, an
 
 Not captured by this project; quoted from code comments in xivgear's tests (commit `6c3c878`, [`sync_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/stats/sync_stats_tests.ts), [`item_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/item_stats_tests.ts)). The budgets are this project's `ItemLevel` rows.
 
-The two candidate cap orders differ only in when the stat factor $F$ applies. **Factor first** (the model) floors $B \times F/100$, then the slot share, and rounds once: $\operatorname{round}(\lfloor \lfloor B \times F/100 \rfloor \times p/100 \rfloor / 10)$. **Item order** rounds the slot share first, then applies the factor, as an item's own stats do (section 2). With $F = 100$ they agree; with $F = 90$ they can differ by 1, and the in-game values decide.
+The two candidate cap orders differ only in when the stat factor $F$ applies. **Factor first** (the model) is $\operatorname{round}(\lfloor \lfloor B \times F/100 \rfloor \times p/100 \rfloor / 10)$; **item order** rounds the slot share first, then applies the factor, as an item's own stats do (section 2). With $F = 100$ they agree; with $F = 90$ they can differ by 1, and the in-game values decide:
+
+![Two step-by-step pipelines for the Blue Mage head synced to item level 270, Vitality budget 736, factor 90%, head share 85 per mille. Factor first: 736 times 0.9 floored is 662, times 0.85 floored is 562 tenths, rounded 56. Item order: 736 times 85/1000 is 62.56, rounded 63, times 0.9 is 56.7, rounded 57. In game: 56, second-hand from xivgear's tests.](../diagrams/validation-cap-order.svg)
 
 | In game | Budget | Cap, factor first | Cap, item order |
 | --- | --- | --- | --- |
@@ -301,7 +299,7 @@ The two candidate cap orders differ only in when the stat factor $F$ applies. **
 
 Notes on the rows:
 
-- Blue Mage: the Edenmorn Hat of Casting (item level 530) synced to 270, "Verified in-game by Xi". Factor first $\lfloor 736 \times 0.9 \rfloor = 662$, $\lfloor 662 \times 0.85 \rfloor = 562 \to 56$; item order $\operatorname{round}(62.56) = 63$, $\times 0.9 \to 57$.
+- Blue Mage: the Edenmorn Hat of Casting (item level 530) synced to 270, "Verified in-game by Xi"; the steps are in the diagram above.
 - Red Mage: "600 item synced down gives us 123? tested in game". Factor first $\lfloor 1603 \times 0.9 \rfloor = 1442$, $\lfloor 1442 \times 0.85 \rfloor = 1225 \to 123$; item order $\operatorname{round}(136.26) = 136$, $\times 0.9 \to 122$.
 - Azeyma's Earrings: item level 560, kind 0, for Ninja and Sage. Factor first $\lfloor 1170 \times 0.9 \rfloor = 1053$, $\lfloor 1053 \times 0.67 \rfloor = 705 \to 71$; item order $\operatorname{round}(78.39) = 78$, $\times 0.9 \to 70$. The other values: Vitality 72, Determination 79, Direct Hit 79 (Ninja), Piety 71 (Sage).
 - Menphina's Earring: item level 430, kind 0, for Sage.

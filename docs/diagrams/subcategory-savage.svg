@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="t d">
+  <title id="t">How code-20 raid gear is split into Savage and Raid</title>
+  <desc id="d">Three steps with one Dawntrail example. 1, seed: code-20 armor and weapons with a dye slot, for example Grand Champion's Coat of Aiming, item level 790, 2 dye slots. 2, Savage currencies: every cost in a shop that sells a seed piece, for example AAC Illustrated: HW Edition I, a raid book. 3, Savage: the seed plus every piece sold for a Savage currency, for example Grand Champion's Ring of Aiming, item level 790, no dye slot. Every other code-20 piece is Raid, for example Heavyweight Gloves of Healing, item level 770, no dye slot, bought with Heavy Hologauntlets, which is not a Savage currency; the Coils have no dye slots and no shops. Cross-check: the run stops if a Savage armor piece or weapon has no dye slot, since a Savage shop would then also take a currency used for other gear. Game data d9582a6.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .on { fill: #ece9dd; stroke: #0d6e72; stroke-width: 2; }
+    .kept { fill: #ece9dd; stroke: #25773a; stroke-width: 2; }
+    .stop { fill: #ece9dd; stroke: #b0402c; stroke-width: 2; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .rule { fill: none; stroke: #586869; stroke-width: 1; stroke-dasharray: 2 4; }
+    .head { fill: #0d6e72; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .s { font-size: 12px; }
+    .h { font-size: 14px; font-weight: 600; }
+    .num { font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .on { fill: #1b2b2e; stroke: #4cc2b6; }
+      .kept { fill: #1b2b2e; stroke: #6cc788; }
+      .stop { fill: #1b2b2e; stroke: #f08a74; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+      .flow { stroke: #4cc2b6; }
+      .rule { stroke: #92a5a5; }
+      .head { fill: #4cc2b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="420"/>
+  <text class="fg h" x="20" y="32">Code 20 (8-player raids): which pieces are Savage</text>
+  <rect class="on" x="20" y="56" width="200" height="196" rx="8"/>
+  <text class="fg h" x="34" y="82">1. Seed</text>
+  <text class="fg s" x="34" y="106">code-20 armor and weapons</text>
+  <text class="fg s" x="34" y="124">with a dye slot</text>
+  <line class="rule" x1="34" y1="150" x2="206" y2="150"/>
+  <text class="muted s" x="34" y="172">Example</text>
+  <text class="gold" x="34" y="194">Grand Champion's</text>
+  <text class="gold" x="34" y="212">Coat of Aiming</text>
+  <text class="muted s" x="34" y="230">790, 2 dye slots</text>
+  <rect class="on" x="260" y="56" width="200" height="196" rx="8"/>
+  <text class="fg h" x="274" y="82">2. Savage currencies</text>
+  <text class="fg s" x="274" y="106">every cost in a shop that</text>
+  <text class="fg s" x="274" y="124">sells a seed piece</text>
+  <line class="rule" x1="274" y1="150" x2="446" y2="150"/>
+  <text class="muted s" x="274" y="172">Example</text>
+  <text class="gold" x="274" y="194">AAC Illustrated:</text>
+  <text class="gold" x="274" y="212">HW Edition I</text>
+  <text class="muted s" x="274" y="230">a raid book</text>
+  <rect class="kept" x="500" y="56" width="200" height="196" rx="8"/>
+  <text class="fg h" x="514" y="82">3. Savage</text>
+  <text class="fg s" x="514" y="106">the seed, plus every piece</text>
+  <text class="fg s" x="514" y="124">sold for a Savage currency</text>
+  <line class="rule" x1="514" y1="150" x2="686" y2="150"/>
+  <text class="muted s" x="514" y="172">Example</text>
+  <text class="gold" x="514" y="194">Grand Champion's</text>
+  <text class="gold" x="514" y="212">Ring of Aiming</text>
+  <text class="muted s" x="514" y="230">790, no dye slot</text>
+  <line class="flow" x1="222" y1="154" x2="257" y2="154" marker-end="url(#arrow)"/>
+  <line class="flow" x1="462" y1="154" x2="497" y2="154" marker-end="url(#arrow)"/>
+  <rect class="box" x="20" y="276" width="330" height="104" rx="8"/>
+  <text class="fg h" x="34" y="302">Every other code-20 piece: Raid</text>
+  <text class="fg s" x="34" y="326">Heavyweight Gloves of Healing: 770, no dye slot,</text>
+  <text class="fg s" x="34" y="344">bought with Heavy Hologauntlets (not a Savage</text>
+  <text class="fg s" x="34" y="362">currency). The Coils: no dye slots, no shops.</text>
+  <rect class="stop" x="370" y="276" width="330" height="104" rx="8"/>
+  <text class="bad h" x="384" y="302">Cross-check: the run stops</text>
+  <text class="fg s" x="384" y="326">if a Savage armor piece or weapon has no dye</text>
+  <text class="fg s" x="384" y="344">slot: a Savage shop would then also take a</text>
+  <text class="fg s" x="384" y="362">currency used for other gear.</text>
+  <text class="muted s" x="20" y="406">Numbers after a name are item levels. Item.csv and SpecialShop.csv at game data d9582a6.</text>
+</svg>

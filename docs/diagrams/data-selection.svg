@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 522" role="img" aria-labelledby="t d">
+  <title id="t">Which Item rows become database rows</title>
+  <desc id="d">Funnel of the eight selection rules applied in order to the 52,801 rows of the Item sheet, with the rows left and removed at each rule: rule 1, has a name: 50,880 left, 1,921 removed; rule 2, resolves to a slot (rules out belts, soul crystals, non-gear): 29,026 left, 21,854 removed; rule 3, item level ≥ 15 (owner's decision): 24,778 left, 4,248 removed; rule 4, a combat job can equip it (rules out crafter, gatherer, base-class-only): 22,155 left, 2,623 removed; rule 5, at least one stat (non-zero after the HQ rule): 20,817 left, 1,338 removed; rule 6, no crafter or gatherer stat (normal or HQ): 20,812 left, 5 removed; rule 7, its slots match a slot code (else left out, name printed): 20,812 left, 0 removed; rule 8, not retired (Diadem, Aetherial and legacy gear): 20,031 left, 781 removed. 20,031 rows become the item database.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .keep { fill: #0d6e72; }
+    .final { fill: #25773a; }
+    .drop { fill: #b0402c; opacity: 0.35; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    .grid { stroke: #586869; stroke-width: 1; opacity: 0.35; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .num { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .keep { fill: #4cc2b6; }
+      .final { fill: #6cc788; }
+      .drop { fill: #f08a74; opacity: 0.45; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+      .grid { stroke: #92a5a5; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="522"/>
+  <text class="muted s" x="20" y="36">Rule (applied in order)</text>
+  <text class="muted s" x="330" y="36">rows left, and removed</text>
+  <text class="muted s" x="630" y="36" text-anchor="end">left</text>
+  <text class="muted s" x="700" y="36" text-anchor="end">removed</text>
+  <line class="grid" x1="20" y1="48" x2="700" y2="48"/>
+  <text class="fg t" x="20" y="84">all Item rows</text>
+  <rect class="keep" x="330" y="72" width="230.0" height="16" rx="3"/>
+  <text class="fg num" x="630" y="85" text-anchor="end">52,801</text>
+  <text class="fg t" x="20" y="130">1. has a name</text>
+  <rect class="keep" x="330" y="118" width="221.6" height="16" rx="3"/>
+  <rect class="drop" x="551.6" y="118" width="8.4" height="16" rx="3"/>
+  <text class="fg num" x="630" y="131" text-anchor="end">50,880</text>
+  <text class="bad num" x="700" y="131" text-anchor="end">−1,921</text>
+  <text class="fg t" x="20" y="170">2. resolves to a slot</text>
+  <text class="muted s" x="38" y="187">rules out belts, soul crystals, non-gear</text>
+  <rect class="keep" x="330" y="164" width="126.4" height="16" rx="3"/>
+  <rect class="drop" x="456.4" y="164" width="95.2" height="16" rx="3"/>
+  <text class="fg num" x="630" y="177" text-anchor="end">29,026</text>
+  <text class="bad num" x="700" y="177" text-anchor="end">−21,854</text>
+  <text class="fg t" x="20" y="216">3. item level ≥ 15</text>
+  <text class="muted s" x="38" y="233">owner's decision</text>
+  <rect class="keep" x="330" y="210" width="107.9" height="16" rx="3"/>
+  <rect class="drop" x="437.9" y="210" width="18.5" height="16" rx="3"/>
+  <text class="fg num" x="630" y="223" text-anchor="end">24,778</text>
+  <text class="bad num" x="700" y="223" text-anchor="end">−4,248</text>
+  <text class="fg t" x="20" y="262">4. a combat job can equip it</text>
+  <text class="muted s" x="38" y="279">rules out crafter, gatherer, base-class-only</text>
+  <rect class="keep" x="330" y="256" width="96.5" height="16" rx="3"/>
+  <rect class="drop" x="426.5" y="256" width="11.4" height="16" rx="3"/>
+  <text class="fg num" x="630" y="269" text-anchor="end">22,155</text>
+  <text class="bad num" x="700" y="269" text-anchor="end">−2,623</text>
+  <text class="fg t" x="20" y="308">5. at least one stat</text>
+  <text class="muted s" x="38" y="325">non-zero after the HQ rule</text>
+  <rect class="keep" x="330" y="302" width="90.7" height="16" rx="3"/>
+  <rect class="drop" x="420.7" y="302" width="5.8" height="16" rx="3"/>
+  <text class="fg num" x="630" y="315" text-anchor="end">20,817</text>
+  <text class="bad num" x="700" y="315" text-anchor="end">−1,338</text>
+  <text class="fg t" x="20" y="354">6. no crafter or gatherer stat</text>
+  <text class="muted s" x="38" y="371">normal or HQ</text>
+  <rect class="keep" x="330" y="348" width="90.7" height="16" rx="3"/>
+  <text class="fg num" x="630" y="361" text-anchor="end">20,812</text>
+  <text class="bad num" x="700" y="361" text-anchor="end">−5</text>
+  <text class="fg t" x="20" y="400">7. its slots match a slot code</text>
+  <text class="muted s" x="38" y="417">else left out, name printed</text>
+  <rect class="keep" x="330" y="394" width="90.7" height="16" rx="3"/>
+  <text class="fg num" x="630" y="407" text-anchor="end">20,812</text>
+  <text class="muted num" x="700" y="407" text-anchor="end">0</text>
+  <text class="good t" x="20" y="446">8. not retired</text>
+  <text class="muted s" x="38" y="463">Diadem, Aetherial and legacy gear</text>
+  <rect class="final" x="330" y="440" width="87.3" height="16" rx="3"/>
+  <rect class="drop" x="417.3" y="440" width="3.4" height="16" rx="3"/>
+  <text class="good num" x="630" y="453" text-anchor="end">20,031</text>
+  <text class="bad num" x="700" y="453" text-anchor="end">−781</text>
+  <rect class="keep" x="20" y="492" width="24" height="12" rx="3"/>
+  <text class="muted s" x="52" y="503">rows left</text>
+  <rect class="drop" x="130" y="492" width="24" height="12" rx="3"/>
+  <text class="muted s" x="162" y="503">removed by the rule</text>
+  <text class="muted s" x="700" y="503" text-anchor="end">bar length: share of the 52,801 Item rows</text>
+</svg>

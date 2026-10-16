@@ -87,9 +87,11 @@ Changes go through store actions: set job, reset everything, switch tab or math 
 **Number inputs.** They are bound to store fields through a helper with two rules:
 
 - A value is committed only when it is inside the allowed range, rounded to a whole number. An out-of-range value is ignored rather than corrected under the user's cursor.
-- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus. So typing 123 does not recompute every view for 1 and 12 first. The gear browser's typed filters wait the same way.
+- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-and-only-when-visible)). The gear browser's typed filters wait the same way.
 
-**Changing the job.** Switching to any other job, even one in the same role, resets the job-specific selections to the new job's defaults: the Piece stats substats (and its slot, if the new job lacks it), the optimizer target and tiebreaks, its meal choice and Target GCD, and the browse slot and sort. The synced level and both equip level filters are held to the new job's level cap. Other settings are kept, including the sync cap, synced level (when under that cap), sync switch and the gear groups left out. Nothing else is lost, so the page switches at once, without asking.
+**Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
+
+![Switching to any other job, even one in the same role, happens at once without asking. Reset to the new job's defaults: Piece stats substats (Critical Hit, then speed), Piece stats slot (head, only if the new job lacks it), optimizer target (main stat), tiebreaks 1 and 2 (none), meal (best for the goal), Target GCD (any), gear browser slot (any slot) and sort (item level). Held to the new job's level cap, lowered only if above it (90 becomes 80 for Blue Mage): the synced level and both equip level filters. Kept: sync cap and sync switch, the gear groups left out in both lists, expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and search text.](../diagrams/architecture-job-switch.svg)
 
 **Reset to defaults** puts every setting back, with no job chosen, after the browser's own confirmation dialog. The open tab and math sub-tab stay as they are.
 
@@ -123,7 +125,9 @@ Notes:
 - **Gear browser**: the database matches of its filters (including its own left-out gear groups), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
 - **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, item level range, equip level, gear groups; the browser's filters with the optimizer's own values). Triggered by a change of those filters, job, cap, sync, level or optimizer settings. [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
-**How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change. If the user changes $k$ inputs less than 120 ms apart, the optimizer runs once, not $k$ times: typing a number therefore runs the optimizer once, after the user pauses. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+**How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart run the optimizer once, not $k$ times. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+
+![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open gear browser recompute at once; the open optimizer runs once 120 ms later; the saved state is written 150 ms later. Each wait restarts on every change.](../diagrams/architecture-timing.svg)
 
 ## 4. Persistence
 
@@ -135,9 +139,11 @@ The page remembers the user's settings in the browser's local storage. This is a
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 
-**Validation on restore.** Stored data can be old, from another job's role, or hand-edited, so it is never trusted. An example (from running the code, 2026-10-16): a save with job Blue Mage, character level 95, sync cap 9999, the old tab name "pool", Piece stats substats [speed, speed, Critical Hit] on the off-hand slot, and optimizer target "special substat" comes back as level 80, cap 795, the Gear browser tab, substats [speed, none] on the head slot, and target main stat. Each change follows one of the rules below.
+**Validation on restore.** Stored data can be old, from another job's role, or hand-edited, so it is never trusted:
 
-Restoring starts from the defaults. A saved job id that is not a known job means no job is chosen; the job-dependent defaults then come from the default job until the user picks one. Each saved field is then taken only if it has the right type and range:
+![Restoring starts from the defaults for the saved job, then keeps each saved field only if it has the right type and range, else uses its default. Example from running the code (2026-10-16), a save for Blue Mage (level cap 80): job Blue Mage is kept; character level 95 becomes 80; sync cap 9999 becomes 795; the old tab name "pool" becomes the Gear browser; Piece stats slot off-hand becomes head; substats speed, speed, Critical Hit become speed, none; optimizer target special substat becomes main stat.](../diagrams/architecture-restore.svg)
+
+A saved job id that is not a known job means no job is chosen; the job-dependent defaults then come from the default job until the user picks one. The rules for each field:
 
 - numbers are rounded and clamped (item levels to 1 to 795, the highest real item level; character level to 1 to the job's level cap, 100 or the limited job's own);
 - choices (tab, slot, stat, sort, filter) must be one of the values valid for this job;
@@ -205,4 +211,4 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |
-| Diagrams | `docs/diagrams/architecture-layers.svg`, `docs/diagrams/architecture-ui-flow.svg` |
+| Diagrams | `docs/diagrams/architecture-layers.svg`, `docs/diagrams/architecture-ui-flow.svg`, `docs/diagrams/architecture-job-switch.svg`, `docs/diagrams/architecture-timing.svg`, `docs/diagrams/architecture-restore.svg` |

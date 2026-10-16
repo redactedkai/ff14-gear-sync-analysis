@@ -81,24 +81,22 @@ Notes:
 
 **The question.** The optimizer is a branch and bound search with pruning and bounds ([optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound)); a wrong bound silently returns a worse loadout (one item per gear slot). How do we know its answer is the true best? By comparing it with a search that is too simple to be wrong: try everything. This is differential testing against a reference implementation.
 
-**What the reference does.** It enumerates every legal loadout of a small pool:
+![Differential testing. Real-gear pools (7 jobs, every role, 24 to 33 items, 3,072 to 147,456 loadouts) and random pools drawn from fixed seeds each go to both the optimizer (branch and bound with pruning and bounds, where a wrong bound silently returns a worse loadout) and the brute-force reference (every legal loadout, drop those outside the speed range, keep the best by goal, tiebreak 1, tiebreak 2; no pruning, no score weighting). The results are compared on every substat, not pinned totals: equal passes, any difference fails and names a reproducible pool. Shared by both sides and so not checked by the comparison: a piece's effective (synced) stats, covered by the sync tests and the caps at item level 475 and 123; and policies 1 and 2, covered by the "policy: ..." tests on two-item pools.](../diagrams/testing-differential.svg)
+
+**What the reference does.** A legal loadout has:
 
 - one item per slot, and two rings;
 - the same ring twice only when it has two copies (a Unique ring can be worn once);
 - a single ring when no pair exists.
 
-It drops loadouts outside the speed range, and keeps the lexicographically best totals: compare the target stat first, then tiebreak 1, then tiebreak 2, like words in a dictionary. It does no pruning and no score weighting, so it is independent of the optimizer's search.
+"Best" is lexicographic: compare the target stat first, then tiebreak 1, then tiebreak 2, like words in a dictionary. With no pruning and no score weighting, the reference is independent of the optimizer's search.
 
 **Toy example** (made-up, to show the count). A pool with 3 heads, 2 bodies and 3 different rings, nothing else, has $3 \times 2 \times \binom{3}{2} = 18$ loadouts if each ring has one copy, and $3 \times 2 \times 6 = 36$ if each has two (the 3 pairs of different rings plus 3 doubles). In general the count is the product, over slots, of the number of choices in that slot, which is why a pool must stay small.
 
-**What it does not check.** It uses the optimizer's own rule for a piece's effective (synced) stats, so it does **not** check the clamp itself (the cut of each stat to the sync cap). The clamp is covered by the sync tests, the Wiki item level 475 caps, the derived caps at 123 in the caps test, and the same caps in the formula, views and smoke tests.
+**What it does not check.** Both sides share three rules, so the comparison would confirm them rather than question them:
 
-**Policies copied, then tested on their own.** Two engine policies are copied into the reference rather than derived:
-
-1. a single ring only when no ring pair exists;
-2. a slot never left empty to meet a constraint.
-
-They are stated in [optimizer.md, section 2](optimizer.md#2-formal-statement). On their own, the comparisons with the reference would confirm these policies rather than question them, since both sides share them. So both are also tested directly on two-item pools, for both the optimizer and the reference (the "policy: ..." tests in the exhaustive test file). Changing either is a deliberate change to the engine, the reference and those tests together.
+- The rule for a piece's effective (synced) stats. The comparison does **not** check the clamp (the cut of each stat to the sync cap); the sync tests, the Wiki item level 475 caps, the derived caps at 123 in the caps test, and the same caps in the formula, views and smoke tests do.
+- Two engine policies copied into the reference rather than derived, stated in [optimizer.md, section 2](optimizer.md#2-formal-statement): (1) a single ring only when no ring pair exists; (2) a slot never left empty to meet a constraint. Both are tested directly on two-item pools, for both the optimizer and the reference (the "policy: ..." tests in the exhaustive test file). Changing either is a deliberate change to the engine, the reference and those tests together.
 
 **Real-gear pools.** A real-gear pool is every database item the job can equip in a small item level window, with equip level 50 or below, small enough to enumerate. The pools in the optimizer tests (speed totals measured on the current data):
 
@@ -114,7 +112,7 @@ They are stated in [optimizer.md, section 2](optimizer.md#2-formal-statement). O
 
 The tests assert equality with the brute force for every substat, not these totals, so they hold if a patch changes the gear in a window. What these comparisons show, alongside the probes outside the tests, is in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
-**Randomized pools.** Besides the real-gear pools, the exhaustive tests draw random pools from fixed seeds, so every run tests the same pools and a failure names one that can be reproduced (section 4).
+**Randomized pools.** The exhaustive tests also draw random pools from fixed seeds, so a failure names a pool that can be reproduced (section 4).
 
 ### Generator tests
 
@@ -151,16 +149,18 @@ Notes:
 
 Which command runs which check? Run from the repository root.
 
+![npm run check runs lint (Biome, with a format check), build (the one HTML page), test (unit tests in Node) and smoke (the built page in Chromium), in that order; it needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:data (generator tests in Python); run it when touching scripts/data/ or after update-data. Both stop at the first failure. The perf commands, the Target GCD sweep and the checks against ffxiv-gearing and xivgear are run by hand and are never part of check.](../diagrams/testing-commands.svg)
+
 | Command | What it runs |
 | --- | --- |
+| `npm run check` | Lint, build, unit tests, smoke (diagram above) |
+| `npm run check:all` | `check`, then `lint:py` and `test:data` |
 | `npm test` | Unit tests |
 | `npm run test:data` | Generator tests (Python) |
 | `npm run smoke` | Browser smoke test |
 | `npm run lint` | Biome, no file changes |
 | `npm run lint:py` | Ruff, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
-| `npm run check` | Lint, build, unit tests, smoke test (no Python) |
-| `npm run check:all` | `check`, then `lint:py` and `test:data` |
 | `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min) |
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
@@ -172,7 +172,7 @@ Notes on the pass/fail commands:
 - **`npm test`** runs the unit tests with Node's built-in test runner. **`npm run test:data`** runs the generator tests with Python `unittest`.
 - **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 12 s; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
 - **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
-- **`npm run check`** runs lint (with format check), build, unit tests and the smoke test, in that order, and stops at the first failure. It needs no Python. It is the bar for calling a change done. **`npm run check:all`** adds `lint:py` and `test:data`; run it when touching `scripts/data/` or after `update-data`. For UI changes, also open the built page and look at it at desktop width and at 960 px.
+- **`npm run check`** and **`npm run check:all`** run the steps in the diagram above; `check` is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at 960 px.
 
 Notes on the measurements and checks run by hand (none is part of `npm run check`):
 
@@ -216,8 +216,7 @@ Cite the source (a URL for a published number) in a comment next to the value. A
 
 **Check the optimizer against exhaustive search.** The optimizer's pruning and bounds are where subtle bugs hide: the ring pruning bug returned a worse ring pair on real gear while every fixed-value test passed ([history.md](../history.md#results-of-the-tool)). So:
 
-- The shared brute force (section 2.1) tries every legal loadout under the same rules; real-gear, constraint and view tests compare against it rather than pinning totals.
-- Random pools are generated from fixed seeds, so a failure names a pool that can be reproduced.
+- The shared brute force (section 2.1) tries every legal loadout under the same rules; real-gear, constraint and view tests compare against it rather than pinning totals, and random pools come from fixed seeds so a failure can be reproduced.
 - Any change to scoring, pruning or the search must keep these tests green; also re-time a large pool ([optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
 
 **Keep shared logic job-agnostic in tests too.** The tool supports all 23 combat jobs. Tests of shared logic should either loop over several jobs (the real-gear optimizer tests cover every role) or use the job only as an example of a role (Sage for healers, Warrior for tanks). Do not encode a Sage-only assumption into a test of shared code.

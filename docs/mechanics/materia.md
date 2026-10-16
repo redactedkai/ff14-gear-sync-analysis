@@ -52,18 +52,9 @@ and without overmelding $B = g$, $S = 0$.
 - A small slot takes the most valuable grade the item level allows that is not VI, VIII, X or XII (the small stone).
 - Slots fill in order, so empty slots always come last (**verified**, Wiki). Overmelding starts only once every guaranteed slot is full.
 
-The best stones by item level follow from the gate table:
+The best stones by item level follow from the gate table. Below 290 the two are the same, so the split into big and small slots changes nothing there.
 
-| Gear item level | Big stone | Small stone |
-| --- | --- | --- |
-| 100 to 159 | IV (+4) | IV (+4) |
-| 160 to 289 | V (+6) | V (+6) |
-| 290 to 419 | VI (+16) | V (+6) |
-| 420 to 559 | VIII (+24) | VII (+8) |
-| 560 to 689 | X (+36) | IX (+12) |
-| 690 and up | XII (+54) | XI (+18) |
-
-The table starts at 100, the lowest item level in the database. Below 290 the two stones are the same, so the split into big and small slots changes nothing there.
+![Step chart of the best stone by gear item level, from 100 (the lowest in the database) to 795. Big and small stone are the same below 290: IV (+4) from 100 to 159, V (+6) from 160 to 289. Then big and small: 290 to 419 VI (+16) and V (+6); 420 to 559 VIII (+24) and VII (+8); 560 to 689 X (+36) and IX (+12); 690 and up XII (+54) and XI (+18).](../diagrams/materia-stones.svg)
 
 **Pieces without guaranteed slots.** In the item data, no piece has 4 guaranteed slots or more than 5. 15 Paladin shields have no guaranteed slot but allow overmelding. The tool gives them no melds. That is **inferred**: xivgear (a community gear planner) gives them 5 slots, and no source says which is right.
 
@@ -71,7 +62,9 @@ The table starts at 100, the lowest item level in the database. Below 290 the tw
 
 Melds cannot raise a substat without limit. On each piece, each substat is capped at that piece's own sync cap: the cap of its slot share and stat factor at its own item level ([math.md, section 5](math.md#the-clamp-rule)). A stone's points above the cap are lost.
 
-**Example.** Kirin's Osode of Fending, an item level 300 body piece for tanks, has Critical Hit 110 and Determination 77, and a cap of 110 on every substat. Critical Hit is already at the cap, so melds add nothing to it. Determination has 33 points of room: two VI and one V (16 + 16 + 6 = 38) fill it, and 5 points are lost.
+**Example.** Kirin's Osode of Fending, an item level 300 body piece for tanks:
+
+![Kirin's Osode of Fending caps every substat at 110. Critical Hit is already 110, so melds add nothing to it. Determination is 77, with 33 points of room: two VI and one V (16 + 16 + 6 = 38) fill it to 110, and 5 points are lost.](../diagrams/materia-cap.svg)
 
 **The rule.** With $x_k$ the piece's own value of substat $k$ and $C_k$ its cap, the room left is
 
@@ -89,14 +82,16 @@ A piece keeps its melds only if it is not synced: its item level is at or below 
 
 ### Which stones are shown
 
-Several melds can give a piece the same gains, when a stone's points are partly cut by the cap. In the Kirin's Osode example, three VI and "two VI and one V" both raise Determination by exactly 33. The tool shows, in this order:
+Several melds can give a piece the same gains, when a stone's points are partly cut by the cap. The tool shows, in this order:
 
 1. the most gain on the target, then the tiebreaks;
 2. the fewest stones (more slots left empty);
 3. the fewest big stones (odd grades first: XI over XII, V over VI);
 4. the first one found.
 
-A slot whose stone adds nothing to the target or a tiebreak stays empty, rather than taking a stone in another substat (the owner's decision, 2026-10-15). For the Osode with Determination as the target, the tool shows two VI and one V, with 2 slots empty.
+A slot whose stone adds nothing to the target or a tiebreak stays empty, rather than taking a stone in another substat (the owner's decision, 2026-10-15).
+
+![Kirin's Osode of Fending with Determination as the target, 33 points of room. Two VI add 32 and are out at rule 1. One VI and three V add 33 with 4 stones, out at rule 2. Three VI add 33 with 3 stones, all big, out at rule 3. Two VI and one V add 33 with 3 stones, 2 big: shown, with 2 slots empty.](../diagrams/materia-ties.svg)
 
 Stone prices, retrieval and overmeld odds play no part (the owner's decision, 2026-10-16). Only what is shown changes: a small stone in a big slot never raises a gain, so the gains, and every result, are the same as with each slot holding its own stone. (With a speed maximum it could reach lower speeds, but in 2,045 Target GCD runs it found no better set for about 14% more search work, so the optimizer leaves it out; owner, 2026-10-16.)
 

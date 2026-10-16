@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 530" role="img" aria-label="Side-by-side comparison of the two rounding orders for Intelligence and Mind Vitality on a body piece at item level 123: the item order gives 46, the cap order gives 45">
+<desc>Budget 375 at item level 123, body share 135 per mille, factor 90%. Item stats take the slot share first and round after each step: 375 × 135 / 1000 = 50.625, rounded 51; × 0.9 = 45.9, rounded 46, what a body piece native to 123 carries. The sync cap takes the factor first, floors each step and rounds once at the end: 375 × 90 / 100 = 337.5, floored 337; × 135 / 100 = 454.95, floored 454; ÷ 10 = 45.4, rounded 45. With a factor of 100 both orders give the same number; with 90 they can differ by 1.</desc>
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .goodbox { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .clampbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-gold { stroke: #8f5f0c; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .strong { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .goodbox { fill: #1b2b2e; stroke: #6cc788; }
+    .clampbox { fill: #1b2b2e; stroke: #f08a74; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-gold { stroke: #e2b659; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="530"/>
+<text class="title fg" x="20" y="30">Two rounding orders</text>
+<text class="small muted" x="20" y="52">Intelligence/Mind Vitality, body, item level 123: budget 375, share 135 ‰, factor 90%</text>
+<text class="fg strong" x="20" y="88">Stats on an item</text>
+<text class="small muted" x="20" y="106">share first, round after each step</text>
+<rect class="box" x="20" y="120" width="320" height="34" rx="8"/>
+<text class="fg" x="180" y="142" text-anchor="middle">375</text>
+<line class="s-muted" x1="180" y1="156" x2="180" y2="167" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="170" width="320" height="34" rx="8"/>
+<text class="fg" x="180" y="192" text-anchor="middle">× 135 / 1000 = 50.625</text>
+<line class="s-muted" x1="180" y1="206" x2="180" y2="217" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="220" width="320" height="34" rx="8"/>
+<text class="fg" x="180" y="242" text-anchor="middle">round → 51</text>
+<line class="s-muted" x1="180" y1="256" x2="180" y2="267" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="20" y="270" width="320" height="34" rx="8"/>
+<text class="fg" x="180" y="292" text-anchor="middle">× 0.9 = 45.9</text>
+<line class="s-muted" x1="180" y1="306" x2="180" y2="317" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="goodbox" x="20" y="320" width="320" height="34" rx="8"/>
+<text class="good strong" x="180" y="342" text-anchor="middle">round → 46</text>
+<text class="small good" x="180" y="374" text-anchor="middle">46: what a body piece native to 123 carries</text>
+<text class="fg strong" x="380" y="88">Sync cap</text>
+<text class="small muted" x="380" y="106">factor first, floor each step, round once</text>
+<rect class="box" x="380" y="120" width="320" height="34" rx="8"/>
+<text class="fg" x="540" y="142" text-anchor="middle">375</text>
+<line class="s-muted" x1="540" y1="156" x2="540" y2="167" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="380" y="170" width="320" height="34" rx="8"/>
+<text class="fg" x="540" y="192" text-anchor="middle">× 90 / 100 = 337.5</text>
+<line class="s-muted" x1="540" y1="206" x2="540" y2="217" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="380" y="220" width="320" height="34" rx="8"/>
+<text class="fg" x="540" y="242" text-anchor="middle">floor → 337</text>
+<line class="s-muted" x1="540" y1="256" x2="540" y2="267" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="380" y="270" width="320" height="34" rx="8"/>
+<text class="fg" x="540" y="292" text-anchor="middle">× 135 / 100 = 454.95</text>
+<line class="s-muted" x1="540" y1="306" x2="540" y2="317" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="380" y="320" width="320" height="34" rx="8"/>
+<text class="fg" x="540" y="342" text-anchor="middle">floor → 454</text>
+<line class="s-muted" x1="540" y1="356" x2="540" y2="367" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="box" x="380" y="370" width="320" height="34" rx="8"/>
+<text class="fg" x="540" y="392" text-anchor="middle">÷ 10 = 45.4</text>
+<line class="s-muted" x1="540" y1="406" x2="540" y2="417" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect class="clampbox" x="380" y="420" width="320" height="34" rx="8"/>
+<text class="bad strong" x="540" y="442" text-anchor="middle">round → 45</text>
+<text class="small bad" x="540" y="474" text-anchor="middle">45: the cap a synced piece is clamped to</text>
+<text class="small muted" x="20" y="508">With a factor of 100 both orders give the same number; with 90 they can differ by 1.</text>
+</svg>

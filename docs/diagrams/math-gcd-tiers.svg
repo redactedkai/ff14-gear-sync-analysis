@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 680" role="img" aria-label="Step chart of the GCD against gear speed at level 50, from 2.50 s at 0 down to 2.15 s at 360, with the generic maximum under cap 123 marked at 296 (2.22 s) and 344 (2.17 s)">
+<desc>Level 50, no haste. The GCD drops one 0.01 s step at a time: 2.50 s at gear speed 0, 2.49 s from 3, 2.35 s from 150, 2.30 s from 202, 2.22 s from 286, 2.21 s from 297, 2.20 s from 307, 2.16 s from 349. After 3, a new step starts about every 10.5 points. The generic maximum under cap 123, every armor and accessory slot at its speed cap (3 × 29 + 2 × 47 + 5 × 23), is 296: 2.22 s, one point below the 2.21 s step at 297. With the weapon too (48) it is 344: 2.17 s.</desc>
+<style>
+  .bg { fill: #fffdf7; }
+  .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+  .goodbox { fill: #ece9dd; stroke: #25773a; stroke-width: 1.5; }
+  .clampbox { fill: #ece9dd; stroke: #b0402c; stroke-width: 1.5; }
+  .fg { fill: #1b2a2c; }
+  .muted { fill: #586869; }
+  .accent { fill: #0d6e72; }
+  .gold { fill: #8f5f0c; }
+  .bad { fill: #b0402c; }
+  .good { fill: #25773a; }
+  .s-muted { stroke: #586869; }
+  .s-accent { stroke: #0d6e72; }
+  .s-gold { stroke: #8f5f0c; }
+  text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+  .num { font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; }
+  .title { font-size: 16px; font-weight: 600; }
+  .strong { font-weight: 600; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #142023; }
+    .box { fill: #1b2b2e; stroke: #e5eeed; }
+    .goodbox { fill: #1b2b2e; stroke: #6cc788; }
+    .clampbox { fill: #1b2b2e; stroke: #f08a74; }
+    .fg { fill: #e5eeed; }
+    .muted { fill: #92a5a5; }
+    .accent { fill: #4cc2b6; }
+    .gold { fill: #e2b659; }
+    .bad { fill: #f08a74; }
+    .good { fill: #6cc788; }
+    .s-muted { stroke: #92a5a5; }
+    .s-accent { stroke: #4cc2b6; }
+    .s-gold { stroke: #e2b659; }
+  }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" class="muted"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="720" height="680"/>
+<text class="title fg" x="20" y="30">GCD steps at level 50</text>
+<text class="small muted" x="20" y="52">No haste. Each step is 0.01 s; after gear speed 3 a new step starts about every 10.5 points.</text>
+<line class="s-muted" x1="80" y1="110" x2="690" y2="110" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="114" text-anchor="end">2.50</text>
+<line class="s-muted" x1="80" y1="180" x2="690" y2="180" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="184" text-anchor="end">2.45</text>
+<line class="s-muted" x1="80" y1="250" x2="690" y2="250" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="254" text-anchor="end">2.40</text>
+<line class="s-muted" x1="80" y1="320" x2="690" y2="320" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="324" text-anchor="end">2.35</text>
+<line class="s-muted" x1="80" y1="390" x2="690" y2="390" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="394" text-anchor="end">2.30</text>
+<line class="s-muted" x1="80" y1="460" x2="690" y2="460" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="464" text-anchor="end">2.25</text>
+<line class="s-muted" x1="80" y1="530" x2="690" y2="530" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="534" text-anchor="end">2.20</text>
+<line class="s-muted" x1="80" y1="600" x2="690" y2="600" stroke-width="0.6" stroke-opacity="0.45"/>
+<text class="small muted num" x="72" y="604" text-anchor="end">2.15</text>
+<line class="s-muted" x1="80" y1="96" x2="80" y2="614" stroke-width="1"/>
+<line class="s-muted" x1="80" y1="614" x2="690" y2="614" stroke-width="1"/>
+<line class="s-muted" x1="80.0" y1="614" x2="80.0" y2="619" stroke-width="1"/>
+<text class="small muted num" x="80.0" y="634" text-anchor="middle">0</text>
+<line class="s-muted" x1="164.7" y1="614" x2="164.7" y2="619" stroke-width="1"/>
+<text class="small muted num" x="164.7" y="634" text-anchor="middle">50</text>
+<line class="s-muted" x1="249.4" y1="614" x2="249.4" y2="619" stroke-width="1"/>
+<text class="small muted num" x="249.4" y="634" text-anchor="middle">100</text>
+<line class="s-muted" x1="334.2" y1="614" x2="334.2" y2="619" stroke-width="1"/>
+<text class="small muted num" x="334.2" y="634" text-anchor="middle">150</text>
+<line class="s-muted" x1="418.9" y1="614" x2="418.9" y2="619" stroke-width="1"/>
+<text class="small muted num" x="418.9" y="634" text-anchor="middle">200</text>
+<line class="s-muted" x1="503.6" y1="614" x2="503.6" y2="619" stroke-width="1"/>
+<text class="small muted num" x="503.6" y="634" text-anchor="middle">250</text>
+<line class="s-muted" x1="588.3" y1="614" x2="588.3" y2="619" stroke-width="1"/>
+<text class="small muted num" x="588.3" y="634" text-anchor="middle">300</text>
+<line class="s-muted" x1="673.1" y1="614" x2="673.1" y2="619" stroke-width="1"/>
+<text class="small muted num" x="673.1" y="634" text-anchor="middle">350</text>
+<text class="small muted" x="385" y="658" text-anchor="middle">Gear speed (Skill or Spell Speed from gear)</text>
+<text class="small muted" x="20" y="84">GCD (s)</text>
+<path class="s-accent" d="M80.0,110 L85.1,110 L85.1,124 L103.7,124 L103.7,138 L120.7,138 L120.7,152 L139.3,152 L139.3,166 L156.3,166 L156.3,180 L174.9,180 L174.9,194 L191.8,194 L191.8,208 L210.5,208 L210.5,222 L227.4,222 L227.4,236 L246.1,236 L246.1,250 L263.0,250 L263.0,264 L281.6,264 L281.6,278 L298.6,278 L298.6,292 L317.2,292 L317.2,306 L334.2,306 L334.2,320 L352.8,320 L352.8,334 L369.8,334 L369.8,348 L386.7,348 L386.7,362 L405.3,362 L405.3,376 L422.3,376 L422.3,390 L440.9,390 L440.9,404 L457.9,404 L457.9,418 L476.5,418 L476.5,432 L493.4,432 L493.4,446 L512.1,446 L512.1,460 L529.0,460 L529.0,474 L547.7,474 L547.7,488 L564.6,488 L564.6,502 L583.3,502 L583.3,516 L600.2,516 L600.2,530 L618.8,530 L618.8,544 L635.8,544 L635.8,558 L654.4,558 L654.4,572 L671.4,572 L671.4,586 L690.0,586 L690.0,600 L690.0,600" fill="none" stroke-width="2"/>
+<circle class="accent" cx="334.2" cy="320" r="3.5"/>
+<text class="small fg num" x="327.2" y="335" text-anchor="end">150 → 2.35 s</text>
+<circle class="accent" cx="422.3" cy="390" r="3.5"/>
+<text class="small fg num" x="415.3" y="405" text-anchor="end">202 → 2.30 s</text>
+<circle class="accent" cx="564.6" cy="502" r="3.5"/>
+<text class="small fg num" x="557.6" y="517" text-anchor="end">286 → 2.22 s</text>
+<circle class="accent" cx="583.3" cy="516" r="3.5"/>
+<text class="small fg num" x="576.3" y="531" text-anchor="end">297 → 2.21 s</text>
+<circle class="accent" cx="600.2" cy="530" r="3.5"/>
+<text class="small fg num" x="593.2" y="545" text-anchor="end">307 → 2.20 s</text>
+<circle class="accent" cx="671.4" cy="586" r="3.5"/>
+<text class="small fg num" x="664.4" y="601" text-anchor="end">349 → 2.16 s</text>
+<circle class="accent" cx="80.0" cy="110" r="3.5"/>
+<circle class="accent" cx="85.1" cy="124" r="3.5"/>
+<text class="small fg num" x="94.0" y="102">0 → 2.50 s, 3 → 2.49 s</text>
+<line class="s-gold" x1="581.6" y1="206" x2="581.6" y2="497" stroke-width="1.5" stroke-dasharray="4 3"/>
+<rect class="bg" x="250" y="198" width="328.6" height="40"/>
+<text class="small gold" x="575.6" y="212" text-anchor="end">296 = 3 × 29 + 2 × 47 + 5 × 23 → 2.22 s</text>
+<text class="small gold" x="575.6" y="230" text-anchor="end">armor and accessories at their cap 123 speed caps</text>
+<line class="s-gold" x1="662.9" y1="136" x2="662.9" y2="567" stroke-width="1.5" stroke-dasharray="4 3"/>
+<rect class="bg" x="400" y="128" width="259.9" height="40"/>
+<text class="small gold" x="656.9" y="142" text-anchor="end">344: with the weapon too → 2.17 s</text>
+<text class="small gold" x="656.9" y="160" text-anchor="end">(48 on a two-handed weapon)</text>
+</svg>

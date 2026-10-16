@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="t d">
+  <title id="t">What happens after typing 123 into a number field</title>
+  <desc id="d">A timeline in milliseconds. The user types 1, 12 and 123 into the sync cap field, 100 ms apart as an example. The field commits 300 ms after the last keystroke, so 1 and 12 are never committed and only 123 reaches the store; Enter or leaving the field would commit at once. When the store changes, Settings and How the math works recompute at once, and so does the gear browser while its tab is open. The optimizer, while its tab is open, runs once 120 ms after the last change: changes less than 120 ms apart reset its timer. The saved state is written to browser storage 150 ms after the last change.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .axis { stroke: #586869; stroke-width: 1; }
+    .grid { stroke: #586869; stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.5; }
+    .wait { fill: none; stroke: #0d6e72; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .now { fill: none; stroke: #8f5f0c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .l { font-size: 12px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .n { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .axis { stroke: #92a5a5; }
+      .grid { stroke: #92a5a5; }
+      .wait { stroke: #4cc2b6; }
+      .now { stroke: #e2b659; }
+    }
+  </style>
+  <rect class="bg" x="0" y="0" width="720" height="420"/>
+
+  <!-- time scale: x = 240 + 0.64 * ms -->
+  <line class="grid" x1="240" y1="40" x2="240" y2="320"/>
+  <line class="grid" x1="304" y1="40" x2="304" y2="320"/>
+  <line class="grid" x1="368" y1="40" x2="368" y2="320"/>
+  <line class="grid" x1="432" y1="40" x2="432" y2="320"/>
+  <line class="grid" x1="496" y1="40" x2="496" y2="320"/>
+  <line class="grid" x1="624" y1="40" x2="624" y2="320"/>
+  <line class="grid" x1="688" y1="40" x2="688" y2="320"/>
+  <line class="now" x1="560" y1="30" x2="560" y2="320"/>
+  <text class="gold l" x="560" y="22" text-anchor="middle">store changes</text>
+
+  <!-- Lane 1: typing -->
+  <text class="fg l" x="20" y="64">Typing in the sync cap</text>
+  <circle class="accent" cx="240" cy="60" r="4"/>
+  <circle class="accent" cx="304" cy="60" r="4"/>
+  <circle class="accent" cx="368" cy="60" r="4"/>
+  <text class="fg n" x="240" y="46" text-anchor="middle">1</text>
+  <text class="fg n" x="304" y="46" text-anchor="middle">12</text>
+  <text class="fg n" x="368" y="46" text-anchor="middle">123</text>
+
+  <!-- Lane 2: field commits -->
+  <text class="fg l" x="20" y="114">Number field commits</text>
+  <line class="wait" x1="368" y1="110" x2="556" y2="110"/>
+  <circle class="accent" cx="560" cy="110" r="4"/>
+  <text class="muted s" x="462" y="100" text-anchor="middle">300 ms after the last key</text>
+  <text class="fg s" x="570" y="114">123 only</text>
+
+  <!-- Lane 3: cheap areas -->
+  <text class="fg l" x="20" y="164">Settings, How the math works</text>
+  <circle class="accent" cx="560" cy="160" r="4"/>
+  <text class="fg s" x="570" y="164">at once</text>
+
+  <!-- Lane 4: gear browser -->
+  <text class="fg l" x="20" y="214">Gear browser (tab open)</text>
+  <circle class="accent" cx="560" cy="210" r="4"/>
+  <text class="fg s" x="570" y="214">at once</text>
+
+  <!-- Lane 5: optimizer -->
+  <text class="fg l" x="20" y="264">Optimizer (tab open)</text>
+  <line class="wait" x1="560" y1="260" x2="633" y2="260"/>
+  <circle class="accent" cx="637" cy="260" r="4"/>
+  <text class="muted s" x="598" y="250" text-anchor="middle">120 ms</text>
+  <text class="fg s" x="647" y="264">runs once</text>
+
+  <!-- Lane 6: save -->
+  <text class="fg l" x="20" y="314">Saved to browser storage</text>
+  <line class="wait" x1="560" y1="310" x2="652" y2="310"/>
+  <circle class="accent" cx="656" cy="310" r="4"/>
+  <text class="muted s" x="608" y="300" text-anchor="middle">150 ms</text>
+
+  <!-- Axis -->
+  <line class="axis" x1="240" y1="334" x2="688" y2="334"/>
+  <text class="muted n" x="240" y="352" text-anchor="middle">0</text>
+  <text class="muted n" x="304" y="352" text-anchor="middle">100</text>
+  <text class="muted n" x="368" y="352" text-anchor="middle">200</text>
+  <text class="muted n" x="432" y="352" text-anchor="middle">300</text>
+  <text class="muted n" x="496" y="352" text-anchor="middle">400</text>
+  <text class="muted n" x="560" y="352" text-anchor="middle">500</text>
+  <text class="muted n" x="624" y="352" text-anchor="middle">600</text>
+  <text class="muted n" x="688" y="352" text-anchor="middle">700 ms</text>
+
+  <text class="muted s" x="20" y="384">Keystrokes 100 ms apart, as an example. Enter or leaving the field commits at once.</text>
+  <text class="muted s" x="20" y="404">Each wait restarts on every change, so changes closer together than the wait run the work once.</text>
+</svg>

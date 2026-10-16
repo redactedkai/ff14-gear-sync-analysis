@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 436" role="img" aria-labelledby="t d">
+  <title id="t">Which gear categories and flags set each source group</title>
+  <desc id="d">Each database row carries a six-bit source mask. A group's bit is set from the piece's gear category and, for crafted, tomestone and ultimate, also from shop and recipe flags. Rows in the current data (2026-10-16): the crafted category (5,243) sets crafted, bit 1 (5,243 rows), as does being a recipe result. The tomestone category (2,882) sets tomestone, bit 2 (2,947 rows), as does a tomestone cost or a trade-in of tomestone gear (1,833 rows). The relic (748) and field op (856) categories set relic, bit 4 (1,604 rows). The Savage category (1,117) sets savage, bit 8 (231 rows), only for pieces at the highest equip level in the database (100 today); the 886 legacy Savage pieces are in no group. The ultimate category (136) sets ultimate, bit 16 (136 rows), as does an ultimate totem cost (136 rows). The PvP category (532) sets PvP, bit 32 (532 rows). Dungeon gear (3,942 rows) and the 16 other categories set no bit through the category; of these, only the 65 Heavensward artifact pieces bought with tomestones get a bit, tomestone, through the flag.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .grp { fill: #ece9dd; stroke: #0d6e72; stroke-width: 2; }
+    .none { fill: none; stroke: #586869; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .gold { fill: #8f5f0c; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .flag { fill: none; stroke: #8f5f0c; stroke-width: 1.5; }
+    .head { fill: #0d6e72; }
+    .headg { fill: #8f5f0c; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .num { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .grp { fill: #1b2b2e; stroke: #4cc2b6; }
+      .none { stroke: #92a5a5; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .gold { fill: #e2b659; }
+      .flow { stroke: #4cc2b6; }
+      .flag { stroke: #e2b659; }
+      .head { fill: #4cc2b6; }
+      .headg { fill: #e2b659; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+    <marker id="arrowg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="headg"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="436"/>
+  <text class="fg t" x="20" y="34">Gear category (rows)</text>
+  <text class="accent t" x="310" y="34">Source group, bit (rows)</text>
+  <text class="gold t" x="530" y="34">Shop and recipe flags</text>
+  <rect class="box" x="20" y="66" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="89">crafted</text>
+  <text class="muted num" x="198" y="89" text-anchor="end">5,243</text>
+  <line class="flow" x1="210" y1="84" x2="308" y2="84" marker-end="url(#arrow)"/>
+  <rect class="grp" x="310" y="66" width="170" height="36" rx="8"/>
+  <text class="fg t" x="322" y="89">crafted <tspan class="muted s">1</tspan></text>
+  <text class="accent num" x="468" y="89" text-anchor="end">5,243</text>
+  <rect class="box" x="530" y="66" width="170" height="36" rx="8"/>
+  <text class="fg s" x="540" y="89">recipe result</text>
+  <line class="flag" x1="530" y1="84" x2="482" y2="84" marker-end="url(#arrowg)"/>
+  <rect class="box" x="20" y="116" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="139">tomestone</text>
+  <text class="muted num" x="198" y="139" text-anchor="end">2,882</text>
+  <line class="flow" x1="210" y1="134" x2="308" y2="134" marker-end="url(#arrow)"/>
+  <rect class="grp" x="310" y="116" width="170" height="36" rx="8"/>
+  <text class="fg t" x="322" y="139">tomestone <tspan class="muted s">2</tspan></text>
+  <text class="accent num" x="468" y="139" text-anchor="end">2,947</text>
+  <rect class="box" x="530" y="116" width="170" height="36" rx="8"/>
+  <text class="fg s" x="540" y="132">tomestone cost or trade-in</text>
+  <text class="muted num" x="540" y="148">1,833</text>
+  <line class="flag" x1="530" y1="134" x2="482" y2="134" marker-end="url(#arrowg)"/>
+  <rect class="box" x="20" y="166" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="189">relic + field op</text>
+  <text class="muted num" x="198" y="189" text-anchor="end">748 + 856</text>
+  <line class="flow" x1="210" y1="184" x2="308" y2="184" marker-end="url(#arrow)"/>
+  <rect class="grp" x="310" y="166" width="170" height="36" rx="8"/>
+  <text class="fg t" x="322" y="189">relic <tspan class="muted s">4</tspan></text>
+  <text class="accent num" x="468" y="189" text-anchor="end">1,604</text>
+  <rect class="box" x="20" y="216" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="239">Savage</text>
+  <text class="muted num" x="198" y="239" text-anchor="end">1,117</text>
+  <line class="flow" x1="210" y1="234" x2="308" y2="234" marker-end="url(#arrow)"/>
+  <text class="muted s" x="260" y="228" text-anchor="middle">equip level 100</text>
+  <text class="muted s" x="260" y="249" text-anchor="middle">(the level cap)</text>
+  <rect class="grp" x="310" y="216" width="170" height="36" rx="8"/>
+  <text class="fg t" x="322" y="239">savage <tspan class="muted s">8</tspan></text>
+  <text class="accent num" x="468" y="239" text-anchor="end">231</text>
+  <text class="muted s" x="530" y="232">886 legacy Savage pieces</text>
+  <text class="muted s" x="530" y="248">are in no group</text>
+  <rect class="box" x="20" y="266" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="289">ultimate</text>
+  <text class="muted num" x="198" y="289" text-anchor="end">136</text>
+  <line class="flow" x1="210" y1="284" x2="308" y2="284" marker-end="url(#arrow)"/>
+  <rect class="grp" x="310" y="266" width="170" height="36" rx="8"/>
+  <text class="fg t" x="322" y="289">ultimate <tspan class="muted s">16</tspan></text>
+  <text class="accent num" x="468" y="289" text-anchor="end">136</text>
+  <rect class="box" x="530" y="266" width="170" height="36" rx="8"/>
+  <text class="fg s" x="540" y="282">ultimate totem cost</text>
+  <text class="muted num" x="540" y="298">136</text>
+  <line class="flag" x1="530" y1="284" x2="482" y2="284" marker-end="url(#arrowg)"/>
+  <rect class="box" x="20" y="316" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="339">PvP</text>
+  <text class="muted num" x="198" y="339" text-anchor="end">532</text>
+  <line class="flow" x1="210" y1="334" x2="308" y2="334" marker-end="url(#arrow)"/>
+  <rect class="grp" x="310" y="316" width="170" height="36" rx="8"/>
+  <text class="fg t" x="322" y="339">PvP <tspan class="muted s">32</tspan></text>
+  <text class="accent num" x="468" y="339" text-anchor="end">532</text>
+  <rect class="box" x="20" y="366" width="190" height="36" rx="8"/>
+  <text class="fg" x="32" y="389">dungeon 3,942 + 16 others</text>
+  <rect class="none" x="310" y="366" width="170" height="36" rx="8"/>
+  <text class="muted" x="395" y="389" text-anchor="middle">no bit from category</text>
+</svg>

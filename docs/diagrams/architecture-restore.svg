@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" role="img" aria-labelledby="t d">
+  <title id="t">Restoring a saved state, field by field</title>
+  <desc id="d">Restoring starts from the defaults for the saved job, then takes each saved field only if it has the right type and range; an invalid field falls back to its default and the valid ones are kept. Example from running the code (2026-10-16): job Blue Mage is a known job and is kept. Character level 95 becomes 80, clamped to 1 to the job's level cap. Sync cap 9999 becomes 795, clamped to 1 to 795, the highest real item level. Tab "pool", an older name, is translated to the Gear browser. Piece stats slot off-hand becomes head, since Blue Mage has no off-hand. Piece stats substats speed, speed, Critical Hit become speed, none: the repeat and the older third rank are dropped. Optimizer target special substat becomes main stat, since Blue Mage has no special substat.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .bad { fill: #b0402c; }
+    .good { fill: #25773a; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .head { fill: #0d6e72; }
+    .rule { stroke: #586869; stroke-width: 1; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .l { font-size: 12px; font-weight: 600; }
+    .s { font-size: 12px; }
+    .n { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .bad { fill: #f08a74; }
+      .good { fill: #6cc788; }
+      .flow { stroke: #4cc2b6; }
+      .head { fill: #4cc2b6; }
+      .rule { stroke: #92a5a5; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="440"/>
+
+  <!-- The steps -->
+  <rect class="box" x="20" y="20" width="200" height="72" rx="8"/>
+  <text class="fg t" x="120" y="47" text-anchor="middle">Saved JSON</text>
+  <text class="muted s" x="120" y="66" text-anchor="middle">old, from another job,</text>
+  <text class="muted s" x="120" y="82" text-anchor="middle">or hand-edited</text>
+
+  <rect class="box" x="260" y="20" width="200" height="72" rx="8"/>
+  <text class="fg t" x="360" y="47" text-anchor="middle">Start from defaults</text>
+  <text class="muted s" x="360" y="66" text-anchor="middle">for the saved job</text>
+  <text class="muted s" x="360" y="82" text-anchor="middle">(none if unknown)</text>
+
+  <rect class="box" x="500" y="20" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="47" text-anchor="middle">Check each field</text>
+  <text class="good s" x="600" y="66" text-anchor="middle">right type and range: kept</text>
+  <text class="bad s" x="600" y="82" text-anchor="middle">otherwise: its default</text>
+
+  <line class="flow" x1="220" y1="56" x2="258" y2="56" marker-end="url(#arrow)"/>
+  <line class="flow" x1="460" y1="56" x2="498" y2="56" marker-end="url(#arrow)"/>
+
+  <!-- Example table -->
+  <text class="fg t" x="20" y="132">Example: a save for Blue Mage (level cap 80)</text>
+  <text class="muted l" x="20" y="162">Field</text>
+  <text class="muted l" x="170" y="162">Saved</text>
+  <text class="muted l" x="350" y="162">Restored</text>
+  <text class="muted l" x="470" y="162">Rule</text>
+  <line class="rule" x1="20" y1="172" x2="700" y2="172"/>
+
+  <text class="fg s" x="20" y="196">Job</text>
+  <text class="fg s" x="170" y="196">Blue Mage</text>
+  <text class="good s" x="350" y="196">Blue Mage</text>
+  <text class="muted s" x="470" y="196">a known job</text>
+
+  <text class="fg s" x="20" y="228">Character level</text>
+  <text class="fg n" x="170" y="228">95</text>
+  <text class="bad n" x="350" y="228">80</text>
+  <text class="muted s" x="470" y="228">clamped to 1 to the job's cap</text>
+
+  <text class="fg s" x="20" y="260">Sync cap</text>
+  <text class="fg n" x="170" y="260">9999</text>
+  <text class="bad n" x="350" y="260">795</text>
+  <text class="muted s" x="470" y="260">clamped to 1 to 795</text>
+
+  <text class="fg s" x="20" y="292">Tab</text>
+  <text class="fg s" x="170" y="292">"pool"</text>
+  <text class="bad s" x="350" y="292">Gear browser</text>
+  <text class="muted s" x="470" y="292">older name translated</text>
+
+  <text class="fg s" x="20" y="324">Piece stats slot</text>
+  <text class="fg s" x="170" y="324">off-hand</text>
+  <text class="bad s" x="350" y="324">head</text>
+  <text class="muted s" x="470" y="324">not a slot this job has</text>
+
+  <text class="fg s" x="20" y="356">Piece stats substats</text>
+  <text class="fg s" x="170" y="356">speed, speed, Critical Hit</text>
+  <text class="bad s" x="350" y="356">speed, none</text>
+  <text class="muted s" x="470" y="356">repeat, old third rank dropped</text>
+
+  <text class="fg s" x="20" y="388">Optimizer target</text>
+  <text class="fg s" x="170" y="388">special substat</text>
+  <text class="bad s" x="350" y="388">main stat</text>
+  <text class="muted s" x="470" y="388">not a stat this job has</text>
+
+  <line class="rule" x1="20" y1="404" x2="700" y2="404"/>
+  <text class="muted s" x="20" y="426">Kept values in green; changed ones in red. From running the code, 2026-10-16.</text>
+</svg>
