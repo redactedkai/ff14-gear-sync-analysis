@@ -46,11 +46,11 @@ export function buildInfo() {
 const escapeHtml = s => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
 /* What a build on this branch shows (CLAUDE.md, Branches): nothing on main or an unknown branch (the live page looks
-   as it always has); on staging a "STAGING" badge, on any other branch "DEV", each with the branch and commit in the
-   footer, so a test build is never mistaken for the live one. */
+   as it always has); on any other branch a "DEV" badge with the branch and commit in the footer, so a test build is
+   never mistaken for the live one. */
 export function buildMarks({ branch, commit }) {
   if (!branch || branch === 'main') return { badge: '', footer: '' };
-  const label = branch === 'staging' ? 'STAGING' : 'DEV';
+  const label = 'DEV';
   const where = escapeHtml(branch) + (commit ? ` @ ${escapeHtml(commit)}` : '');
   return {
     badge: ` <span class="build-badge" title="Test build from branch ${where}, not the live page">${label}</span>`,

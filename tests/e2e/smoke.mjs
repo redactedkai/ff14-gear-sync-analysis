@@ -1,0 +1,1132 @@
+/* Browser smoke test (Playwright) for dist/index.html, loaded from file://.
+
+Fails (exit 1) on JS errors, console errors, wrong numbers in the page, stray undefined/NaN/null text,
+or horizontal page scroll at 960 px (NARROW). Prints 'no errors' on success.
+
+Expected values come from outside the code under test where possible:
+  - sync caps at item level 123 (head/hands/feet 29, body/legs 47, accessories 23, 2H weapon 48;
+    main stat 30/48/24/50) and the FFXIV Wiki's item level 475 caps;
+  - the optimizer over every piece a healer and a tank can wear: the page's best Spell/Skill Speed, synced to 123 and
+    unsynced, equals what src/core computes for the same gear in Node (the core is checked against a brute force over
+    every loadout in tests/unit), and so do the totals with crafted gear left out and with materia off;
+  - a 130 head piece (Spell Speed / Piety) reproducing the ranked stats of a real item level 130 healer head piece
+    (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/views.test.js finds it in
+    the item database);
+  - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
+    head values (Mind 248; tests/unit/level-sync.test.js derives them from the ItemLevel row), and the Sync limits
+    tab at item level 660 (ParamGrow.ItemLevelSync for level 90).
+
+The steps run in groups, in parallel: each group gets a fresh browser context (so its own saved state) and page, set to
+Sage, sync to 123, level 50, and runs its steps one after the other (see GROUPS). The numbers from src/core are
+computed in a worker thread (smoke-core.mjs), so the pages are never kept waiting. Failures are printed in step order.
+
+Setup once: npm install && npx playwright install chromium
+Run: npm run build && npm run smoke
+Environment: SMOKE_PAGE (page to test, default dist/index.html), SMOKE_OUT (screenshots, default tests/e2e/out),
+SMOKE_WORKERS (groups at once, default half the cores up to 6), SMOKE_TRACE=1 (time of each step on stderr).
+*/
+
+import assert from 'node:assert';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { chromium } from 'playwright';
+import { Worker } from 'node:worker_threads';
+import { DEFAULT_EXCLUDE } from './smoke-core.mjs';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const PAGE_PATH = process.env.SMOKE_PAGE ? resolve(process.env.SMOKE_PAGE) : resolve(ROOT, 'dist', 'index.html'); // run `npm run build` first
+const PAGE = pathToFileURL(PAGE_PATH).href;
+const OUT = process.env.SMOKE_OUT ? resolve(process.env.SMOKE_OUT) : resolve(ROOT, 'tests', 'e2e', 'out'); // screenshots (gitignored)
+const shot = name => resolve(OUT, name);
+
+const JOBS = ['SGE', 'WAR', 'PLD', 'BLM', 'NIN', 'DRG', 'BST', 'BLU'];
+const ONE_HANDED = new Set(['PLD', 'BST']); // one-handed weapon + shield
+const BAD_WORDS = ['undefined', 'NaN', 'null'];
+const TIMEOUT = 10_000; // ms for any single wait
+const WORKERS = Number(process.env.SMOKE_WORKERS) || Math.max(1, Math.min(6, availableParallelism() >> 1)); // pages at once: each is a busy browser process, so no more than half the cores
+// The narrowest window the page must fit with no sideways page scroll: half of a 1920 screen, the tool beside the game.
+// There is no phone layout (owner's decision, 2026-10-15).
+const NARROW = { width: 960, height: 900 };
+const STORE_KEY = 'ilvl-stat-lab-v4'; // localStorage key of the saved state (src/ui/state.js)
+
+// Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
+const [DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL] = ['', '', '100'];
+// Every gear group in SOURCES order (src/core/item-format.json); DEFAULT_EXCLUDE (smoke-core.mjs) are left out by default.
+const SOURCE_KEYS = ['crafted', 'tomestone', 'relic', 'savage', 'ultimate', 'pvp'];
+
+// Sync caps at item level 123: slot -> [substat cap, main stat cap]. Same for every job (slot shares are job-neutral).
+const CAPS_123 = {
+  Head: [29, 30],
+  Hands: [29, 30],
+  Feet: [29, 30],
+  Body: [47, 48],
+  Legs: [47, 48],
+  Earring: [23, 24],
+  Necklace: [23, 24],
+  Bracelet: [23, 24],
+  Ring: [23, 24],
+};
+const CAPS_123_2H_WEAPON = [48, 50];
+
+// Each group of steps runs on its own page, in parallel with the others. Its failed checks and the page's JS and
+// console errors go to its own record (found through the async context), so the output is the same in every run.
+const stepRecord = new AsyncLocalStorage();
+
+function check(cond, msg) {
+  if (!cond) stepRecord.getStore().failures.push(msg);
+  return cond;
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const norm = s => s.replace(/\s+/g, ' ').trim();
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// ---------- expect: polling assertions (the plain playwright library has none) ----------
+
+async function poll(what, fn) {
+  const end = Date.now() + TIMEOUT;
+  let last = 'nothing read';
+  for (;;) {
+    try {
+      const r = await fn();
+      if (r.ok) return;
+      last = r.got;
+    } catch (e) {
+      last = String(e.message).split('\n')[0];
+    }
+    if (Date.now() > end) throw new assert.AssertionError({ message: `expect ${what}: last seen ${JSON.stringify(last)}` });
+    await sleep(50);
+  }
+}
+
+function expect(loc) {
+  const make = neg => {
+    const m = (what, read, test) =>
+      poll(`${neg ? 'not ' : ''}${what}`, async () => {
+        const got = await read();
+        const hit = test(got);
+        return { ok: neg ? !hit : hit, got };
+      });
+    const text = () => loc.textContent({ timeout: 500 }).then(norm);
+    const textTest = want => got => (want instanceof RegExp ? want.test(got) : got === want);
+    return {
+      toBeAttached: () =>
+        m(
+          'to be attached',
+          async () => (await loc.count()) > 0,
+          g => g,
+        ),
+      toBeVisible: () =>
+        m(
+          'to be visible',
+          () => loc.isVisible(),
+          g => g,
+        ),
+      toBeHidden: () =>
+        m(
+          'to be hidden',
+          () => loc.isVisible(),
+          g => !g,
+        ),
+      toBeEnabled: () =>
+        m(
+          'to be enabled',
+          () => loc.isEnabled({ timeout: 500 }),
+          g => g,
+        ),
+      toBeDisabled: () =>
+        m(
+          'to be disabled',
+          () => loc.isEnabled({ timeout: 500 }),
+          g => !g,
+        ),
+      toHaveText: want => m(`to have text ${want}`, text, textTest(typeof want === 'string' ? norm(want) : want)),
+      toContainText: want => m(`to contain text ${want}`, text, g => g.includes(norm(want))),
+      toHaveAttribute: (name, want) =>
+        m(
+          `to have attribute ${name}=${want}`,
+          () => loc.getAttribute(name, { timeout: 500 }),
+          g => g === want,
+        ),
+      toHaveValue: want =>
+        m(
+          `to have value ${want}`,
+          () => loc.inputValue({ timeout: 500 }),
+          g => g === want,
+        ),
+      toHaveCount: want =>
+        m(
+          `to have count ${want}`,
+          () => loc.count(),
+          g => g === want,
+        ),
+    };
+  };
+  return { ...make(false), not: make(true) };
+}
+
+// ---------- navigation helpers (each waits for a concrete condition, never a fixed sleep) ----------
+
+/** Alpine has rendered: the job picker has its buttons and the settings panel names the job (or "none chosen"). */
+async function waitReady(pg) {
+  await expect(pg.locator('[data-job-id]').first()).toBeAttached();
+  await expect(pg.locator('#job-name')).not.toHaveText('');
+}
+
+/** The job the picker shows as selected, '' when none is. */
+async function currentJob(pg) {
+  const sel = pg.locator('[data-job-id][aria-checked="true"]');
+  return (await sel.count()) ? await sel.getAttribute('data-job-id') : '';
+}
+
+/** An input's value; '#job' means the job picker's selection. */
+async function fieldValue(pg, sel) {
+  return sel === '#job' ? await currentJob(pg) : await pg.inputValue(sel);
+}
+
+/** Switch job (the page does not ask: nothing is lost but the job-specific choices). */
+async function setJob(pg, job) {
+  await pg.click(`[data-job-id="${job}"]`);
+  await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', job);
+}
+
+async function showTab(pg, tab) {
+  await pg.click(`[data-tab=${tab}]`);
+  await expect(pg.locator(`#tab-${tab}`)).toBeVisible();
+}
+
+async function showMath(pg, sub) {
+  await showTab(pg, 'math');
+  await pg.click(`[data-sub=${sub}]`);
+  await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
+}
+
+/** The optimizer output is debounced and only renders on its tab: wait until a result panel is shown. */
+async function waitOptimizer(pg) {
+  await showTab(pg, 'opt');
+  await expect(pg.locator('#o-out .panel')).toBeVisible();
+}
+
+/** Body rows of a table (CSS selector or Locator) as lists of the texts of its visible cells. Hidden cells (such as
+ * the Sync limits special-substat column when it is not needed) are skipped, so positions match what a user sees. */
+async function tableRows(pg, selector) {
+  const table = typeof selector === 'string' ? pg.locator(selector) : selector;
+  return await table.locator('tbody tr').evaluateAll(rows =>
+    rows.map(r =>
+      Array.from(r.cells)
+        .filter(c => getComputedStyle(c).display !== 'none')
+        .map(c => c.innerText.trim()),
+    ),
+  );
+}
+
+async function setNumber(pg, sel, value) {
+  await pg.fill(sel, value);
+  await pg.locator(sel).dispatchEvent('change');
+}
+
+/** Turn item level sync on (the cap field is disabled while it is off) and set the cap. */
+async function setCap(pg, value) {
+  if (!(await pg.locator('#sync').isChecked())) await pg.locator('#sync').check();
+  await setNumber(pg, '#cap', value);
+}
+
+/** Wait until the (debounced) saved state satisfies a JS predicate over it, s => ... */
+async function waitSaved(pg, jsCondition) {
+  await pg.waitForFunction(
+    `(k => { let s; try { s = JSON.parse(localStorage.getItem(k)); } catch { return false; }
+      return !!s && (${jsCondition})(s); })(${JSON.stringify(STORE_KEY)})`,
+  );
+}
+
+async function checkNoBadText(pg, where) {
+  const txt = await pg.innerText('body');
+  for (const bad of BAD_WORDS) check(!txt.includes(bad), `"${bad}" visible in ${where}`);
+}
+
+// ---------- checks ----------
+
+/** Sync limits view at cap 123: substat and main-stat caps per slot match the known values. */
+async function checkSyncCaps(pg, job) {
+  await showMath(pg, 'sync');
+  await expect(pg.locator('#s-table tbody tr').first()).toBeVisible();
+  const rows = new Map((await tableRows(pg, '#s-table')).map(r => [r[0].replace(' ×2', ''), r])); // "Ring ×2" -> "Ring"
+  for (const [slot, [sub, main]] of Object.entries(CAPS_123)) {
+    const r = rows.get(slot);
+    if (!r) {
+      check(false, `${job}: Sync limits has no ${slot} row`);
+      continue;
+    }
+    check(r[2] === String(sub), `${job}: ${slot} substat cap '${r[2]}', expected ${sub}`);
+    check(r[3] === String(main), `${job}: ${slot} main stat cap '${r[3]}', expected ${main}`);
+  }
+  const hasOffhand = rows.has('Off-hand');
+  if (ONE_HANDED.has(job)) {
+    check(hasOffhand, `${job}: Sync limits has no Off-hand row`);
+  } else {
+    check(!hasOffhand, `${job}: Sync limits shows an Off-hand row for a two-handed job`);
+    const w = rows.get('Weapon');
+    if (!w) check(false, `${job}: Sync limits has no Weapon row`);
+    else {
+      check(
+        w[2] === String(CAPS_123_2H_WEAPON[0]) && w[3] === String(CAPS_123_2H_WEAPON[1]),
+        `${job}: 2H weapon caps ${w[2]}/${w[3]}, expected ${CAPS_123_2H_WEAPON[0]}/${CAPS_123_2H_WEAPON[1]}`,
+      );
+    }
+  }
+}
+
+/** 'Checked against real gear': every Wiki item level 475 cap row says 'match'. */
+async function checkWikiValidation(pg) {
+  await showMath(pg, 'sync');
+  await pg.click('#s-valid summary');
+  const out = pg.locator('#s-valid-out');
+  await expect(out.locator('table').nth(1).locator('tbody tr').first()).toBeVisible();
+  const wiki = await tableRows(pg, out.locator('table').nth(1));
+  check(wiki.length >= 3, `Wiki 475 table has ${wiki.length} rows`);
+  for (const r of wiki) check(r.at(-1) === 'match' && r[1] === r[2], `Wiki 475 cap differs: ${JSON.stringify(r)}`);
+  const bands = await tableRows(pg, out.locator('table').nth(0));
+  check(bands.length > 0, 'real-gear accuracy table is empty');
+}
+
+/** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
+async function checkPieceLab(pg) {
+  await showMath(pg, 'piece');
+  await pg.selectOption('#p-slot', 'head');
+  await pg.selectOption('#p-s1', 'spd');
+  await pg.selectOption('#p-s2', 'spec');
+  await pg.fill('#p-ilvl', '130');
+  await pg.locator('#p-ilvl').dispatchEvent('change');
+  await expect(pg.locator('#p-out thead')).toContainText('Table @ ilvl 130');
+  await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
+  await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
+  const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };
+  const rows = await tableRows(pg, '#p-out');
+  const got = {};
+  for (const r of rows) got[r[0].slice(0, r[0].lastIndexOf(' '))] = r[3]; // "Spell Speed 100%" -> "Spell Speed"
+  for (const [stat, v] of Object.entries(expected)) {
+    check(got[stat] === String(v), `Piece stats ilvl 130 head ${stat} raw '${got[stat]}', expected ${v}`);
+  }
+  // 130 is above the 123 cap: the head caps (29 substat, 30 main) must apply in the synced column
+  const synced = {};
+  for (const r of rows) synced[r[0].slice(0, r[0].lastIndexOf(' '))] = r[4].split(' ')[0];
+  check(
+    synced.Mind === '30' && synced['Spell Speed'] === '29',
+    `Piece stats synced Mind/Spell Speed ${synced.Mind}/${synced['Spell Speed']}, expected 30/29`,
+  );
+  await expect(pg.locator('#p-chart svg')).toBeVisible();
+}
+
+// The numbers the page must show come from src/core (smoke-core.mjs), computed in a worker thread.
+let coreWorker;
+const coreCalls = new Map(); // key -> promise of the result: a call made twice is computed once
+let coreId = 0;
+
+function startCore() {
+  coreWorker = new Worker(new URL('./smoke-core.mjs', import.meta.url));
+  coreWorker.on('message', ({ id, result, error }) => {
+    const call = coreCalls.get(id);
+    if (error) call.reject(new Error(error));
+    else call.resolve(result);
+  });
+  coreWorker.on('error', e => {
+    for (const c of coreCalls.values()) c.reject?.(e);
+  });
+}
+
+/** `fn` of smoke-core.mjs in the worker, with JSON-able `args`. */
+function core(fn, ...args) {
+  const key = JSON.stringify([fn, args]);
+  if (!coreCalls.has(key)) {
+    const id = coreId++;
+    const p = new Promise((resolve, reject) => coreCalls.set(id, { resolve, reject }));
+    coreCalls.set(key, p);
+    coreWorker.postMessage({ id, fn, args });
+  }
+  return coreCalls.get(key);
+}
+const coreGear = (...a) => core('coreGear', ...a);
+const coreFiltered = (...a) => core('coreFiltered', ...a);
+const coreRings = (...a) => core('coreRings', ...a);
+
+const optTotal = pg => pg.locator('#o-out .readout > div').first().locator('b');
+
+async function expectTotal(pg, want, what) {
+  try {
+    await expect(optTotal(pg)).toHaveText(String(want));
+  } catch (e) {
+    if (!(e instanceof assert.AssertionError)) throw e;
+    check(false, `${what}: optimizer total '${await optTotal(pg).innerText()}', expected ${want}`);
+  }
+}
+
+const countText = (searched, total) => `· searching ${searched.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} pieces`;
+
+// Optimizer checks: [job, target], at the shared setup (level 50, cap 123), synced and with item level sync off.
+const OPT_CASES = [
+  ['SGE', 'spd'],
+  ['WAR', 'spd'],
+];
+
+/** For a healer and a tank, with no gear chosen by hand: the page searches every piece the job can wear (minus the
+ * default left-out groups), says how many, and its best speed stat, synced to 123 and with item level sync off (level
+ * sync to 50 still applies), equals the core's optimizer over the same gear. The optimizer itself is checked against a
+ * brute force over every loadout in tests/unit. One step per case. */
+const checkRealGearOptimizer =
+  ([job, target]) =>
+  async pg => {
+    await setJob(pg, job);
+    await waitOptimizer(pg);
+    await pg.selectOption('#o-target', target);
+    const speed = (await pg.locator(`#o-target option[value="${target}"]`).innerText()).trim();
+    await expect(pg.locator('#o-result')).toHaveAttribute('data-target', target);
+    for (const synced of [true, false]) {
+      const want = await coreGear(job, { cap: 123, sync: synced, level: 50 }, target);
+      await pg.locator('#sync').setChecked(synced);
+      await expect(pg.locator('#o-count')).toHaveText(countText(want.searched, want.all));
+      await expectTotal(pg, want.on, `${job} ${synced ? 'synced' : 'unsynced'} ${speed}`);
+      check((await pg.locator('#o-out .readout').innerText()).includes(speed), `${job}: optimizer result does not name ${speed}`);
+      if (synced) await pg.screenshot({ path: shot(`optimizer-${job}.png`), fullPage: true });
+    }
+  };
+
+/** Typing a number commits once, after a pause: typing a cap of 123 key by key runs the optimizer once (for 123),
+ * not for 1 and 12 on the way; the result says how long the solve took. */
+async function checkTypingDebounce(pg) {
+  await setJob(pg, 'SGE');
+  await waitOptimizer(pg);
+  await setCap(pg, '200');
+  await expect(pg.locator('#o-time')).toHaveText(/^Solved in \d+ ms\.$/);
+  await pg.waitForTimeout(600); // longer than the typing and optimizer waits: nothing pending
+  const runs = () => pg.evaluate("performance.getEntriesByName('optimizer').length");
+  const before = await runs();
+  // Typing replaces the selected 200, as a user would: three input events, 60 ms apart (faster than the 300 ms typing
+  // wait). The keys are sent from inside the page, so a busy machine cannot stretch the pauses between them.
+  await pg.evaluate(async () => {
+    const cap = document.querySelector('#cap');
+    cap.focus();
+    cap.select();
+    for (const text of ['1', '12', '123']) {
+      cap.value = text;
+      cap.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+    }
+  });
+  await waitSaved(pg, 's => s.cap === 123');
+  await pg.waitForTimeout(600);
+  const n = (await runs()) - before;
+  check(n === 1, `typing a cap of 123 ran the optimizer ${n} times, expected once`);
+  await expect(pg.locator('#o-time')).toHaveText(/^Solved in \d+ ms\.$/);
+}
+
+/** Switching job takes effect at once (nothing is lost but the job-specific choices, so the page does not ask) and
+ * puts the optimizer target back to the main stat. */
+async function checkJobSwitch(pg) {
+  await setJob(pg, 'WAR');
+  await waitOptimizer(pg);
+  await pg.selectOption('#o-target', 'crit');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
+  await pg.click('[data-job-id="GNB"]'); // same role as WAR
+  await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'GNB');
+  const t = await pg.inputValue('#o-target');
+  check(t === 'main', `after a job switch the target is '${t}'`);
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+}
+
+// Gear browser rings window: [job, item level from, item level to, equip level up to].
+const RINGS_WINDOW = ['SGE', 140, 150, 60];
+
+/** Set the gear browser's filters to an item level window (name filter cleared). */
+async function fillBrowser(pg, lo, hi, lvl, slot = 'any') {
+  await showTab(pg, 'browse');
+  await pg.fill('#b-q', '');
+  await pg.selectOption('#b-type', slot);
+  await allExpansions(pg);
+  await pg.fill('#b-min', String(lo));
+  await pg.fill('#b-max', String(hi));
+  await pg.fill('#b-lvl', String(lvl));
+}
+
+const browserRows = pg => pg.locator('#gear-table tbody tr[data-key]');
+
+/** The gear browser marks every non-Unique ring x2 (it can be worn on both hands) and no Unique one. */
+async function checkRingCopies(pg) {
+  const [job, lo, hi, lvl] = RINGS_WINDOW;
+  const want = await coreRings(job, lo, hi, lvl);
+  if (!check(want.x2 > 0 && want.x2 < want.count, `${job} rings ${lo}-${hi}: no mix of Unique and non-Unique rings; pick another window`))
+    return;
+  await setJob(pg, job);
+  await fillBrowser(pg, lo, hi, lvl, 'ring');
+  await expect(pg.locator('#b-count')).toHaveText(`· ${want.count} matches`);
+  await expect(browserRows(pg)).toHaveCount(want.count);
+  await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
+}
+
+/** The gear-group checkboxes of the optimizer ('o-gear') or the browser ('b-groups'). */
+const groupBoxes = (pg, where) => pg.locator(`#${where} input[data-source]`);
+const groupBox = (pg, where, key) => pg.locator(`#${where} input[data-source="${key}"]`);
+
+async function ticked(pg, where) {
+  const out = [];
+  for (const b of await groupBoxes(pg, where).all()) if (await b.isChecked()) out.push(await b.getAttribute('data-source'));
+  return out;
+}
+
+// A setting where crafted gear and materia both change the best Critical Hit (Sage, level 100, no sync).
+const GROUPS_CASE = ['SGE', { cap: null, sync: false, level: 100 }, 'crit'];
+
+/** Gear to search: six gear groups in one row after their label, every group but Current Savage, Ultimate and PvP
+ * ticked (searched) by default. Unticking crafted gear changes the total to what the core computes without it and the
+ * count in the heading with it; the choice is saved. The browser has its own groups: the optimizer's choice does not
+ * change them. */
+async function checkGearGroups(pg) {
+  const [job, sync, target] = GROUPS_CASE;
+  const want = await coreGear(job, sync, target, ['crafted']);
+  if (!check(want.without < want.on, `${job}: leaving crafted gear out does not lower the total; pick another case`)) return;
+  await setJob(pg, job);
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', String(sync.level));
+  await waitOptimizer(pg);
+  await pg.selectOption('#o-target', target);
+  const searchedDefault = SOURCE_KEYS.filter(s => !DEFAULT_EXCLUDE.includes(s));
+  const t0 = await ticked(pg, 'o-gear');
+  check(same(t0, searchedDefault), `searched by default: ${JSON.stringify(t0)}, expected ${JSON.stringify(searchedDefault)}`);
+  const labels = (await pg.locator('#o-groups label').allInnerTexts()).map(t => t.trim());
+  check(same(labels.slice(3, 4), ['Current Savage']), `the Current Savage box reads ${JSON.stringify(labels.slice(3, 4))}`);
+  const row = await pg
+    .locator('#o-groups label')
+    .evaluateAll(ls => ls.map(l => [Math.round(l.getBoundingClientRect().left), Math.round(l.getBoundingClientRect().top)]));
+  check(row.length === 6 && new Set(row.map(r => r[1])).size === 1, `gear groups are not one row: ${JSON.stringify(row)}`);
+  await expectTotal(pg, want.on, `${job} ${target}, default groups`);
+  const crafted = groupBox(pg, 'o-gear', 'crafted');
+  await crafted.uncheck();
+  await expectTotal(pg, want.without, `${job} ${target}, crafted left out`);
+  const nCrafted = want.searched - (await coreGear(job, sync, target, [], ['crafted', ...DEFAULT_EXCLUDE])).searched;
+  await expect(pg.locator('#o-count')).toHaveText(countText(want.searched - nCrafted, want.all));
+  await waitSaved(pg, `s => s.opt.exclude.join() === ${JSON.stringify(['crafted', ...DEFAULT_EXCLUDE].join(','))}`);
+  await showTab(pg, 'browse');
+  const tb = await ticked(pg, 'b-groups');
+  check(same(tb, searchedDefault), `the browser groups followed the optimizer: ${JSON.stringify(tb)}`);
+  await waitOptimizer(pg);
+  await crafted.check();
+  await expectTotal(pg, want.on, `${job} ${target}, crafted back in`);
+  await pg.locator('#sync').check();
+  await setNumber(pg, '#level', '50');
+}
+
+// Sage, level 100, no sync, Critical Hit, searching Endwalker and Dawntrail gear of item level 700 or less only.
+const OPT_FILTER = { expOff: ['ARR', 'HW', 'SB', 'ShB'], ilvlMax: 700 };
+
+/** The optimizer's own Expansion, item level and equip level filters: the total and the count in the heading equal
+ * the core's over the gear the browser's filters would keep; the browser's filters do not move; the choice is saved;
+ * a filter nothing passes says so. */
+async function checkOptFilters(pg) {
+  const [job, sync, target] = GROUPS_CASE;
+  const want = await coreFiltered(job, sync, target, OPT_FILTER);
+  const full = await coreGear(job, sync, target);
+  if (!check(want.on < full.on, `${job}: the filters do not lower the total; pick another case`)) return;
+  await setJob(pg, job);
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', String(sync.level));
+  await fillBrowser(pg, '', '', 100);
+  await waitSaved(pg, "s => s.browse.min === '' && s.browse.max === '' && String(s.browse.lvl) === '100'");
+  const browseCount = await pg.locator('#b-count').innerText();
+  await waitOptimizer(pg);
+  await pg.selectOption('#o-target', target);
+  await pg.click('#o-exp');
+  for (const b of await pg.locator('#o-exp-menu input').all()) {
+    if (OPT_FILTER.expOff.includes(await b.getAttribute('data-exp'))) await b.uncheck();
+  }
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#o-exp')).toHaveText('2 expansions');
+  await setNumber(pg, '#o-max', String(OPT_FILTER.ilvlMax));
+  await expectTotal(pg, want.on, `${job} ${target}, optimizer filters`);
+  await expect(pg.locator('#o-count')).toHaveText(countText(want.searched, want.all));
+  // number inputs bound with x-model save strings
+  await waitSaved(pg, `s => s.opt.expOff.join() === 'ARR,HW,SB,ShB' && String(s.opt.max) === '${OPT_FILTER.ilvlMax}'`);
+  await setNumber(pg, '#o-min', '9999');
+  await expect(pg.locator('#o-excluded')).toBeVisible();
+  await showTab(pg, 'browse');
+  await expect(pg.locator('#b-exp')).toHaveText('All expansions');
+  await expect(pg.locator('#b-count')).toHaveText(browseCount);
+  // back to no limits
+  await showTab(pg, 'opt');
+  await setNumber(pg, '#o-min', '');
+  await setNumber(pg, '#o-max', '');
+  await pg.click('#o-exp');
+  for (const b of await pg.locator('#o-exp-menu input').all()) await b.check();
+  await pg.keyboard.press('Escape');
+  await expectTotal(pg, full.on, `${job} ${target}, filters cleared`);
+  await pg.locator('#sync').check();
+  await setNumber(pg, '#level', '50');
+}
+
+/** Melds are on by default: the total equals the core's with melds, and each melded pick names its stones; the
+ * switch off gives the core's total without melds and no meld lines. The choice is saved. */
+async function checkMelds(pg) {
+  const [job, sync, target] = GROUPS_CASE;
+  const want = await coreGear(job, sync, target);
+  if (!check(want.on > want.off, `${job}: melds do not raise ${target}; pick another case`)) return;
+  await setJob(pg, job);
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', String(sync.level));
+  await waitOptimizer(pg);
+  await pg.selectOption('#o-target', target);
+  const melds = pg.locator('#o-melds');
+  check(await melds.isChecked(), 'melds are on by default');
+  check(!(await pg.locator('#o-food').isChecked()), 'Food is on by default');
+  await expectTotal(pg, want.on, 'melds on');
+  await expect(pg.locator('#o-result .meld').first()).toBeVisible();
+  await expect(pg.locator('#o-meld-note')).toBeVisible();
+  // every pick has its target at its cap here (melded up to it), so each target cell is marked and the legend shows
+  const rows = await pg.locator('#o-result tbody tr:not(.total):not(.tier)').count();
+  await expect(pg.locator('#o-result td.gold .atcap')).toHaveCount(rows);
+  await expect(pg.locator('#o-cap-note')).toBeVisible();
+  await expect(pg.locator('#o-effect')).toContainText('%'); // the tier rows: Critical Hit rate
+  await checkNoBadText(pg, 'melds/on');
+  await melds.uncheck();
+  await expectTotal(pg, want.off, 'melds off');
+  await expect(pg.locator('#o-result .meld')).toHaveCount(0);
+  await waitSaved(pg, 's => s.opt.melds === false');
+  await melds.check();
+  await expectTotal(pg, want.on, 'melds back on');
+  // leave the target on the main stat: the result is only recomputed while this tab is open, and a later check that
+  // waits for a Critical Hit result would otherwise read this one
+  await pg.selectOption('#o-target', 'main');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+  await pg.locator('#sync').check();
+  await setNumber(pg, '#level', '50');
+}
+
+/** The numbers of the result table's row `rowSel` under the stat column headed `header` (SpS, DET, ...). */
+async function columnValues(pg, rowSel, header) {
+  const heads = (await pg.locator('#o-result thead th').allInnerTexts()).map(h => h.trim().toUpperCase()); // shown in capitals
+  const cell = await pg.locator(`${rowSel} td`).nth(heads.indexOf(header.toUpperCase())).innerText();
+  return Number.parseInt(cell.split(/\s+/)[0].replace(/^\+/, '') || '0', 10);
+}
+
+/** Food off by default; switched on it picks the best meal for the goal: the gear rows stay, the With food row is
+ * gear plus the Food row, the GCD line names the food, the choice is saved. A chosen meal without speed leaves speed
+ * alone. */
+async function checkFood(pg) {
+  await setJob(pg, 'SGE');
+  await pg.locator('#sync').check();
+  await setCap(pg, '123');
+  await setNumber(pg, '#level', '50');
+  await waitOptimizer(pg);
+  await pg.selectOption('#o-target', 'spd');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'spd');
+  const food = pg.locator('#o-food');
+  check(!(await food.isChecked()), 'Food is on by default');
+  await expect(pg.locator('#o-food-row')).toHaveCount(0);
+  const gearCells = () => pg.locator('#o-result tbody td:nth-child(2) > span').allInnerTexts();
+  const gearItems = await gearCells();
+  await food.check();
+  await expect(pg.locator('#o-food-row')).toBeVisible();
+  await expect(pg.locator('#o-food-row')).toContainText('best for the goal');
+  check(same((await gearCells()).slice(0, gearItems.length), gearItems), 'Food changed the gear');
+  const gearSpd = await columnValues(pg, '#o-result tr.total:not(#o-food-total)', 'SpS');
+  const bonus = await columnValues(pg, '#o-food-row', 'SpS');
+  const withFood = await columnValues(pg, '#o-food-total', 'SpS');
+  check(bonus > 0 && withFood === gearSpd + bonus, `Spell Speed with food ${withFood} is not ${gearSpd} + ${bonus}`);
+  // the Total row is the character panel's number: level 50 base speed 341 (AkhMorning) plus gear
+  const base = 341;
+  await expect(pg.locator('#o-result .readout')).toContainText(
+    `${withFood} Spell Speed (${base} base, ${gearSpd - base} gear, ${bonus} food)`,
+  );
+  await expect(pg.locator('#o-total-note')).toContainText('MND and VIT are gear only');
+  await expect(pg.locator('#o-effect')).toContainText('gear and food');
+  await expect(pg.locator('#o-food-note')).toBeVisible();
+  await waitSaved(pg, "s => s.opt.food === true && s.opt.foodPair === ''");
+  await pg.selectOption('#o-food-pair', 'det+crit');
+  await expect(pg.locator('#o-food-row')).not.toContainText('best for the goal');
+  check((await columnValues(pg, '#o-food-total', 'SpS')) === gearSpd, 'a meal without speed changed Spell Speed');
+  check((await columnValues(pg, '#o-food-row', 'DET')) > 0, 'the Determination meal adds no Determination');
+  await waitSaved(pg, "s => s.opt.foodPair === 'det+crit'");
+  await checkNoBadText(pg, 'food');
+  await pg.selectOption('#o-food-pair', '');
+  await pg.selectOption('#o-target', 'main');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+}
+
+/** Build a non-default state (job, cap, sync off, level, optimizer target, tiebreaks and gear groups, browser
+ * filters and gear groups, Piece stats slot and item level, Gear optimizer tab open), reload, and every part comes
+ * back: the inputs, the open tab and the same optimizer total. Nothing like a gear pool is saved. */
+async function checkReloadPersists(pg) {
+  const [job, lo, hi, lvl] = ['DRG', 130, 135, 50]; // not the default job, a different role from the other checks
+  await setJob(pg, job);
+  await fillBrowser(pg, lo, hi, lvl);
+  await groupBox(pg, 'b-groups', 'tomestone').uncheck();
+
+  await showMath(pg, 'piece');
+  await pg.selectOption('#p-slot', 'body');
+  await pg.fill('#p-ilvl', '200');
+  await pg.locator('#p-ilvl').dispatchEvent('change');
+  await setCap(pg, '130');
+  await setNumber(pg, '#level', '60');
+  if (await pg.locator('#sync').isChecked()) await pg.locator('#sync').uncheck();
+  await expect(pg.locator('#cap')).toBeDisabled(); // no sync, so no cap to set
+  await waitOptimizer(pg);
+  await groupBox(pg, 'o-gear', 'relic').uncheck();
+  await pg.selectOption('#o-tb1', 'det');
+  await pg.selectOption('#o-tb2', 'vit');
+  await pg.selectOption('#o-target', 'crit'); // last, so the result below includes every change
+  // the result is debounced: wait until it is for the new target before reading the total
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
+  const total = optTotal(pg);
+  const before = await total.innerText();
+
+  const inputs = {
+    '#job': job,
+    '#cap': '130',
+    '#level': '60',
+    '#b-type': 'any',
+    '#b-min': String(lo),
+    '#b-max': String(hi),
+    '#b-lvl': String(lvl),
+    '#p-slot': 'body',
+    '#p-ilvl': '200',
+    '#o-target': 'crit',
+    '#o-tb1': 'det',
+    '#o-tb2': 'vit',
+  };
+  const groups = { 'o-gear': await ticked(pg, 'o-gear'), 'b-groups': await ticked(pg, 'b-groups') };
+  check(
+    !groups['o-gear'].includes('relic') && groups['o-gear'].includes('tomestone'),
+    `optimizer groups before reload: ${JSON.stringify(groups['o-gear'])}`,
+  );
+  check(
+    !groups['b-groups'].includes('tomestone') && groups['b-groups'].includes('relic'),
+    `browser groups before reload: ${JSON.stringify(groups['b-groups'])}`,
+  );
+  for (const [sel, v] of Object.entries(inputs)) {
+    const got = await fieldValue(pg, sel);
+    check(got === v, `reload setup: ${sel} is '${got}' before reload, expected '${v}'`);
+  }
+  // wait for the debounced save of the last change, rather than sleeping
+  await waitSaved(
+    pg,
+    `s => s.job === '${job}' && s.cap === 130 && s.level === 60 && s.sync === false && s.tab === 'opt'
+    && s.opt.target === 'crit' && s.opt.tb === 'det' && s.opt.tb2 === 'vit' && s.piece.slot === 'body'
+    && s.piece.ilvl === 200 && s.opt.exclude.includes('relic') && s.browse.exclude.includes('tomestone')
+    && !('pool' in s)`,
+  );
+
+  await pg.reload();
+  await waitReady(pg);
+  const selected = (await pg.getAttribute('[data-tab=opt]', 'aria-selected')) === 'true';
+  check(selected && (await pg.locator('#tab-opt').isVisible()), 'after reload the Gear optimizer tab is not the open tab');
+  for (const [sel, v] of Object.entries(inputs)) {
+    const got = await fieldValue(pg, sel);
+    check(got === v, `after reload ${sel} is '${got}', expected '${v}'`);
+  }
+  for (const [where, want] of Object.entries(groups)) {
+    const got = await ticked(pg, where);
+    check(same(got, want), `after reload the ${where} groups are ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+  }
+  check(!(await pg.locator('#sync').isChecked()), 'after reload sync is on, expected off');
+  await waitOptimizer(pg);
+  try {
+    await expect(total).toHaveText(before);
+  } catch (e) {
+    if (!(e instanceof assert.AssertionError)) throw e;
+    const got = (await total.count()) ? await total.innerText() : 'no result';
+    check(false, `after reload the optimizer total is '${got}', expected '${before}' as before reload`);
+  }
+  await groupBox(pg, 'o-gear', 'relic').check();
+  await showTab(pg, 'browse');
+  await groupBox(pg, 'b-groups', 'tomestone').check();
+  await pg.locator('#sync').check(); // leave sync on for the later checks
+  await expect(pg.locator('#cap')).toBeEnabled();
+  const cap = await pg.inputValue('#cap');
+  check(cap === '130', `the cap is '${cap}' after sync came back on, expected 130`);
+}
+
+// Stored values that are not usable state: each must load as the defaults without a JS error.
+const BAD_STORAGE = [
+  ['invalid JSON', '{"job": "WAR", "cap": 13'],
+  ['a JSON array', '[1, 2, 3]'],
+  [
+    'wrong-typed fields',
+    JSON.stringify({
+      job: 42,
+      cap: 'abc',
+      sync: 'yes',
+      level: null,
+      tab: 7,
+      mathTab: {},
+      piece: 'head',
+      browse: [1],
+      opt: { target: 5, tb: null, tb2: 'x', exclude: 'pvp' },
+      poolFilter: 3,
+      pool: { 0: { id: 'x' } },
+    }),
+  ],
+  // a save from the gear pool days, with broken pool items: the pool is dropped
+  [
+    'an old save with a broken pool',
+    JSON.stringify({ job: 'SGE', tab: 'pool', pool: [null, 5, { id: 3 }, { id: 'a', type: 'ring', ilvl: 'big' }] }),
+  ],
+];
+
+/** Invalid JSON, wrong-typed saved values or an old save with a gear pool: the page loads with the default settings
+ * and no JS error. The bad value is written from a separate blank page (same file:// storage), so no pending save of
+ * this page can overwrite it before the load. */
+async function checkCorruptedStorage(pg) {
+  const blank = resolve(OUT, 'blank.html'); // written by main()
+  for (const [what, raw] of BAD_STORAGE) {
+    const wantJob = what === 'an old save with a broken pool' ? 'SGE' : DEFAULT_JOB; // only that case stores a valid job
+    const defaults = { '#job': wantJob, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL };
+    if (wantJob) Object.assign(defaults, { '#b-min': '', '#b-lvl': '100', '#o-target': 'main', '#o-tb1': '', '#o-tb2': '' });
+    const errors = stepRecord.getStore().errors;
+    const nErrors = errors.length;
+    await pg.goto(pathToFileURL(blank).href);
+    await pg.evaluate(([k, v]) => localStorage.setItem(k, v), [STORE_KEY, raw]);
+    await pg.goto(PAGE);
+    await waitReady(pg);
+    if (wantJob) {
+      await expect(pg.locator('#tab-browse')).toBeVisible(); // the old Gear pool tab opens as the Gear browser
+      await expect(browserRows(pg).first()).toBeVisible();
+      await showTab(pg, 'opt');
+      await expect(pg.locator('#o-result')).toBeVisible();
+    } else {
+      await expect(pg.locator('#no-job')).toBeVisible();
+    }
+    for (const [sel, v] of Object.entries(defaults)) {
+      const got = await fieldValue(pg, sel);
+      check(got === v, `stored ${what}: ${sel} is '${got}', expected the default '${v}'`);
+    }
+    check(!(await pg.locator('#sync').isChecked()), `stored ${what}: sync is on, expected the default off`);
+    await checkNoBadText(pg, `page loaded from stored ${what}`);
+    check(errors.length === nErrors, `stored ${what}: JS errors on load: ${JSON.stringify(errors.slice(nErrors))}`);
+    // the page repairs storage: the next save holds valid state, with no pool
+    const jobJs = wantJob ? `'${wantJob}'` : 'null';
+    await waitSaved(pg, `s => s.job === ${jobJs} && !('pool' in s) && Array.isArray(s.opt.exclude)`);
+  }
+}
+
+/** Reset to defaults asks with the browser's own dialog: Cancel keeps everything, OK restores every default. */
+async function checkReset(pg) {
+  await setJob(pg, 'SGE');
+  await setCap(pg, '200');
+  await fillBrowser(pg, 100, '', 100);
+  await pg.fill('#b-q', 'Ring');
+  await waitSaved(pg, "s => s.browse.q === 'Ring' && +s.browse.min === 100"); // typed filters commit after a short wait
+  const messages = [];
+  const answer = accept =>
+    pg.once('dialog', d => {
+      messages.push(d.message());
+      return accept ? d.accept() : d.dismiss();
+    });
+
+  answer(false);
+  await pg.click('#reset');
+  await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'SGE');
+  check((await pg.inputValue('#cap')) === '200', 'Cancel changed the cap');
+  check((await pg.inputValue('#b-q')) === 'Ring', 'Cancel changed the name filter');
+  answer(true);
+  await pg.click('#reset');
+  await expect(pg.locator('#no-job')).toBeVisible();
+  check(
+    same(messages, ['Reset every setting to its default?', 'Reset every setting to its default?']),
+    `reset dialog messages: ${JSON.stringify(messages)}`,
+  );
+  const cj = await currentJob(pg);
+  check(cj === '', `after reset the job is '${cj}', expected none`);
+  check(!(await pg.locator('#sync').isChecked()), 'after reset sync is on, expected off');
+  for (const [sel, v] of Object.entries({ '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL })) {
+    const got = await pg.inputValue(sel);
+    check(got === v, `after reset ${sel} is '${got}', expected '${v}'`);
+  }
+  await setJob(pg, 'SGE');
+  await showTab(pg, 'browse');
+  for (const sel of ['#b-q', '#b-min']) {
+    const got = await pg.inputValue(sel);
+    check(got === '', `after reset ${sel} is '${got}', expected empty`);
+  }
+  await setCap(pg, '123'); // back to the caps the later checks expect
+  await setNumber(pg, '#level', '50');
+}
+
+/** With sync on, the cap field asks for a cap while empty and for a whole item level in range. The message sits
+ * under the field, so the label stays on one line and the cap input lines up with the synced level input. */
+async function checkCapValidation(pg) {
+  await pg.locator('#sync').check();
+  await expect(pg.locator('#cap-error')).toHaveText('Enter a sync cap');
+  check((await pg.getAttribute('#cap', 'aria-invalid')) === 'true', 'an empty cap with sync on is not marked invalid');
+  const lay = await pg.evaluate(() => {
+    const lab = document.querySelector('label[for=cap]');
+    const top = s => document.querySelector(s).getBoundingClientRect().top;
+    return { em: lab.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(lab).fontSize), dy: top('#cap') - top('#level') };
+  });
+  check(lay.em < 2, `the sync cap label wraps (${lay.em.toFixed(1)} em high) while it asks for a cap`);
+  check(Math.abs(lay.dy) < 1, `the cap input is ${lay.dy.toFixed(0)} px off the synced level input`);
+  await pg.fill('#cap', '9999');
+  await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
+  await pg.fill('#cap', '123');
+  await expect(pg.locator('#cap-error')).toBeHidden();
+  await pg.locator('#sync').uncheck();
+}
+
+/** The Expansion dropdown's checkboxes, with the dropdown opened. */
+async function expBoxes(pg) {
+  if ((await pg.locator('#b-exp').getAttribute('aria-expanded')) !== 'true') await pg.click('#b-exp');
+  return pg.locator('#b-exp-menu input');
+}
+
+/** Tick every expansion in the gear browser again, then close the dropdown. */
+async function allExpansions(pg) {
+  for (const box of await (await expBoxes(pg)).all()) if (!(await box.isChecked())) await box.check();
+  await pg.keyboard.press('Escape');
+}
+
+/** Every expansion is ticked by default; with only Endwalker ticked, the browser keeps gear of its equip level band
+ * (81 to 90) and the button names it; the choice is saved. */
+async function checkExpansionFilter(pg) {
+  await setJob(pg, 'WHM');
+  await showTab(pg, 'browse');
+  await expect(pg.locator('#b-exp')).toHaveText('All expansions'); // the default, before any filter is filled in
+  await fillBrowser(pg, '', '', 100);
+  await expect(pg.locator('#b-exp')).toHaveText('All expansions');
+  const boxes = await expBoxes(pg);
+  const all = await boxes.all();
+  let allTicked = true;
+  for (const b of all) allTicked = allTicked && (await b.isChecked());
+  check(all.length === 6 && allTicked, 'every expansion is ticked by default');
+  for (const b of all) if ((await b.getAttribute('data-exp')) !== 'EW') await b.uncheck();
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#b-exp-menu')).toBeHidden();
+  await expect(pg.locator('#b-exp')).toHaveText('Endwalker');
+  await waitSaved(pg, "s => s.browse.expOff.join() === 'ARR,HW,SB,ShB,DT'");
+  const lv = await pg.locator('#gear-table tbody tr td:nth-child(3)').allInnerTexts();
+  check(
+    lv.length > 0 && lv.every(x => Number.parseInt(x, 10) >= 81 && Number.parseInt(x, 10) <= 90),
+    `Endwalker rows outside equip level 81-90: ${[...new Set(lv)].sort()}`,
+  );
+  await allExpansions(pg);
+}
+
+/** PLD (1H weapon + shield) offers an Off-hand slot in the browser; two-handed jobs do not. */
+async function checkPldOffhand(pg) {
+  await setJob(pg, 'PLD');
+  await showTab(pg, 'browse');
+  let opts = await pg.locator('#b-type option').allInnerTexts();
+  check(opts.includes('Off-hand'), `PLD slot filter has no Off-hand: ${JSON.stringify(opts)}`);
+  await pg.screenshot({ path: shot('browser.png'), fullPage: true });
+  await setJob(pg, 'WAR');
+  opts = await pg.locator('#b-type option').allInnerTexts();
+  check(!opts.includes('Off-hand'), `WAR slot filter offers Off-hand: ${JSON.stringify(opts)}`);
+}
+
+// Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
+// capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per
+// mille (level-sync.test.js).
+const HEAD_MAIN_CAP_660 = 248;
+const HEAD_SUB_CAP_660 = '184';
+
+const hasHScroll = pg => pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+
+/** Synced level 90 with item level sync off, at NARROW width: the gear browser shows the level-synced value, the
+ * optimizer total is marked synced, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll. */
+async function checkLevelSync(pg) {
+  await pg.setViewportSize(NARROW);
+  await setJob(pg, 'SGE');
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', '90');
+  await fillBrowser(pg, 780, '', 100, 'head');
+  await expect(browserRows(pg).first()).toContainText(`→${HEAD_MAIN_CAP_660}`);
+  await checkNoBadText(pg, 'level sync/browse');
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-out .readout')).toContainText('synced');
+  await expect(optTotal(pg)).not.toHaveText('');
+  await checkNoBadText(pg, 'level sync/opt');
+  await showMath(pg, 'sync');
+  await expect(pg.locator('#s-lead')).toContainText('synced to item level 660');
+  const head = (await tableRows(pg, '#s-table')).find(r => r[0] === 'Head');
+  check(head?.[2] === HEAD_SUB_CAP_660, `level 90 head substat cap ${head && `'${head[2]}'`}, expected ${HEAD_SUB_CAP_660}`);
+  await showMath(pg, 'piece');
+  await checkNoBadText(pg, 'level sync/piece');
+  for (const where of ['browse', 'opt']) {
+    await showTab(pg, where);
+    check(!(await hasHScroll(pg)), `level sync: horizontal page scroll at ${NARROW.width} px (${where})`);
+  }
+  await pg.screenshot({ path: shot('level-sync.png'), fullPage: true });
+  // back to the shared setup: level 50, sync to 123, no browser filters
+  await fillBrowser(pg, '', '', 100);
+  await setNumber(pg, '#level', '50');
+  await setCap(pg, '123');
+  await pg.setViewportSize({ width: 1000, height: 900 });
+}
+
+/** Limited jobs: picking Blue Mage (level cap 80) or Beastmaster (50) clamps the synced level and the equip level
+ * filter to the cap, both inputs' maximum follows it, and a typed level above the cap is not taken. */
+async function checkJobLevelCap(pg) {
+  await setJob(pg, 'SGE');
+  await showTab(pg, 'browse');
+  await setNumber(pg, '#level', '100');
+  await setNumber(pg, '#b-lvl', '100');
+  for (const [job, cap] of [
+    ['BLU', '80'],
+    ['BST', '50'],
+  ]) {
+    await setJob(pg, job);
+    for (const sel of ['#level', '#b-lvl']) {
+      await expect(pg.locator(sel)).toHaveValue(cap);
+      const max = await pg.getAttribute(sel, 'max');
+      check(max === cap, `${job}: ${sel} max is '${max}', expected ${cap}`);
+    }
+  }
+  await waitSaved(pg, "s => s.job === 'BST' && s.level === 50");
+  await setNumber(pg, '#level', '70');
+  await pg.waitForTimeout(400); // longer than the save debounce
+  const level = await pg.evaluate(`JSON.parse(localStorage.getItem("${STORE_KEY}")).level`);
+  check(level === 50, `BST: a typed level 70 was taken (saved level ${JSON.stringify(level)})`);
+  await setNumber(pg, '#level', '40');
+  await waitSaved(pg, 's => s.level === 40');
+  await setNumber(pg, '#level', '50'); // the shared setup
+  await setJob(pg, 'SGE');
+}
+
+/** Every tab for one job: no undefined/NaN/null text, correct sync caps, page fits NARROW width. Food is on, as it is
+ * for the later jobs of a sequential walk. One step per job; the last job takes the screenshot. */
+const walkJob = job => async pg => {
+  await pg.setViewportSize(NARROW);
+  await setJob(pg, job);
+  await waitOptimizer(pg);
+  await pg.locator('#o-food').check();
+  await showTab(pg, 'browse');
+  await expect(pg.locator('#b-count')).not.toHaveText('');
+  await checkNoBadText(pg, `${job}/browse`);
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-count')).toContainText(' pieces');
+  await checkNoBadText(pg, `${job}/opt`);
+  await expect(pg.locator('#o-food-row')).toBeVisible();
+  await showMath(pg, 'piece');
+  await expect(pg.locator('#p-out tbody tr').first()).toBeVisible();
+  await checkNoBadText(pg, `${job}/math:piece`);
+  await checkSyncCaps(pg, job);
+  await checkNoBadText(pg, `${job}/math:sync`);
+  check(!(await hasHScroll(pg)), `${job}: horizontal page scroll at ${NARROW.width} px`);
+  if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
+};
+
+/** The checks that need a fresh page with nothing set: the title, the defaults and the cap field's validation. */
+async function checkDefaults(pg) {
+  const title = await pg.title();
+  check(title === 'Gear Sync Analysis', `title is '${title}'`);
+  for (const [sel, v] of Object.entries({ '#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL })) {
+    const got = await fieldValue(pg, sel);
+    check(got === v, `default ${sel} is '${got}', expected '${v}'`);
+  }
+  check(!(await pg.locator('#sync').isChecked()), 'sync is on by default');
+  check(await pg.locator('#cap').isDisabled(), 'the cap field is enabled while sync is off');
+  await expect(pg.locator('#no-job')).toBeVisible(); // no job yet: no gear table
+  await checkCapValidation(pg);
+}
+
+// The steps, in groups. A group runs its steps one after the other on a fresh page (own browser context, so own saved
+// state) from the same start: Sage, sync to 123, level 50, which the steps use, and each step leaves that setup
+// behind. The groups run in parallel. `fresh` groups get the page as it loads, with nothing set. `slow` groups start
+// first. A page boot is half a second of CPU, so steps that take little are put together.
+const realGear = c => ({ name: `checkRealGearOptimizer ${c[0]}`, run: checkRealGearOptimizer(c) });
+const walk = job => ({ name: `walkJobs ${job}`, run: walkJob(job) });
+const step = fn => ({ name: fn.name, run: fn });
+const GROUPS = [
+  { fresh: true, steps: [step(checkDefaults)] },
+  { steps: [step(checkPieceLab), step(checkWikiValidation), step(checkJobSwitch), step(checkPldOffhand)] },
+  ...OPT_CASES.map(c => ({ slow: true, steps: [realGear(c)] })),
+  { slow: true, steps: [step(checkTypingDebounce)] },
+  { slow: true, steps: [step(checkRingCopies), step(checkGearGroups)] },
+  { slow: true, steps: [step(checkOptFilters)] },
+  { slow: true, steps: [step(checkMelds), step(checkFood)] },
+  { slow: true, steps: [step(checkExpansionFilter), step(checkReset)] },
+  { slow: true, steps: [step(checkReloadPersists)] },
+  { slow: true, steps: [step(checkCorruptedStorage)] },
+  { slow: true, steps: [step(checkLevelSync), step(checkJobLevelCap)] },
+  { steps: ['SGE', 'WAR', 'PLD'].map(walk) },
+  { steps: ['BLM', 'NIN', 'DRG'].map(walk) },
+  { steps: ['BST', 'BLU'].map(walk) },
+];
+
+/** One group on a new page. Returns what it found: the page and console errors and the failed checks, in order. */
+async function runGroup(browser, group) {
+  const rec = { name: group.steps.map(s => s.name).join(', '), errors: [], failures: [], steps: [] };
+  const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
+  try {
+    await stepRecord.run(rec, async () => {
+      const pg = await ctx.newPage();
+      pg.setDefaultTimeout(TIMEOUT);
+      pg.on('pageerror', e => rec.errors.push(`page error: ${e.message ?? e}`));
+      // ERR_* console errors are network failures (Google Fonts offline), not page bugs
+      pg.on('console', m => {
+        if (m.type() === 'error' && !m.text().includes('ERR_')) rec.errors.push(`console error: ${m.text()}`);
+      });
+      const fail = async (name, e) => {
+        rec.failures.push(`${name}: ${String(e.message ?? e).split('\n')[0]}`);
+        await pg.screenshot({ path: shot(`fail-${name.replaceAll(' ', '-')}.png`), fullPage: true }).catch(() => {});
+      };
+      try {
+        await pg.goto(PAGE);
+        await waitReady(pg);
+        if (!group.fresh) {
+          await setJob(pg, 'SGE');
+          await setCap(pg, '123'); // the checks use the item level 123 caps
+          await setNumber(pg, '#level', '50');
+        }
+      } catch (e) {
+        await fail(`${rec.name} (setup)`, e);
+        return;
+      }
+      for (const step of group.steps) {
+        const t0 = Date.now();
+        try {
+          await step.run(pg);
+        } catch (e) {
+          await fail(step.name, e);
+        }
+        rec.steps.push([step.name, Date.now() - t0]);
+      }
+    });
+  } finally {
+    await ctx.close();
+  }
+  return rec;
+}
+
+async function main() {
+  if (!existsSync(PAGE_PATH)) {
+    console.log(`${PAGE_PATH} not found; run \`npm run build\` first`);
+    return 1;
+  }
+  mkdirSync(OUT, { recursive: true });
+  writeFileSync(resolve(OUT, 'blank.html'), '<!doctype html><title>blank</title>', 'utf-8'); // for checkCorruptedStorage
+
+  const t0 = Date.now();
+  startCore();
+  const browser = await chromium.launch();
+  const records = [];
+  try {
+    // a pool of workers takes the steps in order; the output below is in step order whichever finishes first
+    const queue = GROUPS.map((_, i) => i).sort((a, b) => Number(!!GROUPS[b].slow) - Number(!!GROUPS[a].slow)); // slow ones first
+    const worker = async () => {
+      for (let i = queue.shift(); i !== undefined; i = queue.shift()) records[i] = await runGroup(browser, GROUPS[i]);
+    };
+    await Promise.all(Array.from({ length: Math.min(WORKERS, GROUPS.length) }, worker));
+  } finally {
+    await browser.close();
+    await coreWorker.terminate();
+  }
+
+  if (process.env.SMOKE_TRACE) {
+    for (const r of records) for (const [name, ms] of r.steps) console.error(`${String(ms).padStart(6)} ms  ${name}`);
+    console.error(`${String(Date.now() - t0).padStart(6)} ms  total`);
+  }
+  const problems = records.flatMap(r => [...r.errors, ...r.failures]);
+  console.log(problems.join('\n') || 'no errors');
+  return problems.length ? 1 : 0;
+}
+
+process.exitCode = await main();

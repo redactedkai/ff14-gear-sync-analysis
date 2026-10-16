@@ -1,5 +1,5 @@
-/* Our side of the check against ffxiv-gearing (roadmap A5; run.py). esbuild bundles this file and src/core into one
-   script that run.py injects into ffxiv-gearing's own page, so both tools compute every synced stat in the same page:
+/* Our side of the check against ffxiv-gearing (roadmap A5; run.mjs). esbuild bundles this file and src/core into one
+   script that run.mjs injects into ffxiv-gearing's own page, so both tools compute every synced stat in the same page:
    theirs through the page's store (window.store, which the page exposes on purpose), ours through effStats, the
    function the Gear pool and the optimizer use. Exposes globalThis.OURS = { setup, settings, compare }.
 

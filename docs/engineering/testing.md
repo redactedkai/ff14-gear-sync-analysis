@@ -140,11 +140,14 @@ Run from the repository root.
 
 | Command | What it runs |
 | --- | --- |
-| `npm test` | Unit tests, then generator tests |
+| `npm test` | Unit tests |
+| `npm run test:data` | Generator tests (Python) |
 | `npm run smoke` | Browser smoke test |
-| `npm run lint` | Biome and Ruff, no file changes |
-| `npm run format` | Rewrite files with Biome and Ruff |
-| `npm run check` | Lint, build, tests, smoke test |
+| `npm run lint` | Biome, no file changes |
+| `npm run lint:py` | Ruff, no file changes |
+| `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
+| `npm run check` | Lint, build, unit tests, smoke test (no Python) |
+| `npm run check:all` | `check`, then `lint:py` and `test:data` |
 | `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min) |
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
@@ -152,13 +155,13 @@ Run from the repository root.
 
 Notes:
 
-- **`npm test`** runs the unit tests with Node's built-in test runner, then the generator tests with Python `unittest`.
-- **`npm run smoke`** needs the page built first, and Node on the path for its expected values.
-- **`npm run lint`** lints, then reports formatting differences without changing files.
-- **`npm run check`** runs lint (with format check), build, unit and generator tests and the smoke test, in that order, and stops at the first failure. It is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at 960 px.
+- **`npm test`** runs the unit tests with Node's built-in test runner. **`npm run test:data`** runs the generator tests with Python `unittest`.
+- **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 12 s; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
+- **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
+- **`npm run check`** runs lint (with format check), build, unit tests and the smoke test, in that order, and stops at the first failure. It needs no Python. It is the bar for calling a change done. **`npm run check:all`** adds `lint:py` and `test:data`; run it when touching `scripts/data/` or after `update-data`. For UI changes, also open the built page and look at it at desktop width and at 960 px.
 
 - **The `perf` commands** are performance measurements, not pass/fail tests, and are not part of `npm run check`. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a saved copy of `src/`.
-- **The check against ffxiv-gearing** (`scripts/validate/gearing/`) is also run by hand: `fetch.py` clones and builds that tool at a pinned commit, `run.py` compares every synced stat with it in a browser (about 6 minutes; `--site live` against its published page) and fails on a difference with no known cause. Results in [validation.md, section 9](../mechanics/validation.md#9-against-another-tool-ffxiv-gearing).
+- **The check against ffxiv-gearing** (`scripts/validate/gearing/`) is also run by hand: `fetch.py` clones and builds that tool at a pinned commit, `run.mjs` (Node, Playwright) compares every synced stat with it in a browser (about 6 minutes; `--site live` against its published page) and fails on a difference with no known cause. Results in [validation.md, section 9](../mechanics/validation.md#9-against-another-tool-ffxiv-gearing).
 - **The check against xivgear** (`scripts/validate/xivgear/`) is run by hand the same way: `fetch.py` clones xivgear at a pinned commit and installs its dependencies (with install scripts off), `run.py` runs our bundled core inside xivgear's own test runner and compares every synced stat, job and sync setting (about 30 minutes, one process per job and level; their item data is cached in `data/xivgear-cache`, so later runs are offline). Their two known sync faults are corrected on their side before comparing, and the run fails on any other difference with no known cause. Results in [validation.md, section 10](../mechanics/validation.md#10-against-another-tool-xivgear).
 
 Running a subset:
@@ -167,7 +170,7 @@ Running a subset:
 - unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/*.test.js"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 
-**Setup.** Node 22 or later and `npm install`. For the Python parts, Python 3.9 or later and `python -m pip install -r requirements-dev.txt` (pinned Playwright and Ruff), then once `python -m playwright install chromium`.
+**Setup.** Node 22 or later, `npm install`, then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3.9 or later and `python -m pip install -r requirements-dev.txt`.
 
 ## 4. Conventions
 
@@ -236,7 +239,7 @@ Notes:
 | View builders tested without the browser | `src/ui/views/` |
 | Accuracy check shared by the page and the tests | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_generators.py`, `tests/data/fixtures/` |
-| Smoke test, its steps and its screenshots | `tests/e2e/smoke.py` (`main` and its `steps` list, `check_real_gear_optimizer`, `check_piece_lab`), `tests/e2e/out/` (gitignored) |
-| Commands | `package.json` (`test`, `smoke`, `lint`, `format`, `check`) |
+| Smoke test, its steps and its screenshots | `tests/e2e/smoke.mjs` (`main` and its `steps` list, `checkRealGearOptimizer`, `checkPieceLab`), `tests/e2e/out/` (gitignored) |
+| Commands | `package.json` (`test`, `test:data`, `smoke`, `lint`, `lint:py`, `format`, `check`, `check:all`) |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |
 | Pinned Python tools | `requirements-dev.txt` |

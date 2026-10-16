@@ -1,23 +1,23 @@
-# Build dist/index.html and publish it to GitHub Pages on every push to main.
+# Run `npm run check` on every push to dev or main and on pull requests; publish dist/index.html to GitHub Pages
+# only on a push to main (or by hand) after the check passes.
 # One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
-name: Deploy to GitHub Pages
+name: Check and deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [dev, main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,17 +26,23 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # the unit tests need only Node; a failing test stops the deploy
-      - run: node --test "tests/unit/*.test.js"
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - run: npx playwright install --with-deps chromium
+      # lint, build, unit tests and the browser smoke test; a failure stops the deploy
+      - run: npm run check
+      - if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+      - if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
-    needs: build
+    needs: check
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -1,7 +1,7 @@
-"""Clone ffxiv-gearing at the pinned commit into data/ffxiv-gearing and build its page (for run.py --site local).
+"""Clone ffxiv-gearing at the pinned commit into data/ffxiv-gearing and build its page (for run.mjs --site local).
 
 Their code is third-party: dependencies are installed with --ignore-scripts, and only their own build runs. Needs git
-and Node. Re-pin COMMIT (and run.py DATA_VERSION) to check against a newer version.
+and Node. Re-pin COMMIT (and run.mjs DATA_VERSION) to check against a newer version.
 
 Run: python scripts/validate/gearing/fetch.py
 """

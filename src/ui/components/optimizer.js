@@ -47,7 +47,7 @@ export function optimizer() {
             const view = Object.freeze(optimizerView(raw));
             this.solveMs = Math.max(1, Math.round(performance.now() - t0));
             this.view = view;
-            performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.py
+            performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
             const c = searchCount(raw);
             this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
           };
