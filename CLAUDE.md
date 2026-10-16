@@ -59,6 +59,7 @@ scripts/
   data/regen.py       the three generators, then the build
   perf/               optimizer performance scripts (bench, split, adversarial, browser.py, compare, memory); output in perf/out/
   validate/gearing/   synced stats checked against ffxiv-gearing, run by hand (fetch.py, run.py; validation.md section 9); output in validate/out/
+  validate/xivgear/   the same against xivgear's own core, run by hand (fetch.py, run.py; validation.md section 10); output in validate/out/
 tests/
   unit/*.test.js      node:test, one file per core module, plus state.test.js
   data/               Python generator tests on fixture CSVs

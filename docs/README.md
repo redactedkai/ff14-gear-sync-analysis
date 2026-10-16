@@ -31,7 +31,7 @@ Shorter paths:
 | Page | What it covers |
 | --- | --- |
 | [math.md](mechanics/math.md) | The stat model: budget table, slot shares, the per-item stat factor, double rounding, substat shares; which pieces are synced (item level and level sync) and the cap rule; speed, GCD and DoT/HoT ticks; a verified and assumed table |
-| [validation.md](mechanics/validation.md) | Every check of the model against outside data (real items, the Wiki's caps at item level 475, AkhMorning's tier tables), the optimizer against brute force, which test asserts what, and the in-game evidence still missing |
+| [validation.md](mechanics/validation.md) | Every check of the model against outside data (real items, the Wiki's caps at item level 475, AkhMorning's tier tables), every synced stat against ffxiv-gearing and xivgear, the optimizer against brute force, which test asserts what, and the in-game evidence still missing |
 | [materia.md](mechanics/materia.md) | Meld rules (values, item level gates, slots, caps), the best melds of one piece, why one melded version per piece is exact, substat tiers, checks against xivgear |
 
 **Engineering** (`engineering/`)

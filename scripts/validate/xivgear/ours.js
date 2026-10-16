@@ -1,15 +1,21 @@
 /* Our side of the check against xivgear (run.py). esbuild bundles this file and src/core into one CommonJS file that
    xivgear's own test runner loads (xg_sync_test.ts), so both tools compute every synced stat in the same process:
    theirs through their data manager and gear set (getStatDetail), ours through effStats, the function the optimizer
-   uses. Pieces are matched by game id. Exports { jobInfo, startSetting, compareItem, finishSetting }.
+   uses. Pieces are matched by game id. Exports { jobInfo, startSetting, fixTarget, compareItem, finishSetting }.
 
-   Every difference is tagged with the known cause it matches:
-     X1 level sync item level: they take the level's item level from their data API (maxIlvlPerLvl), we from the game
-        file ParamGrow.ItemLevelSync (e.g. level 90: 665 vs 660)
-     X2 gear whose item level scales with the character (Item.SubStatCategory 2): they sync it only by equip level, as
-        this project did before its D3 fix (docs/mechanics/validation.md section 9)
+   Two known faults on their side are corrected before comparing (fixTarget; their own code then re-syncs the piece),
+   and counted per setting (`corrected`):
+     X1 level sync item level: they take the level's item level from the highest item level of the job's gear at that
+        equip level (their data API's maxIlvlPerLvl), which counts shields: Paladin gets 405 / 535 / 665 at levels
+        70 / 80 / 90; the game file ParamGrow.ItemLevelSync gives 400 / 530 / 660, used instead
+     X2 gear whose item level scales with the character (Item.SubStatCategory 2): they have no rule for it (synced by
+        equip level, or by the cap alone); our rule is used instead (sync-target.js)
+   Every remaining difference is tagged with the known cause it matches:
+     X3 a piece synced to exactly its own item level (equip level above the synced level, item level equal to the
+        level's): they apply the caps (1 lower where the stat factor is below 100%), we leave it as it is
      D1 cap rounding order (±1 where the stat factor is below 100%)
      D2 shield caps (±1)
+     X1 / X2: as above, left after the correction (should not happen)
      target: the two tools sync the piece to different item levels, no known cause
      unexplained: none of the above */
 import { makeJobContext } from '../../../src/core/job-context.js';
@@ -82,18 +88,44 @@ export function startSetting(jobId, level, cap) {
     examples: [],
     seen: new Set(),
     theirsOnly: 0,
+    corrected: {},
   };
+}
+
+/* Their sync target for one of their pieces with the two corrections above, before it is compared: the new target
+   (an item level, or null for not synced) when a correction changes theirs, else undefined. Their rule
+   (datamanager_new.ts, loadData): the cap when below the item level, else the level's item level when the equip level
+   is above the synced level, else none. Only pieces that are compared (ours, wearable by the job) are corrected. */
+export function fixTarget(res, gameId, ilvl, equipLvl, theirTarget) {
+  const row = job(res.job).pieces.get(gameId)?.row;
+  if (!row) return undefined;
+  const { level, cap } = res;
+  const lv = levelSyncIlvl(level);
+  let target = null,
+    fix = null;
+  if (row.scales && lv < ilvl) {
+    target = cap != null && cap < ilvl ? Math.min(cap, lv) : lv;
+    fix = 'X2';
+  } else if (cap != null && cap < ilvl) target = cap;
+  else if (level < equipLvl) {
+    target = lv;
+    fix = 'X1';
+  }
+  if (!fix || target === theirTarget) return undefined;
+  res.corrected[fix] = (res.corrected[fix] || 0) + 1;
+  return target;
 }
 
 function tag(j, p, s, ours, theirs, ourTarget, theirTarget, level) {
   const lowered = t => (t != null && t < p.row.ilvl ? t : null);
   if (lowered(ourTarget) !== lowered(theirTarget)) {
-    if (p.row.scales) return 'X2';
-    // both synced by level only, to their level item level vs ours
+    // both synced by level only, to their level item level vs ours (checked first: scaling gear can hit it too)
     if (ourTarget === levelSyncIlvl(level) && theirTarget != null && p.row.lvl > level) return 'X1';
+    if (p.row.scales) return 'X2';
     return 'target';
   }
   if (Math.abs(ours - theirs) === 1) {
+    if (theirTarget === p.row.ilvl) return 'X3';
     if (p.row.slotCode === 2) return 'D2';
     const factor = kindFactors(j.ctx, p.row.kind)?.[s] ?? 1;
     if (factor < 1) return 'D1';

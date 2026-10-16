@@ -90,7 +90,7 @@ test('optimizer view: one Unique ring fills the first ring slot and leaves the s
   );
 });
 
-test('A5: optimizer errors become an error view instead of throwing', () => {
+test('optimizer errors become an error view instead of throwing', () => {
   const app = makeApp('SGE');
   const pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
     mkItem(t, t, 130, { spd: 9e5, main: 9e5, vit: 9e5 }),

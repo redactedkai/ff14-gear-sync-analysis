@@ -65,9 +65,23 @@ describe('sync caps vs ours', () => {
         dm.minEquipLvl = 1;
         await dm.loadData();
         const sheet: any = HEADLESS_SHEET_PROVIDER.fromScratch('v', 'v', job as any, level as any, cap ?? undefined, false);
+        const res = OURS.startSetting(job, level, cap);
+        // correct their two known sync faults (ours.js fixTarget): re-sync the piece with their own code at the
+        // corrected item level, from its unsynced stats
+        for (const item of dm.allItems) {
+          if (item.isNqVersion || !item.displayGearSlotName) continue;
+          const target = OURS.fixTarget(res, item.id, item.ilvl, item.equipLvl, item.isSyncedDown ? item.syncedDownTo : null);
+          if (target === undefined) continue;
+          if (item.isSyncedDown) {
+            item.baseStats = item.unsyncedVersion.baseStats;
+            item.materiaSlots = item.unsyncedVersion.materiaSlots;
+          }
+          const native = await dm.getIlvlSyncData(null, item.ilvl);
+          const sync = target === null ? undefined : await dm.getIlvlSyncData(null, target);
+          item.applyIlvlData(native, sync, level);
+        }
         await sheet.loadFromDataManager(dm);
         const gs = new CharacterGearSet(sheet);
-        const res = OURS.startSetting(job, level, cap);
         for (const item of dm.allItems) {
           if (item.isNqVersion || !item.displayGearSlotName) continue;
           const slot = item.displayGearSlotName === 'Ring' ? 'RingLeft' : item.displayGearSlotName;
