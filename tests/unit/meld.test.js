@@ -54,12 +54,13 @@ test("meld cap of a piece is its own sync cap: Kirin's Osode of Fending (item le
   assert.deepEqual([c.crit, c.det, c.dh, c.spd, c.spec], [110, 110, 110, 110, 110]);
 });
 
-test("Kirin's Osode of Fending: Determination 77 -> 110 with three VI, the other two slots left empty", () => {
+test("Kirin's Osode of Fending: Determination 77 -> 110 with VI, VI, V, the other two slots left empty", () => {
   const it = piece(war, "Kirin's Osode of Fending");
   const m = bestMeld(war, it, ['det']);
   assert.deepEqual(m.gain, { det: 33 });
   assert.equal(m.free, 2);
-  assert.equal(meldText(war, m), 'DET VI ×3, 2 slots empty');
+  // three stones either way (VI x 3 = 48, VI x 2 + V = 38, both past the 33 of room): the odd grade on the tie
+  assert.equal(meldText(war, m), 'DET VI ×2, DET V, 2 slots empty');
   // with a tiebreak the two spare VI go to it
   assert.deepEqual(bestMeld(war, it, ['det', 'dh']).gain, { det: 33, dh: 32 });
   // a substat the piece lacks can be melded: five VI, 80 below the 110 cap
@@ -77,8 +78,8 @@ test("Courtly Lover's Earrings of Healing: Crit > Det beats greedy (+61 / +90, n
   // the even grades (MateriaGrade: XII has a 0% rate past the first overmeld slot)
   assert.equal(meldText(sge, m), 'CRT XII, DET XII, CRT XI, DET XI ×2');
   assert.deepEqual(bestMeld(sge, it, ['det', 'crit']).gain, { det: 162 });
-  // Critical Hit alone: XII + XI reach the cap as well as two XII, with the cheaper stone; the other three slots stay
-  // empty (no stones in substats the objective doesn't score)
+  // Critical Hit alone: XII + XI reach the cap as well as two XII; with the same gains and stones the odd grade is shown
+  // (owner 2026-10-16). The other three slots stay empty (no stones in substats the objective doesn't score)
   const crit = bestMeld(sge, it, ['crit']);
   assert.deepEqual(crit.gain, { crit: 61 });
   assert.equal(meldText(sge, crit), 'CRT XII, CRT XI, 3 slots empty');
@@ -208,4 +209,62 @@ test('meld versions: with a speed maximum, versions with less speed are kept', a
 test('meld versions: a piece that takes no stones has one version, no melds', async () => {
   const { meldVersions } = await import('../../src/core/meld.js');
   assert.deepEqual(meldVersions(sge, mkItem('H', 'head', 300, { crit: 10 }), ['crit', 'spd']), [null]);
+});
+
+/* One tie rule for both paths: for every gain vector the plain search picks, its meld version shows the same stones. */
+test('meld versions show the same stones as bestMeld for the same gains', async () => {
+  const { meldVersions } = await import('../../src/core/meld.js');
+  let checked = 0;
+  for (const job of [sge, war]) {
+    const pool = browseItems(job, {}).map(r => poolItemFromRow(job, r));
+    for (const it of pool) {
+      if (!meldInfo(it)?.slots) continue;
+      for (const keys of [
+        ['crit', 'spd'],
+        ['spd', 'det'],
+        ['det', 'dh', 'spd'],
+      ]) {
+        const best = bestMeld(job, it, keys);
+        if (!best) continue;
+        const same = meldVersions(job, it, keys).find(v => JSON.stringify(v.gain) === JSON.stringify(best.gain));
+        if (!same) continue; // a speed minimum keeps only versions no other beats; the best one is always among them
+        assert.deepEqual(same.stones, best.stones, `${job.jobId} ${it.name} ${keys}`);
+        assert.equal(same.free, best.free);
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked > 1000, `${checked} checked`);
+});
+
+/* A lower grade in a guaranteed slot is never a version of its own: it only lowers a gain, and under a speed maximum,
+   where less speed can matter, it found no better set in 2,045 Target GCD runs for about 14% more search work (owner,
+   2026-10-16: dropped). Kirin's Osode of Fending (5 guaranteed slots, VI = 16, V = 6) adds speed in steps of 16 only. */
+test('meld versions: with a speed maximum, no lower grade in a guaranteed slot', async () => {
+  const { meldVersions } = await import('../../src/core/meld.js');
+  const it = piece(war, "Kirin's Osode of Fending");
+  const spds = meldVersions(war, it, ['det', 'spd'], { exactSpd: true }).map(m => m?.gain.spd || 0);
+  assert.ok(spds.includes(16) && spds.includes(80));
+  for (const spd of spds) assert.equal(spd % 16, 0, `speed ${spd}`);
+});
+
+/* Odd grades on ties. Courtly Lover's Longcoat of Healing (item level 770, 2 guaranteed + overmeld: 3 big and 2 small
+   slots), Critical Hit 123 below its cap: XII x 2 + XI (126) covers it as well as XII x 3 (162), so the third stone is
+   XI, from both paths. Augmented Bygone Brass Earrings of Healing (item level 790, 2 guaranteed slots, no overmelding),
+   Determination 64 below its cap: XII + XI (72) as well as XII x 2 (108), so XI goes in a guaranteed slot. */
+test('odd grades on ties: XI where it gives the same gains, from both paths', async () => {
+  const { meldVersions } = await import('../../src/core/meld.js');
+  const coat = piece(sge, "Courtly Lover's Longcoat of Healing");
+  assert.equal(meldCaps(sge, coat).crit - (coat.stats.crit || 0), 123);
+  const m = bestMeld(sge, coat, ['crit']);
+  assert.deepEqual(m.gain, { crit: 123 });
+  assert.equal(meldText(sge, m), 'CRT XII ×2, CRT XI, 2 slots empty');
+  // with a speed maximum a version without speed is kept, and it shows the same stones
+  const v = meldVersions(sge, coat, ['crit', 'spd'], { exactSpd: true }).find(x => x.gain.crit === 123 && !x.gain.spd);
+  assert.ok(v, 'a version with Critical Hit only');
+  assert.deepEqual(v.stones, m.stones);
+
+  const ears = piece(sge, 'Augmented Bygone Brass Earrings of Healing');
+  assert.equal(meldCaps(sge, ears).det - (ears.stats.det || 0), 64);
+  assert.equal(meldText(sge, bestMeld(sge, ears, ['det'])), 'DET XII, DET XI');
 });

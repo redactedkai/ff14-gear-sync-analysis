@@ -179,7 +179,7 @@ With a speed range the search looks at only two numbers per candidate: its score
 
 The drop rule and both steps of the proof carry over. In step 2, a swap does not lower the score, and the speed total rises (minimum only) or stays the same (with a maximum), so the speed rule still holds. In the example above, H1 has more speed than H2, so it no longer removes it.
 
-The other stats play no part, so this keeps far fewer candidates than full dominance. Example: the full Sage pool, unsynced, Critical Hit then Determination. Full dominance keeps 212 candidates (261 with melds). With a speed minimum this rule keeps 41 (84); with a maximum, 680 (1,386 meld versions, section 6). Between loadouts with exactly the same score, the one returned can differ from a run without a speed range. The exhaustive-search tests compare the target and tiebreak totals, so they allow that.
+The other stats play no part, so this keeps far fewer candidates than full dominance. Example: the full Sage pool, unsynced, Critical Hit then Determination. Full dominance keeps 212 candidates (257 with melds). With a speed minimum this rule keeps 38 (84); with a maximum, 702 (1,406 meld versions, section 6). Between loadouts with exactly the same score, the one returned can differ from a run without a speed range. The exhaustive-search tests compare the target and tiebreak totals, so they allow that.
 
 The candidates are sorted by score, then by speed, then by stat sum. As above, every beater comes first, and each candidate is compared only with the kept ones. With a maximum, the scan runs once for each speed value.
 
@@ -295,7 +295,7 @@ Each surviving split is one candidate of the piece. Every version shares the ite
 
 **Why this is exact.** Take a best loadout and one of its pieces with melds $P$. Some kept split $Q$ gains at least as much as $P$ on every key, and (with a maximum) the same speed. Swapping $P$ for $Q$ does not lower the score, and the speed total rises (minimum only) or stays the same. So some best loadout uses only kept versions.
 
-Among splits with the same gains, the one that leaves the most slots empty wins, then the one whose stones are worth the least, as for one best split. The lists are cached by stones and room. Room beyond what all the stones can add changes nothing, so it is clamped first, and more pieces share one list. Example: the full Sage pool, unsynced, Critical Hit then Determination. After pruning, a band keeps 1,386 candidates, against 261 with one version per piece and no speed range.
+Among splits with the same gains, the one with the fewest stones wins, then the fewest big stones, as for one best split ([materia.md, section 2](../mechanics/materia.md)). A small stone in a big slot can be the split shown, but never adds a version: with a maximum its lower speed could, yet it found no better set in 2,045 Target GCD runs for about 14% more search work (owner, 2026-10-16). The lists are cached by stones and room. Room beyond what all the stones can add changes nothing, so it is clamped first, and more pieces share one list. Example: the full Sage pool, unsynced, Critical Hit then Determination. After pruning, a band keeps 1,406 candidates, a minimum 84, and no speed range 257.
 
 The first version of this kept only the splits beaten by nothing on every key, including speed, even with a maximum. That dropped splits with less speed that a band needed. Perplexity's review flagged it too, and the exhaustive test with a band now covers it.
 
