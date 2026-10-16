@@ -152,31 +152,38 @@ export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']); /* 1H weapon + shi
    at the highest equip level in the item database (MAX_LEVEL in tables.js, 100). */
 export const JOB_LEVEL_CAPS = Object.freeze({ BLU: 80, BST: 50 });
 /* Haste that is up all fight in practice, counted in the Target GCD (owner's decision 2026-10-15; short buffs such as
-   Presence of Mind, Ley Lines, Army's Paeon and Inspiration are not): job -> {name, steps: [[from level, percent]]},
-   steps in level order. Percents and levels from the official job guides (https://na.finalfantasyxiv.com/jobguide/,
-   read 2026-10-15): Monk's trait Greased Lightning 5% at 1, 10% at 20, 15% at 40, 20% at 76; Ninja's trait
-   Increase Attack Speed 15% from 45; Samurai's Fuka 10% from 18 (Shifu), 13% from 78 (Enhanced Fugetsu and Fuka);
-   Viper's Swiftscaled 15% from 20 (Swiftskin's Sting). xivgear applies Ninja's and Viper's at every level. */
+   Presence of Mind, Ley Lines, Army's Paeon and Inspiration are not): job -> {name, steps: [[from level, percent,
+   the trait or action that gives it]]}, steps in level order. Percents, levels and names from the official job guides
+   (https://na.finalfantasyxiv.com/jobguide/, read 2026-10-15, rechecked 2026-10-16). A level synced below the job's
+   starting level is real (a Samurai, from 50, synced to Sastasha's 18): the step's own level decides. Samurai's 10%
+   below 78 is second-hand (Game8, xivgear): the guide gives only today's 13% and the trait that raises it. xivgear
+   applies Ninja's and Viper's at every level. */
 export const HASTE = Object.freeze({
   MNK: Object.freeze({
     name: 'Greased Lightning',
     steps: Object.freeze([
-      [1, 5],
-      [20, 10],
-      [40, 15],
-      [76, 20],
+      [1, 5, 'Greased Lightning'],
+      [20, 10, 'Enhanced Greased Lightning'],
+      [40, 15, 'Enhanced Greased Lightning II'],
+      [76, 20, 'Enhanced Greased Lightning III'],
     ]),
   }),
-  NIN: Object.freeze({ name: 'Increase Attack Speed', steps: Object.freeze([[45, 15]]) }),
+  NIN: Object.freeze({ name: 'Increase Attack Speed', steps: Object.freeze([[45, 15, 'Increase Attack Speed']]) }),
   SAM: Object.freeze({
     name: 'Fuka',
     steps: Object.freeze([
-      [18, 10],
-      [78, 13],
+      [18, 10, 'Shifu'],
+      [78, 13, 'Enhanced Fugetsu and Fuka'],
     ]),
   }),
-  VPR: Object.freeze({ name: 'Swiftscaled', steps: Object.freeze([[20, 15]]) }),
+  VPR: Object.freeze({ name: 'Swiftscaled', steps: Object.freeze([[20, 15, "Swiftskin's Sting"]]) }),
 });
+/* The shortest recast speed and haste can give a weaponskill or spell, in ms. Second-hand: the game client's recast
+   adjustment, as reverse-engineered by ffxiv_bossmod (its TODO notes on GetAdjustedRecastTime, 7.0: speed multiplier
+   (at least 0), then haste, then "min 1500"), and players' reports of a 1.50 s cap. xivgear clamps only at 0 and
+   AkhMorning gives none. No real setting comes near it (the fastest found: 1.83 s, Samurai at level 90 with Fuka); a
+   cap above every real duty's at a low level does (docs/mechanics/math.md section 6). */
+export const GCD_FLOOR_MS = 1500;
 /* Expansions in order: [short name, full name, level cap]. The item level boundary after each one is the game's own
    sync item level at its level cap (ParamGrow), see expansionBounds in speed.js. */
 export const EXPANSIONS = Object.freeze([

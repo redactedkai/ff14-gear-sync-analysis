@@ -1,6 +1,6 @@
 /* Speed stat -> GCD and DoT/HoT tick scaling (AkhMorning's formulas), using ParamGrow level data. */
 import { PG } from './tables.js';
-import { EXPANSIONS, HASTE } from './constants.js';
+import { EXPANSIONS, HASTE, GCD_FLOOR_MS } from './constants.js';
 
 /* The recast of a weaponskill or spell before speed: 2.5 s, in ms (the GCD every speed formula here starts from). */
 export const BASE_GCD_MS = 2500;
@@ -29,25 +29,27 @@ export function expansionBounds() {
 export function hasteFor(jobId, level) {
   const haste = HASTE[jobId];
   if (!haste) return null;
-  // steps are in level order: the last one the level has reached applies
-  let pct = 0;
-  for (const [from, stepPct] of haste.steps) if (level >= from) pct = stepPct;
-  return pct ? { name: haste.name, pct } : null;
+  // steps are [from level, percent, source] in level order: the last one the level has reached applies
+  let step = null;
+  for (const st of haste.steps) if (level >= st[0]) step = st;
+  return step ? { name: haste.name, pct: step[1], level: step[0], source: step[2] } : null;
 }
 
 /* GCD in seconds for `gearSpd` speed from gear (the base `sub` is added here), base recast in ms, `haste` in percent.
    The haste comes after the speed step is rounded down, then the result is rounded down again (xivgear's formula,
-   xivmath.ts; with no haste it is AkhMorning's). */
+   xivmath.ts; with no haste it is AkhMorning's). The speed multiplier is at least 0 and the result at least 1.50 s
+   (GCD_FLOOR_MS: the game client's floor, second-hand; xivgear and AkhMorning have none). */
 export function gcdFor(gearSpd, level, baseMs, haste = 0) {
   const { sub, div } = speedParams(level);
   baseMs = baseMs || BASE_GCD_MS;
   const speed = sub + gearSpd;
   // the recast multiplier in per mille: 1000 minus 130 per `div` points of speed above the base (Math.ceil of the
-  // negative term rounds toward 1000, so a part step gives nothing)
-  const speedMod = 1000 + Math.ceil((130 * (sub - speed)) / div);
+  // negative term rounds toward 1000, so a part step gives nothing), never below 0
+  const speedMod = Math.max(0, 1000 + Math.ceil((130 * (sub - speed)) / div));
   const recastMs = Math.floor((baseMs * speedMod) / 1000);
-  // haste in percent, then down to hundredths of a second: ms x (100 - haste) / 100 / 10, floored, / 100
-  return Math.floor((recastMs * (100 - haste)) / 1000) / 100;
+  // haste in percent, then down to hundredths of a second (ms x (100 - haste) / 100 / 10, floored), no shorter than the
+  // floor (GCD_FLOOR_MS / 10 in hundredths); / 100 gives seconds
+  return Math.max(GCD_FLOOR_MS / 10, Math.floor((recastMs * (100 - haste)) / 1000)) / 100;
 }
 
 /* DoT/HoT tick multiplier from gear speed, e.g. 1.012 */
@@ -83,7 +85,8 @@ function lowest(lo, hi, pred) {
    - mode 'min' ("this GCD or faster"): {min, max: null}, min the lowest speed whose GCD is `gcd` or shorter;
    - mode 'exact': {min, max}, the speeds whose GCD is exactly `gcd`.
    Null when no speed gives it: (exact) slower than the GCD with no speed
-   (2.40 for a Ninja, whose no-speed GCD is 2.12). The GCD falls 0.01 s at a time, with or without haste, so every value
+   (2.40 for a Ninja, whose no-speed GCD is 2.12), or (either mode) below the 1.50 s floor. At the floor itself no
+   speed is too much: 'exact' 1.50 has no maximum (max 100,000). The GCD falls 0.01 s at a time, with or without haste, so every value
    in between is some speed's (speed.test.js). A target at or above the no-speed GCD is met by any speed: {min: 0} in
    'min' mode. Speeds are totals the GCD formula sees (gear, plus food when the caller adds it). */
 export function speedForGcd(gcd, level, mode, haste = 0) {
