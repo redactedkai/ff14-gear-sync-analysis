@@ -73,6 +73,6 @@ test('tabs: an unknown tab opens the optimizer; a math sub-view opens the math t
   assert.equal(store.tab, 'browse');
   store.showTab('pool'); // the old Gear pool tab no longer exists
   assert.equal(store.tab, 'opt');
-  store.showTab('sync');
-  assert.deepEqual([store.tab, store.mathTab], ['math', 'sync']);
+  store.showTab('gcd');
+  assert.deepEqual([store.tab, store.mathTab], ['math', 'gcd']);
 });

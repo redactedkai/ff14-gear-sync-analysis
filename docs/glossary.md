@@ -116,7 +116,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Generated piece, hand-made piece.** A pool piece built by the formula rather than read from the database. It has no equip level, so only the item level cap syncs it. Old saves drop the hypothetical and hand-entered pieces of the removed Advanced section ([testing.md, section 2](engineering/testing.md#2-what-each-file-covers)). See [math.md, section 5](mechanics/math.md#which-pieces-are-synced).
 
-**Generic maximum.** The most speed gear can give under cap 123 with full-share speed in every armor and accessory slot: 296, a 2.22 s GCD at level 50 (344 and 2.17 s with the weapon, as the Sync limits tab shows). It is derived from budget row 123, since no gear exists at item level 123. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
+**Generic maximum.** The most speed gear can give under cap 123 with full-share speed in every armor and accessory slot: 296, a 2.22 s GCD at level 50 (344 and 2.17 s with the weapon). It is derived from budget row 123, since no gear exists at item level 123. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
 **Job context.** Everything job-dependent (stat mapping, weapon mode, active slots, the job's Vitality factor), computed once per job into a frozen object that every core function takes as its first argument. See [architecture.md, section 2](engineering/architecture.md#2-the-job-context).
 
@@ -162,7 +162,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Stat minimum.** A lower limit on a stat's total that the optimizer must meet, on any stat (the speed range is the speed case). Tier ranking holds each ranked stat with one. See [optimizer.md, section 5](engineering/optimizer.md#with-minimums-on-other-stats).
 
-**Tabs.** The page has two working tabs, **Gear optimizer** (opened by default) and **Gear browser** (looking gear up), and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (a piece built from its item level and slot by the formula) and **Sync limits** (what a cap allows per slot, with the "Checked against real gear and published caps" panel). Some pages call Sync limits "Sync caps". See the [root README](../README.md).
+**Tabs.** The page has two working tabs, **Gear optimizer** (opened by default) and **Gear browser** (looking gear up), and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (one piece before and after sync, and the same slot at every item level against a melded piece at the cap; its formula, budget chart and the "Checked against real gear and published caps" panel under "Each stat, step by step") and **GCD** (a full set's GCD by item level against the melded set at the cap). A "?" button opens "How sync works". The Sync limits sub-tab was removed on 2026-10-16. See the [root README](../README.md).
 
 **Target GCD.** A GCD the optimizer must reach, "exactly" or "or faster", counted with food and haste. It becomes a speed range, and the best set by the goal within it wins. On the page it is a box under the Goal grid, empty by default. See [math.md, section 6](mechanics/math.md#target-gcd) and [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 

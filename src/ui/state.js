@@ -48,7 +48,7 @@ export function shownSync(app) {
 
 export const STORE_KEY = 'ilvl-stat-lab-v4';
 export const TABS = ['opt', 'browse', 'math'];
-export const MATH_TABS = ['piece', 'sync'];
+export const MATH_TABS = ['piece', 'gcd'];
 
 export function defaultState() {
   return {
@@ -58,8 +58,9 @@ export function defaultState() {
     level: DEFAULT_LEVEL,
     tab: 'opt',
     mathTab: 'piece',
-    syncIlvl: MAX_REAL, // Sync limits' comparison piece: the highest real item level, above any cap
-    piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
+    // How the math works: the piece's item level (null: 60 above the cap, DEFAULT_OVER in views/sync-explainer.js),
+    // slot and two ranked substats
+    piece: { ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
     // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
     browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
     // melds: give pieces their best materia melds. expOff, exclude, min, max, lvl: Gear to search, the browser's
@@ -84,10 +85,10 @@ export function defaultState() {
   };
 }
 
-/* The job's own special substat (Piety, Tenacity) first, or its speed stat when it has none; rank 2 empty. */
-export function defaultSubs(job) {
-  // a second substat by default, so Piece stats shows sync raising the 70% line to the full cap
-  return [job.profile.spec ? 'spec' : 'spd', 'crit'];
+/* Critical Hit first and the job's speed second, for every job: a second substat shows sync raising the 70% line to
+   the full cap, and speed as that line gives the GCD sub-tab something to show. */
+export function defaultSubs() {
+  return ['crit', 'spd'];
 }
 
 /* The synced level and the two "Equip level up to" filters held to the job's level cap. */
@@ -99,7 +100,7 @@ export function clampLevels(s, job) {
 /* On a job change: job-specific selections go back to defaults and the levels are held to the job's cap. */
 export function resetForJob(s, job) {
   clampLevels(s, job);
-  s.piece.subs = defaultSubs(job);
+  s.piece.subs = defaultSubs();
   if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
   s.opt.target = 'main';
   s.opt.tb = '';
@@ -145,7 +146,7 @@ function restoreGearFilter(f, raw, job) {
    back. Older saves had a third rank (20%); it is dropped, since real gear has a third line only as Direct Hit on
    Mind-only gear (docs/mechanics/math.md section 4). */
 function restorePieceSubs(raw, job) {
-  const ds = defaultSubs(job);
+  const ds = defaultSubs();
   if (!Array.isArray(raw)) return ds;
   const subs = [0, 1].map(i => (job.substats.includes(raw[i]) ? raw[i] : i === 0 ? ds[0] : null));
   if (subs[1] === subs[0]) subs[1] = null;
@@ -182,11 +183,10 @@ export function restoreState(raw) {
   s.cap = r.cap === null ? null : ilvlIn(r.cap, s.cap);
   s.sync = bool(r.sync, s.sync);
   s.level = intIn(r.level, 1, job.maxLevel, s.level);
-  s.syncIlvl = ilvlIn(r.syncIlvl, s.syncIlvl);
   restoreTabs(s, r);
 
   const piece = isObj(r.piece) ? r.piece : {};
-  s.piece.ilvl = ilvlIn(piece.ilvl, s.piece.ilvl);
+  s.piece.ilvl = piece.ilvl === null ? null : ilvlIn(piece.ilvl, s.piece.ilvl); // older saves: a number, kept
   s.piece.slot = oneOf(piece.slot, job.activeSlotTypes, s.piece.slot);
   s.piece.subs = restorePieceSubs(piece.subs, job);
 

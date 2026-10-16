@@ -213,8 +213,10 @@ export function wearable(job, item) {
 }
 
 /* A pool item's materia slots: {slots, overmeld} (guaranteed slots; whether overmelding is allowed), or null for items
-   not from the database (hand-made, generated) and saved items no database row matches any more. */
+   not from the database (hand-made, generated) and saved items no database row matches any more. A hand-made piece
+   may carry its own `meld` ({slots, overmeld}): the sync explainer's generic pieces take 2 slots, as most gear does. */
 export function meldInfo(item) {
+  if (item.meld) return item.meld;
   const f = rowFacts(item);
   return f ? { slots: f.slots, overmeld: f.overmeld } : null;
 }

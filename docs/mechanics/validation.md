@@ -168,7 +168,7 @@ For a substat (stat factor 100) the model's cap for a slot with share $p$ is $\o
 **Verified** (external truth): 5 of 5 match.
 
 - **What this confirms:** the clamp rule (each stat on a piece above the cap is limited to the full-share value of a same-slot piece at the cap) for **substats**.
-- **What it does not cover:** the main stat, Vitality, and whether lower-ranked substats clamp against the full-share value or their own share. The Wiki lists one cap per slot and only for substats ([math.md, section 5](math.md#what-is-assumed)).
+- **What it does not cover:** the main stat and Vitality. The Wiki lists one cap per slot and only for substats; whether lower-ranked substats clamp against the full-share value is settled by the Wiki's Item Level page instead ([math.md, section 5](math.md#what-is-assumed)).
 
 **Tests.** The validation unit test checks all five rows. The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too. The smoke test checks that the page's Wiki table says "match" on every row.
 
@@ -274,11 +274,11 @@ Notes:
 
 ## 8. Open question: in-game captures
 
-Which parts of the sync model rest on no capture of the game by this project, and what evidence exists instead? The Wiki check (section 3) covers substat caps only. Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)):
+Which parts of the sync model rest on no capture of the game by this project, and what evidence exists instead? The Wiki check (section 3) covers substat caps only. Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)); the second and third are now verified from published values:
 
 1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job), with the factor-first cap order below; supported by second-hand in-game values;
-2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$); strongly supported by a player's in-game report and The Balance's thresholds (below);
-3. sync never raises a stat.
+2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$); **verified** (published) by the Wiki's Item Level page (accessories synced to 475: 127 / 89 becomes 88 / 88), and supported by a player's in-game report and The Balance's thresholds (below);
+3. sync never raises a stat: **verified** for substats (published): the Wiki's 93 / 65 becomes 88 / 65, and its page says "Substats will not be scaled up".
 
 **Level sync.** Melds on synced gear and the level sync trigger are settled (verified by the owner in game). What each part of level sync rests on is in [math.md, section 5](math.md#which-pieces-are-synced); the order when both triggers apply is second-hand, and weapons using the same level item level is inferred. Two captures would check them:
 
@@ -447,8 +447,8 @@ The status of each claim this page checks, in one place. Details are in the sect
 | Caps at item level 123 | Independent derivation | No gear at 123; real pieces at 120 and 125 (section 3) |
 | Factor-first cap order | **Verified** by three **second-hand** in-game values; **inferred** for other caps with a factor below 100 | xivgear's tests (section 8; [math.md, section 5](math.md#the-clamp-rule)) |
 | Main stat and Vitality clamped like substats | **Inferred**, supported second-hand | xivgear's in-game values (section 8) |
-| Lower substats clamp at the full-share cap | **Inferred**, strongly supported | Forum report, The Balance (section 8) |
-| Sync never raises a stat | **Assumed** | No evidence ([math.md, section 5](math.md#what-is-assumed)) |
+| Lower substats clamp at the full-share cap | **Verified** (published) | Wiki Item Level page; forum report, The Balance (section 8) |
+| Sync never raises a stat | **Verified** for substats (published) | Wiki Item Level page ([math.md, section 5](math.md#what-is-assumed)) |
 | All-jobs pieces at 90% under level sync | **Second-hand**, conflicting; kept (owner's decision) | Report of full factor (section 8) |
 | Off-hand = two-handed − one-handed | **Inferred** | 224 of 226 real off-hands (section 9) |
 | Melds on synced gear, level sync trigger | **Verified** by the owner in game | Section 8 |

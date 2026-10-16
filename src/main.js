@@ -5,8 +5,7 @@ import { restoreState, loadSaved, save } from './ui/state.js';
 import { createAppStore } from './ui/store.js';
 import { storeNumberField } from './ui/helpers.js';
 import { page, settings } from './ui/components/page.js';
-import { pieceLab } from './ui/components/piece-lab.js';
-import { syncCaps } from './ui/components/sync-caps.js';
+import { syncExplainer } from './ui/components/sync-explainer.js';
 import { validationPanel } from './ui/components/validation-panel.js';
 import { gear } from './ui/components/gear.js';
 import { optimizer } from './ui/components/optimizer.js';
@@ -20,7 +19,7 @@ const app = Alpine.store('app');
    that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)) */
 Alpine.magic('num', () => (path, lo, hi) => storeNumberField(app, path, lo, hi));
 
-Object.entries({ page, settings, pieceLab, syncCaps, validationPanel, gear, optimizer }).forEach(([name, factory]) => {
+Object.entries({ page, settings, syncExplainer, validationPanel, gear, optimizer }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });
 

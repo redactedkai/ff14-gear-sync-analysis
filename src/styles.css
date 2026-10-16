@@ -914,6 +914,7 @@ svg.chart text.exp {
 }
 .legend {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   font-size: 0.78rem;
   color: var(--muted);
@@ -971,4 +972,219 @@ footer {
 }
 [x-cloak] {
   display: none !important;
+}
+
+/* How the math works: the sync explainer (components/sync-explainer.js) */
+/* its sticky bar: sub-tabs, the piece's controls, the item level slider and the help button */
+.mathbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mathbar .mctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.mathbar .subtabs {
+  padding-right: 14px;
+  border-right: 1px solid var(--line);
+}
+.ilctl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-basis: 100%;
+}
+.ilctl input[type="range"] {
+  flex: 1;
+}
+.ilctl input[type="number"] {
+  width: 80px;
+}
+.ilctl .bound {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 3ch;
+  text-align: center;
+}
+/* the "?" button and its popup, which stands apart from the panels: raised background, accent border, dimmed page */
+.helpwrap {
+  margin-left: auto;
+  position: relative;
+}
+.help {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 600;
+}
+.help[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(720px, calc(100vw - 32px));
+  z-index: 10;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+.popover a {
+  color: var(--accent);
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  background: rgba(0, 0, 0, 0.35);
+}
+.facts {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+  font-size: 0.86rem;
+}
+ul.facts li {
+  margin-bottom: 6px;
+}
+ul.facts li::marker {
+  color: var(--accent);
+}
+.facts ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.versus table td {
+  white-space: normal;
+}
+.versus {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface2);
+  font-size: 0.86rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Piece stats and GCD: two panels side by side on wide screens, stacked below 1300 px */
+.twopanel {
+  display: grid;
+  gap: 14px;
+}
+.twopanel > .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.twopanel .versus {
+  margin-top: auto;
+}
+.twopanel table th {
+  white-space: normal;
+}
+@media (min-width: 1300px) {
+  .twopanel {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+.legend i.hatch,
+.bar .cut {
+  background: repeating-linear-gradient(45deg, var(--bad) 0 3px, transparent 3px 7px);
+}
+.legend i.hatch,
+.legend i.box {
+  height: 10px;
+}
+/* one piece's stats as bars: kept, the extra over a piece at the cap, the part cut by sync, and the cap */
+.bars {
+  display: grid;
+  grid-template-columns: 130px 1fr 130px;
+  gap: 14px 12px;
+  align-items: center;
+}
+.bar {
+  position: relative;
+  height: 26px;
+  background: var(--surface2);
+  border-radius: 4px;
+}
+.bar .keep,
+.bar .rise,
+.bar .cut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.bar .keep {
+  left: 0;
+  background: var(--accent);
+  border-radius: 4px 0 0 4px;
+}
+.bar .rise {
+  background: var(--gold);
+}
+.bar .cut {
+  opacity: 0.55;
+}
+.bar .capmark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--fg);
+}
+.bars .num {
+  text-align: right;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  grid-column: 2 / 4;
+}
+/* a materia stone: struck through while the piece is synced (its melds are ignored), solid while kept */
+.meldchip {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  padding: 1px 9px;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.meldchip.on {
+  text-decoration: none;
+  color: var(--accent);
+  border-style: solid;
+  border-color: var(--accent);
+}
+.callout {
+  background: var(--warn-bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+svg.chart text.lbl {
+  font-family: var(--sans);
+  font-size: 12px;
+  fill: var(--fg);
 }

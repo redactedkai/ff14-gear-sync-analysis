@@ -4,15 +4,13 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { bestFood, foodChoices, statBase } from '../../src/core/food.js';
 import { browseItems, mkItem, poolItemFromRow, poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
-import { capsFor } from '../../src/core/formulas.js';
-import { MAX_REAL } from '../../src/core/tables.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
 import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { statTier } from '../../src/core/tiers.js';
 import { jobGear, optimizerView, panelBase, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
-import { syncView } from '../../src/ui/views/sync-caps.js';
+import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { JOBS, SOURCES } from '../../src/core/constants.js';
@@ -85,45 +83,6 @@ test('optimizer errors become an error view instead of throwing', () => {
   assert.match(v.message, /too large/);
 });
 
-test('sync caps view at 123: substat ceiling 344 over all eleven slots, 2.17 s GCD at level 50', () => {
-  const v = syncView(makeApp('SGE', { cap: 123, level: 50 }));
-  // the generic maximum 296 over the ten armor and accessory slots, plus the weapon's 48 (math.md section 6)
-  assert.equal(v.slots, 11);
-  assert.equal(v.tot.c, 296 + 48);
-  assert.equal(v.gcd, '2.17');
-  // in character panel numbers, as the optimizer shows them: level 50's base speed 341 plus gear
-  assert.deepEqual([v.spdBase, v.spdPanel], [341, 685]);
-  // the comparison piece defaults to the highest real item level, above any cap
-  assert.equal(v.hil, MAX_REAL);
-  assert.equal(v.compare, true);
-  assert.deepEqual(
-    v.rows.filter(r => ['head', 'body', 'ear', 'weapon'].includes(r.type)).map(r => [r.type, r.sub, r.main]),
-    [
-      ['weapon', 48, 50],
-      ['head', 29, 30],
-      ['body', 47, 48],
-      ['ear', 23, 24],
-    ],
-  );
-});
-
-test('sync caps view: a comparison piece at or below the cap is not synced, so no comparison is shown', () => {
-  // level sync at 90 gives cap 660; a 475 piece keeps its own stats
-  const v = syncView(makeApp('SGE', { sync: false, cap: null, level: 90, syncIlvl: 475 }));
-  assert.equal(v.cap, 660);
-  assert.equal(v.compare, false);
-  assert.equal(syncView(makeApp('SGE', { sync: false, cap: null, level: 90, syncIlvl: 661 })).compare, true);
-});
-
-test('sync caps view for a shield job: weapon and shield both count', () => {
-  const v = syncView(makeApp('PLD', { cap: 123, level: 50 }));
-  assert.equal(v.slots, 12);
-  assert.equal(
-    v.tot.c,
-    v.rows.reduce((a, r) => a + r.sub * r.times, 0),
-  );
-});
-
 test('piece lab view: the default two substats both reach the cap; the healer note only for Mind jobs; shares in percent', () => {
   const rpr = pieceView(makeApp('RPR', { cap: 123, sync: true, level: 50 }));
   assert.deepEqual(
@@ -131,8 +90,8 @@ test('piece lab view: the default two substats both reach the cap; the healer no
     [
       ['main', 100, 30],
       ['vit', 100, 32],
-      ['spd', 100, 29],
-      ['crit', 70, 29], // the 70% line is cut to the full-share head cap, not to 70% of it
+      ['crit', 100, 29],
+      ['spd', 70, 29], // the 70% line is cut to the full-share head cap, not to 70% of it
     ],
   );
   assert.equal(rpr.evenSubs, true);
@@ -303,13 +262,13 @@ test('level cap: the optimizer searches no piece above the job cap, and level sy
   const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
   assert.equal(o.total, exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0]);
-  // at the job's own cap no gear it can wear is level-synced: Piece stats and Sync limits show no sync
+  // at the job's own cap no gear it can wear is level-synced: How the math works shows no sync
   assert.equal(pieceView(app).status, 'off');
-  assert.equal(syncView(app), null);
+  assert.equal(explainerView(app), null);
   const bst = makeApp('BST', { sync: false, cap: null, level: 50 });
-  assert.equal(syncView(bst), null);
+  assert.equal(explainerView(bst), null);
   // below the cap, level sync applies as for any job
-  assert.equal(syncView({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
+  assert.equal(explainerView({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
 });
 
 test('sync off: piece lab leaves stats as they are and draws no cap line', () => {
@@ -533,18 +492,17 @@ const LEVEL_SYNC_WINDOW = { ilvlMin: 663, ilvlMax: 666, lvlMax: 100 };
 
 test('views: level sync with item level sync off shows the level item level as the cap', () => {
   const app = sgeApp({ sync: false, cap: null, level: 90 });
-  const v = syncView(app);
+  const v = explainerView(app);
   assert.equal(v.cap, 660);
   assert.equal(v.byLevel, true);
-  assert.equal(v.rows.find(r => r.type === 'head').sub, capsFor(sge, 'head', 660).crit);
   const p = pieceView(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
   assert.equal(p.cap, 660);
   assert.equal(p.status, 'above');
   // at the level cap with item level sync off nothing applies
-  assert.equal(syncView(sgeApp({ sync: false, cap: null, level: 100 })), null);
+  assert.equal(explainerView(sgeApp({ sync: false, cap: null, level: 100 })), null);
   assert.equal(pieceView(sgeApp({ sync: false, cap: null, level: 100 })).status, 'off');
   // item level sync on: its cap is shown, whatever the level
-  assert.equal(syncView(sgeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
+  assert.equal(explainerView(sgeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
 });
 
 test('views: the gear browser and the optimizer apply level sync per piece', () => {
