@@ -28,10 +28,11 @@ test('switching to another role gives that role its weapon mode', () => {
 });
 
 test('switching to a job with a lower level cap clamps the synced level and the equip level filter to it', () => {
-  const store = createAppStore(restoreState({ job: 'SGE', level: 90, browse: { lvl: 100 } }));
+  const store = createAppStore(restoreState({ job: 'SGE', level: 90, browse: { lvl: 100 }, opt: { lvl: 95 } }));
   store.setJob('BLU');
   assert.equal(store.level, 80);
   assert.equal(store.browse.lvl, 80);
+  assert.equal(store.opt.lvl, 80);
   store.setJob('BST');
   assert.equal(store.level, 50);
   assert.equal(store.browse.lvl, 50);

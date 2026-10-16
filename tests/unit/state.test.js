@@ -35,7 +35,19 @@ function validSave() {
       lvl: 50,
       sort: 'spd',
     },
-    opt: { target: 'spec', tb: '', tb2: 'crit', melds: false, exclude: ['crafted', 'pvp'], food: true, foodPair: 'det+crit' },
+    opt: {
+      target: 'spec',
+      tb: '',
+      tb2: 'crit',
+      melds: false,
+      expOff: ['HW'],
+      exclude: ['crafted', 'pvp'],
+      min: '',
+      max: 300,
+      lvl: 60,
+      food: true,
+      foodPair: 'det+crit',
+    },
   };
 }
 
@@ -140,17 +152,28 @@ test('piece fields', () => {
 test('browse fields', () => {
   expectFieldDefault('browse.q', 5, '');
   expectFieldDefault('browse.type', 'belt', 'any');
-  expectFieldDefault('browse.min', '', '');
-  expectFieldDefault('browse.min', '120', 120); // number inputs bound with x-model save strings
-  expectFieldDefault('browse.min', 'abc', D.browse.min);
-  expectFieldDefault('browse.min', -10, 0);
-  expectFieldDefault('browse.max', 5000, MAX_REAL);
-  expectFieldDefault('browse.max', null, '');
-  expectFieldDefault('browse.lvl', 500, 100);
-  expectFieldDefault('browse.lvl', true, 100);
   expectFieldDefault('browse.sort', 'nope', 'ilvl');
-  expectFieldDefault('browse.expOff', 'SB', []);
-  expectFieldDefault('browse.expOff', ['SB', 'XIV', 3, 'ARR'], ['ARR', 'SB']); // unknown values drop; EXPANSIONS order
+});
+
+test('the gear filters, the same rules in the browser and the optimizer (each its own values)', () => {
+  for (const part of ['browse', 'opt']) {
+    assert.deepEqual([D[part].expOff, D[part].min, D[part].max, D[part].lvl], [[], '', '', 100]);
+    expectFieldDefault(`${part}.min`, '', '');
+    expectFieldDefault(`${part}.min`, '120', 120); // number inputs bound with x-model save strings
+    expectFieldDefault(`${part}.min`, 'abc', D[part].min);
+    expectFieldDefault(`${part}.min`, -10, 0);
+    expectFieldDefault(`${part}.max`, 5000, MAX_REAL);
+    expectFieldDefault(`${part}.max`, null, '');
+    expectFieldDefault(`${part}.lvl`, 500, 100);
+    expectFieldDefault(`${part}.lvl`, true, 100);
+    expectFieldDefault(`${part}.expOff`, 'SB', []);
+    expectFieldDefault(`${part}.expOff`, ['SB', 'XIV', 3, 'ARR'], ['ARR', 'SB']); // unknown values drop; EXPANSIONS order
+  }
+  // a save from before the optimizer had them: the defaults, not the browser's values
+  const older = validSave();
+  for (const k of ['expOff', 'min', 'max', 'lvl']) delete older.opt[k];
+  const s = restoreState(older);
+  assert.deepEqual([s.opt.expOff, s.opt.min, s.opt.max, s.opt.lvl], [[], '', '', 100]);
 });
 
 test('opt fields', () => {
@@ -219,9 +242,11 @@ test('a save from another role is repaired as before', () => {
 });
 
 test("a saved level above the job's level cap is clamped to it", () => {
-  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 } });
+  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 }, opt: { lvl: 70 } });
   assert.equal(s.level, 50);
   assert.equal(s.browse.lvl, 50);
+  assert.equal(s.opt.lvl, 50);
+  assert.equal(restoreState({ job: 'BST' }).opt.lvl, 50); // the default (100) too
   // a level at or below the cap is kept; Blue Mage caps at 80
   assert.equal(restoreState({ job: 'BST', level: 30 }).level, 30);
   assert.equal(restoreState({ job: 'BLU', level: 100 }).level, 80);

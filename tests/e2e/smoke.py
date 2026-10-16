@@ -217,6 +217,20 @@ console.log(JSON.stringify({
 """
 
 
+# The optimizer's gear filters (Gear to search): the pieces browseItems keeps with the same filters, minus the default
+# left-out groups.
+NODE_FILTERED = """
+const [jobId, sync, target, def, f] = %s;
+const { makeJobContext } = await import(%s);
+const { browseItems, poolItemFromRow, withoutSources } = await import(%s);
+const { optimize } = await import(%s);
+const job = makeJobContext(jobId);
+const all = browseItems(job, {}).length;
+const pool = withoutSources(browseItems(job, f).map(r => poolItemFromRow(job, r)), def);
+console.log(JSON.stringify({ all, searched: pool.length, on: optimize(job, pool, sync, { target, melds: true }).totals[target] }));
+"""
+
+
 def run_node(script, args):
     """Run a Node ES module script (formatted with the JSON args and the core module URLs) and parse its JSON output."""
     mod = lambda rel: json.dumps((ROOT / rel).as_uri())  # noqa: E731
@@ -250,7 +264,7 @@ def expect_total(pg, want, what):
 
 
 def count_text(searched, total):
-    return f'Searching {searched:,} of {total:,} pieces.'
+    return f'· searching {searched:,} of {total:,} pieces'
 
 
 # Optimizer checks: (job, target), at the shared setup (level 50, cap 123), synced and with item level sync off.
@@ -346,7 +360,7 @@ def check_ring_copies(pg):
         return
     set_job(pg, job)
     fill_browser(pg, lo, hi, lvl, 'ring')
-    expect(pg.locator('#b-count')).to_have_text(f'{want["count"]} matches')
+    expect(pg.locator('#b-count')).to_have_text(f'· {want["count"]} matches')
     expect(browser_rows(pg)).to_have_count(want['count'])
     expect(pg.locator('#gear-table .x2:visible')).to_have_count(want['x2'])
 
@@ -369,10 +383,10 @@ GROUPS_CASE = ('SGE', {'cap': None, 'sync': False, 'level': 100}, 'crit')
 
 
 def check_gear_groups(pg):
-    """Gear to search: six gear groups in two aligned columns of three, every group but Current Savage (named with its
-    patch series), Ultimate and PvP ticked (searched) by default. Unticking crafted gear changes the total to what the
-    core computes without it and the count line with it; the choice is saved. The browser has its own groups: the
-    optimizer's choice does not change them."""
+    """Gear to search: six gear groups in one row after their label (two even columns under it at 400 px), every group
+    but Current Savage, Ultimate and PvP ticked (searched) by default. Unticking crafted
+    gear changes the total to what the core computes without it and the count in the heading with it; the choice is
+    saved. The browser has its own groups: the optimizer's choice does not change them."""
     job, sync, target = GROUPS_CASE
     want = core_gear(job, sync, target, ['crafted'])
     if not check(want['without'] < want['on'], f'{job}: leaving crafted gear out does not lower the total; pick another case'):
@@ -384,17 +398,24 @@ def check_gear_groups(pg):
     pg.select_option('#o-target', target)
     searched_default = [s for s in SOURCE_KEYS if s not in DEFAULT_EXCLUDE]
     check(ticked(pg, 'o-gear') == searched_default, f'searched by default: {ticked(pg, "o-gear")}, expected {searched_default}')
-    labels = [t.strip() for t in pg.locator('#o-gear .groups label').all_inner_texts()]
-    check(labels[3:4] == ['Current Savage (7.x)'], f'the Current Savage box reads {labels[3:4]}')
-    boxes = pg.locator('#o-gear .groups label').evaluate_all(
-        'ls => ls.map(l => { const r = l.getBoundingClientRect(); return [r.left, r.top]; })'
-    )
-    lefts = [round(b[0]) for b in boxes]
-    tops = [round(b[1]) for b in boxes]
+    labels = [t.strip() for t in pg.locator('#o-groups label').all_inner_texts()]
+    check(labels[3:4] == ['Current Savage'], f'the Current Savage box reads {labels[3:4]}')
+
+    def boxes():
+        return pg.locator('#o-groups label').evaluate_all(
+            'ls => ls.map(l => { const r = l.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; })'
+        )
+
+    row = boxes()
+    check(len(row) == 6 and len({t for _, t in row}) == 1, f'gear groups are not one row: {row}')
+    pg.set_viewport_size({'width': 400, 'height': 900})
+    grid = boxes()
+    lefts, tops = [x for x, _ in grid], [t for _, t in grid]
     check(
-        len(boxes) == 6 and len(set(lefts[:3])) == 1 and len(set(lefts[3:])) == 1 and lefts[3] > lefts[0] and tops[:3] == tops[3:],
-        f'gear groups are not two aligned columns of three: {boxes}',
+        len(set(lefts[::2])) == 1 and len(set(lefts[1::2])) == 1 and lefts[1] > lefts[0] and tops[::2] == tops[1::2],
+        f'gear groups at 400 px are not two even columns: {grid}',
     )
+    pg.set_viewport_size({'width': 1000, 'height': 900})
     expect_total(pg, want['on'], f'{job} {target}, default groups')
     crafted = group_box(pg, 'o-gear', 'crafted')
     crafted.uncheck()
@@ -407,6 +428,56 @@ def check_gear_groups(pg):
     wait_optimizer(pg)
     crafted.check()
     expect_total(pg, want['on'], f'{job} {target}, crafted back in')
+    pg.locator('#sync').check()
+    set_number(pg, '#level', '50')
+
+
+# Sage, level 100, no sync, Critical Hit, searching Endwalker and Dawntrail gear of item level 700 or less only.
+OPT_FILTER = {'expOff': ['ARR', 'HW', 'SB', 'ShB'], 'ilvlMax': 700}
+
+
+def check_opt_filters(pg):
+    """The optimizer's own Expansion, item level and equip level filters: the total and the count in the heading equal
+    the core's over the gear the browser's filters would keep; the browser's filters do not move; the choice is saved;
+    a filter nothing passes says so."""
+    job, sync, target = GROUPS_CASE
+    want = run_node(NODE_FILTERED, [job, sync, target, DEFAULT_EXCLUDE, OPT_FILTER])
+    full = core_gear(job, sync, target)
+    if not check(want['on'] < full['on'], f'{job}: the filters do not lower the total; pick another case'):
+        return
+    set_job(pg, job)
+    pg.locator('#sync').uncheck()
+    set_number(pg, '#level', str(sync['level']))
+    fill_browser(pg, '', '', 100)
+    wait_saved(pg, "s => s.browse.min === '' && s.browse.max === '' && String(s.browse.lvl) === '100'")
+    browse_count = pg.locator('#b-count').inner_text()
+    wait_optimizer(pg)
+    pg.select_option('#o-target', target)
+    pg.click('#o-exp')
+    for b in pg.locator('#o-exp-menu input').all():
+        if b.get_attribute('data-exp') in OPT_FILTER['expOff']:
+            b.uncheck()
+    pg.keyboard.press('Escape')
+    expect(pg.locator('#o-exp')).to_have_text('2 expansions')
+    set_number(pg, '#o-max', str(OPT_FILTER['ilvlMax']))
+    expect_total(pg, want['on'], f'{job} {target}, optimizer filters')
+    expect(pg.locator('#o-count')).to_have_text(count_text(want['searched'], want['all']))
+    # number inputs bound with x-model save strings
+    wait_saved(pg, f"s => s.opt.expOff.join() === 'ARR,HW,SB,ShB' && String(s.opt.max) === '{OPT_FILTER['ilvlMax']}'")
+    set_number(pg, '#o-min', '9999')
+    expect(pg.locator('#o-excluded')).to_be_visible()
+    show_tab(pg, 'browse')
+    expect(pg.locator('#b-exp')).to_have_text('All expansions')
+    expect(pg.locator('#b-count')).to_have_text(browse_count)
+    # back to no limits
+    show_tab(pg, 'opt')
+    set_number(pg, '#o-min', '')
+    set_number(pg, '#o-max', '')
+    pg.click('#o-exp')
+    for b in pg.locator('#o-exp-menu input').all():
+        b.check()
+    pg.keyboard.press('Escape')
+    expect_total(pg, full['on'], f'{job} {target}, filters cleared')
     pg.locator('#sync').check()
     set_number(pg, '#level', '50')
 
@@ -841,7 +912,7 @@ def walk_jobs(pg):
         expect(pg.locator('#b-count')).not_to_have_text('')
         check_no_bad_text(pg, f'{job}/browse')
         wait_optimizer(pg)
-        expect(pg.locator('#o-count')).to_contain_text(' pieces.')
+        expect(pg.locator('#o-count')).to_contain_text(' pieces')
         check_no_bad_text(pg, f'{job}/opt')
         expect(pg.locator('#o-food-row')).to_be_visible()  # check_food left Food on
         show_math(pg, 'piece')
@@ -886,6 +957,7 @@ def main():
             check_job_switch,
             check_ring_copies,
             check_gear_groups,
+            check_opt_filters,
             check_melds,
             check_expansion_filter,
             check_reload_persists,

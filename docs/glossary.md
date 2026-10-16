@@ -128,7 +128,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Owner.** The repository's owner. "Verified by the owner in game" means the owner checked it in game; it counts as verified.
 
-**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, minus the gear groups left out under Gear to search; the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, item level range, equip level, gear groups); the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 

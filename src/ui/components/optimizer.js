@@ -2,7 +2,7 @@
    only while the tab is open. */
 import Alpine from 'alpinejs';
 import { optimizerView, searchCount } from '../views/optimizer.js';
-import { debouncedEffect, fmtInt, gearGroupToggles } from '../helpers.js';
+import { debouncedEffect, expansionToggles, fmtInt, gearGroupToggles } from '../helpers.js';
 import { foodChoices, foodLabel } from '../../core/food.js';
 
 const DEBOUNCE_MS = 120;
@@ -10,7 +10,7 @@ const DEBOUNCE_MS = 120;
 export function optimizer() {
   return {
     view: null,
-    /* "Searching 1,939 of 1,999 pieces." under the gear groups: searched of every piece the job can wear */
+    /* "searching 1,939 of 1,999 pieces" in the Gear to search heading: searched of every piece the job can wear */
     countText: '',
     /* how long the last solve took (building the job's gear included, the first time), shown under the result */
     solveMs: 0,
@@ -30,6 +30,10 @@ export function optimizer() {
             app.opt.tb,
             app.opt.tb2,
             app.opt.exclude.join(),
+            app.opt.expOff.join(),
+            app.opt.min,
+            app.opt.max,
+            app.opt.lvl,
             app.opt.melds,
             app.opt.food,
             app.opt.foodPair,
@@ -45,13 +49,14 @@ export function optimizer() {
             this.view = view;
             performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.py
             const c = searchCount(raw);
-            this.countText = `Searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces.`;
+            this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
           };
         },
         DEBOUNCE_MS,
       );
     },
-    /* gear groups searched (ticked) or left out: the optimizer's own list, opt.exclude */
+    /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude), not the browser's */
+    ...expansionToggles('opt'),
     ...gearGroupToggles('opt'),
     get statOptions() {
       return this.job.stats.map(s => [s, this.job.label[s]]);

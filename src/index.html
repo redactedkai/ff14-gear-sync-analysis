@@ -165,8 +165,31 @@
 <section class="tab" id="tab-opt" role="tabpanel" hidden :hidden="$store.app.tab !== 'opt'">
   <div style="display:contents" x-data="optimizer">
     <h2>Gear optimizer</h2>
-    <div class="cards">
-      <div class="panel" id="o-goal" role="group" aria-labelledby="o-goal-h">
+    <div class="panel" id="o-controls">
+      <div class="part" id="o-gear" role="group" aria-labelledby="o-gear-h">
+        <h3 id="o-gear-h">Gear to search <span class="count" id="o-count" x-text="countText ? '· ' + countText : ''"></span></h3>
+        <div class="grid">
+          <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+            <span id="o-exp-label">Expansion</span>
+            <button type="button" class="multi-btn" id="o-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="o-exp-label o-exp" @click="open = !open" x-text="expSummary()"></button>
+            <div class="multi-menu" id="o-exp-menu" role="group" aria-labelledby="o-exp-label" x-show="open" x-cloak>
+              <template x-for="e in expansions" :key="e[0]">
+                <label class="multi-opt"><input type="checkbox" :data-exp="e[0]" :checked="expShown(e[0])" @change="setExpShown(e[0], $event.target.checked)"><span x-text="e[1]"></span></label>
+              </template>
+            </div>
+          </div>
+          <label class="f">Item level from<input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.opt.min"></label>
+          <label class="f">Item level to<input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.opt.max"></label>
+          <label class="f">Equip level up to<input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.opt.lvl"></label>
+        </div>
+        <div class="row groups-row" id="o-groups" role="group" aria-labelledby="o-groups-label">
+          <span class="dim small" id="o-groups-label">Gear groups</span>
+          <template x-for="g in gearGroups" :key="g.key">
+            <label class="chk"><input type="checkbox" :data-source="g.key" :checked="groupOn(g.key)" @change="setGroup(g.key, $event.target.checked)"><span x-text="g.label"></span></label>
+          </template>
+        </div>
+      </div>
+      <div class="part" id="o-goal" role="group" aria-labelledby="o-goal-h">
         <h3 id="o-goal-h">Goal</h3>
         <div class="grid">
           <label class="f">Maximize<select id="o-target" @change="$store.app.opt.target = $event.target.value">
@@ -178,29 +201,20 @@
           <label class="f">Tiebreak 2<select id="o-tb2" @change="$store.app.opt.tb2 = $event.target.value">
             <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
           </select></label>
+          <template x-if="$store.app.opt.food">
+            <label class="f">Meal (HQ)<select id="o-food-pair" @change="$store.app.opt.foodPair = $event.target.value">
+              <template x-for="o in foodOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.foodPair"></option></template>
+            </select></label>
+          </template>
         </div>
         <div class="row switches">
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Materia</span></label>
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-food" :checked="$store.app.opt.food" @change="$store.app.opt.food = $event.target.checked"><span>Food</span></label>
         </div>
-        <template x-if="$store.app.opt.food"><div class="grid">
-          <label class="f">Meal (HQ)<select id="o-food-pair" @change="$store.app.opt.foodPair = $event.target.value">
-            <template x-for="o in foodOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.foodPair"></option></template>
-          </select></label>
-        </div></template>
-      </div>
-      <div class="panel" id="o-gear" role="group" aria-labelledby="o-gear-h">
-        <h3 id="o-gear-h">Gear to search</h3>
-        <div class="groups">
-          <template x-for="g in gearGroups" :key="g.key">
-            <label class="chk"><input type="checkbox" :data-source="g.key" :checked="groupOn(g.key)" @change="setGroup(g.key, $event.target.checked)"><span x-text="g.label"></span></label>
-          </template>
-        </div>
-        <p class="small dim" id="o-count" x-text="countText"></p>
       </div>
     </div>
     <div id="o-out">
-      <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: every piece is in a group left out under Gear to search.</div></div></template>
+      <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>
       <template x-if="view && view.kind === 'ok'"><div class="panel" id="o-result" :data-target="view.target">
@@ -246,15 +260,11 @@
 <!-- GEAR BROWSER -->
 <section class="tab" id="tab-browse" role="tabpanel" hidden :hidden="$store.app.tab !== 'browse'">
   <div class="panel" x-data="gear">
-    <h2>Gear browser</h2>
+    <h2>Gear browser <span class="count" id="b-count" x-text="view ? '· ' + view.countText : ''"></span></h2>
     <div class="grid">
-      <label class="f">Name contains<input type="text" id="b-q" autocomplete="off" x-model.debounce.300ms="$store.app.browse.q"></label>
-      <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
-        <template x-for="o in typeOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.type"></option></template>
-      </select></label>
       <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
         <span id="b-exp-label">Expansion</span>
-        <button type="button" class="multi-btn" id="b-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="b-exp-label b-exp" @click="open = !open" x-text="expSummary"></button>
+        <button type="button" class="multi-btn" id="b-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="b-exp-label b-exp" @click="open = !open" x-text="expSummary()"></button>
         <div class="multi-menu" id="b-exp-menu" role="group" aria-labelledby="b-exp-label" x-show="open" x-cloak>
           <template x-for="e in expansions" :key="e[0]">
             <label class="multi-opt"><input type="checkbox" :data-exp="e[0]" :checked="expShown(e[0])" @change="setExpShown(e[0], $event.target.checked)"><span x-text="e[1]"></span></label>
@@ -264,6 +274,10 @@
       <label class="f">Item level from<input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.browse.min"></label>
       <label class="f">Item level to<input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.browse.max"></label>
       <label class="f">Equip level up to<input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.browse.lvl"></label>
+      <label class="f">Name contains<input type="text" id="b-q" autocomplete="off" x-model.debounce.300ms="$store.app.browse.q"></label>
+      <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
+        <template x-for="o in typeOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.type"></option></template>
+      </select></label>
       <label class="f">Sort by<select id="b-sort" @change="$store.app.browse.sort = $event.target.value">
         <template x-for="o in sortOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.sort"></option></template>
       </select></label>
@@ -274,7 +288,6 @@
         <label class="chk"><input type="checkbox" :data-source="g.key" :checked="groupOn(g.key)" @change="setGroup(g.key, $event.target.checked)"><span x-text="g.label"></span></label>
       </template>
     </div>
-    <p class="small dim" id="b-count" x-text="view ? view.countText : ''"></p>
     <div class="tablewrap tall"><table id="gear-table">
       <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters.</td></tr></tbody></template>
       <template x-if="view && view.shown.length"><thead><tr><th>Item</th><th>Slot</th><th class="n">Lv</th><th class="n">ilvl</th><template x-for="s in job.stats" :key="s"><th class="n" x-text="job.short[s]"></th></template></tr></thead></template>
@@ -288,7 +301,7 @@
         <template x-if="view.hidden"><tr><td :colspan="job.stats.length + 4" class="dim small" x-text="view.hidden + ' more matches not shown. Narrow the filters to view them.'"></td></tr></template>
       </tbody></template>
     </table></div>
-    <p class="small dim">This list is for looking gear up; the optimizer searches every piece the job can wear, with its own gear groups. A ring marked ×2 is not Unique, so it can be worn on both hands. <span class="num">raw → synced</span> where sync bites (item level above the cap with item level sync on, or equip level above the synced level); craftable gear shows high-quality stats.</p>
+    <p class="small dim">This list is for looking gear up; the optimizer has its own filters under Gear to search. A ring marked ×2 is not Unique, so it can be worn on both hands. <span class="num">raw → synced</span> where sync bites (item level above the cap with item level sync on, or equip level above the synced level); craftable gear shows high-quality stats.</p>
   </div>
 
 </section>

@@ -89,7 +89,7 @@ Notes:
 - **Settings, Piece stats, Sync limits** are cheap: a few formulas.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
 - **Gear browser**: the database matches of its filters (including its own left-out gear groups), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
-- **Optimizer result**: every piece the job can wear minus the gear groups left out under Gear to search (the optimizer's own list). Triggered by a change of those groups, job, cap, sync, level or optimizer settings. Node limit 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
+- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, item level range, equip level, gear groups; the browser's filters with the optimizer's own values). Triggered by a change of those filters, job, cap, sync, level or optimizer settings. Node limit 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
 The debounce works by reading all inputs synchronously inside the effect (so they are tracked) and scheduling the expensive part on a timer that is reset on every change. Typing a number therefore runs the optimizer once, after the user pauses. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 

@@ -5,7 +5,7 @@ import { browseItems, dbStats, kindFactors, poolKey, slotLabel, sourcesMask } fr
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { statCell, fmtInt } from '../helpers.js';
-import { syncSettings } from '../state.js';
+import { gearFilter, syncSettings } from '../state.js';
 
 export const SHOW_LIMIT = 100; /* rows rendered */
 
@@ -23,14 +23,7 @@ export function gearView(app) {
   const job = app.jobCtx,
     b = app.browse,
     sync = syncSettings(app);
-  const rows = browseItems(job, {
-    q: b.q,
-    type: b.type,
-    expOff: b.expOff,
-    ilvlMin: +b.min || 0,
-    ilvlMax: +b.max || 0,
-    lvlMax: +b.lvl || 0,
-  });
+  const rows = browseItems(job, { ...gearFilter(b), q: b.q, type: b.type });
   const mask = sourcesMask(b.exclude || []);
   const all = (mask ? rows.filter(r => !(r.sources & mask)) : rows).map(r => {
     const raw = dbStats(job, r.st);

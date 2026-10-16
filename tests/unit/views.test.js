@@ -12,7 +12,7 @@ import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { JOBS, SOURCES } from '../../src/core/constants.js';
-import { sourceMask, withoutSources } from '../../src/core/items.js';
+import { poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE, syncSettings } from '../../src/ui/state.js';
 
@@ -223,6 +223,40 @@ test('left-out groups: the optimizer and the browser each go by their own list',
     ).kind,
     'excluded',
   );
+});
+
+/* Gear to search has the browser's filters with its own values: the optimizer searches exactly the pieces the browser
+   would list with the same filters (no name or slot), and neither tab's filters change the other's. */
+test("Gear to search: the browser's filters, on the optimizer's own values", () => {
+  for (const id of ['SGE', 'PLD', 'BST']) {
+    const app = makeApp(id, { sync: false, cap: null });
+    const job = app.jobCtx;
+    const keys = list => list.map(poolKey).sort();
+    const cases = [
+      { expOff: ['ARR', 'HW', 'SB'], min: '', max: '', lvl: 90 },
+      { expOff: [], min: 400, max: 560, lvl: '' },
+      { expOff: ['DT'], min: '', max: 600, lvl: 100 },
+    ];
+    for (const f of cases) {
+      Object.assign(app.opt, f, { exclude: [...DEFAULT_EXCLUDE] });
+      const rows = browseItems(job, { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 });
+      const want = withoutSources(
+        rows.map(r => poolItemFromRow(job, r)),
+        DEFAULT_EXCLUDE,
+      );
+      assert.deepEqual(keys(searchPool(app)), keys(want), `${id} ${JSON.stringify(f)}`);
+      assert.deepEqual(searchCount(app), { searched: want.length, left: jobGear(job).length - want.length });
+    }
+    // the browser's filters leave the optimizer alone, and the other way round
+    Object.assign(app.opt, { expOff: [], min: '', max: '', lvl: 100 });
+    const searched = searchPool(app).length;
+    Object.assign(app.browse, { expOff: ['ARR'], min: 600, max: 700, lvl: 1, exclude: [] });
+    assert.equal(searchPool(app).length, searched, id);
+    const listed = gearView(app).shown.length;
+    Object.assign(app.opt, { min: 9999, max: 1 });
+    assert.equal(gearView(app).shown.length, listed, id);
+    assert.equal(optimizerView(app).kind, 'excluded', `${id}: nothing passes the filters`);
+  }
 });
 
 test('level cap: the optimizer searches no piece above the job cap, and level sync at the cap is off', () => {

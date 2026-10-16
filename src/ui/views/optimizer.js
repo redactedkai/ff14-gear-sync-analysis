@@ -1,13 +1,13 @@
 /* Gear optimizer tab view: the best loadout for the chosen stat, searched over every piece the job can wear.
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
-import { browseItems, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
+import { browseItems, filterGear, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { bestFood, foodBonus, foodChoices, foodLabel, withFood } from '../../core/food.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
-import { syncSettings } from '../state.js';
+import { gearFilter, syncSettings } from '../state.js';
 
 export const NODE_LIMIT = 700000;
 
@@ -37,10 +37,12 @@ export function jobGear(job) {
   return gearCache.gear;
 }
 
-/* The pool the optimizer searches: the gear (every piece the job can wear, unless a test passes its own) minus the gear
-   groups left out (opt.exclude) and any piece above the job's level cap (jobGear has none; this guards gear passed in). */
+/* The pool the optimizer searches: the gear (every piece the job can wear, unless a test passes its own) that passes the
+   filters under Gear to search (expansions, item level range, equip level, gear groups left out: the opt fields), minus
+   any piece above the job's level cap (jobGear has none; this guards gear passed in). */
 export function searchPool(app, gear = jobGear(app.jobCtx)) {
-  return withoutSources(gear, app.opt.exclude || []).filter(i => wearable(app.jobCtx, i));
+  const pool = filterGear(withoutSources(gear, app.opt.exclude || []), gearFilter(app.opt));
+  return pool.filter(i => wearable(app.jobCtx, i));
 }
 
 /* Sync changes something in this pool: item level sync is on, or some piece is level-synced. */
@@ -48,7 +50,7 @@ function poolSynced(pool, sync) {
   return sync.sync || pool.some(i => itemSyncIlvl(i, sync) != null);
 }
 
-/* {searched, left}: how many pieces are searched and how many the left-out groups hold, for the line under them. */
+/* {searched, left}: how many pieces are searched and how many the filters under Gear to search leave out, for its heading. */
 export function searchCount(app, gear = jobGear(app.jobCtx)) {
   const searched = searchPool(app, gear).length;
   return { searched, left: gear.length - searched };

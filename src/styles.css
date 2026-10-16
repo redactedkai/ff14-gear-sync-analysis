@@ -423,30 +423,41 @@ button.x {
   gap: 8px;
   align-items: center;
 }
-/* the optimizer's two control cards, Goal and Gear to search: side by side, stacked on narrow screens */
-.cards {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 16px;
+/* the optimizer's controls: one panel, Gear to search, then Goal under a rule */
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
-@media (max-width: 760px) {
-  .cards {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.part + .part {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
 }
-/* gear-group checkboxes: two aligned columns, filled top to bottom (three rows for the six groups) */
-.groups {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content));
-  grid-template-rows: repeat(3, auto);
-  grid-auto-flow: column;
-  gap: 8px 32px;
+/* the count after a tab's or part's heading ("· searching 1,939 of 1,999 pieces") */
+.count {
+  display: inline-block; /* wraps as one piece under a long heading */
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--muted);
 }
 .switches {
   gap: 4px 28px;
 }
 .groups-row {
   gap: 8px 16px;
+}
+/* phones: the gear groups in two even columns under their label */
+@media (max-width: 560px) {
+  .groups-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .groups-row > :first-child {
+    grid-column: 1 / -1;
+  }
 }
 .chk {
   cursor: pointer;

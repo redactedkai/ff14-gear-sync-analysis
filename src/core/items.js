@@ -214,6 +214,20 @@ export function sourcesMask(keys) {
 }
 
 /* The pool without items from any excluded source (a list of SOURCES keys). */
+/* Pool items matching the gear filters {expOff, ilvlMin, ilvlMax, lvlMax}: browseItems' filters, for pool items (the
+   optimizer's Gear to search). An item with no equip level (not from the database) passes the equip level filter and
+   takes its expansion from its item level. */
+export function filterGear(pool, f) {
+  const expOff = f.expOff?.length ? f.expOff : null;
+  if (!expOff && !f.ilvlMin && !f.ilvlMax && !f.lvlMax) return pool;
+  return pool.filter(i => {
+    if ((f.ilvlMin && i.ilvl < f.ilvlMin) || (f.ilvlMax && i.ilvl > f.ilvlMax)) return false;
+    const lvl = equipLevel(i);
+    if (f.lvlMax && lvl != null && lvl > f.lvlMax) return false;
+    return !expOff?.includes(expansionOf(lvl ?? 0, i.ilvl));
+  });
+}
+
 export function withoutSources(pool, exclude) {
   const mask = sourcesMask(exclude);
   return mask ? pool.filter(i => !(sourceMask(i) & mask)) : pool;

@@ -70,13 +70,10 @@ export function storeNumberField(store, path, lo, hi) {
   );
 }
 
-/* The gear groups as checkboxes, ticked = searched or listed: {key, label}, in SOURCES order. Current Savage names its
-   patch series ("Current Savage (7.x)"): it is the newest expansion's Savage gear, and the expansions' patch series
-   start at 2.x (A Realm Reborn). */
-export const GEAR_GROUPS = SOURCES.map(s => ({
-  key: s.key,
-  label: s.key === 'savage' ? `${s.label} (${EXPANSIONS.length + 1}.x)` : s.label,
-}));
+/* The gear groups as checkboxes, ticked = searched or listed: {key, label}, in SOURCES order. "Current Savage" is the
+   newest expansion's Savage gear; it no longer names its patch series ("(7.x)"), which wrapped on phones (owner's
+   decision, 2026-10-15). */
+export const GEAR_GROUPS = SOURCES.map(s => ({ key: s.key, label: s.label }));
 
 /* Component methods for one gear-group list, `$store.app[part].exclude` (SOURCES keys left out, in SOURCES order). */
 export function gearGroupToggles(part) {
@@ -88,6 +85,28 @@ export function gearGroupToggles(part) {
     setGroup(key, on) {
       const ex = this.$store.app[part].exclude;
       this.$store.app[part].exclude = SOURCES.map(s => s.key).filter(k => (k === key ? !on : ex.includes(k)));
+    },
+  };
+}
+
+/* Component members for one Expansion filter, `$store.app[part].expOff` (EXPANSIONS short names switched off, oldest
+   first): the list, the dropdown button's text ("All expansions", one name, or how many are on) and the toggles.
+   Methods, not getters: the components spread this object, which would run a getter before Alpine binds it. */
+export function expansionToggles(part) {
+  return {
+    expansions: EXPANSIONS.map(([short, name]) => [short, name]),
+    expSummary() {
+      const on = EXPANSIONS.filter(e => this.expShown(e[0]));
+      if (on.length === EXPANSIONS.length) return 'All expansions';
+      if (!on.length) return 'None';
+      return on.length === 1 ? on[0][1] : `${on.length} expansions`;
+    },
+    expShown(short) {
+      return !this.$store.app[part].expOff.includes(short);
+    },
+    setExpShown(short, on) {
+      const off = this.$store.app[part].expOff.filter(k => k !== short);
+      this.$store.app[part].expOff = on ? off : EXPANSIONS.map(e => e[0]).filter(k => k === short || off.includes(k));
     },
   };
 }

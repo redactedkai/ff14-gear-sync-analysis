@@ -26,6 +26,12 @@ export function levelSyncOn(app) {
 }
 
 /* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/optimizer/candidates.js). */
+/* The gear filters of the browser (app.browse) or the optimizer (app.opt) as browseItems and filterGear take them
+   (core/items.js); an empty field is no limit. */
+export function gearFilter(f) {
+  return { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 };
+}
+
 export function syncSettings(app) {
   return { cap: app.cap, sync: syncActive(app), level: app.level ?? null };
 }
@@ -61,9 +67,22 @@ export function defaultState() {
     piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
     // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
     browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
-    // melds: give pieces their best materia melds. exclude: gear groups left out of the search (its own list, not the
-    // browser's). food: add a meal to the result; foodPair: its key in foodChoices (core/food.js), '' = best for the goal
-    opt: { target: 'main', tb: '', tb2: '', melds: true, exclude: [...DEFAULT_EXCLUDE], food: false, foodPair: '' },
+    // melds: give pieces their best materia melds. expOff, exclude, min, max, lvl: Gear to search, the browser's
+    // filters with their own values. food: add a meal to the result; foodPair: its key in foodChoices (core/food.js),
+    // '' = best for the goal
+    opt: {
+      target: 'main',
+      tb: '',
+      tb2: '',
+      melds: true,
+      expOff: [],
+      exclude: [...DEFAULT_EXCLUDE],
+      min: '',
+      max: '',
+      lvl: 100,
+      food: false,
+      foodPair: '',
+    },
   };
 }
 
@@ -72,10 +91,10 @@ export function defaultSubs(job) {
   return [job.profile.spec ? 'spec' : 'spd', null];
 }
 
-/* The synced level and the "Equip level up to" filter held to the job's level cap. */
+/* The synced level and the two "Equip level up to" filters held to the job's level cap. */
 export function clampLevels(s, job) {
   if (s.level > job.maxLevel) s.level = job.maxLevel;
-  if (s.browse.lvl !== '' && s.browse.lvl > job.maxLevel) s.browse.lvl = job.maxLevel;
+  for (const f of [s.browse, s.opt]) if (f.lvl !== '' && f.lvl > job.maxLevel) f.lvl = job.maxLevel;
 }
 
 /* On a job change: job-specific selections go back to defaults and the levels are held to the job's cap. */
@@ -107,6 +126,14 @@ const bool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
 const str = (v, fallback) => (typeof v === 'string' ? v : fallback);
 const oneOf = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
 const ilvlIn = (v, fallback) => intIn(v, 1, MAX_REAL, fallback);
+
+/* The gear filter fields both tabs have (expOff, min, max, lvl) from saved `raw` into `f`. */
+function restoreGearFilter(f, raw, job) {
+  f.expOff = Array.isArray(raw.expOff) ? EXPANSIONS.map(e => e[0]).filter(k => raw.expOff.includes(k)) : [];
+  f.min = optIntIn(raw.min, 0, MAX_REAL, f.min);
+  f.max = optIntIn(raw.max, 0, MAX_REAL, f.max);
+  f.lvl = optIntIn(raw.lvl, 1, job.maxLevel, f.lvl);
+}
 
 /* piece.subs: two ranked substats for this job (100% and 70%); rank 2 may be null. Unknown or repeated ones fall
    back. Older saves had a third rank (20%); it is dropped, since real gear has a third line only as Direct Hit on
@@ -160,11 +187,8 @@ export function restoreState(raw) {
   const b = isObj(r.browse) ? r.browse : {};
   s.browse.q = str(b.q, s.browse.q);
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
-  s.browse.expOff = Array.isArray(b.expOff) ? EXPANSIONS.map(e => e[0]).filter(k => b.expOff.includes(k)) : [];
+  restoreGearFilter(s.browse, b, job);
   s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);
-  s.browse.min = optIntIn(b.min, 0, MAX_REAL, s.browse.min);
-  s.browse.max = optIntIn(b.max, 0, MAX_REAL, s.browse.max);
-  s.browse.lvl = optIntIn(b.lvl, 1, job.maxLevel, s.browse.lvl);
   s.browse.sort = oneOf(b.sort, ['ilvl', ...job.stats], s.browse.sort);
 
   const o = isObj(r.opt) ? r.opt : {};
@@ -178,6 +202,7 @@ export function restoreState(raw) {
   // starts from the browser's
   const oldSave = isObj(r.opt) && !('exclude' in r.opt);
   s.opt.exclude = restoreExclude(oldSave ? b.exclude : o.exclude, s.opt.exclude);
+  restoreGearFilter(s.opt, o, job);
   return s;
 }
 
