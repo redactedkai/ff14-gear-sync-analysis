@@ -30,6 +30,7 @@ The unit tests need no browser because the core never touches the page (see [arc
 | caps-real-items | caps at 123 from real pieces, the 296 maximum |
 | level-sync | level sync, its triggers, the optimizer under it |
 | speed | GCD tiers, DoT scalars, haste, tier lookup |
+| same-result | other pieces with the same result (A9): shared spare points, Unique rings, cloaks, the owner's level 50 case |
 | tiers | substat tiers |
 | food | food bonus, meal choices, best meal |
 | validation | Wiki caps, accuracy per band, special lines |
@@ -102,9 +103,10 @@ The smoke test opens the built page from a `file://` address in headless Chromiu
 | Ring copies, expansion filter | ×2 marks, the equip level band |
 | Reload, corrupted storage, reset | state kept, repaired, reset after a question |
 | Level sync | level 90 values on each tab, at 960 px |
+| Same result | a row's menu at 960 px, a pick shown with the result unchanged, cleared by a setting change |
 | Every tab for eight jobs | caps at 123, no bad text, no sideways scroll at 960 px |
 
-Any uncaught page error or console error fails the test. Network errors are ignored, since the web fonts cannot load offline. Every wait is on a concrete condition (an element appears, a text matches); there are no fixed sleeps. Screenshots of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, are written to the smoke test's output folder (gitignored). On success it prints `no errors`.
+Any uncaught page error or console error fails the test. Network errors are ignored, since the web fonts cannot load offline. Every wait is on a concrete condition (an element appears, a text matches), except a few fixed waits of 600 ms that let the optimizer's debounce settle (the typing and same-result steps). Screenshots of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, are written to the smoke test's output folder (gitignored). On success it prints `no errors`.
 
 ## 3. Commands
 

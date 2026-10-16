@@ -32,7 +32,7 @@ import gear_categories  # noqa: E402
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
 import gen_job_icons  # noqa: E402
-from item_format import SchemaError  # noqa: E402
+from item_format import SchemaError, load_format  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
 STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr']
@@ -81,8 +81,8 @@ class GenItemsTest(unittest.TestCase):
 
     def test_row_shape(self):
         for r in self.rows:
-            self.assertEqual(len(r), 15, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales = r
+            self.assertEqual(len(r), 16, r)
+            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales, cat = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(15))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
@@ -95,6 +95,7 @@ class GenItemsTest(unittest.TestCase):
             self.assertIsInstance(rarity, int)
             self.assertIsInstance(game_id, int)
             self.assertIn(scales, (0, 1))
+            self.assertIn(cat, range(len(load_format()['category']['list'])))
         ids = [r[13] for r in self.rows]
         self.assertEqual(len(set(ids)), len(ids))
 
@@ -269,6 +270,28 @@ class GenItemsTest(unittest.TestCase):
         # field 14 is 1 for SubStatCategory 2 (item level follows the wearer's level), as on the real pre-order earrings
         self.assertEqual(self.row('Test Preorder Earring')[14], 1)
         self.assertEqual([r[0] for r in self.rows if r[14]], ['Test Preorder Earring'])
+
+    def test_category(self):
+        # field 15 is the gear category (gear_categories.py) as an index into item-format.json's category.list
+        keys = [c['key'] for c in load_format()['category']['list']]
+        expect = {'Test Robe': 'raid', 'Test Greataxe': 'relic', 'Test Gloves': 'field_op', 'Test Tank Helm': 'dungeon'}
+        for name, cat in expect.items():
+            with self.subTest(name=name):
+                self.assertEqual(keys[self.row(name)[15]], cat)
+
+    def test_category_list_must_match(self):
+        # a category with no label, a key gear_categories.py doesn't know, or a key listed twice stops the generator
+        fmt = load_format()
+        gen_items.category_index(fmt)
+        cases = {
+            'missing': [c for c in fmt['category']['list'] if c['key'] != 'dungeon'],
+            'unknown': [*fmt['category']['list'], {'key': 'raid_finder', 'label': 'Raid finder'}],
+            'twice': [*fmt['category']['list'], {'key': 'raid', 'label': 'Raid'}],
+        }
+        for word, lst in cases.items():
+            with self.subTest(word=word), self.assertRaises(SchemaError) as e:
+                gen_items.category_index({**fmt, 'category': {**fmt['category'], 'list': lst}})
+            self.assertIn(word, str(e.exception))
 
     def test_crafter_gatherer_gear_excluded(self):
         # All Classes pieces with a combat stat (Vitality) are still left out when they carry a crafter or gatherer

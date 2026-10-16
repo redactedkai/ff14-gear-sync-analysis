@@ -1,6 +1,16 @@
 /* Pool items and the real-item database (src/data/items.json).
    A pool item: {id, name, type, ilvl, stats (neutral keys), copies, src: 'game' | 'generated' | 'custom'}. */
-import { SLOT_LABEL, ITEM_STAT_ORDER, DB_SLOT_TYPE, DB_SLOT_PCT, DB_SLOT_BLOCKS, SOURCES, EXPANSIONS, ROW } from './constants.js';
+import {
+  SLOT_LABEL,
+  ITEM_STAT_ORDER,
+  DB_SLOT_TYPE,
+  DB_SLOT_PCT,
+  DB_SLOT_BLOCKS,
+  SOURCES,
+  EXPANSIONS,
+  ROW,
+  GEAR_CATEGORIES,
+} from './constants.js';
 import { expansionBounds } from './speed.js';
 import { ITEMS, MP } from './tables.js';
 import { blankStats, buildPiece } from './formulas.js';
@@ -146,7 +156,7 @@ export function browseItems(job, f) {
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 let rowIndex = null;
-/* The database facts about a pool item ({sources, slotCode, kind, lvl, scales, slots, overmeld}), looked up by its pool key, so saved pools need no
+/* The database facts about a pool item ({sources, slotCode, kind, lvl, scales, slots, overmeld, category}), looked up by its pool key, so saved pools need no
    repair when a fact is added. Null for items not from the database (hand-made, generated). */
 function rowFacts(item) {
   if (item.src !== 'game') return null;
@@ -165,6 +175,7 @@ function rowFacts(item) {
         scales: f ? f.scales : !!r[ROW.scales],
         slots: f ? f.slots : r[ROW.meldSlots],
         overmeld: f ? f.overmeld : !!r[ROW.overmeld],
+        category: f ? f.category : r[ROW.category],
       });
     }
   }
@@ -174,6 +185,13 @@ function rowFacts(item) {
 /* The source bit mask (SOURCES) of a pool item. Items not from the database have none. */
 export function sourceMask(item) {
   return rowFacts(item)?.sources || 0;
+}
+
+/* A pool item's gear category ({key, label} of GEAR_CATEGORIES: where it comes from), or null for items not from the
+   database. */
+export function categoryOf(item) {
+  const f = rowFacts(item);
+  return f ? GEAR_CATEGORIES[f.category] : null;
 }
 
 /* A pool item's equip level (the level a character needs to wear it), or null for items not from the database. */

@@ -4,7 +4,7 @@
 Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
 
 Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources, statFactor, meldSlots, overmeld, rarity,
-            gameId, scales]
+            gameId, scales, category]
   slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring,
              12=body that also covers the head)
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
@@ -20,6 +20,7 @@ Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sou
   gameId    : the Item.csv row id (`gameId` in item-format.json), the id other tools and links use
   scales    : 1 when the item's item level follows the wearer's level (Item.SubStatCategory 2, `levelScaled` in
              item-format.json), else 0
+  category  : the piece's gear category (gear_categories.py) as an index into `category.list` of item-format.json
 
 The file also holds the materia table {values, gate, high} (`materia` in item-format.json, see materia_table()).
 """
@@ -266,6 +267,20 @@ def select(csv_dir):
     return kept, multi_slot, crafter_gatherer
 
 
+def category_index(fmt):
+    """{category key: its index in `category.list` of item-format.json}, the value of a row's category field. Raises
+    SchemaError unless the list holds every category a kept piece can have (gear_categories.CATEGORIES minus LEFT_OUT)
+    exactly once and nothing else, so a category added to gear_categories.py can't reach the page without a label."""
+    keys = [c['key'] for c in fmt['category']['list']]
+    kept = set(gear_categories.CATEGORIES) - gear_categories.LEFT_OUT
+    missing = sorted(kept - set(keys))
+    unknown = sorted(set(keys) - kept)
+    twice = sorted({k for k in keys if keys.count(k) > 1})
+    if missing or unknown or twice:
+        raise SchemaError(f'item-format.json category.list: missing {missing}, unknown {unknown}, listed twice {twice}')
+    return {k: i for i, k in enumerate(keys)}
+
+
 def main(csv_dir, out, source='detect'):
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir. Only written as a header comment;
     the DATA_SOURCE constant lives in item-level.json."""
@@ -279,10 +294,11 @@ def main(csv_dir, out, source='detect'):
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     masks = gear_categories.source_masks(kept, cats)
-    rows = [[*row[:8], masks[r['#']], *row[9:]] for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
+    cat_index = category_index(fmt)
+    rows = [[*row[:8], masks[r['#']], *row[9:], cat_index[cats[r['#']]]] for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
     # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields and the rowField
-    # of rarity, gameId and levelScaled)
-    fields = {**fmt['materia']['rowFields'], **{k: fmt[k]['rowField'] for k in ('rarity', 'gameId', 'levelScaled')}}
+    # of rarity, gameId, levelScaled and category)
+    fields = {**fmt['materia']['rowFields'], **{k: fmt[k]['rowField'] for k in ('rarity', 'gameId', 'levelScaled', 'category')}}
     if rows and len(rows[0]) != max(fields.values()) + 1:
         raise SchemaError(f'item rows have {len(rows[0])} fields, item-format.json row fields expect {fields}')
     materia, decoys = materia_table(csv_dir, fmt)

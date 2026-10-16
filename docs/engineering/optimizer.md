@@ -325,6 +325,14 @@ Gear to search has the Gear browser's filters, in the same order, with the optim
 
 **Character panel totals.** The Total and With food rows show each substat as the in-game character panel does: the level's base plus gear (plus food); docs/mechanics/math.md, "Totals as on the character panel". Main stat and Vitality stay gear points: their base depends on the job and clan, which the page does not ask for (owner's decision). The party bonus is not counted. The Target GCD line's speed band uses the same numbers.
 
+**Other pieces with the same result** (roadmap A9; owner's decisions, 2026-10-16). The search returns one set, but under sync many pieces reach the same caps: for Sage at level 50, item level 123, with crafted and tomestone gear, every slot has 11 to 20 others, 171 in all. So each result row shows a piece with the same result, and its item cell is a menu ("1 of 14") of all of them, by expansion, each with its gear category ([data-pipeline.md, section 4](data-pipeline.md#gear-category)).
+
+- **The same result:** the same main stat and the same points of the goal's stat, and every other substat at the same tier (its effect; speed by its GCD, with haste, and by its DoT/HoT tick scaling, whose steps are smaller), counted with the result's meal. Points between two tiers do nothing (as in A7), but the goal stat is what the player asked to maximize, so its points stay; a Spell Speed goal that kept its GCD tier at 3 points less would show less than the search found.
+- **Which piece a row shows:** the lowest equip level, then the lowest item level; the search's own pick on a tie. No setting: the pieces are equivalent, so none is marked as the optimizer's.
+- **Rows share their spare points.** Two swaps can each keep a tier alone and lose it together, so every check is made against the pieces the other rows show at that moment: rows are filled in panel order, each menu is computed against the rows as shown, and a pick from a menu checks the others again. A Unique piece is never in two rows (rings), and a piece must leave the same slots empty as the search's pick (a cloak never replaces a plain body).
+- **The candidates** are the search's own, unpruned (`buildCandidates` with pruning off): every piece with its synced stats and the melds the search would give it (each meld version under a Target GCD). Most pieces are ruled out by the main stat alone. Picks are not saved (A3 will) and any setting change clears them.
+- **Cost:** in Node, 0 to 19 ms per run, plus 14 to 19 ms to build the unpruned lists, which are kept while the pool settings, goal and GCD mode stay (Sage at level 50 / 100 and Warrior at level 70 / item level 400).
+
 The page used to show a per-stat ceiling table below the result (each stat's best total from the pool, synced and unsynced). It was removed on 2026-10-12 (owner's decision): it repeated the main result per target and the Sync limits tab, and cost 12 or 14 extra searches on every change.
 
 ## 8. Correctness and performance
@@ -492,6 +500,7 @@ Notes:
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
+| Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameResult`); the menus in `src/ui/views/optimizer.js` (`sameCandidates`, `sameMenu`) |
 | Page use: the job's gear, gear groups, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `NODE_LIMIT`, `optimizerView`) |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
