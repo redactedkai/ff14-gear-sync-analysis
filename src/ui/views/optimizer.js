@@ -18,6 +18,7 @@ import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js'
 import { buildCandidates } from '../../core/optimizer/candidates.js';
 import { sameResult } from '../../core/same-result.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
+import { rankByTier } from '../../core/tier-rank.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
@@ -89,7 +90,7 @@ export function askedGcd(app) {
   return Number.isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : null;
 }
 
-/* The meal Target GCD searches with: none with Food off, the chosen pair, or every choice ('best'). */
+/* The meal Target GCD and tier ranking search with: none with Food off, the chosen pair, or every choice ('best'). */
 function gcdFood(app) {
   const o = app.opt;
   if (!o.food) return null;
@@ -153,6 +154,16 @@ function gcdLine(job, r, ui, level) {
    other pieces against, with the melds the optimizer would give them (meld versions under a Target GCD). Cached like
    the Target GCD candidates: they depend on the pool settings, the goal and the GCD mode only. */
 let sameCache = { key: null, cands: null };
+
+/* Tier ranking's candidate lists (rankByTier's cache, keyed inside by objective, limits and GCD mode), kept while the
+   pool settings stay, so a new tiebreak, meal or GCD only reruns the searches. */
+let tierCache = { key: null, map: null };
+function tierLists(app, gear) {
+  const key = poolSettingsKey(app, gear);
+  if (key == null) return new Map();
+  if (tierCache.key !== key) tierCache = { key, map: new Map() };
+  return tierCache.map;
+}
 function sameCandidates(app, pool, gear, sync, gcdOn) {
   const o = app.opt;
   const settingsKey = poolSettingsKey(app, gear);
@@ -215,10 +226,37 @@ function buildOptimizerView(app, gear, chosen) {
   const ui = gcdControls(app, pool, gear);
   const pct = ui.haste?.pct ?? 0;
   const asked = askedGcd(app);
-  // 2. the search: with a Target GCD, gear and meal are chosen together (optimizeGcd); without one, the gear first and
-  // the meal after (it never changes which gear wins)
+  // 2. the search. By tier: the tiers of the goal and tiebreaks first, counted with food, so meal and gear are chosen
+  // together (rankByTier). Otherwise, with a Target GCD, gear and meal are chosen together (optimizeGcd); without
+  // one, the gear first and the meal after (it never changes which gear wins)
   let res, food, bonus, line;
-  if (asked != null) {
+  const byTier = o.byTier !== false;
+  if (byTier) {
+    const r = rankByTier(
+      job,
+      pool,
+      sync,
+      {
+        target: o.target,
+        tiebreak: [o.tb, o.tb2],
+        melds: !!o.melds,
+        food: gcdFood(app),
+        nodeLimit: NODE_LIMIT,
+        level: app.level,
+        gcd: asked ?? undefined,
+        mode: o.gcdMode,
+      },
+      tierLists(app, gear),
+    );
+    if (asked != null) line = gcdLine(job, r, ui, app.level);
+    if (!r.ok) {
+      if (asked != null) return { kind: r.truncated ? 'infeasible' : 'nogcd', gcdUi: ui, gcdLine: line, truncated: r.truncated };
+      return { kind: 'infeasible', gcdUi: ui, truncated: r.truncated };
+    }
+    res = r;
+    food = r.food;
+    bonus = r.bonus;
+  } else if (asked != null) {
     const goal = { target: o.target, tiebreak: [o.tb, o.tb2], melds: !!o.melds, mode: o.gcdMode };
     // the candidates depend on the pool settings, the goal and the mode, not on the GCD: reuse them while only it changes
     const settingsKey = poolSettingsKey(app, gear);
@@ -248,6 +286,8 @@ function buildOptimizerView(app, gear, chosen) {
     job,
     res.picks,
     sameCandidates(app, pool, gear, sync, asked != null),
+    // the goal's points stay in both rankings: by tier, the points left over go to the goal (order A, owner's decision
+    // 2026-10-16), so a swap that kept its tier with fewer points would show less than the search found
     { level: app.level, food, haste: pct, goal: o.target },
     chosen,
   );
@@ -293,7 +333,32 @@ function buildOptimizerView(app, gear, chosen) {
       }),
     };
   });
-  // 6. everything the template shows
+  // 6. each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier;
+  // held: a key tier ranking holds (it keeps its tier whatever the later keys do)
+  const heldStats = new Set(byTier ? res.held.map(h => h.stat) : []);
+  const tiers = job.stats.map(s => {
+    // speed with the job's haste: its GCD and steps are the hasted ones, as in the GCD card
+    const g = s === 'spd' && pct ? gcdTierAt(t[s] || 0, app.level, BASE_GCD_MS, pct) : null;
+    const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, t[s], app.level);
+    if (!tier) return null;
+    return {
+      effect: tier.effect,
+      spare: t[s] - tier.start,
+      toNext: tier.next == null ? null : tier.next - t[s],
+      zero: !t[s],
+      held: heldStats.has(s),
+    };
+  });
+  // tier ranking's readout: each key in order, with the effect it holds (its points for a stat without tiers)
+  // (Tenacity is ranked by its mitigation step, rankTierOf, not the damage step the Effect row shows)
+  const heldEffect = h => {
+    if (h.tier == null) return '(every point counts)';
+    if (h.stat === 'spec' && job.profile.spec === 'ten') return `−${(h.tier / 10).toFixed(1)}% damage taken`;
+    return tiers[job.stats.indexOf(h.stat)]?.effect ?? '';
+  };
+  const heldText = byTier ? res.held.map(h => `${job.label[h.stat]} ${heldEffect(h)}`.trim()).join(', then ') : null;
+
+  // 7. everything the template shows
   return {
     kind: 'ok',
     gcdUi: ui,
@@ -316,14 +381,10 @@ function buildOptimizerView(app, gear, chosen) {
     },
     // a GCD target changes which gear fits a meal, so "the same gear with any meal" no longer holds
     gcdOn: asked != null,
-    // each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier
-    tiers: job.stats.map(s => {
-      // speed with the job's haste: its GCD and steps are the hasted ones, as in the GCD card
-      const g = s === 'spd' && pct ? gcdTierAt(t[s] || 0, app.level, BASE_GCD_MS, pct) : null;
-      const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, t[s], app.level);
-      if (!tier) return null;
-      return { effect: tier.effect, spare: t[s] - tier.start, toNext: tier.next == null ? null : tier.next - t[s], zero: !t[s] };
-    }),
+    tiers,
+    // by tier: "Critical Hit 29.3%, then Determination +9.4%, then Direct Hit +0.0%"; null for the plain ranking
+    byTier,
+    heldText,
     synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level, BASE_GCD_MS, pct).toFixed(2),
     // hasted jobs: the haste and the GCD without it (owner's decision 2026-10-16: both, labelled)

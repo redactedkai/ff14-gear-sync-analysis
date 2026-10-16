@@ -481,7 +481,7 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 
 - **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 optimizer runs on full pools.
 - **Tiebreaks:** in 200 of 572 runs with a target and one tiebreak, another loadout keeps the target's step and puts the tiebreak a step higher. This happens mostly at level 100, where steps are 14 to 25 points wide, and rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds ([materia.md](materia.md)).
-- **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next. Ranking by step (tier ranking) is built in the optimizer's core but not yet on the page ([tier-ranking.md](../engineering/tier-ranking.md), [roadmap.md](../roadmap.md)): it holds each key at the start of its best step plus one point, in order, then ranks the raw totals.
+- **What the tool does:** by default it ranks by step (tier ranking, [tier-ranking.md](../engineering/tier-ranking.md)): it holds the target and each tiebreak at the start of its best step plus one point, in order, then ranks the raw totals. With Rank by tier switched off it ranks raw totals only. Either way, under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next.
 
 **Measured** by an independent dynamic program. The step formulas are the community ones from AkhMorning, matching xivgear (**inferred**).
 

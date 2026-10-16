@@ -21,6 +21,10 @@ export function optimizer() {
     menuOpen: null,
     /* the settings the result was last solved for, to tell a new result from a pick */
     lastDeps: '',
+    /* a solve is pending or running: shows the progress bar */
+    busy: false,
+    /* the latest solve asked for; an older one still waiting is dropped */
+    solveId: 0,
     init() {
       debouncedEffect(
         Alpine,
@@ -46,6 +50,7 @@ export function optimizer() {
             app.opt.foodPair,
             app.opt.gcd,
             app.opt.gcdMode,
+            app.opt.byTier,
           ];
           return () => {
             if (deps[0] !== 'opt') return;
@@ -61,8 +66,24 @@ export function optimizer() {
         DEBOUNCE_MS,
       );
     },
-    /* Solve and show the result, with the menu picks made so far. */
+    /* Solve and show the result, with the menu picks made so far. The solve holds the page's thread (tier ranking up to
+       a few seconds under a Target GCD), so the progress bar is shown first: after the next frame is painted. */
     solve() {
+      const id = ++this.solveId;
+      this.busy = true;
+      // two frames: the first lays the bar out, the second paints it and starts its animation, which then runs on the
+      // compositor while the solve holds the thread
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          setTimeout(() => {
+            if (id !== this.solveId) return;
+            this.solveNow();
+            this.busy = false;
+          }),
+        ),
+      );
+    },
+    solveNow() {
       const t0 = performance.now();
       // the plain store: read through Alpine's reactive proxies, the pool's thousands of stat reads cost about
       // twice the run itself (this runs outside the effect, so nothing here needs tracking)

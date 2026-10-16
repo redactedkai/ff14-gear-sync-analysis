@@ -242,7 +242,7 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 
 - **Searches that stop early.** A few cases still reach the node limit; they return the seed or better, marked as possibly not the best, like any truncated result.
 - **Haste jobs in the sweep.** Monk, Samurai, Ninja and Viper have a GCD below 2.50 s with no speed at all; the sweep's halfway GCD lands above it, so those runs end at once ("unreachable") and are left out of the timings.
-- **The page.** Tier ranking runs in the core only; the switch, readout and progress indicator are not built yet (roadmap A7).
+- **The page.** Tier ranking is on by default and holds the page's thread while it solves (about 0.2 s without a Target GCD, up to a few seconds with one), so a progress bar shows meanwhile; the controls and readout are in [optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters).
 
 ## Where this lives
 
@@ -255,4 +255,5 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 | Pruning with limits | `src/core/optimizer/candidates.js` (`pruneForLimits`) |
 | Shortfall filter, Lagrangian bound, reduced-cost fixing, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `branchAndBound`) |
 | Pareto fronts | `src/core/optimizer/front.js` (`frontSearch`) |
-| Tests | `tests/unit/tier-rank.test.js`, `tests/unit/stat-minimums.test.js` |
+| The page: switch, readout, held marks, progress bar | `src/ui/views/optimizer.js` (`optimizerView`, `tierLists`), `src/ui/components/optimizer.js` (`solve`), `src/index.html` (`#o-by-tier`, `#o-held`, `#o-busy`) |
+| Tests | `tests/unit/tier-rank.test.js`, `tests/unit/stat-minimums.test.js`; the page in `tests/unit/views.test.js` and `tests/e2e/smoke.mjs` (`checkRankByTier`) |

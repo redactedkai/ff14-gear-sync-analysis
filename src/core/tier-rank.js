@@ -30,9 +30,10 @@ const HOLD_MARGIN = 1;
  *              GCD mode; filled as it goes, so a new GCD or meal only reruns the searches
  * @returns {ok:false, reason: 'unreachable' (no speed gives the GCD) | 'none' (no loadout meets it), truncated, nodes,
  *          searches, fastest?} or {ok:true, ...solve result (picks, totals = gear points), food, bonus, withFood,
- *          held: [{stat, tier, hold}], gcd, haste, truncated, nodes, searches}: held lists each key with its tier
- *          (rankTierOf's number, null for a key without tiers) and the total with food it is held at; gcd is the
- *          result's GCD with food and haste
+ *          held: [{stat, tier, hold}], gcd, faster, band, haste, truncated, nodes, searches}: held lists each key with its
+ *          tier (rankTierOf's number, null for a key without tiers) and the total with food it is held at; gcd is the
+ *          result's GCD with food and haste, faster is true when it beats the asked GCD ('min' mode only); band = {min,
+ *          max} on total speed with a Target GCD (speedForGcd), else null
  */
 export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   const level = opts.level ?? sync.level ?? job.maxLevel;
@@ -47,6 +48,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   if (gcdMode) {
     band = speedForGcd(opts.gcd, level, gcdMode, pct);
     if (!band) return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
+    base.band = band;
   }
 
   // 2. one state per meal: its gear speed band and the minimums (gear points) held so far
@@ -141,6 +143,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     }
   }
   if (!best) return none();
+  const gcd = gcdFor(best.totals.spd || 0, level, BASE_GCD_MS, pct);
   return {
     ...best.r,
     ok: true,
@@ -152,6 +155,8 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     bonus: best.bonus,
     withFood: best.totals,
     held: best.state.held,
-    gcd: gcdFor(best.totals.spd || 0, level, BASE_GCD_MS, pct),
+    gcd,
+    faster: gcdMode != null && gcd < opts.gcd,
+    band,
   };
 }

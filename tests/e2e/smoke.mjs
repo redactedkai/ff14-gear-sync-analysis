@@ -651,6 +651,31 @@ async function checkFood(pg) {
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
 }
 
+/** Rank by tier: on by default; the readout names the goal and tiebreaks in order and the Tier row marks them; off, both
+ * go and the choice is saved. */
+async function checkRankByTier(pg) {
+  await setJob(pg, 'SGE');
+  await waitOptimizer(pg);
+  const byTier = pg.locator('#o-by-tier');
+  check(await byTier.isChecked(), 'Rank by tier is off by default');
+  await pg.selectOption('#o-target', 'crit');
+  await pg.selectOption('#o-tb1', 'det');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
+  await expect(pg.locator('#o-held')).toHaveText(/^Ranked by tier: Critical Hit [\d.]+%, then Determination \+[\d.]+%/);
+  await expect(pg.locator('#o-tier td.held')).toHaveCount(2);
+  await byTier.uncheck();
+  await expect(pg.locator('#o-held')).toHaveCount(0);
+  await expect(pg.locator('#o-tier td.held')).toHaveCount(0);
+  await waitSaved(pg, 's => s.opt.byTier === false');
+  await byTier.check();
+  await expect(pg.locator('#o-held')).toBeVisible();
+  await waitSaved(pg, 's => s.opt.byTier === true');
+  await checkNoBadText(pg, 'rank by tier');
+  await pg.selectOption('#o-tb1', '');
+  await pg.selectOption('#o-target', 'main');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+}
+
 /** Target GCD: the box is empty (any GCD) with no line; a GCD one step from the free result is met exactly, the
  * result's GCD is the one typed and the line gives the speed on the character panel; "or faster" and the GCD are
  * saved; the goal speed disables the box; a hasted job names its haste, a job switch clears the box, and a GCD the job
@@ -1128,7 +1153,7 @@ const GROUPS = [
   { slow: true, steps: [step(checkTypingDebounce)] },
   { slow: true, steps: [step(checkRingCopies), step(checkGearGroups)] },
   { slow: true, steps: [step(checkOptFilters)] },
-  { slow: true, steps: [step(checkMelds), step(checkFood)] },
+  { slow: true, steps: [step(checkMelds), step(checkFood), step(checkRankByTier)] },
   { slow: true, steps: [step(checkTargetGcd)] },
   { slow: true, steps: [step(checkExpansionFilter), step(checkReset)] },
   { slow: true, steps: [step(checkReloadPersists)] },

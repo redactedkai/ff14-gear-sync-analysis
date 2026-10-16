@@ -8,6 +8,7 @@ import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
 import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
+import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
 import { jobGear, optimizerView, panelBase, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
@@ -17,8 +18,13 @@ import { JOBS, SOURCES } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE, syncSettings } from '../../src/ui/state.js';
 
-/* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. */
-const makeApp = (job = 'SGE', patch = {}) => appState({ job, sync: true, cap: 123 }, patch);
+/* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
+   tier off: these tests check the plain ranking against brute force and the core; tier ranking has its own tests. */
+const makeApp = (job = 'SGE', patch = {}) => {
+  const app = appState({ job, sync: true, cap: 123 }, patch);
+  if (!('opt' in patch)) app.opt.byTier = false;
+  return app;
+};
 
 /* Real gear, chosen by properties, passed to the optimizer view in place of every piece the job can wear. A small item
    level window (with weapons) whose best loadouts exhaustive() can check; and item level 130 Sage gear (no weapon: Sage gear starts at level 70) keeping only Unique rings, which
@@ -522,4 +528,63 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
   assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
   // gear no piece of which is synced at this level is not marked synced
   assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
+});
+
+test('Rank by tier: the view shows the core result, each key held at its tier and marked, food chosen with the gear', () => {
+  // Sage, unsynced level 100 gear from the item level 125-135 window, Critical Hit then Determination then Direct Hit
+  const app = makeApp('SGE', { sync: false });
+  Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: 'dh', food: true, foodPair: '', byTier: true });
+  const pool = windowPool(app.jobCtx);
+  const r = rankByTier(app.jobCtx, pool, syncSettings(app), {
+    target: 'crit',
+    tiebreak: ['det', 'dh'],
+    melds: app.opt.melds,
+    food: 'best',
+    level: app.level,
+  });
+  assert.ok(r.ok);
+  const v = optimizerView(app, pool);
+  assert.equal(v.kind, 'ok');
+  assert.equal(v.byTier, true);
+  // the meal is the one tier ranking chose with the gear
+  assert.equal(v.food.name, r.food.name);
+  // every key keeps the tier the core held it at (the rows may show other pieces with the same tiers, same-result.js)
+  const stats = app.jobCtx.stats;
+  for (const h of r.held) {
+    const shown = v.tiers[stats.indexOf(h.stat)];
+    assert.equal(shown.held, true, h.stat);
+    assert.equal(shown.effect, statTier(app.jobCtx, h.stat, r.withFood[h.stat], app.level).effect, h.stat);
+  }
+  // only the keys are marked; the readout names them in order
+  assert.deepEqual(
+    stats.filter((s, k) => v.tiers[k]?.held),
+    stats.filter(s => ['crit', 'det', 'dh'].includes(s)),
+  );
+  assert.match(v.heldText, /^Critical Hit [\d.]+%, then Determination \+[\d.]+%, then Direct Hit [\d.]+%$/);
+
+  // switched off: the plain ranking (the same view as before tier ranking existed)
+  app.opt.byTier = false;
+  const plain = optimizerView(app, pool);
+  assert.equal(plain.byTier, false);
+  assert.equal(plain.heldText, null);
+  assert.ok(plain.tiers.every(c => !c?.held));
+});
+
+test('Rank by tier with a Target GCD: the GCD line and band come from the tier search', () => {
+  const app = makeApp('SGE', { sync: false });
+  const pool = windowPool(app.jobCtx);
+  const fastest = optimizerView({ ...app, opt: { ...app.opt, target: 'spd', byTier: false } }, pool);
+  // halfway between the GCD with no speed and the fastest the window reaches: reachable, and not trivially
+  const gcd = Math.round(((2.5 + Number(fastest.gcd)) / 2) * 100) / 100;
+  Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: '', byTier: true, gcd, gcdMode: 'exact' });
+  const v = optimizerView(app, pool);
+  assert.equal(v.kind, 'ok');
+  assert.equal(v.gcd, gcd.toFixed(2));
+  assert.equal(v.gcdLine.bad, false);
+  assert.match(v.gcdLine.text, /^Spell Speed \d+ to \d+ \(character panel\)$/);
+  // a GCD faster than any set reaches: no set, said on the GCD line
+  app.opt.gcd = 1.6;
+  const none = optimizerView(app, pool);
+  assert.equal(none.kind, 'nogcd');
+  assert.equal(none.gcdLine.bad, true);
 });

@@ -50,6 +50,7 @@ function validSave() {
       foodPair: 'det+crit',
       gcd: 2.4,
       gcdMode: 'min',
+      byTier: false,
     },
   };
 }
@@ -223,6 +224,12 @@ test('opt fields', () => {
   expectFieldDefault('opt.gcd', 0, D.opt.gcd);
   expectFieldDefault('opt.gcd', null, D.opt.gcd);
   expectFieldDefault('opt.gcdMode', 'faster', D.opt.gcdMode);
+  // Rank by tier: on by default (owner's decision 2026-10-16), also for a save from before the switch existed
+  assert.equal(D.opt.byTier, true);
+  expectFieldDefault('opt.byTier', 'no', true);
+  const beforeTiers = validSave();
+  delete beforeTiers.opt.byTier;
+  assert.equal(restoreState(beforeTiers).opt.byTier, true);
 });
 
 test("a save from the gear pool days: the pool and the browser's list switch are dropped, the rest kept", () => {

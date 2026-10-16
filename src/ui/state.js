@@ -66,7 +66,8 @@ export function defaultState() {
     // melds: give pieces their best materia melds. expOff, exclude, min, max, lvl: Gear to search, the browser's
     // filters with their own values. food: add a meal to the result; foodPair: its key in foodChoices (core/food.js),
     // '' = best for the goal. gcd: the Target GCD in seconds, '' for any; gcdMode: 'exact' (exactly that GCD) or 'min'
-    // (that GCD or faster); exact by default, like xivgear (owner's decision 2026-10-16)
+    // (that GCD or faster); exact by default, like xivgear (owner's decision 2026-10-16). byTier: rank the goal and
+    // tiebreaks by their tiers before their points (core/tier-rank.js); on by default (owner's decision 2026-10-16)
     opt: {
       target: 'main',
       tb: '',
@@ -81,6 +82,7 @@ export function defaultState() {
       foodPair: '',
       gcd: '',
       gcdMode: 'exact',
+      byTier: true,
     },
   };
 }
@@ -203,6 +205,7 @@ export function restoreState(raw) {
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
   s.opt.melds = bool(o.melds, s.opt.melds);
   s.opt.food = bool(o.food, s.opt.food);
+  s.opt.byTier = bool(o.byTier, s.opt.byTier);
   s.opt.foodPair = oneOf(o.foodPair, ['', ...foodChoices(job).map(c => c.key)], s.opt.foodPair);
   s.opt.gcd = gcdIn(o.gcd, s.opt.gcd);
   s.opt.gcdMode = oneOf(o.gcdMode, ['exact', 'min'], s.opt.gcdMode);
