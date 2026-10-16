@@ -98,6 +98,7 @@ Branch and bound over slots, after removing dominated items. Each item gets one 
 - Fix root causes.
 - No new dependencies without asking. Keep the Google Fonts link, and make sure the page works without it.
 - Don't commit or push unless asked.
+- No AI attribution in commits or PR descriptions: no `Co-Authored-By` or "Generated with" lines.
 
 ## Tests and docs
 
