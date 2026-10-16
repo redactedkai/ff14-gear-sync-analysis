@@ -3,13 +3,13 @@
    an easier piece instead of the one the search happened to pick.
 
    "The same result" is the same main stat and the same points of the goal's stat (what the player asked to maximize),
-   and every other substat at the same tier (its effect; speed by its GCD, with the job's haste), counted with the
-   result's meal: the points between two tiers do nothing, so they may differ (as in roadmap A7).
+   and every other substat at the same tier (its effect; speed by its GCD, with the job's haste, and its DoT/HoT tick
+   scaling, which moves in smaller steps of its own), counted with the result's meal: the points between two tiers do nothing, so they may differ (as in roadmap A7).
    Rows share their spare points: two swaps that are each fine alone can push a tier down together. So every check is
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
 import { foodBonus, withFood } from './food.js';
 import { equipLevel, poolKey, slotInfo } from './items.js';
-import { BASE_GCD_MS, gcdTierAt } from './speed.js';
+import { BASE_GCD_MS, dotMult, gcdTierAt } from './speed.js';
 import { statTier } from './tiers.js';
 
 /* What a set does, as one comparable string: its main stat, the goal stat's points, then each substat's effect, from
@@ -19,7 +19,9 @@ import { statTier } from './tiers.js';
 export function resultOf(job, gearTotals, { level, food, haste = 0, goal = 'main' }) {
   const t = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
   const effects = job.substats.map(s =>
-    s === 'spd' ? gcdTierAt(t.spd || 0, level, BASE_GCD_MS, haste).gcd : (statTier(job, s, t[s], level)?.effect ?? ''),
+    s === 'spd'
+      ? `${gcdTierAt(t.spd || 0, level, BASE_GCD_MS, haste).gcd}/${dotMult(t.spd || 0, level)}`
+      : (statTier(job, s, t[s], level)?.effect ?? ''),
   );
   return [t.main || 0, t[goal] || 0, ...effects].join('|');
 }

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { equipLevel, mkItem, poolKey } from '../../src/core/items.js';
 import { resultOf, sameResult } from '../../src/core/same-result.js';
+import { dotMult, gcdFor } from '../../src/core/speed.js';
 import { statTier } from '../../src/core/tiers.js';
 import { optimizerView } from '../../src/ui/views/optimizer.js';
 import { appState } from './helpers/common.js';
@@ -44,6 +45,14 @@ test('resultOf: points within a tier give the same result, a tier lost or a main
   assert.equal(at(start), at(start + 1));
   assert.notEqual(at(start - 1), at(start));
   assert.notEqual(resultOf(sge, { main: 301, crit: start }, CTX), at(start));
+});
+
+test('resultOf: speed keeps both its GCD and its DoT/HoT tick scaling, which has smaller steps', () => {
+  // the first speed above 400 whose DoT/HoT scaling is one step up while its GCD is the same as one point less
+  let spd = 400;
+  while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) spd++;
+  const at = points => resultOf(sge, { main: 300, spd: points }, CTX);
+  assert.notEqual(at(spd - 1), at(spd));
 });
 
 test('resultOf: the goal stat keeps its exact points, even within a tier', () => {
