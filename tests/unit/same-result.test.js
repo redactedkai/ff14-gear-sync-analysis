@@ -6,7 +6,7 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { equipLevel, mkItem, poolKey } from '../../src/core/items.js';
 import { resultOf, sameResult } from '../../src/core/same-result.js';
 import { dotMult, gcdFor } from '../../src/core/speed.js';
-import { statTier } from '../../src/core/tiers.js';
+import { rankTierOf, statTier } from '../../src/core/tiers.js';
 import { optimizerView } from '../../src/ui/views/optimizer.js';
 import { appState } from './helpers/common.js';
 
@@ -55,10 +55,25 @@ test('resultOf: speed keeps both its GCD and its DoT/HoT tick scaling, which has
   assert.notEqual(at(spd - 1), at(spd));
 });
 
-test('resultOf: the goal stat keeps its exact points, even within a tier', () => {
+test('resultOf: a Tenacity total keeps both its mitigation step (200) and its damage step (112)', () => {
+  const war = makeJobContext('WAR');
+  const at = (ten, mitigation) => resultOf(war, { main: 300, spec: ten }, CTX) === resultOf(war, { main: 300, spec: mitigation }, CTX);
+  // the first Tenacity above 400 where one step moves and the other doesn't, each way
+  const mit = rankTierOf(war, 'spec', 100);
+  const dmg = p => statTier(war, 'spec', p, 100).effect;
+  let a = 400;
+  while (mit(a) === mit(a - 1) || dmg(a) !== dmg(a - 1)) a++;
+  let b = 400;
+  while (dmg(b) === dmg(b - 1) || mit(b) !== mit(b - 1)) b++;
+  assert.ok(!at(a, a - 1), 'a mitigation step lost');
+  assert.ok(!at(b, b - 1), 'a damage step lost');
+});
+
+test('resultOf: the goal stat keeps its exact points when asked (the plain optimizer), only its tier without (tier ranking)', () => {
   const start = statTier(sge, 'crit', 1000, 100).start;
-  const at = crit => resultOf(sge, { main: 300, crit }, { ...CTX, goal: 'crit' });
-  assert.notEqual(at(start), at(start + 1));
+  const at = (crit, goal) => resultOf(sge, { main: 300, crit }, { ...CTX, goal });
+  assert.notEqual(at(start, 'crit'), at(start + 5, 'crit'));
+  assert.equal(at(start, null), at(start + 5, null));
 });
 
 test('each swap alone fits, so both rows list their other piece; the shown set keeps the result', () => {
