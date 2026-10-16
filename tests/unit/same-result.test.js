@@ -59,7 +59,7 @@ test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (o
   assert.notEqual(at(step - 1), at(step));
 });
 
-test('resultOf: a Tenacity total keeps both its mitigation step (200) and its damage step (112)', () => {
+test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) may drop (owner, 2026-10-16)', () => {
   const war = makeJobContext('WAR');
   const at = (ten, mitigation) => resultOf(war, { main: 300, spec: ten }, CTX) === resultOf(war, { main: 300, spec: mitigation }, CTX);
   // the first Tenacity above 400 where one step moves and the other doesn't, each way
@@ -70,7 +70,7 @@ test('resultOf: a Tenacity total keeps both its mitigation step (200) and its da
   let b = 400;
   while (dmg(b) === dmg(b - 1) || mit(b) !== mit(b - 1)) b++;
   assert.ok(!at(a, a - 1), 'a mitigation step lost');
-  assert.ok(!at(b, b - 1), 'a damage step lost');
+  assert.ok(at(b, b - 1), 'a damage step lost, the mitigation step kept');
 });
 
 test('resultOf: the goal stat keeps its exact points when asked (the plain optimizer), only its tier without (tier ranking)', () => {
