@@ -240,7 +240,7 @@ and the clamp below is applied with $t$ in place of $C$. A piece synced to an it
 
 What changes at T13 (level 50, cap 123), measured on the current data: 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes. Every other piece is synced exactly as by the cap alone.
 
-With item level sync off, level sync alone syncs this many of the 17,316 database pieces (the 35 Beastmaster pieces, equip level 50, are synced at none of these levels; scaling gear is counted in, 1 to 5 pieces a level that the equip level alone would leave):
+With item level sync off, level sync alone syncs this many of the 20,031 database pieces (the 50 Beastmaster pieces, equip level 50 or below, are synced at none of these levels; scaling gear is counted in, 1 to 5 pieces a level that the equip level alone would leave):
 
 | Synced level | $\text{sync}(L)$ | Pieces synced | Above $\text{sync}(L)$ | With a stat lowered |
 | --- | --- | --- | --- | --- |

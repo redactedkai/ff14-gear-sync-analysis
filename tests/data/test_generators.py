@@ -84,7 +84,7 @@ class GenItemsTest(unittest.TestCase):
             self.assertEqual(len(r), 15, r)
             name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales = r
             self.assertIsInstance(name, str)
-            self.assertIn(slot, range(13))
+            self.assertIn(slot, range(15))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
@@ -192,10 +192,12 @@ class GenItemsTest(unittest.TestCase):
         # Category 15: Body 1, Head -1 (a cloak that also covers the head) has its own slot code, 12
         self.assertEqual(self.row('Test Cloak')[1], 12)
         self.assertEqual(self.row('Test Robe')[1], 4)  # a plain body piece
-        # Category 18: Legs 1, Feet -1 has no slot code: left out and listed
-        self.assertNotIn('Test Flanchard', self.by_name)
+        # Category 18: Legs 1, Feet -1 (legs that also cover the feet) has slot code 13
+        self.assertEqual(self.row('Test Flanchard')[1], 13)
+        # Category 20: Body 1, Gloves -1, Legs -1 has no slot code: left out and listed
+        self.assertNotIn('Test Overall', self.by_name)
         _, multi_slot, _ = gen_items.select(FIXTURES)
-        self.assertEqual(multi_slot, ['Test Flanchard (item level 130)'])
+        self.assertEqual(multi_slot, ['Test Overall (item level 130)'])
 
     def test_stat_mapping(self):
         self.assertEqual(self.row('Test Hood of Healing')[5], HEAL)
@@ -218,9 +220,10 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.row('Test Sallet NoHQ')[7], 0)
 
     def test_minimum_item_level(self):
-        self.assertEqual(self.row('Test Min Ilvl')[2], 100)
+        self.assertEqual(gen_items.MIN_ILVL, 15)  # Sastasha's entry level, the lowest dungeon
+        self.assertEqual(self.row('Test Min Ilvl')[2], 15)
         self.assertNotIn('Test Below Min Ilvl', self.by_name)
-        self.assertTrue(all(r[2] >= 100 for r in self.rows))
+        self.assertTrue(all(r[2] >= 15 for r in self.rows))
 
     def test_excluded_jobs(self):
         for name in ('Test No Category', 'Test Gladiator Only', 'Test Crafter Only', 'Test Unknown Category'):
@@ -298,6 +301,7 @@ class GenItemsTest(unittest.TestCase):
             'Test Ring Plain',
             'Test Ring Unique',
             'Test Cloak',
+            'Test Flanchard',
             'Test Sallet HQ',
             'Test Sallet NoHQ',
             'Test Min Ilvl',
@@ -576,6 +580,21 @@ class GearCategoriesTest(unittest.TestCase):
         self.assertEqual(cats['Test Earring'], 'savage')
         self.assertEqual(masks['Test Earring'], 2)  # tomestone flag only
         self.assertEqual(masks['Test Hood of Healing'], 2 | 8)  # equip level 50, the highest: current
+
+    def test_code_250_and_990_are_left_out(self):
+        # code 250 is Diadem gear at equip level 60 and Aetherial gear at 50 or below (both random secondary
+        # attributes); code 990 is legacy gear. All three categories are dropped from the database.
+        def fn(rows):
+            h = rows[0]
+            sort, lv = h.index('SubcategorySort'), h.index('LevelEquip')
+            for gid, code, level in (('1006', '8250', '60'), ('1007', '8250', '50'), ('1008', '8990', '50')):
+                r = next(r for r in rows if r[0] == gid)
+                r[sort], r[lv] = code, level
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        cats, _, _ = self.categories()
+        self.assertEqual((cats['Test Gloves'], cats['Test Tonban'], cats['Test Shoes']), ('diadem', 'aetherial', 'legacy'))
+        self.assertTrue({'diadem', 'aetherial', 'legacy'} <= gear_categories.LEFT_OUT)
 
     def test_shared_shop_is_caught(self):
         # a Normal token taken by the Savage shop makes the Normal robe "savage"; the dye check reports it

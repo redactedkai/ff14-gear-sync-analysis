@@ -78,10 +78,12 @@ test('Direct Hit on Mind-only gear is a fixed 20% line; elsewhere it ranks norma
 test('every piece with three substats is Mind-only gear whose lowest line is Direct Hit', async () => {
   const { ITEMS } = await import('../../src/core/tables.js');
   const { ITEM_STAT_ORDER, RAW_SUBSTAT_IDX, RAW_MAIN_IDX } = await import('../../src/core/constants.js');
+  const { MODEL_MIN_ILVL } = await import('../../src/core/validation.js');
   const mind = ITEM_STAT_ORDER.indexOf('mind'),
     dh = ITEM_STAT_ORDER.indexOf('dh');
   let n = 0;
   for (const r of ITEMS) {
+    if (r[2] < MODEL_MIN_ILVL) continue;
     const st = r[5].split(',').map(Number);
     const subs = RAW_SUBSTAT_IDX.filter(i => st[i]).sort((a, b) => st[b] - st[a]);
     if (subs.length < 3) continue;

@@ -29,11 +29,11 @@ The stats used are the **effective** stats: the synced stats when sync is on, th
 
 ## 2. Formal statement
 
-**Slots.** Let $s_1, \dots, s_n$ be the slots to fill, in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring, except that a slot some pool item can leave empty (the off-hand, and the head when a cloak is in the pool) moves to the end. A slot type with no item in the pool is left out, so $n \le 12$.
+**Slots.** Let $s_1, \dots, s_n$ be the slots to fill, in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring, except that a slot some pool item can leave empty (the off-hand; the head, hands, legs or feet when a piece covering them is in the pool) moves to the end, in the same order, so a blocked slot always comes after the piece that blocks it. A slot type with no item in the pool is left out, so $n \le 12$.
 
-**Blocked slots.** Each item $x$ has a set $B(x)$ of slot types it leaves empty: the off-hand for a two-handed weapon, the head for a cloak, nothing otherwise. The set comes from the item's slot code; a hand-made weapon on a two-handed job blocks the off-hand. A loadout is legal only if every slot in $B(x)$ of a chosen $x$ is empty.
+**Blocked slots.** Each item $x$ has a set $B(x)$ of slot types it leaves empty: the off-hand for a two-handed weapon, the head for a cloak, the feet for legs that cover them, the hands, legs and feet for Herklaedi, nothing otherwise. The set comes from the item's slot code; a hand-made weapon on a two-handed job blocks the off-hand. A loadout is legal only if every slot in $B(x)$ of a chosen $x$ is empty.
 
-Because blockable slots come last, the search knows whether one is blocked when it reaches it. A blocked slot takes no item and adds 0. While a chosen piece blocks a later slot, that slot's best score and speed come off the bounds of section 5, so a cloak's branch is pruned like any other. (Without this, ceiling runs on the full Sage pool synced to 123 hit their 150,000-node limit; now the largest takes 181 nodes.) Dominance pruning also respects blocked slots (section 4).
+Because blockable slots come last, the search knows whether one is blocked when it reaches it. A blocked slot takes no item and adds 0. While a chosen piece blocks a later slot, that slot's bound $u_j$ and speed come off the bounds of section 5, so a cloak's branch is pruned like any other. (Without this, ceiling runs on the full Sage pool synced to 123 hit their 150,000-node limit; now the largest takes 181 nodes.) Dominance pruning also respects blocked slots (section 4).
 
 **Slot counts.** The ring type appears twice. For a slot type $t$, let $k_t$ be how many slots it has: $k_{\text{ring}} = 2$, otherwise $k_t = 1$.
 
@@ -165,14 +165,14 @@ At a node where slots $1, \dots, p-1$ are filled, with partial score $\sigma$ an
 **Score bound.** The remaining slots can add at most
 
 $$
-U_p = \sum_{i \ge p} \max_{x \in P_{s_i}} \sigma(x),
+U_p = \sum_{i \ge p} u_i, \qquad u_i = \max\Bigl(0,\; \max_{x \in P_{s_i}} \bigl(\sigma(x) - \textstyle\sum_{s_j \in B(x),\, j > i} u_j\bigr)\Bigr),
 $$
 
-so if $\sigma + U_p \le \sigma^*$, nothing below this node can be strictly better. (A loadout only replaces the best one if it scores strictly higher, so among equal scores the first one found is kept.)
+so if $\sigma + U_p \le \sigma^*$, nothing below this node can be strictly better. For a piece that blocks no later slot, $u_i$ is just the best score in the slot. A piece that blocks later slots (legs that cover the feet) is bounded together with them: its score is spread over its own slot and the ones it empties, so $\sigma(x) \le u_i + \sum_{j \in B(x)} u_j$ and the sum never counts both the piece and the slots it blocks. (Counting both, with the best feet piece on top of a legs piece already worth legs and feet, the search hit its node limit under level sync below 50, where every piece syncs to nearly the same item level and loadouts tie; now those searches take a few hundred nodes.) The speed bound uses the same spread. (A loadout only replaces the best one if it scores strictly higher, so among equal scores the first one found is kept.)
 
 **Speed minimum.** If $T_{\text{spd}} + \sum_{i \ge p} \max\bigl(0, \max_{x \in P_{s_i}} v_{\text{spd}}(x)\bigr) < m$, the minimum can no longer be reached.
 
-**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 17,316 database rows), so the total can only grow along a branch.
+**Speed maximum.** A candidate is skipped if adding it would push the speed total past $M$. All real item stats are non-negative (checked over all 20,031 database rows), so the total can only grow along a branch.
 
 **Ring pair.** Both bounds use the best value in each remaining slot independently, except that the two ring slots are bounded together. At the first ring slot the two add at most the best **legal pair**: the best ring twice if it has 2 copies, otherwise the best ring plus the best ring of another item (the best alone if there is none). Every legal pair is at most this: a pair with the best ring adds the best other item at most, and a pair without it has both members at most the best other item.
 
@@ -288,6 +288,18 @@ Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, includin
 Synced runs leave fewer candidates after pruning (119 against 169 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level. Across the Sage and Warrior full pools, caps 123 to 660 and no sync, and five objectives, the slowest run takes about 20 ms without melds and 42 ms with them.
 
 Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149 and the largest 203 (Summoner, items 260 to 300, unsynced). Before the ring-pair bound they were 73, 18,178 and 191,023. The largest was Ninja and Viper, items 600 to 640, unsynced, Skill Speed: most armor there has no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so counting it twice left the bound 42 points too high to cut those ties. Rerun on 2026-10-12 with both searches side by side: the same total in all 9,800 runs, none truncated.
+
+### Item level floor 15 (2026-10-15)
+
+Lowering the database floor from item level 100 to 15 made every job's pool 21 to 33% larger. The quick benchmark (`npm run perf`: SGE, WAR, PLD, BLM, DNC, SAM, 7,884 runs), run on the same PC on the last commit before the change and after it, one run each with nothing else running:
+
+| | Before | After |
+| --- | ---: | ---: |
+| Melds off, median / 95th percentile | 17.8 / 29.1 ms | 22.4 / 36.4 ms |
+| Melds on, median / 95th percentile | 28.0 / 42.6 ms | 34.6 / 52.4 ms |
+| Largest search (melds on / off) | 702 / 377 nodes | 555 / 380 nodes |
+
+The time grows with the pool (each piece is scored and pruned before the search); the searches are no larger. Both runs miss the script's budgets on this PC, which were set on an earlier, smaller workload. The owner accepted the slowdown (accuracy first). Without the bound for blocking pieces in section 5, level sync below 50 hit the node limit.
 
 ### Stress test (2026-10-14)
 

@@ -11,6 +11,7 @@ import { kindFactors, browseItems, poolItemFromRow } from '../../src/core/items.
 import { effStats } from '../../src/core/optimizer/index.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { restoreState } from '../../src/ui/state.js';
+import { MODEL_MIN_ILVL } from '../../src/core/validation.js';
 
 const row = name => {
   const r = ITEMS.find(x => x[0] === name);
@@ -28,7 +29,7 @@ test("the job's own factor equals the game files' factor on every piece of its o
     const job = makeJobContext(id);
     let n = 0;
     for (const r of ITEMS) {
-      if (!(r[4] & (1 << job.jobIndex))) continue;
+      if (!(r[4] & (1 << job.jobIndex)) || r[2] < MODEL_MIN_ILVL) continue;
       const st = stats(r);
       const mains = RAW_MAIN_IDX.filter(i => st[i]).map(i => ITEM_STAT_ORDER[i]);
       if (mains.length !== 1 || mains[0] !== job.profile.main) continue;
@@ -44,7 +45,7 @@ test('the only pieces whose factors differ from the job rule are kind 0: the fou
   const odd = new Set();
   for (const [id] of JOBS) {
     const job = makeJobContext(id);
-    for (const p of browseItems(job, {})) {
+    for (const p of browseItems(job, { ilvlMin: MODEL_MIN_ILVL })) {
       const f = kindFactors(job, p.kind);
       if (f.main !== 1 || f.vit !== jobFactor(job, 'vit')) odd.add(p.name);
     }
@@ -72,7 +73,7 @@ test('pieces with all four main stats: every main stat and Vitality at the full 
   assert.equal(rnd(rnd((IL.mind[160] * 135) / 1000) * 0.9), 54);
   assert.equal(rnd(rnd((IL.vit[160] * 135) / 1000) * 0.9), 54);
   assert.deepEqual(stats(coat).slice(0, 5), [54, 54, 54, 54, 54]);
-  const four = ITEMS.filter(r => RAW_MAIN_IDX.every(i => stats(r)[i]));
+  const four = ITEMS.filter(r => r[2] >= MODEL_MIN_ILVL && RAW_MAIN_IDX.every(i => stats(r)[i]));
   assert.equal(four.length, 13);
   for (const r of four) assert.deepEqual(predictRaw(r[2], r[1], stats(r), r[9]), stats(r), r[0]);
 });

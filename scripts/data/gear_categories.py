@@ -43,7 +43,7 @@ CATEGORY_BY_CODE = {
     210: 'grand_company',
     220: 'grand_company',
     230: 'grand_company',
-    250: 'diadem',
+    250: 'diadem',  # equip level 60; at equip level 50 or below the same code is A Realm Reborn's Aetherial gear
     270: 'dungeon',
     300: 'crafted',  # augmented crafted gear (Shadowbringers on)
     310: 'wondrous_tails',
@@ -51,13 +51,19 @@ CATEGORY_BY_CODE = {
     350: 'fate',
     370: 'field_op',  # Occult Crescent accessories; also one Hall of the Novice ring
     410: 'pvp',  # every piece is sold for Wolf Marks
+    430: 'gold_saucer',  # level 50 weapons bought with MGP
     450: 'gil_vendor',
+    470: 'crafted',  # Replica Allagan and replica relic weapons (glamour), every one has a recipe
     500: 'achievement',
     510: 'quest',
+    520: 'venture',  # retainer venture rewards (Explorer's, Mage's, Thormoen's ...)
     530: 'quest',  # starting gear of jobs that begin above level 1
+    830: 'seasonal_event',  # Hatching-tide egg caps
+    921: 'collaboration',  # Yo-kai Watch weapons (Legendary Shogunyan Medals)
     922: 'collaboration',
     923: 'collaboration',
     980: 'promotional',
+    990: 'legacy',  # 1.0 leftovers (the Dated gear) and other retired rewards; left out of the database
 }
 # The few pieces whose code says the wrong thing, checked on the Lodestone and the Console Games Wiki. Keyed by item id,
 # with the expected name so a patch that reuses an id stops the run (as for the ultimate totems).
@@ -70,11 +76,15 @@ CURRENCY_OVERRIDES = {
 # Single pieces -> category:
 ITEM_OVERRIDES = {
     44410: ("Neophyte's Ring", 'quest'),  # code 370 (Occult Crescent), but the Hall of the Novice final reward
+    2752: ('Peregrine Helm', 'venture'),  # code 990 (legacy), but a Quick Exploration venture reward today
 }
-CATEGORIES = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op'})
-# Gear that can no longer be obtained, left out of the database: the Heavensward Diadem gear (code 250; checked on the
-# Console Games Wiki, docs/engineering/subcategory-sort-codes.md).
-RETIRED = frozenset({'diadem'})
+CATEGORIES = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op', 'aetherial'})
+# Gear left out of the database (checked on the Console Games Wiki, docs/engineering/subcategory-sort-codes.md):
+# - code 250, whose secondary attributes are random, so the stats in the game files are not what a piece has: the
+#   Heavensward Diadem gear (equip level 60, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below);
+# - code 990, gear that can no longer be obtained: 1.0 leftovers and retired achievement and event rewards.
+LEFT_OUT = frozenset({'diadem', 'aetherial', 'legacy'})
+AETHERIAL_MAX_EQUIP = 50  # code 250 at or below this equip level is Aetherial gear, above it Diadem gear
 CODE_DIVISOR = 1000
 # a piece's SubcategorySort below 1000 has no job or role prefix; the code is still the last three digits
 
@@ -151,6 +161,8 @@ def categorize(csv_dir, kept, weapon_slots):
             cat = 'savage'
         elif code in (60, 61) and row[8] & ultimate:  # bought with an ultimate totem
             cat = 'ultimate'
+        elif code == 250 and row[3] <= AETHERIAL_MAX_EQUIP:
+            cat = 'aetherial'
         out[r['#']] = overrides.get(r['#'], cat)
     if unknown:
         listed = ', '.join(f'{c} ({n} pieces)' for c, n in sorted(unknown.items()))

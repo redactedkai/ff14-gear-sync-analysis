@@ -10,7 +10,7 @@ All numbers were produced by running the code against the data in this repositor
 
 | Source | What it gives | Used for |
 | --- | --- | --- |
-| Game item data (`Item` sheet) | Final stats of 17,316 real combat pieces | Sections 2, 4 and 6 |
+| Game item data (`Item` sheet) | Final stats of 17,316 real combat pieces at item level 100 and up | Sections 2, 4 and 6 |
 | FFXIV Wiki, Item Level Sync page | Substat caps at item level 475 | The sync clamp (section 3) |
 | Game `BaseParam` sheet (`MeldParam`) and `Item.BaseParamModifier` | Per-item stat percentages | The stat factor (section 2) |
 | xivgear (community gear planner), [source at commit 6c3c878](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts) | Its sync cap code and in-game notes in its tests | Off-hand rule, cap order (section 8) |
@@ -56,7 +56,8 @@ Every stat on the piece has to match, not just one.
 
 - **The budget table, the slot shares, the double rounding and the stat factor** are confirmed by these matches. The factor is read from the game files for each item ([math.md, section 4](math.md#the-stat-factor-of-an-item)). With a single rounding the same check gives 80.0% exact (13,306; [math.md, section 4](math.md#the-formula)).
 - **Main Attribute and Secondary Attribute.** Sixteen pieces carry the game's generic Main Attribute and Secondary Attribute (`BaseParam` 55 and 56) instead of a named main stat: the ten Occult accessories, the five pre-order earrings and Neophyte's Ring. The check counts Main Attribute as a main stat and Secondary Attribute as a substat, each with its own factor (100 for every item kind). The ten Occult accessories at 745 are exact with the file's factors. The six all-jobs earrings and rings are exact with their own factors (below); Neophyte's Ring's Determination 25 is the 70% share next to Secondary Attribute 35 (**verified**).
-- **Whole database** (17,316 pieces, every item level, outside the band table): 17,292 exact (99.9%), 24 off by 1 (the misses below) and none off by more. The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
+- **Below item level 100** (2,715 pieces, item level 15 to 99, in the database since 2026-10-15; outside every check here): 2,673 exact (98.5%), 2,695 within 1 (99.3%), 20 off by more. Not examined; the patterns below were measured at 100 and up, and the stat factor, three-substat and four-main-stat tests stop there too.
+- **Whole database at item level 100 and up** (17,316 pieces, outside the band table): 17,292 exact (99.9%), 24 off by 1 (the misses below) and none off by more. The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
 - **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4](../engineering/data-pipeline.md#stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.\n- **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
 - **The shares stay inferred.** The 100 / 70 substat shares and the fixed 20% Direct Hit line on Mind-only gear remain an **inferred** pattern. They fit almost every piece, but the game files do not store them. Why the relic weapon steps carry two full substats is **not known**; the data only shows the pattern.
 - Every piece is within 1 on every stat; 110–135 and 601+ are 100.0% exact.
@@ -83,7 +84,7 @@ These misses are not explained. They affect only Piece stats: the optimizer and 
 - **The six all-jobs earrings and rings** (item kind 0 with Main Attribute: Neophyte's Ring, the Aetheryte, Bozjan, Menphina's, Azeyma's and Halone's earrings) follow three factor patterns: Vitality 90% with Main Attribute full (Neophyte's, Aetheryte); both full (Bozjan, Menphina's, Azeyma's; their kind gives Vitality 90%); both 90% (Halone's: Main Attribute 212 where the full value is 236, although its own factor is 100).
   - The stats were edited by hand patch by patch, with the factor table, item level and kind unchanged (**verified**, xivapi/ffxiv-datamining history). Neophyte's Main Attribute was 26 at 7.1, 29 at 7.2; Aetheryte 95 / 104 / Vitality 96 at 5.55, 51 / 53 / 46 at 6.0; Bozjan's Determination 124 at 5.35, 177 at 5.4.
   - The model gives each its own main stat and Vitality factor, by name (owner's decision; a test fails if a new piece joins the group).
-  - Stored stats only: synced, the game applies the file's 90% (in-game values quoted in xivgear's tests, section 8), which the sync caps already use.
+  - Stored stats only: synced, the game applies the file's 90% (in-game values quoted in xivgear's tests, section 8), which the sync caps already use. One player report conflicts with this under level sync (section 8, "Conflicting report").
 
 **Tests.** The validation unit test:
 
@@ -236,6 +237,17 @@ What the table shows:
 - **Settles the cap order.** Every value fits the factor-first cap, $\operatorname{round}(\lfloor \lfloor B \times F/100 \rfloor \times p/100 \rfloor / 10)$; the item order misses three of them by 1 (in game Blue Mage is 1 lower, Red Mage and Azeyma's 1 higher). The model computes caps factor first ([math.md, section 5](math.md#the-clamp-rule)). The Red Mage value also shows that a cap is not always what a same-slot piece at the cap carries: the native item level 530 head has Vitality 122.
 - **Item stats keep the item order.** For an item's own stats the item order is far better: it matches 5,820 of 5,842 Intelligence and Mind pieces on Vitality, against 4,639 for factor first. For a factor of 100 the two orders give the same number at every item level and slot share, so substat caps (and the Wiki check in section 3) are unaffected.
 - The sync cap order unit test turns every row of the table into a test case, on the real items where the note names one.
+
+**Conflicting report: the all-jobs earrings under level sync.** A player wrote in an issue on another tool ([ffxiv-characterstatus-refined #32](https://github.com/Kouzukii/ffxiv-characterstatus-refined/issues/32), 2026-04-20, with a screenshot): "the Azeyma's Earring in Final Coils (i130) should be capping Str at 26, Vit at 28, and substats at 24", and that the Aetheryte Earring, Menphina's Earring and Neophyte's Ring behave the same. Final Coil is level 50, and the earring scales with level ([math.md, section 5](math.md#which-pieces-are-synced)), so it is synced to 130.
+
+| Azeyma's Earrings at 130 | Main stat | Vitality | Substat |
+| --- | --- | --- | --- |
+| The report | 26 | 28 | 24 |
+| Cap with the file's 90% (the model, xivgear, ffxiv-gearing) | 23 | 25 | 24 |
+| Cap at 100% | 26 | 28 | 24 |
+
+- The report fits the full factor on the main stat and Vitality; the Azeyma's row above (item level sync to 430, main stat 71) fits the 90%. Both are second-hand. The two differ in how the piece is synced (level sync on scaling gear against an item level cap), which might explain it (**inferred**, a guess).
+- Not acted on (owner's decision, 2026-10-15): the model keeps the 90% on these six pieces. If the report is right, their main stat and Vitality are too low under level sync (by 3 at 130), in all three tools, so neither the ffxiv-gearing check (section 9) nor the xivgear check can show it. A capture in a level-synced duty wearing one of them would settle it.
 
 **Evidence for question 2 (lower-ranked substats).** None of these are captures by this project. The numbers were checked against this project's data.
 

@@ -16,31 +16,44 @@ function bestPair(list, f) {
   return f(top) + other;
 }
 
-/* remMax[d][i]: most of dimension d slots i.. can still add; remSc[i]: best score they can still add.
+/* remMax[d][i]: most of dimension d slots i.. can still add; remSc[i]: best score they can still add. Each is a sum of
+   per-slot bounds, slotMax[d][i] and slotSc[i], which a branch subtracts for a slot a chosen piece leaves empty.
+   A piece that leaves later slots empty (legs that cover the feet) is bounded together with them: its slot's bound is
+   its value minus the bounds of the slots it blocks, so the bound never counts both the piece and those slots (counted
+   twice, the search hit its node limit below level 50, where every piece syncs to nearly the same item level). Every
+   blocked slot comes after its blocker (buildCandidates), so those bounds are known when its slot is reached.
    At the first of the two ring slots the two are bounded together by the best legal pair (bestPair); counting the
    best ring twice, as a sum of single-slot bounds does, overstates the bound whenever that ring is Unique. */
 export function suffixBounds(slotList, posList, dims) {
   const n = posList.length;
-  const remMax = {};
+  const posOf = new Map(slotList.map((t, i) => [t, i]));
+  const remMax = {},
+    slotMax = {};
   dims.forEach(d => {
     remMax[d] = new Array(n + 1).fill(0);
+    slotMax[d] = new Array(n).fill(0);
   });
   const remSc = new Array(n + 1).fill(0);
+  const slotSc = new Array(n).fill(0);
   for (let i = n - 1; i >= 0; i--) {
+    const list = posList[i];
     if (slotList[i] === 'ring' && slotList[i + 1] === 'ring') {
-      const list = posList[i];
       dims.forEach(d => {
         remMax[d][i] = remMax[d][i + 2] + bestPair(list, a => Math.max(0, a.v[d]));
       });
       remSc[i] = remSc[i + 2] + bestPair(list, a => a.sc);
       continue;
     }
+    // the bound of one piece here, less the bounds of the later slots it blocks
+    const own = (a, value, bounds) => (a.blocks || []).reduce((x, b) => (posOf.get(b) > i ? x - bounds[posOf.get(b)] : x), value);
     dims.forEach(d => {
-      remMax[d][i] = remMax[d][i + 1] + Math.max(0, ...posList[i].map(a => a.v[d]));
+      slotMax[d][i] = Math.max(0, ...list.map(a => own(a, a.v[d], slotMax[d])));
+      remMax[d][i] = remMax[d][i + 1] + slotMax[d][i];
     });
-    remSc[i] = remSc[i + 1] + Math.max(...posList[i].map(a => a.sc));
+    slotSc[i] = Math.max(0, ...list.map(a => own(a, a.sc, slotSc)));
+    remSc[i] = remSc[i + 1] + slotSc[i];
   }
-  return { remMax, remSc };
+  return { remMax, remSc, slotMax, slotSc };
 }
 
 /* spdMin, spdMax: optional bounds on the speed total (null for none).
@@ -51,7 +64,7 @@ export function suffixBounds(slotList, posList, dims) {
    bound still counted a head, was almost never pruned under sync). */
 export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLimit }) {
   const nSlots = slotList.length;
-  const { remMax, remSc } = suffixBounds(slotList, posList, dims);
+  const { remMax, remSc, slotMax, slotSc } = suffixBounds(slotList, posList, dims);
   let best = null,
     bestSc = -Infinity,
     nodes = 0,
@@ -64,9 +77,10 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
   const used = new Map();
   const blockedBy = new Map(); // slot type -> the chosen candidate that leaves it empty
   const posOf = new Map(slotList.map((t, i) => [t, i])); // blockable slots appear once (rings are never blocked)
-  const maxSc = posList.map(list => Math.max(...list.map(a => a.sc)));
-  const maxSpd = posList.map(list => (dims.includes('spd') ? Math.max(0, ...list.map(a => a.v.spd)) : 0));
-  let blockedSc = 0, // best score and speed of the later slots currently blocked
+  // per-slot bounds (suffixBounds) of the slots a chosen piece blocks come off the remaining bound
+  const maxSc = slotSc;
+  const maxSpd = dims.includes('spd') ? slotMax.spd : new Array(nSlots).fill(0);
+  let blockedSc = 0, // bounds of the later slots currently blocked
     blockedSpd = 0;
 
   function dfs(pos, sc) {

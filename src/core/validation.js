@@ -4,6 +4,10 @@ import { RAW_SUBSTAT_IDX, RARITY_FIELD, WEAPON_PCT } from './constants.js';
 import { IL, ITEMS } from './tables.js';
 import { rnd, predictRaw } from './formulas.js';
 
+/* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).
+   The database starts lower (item level 15, gen_items.py MIN_ILVL) for gear worn in low-level duties; below this its
+   own stats are carried as they are and never predicted. */
+export const MODEL_MIN_ILVL = 100;
 export const ACCURACY_MIN_ILVL = 110;
 export const ACCURACY_BANDS = Object.freeze([
   { label: '110–135', max: 135 },

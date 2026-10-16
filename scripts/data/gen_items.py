@@ -33,7 +33,7 @@ import provenance
 from gear_sources import sources as gear_sources
 from item_format import N_ITEM_PARAMS, SchemaError, item_columns, load_format, meld_fields, read_csv, run_main, stat_factors
 
-MIN_ILVL = 100
+MIN_ILVL = 15
 
 
 def crafter_gatherer_params(base_param_csv, fmt):
@@ -279,7 +279,7 @@ def main(csv_dir, out, source='detect'):
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     masks = gear_categories.source_masks(kept, cats)
-    rows = [[*row[:8], masks[r['#']], *row[9:]] for r, row in kept if cats[r['#']] not in gear_categories.RETIRED]
+    rows = [[*row[:8], masks[r['#']], *row[9:]] for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
     # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields and the rowField
     # of rarity, gameId and levelScaled)
     fields = {**fmt['materia']['rowFields'], **{k: fmt[k]['rowField'] for k in ('rarity', 'gameId', 'levelScaled')}}

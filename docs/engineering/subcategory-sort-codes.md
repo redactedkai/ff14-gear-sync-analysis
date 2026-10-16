@@ -5,7 +5,7 @@
 How to read the table:
 
 - **Category** is the one the code is filed under. Where a piece is moved to another category, the note says by what.
-- **Pieces** counts the gear the generator keeps (item level 100+, game data `d9582a6`) before retired gear is left out, so the Diadem gear is counted.
+- **Pieces** counts the gear the generator keeps before the gear left out is dropped (so the Diadem and Aetherial gear is counted): item level 100+ at game data `d9582a6` for the codes found there; the codes added when the floor moved to item level 15 (430, 470, 520, 830, 921, 990, Aetherial) count item level 15 to 99 at `a67c23b`. Lower floors also added pieces to older codes (Grand Company, PvP, dungeon), not recounted here.
 - ✅ = checked against the wiki or Lodestone, one piece per group.
 
 | Code | Category | Pieces | Examples | Meaning | Status |
@@ -24,7 +24,7 @@ How to read the table:
 | 140 | Field Op | 7 | Kirin's Osode, Vermilion Cloak | The five Kirin's Osode (Eureka side set) and the two Vermilion Cloaks (body covering the head) | ✅ Verified (Kirin's Osode; the cloaks' origin not checked) |
 | 150 | Field Op | 176 | Bozjan, Law's Order, Blade's | Bozja armor and accessories | ✅ Verified |
 | 210 / 220 / 230 | Grand Company | 17 each | Serpent / Storm / Flame | Twin Adder / Maelstrom / Immortal Flames gear (same as the `GrandCompany` column) | ✅ Verified |
-| 250 | Diadem | 293 | Mistfall, Sunburst, Coven | Heavensward Diadem gear, retired (random substats); left out of the database | ✅ Verified |
+| 250 | Diadem (equip level 60); Aetherial (equip level 50 or below) | 293 + 487 | Mistfall, Sunburst, Coven; Aetherial Brass Viking Sword | Heavensward Diadem gear (retired) and A Realm Reborn's Aetherial gear (dungeon and treasure loot, item level 14 to 50). Both have random secondary attributes (the item text says "This weapon's secondary attributes are random."; the export's descriptions are empty), so the stats in the game files are not what a piece has: both are left out of the database | ✅ Verified (Diadem: retired; Aetherial: the random attributes on the Console Games Wiki item page, second-hand game text) |
 | 270 | Dungeon | 3,387 | Ktiseos, Riversbreath, Mistwake | Dungeon drops | ✅ Verified |
 | 300 | Crafted (augmented) | 675 | Augmented Exarchic, Augmented Courtly Lover's | Crafted gear upgraded with certificates (ShB on) | ✅ Verified |
 | 310 | Wondrous Tails | 91 | Ornate … | Ornate copies of crafted body pieces | ✅ Verified |
@@ -32,13 +32,19 @@ How to read the table:
 | 350 | FATE | 1 | Kidomaru | FATE reward | ✅ Verified |
 | 370 | Field Op | 11 | Occult …, Neophyte's Ring | Occult Crescent accessories. Exception: Neophyte's Ring is a Hall of the Novice reward (filed under Quest, overridden by item id) | ✅ Verified |
 | 410 | PvP | 340 | Hellwolf, Werewolf, Battleliege, Althyk's | PvP gear (item level 100–205) | ✅ Verified (game shop data: all 340 sold for Wolf Marks) |
+| 430 | Gold Saucer | 26 | Blood Sword, Ai Apaec, Cross Pattee, Senor Sabotender | Level 50 weapons bought with MGP at the Gold Saucer (item level 50) | ✅ Verified |
 | 450 | Gil vendor | 1 | Kettle Knuckles Nexus | Basic gear sold for gil | ✅ Verified |
+| 470 | Crafted | 124 | Replica Allagan Blade, Replica Allagan Cane | Replica Allagan and relic glamour weapons (item level 50); every one is a recipe result | ✅ Verified (recipe: Master Blacksmith IV, Master Goldsmith IV) |
 | 500 | Achievement | 6 | Field Commander's, Warlord's Crown | Achievement reward | ✅ Verified |
 | 510 | Quest | 10 | Nameless, Red | Quest reward (Samurai, Red Mage starter gear) | ✅ Verified |
+| 520 | Venture | 37 | Thormoen's Pride, Explorer's, Mage's, Stonewall, Gysahl Ring | Retainer venture rewards (Quick and Field Exploration), item level 49 to 52 | ✅ Verified |
 | 530 | Quest (job starter) | 32 | Outsider's, Bookwyrm's, Weathered Painter's | Starter gear of GNB, DNC, SGE, RPR, VPR, PCT | ✅ Verified |
+| 830 | Seasonal event | 4 | Chocobo Egg Cap, Midnight Egg Cap | Hatching-tide egg caps (item level 15 to 40), sold for gil after the event | ✅ Verified |
+| 921 | Collaboration | 14 | Whisker of the Brave Cat, Ears of the Moon Rabbit | Yo-kai Watch collaboration weapons (item level 30), bought with Legendary Shogunyan Medals | ✅ Verified |
 | 922 | Collaboration | 119 | Makai, Mado, The Fanged Wolf | GARO collaboration gear, bought with Wolf Marks (PvP) | ✅ Verified |
 | 923 | Collaboration | 44 | Veldian, Augmented Veldian | Monster Hunter crossover weapons (The Windward Wilds, 7.35) | ✅ Verified |
 | 980 | Promotional (pre-order) | 4 | Aetheryte, Menphina's, Azeyma's, Halone's | Expansion pre-order bonus earrings (level-scaled stats) | ✅ Verified (3 of 4; Halone's is reported as the Evercold pre-order bonus, not yet official) |
+| 990 | Legacy | 1 | Chocobo Mask (and 1,121 "Dated" pieces with no combat stats) | Gear from version 1.0 and retired rewards: the "Dated" gear, the Chocobo Mask (achievement), White Ravens (The Rising 2018); left out of the database. Exception: the Peregrine Helm is a Quick Exploration venture reward today (filed under Venture, overridden by item id) | ✅ Verified (retired notices on the Console Games Wiki; the "Dated" gear has no wiki pages and no shop or recipe in the game files) |
 
 ## Field Op gear
 
@@ -83,7 +89,7 @@ Relic glamour replicas use 470. Curtana Ultima (375) is 60. So "relic weapon, an
 
 | Concept | File |
 | --- | --- |
-| Code to category table, overrides, retired gear | `scripts/data/gear_categories.py` (`CATEGORY_BY_CODE`, `CURRENCY_OVERRIDES`, `ITEM_OVERRIDES`, `RETIRED`) |
+| Code to category table, overrides, gear left out | `scripts/data/gear_categories.py` (`CATEGORY_BY_CODE`, `CURRENCY_OVERRIDES`, `ITEM_OVERRIDES`, `LEFT_OUT`) |
 | Savage currencies and the dye-slot cross-check | `scripts/data/gear_categories.py` (`savage_items`, `check`) |
 | Ultimate totems, recipe and tomestone flags | `scripts/data/gear_sources.py` (`ULTIMATE_TOTEMS`) |
 | Categories of each source group | `src/core/item-format.json` (`sources`) |

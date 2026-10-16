@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `python scripts/data/regen.py` afterwards. `sources`: bit i of an item row's source mask is sources[i], the groups the Gear pool tab can exclude, in the order the page shows them: set when the piece's category (scripts/data/gear_categories.py) is in `categories`, or when gear_sources.py flags it (crafted, tomestone, ultimate). `currentOnly`: only pieces of the current expansion, whose equip level is the highest in the database. A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; a `twoHanded` weapon blocks the off-hand). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv. `crafterGathererParams`: crafter and gatherer stats (BaseParam row id and name); gen_items.py leaves out any piece that carries one, normal or HQ, and stops if a row id no longer has that name.",
+  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `python scripts/data/regen.py` afterwards. `sources`: bit i of an item row's source mask is sources[i], the groups the Gear pool tab can exclude, in the order the page shows them: set when the piece's category (scripts/data/gear_categories.py) is in `categories`, or when gear_sources.py flags it (crafted, tomestone, ultimate). `currentOnly`: only pieces of the current expansion, whose equip level is the highest in the database. A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; 13: legs that also cover the feet; 14: a body piece that also covers the hands, legs and feet; a `twoHanded` weapon blocks the off-hand). BaseParam's share columns follow EquipSlotCategory rows in order and their names are the dataminers' own: code 14 (EquipSlotCategory 16) reads the 16th column, named ChestHeadLegsFeetPercent although the piece leaves the head free (440 fits Herklaedi's stats). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv. `crafterGathererParams`: crafter and gatherer stats (BaseParam row id and name); gen_items.py leaves out any piece that carries one, normal or HQ, and stops if a row id no longer has that name.",
   "jobs": [
     "PLD",
     "WAR",
@@ -83,6 +83,22 @@
       "blocks": ["head"],
       "percent": 220,
       "baseParamColumn": "ChestHeadPercent"
+    },
+    {
+      "code": 13,
+      "type": "legs",
+      "equipSlotColumn": "Legs",
+      "blocks": ["feet"],
+      "percent": 220,
+      "baseParamColumn": "LegsFeetPercent"
+    },
+    {
+      "code": 14,
+      "type": "body",
+      "equipSlotColumn": "Body",
+      "blocks": ["hands", "legs", "feet"],
+      "percent": 440,
+      "baseParamColumn": "ChestHeadLegsFeetPercent"
     }
   ],
   "sources": [

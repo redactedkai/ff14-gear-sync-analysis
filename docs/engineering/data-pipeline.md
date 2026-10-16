@@ -134,7 +134,7 @@ An `Item` row becomes a database row when all of these hold:
 
 1. it has a name;
 2. its equip slot category resolves to a slot (section *Slot*), which rules out belts, soul crystals and non-gear;
-3. its item level is at least 100;
+3. its item level is at least 15;
 4. at least one of the 23 combat jobs may equip it (job mask $> 0$), which rules out crafter and gatherer gear and gear only a base class (for example Gladiator) can wear;
 5. at least one of its 14 stats is non-zero after the HQ rule below;
 6. it carries no crafter or gatherer stat (GP, CP, Craftsmanship, Control, Gathering, Perception), normal or HQ;
@@ -144,8 +144,8 @@ An `Item` row becomes a database row when all of these hold:
 Notes on the rules:
 
 - **Rule 6.** Such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in the shared format file, and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality. The formula could not predict them, because crafter and gatherer Vitality follows no share of the combat budget.
-- **Rule 7.** There is no such piece at item level 100 or above today (section *Slot*).
-- **Rule 8.** The Heavensward Diadem gear (category diadem, code 250) can no longer be obtained, so it is left out (**verified** on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). The generator prints nothing about them; the counts are in the table below.
+- **Rule 7.** There is no such piece today: the two shapes below item level 100 have slot codes (section *Slot*).
+- **Rule 8.** Three categories are left out (checked on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)). Code 250 gear has random secondary attributes, so the stats in the game files are not what a piece has (**second-hand**: the item text, which the export does not carry): the Heavensward Diadem gear (equip level 60, 293 pieces, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below, 487 pieces). Code 990 is gear that can no longer be obtained (1 piece reaches this rule, the Chocobo Mask; the version 1.0 "Dated" gear has no combat stats and stops earlier). The generator prints nothing about them; the counts are in the table below.
 
 For the current data, each rule leaves:
 
@@ -154,18 +154,18 @@ For the current data, each rule leaves:
 | all `Item` rows | 52,801 |
 | has a name | 50,880 |
 | resolves to a slot | 29,026 |
-| item level ≥ 100 | 19,843 |
-| a combat job can equip it | 17,662 |
-| at least one stat | 17,614 |
-| no crafter or gatherer stat | 17,609 |
-| its slots match a slot code | 17,609 |
-| not retired (Diadem gear left out) | **17,316** |
+| item level ≥ 15 | 24,778 |
+| a combat job can equip it | 22,155 |
+| at least one stat | 20,817 |
+| no crafter or gatherer stat | 20,812 |
+| its slots match a slot code | 20,812 |
+| not left out (Diadem, Aetherial and legacy gear) | **20,031** |
 
-The item level floor of 100 is a choice of this project, not a game rule; gear below it is not useful for the sync caps the page targets.
+The item level floor of 15 is a choice of this project (owner's decision, 2026-10-15), not a game rule: Sastasha, the lowest dungeon, opens at level 15 and syncs to level 18 with no item level requirement or item level sync (`ContentFinderCondition`, **verified**), so gear from item level 15 up can be worn there. Until then the floor was 100. Below 100 the database carries each piece's own stats, but the stat model's patterns (substat shares, factors) were measured at 100 and up only ([validation.md](../mechanics/validation.md)), and the item stat accuracy check starts at 110.
 
 ### Slot
 
-The slot is the first slot code, in format order, whose `EquipSlotCategory` column is 1. A main-hand item is **two-handed when the same category also blocks the off-hand** (off-hand column $= -1$) and one-handed when the off-hand column is 0. A piece must also block (value $-1$) exactly the slots its slot code names: none for most codes, the off-hand for a two-handed weapon, and the head for code 12, a body piece that also covers the head (the two Vermilion Cloaks, item level 300; share 220 per mille, the `ChestHeadPercent` column of `BaseParam`, which reproduces both cloaks' stats exactly). Other multi-slot combinations (legs that cover the feet, a body that covers hands, legs and feet) exist only below item level 100; if one appears above it, the generator leaves it out and prints its name. Rings set both FingerL and FingerR to 1 and are matched by FingerL.
+The slot is the first slot code, in format order, whose `EquipSlotCategory` column is 1. A main-hand item is **two-handed when the same category also blocks the off-hand** (off-hand column $= -1$) and one-handed when the off-hand column is 0. A piece must also block (value $-1$) exactly the slots its slot code names: none for most codes, the off-hand for a two-handed weapon, the head for code 12, a body piece that also covers the head (21 pieces, among them the two Vermilion Cloaks, item level 300; share 220 per mille, the `ChestHeadPercent` column of `BaseParam`, which reproduces both cloaks' stats exactly), the feet for code 13, legs that also cover the feet (the five Flanchards, item level 25 to 70; share 220), and the hands, legs and feet for code 14, a body that covers them (Herklaedi, item level 50; share 440). `BaseParam`'s share columns follow the `EquipSlotCategory` rows in order, and their names are the dataminers' own: code 14 reads the column named `ChestHeadLegsFeetPercent`, although Herklaedi leaves the head free; 440 gives its main stat, Vitality and first substat exactly (**verified**). Any other combination is left out and its name printed. Rings set both FingerL and FingerR to 1 and are matched by FingerL.
 
 ### Job mask
 
@@ -175,7 +175,7 @@ $$
 \text{mask} = \sum_{i=0}^{22} 2^{i}\,\bigl[\text{job}_i \text{ can equip the item}\bigr]
 $$
 
-"Can equip" means the job's column in the item's `ClassJobCategory` row is `True`. Base classes (Gladiator, Conjurer, ...) and crafting or gathering classes have no bit. In the example above, category 59 lists GLA MRD PLD WAR DRK GNB; Gladiator and Marauder are base classes, so only bits 0 to 3 are set and $\text{mask} = 2^0 + 2^1 + 2^2 + 2^3 = 15$. An item every job can wear has $\text{mask} = 2^{23} - 1 = 8{,}388{,}607$ (974 rows); Beastmaster's own gear has $\text{mask} = 2^{22}$ (35 rows).
+"Can equip" means the job's column in the item's `ClassJobCategory` row is `True`. Base classes (Gladiator, Conjurer, ...) and crafting or gathering classes have no bit. In the example above, category 59 lists GLA MRD PLD WAR DRK GNB; Gladiator and Marauder are base classes, so only bits 0 to 3 are set and $\text{mask} = 2^0 + 2^1 + 2^2 + 2^3 = 15$. An item every job can wear has $\text{mask} = 2^{23} - 1 = 8{,}388{,}607$ (1,531 rows); Beastmaster's own gear has $\text{mask} = 2^{22}$ (50 rows).
 
 ### Stats and the HQ bonus
 
@@ -185,13 +185,13 @@ $$
 \text{stat}_k = \sum_{j=0}^{5} \bigl[\text{id}_j = \text{id}(k)\bigr]\,\text{value}_j \;+\; \bigl[\text{can be HQ}\bigr] \sum_{j=0}^{5} \bigl[\text{id}^{\text{HQ}}_j = \text{id}(k)\bigr]\,\text{value}^{\text{HQ}}_j
 $$
 
-The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. Why the flag matters: 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)). By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each) and Beastmaster's own 35 pieces. Beastmaster's carry its Crucible bonus there (Strength and Vitality, `ItemSpecialBonus` 11; +9 / +9 on Guttler), which the game applies only inside the Crucible of the Unbroken (**second-hand**, Console Games Wiki); the tool leaves it out, as it does the Eureka and Bozja bonuses. With the rule, the bonus is applied to 4,398 rows.
+The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. Why the flag matters: 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)). By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each) and Beastmaster's own 35 pieces. Beastmaster's carry its Crucible bonus there (Strength and Vitality, `ItemSpecialBonus` 11; +9 / +9 on Guttler), which the game applies only inside the Crucible of the Unbroken (**second-hand**, Console Games Wiki); the tool leaves it out, as it does the Eureka and Bozja bonuses. With the rule, the bonus is applied to 5,245 rows. Below item level 100, 451 more pieces carry such values without being HQ-able, nearly all Grand Company gear (Storm, Flame and Serpent; Gridanian, Lominsan and Ul'dahn); the rule leaves them out too.
 
 Melds (materia) are not part of these stats: a database row holds the item as it drops or is crafted. What a piece can take is in its two meld fields (section *Materia slots*).
 
 ### Unique flag
 
-`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 12,815 of the 17,316 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
+`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 14,458 of the 20,031 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
 
 ### Sources
 
@@ -362,24 +362,25 @@ The recorded commit is the clone's newest commit, not the newest commit that cha
 
 | Fact | Value |
 | --- | --- |
-| Database rows | 17,316 |
-| Lowest / highest item level in the database | 100 / **795** (66 rows at 795) |
+| Database rows | 20,031 |
+| Lowest / highest item level in the database | 15 / **795** (66 rows at 795) |
 | `ItemLevel` rows | 921 (ids 0 to 920) |
 | Level data | levels 1 to 100 |
-| Unique rows | 12,815 |
-| Rows wearable by every job | 974 |
+| Unique rows | 14,458 |
+| Rows wearable by every job | 1,531 |
 
 Rows per slot:
 
 | Slot | Rows | Slot | Rows |
 | --- | --- | --- | --- |
-| two-handed weapon | 4,248 | feet | 1,707 |
-| one-handed weapon | 262 | earring | 965 |
-| off-hand | 259 | necklace | 965 |
-| head | 1,712 | bracelet | 965 |
-| body | 1,814 | ring | 968 |
-| hands | 1,707 | body covering the head | 2 |
-| legs | 1,707 | | |
+| two-handed weapon | 5,011 | feet | 1,953 |
+| one-handed weapon | 414 | earring | 1,062 |
+| off-hand | 357 | necklace | 1,058 |
+| head | 2,004 | bracelet | 1,059 |
+| body | 2,087 | ring | 1,091 |
+| hands | 1,956 | body covering the head | 21 |
+| legs | 1,952 | legs covering the feet | 5 |
+| | | body covering hands, legs and feet | 1 |
 
 ### Item levels above 795
 
@@ -416,7 +417,7 @@ One command, `npm run update-data`, does steps 1 and 2.
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page. Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 17,316 rows above.
+4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 20,031 rows above.
 
 Some test expectations are allowed to move after a patch and others must not; the list is in [testing.md, section 6](testing.md#6-after-a-game-patch).
 
