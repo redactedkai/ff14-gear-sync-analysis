@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="t d">
+  <title id="t">Tier ranking, one search per key</title>
+  <desc id="d">Dark Knight, level 90, item level 660, a GCD of exactly 2.30 with Nachos. Search 1 finds the most Critical Hit, 2,310 with food (29.3%, a tier starting at 2,309), and holds it at 2,310 or more. Search 2 finds the most Determination with that hold, 1,288 (+9.4%, a tier starting at 1,276), and holds it at 1,277 or more. Search 3 finds the most Direct Hit with both holds: 0. Search 4 ranks by raw totals under all three holds: Critical Hit 2,310, Determination 1,288, Direct Hit 0.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .stroke { stroke: #1b2a2c; stroke-width: 1.5; fill: none; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .accentStroke { stroke: #0d6e72; stroke-width: 1.5; fill: none; }
+    .good { fill: #25773a; }
+    .goodStroke { stroke: #25773a; stroke-width: 1.5; fill: none; }
+    .num { fill: #fffdf7; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .small { font-size: 13px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .head { font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .fg { fill: #e5eeed; }
+      .stroke { stroke: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .accentStroke { stroke: #4cc2b6; }
+      .good { fill: #6cc788; }
+      .goodStroke { stroke: #6cc788; }
+      .num { fill: #142023; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="accent"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="520"/>
+
+  <text class="fg title" x="40" y="36">Tier ranking: one search per key, each holding the keys before it</text>
+  <text class="muted small" x="40" y="58">Dark Knight, level 90, item level 660, GCD exactly 2.30 with Nachos. Goal: Critical Hit &gt; Determination &gt; Direct Hit.</text>
+
+  <!-- search 1 -->
+  <rect class="box" x="40" y="78" width="640" height="88" rx="8"/>
+  <circle class="accent" cx="70" cy="104" r="14"/>
+  <text class="num head" x="70" y="109" text-anchor="middle">1</text>
+  <text class="fg head" x="96" y="109">Most Critical Hit</text>
+  <text class="fg small" x="96" y="132">Reaches 2,310 with food: a 29.3% rate, a tier that starts at 2,309.</text>
+  <text class="accent small" x="96" y="153">Hold: Critical Hit ≥ 2,310 (the start + 1, or the most reached when that is less)</text>
+
+  <path class="accentStroke" d="M360,166 L360,186" marker-end="url(#arrow)"/>
+
+  <!-- search 2 -->
+  <rect class="box" x="40" y="190" width="640" height="88" rx="8"/>
+  <circle class="accent" cx="70" cy="216" r="14"/>
+  <text class="num head" x="70" y="221" text-anchor="middle">2</text>
+  <text class="fg head" x="96" y="221">Most Determination, with Critical Hit held</text>
+  <text class="fg small" x="96" y="244">Reaches 1,288: +9.4% damage, a tier that starts at 1,276.</text>
+  <text class="accent small" x="96" y="265">Hold: Determination ≥ 1,277 (the start + 1)</text>
+
+  <path class="accentStroke" d="M360,278 L360,298" marker-end="url(#arrow)"/>
+
+  <!-- search 3 -->
+  <rect class="box" x="40" y="302" width="640" height="88" rx="8"/>
+  <circle class="accent" cx="70" cy="328" r="14"/>
+  <text class="num head" x="70" y="333" text-anchor="middle">3</text>
+  <text class="fg head" x="96" y="333">Most Direct Hit, with both held</text>
+  <text class="fg small" x="96" y="356">Reaches 0: every stone left goes to the held keys and the speed band.</text>
+  <text class="accent small" x="96" y="377">Hold: Direct Hit ≥ 0</text>
+
+  <path class="accentStroke" d="M360,390 L360,410" marker-end="url(#arrow)"/>
+
+  <!-- search 4 -->
+  <rect class="box" x="40" y="414" width="640" height="88" rx="8"/>
+  <circle class="good" cx="70" cy="440" r="14"/>
+  <text class="num head" x="70" y="445" text-anchor="middle">4</text>
+  <text class="fg head" x="96" y="445">Raw order under all three holds: leftover points go to the target</text>
+  <text class="good small" x="96" y="468">Critical Hit 2,310 · Determination 1,288 · Direct Hit 0 · GCD 2.30</text>
+  <text class="muted small" x="96" y="489">Totals with food. Each search after the first starts from the one before's set.</text>
+</svg>

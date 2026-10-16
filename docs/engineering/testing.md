@@ -42,6 +42,8 @@ The unit tests need no browser because the core never touches the page (see [arc
 | optimizer-exhaustive | random pools, regressions, policies |
 | target-gcd | Target GCD: GCD reached, modes, meals |
 | target-gcd-exhaustive | Target GCD against the brute force |
+| stat-minimums | minimums on any stat against the brute force; seeds; the filters and fronts on tight cases against the plain search |
+| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out) |
 | views | what each tab shows |
 | sync-caps-view | the special substat column of Sync limits |
 | piece-subs | Piece stats substat ranks |

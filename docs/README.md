@@ -15,13 +15,14 @@ These pages explain the model behind it, the evidence for that model, and how th
 New to FFXIV: read the [glossary](glossary.md) first, or keep it open.
 
 1. **Mechanics**: [math.md](mechanics/math.md), then [validation.md](mechanics/validation.md), then [materia.md](mechanics/materia.md).
-2. **Engineering**: [architecture.md](engineering/architecture.md), [data-pipeline.md](engineering/data-pipeline.md), [optimizer.md](engineering/optimizer.md), [testing.md](engineering/testing.md). [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) is a reference table; open it when you need a code.
+2. **Engineering**: [architecture.md](engineering/architecture.md), [data-pipeline.md](engineering/data-pipeline.md), [optimizer.md](engineering/optimizer.md), [tier-ranking.md](engineering/tier-ranking.md), [testing.md](engineering/testing.md). [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) is a reference table; open it when you need a code.
 3. **Before changing anything**: [history.md](history.md) (mistakes not to repeat) and [roadmap.md](roadmap.md) (feature ideas and which are built).
 
 Shorter paths:
 
 - The math only: math.md, then validation.md.
 - The gear search only: optimizer.md, then materia.md sections 3 and 4 (section 4 uses the score from optimizer.md section 3).
+- Tier ranking: optimizer.md sections 2 to 6, then tier-ranking.md.
 - After a game patch: data-pipeline.md section 9, then testing.md section 6.
 
 ## Pages
@@ -41,6 +42,7 @@ Shorter paths:
 | [architecture.md](engineering/architecture.md) | Layers, the job context, the shared store and views, what is saved in the browser, the single-file build, the dev loop |
 | [data-pipeline.md](engineering/data-pipeline.md) | The game sheets used, fetching, the shared format file, item database rules and fields, the item level table, provenance, facts about the current data, the steps after a game patch |
 | [optimizer.md](engineering/optimizer.md) | How the best gear set is found: lexicographic score, dominance pruning, branch and bound, correctness and timing |
+| [tier-ranking.md](engineering/tier-ranking.md) | Ranking gear sets by stat tiers: the stages, and the shortfall filter, reduced-cost fixing and Pareto fronts that make those searches fast |
 | [testing.md](engineering/testing.md) | Test layers, what each test file covers, the brute-force reference, commands, conventions, which expected numbers may move after a patch |
 | [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) | Working notes: what each `Item.SubcategorySort` code means for gear, piece counts, and how each was checked |
 

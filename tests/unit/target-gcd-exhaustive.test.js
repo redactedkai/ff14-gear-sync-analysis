@@ -6,33 +6,13 @@
    gearNeeded. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { foodChoices, statBase } from '../../src/core/food.js';
+import { foodChoices } from '../../src/core/food.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize, prepare, solve } from '../../src/core/optimizer/index.js';
 import { gcdFor, gcdTierAt, hasteFor } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
-import { exhaustive, gamePool } from './helpers/exhaustive.js';
+import { exhaustive, foodAdd, gamePool, smallPool, WINDOWS } from './helpers/exhaustive.js';
 import { rng } from './helpers/common.js';
-
-const WINDOWS = [
-  { ilvlMin: 290, ilvlMax: 345 },
-  { ilvlMin: 560, ilvlMax: 600 },
-  { ilvlMin: 690, ilvlMax: 730 },
-];
-
-/* A small real pool: up to `n` distinct pieces per slot type (at least `least` where the window has them), from `window` or a random one of WINDOWS (the same object twice would be one Unique ring the
-   reference could pair with itself). */
-function smallPool(job, rand, types, n, least = 0, window = null) {
-  const int = k => Math.floor(rand() * k);
-  const all = gamePool(job, window ?? WINDOWS[int(WINDOWS.length)]);
-  const pool = [];
-  for (const ty of types) {
-    const of = all.filter(i => i.type === ty);
-    const m = ty === 'ring' ? 1 + int(n) : least + int(n + 1 - least);
-    for (let i = 0; i < m && of.length; i++) pool.push(of.splice(int(of.length), 1)[0]);
-  }
-  return pool;
-}
 
 /* GCD tier starts around the free result's speed `free` at `level`: two below (slower GCDs) and two above (faster). */
 function tiersAround(free, level) {
@@ -166,14 +146,6 @@ test('speed tables for blocked slots (built from the first node) match exhaustiv
   assert.ok(runs >= 100, `${runs} runs`);
   assert.ok(blocking >= 10, `${blocking} pools where a piece blocks a slot with candidates`);
 });
-
-/* Food, written out: min(max, floor(pct x (base + gear) / 100)) (math.md section 6); base = BaseSpeed for speed, the
-   level's main stat base for Determination and Piety (statBase, checked in food.test.js). */
-function foodAdd(job, meal, stat, gear, level) {
-  const s = meal?.stats.find(x => x.stat === stat);
-  if (!s) return 0;
-  return Math.min(s.max, Math.floor((s.pct * (statBase(job, stat, level) + gear)) / 100));
-}
 
 /* The gear speeds whose GCD with `meal` and `haste` is the target (exact) or at most it (min), by scanning every value;
    they form one band, which is checked. */

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-labelledby="t d">
+  <title id="t">Filters before the search</title>
+  <desc id="d">Search 3 of the Dark Knight example: maximize Direct Hit with Critical Hit at least 2,159 and Determination at least 1,277 in gear points, speed 1,035 to 1,092. The candidate lists hold 11,045 pieces with their meld versions. The shortfall filter leaves 137, pruning against the set in hand leaves 120. Pareto fronts then settle the search: the largest front holds 6,958 partial sets, and no set beats the one in hand, so Direct Hit 0 is proven best.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .accent { fill: #0d6e72; }
+    .accentStroke { stroke: #0d6e72; stroke-width: 1.5; fill: none; }
+    .bar { fill: #0d6e72; opacity: 0.85; }
+    .good { fill: #25773a; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
+    .small { font-size: 13px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .head { font-weight: 600; }
+    .mono { font-family: ui-monospace, Consolas, monospace; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .accent { fill: #4cc2b6; }
+      .accentStroke { stroke: #4cc2b6; }
+      .bar { fill: #4cc2b6; }
+      .good { fill: #6cc788; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="accent"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="400"/>
+
+  <text class="fg title" x="40" y="36">Before the search: drop what provably cannot matter</text>
+  <text class="muted small" x="40" y="58">Search 3 of the example: most Direct Hit, with Critical Hit ≥ 2,159 and Determination ≥ 1,277 in gear points</text>
+  <text class="muted small" x="40" y="76">and speed 1,035–1,092. Bar length: the number of candidates, on a log scale.</text>
+
+  <!-- bars: width = 320 x log10(n) / log10(11,045) -->
+  <text class="fg head" x="40" y="112">Prepared</text>
+  <rect class="bar" x="290" y="96" width="320" height="22" rx="4"/>
+  <text class="fg mono small" x="680" y="112" text-anchor="end">11,045</text>
+  <text class="muted small" x="40" y="132">every piece × its meld versions</text>
+
+  <path class="accentStroke" d="M120,140 L120,158" marker-end="url(#arrow)"/>
+
+  <text class="fg head" x="40" y="182">Shortfall filter</text>
+  <rect class="bar" x="290" y="166" width="169" height="22" rx="4"/>
+  <text class="fg mono small" x="680" y="182" text-anchor="end">137</text>
+  <text class="muted small" x="40" y="202">drops pieces too far below their slot's best of a held stat (budget: 5 points of Critical Hit)</text>
+
+  <path class="accentStroke" d="M120,210 L120,228" marker-end="url(#arrow)"/>
+
+  <text class="fg head" x="40" y="252">Pruning against the set in hand</text>
+  <rect class="bar" x="290" y="236" width="165" height="22" rx="4"/>
+  <text class="fg mono small" x="680" y="252" text-anchor="end">120</text>
+  <text class="muted small" x="40" y="272">drops pieces that no set beating the one from search 2 can hold (priced bound)</text>
+
+  <path class="accentStroke" d="M120,280 L120,298" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="40" y="304" width="640" height="76" rx="8"/>
+  <text class="fg head" x="60" y="330">Pareto fronts settle it in one pass</text>
+  <text class="fg small" x="60" y="352">10 steps from the last slot back; the largest front holds 6,958 partial sets.</text>
+  <text class="good small" x="60" y="370">Nothing beats the set in hand: Direct Hit 0 is proven best (265 ms for this search).</text>
+</svg>

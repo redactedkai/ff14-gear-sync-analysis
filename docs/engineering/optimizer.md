@@ -183,6 +183,8 @@ The other stats play no part, so this keeps far fewer candidates than full domin
 
 The candidates are sorted by score, then by speed, then by stat sum. As above, every beater comes first, and each candidate is compared only with the kept ones. With a maximum, the scan runs once for each speed value.
 
+**Minimums on other stats** (the engine side of tier ranking, roadmap A7) work the same way: each stat with a minimum joins speed in the comparison, and $x$ must have at least $y$'s value of every one. The swap keeps every minimum, so the proof is unchanged. The candidates are then sorted by score, then by the sum of the limited stats (`pruneForLimits`).
+
 ## 5. The search: depth-first branch and bound
 
 After pruning, each slot's candidate list is sorted by score, best first, then by stat sum (exact ties keep pool order). The search fills slots one at a time in the fixed order of section 2, trying candidates best first. It keeps the best complete loadout found so far, with score $\sigma^*$.
@@ -242,6 +244,20 @@ Blocked slots are not taken off the table bounds as they are off the plain ones.
 
 Measured on the synthetic pool above: 29 nodes with a speed minimum and 12 with a band, both against 700,001 (truncated) before.
 
+### With minimums on other stats
+
+A search may also hold any stat to a minimum (tier ranking, roadmap A7), alone or with the speed range. Each limited stat gets everything speed has above:
+
+- its own table, built the same way (`limitTables`);
+- its own minimum check;
+- a place in the group key and the memo key.
+
+The bound is the **smallest** of the tables. Each table is an upper bound with the other limits dropped, so the smallest is one too. A joint table over every limited stat would be exact but far too large ($10^{10}$ cells at level 100). Candidates must be prepared for the stats that may get a minimum (`prepare`'s `minStats`), since pruning and meld versions depend on them.
+
+Tier ranking's searches hold two or three stats near their most, often with a speed band, where these tables alone are weak. Three more steps run before the search there: a shortfall filter, pruning against a set already in hand (a seed), and Pareto fronts that often settle the search without a tree. They are explained in [tier-ranking.md](tier-ranking.md). The shortfall filter also runs on Target GCD searches (their speed minimum).
+
+With no minimums the search is the one above. Against the search before this change (2026-10-16), the plain optimizer gave the same results with the same node counts in 5,580 runs (`scripts/perf/compare.mjs --quick`), and Target GCD gave the same results in 2,045 runs of each mode, with slightly fewer nodes (198,473 against 199,862 in "exactly" mode) from the shortfall filter.
+
 ## 6. Melds in the search
 
 With melds on, every piece that is not synced enters the search with its best melds for the objective. The meld rules (stone values, item level gates, caps, sync) are in [materia.md, section 2](../mechanics/materia.md#2-the-rules); this section is how the best melds of one piece are found and why one melded version per piece is enough.
@@ -291,7 +307,7 @@ With a speed range, speed joins the keys of the split search above, and every sp
 - **Minimum only:** another split beats it when it gains at least as much on every key, speed included.
 - **With a maximum:** the same, but only at the same speed gain. A split with less speed can be what keeps a set under $M$.
 
-Each surviving split is one candidate of the piece. Every version shares the item, so copies and Unique rings still count once per piece. Pruning (section 4) then drops the versions that another candidate beats on score and speed.
+A stat with a minimum (tier ranking) joins the keys the same way as speed with a minimum only. Each surviving split is one candidate of the piece. Every version shares the item, so copies and Unique rings still count once per piece. Pruning (section 4) then drops the versions that another candidate beats on score and speed.
 
 **Why this is exact.** Take a best loadout and one of its pieces with melds $P$. Some kept split $Q$ gains at least as much as $P$ on every key, and (with a maximum) the same speed. Swapping $P$ for $Q$ does not lower the score, and the speed total rises (minimum only) or stays the same. So some best loadout uses only kept versions.
 
@@ -467,9 +483,10 @@ Notes:
 
 | Concept | File |
 | --- | --- |
-| Effective stats, item vectors, score weights, dominance pruning, candidate lists | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `pruneDominated`, `pruneForSpeed`, `buildCandidates`) |
+| Effective stats, item vectors, score weights, dominance pruning, candidate lists | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
-| Bounds, speed tables and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `speedTables`, `branchAndBound`) |
+| Bounds, limit tables, filters before the search and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `limitTables`, `dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `branchAndBound`) |
+| Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
 | Entry points: candidates once, search many times | `src/core/optimizer/index.js` (`prepare`, `solve`, `optimize`) |
 | Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`); `src/core/speed.js` (`speedForGcd`, `hasteFor`) |
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
@@ -478,4 +495,4 @@ Notes:
 | Page use: the job's gear, gear groups, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `NODE_LIMIT`, `optimizerView`) |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
-| Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js`, `tests/unit/target-gcd.test.js`, `tests/unit/target-gcd-exhaustive.test.js` |
+| Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js`, `tests/unit/target-gcd.test.js`, `tests/unit/target-gcd-exhaustive.test.js`, `tests/unit/stat-minimums.test.js` |

@@ -46,11 +46,9 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   let best = null,
     bestRank = null;
   for (const meal of meals) {
-    // the band on total speed as a band on gear speed with this meal; the most gear speed is one below the fewest
-    // whose total reaches band.max + 1
-    const gearMin = gearNeeded(job, meal, 'spd', band.min, level);
-    const gearMax = band.max == null ? null : gearNeeded(job, meal, 'spd', band.max + 1, level) - 1;
-    if (gearMax != null && gearMax < gearMin) continue; // the meal jumps over the band: no gear speed lands in it
+    const gear = gearBand(job, meal, band, level);
+    if (!gear) continue;
+    const { gearMin, gearMax } = gear;
     const key = `${gearMin},${gearMax}`;
     if (!runs.has(key)) runs.set(key, solve(prep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
     const r = runs.get(key);
@@ -94,6 +92,16 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
     searches: runs.size,
     prep,
   };
+}
+
+/* A band on total speed ({min, max}; max null for none, speedForGcd) as a band on gear speed with `meal` (null for
+   none) at `level`: {gearMin, gearMax}, or null when the meal jumps over the band (no gear speed lands in it). The most
+   gear speed is one below the fewest whose total reaches band.max + 1. Shared by Target GCD and tier ranking. */
+export function gearBand(job, meal, band, level) {
+  const gearMin = gearNeeded(job, meal, 'spd', band.min, level);
+  const gearMax = band.max == null ? null : gearNeeded(job, meal, 'spd', band.max + 1, level) - 1;
+  if (gearMax != null && gearMax < gearMin) return null;
+  return { gearMin, gearMax };
 }
 
 /* The shortest GCD the pool can reach: the most speed, with the meal that adds the most speed when food is on (the

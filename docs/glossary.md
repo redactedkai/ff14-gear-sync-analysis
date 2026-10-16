@@ -130,11 +130,19 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Owner.** The repository's owner. "Verified by the owner in game" means the owner checked it in game; it counts as verified.
 
+**Pareto front.** In tier ranking's searches: the partial gear sets, built from the last slot back, that no other partial set beats on score and every held stat. The best full set meeting every limit is always in the last front, so no search tree is needed. See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
+
 **Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, item level range, equip level, gear groups); the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
 **Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into both generated data files and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
+
+**Reduced-cost fixing.** Dropping a candidate before the search because no gear set holding it can beat a set already in hand, shown with a bound that prices every limit (a Lagrangian bound). Exact. See [tier-ranking.md, section 4.2](engineering/tier-ranking.md#42-pruning-against-the-set-in-hand).
+
+**Seed.** A gear set that already meets every limit of a search, given to it as a start: the search then only looks for a better one. Tier ranking passes each stage the stage before's set. See [tier-ranking.md, section 2](engineering/tier-ranking.md#2-the-stages).
+
+**Shortfall filter (deficit budget).** Dropping every candidate that falls so far below its slot's best of a held stat that no set holding it can reach the minimum. The budget is how far a whole set may fall short of the best in every slot. See [tier-ranking.md, section 4.1](engineering/tier-ranking.md#41-the-shortfall-filter).
 
 **Sheet.** One of the game's internal data tables, exported as one CSV file: for example `Item` (one row per item), `ItemLevel` (the budget table), `BaseParam` (slot shares and stat factors) and `ParamGrow` (per-level data). See [data-pipeline.md, section 1](engineering/data-pipeline.md#1-source).
 
@@ -152,11 +160,15 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files (**inferred**); it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md).
 
+**Stat minimum.** A lower limit on a stat's total that the optimizer must meet, on any stat (the speed range is the speed case). Tier ranking holds each ranked stat with one. See [optimizer.md, section 5](engineering/optimizer.md#with-minimums-on-other-stats).
+
 **Tabs.** The page has two working tabs, **Gear optimizer** (opened by default) and **Gear browser** (looking gear up), and a reference tab, **How the math works**, with two sub-tabs: **Piece stats** (a piece built from its item level and slot by the formula) and **Sync limits** (what a cap allows per slot, with the "Checked against real gear and published caps" panel). Some pages call Sync limits "Sync caps". See the [root README](../README.md).
 
 **Target GCD.** A GCD the optimizer must reach, "exactly" or "or faster", counted with food and haste. It becomes a speed range, and the best set by the goal within it wins. On the page it is a box under the Goal grid, empty by default. See [math.md, section 6](mechanics/math.md#target-gcd) and [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
 **Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
+
+**Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals, with each ranked stat held one point above the start of its best tier (roadmap A7; the page's switch is not built yet). See [tier-ranking.md](engineering/tier-ranking.md).
 
 **Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints).
 

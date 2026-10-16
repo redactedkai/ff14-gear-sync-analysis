@@ -4,6 +4,7 @@ import { SLOT_TYPES } from '../../../src/core/constants.js';
 import { capsFor } from '../../../src/core/formulas.js';
 import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/index.js';
+import { statBase } from '../../../src/core/food.js';
 import { MATERIA } from '../../../src/core/tables.js';
 
 /* Pool items for every database row this job can equip that matches the browse filter
@@ -12,6 +13,28 @@ export function gamePool(job, filter, keep = () => true) {
   return browseItems(job, filter)
     .filter(keep)
     .map(r => poolItemFromRow(job, r));
+}
+
+/* Item level windows for small pools: one with low grades only (V, VI), one with X, one with XII. */
+export const WINDOWS = [
+  { ilvlMin: 290, ilvlMax: 345 },
+  { ilvlMin: 560, ilvlMax: 600 },
+  { ilvlMin: 690, ilvlMax: 730 },
+];
+
+/* A small real pool: up to `n` distinct pieces per slot type (at least `least` where the window has them), from
+   `window` or a random one of WINDOWS, drawn with `rand` (rng). Pieces are distinct objects: the same object twice would
+   be one Unique ring the reference could pair with itself. */
+export function smallPool(job, rand, types, n, least = 0, window = null) {
+  const int = k => Math.floor(rand() * k);
+  const all = gamePool(job, window ?? WINDOWS[int(WINDOWS.length)]);
+  const pool = [];
+  for (const ty of types) {
+    const of = all.filter(i => i.type === ty);
+    const m = ty === 'ring' ? 1 + int(n) : least + int(n + 1 - least);
+    for (let i = 0; i < m && of.length; i++) pool.push(of.splice(int(of.length), 1)[0]);
+  }
+  return pool;
 }
 
 /* How many loadouts exhaustive() will try for this pool (one item per slot that has items, ring pairs, plus "empty"
@@ -120,18 +143,36 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
    when a chosen piece blocks it (a two-handed weapon blocks the off-hand, a cloak the head).
 
    Effective (synced) stats come from the optimizer's own effStats, so this reference does not check the sync
-   clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md). */
-export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, melds = false }) {
+   clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
+   `mins` = {stat: total}: minimums on any stat's total, checked like spdMin. */
+export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, mins = {}, melds = false }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
+  // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones.
+  // With a speed rule speed is one of the meld keys, and with a maximum more speed is not always better; a stat with a
+  // minimum is a meld key too
+  const ranged = spdMin != null || spdMax != null;
+  const minStats = Object.keys(mins).filter(s => mins[s] > 0);
+  const meldKeys = [...new Set([...keys, ...(ranged ? ['spd'] : []), ...minStats])];
+  let best = null;
+  forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: spdMax != null }, get => {
+    if (spdMin != null && get('spd') < spdMin) return;
+    if (spdMax != null && get('spd') > spdMax) return;
+    if (minStats.some(s => get(s) < mins[s])) return;
+    const v = keys.map(get);
+    if (!best || lexGreater(v, best)) best = v;
+  });
+  return best;
+}
+
+/* Call visit(get) once for every legal loadout (see exhaustive for the rules), where get(stat) is the loadout's total
+   of a neutral stat. With melds every piece brings each of its meld vectors on `meldKeys` (meldVectors; exactSpd as
+   there). */
+export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], exactSpd = false }, visit) {
   const stats = job.stats;
   const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
   const blockable = blockableTypes(job, pool);
+  const vectorsOf = i => (melds ? meldVectors(job, i, sync, meldKeys, { exactSpd }) : [effStats(job, i, sync)]);
   /* each choice (an item, a ring pair, or empty) as its effective stat totals in job.stats order and what it blocks */
-  // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones.
-  // With a speed rule speed is one of the meld keys, and with a maximum more speed is not always better
-  const ranged = spdMin != null || spdMax != null;
-  const meldKeys = ranged ? [...keys, 'spd'] : keys;
-  const vectorsOf = i => (melds ? meldVectors(job, i, sync, meldKeys, { exactSpd: spdMax != null }) : [effStats(job, i, sync)]);
   const choices = slots.map(t => {
     const list = choicesFor(pool, t).flatMap(items => {
       const blocks = items.flatMap(i => slotInfo(job, i).blocks);
@@ -145,17 +186,13 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
     return list;
   });
   const tot = stats.map(() => 0);
+  const get = s => tot[stats.indexOf(s)] || 0;
   const picked = [];
-  let best = null;
   const rec = k => {
     if (k === choices.length) {
       const blocked = new Set(picked.flatMap(c => c.blocks));
       if (picked.some((c, i) => c.empty !== blocked.has(slots[i]))) return;
-      const get = s => tot[stats.indexOf(s)] || 0;
-      if (spdMin != null && get('spd') < spdMin) return;
-      if (spdMax != null && get('spd') > spdMax) return;
-      const v = keys.map(get);
-      if (!best || lexGreater(v, best)) best = v;
+      visit(get);
       return;
     }
     for (const c of choices[k]) {
@@ -171,7 +208,14 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
     }
   };
   rec(0);
-  return best;
+}
+
+/* Food, written out: min(max, floor(pct x (base + gear) / 100)) (math.md section 6); base = BaseSpeed for speed, the
+   level's main stat base for Determination and Piety (statBase, checked in food.test.js). */
+export function foodAdd(job, meal, stat, gear, level) {
+  const s = meal?.stats.find(x => x.stat === stat);
+  if (!s) return 0;
+  return Math.min(s.max, Math.floor((s.pct * (statBase(job, stat, level) + gear)) / 100));
 }
 
 function lexGreater(a, b) {

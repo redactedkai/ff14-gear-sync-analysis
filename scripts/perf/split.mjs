@@ -93,7 +93,7 @@ function replica() {
   });
   t0 = lap('prune', t0);
   const posList = slotList.map(ty => cand[ty]);
-  const r = branchAndBound({ slotList, posList, dims, spdMin: null, spdMax: null, nodeLimit: 700000 });
+  const r = branchAndBound({ slotList, posList, dims, nodeLimit: 700000 });
   lap('search', t0);
   return { slotList, posList, nodes: r.nodes };
 }

@@ -1,7 +1,9 @@
 /* Optimizer stage 2: depth-first branch-and-bound over the slot sequence.
-   Prunes on the score upper bound and on a speed minimum that the remaining
-   slots can no longer reach. With a speed rule it also bounds the score by the speed still needed (speed tables), tries
-   children in order of that bound, and cuts states it has already seen (the memo). */
+   Prunes on the score upper bound and on a stat minimum that the remaining slots can no longer reach. With limits on
+   stats (a speed minimum or band for Target GCD; minimums on other stats for tier ranking) it also bounds the score by
+   what each limited stat still needs (limit tables), tries children in order of that bound, and cuts states it has
+   already seen (the memo). */
+import { frontSearch } from './front.js';
 
 /* Most two rings can add together on f(a) >= 0: the best ring twice only if that item has 2 copies, otherwise the best
    plus the best other item (the best alone when there is no other: the second ring slot stays empty). Any legal pair
@@ -60,27 +62,28 @@ export function suffixBounds(slotList, posList, dims) {
   return { remMax, remSc, slotMax, slotSc };
 }
 
-/* Speed tables: bound(i, c) = an upper bound on the score slots i.. can still add when the speed so far is c, given the
-   speed rule. Each slot on its own: copy limits are ignored (a Unique ring may count twice) and a slot some piece can
-   block may stay empty, so the bound never falls below what a legal loadout can add, and the search stays exact.
-   - Minimum only: need[i][r] = most score slots i.. add while adding at least r speed (r up to the minimum), built on
-     each slot's (score, speed) frontier: the best score at each speed, keeping a speed only if no faster one scores as
-     much.
-   - Maximum too: exact[i][s] = most score slots i.. add while adding exactly s speed (s up to the maximum), from each
-     slot's best score at each speed. The bound is its best over the speeds that still land in [min, max], read in O(1)
-     from a prefix maximum (when the minimum is already met) or a window maximum the band's width.
-   Speeds below 0 count as 0; candidates faster than the maximum are left out (they can never be worn). `empty`: the
+/* Limit tables for one limited value (speed in the examples; any stat, or the combined minimum of branchAndBound, works
+   the same; valueFn(candidate) gives it): bound(i, c) = an upper bound on the score slots i.. can still add when the
+   total so far is c, given its minimum and maximum. Each slot on its own: copy limits are ignored (a Unique ring may count twice) and a slot some piece can block may stay empty, so the
+   bound never falls below what a legal loadout can add, and the search stays exact.
+   - Minimum only: need[i][r] = most score slots i.. add while adding at least r of the stat (r up to the minimum),
+     built on each slot's (score, value) frontier: the best score at each value, keeping a value only if no higher one
+     scores as much.
+   - Maximum too: exact[i][s] = most score slots i.. add while adding exactly s (s up to the maximum), from each slot's
+     best score at each value. The bound is its best over the values that still land in [min, max], read in O(1) from a
+     prefix maximum (when the minimum is already met) or a window maximum the band's width.
+   Values below 0 count as 0; candidates above the maximum are left out (they can never be worn). `empty`: the
    positions of slots a piece already chosen blocks, which add nothing. Each returned function has `top(i)`, its most
-   at any speed so far. Returns null when the rule has neither a minimum above 0 nor a maximum. */
-export function speedTables(slotList, posList, spdMin, spdMax, empty = null) {
+   at any total so far. Returns null when the limit has neither a minimum above 0 nor a maximum. */
+export function limitTables(slotList, posList, valueFn, min, max, empty = null) {
   const n = slotList.length;
-  const lo = spdMin > 0 ? spdMin : 0;
+  const lo = min > 0 ? min : 0;
   const blockable = new Set(posList.flatMap(list => list.flatMap(a => a.blocks)));
-  const spdOf = a => Math.max(0, a.eff.spd || 0);
+  const statOf = a => Math.max(0, valueFn(a) || 0);
 
   // slots a legal loadout can leave empty: a blockable slot, a slot with no candidates, and a ring slot when the ring
   // list cannot fill both (copies of distinct items below 2: a lone Unique ring is worn once). Counting a piece in such a
-  // slot would add speed a loadout may not have, which a maximum can then wrongly reject
+  // slot would add points a loadout may not have, which a maximum can then wrongly reject
   const blockedNow = i => !!empty && empty.has(i); // blocked by a piece already chosen: only empty
   const canEmpty = i => {
     const list = posList[i];
@@ -93,21 +96,22 @@ export function speedTables(slotList, posList, spdMin, spdMax, empty = null) {
     return total < 2;
   };
 
-  // a maximum no loadout can pass is no rule at all, and the table for it would be needlessly long
-  const mostSpd = posList.reduce((sum, list, i) => sum + (blockedNow(i) ? 0 : Math.max(0, ...list.map(spdOf))), 0);
-  if (spdMax != null && spdMax >= mostSpd) spdMax = null;
-  if (!lo && spdMax == null) return null;
+  // a maximum no loadout can pass is no limit at all, and the table for it would be needlessly long
+  const most = posList.reduce((sum, list, i) => sum + (blockedNow(i) ? 0 : Math.max(0, ...list.map(statOf))), 0);
+  if (max != null && max >= most) max = null;
+  if (!lo && max == null) return null;
 
-  if (spdMax == null) {
-    // need[i][r]: the most score slots i.. add while adding at least r more speed (r = 0..lo)
+  if (max == null) {
+    // need[i][r]: the most score slots i.. add while adding at least r more (r = 0..lo)
     const need = new Array(n + 1);
     need[n] = new Float64Array(lo + 1).fill(-Infinity);
     need[n][0] = 0;
     for (let i = n - 1; i >= 0; i--) {
       const next = need[i + 1];
 
-      // this slot's choices as [score, speed], fastest first; the frontier keeps one only if it outscores every faster one
-      const choices = blockedNow(i) ? [] : posList[i].map(a => [a.score, spdOf(a)]);
+      // this slot's choices as [score, value], highest value first; the frontier keeps one only if it outscores every
+      // higher one
+      const choices = blockedNow(i) ? [] : posList[i].map(a => [a.score, statOf(a)]);
       if (blockedNow(i) || canEmpty(i)) choices.push([0, 0]);
       choices.sort((x, y) => y[1] - x[1] || y[0] - x[0]);
       const frontier = [];
@@ -120,40 +124,39 @@ export function speedTables(slotList, posList, spdMin, spdMax, empty = null) {
       }
 
       // the most this slot and the ones after it add while adding at least r: the best frontier choice plus what the
-      // later slots add for the speed still needed after it
+      // later slots add for the points still needed after it
       const row = new Float64Array(lo + 1);
       for (let r = 0; r <= lo; r++) {
-        let most = -Infinity;
-        for (const [score, spd] of frontier) {
-          const v = score + next[r > spd ? r - spd : 0];
-          if (v > most) most = v;
+        let best = -Infinity;
+        for (const [score, value] of frontier) {
+          const v = score + next[r > value ? r - value : 0];
+          if (v > best) best = v;
         }
-        row[r] = most;
+        row[r] = best;
       }
       need[i] = row;
     }
 
-    const bound = (i, spdSoFar) => {
-      const r = lo - spdSoFar;
+    const bound = (i, soFar) => {
+      const r = lo - soFar;
       return need[i][r > 0 ? r : 0];
     };
-    bound.top = i => need[i][0]; // the most at any speed so far (need is highest with nothing more needed)
+    bound.top = i => need[i][0]; // the most at any total so far (need is highest with nothing more needed)
     return bound;
   }
 
   // a band (a maximum too)
-  const max = spdMax;
   if (max < lo) return Object.assign(() => -Infinity, { top: () => -Infinity });
-  const width = max - lo; // the band's width: a speed so far of c still lands in it with lo - c to max - c more
+  const width = max - lo; // the band's width: a total so far of c still lands in it with lo - c to max - c more
 
-  // per slot i, from exact[i] (exact[i][x]: the most score slots i.. add with exactly x more speed):
+  // per slot i, from exact[i] (exact[i][x]: the most score slots i.. add with exactly x more):
   // prefixMax[i][x] = the most with at most x more, windowMax[i][x] = the most with x to x + width more
   const prefixMax = new Array(n + 1),
     windowMax = new Array(n + 1);
   const storeMaxima = (i, exact) => {
     const prefix = new Float64Array(max + 1);
-    let most = -Infinity;
-    for (let x = 0; x <= max; x++) prefix[x] = most = exact[x] > most ? exact[x] : most;
+    let best = -Infinity;
+    for (let x = 0; x <= max; x++) prefix[x] = best = exact[x] > best ? exact[x] : best;
     prefixMax[i] = prefix;
 
     // window maximum over [x, x + width] in blocks of width + 1: the suffix maximum inside x's block and the prefix
@@ -175,92 +178,306 @@ export function speedTables(slotList, posList, spdMin, spdMax, empty = null) {
     windowMax[i] = win;
   };
 
-  // exact rows from the last slot back: slot i's best score at each speed, plus the later slots' row
+  // exact rows from the last slot back: slot i's best score at each value, plus the later slots' row
   let exact = new Float64Array(max + 1).fill(-Infinity);
   exact[0] = 0;
   storeMaxima(n, exact);
   for (let i = n - 1; i >= 0; i--) {
-    // this slot's best score at each speed it can add
+    // this slot's best score at each value it can add
     const bestAt = new Map();
     for (const a of blockedNow(i) ? [] : posList[i]) {
-      const spd = spdOf(a);
-      if (spd <= max && !(bestAt.get(spd) >= a.score)) bestAt.set(spd, a.score);
+      const value = statOf(a);
+      if (value <= max && !(bestAt.get(value) >= a.score)) bestAt.set(value, a.score);
     }
     if ((blockedNow(i) || canEmpty(i)) && !(bestAt.get(0) >= 0)) bestAt.set(0, 0);
 
     const prev = exact;
     exact = new Float64Array(max + 1).fill(-Infinity);
-    for (const [spd, score] of bestAt) {
-      for (let x = spd; x <= max; x++) {
-        const v = score + prev[x - spd];
+    for (const [value, score] of bestAt) {
+      for (let x = value; x <= max; x++) {
+        const v = score + prev[x - value];
         if (v > exact[x]) exact[x] = v;
       }
     }
     storeMaxima(i, exact);
   }
 
-  const bound = (i, spdSoFar) => {
-    const roomLeft = max - spdSoFar;
+  const bound = (i, soFar) => {
+    const roomLeft = max - soFar;
     if (roomLeft < 0) return -Infinity;
-    const stillNeeded = lo - spdSoFar;
+    const stillNeeded = lo - soFar;
     return stillNeeded <= 0 ? prefixMax[i][roomLeft] : windowMax[i][stillNeeded];
   };
-  bound.top = i => prefixMax[i][max]; // the most at any speed so far
+  bound.top = i => prefixMax[i][max]; // the most at any total so far
   return bound;
 }
 
-/* A search this small is over before a speed table for its blocked slots would pay for itself (one table takes 1 to
+/* The Lagrangian bound (branchAndBound uses it with a known set, `start`): every limit as a priced term. For a set meeting
+   every limit, score <= score + sum over terms of coef x (value - rhs), each term being >= 0 (a minimum: coef >= 0 on
+   value - min; a maximum: coef <= 0 on value - max). The right side splits per slot, so its most is the sum of each
+   slot's most of score + sum of coef x value (`slotAug`, at least 0: an empty slot adds 0), minus sum of coef x rhs.
+   The coefficients come from a subgradient descent on that most at the root (the Lagrangian dual of the limits).
+   Returns {terms: [{stat, coef, rhs}], slotAug} or null when no limit has a minimum or maximum. */
+export function lagrangeBound(posList, limits, floor = 0, iterations = 300) {
+  const terms = [];
+  for (const l of limits) {
+    if (l.min > 0) terms.push({ stat: l.stat, sign: 1, rhs: l.min });
+    if (l.max != null) terms.push({ stat: l.stat, sign: -1, rhs: l.max });
+  }
+  if (!terms.length) return null;
+  const n = posList.length;
+  const values = posList.map(list => list.map(a => terms.map(t => a.eff[t.stat] || 0)));
+  // the dual function at multipliers `lam` (>= 0, one per term): its value and a subgradient
+  const dual = lam => {
+    let total = 0;
+    const grad = terms.map(t => -t.sign * t.rhs);
+    const slotAug = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      let best = 0,
+        arg = -1;
+      posList[i].forEach((a, c) => {
+        let v = a.score;
+        for (let j = 0; j < terms.length; j++) v += lam[j] * terms[j].sign * values[i][c][j];
+        if (v > best) {
+          best = v;
+          arg = c;
+        }
+      });
+      slotAug[i] = best;
+      total += best;
+      if (arg >= 0) for (let j = 0; j < terms.length; j++) grad[j] += terms[j].sign * values[i][arg][j];
+    }
+    for (let j = 0; j < terms.length; j++) total -= lam[j] * terms[j].sign * terms[j].rhs;
+    return { total, grad, slotAug };
+  };
+  // Polyak steps toward `floor` (a score some set reaches, or 0): step = factor x (dual - floor) / |subgradient|^2, the
+  // factor halved after 15 steps without a better dual
+  let lam = terms.map(() => 0);
+  let cur = dual(lam),
+    best = cur,
+    bestLam = lam,
+    factor = 1,
+    stale = 0;
+  for (let it = 0; it < iterations; it++) {
+    const norm2 = cur.grad.reduce((x, g) => x + g * g, 0);
+    if (!norm2) break; // a zero subgradient: the minimum
+    const step = (factor * (cur.total - floor)) / norm2;
+    lam = lam.map((x, j) => Math.max(0, x - step * cur.grad[j]));
+    cur = dual(lam);
+    if (cur.total < best.total) {
+      best = cur;
+      bestLam = lam;
+      stale = 0;
+    } else if (++stale >= 15) {
+      factor /= 2;
+      stale = 0;
+    }
+  }
+  return {
+    terms: terms.map((t, j) => ({ stat: t.stat, coef: t.sign * bestLam[j], rhs: t.rhs })),
+    slotAug: best.slotAug,
+  };
+}
+
+/* Drop every candidate that no set holding it can lift to a minimum: the most a set with candidate `a` has of a stat
+   is its own value plus the bounds of the other slots (suffixBounds; for a piece that blocks later slots, its own value
+   less their bounds, as there), and for a ring, its value plus the most of any ring (the pair partner). When that is
+   below a minimum, `a` goes (a "deficit budget": a piece short of its slot's best by more than the total room above
+   the minimum). Dropping pieces lowers the bounds, so it repeats until nothing more goes. Exact: every set meeting the
+   minimum keeps all its pieces. The two ring slots share one list and keep sharing it. */
+export function dropShortfalls(slotList, posList, dims, limits) {
+  const mins = limits.filter(l => l.min > 0);
+  const posOf = new Map(slotList.map((t, i) => [t, i]));
+  for (let round = 0; round < 10; round++) {
+    const { remMax, slotMax } = suffixBounds(slotList, posList, dims);
+    let dropped = false;
+    const filtered = new Map();
+    posList = posList.map((list, i) => {
+      if (filtered.has(list)) return filtered.get(list);
+      const isRing = slotList[i] === 'ring';
+      const kept = list.filter(a =>
+        mins.every(l => {
+          const d = l.stat;
+          const total = remMax[d][0];
+          let most;
+          if (isRing) {
+            const top = Math.max(0, ...list.map(x => x.eff[d] || 0));
+            const pair = remMax[d][i] - remMax[d][i + 2];
+            most = total - pair + (a.eff[d] || 0) + top;
+          } else {
+            // own value less the bounds of the later slots it blocks, as suffixBounds counts it
+            let own = a.eff[d] || 0;
+            for (const b of a.blocks) if (posOf.get(b) > i) own -= slotMax[d][posOf.get(b)];
+            most = total - slotMax[d][i] + own;
+          }
+          return most >= l.min;
+        }),
+      );
+      if (kept.length < list.length) dropped = true;
+      filtered.set(list, kept);
+      return kept;
+    });
+    if (!dropped) break;
+  }
+  return posList;
+}
+
+/* The coefficients are fractions, so the Lagrangian bound is a float: a margin far above its rounding error (scores
+   stay below 2^53, a relative error near 1e-16 per step) keeps every cut on the safe side. */
+const lagrSlack = bound => 1 + Math.abs(bound) * 1e-9;
+
+/* Reduced-cost fixing: the candidates of slot `i` worth searching against a known set scoring `known`. Forcing a
+   candidate into its slot lowers the Lagrangian bound (lagrangeBound) by the slot's most minus the candidate's own
+   priced value; when that leaves the bound at or below `known`, no set holding the candidate beats the known set, and
+   the candidate goes. Exact: the bound is an upper bound for every set meeting the limits. */
+export function fixByReducedCost(list, lagr, i, known) {
+  const root = lagr.slotAug.reduce((a, b) => a + b, 0) - lagr.terms.reduce((a, t) => a + t.coef * t.rhs, 0);
+  const gap = root - known + lagrSlack(root);
+  return list.filter(a => {
+    let aug = a.score;
+    for (const t of lagr.terms) aug += t.coef * (a.eff[t.stat] || 0);
+    return lagr.slotAug[i] - aug < gap;
+  });
+}
+
+/* A search this small is over before a limit table for its blocked slots would pay for itself (one table takes 1 to
    50 ms; WHM at level 100 with sync off needs a few hundred nodes, synced searches 100,000 and more without them). */
 const LAZY_TABLES = 2000;
 
-/* spdMin, spdMax: optional bounds on the speed total (null for none).
-   Returns {best, nodes, truncated}; best[i] = {cand: candidate | null, rank, blockedBy?} or best = null if nothing is
+/* limits: [{stat, min, max}], each a minimum (null or 0 for none) and a maximum (null for none) on a stat's total; the
+   stat must be in dims. Target GCD sets one on speed, tier ranking minimums on other stats.
+   start: {best, score}, a loadout known to meet every limit (in the shape of `best` below) and its score; the search
+   then looks only for a strictly better one and returns `start` when there is none, or when it stops early.
+   Returns {best, nodes, truncated, method, kept, frontSizes}; method is 'fronts' or 'search', kept the candidates left
+   after the filters (summed over slot lists, rings once), frontSizes the fronts' sizes when they settled it; best[i] = {cand: candidate | null, rank, blockedBy?} or best = null if nothing is
    feasible. A slot is left empty when a chosen piece blocks it (blockedBy: that candidate; buildCandidates puts
    blockable slots last) or when every candidate's copies are used up. A blocked slot adds 0, so while a chosen piece
-   blocks a later slot, that slot's best score and speed come off the bounds (without this a cloak's branch, whose
-   bound still counted a head, was almost never pruned under sync).
-   With a speed rule (and `spd` among dims) three more things, all exact:
-   - the speed tables (speedTables) bound the score by the speed still needed, one table per set of blocked slots,
-     where those slots add nothing (with one table for all, a White Mage search with a two-handed weapon still counted
-     the best shield and ran 110,000 to 420,000 nodes at item level 400 instead of under 120);
-   - children are grouped by speed and the slots they block, groups tried best bound first, and each group scanned by
-     score down to the first candidate that cannot beat the best loadout so far (within a group the speed term of the
-     bound is the same);
-   - the memo: two partial loadouts at the same slot with the same speed total (a total past a minimum with no maximum
-     counts as the minimum: nothing after it can tell them apart), the same blocked slots and, at the second ring slot,
-     the same first ring have the same completions, so the later one is cut unless it scores more. */
-export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLimit, plain = false, lazyTables = LAZY_TABLES }) {
+   blocks a later slot, that slot's best score and limited stats come off the bounds (without this a cloak's branch,
+   whose bound still counted a head, was almost never pruned under sync).
+   Before the search, with limits (docs/engineering/tier-ranking.md, section 4), all exact:
+   - candidates that cannot reach a minimum go (dropShortfalls);
+   - with a known set (`start`, which tier ranking always has after its first stage): the candidates the Lagrangian
+     bound shows cannot beat it go (fixByReducedCost), the shortfall filter runs again on what is left, and Pareto fronts
+     (front.js) try to settle the search in one pass; only when a front grows too large does the search below run.
+   In the search, with limits, three more things, all exact:
+   - the limit tables (limitTables) bound the score by what each limited stat still needs; with several limits the
+     bound is the smallest of their tables (each is an upper bound with the other limits dropped, so the smallest is
+     one too). One set of tables per set of blocked slots, where those slots add nothing (with one set for all, a
+     White Mage search with a two-handed weapon still counted the best shield and ran 110,000 to 420,000 nodes at item
+     level 400 instead of under 120);
+   - children are grouped by the first limit's value and the slots they block, groups tried best bound first, and each
+     group scanned by score down to the first candidate that cannot beat the best loadout so far;
+   - the memo: two partial loadouts at the same slot with the same limited totals (a total past a minimum with no
+     maximum counts as the minimum: nothing after it can tell them apart), the same blocked slots and, at the second
+     ring slot, the same first ring have the same completions, so the later one is cut unless it scores more. */
+export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit, plain = false, lazyTables = LAZY_TABLES, start = null }) {
   const nSlots = slotList.length;
-  const { remMax, remSc, slotMax, slotSc } = suffixBounds(slotList, posList, dims);
+  limits = limits.filter(l => dims.includes(l.stat) && (l.min > 0 || l.max != null));
+  const hasMinimum = limits.some(l => l.min > 0);
+  const keptCount = () => [...new Set(posList)].reduce((n, list) => n + list.length, 0);
 
-  // `plain` (tests and perf scripts only): none of the speed-rule extras, to check them against the plain search
-  const speedBound = !plain && dims.includes('spd') ? speedTables(slotList, posList, spdMin, spdMax) : null;
+  // 1. drop the candidates that cannot reach a minimum
+  if (!plain && hasMinimum) posList = dropShortfalls(slotList, posList, dims, limits);
+
+  // 2. with a known set: drop the candidates that cannot beat it (each slot's list filtered once; the two ring slots
+  // share one list, so they share the filtered one too), and the shortfalls that leaves
+  const lagr = !plain && start && limits.length ? lagrangeBound(posList, limits, start.score) : null;
+  if (lagr) {
+    const filtered = new Map();
+    posList = posList.map((list, i) => {
+      if (!filtered.has(list)) filtered.set(list, fixByReducedCost(list, lagr, i, start.score));
+      return filtered.get(list);
+    });
+    if (hasMinimum) posList = dropShortfalls(slotList, posList, dims, limits);
+  }
+
+  // 3. with lists that short, Pareto fronts often settle it in one pass (front.js); when a front grows too large, search
+  if (lagr) {
+    const fronts = frontSearch(slotList, posList, limits, start.score);
+    if (fronts) {
+      const best = fronts.best ? fronts.best.slots : start.best;
+      return { best, nodes: fronts.entries, truncated: false, method: 'fronts', kept: keptCount(), frontSizes: fronts.sizes };
+    }
+  }
+  const { remMax, remSc, slotMax, slotSc } = suffixBounds(slotList, posList, dims);
+  const nLimits = limits.length;
+  const limitStats = limits.map(l => l.stat);
+
   const posOf = new Map(slotList.map((slotType, i) => [slotType, i])); // blockable slots appear once (rings are never blocked)
   // the slots a candidate blocks, as a bit mask of positions
   const maskOf = blocks => blocks.reduce((mask, b) => (posOf.has(b) ? mask | (1 << posOf.get(b)) : mask), 0);
   const blockMaskOf = new Map(posList.flatMap(list => list.map(a => [a, maskOf(a.blocks)])));
 
-  // speed tables for each set of blocked slots (speedBound is the one for none), built when first needed: once a chosen
-  // piece blocks a slot (a two-handed weapon the off-hand, a cloak the head) that slot adds nothing, while the table
-  // for none still counts its best piece. Below LAZY_TABLES nodes the table for none stands in (a looser bound)
-  let nodes = 0; // search nodes so far (also read by speedBoundFor)
-  const tables = new Map([[0, speedBound]]);
-  const speedBoundFor = mask => {
-    let table = tables.get(mask);
-    if (table === undefined) {
-      if (nodes < lazyTables) return speedBound;
+  // the limited totals so far, in `limits` order (the stats are also kept in `totals`; this copy is what the tables
+  // read)
+  const limitTotals = new Float64Array(nLimits);
+
+  // the tables for one set of blocked slots, as one bound: the smallest over the tables of each one's bound when `add`
+  // (a group's limited values, or null) joins the totals so far; null when no limit has a table
+  const tablesFor = empty => {
+    const tables = [];
+    limits.forEach((l, k) => {
+      const t = limitTables(slotList, posList, a => a.eff[l.stat], l.min, l.max, empty);
+      if (t) tables.push({ at: (i, add) => t(i, limitTotals[k] + (add ? add[k] : 0)), top: t.top });
+    });
+    if (!tables.length) return null;
+    if (tables.length === 1) return tables[0];
+    return {
+      at: (i, add) => {
+        let least = Infinity;
+        for (const t of tables) {
+          const b = t.at(i, add);
+          if (b < least) least = b;
+        }
+        return least;
+      },
+      top: i => Math.min(...tables.map(t => t.top(i))),
+    };
+  };
+  const limitBound = !plain && nLimits ? tablesFor(null) : null;
+
+  // the Lagrangian bound in the search: its per-slot most summed from each position on, and each candidate's priced
+  // value (score + sum of coef x value), for the check per node and per child below
+  const sufAug = new Float64Array(nSlots + 1);
+  const augOf = new Map();
+  if (lagr) {
+    for (let i = nSlots - 1; i >= 0; i--) sufAug[i] = sufAug[i + 1] + lagr.slotAug[i];
+    for (const list of posList) {
+      for (const a of list) {
+        let aug = a.score;
+        for (const t of lagr.terms) aug += t.coef * (a.eff[t.stat] || 0);
+        augOf.set(a, aug);
+      }
+    }
+  }
+  let blockedAug = 0; // slotAug of the later slots currently blocked
+  const lagrRest = pos => {
+    let rest = sufAug[pos] - blockedAug;
+    for (const t of lagr.terms) rest += t.coef * ((totals[t.stat] || 0) - t.rhs);
+    return rest;
+  };
+
+  // tables for each set of blocked slots (limitBound is the one for none), built when first needed: once a chosen
+  // piece blocks a slot (a two-handed weapon the off-hand, a cloak the head) that slot adds nothing, while the tables
+  // for none still count its best piece. Below LAZY_TABLES nodes the ones for none stand in (a looser bound)
+  let nodes = 0; // search nodes so far (also read by limitBoundFor)
+  const tables = new Map([[0, limitBound]]);
+  const limitBoundFor = mask => {
+    let bound = tables.get(mask);
+    if (bound === undefined) {
+      if (nodes < lazyTables) return limitBound;
       const empty = new Set();
       for (let i = 0; i < slotList.length; i++) if (mask & (1 << i)) empty.add(i);
-      table = speedTables(slotList, posList, spdMin, spdMax, empty) || speedBound;
-      tables.set(mask, table);
+      bound = tablesFor(empty) || limitBound;
+      tables.set(mask, bound);
     }
-    return table;
+    return bound;
   };
 
   // search state, changed by tryChild and restored when it returns
   let blockedMask = 0; // blocked slots now, as a mask
-  let best = null,
-    bestScore = -Infinity,
+  let best = start ? start.best : null,
+    bestScore = start ? start.score : -Infinity,
     truncated = false;
   const totals = {};
   dims.forEach(d => {
@@ -271,30 +488,57 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
   const blockedBy = new Map(); // slot type -> the chosen candidate that leaves it empty
 
   // per-slot bounds (suffixBounds) of the slots a chosen piece blocks come off the remaining bound
-  const slotSpd = dims.includes('spd') ? slotMax.spd : new Array(nSlots).fill(0);
-  let blockedSc = 0, // bounds of the later slots currently blocked
-    blockedSpd = 0;
+  const slotLimitMax = limitStats.map(s => slotMax[s]);
+  let blockedSc = 0; // bounds of the later slots currently blocked
+  const blockedLimit = new Float64Array(nLimits); // the same per limited stat
+  const block = (p, sign) => {
+    blockedSc += sign * slotSc[p];
+    if (lagr) blockedAug += sign * lagr.slotAug[p];
+    for (let k = 0; k < nLimits; k++) blockedLimit[k] += sign * slotLimitMax[k][p];
+  };
 
-  // groups[pos]: the slot's candidates split by (speed, blocked slots), each group's [rank, candidate] list by score,
-  // highest first, and the groups by their best score, highest first; `i` keeps a group's first-seen order for ties
-  const groups = speedBound
+  // groups[pos]: the slot's candidates split by (the first limit's value, blocked slots), each group's [rank, candidate]
+  // list by score, highest first, and the groups by their best score, highest first; `i` keeps a group's first-seen
+  // order for ties. A group's `values` are, per limit, the most any member adds: exact for the first limit (speed, the
+  // only one that can have a maximum, comes first), and for the others, which are minimums only, a bound that never
+  // falls below a member's (a minimum's table only rises with the total so far). Grouping by every limited value
+  // instead made nearly every candidate its own group, and scoring each group at every node cost more than it saved
+  // (Sage at level 100, three limits: 9 s)
+  const groups = limitBound
     ? posList.map(list => {
         const byKey = new Map();
         list.forEach((a, rank) => {
-          const spd = Math.max(0, a.eff.spd || 0);
+          const values = limitStats.map(s => Math.max(0, a.eff[s] || 0));
           const mask = blockMaskOf.get(a);
-          const key = `${spd}|${mask}`;
-          if (!byKey.has(key)) byKey.set(key, { spd, mask, list: [] });
-          byKey.get(key).list.push([rank, a]);
+          const key = `${values[0]}|${mask}`;
+          const group = byKey.get(key);
+          // each entry keeps the candidate's own values, for its own bound (several limits)
+          if (!group) byKey.set(key, { values: [...values], mask, list: [[rank, a, values]] });
+          else {
+            for (let k = 1; k < nLimits; k++) if (values[k] > group.values[k]) group.values[k] = values[k];
+            group.list.push([rank, a, values]);
+          }
         });
         const slotGroups = [...byKey.values()].map((g, i) => ({ ...g, i, list: g.list.sort((x, y) => y[1].score - x[1].score) }));
         return slotGroups.sort((x, y) => y.list[0][1].score - x.list[0][1].score);
       })
     : null;
 
-  // the memo (see "the memo" above): best score seen per state
-  const seen = speedBound ? new Map() : null;
-  const memoSpd = spdMax == null && spdMin > 0 ? s => (s < spdMin ? s : spdMin) : s => s;
+  // the memo (see "the memo" above): best score seen per state. A limited total past a minimum with no maximum is
+  // stored as the minimum
+  const seen = limitBound ? new Map() : null;
+  const memoValue = limits.map(l => (l.max == null && l.min > 0 ? s => (s < l.min ? s : l.min) : s => s));
+  const memoKey = pos => {
+    const prev = slotList[pos] === 'ring' && slotList[pos - 1] === 'ring' ? chosen[pos - 1] : null;
+    // one limit: the state packed into one integer, exact below 2^53: the first ring's rank + 1 at the second ring
+    // slot, else 0 (< 256); the blocked-slot mask (12 slots, < 4096); the position (< 32); the total so far plus
+    // 50,000 (< 1e5). Several: the same numbers in a string
+    const head = ((prev ? prev.rank + 1 : 0) * 4096 + blockedMask) * 32 + pos;
+    if (nLimits === 1) return head * 1e5 + memoValue[0](limitTotals[0]) + 5e4;
+    let key = `${head}`;
+    for (let k = 0; k < nLimits; k++) key += `,${memoValue[k](limitTotals[k])}`;
+    return key;
+  };
 
   // put candidate a (at `rank` in its slot's list) in slot pos and search on; false when it is not allowed there
   function tryChild(pos, rank, a, isRing2, scoreSoFar) {
@@ -304,19 +548,19 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
       const prev = chosen[pos - 1];
       if (prev && prev.rank > rank) return false;
     }
-    if (spdMax != null && totals.spd + a.eff.spd > spdMax) return false;
+    for (let k = 0; k < nLimits; k++) {
+      if (limits[k].max != null && limitTotals[k] + a.eff[limitStats[k]] > limits[k].max) return false;
+    }
 
     // wear it
     dims.forEach(d => {
       totals[d] += a.eff[d];
     });
+    for (let k = 0; k < nLimits; k++) limitTotals[k] += a.eff[limitStats[k]];
     used.set(a.item.id, usedCount + 1);
     const laterBlocked = a.blocks.map(b => posOf.get(b)).filter(p => p > pos);
     for (const b of a.blocks) blockedBy.set(b, a);
-    for (const p of laterBlocked) {
-      blockedSc += slotSc[p];
-      blockedSpd += slotSpd[p];
-    }
+    for (const p of laterBlocked) block(p, 1);
     const prevMask = blockedMask;
     blockedMask |= blockMaskOf.get(a);
     chosen[pos] = { cand: a, rank };
@@ -326,12 +570,10 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
     // take it off again
     chosen[pos] = null;
     blockedMask = prevMask;
-    for (const p of laterBlocked) {
-      blockedSc -= slotSc[p];
-      blockedSpd -= slotSpd[p];
-    }
+    for (const p of laterBlocked) block(p, -1);
     for (const b of a.blocks) blockedBy.delete(b);
     used.set(a.item.id, usedCount);
+    for (let k = 0; k < nLimits; k++) limitTotals[k] -= a.eff[limitStats[k]];
     dims.forEach(d => {
       totals[d] -= a.eff[d];
     });
@@ -345,7 +587,7 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
       return;
     }
     if (pos === nSlots) {
-      if (spdMin != null && totals.spd < spdMin) return;
+      for (let k = 0; k < nLimits; k++) if (limits[k].min > 0 && limitTotals[k] < limits[k].min) return;
       if (scoreSoFar > bestScore) {
         bestScore = scoreSoFar;
         best = chosen.slice();
@@ -353,15 +595,26 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
       return;
     }
 
-    // cut: even the best the remaining slots can add does not beat the best loadout so far, or cannot reach the minimum
+    // cut: even the best the remaining slots can add does not beat the best loadout so far, or cannot reach a minimum
     if (scoreSoFar + remSc[pos] - blockedSc <= bestScore) return;
-    if (spdMin != null && totals.spd + remMax.spd[pos] - blockedSpd < spdMin) return;
-    if (speedBound && scoreSoFar + speedBoundFor(blockedMask)(pos, totals.spd) <= bestScore) return;
+    for (let k = 0; k < nLimits; k++) {
+      const min = limits[k].min;
+      if (min > 0 && limitTotals[k] + remMax[limitStats[k]][pos] - blockedLimit[k] < min) return;
+    }
+    if (limitBound && scoreSoFar + limitBoundFor(blockedMask).at(pos, null) <= bestScore) return;
+    // the Lagrangian bound here; a child gives up its slot's most minus its own priced value from it
+    let nodeLagr = Infinity;
+    if (lagr) {
+      nodeLagr = scoreSoFar + lagrRest(pos);
+      if (nodeLagr + lagrSlack(nodeLagr) <= bestScore) return;
+    }
+    const lagrCuts = a => {
+      if (!lagr) return false;
+      const bound = nodeLagr - (lagr.slotAug[pos] - augOf.get(a));
+      return bound + lagrSlack(bound) <= bestScore;
+    };
     if (seen && pos > 0) {
-      const prev = slotList[pos] === 'ring' && slotList[pos - 1] === 'ring' ? chosen[pos - 1] : null;
-      // the state packed into one integer, exact below 2^53: the first ring's rank + 1 at the second ring slot, else 0
-      // (< 256); the blocked-slot mask (12 slots, < 4096); the position (< 32); the speed so far plus 50,000 (< 1e5)
-      const key = (((prev ? prev.rank + 1 : 0) * 4096 + blockedMask) * 32 + pos) * 1e5 + memoSpd(totals.spd) + 5e4;
+      const key = memoKey(pos);
       const was = seen.get(key);
       if (was !== undefined && was >= scoreSoFar) return;
       seen.set(key, scoreSoFar);
@@ -370,13 +623,11 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
     // a slot a chosen piece blocks stays empty
     const slotType = slotList[pos];
     if (blockedBy.has(slotType)) {
-      blockedSc -= slotSc[pos];
-      blockedSpd -= slotSpd[pos];
+      block(pos, -1);
       chosen[pos] = { cand: null, rank: -1, blockedBy: blockedBy.get(slotType) };
       dfs(pos + 1, scoreSoFar);
       chosen[pos] = null;
-      blockedSc += slotSc[pos];
-      blockedSpd += slotSpd[pos];
+      block(pos, 1);
       return;
     }
 
@@ -384,17 +635,17 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
     // the two ring slots share one list; the 2nd ring never ranks before the 1st, so each pair is tried once
     const isRing2 = slotType === 'ring' && pos > 0 && slotList[pos - 1] === 'ring';
 
-    // with a speed rule: try the groups (same speed, same blocked slots) best bound first
+    // with limits: try the groups (same value of the first limit, same blocked slots) best bound first
     if (groups) {
       const slotGroups = groups[pos];
       // only the groups that can still beat the best so far (the loop below skips the others anyway); groups come by
-      // top score, highest first, so once even the table's most at any speed cannot lift one past it, none can
+      // top score, highest first, so once even the tables' most at any total cannot lift one past it, none can
       const order = [];
-      const top = speedBound.top(pos + 1);
+      const top = limitBound.top(pos + 1);
       for (let i = 0; i < slotGroups.length; i++) {
         const head = scoreSoFar + slotGroups[i].list[0][1].score;
         if (head + top <= bestScore) break;
-        const restBound = speedBoundFor(blockedMask | slotGroups[i].mask)(pos + 1, totals.spd + slotGroups[i].spd);
+        const restBound = limitBoundFor(blockedMask | slotGroups[i].mask).at(pos + 1, slotGroups[i].values);
         if (head + restBound > bestScore) order.push([i, restBound]);
       }
 
@@ -406,8 +657,12 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
       for (const [g, restBound] of order) {
         const groupList = slotGroups[g].list;
         if (scoreSoFar + groupList[0][1].score + restBound <= bestScore) continue;
-        for (const [rank, a] of groupList) {
+        const bound = nLimits > 1 ? limitBoundFor(blockedMask | slotGroups[g].mask) : null;
+        for (const [rank, a, values] of groupList) {
           if (scoreSoFar + a.score + restBound <= bestScore) break;
+          // several limits: the group's bound uses its most of each, so check the candidate's own too
+          if (bound && scoreSoFar + a.score + bound.at(pos + 1, values) <= bestScore) continue;
+          if (lagrCuts(a)) continue;
           tryChild(pos, rank, a, isRing2, scoreSoFar);
           if (truncated) return;
         }
@@ -422,12 +677,13 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
       return;
     }
 
-    // without one: every candidate in score order
+    // without them: every candidate in score order
     let avail = 0;
     for (let rank = 0; rank < list.length; rank++) {
       const a = list[rank];
       if ((used.get(a.item.id) || 0) >= a.copies) continue;
       avail++;
+      if (lagrCuts(a)) continue;
       tryChild(pos, rank, a, isRing2, scoreSoFar);
       if (truncated) return;
     }
@@ -440,5 +696,5 @@ export function branchAndBound({ slotList, posList, dims, spdMin, spdMax, nodeLi
   }
 
   dfs(0, 0);
-  return { best, nodes, truncated };
+  return { best, nodes, truncated, method: 'search', kept: keptCount() };
 }
