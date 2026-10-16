@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../src/core/items.js';
 import { MATERIA } from '../../src/core/tables.js';
-import { bestMeld, meldCaps, meldSlots, meldText, stoneValues } from '../../src/core/meld.js';
+import { bestMeld, meldCaps, meldSlots, meldText, meldVersions, stoneValues } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 
 const sge = makeJobContext('SGE');
@@ -177,8 +177,7 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
    with a speed minimum only, more speed is always better, so every kept version melds speed into the slots that
    Determination does not fill; with a maximum (exactSpd), versions with less speed must survive too, down to none, or a
    band below the piece's full speed could be missed. */
-test('meld versions: with a speed maximum, versions with less speed are kept', async () => {
-  const { meldVersions } = await import('../../src/core/meld.js');
+test('meld versions: with a speed maximum, versions with less speed are kept', () => {
   const it = piece(war, "Kirin's Osode of Fending");
   const gains = vs => vs.map(m => [m?.gain.det || 0, m?.gain.spd || 0]);
   const min = gains(meldVersions(war, it, ['det', 'spd']));
@@ -206,14 +205,12 @@ test('meld versions: with a speed maximum, versions with less speed are kept', a
   }
 });
 
-test('meld versions: a piece that takes no stones has one version, no melds', async () => {
-  const { meldVersions } = await import('../../src/core/meld.js');
+test('meld versions: a piece that takes no stones has one version, no melds', () => {
   assert.deepEqual(meldVersions(sge, mkItem('H', 'head', 300, { crit: 10 }), ['crit', 'spd']), [null]);
 });
 
 /* One tie rule for both paths: for every gain vector the plain search picks, its meld version shows the same stones. */
-test('meld versions show the same stones as bestMeld for the same gains', async () => {
-  const { meldVersions } = await import('../../src/core/meld.js');
+test('meld versions show the same stones as bestMeld for the same gains', () => {
   let checked = 0;
   for (const job of [sge, war]) {
     const pool = browseItems(job, {}).map(r => poolItemFromRow(job, r));
@@ -240,8 +237,7 @@ test('meld versions show the same stones as bestMeld for the same gains', async 
 /* A lower grade in a guaranteed slot is never a version of its own: it only lowers a gain, and under a speed maximum,
    where less speed can matter, it found no better set in 2,045 Target GCD runs for about 14% more search work (owner,
    2026-10-16: dropped). Kirin's Osode of Fending (5 guaranteed slots, VI = 16, V = 6) adds speed in steps of 16 only. */
-test('meld versions: with a speed maximum, no lower grade in a guaranteed slot', async () => {
-  const { meldVersions } = await import('../../src/core/meld.js');
+test('meld versions: with a speed maximum, no lower grade in a guaranteed slot', () => {
   const it = piece(war, "Kirin's Osode of Fending");
   const spds = meldVersions(war, it, ['det', 'spd'], { exactSpd: true }).map(m => m?.gain.spd || 0);
   assert.ok(spds.includes(16) && spds.includes(80));
@@ -252,8 +248,7 @@ test('meld versions: with a speed maximum, no lower grade in a guaranteed slot',
    slots), Critical Hit 123 below its cap: XII x 2 + XI (126) covers it as well as XII x 3 (162), so the third stone is
    XI, from both paths. Augmented Bygone Brass Earrings of Healing (item level 790, 2 guaranteed slots, no overmelding),
    Determination 64 below its cap: XII + XI (72) as well as XII x 2 (108), so XI goes in a guaranteed slot. */
-test('odd grades on ties: XI where it gives the same gains, from both paths', async () => {
-  const { meldVersions } = await import('../../src/core/meld.js');
+test('odd grades on ties: XI where it gives the same gains, from both paths', () => {
   const coat = piece(sge, "Courtly Lover's Longcoat of Healing");
   assert.equal(meldCaps(sge, coat).crit - (coat.stats.crit || 0), 123);
   const m = bestMeld(sge, coat, ['crit']);
