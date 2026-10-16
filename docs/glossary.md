@@ -146,7 +146,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Sheet.** One of the game's internal data tables, exported as one CSV file: for example `Item` (one row per item), `ItemLevel` (the budget table), `BaseParam` (slot shares and stat factors) and `ParamGrow` (per-level data). See [data-pipeline.md, section 1](engineering/data-pipeline.md#1-source).
 
-**Slot code.** The number, 0 to 12, that names a piece's slot type in the database; 12 is a body piece that also covers the head. See [data-pipeline.md, section 4](engineering/data-pipeline.md#slot).
+**Slot code.** The number, 0 to 14, that names a piece's slot type in the database; 12 is a body piece that also covers the head, 13 legs that also cover the feet, 14 a body that covers the hands, legs and feet. See [data-pipeline.md, section 4](engineering/data-pipeline.md#slot).
 
 **Slot share.** The fraction of the budget a slot gets, in thousandths, for example 135 for body and legs. Read from the game's `BaseParam` sheet (**verified**). A shield's stats are not computed from its own share: they are the two-handed value minus the one-handed value (**inferred**). See [math.md, section 3](mechanics/math.md#3-slot-shares).
 

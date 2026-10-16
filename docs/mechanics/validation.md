@@ -111,7 +111,7 @@ Two groups that used to miss have a known cause and a rule in the model ([math.m
 - **Eight level 50 crafted HQ healer pieces at item level 110** carry Direct Hit at 25% of the slot's substat budget, not the 20% line. It is the old Accuracy stat, raised in patch 4.0.
   - The official patch 4.0 notes say "The \"accuracy\" attribute has been changed to \"direct hit\"" and that "the attributes of certain gear ... have been adjusted" ([patch 4.0 notes](https://na.finalfantasyxiv.com/lodestone/topics/detail/8937c86379b2124393409732025dac57f23839bc)).
   - Archived wiki pages from before 4.0 show Accuracy in that position. The Ebony Cane had Accuracy 9, exactly the 20% line; it now has Direct Hit 11 ([Gamer Escape, 2015](https://web.archive.org/web/20150125060027/http://ffxiv.gamerescape.com:80/wiki/Ebony_Cane)).
-  - The eight are exactly the green (`Rarity` 2), HQ-able Mind-only pieces with three substats. The model applies 25% to that group (fitted to these eight, **inferred**). The same holds for 13 item level 50 Replica High Allagan and Dreadwyrm healer pieces the check does not cover.
+  - The eight are exactly the green (`Rarity` 2), HQ-able Mind-only pieces with three substats. The model applies 25% to that group (fitted to these eight, **inferred**). 13 item level 50 Replica High Allagan and Dreadwyrm healer pieces also carry 25%, but the model does not apply it to them: nothing separates them from the blue crafted pieces at 20% (they are among the remaining misses below).
 - **The six all-jobs earrings and rings** (item kind 0 with Main Attribute: Neophyte's Ring, the Aetheryte, Bozjan, Menphina's, Azeyma's and Halone's earrings) follow three factor patterns:
   - Vitality 90% with Main Attribute full (Neophyte's, Aetheryte);
   - both full (Bozjan, Menphina's, Azeyma's; their kind gives Vitality 90%);
@@ -444,7 +444,7 @@ The status of each claim this page checks, in one place. Details are in the sect
 | Reduced stats on 18 item level 46 pieces | **Inferred**; listed by name (owner's decision) | Fitted to the 18 (section 2) |
 | Hand-edited stats of the six all-jobs pieces | **Verified**; factors by name (owner's decision) | Datamining history (section 2) |
 | Sync clamp for substats | **Verified** | Wiki, 5 of 5 at 475 (section 3) |
-| Caps at item level 123 | Independent derivation | No gear at 123; real pieces at 120 and 125 (section 3) |
+| Caps at item level 123 | **Inferred** (independent derivation) | No gear at 123; real pieces at 120 and 125 (section 3) |
 | Factor-first cap order | **Verified** by three **second-hand** in-game values; **inferred** for other caps with a factor below 100 | xivgear's tests (section 8; [math.md, section 5](math.md#the-clamp-rule)) |
 | Main stat and Vitality clamped like substats | **Inferred**, supported second-hand | xivgear's in-game values (section 8) |
 | Lower substats clamp at the full-share cap | **Verified** (published) | Wiki Item Level page; forum report, The Balance (section 8) |

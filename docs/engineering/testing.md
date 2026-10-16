@@ -21,8 +21,8 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 232 tests in 26 files |
-| Generator tests (Python) | the data generators, on small test files | 75 tests |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 256 tests in 29 files (2026-10-16) |
+| Generator tests (Python) | the data generators, on small test files | 77 tests (2026-10-16) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 16 groups of checks |
 
 Notes:

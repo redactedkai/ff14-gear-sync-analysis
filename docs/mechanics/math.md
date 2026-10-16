@@ -275,7 +275,7 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 
 Below level 100 no duty's cap is more than 5 above $\text{sync}(L)$; the 7 that are above it are the level 90 Mount Rokkon and Aloalo Island duties (665) and Second Master's Board (level 50, 135).
 
-A higher cap still computes as typed, since the cap wins (the owner's decision: warn only). The page notes under the cap field that no duty at that level has such a cap (the warning starts above $\text{sync}(L) + 5$, none at level 100). Such settings give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD to 0.50 s, while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
+A higher cap still computes as typed, since the cap wins (the owner's decision: warn only). The page notes under the cap field that no duty at that level has such a cap (the warning starts above $\text{sync}(L) + 5$, none at level 100). Such settings give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6; without the floor it would be about 0.50 s), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
 
 **The rule in one formula.** The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 
@@ -489,7 +489,7 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 
 - **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 optimizer runs on full pools.
 - **Tiebreaks:** in 200 of 572 runs with a target and one tiebreak, another loadout keeps the target's step and puts the tiebreak a step higher. This happens mostly at level 100, where steps are 14 to 25 points wide, and rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds ([materia.md](materia.md)).
-- **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next. Ranking tiebreaks by step is planned after food and a target GCD ([roadmap.md](../roadmap.md)): fix the target at the start of its best step, then maximize the tiebreaks.
+- **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next. Ranking by step (tier ranking) is built in the optimizer's core but not yet on the page ([tier-ranking.md](../engineering/tier-ranking.md), [roadmap.md](../roadmap.md)): it holds each key at the start of its best step plus one point, in order, then ranks the raw totals.
 
 **Measured** by an independent dynamic program. The step formulas are the community ones from AkhMorning, matching xivgear (**inferred**).
 
@@ -550,7 +550,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 | 18 item level 46 dungeon pieces at 90% / 80% | Inferred (fitted to 18); applied by name | 17 exact, 1 within 1 |
 | Off-hand = two-handed − one-handed value | Inferred (fits data) | 224 of 226 off-hands (5) |
 | Sync clamps each stat to its cap at the cap item level | Verified for substats | Wiki caps at 475, 5 of 5 |
-| Caps at 123 | Derived | Row 123 × slot share (6) |
+| Caps at 123 | Inferred (derived from the verified cap rule; no gear at 123) | Row 123 × slot share (6) |
 | Same clamp for main stat and Vitality | Inferred (supported second-hand) | Three in-game values (7) |
 | Lower-ranked substats clamp to the full-share cap | Verified (published) | Wiki Item Level page; player report; The Balance (8) |
 | Melds ignored on synced pieces | Verified (owner, in game) | Section 5 |

@@ -245,7 +245,7 @@ $$
 \text{stat}_k = \sum_{j=0}^{5} \bigl[\text{id}_j = \text{id}(k)\bigr]\,\text{value}_j \;+\; \bigl[\text{can be HQ}\bigr] \sum_{j=0}^{5} \bigl[\text{id}^{\text{HQ}}_j = \text{id}(k)\bigr]\,\text{value}^{\text{HQ}}_j
 $$
 
-**The rule.** The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. With the rule, the bonus is applied to 5,245 rows.
+**The rule.** The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. With the rule, the bonus is applied to 5,395 rows (2026-10-16).
 
 **Why the flag matters.** 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)).
 
@@ -280,11 +280,11 @@ Melds (materia) are not part of these stats: a database row holds the item as it
 
 **Savage is current-only.** The savage group takes only pieces whose equip level is the highest in the database (the level cap, 100 today). Legacy Savage gear, which is far easier to get now, stays in the pool, and the group moves on by itself when an expansion raises the cap. No item names are used.
 
-Counts in the current data: crafted 4,307, tomestone 2,947, ultimate 136, savage 231 (the three Dawntrail tiers; 886 legacy Savage pieces are in no group), relic 1,559, pvp 340.
+Counts in the current data (2026-10-16): crafted 5,243, tomestone 2,947, ultimate 136, savage 231 (the three Dawntrail tiers; 886 legacy Savage pieces are in no group), relic 1,604, pvp 532.
 
 The shop and recipe flags:
 
-- **Crafted** (bit 0): the item is the `ItemResult` of a recipe. 3,450 rows, all in the crafted category; the other 857 crafted pieces are augmented crafted gear bought with certificates (675) and pieces with no recipe of their own. **Verified** against the Lodestone (section 10).
+- **Crafted** (bit 0): the item is the `ItemResult` of a recipe. When last counted (item level 100 and up, before the floor moved to 15): 3,450 rows, all in the crafted category; the other 857 crafted pieces are augmented crafted gear bought with certificates (675) and pieces with no recipe of their own. **Verified** against the Lodestone (section 10).
 - **Tomestone** (bit 1): an exchange listing costs a tomestone to get it, or it is made by trading in such a piece. 1,833 rows. Details below.
 - **Ultimate** (bit 4): an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). 136 rows: the 16, 16, 18, 20, 22, 22 and 22 weapons of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
@@ -308,14 +308,14 @@ In the current data:
 
 | Kinds | Gear | Rows |
 | --- | --- | --- |
-| 1, 2, 3 and 10 | Strength | 7,253 |
-| 4, 11 and 12 | Dexterity | 4,136 |
-| 5 | Intelligence | 2,894 |
-| 6 | Mind | 2,949 |
-| 7 | Strength and Dexterity | 25 |
-| 8 | Intelligence and Mind | 5 |
+| 1, 2, 3 and 10 | Strength | 8,237 |
+| 4, 11 and 12 | Dexterity | 4,496 |
+| 5 | Intelligence | 3,209 |
+| 6 | Mind | 3,319 |
+| 7 | Strength and Dexterity | 411 |
+| 8 | Intelligence and Mind | 297 |
 | 9 | crafter and gatherer | none left in the database |
-| 0 | the 13 pieces with all four main stats, plus six earrings and rings with no main stat | 19 |
+| 0 | at item level 100 and up, the 13 pieces with all four main stats and six earrings and rings with no main stat; 43 more below | 62 |
 
 The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
 
@@ -330,17 +330,18 @@ In the current data:
 
 | Meld slots | Overmeld 0 | Overmeld 1 |
 | --- | --- | --- |
-| 0 | 2,494 | 15 |
-| 1 | 1,720 | 863 |
-| 2 | 8,723 | 2,776 |
-| 3 | 129 | 0 |
-| 5 | 561 | 0 |
+| 0 | 4,140 | 15 |
+| 1 | 1,725 | 1,085 |
+| 2 | 8,842 | 3,484 |
+| 3 | 129 | 29 |
+| 4 | 0 | 16 |
+| 5 | 566 | 0 |
 
-No piece has 4 slots. The 15 pieces with no slot but the overmeld flag are old crafted Paladin shields, item level 180 to 415 (for example Dwarven Mythril Shield). Whether they take any materia in game is not known (**inferred** that they take none: a piece overmelds only past its guaranteed slots, report in `docs/scratchpad/materia/`).
+Only 16 pieces have 4 slots, all with the overmeld flag. The 15 pieces with no slot but the overmeld flag are old crafted Paladin shields, item level 180 to 415 (for example Dwarven Mythril Shield). Whether they take any materia in game is not known (**inferred** that they take none: a piece overmelds only past its guaranteed slots, report in `docs/scratchpad/materia/`).
 
 ### Rarity
 
-Field 12 is `Item.Rarity`, the item's colour in game, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,078, 6,052, 8,559 and 592 rows in the current data. A value that is not a whole number stops the generator. Only the accuracy check reads it: on green, HQ-able healer pieces with three substats, Direct Hit is 25%, not 20% ([math.md, section 4](../mechanics/math.md#substat-shares-empirical)).
+Field 12 is `Item.Rarity`, the item's colour in game, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,844, 7,333, 9,236 and 618 rows in the current data (2026-10-16). A value that is not a whole number stops the generator. Only the accuracy check reads it: on green, HQ-able healer pieces with three substats, Direct Hit is 25%, not 20% ([math.md, section 4](../mechanics/math.md#substat-shares-empirical)).
 
 ### Game id
 
@@ -394,8 +395,8 @@ Each database row is a fixed list of sixteen fields:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | name | text | Item name as in the English client. |
-| slot code | integer 0 to 12 | Slot, per the shared slot table. |
-| item level | integer | The item's own item level (`LevelItem`), 100 to 795 in the current data. |
+| slot code | integer 0 to 14 | Slot, per the shared slot table. |
+| item level | integer | The item's own item level (`LevelItem`), 15 to 795 in the current data. |
 | equip level | integer | Character level needed to wear it (`LevelEquip`). |
 | job mask | integer, $0 < \text{mask} < 2^{23}$ | Who can equip it, as defined above. |
 | stats | 14 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
@@ -517,7 +518,7 @@ Where the extra rows come from (**verified** against the datamining repository's
 
 ## 8. Building the page
 
-The page bundle takes the page code, the stylesheet and the three generated data files and writes them into one HTML file, so the data is part of the code, not loaded at run time. How the build works, and why the page still runs offline, is in [architecture.md, section 5](architecture.md#5-build).
+The page bundle takes the page code, the stylesheet and the generated data files (items, item levels, food, job icons) and writes them into one HTML file, so the data is part of the code, not loaded at run time. How the build works, and why the page still runs offline, is in [architecture.md, section 5](architecture.md#5-build).
 
 | Part | Size |
 | --- | --- |
@@ -533,7 +534,7 @@ The item database is close to 80% of the page, the icons about 10%.
 One command, `npm run update-data`, does steps 1 and 2.
 
 1. **Fetch**: pull the newest CSVs into the local clone.
-2. **Regenerate**: run the three generators (the item and item level ones record the new commit) and rebuild the page. Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
+2. **Regenerate**: run the generators (the item and item level ones record the new commit) and rebuild the page. Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
 4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 20,031 rows above.
 
@@ -630,7 +631,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
-| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; part of `npm test`) |
+| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:data`) |
 | Format and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
 | Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg` |
