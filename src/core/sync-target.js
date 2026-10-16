@@ -10,6 +10,18 @@ export function levelSyncIlvl(level) {
   return speedParams(level).sync;
 }
 
+/* The highest item level cap a real duty pairs with synced level `level`: its level sync item level plus 5, or null at
+   level 100. In the game's duty list (ContentFinderCondition: ClassJobLevelSync, ItemLevelSync; 567 duties at
+   datamining d9582a6, verified 2026-10-16) no duty below level 100 has a cap more than 5 above levelSyncIlvl of its
+   level: the most are Mount Rokkon and Aloalo Island (level 90, 665 over 660) and Second Master's Board (level 50, 135
+   over 130); duties below level 50 have none (Sastasha syncs only the level) or the tutorials' 5 at level 15. At level
+   100 caps run from 680 to the highest item level. A higher cap still computes (owner's decision: warn only), but
+   gives results no duty can, such as a 0.66 s GCD at level 1 with cap 123. */
+export const DUTY_CAP_MARGIN = 5;
+export function dutyCapMax(level) {
+  return level >= 100 ? null : levelSyncIlvl(level) + DUTY_CAP_MARGIN;
+}
+
 /* The item level a piece is synced to, or null when it is untouched. Two triggers (verified by the owner in game):
    - item level sync: `syncOn`, a `cap` is set and the piece's `itemLevel` is above it; the target is the cap;
    - level sync: the piece's `equipLevel` is above `syncedLevel`; the target is levelSyncIlvl(syncedLevel).

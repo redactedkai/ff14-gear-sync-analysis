@@ -117,19 +117,19 @@ function gcdControls(app, pool, gear) {
   };
 }
 
-/* The line under the Target GCD box: the speed the GCD asks for on the character panel, or why no set fits. */
+/* The line under the Target GCD box, short and plain (owner's request): the speed the GCD asks for on the character
+   panel, or why no set fits. The fastest GCD the gear reaches is already in the range beside the box. */
 function gcdLine(job, r, ui, level) {
   const base = statBase(job, 'spd', level);
-  const fast = ui.fastest == null ? '' : ` Fastest with this gear: ${ui.fastest.toFixed(2)}.`;
   if (r.reason === 'unreachable') {
     const why = ui.haste ? `${ui.haste.name} ${ui.haste.pct}%` : 'no speed';
-    return { bad: true, text: `${job.jobName}'s GCD is ${ui.top.toFixed(2)} at most (${why}).${fast}` };
+    return { bad: true, text: `${job.jobName}'s GCD is ${ui.top.toFixed(2)} at most (${why})` };
   }
-  if (!r.ok) return { bad: true, text: `No set reaches ${r.mode === 'exact' ? 'exactly ' : ''}${r.asked.toFixed(2)}.${fast}` };
-  if (r.faster) return { bad: false, text: `Got ${r.gcd.toFixed(2)}, faster than asked: the best set for your goal has more speed.` };
+  if (!r.ok) return { bad: true, text: `No set at ${r.mode === 'exact' ? 'exactly ' : ''}${r.asked.toFixed(2)}` };
+  if (r.faster) return { bad: false, text: `${r.gcd.toFixed(2)}, faster than asked` };
   const lo = base + r.band.min;
   const need = r.band.max == null ? `${lo} or more` : `${lo} to ${base + r.band.max}`;
-  return { bad: false, text: `Needs ${job.label.spd} ${need} on the character panel.` };
+  return { bad: false, text: `${job.label.spd} ${need} (character panel)` };
 }
 
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message

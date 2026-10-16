@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { IL, ITEMS, MAX_REAL } from '../../src/core/tables.js';
 import { JOBS } from '../../src/core/constants.js';
-import { levelSyncIlvl, syncTarget } from '../../src/core/sync-target.js';
+import { dutyCapMax, levelSyncIlvl, syncTarget } from '../../src/core/sync-target.js';
 import { capsFor } from '../../src/core/formulas.js';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../src/core/items.js';
 import { effStats, itemSyncIlvl, optimize } from '../../src/core/optimizer/index.js';
@@ -247,4 +247,29 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
   assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
   // gear no piece of which is synced at this level is not marked synced
   assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
+});
+
+/* Real duties (ContentFinderCondition at datamining d9582a6): the highest cap at each synced level below 100 is at most
+   its level sync item level + 5; at 100 caps run to the highest item level, so there is no limit to warn about. */
+test('dutyCapMax: the highest real cap at a level fits every duty below level 100', () => {
+  // [level, highest cap a real duty has there]
+  for (const [level, cap] of [
+    [15, 5],
+    [50, 135],
+    [60, 240],
+    [70, 395],
+    [75, 406],
+    [80, 525],
+    [90, 665],
+    [92, 655],
+    [94, 663],
+    [95, 666],
+    [98, 675],
+  ]) {
+    assert.ok(cap <= dutyCapMax(level), `level ${level}: cap ${cap} above ${dutyCapMax(level)}`);
+  }
+  assert.equal(dutyCapMax(90), 665); // Mount Rokkon and Aloalo Island, the most above the level's 660
+  assert.equal(dutyCapMax(1), 6);
+  assert.equal(dutyCapMax(50), 135);
+  assert.equal(dutyCapMax(100), null);
 });

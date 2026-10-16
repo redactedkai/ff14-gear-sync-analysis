@@ -322,6 +322,10 @@ input.invalid {
   color: var(--bad);
   font-size: 0.78rem;
 }
+.field-note {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
 input:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -570,13 +574,15 @@ button.x {
   cursor: not-allowed;
 }
 .gcd-line {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+/* no set fits: the one case that needs a look */
+.gcd-line.bad {
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--accent-soft);
-  font-size: 0.88rem;
-}
-.gcd-line.bad {
   background: var(--warn-bg);
+  color: var(--fg);
 }
 @media (max-width: 560px) {
   .groups-row {

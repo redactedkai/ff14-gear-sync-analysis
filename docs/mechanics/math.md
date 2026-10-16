@@ -222,6 +222,20 @@ Between the level caps it rises in steps of 3 (54 → 133, ..., 59 → 148). No 
 
 When both apply, the **item level cap wins**, even where it is the higher of the two. In Aloalo Island (level 90, item level 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660; level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). *Second-hand*: a player's report quoted by xivgear, which applies the same order; not captured by this project. In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
 
+**Caps real duties use** (**verified**, game files: `ContentFinderCondition.ClassJobLevelSync` and `ItemLevelSync`, 567 duties at the datamining commit in the footer). The page accepts any cap at any level, but real duties pair them closely:
+
+| Synced level | Caps in real duties | $\text{sync}(L)$ |
+| --- | --- | ---: |
+| 1 to 49 | none (level sync only; Sastasha is level 18), except the level 15 tutorials' 5 | 1 to 49 |
+| 50 | 50 to 135 | 130 |
+| 60 | 150 to 240 | 270 |
+| 70 | 290 to 395 | 400 |
+| 80 | 420 to 525 | 530 |
+| 90 | 550 to 665 | 660 |
+| 100 | 680 to 795 | 690 |
+
+Below level 100 no duty's cap is more than 5 above $\text{sync}(L)$; the 7 that are above it are the level 90 Mount Rokkon and Aloalo Island duties (665) and Second Master's Board (level 50, 135). A higher cap still computes as typed, since the cap wins (the owner's decision: warn only), and the page notes under the cap field that no duty at that level has such a cap (`dutyCapMax` in sync-target.js: $\text{sync}(L) + 5$, none at level 100). Such settings give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD to 0.50 s, while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
+
 The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 
 $$

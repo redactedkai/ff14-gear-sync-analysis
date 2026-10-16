@@ -670,8 +670,7 @@ async function checkTargetGcd(pg) {
   const free = Number.parseFloat(await gcdCard.innerText());
   const asked = Math.round((free >= 2.5 ? free - 0.01 : free + 0.01) * 100) / 100;
   await setNumber(pg, '#o-gcd', asked.toFixed(2));
-  await expect(pg.locator('#o-gcd-line')).toContainText('Needs Spell Speed');
-  await expect(pg.locator('#o-gcd-line')).toContainText('on the character panel');
+  await expect(pg.locator('#o-gcd-line')).toHaveText(/^Spell Speed \d+ to \d+ \(character panel\)$/);
   await expect(gcdCard).toHaveText(`${asked.toFixed(2)}s`);
   await pg.locator('#o-gcd-mode label', { hasText: 'or faster' }).click();
   await expect(pg.locator('#o-gcd-line')).toBeVisible();
@@ -912,6 +911,13 @@ async function checkCapValidation(pg) {
   await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
   await pg.fill('#cap', '123');
   await expect(pg.locator('#cap-error')).toBeHidden();
+  await expect(pg.locator('#cap-note')).toBeHidden(); // level 100: real caps run to the highest item level
+  // no duty pairs level 1 with cap 123: computed as typed, with a note under the field
+  await setNumber(pg, '#level', '1');
+  await expect(pg.locator('#cap-note')).toHaveText('No duty at level 1 has a cap above item level 6');
+  await setNumber(pg, '#level', '50');
+  await expect(pg.locator('#cap-note')).toBeHidden(); // cap 123 at level 50 is real (T13)
+  await setNumber(pg, '#level', '100');
   await pg.locator('#sync').uncheck();
 }
 
