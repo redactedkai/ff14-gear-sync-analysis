@@ -5,7 +5,7 @@ import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL } from '../core/tables.js';
 import { restoreState, resetForJob, TABS, MATH_TABS } from './state.js';
 
-export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'syncIlvl', 'piece', 'browse', 'opt'];
+export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'piece', 'browse', 'opt'];
 
 export function createAppStore(initial) {
   return {

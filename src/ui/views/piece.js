@@ -3,6 +3,7 @@
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, statDerivation } from '../../core/formulas.js';
 import { budgetChartSvg } from '../chart.js';
+import { MAX_REAL } from '../../core/tables.js';
 import { shownSync } from '../state.js';
 
 /* "base × 8.5% = 26.4 → 26; × 70% = 18.2 → 18". The slot share is per mille in the game files; one decimal of a
@@ -18,10 +19,12 @@ function formulaText(steps) {
     .join('; ');
 }
 
-export function pieceView(app) {
+/* The step-by-step table and budget chart for Piece stats' piece at item level `ilvl` (the explainer's chosen one,
+   explainerItemLevel). */
+export function pieceView(app, ilvl) {
   const job = app.jobCtx,
     p = app.piece,
-    il = clampIlvl(p.ilvl),
+    il = clampIlvl(ilvl ?? p.ilvl ?? MAX_REAL),
     t = p.slot;
   const sync = shownSync(app),
     cap = sync?.cap ?? null;
@@ -48,7 +51,6 @@ export function pieceView(app) {
     byLevel: !!sync?.byLevel,
     level: sync?.level ?? null,
     status: !sync ? 'off' : il <= cap ? 'below' : 'above',
-    rangeValue: Math.max(1, Math.min(app.maxReal, il)),
     chartSvg: budgetChartSvg(job, il, cap),
     // sync cuts the 70% line to the full-share cap, so it ends up level with the first (math.md section 5)
     evenSubs: clampOn && rows.some(r => r.w === SUB_WEIGHTS[1] && r.syn === caps[r.stat]),

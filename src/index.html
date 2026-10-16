@@ -57,129 +57,199 @@
   <button role="tab" data-tab="math" type="button" class="aside" :aria-selected="String($store.app.tab === 'math')" @click="$store.app.showTab('math')">How the math works</button>
 </nav>
 
-<!-- THE MATH -->
-<section class="tab" id="tab-math" role="tabpanel" hidden :hidden="$store.app.tab !== 'math'">
-<nav class="subtabs" aria-label="Math views">
-  <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece stats</button>
-  <button data-sub="sync" type="button" :aria-pressed="String($store.app.mathTab === 'sync')" @click="$store.app.showSub('sync')">Sync limits</button>
-</nav>
-
-<!-- PIECE LAB -->
-<section class="subtab" id="tab-piece" x-data="pieceLab" :hidden="$store.app.mathTab !== 'piece'">
-  <div class="panel">
-    <div class="grid">
-      <label class="f">Item level
-        <input type="number" id="p-ilvl" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric" x-bind="$num('piece.ilvl', 1, $store.app.maxReal)">
-      </label>
-      <label class="f">Slot
-        <select id="p-slot" @change="$store.app.piece.slot = $event.target.value">
-          <template x-for="o in slotOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.slot"></option></template>
-        </select>
-      </label>
-      <label class="f">1st substat · 100%<select id="p-s1" @change="setSub(0, $event.target.value)">
-        <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[0] || 'spd')"></option></template>
-      </select></label>
-      <label class="f">2nd substat · 70%<select id="p-s2" @change="setSub(1, $event.target.value)">
-        <template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
-      </select></label>
+<!-- THE MATH: what sync does to one piece (Piece stats) and to a full set's GCD (GCD); controls shared in a sticky bar -->
+<section class="tab" id="tab-math" role="tabpanel" hidden :hidden="$store.app.tab !== 'math'" x-data="syncExplainer" @keydown.escape.window="helpOpen = false">
+<div class="mathbar" id="m-bar">
+  <nav class="subtabs" aria-label="Math views">
+    <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece stats</button>
+    <button data-sub="gcd" type="button" :aria-pressed="String($store.app.mathTab === 'gcd')" @click="$store.app.showSub('gcd')">GCD</button>
+  </nav>
+  <label class="mctl" x-show="$store.app.mathTab === 'piece'">Slot
+    <select id="p-slot" @change="$store.app.piece.slot = $event.target.value">
+      <template x-for="o in slotOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.slot"></option></template>
+    </select>
+  </label>
+  <label class="mctl">1st substat
+    <select id="p-s1" @change="setSub(0, $event.target.value)">
+      <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.subs[0]"></option></template>
+    </select>
+  </label>
+  <label class="mctl">2nd substat
+    <select id="p-s2" @change="setSub(1, $event.target.value)">
+      <template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
+    </select>
+  </label>
+  <div class="helpwrap">
+    <button type="button" class="help" id="m-help" :aria-expanded="String(helpOpen)" aria-controls="m-help-pop" title="How sync works" @click.stop="helpOpen = !helpOpen">?</button>
+    <div class="backdrop" x-show="helpOpen" @click="helpOpen = false"></div>
+    <div class="popover" id="m-help-pop" role="dialog" aria-label="How sync works" x-show="helpOpen" @click.outside="helpOpen = false">
+      <h2>How sync works</h2>
+      <ul class="facts">
+        <li><b>Sync caps stats instead of scaling gear down.</b> A stat above its slot’s cap drops to the cap. A stat below the cap stays the same. (For the main stat and Vitality this is a guess; the Wiki covers substats only.)</li>
+        <li><b>A piece at or below the synced item level</b> is untouched and keeps its materia.</li>
+        <li><b>A piece above the synced item level</b> loses all its materia.</li>
+        <li><b>Both substats on a piece have the same cap.</b> The 70% substat reaches the cap when the piece is about 120 item levels above the synced item level.</li>
+        <li><b>Overgeared or melded depends on the gap.</b> From about 95 item levels above the synced item level, overgeared gear has more substat points than melded gear at the synced item level. Below that gap, the melded gear has more.
+          <ul><li>At levels 50 and 60, where materia adds little, the gap is much smaller.</li></ul>
+        </li>
+        <li><b>Every job gets the same caps.</b> Only Vitality on healer and caster gear is lower (90%).</li>
+        <li><b>Level sync</b> lowers your character level. <b>Item level sync</b> caps your gear’s item level. A duty can use both; the item level cap wins.</li>
+      </ul>
+      <p class="small dim">Sources: FFXIV Wiki, <a href="https://ffxiv.consolegameswiki.com/wiki/Item_Level" target="_blank" rel="noopener">Item Level</a> and <a href="https://ffxiv.consolegameswiki.com/wiki/Level_Sync" target="_blank" rel="noopener">Level Sync</a>; game data from <a href="https://github.com/xivapi/ffxiv-datamining" target="_blank" rel="noopener">ffxiv-datamining</a>.</p>
     </div>
-    <input type="range" id="p-range" min="1" :max="$store.app.maxReal" step="1" aria-label="Item level slider" :value="view.rangeValue" @input="setFromRange($event.target.value)">
-    <div id="p-out">
-      <p class="small" style="margin-bottom:10px">
-        <span x-show="view.status === 'off'">No sync cap applies: stats are shown as on the item.</span>
-        <span x-show="view.byLevel" x-text="`Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}, used as the cap here.`"></span>
-        <span x-show="view.status === 'below'" x-text="`This piece is at or below the cap (${view.cap}), so sync leaves it untouched.`"></span>
-        <span x-show="view.status === 'above'">This piece is above the cap, so sync clamps each line to what a 100% stat on a <span x-text="slotLabel[$store.app.piece.slot]"></span> at item level <span x-text="view.cap"></span> would have. <b class="bad" x-text="view.lost + ' points'"></b> of its raw stats are unused, and its materia is ignored.</span>
-        <span x-show="view.evenSubs">Each substat is cut to the same cap, so the 70% line ends up as high as the first: a piece far above the cap keeps two full substats.</span>
-      </p>
+  </div>
+  <div class="ilctl small">
+    <label for="p-range">Gear item level</label>
+    <span class="bound" x-text="range[0]" :title="rangeNote"></span>
+    <input type="range" id="p-range" :min="range[0]" :max="range[1]" step="1" :value="il" :title="rangeNote" @input="setIlvl($event.target.value)">
+    <span class="bound" x-text="range[1]" :title="rangeNote"></span>
+    <input type="number" id="p-ilvl" :min="range[0]" :max="range[1]" step="1" inputmode="numeric" :value="il" aria-label="Gear item level" @change="setIlvl($event.target.value)">
+    <button type="button" class="chip" id="p-ilvl-reset" @click="resetIlvl()">Reset</button>
+  </div>
+</div>
+
+<p class="panel empty" id="m-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
+
+<!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
+<section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
+<template x-if="view"><div class="twopanel">
+  <div class="panel" id="p-piece">
+    <h2>One piece, before and after sync</h2>
+    <p class="small" id="p-lead" x-text="view.lead"></p>
+    <div class="bars" id="p-bars">
+      <template x-for="b in view.bars" :key="b.label">
+        <div style="display:contents">
+          <div class="small" x-text="b.label"></div>
+          <div class="bar"><div class="keep" :style="`width:${b.keep}`"></div><div class="rise" :style="`left:${b.riseLeft};width:${b.rise}`"></div><div class="cut" :style="`left:${b.cutLeft};width:${b.cut}`"></div><div class="capmark" :style="`left:${b.capAt}`"></div></div>
+          <div class="num"><span x-text="b.raw"></span> → <b x-text="b.kept"></b><span class="gold" x-show="b.extra" x-text="` +${b.extra}`"></span></div>
+        </div>
+      </template>
+      <div class="small">Materia</div>
+      <div class="chips" id="p-materia">
+        <template x-for="(c, i) in view.stoneChips" :key="i"><span class="meldchip" :class="{ on: !view.synced }" x-text="c"></span></template>
+        <span class="small dim" x-text="view.meldNote"></span>
+      </div>
+    </div>
+    <p class="small dim" x-show="view.goalNote" x-text="view.goalNote"></p>
+    <div class="legend">
+      <span><i class="box" style="background:var(--accent)"></i>Kept</span>
+      <span><i class="hatch"></i>Cut by sync</span>
+      <span><i class="box" style="background:var(--gold)"></i><span x-text="`More than an item level ${view.cap} piece has`"></span></span>
+      <span><i style="background:var(--fg);width:2px"></i><span x-text="`Cap at item level ${view.cap}`"></span></span>
+    </div>
+    <div class="versus" id="p-vs">
       <div class="tablewrap"><table class="compact">
-        <thead><tr><th>Stat</th><th class="n" x-text="'Budget at ilvl ' + view.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-show="view.cap != null" x-text="'Synced to ' + view.cap"></th></tr></thead>
-        <tbody>
-          <template x-for="(r, i) in view.rows" :key="i">
-            <tr>
-              <td><span x-text="r.label"></span> <span class="dim" x-text="r.w + '%'"></span></td>
-              <td class="n" x-text="r.base"></td>
-              <td class="formula" x-text="r.formula"></td>
-              <td class="n" x-text="r.raw"></td>
-              <td class="n" x-show="view.cap != null" :class="{ clamp: r.syn < r.raw }"><span x-text="r.syn"></span><template x-if="r.syn < r.raw"><span class="small" x-text="` (−${r.raw - r.syn})`"></span></template></td>
-            </tr>
-          </template>
-        </tbody>
+        <thead><tr><th x-text="`${slotLabel[$store.app.piece.slot]} item level`"></th><th>Materia</th><th class="n">In the duty</th></tr></thead>
+        <tbody><template x-for="r in view.vsRows" :key="r.il"><tr><td><span x-text="r.il"></span> <span class="dim" x-show="r.tag" x-text="`(${r.tag})`"></span></td><td x-text="r.materia"></td><td class="n" x-text="r.points"></td></tr></template></tbody>
       </table></div>
-    </div>
-    <div class="note small" id="p-why">
-      <b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that.<span x-show="view.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.</span>
-      This is a pattern measured on real gear (it matches 99.9% of pieces), not a rule from the game files. The Gear optimizer and Gear browser use each item’s real stats instead.
+      <p class="small" x-show="view.verdict"><b x-text="view.verdict"></b></p>
     </div>
   </div>
-  <div class="panel">
-    <h3>Stat budget by item level</h3>
-    <div class="legend"><span><i style="background:var(--accent)"></i>Substat budget</span><span><i style="background:var(--gold)"></i>Main stat budget</span><span x-show="view.cap != null"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
-    <div id="p-chart" x-html="view.chartSvg"></div>
-    <p class="small dim">A piece’s stats come from these two budgets at its item level, scaled by its slot’s share. Dotted lines split the expansions.</p>
+  <div class="panel" id="p-curve">
+    <h2>Overgeared or melded: which has more?</h2>
+    <p class="small" x-text="`Substat points of a ${view.slotName} in a duty synced to ${view.cap}, by the ${view.slotName}’s item level. Melds count only up to item level ${view.cap}.`"></p>
+    <div class="legend">
+      <span><i style="background:var(--accent);height:2px"></i>Substats + melds in the duty</span>
+      <span><i style="background:var(--muted);height:2px"></i>Substats only</span>
+      <span><i style="background:var(--gold);height:2px"></i><span x-text="`Item level ${view.cap} with its melds`"></span></span>
+      <span><i style="background:var(--fg);opacity:.12"></i>Overgeared has more</span>
+    </div>
+    <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-html="view.curveChartSvg"></div>
+    <p class="callout small" id="p-curve-note" x-show="view.curveNote" x-text="view.curveNote"></p>
   </div>
-</section>
+</div></template>
 
-<!-- SYNC CAPS -->
-<section class="subtab" id="tab-sync" x-data="syncCaps" hidden :hidden="$store.app.mathTab !== 'sync'">
-  <div class="panel">
-    <h2>What the sync cap allows</h2>
-    <ul class="small list" id="s-how">
-      <li><b>Which gear is synced.</b> With item level sync on, every piece above the cap. With a lower synced level (level sync), every piece whose equip level is above it, synced to that level’s item level. When both apply, the item level cap wins.</li>
-      <li><b>What sync does.</b> Each stat is cut to the cap for its slot. Both substats get the same cap, so a piece far above the cap keeps two full substats, where a piece at the cap has 100% and 70%.</li>
-      <li><b>What it never does.</b> Raise a stat: a piece at or below the cap keeps its own stats.</li>
-      <li><b>Materia.</b> A synced piece loses its materia; a piece at or below the cap keeps it. So a melded piece at the cap can beat a synced one, and the optimizer weighs both.</li>
-    </ul>
-    <p class="small dim" id="s-off" x-show="!view" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what it allows.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what it allows.'"></p>
-    <template x-if="view"><div style="display:flex;flex-direction:column;gap:12px">
-    <label class="f" style="max-width:240px">Compare with a piece at item level<input type="number" id="s-ilvl" min="1" :max="$store.app.maxReal" inputmode="numeric" x-bind="$num('syncIlvl', 1, $store.app.maxReal)"></label>
-    <p class="small dim" id="s-lead" x-text="(view.byLevel ? `Level sync: at level ${view.level}, gear with a higher equip level is synced to item level ${view.cap}. ` : '') + `Caps at item level ${view.cap}, per slot. ` + (view.compare ? `The last two columns show a piece’s 1st / 2nd substat: at item level ${view.cap}, and at item level ${view.hil} after syncing.` : `A piece at item level ${view.hil} is at or below the cap, so it is not synced: enter an item level above ${view.cap} to compare.`)"></p>
-    <div class="tablewrap"><table id="s-table" class="compact">
-      <thead><tr><th>Slot</th><th class="n">Share</th><th class="n">Substat cap</th><th class="n" x-show="view.specLabel" x-text="view.specLabel + ' cap'"></th><th class="n" x-text="job.short.main + ' cap'"></th><th class="n">VIT cap</th><th class="n" x-text="`Ilvl ${view.cap} piece`"></th><th class="n" x-show="view.compare" x-text="`Ilvl ${view.hil} synced`"></th></tr></thead>
+<details class="panel" id="p-steps">
+  <summary>Each stat, step by step</summary>
+  <div id="p-out" style="margin-top:12px">
+    <p class="small" style="margin-bottom:10px">
+      <span x-show="calc.status === 'off'">No sync cap applies: stats are shown as on the item.</span>
+      <span x-show="calc.byLevel" x-text="`Level sync: at level ${calc.level}, gear with a higher equip level is synced to item level ${calc.cap}, used as the cap here.`"></span>
+      <span x-show="calc.status === 'below'" x-text="`This piece is at or below the cap (${calc.cap}), so sync leaves it untouched.`"></span>
+      <span x-show="calc.status === 'above'" x-text="`This piece is above the cap (${calc.cap}): each line is cut to the cap for its slot.`"></span>
+    </p>
+    <div class="tablewrap"><table class="compact">
+      <thead><tr><th>Stat</th><th class="n" x-text="'Budget at ilvl ' + calc.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-show="calc.cap != null" x-text="'Synced to ' + calc.cap"></th></tr></thead>
       <tbody>
-        <template x-for="r in view.rows" :key="r.type">
-          <tr><td x-text="slotLabel[r.type] + (r.times > 1 ? ' ×2' : '')"></td><td class="n" x-text="r.pct + '%'"></td><td class="n" x-text="r.sub"></td><td class="n" x-show="view.specLabel" x-text="r.spec"></td><td class="n" x-text="r.main"></td><td class="n" x-text="r.vit"></td><td class="n" x-text="r.native"></td><td class="n" x-show="view.compare" x-text="r.synced"></td></tr>
+        <template x-for="(r, i) in calc.rows" :key="i">
+          <tr>
+            <td><span x-text="r.label"></span> <span class="dim" x-text="r.w + '%'"></span></td>
+            <td class="n" x-text="r.base"></td>
+            <td class="formula" x-text="r.formula"></td>
+            <td class="n" x-text="r.raw"></td>
+            <td class="n" x-show="calc.cap != null" :class="{ clamp: r.syn < r.raw }"><span x-text="r.syn"></span><template x-if="r.syn < r.raw"><span class="small" x-text="` (−${r.raw - r.syn})`"></span></template></td>
+          </tr>
         </template>
-        <tr class="total"><td x-text="`All ${view.slots} slots`"></td><td class="n"></td><td class="n" x-text="view.tot.c"></td><td class="n" x-show="view.specLabel" x-text="view.tot.spec"></td><td class="n" x-text="view.tot.main"></td><td class="n" x-text="view.tot.vit"></td><td class="n" x-text="`${view.tot.n1} / ${view.tot.n2}`"></td><td class="n" x-show="view.compare" x-text="`${view.tot.h1} / ${view.tot.h2}`"></td></tr>
       </tbody>
     </table></div>
-    <div id="s-sum"><div class="readout">
-      <div><b x-text="view.best"></b><span x-text="`Most gear can give of one substat${view.bestLabel ? ` (${view.bestLabel})` : ''}, all ${view.slots} slots`"></span></div>
-      <div x-show="view.compare"><b class="gold" x-text="(view.gain >= 0 ? '+' : '') + view.gain"></b><span x-text="`First two substats combined, item level ${view.hil} pieces vs item level ${view.cap} pieces (${view.gainPct}%)`"></span></div>
-      <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD at ${view.spdPanel} ${job.label.spd} (${view.spdBase} base, ${view.spd} gear), level ${$store.app.level}`"></span></div>
-    </div></div>
-    </div></template>
-    <details id="s-valid" x-data="validationPanel" @toggle="onToggle($el.open)"><summary>Checked against real gear and published caps</summary><div id="s-valid-out" style="margin-top:10px">
-      <template x-if="view"><div>
-        <p class="small"><b x-text="view.exact"></b> of <b x-text="view.total"></b> pieces exact. For every combat piece in the game database with two or more substats and item level 110 or higher (<b x-text="view.total"></b> pieces, all jobs), the page’s formula <span class="num">round( round(table × slot share) × substat share )</span> was compared with the item’s real stats, assigning substat shares by rank (100%, 70%), with Direct Hit on Mind-only gear at 20% (25% on eight green crafted pieces). Real stats are rounded twice: the slot budget first, then the share.</p>
-        <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Item level</th><th class="n">Pieces</th><th class="n">Exact</th><th class="n">Off by 1</th><th class="n">Off by more</th></tr></thead><tbody>
-          <template x-for="b in view.bands" :key="b.label"><tr><td x-text="b.label"></td><td class="n" x-text="b.n"></td><td class="n" x-text="b.exact"></td><td class="n" x-text="b.off1"></td><td class="n" x-text="b.more"></td></tr></template>
-        </tbody></table></div>
-        <p class="small" style="margin-top:12px"><b>Sync caps at item level 475</b>, published on the FFXIV Wiki’s Item Level Sync page, against this page’s formula:</p>
-        <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Gear type</th><th class="n">Wiki</th><th class="n">Formula</th><th></th></tr></thead><tbody>
-          <template x-for="c in view.wiki" :key="c.label"><tr><td x-text="c.label"></td><td class="n" x-text="c.published"></td><td class="n" x-text="c.computed"></td><td :class="c.match ? 'ok' : 'bad'" x-text="c.match ? 'match' : 'differs'"></td></tr></template>
-        </tbody></table></div>
-        <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), two weapon and shield pairs, two item level 595 legs, each 1 off; their causes are not known.</p>
-      </div></template>
-    </div></details>
-    <div class="note small" id="s-model">
-      <b>Checked</b>
-      <ul class="list">
-        <li>Substat caps match the FFXIV Wiki’s item level 475 caps (5 of 5).</li>
-        <li>Piece stats from the budget table match real gear (the table above).</li>
-        <li>Materia is ignored on synced pieces, and level sync applies to gear whose equip level is above the synced level (in game).</li>
-        <li>Level sync item levels come from the game’s level table.</li>
-      </ul>
-      <b>Guessed</b>
-      <ul class="list">
-        <li>The main stat and Vitality are cut the same way (three in-game values reported by xivgear fit).</li>
-        <li>The 70% line is cut to the full cap, not to 70% of it (a player’s report).</li>
-        <li>Sync never raises a stat.</li>
-        <li>When both syncs apply, the item level cap wins (a player’s report); weapons use the same level sync item level.</li>
-        <li>The 100% / 70% shares and the off-hand rule (two-handed minus one-handed) are patterns measured on real gear, not game rules.</li>
-      </ul>
-    </div>
   </div>
+  <div class="note small" id="p-why">
+    <b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.</span>
+    This is a pattern measured on real gear (it matches 99.9% of pieces), not a rule from the game files. The Gear optimizer and Gear browser use each item’s real stats instead.
+  </div>
+  <h3>Stat budget by item level</h3>
+  <div class="legend"><span><i style="background:var(--accent)"></i>Substat budget</span><span><i style="background:var(--gold)"></i>Main stat budget</span><span x-show="calc.cap != null"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
+  <div id="p-chart" x-html="calc.chartSvg"></div>
+  <p class="small dim">A piece’s stats come from these two budgets at its item level, scaled by its slot’s share. Dotted lines split the expansions.</p>
+  <details id="s-valid" x-data="validationPanel" @toggle="onToggle($el.open)"><summary>Checked against real gear and published caps</summary><div id="s-valid-out" style="margin-top:10px">
+    <template x-if="view"><div>
+      <p class="small"><b x-text="view.exact"></b> of <b x-text="view.total"></b> pieces exact. For every combat piece in the game database with two or more substats and item level 110 or higher (<b x-text="view.total"></b> pieces, all jobs), the page’s formula <span class="num">round( round(table × slot share) × substat share )</span> was compared with the item’s real stats, assigning substat shares by rank (100%, 70%), with Direct Hit on Mind-only gear at 20% (25% on eight green crafted pieces). Real stats are rounded twice: the slot budget first, then the share.</p>
+      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Item level</th><th class="n">Pieces</th><th class="n">Exact</th><th class="n">Off by 1</th><th class="n">Off by more</th></tr></thead><tbody>
+        <template x-for="b in view.bands" :key="b.label"><tr><td x-text="b.label"></td><td class="n" x-text="b.n"></td><td class="n" x-text="b.exact"></td><td class="n" x-text="b.off1"></td><td class="n" x-text="b.more"></td></tr></template>
+      </tbody></table></div>
+      <p class="small" style="margin-top:12px"><b>Sync caps at item level 475</b>, published on the FFXIV Wiki’s Item Level Sync page, against this page’s formula:</p>
+      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Gear type</th><th class="n">Wiki</th><th class="n">Formula</th><th></th></tr></thead><tbody>
+        <template x-for="c in view.wiki" :key="c.label"><tr><td x-text="c.label"></td><td class="n" x-text="c.published"></td><td class="n" x-text="c.computed"></td><td :class="c.match ? 'ok' : 'bad'" x-text="c.match ? 'match' : 'differs'"></td></tr></template>
+      </tbody></table></div>
+      <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), two weapon and shield pairs, two item level 595 legs, each 1 off; their causes are not known.</p>
+    </div></template>
+  </div></details>
+  <div class="note small" id="s-model">
+    <b>Checked</b>
+    <ul class="list">
+      <li>Substat caps match the FFXIV Wiki’s item level 475 caps (5 of 5).</li>
+      <li>Piece stats from the budget table match real gear (the table above).</li>
+      <li>The 70% line is cut to the full cap, and sync never raises a stat (the Wiki’s item level 475 example: 127 / 89 → 88 / 88, 93 / 65 → 88 / 65).</li>
+      <li>Materia is ignored on synced pieces, and level sync applies to gear whose equip level is above the synced level (in game).</li>
+      <li>Level sync item levels come from the game’s level table.</li>
+    </ul>
+    <b>Guessed</b>
+    <ul class="list">
+      <li>The main stat and Vitality are cut the same way (three in-game values reported by xivgear fit).</li>
+      <li>When both syncs apply, the item level cap wins (a player’s report); weapons use the same level sync item level.</li>
+      <li>The 100% / 70% shares and the off-hand rule (two-handed minus one-handed) are patterns measured on real gear, not game rules.</li>
+    </ul>
+  </div>
+</details>
+</section>
+
+<!-- GCD: a full set at the chosen item level against the same set at the cap -->
+<section class="subtab" id="tab-gcd" hidden :hidden="$store.app.mathTab !== 'gcd'">
+<template x-if="view"><div>
+  <p class="panel small" id="g-none" x-show="!view.gcd" x-text="`The GCD needs ${view.spdLabel} as one of the two substats. Pick it in the 1st or 2nd substat menu above.`"></p>
+  <template x-if="view.gcd"><div class="twopanel">
+    <div class="panel" id="g-sets">
+      <h2>Full set: two item levels compared</h2>
+      <p class="small" x-text="`A full set (every slot, ${view.spdLabel} on every piece as one of the two substats) in a duty synced to ${view.cap}. At or below ${view.cap} each piece keeps its melds.`"></p>
+      <div class="tablewrap"><table class="compact" id="g-table">
+        <thead><tr><th>Set item level</th><th class="n" x-text="view.spdLabel"></th><th class="n">GCD</th><th class="n">Past last step</th><th class="n">To next step</th></tr></thead>
+        <tbody><template x-for="r in view.gcd.rows" :key="r.il"><tr><td><span x-text="r.il"></span> <span class="dim" x-show="r.tag" x-text="`(${r.tag})`"></span></td><td class="n" x-text="r.spd"></td><td class="n" x-text="r.gcd.toFixed(2) + 's'"></td><td class="n" x-text="r.past"></td><td class="n" x-text="r.next ?? '–'"></td></tr></template></tbody>
+      </table></div>
+      <p class="small dim" x-text="`The GCD changes in 0.01 s steps. Points past the last step don’t shorten it until the next step (they still add a little DoT and auto-attack damage).${view.gcd.haste ? ` Includes ${view.gcd.haste}.` : ''}`"></p>
+      <div class="versus" id="g-vs" x-show="view.gcd.verdict"><b x-text="view.gcd.verdict"></b></div>
+    </div>
+    <div class="panel" id="g-curve">
+      <h2>Full set GCD by item level</h2>
+      <p class="small" x-text="view.gcd.step != null ? `The set’s GCD by its item level. At level ${view.level}, one GCD step (0.01 s) is about ${view.gcd.step} ${view.spdLabel}.` : `The set’s GCD by its item level.`"></p>
+      <div class="legend">
+        <span><i style="background:var(--accent);height:2px"></i>Set at each item level</span>
+        <span><i style="background:var(--gold);height:2px"></i><span x-text="`Item level ${view.cap} with its melds`"></span></span>
+        <span><i style="background:var(--fg);opacity:.12"></i>Shorter GCD than the melded set</span>
+      </div>
+      <div class="chartbox" id="g-chart" x-ref="gcdChart" x-html="view.gcd.chartSvg"></div>
+    </div>
+  </div></template>
+</div></template>
 </section>
 
 </section>

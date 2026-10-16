@@ -24,8 +24,7 @@ function validSave() {
     sync: false,
     level: 70,
     tab: 'math',
-    mathTab: 'sync',
-    syncIlvl: 400,
+    mathTab: 'gcd',
     piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'spec'] },
     browse: {
       q: 'Robe',
@@ -109,8 +108,12 @@ test('top-level scalars of the wrong type or out of range fall back field by fie
   expectFieldDefault('level', 9999, 100);
   expectFieldDefault('level', 0, 1);
   expectFieldDefault('level', '50', D.level); // strings are not accepted here
-  expectFieldDefault('syncIlvl', 5000, MAX_REAL);
-  expectFieldDefault('syncIlvl', {}, MAX_REAL);
+});
+
+test('older saves: the removed Sync limits sub-tab opens Piece stats, and its comparison item level is dropped', () => {
+  const s = restoreState({ ...validSave(), mathTab: 'sync', syncIlvl: 400 });
+  assert.equal(s.mathTab, 'piece');
+  assert.equal('syncIlvl' in s, false);
 });
 
 test('tab and mathTab', () => {
@@ -137,14 +140,14 @@ test('nested objects that are not objects fall back to their defaults', () => {
 });
 
 test('piece fields', () => {
-  assert.equal(D.piece.ilvl, MAX_REAL); // the highest real item level
-  expectFieldDefault('piece.ilvl', 'abc', MAX_REAL);
-  expectFieldDefault('piece.ilvl', 900, MAX_REAL);
+  assert.equal(D.piece.ilvl, null); // null: 60 above the cap (DEFAULT_OVER in views/sync-explainer.js)
+  expectFieldDefault('piece.ilvl', 'abc', null);
+  expectFieldDefault('piece.ilvl', null, null);
+  expectFieldDefault('piece.ilvl', 900, MAX_REAL); // an older save's number is kept, held to the real item levels
   expectFieldDefault('piece.slot', 'belt', 'head');
   expectFieldDefault('piece.slot', 'offhand', 'head');
-  const ds = defaultSubs(makeJobContext('WHM'));
-  assert.deepEqual(ds, ['spec', 'crit']); // the job's own substat first (Piety), then Critical Hit
-  assert.deepEqual(defaultSubs(makeJobContext('MNK')), ['spd', 'crit']); // no special substat: speed
+  const ds = defaultSubs();
+  assert.deepEqual(ds, ['crit', 'spd']); // Critical Hit, then speed, for every job (the GCD sub-tab needs speed)
   expectFieldDefault('piece.subs', 'crit', ds);
   expectFieldDefault('piece.subs', { 0: 'crit' }, ds);
   expectFieldDefault('piece.subs', ['crit', 'crit'], ['crit', null]); // the repeat drops

@@ -35,8 +35,8 @@ The tool computes all of that **once per job** into a *job context*: a small, fr
 What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
-- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin, Beastmaster). This fixes the list of active slots for Piece stats, the sync caps table and the slot filter, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
-- **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise. This is the factor the job's own gear carries. It is used only where no real item is involved (Sync caps, Piece stats). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
+- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin, Beastmaster). This fixes the list of active slots for Piece stats, the GCD sub-tab's full set and the slot filter, and the weapon's slot share (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
+- **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise. This is the factor the job's own gear carries. It is used only where no real item is involved (How the math works). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
 - **Level cap.** 100, or the limited job's own: Blue Mage 80, Beastmaster 50 (a constant from the Lodestone patch notes; the game files have none, [math.md, section 1](../mechanics/math.md#1-terms)). The synced level and the equip level filter stop there, and gear above it is left out of the gear list and the search.\n- **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
 Contexts are cached, so asking for the same job twice returns the same object. They are frozen, so no caller can change one by accident. An unknown job id gets the default job's context.
@@ -79,14 +79,14 @@ Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps ne
 
 | Page area | When it recomputes |
 | --- | --- |
-| Settings, Piece stats, Sync limits | On every relevant change |
+| Settings, How the math works | On every relevant change |
 | Real-gear accuracy check | Once, when its panel is first opened |
 | Gear browser | On a relevant change, while the Gear browser tab is open |
 | Optimizer result | 120 ms after the last change, while the Gear optimizer tab is open |
 
 Notes:
 
-- **Settings, Piece stats, Sync limits** are cheap: a few formulas.
+- **Settings, How the math works** are cheap: a few formulas per piece; the explainer's curves (a few thousand generic pieces per setting) are remembered per setting, so a slider move costs a few milliseconds.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
 - **Gear browser**: the database matches of its filters (including its own left-out gear groups), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
 - **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, item level range, equip level, gear groups; the browser's filters with the optimizer's own values). Triggered by a change of those filters, job, cap, sync, level or optimizer settings. Node limit 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
@@ -97,7 +97,7 @@ The debounce works by reading all inputs synchronously inside the effect (so the
 
 The page remembers the user's settings between visits in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Sync limits item level, Piece stats inputs, browse filters and sort, the optimizer settings with its gear groups. The job context, the job's gear, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Piece stats inputs (slot, substats, item level), browse filters and sort, the optimizer settings with its gear groups. The job context, the job's gear, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 
@@ -157,10 +157,10 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
 | Budget chart | `src/ui/chart.js` |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-caps.js`, `gear.js`, `optimizer.js`) |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`); charts in `src/ui/chart.js` and `src/ui/sync-charts.js` |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
-| Components | `src/ui/components/` (`page.js`, `piece-lab.js`, `sync-caps.js`, `validation-panel.js`, `gear.js`, `optimizer.js`) |
+| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `validation-panel.js`, `gear.js`, `optimizer.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |

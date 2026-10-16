@@ -13,8 +13,8 @@ Expected values come from outside the code under test where possible:
     (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/views.test.js finds it in
     the item database);
   - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
-    head values (Mind 248; tests/unit/level-sync.test.js derives them from the ItemLevel row), and the Sync limits
-    tab at item level 660 (ParamGrow.ItemLevelSync for level 90).
+    head values (Mind 248; tests/unit/level-sync.test.js derives them from the ItemLevel row), in the gear browser and
+    in Piece stats (item level 660: ParamGrow.ItemLevelSync for level 90).
 
 The steps run in groups, in parallel: each group gets a fresh browser context (so its own saved state) and page, set to
 Sage, sync to 123, level 50, and runs its steps one after the other (see GROUPS). The numbers from src/core are
@@ -210,8 +210,8 @@ async function waitOptimizer(pg) {
   await expect(pg.locator('#o-out .panel')).toBeVisible();
 }
 
-/** Body rows of a table (CSS selector or Locator) as lists of the texts of its visible cells. Hidden cells (such as
- * the Sync limits special-substat column when it is not needed) are skipped, so positions match what a user sees. */
+/** Body rows of a table (CSS selector or Locator) as lists of the texts of its visible cells. Hidden cells are
+ * skipped, so positions match what a user sees. */
 async function tableRows(pg, selector) {
   const table = typeof selector === 'string' ? pg.locator(selector) : selector;
   return await table.locator('tbody tr').evaluateAll(rows =>
@@ -249,39 +249,33 @@ async function checkNoBadText(pg, where) {
 
 // ---------- checks ----------
 
-/** Sync limits view at cap 123: substat and main-stat caps per slot match the known values. */
+/** Piece stats at cap 123: for every slot, a piece above the cap is cut to the slot's caps, so its main stat and 1st
+ * substat bars end at the known values. A shield job has an Off-hand slot, a two-handed job does not. */
 async function checkSyncCaps(pg, job) {
-  await showMath(pg, 'sync');
-  await expect(pg.locator('#s-table tbody tr').first()).toBeVisible();
-  const rows = new Map((await tableRows(pg, '#s-table')).map(r => [r[0].replace(' ×2', ''), r])); // "Ring ×2" -> "Ring"
-  for (const [slot, [sub, main]] of Object.entries(CAPS_123)) {
-    const r = rows.get(slot);
-    if (!r) {
-      check(false, `${job}: Sync limits has no ${slot} row`);
-      continue;
-    }
-    check(r[2] === String(sub), `${job}: ${slot} substat cap '${r[2]}', expected ${sub}`);
-    check(r[3] === String(main), `${job}: ${slot} main stat cap '${r[3]}', expected ${main}`);
+  await showMath(pg, 'piece');
+  const slots = await pg.locator('#p-slot option').allInnerTexts();
+  check(ONE_HANDED.has(job) === slots.includes('Off-hand'), `${job}: Piece stats slots ${JSON.stringify(slots)}`);
+  const caps = ONE_HANDED.has(job) ? CAPS_123 : { ...CAPS_123, Weapon: CAPS_123_2H_WEAPON };
+  for (const [slot, [sub, main]] of Object.entries(caps)) {
+    await pg.selectOption('#p-slot', { label: slot });
+    await setNumber(pg, '#p-ilvl', '160'); // above the cap, inside the slider's range
+    await expect(pg.locator('#p-lead')).toContainText('Synced to 123');
+    const kept = await pg.locator('#p-bars .num b').allInnerTexts(); // main stat, Vitality, 1st and 2nd substat
+    check(kept[0] === String(main), `${job}: ${slot} main stat cap '${kept[0]}', expected ${main}`);
+    check(kept[2] === String(sub), `${job}: ${slot} substat cap '${kept[2]}', expected ${sub}`);
   }
-  const hasOffhand = rows.has('Off-hand');
-  if (ONE_HANDED.has(job)) {
-    check(hasOffhand, `${job}: Sync limits has no Off-hand row`);
-  } else {
-    check(!hasOffhand, `${job}: Sync limits shows an Off-hand row for a two-handed job`);
-    const w = rows.get('Weapon');
-    if (!w) check(false, `${job}: Sync limits has no Weapon row`);
-    else {
-      check(
-        w[2] === String(CAPS_123_2H_WEAPON[0]) && w[3] === String(CAPS_123_2H_WEAPON[1]),
-        `${job}: 2H weapon caps ${w[2]}/${w[3]}, expected ${CAPS_123_2H_WEAPON[0]}/${CAPS_123_2H_WEAPON[1]}`,
-      );
-    }
-  }
+  await pg.selectOption('#p-slot', { label: 'Head' });
+  await pg.click('#p-ilvl-reset');
 }
 
 /** 'Checked against real gear': every Wiki item level 475 cap row says 'match'. */
+async function openSteps(pg) {
+  if (!(await pg.locator('#p-steps').evaluate(d => d.open))) await pg.click('#p-steps > summary');
+}
+
 async function checkWikiValidation(pg) {
-  await showMath(pg, 'sync');
+  await showMath(pg, 'piece');
+  await openSteps(pg);
   await pg.click('#s-valid summary');
   const out = pg.locator('#s-valid-out');
   await expect(out.locator('table').nth(1).locator('tbody tr').first()).toBeVisible();
@@ -298,8 +292,8 @@ async function checkPieceLab(pg) {
   await pg.selectOption('#p-slot', 'head');
   await pg.selectOption('#p-s1', 'spd');
   await pg.selectOption('#p-s2', 'spec');
-  await pg.fill('#p-ilvl', '130');
-  await pg.locator('#p-ilvl').dispatchEvent('change');
+  await setNumber(pg, '#p-ilvl', '130');
+  await openSteps(pg);
   await expect(pg.locator('#p-out thead')).toContainText('Budget at ilvl 130');
   await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
   await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
@@ -318,6 +312,11 @@ async function checkPieceLab(pg) {
     `Piece stats synced Mind/Spell Speed ${synced.Mind}/${synced['Spell Speed']}, expected 30/29`,
   );
   await expect(pg.locator('#p-chart svg')).toBeVisible();
+  // the explainer: the item level 130 head against the melded item level 123 head, and the curve
+  await expect(pg.locator('#p-vs')).toContainText('(melded)');
+  await expect(pg.locator('#p-vs b')).toContainText(' more.');
+  await expect(pg.locator('#p-curve-chart svg')).toBeVisible();
+  await pg.click('#p-ilvl-reset');
 }
 
 // The numbers the page must show come from src/core (smoke-core.mjs), computed in a worker thread.
@@ -704,14 +703,14 @@ async function checkReloadPersists(pg) {
   await fillBrowser(pg, lo, hi, lvl);
   await groupBox(pg, 'b-groups', 'tomestone').uncheck();
 
-  await showMath(pg, 'piece');
-  await pg.selectOption('#p-slot', 'body');
-  await pg.fill('#p-ilvl', '200');
-  await pg.locator('#p-ilvl').dispatchEvent('change');
   await setCap(pg, '130');
   await setNumber(pg, '#level', '60');
   if (await pg.locator('#sync').isChecked()) await pg.locator('#sync').uncheck();
   await expect(pg.locator('#cap')).toBeDisabled(); // no sync, so no cap to set
+  // level sync to item level 270: the explainer's item level is held to its range (240 and up)
+  await showMath(pg, 'piece');
+  await pg.selectOption('#p-slot', 'body');
+  await setNumber(pg, '#p-ilvl', '300');
   await waitOptimizer(pg);
   await groupBox(pg, 'o-gear', 'relic').uncheck();
   await pg.selectOption('#o-tb1', 'det');
@@ -731,7 +730,7 @@ async function checkReloadPersists(pg) {
     '#b-max': String(hi),
     '#b-lvl': String(lvl),
     '#p-slot': 'body',
-    '#p-ilvl': '200',
+    '#p-ilvl': '300',
     '#o-target': 'crit',
     '#o-tb1': 'det',
     '#o-tb2': 'vit',
@@ -754,7 +753,7 @@ async function checkReloadPersists(pg) {
     pg,
     `s => s.job === '${job}' && s.cap === 130 && s.level === 60 && s.sync === false && s.tab === 'opt'
     && s.opt.target === 'crit' && s.opt.tb === 'det' && s.opt.tb2 === 'vit' && s.piece.slot === 'body'
-    && s.piece.ilvl === 200 && s.opt.exclude.includes('relic') && s.browse.exclude.includes('tomestone')
+    && s.piece.ilvl === 300 && s.opt.exclude.includes('relic') && s.browse.exclude.includes('tomestone')
     && !('pool' in s)`,
   );
 
@@ -1011,7 +1010,8 @@ async function checkSameResult(pg) {
 }
 
 /** Synced level 90 with item level sync off, at NARROW width: the gear browser shows the level-synced value, the
- * optimizer total is marked synced, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll. */
+ * optimizer total is marked synced, Piece stats cuts a head to the item level 660 caps; no bad text, no horizontal
+ * scroll. */
 async function checkLevelSync(pg) {
   await pg.setViewportSize(NARROW);
   await setJob(pg, 'SGE');
@@ -1024,12 +1024,16 @@ async function checkLevelSync(pg) {
   await expect(pg.locator('#o-out .readout')).toContainText('synced');
   await expect(optTotal(pg)).not.toHaveText('');
   await checkNoBadText(pg, 'level sync/opt');
-  await showMath(pg, 'sync');
-  await expect(pg.locator('#s-lead')).toContainText('synced to item level 660');
-  const head = (await tableRows(pg, '#s-table')).find(r => r[0] === 'Head');
-  check(head?.[2] === HEAD_SUB_CAP_660, `level 90 head substat cap ${head && `'${head[2]}'`}, expected ${HEAD_SUB_CAP_660}`);
   await showMath(pg, 'piece');
+  await pg.selectOption('#p-slot', 'head');
+  await setNumber(pg, '#p-ilvl', '780');
+  await expect(pg.locator('#p-lead')).toContainText('Synced to 660');
+  const kept = await pg.locator('#p-bars .num b').allInnerTexts();
+  check(kept[0] === String(HEAD_MAIN_CAP_660), `level 90 head main stat cap '${kept[0]}', expected ${HEAD_MAIN_CAP_660}`);
+  check(kept[2] === HEAD_SUB_CAP_660, `level 90 head substat cap '${kept[2]}', expected ${HEAD_SUB_CAP_660}`);
   await checkNoBadText(pg, 'level sync/piece');
+  check(!(await hasHScroll(pg)), `level sync: horizontal page scroll at ${NARROW.width} px (math)`);
+  await pg.click('#p-ilvl-reset');
   for (const where of ['browse', 'opt']) {
     await showTab(pg, where);
     check(!(await hasHScroll(pg)), `level sync: horizontal page scroll at ${NARROW.width} px (${where})`);
@@ -1086,10 +1090,12 @@ const walkJob = job => async pg => {
   await checkNoBadText(pg, `${job}/opt`);
   await expect(pg.locator('#o-food-row')).toBeVisible();
   await showMath(pg, 'piece');
-  await expect(pg.locator('#p-out tbody tr').first()).toBeVisible();
+  await expect(pg.locator('#p-bars .num').first()).toBeVisible();
   await checkNoBadText(pg, `${job}/math:piece`);
   await checkSyncCaps(pg, job);
-  await checkNoBadText(pg, `${job}/math:sync`);
+  await showMath(pg, 'gcd');
+  await expect(pg.locator('#g-chart svg')).toBeVisible();
+  await checkNoBadText(pg, `${job}/math:gcd`);
   check(!(await hasHScroll(pg)), `${job}: horizontal page scroll at ${NARROW.width} px`);
   if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
 };

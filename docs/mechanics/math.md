@@ -32,7 +32,7 @@ The game's `ItemLevel` sheet has one row per item level (rows 0 to 920). Each ro
 
 - The four main-stat columns (Strength, Dexterity, Intelligence, Mind) are identical in every row.
 - Determination, Direct Hit, Skill Speed and Spell Speed are identical to Critical Hit in every row.
-- Piety and Tenacity match Critical Hit except in 6 rows (540, 565, 570, 590, 595, 596), where they are 1 to 8 higher. The Sync limits sub-tab's table adds a Piety or Tenacity cap column only when the cap item level is one of these rows and the cap differs in some slot.
+- Piety and Tenacity match Critical Hit except in 6 rows (540, 565, 570, 590, 595, 596), where they are 1 to 8 higher. The caps use each stat's own column, so a Piety or Tenacity cap is 1 higher than Critical Hit's at those rows in some slots.
 - Vitality has its own column.
 
 So in practice there are three curves: main stat, substat and Vitality. We write them as $\text{budget}_s(i)$ for stat $s$ at item level $i$.
@@ -142,7 +142,7 @@ An Intelligence earring every job can wear (Alexandrian Earrings of Casting) sti
 
 **Verified** in the game files: the table and the item column are read from the client data on every regeneration, and the generator stops if an item names a column the table does not have. The order of the rounding (slot share first, then the factor) is read off real items. Applying the 90% first, as xivgear does for its sync caps, is right on only 18 Intelligence/Mind pieces where the two orders differ, and wrong on 1,199.
 
-**Where no item is involved** (the Sync limits tab and Piece stats, which describe a slot for a job), the page uses the factor the job's own gear carries: main stat 1, Vitality 0.9 for Intelligence and Mind jobs, 1 otherwise. A unit test checks this against the game files for all 23 jobs: every database piece a job can wear that carries that job's main stat and no other has exactly those factors. The only pieces whose factors differ from the job's are of kind 0: the 13 four-main-stat pieces and the six all-jobs earrings and rings.
+**Where no item is involved** (How the math works, which describes a slot for a job), the page uses the factor the job's own gear carries: main stat 1, Vitality 0.9 for Intelligence and Mind jobs, 1 otherwise. A unit test checks this against the game files for all 23 jobs: every database piece a job can wear that carries that job's main stat and no other has exactly those factors. The only pieces whose factors differ from the job's are of kind 0: the 13 four-main-stat pieces and the six all-jobs earrings and rings.
 
 ### Substat shares (empirical)
 
@@ -252,7 +252,7 @@ $$
 and the clamp below is applied with $t$ in place of $C$. A piece synced to an item level at or above its own keeps its stats; only its materia stops counting.
 
 - **Weapons.** The game file has one `ItemLevelSync` column for every slot. xivgear's sheet code uses a separate weapon table from its own data service for the sheet-wide target, but syncs each item with the one table. That weapons use the same value is *inferred*; the player report above saw level 100 weapons synced to item level 660 in P12S, a level 90 duty, which fits it at level 90.
-- **Pieces with no equip level.** Generated and hand-made pieces, and the Piece stats and Sync limits tabs (which have no item behind them), know only an item level. A generated or hand-made pool piece is synced only by the item level cap. Piece stats and Sync limits use the item level cap when item level sync is on; with it off and a synced level below 100, they show $\text{sync}(L)$, the cap a piece with a higher equip level gets.
+- **Pieces with no equip level.** Generated and hand-made pieces, and How the math works (which has no item behind it), know only an item level. A generated or hand-made pool piece is synced only by the item level cap. How the math works uses the item level cap when item level sync is on; with it off and a synced level below 100, they show $\text{sync}(L)$, the cap a piece with a higher equip level gets.
 
 What changes at T13 (level 50, cap 123), measured on the current data: 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes. Every other piece is synced exactly as by the cap alone.
 
@@ -282,7 +282,7 @@ $$
 
 **With a factor below 100 the orders differ**, and the cap can be 1 above or 1 below what a same-slot piece of the same kind carries at $C$. For Intelligence and Mind Vitality (factor 90) that happens in 1,159 of 4,770 item level and slot combinations (item levels 1 to 795; head, body, accessory, two-handed and one-handed weapon, off-hand): 405 times 1 higher, 754 times 1 lower. The same holds for the main stat, Vitality and Piety (factor 90) of the kind 0 pieces (all four main stats, and the all-jobs earrings and rings): about one item level in four per slot changes.
 
-For a real piece $F_s$ is the piece's own factor. For the Sync limits tab and Piece stats, which have no item behind them, it is the job's (Vitality 90 for Intelligence/Mind jobs). The two differ only for the kind 0 pieces. Synced to 123, Field Commander's Coat (item level 160, body) is capped at main stat 43 and Vitality 45 for every job, where the job rule gives a Warrior 48 and 51:
+For a real piece $F_s$ is the piece's own factor. For How the math works, which has no item behind it, it is the job's (Vitality 90 for Intelligence/Mind jobs). The two differ only for the kind 0 pieces. Synced to 123, Field Commander's Coat (item level 160, body) is capped at main stat 43 and Vitality 45 for every job, where the job rule gives a Warrior 48 and 51:
 
 $$
 \lfloor 355 \times 0.9 \rfloor = 319,\ \lfloor 319 \times 1.35 \rfloor = 430,\ 43.0 \to 43; \qquad \lfloor 375 \times 0.9 \rfloor = 337,\ \lfloor 337 \times 1.35 \rfloor = 454,\ 45.4 \to 45
@@ -330,10 +330,10 @@ The FFXIV Wiki's Item Level Sync page lists substat caps at item level 475. The 
 ### What is assumed
 
 - **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor. The Wiki table covers substats only. The three second-hand in-game values of the clamp rule above (two Vitality caps and a kind 0 earring's main stat at its kind's 90%; [validation.md, section 8](validation.md#8-open-question-in-game-captures)) support it. This project has no capture of its own, so it stays *inferred* in general, and so does using the piece's factor rather than the job's. xivgear does the same: its caps take the factor from the item (`BaseParamModifier`), and its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece, main stats and Vitality included, exempting only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). With the factor-first order, its cap formula and this page's are the same.
-- **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). *Inferred, strongly supported*: a player's in-game report shows a lower substat clamped to the full cap, and The Balance's item level thresholds for "both substats capped" only make sense under this rule. Nothing contradicts it, but this project has no capture of its own. The evidence is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
-- **No scaling up**: sync never raises a stat. *Assumed.*
+- **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). *Verified* (published): the FFXIV Wiki's Item Level page shows accessories synced to item level 475 (cap 88): an item level 600 piece's 127 / 89 becomes 88 / 88, so the 70% line reaches the full cap, and an item level 500 piece's 93 / 65 becomes 88 / 65 (the formula gives the same six numbers; tests/unit/sync-explainer-view.test.js). A player's in-game report and The Balance's item level thresholds for "both substats capped" agree. The evidence is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
+- **No scaling up**: sync never raises a stat. *Verified* for substats (published): the Wiki's 65 stays 65 above, and its page says "Substats will not be scaled up".
 
-In-game captures under a known sync would settle the first two points; what to capture is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
+An in-game capture under a known sync would settle the first point; what to capture is in [validation.md, section 8](validation.md#8-open-question-in-game-captures).
 
 ## 6. Speed and substat tiers
 
@@ -394,7 +394,7 @@ $$
 
 That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real gear set usually falls short of this, because a piece rarely has speed as its top substat in every slot.
 
-With the weapon too (48 on a two-handed weapon, and the same on a one-handed weapon and shield together) it is 344, a 2.17 s GCD; 685 on the character panel. The Sync limits tab counts every slot, so it shows this number.
+With the weapon too (48 on a two-handed weapon, and the same on a one-handed weapon and shield together) it is 344, a 2.17 s GCD; 685 on the character panel.
 
 ### Haste
 
@@ -527,7 +527,7 @@ Notes:
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
-| The cap shown on Piece stats and Sync limits; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
+| The cap shown on How the math works; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
 | Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
 | Food: bonus, base, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json`; main stat base `LEVEL_MAIN` in `src/core/constants.js` |

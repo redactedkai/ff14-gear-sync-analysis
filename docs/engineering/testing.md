@@ -46,7 +46,7 @@ The unit tests need no browser because the core never touches the page (see [arc
 | stat-minimums | minimums on any stat against the brute force; seeds; the filters and fronts on tight cases against the plain search |
 | tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out) |
 | views | what each tab shows |
-| sync-caps-view | the special substat column of Sync limits |
+| sync-explainer-view | How the math works: a piece and a full set against the melded cap, the item level range, melds from the Goal, the special substat caps |
 | piece-subs | Piece stats substat ranks |
 | data-format | generated data shape |
 | provenance | source record and footer |
