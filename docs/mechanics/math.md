@@ -160,7 +160,8 @@ Two refinements, both read off real pieces:
 
 **Direct Hit on healer gear is a fixed 20% line, outside the ranking.** On gear whose only main stat is Mind, Direct Hit sits at 20% of its slot value whatever its size next to the other substats: as the third line (113 pieces), as the second (4), or as the only substat (8 early relic weapons). It is the old Accuracy stat, renamed Direct Hit in patch 4.0 ([validation.md, section 2](validation.md#what-the-misses-look-like)).
 
-- It is the only third substat in the game. Over every combat piece in `Item`, at any item level, the only pieces with three substats, and the only substat lines below half their slot value, are Direct Hit on Mind-only gear at item level 50 to 135.
+- It is the only third substat in the game but one. Over every combat piece in `Item`, at any item level, the only pieces with three substats, and the only substat lines below half their slot value, are Direct Hit on Mind-only gear at item level 50 to 135, and Herklaedi (item level 50), whose second and third substats are equal and both at 70%.
+- Where Direct Hit is larger than another substat it ranks like any substat (one piece, Wolf Ringbands, item level 55).
 - Strength, Dexterity and Intelligence gear never has a third substat, and Direct Hit on any other gear ranks like other substats.
 - High quality (HQ) crafted pieces carry bonus stats over the normal version. On HQ pieces this line gets no HQ bonus while the other substats do (all 16 HQ-able pieces).
 
@@ -174,10 +175,11 @@ Two refinements, both read off real pieces:
 
 **Inferred**, and fitted to these eight: no other piece matches it, and since gear above item level 135 never carries this line, no new piece will test it. Adopted by the owner because it changes no other piece.
 
-Two exceptions go by item name, because nothing in the data marks the pieces (owner's decision):
+Three exceptions go by item name, because nothing in the data marks the pieces (owner's decision):
 
 - **Atma weapons carry their Zenith stats.** The 11 Zodiac Atma weapons (item level 100; Zenith, Atma and Animus are steps of the Zodiac relic weapon) are exact copies of their Zenith step (item level 90): the same main stat, Vitality, substats and weapon damage (**verified**, `Item`; Curtana Zenith and Curtana Atma both carry Strength 22, Vitality 24, Direct Hit 26, Tenacity 18 and damage 61). The following Animus step, also item level 100, carries item level 100 stats. The model predicts an item whose name ends in " Atma" (exactly these 11) at item level 90. This only affects the whole-database accuracy figure; the pieces are below the banded check's item level 110.
 - **The all-jobs earrings and rings carry their own factors.** The six kind 0 pieces with Main Attribute (Neophyte's Ring and the Aetheryte, Bozjan, Menphina's, Azeyma's and Halone's earrings) were edited by hand patch by patch (**verified**, datamining history). So their main stat and Vitality follow no one factor: Main Attribute full and Vitality 90% (Neophyte's, Aetheryte), both full (Bozjan, Menphina's, Azeyma's), both 90% (Halone's). The model gives each its own pair of factors. This applies to stored stats only: synced, the game applies the file's 90% (second-hand in-game values; [validation.md, section 8](validation.md#8-open-question-in-game-captures)).
+- **18 dungeon pieces at item level 46 carry reduced stats.** Main stats at 90% of the usual value, Vitality and substats at 80%, rounded after (fits 17 of 18; **inferred**, fitted to them). The other pieces of their sets at that level follow the usual rule ([validation.md, section 2](validation.md#below-item-level-100)).
 
 **Inferred**: the shares are a measured pattern, not a game rule. Predicting every combat piece at item level 110 or above that has at least two substats this way (main stats and Vitality at full share times the item's stat factor, substats by rank, the Direct Hit line, off-hands as in section 3) reproduces 99.9% of them exactly (16,605 of 16,629), and every one within 1. The per-band table, and what the misses look like, are in [validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band).
 
@@ -429,6 +431,7 @@ At low levels the percentage, not the maximum, is what limits food. At level 50 
 | That line is 25% on green, HQ-able three-substat pieces | Inferred (fitted to 8 pieces) | All 8, no other |
 | Atma weapons carry item level 90 stats | Verified (game data); applied by name | All 11 equal their Zenith step |
 | All-jobs earrings and rings carry their own factors | Verified (datamining history); applied by name | All 6 exact |
+| 18 item level 46 dungeon pieces at 90% / 80% | Inferred (fitted to 18); applied by name | 17 exact, 1 within 1 |
 | Off-hand = two-handed − one-handed value | Inferred (fits data) | 224 of 226 off-hands (5) |
 | Sync clamps each stat to its cap at the cap item level | Verified for substats | Wiki caps at 475, 5 of 5 |
 | Caps at 123 | Derived | Row 123 × slot share (6) |

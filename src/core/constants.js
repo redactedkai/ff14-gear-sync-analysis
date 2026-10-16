@@ -60,6 +60,34 @@ export const ALL_JOBS_ACCESSORY_FACTORS = Object.freeze({
   "Azeyma's Earrings": { mainAttr: 100, vit: 100 },
   "Halone's Earring": { mainAttr: 90, vit: 90 },
 });
+/* 18 A Realm Reborn dungeon pieces at item level 46 (equip level 44) whose stats sit below their item level: each main
+   stat at 90% of the usual value, Vitality and every substat at 80% (fits 17 of 18; Harlequin's Acton's Intelligence
+   stays 1 off). The other 26 pieces of their sets and level follow the usual rule and nothing in the data marks these,
+   so the rule goes by name (owner's decision, 2026-10-16). Measured on these pieces only. Accuracy check only. */
+export const REDUCED_STAT_PIECES = Object.freeze({
+  names: new Set([
+    "Buccaneer's Tricorne",
+    "Buccaneer's Shirt",
+    "Buccaneer's Boots",
+    "Harlequin's Cap",
+    "Harlequin's Acton",
+    "Harlequin's Tights",
+    "Sentinel's Celata",
+    "Sentinel's Cuirass",
+    "Sentinel's Gauntlets",
+    "Sentinel's Trousers",
+    "Sentinel's Sabatons",
+    "Templar's Chain Coif",
+    "Templar's Haubergeon",
+    "Templar's Sollerets",
+    'Coliseum Galerus',
+    'Coliseum Shawl',
+    'Coliseum Loincloth',
+    'Coliseum Subligar',
+  ]),
+  main: 90,
+  rest: 80,
+});
 /* Item row field of the item's rarity (`rarity` in item-format.json). */
 export const RARITY_FIELD = ITEM_FORMAT.rarity.rowField;
 

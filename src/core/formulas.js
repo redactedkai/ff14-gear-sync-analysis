@@ -9,6 +9,7 @@ import {
   ATMA_NAME_SUFFIX,
   ATMA_STAT_ILVL,
   ALL_JOBS_ACCESSORY_FACTORS,
+  REDUCED_STAT_PIECES,
   ITEM_STAT_ORDER,
   RAW_MAIN_IDX,
   RAW_MAIN_ATTR_IDX,
@@ -162,6 +163,8 @@ const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind'),
 function fixedDirectHitShare(st, item) {
   const onlyMind = st[RAW_MIND_IDX] && RAW_MAIN_IDX.every(i => i === RAW_MIND_IDX || !st[i]);
   if (!onlyMind || !st[RAW_DH_IDX]) return 0;
+  // a Direct Hit line above another substat is ranked like any substat (Wolf Ringbands, PvP item level 55)
+  if (RAW_SUBSTAT_IDX.some(i => st[i] && st[i] < st[RAW_DH_IDX])) return 0;
   const three = RAW_SUBSTAT_IDX.filter(i => st[i]).length === 3;
   return three && item.hq && item.rarity === RARITY_GREEN ? GREEN_CRAFTED_DIRECT_HIT_SHARE : MIND_DIRECT_HIT_SHARE;
 }
@@ -173,7 +176,8 @@ function fixedDirectHitShare(st, item) {
    a fixed line (fixedDirectHitShare; `item` is {name, hq, rarity} of the row). Each stat's slot value is multiplied
    by the item's own stat factor (MP) before the substat share, rounded after each step. An off-hand is the two-handed
    value minus the one-handed value (isOffhand). An Atma weapon is predicted at its Zenith item level (ATMA_STAT_ILVL);
-   an all-jobs accessory with its own factors (ALL_JOBS_ACCESSORY_FACTORS). */
+   an all-jobs accessory with its own factors (ALL_JOBS_ACCESSORY_FACTORS); 18 dungeon pieces with reduced stats at the
+   end (REDUCED_STAT_PIECES). */
 export function predictRaw(il, slotCode, st, kind, item = {}) {
   if (item.name?.endsWith(ATMA_NAME_SUFFIX)) il = ATMA_STAT_ILVL;
   const own = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '') ? ALL_JOBS_ACCESSORY_FACTORS[item.name] : {};
@@ -191,15 +195,21 @@ export function predictRaw(il, slotCode, st, kind, item = {}) {
     off ? line(k, WEAPON_PCT['2h'], weight) - line(k, WEAPON_PCT['1h+oh'], weight) : line(k, DB_SLOT_PCT[slotCode], weight);
   const out = new Array(st.length).fill(0);
   for (const m of main) out[m] = value(ITEM_STAT_ORDER[m], 100);
-  out[RAW_VIT_IDX] = value('vit', 100);
+  if (st[RAW_VIT_IDX]) out[RAW_VIT_IDX] = value('vit', 100);
   const dhShare = fixedDirectHitShare(st, item);
   const fixed = dhShare ? RAW_DH_IDX : -1;
   if (dhShare) out[RAW_DH_IDX] = value('dh', dhShare);
   const subs = RAW_SUBSTAT_IDX.filter(i => st[i] && i !== fixed).sort((a, b) => st[b] - st[a]);
   let rank = 0;
-  subs.slice(0, SUB_WEIGHTS.length).forEach((i, k) => {
+  // a substat past the last share counts only when it ties with the one before (Herklaedi: three substats, two at 70%)
+  for (const [k, i] of subs.entries()) {
     if (k > 0 && st[i] !== st[subs[k - 1]]) rank = k;
+    if (rank >= SUB_WEIGHTS.length) break;
     out[i] = value(ITEM_STAT_ORDER[i], SUB_WEIGHTS[rank]);
-  });
+  }
+  if (REDUCED_STAT_PIECES.names.has(item.name)) {
+    const { main: m, rest } = REDUCED_STAT_PIECES;
+    return out.map((v, i) => rnd((v * (main.includes(i) ? m : rest)) / 100));
+  }
   return out;
 }

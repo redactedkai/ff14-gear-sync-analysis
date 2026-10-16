@@ -148,3 +148,49 @@ test('all-jobs accessories: the factor table covers exactly them, each predicted
     assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, r[0]);
   }
 });
+
+/* Below item level 100 (outside the model's range): three rules every piece follows, each shown by the pieces that
+   needed it, and the 18 item level 46 dungeon pieces with reduced stats (by name). */
+test('below item level 100: Direct Hit above another substat ranks, a tied third substat, Vitality only when carried', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const names = ['Wolf Ringbands', 'Herklaedi', 'Gridanian Ring', 'Lominsan Ring', "Ul'dahn Ring"];
+  for (const name of names) {
+    const r = ITEMS.find(x => x[0] === name);
+    assert.ok(r, name);
+    const st = r[5].split(',').map(Number);
+    assert.deepEqual(predictRaw(r[2], r[1], st, r[9], rowItem(r)), st, name);
+  }
+});
+
+test('reduced-stat dungeon pieces: the list matches the data, each within 1, all but one exact', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const { REDUCED_STAT_PIECES } = await import('../../src/core/constants.js');
+  const rows = ITEMS.filter(r => REDUCED_STAT_PIECES.names.has(r[0]));
+  assert.equal(rows.length, REDUCED_STAT_PIECES.names.size);
+  let exact = 0;
+  for (const r of rows) {
+    assert.equal(r[2], 46, r[0]);
+    const st = r[5].split(',').map(Number);
+    const d = Math.max(...predictRaw(r[2], r[1], st, r[9], rowItem(r)).map((x, i) => Math.abs(x - st[i])));
+    assert.ok(d <= 1, r[0]);
+    if (d === 0) exact++;
+  }
+  assert.equal(exact, rows.length - 1);
+});
+
+test('every piece below item level 100 is predicted within 1', async () => {
+  const { ITEMS } = await import('../../src/core/tables.js');
+  const { predictRaw } = await import('../../src/core/formulas.js');
+  const { MODEL_MIN_ILVL } = await import('../../src/core/validation.js');
+  const off = ITEMS.filter(r => {
+    if (r[2] >= MODEL_MIN_ILVL) return false;
+    const st = r[5].split(',').map(Number);
+    return predictRaw(r[2], r[1], st, r[9], rowItem(r)).some((x, i) => Math.abs(x - st[i]) > 1);
+  });
+  assert.deepEqual(
+    off.map(r => r[0]),
+    [],
+  );
+});

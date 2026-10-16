@@ -34,7 +34,7 @@ Expected values in the tests are of four kinds, and each section below says whic
 - substats at 100% / 70% by their rank on the piece, equal substats sharing the higher rank;
 - an off-hand as the two-handed value minus the one-handed value;
 - Direct Hit on gear whose only main stat is Mind as a fixed 20% line, 25% on green HQ-able pieces with three substats;
-- the two rules that go by name (Atma weapons, all-jobs earrings and rings).
+- the two rules that go by name (Atma weapons, all-jobs earrings and rings); a third, 18 item level 46 dungeon pieces, applies below the band table.
 
 For predicted stats $\hat s_k$ and real stats $s_k$, a piece counts as
 
@@ -56,9 +56,10 @@ Every stat on the piece has to match, not just one.
 
 - **The budget table, the slot shares, the double rounding and the stat factor** are confirmed by these matches. The factor is read from the game files for each item ([math.md, section 4](math.md#the-stat-factor-of-an-item)). With a single rounding the same check gives 80.0% exact (13,306; [math.md, section 4](math.md#the-formula)).
 - **Main Attribute and Secondary Attribute.** Sixteen pieces carry the game's generic Main Attribute and Secondary Attribute (`BaseParam` 55 and 56) instead of a named main stat: the ten Occult accessories, the five pre-order earrings and Neophyte's Ring. The check counts Main Attribute as a main stat and Secondary Attribute as a substat, each with its own factor (100 for every item kind). The ten Occult accessories at 745 are exact with the file's factors. The six all-jobs earrings and rings are exact with their own factors (below); Neophyte's Ring's Determination 25 is the 70% share next to Secondary Attribute 35 (**verified**).
-- **Below item level 100** (2,715 pieces, item level 15 to 99, in the database since 2026-10-15; outside every check here): 2,673 exact (98.5%), 2,695 within 1 (99.3%), 20 off by more. Not examined; the patterns below were measured at 100 and up, and the stat factor, three-substat and four-main-stat tests stop there too.
+- **Below item level 100** (2,715 pieces, item level 15 to 99, in the database since 2026-10-15; outside the band table): 2,695 exact (99.3%), every piece within 1 (a unit test checks it). Examined 2026-10-16 (below, "Below item level 100"). The stat factor, three-substat and four-main-stat tests stop at 100.
 - **Whole database at item level 100 and up** (17,316 pieces, outside the band table): 17,292 exact (99.9%), 24 off by 1 (the misses below) and none off by more. The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
-- **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4](../engineering/data-pipeline.md#stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.\n- **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
+- **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4](../engineering/data-pipeline.md#stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.
+- **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
 - **The shares stay inferred.** The 100 / 70 substat shares and the fixed 20% Direct Hit line on Mind-only gear remain an **inferred** pattern. They fit almost every piece, but the game files do not store them. Why the relic weapon steps carry two full substats is **not known**; the data only shows the pattern.
 - Every piece is within 1 on every stat; 110–135 and 601+ are 100.0% exact.
 
@@ -74,6 +75,17 @@ There are 24 misses in total (0, 2, 22 and 0 per band), all off by 1, in three g
 - **2 at item level 595** (Troian legs). Tenacity and Piety follow the common substat column of the budget table, not their own (1 lower). Not adopted into the model.
 
 These misses are not explained. They affect only Piece stats: the optimizer and the gear browser use each item's real stats.
+
+### Below item level 100
+
+The 2,715 pieces below item level 100 had 42 misses (2026-10-16). Three rules that hold for all gear, and one list of names, fixed 22 of them; no piece at 100 and up changed (every piece's prediction compared before and after):
+
+- **Direct Hit above another substat ranks like any substat.** Wolf Ringbands (PvP, item level 55, Mind only) carry Direct Hit 15 and Piety 11: Direct Hit at 100%, Piety at 70%, not the fixed line. Everywhere else the fixed line is the smallest substat.
+- **A third substat tied with the second also takes 70%.** Herklaedi (item level 50, a body piece covering hands, legs and feet) carry Tenacity 75, Determination 53 and Skill Speed 53. It is the only piece with three ranked substats.
+- **Vitality only where the piece carries it.** The three starting city rings (Gridanian, Lominsan, Ul'dahn; item level 15) carry only Direct Hit 1.
+- **18 dungeon pieces at item level 46 carry reduced stats** (equip level 44; Buccaneer's, Harlequin's, Sentinel's, Templar's and Coliseum head, body, hands, legs and feet): each main stat at 90% of the usual value, Vitality and substats at 80%, rounded after. That fits 17 exactly; Harlequin's Acton's Intelligence stays 1 off. Before, they were off by up to 4. The other 26 pieces of their sets at that level follow the usual rule and nothing in the data marks the 18, so the model lists them by name (owner's decision). **Inferred**, fitted to these 18.
+
+The 20 that still miss are all off by 1 and are left as they are: the 13 Replica High Allagan and Dreadwyrm healer pieces (item level 50) carry Direct Hit at 25%, like the eight green pieces below, but nothing separates them from the blue crafted pieces at 20%; three item level 30 crafted weapons (Steel Claymore, Steel-barreled Carbine, Star Globe), the Midnight Egg Cap (seasonal event, four main stats) and the Plundered Earrings and Ear Cuffs (item level 17).
 
 **Explained exceptions, now in the model.** Two groups that used to miss have a known cause and a rule in the model ([math.md, section 4](math.md#substat-shares-empirical)):
 
@@ -92,7 +104,8 @@ These misses are not explained. They affect only Piece stats: the optimizer and 
 - checks five real pieces the refinements reproduce (two relic weapons, a two-main-stat piece and two shields);
 - checks four for the fixed Direct Hit line (as the only, second and third substat, and Direct Hit ranked normally on Strength gear) and five for the 25% variant (three green crafted pieces at 25%, a blue and a non-HQ sibling at 20%);
 - checks that every three-substat piece is Mind-only gear whose third line is Direct Hit;
-- checks the 11 Atma weapons (and two Animus weapons at their own item level), and that the all-jobs factor table covers exactly the six pieces, each predicted exactly.
+- checks the 11 Atma weapons (and two Animus weapons at their own item level), and that the all-jobs factor table covers exactly the six pieces, each predicted exactly;
+- below item level 100: the five pieces behind the three general rules are exact, the reduced-stat list matches the data (17 of 18 exact, all within 1), and every piece is within 1.
 
 The page's "Checked against real gear" panel shows the same table, because the page and the test call the same function. The thresholds are lower than today's figures on purpose, so new gear after a patch can move them; a band below the threshold means the model needs a look ([data-pipeline.md, section 9](../engineering/data-pipeline.md#9-updating-after-a-game-patch)).
 
