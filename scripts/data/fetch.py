@@ -31,6 +31,8 @@ FILES = [
     'ClassJob',
     'Materia',
     'MateriaGrade',
+    'ItemAction',
+    'ItemFood',
     *gear_sources.FILES,
 ]
 ICON_DIR = ROOT / 'data' / 'icons'

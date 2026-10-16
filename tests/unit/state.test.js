@@ -35,7 +35,7 @@ function validSave() {
       lvl: 50,
       sort: 'spd',
     },
-    opt: { target: 'spec', tb: '', tb2: 'crit', melds: false, exclude: ['crafted', 'pvp'] },
+    opt: { target: 'spec', tb: '', tb2: 'crit', melds: false, exclude: ['crafted', 'pvp'], food: true, foodPair: 'det+crit' },
   };
 }
 

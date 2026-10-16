@@ -168,3 +168,15 @@ export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
 export const DB_SLOT_BLOCKS = Object.freeze(ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])));
 /* Gear groups the optimizer can leave out (crafted, tomestone, ultimate, savage, relic): bit i of a row's source mask = SOURCES[i]. */
 export const SOURCES = Object.freeze(ITEM_FORMAT.sources.map((s, i) => Object.freeze({ key: s.key, label: s.label, bit: 1 << i })));
+
+/* The character's base main stat at each level 1..100 (index = level - 1), the base that Determination and Piety start
+   from (Critical Hit, Direct Hit, speed and Tenacity start from ParamGrow BaseSpeed). Not in the game files (no sheet
+   holds it); AkhMorning's Level Modifiers table (Allagan Studies), which Ariyala and the FF Wiki repeat. Its BaseSpeed
+   and LevelModifier columns equal ParamGrow's at every level, and this column equals xivgear's at 50, 60, ..., 100.
+   Inferred; used only for food, which is a percentage of the whole stat (docs/mechanics/math.md, section 6, Food). */
+export const LEVEL_MAIN = Object.freeze([
+  20, 21, 22, 24, 26, 27, 29, 31, 33, 35, 36, 38, 41, 44, 46, 49, 52, 54, 57, 60, 63, 67, 71, 74, 78, 81, 85, 89, 92, 97, 101, 106, 110,
+  115, 119, 124, 128, 134, 139, 144, 150, 155, 161, 166, 171, 177, 183, 189, 196, 202, 204, 205, 207, 209, 210, 212, 214, 215, 217, 218,
+  224, 228, 236, 244, 252, 260, 268, 276, 284, 292, 296, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360, 365, 370, 375,
+  380, 385, 390, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440,
+]);

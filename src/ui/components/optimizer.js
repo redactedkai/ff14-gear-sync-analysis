@@ -3,6 +3,7 @@
 import Alpine from 'alpinejs';
 import { optimizerView, searchCount } from '../views/optimizer.js';
 import { debouncedEffect, fmtInt, gearGroupToggles } from '../helpers.js';
+import { foodChoices, foodLabel } from '../../core/food.js';
 
 const DEBOUNCE_MS = 120;
 
@@ -30,6 +31,8 @@ export function optimizer() {
             app.opt.tb2,
             app.opt.exclude.join(),
             app.opt.melds,
+            app.opt.food,
+            app.opt.foodPair,
           ];
           return () => {
             if (deps[0] !== 'opt') return;
@@ -55,6 +58,10 @@ export function optimizer() {
     },
     get tiebreakOptions() {
       return [['', 'none']].concat(this.statOptions);
+    },
+    /* the Food select: best for the goal, then the job's meals by stat pair, primary stat first */
+    get foodOptions() {
+      return [['', 'Best for the goal']].concat(foodChoices(this.job).map(c => [c.key, `${foodLabel(this.job, c)} (${c.ilvl})`]));
     },
   };
 }

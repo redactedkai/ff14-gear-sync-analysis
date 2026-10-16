@@ -1,6 +1,7 @@
 /* Generated game tables plus the limits derived from them. */
 import ITEM_LEVEL_FILE from '../data/item-level.json' with { type: 'json' };
 import ITEMS_FILE from '../data/items.json' with { type: 'json' };
+import FOOD_FILE from '../data/food.json' with { type: 'json' };
 
 /* {repo, commit, date} of the xivapi/ffxiv-datamining commit the tables were generated from, or null when unknown. */
 export const DATA_SOURCE = ITEM_LEVEL_FILE.source ?? null;
@@ -12,6 +13,8 @@ export const PG = ITEM_LEVEL_FILE.PG;
 export const MP = ITEM_LEVEL_FILE.MP;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
+/* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...]] (food.js). */
+export const FOODS = FOOD_FILE.foods;
 /* MATERIA: the materia table, one entry per grade I to XII. values: what a grade adds to a combat substat; gate: the
    lowest gear item level that takes it; high: the grades (1-based) that cannot go past the first overmeld slot. */
 export const MATERIA = Object.freeze({

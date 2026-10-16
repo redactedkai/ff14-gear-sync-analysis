@@ -181,9 +181,13 @@
         </div>
         <div class="row switches">
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Materia</span></label>
-          <!-- food is planned (docs/roadmap.md, A2): shown off and disabled until then -->
-          <label class="toggle off"><input type="checkbox" role="switch" class="switch" id="o-food" disabled><span>Food</span></label>
+          <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-food" :checked="$store.app.opt.food" @change="$store.app.opt.food = $event.target.checked"><span>Food</span></label>
         </div>
+        <template x-if="$store.app.opt.food"><div class="grid">
+          <label class="f">Meal (HQ)<select id="o-food-pair" @change="$store.app.opt.foodPair = $event.target.value">
+            <template x-for="o in foodOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.foodPair"></option></template>
+          </select></label>
+        </div></template>
       </div>
       <div class="panel" id="o-gear" role="group" aria-labelledby="o-gear-h">
         <h3 id="o-gear-h">Gear to search</h3>
@@ -201,8 +205,8 @@
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>
       <template x-if="view && view.kind === 'ok'"><div class="panel" id="o-result" :data-target="view.target">
         <div class="readout">
-          <div><b x-text="view.total"></b><span x-text="`${view.targetLabel} (gear total${view.synced ? ', synced' : ''})`"></span></div>
-          <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD with ${view.spd} gear ${view.spdLabel} · ${view.tierText}`"></span></div>
+          <div><b x-text="view.total"></b><span x-text="view.totalLabel"></span></div>
+          <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD with ${view.spdText} · ${view.tierText}`"></span></div>
           <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
         </div>
         <p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p>
@@ -219,13 +223,20 @@
               </tr>
             </template>
             <tr class="total"><td>Total</td><td></td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
-            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim">gear only, no food</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
+            <template x-if="view.food">
+              <tr class="food" id="o-food-row"><td>Food</td><td><span x-text="view.food.name"></span><div class="small dim" x-text="`HQ${view.food.best ? ', best for the goal' : ''}`"></div></td><td class="n" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
+            </template>
+            <template x-if="view.food">
+              <tr class="total" id="o-food-total"><td>With food</td><td></td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+            </template>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
             <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n small" :class="{ dim: c && c.zero }" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
         <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
-        <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. Gear only: food would move every total.</p>
+        <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. <span x-text="view.food ? 'Counted with food.' : 'Gear only: food moves every total (switch Food on).'"></span></p>
+        <template x-if="view.food"><p class="small dim" id="o-food-note">Food: a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. This is the community formula (xivgear, Ariyala), not from the game files. Vitality from food is not counted. The gear set is the same with any meal.</p></template>
         <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, only where they raise the target or a tiebreak, every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>

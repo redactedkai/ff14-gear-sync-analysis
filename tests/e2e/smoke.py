@@ -425,8 +425,7 @@ def check_melds(pg):
     pg.select_option('#o-target', target)
     melds = pg.locator('#o-melds')
     check(melds.is_checked(), 'melds are on by default')
-    food = pg.locator('#o-food')
-    check(food.is_disabled() and not food.is_checked(), 'the Food switch is not shown off and disabled (food is not available yet)')
+    check(not pg.locator('#o-food').is_checked(), 'Food is on by default')
     expect_total(pg, want['on'], 'melds on')
     expect(pg.locator('#o-result .meld').first).to_be_visible()
     expect(pg.locator('#o-meld-note')).to_be_visible()
@@ -448,6 +447,51 @@ def check_melds(pg):
     expect(pg.locator('#o-result')).to_have_attribute('data-target', 'main')
     pg.locator('#sync').check()
     set_number(pg, '#level', '50')
+
+
+def column_values(pg, row_sel, header):
+    """The numbers of the result table's row `row_sel` under the stat column headed `header` (SpS, DET, ...)."""
+    heads = [h.strip().upper() for h in pg.locator('#o-result thead th').all_inner_texts()]  # shown in capitals
+    cell = pg.locator(f'{row_sel} td').nth(heads.index(header.upper())).inner_text()
+    return int(cell.split()[0].lstrip('+') or 0)
+
+
+def check_food(pg):
+    """Food off by default; switched on it picks the best meal for the goal: the gear rows stay, the With food row is
+    gear plus the Food row, the GCD line names the food, the choice is saved. A chosen meal without speed leaves speed
+    alone. Left on, so walk_jobs checks every job with food."""
+    set_job(pg, 'SGE')
+    pg.locator('#sync').check()
+    set_cap(pg, '123')
+    set_number(pg, '#level', '50')
+    wait_optimizer(pg)
+    pg.select_option('#o-target', 'spd')
+    expect(pg.locator('#o-result')).to_have_attribute('data-target', 'spd')
+    food = pg.locator('#o-food')
+    check(not food.is_checked(), 'Food is on by default')
+    expect(pg.locator('#o-food-row')).to_have_count(0)
+    gear_items = pg.locator('#o-result tbody td:nth-child(2) > span').all_inner_texts()
+    food.check()
+    expect(pg.locator('#o-food-row')).to_be_visible()
+    expect(pg.locator('#o-food-row')).to_contain_text('best for the goal')
+    check(pg.locator('#o-result tbody td:nth-child(2) > span').all_inner_texts()[: len(gear_items)] == gear_items, 'Food changed the gear')
+    gear_spd = column_values(pg, '#o-result tr.total:not(#o-food-total)', 'SpS')
+    bonus = column_values(pg, '#o-food-row', 'SpS')
+    with_food = column_values(pg, '#o-food-total', 'SpS')
+    check(bonus > 0 and with_food == gear_spd + bonus, f'Spell Speed with food {with_food} is not {gear_spd} + {bonus}')
+    expect(pg.locator('#o-result .readout')).to_contain_text(f'{with_food} Spell Speed ({gear_spd} gear, {bonus} food)')
+    expect(pg.locator('#o-effect')).to_contain_text('gear and food')
+    expect(pg.locator('#o-food-note')).to_be_visible()
+    wait_saved(pg, "s => s.opt.food === true && s.opt.foodPair === ''")
+    pg.select_option('#o-food-pair', 'det+crit')
+    expect(pg.locator('#o-food-row')).not_to_contain_text('best for the goal')
+    check(column_values(pg, '#o-food-total', 'SpS') == gear_spd, 'a meal without speed changed Spell Speed')
+    check(column_values(pg, '#o-food-row', 'DET') > 0, 'the Determination meal adds no Determination')
+    wait_saved(pg, "s => s.opt.foodPair === 'det+crit'")
+    check_no_bad_text(pg, 'food')
+    pg.select_option('#o-food-pair', '')
+    pg.select_option('#o-target', 'main')
+    expect(pg.locator('#o-result')).to_have_attribute('data-target', 'main')
 
 
 def wait_saved(pg, js_condition):
@@ -799,6 +843,7 @@ def walk_jobs(pg):
         wait_optimizer(pg)
         expect(pg.locator('#o-count')).to_contain_text(' pieces.')
         check_no_bad_text(pg, f'{job}/opt')
+        expect(pg.locator('#o-food-row')).to_be_visible()  # check_food left Food on
         show_math(pg, 'piece')
         expect(pg.locator('#p-out tbody tr').first).to_be_visible()
         check_no_bad_text(pg, f'{job}/math:piece')
@@ -849,6 +894,7 @@ def main():
             check_pld_offhand,
             check_level_sync,
             check_job_level_cap,
+            check_food,
             walk_jobs,
         ]
         set_job(pg, 'SGE')

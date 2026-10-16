@@ -384,9 +384,33 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 
 - **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 optimizer runs on full pools.
 - **Tiebreaks:** in 200 of 572 runs with a target and one tiebreak, another loadout keeps the target's step and puts the tiebreak a step higher. This happens mostly at level 100, where steps are 14 to 25 points wide, and rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds ([materia.md](materia.md)).
-- **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect from gear (no food), the points above the start of its step and the points to the next. Ranking tiebreaks by step instead is not planned (owner's decision): raw totals already reach the target's best step, the tiebreak gain is about one step, food shifts every step, and it would need the same engine changes as a target GCD.
+- **What the tool does:** it keeps raw totals and shows the steps instead. Under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next. Ranking tiebreaks by step is planned after food and a target GCD ([roadmap.md](../roadmap.md)): fix the target at the start of its best step, then maximize the tiebreaks.
 
 **Measured** by an independent dynamic program. The step formulas are the community ones from AkhMorning, matching xivgear (**inferred**).
+
+### Food
+
+A meal raises one or two substats (and Vitality) for 30 minutes. Each stat $k$ of a high-quality (HQ) meal has a percentage $p_k$ and a maximum $M_k$ (`ItemFood`, **verified** game file):
+
+$$
+f_k = \min\Bigl(M_k,\ \Bigl\lfloor \frac{p_k\,(b_k + g_k)}{100} \Bigr\rfloor\Bigr)
+$$
+
+with $g_k$ the points from gear (synced, melds included) and $b_k$ the character's base at the synced level: $\text{sub}$ (`ParamGrow.BaseSpeed`) for Critical Hit, Direct Hit, speed and Tenacity; the level's main stat base for Determination and Piety. The total with food is $g_k + f_k$, and the effects and tiers use it in place of $g_k$; the base still cancels in the tier formulas.
+
+| Claim | Status |
+| --- | --- |
+| Percentages and maximums | Verified (game files): every combat stat from item level 51 up is 8% NQ, 10% HQ |
+| Of the whole stat (base plus gear), floored, then capped | Inferred: xivgear's and Ariyala's code; the owner's understanding; no official source or in-game capture |
+| Applied unchanged under item level and level sync | Inferred: player reports, xivgear; meals have equip level 1 and no sync field |
+| Determination and Piety start from the main stat base, at every level | Inferred: AkhMorning, the FF Wiki, xivgear; no capture below level 50 |
+| The main stat base per level | Inferred: not in any game sheet; AkhMorning's table, whose other two columns equal `ParamGrow` at all 100 levels and whose values equal xivgear's at 50, 60, ..., 100 |
+
+At low levels the percentage, not the maximum, is what limits food. At level 50 with cap 123, a Sage with 344 gear Spell Speed has $341 + 344 = 685$, so any HQ meal whose maximum is at least 68 adds 68: the GCD goes from 2.17 s to 2.10 s, seven steps. Across substats and jobs at that setting, food moves a stat a median of 27 tiers. From about level 80 up the maximum binds and the newest meal is best.
+
+**Which meals.** The tool models HQ meals only (owner's decision). Within one ordered stat pair (primary, secondary), a newer meal never has a lower maximum (all 255 two-substat meals), so each pair is represented by its newest meal. A meal is left out when another one has each of its stats at an equal or higher maximum (an old Critical Hit + Determination meal next to a new Determination + Critical Hit one), so a job has 7 to 13 choices. Vitality from food is not counted: it has no tier, and its base needs the job and clan modifiers.
+
+**Food does not change the gear.** For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged. "Best for the goal" keeps the optimizer's gear and takes the meal that gives the highest target, then tiebreak 1, then tiebreak 2, with food added. A test checks this against every (gear set, meal) pair of a small pool.
 
 ## 7. Verified and assumed
 
@@ -417,6 +441,9 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 | Weapons use the same level sync item level | Inferred | One column; same report |
 | No scaling up under sync | Assumed | – |
 | GCD and tick formulas | Community reference (AkhMorning) | AkhMorning tier tables (9) |
+| Food percentages and maximums | Verified (game files) | `ItemFood`, HQ columns |
+| Food: of base plus gear, floored, capped; unchanged under sync | Inferred (community tools, player reports) | [Food](#food) |
+| Main stat base per level (Determination and Piety food) | Inferred (AkhMorning table) | Its `ParamGrow` columns match, 100 of 100 |
 | Rows 796–920 carry no gear | Verified (data) | Highest real item level 795 |
 
 Notes:
@@ -446,6 +473,7 @@ Notes:
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
 | The cap shown on Piece stats and Sync limits; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers | `src/core/speed.js` |
+| Food: bonus, base, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json`; main stat base `LEVEL_MAIN` in `src/core/constants.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
 | Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `level-sync.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |

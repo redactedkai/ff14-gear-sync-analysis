@@ -131,5 +131,16 @@
     "itemColumn": "BaseParamModifier",
     "baseParamColumn": "MeldParam",
     "count": 13
+  },
+  "food": {
+    "_comment": "Meals, for food.json (gen_food.py). A meal is an Item.csv row whose `uiCategoryColumn` is `uiCategory` (Meal); its `actionColumn` names an ItemAction row whose Action is one of `actions` and whose Data[0] is `status` (Well Fed). That row's `foodRowColumn` is the ItemFood row: up to three stats (BaseParam[i], IsRelative[i], ValueHQ[i] percent, MaxHQ[i] cap). Kept: HQ-able meals whose stats are all relative and all in `stats` (raw stat keys from `stats` above), with at least one substat; carried: HQ values of every substat, Vitality left out (the page does not use it). Medicine (tinctures) uses ItemFood too but another category and action.",
+    "uiCategoryColumn": "ItemUICategory",
+    "uiCategory": 46,
+    "actionColumn": "ItemAction",
+    "actions": [844, 845],
+    "status": 48,
+    "foodRowColumn": "Data[1]",
+    "stats": ["vit", "piety", "ten", "dh", "crit", "det", "sks", "sps"],
+    "carried": ["piety", "ten", "dh", "crit", "det", "sks", "sps"]
   }
 }

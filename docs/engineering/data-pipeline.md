@@ -10,11 +10,11 @@ Every count on this page was produced by running the generators' rules over the 
 
 The data comes from [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining), a public repository of the game client's data sheets saved as CSV files. A *sheet* is one of the game's internal data tables, for example `Item` (one row per item). The files are exported straight from the client, by XIVData Oxidizer since January 2026 and by SaintCoinach before that. The miners do not compute or derive anything: a row in a CSV is a row in the game's own data. **Verified**: the repository's own commit history shows the exporter change (commit `d3eb86d`, 4 January 2026, "Migrate to XIVData Oxidizer").
 
-The project fetches twelve sheets (English column names, `csv/en/`). The generators read eleven of them. `ClassJob` is read only by the fetch step, to know which icon belongs to which job (section 2).
+The project fetches fourteen sheets (English column names, `csv/en/`). The generators read thirteen of them. `ClassJob` is read only by the fetch step, to know which icon belongs to which job (section 2).
 
 | Sheet | Read by | Gives | Rows |
 | --- | --- | --- | --- |
-| `Item` | item database generator | one row per item | 52,801 |
+| `Item` | item database and food generators | one row per item | 52,801 |
 | `Materia` | item database generator | materia table | 1,417 |
 | `MateriaGrade` | item database generator | high materia grades | 12 |
 | `EquipSlotCategory` | item database generator | slots taken or blocked | 25 |
@@ -24,7 +24,9 @@ The project fetches twelve sheets (English column names, `csv/en/`). The generat
 | `TomestonesItem` | item database generator | current tomestones | 24 |
 | `ItemLevel` | item level generator | stat budgets | 921 |
 | `ParamGrow` | item level generator | per-level data | 202 |
-| `BaseParam` | both generators | slot shares, stat factors | |
+| `ItemAction` | food generator | what using an item does | 3,051 |
+| `ItemFood` | food generator | meal and medicine bonuses | 714 |
+| `BaseParam` | item database and item level generators | slot shares, stat factors | |
 | `ClassJob` | fetch step | job icon numbers | |
 
 Notes:
@@ -40,21 +42,23 @@ Notes:
 - **`ItemLevel`**: the stat budget of every stat at every item level. Ids 0 to 920.
 - **`ParamGrow`**: per character level data, including the speed constants. Rows 0 to 201; levels 1 to 100 are used.
 - **`BaseParam`**: one row per stat. It holds the share of the budget each slot gets, in thousandths (values in [math.md, section 3](../mechanics/math.md#3-slot-shares)), and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). The item level generator copies the stat factors (section 5) and only checks the slot shares, which are kept in the shared format definition (section 3). The item database generator checks the item kinds and the names of the crafter and gatherer stats.
+- **`ItemAction`**: what using an item does. A meal's row has `Action` 844 or 845, `Data[0]` 48 (the Well Fed status) and `Data[1]` its `ItemFood` row.
+- **`ItemFood`**: up to three stats per meal or medicine: `BaseParam[0..2]`, `IsRelative[0..2]` (a percentage, or a flat bonus), `Value`/`Max` for normal quality and `ValueHQ`/`MaxHQ` for HQ, in one row.
 - **`ClassJob`**: one row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon.
 
 **Verified on every regeneration**: for all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the share the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). The columns checked are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent`, `RingPercent` and `ChestHeadPercent` (the body that covers the head, section 4). The sheet has more columns for other multi-slot gear; the project has no slot code for that gear, so they are not checked. See [math.md](../mechanics/math.md) for how the shares are used.
 
-**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`, `MateriaSlotCount`, `IsAdvancedMeldingPermitted`, `Rarity`, and for the gear categories `SubcategorySort` and `DyeCount`), the `Materia` and `MateriaGrade` columns of the materia table (section 4), the `Recipe`, `SpecialShop` and `TomestonesItem` columns of the source flags, the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns. A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
+**Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers every job of the shared format in `ClassJobCategory`, every stat column in `ItemLevel`, every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`, the `Item` columns listed above (the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`, `MateriaSlotCount`, `IsAdvancedMeldingPermitted`, `Rarity`, and for the gear categories `SubcategorySort` and `DyeCount`), the `Materia` and `MateriaGrade` columns of the materia table (section 4), the `Recipe`, `SpecialShop` and `TomestonesItem` columns of the source flags, the 13 `MeldParam` columns of `BaseParam`, the three `ParamGrow` columns, and the `Item`, `ItemAction` and `ItemFood` columns of the food table (section 5). A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An error exits with status 1 and writes no file, so the full regeneration stops too.
 
 ## 2. Fetching
 
 The fetch step makes a **sparse, shallow, blobless** clone of the datamining repository into `data/ffxiv-datamining/` (gitignored):
 
 - *shallow*: only the latest commit, no history;
-- *sparse*: only the twelve `csv/en/<Sheet>.csv` paths are checked out;
+- *sparse*: only the fourteen `csv/en/<Sheet>.csv` paths are checked out;
 - *blobless*: file contents are downloaded only for those paths.
 
-For the current data that is about 7 MB of git data and 20 MB of CSV files on disk, mostly `Item.csv`, instead of the whole repository. Running the fetch again when the clone exists does a fast-forward pull, which picks up whatever the miners published since. The step fails if any of the twelve files is missing afterwards. A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run; to add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
+For the current data that is about 7 MB of git data and 20 MB of CSV files on disk, mostly `Item.csv`, instead of the whole repository. Running the fetch again when the clone exists does a fast-forward pull, which picks up whatever the miners published since. The step fails if any of the fourteen files is missing afterwards. A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run; to add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
 
 ### Job icons
 
@@ -325,6 +329,16 @@ A missing level or column stops the generator with an error. The values at level
 
 **Source record.** Which datamining commit the data came from (next section).
 
+### The food table
+
+A third generator writes the meals that raise combat substats, one row per meal: name, item level, and the HQ percent and maximum of each substat, primary first. Which rows are meals and which are kept is in the `food` part of the shared format definition (section 3):
+
+- a meal is an `Item` row in the Meal category (46) whose `ItemAction` is a food action (844 or 845) with the Well Fed status (48); its `ItemFood` row is `Data[1]`. Medicine (tinctures) uses `ItemFood` too, with another category and action, and is left out;
+- kept: meals that can be HQ, whose stats are all percentages and all combat stats (Vitality and the seven substats), with at least one substat. That leaves out crafter and gatherer meals and the flat-bonus novelty meals of item level 15 and below;
+- carried: the HQ percent and maximum of each substat in `ItemFood` order. Vitality is left out: the page does not count it.
+
+A meal whose `ItemFood` row is missing, or a kept stat whose HQ percent is not 1 to 100 or whose maximum is not positive, stops the generator. In the current data: 296 meals, 255 with two substats and 41 with one; every kept stat is 10% HQ (**verified** by count). How the page uses them is in [math.md, section 6](../mechanics/math.md#food).
+
 ## 6. Provenance
 
 When the data is regenerated, the commit id and commit date of the local datamining clone are recorded. They appear in three places:
@@ -335,7 +349,7 @@ When the data is regenerated, the commit id and commit date of the local datamin
 
 The full regeneration refuses to run when it cannot read the clone's commit. A generator run on its own (for example on test files) writes "commit unknown" and no source record, and the footer then shows nothing.
 
-The recorded commit is the clone's newest commit, not the newest commit that changed one of the fetched sheets. Commit `d9582a6` ("TC 7.25") changed no English CSV. Six of the twelve sheets were last changed by:
+The recorded commit is the clone's newest commit, not the newest commit that changed one of the fetched sheets. Commit `d9582a6` ("TC 7.25") changed no English CSV. Six of the sheets were last changed by:
 
 | Sheet | Last changed in |
 | --- | --- |
@@ -445,15 +459,16 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 | Meld fields of an Item row | `scripts/data/item_format.py` (`meld_fields`), `materia` in `src/core/item-format.json` |
 | Meld fields of a pool item | `src/core/items.js` (`parseRow`, `meldInfo`) |
 | Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
+| Food table generator; which meals, `food` in the format file | `scripts/data/gen_food.py`, `src/core/item-format.json` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Source commit detection and the generated-file notice | `scripts/data/provenance.py` |
 | Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
-| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/job-icons.js` |
+| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js` |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
-| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/fixtures/` (part of `npm test`) |
+| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; part of `npm test`) |
 | Format and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
 | Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg` |

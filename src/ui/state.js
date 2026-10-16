@@ -4,6 +4,7 @@ import { JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { levelSyncIlvl } from '../core/sync-target.js';
+import { foodChoices } from '../core/food.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
@@ -61,8 +62,8 @@ export function defaultState() {
     // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
     browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
     // melds: give pieces their best materia melds. exclude: gear groups left out of the search (its own list, not the
-    // browser's)
-    opt: { target: 'main', tb: '', tb2: '', melds: true, exclude: [...DEFAULT_EXCLUDE] },
+    // browser's). food: add a meal to the result; foodPair: its key in foodChoices (core/food.js), '' = best for the goal
+    opt: { target: 'main', tb: '', tb2: '', melds: true, exclude: [...DEFAULT_EXCLUDE], food: false, foodPair: '' },
   };
 }
 
@@ -85,6 +86,7 @@ export function resetForJob(s, job) {
   s.opt.target = 'main';
   s.opt.tb = '';
   s.opt.tb2 = '';
+  s.opt.foodPair = '';
   s.browse.type = 'any';
   s.browse.sort = 'ilvl';
 }
@@ -170,6 +172,8 @@ export function restoreState(raw) {
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
   s.opt.melds = bool(o.melds, s.opt.melds);
+  s.opt.food = bool(o.food, s.opt.food);
+  s.opt.foodPair = oneOf(o.foodPair, ['', ...foodChoices(job).map(c => c.key)], s.opt.foodPair);
   // a save from before the optimizer had its own list (the gear pool days, when the browser's list served both)
   // starts from the browser's
   const oldSave = isObj(r.opt) && !('exclude' in r.opt);

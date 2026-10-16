@@ -445,9 +445,6 @@ button.x {
 .switches {
   gap: 4px 28px;
 }
-.toggle.off {
-  color: var(--muted);
-}
 .groups-row {
   gap: 8px 16px;
 }

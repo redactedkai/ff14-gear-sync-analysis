@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Regenerate src/data/item-level.json, src/data/items.json and src/data/job-icons.js from what fetch.py saved in data/, then
-rebuild dist/."""
+"""Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json and src/data/job-icons.js from what
+fetch.py saved in data/, then rebuild dist/."""
 
 import subprocess
 import sys
@@ -24,6 +24,7 @@ OUT = ROOT / 'src' / 'data'
 STEPS = [
     ('Generating the item level table', [py, str(DATA / 'gen_item_level.py'), str(CSV), str(OUT / 'item-level.json'), *prov]),
     ('Generating the item database', [py, str(DATA / 'gen_items.py'), str(CSV), str(OUT / 'items.json'), *prov]),
+    ('Generating the food table', [py, str(DATA / 'gen_food.py'), str(CSV), str(OUT / 'food.json'), *prov]),
     ('Generating the job icons', [py, str(DATA / 'gen_job_icons.py')]),
     ('Building the page', ['node', str(ROOT / 'scripts' / 'build' / 'build.mjs')]),
 ]

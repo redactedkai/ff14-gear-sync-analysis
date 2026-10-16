@@ -186,6 +186,7 @@ What each test file covers in full is in [testing.md, section 2](../engineering/
 | Stat factor | Job factor vs item factor; named pieces | Game data; derivation (8) |
 | Data format, provenance | Shape of the generated data; data source | Format definition |
 | State | Saved state repaired field by field | Rules of the page |
+| Food | Real meals; xivgear's food values; best meal and gear | Game data; second-hand; brute-force reference |
 | Generator tests (Python) | 65 tests on small CSV fixtures | Hand-built fixtures (9) |
 | Smoke test (browser) | The built page, six jobs | Mixed (10) |
 
@@ -254,6 +255,8 @@ What it shows:
 
 - **Strongly supports question 2.** The forum report is the only value where the two rules differ. Its poster asked Square Enix to switch to the own-share rule, which implies the game uses the full-share one. Nothing found contradicts it. Square Enix has not published how sync reduces individual stats.
 - Found by research on 2026-10-12 (notes in `docs/scratchpad/materia/report.md`, section 9).
+
+**Food.** The food formula (a percentage of base plus gear, floored, then capped) and food being unchanged under sync are community knowledge, with no capture ([math.md, section 6](math.md#food)). One reading settles both: at a known synced level, Critical Hit on the character sheet before and after eating a known HQ meal, with the bonus below the meal's maximum; it should equal $\min(M, \lfloor 0.1 \times \text{before} \rfloor)$.
 
 Captures from the game are **the single most valuable evidence the project does not have**. A useful capture is a character sheet screenshot taken under a known sync cap (the duty name, or the cap item level), with the equipped gear listed by name, and ideally the same character unsynced for comparison. One capture with a piece whose second substat is above the cap (for example a 70% substat of 30 or more on a head piece at cap 123) would settle point 2 directly; the main stat and Vitality on the same sheet would settle point 1. Each capture should become a test case with the screenshot's numbers as the expected values.
 

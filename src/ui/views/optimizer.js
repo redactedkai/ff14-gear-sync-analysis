@@ -5,6 +5,7 @@ import { browseItems, poolItemFromRow, withoutSources, slotInfo, slotLabel, wear
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
+import { bestFood, foodBonus, foodChoices, foodLabel, withFood } from '../../core/food.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
 import { syncSettings } from '../state.js';
 
@@ -14,6 +15,17 @@ export const NODE_LIMIT = 700000;
 export function tierText(spd, level) {
   const t = gcdTierAt(spd, level);
   return `tier starts at ${t.start}${t.next != null ? `, next at ${t.next} (+${t.next - spd})` : ''}`;
+}
+
+/* The meal the result shows, or null with Food off: the chosen pair (opt.foodPair), or with '' the one that raises the
+   target, then the tiebreaks, the most (bestFood; the gear set is the same with any meal, core/food.js). */
+export function chosenFood(app, totals) {
+  const job = app.jobCtx,
+    o = app.opt;
+  if (!o.food) return null;
+  const choices = foodChoices(job);
+  if (o.foodPair) return choices.find(c => c.key === o.foodPair) ?? null;
+  return bestFood(job, choices, totals, app.level, [o.target, o.tb, o.tb2]);
 }
 
 /* Every database piece the job can wear (browseItems leaves out gear above its level cap), as pool items. Built once per
@@ -66,7 +78,11 @@ function buildOptimizerView(app, gear) {
   });
   if (!res.ok) return { kind: 'infeasible', truncated: res.truncated };
 
-  const t = res.totals,
+  const gearT = res.totals;
+  const food = chosenFood(app, gearT);
+  const bonus = food ? foodBonus(job, food, gearT, app.level) : {};
+  // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
+  const t = withFood(gearT, bonus),
     spd = t.spd;
   const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
@@ -97,8 +113,18 @@ function buildOptimizerView(app, gear) {
     targetLabel: job.label[o.target],
     spdLabel: job.label.spd,
     total: t[o.target],
-    totals: job.stats.map(s => t[s]),
-    // each stat's effect from gear alone, the points above its tier start (spare) and the points to the next tier
+    totalLabel: `${job.label[o.target]} (${food ? 'gear and food' : 'gear total'}${poolSynced(pool, sync) ? ', synced' : ''})`,
+    totals: job.stats.map(s => gearT[s]),
+    // the Food row and the totals with it; null with Food off
+    food: food && {
+      name: food.name,
+      ilvl: food.ilvl,
+      label: foodLabel(job, food),
+      best: !o.foodPair,
+      cells: job.stats.map(s => (bonus[s] ? { value: bonus[s].bonus, capped: bonus[s].capped } : null)),
+      totals: job.stats.map(s => t[s]),
+    },
+    // each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier
     tiers: job.stats.map(s => {
       const tier = statTier(job, s, t[s], app.level);
       if (!tier) return null;
@@ -107,6 +133,7 @@ function buildOptimizerView(app, gear) {
     synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level).toFixed(2),
     spd,
+    spdText: bonus.spd ? `${spd} ${job.label.spd} (${gearT.spd} gear, ${bonus.spd.bonus} food)` : `${spd} gear ${job.label.spd}`,
     tierText: tierText(spd, app.level),
     dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
     rows,
