@@ -47,15 +47,19 @@ test('resultOf: points within a tier give the same result, a tier lost or a main
   assert.notEqual(resultOf(sge, { main: 301, crit: start }, CTX), at(start));
 });
 
-test('resultOf: speed keeps both its GCD and its DoT/HoT tick scaling, which has smaller steps', () => {
+test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (owner, 2026-10-16)', () => {
   // the first speed above 400 whose DoT/HoT scaling is one step up while its GCD is the same as one point less
   let spd = 400;
   while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) spd++;
   const at = points => resultOf(sge, { main: 300, spd: points }, CTX);
-  assert.notEqual(at(spd - 1), at(spd));
+  assert.equal(at(spd - 1), at(spd));
+  // a GCD step lost is a different result
+  let step = 400;
+  while (gcdFor(step, 100) === gcdFor(step - 1, 100)) step++;
+  assert.notEqual(at(step - 1), at(step));
 });
 
-test('resultOf: a Tenacity total keeps both its mitigation step (200) and its damage step (112)', () => {
+test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) may drop (owner, 2026-10-16)', () => {
   const war = makeJobContext('WAR');
   const at = (ten, mitigation) => resultOf(war, { main: 300, spec: ten }, CTX) === resultOf(war, { main: 300, spec: mitigation }, CTX);
   // the first Tenacity above 400 where one step moves and the other doesn't, each way
@@ -66,7 +70,7 @@ test('resultOf: a Tenacity total keeps both its mitigation step (200) and its da
   let b = 400;
   while (dmg(b) === dmg(b - 1) || mit(b) !== mit(b - 1)) b++;
   assert.ok(!at(a, a - 1), 'a mitigation step lost');
-  assert.ok(!at(b, b - 1), 'a damage step lost');
+  assert.ok(at(b, b - 1), 'a damage step lost, the mitigation step kept');
 });
 
 test('resultOf: the goal stat keeps its exact points when asked (the plain optimizer), only its tier without (tier ranking)', () => {
