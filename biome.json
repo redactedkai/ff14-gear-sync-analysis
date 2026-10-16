@@ -11,7 +11,8 @@
       "!scripts/perf/out",
       "!scripts/validate/out",
       "!package-lock.json",
-      "!docs/scratchpad"
+      "!docs/scratchpad",
+      "!.claude/worktrees"
     ]
   },
   "formatter": {

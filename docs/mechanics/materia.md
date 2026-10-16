@@ -6,14 +6,21 @@ Related pages: [optimizer.md](../engineering/optimizer.md) (the search and the b
 
 ## 1. Terms
 
+A piece of gear carries a main stat, Vitality and usually two **substats** (secondary stats such as Critical Hit; see the [glossary](../glossary.md)). Melding lets the player add more substat points to a piece, within limits. The words below are used in the rest of the page.
+
 - **Materia** are stones that add one combat substat to a piece of gear: Critical Hit, Determination, Direct Hit, Skill or Spell Speed, Tenacity or Piety. Placing one is **melding**.
-- **Grades** run from I to XII. A higher grade is not always worth more (section 2).
+- **Grades** run from I to XII. A higher grade is not always worth more (section 2): grade VI adds 16 points, grade VII only 8.
 - A piece has 0 to 5 **guaranteed slots**. Some pieces (crafted gear and the old PvP sets) also allow **overmelding**, also called advanced melding: extra slots up to 5 in all, which can fail in game. The tool assumes every meld succeeds (owner's decision).
 - A **synced** piece is one that item level sync or level sync applies to: its item level is above the duty's item level cap, or its equip level is above the synced level ([math.md, section 5](math.md#which-pieces-are-synced)). Its stats may or may not drop, but it loses all its melds (section 2).
+- The **objective** is what the optimizer maximizes: a **target** stat, then up to two **tiebreaks** that decide between results with the same target ([glossary](../glossary.md)).
 
 ## 2. The rules
 
-**Values and item level gates.** Every combat substat has the same values. Read from the game files (`Materia` sheet, and each materia item's item level); **verified**. The gate also appears on the Lodestone, the official game website, as "Base Item: Item Level N".
+Four questions decide what a piece can gain from melds: how much each stone is worth, how many stones of each kind fit, how far each substat may rise, and whether the piece keeps its melds at all. The subsections answer them in that order, then say which of several equal melds the tool shows.
+
+### Stone values and item level gates
+
+A stone's grade fixes its value, and each grade fits only gear at or above a minimum item level (its **gate**). Every combat substat has the same values. Read from the game files (`Materia` sheet, and each materia item's item level); **verified**. The gate also appears on the Lodestone, the official game website, as "Base Item: Item Level N".
 
 | Grade | I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -21,9 +28,19 @@ Related pages: [optimizer.md](../engineering/optimizer.md) (the search and the b
 | Gear item level at least | 15 | 30 | 45 | 70 | 160 | 290 | 420 | 420 | 560 | 560 | 690 | 690 |
 
 - **Main stats and Vitality cannot be melded:** their materia have value 0 (**verified**).
-- **Grades VI, VIII, X and XII** go into a guaranteed slot or the first overmeld slot, never later. Their overmeld success rate is 0% past the first overmeld slot (game files, `MateriaGrade`; **verified**).
+- **Grades VI, VIII, X and XII** (the **high grades**) go into a guaranteed slot or the first overmeld slot, never later. Their overmeld success rate is 0% past the first overmeld slot (game files, `MateriaGrade`; **verified**).
 
-**Slots.** With $g$ guaranteed slots (`Item.MateriaSlotCount`) and overmelding allowed (`Item.IsAdvancedMeldingPermitted`), a piece takes
+From grade VI on, the values alternate: each even grade is worth far more than the odd grade gated with it (VIII 24 against VII 8, XII 54 against XI 18), and only the even grades carry the slot restriction.
+
+### Slots: big and small stones
+
+Because the high grades are restricted, slots fall into two kinds. A **big** slot (a guaranteed slot or the first overmeld slot) takes any grade; a **small** slot (a later overmeld slot) takes any grade except VI, VIII, X and XII.
+
+**Example.** Courtly Lover's Earrings of Healing (item level 770) have 1 guaranteed slot and allow overmelding, so they take 5 stones: 2 big (slots 1 and 2) and 3 small (slots 3 to 5). At item level 770 the best big stone is XII (+54) and the best small stone is XI (+18). The diagram shows the slots and their best meld for Critical Hit, then Determination.
+
+![The five meld slots of an overmeldable earring, filled in order](../diagrams/materia-slots.svg)
+
+**The rule.** With $g$ guaranteed slots (`Item.MateriaSlotCount`) and overmelding allowed (`Item.IsAdvancedMeldingPermitted`), a piece takes
 
 $$
 B = \min(5,\ g + 1) \ \text{"big" stones}, \qquad S = 5 - B \ \text{"small" stones},
@@ -31,9 +48,11 @@ $$
 
 and without overmelding $B = g$, $S = 0$.
 
-- A big slot (a guaranteed slot or the first overmeld slot) takes any grade; the tool uses the most valuable grade the item level allows (the big stone) or the small stone below.
-- A small slot (a later overmeld slot) takes the most valuable grade the item level allows that is not VI, VIII, X or XII (the small stone).
+- A big slot takes any grade; the tool uses the most valuable grade the item level allows (the big stone) or the small stone below.
+- A small slot takes the most valuable grade the item level allows that is not VI, VIII, X or XII (the small stone).
 - Slots fill in order, so empty slots always come last (**verified**, Wiki). Overmelding starts only once every guaranteed slot is full.
+
+The best stones by item level follow from the gate table:
 
 | Gear item level | Big stone | Small stone |
 | --- | --- | --- |
@@ -44,32 +63,46 @@ and without overmelding $B = g$, $S = 0$.
 | 560 to 689 | X (+36) | IX (+12) |
 | 690 and up | XII (+54) | XI (+18) |
 
-The table starts at 100, the lowest item level in the database.
+The table starts at 100, the lowest item level in the database. Below 290 the two stones are the same, so the split into big and small slots changes nothing there.
 
-**Which stones are shown.** Several melds can give a piece the same gains, when a stone's points are partly cut by the cap. The tool shows, in this order:
+**Pieces without guaranteed slots.** In the item data, no piece has 4 guaranteed slots or more than 5. 15 Paladin shields have no guaranteed slot but allow overmelding. The tool gives them no melds. That is **inferred**: xivgear (a community gear planner) gives them 5 slots, and no source says which is right.
+
+### The cap on each substat
+
+Melds cannot raise a substat without limit. On each piece, each substat is capped at that piece's own sync cap: the cap of its slot share and stat factor at its own item level ([math.md, section 5](math.md#the-clamp-rule)). A stone's points above the cap are lost.
+
+**Example.** Kirin's Osode of Fending, an item level 300 body piece for tanks, has Critical Hit 110 and Determination 77, and a cap of 110 on every substat. Critical Hit is already at the cap, so melds add nothing to it. Determination has 33 points of room: two VI and one V (16 + 16 + 6 = 38) fill it, and 5 points are lost.
+
+**The rule.** With $x_k$ the piece's own value of substat $k$ and $C_k$ its cap, the room left is
+
+$$
+h_k = \max(0,\ C_k - x_k),
+$$
+
+and the stones put into substat $k$ add $\min(h_k,\ \text{their total value})$ to it. A meld never lowers a stat already above its cap.
+
+**Evidence.** This is **verified** for substats with a stat factor of 100: the top substat of real pieces equals it, and the Wiki's Kirin's Osode of Fending (item level 300 body) caps at 110 with its 77 melded up to 110. Where the factor is below 100 (for example Piety on kind 0 earrings, at 90%), the cap uses the factor-first cap order, which is **inferred** beyond three second-hand in-game values.
+
+### Sync removes melds
+
+A piece keeps its melds only if it is not synced: its item level is at or below the item level cap (with item level sync on), and its equip level is at or below the synced level. **Verified** in game by the owner. A piece exactly at the cap keeps them.
+
+### Which stones are shown
+
+Several melds can give a piece the same gains, when a stone's points are partly cut by the cap. In the Kirin's Osode example, three VI and "two VI and one V" both raise Determination by exactly 33. The tool shows, in this order:
 
 1. the most gain on the target, then the tiebreaks;
 2. the fewest stones (more slots left empty);
 3. the fewest big stones (odd grades first: XI over XII, V over VI);
 4. the first one found.
 
+A slot whose stone adds nothing to the target or a tiebreak stays empty, rather than taking a stone in another substat (the owner's decision, 2026-10-15). For the Osode with Determination as the target, the tool shows two VI and one V, with 2 slots empty.
+
 Stone prices, retrieval and overmeld odds play no part (the owner's decision, 2026-10-16). Only what is shown changes: a small stone in a big slot never raises a gain, so the gains, and every result, are the same as with each slot holding its own stone. (With a speed maximum it could reach lower speeds, but in 2,045 Target GCD runs it found no better set for about 14% more search work, so the optimizer leaves it out; owner, 2026-10-16.)
 
-In the item data, no piece has 4 guaranteed slots or more than 5. 15 Paladin shields have no guaranteed slot but allow overmelding. The tool gives them no melds. That is **inferred**: xivgear gives them 5 slots, and no source says which is right.
-
-![The five meld slots of an overmeldable earring, filled in order](../diagrams/materia-slots.svg)
-
-**Cap.** On each piece, each substat is capped at that piece's own sync cap: the cap of its slot share and stat factor at its own item level ([math.md, section 5](math.md#the-clamp-rule)). This is **verified** for substats with a stat factor of 100: the top substat of real pieces equals it, and the Wiki's Kirin's Osode of Fending (item level 300 body) caps at 110 with its 77 melded up to 110. Where the factor is below 100 (for example Piety on kind 0 earrings, at 90%), the cap uses the factor-first cap order, which is **inferred** beyond three second-hand in-game values. A stone's points above the cap are lost. With $x_k$ the piece's own value of substat $k$ and $C_k$ its cap, the room left is
-
-$$
-h_k = \max(0,\ C_k - x_k),
-$$
-
-and a meld never lowers a stat already above its cap.
-
-**Sync.** A piece keeps its melds only if it is not synced: its item level is at or below the item level cap (with item level sync on), and its equip level is at or below the synced level. **Verified** in game by the owner. A piece exactly at the cap keeps them.
-
 ## 3. Checks
+
+How do we know the rules above are implemented right? Three independent sources were compared with the tool.
 
 - **Against xivgear** (its own code at commit `6c3c878` and its data API, 10,534 pieces of 8 jobs, item levels 100 to 795):
   - every meld cap matches (67,433 of 67,433);
@@ -82,7 +115,7 @@ and a meld never lowers a stat already above its cap.
 
 ## 4. Effect on results
 
-Pieces that keep their melds, out of the full pool:
+Do melds change which gear the optimizer picks? Sync decides how many pieces keep their melds at all. Pieces that keep their melds, out of the full pool (every piece the job can wear):
 
 | Setting | Sage (1,999 pieces) | Warrior (2,383) |
 | --- | --- | --- |
@@ -115,6 +148,8 @@ Under sync, a piece above the cap gets its stats lowered to the cap and loses it
 | Shield and cloak caps (2H − 1H, share 220) | Inferred ([math.md, section 3](math.md#3-slot-shares)), and xivgear agrees |
 | HQ and NQ share a cap | Inferred; the tool models HQ stats |
 | Custom-stat relics melded on their base stats | Limitation: their real stats are set by the player |
+
+Notes: HQ (high quality) and NQ (normal quality) are the two versions of a crafted item ([glossary](../glossary.md)). Custom-stat relics are relic weapons whose stats the player sets.
 
 ## Where this lives
 

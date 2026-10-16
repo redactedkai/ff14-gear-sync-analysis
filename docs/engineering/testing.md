@@ -2,7 +2,22 @@
 
 How the project is tested: the three test layers, what each file covers, the commands, the conventions every test follows, and which expected numbers are allowed to change after a game patch. The evidence the tests encode (real items, Wiki caps, speed examples) is collected in [validation.md](../mechanics/validation.md). How the parts fit together is in [architecture.md](architecture.md).
 
+Related pages: [validation.md](../mechanics/validation.md) (the evidence behind expected values), [optimizer.md](optimizer.md) (the search the exhaustive tests check), [data-pipeline.md](data-pipeline.md) (the generators the Python tests check), [architecture.md](architecture.md), [glossary.md](../glossary.md).
+
+**The testing problem in one paragraph.** The tool computes numbers nobody can check by eye: the stats of a gear piece (an item worn in one body slot) after the game lowers it to a fixed strength, and the best combination of pieces out of thousands. A test is only as good as its **oracle**, the source of its expected value. This suite uses four kinds of oracle, in order of preference:
+
+| Oracle | Example | Where |
+| --- | --- | --- |
+| Published numbers | the Wiki's sync caps at item level 475 | unit tests (section 2) |
+| Real game data | a real item level 130 healer head piece | unit and smoke tests |
+| An independent reference | a brute force that tries every loadout | section 2.1 |
+| A regression that failed before a fix | the ring pruning bug | section 4 |
+
+A number copied from the tool's own output is not an oracle: it only proves the tool still agrees with itself (section 4). Game terms used below (item level, sync cap, GCD, melds, Unique) are defined in [glossary.md](../glossary.md).
+
 ## 1. Test layers
+
+What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
@@ -16,9 +31,11 @@ Notes:
 - **Generator tests** run the item level, item database and job icon generators and the gear category rules on small test CSV and icon files. They check row selection, slot detection, multi-slot gear (a cloak kept on its own slot code, an unsupported combination left out), stat placement, the HQ rule, job mask, sort order, budget table and level data, stat factor kind and table, gear categories and source flags, schema drift, and job icon embedding and numbering.
 - **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 16 groups, each on a fresh page (section 2, *Smoke test*).
 
-The unit tests need no browser because the core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects. They load the full item database, so they check the model against all 17,316 real pieces, not just hand-made examples.
+**Why most tests need no browser.** The core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects, so both run in plain Node. The unit tests load the full item database, so they check the model against all 17,316 real pieces, not just hand-made examples. The smoke test is left with only what needs a real page: wiring, layout and interaction.
 
 ## 2. What each file covers
+
+Which file tests what? One line per file; the file itself says the rest.
 
 ### Unit tests
 
@@ -62,13 +79,28 @@ Notes:
 
 ### 2.1 The brute-force reference and the real-gear pools
 
-The optimizer tests share one reference. It tries every legal loadout (one item per slot, two rings, the same ring twice only when it has two copies, a single ring when no pair exists), drops loadouts outside the speed range, and keeps the lexicographically best totals. It does no pruning and no score weighting, so it is independent of the optimizer's search.
+**The question.** The optimizer is a branch and bound search with pruning and bounds ([optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound)); a wrong bound silently returns a worse loadout (one item per gear slot). How do we know its answer is the true best? By comparing it with a search that is too simple to be wrong: try everything. This is differential testing against a reference implementation.
 
-It does use the optimizer's own rule for a piece's effective (synced) stats, so it does **not** check the clamp itself. The clamp is covered by the sync tests, the Wiki item level 475 caps, the derived caps at 123 in the caps test, and the same caps in the formula, views and smoke tests.
+**What the reference does.** It enumerates every legal loadout of a small pool:
 
-Two engine policies are copied into the reference rather than derived: a single ring only when no ring pair exists, and a slot never left empty to meet a constraint. They are stated in [optimizer.md, section 2](optimizer.md#2-formal-statement). On their own, the comparisons with the reference would confirm these policies rather than question them. So both are also tested directly on two-item pools, for both the optimizer and the reference (the "policy: ..." tests in the exhaustive test file). Changing either is a deliberate change to the engine, the reference and those tests together.
+- one item per slot, and two rings;
+- the same ring twice only when it has two copies (a Unique ring can be worn once);
+- a single ring when no pair exists.
 
-A real-gear pool is every database item the job can equip in a small item level window, with equip level 50 or below, small enough to enumerate. The pools in the optimizer tests (speed totals measured on the current data):
+It drops loadouts outside the speed range, and keeps the lexicographically best totals: compare the target stat first, then tiebreak 1, then tiebreak 2, like words in a dictionary. It does no pruning and no score weighting, so it is independent of the optimizer's search.
+
+**Toy example** (made-up, to show the count). A pool with 3 heads, 2 bodies and 3 different rings, nothing else, has $3 \times 2 \times \binom{3}{2} = 18$ loadouts if each ring has one copy, and $3 \times 2 \times 6 = 36$ if each has two (the 3 pairs of different rings plus 3 doubles). In general the count is the product, over slots, of the number of choices in that slot, which is why a pool must stay small.
+
+**What it does not check.** It uses the optimizer's own rule for a piece's effective (synced) stats, so it does **not** check the clamp itself (the cut of each stat to the sync cap). The clamp is covered by the sync tests, the Wiki item level 475 caps, the derived caps at 123 in the caps test, and the same caps in the formula, views and smoke tests.
+
+**Policies copied, then tested on their own.** Two engine policies are copied into the reference rather than derived:
+
+1. a single ring only when no ring pair exists;
+2. a slot never left empty to meet a constraint.
+
+They are stated in [optimizer.md, section 2](optimizer.md#2-formal-statement). On their own, the comparisons with the reference would confirm these policies rather than question them, since both sides share them. So both are also tested directly on two-item pools, for both the optimizer and the reference (the "policy: ..." tests in the exhaustive test file). Changing either is a deliberate change to the engine, the reference and those tests together.
+
+**Real-gear pools.** A real-gear pool is every database item the job can equip in a small item level window, with equip level 50 or below, small enough to enumerate. The pools in the optimizer tests (speed totals measured on the current data):
 
 | Job (role) | Item levels | Items | Loadouts | Best speed, synced to 123 / unsynced |
 | --- | --- | ---: | ---: | --- |
@@ -80,7 +112,9 @@ A real-gear pool is every database item the job can equip in a small item level 
 | Bard (ranged) | 125–135 | 25 | 3,584 | 254 / 262 |
 | Black Mage (caster) | 125–135 | 25 | 3,584 | 273 / 288 |
 
-The tests assert equality with the brute force for every substat, not these totals, so they hold if a patch changes the gear in a window. What these comparisons show alongside the probes outside the tests, are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+The tests assert equality with the brute force for every substat, not these totals, so they hold if a patch changes the gear in a window. What these comparisons show, alongside the probes outside the tests, is in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+
+**Randomized pools.** Besides the real-gear pools, the exhaustive tests draw random pools from fixed seeds, so every run tests the same pools and a failure names one that can be reproduced (section 4).
 
 ### Generator tests
 
@@ -88,7 +122,7 @@ Two Python files: `test_generators.py` (the item database, the item level data, 
 
 ### Smoke test
 
-The smoke test opens the built page from a `file://` address in headless Chromium at 1000 × 900. Its numbers come from `src/core` in Node at test time (`smoke-core.mjs`), so it checks how the page is wired to the core, not the math again.
+**The question.** The unit tests prove the core and the view builders right; does the built page actually show what they compute? The smoke test opens the built page from a `file://` address in headless Chromium at 1000 × 900. Its numbers come from `src/core` in Node at test time (`smoke-core.mjs`), so it checks how the page is wired to the core, not the math again.
 
 | Step | Checks |
 | --- | --- |
@@ -106,11 +140,16 @@ The smoke test opens the built page from a `file://` address in headless Chromiu
 | Same result | a row's menu at 960 px, a pick shown with the result unchanged, cleared by a setting change |
 | Every tab for eight jobs | caps at 123, no bad text, no sideways scroll at 960 px |
 
-Any uncaught page error or console error fails the test. Network errors are ignored, since the web fonts cannot load offline. Every wait is on a concrete condition (an element appears, a text matches), except a few fixed waits of 600 ms that let the optimizer's debounce settle (the typing and same-result steps). Screenshots of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, are written to the smoke test's output folder (gitignored). On success it prints `no errors`.
+Notes:
+
+- **What fails it.** Any uncaught page error or console error. Network errors are ignored, since the web fonts cannot load offline.
+- **Waits.** Every wait is on a concrete condition (an element appears, a text matches), except a few fixed waits of 600 ms that let the optimizer's debounce settle (the typing and same-result steps).
+- **Screenshots.** Of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, written to the smoke test's output folder (gitignored).
+- **Success** prints `no errors`.
 
 ## 3. Commands
 
-Run from the repository root.
+Which command runs which check? Run from the repository root.
 
 | Command | What it runs |
 | --- | --- |
@@ -128,16 +167,28 @@ Run from the repository root.
 | `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
 | `node scripts/perf/target-gcd-sweep.mjs [workers] [jobs]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
 
-Notes:
+Notes on the pass/fail commands:
 
 - **`npm test`** runs the unit tests with Node's built-in test runner. **`npm run test:data`** runs the generator tests with Python `unittest`.
 - **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 12 s; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
 - **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
 - **`npm run check`** runs lint (with format check), build, unit tests and the smoke test, in that order, and stops at the first failure. It needs no Python. It is the bar for calling a change done. **`npm run check:all`** adds `lint:py` and `test:data`; run it when touching `scripts/data/` or after `update-data`. For UI changes, also open the built page and look at it at desktop width and at 960 px.
 
-- **The `perf` commands** are performance measurements, not pass/fail tests, and are not part of `npm run check`. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). More scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a saved copy of `src/`. `target-gcd-sweep.mjs` runs Target GCD on every job, every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync), the page's default gear groups, every goal and tiebreak order, six GCDs from the no-speed one to the fastest the gear reaches, both modes, and food off and "Best for the goal". On every fourth run with food off, it searches the same candidates with the plain search (no speed tables, groups or memo) and compares. For each job and sync setting, it also checks four small pools against the brute force. A difference is counted as a mismatch, and the results are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
-- **The check against ffxiv-gearing** (`scripts/validate/gearing/`) is also run by hand: `fetch.py` clones and builds that tool at a pinned commit, `run.mjs` (Node, Playwright) compares every synced stat with it in a browser (about 6 minutes; `--site live` against its published page) and fails on a difference with no known cause. Results in [validation.md, section 9](../mechanics/validation.md#9-against-another-tool-ffxiv-gearing).
-- **The check against xivgear** (`scripts/validate/xivgear/`) is run by hand the same way: `fetch.py` clones xivgear at a pinned commit and installs its dependencies (with install scripts off), `run.py` runs our bundled core inside xivgear's own test runner and compares every synced stat, job and sync setting (about 30 minutes, one process per job and level; their item data is cached in `data/xivgear-cache`, so later runs are offline). Their two known sync faults are corrected on their side before comparing, and the run fails on any other difference with no known cause. Results in [validation.md, section 10](../mechanics/validation.md#10-against-another-tool-xivgear).
+Notes on the measurements and checks run by hand (none is part of `npm run check`):
+
+- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a saved copy of `src/`.
+- **`target-gcd-sweep.mjs`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
+  - every job;
+  - every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync);
+  - the page's default gear groups;
+  - every goal and tiebreak order;
+  - six GCDs, from the no-speed one to the fastest the gear reaches;
+  - both modes;
+  - food off and "Best for the goal".
+
+  It checks itself two ways. On every fourth run with food off, it searches the same candidates with the plain search (no speed tables, groups or memo) and compares. For each job and sync setting, it also checks four small pools against the brute force. A difference is counted as a mismatch, and the results are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+- **The check against ffxiv-gearing** (`scripts/validate/gearing/`): `fetch.py` clones and builds that tool at a pinned commit, `run.mjs` (Node, Playwright) compares every synced stat with it in a browser (about 6 minutes; `--site live` against its published page) and fails on a difference with no known cause. Results in [validation.md, section 9](../mechanics/validation.md#9-against-another-tool-ffxiv-gearing).
+- **The check against xivgear** (`scripts/validate/xivgear/`), run the same way: `fetch.py` clones xivgear at a pinned commit and installs its dependencies (with install scripts off), `run.py` runs our bundled core inside xivgear's own test runner and compares every synced stat, job and sync setting (about 30 minutes, one process per job and level; their item data is cached in `data/xivgear-cache`, so later runs are offline). Their two known sync faults are corrected on their side before comparing, and the run fails on any other difference with no known cause. Results in [validation.md, section 10](../mechanics/validation.md#10-against-another-tool-xivgear).
 
 Running a subset:
 
@@ -149,19 +200,33 @@ Running a subset:
 
 ## 4. Conventions
 
-**Expected values come from outside the code under test.** Prefer, in this order: published numbers (the Wiki's item level 475 sync caps, AkhMorning's GCD tier tables), real items from the game data (the item level 130 healer head piece, real-gear pools), and independent references written in the test (the brute force; caps derived from the raw `ItemLevel` rows and slot shares rather than by the function under test). Cite the source (a URL for a published number) in a comment next to the value. A number copied from the tool's own output only proves the tool still agrees with itself. If a value has no outside source, say so in the test name or a comment.
+What makes a test here worth having? Five rules, each with the reason behind it.
+
+**Expected values come from outside the code under test.** Prefer, in this order:
+
+1. published numbers (the Wiki's item level 475 sync caps, AkhMorning's GCD tier tables);
+2. real items from the game data (the item level 130 healer head piece, real-gear pools);
+3. independent references written in the test (the brute force; caps derived from the raw `ItemLevel` rows and slot shares rather than by the function under test).
+
+Cite the source (a URL for a published number) in a comment next to the value. A number copied from the tool's own output only proves the tool still agrees with itself. If a value has no outside source, say so in the test name or a comment.
 
 **Pick real items by their properties, not their names.** A test asks for what it needs (a head piece at item level 130 with Spell Speed above the cap, a Unique ring, every item a job can equip in a window) and finds it in the database. The test then states its requirement, and does not depend on one gear set.
 
-**Reproduce a reported bug before fixing it.** When the owner reports a bug (often from a screenshot), first write a unit test or smoke check that fails on the current code, then fix, and keep the test as a regression check. The ring pruning and tiebreak weight regressions in the exhaustive tests fail on the code before those fixes ([history.md](../history.md)), and 8 of the original 14 saved-state tests failed on the old restore code.
+**Reproduce a reported bug before fixing it.** When the owner reports a bug (often from a screenshot), first write a unit test or smoke check that fails on the current code, then fix, and keep the test as a regression check. This is the hand-made counterpart of mutation testing: the buggy code is a known mutant, and the test must kill it. The ring pruning and tiebreak weight regressions in the exhaustive tests fail on the code before those fixes ([history.md](../history.md)), and 8 of the original 14 saved-state tests failed on the old restore code.
 
-**Check the optimizer against exhaustive search.** The optimizer's pruning and bounds are where subtle bugs hide: the ring pruning bug returned a worse ring pair on real gear while every fixed-value test passed ([history.md](../history.md#results-of-the-tool)). The shared brute force (section 2.1) tries every legal loadout under the same rules; real-gear, constraint and view tests compare against it rather than pinning totals. Random pools are generated from fixed seeds, so a failure names a pool that can be reproduced. Any change to scoring, pruning or the search must keep these tests green; also re-time a large pool ([optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
+**Check the optimizer against exhaustive search.** The optimizer's pruning and bounds are where subtle bugs hide: the ring pruning bug returned a worse ring pair on real gear while every fixed-value test passed ([history.md](../history.md#results-of-the-tool)). So:
 
-**Keep shared logic job-agnostic in tests too.** Tests of shared logic should either loop over several jobs (the real-gear optimizer tests cover every role) or use the job only as an example of a role (Sage for healers, Warrior for tanks). Do not encode a Sage-only assumption into a test of shared code.
+- The shared brute force (section 2.1) tries every legal loadout under the same rules; real-gear, constraint and view tests compare against it rather than pinning totals.
+- Random pools are generated from fixed seeds, so a failure names a pool that can be reproduced.
+- Any change to scoring, pruning or the search must keep these tests green; also re-time a large pool ([optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
+
+**Keep shared logic job-agnostic in tests too.** The tool supports all 23 combat jobs. Tests of shared logic should either loop over several jobs (the real-gear optimizer tests cover every role) or use the job only as an example of a role (Sage for healers, Warrior for tanks). Do not encode a Sage-only assumption into a test of shared code.
 
 **Assert, don't print.** A check that only prints a value cannot fail. The band accuracy test prints its per-band shares as diagnostics but asserts the thresholds.
 
 ## 5. Adding a test
+
+Where does a new test go?
 
 | What changed | Where the test goes |
 | --- | --- |
@@ -179,11 +244,11 @@ Notes:
 - **Generator.** Add a row to the fixture CSVs if needed, using the real header, and assert on the generated output.
 - **Smoke test.** For a layout, a binding or an interaction: a new check function, called from the smoke test's list of steps. Wait on a concrete condition, never a fixed delay, and record failures with the shared check helper so the run continues.
 
-Run the whole check afterwards: a new test is only useful if it passes on the fixed code and fails on the broken one, so when possible, also confirm it fails before the fix.
+Run the whole check afterwards. A new test is only useful if it passes on the fixed code and fails on the broken one, so when possible, also confirm it fails before the fix.
 
 ## 6. After a game patch
 
-Refreshing the data can legitimately change some expected values and must not change others. The refresh steps are in [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).
+**The question.** A game patch adds gear, and the data is refreshed from the new game files. Which failing tests then mean "the data moved, update the expectation" and which mean "something is wrong"? Refreshing the data can legitimately change some expected values and must not change others. The refresh steps are in [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).
 
 | Expectation | After a patch |
 | --- | --- |
@@ -195,7 +260,7 @@ Refreshing the data can legitimately change some expected values and must not ch
 | Generic maximum at cap 123 | must not move |
 | Format, row shape, provenance, generator tests | must not move |
 
-Notes:
+The rule behind the table: a value that depends on what gear exists may move; a value that depends only on old, unchanged game rows must not.
 
 - **Row counts and the highest real item level** move when new gear is added. The page computes the highest item level itself.
 - **Accuracy shares** are currently 99.7% to 100.0% exact. They can move as new gear arrives, but the thresholds (98.5% exact and within ±1) should still hold. A drop below them means the model needs a look, not a lower threshold.
