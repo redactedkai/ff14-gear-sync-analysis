@@ -300,7 +300,7 @@ async function checkPieceLab(pg) {
   await pg.selectOption('#p-s2', 'spec');
   await pg.fill('#p-ilvl', '130');
   await pg.locator('#p-ilvl').dispatchEvent('change');
-  await expect(pg.locator('#p-out thead')).toContainText('Table @ ilvl 130');
+  await expect(pg.locator('#p-out thead')).toContainText('Budget at ilvl 130');
   await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
   await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
   const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };

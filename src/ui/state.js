@@ -58,7 +58,7 @@ export function defaultState() {
     level: DEFAULT_LEVEL,
     tab: 'opt',
     mathTab: 'piece',
-    syncIlvl: 475,
+    syncIlvl: MAX_REAL, // Sync limits' comparison piece: the highest real item level, above any cap
     piece: { ilvl: MAX_REAL, slot: 'head', subs: ['spd', null] }, // the highest real item level
     // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
     browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
@@ -86,7 +86,8 @@ export function defaultState() {
 
 /* The job's own special substat (Piety, Tenacity) first, or its speed stat when it has none; rank 2 empty. */
 export function defaultSubs(job) {
-  return [job.profile.spec ? 'spec' : 'spd', null];
+  // a second substat by default, so Piece stats shows sync raising the 70% line to the full cap
+  return [job.profile.spec ? 'spec' : 'spd', 'crit'];
 }
 
 /* The synced level and the two "Equip level up to" filters held to the job's level cap. */

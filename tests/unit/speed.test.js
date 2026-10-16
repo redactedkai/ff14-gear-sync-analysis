@@ -82,7 +82,9 @@ test('GCD equals AkhMorning speed table at level 100, every speed and recast', (
   for (const ms of [1500, 2000, 2500, 2800, 3000, 3500, 4000]) {
     for (let S = 420; S <= 420 + 3365; S++) {
       const mod = Math.trunc((130 * (420 - S)) / 2780) + 1000;
-      assert.equal(gcdFor(S - 420, 100, ms), Math.trunc((ms * mod) / 10000) / 100, `speed ${S}, recast ${ms}`);
+      // AkhMorning's table has no floor; the game's 1.50 s (GCD_FLOOR_MS) only reaches the 1.5 s recast here
+      const want = Math.max(1.5, Math.trunc((ms * mod) / 10000) / 100);
+      assert.equal(gcdFor(S - 420, 100, ms), want, `speed ${S}, recast ${ms}`);
     }
   }
 });
@@ -124,6 +126,21 @@ test('haste starts at the levels in the official job guides', () => {
   assert.equal(hasteFor('SGE', 100), null);
   assert.equal(hasteFor('WHM', 100), null); // Presence of Mind is a short buff: not counted (owner's decision)
   assert.equal(hasteFor('SAM', 100).name, 'Fuka');
+  // what grants each step, as the job guides name it (Fuka comes from Shifu, a level 18 combo action)
+  assert.deepEqual(
+    [hasteFor('SAM', 18), hasteFor('SAM', 78), hasteFor('MNK', 76), hasteFor('NIN', 45), hasteFor('VPR', 20)].map(h => [
+      h.level,
+      h.pct,
+      h.source,
+    ]),
+    [
+      [18, 10, 'Shifu'],
+      [78, 13, 'Enhanced Fugetsu and Fuka'],
+      [76, 20, 'Enhanced Greased Lightning III'],
+      [45, 15, 'Increase Attack Speed'],
+      [20, 15, "Swiftskin's Sting"],
+    ],
+  );
 });
 
 test('the GCD falls 0.01 s at a time, with or without haste, so no value in between is skipped', () => {
@@ -177,9 +194,39 @@ test('gcdTierAt agrees with a step-by-step scan at every level', () => {
       const t = gcdTierAt(spd, level);
       let start = spd;
       while (start > 0 && gcdFor(start - 1, level) === t.gcd) start--;
+      // at the 1.50 s floor no speed shortens it: no next step
+      if (t.gcd === 1.5) {
+        assert.deepEqual([t.start, t.next, t.nextGcd], [start, null, null], `level ${level}, speed ${spd} (floor)`);
+        continue;
+      }
       let next = spd + 1;
       while (gcdFor(next, level) === t.gcd) next++;
       assert.deepEqual([t.start, t.next, t.nextGcd], [start, next, gcdFor(next, level)], `level ${level}, speed ${spd}`);
     }
   }
+});
+
+/* The game's recast floor (GCD_FLOOR_MS, second-hand: the client as reverse-engineered by ffxiv_bossmod): speed and
+   haste never take the GCD below 1.50 s, and the speed multiplier never below 0. At level 1 (div 56) item level 123
+   gear is far past both; at level 100 nothing real comes near. */
+test('the GCD stops at 1.50 s, at every level and haste', () => {
+  for (const level of [1, 15, 50, 100]) {
+    for (const haste of [0, 13, 20]) {
+      assert.equal(gcdFor(100000, level, 2500, haste), 1.5, `level ${level} haste ${haste}`);
+      const t = gcdTierAt(100000, level, 2500, haste);
+      assert.equal(t.gcd, 1.5);
+      assert.equal(t.next, null, 'no step after the floor');
+    }
+  }
+  assert.equal(gcdFor(487, 1), 1.5); // the multiplier is 0 here: 130 x 487 / 56 is past 1000
+  assert.equal(gcdFor(316, 1), 1.5); // 0.66 s before the floor
+  assert.equal(gcdFor(0, 1), 2.5);
+  // a Target GCD of exactly 1.50 has no speed maximum; below 1.50 none can be had
+  const b = speedForGcd(1.5, 1, 'exact');
+  assert.equal(gcdFor(b.min, 1), 1.5);
+  assert.ok(gcdFor(b.min - 1, 1) > 1.5);
+  assert.equal(b.max, 100000);
+  assert.equal(speedForGcd(1.49, 1, 'exact'), null);
+  assert.equal(speedForGcd(1.49, 1, 'min'), null);
+  assert.equal(speedForGcd(1.4, 100, 'min', 20), null);
 });

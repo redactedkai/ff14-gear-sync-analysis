@@ -2,7 +2,6 @@
 import { EXPANSIONS, SOURCES } from '../core/constants.js';
 
 export const fmtInt = n => n.toLocaleString();
-export const pct0 = (part, whole) => ((100 * part) / whole).toFixed(0) + '%';
 
 /* A table cell for a stat: "raw→synced" in the clamp colour when sync cuts it, dimmed when zero. */
 export function statCell(raw, synced) {

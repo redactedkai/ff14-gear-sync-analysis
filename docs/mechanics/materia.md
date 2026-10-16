@@ -31,8 +31,9 @@ $$
 
 and without overmelding $B = g$, $S = 0$.
 
-- A big stone fits a guaranteed slot or the first overmeld slot: the most valuable grade the item level allows.
-- A small stone fits a later overmeld slot: the most valuable grade the item level allows that is not VI, VIII, X or XII.
+- A big slot (a guaranteed slot or the first overmeld slot) takes any grade; the tool uses the most valuable grade the item level allows (the big stone) or the small stone below.
+- A small slot (a later overmeld slot) takes the most valuable grade the item level allows that is not VI, VIII, X or XII (the small stone).
+- Slots fill in order, so empty slots always come last (**verified**, Wiki). Overmelding starts only once every guaranteed slot is full.
 
 | Gear item level | Big stone | Small stone |
 | --- | --- | --- |
@@ -44,6 +45,15 @@ and without overmelding $B = g$, $S = 0$.
 | 690 and up | XII (+54) | XI (+18) |
 
 The table starts at 100, the lowest item level in the database.
+
+**Which stones are shown.** Several melds can give a piece the same gains, when a stone's points are partly cut by the cap. The tool shows, in this order:
+
+1. the most gain on the target, then the tiebreaks;
+2. the fewest stones (more slots left empty);
+3. the fewest big stones (odd grades first: XI over XII, V over VI);
+4. the first one found.
+
+Stone prices, retrieval and overmeld odds play no part (the owner's decision, 2026-10-16). Only what is shown changes: a small stone in a big slot never raises a gain, so the gains, and every result, are the same as with each slot holding its own stone. (With a speed maximum it could reach lower speeds, but in 2,045 Target GCD runs it found no better set for about 14% more search work, so the optimizer leaves it out; owner, 2026-10-16.)
 
 In the item data, no piece has 4 guaranteed slots or more than 5. 15 Paladin shields have no guaranteed slot but allow overmelding. The tool gives them no melds. That is **inferred**: xivgear gives them 5 slots, and no source says which is right.
 
@@ -95,6 +105,8 @@ Under sync, a piece above the cap gets its stats lowered to the cap and loses it
 | --- | --- |
 | Values, item level gates, no main stat or Vitality materia | Verified (game files, Lodestone) |
 | High grades not past the first overmeld slot | Verified (game files) |
+| Slots fill in order; overmelding after every guaranteed slot | Verified (Wiki) |
+| Which stones are shown among equal gains (section 2) | The owner's decision (2026-10-16), not a game rule |
 | Meld cap = the piece's own sync cap | Verified (real items, Wiki, xivgear) for factor 100; inferred below 100 |
 | Melds lost on synced pieces | Verified (owner, in game) |
 | Every meld succeeds | Assumed (owner's decision: odds are out of scope) |

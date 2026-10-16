@@ -1,6 +1,6 @@
 /* Gear optimizer tab view: the best loadout for the chosen stat, searched over every piece the job can wear.
    Pure view builders: no Alpine import, so Node can load and test them. */
-import { SLOT_LABEL } from '../../core/constants.js';
+import { GCD_FLOOR_MS, SLOT_LABEL } from '../../core/constants.js';
 import { browseItems, filterGear, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
@@ -121,6 +121,9 @@ function gcdControls(app, pool, gear) {
    panel, or why no set fits. The fastest GCD the gear reaches is already in the range beside the box. */
 function gcdLine(job, r, ui, level) {
   const base = statBase(job, 'spd', level);
+  if (r.reason === 'unreachable' && r.asked < GCD_FLOOR_MS / 1000) {
+    return { bad: true, text: `The GCD can't go below ${(GCD_FLOOR_MS / 1000).toFixed(2)}` };
+  }
   if (r.reason === 'unreachable') {
     const why = ui.haste ? `${ui.haste.name} ${ui.haste.pct}%` : 'no speed';
     return { bad: true, text: `${job.jobName}'s GCD is ${ui.top.toFixed(2)} at most (${why})` };

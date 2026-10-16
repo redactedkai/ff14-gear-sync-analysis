@@ -6,7 +6,7 @@ How the project is tested: the three test layers, what each file covers, the com
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 225 tests in 26 files |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 232 tests in 26 files |
 | Generator tests (Python) | the data generators, on small test files | 75 tests |
 | Smoke test (browser) | the built page in headless Chromium | one script, 16 groups of checks |
 

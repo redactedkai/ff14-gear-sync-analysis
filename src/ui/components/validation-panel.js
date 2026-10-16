@@ -1,22 +1,26 @@
 /* "Checked against real gear and published caps": computed once, the first time the panel is opened. */
 import { bandAccuracy, wikiChecks } from '../../core/validation.js';
-import { fmtInt, pct0 } from '../helpers.js';
+import { fmtInt } from '../helpers.js';
 
 export function validationPanel() {
   return {
     view: null,
     onToggle(open) {
       if (!open || this.view) return;
-      const bands = bandAccuracy().map(b => ({
+      // counts, not percentages: rounded to whole percents the few misses would read as 100%
+      const raw = bandAccuracy();
+      const sum = k => raw.reduce((a, b) => a + b[k], 0);
+      const bands = raw.map(b => ({
         label: b.label,
         n: fmtInt(b.n),
-        exact: pct0(b.exact, b.n),
-        within1: pct0(b.within1, b.n),
-        count: b.n,
+        exact: fmtInt(b.exact),
+        off1: fmtInt(b.within1 - b.exact),
+        more: fmtInt(b.n - b.within1),
       }));
       this.view = Object.freeze({
         bands,
-        total: fmtInt(bands.reduce((a, b) => a + b.count, 0)),
+        total: fmtInt(sum('n')),
+        exact: fmtInt(sum('exact')),
         wiki: wikiChecks(),
       });
     },

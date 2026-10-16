@@ -361,7 +361,9 @@ $$
 \text{GCD} = \frac{1}{100}\left\lfloor \frac{b \cdot m}{10000} \right\rfloor \ \text{seconds}
 $$
 
-where $b$ is the base recast in milliseconds (2,500). The DoT/HoT tick multiplier is
+where $b$ is the base recast in milliseconds (2,500). The game never lets speed and haste take the recast below **1.50 s**, and $m$ never below 0 (*second-hand*: the game client's recast step as reverse-engineered by ffxiv_bossmod, which ends in "min 1500", and players' reports of a 1.50 s cap; xivgear clamps only at 0 and AkhMorning gives no floor). The tool applies both (`GCD_FLOOR_MS` in constants.js). No real setting comes near the floor (the fastest found is 1.83 s, a level 90 Samurai with Fuka); only a cap no duty pairs with a low level does (section 5).
+
+The DoT/HoT tick multiplier is
 
 $$
 \text{tick multiplier} = 1 + \frac{1}{1000}\left\lfloor \frac{130\, g}{\text{div}} \right\rfloor
@@ -392,6 +394,8 @@ $$
 
 That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real gear set usually falls short of this, because a piece rarely has speed as its top substat in every slot.
 
+With the weapon too (48 on a two-handed weapon, and the same on a one-handed weapon and shield together) it is 344, a 2.17 s GCD; 685 on the character panel. The Sync limits tab counts every slot, so it shows this number.
+
 ### Haste
 
 Four jobs run faster all fight, from a trait or a buff kept up the whole time. The Target GCD counts their haste $h$ (percent), so the box takes the GCD their guides give. Short buffs (Presence of Mind, Ley Lines, Army's Paeon, Inspiration) and party buffs are not counted (owner's decision, 2026-10-15). xivgear counts the same four jobs.
@@ -403,7 +407,7 @@ Four jobs run faster all fight, from a trait or a buff kept up the whole time. T
 | Samurai | Fuka (buff) | 10 / 13% | 18 / 78 |
 | Viper | Swiftscaled (buff) | 15% | 20 |
 
-Percentages and levels are from the official job guides (**verified**). xivgear applies the Ninja and Viper haste at every level.
+Percentages and levels are from the official job guides (**verified**, rechecked 2026-10-16): Monk's traits Greased Lightning, Enhanced Greased Lightning, II and III; Ninja's role trait Increase Attack Speed; Samurai's Fuka from Shifu (a level 18 combo action) and Enhanced Fugetsu and Fuka (78); Viper's Swiftscaled from Swiftskin's Sting (20). Samurai's 10% below 78 is *second-hand* (Game8, xivgear): the guide gives only today's 13% and the trait that raises it. The step's own level decides, not the job's starting level: a level synced below it is real, so a Samurai (from 50) synced to Sastasha (18) has Fuka. xivgear applies the Ninja and Viper haste at every level.
 
 Haste applies after the speed step, then the result is rounded down again (xivgear's formula, **inferred**):
 

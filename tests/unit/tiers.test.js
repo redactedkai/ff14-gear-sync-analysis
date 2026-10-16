@@ -5,7 +5,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { gcdFor } from '../../src/core/speed.js';
 import { statTier } from '../../src/core/tiers.js';
 import { AKH_LEVEL } from './helpers/common.js';
 
@@ -49,9 +48,14 @@ test('start and next bound the step exactly, at every level', () => {
         const t = statTier(job, stat, g, level);
         const effect = x => statTier(job, stat, x, level).effect;
         const label = `${job.jobId} ${stat} ${g} at ${level}`;
-        assert.ok(t.start <= g && g < t.next, label);
+        assert.ok(t.start <= g && (t.next == null || g < t.next), label);
         assert.equal(effect(t.start), t.effect, label);
         if (t.start > 0) assert.notEqual(effect(t.start - 1), t.effect, label);
+        // the GCD's last step is the game's 1.50 s floor: nothing comes after it
+        if (t.next == null) {
+          assert.equal(t.effect, '1.50s', label);
+          continue;
+        }
         assert.equal(effect(t.next - 1), t.effect, label);
         assert.notEqual(effect(t.next), t.effect, label);
       }
@@ -71,7 +75,9 @@ test('effects equal AkhMorning formulas at every level in their table', () => {
     det: (v, [main, , div]) => `+${pctOf(Math.floor((140 * (v - main)) / div))}`,
     ten: (v, [, sub, div]) => `+${pctOf(Math.floor((112 * (v - sub)) / div))}`,
     piety: (v, [main, , div]) => `+${Math.floor((150 * (v - main)) / div)} MP`,
-    spd: (v, [, sub, div]) => `${(Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
+    // AkhMorning's table has no floor: the game's 1.50 s (GCD_FLOOR_MS) is applied on top
+    spd: (v, [, sub, div]) =>
+      `${Math.max(1.5, Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
   };
   for (const job of [sge, war]) {
     for (const [lv, row] of Object.entries(AKH_LEVEL)) {
@@ -79,8 +85,6 @@ test('effects equal AkhMorning formulas at every level in their table', () => {
         const key = s === 'spec' ? job.profile.spec : s;
         const base = key === 'det' || key === 'piety' ? row[0] : row[1]; // Determination and Piety start from MAIN
         for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
-          // at low levels this much speed would take the GCD below zero, where only the rounding of negatives differs
-          if (key === 'spd' && gcdFor(gear, +lv) <= 0) continue;
           assert.equal(statTier(job, s, gear, +lv).effect, akh[key](base + gear, row), `${job.jobId} ${s} level ${lv}, gear ${gear}`);
         }
       }
