@@ -2,6 +2,7 @@
    with up to two tiebreak stats and an optional speed range (to reach a GCD tier without overshooting it). */
 import { buildCandidates } from './candidates.js';
 import { branchAndBound } from './search.js';
+import { SLOT_TYPES } from '../constants.js';
 
 export { effStats, itemCaps, itemSyncIlvl } from './candidates.js';
 
@@ -12,7 +13,8 @@ export { effStats, itemCaps, itemSyncIlvl } from './candidates.js';
  * @param opts  {target='spd', tiebreak=[], spdMin, spdMax, nodeLimit=1.5e6, melds=false}: melds gives every piece that is
  *              not synced its best materia melds for the objective; it cannot be combined with a speed range
  * @returns {ok:false, truncated, nodes} when nothing is feasible, otherwise
- *          {ok:true, picks:[{type, item, eff, meld, blockedBy}], totals, truncated, nodes, noMeldData}; an empty pick has
+ *          {ok:true, picks:[{type, item, eff, meld, blockedBy}], totals, truncated, nodes, noMeldData}; picks are in the
+ *          character panel's slot order (SLOT_TYPES), not the search order; an empty pick has
  *          item null, and blockedBy is the chosen item that leaves its slot empty (a cloak for the head), if any; meld is
  *          the pick's melds (bestMeld in meld.js) or null, and eff includes them; noMeldData counts the pool pieces with
  *          no slot data when melds are on
@@ -50,5 +52,7 @@ export function optimize(job, pool, sync, opts) {
       totals[d] += c.a.v[d];
     });
   });
+  // the search fills blockable slots last; show the picks in the game's order (the sort is stable, so rings keep theirs)
+  picks.sort((a, b) => SLOT_TYPES.indexOf(a.type) - SLOT_TYPES.indexOf(b.type));
   return { ok: true, picks, totals, truncated, nodes, noMeldData };
 }

@@ -192,3 +192,14 @@ test('below level 50 a full pool keeps the search small: a piece covering later 
     }
   }
 });
+
+test("picks come back in the character panel's slot order, though the search fills the head last", () => {
+  // With the healer cloak in the pool the head is blockable, so the search puts it after the rings; the result is
+  // ordered by SLOT_TYPES instead (it showed Head below Ring 2).
+  const sge = makeJobContext('SGE');
+  const r = optimize(sge, gamePool(sge, {}), { cap: 123, sync: true }, { target: 'main' });
+  assert.deepEqual(
+    r.picks.map(p => p.type),
+    ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'],
+  );
+});
