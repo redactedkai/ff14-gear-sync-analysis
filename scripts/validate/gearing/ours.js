@@ -8,8 +8,10 @@
      D2 shield caps (their 40% share; ours two-handed minus one-handed)
      (D3, gear whose item level scales with the character, was fixed on our side: both tools now sync it to the
         level's item level, so a difference there shows as 'target' or 'unexplained')
-     D4 Main Attribute on tanks (theirs: Vitality, the game before patch 5.0; ours: Strength, the game since 5.0)
-     D6 Crucible and Occult Crescent bonus stats (they add them; we leave them out)
+     (D4, Main Attribute on tanks, is corrected on their side before comparing: their tank mainStat is 'VIT', the game
+        before patch 5.0; setup sets it to 'STR', the game since 5.0, so their own code runs with today's rule)
+     (D6, Crucible and Occult Crescent bonus stats, which they add and we leave out, is taken off their value before
+        comparing: theirBonus, counted in `bonus`, not as a difference)
      target: the two tools sync the piece to different item levels (D5, level 100 -> 790 vs 690, is one case)
      unexplained: none of the above */
 import { makeJobContext } from '../../../src/core/job-context.js';
@@ -49,9 +51,16 @@ function keyMap(job) {
 
 /* Load all of their gear data, switch their page to `jobId` in view mode with every database piece this job can wear,
    and keep our pool items for it. Returns counts: ours (our pieces), theirs (of those, in their data), notWearable
-   (in their data but not wearable by the job there) with a few examples per their job category. */
-async function setup(store, jobId) {
+   (in their data but not wearable by the job there) with a few examples per their job category, and mainStatFixed
+   (their tank mainStat corrected from 'VIT' to 'STR', see D4 above). */
+async function setup(store, game, jobId) {
   const job = makeJobContext(jobId);
+  // D4: their job table maps a tank's Main Attribute to Vitality, the rule before patch 5.0 (patch notes: "changed from
+  // vitality to strength"). Set before the job loads, so none of their cached values saw the old one. Their damage
+  // math also reads the field, but it is not compared here.
+  const schema = game.jobSchemas[jobId];
+  const mainStatFixed = schema.mainStat === 'VIT';
+  if (mainStatFixed) schema.mainStat = 'STR';
   store.setMode('edit');
   store.setJob(jobId);
   store.minLevel = 1; // load every item level group
@@ -91,7 +100,7 @@ async function setup(store, jobId) {
     }
   }
   prepared.set(jobId, list);
-  return { ours: list.length, theirs, notWearable, notWearableExamples };
+  return { ours: list.length, theirs, notWearable, notWearableExamples, mainStatFixed };
 }
 
 /* Their sync settings for a job: [level, item level or null] for each job level up to the job's cap, "level only"
@@ -108,10 +117,6 @@ function settings(game, jobId) {
 }
 
 function tag(job, p, s, ours, theirs, ourTarget, theirTarget, level) {
-  const data = p.g.data;
-  const bare = data.stats;
-  if (data.bonusType !== undefined) return 'D6';
-  if (job.profileId === 'tank' && ('main' in bare || 'secondary' in bare) && (s === 'main' || s === 'vit')) return 'D4';
   if (p.row.slotCode === 2) return 'D2';
   // a target at or above the piece's own item level lowers nothing (theirs still caps there, which is D1 territory)
   const lowered = t => (t != null && t < p.row.ilvl ? t : null);
@@ -121,20 +126,35 @@ function tag(job, p, s, ours, theirs, ourTarget, theirTarget, level) {
   return 'unexplained';
 }
 
-/* Compare every prepared piece of `jobId` at one setting. Returns {level, cap, pieces, stats, equal, tags, onScaling,
-   offBy, maxOff, examples}; onScaling counts the differences per tag on gear whose item level scales with the level
+/* The bonus stats ffxiv-gearing adds to a piece at its current sync, by their stat key: their Gear.stats adds
+   data.bonusStats, uncapped, always for Crucible pieces (bonusType 11) and for Occult Crescent pieces (9) only when
+   synced to item level 700. This project leaves both out on purpose (D6), so the check takes them off their value. */
+function theirBonus(g) {
+  const d = g.data;
+  const out = {};
+  if (!d.bonusStats || !(d.bonusType === 11 || (d.bonusType === 9 && g.syncedLevel === 700))) return out;
+  for (const [stat, value] of Object.entries(d.bonusStats)) {
+    const k = g.concretizeStat(stat);
+    out[k] = (out[k] || 0) + value;
+  }
+  return out;
+}
+
+/* Compare every prepared piece of `jobId` at one setting. Returns {level, cap, pieces, stats, equal, bonus, tags,
+   onScaling, offBy, maxOff, examples}; bonus counts the stats their bonus was taken off (theirBonus); onScaling counts the differences per tag on gear whose item level scales with the level
    (parseRow scales); offBy counts them per tag and size of the gap (OFF_BUCKETS), maxOff is the largest gap per tag. */
 function compare(store, jobId, level, cap) {
   const job = makeJobContext(jobId);
   const map = keyMap(job);
   store.setSyncLevel(cap ?? undefined, level);
   const sync = { cap, sync: cap != null, level };
-  const res = { level, cap, pieces: 0, stats: 0, equal: 0, tags: {}, onScaling: {}, offBy: {}, maxOff: {}, examples: [] };
+  const res = { level, cap, pieces: 0, stats: 0, equal: 0, bonus: 0, tags: {}, onScaling: {}, offBy: {}, maxOff: {}, examples: [] };
   const kept = {};
   for (const p of prepared.get(jobId)) {
     if (!p.g) continue;
     res.pieces++;
     const theirs = p.g.stats;
+    const extra = theirBonus(p.g);
     const ours = effStats(job, p.item, sync);
     let ourTarget = null;
     let theirTarget;
@@ -142,7 +162,8 @@ function compare(store, jobId, level, cap) {
       if (!map[s]) continue;
       res.stats++;
       const o = ours[s] || 0;
-      const t = theirs[map[s]] || 0;
+      if (extra[map[s]]) res.bonus++;
+      const t = (theirs[map[s]] || 0) - (extra[map[s]] || 0);
       if (o === t) {
         res.equal++;
         continue;

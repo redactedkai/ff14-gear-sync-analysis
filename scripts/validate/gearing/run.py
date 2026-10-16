@@ -36,7 +36,8 @@ LIVE_URL = 'https://asvel.github.io/ffxiv-gearing/'
 DATA_VERSION = '7.57'  # the data version the pinned commit carries (fetch.py COMMIT); the live page must show it too
 JOBS = 'PLD WAR DRK GNB WHM SCH AST SGE MNK DRG SAM RPR NIN VPR BRD MCH DNC BLM SMN RDM PCT BLU BST'.split()
 TIMEOUT = 120_000
-PASS_TAGS = {'D1', 'D2', 'D4', 'D5', 'D6'}  # D3 (level-scaling gear) was fixed on our side
+# D3 (level-scaling gear) fixed on our side; D4 (tank Main Attribute) and D6 (bonus stats) corrected on theirs
+PASS_TAGS = {'D1', 'D2', 'D5'}
 
 
 def bundle():
@@ -76,7 +77,7 @@ def open_page(browser, url):
 
 def run_job(browser, url, job):
     pg, errors = open_page(browser, url)
-    counts = pg.evaluate('job => OURS.setup(window.store, job)', job)
+    counts = pg.evaluate('job => OURS.setup(window.store, window.game, job)', job)
     settings = pg.evaluate('job => OURS.settings(window.game, job)', job)
     results = [pg.evaluate('([job, l, c]) => OURS.compare(window.store, job, l, c)', [job, level, cap]) for level, cap in settings]
     pg.close()
@@ -86,14 +87,15 @@ def run_job(browser, url, job):
 
 
 def summarize(report):
-    tags, stats, equal, pieces = Counter(), 0, 0, 0
+    tags, stats, equal, pieces, bonus = Counter(), 0, 0, 0, 0
     for job in report['jobs'].values():
         for s in job['settings']:
             tags.update(s['tags'])
             stats += s['stats']
             equal += s['equal']
             pieces += s['pieces']
-    return tags, stats, equal, pieces
+            bonus += s.get('bonus', 0)
+    return tags, stats, equal, pieces, bonus
 
 
 def main():
@@ -135,8 +137,9 @@ def main():
         server.shutdown()
     out = OUT / f'gearing-{args.site}.json'
     out.write_text(json.dumps(report, ensure_ascii=False), encoding='utf-8')
-    tags, stats, equal, pieces = summarize(report)
+    tags, stats, equal, pieces, bonus = summarize(report)
     print(f'\n{pieces:,} piece checks, {stats:,} stats compared, {equal:,} equal ({equal / stats:.4%})')
+    print(f'  their Crucible / Occult bonus taken off before comparing (D6): {bonus:,} stats')
     for k, v in sorted(tags.items()):
         print(f'  {k}: {v:,}')
     bad = {k: v for k, v in tags.items() if k not in PASS_TAGS}
