@@ -23,6 +23,7 @@ import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/c
 import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/candidates.js';
 import { levelSyncIlvl } from '../../../src/core/sync-target.js';
 import { ITEMS } from '../../../src/core/tables.js';
+import { ROW } from '../../../src/core/constants.js';
 
 const THEIR_KEY = {
   str: 'strength',
@@ -57,7 +58,7 @@ function job(jobId) {
     const bit = 1 << ctx.jobIndex;
     const pieces = new Map();
     for (const r of ITEMS) {
-      if (!(r[4] & bit)) continue;
+      if (!(r[ROW.jobMask] & bit)) continue;
       const row = parseRow(r);
       const item = poolItemFromRow(ctx, row);
       if (wearable(ctx, item)) pieces.set(row.gameId, { row, item });

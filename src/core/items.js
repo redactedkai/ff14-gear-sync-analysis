@@ -1,15 +1,16 @@
 /* Pool items and the real-item database (src/data/items.json).
    A pool item: {id, name, type, ilvl, stats (neutral keys), copies, src: 'game' | 'generated' | 'custom'}. */
-import { SLOT_LABEL, ITEM_STAT_ORDER, DB_SLOT_TYPE, DB_SLOT_PCT, DB_SLOT_BLOCKS, SOURCES, EXPANSIONS } from './constants.js';
+import { SLOT_LABEL, ITEM_STAT_ORDER, DB_SLOT_TYPE, DB_SLOT_PCT, DB_SLOT_BLOCKS, SOURCES, EXPANSIONS, ROW } from './constants.js';
 import { expansionBounds } from './speed.js';
 import { ITEMS, MP } from './tables.js';
 import { blankStats, buildPiece } from './formulas.js';
 
 let nextId = 1;
-export function newId() {
+function newId() {
   return 'i' + nextId++;
 }
 
+/* A pool item with defaults (one copy, hand-made); `stats` may leave stats out (0), `extra` overrides any field. */
 export function mkItem(name, type, ilvl, stats, extra) {
   return Object.assign({ id: newId(), name, type, ilvl, stats: Object.assign(blankStats(), stats), copies: 1, src: 'custom' }, extra || {});
 }
@@ -30,8 +31,14 @@ export function genericItems(job, ilvl, subsAllowed, types) {
   return items;
 }
 
+/* The position of a raw stat key ('crit', 'sps', 'mainAttr', ...) in a row's stats (ITEM_STAT_ORDER). */
 export function statIdx(key) {
   return ITEM_STAT_ORDER.indexOf(key);
+}
+
+/* A database row's raw stats as numbers, in ITEM_STAT_ORDER (the row stores them comma-joined). */
+export function rowStats(row) {
+  return row[ROW.stats].split(',').map(Number);
 }
 
 /* A database row's raw stats as this job's neutral keys. The game's generic Main Attribute adds to the job's main stat;
@@ -39,17 +46,17 @@ export function statIdx(key) {
    (xivgear's mapping, with in-game values for a healer and a Ninja). A tank's main stat here is Strength (verified: patch
    5.0 notes changed it from Vitality; ClassJob.PrimaryStat); its Tenacity from Secondary Attribute is inferred. */
 export function dbStats(job, raw) {
-  const g = k => raw[statIdx(k)] || 0;
-  const p = job.profile;
-  const sec = g('secAttr');
+  const rawOf = k => raw[statIdx(k)] || 0;
+  const profile = job.profile; // which raw stat each neutral key means for this job
+  const secAttr = rawOf('secAttr');
   return {
-    main: g(p.main) + g('mainAttr'),
-    vit: g('vit'),
-    crit: g('crit'),
-    det: g('det'),
-    dh: g('dh') + (p.spec ? 0 : sec),
-    spd: g(p.spd),
-    spec: p.spec ? g(p.spec) + sec : 0,
+    main: rawOf(profile.main) + rawOf('mainAttr'),
+    vit: rawOf('vit'),
+    crit: rawOf('crit'),
+    det: rawOf('det'),
+    dh: rawOf('dh') + (profile.spec ? 0 : secAttr),
+    spd: rawOf(profile.spd),
+    spec: profile.spec ? rawOf(profile.spec) + secAttr : 0,
   };
 }
 
@@ -62,35 +69,37 @@ const kindCache = new Map();
 export function kindFactors(job, kind) {
   if (kind == null || MP.vit[kind] == null) return null;
   const key = job.jobId + '|' + kind;
-  let f = kindCache.get(key);
-  if (!f) {
-    const p = job.profile;
-    const raw = { main: p.main, vit: 'vit', crit: 'crit', det: 'det', dh: 'dh', spd: p.spd, spec: p.spec };
-    f = Object.freeze(Object.fromEntries(Object.entries(raw).map(([s, k]) => [s, k ? MP[k][kind] / 100 : 1])));
-    kindCache.set(key, f);
+  let factors = kindCache.get(key);
+  if (!factors) {
+    const profile = job.profile;
+    // the raw stat each neutral key reads for this job; MP holds percents, the factors here are fractions
+    const rawKeyOf = { main: profile.main, vit: 'vit', crit: 'crit', det: 'det', dh: 'dh', spd: profile.spd, spec: profile.spec };
+    factors = Object.freeze(Object.fromEntries(Object.entries(rawKeyOf).map(([s, k]) => [s, k ? MP[k][kind] / 100 : 1])));
+    kindCache.set(key, factors);
   }
-  return f;
+  return factors;
 }
 
+/* A database row as an object, named as below (the fields of ROW, plus the slot code's type, share and blocks). */
 export function parseRow(r) {
   return {
-    name: r[0],
-    slotCode: r[1],
-    type: DB_SLOT_TYPE[r[1]],
-    pct: DB_SLOT_PCT[r[1]], // slot share, thousandths
-    blocks: DB_SLOT_BLOCKS[r[1]], // slot types it leaves empty
-    ilvl: r[2],
-    lvl: r[3],
-    mask: r[4],
-    st: r[5].split(',').map(Number),
-    unique: !!r[6],
-    hq: !!r[7], // can be high quality: the stats are the HQ ones
-    sources: r[8] | 0, // bit mask over SOURCES
-    kind: r[9], // item kind: the column of the stat factor table MP (kindFactors)
-    meldSlots: r[10], // guaranteed materia slots
-    overmeld: !!r[11], // overmelding allowed
-    gameId: r[13], // the game's item id (Item.csv row), for links to and checks against other tools
-    scales: !!r[14], // item level follows the wearer's level (Item.SubStatCategory 2; syncTarget)
+    name: r[ROW.name],
+    slotCode: r[ROW.slotCode],
+    type: DB_SLOT_TYPE[r[ROW.slotCode]],
+    pct: DB_SLOT_PCT[r[ROW.slotCode]], // slot share, thousandths
+    blocks: DB_SLOT_BLOCKS[r[ROW.slotCode]], // slot types it leaves empty
+    ilvl: r[ROW.ilvl],
+    lvl: r[ROW.equipLevel],
+    mask: r[ROW.jobMask],
+    st: rowStats(r),
+    unique: !!r[ROW.unique],
+    hq: !!r[ROW.hq], // can be high quality: the stats are the HQ ones
+    sources: r[ROW.sources] | 0, // bit mask over SOURCES
+    kind: r[ROW.kind], // item kind: the column of the stat factor table MP (kindFactors)
+    meldSlots: r[ROW.meldSlots], // guaranteed materia slots
+    overmeld: !!r[ROW.overmeld], // overmelding allowed
+    gameId: r[ROW.gameId], // the game's item id (Item.csv row), for links to and checks against other tools
+    scales: !!r[ROW.scales], // item level follows the wearer's level (Item.SubStatCategory 2; syncTarget)
   };
 }
 
@@ -118,13 +127,14 @@ export function browseItems(job, f) {
     attrIdx = statIdx('mainAttr');
   for (let k = 0; k < ITEMS.length; k++) {
     const r = ITEMS[k];
-    if (!(r[4] & bit)) continue;
-    if (f.type && f.type !== 'any' && DB_SLOT_TYPE[r[1]] !== f.type) continue;
-    if (f.expOff?.length && f.expOff.includes(expansionOf(r[3], r[2]))) continue;
-    if (f.ilvlMin && r[2] < f.ilvlMin) continue;
-    if (f.ilvlMax && r[2] > f.ilvlMax) continue;
-    if (r[3] > job.maxLevel || (f.lvlMax && r[3] > f.lvlMax)) continue;
-    if (q && r[0].toLowerCase().indexOf(q) < 0) continue;
+    // cheap checks on the raw row first; parseRow (which splits the stats) runs only for rows that pass
+    if (!(r[ROW.jobMask] & bit)) continue;
+    if (f.type && f.type !== 'any' && DB_SLOT_TYPE[r[ROW.slotCode]] !== f.type) continue;
+    if (f.expOff?.length && f.expOff.includes(expansionOf(r[ROW.equipLevel], r[ROW.ilvl]))) continue;
+    if (f.ilvlMin && r[ROW.ilvl] < f.ilvlMin) continue;
+    if (f.ilvlMax && r[ROW.ilvl] > f.ilvlMax) continue;
+    if (r[ROW.equipLevel] > job.maxLevel || (f.lvlMax && r[ROW.equipLevel] > f.lvlMax)) continue;
+    if (q && r[ROW.name].toLowerCase().indexOf(q) < 0) continue;
     const p = parseRow(r);
     if (!p.st[mainIdx] && !p.st[attrIdx]) continue; // must carry this job's main stat, or Main Attribute
     out.push(p);
@@ -132,7 +142,6 @@ export function browseItems(job, f) {
   return out;
 }
 
-/* Non-unique rings can be worn twice. */
 /* Identity of a piece in the pool: the same name, slot and item level is the same piece. */
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
@@ -142,18 +151,20 @@ let rowIndex = null;
 function rowFacts(item) {
   if (item.src !== 'game') return null;
   if (!rowIndex) {
+    // built once: several rows can share a pool key (the same piece from two sources); their source bits are joined,
+    // every other fact comes from the first such row
     rowIndex = new Map();
     for (const r of ITEMS) {
-      const k = poolKey({ name: r[0], type: DB_SLOT_TYPE[r[1]], ilvl: r[2] });
+      const k = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });
       const f = rowIndex.get(k);
       rowIndex.set(k, {
-        sources: (f?.sources || 0) | (r[8] | 0),
-        slotCode: f ? f.slotCode : r[1],
-        kind: f ? f.kind : r[9],
-        lvl: f ? f.lvl : r[3],
-        scales: f ? f.scales : !!r[14],
-        slots: f ? f.slots : r[10],
-        overmeld: f ? f.overmeld : !!r[11],
+        sources: (f?.sources || 0) | (r[ROW.sources] | 0),
+        slotCode: f ? f.slotCode : r[ROW.slotCode],
+        kind: f ? f.kind : r[ROW.kind],
+        lvl: f ? f.lvl : r[ROW.equipLevel],
+        scales: f ? f.scales : !!r[ROW.scales],
+        slots: f ? f.slots : r[ROW.meldSlots],
+        overmeld: f ? f.overmeld : !!r[ROW.overmeld],
       });
     }
   }
@@ -198,6 +209,7 @@ export function slotInfo(job, item) {
   if (f) return { pct: DB_SLOT_PCT[f.slotCode], blocks: DB_SLOT_BLOCKS[f.slotCode], factors: kindFactors(job, f.kind) };
   return {
     pct: job.slotPct[item.type],
+    // slot code 0 is the two-handed weapon, which blocks the off-hand
     blocks: item.type === 'weapon' && job.weaponMode === '2h' ? DB_SLOT_BLOCKS[0] : [],
     factors: null,
   };
@@ -213,7 +225,6 @@ export function sourcesMask(keys) {
   return SOURCES.filter(s => keys.includes(s.key)).reduce((m, s) => m | s.bit, 0);
 }
 
-/* The pool without items from any excluded source (a list of SOURCES keys). */
 /* Pool items matching the gear filters {expOff, ilvlMin, ilvlMax, lvlMax}: browseItems' filters, for pool items (the
    optimizer's Gear to search). An item with no equip level (not from the database) passes the equip level filter and
    takes its expansion from its item level. */
@@ -228,11 +239,18 @@ export function filterGear(pool, f) {
   });
 }
 
+/* The pool without items from any excluded source (a list of SOURCES keys). */
 export function withoutSources(pool, exclude) {
   const mask = sourcesMask(exclude);
   return mask ? pool.filter(i => !(sourceMask(i) & mask)) : pool;
 }
 
-export function poolItemFromRow(job, p) {
-  return mkItem(p.name, p.type, p.ilvl, dbStats(job, p.st), { src: 'game', hq: !!p.hq, copies: p.type === 'ring' && !p.unique ? 2 : 1 });
+/* How many of a piece can be worn at once: a ring that is not Unique twice, anything else once. */
+export function copiesOf(type, unique) {
+  return type === 'ring' && !unique ? 2 : 1;
+}
+
+/* A parsed database row (parseRow) as a pool item, with its stats as this job's neutral keys. */
+export function poolItemFromRow(job, row) {
+  return mkItem(row.name, row.type, row.ilvl, dbStats(job, row.st), { src: 'game', hq: !!row.hq, copies: copiesOf(row.type, row.unique) });
 }

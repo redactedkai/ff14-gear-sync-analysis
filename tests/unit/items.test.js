@@ -1,8 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, poolItemFromRow, parseRow, mkItem, sourceMask, withoutSources, expansionOf, meldInfo } from '../../src/core/items.js';
-import { SOURCES, EXPANSIONS } from '../../src/core/constants.js';
+import {
+  browseItems,
+  poolItemFromRow,
+  parseRow,
+  mkItem,
+  sourceMask,
+  withoutSources,
+  expansionOf,
+  meldInfo,
+  rowStats,
+} from '../../src/core/items.js';
+import { SOURCES, EXPANSIONS, ROW } from '../../src/core/constants.js';
 import { ITEMS, MATERIA } from '../../src/core/tables.js';
 
 const pld = makeJobContext('PLD');
@@ -28,9 +38,8 @@ const RAW = {
   mainAttr: 12,
   secAttr: 13,
 };
-const rawStats = r => r[5].split(',').map(Number);
 const rowKey = r => `${r.name}|${r.slotCode}|${r.ilvl}|${r.mask}`;
-const rawKey = r => `${r[0]}|${r[1]}|${r[2]}|${r[4]}`;
+const rawKey = r => `${r[ROW.name]}|${r[ROW.slotCode]}|${r[ROW.ilvl]}|${r[ROW.jobMask]}`;
 const lvl50 = { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 };
 
 test('weapon mode: Paladin sees one-handed weapons and shields, never two-handed weapons', () => {
@@ -56,7 +65,7 @@ test('job mask: only rows with the job bit are shown, even when they carry the m
   const bit = 1 << war.jobIndex;
   assert.ok(shown.every(r => r.mask & bit));
   // Strength gear other jobs can wear but a Warrior cannot (e.g. Dragoon or Monk gear)
-  const hidden = ITEMS.filter(r => !(r[4] & bit) && rawStats(r)[RAW.str] > 0);
+  const hidden = ITEMS.filter(r => !(r[ROW.jobMask] & bit) && rowStats(r)[RAW.str] > 0);
   assert.ok(hidden.length > 100);
   const keys = new Set(shown.map(rowKey));
   assert.ok(hidden.every(r => !keys.has(rawKey(r))));
@@ -91,7 +100,7 @@ test("main and secondary attribute: Azeyma's Earrings give each job its own main
 
 test('main-stat filter: gear the job can equip but without its main stat is hidden', () => {
   const bit = 1 << war.jobIndex;
-  const noStr = ITEMS.filter(r => r[4] & bit && rawStats(r)[RAW.str] === 0 && !rawStats(r)[RAW.mainAttr]);
+  const noStr = ITEMS.filter(r => r[ROW.jobMask] & bit && rowStats(r)[RAW.str] === 0 && !rowStats(r)[RAW.mainAttr]);
   assert.ok(noStr.length > 0, 'the database has Warrior-equippable rows without Strength');
   const keys = new Set(browseItems(war, {}).map(rowKey));
   assert.ok(noStr.every(r => !keys.has(rawKey(r))));
@@ -120,7 +129,7 @@ test('level cap: Beastmaster and Blue Mage never see gear above their cap, whate
   ]) {
     const job = makeJobContext(id);
     const bit = 1 << job.jobIndex;
-    const above = ITEMS.filter(r => r[4] & bit && r[3] > cap);
+    const above = ITEMS.filter(r => r[ROW.jobMask] & bit && r[ROW.equipLevel] > cap);
     assert.ok(above.length > 0, `${id} has database gear above its cap`); // so the filter is tested
     for (const f of [{}, { lvlMax: 100 }]) {
       const rows = browseItems(job, f);
@@ -232,7 +241,7 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable', () => 
    drops in a dungeon, which is in no group; Lionsmane Armet is sold for Wolf Marks (PvP). */
 test('source flags of real items, and leaving sources out of a pool', () => {
   const find = name => {
-    const r = ITEMS.find(x => x[0] === name);
+    const r = ITEMS.find(x => x[ROW.name] === name);
     assert.ok(r, name);
     return parseRow(r);
   };
@@ -283,9 +292,9 @@ test('source flags of real items, and leaving sources out of a pool', () => {
    edge, and a level-1 gift earring that falls back to its item level band. */
 test('expansion of real pieces, and the browse filter by expansion', () => {
   const lvl = name => {
-    const r = ITEMS.find(x => x[0] === name);
+    const r = ITEMS.find(x => x[ROW.name] === name);
     assert.ok(r, name);
-    return expansionOf(r[3], r[2]);
+    return expansionOf(r[ROW.equipLevel], r[ROW.ilvl]);
   };
   assert.equal(lvl('Dreadwyrm Cane'), 'ARR'); // equip level 50
   assert.equal(lvl('Martial Codex'), 'HW'); // 51
@@ -309,7 +318,7 @@ test('expansion of real pieces, and the browse filter by expansion', () => {
 /* Materia slots of real pieces (Item.MateriaSlotCount, Item.IsAdvancedMeldingPermitted), read through a pool item. */
 test('meld slots and overmelding of real pieces; none for hand-made pieces', () => {
   const meld = (name, job) => {
-    const r = ITEMS.filter(x => x[0] === name);
+    const r = ITEMS.filter(x => x[ROW.name] === name);
     assert.equal(r.length, 1, name);
     const p = parseRow(r[0]);
     const info = meldInfo(poolItemFromRow(makeJobContext(job), p));

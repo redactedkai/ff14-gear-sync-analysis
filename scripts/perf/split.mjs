@@ -71,7 +71,7 @@ function replica() {
   const score = makeScorer(
     target,
     tiebreak,
-    slotList.map(ty => all[ty].map(a => a.v)),
+    slotList.map(ty => all[ty].map(a => a.eff)),
   );
   t0 = lap('scorer', t0);
   const cand = {};
@@ -80,10 +80,10 @@ function replica() {
     if (sorted[ty]) return;
     const arr = all[ty];
     arr.forEach(a => {
-      a.sc = score(a.v);
-      a.sum = dims.reduce((x, d) => x + a.v[d], 0);
+      a.score = score(a.eff);
+      a.sum = dims.reduce((x, d) => x + a.eff[d], 0);
     });
-    arr.sort((a, b) => b.sc - a.sc || b.sum - a.sum);
+    arr.sort((a, b) => b.score - a.score || b.sum - a.sum);
     sorted[ty] = arr;
   });
   t0 = lap('score+sort', t0);
@@ -101,7 +101,7 @@ function replica() {
 // drift guard: same slots, same candidates (item and vector) in the same order
 const real = buildCandidates(job, pool, sync, { target, tiebreak }, { melds });
 const mine = replica();
-const sig = c => c.posList.map(l => l.map(a => `${a.it.id}:${Object.values(a.v).join(',')}`).join(';')).join('|');
+const sig = c => c.posList.map(l => l.map(a => `${a.item.id}:${Object.values(a.eff).join(',')}`).join(';')).join('|');
 if (real.slotList.join() !== mine.slotList.join() || sig(real) !== sig(mine)) {
   console.error('DRIFT: the replica no longer matches buildCandidates; update split.mjs');
   process.exit(1);

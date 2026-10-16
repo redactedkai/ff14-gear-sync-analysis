@@ -1,5 +1,5 @@
-/* Sync limits: the per-slot ceiling at the current cap, and what a high item level piece keeps after syncing. */
-/* Pure view builder: no Alpine import, so Node can load and test it. */
+/* Sync limits: the per-slot ceiling at the current cap, and what a high item level piece keeps after syncing.
+   Pure view builder: no Alpine import, so Node can load and test it. */
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, pieceValue } from '../../core/formulas.js';
 import { gcdFor, dotMult } from '../../core/speed.js';
@@ -13,13 +13,16 @@ export function syncView(app) {
   const job = app.jobCtx,
     cap = sync.cap,
     hil = clampIlvl(app.syncIlvl);
+  // totals over the armor and accessories (weapons left out), each ring counted twice:
+  // n1, n2: a native piece's first and second substat at the cap item level; h1, h2: the same lines of a piece at
+  // `hil` after sync; c: the substat cap; spec, main, vit: the Piety/Tenacity, main stat and Vitality caps
   const tot = { n1: 0, n2: 0, h1: 0, h2: 0, c: 0, spec: 0, main: 0, vit: 0 };
   /* "Substat cap" is the shared Critical Hit / Determination / Direct Hit / speed column. Piety and Tenacity have
      their own column, which is higher at a few item levels (docs/mechanics/math.md section 2); show it only where it differs. */
   let specDiffers = false;
   const rows = job.activeSlotTypes.map(t => {
     const c = capsFor(job, t, cap),
-      m = t === 'ring' ? 2 : 1;
+      m = t === 'ring' ? 2 : 1; // how many of the slot a character wears
     const n = SUB_WEIGHTS.map(w => pieceValue(job, 'crit', cap, t, w));
     const hi = SUB_WEIGHTS.map(w => Math.min(c.crit, pieceValue(job, 'crit', hil, t, w)));
     if (t !== 'weapon' && t !== 'offhand') {

@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, kindFactors, slotInfo, slotLabel } from '../../src/core/items.js';
+import { browseItems, kindFactors, rowStats, slotInfo, slotLabel } from '../../src/core/items.js';
+import { ROW } from '../../src/core/constants.js';
 import { predictRaw, syncStats } from '../../src/core/formulas.js';
 import { optimize, effStats } from '../../src/core/optimizer/index.js';
 import { ITEMS } from '../../src/core/tables.js';
@@ -14,7 +15,7 @@ import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 const whm = makeJobContext('WHM');
 const blm = makeJobContext('BLM');
 const row = name => {
-  const r = ITEMS.find(x => x[0] === name);
+  const r = ITEMS.find(x => x[ROW.name] === name);
   assert.ok(r, name);
   return r;
 };
@@ -23,8 +24,8 @@ test('the cloaks and the Tidal Wave wand and shields: real stats equal the formu
   // the share comes from the game's BaseParam sheet: ChestHeadPercent 220, OneHandWeaponPercent 100, OffHandPercent 40
   for (const name of ['Vermilion Cloak of Casting', 'Vermilion Cloak of Healing', 'Tidal Wave Wand']) {
     const r = row(name);
-    const st = r[5].split(',').map(Number);
-    assert.deepEqual(predictRaw(r[2], r[1], st, r[9]), st, name);
+    const st = rowStats(r);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind]), st, name);
   }
   assert.equal(row('Vermilion Cloak of Casting')[1], 12);
 });

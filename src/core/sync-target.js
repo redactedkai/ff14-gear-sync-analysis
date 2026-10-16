@@ -36,12 +36,14 @@ export function dutyCapMax(level) {
    gives the Wiki's artifact armor item levels (548 at level 89, 678 at 99); ffxiv-gearing does the same at levels 50
    to 90 (docs/mechanics/validation.md section 9). */
 export function syncTarget({ itemLevel, equipLevel, scales, syncOn, cap, syncedLevel }) {
-  const capped = syncOn && cap != null && itemLevel > cap;
+  const overCap = syncOn && cap != null && itemLevel > cap;
+  // gear that scales with the wearer follows the synced level whatever its equip level; the cap can only lower it more
   if (scales && syncedLevel != null) {
-    const level = levelSyncIlvl(syncedLevel);
-    if (level < itemLevel) return capped ? Math.min(cap, level) : level;
+    const levelIlvl = levelSyncIlvl(syncedLevel);
+    if (levelIlvl < itemLevel) return overCap ? Math.min(cap, levelIlvl) : levelIlvl;
   }
-  if (capped) return cap;
+  // the item level cap wins over level sync, even where it is the higher of the two
+  if (overCap) return cap;
   if (equipLevel != null && syncedLevel != null && equipLevel > syncedLevel) return levelSyncIlvl(syncedLevel);
   return null;
 }

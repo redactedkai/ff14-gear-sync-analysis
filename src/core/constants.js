@@ -88,8 +88,6 @@ export const REDUCED_STAT_PIECES = Object.freeze({
   main: 90,
   rest: 80,
 });
-/* Item row field of the item's rarity (`rarity` in item-format.json). */
-export const RARITY_FIELD = ITEM_FORMAT.rarity.rowField;
 
 export const MAIN_NAME = Object.freeze({ str: 'Strength', dex: 'Dexterity', int: 'Intelligence', mind: 'Mind' });
 /* Short names as xivgear writes them */
@@ -200,18 +198,42 @@ export const JOB_ROWS = Object.freeze([
   Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])]),
 ]);
 
-/* Item database rows (src/data/items.json): [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources,
-   statFactor, meldSlots, overmeld, rarity, gameId, scales] (statFactor: the item's kind, a column of the stat factor
-   table MP in tables.js; meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed;
-   `materia` in item-format.json; scales: 1 when its item level follows the wearer's level; parseRow in items.js) */
+/* Field positions in an item database row (src/data/items.json; written by scripts/data/gen_items.py). Read a row as
+   row[ROW.ilvl], never row[2]; parseRow in items.js turns a whole row into an object.
+   - slotCode: index into `slots` of item-format.json (DB_SLOT_TYPE, DB_SLOT_PCT, DB_SLOT_BLOCKS)
+   - equipLevel: the character level needed to wear it
+   - jobMask: bit i set when JOBS[i] can wear it
+   - stats: comma-joined raw stats in ITEM_STAT_ORDER (rowStats in items.js splits them)
+   - unique: 1 when only one can be worn (rings); hq: 1 when it can be high quality (the stats are then the HQ ones)
+   - sources: bit mask over SOURCES (gear groups)
+   - kind: the item's stat factor kind, a column of the stat factor table MP in tables.js (kindFactors in items.js)
+   - meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed (`materia` in item-format.json)
+   - rarity: Item.Rarity (1 white, 2 green, 3 blue, 4 purple, 7 pink); gameId: the game's item id (Item.csv row)
+   - scales: 1 when its item level follows the wearer's level (Item.SubStatCategory 2; syncTarget) */
+export const ROW = Object.freeze({
+  name: 0,
+  slotCode: 1,
+  ilvl: 2,
+  equipLevel: 3,
+  jobMask: 4,
+  stats: 5,
+  unique: 6,
+  hq: 7,
+  sources: 8,
+  kind: 9,
+  meldSlots: ITEM_FORMAT.materia.rowFields.meldSlots,
+  overmeld: ITEM_FORMAT.materia.rowFields.overmeld,
+  rarity: ITEM_FORMAT.rarity.rowField,
+  gameId: ITEM_FORMAT.gameId.rowField,
+  scales: ITEM_FORMAT.levelScaled.rowField,
+});
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
-/* The game's generic "Main Attribute" and "Secondary Attribute" (pre-order earrings): the wearer's main stat, and its
-   secondary stat (Piety for healers, Tenacity for tanks, Direct Hit otherwise; see items.js dbStats). */
+/* The game's generic "Main Attribute" (pre-order earrings): the wearer's main stat (see items.js dbStats, which also
+   maps the generic "Secondary Attribute"). */
 export const RAW_MAIN_ATTR_IDX = ITEM_STAT_ORDER.indexOf('mainAttr');
-export const RAW_SEC_ATTR_IDX = ITEM_STAT_ORDER.indexOf('secAttr');
-/* Substats: every stat but the main stats, Vitality and Main Attribute (Secondary Attribute ranks as a substat). */
+/* Indices into a row's raw stat array (ITEM_STAT_ORDER), not neutral keys. Substats: every stat but the main stats, Vitality and Main Attribute (Secondary Attribute ranks as a substat). */
 export const RAW_SUBSTAT_IDX = Object.freeze(
   ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX && i !== RAW_MAIN_ATTR_IDX),
 );

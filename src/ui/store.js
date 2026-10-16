@@ -1,5 +1,6 @@
 /* Alpine.store('app'): the saved state plus the actions that change it.
-   Templates read it as $store.app.<field>; `job` is the current (frozen) JobContext. */
+   Templates read it as $store.app.<field>. `job` is the chosen job's id ('SGE', or null for none; saved), `jobCtx` its
+   frozen JobContext (makeJobContext; derived, not saved). */
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL } from '../core/tables.js';
 import { restoreState, resetForJob, TABS, MATH_TABS } from './state.js';

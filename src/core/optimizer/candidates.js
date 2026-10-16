@@ -1,6 +1,15 @@
 /* Optimizer stage 1: turn a pool into per-slot candidate lists.
    Each candidate carries its effective stat vector (synced where item level or level sync applies) and its scalar score.
-   Candidates dominated by another item in the same slot are dropped. */
+   Candidates dominated by another item in the same slot are dropped.
+
+   A candidate (built by withMeld, read by search.js and solve in index.js):
+     item    the pool item
+     eff     its effective stats: after sync, plus its melds ({neutral stat: points}, the job's stats only)
+     copies  how many of it can be worn (2 for a non-Unique ring), counted per item, not per candidate
+     blocks  slot types it leaves empty (a two-handed weapon the off-hand, a cloak the head)
+     meld    its melds (bestMeld in meld.js) or null
+     score   [target, tiebreak 1, tiebreak 2] packed into one number (makeScorer); set by buildCandidates
+     sum     its stat total, the sort tiebreak; set by buildCandidates */
 import { SLOT_TYPES } from '../constants.js';
 import { capsFor, syncStats } from '../formulas.js';
 import { equipLevel, meldInfo, scalesWithLevel, slotInfo } from '../items.js';
@@ -48,7 +57,7 @@ export function itemCaps(job, item, sync) {
    `slotVectors[i]` is the list of stat vectors for slot i of the loadout (the ring list appears twice). */
 export function makeScorer(target, tiebreaks, slotVectors) {
   const keys = [target, ...tiebreaks.filter(Boolean)].slice(0, 3);
-  const range = k =>
+  const keySpan = k =>
     slotVectors.reduce(
       (acc, vs) => {
         let lo = 0,
@@ -62,22 +71,24 @@ export function makeScorer(target, tiebreaks, slotVectors) {
       },
       { span: 0, abs: 0 },
     );
-  const r = keys.map(range);
-  const w = new Array(keys.length).fill(1);
+  const spans = keys.map(keySpan);
+  const weights = new Array(keys.length).fill(1);
+  // the last key weighs 1; each higher key weighs more than every lower key together can swing, so packed scores
+  // order like the key tuples
   for (let i = keys.length - 2; i >= 0; i--) {
     // W_i = (span of everything below key i, in score units) + 1
     let below = 0;
-    for (let j = i + 1; j < keys.length; j++) below += r[j].span * w[j];
-    w[i] = below + 1;
+    for (let j = i + 1; j < keys.length; j++) below += spans[j].span * weights[j];
+    weights[i] = below + 1;
   }
-  const maxAbs = r.reduce((a, ri, i) => a + ri.abs * w[i], 0);
-  if (!Number.isSafeInteger(maxAbs) || !w.every(Number.isSafeInteger)) {
+  const maxAbs = spans.reduce((a, span, i) => a + span.abs * weights[i], 0);
+  if (!Number.isSafeInteger(maxAbs) || !weights.every(Number.isSafeInteger)) {
     throw new Error('Optimizer: stat totals too large to rank exactly (score bound ' + maxAbs + ' exceeds 2^53)');
   }
   return v => {
-    let sc = 0;
-    for (let i = 0; i < keys.length; i++) sc += (v[keys[i]] || 0) * w[i];
-    return sc;
+    let score = 0;
+    for (let i = 0; i < keys.length; i++) score += (v[keys[i]] || 0) * weights[i];
+    return score;
   };
 }
 
@@ -92,28 +103,29 @@ export function vectorDims(job) {
    giving every worn piece its own best melds never lowers a loadout (docs/engineering/optimizer.md, section 6). A synced piece
    keeps no melds (verified in game by the owner). */
 function itemCandidate(job, item, sync, keys) {
-  const e = effStats(job, item, sync);
+  const synced = effStats(job, item, sync);
   const meld = keys && itemSyncIlvl(item, sync) == null ? bestMeld(job, item, keys) : null;
-  return withMeld(job, item, e, meld);
+  return withMeld(job, item, synced, meld);
 }
 
-function withMeld(job, item, e, meld) {
+/* A candidate for `item`: its synced stats plus the melds' gains. */
+function withMeld(job, item, synced, meld) {
   const v = {};
   job.stats.forEach(s => {
-    v[s] = (e[s] || 0) + (meld?.gain[s] || 0);
+    v[s] = (synced[s] || 0) + (meld?.gain[s] || 0);
   });
-  return { it: item, v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld };
+  return { item, eff: v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld };
 }
 
 /* With a speed rule (Target GCD) and melds: one candidate per meld version of the piece (meldVersions), all sharing the
    item, so copies and Unique rings still count once per piece (pruneDominated counts by `it`, the search by item id). */
 function itemVersions(job, item, sync, keys, exactSpd) {
-  const e = effStats(job, item, sync);
-  if (itemSyncIlvl(item, sync) != null) return [withMeld(job, item, e, null)];
-  return meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, e, meld));
+  const synced = effStats(job, item, sync);
+  if (itemSyncIlvl(item, sync) != null) return [withMeld(job, item, synced, null)];
+  return meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld));
 }
 
-/* A beats B when A is >= on every dimension and either > on one of them or, for an exact tie, comes first, and A
+/* A (`rival` in the code) beats B (`cand`) when A is >= on every dimension and either > on one of them or, for an exact tie, comes first, and A
    leaves no slot empty that B does not (a cloak covering the head never beats a plain body piece).
    B can be dropped only when the items that beat it have enough copies between them to fill every slot of
    this type (`slotsOfType`: 1, or 2 for rings). Then any loadout using B can swap it for one of them without
@@ -122,40 +134,42 @@ function itemVersions(job, item, sync, keys, exactSpd) {
    Copies are counted once per item: several candidates of one item (`it`) are still one item's copies.
    `sorted`: every beater of a candidate comes before it in arr (buildCandidates sorts by score, then stat sum, ties in
    pool order). Then B is compared with the kept candidates only: since the kept beaters always have enough copies (see
-   above), that drops exactly the same candidates, and the kept list is much shorter than arr. */
+   above), that drops exactly the same candidates, and the kept list is much shorter than arr. buildCandidates always
+   passes sorted; the unsorted mode is the reference that scripts/perf/compare.mjs and the tests check it against. */
 export function pruneDominated(arr, dims, slotsOfType, sorted = false) {
   const keep = [];
   for (let i = 0; i < arr.length; i++) {
-    const B = arr[i];
+    const cand = arr[i];
     let copies = 0;
     const counted = new Set();
     const rivals = sorted ? keep : arr;
     for (let j = 0; j < rivals.length && copies < slotsOfType; j++) {
-      const A = rivals[j];
-      if (A === B) continue;
-      if (counted.has(A.it)) continue;
-      if (!A.blocks.every(t => B.blocks.includes(t))) continue;
-      let ge = true,
-        gt = false;
+      const rival = rivals[j];
+      if (rival === cand) continue;
+      if (counted.has(rival.item)) continue;
+      if (!rival.blocks.every(t => cand.blocks.includes(t))) continue;
+      let allGe = true,
+        anyGt = false;
       for (const d of dims) {
-        if (A.v[d] < B.v[d]) {
-          ge = false;
+        if (rival.eff[d] < cand.eff[d]) {
+          allGe = false;
           break;
         }
-        if (A.v[d] > B.v[d]) gt = true;
+        if (rival.eff[d] > cand.eff[d]) anyGt = true;
       }
-      if (ge && (gt || sorted || j < i)) {
-        copies += A.copies;
-        counted.add(A.it);
+      // an exact tie counts only for the earlier of the two; sorted, every rival is an earlier, kept candidate
+      if (allGe && (anyGt || sorted || j < i)) {
+        copies += rival.copies;
+        counted.add(rival.item);
       }
     }
-    if (copies < slotsOfType) keep.push(B);
+    if (copies < slotsOfType) keep.push(cand);
   }
   return keep;
 }
 
 /* Pruning with a speed rule (Target GCD). The search needs only a candidate's score (target and tiebreaks, packed) and
-   its speed, so A beats B when A has at least B's score and at least its speed ('min': a speed minimum, where more speed
+   its speed, so A (`rival`) beats B (`cand`) when A has at least B's score and at least its speed ('min': a speed minimum, where more speed
    never hurts) or exactly its speed ('exact': a maximum too, where more speed can break it), and leaves no slot empty
    that B does not. Any loadout using B can then swap in A without a lower score or a broken speed rule. The other stats
    play no part, so far more candidates go than with pruneDominated, which compares every stat (they are still shown in
@@ -167,7 +181,7 @@ export function pruneForSpeed(arr, slotsOfType, mode) {
   if (mode === 'exact') {
     const bySpd = new Map();
     for (const a of arr) {
-      const s = a.v.spd || 0;
+      const s = a.eff.spd || 0;
       if (!bySpd.has(s)) bySpd.set(s, []);
       bySpd.get(s).push(a);
     }
@@ -176,33 +190,34 @@ export function pruneForSpeed(arr, slotsOfType, mode) {
     return arr.filter(a => kept.has(a));
   }
   // blocked slots as a bit mask, so the inner loop does no allocation
-  const bit = new Map();
-  const mask = a =>
+  const slotBit = new Map();
+  const maskOf = a =>
     a.blocks.reduce((m, t) => {
-      if (!bit.has(t)) bit.set(t, 1 << bit.size);
-      return m | bit.get(t);
+      if (!slotBit.has(t)) slotBit.set(t, 1 << slotBit.size);
+      return m | slotBit.get(t);
     }, 0);
   const keep = [],
-    kSc = [],
-    kSpd = [],
-    kMask = [];
-  for (const B of arr) {
-    const bm = mask(B),
-      bs = B.v.spd || 0;
+    keptScore = [],
+    keptSpd = [],
+    keptMask = [];
+  for (const cand of arr) {
+    const candMask = maskOf(cand),
+      candSpd = cand.eff.spd || 0;
     let copies = 0;
     const counted = new Set();
     for (let j = 0; j < keep.length && copies < slotsOfType; j++) {
-      if (kSc[j] < B.sc || kSpd[j] < bs || (kMask[j] & bm) !== kMask[j]) continue;
-      const A = keep[j];
-      if (counted.has(A.it)) continue;
-      copies += A.copies;
-      counted.add(A.it);
+      // the rival needs at least the score and the speed, and must leave empty no slot that cand fills
+      if (keptScore[j] < cand.score || keptSpd[j] < candSpd || (keptMask[j] & candMask) !== keptMask[j]) continue;
+      const rival = keep[j];
+      if (counted.has(rival.item)) continue;
+      copies += rival.copies;
+      counted.add(rival.item);
     }
     if (copies < slotsOfType) {
-      keep.push(B);
-      kSc.push(B.sc);
-      kSpd.push(bs);
-      kMask.push(bm);
+      keep.push(cand);
+      keptScore.push(cand.score);
+      keptSpd.push(candSpd);
+      keptMask.push(candMask);
     }
   }
   return keep;
@@ -220,52 +235,53 @@ export function buildCandidates(job, pool, sync, { target, tiebreak = [] }, { pr
   const dims = vectorDims(job);
   // melds are chosen per piece from the objective's keys, before the score weights are derived from the vectors
   const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, 3) : null;
-  const all = {};
+  const candsByType = {};
   SLOT_TYPES.forEach(t => {
     const items = pool.filter(i => i.type === t);
-    all[t] =
+    candsByType[t] =
       melds && speed
         ? items.flatMap(it => itemVersions(job, it, sync, [...keys, 'spd'], speed === 'exact'))
         : items.map(it => itemCandidate(job, it, sync, keys));
   });
-  const blockable = new Set(SLOT_TYPES.flatMap(t => all[t].flatMap(a => a.blocks)));
+  const blockable = new Set(SLOT_TYPES.flatMap(t => candsByType[t].flatMap(a => a.blocks)));
+  // slots some candidate can leave empty go last, so the search knows whether a chosen piece blocks them
   const order = [...SLOT_TYPES.filter(t => !blockable.has(t)), ...SLOT_TYPES.filter(t => blockable.has(t))];
   const slotList = [];
   order.forEach(t => {
-    if (!all[t].length) return;
+    if (!candsByType[t].length) return;
     slotList.push(t);
     if (t === 'ring') slotList.push('ring');
   });
   const score = makeScorer(
     target,
     tiebreak,
-    slotList.map(t => all[t].map(a => a.v)),
+    slotList.map(t => candsByType[t].map(a => a.eff)),
   );
-  const cand = {};
+  const prunedByType = {};
   slotList.forEach(t => {
-    if (cand[t]) return;
-    const arr = all[t];
+    if (prunedByType[t]) return;
+    const arr = candsByType[t];
     arr.forEach(a => {
-      a.sc = score(a.v);
+      a.score = score(a.eff);
     });
     // beaters first (pruneDominated, sorted): a beater has at least the score and, unless it is an exact tie, a larger
     // stat sum; the sort is stable, so exact ties keep pool order, which is what the tie rule goes by
-    const sum = a => dims.reduce((x, d) => x + a.v[d], 0);
+    const sum = a => dims.reduce((x, d) => x + a.eff[d], 0);
     arr.forEach(a => {
       a.sum = sum(a);
     });
-    const n = slotList.filter(x => x === t).length;
+    const slotsOfType = slotList.filter(x => x === t).length;
     let keep = arr;
     if (speed) {
-      arr.sort((a, b) => b.sc - a.sc || (b.v.spd || 0) - (a.v.spd || 0) || b.sum - a.sum);
-      if (prune) keep = pruneForSpeed(arr, n, speed);
+      arr.sort((a, b) => b.score - a.score || (b.eff.spd || 0) - (a.eff.spd || 0) || b.sum - a.sum);
+      if (prune) keep = pruneForSpeed(arr, slotsOfType, speed);
     } else {
-      arr.sort((a, b) => b.sc - a.sc || b.sum - a.sum);
-      if (prune) keep = pruneDominated(arr, dims, n, true);
+      arr.sort((a, b) => b.score - a.score || b.sum - a.sum);
+      if (prune) keep = pruneDominated(arr, dims, slotsOfType, true);
     }
-    cand[t] = keep;
+    prunedByType[t] = keep;
   });
   // for the page's note: pieces with no slot data (hand-made, generated) never take melds
   const noMeldData = melds ? pool.filter(i => !meldInfo(i)).length : 0;
-  return { slotList, posList: slotList.map(t => cand[t]), dims, noMeldData };
+  return { slotList, posList: slotList.map(t => prunedByType[t]), dims, noMeldData };
 }

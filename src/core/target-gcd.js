@@ -8,9 +8,9 @@
      (prepare), so only the search repeats.
    - Among meals the winner has the highest totals with food on the target and tiebreaks, then the most food points,
      then the first in the job's food choices (bestFood's order). */
-import { foodBonus, foodChoices, gearNeeded, withFood } from './food.js';
+import { betterRank, foodBonus, gearNeeded, mealRank, mealsFor, withFood } from './food.js';
 import { prepare, solve } from './optimizer/index.js';
-import { gcdFor, hasteFor, speedForGcd } from './speed.js';
+import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
 
 /**
  * @param job   JobContext
@@ -40,26 +40,27 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   const band = speedForGcd(opts.gcd, level, mode, pct);
   if (!band) return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
 
-  const meals = opts.food == null ? [null] : opts.food === 'best' ? foodChoices(job) : [opts.food];
+  const meals = mealsFor(job, opts.food);
   prep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode });
   const runs = new Map(); // "gear min,gear max" -> solve result
   let best = null,
-    bestVals = null;
+    bestRank = null;
   for (const meal of meals) {
-    const gMin = gearNeeded(job, meal, 'spd', band.min, level);
-    const gMax = band.max == null ? null : gearNeeded(job, meal, 'spd', band.max + 1, level) - 1;
-    if (gMax != null && gMax < gMin) continue; // the meal jumps over the band: no gear speed lands in it
-    const key = `${gMin},${gMax}`;
-    if (!runs.has(key)) runs.set(key, solve(prep, { spdMin: gMin, spdMax: gMax, nodeLimit: opts.nodeLimit }));
+    // the band on total speed as a band on gear speed with this meal; the most gear speed is one below the fewest
+    // whose total reaches band.max + 1
+    const gearMin = gearNeeded(job, meal, 'spd', band.min, level);
+    const gearMax = band.max == null ? null : gearNeeded(job, meal, 'spd', band.max + 1, level) - 1;
+    if (gearMax != null && gearMax < gearMin) continue; // the meal jumps over the band: no gear speed lands in it
+    const key = `${gearMin},${gearMax}`;
+    if (!runs.has(key)) runs.set(key, solve(prep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
     const r = runs.get(key);
     if (!r.ok) continue;
     const bonus = meal ? foodBonus(job, meal, r.totals, level) : {};
     const t = withFood(r.totals, bonus);
-    const vals = [...keys.map(k => t[k] || 0), Object.values(bonus).reduce((n, b) => n + b.bonus, 0)];
-    const i = bestVals ? vals.findIndex((v, j) => v !== bestVals[j]) : 0;
-    if (!bestVals || (i >= 0 && vals[i] > bestVals[i])) {
-      best = { r, meal, bonus, t, band: { gearMin: gMin, gearMax: gMax } };
-      bestVals = vals;
+    const rank = mealRank(keys, t, bonus);
+    if (betterRank(rank, bestRank)) {
+      best = { r, meal, bonus, t, band: { gearMin, gearMax } };
+      bestRank = rank;
     }
   }
   const truncated = [...runs.values()].some(r => r.truncated);
@@ -77,7 +78,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
       fastest: fastestGcd(job, pool, sync, { ...opts, level }),
     };
   }
-  const gcd = gcdFor(best.t.spd || 0, level, 2500, pct);
+  const gcd = gcdFor(best.t.spd || 0, level, BASE_GCD_MS, pct);
   return {
     ...best.r,
     ok: true,
@@ -103,8 +104,8 @@ export function fastestGcd(job, pool, sync, opts) {
   const pct = hasteFor(job.jobId, level)?.pct ?? 0;
   const r = solve(prepare(job, pool, sync, { target: 'spd', melds: opts.melds }), { nodeLimit: opts.nodeLimit });
   if (!r.ok) return null;
-  const meals = opts.food == null ? [null] : opts.food === 'best' ? foodChoices(job) : [opts.food];
+  const meals = mealsFor(job, opts.food);
   let spd = r.totals.spd || 0;
   for (const m of meals) if (m) spd = Math.max(spd, withFood(r.totals, foodBonus(job, m, r.totals, level)).spd || 0);
-  return gcdFor(spd, level, 2500, pct);
+  return gcdFor(spd, level, BASE_GCD_MS, pct);
 }

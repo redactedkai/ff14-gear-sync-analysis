@@ -4,22 +4,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ITEMS, IL, MP, MAX_REAL } from '../../src/core/tables.js';
-import { JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX } from '../../src/core/constants.js';
+import { JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } from '../../src/core/constants.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../src/core/formulas.js';
-import { kindFactors, browseItems, poolItemFromRow } from '../../src/core/items.js';
+import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../src/core/items.js';
 import { effStats } from '../../src/core/optimizer/index.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { restoreState } from '../../src/ui/state.js';
 import { MODEL_MIN_ILVL } from '../../src/core/validation.js';
 
 const row = name => {
-  const r = ITEMS.find(x => x[0] === name);
+  const r = ITEMS.find(x => x[ROW.name] === name);
   assert.ok(r, name);
   return r;
 };
-const stats = r => r[5].split(',').map(Number);
-const at = (r, key) => stats(r)[ITEM_STAT_ORDER.indexOf(key)];
+const at = (r, key) => rowStats(r)[ITEM_STAT_ORDER.indexOf(key)];
 const rnd = x => Math.floor(x + 0.5 + 1e-9);
 
 test("the job's own factor equals the game files' factor on every piece of its own kind", () => {
@@ -29,13 +28,13 @@ test("the job's own factor equals the game files' factor on every piece of its o
     const job = makeJobContext(id);
     let n = 0;
     for (const r of ITEMS) {
-      if (!(r[4] & (1 << job.jobIndex)) || r[2] < MODEL_MIN_ILVL) continue;
-      const st = stats(r);
+      if (!(r[ROW.jobMask] & (1 << job.jobIndex)) || r[ROW.ilvl] < MODEL_MIN_ILVL) continue;
+      const st = rowStats(r);
       const mains = RAW_MAIN_IDX.filter(i => st[i]).map(i => ITEM_STAT_ORDER[i]);
       if (mains.length !== 1 || mains[0] !== job.profile.main) continue;
       n++;
-      assert.equal(MP[job.profile.main][r[9]], 100, `${id} ${r[0]}`);
-      assert.equal(MP.vit[r[9]] / 100, jobFactor(job, 'vit'), `${id} ${r[0]}`);
+      assert.equal(MP[job.profile.main][r[ROW.kind]], 100, `${id} ${r[ROW.name]}`);
+      assert.equal(MP.vit[r[ROW.kind]] / 100, jobFactor(job, 'vit'), `${id} ${r[ROW.name]}`);
     }
     assert.ok(n > 100, id);
   }
@@ -50,8 +49,8 @@ test('the only pieces whose factors differ from the job rule are kind 0: the fou
       if (f.main !== 1 || f.vit !== jobFactor(job, 'vit')) odd.add(p.name);
     }
   }
-  const fourMain = [...odd].filter(name => RAW_MAIN_IDX.every(i => stats(row(name))[i]));
-  const attr = [...odd].filter(name => stats(row(name))[ITEM_STAT_ORDER.indexOf('mainAttr')] > 0);
+  const fourMain = [...odd].filter(name => RAW_MAIN_IDX.every(i => rowStats(row(name))[i]));
+  const attr = [...odd].filter(name => rowStats(row(name))[ITEM_STAT_ORDER.indexOf('mainAttr')] > 0);
   assert.equal(fourMain.length, 13);
   // pre-order earrings and Neophyte's Ring carry Main Attribute and are kind 0 (all jobs): main stat and Vitality caps
   // x 0.9 for every job; the 10 Occult accessories have their own kinds and match the job rule
@@ -72,10 +71,10 @@ test('pieces with all four main stats: every main stat and Vitality at the full 
   const coat = row("Field Commander's Coat");
   assert.equal(rnd(rnd((IL.mind[160] * 135) / 1000) * 0.9), 54);
   assert.equal(rnd(rnd((IL.vit[160] * 135) / 1000) * 0.9), 54);
-  assert.deepEqual(stats(coat).slice(0, 5), [54, 54, 54, 54, 54]);
-  const four = ITEMS.filter(r => r[2] >= MODEL_MIN_ILVL && RAW_MAIN_IDX.every(i => stats(r)[i]));
+  assert.deepEqual(rowStats(coat).slice(0, 5), [54, 54, 54, 54, 54]);
+  const four = ITEMS.filter(r => r[ROW.ilvl] >= MODEL_MIN_ILVL && RAW_MAIN_IDX.every(i => rowStats(r)[i]));
   assert.equal(four.length, 13);
-  for (const r of four) assert.deepEqual(predictRaw(r[2], r[1], stats(r), r[9]), stats(r), r[0]);
+  for (const r of four) assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], rowStats(r), r[ROW.kind]), rowStats(r), r[ROW.name]);
 });
 
 test('Occult accessories at 745: "of Magic" Vitality 307 (x 0.9), "of Blood" 341 (full), from the item, not a job', () => {
@@ -90,17 +89,17 @@ test('Occult accessories at 745: "of Magic" Vitality 307 (x 0.9), "of Blood" 341
     const r = row(name);
     assert.equal(at(r, 'vit'), vit, name);
     // no main stat on these pieces: the old rule (factor from the main stat) could not predict them at all
-    assert.deepEqual(predictRaw(r[2], r[1], stats(r), r[9]), stats(r), name);
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], rowStats(r), r[ROW.kind]), rowStats(r), name);
   }
 });
 
 test('an Intelligence accessory every job can wear still has Vitality x 0.9', () => {
   // Alexandrian Earrings of Casting, item level 270: Vitality row 736 x 67 / 1000 = 49.3 -> 49; x 0.9 = 44.1 -> 44
   const r = row('Alexandrian Earrings of Casting');
-  assert.equal(r[4], 2 ** 23 - 1);
+  assert.equal(r[ROW.jobMask], 2 ** 23 - 1);
   assert.equal(at(r, 'vit'), 44);
   assert.equal(rnd(rnd((IL.vit[270] * 67) / 1000) * 0.9), 44);
-  assert.deepEqual(predictRaw(r[2], r[1], stats(r), r[9]), stats(r));
+  assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], rowStats(r), r[ROW.kind]), rowStats(r));
 });
 
 test("sync: a real piece is capped by its own factors; a piece with no item behind it by the job's", () => {
@@ -125,7 +124,7 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   assert.equal(v.shown.length, 1);
   assert.deepEqual([v.shown[0].eff.main, v.shown[0].eff.vit], [43, 45]);
   // a piece of the job's own kind is unchanged by the switch: same caps as before
-  const helm = ITEMS.find(r => r[1] === 3 && r[2] === 130 && r[9] === 6);
+  const helm = ITEMS.find(r => r[ROW.slotCode] === 3 && r[ROW.ilvl] === 130 && r[ROW.kind] === 6);
   const p = browseItems(sge, { q: helm[0], ilvlMin: 130, ilvlMax: 130 }).find(x => x.slotCode === 3);
   assert.deepEqual(
     syncStats(sge, poolItemFromRow(sge, p).stats, 'head', 123, 130, 85, kindFactors(sge, 6)),

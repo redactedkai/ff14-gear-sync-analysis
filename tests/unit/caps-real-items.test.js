@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { capsFor } from '../../src/core/formulas.js';
-import { genericItems } from '../../src/core/items.js';
+import { genericItems, rowStats } from '../../src/core/items.js';
+import { ROW } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { gcdFor } from '../../src/core/speed.js';
 import { IL } from '../../src/core/tables.js';
@@ -61,14 +62,14 @@ const full = (a, slot) => (slot === 'offhand' ? share(a, PCT.weapon2h) - share(a
 const derived = (ilvl, slot) => ({ main: full(IL.str[ilvl], slot), sub: full(IL.crit[ilvl], slot) });
 
 function realPieces(ilvl, slot) {
-  return ITEMS.filter(r => r[2] === ilvl && r[1] === SLOT_CODE[slot])
-    .map(r => r[5].split(',').map(Number))
+  return ITEMS.filter(r => r[ROW.ilvl] === ilvl && r[ROW.slotCode] === SLOT_CODE[slot])
+    .map(r => rowStats(r))
     .filter(st => Math.max(...st.slice(0, 4)) > 0 && Math.max(...st.slice(5)) > 0); // has a main stat and a substat
 }
 
 test('the game has no gear at item level 123, so the 123 caps are derived, not read off a real piece', () => {
   // If a patch adds item level 123 gear, compare it with the caps here and promote them to external truth.
-  assert.equal(ITEMS.filter(r => r[2] === 123).length, 0);
+  assert.equal(ITEMS.filter(r => r[ROW.ilvl] === 123).length, 0);
   assert.ok(realPieces(120, 'head').length > 0 && realPieces(125, 'head').length > 0);
 });
 

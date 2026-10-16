@@ -1,5 +1,5 @@
-/* Piece stats: how one piece's stats come from its item level, line by line, and what sync does to them. */
-/* Pure view builder: no Alpine import, so Node can load and test it. */
+/* Piece stats: how one piece's stats come from its item level, line by line, and what sync does to them.
+   Pure view builder: no Alpine import, so Node can load and test it. */
 import { SUB_WEIGHTS } from '../../core/constants.js';
 import { clampIlvl, capsFor, statDerivation } from '../../core/formulas.js';
 import { budgetChartSvg } from '../chart.js';
