@@ -21,8 +21,9 @@ export function budgetChartSvg(job, ilvl, cap) {
     subCol = IL.crit;
   const x0 = 80,
     x1 = Math.min(MAX_REAL, Math.max(500, il + 30));
-  const W = 640,
-    H = 250,
+  // drawn about as wide as the panel, so its text stays near the page's text size (the SVG scales to the width)
+  const W = 960,
+    H = 300,
     L = 52,
     R = 14,
     T = 12,

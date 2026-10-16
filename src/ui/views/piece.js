@@ -5,12 +5,13 @@ import { clampIlvl, capsFor, statDerivation } from '../../core/formulas.js';
 import { budgetChartSvg } from '../chart.js';
 import { shownSync } from '../state.js';
 
-/* "base × pct ÷ 1000 = 26.4 → 26; × 70% = 18.2 → 18" */
+/* "base × 8.5% = 26.4 → 26; × 70% = 18.2 → 18". The slot share is per mille in the game files; one decimal of a
+   percent shows it exactly (85 ‰ = 8.5%), the unit Sync limits uses too. */
 function formulaText(steps) {
   return steps
     .map(s => {
       if (s.kind === 'offhand') return `two-handed ${s.two} − one-handed ${s.one} = ${s.value}`;
-      if (s.kind === 'slot') return `${s.base} × ${s.pct} ÷ 1000 = ${s.exact.toFixed(1)} → ${s.value}`;
+      if (s.kind === 'slot') return `${s.base} × ${s.pct / 10}% = ${s.exact.toFixed(1)} → ${s.value}`;
       if (s.kind === 'factor') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
       return `× ${s.weight}% = ${s.exact.toFixed(1)} → ${s.value}`;
     })
@@ -49,6 +50,10 @@ export function pieceView(app) {
     status: !sync ? 'off' : il <= cap ? 'below' : 'above',
     rangeValue: Math.max(1, Math.min(app.maxReal, il)),
     chartSvg: budgetChartSvg(job, il, cap),
+    // sync cuts the 70% line to the full-share cap, so it ends up level with the first (math.md section 5)
+    evenSubs: clampOn && rows.some(r => r.w === SUB_WEIGHTS[1] && r.syn === caps[r.stat]),
+    // the fixed Direct Hit line exists only on older Mind gear
+    healerNote: job.profile.main === 'mind',
   };
 }
 

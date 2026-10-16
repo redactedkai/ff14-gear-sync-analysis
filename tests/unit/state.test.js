@@ -108,7 +108,7 @@ test('top-level scalars of the wrong type or out of range fall back field by fie
   expectFieldDefault('level', 0, 1);
   expectFieldDefault('level', '50', D.level); // strings are not accepted here
   expectFieldDefault('syncIlvl', 5000, MAX_REAL);
-  expectFieldDefault('syncIlvl', {}, 475);
+  expectFieldDefault('syncIlvl', {}, MAX_REAL);
 });
 
 test('tab and mathTab', () => {
@@ -141,8 +141,8 @@ test('piece fields', () => {
   expectFieldDefault('piece.slot', 'belt', 'head');
   expectFieldDefault('piece.slot', 'offhand', 'head');
   const ds = defaultSubs(makeJobContext('WHM'));
-  assert.deepEqual(ds, ['spec', null]); // the job's own substat first (Piety), rank 2 empty
-  assert.deepEqual(defaultSubs(makeJobContext('MNK')), ['spd', null]); // no special substat: speed
+  assert.deepEqual(ds, ['spec', 'crit']); // the job's own substat first (Piety), then Critical Hit
+  assert.deepEqual(defaultSubs(makeJobContext('MNK')), ['spd', 'crit']); // no special substat: speed
   expectFieldDefault('piece.subs', 'crit', ds);
   expectFieldDefault('piece.subs', { 0: 'crit' }, ds);
   expectFieldDefault('piece.subs', ['crit', 'crit'], ['crit', null]); // the repeat drops

@@ -105,10 +105,17 @@ test('optimizer errors become an error view instead of throwing', () => {
   assert.match(v.message, /too large/);
 });
 
-test('sync caps view at 123: substat ceiling 296 over ten slots, 2.22 s GCD at level 50', () => {
+test('sync caps view at 123: substat ceiling 344 over all eleven slots, 2.17 s GCD at level 50', () => {
   const v = syncView(makeApp('SGE', { cap: 123, level: 50 }));
-  assert.equal(v.tot.c, 296);
-  assert.equal(v.gcd, '2.22');
+  // the generic maximum 296 over the ten armor and accessory slots, plus the weapon's 48 (math.md section 6)
+  assert.equal(v.slots, 11);
+  assert.equal(v.tot.c, 296 + 48);
+  assert.equal(v.gcd, '2.17');
+  // in character panel numbers, as the optimizer shows them: level 50's base speed 341 plus gear
+  assert.deepEqual([v.spdBase, v.spdPanel], [341, 685]);
+  // the comparison piece defaults to the highest real item level, above any cap
+  assert.equal(v.hil, MAX_REAL);
+  assert.equal(v.compare, true);
   assert.deepEqual(
     v.rows.filter(r => ['head', 'body', 'ear', 'weapon'].includes(r.type)).map(r => [r.type, r.sub, r.main]),
     [
@@ -118,6 +125,45 @@ test('sync caps view at 123: substat ceiling 296 over ten slots, 2.22 s GCD at l
       ['ear', 23, 24],
     ],
   );
+});
+
+test('sync caps view: a comparison piece at or below the cap is not synced, so no comparison is shown', () => {
+  // level sync at 90 gives cap 660; a 475 piece keeps its own stats
+  const v = syncView(makeApp('SGE', { sync: false, cap: null, level: 90, syncIlvl: 475 }));
+  assert.equal(v.cap, 660);
+  assert.equal(v.compare, false);
+  assert.equal(syncView(makeApp('SGE', { sync: false, cap: null, level: 90, syncIlvl: 661 })).compare, true);
+});
+
+test('sync caps view for a shield job: weapon and shield both count', () => {
+  const v = syncView(makeApp('PLD', { cap: 123, level: 50 }));
+  assert.equal(v.slots, 12);
+  assert.equal(
+    v.tot.c,
+    v.rows.reduce((a, r) => a + r.sub * r.times, 0),
+  );
+});
+
+test('piece lab view: the default two substats both reach the cap; the healer note only for Mind jobs; shares in percent', () => {
+  const rpr = pieceView(makeApp('RPR', { cap: 123, sync: true, level: 50 }));
+  assert.deepEqual(
+    rpr.rows.map(r => [r.stat, r.w, r.syn]),
+    [
+      ['main', 100, 30],
+      ['vit', 100, 32],
+      ['spd', 100, 29],
+      ['crit', 70, 29], // the 70% line is cut to the full-share head cap, not to 70% of it
+    ],
+  );
+  assert.equal(rpr.evenSubs, true);
+  assert.equal(rpr.healerNote, false);
+  assert.match(rpr.rows[0].formula, /^6050 × 8\.5% = 514\.3 → 514/);
+  assert.equal(pieceView(makeApp('SGE', { cap: 123, sync: true, level: 50 })).healerNote, true);
+  // no sync, or a piece at the cap: nothing is cut
+  assert.equal(pieceView(makeApp('RPR', { sync: false, cap: null, level: 100 })).evenSubs, false);
+  const atCap = makeApp('RPR', { level: 50 });
+  atCap.piece = { ...atCap.piece, ilvl: 123 };
+  assert.equal(pieceView(atCap).evenSubs, false);
 });
 
 test('piece lab view: every real item level 130 Sage head piece with three substats, its two ranked ones from the formula, synced to 123', () => {

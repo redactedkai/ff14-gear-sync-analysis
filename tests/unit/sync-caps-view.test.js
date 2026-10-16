@@ -48,8 +48,12 @@ for (const [job, column, short, oneHanded] of [
     const ring = v.rows.find(r => r.type === 'ring');
     assert.equal(ring.spec, 102); // 1518 x 67 / 1000 = 101.7
     assert.equal(ring.sub, 101); // 1514 x 67 / 1000 = 101.4
-    const specTotal = ARMOR.reduce((n, t) => n + expectedCap(column, 540, t) * (t === 'ring' ? 2 : 1), 0);
-    const subTotal = ARMOR.reduce((n, t) => n + expectedCap('crit', 540, t) * (t === 'ring' ? 2 : 1), 0);
+    // every slot: the armor and accessories, and the weapon (a one-handed weapon and its shield together make the
+    // two-handed value, by the off-hand rule)
+    const total = col =>
+      ARMOR.reduce((n, t) => n + expectedCap(col, 540, t) * (t === 'ring' ? 2 : 1), 0) + expectedCap(col, 540, 'weapon', false);
+    const specTotal = total(column);
+    const subTotal = total('crit');
     assert.ok(specTotal > subTotal);
     assert.equal(v.tot.spec, specTotal);
     assert.equal(v.tot.c, subTotal);

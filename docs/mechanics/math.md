@@ -392,6 +392,8 @@ $$
 
 That is a 2.22 s GCD at level 50, one point below the 2.21 s tier at 297. A real gear set usually falls short of this, because a piece rarely has speed as its top substat in every slot.
 
+With the weapon too (48 on a two-handed weapon, and the same on a one-handed weapon and shield together) it is 344, a 2.17 s GCD; 685 on the character panel. The Sync limits tab counts every slot, so it shows this number.
+
 ### Haste
 
 Four jobs run faster all fight, from a trait or a buff kept up the whole time. The Target GCD counts their haste $h$ (percent), so the box takes the GCD their guides give. Short buffs (Presence of Mind, Ley Lines, Army's Paeon, Inspiration) and party buffs are not counted (owner's decision, 2026-10-15). xivgear counts the same four jobs.
