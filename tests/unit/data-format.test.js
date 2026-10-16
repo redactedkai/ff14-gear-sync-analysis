@@ -45,7 +45,7 @@ test('every item row has the documented shape', () => {
   const maxMask = 2 ** ITEM_FORMAT.jobs.length;
   for (const r of ITEMS) {
     const where = JSON.stringify(r).slice(0, 80);
-    assert.equal(r.length, 13, where);
+    assert.equal(r.length, 15, where);
     assert.ok(Number.isInteger(r[1]) && r[1] >= 0 && r[1] < ITEM_FORMAT.slots.length, 'slot code ' + where);
     assert.ok(r[4] > 0 && r[4] < maxMask, 'job mask ' + where);
     assert.equal(r[5].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
@@ -56,12 +56,17 @@ test('every item row has the documented shape', () => {
     assert.ok(Number.isInteger(r[10]) && r[10] >= 0 && r[10] <= ITEM_FORMAT.materia.maxSlots, 'meld slots ' + where);
     assert.ok(r[11] === 0 || r[11] === 1, 'overmeld flag ' + where);
     assert.ok(Number.isInteger(r[12]) && r[12] >= 0, 'rarity ' + where);
+    assert.ok(Number.isInteger(r[13]) && r[13] > 0, 'game id ' + where);
+    assert.ok(r[14] === 0 || r[14] === 1, 'level-scaled flag ' + where);
   }
+  assert.equal(new Set(ITEMS.map(r => r[13])).size, ITEMS.length, 'game ids are unique');
 });
 
 test('meld fields sit where item-format.json says; the materia table has one entry per grade', () => {
   assert.deepEqual(ITEM_FORMAT.materia.rowFields, { meldSlots: 10, overmeld: 11 }); // parseRow reads r[10], r[11]
   assert.equal(ITEM_FORMAT.rarity.rowField, 12); // the accuracy check reads r[12] (RARITY_FIELD)
+  assert.equal(ITEM_FORMAT.gameId.rowField, 13); // parseRow reads r[13]
+  assert.equal(ITEM_FORMAT.levelScaled.rowField, 14); // parseRow reads r[14]
   const n = ITEM_FORMAT.materia.grades;
   assert.equal(MATERIA.values.length, n);
   assert.equal(MATERIA.gate.length, n);

@@ -16,9 +16,20 @@ export function levelSyncIlvl(level) {
    When both apply the item level cap wins, even where it is the higher of the two: in Aloalo Island (level 90, item
    level 665) level 95 and 96 gear at item level 666 and 669 showed item level 665 stats, not 660 (a player's in-game
    report, xivgear issue #317; second-hand). `equipLevel` null (a generated or hand-made piece) or `syncedLevel` null
-   means no level sync. A piece synced to an item level at or above its own keeps its stats (syncStats). */
-export function syncTarget({ itemLevel, equipLevel, syncOn, cap, syncedLevel }) {
-  if (syncOn && cap != null && itemLevel > cap) return cap;
+   means no level sync. A piece synced to an item level at or above its own keeps its stats (syncStats).
+   A piece that `scales` (Item.SubStatCategory 2: level 89 and 99 boost gear, gift earrings and rings) follows the
+   wearer's level whatever its equip level: the game's description of each reads "IL and attributes synced to current
+   job level." (verified, game files). Below levelSyncIlvl(syncedLevel) of its own item level it is synced to that, or
+   to the item level cap where that is lower. That the target is ParamGrow's item level at every level is inferred: it
+   gives the Wiki's artifact armor item levels (548 at level 89, 678 at 99); ffxiv-gearing does the same at levels 50
+   to 90 (docs/mechanics/validation.md section 9). */
+export function syncTarget({ itemLevel, equipLevel, scales, syncOn, cap, syncedLevel }) {
+  const capped = syncOn && cap != null && itemLevel > cap;
+  if (scales && syncedLevel != null) {
+    const level = levelSyncIlvl(syncedLevel);
+    if (level < itemLevel) return capped ? Math.min(cap, level) : level;
+  }
+  if (capped) return cap;
   if (equipLevel != null && syncedLevel != null && equipLevel > syncedLevel) return levelSyncIlvl(syncedLevel);
   return null;
 }

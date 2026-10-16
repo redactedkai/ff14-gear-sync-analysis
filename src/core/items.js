@@ -36,7 +36,8 @@ export function statIdx(key) {
 
 /* A database row's raw stats as this job's neutral keys. The game's generic Main Attribute adds to the job's main stat;
    Secondary Attribute adds to its secondary stat: Piety or Tenacity where the job has one (spec), Direct Hit otherwise
-   (xivgear's mapping, with in-game values for a healer and a Ninja; inferred for tanks). */
+   (xivgear's mapping, with in-game values for a healer and a Ninja). A tank's main stat here is Strength (verified: patch
+   5.0 notes changed it from Vitality; ClassJob.PrimaryStat); its Tenacity from Secondary Attribute is inferred. */
 export function dbStats(job, raw) {
   const g = k => raw[statIdx(k)] || 0;
   const p = job.profile;
@@ -88,6 +89,8 @@ export function parseRow(r) {
     kind: r[9], // item kind: the column of the stat factor table MP (kindFactors)
     meldSlots: r[10], // guaranteed materia slots
     overmeld: !!r[11], // overmelding allowed
+    gameId: r[13], // the game's item id (Item.csv row), for links to and checks against other tools
+    scales: !!r[14], // item level follows the wearer's level (Item.SubStatCategory 2; syncTarget)
   };
 }
 
@@ -134,7 +137,7 @@ export function browseItems(job, f) {
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 let rowIndex = null;
-/* The database facts about a pool item ({sources, slotCode, kind, lvl, slots, overmeld}), looked up by its pool key, so saved pools need no
+/* The database facts about a pool item ({sources, slotCode, kind, lvl, scales, slots, overmeld}), looked up by its pool key, so saved pools need no
    repair when a fact is added. Null for items not from the database (hand-made, generated). */
 function rowFacts(item) {
   if (item.src !== 'game') return null;
@@ -148,6 +151,7 @@ function rowFacts(item) {
         slotCode: f ? f.slotCode : r[1],
         kind: f ? f.kind : r[9],
         lvl: f ? f.lvl : r[3],
+        scales: f ? f.scales : !!r[14],
         slots: f ? f.slots : r[10],
         overmeld: f ? f.overmeld : !!r[11],
       });
@@ -164,6 +168,13 @@ export function sourceMask(item) {
 /* A pool item's equip level (the level a character needs to wear it), or null for items not from the database. */
 export function equipLevel(item) {
   return rowFacts(item)?.lvl ?? null;
+}
+
+/* True when a pool item's item level follows the wearer's level (Item.SubStatCategory 2: level 89 and 99 boost gear,
+   gift earrings and rings), so level sync lowers it whatever its equip level (syncTarget). False for items not from
+   the database. */
+export function scalesWithLevel(item) {
+  return rowFacts(item)?.scales ?? false;
 }
 
 /* The job can wear the pool item: its equip level is at most the job's level cap. Items not from the database (no

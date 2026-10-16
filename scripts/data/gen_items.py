@@ -3,7 +3,8 @@
 
 Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
 
-Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources, statFactor, meldSlots, overmeld, rarity]
+Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources, statFactor, meldSlots, overmeld, rarity,
+            gameId, scales]
   slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring,
              12=body that also covers the head)
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
@@ -16,6 +17,9 @@ Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sou
   meldSlots : guaranteed materia slots (Item.MateriaSlotCount, 0 to `materia.maxSlots` in item-format.json)
   overmeld  : 1 when the item allows overmelding (Item.IsAdvancedMeldingPermitted)
   rarity    : Item.Rarity (`rarity` in item-format.json: 1 white, 2 green, 3 blue, 4 purple, 7 pink)
+  gameId    : the Item.csv row id (`gameId` in item-format.json), the id other tools and links use
+  scales    : 1 when the item's item level follows the wearer's level (Item.SubStatCategory 2, `levelScaled` in
+             item-format.json), else 0
 
 The file also holds the materia table {values, gate, high} (`materia` in item-format.json, see materia_table()).
 """
@@ -178,6 +182,8 @@ def select(csv_dir):
     src = gear_sources(d, items)
     kept, multi_slot, crafter_gatherer, bad_kind, bad_meld, bad_rarity = [], [], [], [], [], []
     rarity_col = fmt['rarity']['itemColumn']
+    scaled = fmt['levelScaled']
+    known_scaled = {str(v) for v in scaled['known']}
     for r in items:
         if not r['Name']:
             continue
@@ -234,6 +240,8 @@ def select(csv_dir):
                     int(kind),
                     *meld,
                     int(r[rarity_col]) if r[rarity_col].isdigit() else -1,
+                    int(r['#']) if r['#'].isdigit() else -1,
+                    1 if r[scaled['itemColumn']] == str(scaled['value']) else 0,
                 ],
             )
         )
@@ -244,6 +252,13 @@ def select(csv_dir):
     bad_rarity = [f'{r["Name"]} ({r[rarity_col]!r})' for r, row in kept if row[12] < 0]
     if bad_rarity:
         raise SchemaError(f'Item.csv {rarity_col} is not a whole number: ' + ', '.join(bad_rarity[:10]))
+    ids = [row[13] for r, row in kept]
+    bad_id = [f'{r["Name"]} ({r["#"]!r})' for r, row in kept if row[13] < 0]
+    if bad_id or len(set(ids)) != len(ids):
+        raise SchemaError('Item.csv row ids are not unique whole numbers: ' + ', '.join(bad_id[:10]))
+    bad_scaled = [f'{r["Name"]} ({r[scaled["itemColumn"]]!r})' for r, row in kept if r[scaled['itemColumn']] not in known_scaled]
+    if bad_scaled:
+        raise SchemaError(f'Item.csv {scaled["itemColumn"]} outside {scaled["known"]}: ' + ', '.join(bad_scaled[:10]))
     if bad_meld:
         m = fmt['materia']
         expect = f'{m["slotColumn"]} 0 to {m["maxSlots"]}, {m["overmeldColumn"]} True or False'
@@ -265,8 +280,9 @@ def main(csv_dir, out, source='detect'):
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     masks = gear_categories.source_masks(kept, cats)
     rows = [[*row[:8], masks[r['#']], *row[9:]] for r, row in kept if cats[r['#']] not in gear_categories.RETIRED]
-    # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields, rarity.rowField)
-    fields = {**fmt['materia']['rowFields'], 'rarity': fmt['rarity']['rowField']}
+    # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields and the rowField
+    # of rarity, gameId and levelScaled)
+    fields = {**fmt['materia']['rowFields'], **{k: fmt[k]['rowField'] for k in ('rarity', 'gameId', 'levelScaled')}}
     if rows and len(rows[0]) != max(fields.values()) + 1:
         raise SchemaError(f'item rows have {len(rows[0])} fields, item-format.json row fields expect {fields}')
     materia, decoys = materia_table(csv_dir, fmt)

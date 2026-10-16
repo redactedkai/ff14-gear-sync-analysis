@@ -114,8 +114,20 @@
     "itemColumn": "Rarity",
     "rowField": 12
   },
+  "gameId": {
+    "_comment": "Item rows carry the item's game id (Item.csv row `itemColumn`) at `rowField`, so a piece can be matched with other tools and links that name items by id (ffxiv-gearing, xivgear). gen_items.py stops on an id that is not a whole number or appears twice.",
+    "itemColumn": "#",
+    "rowField": 13
+  },
+  "levelScaled": {
+    "_comment": "Item rows carry 1 at `rowField` when the item's `itemColumn` (Item.csv) is `value`, else 0: gear whose item level and stats follow the wearer's level (the game's description reads \"IL and attributes synced to current job level.\"; level 89 and 99 boost gear, gift earrings and rings). Below the level its item level is for, such a piece is synced to that level's item level whatever its equip level (sync-target.js). gen_items.py stops on a value outside `known`.",
+    "itemColumn": "SubStatCategory",
+    "value": 2,
+    "known": [0, 1, 2],
+    "rowField": 14
+  },
   "statFactor": {
-    "_comment": "Per-item stat factor. The last field of an item row is the item's `itemColumn` (Item.csv), an index 0..count-1 into the `baseParamColumn`[0..count-1] columns of BaseParam.csv. Each stat's BaseParam row holds there the percent its full-share slot value is multiplied by on that kind of item (Vitality 90 on Intelligence/Mind gear, every main stat 90 on gear that carries all four). gen_item_level.py writes the table to item-level.json (MP); gen_items.py stops on an index outside it.",
+    "_comment": "Per-item stat factor. Field 9 of an item row is the item's `itemColumn` (Item.csv), an index 0..count-1 into the `baseParamColumn`[0..count-1] columns of BaseParam.csv. Each stat's BaseParam row holds there the percent its full-share slot value is multiplied by on that kind of item (Vitality 90 on Intelligence/Mind gear, every main stat 90 on gear that carries all four). gen_item_level.py writes the table to item-level.json (MP); gen_items.py stops on an index outside it.",
     "itemColumn": "BaseParamModifier",
     "baseParamColumn": "MeldParam",
     "count": 13

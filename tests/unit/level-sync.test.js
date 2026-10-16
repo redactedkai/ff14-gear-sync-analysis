@@ -57,7 +57,9 @@ test('syncTarget: the item level trigger, the level trigger, both, and neither',
 test('at level 100 (the level cap) no real piece is level-synced', () => {
   assert.ok(ROWS.every(r => r.lvl <= 100));
   assert.equal(
-    ROWS.filter(r => syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, syncOn: false, cap: null, syncedLevel: 100 }) != null).length,
+    ROWS.filter(
+      r => syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: r.scales, syncOn: false, cap: null, syncedLevel: 100 }) != null,
+    ).length,
     0,
   );
 });
@@ -70,7 +72,7 @@ test('T13 (level 50, cap 123): 71 pieces are synced by level alone, to item leve
   assert.equal(levelOnly.length, 71);
   let changed = 0;
   for (const r of ROWS) {
-    const now = syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, syncOn: true, cap: 123, syncedLevel: 50 });
+    const now = syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: r.scales, syncOn: true, cap: 123, syncedLevel: 50 });
     const before = r.ilvl > 123 ? 123 : null; // item level sync alone
     if (now !== before) changed++;
   }
@@ -85,6 +87,61 @@ test('T13 (level 50, cap 123): 71 pieces are synced by level alone, to item leve
       const raw = dbStats(job, r.st);
       for (const s of job.stats) assert.ok((raw[s] || 0) <= c[s], `${r.name} ${job.jobId} ${s} ${raw[s]} > ${c[s]}`);
     }
+  }
+});
+
+/* Gear whose item level follows the wearer's level (Item.SubStatCategory 2; the game's description: "IL and attributes
+   synced to current job level."). Below the level its item level is for, it is synced to the level's item level
+   whatever its equip level, or to the item level cap where that is lower. Expected item levels for the boost gear are
+   the Wiki's artifact armor values: 548 at level 89, 678 at level 99. */
+test('syncTarget: gear that scales with the level follows the level whatever its equip level', () => {
+  const t = (itemLevel, equipLevel, syncOn, cap, syncedLevel) =>
+    syncTarget({ itemLevel, equipLevel, scales: true, syncOn, cap, syncedLevel });
+  assert.equal(t(430, 1, false, null, 50), 130); // equip level 1: plain level sync would leave it
+  assert.equal(t(430, 1, false, null, 70), 400);
+  assert.equal(t(430, 1, false, null, 80), null); // 530 is above its own item level
+  assert.equal(t(430, 1, true, 123, 50), 123); // the item level cap is lower
+  assert.equal(t(430, 1, true, 135, 50), 130); // the level's item level is lower
+  assert.equal(t(430, 1, true, 290, 80), 290); // only the item level cap applies
+  assert.equal(t(690, 99, false, null, 99), 678);
+  assert.equal(t(560, 89, false, null, 89), 548);
+  assert.equal(t(690, 99, false, null, 100), null);
+  assert.equal(t(430, 1, false, null, null), null); // no synced level
+  assert.equal(syncTarget({ itemLevel: 430, equipLevel: 1, scales: false, syncOn: false, cap: null, syncedLevel: 50 }), null);
+});
+
+test('scaling gear: 260 real pieces; at their own level they drop to the level item level, at 100 none is synced', () => {
+  const scaling = ROWS.filter(r => r.scales);
+  assert.equal(scaling.length, 260);
+  const target = (r, level) =>
+    syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: true, syncOn: false, cap: null, syncedLevel: level });
+  for (const r of scaling) {
+    assert.equal(target(r, 100), null, r.name);
+    if (r.lvl === 89) assert.equal(target(r, 89), 548, r.name);
+    if (r.lvl === 99) assert.equal(target(r, 99), 678, r.name);
+  }
+  // the Wiki's artifact armor: a level 99 head at item level 690 is 678 at level 99
+  const visor = ROWS.find(r => r.name === 'Asklepian Visor');
+  assert.ok(visor.scales && visor.ilvl === 690 && visor.lvl === 99);
+  // Bozjan Earring (equip level 71, item level 430): at level 75 plain level sync leaves it, the scaling rule does not
+  const bozja = ROWS.find(r => r.name === 'Bozjan Earring');
+  assert.ok(bozja.scales);
+  assert.equal(target(bozja, 75), levelSyncIlvl(75));
+  assert.ok(levelSyncIlvl(75) < 430);
+});
+
+test("Menphina's Earring at level 50: synced to item level 130, its stats capped at the 130 earring caps", () => {
+  const row = ROWS.find(r => r.name === "Menphina's Earring");
+  assert.ok(row.scales && row.lvl === 1 && row.ilvl === 430);
+  for (const job of [sge, makeJobContext('WAR'), makeJobContext('BST')]) {
+    const item = poolItemFromRow(job, row);
+    const sync = { cap: null, sync: false, level: 50 };
+    assert.equal(itemSyncIlvl(item, sync), 130, job.jobId);
+    const c = capsFor(job, row.type, 130, row.pct, kindFactors(job, row.kind));
+    const eff = effStats(job, item, sync);
+    for (const s of job.stats) assert.equal(eff[s] || 0, Math.min(item.stats[s] || 0, c[s]), `${job.jobId} ${s}`);
+    assert.ok(eff.main < item.stats.main, `${job.jobId}: main stat lowered`);
+    assert.deepEqual(effStats(job, item, { cap: null, sync: false, level: 100 }), item.stats);
   }
 });
 

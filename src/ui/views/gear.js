@@ -34,7 +34,14 @@ export function gearView(app) {
   const mask = sourcesMask(b.exclude || []);
   const all = (mask ? rows.filter(r => !(r.sources & mask)) : rows).map(r => {
     const raw = dbStats(job, r.st);
-    const target = syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, syncOn: sync.sync, cap: sync.cap, syncedLevel: sync.level });
+    const target = syncTarget({
+      itemLevel: r.ilvl,
+      equipLevel: r.lvl,
+      scales: r.scales,
+      syncOn: sync.sync,
+      cap: sync.cap,
+      syncedLevel: sync.level,
+    });
     return {
       name: r.name,
       type: r.type,

@@ -81,8 +81,8 @@ class GenItemsTest(unittest.TestCase):
 
     def test_row_shape(self):
         for r in self.rows:
-            self.assertEqual(len(r), 13, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity = r
+            self.assertEqual(len(r), 15, r)
+            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(13))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
@@ -93,6 +93,10 @@ class GenItemsTest(unittest.TestCase):
             self.assertIn(meld_slots, range(6))
             self.assertIn(overmeld, (0, 1))
             self.assertIsInstance(rarity, int)
+            self.assertIsInstance(game_id, int)
+            self.assertIn(scales, (0, 1))
+        ids = [r[13] for r in self.rows]
+        self.assertEqual(len(set(ids)), len(ids))
 
     def test_meld_fields(self):
         """meldSlots and overmeld are Item.MateriaSlotCount and IsAdvancedMeldingPermitted, after the source mask and kind."""
@@ -249,10 +253,19 @@ class GenItemsTest(unittest.TestCase):
             self.assertNotIn(name, self.by_name)
 
     def test_rarity(self):
-        # the last field is Item.Rarity as written in the fixture
+        # field 12 is Item.Rarity as written in the fixture
         self.assertEqual(self.row('Test Robe')[12], 2)
         self.assertEqual(self.row('Test Hood of Healing')[12], 3)
         self.assertEqual(self.row('Test Sword')[12], 0)
+
+    def test_game_id(self):
+        # field 13 is the Item.csv row id, the id other tools use
+        self.assertEqual(self.row('Test Robe')[13], 1005)
+
+    def test_level_scaled(self):
+        # field 14 is 1 for SubStatCategory 2 (item level follows the wearer's level), as on the real pre-order earrings
+        self.assertEqual(self.row('Test Preorder Earring')[14], 1)
+        self.assertEqual([r[0] for r in self.rows if r[14]], ['Test Preorder Earring'])
 
     def test_crafter_gatherer_gear_excluded(self):
         # All Classes pieces with a combat stat (Vitality) are still left out when they carry a crafter or gatherer
@@ -706,6 +719,16 @@ class SchemaDriftTest(unittest.TestCase):
 
         edit_csv(self.dir / 'Item.csv', fn)
         self.assert_fails(gen_items, 'Rarity', 'not a whole number', 'Test Robe')
+
+    def test_unknown_level_scaled_value(self):
+        """A SubStatCategory value the format does not know stops gen_items: it might be a new kind of scaling."""
+
+        def fn(rows):
+            col = rows[0].index('SubStatCategory')
+            next(r for r in rows if r[0] == '1005')[col] = '3'  # Test Robe
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'SubStatCategory outside [0, 1, 2]', "Test Robe ('3')")
 
     def test_crafter_gatherer_param_renamed(self):
         """A crafter/gatherer stat row id that now names something else stops gen_items (item-format.json is stale)."""

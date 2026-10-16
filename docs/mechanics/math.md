@@ -206,6 +206,8 @@ A piece is synced in two cases (**verified** by the owner in game):
 1. **Item level sync**: the duty has an item level cap $C$ (item level sync on) and the piece's item level is above $C$. The piece is synced to $C$.
 2. **Level sync**: the piece's equip level is above the synced character level $L$. The piece is synced to the item level the game assigns to $L$, $\text{sync}(L)$.
 
+A third kind of piece follows the level whatever its equip level: gear whose item level **scales with the wearer** (`Item.SubStatCategory` 2; 260 pieces: the level 89 and 99 boost gear at item level 560 and 690, and six all-jobs earrings and rings such as Menphina's Earring). The game's own description says so: "IL and attributes synced to current job level." (241 pieces), or that attributes and item level vary with the current level (the six accessories) (**verified**, game data). Such a piece is synced to $\text{sync}(L)$ whenever that is below its own item level, or to the item level cap where that is lower still. That the target is $\text{sync}(L)$ at every level is *inferred*: it gives the Wiki's artifact armor item levels (548 at level 89, 678 at level 99; *second-hand*), and ffxiv-gearing applies the same rule at levels 50 to 90 ([validation.md, section 9](validation.md#9-against-another-tool-ffxiv-gearing)).
+
 A synced piece also loses its materia melds (**verified** by the owner in game; [materia.md, section 2](materia.md#2-the-rules)).
 
 $\text{sync}(L)$ is the `ItemLevelSync` column of the game's `ParamGrow` sheet (**verified**: read from the game file):
@@ -214,7 +216,7 @@ $\text{sync}(L)$ is the `ItemLevelSync` column of the game's `ParamGrow` sheet (
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | $\text{sync}(L)$ | $L$ | 130 | 270 | 400 | 530 | 660 | 690 |
 
-Between the level caps it rises in steps of 3 (54 → 133, ..., 59 → 148). No real piece has an equip level above 100, so at level 100 level sync never applies. The same holds for a limited job at its own cap (Blue Mage 80, Beastmaster 50, section 1): it cannot wear gear of a higher equip level, so Piece stats and Sync limits show no level sync there.
+Between the level caps it rises in steps of 3 (54 → 133, ..., 59 → 148). No real piece has an equip level above 100, so at level 100 level sync never applies. The same holds for a limited job at its own cap (Blue Mage 80, Beastmaster 50, section 1): it cannot wear gear of a higher equip level, so Piece stats and Sync limits show no level sync there. Scaling gear (below) is the exception: at 80 a Blue Mage wears Azeyma's and Halone's Earrings (item level 560 and 690) at 530, at 50 a Beastmaster wears the five scaling accessories it can equip at 130.
 
 When both apply, the **item level cap wins**, even where it is the higher of the two. In Aloalo Island (level 90, item level 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660; level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). *Second-hand*: a player's report quoted by xivgear, which applies the same order; not captured by this project. In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
 
@@ -223,7 +225,9 @@ The synced item level $t$ of a piece at item level $i$ with equip level $e$ is t
 $$
 t =
 \begin{cases}
-C & \text{if item level sync is on and } i > C \\
+\min(C, \text{sync}(L)) & \text{if the piece scales, } \text{sync}(L) < i \text{ and item level sync is on with } i > C \\
+\text{sync}(L) & \text{else if the piece scales and } \text{sync}(L) < i \\
+C & \text{else if item level sync is on and } i > C \\
 \text{sync}(L) & \text{else if } e > L \\
 \text{none (untouched)} & \text{otherwise}
 \end{cases}
@@ -236,15 +240,15 @@ and the clamp below is applied with $t$ in place of $C$. A piece synced to an it
 
 What changes at T13 (level 50, cap 123), measured on the current data: 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes. Every other piece is synced exactly as by the cap alone.
 
-With item level sync off, level sync alone syncs this many of the 17,316 database pieces (the 35 Beastmaster pieces, equip level 50, are synced at none of these levels):
+With item level sync off, level sync alone syncs this many of the 17,316 database pieces (the 35 Beastmaster pieces, equip level 50, are synced at none of these levels; scaling gear is counted in, 1 to 5 pieces a level that the equip level alone would leave):
 
 | Synced level | $\text{sync}(L)$ | Pieces synced | Above $\text{sync}(L)$ | With a stat lowered |
 | --- | --- | --- | --- | --- |
-| 50 | 130 | 16,183 | 15,970 | 15,949 |
-| 60 | 270 | 13,010 | 12,791 | 12,791 |
-| 70 | 400 | 9,500 | 9,275 | 9,275 |
-| 80 | 530 | 6,245 | 6,014 | 6,014 |
-| 90 | 660 | 3,265 | 3,034 | 3,034 |
+| 50 | 130 | 16,188 | 15,975 | 15,954 |
+| 60 | 270 | 13,014 | 12,795 | 12,795 |
+| 70 | 400 | 9,503 | 9,278 | 9,278 |
+| 80 | 530 | 6,247 | 6,016 | 6,016 |
+| 90 | 660 | 3,266 | 3,035 | 3,035 |
 
 A stat is lowered on every piece above $\text{sync}(L)$ except 21 at level 50: item level 133 pieces whose stats equal the item level 130 caps.
 

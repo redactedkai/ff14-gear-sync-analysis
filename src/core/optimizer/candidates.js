@@ -3,17 +3,18 @@
    Candidates dominated by another item in the same slot are dropped. */
 import { SLOT_TYPES } from '../constants.js';
 import { capsFor, syncStats } from '../formulas.js';
-import { equipLevel, meldInfo, slotInfo } from '../items.js';
+import { equipLevel, meldInfo, scalesWithLevel, slotInfo } from '../items.js';
 import { bestMeld, meldCaps } from '../meld.js';
 import { syncTarget } from '../sync-target.js';
 
 /* The item level a pool item is synced to, or null when it is untouched (syncTarget). sync = {cap, sync, level}: the
    item level cap, whether item level sync is on (with a cap set), and the synced character level (null or missing: no
-   level sync). Only database pieces have an equip level, so only they can be level-synced. */
+   level sync). Only database pieces have an equip level (or scale with the level), so only they can be level-synced. */
 export function itemSyncIlvl(item, sync) {
   return syncTarget({
     itemLevel: item.ilvl,
     equipLevel: equipLevel(item),
+    scales: scalesWithLevel(item),
     syncOn: sync.sync,
     cap: sync.cap,
     syncedLevel: sync.level ?? null,

@@ -49,7 +49,8 @@ def item_columns():
     ]
     cols = ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
     materia = fmt['materia']
-    return [*cols, fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn'], fmt['rarity']['itemColumn']]
+    trailing = [fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn']]
+    return [*cols, *trailing, fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn']]
 
 
 def meld_fields(row, fmt):

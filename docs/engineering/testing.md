@@ -154,6 +154,7 @@ Notes:
 - **`npm run check`** runs lint (with format check), build, unit and generator tests and the smoke test, in that order, and stops at the first failure. It is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at about 400 px.
 
 - **The `perf` commands** are performance measurements, not pass/fail tests, and are not part of `npm run check`. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a saved copy of `src/`.
+- **The check against ffxiv-gearing** (`scripts/validate/gearing/`) is also run by hand: `fetch.py` clones and builds that tool at a pinned commit, `run.py` compares every synced stat with it in a browser (about 6 minutes; `--site live` against its published page) and fails on a difference with no known cause. Results in [validation.md, section 9](../mechanics/validation.md#9-against-another-tool-ffxiv-gearing).
 
 Running a subset:
 

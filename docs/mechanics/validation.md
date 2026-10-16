@@ -14,6 +14,7 @@ All numbers were produced by running the code against the data in this repositor
 | FFXIV Wiki, Item Level Sync page | Substat caps at item level 475 | The sync clamp (section 3) |
 | Game `BaseParam` sheet (`MeldParam`) and `Item.BaseParamModifier` | Per-item stat percentages | The stat factor (section 2) |
 | xivgear (community gear planner), [source at commit 6c3c878](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts) | Its sync cap code and in-game notes in its tests | Off-hand rule, cap order (section 8) |
+| ffxiv-gearing (community gear planner), [source at commit 8d75ef8](https://github.com/Asvel/ffxiv-gearing/tree/8d75ef89c317401727066a28025fb4d860a92f20) | Its synced stats for every piece and duty sync | Section 9 |
 | AkhMorning (community reference), [Skill and Spell Speed page](https://www.akhmorning.com/allagan-studies/stats/speed/) | GCD and DoT formula, tier tables | Speed and GCD (section 5) |
 
 Notes: each item names a column of the stat factor table (Vitality 90 on Intelligence/Mind gear, every main stat 90 on four-main-stat gear; [math.md, section 4](math.md#the-stat-factor-of-an-item)). xivgear is a community reference, not external truth; its in-game values are second-hand.
@@ -256,6 +257,31 @@ What it shows:
 
 Captures from the game are **the single most valuable evidence the project does not have**. A useful capture is a character sheet screenshot taken under a known sync cap (the duty name, or the cap item level), with the equipped gear listed by name, and ideally the same character unsynced for comparison. One capture with a piece whose second substat is above the cap (for example a 70% substat of 30 or more on a head piece at cap 123) would settle point 2 directly; the main stat and Vitality on the same sheet would settle point 1. Each capture should become a test case with the screenshot's numbers as the expected values.
 
+## 9. Against another tool: ffxiv-gearing
+
+ffxiv-gearing (Asvel's planner, [asvel.github.io/ffxiv-gearing](https://asvel.github.io/ffxiv-gearing/), Chinese only) syncs stats with its own code. Like xivgear, it is a community reference, not external truth: agreeing with it shows the two models match, not that either matches the game. Its item data comes from the Chinese client, yet all 26,044 of its gear items have the same stats, item level, equip level and stat factor kind as this project's `Item` sheet (checked by game id), so every difference below comes from the math.
+
+**What was compared.** Its own code, run in its own page (built from the pinned commit, and the live site), against this project's synced stats, side by side in that page: every database piece each of the 23 jobs can wear, at every sync it offers (each job level 50 to 100 up to the job's cap, level sync only and each duty item level it lists: 139 settings), every stat of the job. 2026-10-15, after the D3 fix: 8,691,554 piece checks, 55,426,805 stats, 99.86% equal (55,346,584). The live site gave exactly the same results as the local build.
+
+| Tag | Difference | Stats | Off by |
+| --- | --- | --- | --- |
+| D1 | Cap rounding order | 62,324 | 1 |
+| D2 | Off-hand (shield) caps | 5,570 | 1 |
+| D3 | Gear that scales with level (fixed) | 0 | – |
+| D4 | Main Attribute on tanks | 4,752 | any |
+| D6 | Bonus stats in Crucible, Occult Crescent | 7,575 | any |
+| – | Anything else | 0 | – |
+
+Notes:
+- **D1.** It rounds a cap once, $\operatorname{round}(B \cdot s \cdot f / 10^5)$; this project floors twice first ([math.md, section 5](math.md#the-clamp-rule)). With a factor of 100 the two agree everywhere: its caps alone, at the 230 item levels its data defines, every slot code and stat factor kind, equal this project's in all 292,560 cases; with a factor below 100 they differ by 1 in 6,068 of 138,000. This project's order rests on three second-hand in-game values (section 8); its order on none found. Accepted either way (off by 1).
+- **D2.** It caps a shield at the 40% share; this project uses two-handed minus one-handed (**inferred**, fits 224 of 226 real off-hands). Never more than 1 apart.
+- **D3.** 260 pieces (`Item.SubStatCategory` 2) scale with the character: the game's own text says "IL and attributes synced to current job level" (241 pieces) or that attributes and item level vary with the current level (the six experience-bonus accessories) (**verified**, game data). ffxiv-gearing syncs them to the level's item level at every level it offers; this project synced them only like other gear, by equip level, so at level 50 with no item level cap Menphina's Earring (item level 430, equip level 1) kept its 430 stats here. **It was a gap in this project's model, fixed 2026-10-15** ([math.md, section 5](math.md#which-pieces-are-synced); [history.md](../history.md)): before the fix 4,023 stats differed for this reason, now 0. The wiki's figures for the artifact armor among them (548 at level 89, 678 at level 99) equal `ParamGrow.ItemLevelSync` for those levels (**second-hand**), so this project uses that column at every level; ffxiv-gearing uses its own table at levels 50 to 100, the same values except 790 at 100, which no scaling piece reaches. Now that both tools sync these pieces to the same item level, the cap rules apply to them too: 1,166 of the D1 and 50 of the D2 differences are on scaling pieces (tagged D3 before), and 60 D4 differences went away.
+- **D4.** It gives a tank's Main Attribute to Vitality; this project gives it to Strength (**verified**). The patch 5.0 notes say "The main attribute of the Aetheryte Earring when equipped by a tank has been changed from vitality to strength." ([Lodestone](https://na.finalfantasyxiv.com/lodestone/topics/detail/330f2b280067d69d85b17831c66712a499e97484)). The game data agrees: `ClassJob.PrimaryStat` for every tank is 3 (Vitality) in the 4.55–4.58 data and 1 (Strength) from 5.0 to today (xivapi/ffxiv-datamining commits f10581e and 2c4f0a2). ffxiv-gearing's Vitality therefore matches the game only as it was from 4.5 to 4.58, when the Aetheryte Earring was the only item with Main Attribute. In its code the value comes from a 2020 tank switch for its damage math (commit dc4935a), which its 2026 Main Attribute support reused (9bd08ba) (**inferred** as the cause). xivgear also gives tanks Strength and Tenacity (PR #884, 2026). No in-game character sheet of a tank wearing such a piece has been found.
+- **D6.** It adds the Crucible bonus (Beastmaster gear) and, at item level sync 700, the Occult Crescent bonus; this project leaves both out on purpose ([data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
+- **Which pieces a job can wear** differs, not compared: it reassigns some all-classes pieces by their main stat (573 to 764 pieces a job, mostly old accessories such as Earrings of Casting); this project follows `ClassJobCategory`, so a Sage may wear them, as in game.
+
+Re-run after a patch or a new ffxiv-gearing version: see the scripts in the table below (not part of `npm run check`; they need the clone and a browser).
+
 ## Where this lives
 
 | Concept | File |
@@ -270,3 +296,4 @@ Captures from the game are **the single most valuable evidence the project does 
 | Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `caps-real-items.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `level-sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |
 | Smoke test | `tests/e2e/smoke.py` |
+| Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.py --site local\|live` compares, `ours.js` is this project's side) |

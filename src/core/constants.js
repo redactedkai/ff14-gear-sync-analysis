@@ -147,8 +147,9 @@ export const JOB_ROWS = Object.freeze([
 ]);
 
 /* Item database rows (src/data/items.json): [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources,
-   statFactor, meldSlots, overmeld] (statFactor: the item's kind, a column of the stat factor table MP in tables.js;
-   meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed; `materia` in item-format.json) */
+   statFactor, meldSlots, overmeld, rarity, gameId, scales] (statFactor: the item's kind, a column of the stat factor
+   table MP in tables.js; meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed;
+   `materia` in item-format.json; scales: 1 when its item level follows the wearer's level; parseRow in items.js) */
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');

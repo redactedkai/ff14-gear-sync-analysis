@@ -3,6 +3,7 @@
 /data/
 /tests/e2e/out/
 /scripts/perf/out/
+/scripts/validate/out/
 node_modules/
 __pycache__/
 *.pyc

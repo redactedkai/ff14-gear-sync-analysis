@@ -29,7 +29,7 @@ The project fetches twelve sheets (English column names, `csv/en/`). The generat
 
 Notes:
 
-- **`Item`**: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table), `MateriaSlotCount` and `IsAdvancedMeldingPermitted` (materia slots), and `Rarity`. The gear categories also read `SubcategorySort` and `DyeCount` (section 4), and the materia table reads the `LevelItem` of the materia items.
+- **`Item`**: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table), `MateriaSlotCount` and `IsAdvancedMeldingPermitted` (materia slots), `Rarity`, `SubStatCategory` (whether the item level scales with the wearer's level), and the row id (`#`, the game id). The gear categories also read `SubcategorySort` and `DyeCount` (section 4), and the materia table reads the `LevelItem` of the materia items.
 - **`Materia`**: one row per stat: the materia item of each grade (`Item[0]` to `Item[15]`), what it adds (`Value[0]` to `Value[15]`) and the stat (`BaseParam`). Ids 0 to 1416.
 - **`MateriaGrade`**: one row per grade (I to XII) with the overmeld success rates, `OvermeldNQPercent[0]` to `[3]` for the four overmeld slots. Only `[1]` is read.
 - **`EquipSlotCategory`**: which gear slots an item occupies (1) or blocks (−1).
@@ -244,7 +244,15 @@ No piece has 4 slots. The 15 pieces with no slot but the overmeld flag are old c
 
 ### Rarity
 
-The last field (position 12) is `Item.Rarity`, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,078, 6,052, 8,559 and 592 rows in the current data. A value that is not a whole number stops the generator. Only the accuracy check reads it: on green, HQ-able healer pieces with three substats, Direct Hit is 25%, not 20% ([math.md, section 4](../mechanics/math.md#substat-shares-empirical)).
+Field 12 is `Item.Rarity`, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,078, 6,052, 8,559 and 592 rows in the current data. A value that is not a whole number stops the generator. Only the accuracy check reads it: on green, HQ-able healer pieces with three substats, Direct Hit is 25%, not 20% ([math.md, section 4](../mechanics/math.md#substat-shares-empirical)).
+
+### Game id
+
+Field 13 is the item's row id in `Item`, the id the game, its data files and other tools use for the item (**verified**, game data). Ids are unique; a duplicate or a value that is not a whole number stops the generator. The page does not show it. It lets a piece be matched with other tools: the check against ffxiv-gearing's sync caps (roadmap A5) and links to and from xivgear (A6). It adds about 0.1 MB to the file.
+
+### Scales with level
+
+The last field (position 14) is 1 when `Item.SubStatCategory` is 2, else 0: gear whose item level follows the wearer's level, which level sync lowers whatever its equip level ([math.md, section 5](../mechanics/math.md#which-pieces-are-synced)). The game's description of each of these pieces says so (**verified**, game data). 260 rows in the current data: 127 level 89 and 127 level 99 boost pieces (item level 560 and 690), Bozjan Earring (equip level 71) and five gift accessories at equip level 1. The column takes only 0, 1 and 2 in the whole `Item` sheet (1 is never on a database row); any other value stops the generator, since it might be a new kind of scaling.
 
 ### The materia table
 
@@ -267,7 +275,7 @@ Any violation stops the generator with an error naming the rows.
 
 ### Row format and order
 
-Each database row is a fixed list of thirteen fields:
+Each database row is a fixed list of fifteen fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -284,12 +292,14 @@ Each database row is a fixed list of thirteen fields:
 | meld slots | integer 0 to 5 | `MateriaSlotCount`: guaranteed materia slots (section *Materia slots*). |
 | overmeld | 0 or 1 | 1 when overmelding is allowed (`IsAdvancedMeldingPermitted`). |
 | rarity | integer | `Item.Rarity` (section *Rarity*). |
+| game id | integer | The item's row id in `Item` (section *Game id*). |
+| scales | 0 or 1 | 1 when its item level follows the wearer's level (section *Scales with level*). |
 
 The example row is
 
-| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 |
+| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity | game id | scales |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 13119 | 0 |
 
 The file holds the rows and the materia table next to each other, under the same source record (section 6).
 
@@ -412,7 +422,7 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has thirteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag and a whole-number rarity last), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has fifteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique) and a 0/1 scaling flag last), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
