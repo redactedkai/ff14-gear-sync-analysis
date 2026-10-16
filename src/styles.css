@@ -580,6 +580,11 @@ td.clamp {
 .gold {
   color: var(--gold);
 }
+/* a target or tiebreak number at the piece's cap: a line over it, "it hits the ceiling" */
+.atcap {
+  box-shadow: inset 0 2px 0 currentColor;
+  padding-top: 2px;
+}
 .small {
   font-size: 0.82rem;
 }

@@ -98,6 +98,7 @@ Under sync, a piece above the cap gets its stats lowered to the cap and loses it
 | Meld cap = the piece's own sync cap | Verified (real items, Wiki, xivgear) for factor 100; inferred below 100 |
 | Melds lost on synced pieces | Verified (owner, in game) |
 | Every meld succeeds | Assumed (owner's decision: odds are out of scope) |
+| A slot whose stone adds nothing to the target or a tiebreak stays empty | The owner's decision (2026-10-15), not a game rule |
 | 0-slot pieces with overmelding take nothing | Inferred (xivgear gives them 5 slots) |
 | Shield and cloak caps (2H − 1H, share 220) | Inferred ([math.md, section 3](math.md#3-slot-shares)), and xivgear agrees |
 | HQ and NQ share a cap | Inferred; the tool models HQ stats |

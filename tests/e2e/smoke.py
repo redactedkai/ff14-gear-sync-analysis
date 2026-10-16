@@ -430,6 +430,10 @@ def check_melds(pg):
     expect_total(pg, want['on'], 'melds on')
     expect(pg.locator('#o-result .meld').first).to_be_visible()
     expect(pg.locator('#o-meld-note')).to_be_visible()
+    # every pick has its target at its cap here (melded up to it), so each target cell is marked and the legend shows
+    rows = pg.locator('#o-result tbody tr:not(.total):not(.tier)').count()
+    expect(pg.locator('#o-result td.gold .atcap')).to_have_count(rows)
+    expect(pg.locator('#o-cap-note')).to_be_visible()
     expect(pg.locator('#o-effect')).to_contain_text('%')  # the tier rows: Critical Hit rate
     check_no_bad_text(pg, 'melds/on')
     melds.uncheck()

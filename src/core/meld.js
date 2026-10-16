@@ -80,11 +80,12 @@ export function meldCacheStats() {
 }
 
 /* Best split of `big` stones of value bv and `small` stones of value sv among the stats with headrooms `heads` (in
-   objective order) plus a spare bucket: the gains, compared lexicographically in objective order; among equal gains,
-   the split whose spare stones are worth the most (they go to the job's other substats). Greedy filling is not enough: Courtly Lover's Earrings of Healing (Critical Hit
-   61 below its cap, 2 big and 3 small stones) gets Determination +90 from XII + XI in Critical Hit, against +54 when
-   both XII go into Critical Hit. Returns {big: [n per stat], small: [n per stat], gain: [per stat], spareBig,
-   spareSmall}. */
+   objective order) plus a spare bucket (slots left empty): the gains, compared lexicographically in objective order;
+   among equal gains, the split that leaves the most slots empty, then the one whose stones are worth the least (no
+   stone that adds nothing to the objective). Greedy filling is not enough: Courtly Lover's Earrings of Healing
+   (Critical Hit 61 below its cap, 2 big and 3 small stones) gets Determination +90 from XII + XI in Critical Hit,
+   against +54 when both XII go into Critical Hit. Returns {big: [n per stat], small: [n per stat], gain: [per stat],
+   spareBig, spareSmall}. */
 function bestSplit(big, small, bv, sv, heads) {
   const key = `${big},${small},${bv},${sv},${heads.join(',')}`;
   const hit = memo.get(key);
@@ -96,13 +97,15 @@ function bestSplit(big, small, bv, sv, heads) {
   for (const b of bigSplits) {
     for (const s of smallSplits) {
       const gain = heads.map((h, j) => Math.min(h, b[j] * bv + s[j] * sv));
-      const spare = b[k] * bv + s[k] * sv;
+      const empty = b[k] + s[k],
+        spare = b[k] * bv + s[k] * sv;
       if (best) {
         let cmp = 0;
         for (let j = 0; j < k && !cmp; j++) cmp = gain[j] - best.gain[j];
+        if (!cmp) cmp = empty - best.empty;
         if (cmp < 0 || (cmp === 0 && spare <= best.spare)) continue;
       }
-      best = { big: b.slice(0, k), small: s.slice(0, k), gain, spare, spareBig: b[k], spareSmall: s[k] };
+      best = { big: b.slice(0, k), small: s.slice(0, k), gain, empty, spare, spareBig: b[k], spareSmall: s[k] };
     }
   }
   memo.set(key, best);
@@ -110,8 +113,8 @@ function bestSplit(big, small, bv, sv, heads) {
 }
 
 /* The best melds of a piece for the objective `keys` (target, tiebreak 1, tiebreak 2; neutral stat keys), or null when
-   the piece takes no stones or no key is a meldable substat (a main stat target alone melds nothing). Spare stones go
-   into the job's other substats in order, each up to its headroom; any left over are `free`.
+   the piece takes no stones or no key is a meldable substat (a main stat target alone melds nothing). A slot whose
+   stone would add nothing to a key is left empty (`free`, owner's decision 2026-10-15): no stones in other substats.
    Returns {gain: {stat: n}, stones: [{stat, grade, n}], free}. The stats a piece ends up with are its own plus `gain`.
    `stones` is in slot order, the order they are melded in: the stones for the guaranteed slots and the first overmeld
    slot first, then those for the later overmeld slots, which refuse VI, VIII, X and XII. */
@@ -143,33 +146,14 @@ export function bestMeld(job, item, keys) {
     add(bigStones, s, big.grade, split.big[j]);
     add(smallStones, s, small?.grade, split.small[j]);
   });
-  // spare stones: the job's other substats in order, big stones first, each stat up to its headroom
-  let spareBig = split.spareBig,
-    spareSmall = split.spareSmall;
-  for (const s of job.substats) {
-    if (meldable.includes(s)) continue;
-    let h = head(s),
-      g = 0;
-    while (h > 0 && (spareBig || spareSmall)) {
-      const useBig = spareBig > 0;
-      const v = useBig ? bv : sv;
-      if (useBig) spareBig--;
-      else spareSmall--;
-      if (useBig) add(bigStones, s, big.grade, 1);
-      else add(smallStones, s, small.grade, 1);
-      g += Math.min(h, v);
-      h -= v;
-    }
-    if (g) gain[s] = g;
-  }
   const stones = smallStones === bigStones ? bigStones : [...bigStones, ...smallStones];
-  return { gain, stones, free: spareBig + spareSmall };
+  return { gain, stones, free: split.spareBig + split.spareSmall };
 }
 
-/* "CRT XII, DET XII, CRT XI, DET XI ×2" in slot order (+ ", 1 free" when stones are left over). */
+/* "CRT XII, DET XII, CRT XI, DET XI ×2" in slot order (+ ", 3 slots empty" when stones would add nothing). */
 export function meldText(job, meld) {
   if (!meld) return '';
   const parts = meld.stones.map(x => `${job.short[x.stat]} ${ROMAN[x.grade - 1]}${x.n > 1 ? ` ×${x.n}` : ''}`);
-  if (meld.free) parts.push(`${meld.free} free`);
+  if (meld.free) parts.push(`${meld.free} slot${meld.free > 1 ? 's' : ''} empty`);
   return parts.join(', ');
 }

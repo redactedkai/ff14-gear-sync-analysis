@@ -194,7 +194,7 @@ Notation from there: a piece has $B$ **big** stones (guaranteed slots and the fi
 
 The objective ranks substats in order, keys $k_1, k_2, k_3$: the target, then up to two tiebreaks. Only keys that are combat substats can take stones; a main stat target alone melds nothing.
 
-A meld plan puts $b_j$ big and $s_j$ small stones into key $k_j$. The rest are spare. With big value $V$ and small value $v$, the gain on key $k_j$ is
+A meld plan puts $b_j$ big and $s_j$ small stones into key $k_j$. The rest are spare and stay empty. With big value $V$ and small value $v$, the gain on key $k_j$ is
 
 $$
 \text{gain}_j = \min\bigl(h_{k_j},\ b_j V + s_j v\bigr), \qquad \sum_j b_j \le B, \quad \sum_j s_j \le S .
@@ -202,7 +202,7 @@ $$
 
 The best plan maximizes $(\text{gain}_1, \text{gain}_2, \text{gain}_3)$ in lexicographic order: first the target's gain, then the first tiebreak's, then the second's.
 
-- **Ties** go to the plan whose spare stones are worth the most. Those go into the job's other substats in order, each up to its room. Any left over are shown as free.
+- **Ties** go to the plan that leaves the most slots empty, then to the one whose stones are worth the least. A stone that adds nothing to a key is not melded: no stones go into substats the objective doesn't score (the owner's decision, 2026-10-15; until then they went into the job's other substats in order). The page lists the empty slots after the stones ("3 slots empty").
 - **The search tries every split** of the $B$ big and $S$ small stones among the keys and the spare bucket. That is at most 200 splits per piece, and the result is cached for each combination of stones, values and rooms.
 - **Always the best grade:** for a fixed split, a bigger stone never lowers a gain, so using the most valuable allowed grade loses nothing.
 
@@ -213,7 +213,7 @@ The best plan maximizes $(\text{gain}_1, \text{gain}_2, \text{gain}_3)$ in lexic
 
 Over every meldable piece of all 22 jobs before Beastmaster and every ordered pair of substats (615,204 cases), greedy is worse in 13,543 (2.20%). **Verified** by running both.
 
-**A missing substat can be melded.** Kirin's Osode of Fending (5 guaranteed slots, grade VI) maximizing Skill Speed, which it doesn't carry, gets five VI: $5 \times 16 = 80$, below its cap of 110. Maximizing Determination instead, it gets three VI ($77 \to 110$), and the two spare VI give Direct Hit 32.
+**A missing substat can be melded.** Kirin's Osode of Fending (5 guaranteed slots, grade VI) maximizing Skill Speed, which it doesn't carry, gets five VI: $5 \times 16 = 80$, below its cap of 110. Maximizing Determination instead, it gets three VI ($77 \to 110$), and its other two slots stay empty; with Direct Hit as a tiebreak, those two VI give Direct Hit 32.
 
 **Order.** The page lists the stones in slot order, the order they are melded in: the big stones (slots 1 to $B$), then the small ones. Read left to right, every list is a legal melding order. A test checks this for every meldable piece of three jobs under four objectives.
 

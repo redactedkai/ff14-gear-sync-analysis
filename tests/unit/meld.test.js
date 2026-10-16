@@ -54,11 +54,14 @@ test("meld cap of a piece is its own sync cap: Kirin's Osode of Fending (item le
   assert.deepEqual([c.crit, c.det, c.dh, c.spd, c.spec], [110, 110, 110, 110, 110]);
 });
 
-test("Kirin's Osode of Fending: Determination 77 -> 110 with three VI, the two spare VI into Direct Hit", () => {
+test("Kirin's Osode of Fending: Determination 77 -> 110 with three VI, the other two slots left empty", () => {
   const it = piece(war, "Kirin's Osode of Fending");
   const m = bestMeld(war, it, ['det']);
-  assert.deepEqual(m.gain, { det: 33, dh: 32 });
-  assert.equal(meldText(war, m), 'DET VI ×3, DHT VI ×2');
+  assert.deepEqual(m.gain, { det: 33 });
+  assert.equal(m.free, 2);
+  assert.equal(meldText(war, m), 'DET VI ×3, 2 slots empty');
+  // with a tiebreak the two spare VI go to it
+  assert.deepEqual(bestMeld(war, it, ['det', 'dh']).gain, { det: 33, dh: 32 });
   // a substat the piece lacks can be melded: five VI, 80 below the 110 cap
   assert.deepEqual(bestMeld(war, it, ['spd']).gain, { spd: 80 });
 });
@@ -74,9 +77,11 @@ test("Courtly Lover's Earrings of Healing: Crit > Det beats greedy (+61 / +90, n
   // the even grades (MateriaGrade: XII has a 0% rate past the first overmeld slot)
   assert.equal(meldText(sge, m), 'CRT XII, DET XII, CRT XI, DET XI ×2');
   assert.deepEqual(bestMeld(sge, it, ['det', 'crit']).gain, { det: 162 });
-  // Critical Hit alone: XII + XI reach the cap as well as two XII and leave the more valuable stones spare (found by the
-  // xivgear comparison, docs/scratchpad/materia/xivgear-validation.md)
-  assert.deepEqual(bestMeld(sge, it, ['crit']).gain, { crit: 61, det: 90 });
+  // Critical Hit alone: XII + XI reach the cap as well as two XII, with the cheaper stone; the other three slots stay
+  // empty (no stones in substats the objective doesn't score)
+  const crit = bestMeld(sge, it, ['crit']);
+  assert.deepEqual(crit.gain, { crit: 61 });
+  assert.equal(meldText(sge, crit), 'CRT XII, CRT XI, 3 slots empty');
 });
 
 test("Courtly Lover's Pendulums: Crit > Det > DH gets Direct Hit +54 (greedy +36)", () => {
@@ -84,15 +89,16 @@ test("Courtly Lover's Pendulums: Crit > Det > DH gets Direct Hit +54 (greedy +36
   assert.deepEqual(m.gain, { det: 127, dh: 54 });
 });
 
-test('Rainbow Robe of Healing (item level 115): grade IV only; Piety headroom 13 takes four, one spare', () => {
+test('Rainbow Robe of Healing (item level 115): grade IV only; Piety headroom 13 takes four, one slot left empty', () => {
   const it = piece(sge, 'Rainbow Robe of Healing');
   assert.deepEqual(bestMeld(sge, it, ['spd']).gain, { spd: 20 });
   const m = bestMeld(sge, it, ['spec']);
   assert.equal(m.gain.spec, 13);
   assert.equal(
     m.stones.reduce((n, x) => n + x.n, 0),
-    5,
+    4,
   );
+  assert.equal(m.free, 1);
 });
 
 test('no melds: a main stat target alone, a piece with no slots, a hand-made piece', () => {
@@ -139,10 +145,12 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
         if (!m) continue;
         const seq = m.stones.flatMap(x => Array(x.n).fill(x));
         const label = `${job.jobId} ${it.name} ${keys}`;
-        assert.ok(seq.length + m.free <= total, label);
+        assert.equal(seq.length + m.free, total, label);
         const sum = {};
         seq.forEach((x, i) => {
           assert.ok(job.substats.includes(x.stat), label);
+          // no stone in a substat the objective doesn't score: those slots stay empty (owner's decision 2026-10-15)
+          assert.ok(keys.includes(x.stat), `${label}: a stone in ${x.stat}`);
           assert.ok(MATERIA.gate[x.grade - 1] <= it.ilvl, `${label}: grade ${x.grade} below its gate`);
           if (i >= highSlots) assert.ok(!MATERIA.high.includes(x.grade), `${label}: grade ${x.grade} in slot ${i + 1}`);
           sum[x.stat] = (sum[x.stat] || 0) + MATERIA.values[x.grade - 1];

@@ -215,7 +215,7 @@
                 <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.blockedBy ? 'covered by ' + r.blockedBy : 'empty (no copy left)'"></td></template>
                 <template x-if="r.item"><td><span x-text="r.item.name"></span><template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template></td></template>
                 <template x-if="r.item"><td class="n" x-text="r.item.ilvl"></td></template>
-                <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value"></span><span class="dim" x-show="!c.value">0</span></td></template>
+                <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
               </tr>
             </template>
             <tr class="total"><td>Total</td><td></td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
@@ -224,8 +224,9 @@
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
+        <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
         <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. Gear only: food would move every total.</p>
-        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, every slot filled and every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
+        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, only where they raise the target or a tiebreak, every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>
   </div>

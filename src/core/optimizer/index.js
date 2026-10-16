@@ -3,7 +3,7 @@
 import { buildCandidates } from './candidates.js';
 import { branchAndBound } from './search.js';
 
-export { effStats, itemSyncIlvl } from './candidates.js';
+export { effStats, itemCaps, itemSyncIlvl } from './candidates.js';
 
 /**
  * @param job   JobContext

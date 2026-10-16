@@ -258,3 +258,37 @@ test('sync off: piece lab leaves stats as they are and draws no cap line', () =>
   assert.doesNotMatch(v.chartSvg, /cap 123/);
   assert.match(pieceView({ ...app, sync: true }).chartSvg, /cap 123/);
 });
+
+/* "At cap" marks: a target or tiebreak number at the most its piece can have. Sage, Critical Hit. Level 100, no sync:
+   every piece is melded up to its own cap, and a piece already at it takes no stone (Phantom Pendulums Eclipticum, 443:
+   its 2 slots stay empty instead of going to another substat). Level 90, cap 535: the synced Augmented Bygone Brass
+   Pendulums (item level 790) sit at the sync cap, Critical Hit and Determination 210. */
+test('optimizer view: target and tiebreak cells at their cap are marked, other stats never', () => {
+  const app = makeApp('SGE', { cap: null, sync: false, level: 100 });
+  app.opt.target = 'crit';
+  const stats = app.jobCtx.stats,
+    k = stats.indexOf('crit'),
+    det = stats.indexOf('det');
+  const v = optimizerView(app);
+  assert.equal(v.kind, 'ok');
+  assert.ok(v.anyAtCap);
+  const row = (view, name) => view.rows.find(r => r.item?.name === name);
+  const wpn = row(v, 'Phantom Pendulums Eclipticum');
+  assert.deepEqual([wpn.cells[k].value, wpn.cells[k].atCap, wpn.meld], [443, true, '2 slots empty']);
+  assert.equal(row(v, 'Augmented Bygone Brass Gloves of Healing').meld, 'CRT XII ×2');
+  for (const r of v.rows.filter(r => r.item)) {
+    assert.ok(r.cells[k].atCap, `${r.item.name}: Critical Hit below its cap`);
+    assert.ok(
+      r.cells.every((c, j) => j === k || !c.atCap),
+      `${r.item.name}: a stat that is not scored is marked`,
+    );
+    assert.ok(!/DET|DHT|SPS|PIE/i.test(r.meld), `${r.item.name}: a stone outside the objective (${r.meld})`);
+  }
+  Object.assign(app, { cap: 535, sync: true, level: 90 });
+  app.opt.tb = 'det';
+  const synced = row(optimizerView(app), 'Augmented Bygone Brass Pendulums');
+  assert.deepEqual(
+    [synced.cells[k].value, synced.cells[k].atCap, synced.cells[det].value, synced.cells[det].atCap],
+    [210, true, 210, true],
+  );
+});

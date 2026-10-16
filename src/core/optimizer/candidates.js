@@ -2,9 +2,9 @@
    Each candidate carries its effective stat vector (synced where item level or level sync applies) and its scalar score.
    Candidates dominated by another item in the same slot are dropped. */
 import { SLOT_TYPES } from '../constants.js';
-import { syncStats } from '../formulas.js';
+import { capsFor, syncStats } from '../formulas.js';
 import { equipLevel, meldInfo, slotInfo } from '../items.js';
-import { bestMeld } from '../meld.js';
+import { bestMeld, meldCaps } from '../meld.js';
 import { syncTarget } from '../sync-target.js';
 
 /* The item level a pool item is synced to, or null when it is untouched (syncTarget). sync = {cap, sync, level}: the
@@ -26,6 +26,15 @@ export function effStats(job, item, sync) {
   if (target == null) return item.stats;
   const s = slotInfo(job, item);
   return syncStats(job, item.stats, item.type, target, item.ilvl, s.pct, s.factors);
+}
+
+/* The most each stat on a pool item can be after sync and melds: the cap at the item level it is synced to, or, when it
+   is untouched, its own cap (the meld cap). For the page's "at cap" marks. */
+export function itemCaps(job, item, sync) {
+  const target = itemSyncIlvl(item, sync);
+  if (target == null) return meldCaps(job, item);
+  const s = slotInfo(job, item);
+  return capsFor(job, item.type, target, s.pct, s.factors);
 }
 
 /* Lexicographic score [target, tiebreak 1, tiebreak 2] packed into one number, so the search can add and

@@ -2,7 +2,7 @@
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { SLOT_LABEL } from '../../core/constants.js';
 import { browseItems, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
-import { optimize, itemSyncIlvl } from '../../core/optimizer/index.js';
+import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { gcdFor, dotMult, gcdTierAt } from '../../core/speed.js';
@@ -68,6 +68,7 @@ function buildOptimizerView(app, gear) {
 
   const t = res.totals,
     spd = t.spd;
+  const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
   const rows = res.picks.map(p => {
     let label = SLOT_LABEL[p.type];
@@ -77,11 +78,16 @@ function buildOptimizerView(app, gear) {
     }
     if (!p.item) return { label, item: null, blockedBy: p.blockedBy?.name ?? '' };
     if (p.type !== 'ring') label = slotLabel(p.type, slotInfo(job, p.item).blocks);
+    const caps = itemCaps(job, p.item, sync);
     return {
       label,
       item: p.item,
       meld: meldText(job, p.meld),
-      cells: job.stats.map(s => ({ value: p.eff[s] || 0, gold: s === o.target && !!p.eff[s] })),
+      // atCap: a target or tiebreak stat at the most this piece can have (its sync cap, or its own cap with melds)
+      cells: job.stats.map(s => {
+        const value = p.eff[s] || 0;
+        return { value, gold: s === o.target && !!value, atCap: scored.includes(s) && !!value && value >= caps[s] };
+      }),
     };
   });
   return {
@@ -106,6 +112,7 @@ function buildOptimizerView(app, gear) {
     rows,
     truncated: res.truncated,
     melds: !!o.melds,
+    anyAtCap: rows.some(r => r.cells?.some(c => c.atCap)),
     melded: res.picks.filter(p => p.meld).length,
     noMeldData: res.noMeldData,
   };
