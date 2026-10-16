@@ -979,6 +979,37 @@ const HEAD_SUB_CAP_660 = '184';
 
 const hasHScroll = pg => pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
 
+/** Other pieces with the same result (roadmap A9), at the shared setup (Sage, level 50, item level 123), where every
+ * row has others: at NARROW width, the weapon row's menu opens without a sideways scroll; a piece picked from it is what
+ * the row shows, the result stays the same, the menu closes; any setting change clears the pick. */
+async function checkSameResult(pg) {
+  await pg.setViewportSize(NARROW);
+  await waitOptimizer(pg);
+  // a solve for changed settings closes any open menu: let the group's setup settle first
+  await pg.waitForTimeout(600);
+  const button = pg.locator('#o-table .same-btn').first();
+  await expect(button).toBeVisible();
+  const total = await optTotal(pg).innerText();
+  const first = await button.locator('span').first().innerText();
+  await button.click();
+  const menu = pg.locator('#o-table .same-menu').first();
+  await expect(menu).toBeVisible();
+  check(!(await hasHScroll(pg)), 'the same-result menu scrolls the page sideways at 960 px');
+  const other = menu.locator('.same-item:not(.on)').first();
+  const name = await other.locator('span span').first().innerText();
+  await other.click();
+  await expect(menu).toBeHidden();
+  await expect(button.locator('span').first()).toHaveText(name);
+  await expect(optTotal(pg)).toHaveText(total);
+  await checkNoBadText(pg, 'same result/picked');
+  // a setting change gives a new result, and the rows start again from the easiest pieces
+  // (one solve apart: settings changed and changed back within the optimizer's wait keep the pick)
+  await pg.selectOption('#o-tb1', 'crit');
+  await pg.waitForTimeout(600);
+  await pg.selectOption('#o-tb1', '');
+  await expect(button.locator('span').first()).toHaveText(first);
+}
+
 /** Synced level 90 with item level sync off, at NARROW width: the gear browser shows the level-synced value, the
  * optimizer total is marked synced, Sync limits shows the item level 660 caps; no bad text, no horizontal scroll. */
 async function checkLevelSync(pg) {
@@ -1097,6 +1128,7 @@ const GROUPS = [
   { slow: true, steps: [step(checkReloadPersists)] },
   { slow: true, steps: [step(checkCorruptedStorage)] },
   { slow: true, steps: [step(checkLevelSync), step(checkJobLevelCap)] },
+  { slow: true, steps: [step(checkSameResult)] },
   { steps: ['SGE', 'WAR', 'PLD'].map(walk) },
   { steps: ['BLM', 'NIN', 'DRG'].map(walk) },
   { steps: ['BST', 'BLU'].map(walk) },

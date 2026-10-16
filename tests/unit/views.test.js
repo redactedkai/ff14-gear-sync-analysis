@@ -349,7 +349,9 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
   }
   Object.assign(app, { cap: 535, sync: true, level: 90 });
   app.opt.tb = 'det';
-  const synced = row(optimizerView(app), 'Augmented Bygone Brass Pendulums');
+  // the weapon row: whichever piece with the same result it shows (the easiest), its synced Critical Hit and
+  // Determination are at the item level 535 cap
+  const synced = optimizerView(app).rows.find(r => r.label === 'Weapon');
   assert.deepEqual(
     [synced.cells[k].value, synced.cells[k].atCap, synced.cells[det].value, synced.cells[det].atCap],
     [210, true, 210, true],

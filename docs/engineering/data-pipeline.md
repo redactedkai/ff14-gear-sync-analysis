@@ -120,7 +120,7 @@ Belts (`Waist`) and soul crystals have no slot code, so items in those slots are
 - the most guaranteed slots a piece may have (5);
 - where the materia table comes from: the `Materia` sheet and its columns, the number of grades (12), the seven combat substats whose rows are read (Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed), the `Item` column that gives each grade's item level gate (`LevelItem`) and the `MateriaGrade` column that marks the high grades (`OvermeldNQPercent[1]`).
 
-**Other entries.** The file also lists the six source groups and their categories (section 4), the crafter and gatherer stats that keep a piece out of the database, and the `Item` column and row position of the rarity.
+**Other entries.** The file also lists the six source groups and their categories (section 4), the crafter and gatherer stats that keep a piece out of the database, the `Item` column and row position of the rarity, and the gear categories with their labels (section 4, *Gear category*).
 
 Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
 
@@ -256,7 +256,11 @@ Field 13 is the item's row id in `Item`, the id the game, its data files and oth
 
 ### Scales with level
 
-The last field (position 14) is 1 when `Item.SubStatCategory` is 2, else 0: gear whose item level follows the wearer's level, which level sync lowers whatever its equip level ([math.md, section 5](../mechanics/math.md#which-pieces-are-synced)). The game's description of each of these pieces says so (**verified**, game data). 260 rows in the current data: 127 level 89 and 127 level 99 boost pieces (item level 560 and 690), Bozjan Earring (equip level 71) and five gift accessories at equip level 1. The column takes only 0, 1 and 2 in the whole `Item` sheet (1 is never on a database row); any other value stops the generator, since it might be a new kind of scaling.
+Field 14 is 1 when `Item.SubStatCategory` is 2, else 0: gear whose item level follows the wearer's level, which level sync lowers whatever its equip level ([math.md, section 5](../mechanics/math.md#which-pieces-are-synced)). The game's description of each of these pieces says so (**verified**, game data). 260 rows in the current data: 127 level 89 and 127 level 99 boost pieces (item level 560 and 690), Bozjan Earring (equip level 71) and five gift accessories at equip level 1. The column takes only 0, 1 and 2 in the whole `Item` sheet (1 is never on a database row); any other value stops the generator, since it might be a new kind of scaling.
+
+### Gear category
+
+The last field (position 15) is the piece's gear category, the one its `sources` groups are built from (section *Sources*; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)), as an index into `category.list` of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9). The list must hold every category a kept piece can have (`gear_categories.CATEGORIES` minus the three left out) exactly once and nothing else; a missing, unknown or repeated key stops the generator, so a category added after a patch can't reach the page without a label. The 24 categories in the current data, by rows: crafted 5,243, dungeon 3,942, tomestone 2,882, Savage 1,117, raid 1,029, artifact 904, trial 862, field op 856, relic 748, alliance raid 679, PvP 532, Grand Company 494, collaboration 181, deep dungeon 154, ultimate 136, Wondrous Tails 91, quest 52, venture 37, gil vendor 28, Gold Saucer 26, achievement 17, FATE 11, promotional 6, seasonal event 4. It adds about 40 KB to the file.
 
 ### The materia table
 
@@ -279,7 +283,7 @@ Any violation stops the generator with an error naming the rows.
 
 ### Row format and order
 
-Each database row is a fixed list of fifteen fields:
+Each database row is a fixed list of sixteen fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -298,12 +302,13 @@ Each database row is a fixed list of fifteen fields:
 | rarity | integer | `Item.Rarity` (section *Rarity*). |
 | game id | integer | The item's row id in `Item` (section *Game id*). |
 | scales | 0 or 1 | 1 when its item level follows the wearer's level (section *Scales with level*). |
+| category | integer 0 to 23 | Its gear category, an index into `category.list` (section *Gear category*). |
 
 The example row is
 
-| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity | game id | scales |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 13119 | 0 |
+| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity | game id | scales | category |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 13119 | 0 | 5 (alliance raid) |
 
 The file holds the rows and the materia table next to each other, under the same source record (section 6).
 
@@ -430,14 +435,14 @@ If a patch adds a job or a stat, the shared format definition and the page's job
 - The test files use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
 - The `BaseParam` test file holds the real rows of the 14 stats.
-- They check slot detection (two-handed vs one-handed, every slot type, the cloak's own slot code and an unsupported multi-slot piece), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind and the meld fields of a few items, the materia table (with two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats), the stat factor table (the `BaseParam` test file holds the real rows), the rarity field, the source flags and gear categories, levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
+- They check slot detection (two-handed vs one-handed, every slot type, the cloak's own slot code and an unsupported multi-slot piece), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind and the meld fields of a few items, the materia table (with two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats), the stat factor table (the `BaseParam` test file holds the real rows), the rarity field, the source flags and gear categories, the category field and its list's check (a missing, unknown or repeated key), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
 - Schema drift, on edited copies of the test files: a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`, missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column, a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0, an item kind with no `MeldParam` column, a missing meld column in `Item`, `Materia` or `MateriaGrade`, a slot count of 6, an overmeld value other than `True`/`False`, a rarity that is not a whole number, combat materia rows that disagree on a value or a gate, a decoy row that gains an item, a missing combat materia row, a thirteenth grade, high grades that no longer match the values, a changed ultimate totem id, missing shop columns, and a renamed crafter or gatherer stat each stop the generator with an error naming the sheet and column, and no file is written. Run from the command line, the generator exits with status 1 and a one-line message.
 
 **Format tests** (Node, on the real generated data):
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has fifteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique) and a 0/1 scaling flag last), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has sixteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag and a category index last), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 

@@ -260,14 +260,29 @@
           <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
         </div>
         <p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p>
-        <div class="tablewrap"><table>
+        <div class="tablewrap menus" id="o-table"><table>
           <thead><tr><th>Slot</th><th>Item</th><th class="n">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
           <tbody>
             <template x-for="(r, i) in view.rows" :key="i">
               <tr>
                 <td x-text="r.label"></td>
                 <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.blockedBy ? 'covered by ' + r.blockedBy : 'empty (no copy left)'"></td></template>
-                <template x-if="r.item"><td><span x-text="r.item.name"></span><template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template></td></template>
+                <template x-if="r.item"><td class="item">
+                  <template x-if="!r.same"><span x-text="r.item.name"></span></template>
+                  <template x-if="r.same"><div class="same" @click.outside="if (menuOpen === i) menuOpen = null" @keydown.escape="menuOpen = null">
+                    <button type="button" class="same-btn" :aria-expanded="menuOpen === i" :title="`${r.same.count} pieces give the same result here`" @click="menuOpen = menuOpen === i ? null : i"><span x-text="r.item.name"></span><span class="same-count" x-text="`1 of ${r.same.count}`"></span></button>
+                    <div class="same-menu" x-show="menuOpen === i" x-cloak>
+                      <template x-for="g in r.same.groups" :key="g.label">
+                        <div><div class="same-head" x-text="g.label"></div>
+                          <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill" :class="'cat-' + x.category.key" x-text="x.category.label"></span></template></span><span class="same-lvl" x-text="`${x.ilvl}, lvl ${x.lvl}`"></span></button></template>
+                        </div>
+                      </template>
+                      <div class="same-foot" x-text="`All ${r.same.count} give the same result here (counted with the other rows as shown).`"></div>
+                    </div>
+                  </div></template>
+                  <template x-if="r.from"><div class="from"><template x-if="r.category"><span class="pill" :class="'cat-' + r.category.key" x-text="r.category.label"></span></template><span x-text="r.from"></span></div></template>
+                  <template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template>
+                </td></template>
                 <template x-if="r.item"><td class="n" x-text="r.item.ilvl"></td></template>
                 <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
               </tr>
@@ -284,6 +299,7 @@
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
+        <template x-if="view.sameCount"><p class="small dim" id="o-same-note" x-text="`${view.sameCount} other piece${view.sameCount > 1 ? 's give' : ' gives'} the same result: the same ${view.target === 'main' ? view.targetLabel : 'main stat and ' + view.targetLabel}, and every other substat at the same tier. Each row shows the one with the lowest equip level; its menu lists the rest.`"></p></template>
         <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
         <p class="small dim" id="o-total-note">Total and With food are what the character panel shows at this level for every substat: the level's base plus gear (and food). <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span>: the panel adds your job's and clan's own base to them.</p>
         <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. <span x-text="view.food ? 'Counted with food.' : 'Gear only: food moves every total (switch Food on).'"></span></p>

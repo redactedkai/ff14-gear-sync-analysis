@@ -256,6 +256,126 @@ select {
   border-bottom: 1.5px solid currentColor;
   transform: translateY(-75%) rotate(45deg);
 }
+/* Pieces with the same result (optimizer result rows): the item cell's menu, the gear category pill, "HW · lvl 60".
+   The result table must fit at 960 px anyway, so it lets the menu overflow instead of scrolling. */
+.tablewrap.menus {
+  overflow: visible;
+}
+td.item {
+  white-space: normal;
+}
+.same {
+  position: relative;
+}
+.same-btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.same-btn::after {
+  content: "▾";
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.same-btn:hover,
+.same-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+.same-count,
+.same-lvl,
+.from {
+  font: 500 0.72rem var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.from {
+  margin-top: 2px;
+}
+.same-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  width: min(440px, 70vw);
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 6px 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--fg) 18%, transparent);
+}
+.same-head {
+  padding: 6px 12px 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.same-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 3px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.84rem;
+  text-align: left;
+  cursor: pointer;
+}
+.same-item:hover,
+.same-item.on {
+  background: var(--accent-soft);
+}
+.same-item.on {
+  font-weight: 600;
+}
+.same-foot {
+  margin-top: 6px;
+  padding: 6px 12px 2px;
+  border-top: 1px solid var(--line);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--muted);
+  font: 600 0.64rem var(--sans);
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.from .pill {
+  margin: 0 6px 0 0;
+}
+.pill.cat-crafted {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pill.cat-tomestone {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  color: var(--gold);
+}
 .multi-menu {
   position: absolute;
   top: 100%;

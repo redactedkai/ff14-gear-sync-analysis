@@ -233,7 +233,11 @@ export const ROW = Object.freeze({
   rarity: ITEM_FORMAT.rarity.rowField,
   gameId: ITEM_FORMAT.gameId.rowField,
   scales: ITEM_FORMAT.levelScaled.rowField,
+  category: ITEM_FORMAT.category.rowField,
 });
+/* The gear categories, in the order of a row's category field: {key, label} (where a piece comes from: Crafted,
+   Dungeon, Raid, ...; gear_categories.py). */
+export const GEAR_CATEGORIES = Object.freeze(ITEM_FORMAT.category.list.map(c => Object.freeze({ key: c.key, label: c.label })));
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');

@@ -12,6 +12,7 @@ import {
   WEAPON_PCT,
   BASE_SLOT_PCT,
   ROW,
+  GEAR_CATEGORIES,
 } from '../../src/core/constants.js';
 import { IL, PG, ITEMS, MP, MATERIA } from '../../src/core/tables.js';
 import { JOB_ICONS } from '../../src/data/job-icons.js';
@@ -46,7 +47,7 @@ test('every item row has the documented shape', () => {
   const maxMask = 2 ** ITEM_FORMAT.jobs.length;
   for (const r of ITEMS) {
     const where = JSON.stringify(r).slice(0, 80);
-    assert.equal(r.length, 15, where);
+    assert.equal(r.length, 16, where);
     assert.ok(
       Number.isInteger(r[ROW.slotCode]) && r[ROW.slotCode] >= 0 && r[ROW.slotCode] < ITEM_FORMAT.slots.length,
       'slot code ' + where,
@@ -68,6 +69,7 @@ test('every item row has the documented shape', () => {
     assert.ok(Number.isInteger(r[ROW.rarity]) && r[ROW.rarity] >= 0, 'rarity ' + where);
     assert.ok(Number.isInteger(r[ROW.gameId]) && r[ROW.gameId] > 0, 'game id ' + where);
     assert.ok(r[ROW.scales] === 0 || r[ROW.scales] === 1, 'level-scaled flag ' + where);
+    assert.ok(Number.isInteger(r[ROW.category]) && r[ROW.category] >= 0 && r[ROW.category] < GEAR_CATEGORIES.length, 'category ' + where);
   }
   assert.equal(new Set(ITEMS.map(r => r[ROW.gameId])).size, ITEMS.length, 'game ids are unique');
 });

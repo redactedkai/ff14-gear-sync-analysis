@@ -1,8 +1,22 @@
 /* Gear optimizer tab view: the best loadout for the chosen stat, searched over every piece the job can wear.
    Pure view builders: no Alpine import, so Node can load and test them. */
-import { GCD_FLOOR_MS, SLOT_LABEL } from '../../core/constants.js';
-import { browseItems, filterGear, poolItemFromRow, withoutSources, slotInfo, slotLabel, wearable } from '../../core/items.js';
+import { EXPANSIONS, GCD_FLOOR_MS, SLOT_LABEL } from '../../core/constants.js';
+import {
+  browseItems,
+  categoryOf,
+  equipLevel,
+  expansionOf,
+  filterGear,
+  poolItemFromRow,
+  poolKey,
+  withoutSources,
+  slotInfo,
+  slotLabel,
+  wearable,
+} from '../../core/items.js';
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
+import { buildCandidates } from '../../core/optimizer/candidates.js';
+import { sameResult } from '../../core/same-result.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
@@ -135,17 +149,63 @@ function gcdLine(job, r, ui, level) {
   return { bad: false, text: `${job.label.spd} ${need} (character panel)` };
 }
 
+/* Every piece of the pool as a candidate for the goal, unpruned, by slot type: what sameResult checks each row's
+   other pieces against, with the melds the optimizer would give them (meld versions under a Target GCD). Cached like
+   the Target GCD candidates: they depend on the pool settings, the goal and the GCD mode only. */
+let sameCache = { key: null, cands: null };
+function sameCandidates(app, pool, gear, sync, gcdOn) {
+  const o = app.opt;
+  const settingsKey = poolSettingsKey(app, gear);
+  const key = settingsKey == null ? null : `${settingsKey}|${o.target},${o.tb},${o.tb2}|${gcdOn ? o.gcdMode : ''}`;
+  if (key != null && sameCache.key === key) return sameCache.cands;
+  const { slotList, posList } = buildCandidates(
+    app.jobCtx,
+    pool,
+    sync,
+    { target: o.target, tiebreak: [o.tb, o.tb2].filter(Boolean) },
+    { prune: false, melds: !!o.melds, speed: gcdOn ? o.gcdMode : null },
+  );
+  const cands = {};
+  slotList.forEach((t, i) => {
+    cands[t] = posList[i];
+  });
+  if (key != null) sameCache = { key, cands };
+  return cands;
+}
+
+/* A row's menu of pieces with the same result, or null when the shown piece is the only one: {count, groups}, groups by
+   expansion, oldest first, each [{key, name, ilvl, lvl, category, on}] by equip level (category: its gear category,
+   {key, label}, or null for a piece not from the database; on: the piece the row shows). */
+function sameMenu(options, shown) {
+  if (options.length < 2) return null;
+  const facts = c => ({
+    key: poolKey(c.item),
+    name: c.item.name,
+    ilvl: c.item.ilvl,
+    lvl: equipLevel(c.item) ?? 0,
+    category: categoryOf(c.item),
+    on: c.item === shown,
+    exp: expansionOf(equipLevel(c.item) ?? 0, c.item.ilvl),
+  });
+  const items = options.map(facts).sort((a, b) => a.lvl - b.lvl || a.ilvl - b.ilvl);
+  const groups = EXPANSIONS.map(([short, name]) => ({ label: name, items: items.filter(x => x.exp === short) })).filter(
+    g => g.items.length,
+  );
+  return { count: options.length, groups };
+}
+
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message
-   instead of keeping a stale result. `gear`: as for searchPool. */
-export function optimizerView(app, gear) {
+   instead of keeping a stale result. `gear`: as for searchPool. `chosen`: {row index: pool key}, the pieces the player
+   picked from the rows' menus of pieces with the same result (sameResult; not saved). */
+export function optimizerView(app, gear, chosen = {}) {
   try {
-    return buildOptimizerView(app, gear);
+    return buildOptimizerView(app, gear, chosen);
   } catch (e) {
     return { kind: 'error', message: e?.message || String(e) };
   }
 }
 
-function buildOptimizerView(app, gear) {
+function buildOptimizerView(app, gear, chosen) {
   const job = app.jobCtx,
     o = app.opt;
   // 1. the gear to search and the Target GCD box's state
@@ -183,18 +243,29 @@ function buildOptimizerView(app, gear) {
     bonus = food ? foodBonus(job, food, res.totals, app.level) : {};
   }
 
-  // 3. totals: gear only, with food, and as the character panel shows them
-  const gearTotals = res.totals;
+  // 3. the set each row shows: the easiest piece with the same result, or the player's pick (core/same-result.js)
+  const same = sameResult(
+    job,
+    res.picks,
+    sameCandidates(app, pool, gear, sync, asked != null),
+    { level: app.level, food, haste: pct, goal: o.target },
+    chosen,
+  );
+  const picks = same.map(r => r.pick);
+  const gearTotals = Object.fromEntries(job.stats.map(s => [s, picks.reduce((sum, p) => sum + (p.item ? p.eff[s] || 0 : 0), 0)]));
+  if (food) bonus = foodBonus(job, food, gearTotals, app.level);
+
+  // 4. totals: gear only, with food, and as the character panel shows them
   // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
   const t = withFood(gearTotals, bonus),
     spd = t.spd;
   // the character panel's numbers: substats with the level's base added, main stat and Vitality as gear points
   const panel = s => t[s] + panelBase(job, s, app.level),
     base = s => panelBase(job, s, app.level);
-  // 4. one row per slot, in the character panel's order; rings are numbered
+  // 5. one row per slot, in the character panel's order; rings are numbered
   const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
-  const rows = res.picks.map(p => {
+  const rows = picks.map((p, i) => {
     let label = SLOT_LABEL[p.type];
     if (p.type === 'ring') {
       ringN++;
@@ -204,10 +275,17 @@ function buildOptimizerView(app, gear) {
     // a piece covering more than one slot says so ("Body + Head")
     if (p.type !== 'ring') label = slotLabel(p.type, slotInfo(job, p.item).blocks);
     const caps = itemCaps(job, p.item, sync);
+    const lvl = equipLevel(p.item);
     return {
       label,
       item: p.item,
       meld: meldText(job, p.meld),
+      // where the piece comes from: its gear category ({key, label}), and "HW · lvl 60" (both null for a piece not
+      // from the database)
+      category: categoryOf(p.item),
+      from: lvl == null ? null : `${expansionOf(lvl, p.item.ilvl)} · lvl ${lvl}`,
+      // the other pieces with the same result, for the row's menu (null when there are none)
+      same: sameMenu(same[i].options, p.item),
       // atCap: a target or tiebreak stat at the most this piece can have (its sync cap, or its own cap with melds)
       cells: job.stats.map(s => {
         const value = p.eff[s] || 0;
@@ -215,7 +293,7 @@ function buildOptimizerView(app, gear) {
       }),
     };
   });
-  // 5. everything the template shows
+  // 6. everything the template shows
   return {
     kind: 'ok',
     gcdUi: ui,
@@ -258,7 +336,8 @@ function buildOptimizerView(app, gear) {
     truncated: res.truncated,
     melds: !!o.melds,
     anyAtCap: rows.some(r => r.cells?.some(c => c.atCap)),
-    melded: res.picks.filter(p => p.meld).length,
+    melded: picks.filter(p => p.meld).length,
+    sameCount: rows.reduce((n, r) => n + (r.same ? r.same.count - 1 : 0), 0),
     noMeldData: res.noMeldData,
   };
 }
