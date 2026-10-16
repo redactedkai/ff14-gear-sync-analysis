@@ -13,15 +13,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { capValue, capsFor, pieceValue, syncStats } from '../../src/core/formulas.js';
-import { browseItems, kindFactors, poolItemFromRow } from '../../src/core/items.js';
-import { ALL_STATS, ROW } from '../../src/core/constants.js';
+import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../src/core/items.js';
+import { ALL_STATS, ITEM_STAT_ORDER, ROW } from '../../src/core/constants.js';
 import { IL, ITEMS, MAX_REAL } from '../../src/core/tables.js';
+import { itemRow } from './helpers/common.js';
 
-const row = name => {
-  const r = ITEMS.find(x => x[ROW.name] === name);
-  assert.ok(r, name);
-  return r;
-};
 /* A database piece as the job sees it, synced to `cap` at its own slot share and item kind. */
 function synced(job, name, cap) {
   const [p] = browseItems(job, { q: name });
@@ -43,11 +39,12 @@ test('Red Mage head at item level 530: Vitality cap 123 (in game), one above the
   assert.equal(IL.vit[530], 1603);
   // floor(1603 x 0.9) = 1442, floor(1442 x 0.85) = 1225, 122.5 -> 123; the item-stat order: round(136.255) = 136, x 0.9 -> 122
   assert.equal(capsFor(rdm, 'head', 530).vit, 123);
-  assert.equal(row('Edenmorn Hat of Casting')[5].split(',').map(Number)[4], 122); // the native 530 head
+  const hat = itemRow('Edenmorn Hat of Casting');
+  assert.equal(rowStats(hat)[ITEM_STAT_ORDER.indexOf('vit')], 122); // the native 530 head
   // a higher Intelligence head synced to 530 keeps 123
-  const high = ITEMS.find(r => r[ROW.slotCode] === 3 && r[ROW.ilvl] >= 600 && r[ROW.kind] === row('Edenmorn Hat of Casting')[9]);
+  const high = ITEMS.find(r => r[ROW.slotCode] === 3 && r[ROW.ilvl] >= 600 && r[ROW.kind] === hat[ROW.kind]);
   assert.ok(high);
-  assert.equal(synced(rdm, high[0], 530).vit, 123);
+  assert.equal(synced(rdm, high[ROW.name], 530).vit, 123);
 });
 
 test("Azeyma's Earrings (all jobs, item kind 0) synced to 430: the in-game values for Ninja and Sage", () => {

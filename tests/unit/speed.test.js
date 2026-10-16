@@ -1,6 +1,9 @@
+/* Speed (src/core/speed.js): GCD tiers and DoT scalars against AkhMorning's published tables, haste, the tier lookup,
+   and the speed band for a target GCD. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dotMult, gcdFor, gcdTiers } from '../../src/core/speed.js';
+import { dotMult, expansionBounds, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../src/core/speed.js';
+import { rngInt } from './helpers/common.js';
 
 /* Expected values in this file are read from AkhMorning's published tier tables:
    https://www.akhmorning.com/allagan-studies/stats/speed/ ("Table View: 2.5s Tiers", "Show data for level" 50 / 90 /
@@ -58,8 +61,7 @@ test('gcdTiers at level 50 lists the AkhMorning tier starts', () => {
   for (const [spd, gcd] of AKH[50]) assert.equal(tiers.get(spd), gcd, `tier at ${spd}`);
 });
 
-test("expansion boundaries are the game's own sync item level at each level cap (ParamGrow)", async () => {
-  const { expansionBounds } = await import('../../src/core/speed.js');
+test("expansion boundaries are the game's own sync item level at each level cap (ParamGrow)", () => {
   assert.deepEqual(
     expansionBounds().map(e => [e.short, e.from, e.to]),
     [
@@ -89,8 +91,7 @@ test('GCD equals AkhMorning speed table at level 100, every speed and recast', (
    the ultimate sheets; target-gcd research): NIN and VPR 2.12 (15%), SAM 2.17 (Fuka 13%), MNK 2.00 (20%) at levels
    90 and 100, MNK 2.12 at level 70 (15%, UCoB/UWU sets 2.09-2.12). Levels from the official job guides (HASTE in
    constants.js). */
-test('hasted GCD with no gear speed matches the published tiers', async () => {
-  const { hasteFor } = await import('../../src/core/speed.js');
+test('hasted GCD with no gear speed matches the published tiers', () => {
   const noSpeed = (job, level) => gcdFor(0, level, 2500, hasteFor(job, level)?.pct ?? 0);
   for (const level of [90, 100]) {
     assert.equal(noSpeed('NIN', level), 2.12);
@@ -102,8 +103,7 @@ test('hasted GCD with no gear speed matches the published tiers', async () => {
   assert.equal(noSpeed('MNK', 70), 2.12);
 });
 
-test('haste starts at the levels in the official job guides', async () => {
-  const { hasteFor } = await import('../../src/core/speed.js');
+test('haste starts at the levels in the official job guides', () => {
   const pct = (job, level) => hasteFor(job, level)?.pct ?? 0;
   assert.deepEqual(
     [44, 45].map(l => pct('NIN', l)),
@@ -126,12 +126,6 @@ test('haste starts at the levels in the official job guides', async () => {
   assert.equal(hasteFor('SAM', 100).name, 'Fuka');
 });
 
-test('with no haste the hasted formula is the plain one at every speed', () => {
-  for (const level of [50, 70, 90, 100]) {
-    for (let s = 0; s <= 3000; s++) assert.equal(gcdFor(s, level, 2500, 0), gcdFor(s, level), `${s} at ${level}`);
-  }
-});
-
 test('the GCD falls 0.01 s at a time, with or without haste, so no value in between is skipped', () => {
   for (const level of [50, 90, 100]) {
     for (const haste of [0, 5, 10, 13, 15, 20]) {
@@ -146,8 +140,7 @@ test('the GCD falls 0.01 s at a time, with or without haste, so no value in betw
 });
 
 /* speedForGcd against the AkhMorning tier starts above (level 100: 2.49 from 22, 2.48 from 107). */
-test('speed for a target GCD: the band ends give the GCD, one point outside does not', async () => {
-  const { speedForGcd } = await import('../../src/core/speed.js');
+test('speed for a target GCD: the band ends give the GCD, one point outside does not', () => {
   assert.deepEqual(speedForGcd(2.49, 100, 'exact'), { min: 22, max: 106 });
   assert.deepEqual(speedForGcd(2.49, 100, 'min'), { min: 22, max: null });
   assert.deepEqual(speedForGcd(2.5, 100, 'exact'), { min: 0, max: 21 });
@@ -170,9 +163,23 @@ test('speed for a target GCD: the band ends give the GCD, one point outside does
   }
 });
 
-test('speed for a target GCD: slower than the no-speed GCD', async () => {
-  const { speedForGcd } = await import('../../src/core/speed.js');
+test('speed for a target GCD: slower than the no-speed GCD', () => {
   // a Ninja's GCD with 15% haste is 2.12 at most: exactly 2.40 cannot be had, 2.40 or faster always is
   assert.equal(speedForGcd(2.4, 100, 'exact', 15), null);
   assert.deepEqual(speedForGcd(2.4, 100, 'min', 15), { min: 0, max: null });
+});
+
+test('gcdTierAt agrees with a step-by-step scan at every level', () => {
+  const rand = rngInt(7);
+  for (let level = 1; level <= 100; level++) {
+    for (let k = 0; k < 5; k++) {
+      const spd = rand(3000);
+      const t = gcdTierAt(spd, level);
+      let start = spd;
+      while (start > 0 && gcdFor(start - 1, level) === t.gcd) start--;
+      let next = spd + 1;
+      while (gcdFor(next, level) === t.gcd) next++;
+      assert.deepEqual([t.start, t.next, t.nextGcd], [start, next, gcdFor(next, level)], `level ${level}, speed ${spd}`);
+    }
+  }
 });

@@ -1,3 +1,5 @@
+/* Speed limits (a minimum, a maximum, a range) on real Warrior gear, every answer against the brute-force reference;
+   infeasible limits, the node limit and an empty pool. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
@@ -15,7 +17,8 @@ const NOSYNC = { cap: 123, sync: false };
 const pool = gamePool(war, { ilvlMin: 130, ilvlMax: 135, lvlMax: 50 });
 const brute = (target, constraints) => exhaustive(war, pool, NOSYNC, { target, ...constraints });
 
-test('pool sanity: Warrior item level 130-135 gear', () => {
+test('the pool is what these tests need, and the unconstrained result matches brute force', () => {
+  // a patch that changes the window fails here, not in a puzzling total below
   const of = t => pool.filter(i => i.type === t);
   assert.ok(of('weapon').length >= 2);
   assert.equal(Math.max(...of('weapon').map(i => i.ilvl)), 135);
@@ -28,9 +31,6 @@ test('pool sanity: Warrior item level 130-135 gear', () => {
   }
   assert.ok(of('ring').some(i => i.copies === 1) && of('ring').some(i => i.copies === 2));
   assert.ok(loadoutCount(war, pool) <= 200000);
-});
-
-test('unconstrained result matches brute force', () => {
   const r = optimize(war, pool, NOSYNC, { target: 'spd' });
   assert.ok(r.ok);
   assert.deepEqual([r.totals.spd], brute('spd'));

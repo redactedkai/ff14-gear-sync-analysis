@@ -12,13 +12,7 @@ import { optimize, prepare, solve } from '../../src/core/optimizer/index.js';
 import { gcdFor, gcdTierAt, hasteFor } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
-
-function rng(seed) {
-  return () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed / 2147483648;
-  };
-}
+import { rng } from './helpers/common.js';
 
 const WINDOWS = [
   { ilvlMin: 290, ilvlMax: 345 },

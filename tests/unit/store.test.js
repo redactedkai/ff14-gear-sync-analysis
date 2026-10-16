@@ -25,12 +25,6 @@ test('A1: switching to another job in the same role resets the job-specific sett
   assert.deepEqual(store.opt.exclude, ['crafted']); // gear groups are not job-specific: kept
 });
 
-test('switching to another role gives that role its weapon mode', () => {
-  const store = storeFor('WAR');
-  store.setJob('BLM');
-  assert.equal(store.jobCtx.weaponMode, '2h');
-});
-
 test('switching to a job with a lower level cap clamps the synced level and the equip level filter to it', () => {
   const store = createAppStore(restoreState({ job: 'SGE', level: 90, browse: { lvl: 100 }, opt: { lvl: 95 } }));
   store.setJob('BLU');

@@ -1,25 +1,21 @@
-/* Level sync: which item level a piece is synced to (src/core/sync-target.js) and how the optimizer and the views
-   apply it. Expected values come from the game's ParamGrow sheet, the ItemLevel rows and real items. */
+/* Level sync: which item level a piece is synced to (src/core/sync-target.js) and how the optimizer applies it (the
+   views under level sync are in views.test.js). Expected values come from the game's ParamGrow sheet, the ItemLevel
+   rows and real items. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { IL, ITEMS, MAX_REAL } from '../../src/core/tables.js';
+import { IL, ITEMS } from '../../src/core/tables.js';
 import { JOBS } from '../../src/core/constants.js';
 import { dutyCapMax, levelSyncIlvl, syncTarget } from '../../src/core/sync-target.js';
 import { capsFor } from '../../src/core/formulas.js';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../src/core/items.js';
 import { effStats, itemSyncIlvl, optimize } from '../../src/core/optimizer/index.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
-import { restoreState } from '../../src/ui/state.js';
-import { syncView } from '../../src/ui/views/sync-caps.js';
-import { pieceView } from '../../src/ui/views/piece.js';
-import { gearView } from '../../src/ui/views/gear.js';
-import { optimizerView } from '../../src/ui/views/optimizer.js';
+import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const ROWS = ITEMS.map(parseRow);
 const jobsOf = r => JOBS.filter((_, i) => r.mask & (1 << i)).map(j => makeJobContext(j[0]));
-const roundHalfUp = x => Math.floor(x + 0.5 + 1e-9);
 
 /* ParamGrow.ItemLevelSync, read from the game file: the level caps of each expansion. xivgear's tests sync level 94
    to 100 gear to item level 660 in a level 90 duty (issue #317, in-game reports), the same value. */
@@ -110,9 +106,9 @@ test('syncTarget: gear that scales with the level follows the level whatever its
   assert.equal(syncTarget({ itemLevel: 430, equipLevel: 1, scales: false, syncOn: false, cap: null, syncedLevel: 50 }), null);
 });
 
-test('scaling gear: 260 real pieces; at their own level they drop to the level item level, at 100 none is synced', () => {
+test('scaling gear: every real piece drops to the level item level at its own level, and none is synced at 100', () => {
   const scaling = ROWS.filter(r => r.scales);
-  assert.equal(scaling.length, 260);
+  assert.ok(scaling.length > 200); // 260 in the current data; new field operation gear adds more
   const target = (r, level) =>
     syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: true, syncOn: false, cap: null, syncedLevel: level });
   for (const r of scaling) {
@@ -152,7 +148,7 @@ test('level 90, item level sync off: level 100 head pieces are capped at the ite
   // every level 100 healer head piece at item level 780 or more (each has a main stat above the 660 cap)
   const rows = browseItems(sge, { type: 'head', ilvlMin: 780, lvlMax: 100 }).filter(r => r.lvl === 100);
   assert.ok(rows.length >= 2);
-  const head = col => roundHalfUp((IL[col][660] * 85) / 1000);
+  const head = col => roundHalfUp((IL[col][660] * SLOT_PERMILLE.head) / 1000);
   const cap = {
     main: head('mind'),
     vit: roundHalfUp(head('vit') * 0.9),
@@ -208,46 +204,6 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
     assert.ok(differs, 'level sync changes at least one best total');
   });
 }
-
-function makeApp(patch) {
-  const s = restoreState({ job: 'SGE' });
-  return Object.assign(s, { jobCtx: sge, maxReal: MAX_REAL }, patch);
-}
-
-test('views: level sync with item level sync off shows the level item level as the cap', () => {
-  const app = makeApp({ sync: false, cap: null, level: 90 });
-  const v = syncView(app);
-  assert.equal(v.cap, 660);
-  assert.equal(v.byLevel, true);
-  assert.equal(v.rows.find(r => r.type === 'head').sub, capsFor(sge, 'head', 660).crit);
-  const p = pieceView(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
-  assert.equal(p.cap, 660);
-  assert.equal(p.status, 'above');
-  // at the level cap with item level sync off nothing applies
-  assert.equal(syncView(makeApp({ sync: false, cap: null, level: 100 })), null);
-  assert.equal(pieceView(makeApp({ sync: false, cap: null, level: 100 })).status, 'off');
-  // item level sync on: its cap is shown, whatever the level
-  assert.equal(syncView(makeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
-});
-
-test('views: the gear browser and the optimizer apply level sync per piece', () => {
-  const app = makeApp({ sync: false, cap: null, level: 90 });
-  Object.assign(app.browse, { q: '', type: 'head', min: 780, max: '', lvl: 100 });
-  const g = gearView(app);
-  const lv100 = g.shown.filter(x => x.lvl === 100);
-  assert.ok(lv100.length >= 2);
-  for (const x of lv100) assert.ok(x.eff.main === 248 && x.raw.main > 248, x.name);
-  const pool = gamePool(sge, WINDOW);
-  Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' });
-  const sync = { cap: null, sync: false, level: 90 };
-  const o = optimizerView(app, pool);
-  assert.equal(o.kind, 'ok');
-  assert.equal(o.synced, true);
-  // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear
-  assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
-  // gear no piece of which is synced at this level is not marked synced
-  assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
-});
 
 /* Real duties (ContentFinderCondition at datamining d9582a6): the highest cap at each synced level below 100 is at most
    its level sync item level + 5; at 100 caps run to the highest item level, so there is no limit to warn about. */

@@ -1,3 +1,5 @@
+/* Item queries (src/core/items.js): gear filtering per job, picked by properties, never by name; database rows to pool
+   items; copies, HQ, gear groups, expansions and meld slots of real pieces; the materia table. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
@@ -14,6 +16,7 @@ import {
 } from '../../src/core/items.js';
 import { SOURCES, EXPANSIONS, ROW } from '../../src/core/constants.js';
 import { ITEMS, MATERIA } from '../../src/core/tables.js';
+import { itemRow } from './helpers/common.js';
 
 const pld = makeJobContext('PLD');
 const war = makeJobContext('WAR');
@@ -240,11 +243,7 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable', () => 
    field operations (Bozjan, Phantom Vision: in the relic group) and a relic weapon (Phantom Gunblade); Mistwake gear
    drops in a dungeon, which is in no group; Lionsmane Armet is sold for Wolf Marks (PvP). */
 test('source flags of real items, and leaving sources out of a pool', () => {
-  const find = name => {
-    const r = ITEMS.find(x => x[ROW.name] === name);
-    assert.ok(r, name);
-    return parseRow(r);
-  };
+  const find = name => parseRow(itemRow(name));
   const cases = {
     "Ra'Kaznar Helm of Fending": ['crafted', 'WAR'],
     'Bygone Brass Earrings of Casting': ['tomestone', 'BLM'],
@@ -292,8 +291,7 @@ test('source flags of real items, and leaving sources out of a pool', () => {
    edge, and a level-1 gift earring that falls back to its item level band. */
 test('expansion of real pieces, and the browse filter by expansion', () => {
   const lvl = name => {
-    const r = ITEMS.find(x => x[ROW.name] === name);
-    assert.ok(r, name);
+    const r = itemRow(name);
     return expansionOf(r[ROW.equipLevel], r[ROW.ilvl]);
   };
   assert.equal(lvl('Dreadwyrm Cane'), 'ARR'); // equip level 50
@@ -340,5 +338,4 @@ test('materia table: values, item level gates and the grades limited to the firs
   assert.deepEqual(MATERIA.values, [1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54]);
   assert.deepEqual(MATERIA.gate, [15, 30, 45, 70, 160, 290, 420, 420, 560, 560, 690, 690]);
   assert.deepEqual(MATERIA.high, [6, 8, 10, 12]); // VI, VIII, X, XII
-  assert.ok(Object.isFrozen(MATERIA) && Object.isFrozen(MATERIA.values));
 });

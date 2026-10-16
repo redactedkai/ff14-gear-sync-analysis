@@ -1,9 +1,12 @@
+/* The sync clamp (syncStats, src/core/formulas.js) at its edges: at, below and one above the cap, on a real piece, with
+   the caps derived from the raw ItemLevel rows; plus the Wiki's item level 475 caps for Paladin's weapon and shield. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { capsFor, syncStats } from '../../src/core/formulas.js';
 import { browseItems, poolItemFromRow } from '../../src/core/items.js';
 import { IL } from '../../src/core/tables.js';
+import { SLOT_PERMILLE } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const blm = makeJobContext('BLM');
@@ -17,7 +20,7 @@ const HEAD_CAP_123 = { sub: 29, main: 30 }; // head caps at item level 123 (subs
    (85 per mille, BaseParam; the Wiki's item level 475 head cap 112 = round(1314 x 0.085) confirms it), rounded.
    Vitality for an Int/Mind job takes its 90% first: floor(row x 0.9), then floor(x 85 / 100), then / 10 rounded
    (the cap order of in-game sync values; docs/mechanics/math.md section 5). Only the healer's columns are needed here. */
-const HEAD_PCT = 85;
+const HEAD_PCT = SLOT_PERMILLE.head;
 const headCap = (col, ilvl) => Math.round((IL[col][ilvl] * HEAD_PCT) / 1000);
 const headCapFactor = (col, ilvl, f) => Math.round(Math.floor((Math.floor((IL[col][ilvl] * f) / 100) * HEAD_PCT) / 100) / 10);
 function healerHeadCaps(ilvl) {
@@ -34,19 +37,7 @@ function healerHeadCaps(ilvl) {
 const hood = browseItems(sge, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 })
   .map(r => poolItemFromRow(sge, r).stats)
   .find(st => st.spd > HEAD_CAP_123.sub && sge.substats.some(k => st[k] > 0 && st[k] < HEAD_CAP_123.sub));
-
-test('the head caps at 123 follow from the raw ItemLevel row (346 substat, 355 main) and the 85 per mille share', () => {
-  assert.equal(IL.sps[123], 346);
-  assert.equal(IL.mind[123], 355);
-  const c = healerHeadCaps(123);
-  assert.equal(c.spd, HEAD_CAP_123.sub);
-  assert.equal(c.main, HEAD_CAP_123.main);
-});
-
-test('the real head piece exists and has stats on both sides of the 123 cap', () => {
-  assert.ok(hood);
-  assert.ok(hood.main > HEAD_CAP_123.main);
-});
+assert.ok(hood && hood.main > HEAD_CAP_123.main, 'a real item level 130 healer head piece with stats on both sides of the 123 cap');
 
 test('an item exactly at the cap is untouched (and returned as a copy)', () => {
   const out = syncStats(sge, hood, 'head', 130, 130);

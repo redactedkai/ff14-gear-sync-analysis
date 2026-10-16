@@ -6,8 +6,8 @@ import { genericItems, rowStats } from '../../src/core/items.js';
 import { ROW } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { gcdFor } from '../../src/core/speed.js';
-import { IL } from '../../src/core/tables.js';
-import { ITEMS } from '../../src/core/tables.js';
+import { IL, ITEMS } from '../../src/core/tables.js';
+import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
 
 /* The sync caps at item level 123, checked against game data without calling capsFor.
 
@@ -15,8 +15,9 @@ import { ITEMS } from '../../src/core/tables.js';
    directly. What the data does allow:
    1. real pieces at 120 and 125, in every slot, carry round(ItemLevel row x slot percent) as their main stat and
       their largest substat (the rule the caps come from, checked on both sides of 123);
-   2. the 123 caps derived from the raw ItemLevel row 123 and the BaseParam slot percents typed in here (not read
-      from item-format.json) equal what the page uses (capsFor), for a healer, a Strength job and Paladin;
+   2. the 123 caps derived from the raw ItemLevel row 123 and the BaseParam slot percents typed into the tests
+      (SLOT_PERMILLE in helpers/common.js, not read from item-format.json) equal what the page uses (capsFor), for a
+      healer, a Strength job and Paladin;
    3. the ten armor and accessory substat caps sum to 296, a 2.22 s GCD at level 50 (AkhMorning's table, see
       speed.test.js), and the generic-piece optimizer reaches exactly that sum.
    Expected values come from the game data (ItemLevel rows, real items) and BaseParam, never from capsFor. */
@@ -37,27 +38,13 @@ const SLOT_CODE = {
   wrist: 10,
   ring: 11,
 };
-// BaseParam slot percents (per mille) for every combat stat, as of patch 7.50 (docs/mechanics/math.md, section 2).
-const PCT = {
-  weapon2h: 140,
-  weapon1h: 100,
-  offhand: 40,
-  head: 85,
-  body: 135,
-  hands: 85,
-  legs: 135,
-  feet: 85,
-  ear: 67,
-  neck: 67,
-  wrist: 67,
-  ring: 67,
-};
 const ARMOR = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'];
 
-// Half-up rounding in integers (round(a x p / 1000)); real items at an exact .5 round up (e.g. 1H swords at 780: 570.5 -> 571).
-const share = (a, pct) => Math.floor((a * pct + 500) / 1000);
+// round(a x p / 1000), half up: real items at an exact .5 round up (e.g. 1H swords at 780: 570.5 -> 571).
+const share = (a, pct) => roundHalfUp((a * pct) / 1000);
 // An off-hand is the two-handed value minus the one-handed value (140 - 100 = 40 per mille; docs/mechanics/math.md, section 3).
-const full = (a, slot) => (slot === 'offhand' ? share(a, PCT.weapon2h) - share(a, PCT.weapon1h) : share(a, PCT[slot]));
+const full = (a, slot) =>
+  slot === 'offhand' ? share(a, SLOT_PERMILLE.weapon2h) - share(a, SLOT_PERMILLE.weapon1h) : share(a, SLOT_PERMILLE[slot]);
 // Every stat column of ItemLevel has the same value for all main stats and for all substats (checked below).
 const derived = (ilvl, slot) => ({ main: full(IL.str[ilvl], slot), sub: full(IL.crit[ilvl], slot) });
 
@@ -96,7 +83,7 @@ test('real pieces at 120 and 125 carry round(row x slot percent) as main stat an
   }
 });
 
-const CAPS_123 = Object.fromEntries(Object.keys(PCT).map(slot => [slot, derived(123, slot)]));
+const CAPS_123 = Object.fromEntries(Object.keys(SLOT_PERMILLE).map(slot => [slot, derived(123, slot)]));
 
 test('derived caps at 123: substats 29 / 47 / 23 / 48, main stat 30 / 48 / 24 / 50 (docs/mechanics/math.md)', () => {
   const pick = s => [CAPS_123[s].sub, CAPS_123[s].main];

@@ -6,11 +6,11 @@ import { isMainThread, parentPort } from 'node:worker_threads';
 import { browseItems, poolItemFromRow, sourcesMask, withoutSources } from '../../src/core/items.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
 import { panelBase } from '../../src/ui/views/optimizer.js';
 
-// Gear groups left out by default, in the optimizer and the browser (owner's decision; DEFAULT_EXCLUDE in
-// src/ui/state.js).
-export const DEFAULT_EXCLUDE = ['savage', 'ultimate', 'pvp'];
+// Gear groups left out by default, in the optimizer and the browser (owner's decision); smoke.mjs uses them too.
+export { DEFAULT_EXCLUDE };
 
 // The optimizer searches every piece the job can wear, minus the gear groups unticked under Gear to search (Current
 // Savage, Ultimate and PvP by default). Totals are character panel numbers as the page shows them: the level's base

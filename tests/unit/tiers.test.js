@@ -1,21 +1,17 @@
 /* Substat tiers (src/core/tiers.js). Expected values worked by hand from AkhMorning's formulas with ParamGrow's
-   LevelModifier (2780 at level 100, 341 at level 50; checked below), not from the code under test:
+   LevelModifier (2780 at level 100, 341 at level 50; AKH_LEVEL in helpers/common.js), not from the code under test:
    Critical Hit rate floor(200 g / div + 50) / 10 %, Direct Hit floor(550 g / div) / 10 %, Determination
    floor(140 g / div) per mille, Tenacity floor(112 g / div), Piety floor(150 g / div) MP per tick. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { speedParams } from '../../src/core/speed.js';
+import { gcdFor } from '../../src/core/speed.js';
 import { statTier } from '../../src/core/tiers.js';
+import { AKH_LEVEL } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const war = makeJobContext('WAR');
 const blm = makeJobContext('BLM');
-
-test('level modifiers from ParamGrow', () => {
-  assert.equal(speedParams(100).div, 2780);
-  assert.equal(speedParams(50).div, 341);
-});
 
 test('effects at level 100 and 50', () => {
   // 200 x 2000 / 2780 = 143.9 -> 143 + 50 = 193 per mille
@@ -58,6 +54,35 @@ test('start and next bound the step exactly, at every level', () => {
         if (t.start > 0) assert.notEqual(effect(t.start - 1), t.effect, label);
         assert.equal(effect(t.next - 1), t.effect, label);
         assert.notEqual(effect(t.next), t.effect, label);
+      }
+    }
+  }
+});
+
+/* AkhMorning's formulas on full (panel) stats, with MAIN, SUB and DIV from their level table: Critical Hit rate
+   floor(200 (CRT - SUB) / DIV + 50) / 10 %, Direct Hit floor(550 (DH - SUB) / DIV) / 10 %, Determination
+   floor(140 (DET - MAIN) / DIV) / 10 %, Tenacity floor(112 (TEN - SUB) / DIV) / 10 %, Piety floor(150 (PIE - MAIN) / DIV)
+   MP; the GCD as their speed table computes it. The effect from gear points must agree at every level in the table. */
+test('effects equal AkhMorning formulas at every level in their table', () => {
+  const pctOf = n => `${(n / 10).toFixed(1)}%`;
+  const akh = {
+    crit: (v, [, sub, div]) => pctOf(Math.floor((200 * (v - sub)) / div) + 50),
+    dh: (v, [, sub, div]) => pctOf(Math.floor((550 * (v - sub)) / div)),
+    det: (v, [main, , div]) => `+${pctOf(Math.floor((140 * (v - main)) / div))}`,
+    ten: (v, [, sub, div]) => `+${pctOf(Math.floor((112 * (v - sub)) / div))}`,
+    piety: (v, [main, , div]) => `+${Math.floor((150 * (v - main)) / div)} MP`,
+    spd: (v, [, sub, div]) => `${(Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
+  };
+  for (const job of [sge, war]) {
+    for (const [lv, row] of Object.entries(AKH_LEVEL)) {
+      for (const s of job.substats) {
+        const key = s === 'spec' ? job.profile.spec : s;
+        const base = key === 'det' || key === 'piety' ? row[0] : row[1]; // Determination and Piety start from MAIN
+        for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
+          // at low levels this much speed would take the GCD below zero, where only the rounding of negatives differs
+          if (key === 'spd' && gcdFor(gear, +lv) <= 0) continue;
+          assert.equal(statTier(job, s, gear, +lv).effect, akh[key](base + gear, row), `${job.jobId} ${s} level ${lv}, gear ${gear}`);
+        }
       }
     }
   }

@@ -1,11 +1,12 @@
+/* The optimizer (src/core/optimizer/) on real gear against the brute-force reference, one job per role, and the
+   ring-pair bound and dominance pruning that keep its search small. Unique rings on real gear are in views.test.js,
+   hand-made ring cases in optimizer-exhaustive.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { genericItems } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { pruneDominated } from '../../src/core/optimizer/candidates.js';
 import { suffixBounds } from '../../src/core/optimizer/search.js';
-import { gcdFor } from '../../src/core/speed.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');
@@ -53,47 +54,6 @@ for (const [jobId, filter] of REAL_POOLS) {
     }
   });
 }
-
-/* The one item level 130 healer ring that is Unique (property, not name): with it as the only ring, the
-   loadout wears it once and leaves the second ring slot empty. */
-const healer130 = { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 };
-const uniqueRingPool = gamePool(sge, healer130, r => r.type !== 'ring' || r.unique);
-
-test('Unique ring pool: item level 130 Sage gear with its only ring Unique', () => {
-  const rings = uniqueRingPool.filter(i => i.type === 'ring');
-  assert.equal(rings.length, 1);
-  assert.equal(rings[0].copies, 1);
-  for (const t of ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist']) {
-    assert.ok(uniqueRingPool.filter(i => i.type === t).length >= 2, t);
-  }
-});
-
-for (const sync of [SYNC, NOSYNC]) {
-  test(`a Unique ring is worn once (sync ${sync.sync ? 'on' : 'off'}), and a second copy would have been chosen`, () => {
-    const r = optimize(sge, uniqueRingPool, sync, { target: 'spd' });
-    const ringPicks = r.picks.filter(p => p.type === 'ring' && p.item);
-    assert.equal(ringPicks.length, 1);
-    assert.deepEqual([r.totals.spd], exhaustive(sge, uniqueRingPool, sync, { target: 'spd' }));
-    // the rule binds: the same ring with 2 copies would be worn twice, adding its Spell Speed again
-    const twice = uniqueRingPool.map(i => (i.type === 'ring' ? { ...i, copies: 2 } : i));
-    const r2 = optimize(sge, twice, sync, { target: 'spd' });
-    assert.equal(r2.picks.filter(p => p.type === 'ring' && p.item).length, 2);
-    assert.equal(r2.totals.spd, r.totals.spd + ringPicks[0].eff.spd);
-    assert.ok(ringPicks[0].eff.spd > 0);
-  });
-}
-
-test('sync lowers the best Spell Speed of item level 130 gear under a 123 cap', () => {
-  const synced = optimize(sge, uniqueRingPool, SYNC, { target: 'spd' }).totals.spd;
-  const unsynced = optimize(sge, uniqueRingPool, NOSYNC, { target: 'spd' }).totals.spd;
-  assert.ok(synced < unsynced, `${synced} vs ${unsynced}`);
-});
-
-test('generic maximum under a 123 cap is 296 Spell Speed, 2.22 s GCD', () => {
-  const gen = genericItems(sge, 475, sge.substats, ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
-  const r = optimize(sge, gen, { cap: 123, sync: true }, { target: 'spd' });
-  assert.deepEqual([r.totals.spd, gcdFor(r.totals.spd, 50)], [296, 2.22]);
-});
 
 /* The two ring slots are bounded together by the best legal pair: a Unique ring is never counted twice. */
 test('ring-pair bound: the best ring twice only with 2 copies, else the best plus the best other item', () => {

@@ -1,3 +1,5 @@
+/* Gear that covers more than its own slot (cloaks, A Realm Reborn tank legs and bodies, a two-handed weapon against
+   White Mage's wand and shield): slot shares, what each blocks, and the optimizer against the brute force on them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
@@ -5,8 +7,8 @@ import { browseItems, kindFactors, rowStats, slotInfo, slotLabel } from '../../s
 import { ROW } from '../../src/core/constants.js';
 import { predictRaw, syncStats } from '../../src/core/formulas.js';
 import { optimize, effStats } from '../../src/core/optimizer/index.js';
-import { ITEMS } from '../../src/core/tables.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
+import { itemRow } from './helpers/common.js';
 
 /* Gear that takes more than its own slot: a two-handed weapon leaves the off-hand empty, and the Vermilion Cloaks
    (Eureka, item level 300, slot code 12) leave the head empty. White Mage keeps one A Realm Reborn wand and shield
@@ -14,20 +16,15 @@ import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
 const whm = makeJobContext('WHM');
 const blm = makeJobContext('BLM');
-const row = name => {
-  const r = ITEMS.find(x => x[ROW.name] === name);
-  assert.ok(r, name);
-  return r;
-};
 
 test('the cloaks and the Tidal Wave wand and shields: real stats equal the formula at their own slot share', () => {
   // the share comes from the game's BaseParam sheet: ChestHeadPercent 220, OneHandWeaponPercent 100, OffHandPercent 40
   for (const name of ['Vermilion Cloak of Casting', 'Vermilion Cloak of Healing', 'Tidal Wave Wand']) {
-    const r = row(name);
+    const r = itemRow(name);
     const st = rowStats(r);
     assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind]), st, name);
   }
-  assert.equal(row('Vermilion Cloak of Casting')[1], 12);
+  assert.equal(itemRow('Vermilion Cloak of Casting')[ROW.slotCode], 12);
 });
 
 test('White Mage can browse its wand and shield as well as its two-handed weapons; Sage has no off-hand', () => {
@@ -40,7 +37,11 @@ test('White Mage can browse its wand and shield as well as its two-handed weapon
 
 test('slot info: a piece is capped at its own slot share, and names what it covers', () => {
   const [cloak] = gamePool(blm, { q: 'Vermilion Cloak' });
-  assert.deepEqual(slotInfo(blm, cloak), { pct: 220, blocks: ['head'], factors: kindFactors(blm, row('Vermilion Cloak of Casting')[9]) });
+  assert.deepEqual(slotInfo(blm, cloak), {
+    pct: 220,
+    blocks: ['head'],
+    factors: kindFactors(blm, itemRow('Vermilion Cloak of Casting')[ROW.kind]),
+  });
   assert.equal(slotLabel(cloak.type, slotInfo(blm, cloak).blocks), 'Body + Head');
   // synced to 290, the cloak keeps a 220-share cap, well above a plain body piece's 135 share
   const sync = { cap: 290, sync: true };
@@ -48,9 +49,9 @@ test('slot info: a piece is capped at its own slot share, and names what it cove
   assert.deepEqual(eff, syncStats(blm, cloak.stats, 'body', 290, 300, 220, slotInfo(blm, cloak).factors));
   assert.ok(eff.main > syncStats(blm, cloak.stats, 'body', 290, 300).main);
   const [wand] = gamePool(whm, { q: 'Tidal Wave Wand' });
-  assert.deepEqual(slotInfo(whm, wand), { pct: 100, blocks: [], factors: kindFactors(whm, row('Tidal Wave Wand')[9]) });
+  assert.deepEqual(slotInfo(whm, wand), { pct: 100, blocks: [], factors: kindFactors(whm, itemRow('Tidal Wave Wand')[ROW.kind]) });
   const [cane] = gamePool(whm, { q: 'Tidal Wave Cane' });
-  assert.deepEqual(slotInfo(whm, cane), { pct: 140, blocks: ['offhand'], factors: kindFactors(whm, row('Tidal Wave Cane')[9]) });
+  assert.deepEqual(slotInfo(whm, cane), { pct: 140, blocks: ['offhand'], factors: kindFactors(whm, itemRow('Tidal Wave Cane')[ROW.kind]) });
 });
 
 /* Real pools with multi-slot choices; the brute force checks blocked slots on the whole loadout. */
@@ -130,8 +131,8 @@ test('a cloak in a full pool keeps the search small: the bound drops the head it
 const war = makeJobContext('WAR');
 
 test('legs covering the feet and a body covering hands, legs and feet: slot share and what they block', () => {
-  assert.equal(row('High Mythril Flanchard')[1], 13);
-  assert.equal(row('Herklaedi')[1], 14);
+  assert.equal(itemRow('High Mythril Flanchard')[ROW.slotCode], 13);
+  assert.equal(itemRow('Herklaedi')[ROW.slotCode], 14);
   const [flanchard] = gamePool(war, { q: 'High Mythril Flanchard' });
   const herklaedi = gamePool(war, { q: 'Herklaedi' }).find(i => i.name === 'Herklaedi');
   assert.deepEqual(slotInfo(war, flanchard).blocks, ['feet']);

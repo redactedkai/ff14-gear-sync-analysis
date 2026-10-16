@@ -8,7 +8,7 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { PG, FOODS } from '../../src/core/tables.js';
-import { restoreState } from '../../src/ui/state.js';
+import { rngInt } from './helpers/common.js';
 
 const SGE = makeJobContext('SGE');
 const WAR = makeJobContext('WAR');
@@ -177,11 +177,7 @@ function bruteBest(job, choices, totals, level, keys) {
 }
 
 test('best food for the goal equals trying every choice', () => {
-  let seed = 11;
-  const rand = n => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return Math.floor((seed / 2147483648) * n);
-  };
+  const rand = rngInt(11);
   for (const id of JOB_IDS) {
     const job = makeJobContext(id);
     const choices = foodChoices(job);
@@ -251,60 +247,4 @@ test('gearNeeded: the fewest gear points that reach a total with food', () => {
       const reach = x => x + foodBonus(SGE, food, { spd: x }, level).spd.bonus >= total;
       assert.ok(reach(g) && (g === 0 || !reach(g - 1)), `level ${level}, total ${total}`);
     }
-});
-
-test('saved state: Food off by default; the meal choice is repaired per job and reset on a job switch', () => {
-  assert.deepEqual([restoreState(null).opt.food, restoreState(null).opt.foodPair], [false, '']);
-  const s = restoreState({ job: 'SGE', opt: { food: true, foodPair: 'spd+spec' } });
-  assert.deepEqual([s.opt.food, s.opt.foodPair], [true, 'spd+spec']);
-  // a Piety meal saved for a job without Piety, a bad type, an unknown key
-  assert.equal(restoreState({ job: 'DRG', opt: { food: true, foodPair: 'spd+spec' } }).opt.foodPair, '');
-  assert.equal(restoreState({ job: 'SGE', opt: { food: 'yes', foodPair: 7 } }).opt.food, false);
-  assert.equal(restoreState({ job: 'SGE', opt: { foodPair: 'nope' } }).opt.foodPair, '');
-});
-
-test('optimizer view: Food adds a meal row and the totals with it, counts tiers and the GCD with food, keeps the gear', async () => {
-  const { optimizerView, panelBase } = await import('../../src/ui/views/optimizer.js');
-  const { gamePool } = await import('./helpers/exhaustive.js');
-  const { gcdFor } = await import('../../src/core/speed.js');
-  const { statTier } = await import('../../src/core/tiers.js');
-  const app = Object.assign(restoreState({ job: 'SGE', sync: true, cap: 123, level: 50 }), { jobCtx: SGE });
-  Object.assign(app.opt, { target: 'spd', tb: 'crit' });
-  const pool = gamePool(SGE, { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 }).map(i => i);
-  const off = optimizerView(app, pool);
-  assert.equal(off.food, null);
-  // character panel numbers: level 50 base speed 341 (AkhMorning) plus gear
-  const i = SGE.stats.indexOf('spd');
-  const gearSpd = off.totals[i] - 341;
-  assert.equal(off.spd, gearSpd);
-  assert.match(off.totalLabel, /^Spell Speed \(base \+ gear, synced\)$/);
-  assert.equal(off.spdText, `${off.totals[i]} Spell Speed (341 base, ${gearSpd} gear)`);
-
-  app.opt.food = true; // best for the goal
-  const on = optimizerView(app, pool);
-  assert.deepEqual(
-    on.rows.map(r => r.item?.name),
-    off.rows.map(r => r.item?.name),
-    'the same gear with food',
-  );
-  assert.deepEqual(on.totals, off.totals, 'the gear totals row is unchanged');
-  const gearTotals = Object.fromEntries(SGE.stats.map((s, k) => [s, off.totals[k] - panelBase(SGE, s, 50)]));
-  const meal = bestFood(SGE, foodChoices(SGE), gearTotals, 50, ['spd', 'crit', '']);
-  assert.equal(on.food.name, meal.name);
-  assert.equal(on.food.best, true);
-  const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'spd').max, Math.floor((341 + gearSpd) / 10));
-  assert.equal(on.food.totals[i], 341 + want);
-  assert.equal(on.total, 341 + want);
-  assert.match(on.totalLabel, /base \+ gear \+ food, synced/);
-  assert.equal(on.gcd, gcdFor(want, 50).toFixed(2));
-  assert.equal(on.spdText, `${341 + want} Spell Speed (341 base, ${gearSpd} gear, ${want - gearSpd} food)`);
-  assert.equal(on.tiers[i].effect, statTier(SGE, 'spd', want, 50).effect);
-  // main stat and Vitality get no food cell
-  assert.deepEqual([on.food.cells[0], on.food.cells[1]], [null, null]);
-
-  app.opt.foodPair = 'det+crit'; // a chosen meal
-  const det = optimizerView(app, pool);
-  assert.equal(det.food.best, false);
-  assert.equal(det.food.totals[i], 341 + gearSpd, 'no speed on this meal');
-  assert.ok(det.food.cells[SGE.stats.indexOf('det')].value > 0);
 });

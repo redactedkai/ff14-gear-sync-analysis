@@ -72,9 +72,7 @@ test('every item row has the documented shape', () => {
   assert.equal(new Set(ITEMS.map(r => r[ROW.gameId])).size, ITEMS.length, 'game ids are unique');
 });
 
-test('meld fields sit where item-format.json says; the materia table has one entry per grade', () => {
-  // ROW (constants.js) takes these from item-format.json; gen_items.py writes the trailing fields in this order
-  assert.deepEqual([ROW.meldSlots, ROW.overmeld, ROW.rarity, ROW.gameId, ROW.scales], [10, 11, 12, 13, 14]);
+test('the materia table has one entry per grade', () => {
   const n = ITEM_FORMAT.materia.grades;
   assert.equal(MATERIA.values.length, n);
   assert.equal(MATERIA.gate.length, n);

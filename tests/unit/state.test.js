@@ -1,3 +1,5 @@
+/* Restoring saved state (restoreState, src/ui/state.js): a valid save round-trips, and every damaged or outdated field
+   falls back to its default on its own, leaving the rest. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE } from '../../src/ui/state.js';
@@ -265,4 +267,14 @@ test("a saved level above the job's level cap is clamped to it", () => {
   assert.equal(restoreState({ job: 'BLU' }).level, 80); // the default (100) too
   // with no job chosen the game's cap applies
   assert.equal(restoreState({ level: 100 }).level, 100);
+});
+
+test('Food fields: off by default; a meal the job cannot use, a wrong type or an unknown meal falls back', () => {
+  assert.deepEqual([restoreState(null).opt.food, restoreState(null).opt.foodPair], [false, '']);
+  const s = restoreState({ job: 'SGE', opt: { food: true, foodPair: 'spd+spec' } });
+  assert.deepEqual([s.opt.food, s.opt.foodPair], [true, 'spd+spec']);
+  // a Piety meal saved for a job without Piety, a bad type, an unknown key
+  assert.equal(restoreState({ job: 'DRG', opt: { food: true, foodPair: 'spd+spec' } }).opt.foodPair, '');
+  assert.equal(restoreState({ job: 'SGE', opt: { food: 'yes', foodPair: 7 } }).opt.food, false);
+  assert.equal(restoreState({ job: 'SGE', opt: { foodPair: 'nope' } }).opt.foodPair, '');
 });

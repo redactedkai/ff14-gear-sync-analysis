@@ -2,34 +2,15 @@
    differs from the shared substat column at a few rows. The view must show its cap where it differs, and only then. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../src/core/job-context.js';
-import { IL, MAX_REAL } from '../../src/core/tables.js';
-import { restoreState } from '../../src/ui/state.js';
+import { IL } from '../../src/core/tables.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
+import { SLOT_PERMILLE, appState, roundHalfUp } from './helpers/common.js';
 
-function makeApp(job, patch = {}) {
-  const s = restoreState({ job, sync: true });
-  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL }, patch);
-}
+const makeApp = (job, patch = {}) => appState({ job, sync: true }, patch);
 
-/* Slot shares in per mille, from the BaseParam sheet (see CLAUDE.md), and an independent round half up. */
-const PERMILLE = {
-  weapon2h: 140,
-  weapon1h: 100,
-  offhand: 40,
-  head: 85,
-  body: 135,
-  hands: 85,
-  legs: 135,
-  feet: 85,
-  ear: 67,
-  neck: 67,
-  wrist: 67,
-  ring: 67,
-};
-const roundHalfUp = x => Math.floor(x + 0.5 + 1e-9);
+/* An independent cap: the ItemLevel column times the slot share (BaseParam, typed in), rounded half up. */
 const expectedCap = (column, ilvl, type, oneHanded) => {
-  const pm = type === 'weapon' ? (oneHanded ? PERMILLE.weapon1h : PERMILLE.weapon2h) : PERMILLE[type];
+  const pm = type === 'weapon' ? (oneHanded ? SLOT_PERMILLE.weapon1h : SLOT_PERMILLE.weapon2h) : SLOT_PERMILLE[type];
   return roundHalfUp((IL[column][ilvl] * pm) / 1000);
 };
 const ARMOR = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'];

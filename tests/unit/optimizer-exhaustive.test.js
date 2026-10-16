@@ -5,16 +5,10 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
+import { rng } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const NO_SYNC = { cap: 999, sync: false };
-
-function rng(seed) {
-  return () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed / 2147483648;
-  };
-}
 
 const ring = (name, spd, copies) => mkItem(name, 'ring', 100, { spd }, { copies });
 

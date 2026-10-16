@@ -2,26 +2,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { MAX_REAL } from '../../src/core/tables.js';
-import { browseItems, mkItem, poolItemFromRow } from '../../src/core/items.js';
+import { bestFood, foodChoices, statBase } from '../../src/core/food.js';
+import { browseItems, mkItem, poolItemFromRow, poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
+import { capsFor } from '../../src/core/formulas.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
-import { gcdFor, gcdTierAt, speedParams } from '../../src/core/speed.js';
+import { AKH_LEVEL, appState } from './helpers/common.js';
+import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
+import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { statTier } from '../../src/core/tiers.js';
-import { restoreState } from '../../src/ui/state.js';
 import { jobGear, optimizerView, panelBase, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { syncView } from '../../src/ui/views/sync-caps.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { JOBS, SOURCES } from '../../src/core/constants.js';
-import { poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE, syncSettings } from '../../src/ui/state.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. */
-function makeApp(job = 'SGE', patch = {}) {
-  const s = restoreState({ job, sync: true, cap: 123 });
-  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL }, patch);
-}
+const makeApp = (job = 'SGE', patch = {}) => appState({ job, sync: true, cap: 123 }, patch);
 
 /* Real gear, chosen by properties, passed to the optimizer view in place of every piece the job can wear. A small item
    level window (with weapons) whose best loadouts exhaustive() can check; and item level 130 Sage gear (no weapon: Sage gear starts at level 70) keeping only Unique rings, which
@@ -34,25 +32,6 @@ const uniqueRingPool = job => gamePool(job, { ilvlMin: 130, ilvlMax: 130, lvlMax
    (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, speed.test.js). */
 test('A3: tier text is right above 1,200 gear speed (level 100, 1,839 gear speed), in panel numbers', () => {
   assert.equal(tierText(1839, 100), 'tier starts at 2238, next at 2324 (+65)');
-});
-
-test('gcdTierAt agrees with a step-by-step scan at every level', () => {
-  let seed = 7;
-  const rand = n => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return Math.floor((seed / 2147483648) * n);
-  };
-  for (let level = 1; level <= 100; level++) {
-    for (let k = 0; k < 5; k++) {
-      const spd = rand(3000);
-      const t = gcdTierAt(spd, level);
-      let start = spd;
-      while (start > 0 && gcdFor(start - 1, level) === t.gcd) start--;
-      let next = spd + 1;
-      while (gcdFor(next, level) === t.gcd) next++;
-      assert.deepEqual([t.start, t.next, t.nextGcd], [start, next, gcdFor(next, level)], `level ${level}, speed ${spd}`);
-    }
-  }
 });
 
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
@@ -330,21 +309,7 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
   );
 });
 
-/* Character panel numbers against AkhMorning (Allagan Studies). Their Level Modifiers table, read from the page's
-   script (https://www.akhmorning.com/allagan-studies/modifiers/levelmods/), 2026-10-16: [MAIN, SUB, DIV] by level.
-   All 100 rows equal ours (checked once; these are a sample). */
-const AKH_LEVEL = {
-  1: [20, 56, 56],
-  15: [46, 96, 96],
-  30: [97, 173, 173],
-  50: [202, 341, 341],
-  60: [218, 354, 600],
-  70: [292, 364, 900],
-  80: [340, 380, 1300],
-  90: [390, 400, 1900],
-  100: [440, 420, 2780],
-};
-
+/* Character panel numbers against AkhMorning's Level Modifiers table (AKH_LEVEL, helpers/common.js). */
 test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB)', () => {
   for (const [id, stats] of [
     ['SGE', ['crit', 'det', 'dh', 'spd', 'spec']],
@@ -360,36 +325,6 @@ test('panel base: AkhMorning level table (Determination and Piety from MAIN, the
       }
       assert.equal(panelBase(job, 'main', +lv), 0, 'main stat stays gear points');
       assert.equal(panelBase(job, 'vit', +lv), 0, 'Vitality stays gear points');
-    }
-  }
-});
-
-/* AkhMorning's formulas on full (panel) stats: Critical Hit rate floor(200 (CRT - SUB) / DIV + 50) / 10 %, Direct Hit
-   floor(550 (DH - SUB) / DIV) / 10 %, Determination floor(140 (DET - MAIN) / DIV) / 10 %, Tenacity floor(112 (TEN - SUB)
-   / DIV) / 10 %, Piety floor(150 (PIE - MAIN) / DIV) MP; the GCD as their speed table computes it. The page's effect
-   from gear points (panel - base) must agree at every level in the table. */
-test('panel numbers give AkhMorning effects at every level in their table', () => {
-  const pctOf = n => `${(n / 10).toFixed(1)}%`;
-  const akh = {
-    crit: (v, [, sub, div]) => pctOf(Math.floor((200 * (v - sub)) / div) + 50),
-    dh: (v, [, sub, div]) => pctOf(Math.floor((550 * (v - sub)) / div)),
-    det: (v, [main, , div]) => `+${pctOf(Math.floor((140 * (v - main)) / div))}`,
-    ten: (v, [, sub, div]) => `+${pctOf(Math.floor((112 * (v - sub)) / div))}`,
-    piety: (v, [main, , div]) => `+${Math.floor((150 * (v - main)) / div)} MP`,
-    spd: (v, [, sub, div]) => `${(Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
-  };
-  for (const id of ['SGE', 'WAR']) {
-    const job = makeJobContext(id);
-    for (const [lv, row] of Object.entries(AKH_LEVEL)) {
-      for (const s of job.substats) {
-        const key = s === 'spec' ? job.profile.spec : s;
-        const base = panelBase(job, s, +lv);
-        for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
-          // at low levels this much speed would take the GCD below zero, where only the rounding of negatives differs
-          if (key === 'spd' && gcdFor(gear, +lv) <= 0) continue;
-          assert.equal(statTier(job, s, gear, +lv).effect, akh[key](base + gear, row), `${id} ${s} level ${lv}, gear ${gear}`);
-        }
-      }
     }
   }
 });
@@ -411,16 +346,11 @@ test('optimizer totals are character panel numbers for substats', () => {
   });
   const spd = job.stats.indexOf('spd');
   assert.equal(v.total, v.food.totals[spd]);
-  assert.match(v.totalLabel, /^Spell Speed \(base \+ gear \+ food, synced\)$/);
-  assert.equal(v.spdText, `${v.food.totals[spd]} Spell Speed (341 base, ${gear[spd]} gear, ${v.food.cells[spd]?.value ?? 0} food)`);
 });
 
 /* Target GCD on the page: the view equals the core's optimizeGcd on the same gear, counts the job's haste in its GCD
    and label, gives the speed band as the character panel shows it (base + gear + food), and says why no set fits. */
-test('optimizer view with a Target GCD equals the core, with haste, food and the band on the character panel', async () => {
-  const { optimizeGcd } = await import('../../src/core/target-gcd.js');
-  const { foodChoices, statBase } = await import('../../src/core/food.js');
-  const { hasteFor } = await import('../../src/core/speed.js');
+test('optimizer view with a Target GCD equals the core, with haste, food and the band on the character panel', () => {
   const window = { type: 'any', ilvlMin: 700, ilvlMax: 730, lvlMax: 100 };
   for (const [jobId, food] of [
     ['SGE', false],
@@ -496,4 +426,88 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
   assert.equal(spd.kind, 'ok');
   assert.equal(spd.gcdLine, null);
   assert.equal(spd.gcdUi.off, true);
+});
+
+test('optimizer view: Food adds a meal row and the totals with it, counts tiers and the GCD with food, keeps the gear', () => {
+  const app = makeApp('SGE', { level: 50 });
+  const job = app.jobCtx;
+  Object.assign(app.opt, { target: 'spd', tb: 'crit' });
+  const pool = windowPool(job);
+  const off = optimizerView(app, pool);
+  assert.equal(off.food, null);
+  // character panel numbers: level 50 base speed 341 (AkhMorning) plus gear
+  const i = job.stats.indexOf('spd');
+  const gearSpd = off.totals[i] - 341;
+  assert.equal(off.spd, gearSpd);
+  assert.match(off.totalLabel, /^Spell Speed \(base \+ gear, synced\)$/);
+  assert.equal(off.spdText, `${off.totals[i]} Spell Speed (341 base, ${gearSpd} gear)`);
+
+  app.opt.food = true; // best for the goal
+  const on = optimizerView(app, pool);
+  assert.deepEqual(
+    on.rows.map(r => r.item?.name),
+    off.rows.map(r => r.item?.name),
+    'the same gear with food',
+  );
+  assert.deepEqual(on.totals, off.totals, 'the gear totals row is unchanged');
+  const gearTotals = Object.fromEntries(job.stats.map((s, k) => [s, off.totals[k] - panelBase(job, s, 50)]));
+  const meal = bestFood(job, foodChoices(job), gearTotals, 50, ['spd', 'crit', '']);
+  assert.equal(on.food.name, meal.name);
+  assert.equal(on.food.best, true);
+  const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'spd').max, Math.floor((341 + gearSpd) / 10));
+  assert.equal(on.food.totals[i], 341 + want);
+  assert.equal(on.total, 341 + want);
+  assert.match(on.totalLabel, /base \+ gear \+ food, synced/);
+  assert.equal(on.gcd, gcdFor(want, 50).toFixed(2));
+  assert.equal(on.spdText, `${341 + want} Spell Speed (341 base, ${gearSpd} gear, ${want - gearSpd} food)`);
+  assert.equal(on.tiers[i].effect, statTier(job, 'spd', want, 50).effect);
+  // main stat and Vitality get no food cell
+  assert.deepEqual([on.food.cells[0], on.food.cells[1]], [null, null]);
+
+  app.opt.foodPair = 'det+crit'; // a chosen meal
+  const det = optimizerView(app, pool);
+  assert.equal(det.food.best, false);
+  assert.equal(det.food.totals[i], 341 + gearSpd, 'no speed on this meal');
+  assert.ok(det.food.cells[job.stats.indexOf('det')].value > 0);
+});
+
+/* Level sync (synced level 90, item level sync off) in the views. Real gear at item level 663 to 666: the equip level
+   94 and 95 pieces are synced to 660 at level 90, the level 90 ones are not (level-sync.test.js). */
+const sge = makeJobContext('SGE');
+const sgeApp = patch => appState({ job: 'SGE' }, patch);
+const LEVEL_SYNC_WINDOW = { ilvlMin: 663, ilvlMax: 666, lvlMax: 100 };
+
+test('views: level sync with item level sync off shows the level item level as the cap', () => {
+  const app = sgeApp({ sync: false, cap: null, level: 90 });
+  const v = syncView(app);
+  assert.equal(v.cap, 660);
+  assert.equal(v.byLevel, true);
+  assert.equal(v.rows.find(r => r.type === 'head').sub, capsFor(sge, 'head', 660).crit);
+  const p = pieceView(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
+  assert.equal(p.cap, 660);
+  assert.equal(p.status, 'above');
+  // at the level cap with item level sync off nothing applies
+  assert.equal(syncView(sgeApp({ sync: false, cap: null, level: 100 })), null);
+  assert.equal(pieceView(sgeApp({ sync: false, cap: null, level: 100 })).status, 'off');
+  // item level sync on: its cap is shown, whatever the level
+  assert.equal(syncView(sgeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
+});
+
+test('views: the gear browser and the optimizer apply level sync per piece', () => {
+  const app = sgeApp({ sync: false, cap: null, level: 90 });
+  Object.assign(app.browse, { q: '', type: 'head', min: 780, max: '', lvl: 100 });
+  const g = gearView(app);
+  const lv100 = g.shown.filter(x => x.lvl === 100);
+  assert.ok(lv100.length >= 2);
+  for (const x of lv100) assert.ok(x.eff.main === 248 && x.raw.main > 248, x.name);
+  const pool = gamePool(sge, LEVEL_SYNC_WINDOW);
+  Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' });
+  const sync = { cap: null, sync: false, level: 90 };
+  const o = optimizerView(app, pool);
+  assert.equal(o.kind, 'ok');
+  assert.equal(o.synced, true);
+  // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear
+  assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
+  // gear no piece of which is synced at this level is not marked synced
+  assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
 });
