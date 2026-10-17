@@ -91,7 +91,7 @@ The engine is a depth-first branch and bound over the 11 or 12 slot positions ([
 - **Many more candidates.** Dominance reduction ([optimizer.md, section 4](optimizer.md#4-fewer-candidates-dominance-pruning)) may drop a piece only for one at least as good on the score and every limited stat, and under a speed maximum only for one with the same speed. The full White Mage pool at level 100 keeps 19 to 26 candidates per slot in a plain search, 115 to 173 with a GCD band, and 770 to 1,570 in a tier stage with a band: about $10^{35}$ sets.
 - **Weak bounds.** The engine's bound under minimums is the smallest of one exact DP table per limited stat ([optimizer.md, section 5](optimizer.md#with-minimums-on-other-stats)); each table keeps one limit row and drops the others, so each accepts sets that trade the other held stat, or the speed band, away. Joint infeasibility of the limit rows is only detected at complete assignments. In one White Mage stage the true best had Direct Hit 0, and proving that nothing reaches 1 took 1.2 million nodes.
 
-The difficulty is the optimality proof, not finding the optimum: the seed is usually already optimal. Sections 4 and 5 replace most of that proof. All three techniques are exact: they only remove variables or partial solutions that provably cannot be part of a set better than the incumbent.
+The difficulty is usually the optimality proof, not finding the optimum: the seed is usually already optimal. Not always: the seed is the best set for the previous key, and it can be far from the best for this one (section 4.3). Sections 4 and 5 replace most of that proof. All three techniques are exact: they only remove variables or partial solutions that provably cannot be part of a set better than the incumbent.
 
 ## 4. Before the search: filters
 
@@ -162,6 +162,16 @@ Points to note:
 
 In the example the shortfall filter does most of the work (137 to 120 here), but on other cases reduced-cost fixing matters more: Black Mage at level 90, exactly 2.30, takes 2.8 s with it and 6.4 s without, Summoner 2.1 s and 6.1 s (measured 2026-10-16).
 
+### 4.3 Improving the seed first
+
+The fixing above is only as strong as $\sigma^\star$. The seed is the previous stage's optimum, chosen for another key, so it can be poor for this one. Before the Lagrangian step, a **1-opt local search** improves it: at each position, any candidate that keeps every limit, the copies and the blocked slots, and raises the score. The best such swap is made, and the passes repeat until none helps (`improveStart`).
+
+- **Exact:** the result is still a legal set meeting every limit, and the search still looks for anything strictly better.
+- **The case that showed it.** White Mage at level 100, exactly 2.32, Piety > Direct Hit > Determination, every meal. In the Determination stage (Prune Ponzecake), the seed had Determination 188 and the best has 710: the same set with the body and both rings swapped.
+  - Without the swaps, the search ran 700,000 nodes without finding any better set, so the page showed 188 and held Determination's tier at 12 where 40 was possible.
+  - It needed 812,472 nodes to finish. The Lagrangian gap was 885 points of Determination against the seed.
+  - With the swaps, the seed starts at 710, the gap is 361 points, fixing keeps 330 of 2,268 candidates, and the search needs 7,397 nodes.
+
 ## 5. Pareto fronts
 
 After fixing, each position holds about 10 to 100 candidates. Can the stage be solved without a tree? Yes, by the multi-criteria dynamic program over positions: keep, per stage, the nondominated partial solutions in (score, limited totals) space, fathom the ones that cannot beat the incumbent, and read the optimum off the last stage.
@@ -187,7 +197,10 @@ and the answer is the best entry of $F_1$ that meets every limit. This is Nemhau
 
 **Why this replaces the proof.** Branch and bound spends most of a tier stage proving that nothing beats the incumbent. With fronts the proof is built in: every full set is either in $F_1$ or was dropped for one at least as good on everything that matters, so the best feasible entry of $F_1$ is optimal.
 
-**When it fails.** A front grows when a held stat has a wide budget: many partial totals sit below the minimum, where the truncation merges nothing. The Determination budget in the example's third search is 887 points, and its largest front holds 6,958 entries (265 ms). The fronts give up past 150,000 entries in one front or 1,000,000 extensions in all, and the branch and bound runs instead, still with the seed and the reduced lists.
+**When it fails.** A front grows when a held stat has a wide budget: many partial totals sit below the minimum, where the truncation merges nothing. The Determination budget in the example's third search is 887 points, and its largest front holds 6,958 entries (265 ms). The fronts give up past 150,000 entries in one front, 1,000,000 extensions in all, or 30 million entry comparisons in the dominance filter in all, and the branch and bound runs instead, still with the seed and the reduced lists. Giving up never changes the answer, only who proves it.
+
+- **Why the comparison limit.** The filter compares each new entry with the kept ones of its group, so a large front costs its size squared. Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit, food off, spent 21 s in that loop before the front gave up on its size; the search after it took 25,359 nodes. With the limit the whole run takes 1.3 s.
+- **Ring pairs.** The ring stage gives up before building its pairs when they alone pass the extension limit. Building 2 million pairs (Direct Hit first, GCD 2.30 or 2.31, healers at level 100) overflowed the stack and showed an error on the page.
 
 What is specific here, beyond the classic method that Perplexity's report pointed to, is the truncation at the minimums and the game's slot rules.
 
@@ -202,11 +215,15 @@ Recorded so that nobody tries them again without a new idea.
 | Re-optimizing the multipliers at every node | Never fathomed a node (the integrality gap, section 4.2) |
 | A table on exact speed × the shortfall of a held stat | Exact, but fixing and fronts already capture it; cost time |
 | Meet in the middle (enumerating the last positions' completions) | No consistent gain once the fronts existed |
+| A score to beat without the tiebreaks | Same nodes (11.75 against 11.77 million) |
+| Fronts for feasibility only | 716 million extensions at the third stage |
 
 Notes:
 
 - **Weighted-sum table.** Like each single-stat table, it bounds an average of the limits (a surrogate relaxation), so it is no tighter on the joint infeasibility.
 - **Per-node multipliers.** The Lagrangian bound mixes fractions of candidates to land in the speed band, so re-tuning it below the root gained nothing.
+- **Score to beat.** When a stage's seed is already its best (section 9), the search must show that no set has one more point of the target. Asking only that, with the tiebreaks out of the score, fathomed almost nothing more: the nodes that survive are the ones whose bounds cannot see the rows' joint infeasibility, not the ones kept alive by a tiebreak.
+- **Feasibility fronts.** The same question as fronts with every score at 0, the target as a minimum, and every total capped at its minimum. On White Mage at level 100, exactly 2.31, the second stage already held 4,834 entries.
 
 ## 7. Correctness evidence
 
@@ -234,13 +251,30 @@ Every combat job, two goals each (Critical Hit > Determination > Direct Hit and 
 | Stopped at the node limit | 0 | 25 | 1 |
 | Slowest | 395 ms | 15.7 s | 6.8 s |
 
-The one search that still stops early is White Mage at level 100, exactly 2.32, Piety > Direct Hit > Determination (1.07 million nodes); the next slowest are White Mage, Astrologian, Black Mage, Scholar and Sage at 1.9 to 2.6 s. The 14 runs of the haste jobs are left out (section 9).
+The one search that stopped early was White Mage at level 100, exactly 2.32, Piety > Direct Hit > Determination (1.07 million nodes); the next slowest are White Mage, Astrologian, Black Mage, Scholar and Sage at 1.9 to 2.6 s. The 14 runs of the haste jobs are left out (section 9).
+
+**After the seed swaps, the memo dominance and the comparison limit** (sections 4.3 and 5; [optimizer.md, section 5](optimizer.md#with-minimums-on-other-stats)). The same sweep, run side by side with the code before so both saw the same load (2026-10-16): Target GCD median 691 → 728 ms, slowest tenth from 1,973 → 1,781 ms, over 1.5 s 10 → 9, slowest 7.2 → 4.0 s, stopped at the node limit 1 → 0. The White Mage case now ends at 199,759 nodes with Determination 801 with food (240 before, truncated); alone it takes 2.7 s against 6.0 s. Every run that ended before gives the same answer.
+
+Some slow cases from a wider comparison (one run at a time, page pool):
+
+| Case | Before | After |
+| --- | --- | --- |
+| BLM 90, cap 660, 2.32 or faster, Crit > DH > Det, food | 87 s | 1.6 s |
+| BLM 90, cap 660, 2.32 or faster, Crit > Det > DH, no food | 21 s | 1.3 s |
+| SGE 100, cap 690, 2.36 or faster, Piety > Crit > Det, food | over 180 s | 5.0 s, truncated |
+| WHM 100, exactly 2.32, Piety > DH > Det, no food | 4.6 s | 1.6 s |
+
+The Black Mage and Sage times came from the fronts' dominance filter, not from nodes: 266,179 nodes took 108 s in one search.
 
 The remaining time is mostly building the candidate lists (meld versions and dominance reduction), which happens once per stage.
 
 ## 9. Known limits
 
 - **Searches that stop early.** A few cases still reach the node limit; they return the seed or better, marked as possibly not the best, like any truncated result.
+  - They are the fastest bands: GCDs 2.30 and 2.31 for healers at level 100, and Sage at cap 690, 2.36 or faster. Of 264 runs near the White Mage case (Scholar, Astrologian and Sage with food, White Mage without; GCDs 2.30 to 2.40; six goals), 14 stop early, against 5 before; 9 of the 14 showed an error before (the ring pairs, section 5).
+  - In each one checked (five), the seed already was the best; the search could not prove it. Finished with no node limit they took 1.1 to 11.8 million nodes (White Mage, exactly 2.31, Piety > Determination > Direct Hit, food off: 11.8 million, 78 s, to show Direct Hit cannot leave 0).
+  - The rows that make "one more point of the target" impossible are three or four tight limits at once (the speed band and two held keys). Every bound here keeps or prices one row at a time, or relaxes integrality, so none sees it. The Lagrangian bound allows 213 points of Direct Hit in that case.
+- **Time per node.** Searches run about 5 to 12 µs a node, so the node limit bounds the time of the search part (about 4 to 8 s at 700,000). The fronts are bounded by their own limits (section 5); before the comparison limit, a front that gave up could take minutes first.
 - **Haste jobs in the sweep.** Monk, Samurai, Ninja and Viper have a GCD below 2.50 s with no speed at all; the sweep's halfway GCD lands above it, so those runs end at once ("unreachable") and are left out of the timings.
 - **The page.** Tier ranking is on by default and holds the page's thread while it solves (about 0.2 s without a Target GCD, up to a few seconds with one), so a progress bar shows meanwhile; the controls and readout are in [optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters).
 

@@ -314,6 +314,8 @@ A search may also hold any stat to a minimum (tier ranking, roadmap A7), alone o
 - its own minimum check;
 - a place in the group key and the state key.
 
+**State dominance with several limits.** Equal states are not the only ones that can be cut. With two or more limits, a later state is also cut when an earlier one at the same position, blocked slots, first ring and exact totals of the limits with a maximum has at least its score and at least each minimum-only total (capped at its minimum): every completion of the later one completes the earlier one with no lower score and no broken limit. Each such key keeps at most 32 states no other one beats; dropping one only cuts less. On White Mage at level 100, exactly 2.30, food off, Direct Hit > Piety > Determination, the Determination search fell from 1,253,132 to 1,114,095 nodes.
+
 The bound is the **smallest** of the tables. Each table is the exact value of a relaxation that keeps one limit row and drops the others, so each is an upper bound and so is the smallest. A joint table over every limited stat would be the exact DP but far too large ($10^{10}$ cells at level 100). Candidates must be prepared for the stats that may get a minimum, since pruning and meld versions depend on them.
 
 Tier ranking's searches hold two or three stats near their most, often with a speed band, where these tables alone are weak. Three more steps run before the search there, all explained in [tier-ranking.md](tier-ranking.md):

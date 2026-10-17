@@ -6,7 +6,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { optimize, prepare, solve } from '../../src/core/optimizer/index.js';
+import { optimize, prepare, seedStart, solve } from '../../src/core/optimizer/index.js';
+import { dropShortfalls, improveStart } from '../../src/core/optimizer/search.js';
+import { frontSearch } from '../../src/core/optimizer/front.js';
+import { slotInfo } from '../../src/core/items.js';
 import { pruneForLimits } from '../../src/core/optimizer/candidates.js';
 import { gcdTierAt } from '../../src/core/speed.js';
 import { exhaustive, smallPool } from './helpers/exhaustive.js';
@@ -220,4 +223,87 @@ test('a seed that breaks a limit is ignored', () => {
   assert.ok(bestCrit.totals.det < det);
   const r = solve(prep, { mins: { det }, seed: bestCrit.picks });
   assert.ok(r.ok && r.totals.det >= det);
+});
+
+/* improveStart (search.js) makes the seed better one swap at a time before the search. Its set must stay a legal
+   loadout meeting every limit (each slot a candidate of its list or the seed's own piece, copies kept, a slot empty
+   exactly when a chosen piece blocks it) with a score no lower than the seed's; and the search from it must still give
+   the plain search's totals. Seeds are the best sets for another stat, usually far from this objective's best (as in
+   the White Mage case it was made for: Determination 188 seeded where 710 was the best); pools with two-handed weapons,
+   shields and Unique rings. */
+test('improveStart: the improved seed is a legal set meeting the limits, and the search still finds the best', () => {
+  const rand = rng(77),
+    int = n => Math.floor(rand() * n);
+  let runs = 0,
+    improved = 0;
+  for (let t = 0; t < 80; t++) {
+    const job = makeJobContext(['WHM', 'PLD', 'SGE', 'NIN', 'DRG'][t % 5]);
+    const pool = smallPool(job, rand, ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'neck', 'ring'], 3, 1);
+    if (!pool.length) continue;
+    const subs = job.substats.filter(s => s !== 'spd');
+    const [target, other, third] = [...subs].sort(() => rand() - 0.5);
+    // the seed: the best set for `other`, then `third`; the limits hold around it, so it meets them
+    const seed = optimize(job, pool, NO_SYNC, { target: other, tiebreak: [third], melds: true });
+    if (!seed.ok) continue;
+    const spdMin = Math.max(0, seed.totals.spd - int(60));
+    const limits = { spdMin, spdMax: seed.totals.spd + int(60), mins: { [other]: seed.totals[other] - int(40) } };
+    const prep = prepare(job, pool, NO_SYNC, { target, tiebreak: [other], melds: true, speed: 'exact', minStats: [other] });
+    const label = `${job.jobId} #${t} ${target} > ${other} ${JSON.stringify(limits)}`;
+
+    // the improved seed, on the lists the search sees (after the shortfall filter)
+    const lim = [
+      { stat: 'spd', min: limits.spdMin || null, max: limits.spdMax },
+      { stat: other, min: limits.mins[other], max: null },
+    ];
+    const lists = dropShortfalls(prep.slotList, prep.posList, prep.dims, lim);
+    const start = seedStart(prep, seed.picks);
+    const better = improveStart(prep.slotList, lists, lim, start);
+    const cands = better.best.map(s => s?.cand ?? null);
+    assert.ok(better.score >= start.score, label);
+    assert.equal(
+      better.score,
+      cands.reduce((x, a) => x + (a ? a.score : 0), 0),
+      `${label} score`,
+    );
+    for (const l of lim) {
+      const total = cands.reduce((x, a) => x + (a?.eff[l.stat] || 0), 0);
+      assert.ok(!(l.min > 0 && total < l.min) && !(l.max != null && total > l.max), `${label} ${l.stat} ${total}`);
+    }
+    cands.forEach((a, i) => {
+      if (a) {
+        assert.ok(lists[i].includes(a) || a === start.best[i].cand, `${label} slot ${i} from its list`);
+        const worn = cands.filter(b => b && b.item.id === a.item.id).length;
+        assert.ok(worn <= (a.item.copies || 1), `${label} copies of ${a.item.name}`);
+      }
+      const blocked = cands.some(b => b && slotInfo(job, b.item).blocks.includes(prep.slotList[i]));
+      if (blocked) assert.equal(a, null, `${label} slot ${i} blocked but filled`);
+      else if (!a) assert.equal(start.best[i].cand, null, `${label} slot ${i} emptied`);
+    });
+    if (better !== start) improved++;
+
+    // the search from the seed against the plain search
+    const plain = solve(prep, { ...limits, plain: true });
+    const full = solve(prep, { ...limits, seed: seed.picks });
+    assert.deepEqual([full.totals[target], full.totals[other]], [plain.totals[target], plain.totals[other]], label);
+    runs++;
+  }
+  assert.ok(runs >= 60, `${runs} runs`);
+  assert.ok(improved >= 20, `${improved} seeds improved`);
+});
+
+/* Fronts that would grow too large give up (null; the search then runs) instead of throwing or running for minutes:
+   2,000 ring candidates make 2 million pairs, which overflowed the stack (Scholar at level 100, a Target GCD, Direct
+   Hit first); two slots of about 1,000 candidates trading score for Determination one for one stay under FRONT_TRIES
+   but make a million entries in about 2,000 tied pairs, whose dominance filter alone would take seconds
+   (FRONT_COMPARES). Synthetic candidates. */
+test('frontSearch gives up on too many ring pairs or too much filtering, without throwing', () => {
+  const cand = (id, score, det) => ({ item: { id }, eff: { det }, score, blocks: [], copies: 1 });
+  const rings = Array.from({ length: 2000 }, (_, i) => cand(`r${i}`, i, 2000 - i));
+  assert.equal(frontSearch(['ring', 'ring'], [rings, rings], [{ stat: 'det', min: 10, max: null }]), null);
+  // a neck with room for the minimum, filled last, so the head and body totals stay below it and apart
+  const lists = [999, 1000].map((n, s) => Array.from({ length: n }, (_, i) => cand(`${s}-${i}`, i, 1000 - i)));
+  const t = performance.now();
+  const limits = [{ stat: 'det', min: 2000, max: null }];
+  assert.equal(frontSearch(['neck', 'head', 'body'], [[cand('n', 0, 2000)], ...lists], limits), null);
+  assert.ok(performance.now() - t < 3000, `${Math.round(performance.now() - t)} ms`);
 });

@@ -78,7 +78,7 @@ function meetsLimits(picks, limits) {
    objective. Its eff stays as it was, so a meld version this prep pruned still counts as itself. Every stat total of
    the picks lies within the ranges the scorer was built on (each key's most per piece is some kept meld version's), so
    its score ranks like any loadout's. */
-function seedStart(prep, picks) {
+export function seedStart(prep, picks) {
   const byType = new Map();
   for (const p of picks) {
     if (!byType.has(p.type)) byType.set(p.type, []);
@@ -113,6 +113,7 @@ export function solve(prep, opts) {
   const limits = limitsFor(prep, opts);
   const nodeLimit = opts.nodeLimit || DEFAULT_NODE_LIMIT;
   const { slotList, posList, dims, noMeldData } = prep;
+  const start = opts.seed && meetsLimits(opts.seed, limits) ? seedStart(prep, opts.seed) : null;
   const { best, nodes, truncated, method, kept, frontSizes } = branchAndBound({
     slotList,
     posList,
@@ -121,7 +122,7 @@ export function solve(prep, opts) {
     nodeLimit,
     plain: !!opts.plain,
     lazyTables: opts.lazyTables,
-    start: opts.seed && meetsLimits(opts.seed, limits) ? seedStart(prep, opts.seed) : null,
+    start,
   });
   if (!best) return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
 

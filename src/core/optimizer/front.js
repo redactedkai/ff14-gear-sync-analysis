@@ -20,6 +20,8 @@
    frontSearch gives up (the caller then searches as before). */
 const FRONT_MOST = 150000;
 const FRONT_TRIES = 1000000;
+/* The most entry comparisons the fronts' dominance filter may make in all (paretoFilter), about 0.1 to 0.3 s. */
+const FRONT_COMPARES = 30000000;
 
 /**
  * @param slotList  slot sequence (search.js), rings twice in a row, blockable slots after every slot that blocks them
@@ -27,7 +29,8 @@ const FRONT_TRIES = 1000000;
  * @param limits    [{stat, min, max}] as branchAndBound's
  * @param known     the score to beat (a set already in hand), or -Infinity
  * @returns {best, entries, sizes} with best in branchAndBound's shape (null when nothing beats `known`) and sizes the
- *          front's size after each stage, last slot first; or null when a front grew too large (FRONT_MOST, FRONT_TRIES)
+ *          front's size after each stage, last slot first; or null when a front grew too large (FRONT_MOST, FRONT_TRIES,
+ *          FRONT_COMPARES)
  */
 export function frontSearch(slotList, posList, limits, known = -Infinity) {
   const n = slotList.length;
@@ -52,6 +55,10 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   const stages = [];
   for (let i = n - 1; i >= 0; i--) {
     if (slotList[i] === 'ring' && i > 0 && slotList[i - 1] === 'ring') {
+      // the pairs alone would pass FRONT_TRIES (and building millions of them overflowed the stack below: Scholar at
+      // level 100, a Target GCD, about 2,000 ring candidates): give up before building them
+      const rings = posList[i - 1].length;
+      if ((rings * (rings + 1)) / 2 > FRONT_TRIES) return null;
       stages.push({ from: i - 1, choices: ringChoices(posList[i - 1]) });
       i--;
       continue;
@@ -81,8 +88,15 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   for (let s = stages.length - 2; s >= 0; s--) {
     const st = stages[s + 1];
     const acc = { score: before[s + 1].score, vals: Float64Array.from(before[s + 1].vals) };
-    acc.score += Math.max(0, ...st.choices.map(c => c.score));
-    for (let k = 0; k < nL; k++) acc.vals[k] += Math.max(0, ...st.choices.map(c => c.vals[k]));
+    // loops, not Math.max(...list): a long list as arguments overflows the stack
+    let top = 0;
+    for (const c of st.choices) if (c.score > top) top = c.score;
+    acc.score += top;
+    for (let k = 0; k < nL; k++) {
+      let most = 0;
+      for (const c of st.choices) if (c.vals[k] > most) most = c.vals[k];
+      acc.vals[k] += most;
+    }
     before[s] = acc;
   }
 
@@ -90,6 +104,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   let entries = 0,
     tries = 0;
   const sizes = [];
+  const work = { compares: 0 }; // entry comparisons in paretoFilter, over all stages
   stages.forEach((st, s) => {
     if (!front) return;
     tries += front.length * st.choices.length;
@@ -117,9 +132,8 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
       }
     }
     entries += out.length;
-    front = paretoFilter(out, nL, exactK);
-    sizes.push(front.length);
-    if (front.length > FRONT_MOST) front = null;
+    front = paretoFilter(out, nL, exactK, work);
+    if (front) sizes.push(front.length);
   });
   if (!front) return null;
 
@@ -170,8 +184,12 @@ function ringChoices(list) {
 }
 
 /* The entries no other one beats: same empty and blocked slots (and the same speed under a maximum, limit `exactK`),
-   at least the score and every other limited total. By score, highest first, so a beater is always kept first. */
-function paretoFilter(entries, nL, exactK) {
+   at least the score and every other limited total. By score, highest first, so a beater is always kept first.
+   Null as soon as more than FRONT_MOST are kept, or the comparisons (work.compares, summed over the stages) pass
+   FRONT_COMPARES: each entry is compared with every kept one of its group, so a large front costs its size squared
+   (Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit, food off: 21 s
+   in this loop before the front gave up on its size, then a 25,000-node search). */
+function paretoFilter(entries, nL, exactK, work) {
   entries.sort((x, y) => y.score - x.score);
   const groups = new Map();
   const kept = [];
@@ -183,6 +201,8 @@ function paretoFilter(entries, nL, exactK) {
       groups.set(key, g);
     }
     let beaten = false;
+    work.compares += g.length;
+    if (work.compares > FRONT_COMPARES) return null;
     for (const f of g) {
       let all = true;
       for (let k = 0; k < nL; k++) {
@@ -199,6 +219,7 @@ function paretoFilter(entries, nL, exactK) {
     if (beaten) continue;
     g.push(e);
     kept.push(e);
+    if (kept.length > FRONT_MOST) return null;
   }
   return kept;
 }
