@@ -226,3 +226,14 @@ test('overgeared chart: an overgeared piece with as much as the melded one is sh
     'Overgeared never reaches the melded head (538): at most 459.',
   );
 });
+
+/* The materia row shows only what the piece has in the duty (owner's screenshots, 2026-10-18: above the cap it showed
+   the stones the piece would take at its own item level, Grade VI at 415 and Grade VIII at 429, struck through). */
+test('one piece: the materia row shows no stones above the cap, the kept stones at or below it', () => {
+  const synced = explainerView(app('SGE', { level: 70, cap: 405, slot: 'body', ilvl: 429, subs: ['det', 'spd'] }));
+  assert.deepEqual(synced.stoneChips, []);
+  assert.equal(synced.meldNote, 'None: a synced piece loses its melds.');
+  const kept = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 169, subs: ['dh', 'crit'] }));
+  assert.deepEqual(kept.stoneChips, ['+6', '+6']);
+  assert.equal(kept.meldNote, '2 × Grade V Critical Hit, kept');
+});

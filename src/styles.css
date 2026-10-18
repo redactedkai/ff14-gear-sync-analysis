@@ -1427,7 +1427,7 @@ ul.facts li::marker {
 .chips .meldnote {
   flex-basis: 100%;
 }
-/* a materia stone: struck through while the piece is synced (its melds are ignored), solid while kept */
+/* a materia stone the piece keeps (.on); the bare chip is only the hidden placeholder that holds the row's height */
 .meldchip {
   white-space: nowrap;
   font-size: 0.75rem;

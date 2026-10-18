@@ -130,7 +130,8 @@
       </template>
       <div class="small">Materia</div>
       <div class="chips" id="p-materia">
-        <template x-for="(c, i) in view.stoneChips" :key="i"><span class="meldchip" :class="{ on: !view.synced }" x-text="c"></span></template>
+        <template x-for="(c, i) in view.stoneChips" :key="i"><span class="meldchip on" x-text="c"></span></template>
+        <span class="meldchip" style="visibility: hidden" aria-hidden="true" x-show="!view.stoneChips.length">+0</span>
         <span class="small dim meldnote" x-text="view.meldNote"></span>
       </div>
     </div>

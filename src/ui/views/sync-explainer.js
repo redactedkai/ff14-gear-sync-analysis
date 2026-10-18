@@ -182,11 +182,14 @@ export function explainerView(app, widths = {}) {
     };
   });
   const lost = lines.reduce((a, l) => a + piece.raw[l.stat] - piece.synced[l.stat], 0);
-  const stoneChips = (piece.meld?.stones || []).flatMap(s => Array.from({ length: s.n }, () => `+${MATERIA.values[s.grade - 1]}`));
-  const meldStats = [...new Set((piece.meld?.stones || []).map(s => job.label[s.stat]))].join(', ');
-  const meldNote = !piece.meld
-    ? 'no materia fits this item level'
-    : `${[...new Set(piece.meld.stones.map(s => `Grade ${ROMAN[s.grade - 1]}`))].join(', ')} ${meldStats}, ${synced ? 'ignored while synced' : 'kept'}`;
+  // the materia row: only the stones the piece has in the duty, so none above the cap (a synced piece loses its melds)
+  const keptStones = synced ? [] : piece.meld?.stones || [];
+  const stoneChips = keptStones.flatMap(s => Array.from({ length: s.n }, () => `+${MATERIA.values[s.grade - 1]}`));
+  const meldNote = synced
+    ? 'None: a synced piece loses its melds.'
+    : !keptStones.length
+      ? 'No materia fits this item level.'
+      : `${keptStones.map(s => `${s.n} × Grade ${ROMAN[s.grade - 1]} ${job.label[s.stat]}`).join(', ')}, kept`;
   const goalNote = fromGoal
     ? ''
     : `The Goal (${job.label[app.opt.target] || app.opt.target}) takes no materia, so melds go into the substats above.`;
