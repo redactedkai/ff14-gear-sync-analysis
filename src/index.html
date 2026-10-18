@@ -146,7 +146,7 @@
     <div class="versus" id="p-vs">
       <div class="tablewrap"><table class="compact">
         <colgroup><col class="c-il"><col><col class="c-pts"></colgroup>
-        <thead><tr><th x-text="`${slotLabel[$store.app.piece.slot]} item level`"></th><th>Materia</th><th class="n">In the duty</th></tr></thead>
+        <thead><tr><th>Item level</th><th>Materia</th><th class="n">In the duty</th></tr></thead>
         <tbody>
           <template x-for="r in view.vsRows" :key="r.il"><tr :class="{ solo: view.vsRows.length < 2 }"><td><span x-text="r.il"></span><div class="dim small" x-text="r.tag || ' '"></div></td><td><span x-text="r.materia"></span><div class="dim small" x-text="r.materiaNote || ' '"></div></td><td class="n" x-text="r.points"></td></tr></template>
           <tr class="spacer" aria-hidden="true" x-show="view.vsRows.length < 2"><td>&nbsp;<div class="small">&nbsp;</div></td><td><span x-text="view.vsRows[0].materia"></span><div class="small" x-text="view.vsRows[0].materiaNote || ' '"></div></td><td></td></tr>
