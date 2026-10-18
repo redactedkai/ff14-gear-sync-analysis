@@ -1201,12 +1201,24 @@ table.ladder th {
   white-space: normal;
   vertical-align: top;
 }
+.steps-table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
 .steps-table .big {
   font: 600 1.1rem var(--mono);
   font-variant-numeric: tabular-nums;
 }
 .steps-table .big.dim {
   font-weight: 400;
+}
+/* each number's sentence: a lighter grey than the numbers, a little apart from them and from the arithmetic below */
+.steps-table .why {
+  color: color-mix(in srgb, var(--fg) 72%, var(--muted));
+  margin-left: 6px;
+}
+.steps-table .formula {
+  margin-top: 4px;
 }
 .steps .clamp {
   color: var(--bad);

@@ -188,8 +188,8 @@
         <template x-for="r in calc.rows" :key="r.stat">
           <tr>
             <td><b x-text="r.label"></b><div class="dim small" x-text="r.w + '%'"></div></td>
-            <td><span class="num big" :class="{ dim: !r.ownKept }" x-text="r.raw"></span> <span class="small" x-text="r.ownText"></span><div class="formula" x-text="r.ownFormula"></div></td>
-            <td x-show="calc.status !== 'off'"><span class="num big" :class="{ dim: r.ownKept }" x-text="r.cap"></span> <span class="small" x-text="r.capText"></span><div class="formula" x-text="r.capFormula"></div></td>
+            <td><span class="num big" :class="{ dim: !r.ownKept }" x-text="r.raw"></span> <span class="small why" x-text="r.ownText"></span><div class="formula" x-text="r.ownFormula"></div></td>
+            <td x-show="calc.status !== 'off'"><span class="num big" :class="{ dim: r.ownKept }" x-text="r.cap"></span> <span class="small why" x-text="r.capText"></span><div class="formula" x-text="r.capFormula"></div></td>
             <td class="n" x-show="calc.status !== 'off'"><span class="big" :class="{ clamp: r.lost }" x-text="r.syn"></span><template x-if="r.lost"><div class="small clamp" x-text="`−${r.lost}`"></div></template></td>
           </tr>
         </template>
