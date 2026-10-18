@@ -16,7 +16,7 @@ import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { JOBS, SOURCES } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { DEFAULT_EXCLUDE, syncSettings } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE, capOutOfRange, syncSettings } from '../../src/ui/state.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
    tier off: these tests check the plain ranking against brute force and the core; tier ranking has its own tests. */
@@ -655,4 +655,20 @@ test('Rank by tier with a Target GCD: the GCD line and band come from the tier s
   const none = optimizerView(app, pool);
   assert.equal(none.kind, 'nogcd');
   assert.equal(none.gcdLine.bad, true);
+});
+
+/* A cap above every real duty's at the synced level computes nothing (owner's screenshot, 2026-10-18: level 50 with cap
+   500 showed a 1.50 s GCD for item level 470 to 540 sets). Level 50's highest duty cap is 135; level 100 has none. */
+test('a cap no duty pairs with the synced level: no optimizer result and no explainer, only the message', () => {
+  const bad = appState({ job: 'SGE', sync: true, cap: 500, level: 50 }, {});
+  assert.equal(capOutOfRange(bad), true);
+  const message = 'No duty at level 50 has a cap above item level 135. Lower the cap or raise the synced level.';
+  assert.deepEqual(optimizerView(bad), { kind: 'badcap', message });
+  assert.equal(explainerView(bad), null);
+  assert.equal(pieceView(bad).status, 'off');
+  // the highest real cap, sync off, and level 100 are all fine
+  assert.equal(capOutOfRange(appState({ job: 'SGE', sync: true, cap: 135, level: 50 }, {})), false);
+  assert.equal(capOutOfRange(appState({ job: 'SGE', sync: false, cap: 500, level: 50 }, {})), false);
+  assert.equal(capOutOfRange(appState({ job: 'SGE', sync: true, cap: 795, level: 100 }, {})), false);
+  assert.notEqual(explainerView(appState({ job: 'SGE', sync: true, cap: 135, level: 50 }, {})), null);
 });

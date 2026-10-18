@@ -41,7 +41,6 @@
       <input type="number" id="cap" :disabled="!$store.app.sync" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric"
         x-bind="$num('cap', 1, $store.app.maxReal)" @input="onCapInput($event.target.value)" :class="{ invalid: !!capError }" :aria-invalid="String(!!capError)" aria-describedby="cap-error">
       <span class="field-error" id="cap-error" x-show="capError" x-text="capError"></span>
-      <span class="field-note" id="cap-note" x-show="capNote" x-text="capNote"></span>
     </div>
     <label class="f">Item level sync
       <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sync" x-model="$store.app.sync"><span x-text="$store.app.sync ? 'On' : 'Off'"></span></span>
@@ -113,7 +112,7 @@
   </div></template>
 </div>
 
-<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab !== 'tiers'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
+<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab !== 'tiers'" x-text="capOutOfRange($store.app) ? capRangeMessage($store.app) : $store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
 
 <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
 <section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
@@ -166,7 +165,7 @@
   </div>
 </div></template>
 
-<details class="panel" id="p-steps">
+<details class="panel" id="p-steps" x-show="!capOutOfRange($store.app)">
   <summary>Each stat, step by step</summary>
   <div id="p-out" class="steps">
     <p class="steps-sum" x-text="calc.summary"></p>
@@ -329,6 +328,7 @@
     <div id="o-out">
       <div class="progress" id="o-busy" x-show="busy" x-cloak role="progressbar" aria-label="Solving"><span></span></div>
       <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
+      <template x-if="view && view.kind === 'badcap'"><div class="panel"><div class="empty" id="o-badcap"><b class="bad" x-text="view.message"></b></div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'nogcd'"><div class="panel"><div class="empty" id="o-nogcd">No set fits this GCD.</div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>

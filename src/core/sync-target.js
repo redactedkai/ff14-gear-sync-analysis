@@ -15,8 +15,9 @@ export function levelSyncIlvl(level) {
    datamining d9582a6, verified 2026-10-16) no duty below level 100 has a cap more than 5 above levelSyncIlvl of its
    level: the most are Mount Rokkon and Aloalo Island (level 90, 665 over 660) and Second Master's Board (level 50, 135
    over 130); duties below level 50 have none (Sastasha syncs only the level) or the tutorials' 5 at level 15. At level
-   100 caps run from 680 to the highest item level. A higher cap still computes (owner's decision: warn only), but
-   gives results no duty can, such as a 0.66 s GCD at level 1 with cap 123. */
+   100 caps run from 680 to the highest item level. The page computes nothing for a higher cap (ui/state.js
+   capOutOfRange; owner's decision, 2026-10-18): it gives results no duty can, such as a 1.50 s GCD at level 50 with
+   cap 500. */
 export const DUTY_CAP_MARGIN = 5;
 export function dutyCapMax(level) {
   return level >= 100 ? null : levelSyncIlvl(level) + DUTY_CAP_MARGIN;

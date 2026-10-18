@@ -3,7 +3,7 @@
 import { JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
-import { levelSyncIlvl } from '../core/sync-target.js';
+import { dutyCapMax, levelSyncIlvl } from '../core/sync-target.js';
 import { foodChoices } from '../core/food.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
@@ -16,6 +16,20 @@ export const DEFAULT_EXCLUDE = Object.freeze(['savage', 'ultimate', 'pvp']);
 /* Sync applies only when it is switched on and a cap is set. */
 export function syncActive(app) {
   return !!app.sync && app.cap != null;
+}
+
+/* The item level cap is above every real duty's at the synced level (dutyCapMax, core/sync-target.js): no duty pairs
+   the two, so the page computes nothing for them (owner's decision, 2026-10-18; until then it only warned, and showed
+   results no duty can, such as a 1.50 s GCD at level 50 with cap 500). */
+export function capOutOfRange(app) {
+  const max = dutyCapMax(app.level);
+  return !!app.sync && app.cap != null && max != null && app.cap > max;
+}
+
+/* What the page says while capOutOfRange: under the cap field, and in place of the optimizer's and the explainer's
+   results. */
+export function capRangeMessage(app) {
+  return `No duty at level ${app.level} has a cap above item level ${dutyCapMax(app.level)}. Lower the cap or raise the synced level.`;
 }
 
 /* Level sync can apply: the synced level is below the job's level cap (MAX_LEVEL before a job context exists), so gear
@@ -38,9 +52,11 @@ export function syncSettings(app) {
 
 /* The cap for a piece whose equip level is not known (Piece stats, Sync limits): the item level cap while item level
    sync is on (a piece above it is synced to it whatever its equip level); otherwise the synced level's item level
-   while level sync can apply, for gear with a higher equip level (byLevel). Null when neither.
+   while level sync can apply, for gear with a higher equip level (byLevel). Null when neither, or while the cap is out of range
+   (capOutOfRange).
    {cap, level, byLevel} */
 export function shownSync(app) {
+  if (capOutOfRange(app)) return null;
   if (syncActive(app)) return { cap: app.cap, level: app.level, byLevel: false };
   if (levelSyncOn(app)) return { cap: levelSyncIlvl(app.level), level: app.level, byLevel: true };
   return null;

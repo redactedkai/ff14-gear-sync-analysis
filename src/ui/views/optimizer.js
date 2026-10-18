@@ -23,7 +23,7 @@ import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
 import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
-import { gearFilter, syncSettings } from '../state.js';
+import { capOutOfRange, capRangeMessage, gearFilter, syncSettings } from '../state.js';
 
 export const NODE_LIMIT = 700000;
 
@@ -254,6 +254,8 @@ export function optimizerView(app, gear, chosen = {}) {
 function buildOptimizerView(app, gear, chosen) {
   const job = app.jobCtx,
     o = app.opt;
+  // 0. a cap no duty pairs with the synced level: no search (capOutOfRange)
+  if (capOutOfRange(app)) return { kind: 'badcap', message: capRangeMessage(app) };
   // 1. the gear to search and the Target GCD box's state
   const pool = searchPool(app, gear);
   if (!pool.length) return { kind: 'excluded' };

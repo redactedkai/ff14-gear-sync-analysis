@@ -274,7 +274,7 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 
 Below level 100 no duty's cap is more than 5 above $\text{sync}(L)$; the 7 that are above it are the level 90 Mount Rokkon and Aloalo Island duties (665) and Second Master's Board (level 50, 135).
 
-A higher cap still computes as typed, since the cap wins (the owner's decision: warn only). The page notes under the cap field that no duty at that level has such a cap (the warning starts above $\text{sync}(L) + 5$, none at level 100). Such settings give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
+The page computes nothing for a higher cap (the owner's decision, 2026-10-18; until then it computed as typed and only warned). The cap field shows an error that no duty at that level has such a cap (above $\text{sync}(L) + 5$, never at level 100), and the optimizer and How the math works show it in place of results. Such settings would give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
 
 **The rule in one formula.** The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 
@@ -585,7 +585,7 @@ Notes:
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
-| The highest cap a real duty pairs with a level ($\text{sync}(L) + 5$), for the warning under the cap field | `src/core/sync-target.js` (`dutyCapMax`) |
+| The highest cap a real duty pairs with a level ($\text{sync}(L) + 5$), above which the page computes nothing | `src/core/sync-target.js` (`dutyCapMax`), `src/ui/state.js` (`capOutOfRange`) |
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
 | The 1.50 s GCD floor | `src/core/constants.js` (`GCD_FLOOR_MS`) |
