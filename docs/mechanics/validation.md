@@ -145,7 +145,7 @@ The validation unit test:
 - checks the 11 Atma weapons (and two Animus weapons at their own item level), and that the all-jobs factor table covers exactly the six pieces, each predicted exactly;
 - below item level 100: the five pieces behind the three general rules are exact, the reduced-stat list matches the data (17 of 18 exact, all within 1), and every piece is within 1.
 
-The page's "Checked against real gear" panel shows the same table, because the page and the test call the same function. The thresholds are lower than today's figures on purpose, so new gear after a patch can move them; a band below the threshold means the model needs a look ([data-pipeline.md, section 9](../engineering/data-pipeline.md#9-updating-after-a-game-patch)).
+The thresholds are lower than today's figures on purpose, so new gear after a patch can move them; a band below the threshold means the model needs a look ([data-pipeline.md, section 9](../engineering/data-pipeline.md#9-updating-after-a-game-patch)).
 
 ## 3. Published sync caps at item level 475
 
@@ -462,12 +462,11 @@ The status of each claim this page checks, in one place. Details are in the sect
 
 | Concept | File |
 | --- | --- |
-| Band accuracy, Wiki 475 table (shared by page and tests) | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`, `WIKI475`) |
+| Band accuracy, Wiki 475 table | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`, `WIKI475`) |
 | Prediction of a real piece's stats | `src/core/formulas.js` (`predictRaw`) |
 | Caps used by the tests above | `src/core/formulas.js` (`capsFor`, `capValue`) |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js` (`syncTarget`, `levelSyncIlvl`) |
 | GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
-| "Checked against real gear" panel | `src/ui/components/validation-panel.js` |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
 | Unit tests named above | `tests/unit/validation.test.js`, `formulas.test.js`, `caps-real-items.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `level-sync.test.js`, `speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `stat-factor.test.js`, `views.test.js`, `items.test.js`, `piece-subs.test.js`, `data-format.test.js`, `provenance.test.js`, `state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |

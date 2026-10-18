@@ -1,5 +1,5 @@
-/* Validation of the stat model against external truth. Shared by the page ("Checked against real gear")
-   and the unit tests, so both report the same numbers. */
+/* Validation of the stat model against external truth (real items, the Wiki's item level 475 caps), for the unit
+   tests. */
 import { RAW_SUBSTAT_IDX, ROW, WEAPON_PCT } from './constants.js';
 import { IL, ITEMS } from './tables.js';
 import { rnd, predictRaw } from './formulas.js';

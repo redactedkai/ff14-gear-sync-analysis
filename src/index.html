@@ -190,41 +190,11 @@
   </div>
   <div class="note small" id="p-why">
     <b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.</span>
-    This is a pattern measured on real gear (it matches 99.9% of pieces), not a rule from the game files. The Gear optimizer and Gear browser use each item’s real stats instead.
   </div>
   <h3>Stat budget by item level</h3>
   <div class="legend"><span><i style="background:var(--accent)"></i>Substat budget</span><span><i style="background:var(--gold)"></i>Main stat budget</span><span x-show="calc.cap != null"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
   <div id="p-chart" x-html="calc.chartSvg"></div>
   <p class="small dim">A piece’s stats come from these two budgets at its item level, scaled by its slot’s share. Dotted lines split the expansions.</p>
-  <details id="s-valid" x-data="validationPanel" @toggle="onToggle($el.open)"><summary>Checked against real gear and published caps</summary><div id="s-valid-out" style="margin-top:10px">
-    <template x-if="view"><div>
-      <p class="small"><b x-text="view.exact"></b> of <b x-text="view.total"></b> pieces exact. For every combat piece in the game database with two or more substats and item level 110 or higher (<b x-text="view.total"></b> pieces, all jobs), the page’s formula <span class="num">round( round(table × slot share) × substat share )</span> was compared with the item’s real stats, assigning substat shares by rank (100%, 70%), with Direct Hit on Mind-only gear at 20% (25% on eight green crafted pieces). Real stats are rounded twice: the slot budget first, then the share.</p>
-      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Item level</th><th class="n">Pieces</th><th class="n">Exact</th><th class="n">Off by 1</th><th class="n">Off by more</th></tr></thead><tbody>
-        <template x-for="b in view.bands" :key="b.label"><tr><td x-text="b.label"></td><td class="n" x-text="b.n"></td><td class="n" x-text="b.exact"></td><td class="n" x-text="b.off1"></td><td class="n" x-text="b.more"></td></tr></template>
-      </tbody></table></div>
-      <p class="small" style="margin-top:12px"><b>Sync caps at item level 475</b>, published on the FFXIV Wiki’s Item Level Sync page, against this page’s formula:</p>
-      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Gear type</th><th class="n">Wiki</th><th class="n">Formula</th><th></th></tr></thead><tbody>
-        <template x-for="c in view.wiki" :key="c.label"><tr><td x-text="c.label"></td><td class="n" x-text="c.published"></td><td class="n" x-text="c.computed"></td><td :class="c.match ? 'ok' : 'bad'" x-text="c.match ? 'match' : 'differs'"></td></tr></template>
-      </tbody></table></div>
-      <p class="small dim" style="margin-top:8px">The wiki also states that substats are never scaled up, that melds are ignored on synced-down gear, and that for gear occupying several slots the cap is the sum of those slots. It does not say whether the main stat or Vitality is clamped; this page assumes they are. The few misses are Intelligence and Mind head, hands and feet at item level 380 (Vitality 1 higher), two weapon and shield pairs, two item level 595 legs, each 1 off; their causes are not known.</p>
-    </div></template>
-  </div></details>
-  <div class="note small" id="s-model">
-    <b>Checked</b>
-    <ul class="list">
-      <li>Substat caps match the FFXIV Wiki’s item level 475 caps (5 of 5).</li>
-      <li>Piece stats from the budget table match real gear (the table above).</li>
-      <li>The 70% line is cut to the full cap, and sync never raises a stat (the Wiki’s item level 475 example: 127 / 89 → 88 / 88, 93 / 65 → 88 / 65).</li>
-      <li>Materia is ignored on synced pieces, and level sync applies to gear whose equip level is above the synced level (in game).</li>
-      <li>Level sync item levels come from the game’s level table.</li>
-    </ul>
-    <b>Guessed</b>
-    <ul class="list">
-      <li>The main stat and Vitality are cut the same way (three in-game values reported by xivgear fit).</li>
-      <li>When both syncs apply, the item level cap wins (a player’s report); weapons use the same level sync item level.</li>
-      <li>The 100% / 70% shares and the off-hand rule (two-handed minus one-handed) are patterns measured on real gear, not game rules.</li>
-    </ul>
-  </div>
 </details>
 </section>
 
@@ -412,7 +382,7 @@
         <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
         <p class="small dim" id="o-total-note">Total and With food are what the character panel shows at this level for every substat: the level's base plus gear (and food). <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span>: the panel adds your job's and clan's own base to them.</p>
         <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. <span x-text="view.food ? 'Counted with food.' : 'Gear only: food moves every total (switch Food on).'"></span><span x-show="view.byTier"> A highlighted cell is a stat Rank by tier holds at its tier.</span></p>
-        <template x-if="view.food"><p class="small dim" id="o-food-note">Food: a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. This is the community formula (xivgear, Ariyala), not from the game files. Vitality from food is not counted.<span x-show="!view.gcdOn"> The gear set is the same with any meal.</span></p></template>
+        <template x-if="view.food"><p class="small dim" id="o-food-note">Food (community formula): a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. Vitality from food is not counted.<span x-show="!view.gcdOn"> The gear set is the same with any meal.</span></p></template>
         <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, only where they raise the target or a tiebreak, every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>

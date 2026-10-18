@@ -268,22 +268,9 @@ async function checkSyncCaps(pg, job) {
   await pg.click('#p-ilvl-reset');
 }
 
-/** 'Checked against real gear': every Wiki item level 475 cap row says 'match'. */
+/** Opens Piece stats' "Each stat, step by step" if it is closed. */
 async function openSteps(pg) {
   if (!(await pg.locator('#p-steps').evaluate(d => d.open))) await pg.click('#p-steps > summary');
-}
-
-async function checkWikiValidation(pg) {
-  await showMath(pg, 'piece');
-  await openSteps(pg);
-  await pg.click('#s-valid summary');
-  const out = pg.locator('#s-valid-out');
-  await expect(out.locator('table').nth(1).locator('tbody tr').first()).toBeVisible();
-  const wiki = await tableRows(pg, out.locator('table').nth(1));
-  check(wiki.length >= 3, `Wiki 475 table has ${wiki.length} rows`);
-  for (const r of wiki) check(r.at(-1) === 'match' && r[1] === r[2], `Wiki 475 cap differs: ${JSON.stringify(r)}`);
-  const bands = await tableRows(pg, out.locator('table').nth(0));
-  check(bands.length > 0, 'real-gear accuracy table is empty');
 }
 
 /** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
@@ -1226,7 +1213,7 @@ const walk = job => ({ name: `walkJobs ${job}`, run: walkJob(job) });
 const step = fn => ({ name: fn.name, run: fn });
 const GROUPS = [
   { fresh: true, steps: [step(checkDefaults)] },
-  { steps: [step(checkPieceLab), step(checkWikiValidation), step(checkJobSwitch), step(checkPldOffhand)] },
+  { steps: [step(checkPieceLab), step(checkJobSwitch), step(checkPldOffhand)] },
   ...OPT_CASES.map(c => ({ slow: true, steps: [realGear(c)] })),
   { slow: true, steps: [step(checkTypingDebounce)] },
   { slow: true, steps: [step(checkRingCopies), step(checkGearGroups)] },

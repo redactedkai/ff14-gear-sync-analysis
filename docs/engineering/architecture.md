@@ -206,7 +206,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/chart.js` and `src/ui/sync-charts.js` |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
-| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `validation-panel.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
+| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |

@@ -279,7 +279,7 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`, `loadoutCount`) |
 | Shared test helpers and typed-in outside values | `tests/unit/helpers/common.js` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
 | View builders tested without the browser | `src/ui/views/` |
-| Accuracy check shared by the page and the tests | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
+| Accuracy check against real items and the Wiki | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_generators.py`, `tests/data/fixtures/` |
 | Smoke test, its steps and its screenshots | `tests/e2e/smoke.mjs` (`main` and its `steps` list, `checkRealGearOptimizer`, `checkPieceLab`), `tests/e2e/out/` (gitignored) |
 | Commands | `package.json` (`test`, `test:data`, `smoke`, `lint`, `lint:py`, `format`, `check`, `check:all`) |

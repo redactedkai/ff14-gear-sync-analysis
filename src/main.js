@@ -6,7 +6,6 @@ import { createAppStore } from './ui/store.js';
 import { storeNumberField } from './ui/helpers.js';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
-import { validationPanel } from './ui/components/validation-panel.js';
 import { gear } from './ui/components/gear.js';
 import { optimizer } from './ui/components/optimizer.js';
 import { tierTable } from './ui/components/tiers.js';
@@ -21,7 +20,7 @@ const app = Alpine.store('app');
    argument {live: true} commits each valid value as typed (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-Object.entries({ page, settings, syncExplainer, validationPanel, gear, optimizer, tierTable }).forEach(([name, factory]) => {
+Object.entries({ page, settings, syncExplainer, gear, optimizer, tierTable }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });
 

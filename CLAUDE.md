@@ -62,7 +62,7 @@ Details: `docs/mechanics/math.md`, evidence in `docs/mechanics/validation.md`, m
 - Synced item level: the item level cap first; otherwise, if the equip level is above the synced level, that level's `ParamGrow.ItemLevelSync`. Gear that scales with the wearer (`Item.SubStatCategory` 2) always follows the level, whatever its equip level (math.md section 5).
 - Food: HQ only. Without a Target GCD it never changes which gear wins; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together.
 
-**These are guesses, not facts; say so in the UI and in answers:** the 100%/70% substat shares, the main stat and Vitality clamp under sync, the off-hand rule, the food formula, and every meld succeeding. (Substats never scaling up and the 70% line reaching the full cap are verified by the Wiki's item level 475 example.)
+**These are guesses, not facts:** the 100%/70% substat shares, the main stat and Vitality clamp under sync, the off-hand rule, the food formula, and every meld succeeding. (Substats never scaling up and the 70% line reaching the full cap are verified by the Wiki's item level 475 example.) Always say so in answers. In the UI, mark a guess only where it changes a number the user acts on (food, the main stat and Vitality clamp, melds), in a few words next to it; the evidence and the full verified/guessed lists live in `docs/`.
 
 ## Data
 
