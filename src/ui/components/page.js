@@ -35,8 +35,8 @@ export function settings() {
     },
     /* the cap field holds text that is not a whole item level in range (the store keeps its last valid cap) */
     capTypedBad: false,
-    // the cap the page last lowered, {from, to, level} (limitCapToLevel), for the note under the field and the field's
-    // flash; null once the cap or the level changes again
+    // the cap the page last lowered, {from, to, level} (limitCapToLevel), for the note under the field; null once the
+    // cap is changed to one the level allows, or the level settles without lowering it
     capLowered: null,
     init() {
       this.$watch('$store.app.cap', cap => {
@@ -49,27 +49,35 @@ export function settings() {
       // passes through 8, which would lower the cap to level 8's
       let timer = null;
       this.$watch('$store.app.level', () => {
-        this.capLowered = null;
         clearTimeout(timer);
         timer = setTimeout(() => this.lowerCap(), TYPING_DEBOUNCE_MS);
       });
     },
-    /* limitCapToLevel, keeping what it lowered for the note; cleared first so a second lowering flashes the field again */
+    /* limitCapToLevel, keeping what it lowered for the note. A second lowering (the up arrow at the limit) updates the
+       note in place and flashes the field again: hiding and showing the note made the panel jump (owner's report,
+       2026-10-18). */
     lowerCap() {
-      this.capLowered = null;
       const lowered = limitCapToLevel(this.$store.app);
-      if (lowered) this.$nextTick(() => (this.capLowered = lowered));
+      this.capLowered = lowered;
+      if (!lowered) return;
+      const field = this.$refs.cap; // restart the flash: drop the class, let the browser see it gone, add it back
+      field.classList.remove('flash');
+      void field.offsetWidth;
+      field.classList.add('flash');
     },
-    /* under the cap field after the page lowered it: "Lowered from 500 to 135, the highest for level 50." */
+    /* under the cap field after the page lowered it: "Lowered to 135, the highest for level 50.", or at the job's
+       level cap "Lowered to 795, the highest item level." */
     get capLoweredNote() {
       const c = this.capLowered;
-      return c && !this.capError ? `Lowered from ${c.from} to ${c.to}, the highest for level ${c.level}.` : '';
+      if (!c || this.capError) return '';
+      return `Lowered to ${c.to}, the highest ${c.level == null ? 'item level' : `for level ${c.level}`}.`;
     },
     onCapInput(text) {
       const app = this.$store.app,
         v = Number(text);
       if (text === '') app.cap = null; // an empty field means no cap
-      this.capTypedBad = text !== '' && !(Number.isInteger(v) && v >= 1 && v <= app.maxReal);
+      // a whole number above the highest real item level is a cap too: limitCapToLevel lowers it
+      this.capTypedBad = text !== '' && !(Number.isInteger(v) && v >= 1);
     },
     /* shown under the cap field while sync is on */
     get capError() {

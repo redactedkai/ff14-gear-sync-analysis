@@ -931,7 +931,11 @@ async function checkCapValidation(pg) {
   });
   check(lay.em < 2, `the sync cap label wraps (${lay.em.toFixed(1)} em high) while it asks for a cap`);
   check(Math.abs(lay.dy) < 1, `the cap input is ${lay.dy.toFixed(0)} px off the synced level input`);
-  await pg.fill('#cap', '9999');
+  // the ranges next to the labels
+  await expect(pg.locator('#level-range')).toHaveText('1–100');
+  await expect(pg.locator('#cap-range')).toHaveText('1–795');
+  // not a whole item level: an error, and the page keeps its last cap
+  await pg.fill('#cap', '0');
   await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
   await pg.fill('#cap', '123');
   await expect(pg.locator('#cap-error')).toBeHidden();
@@ -940,7 +944,7 @@ async function checkCapValidation(pg) {
   await setNumber(pg, '#level', '40');
   await expect(pg.locator('#cap')).toHaveValue('43');
   await expect(pg.locator('#cap-error')).toBeHidden();
-  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered from 123 to 43, the highest for level 40.');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 43, the highest for level 40.');
   check(await pg.locator('#cap').evaluate(e => e.classList.contains('lowered')), 'the lowered cap field does not flash');
   await setNumber(pg, '#level', '50');
   await expect(pg.locator('#cap')).toHaveValue('43');
@@ -948,7 +952,30 @@ async function checkCapValidation(pg) {
   // a cap entered above what the level allows is lowered once it commits
   await pg.fill('#cap', '500');
   await expect(pg.locator('#cap')).toHaveValue('135');
-  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered from 500 to 135, the highest for level 50.');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
+  // above the highest real item level too: lowered the same way, not an error
+  await pg.fill('#cap', '999');
+  await expect(pg.locator('#cap')).toHaveValue('135');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
+  await expect(pg.locator('#cap-error')).toBeHidden();
+  // the up arrow at the limit (owner's report, 2026-10-18): each press is lowered again, and the note stays put rather
+  // than hiding and showing (the panel jumped); the field flashes again instead
+  await pg.evaluate(() => {
+    window.__noteHidden = 0;
+    const note = document.querySelector('#cap-lowered');
+    new MutationObserver(() => {
+      if (note.style.display === 'none') window.__noteHidden++;
+    }).observe(note, { attributes: true, attributeFilter: ['style'] });
+  });
+  await pg.locator('#cap').focus();
+  for (let i = 0; i < 5; i++) {
+    await pg.keyboard.press('ArrowUp');
+    await pg.waitForTimeout(60);
+  }
+  await pg.waitForTimeout(400);
+  await expect(pg.locator('#cap')).toHaveValue('135');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
+  check((await pg.evaluate(() => window.__noteHidden)) === 0, 'the lowered note hides and shows again on the up arrow');
   await pg.fill('#cap', '123');
   await setNumber(pg, '#level', '100');
   await pg.locator('#sync').uncheck();

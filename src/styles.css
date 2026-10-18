@@ -438,6 +438,13 @@ input.invalid {
   line-height: 1.4;
   vertical-align: 1px;
 }
+/* the values a number field takes, next to its label: "1–100" */
+.f-range {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-weight: 400;
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
 .field-error {
   color: var(--bad);
   font-size: 0.78rem;
@@ -446,13 +453,15 @@ input.invalid {
   color: var(--muted);
   font-size: 0.78rem;
 }
-/* the page lowered the cap to what the level allows (settings component, capLowered): the field flashes gold once,
-   and its note is gold */
+/* the page lowered the cap to what the level allows (settings component, capLowered): a gold border and note, and a
+   gold flash on each lowering (lowerCap restarts it) */
 .field-note.lowered {
   color: var(--gold);
 }
 input.lowered {
   border-color: var(--gold);
+}
+input.lowered.flash {
   animation: cap-lowered 1.2s ease-out;
 }
 @keyframes cap-lowered {
@@ -1505,7 +1514,7 @@ td.held {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  input.lowered {
+  input.lowered.flash {
     animation: none;
   }
   .progress > span {

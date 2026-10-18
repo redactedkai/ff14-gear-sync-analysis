@@ -298,11 +298,15 @@ test('limitCapToLevel: lowers a cap above what the level allows, and leaves ever
     [500, 50, 135], // level 50's weapons
     [500, 55, 136], // between level caps: the level's own item level
     [700, 90, 665], // Aloalo Island's cap
+    [999, 50, 135], // above the highest real item level too
   ]) {
     const a = app({ cap, level });
     assert.deepEqual(limitCapToLevel(a), { from: cap, to: want, level }, `cap ${cap} level ${level}`);
     assert.equal(a.cap, want);
   }
+  // with no level sync (level 100), only the highest real item level limits it
+  const top = app({ cap: 999, level: 100 });
+  assert.deepEqual(limitCapToLevel(top), { from: 999, to: 795, level: null });
   for (const s of [
     { cap: 123, level: 50 }, // T13: never raised
     { cap: 135, level: 50 },

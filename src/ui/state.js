@@ -51,16 +51,18 @@ export function shownSync(app) {
 }
 
 /* The cap follows the synced level: a cap above what the level allows (capCeiling, the best gear made for it) is
-   lowered to it, while item level sync is on and level sync can apply. Above it the level, not the cap, decides what
-   gear made for a higher level syncs to (syncTarget), so the field shows the cap that applies (owner's decision,
-   2026-10-18). A cap is never raised: a low cap is a real duty's (Minimum IL). Called when the level settles, when a
-   cap is entered, when sync is switched on, and on restore. Returns {from, to, level} when it lowered the cap (the
-   note under the field), else null. */
+   lowered to it, while item level sync is on and level sync can apply; without level sync (the job's level cap), a cap
+   above the highest real item level is lowered to that. Above either the cap changes nothing (syncTarget), so the
+   field shows the cap that applies (owner's decision, 2026-10-18). A cap is never raised: a low cap is a real duty's
+   (Minimum IL). Called when the level settles, when a cap is entered, when sync is switched on, and on restore.
+   Returns {from, to, level} when it lowered the cap (the note under the field; level null when the highest real item
+   level was the limit), else null. */
 export function limitCapToLevel(app) {
-  if (!syncActive(app) || !levelSyncOn(app)) return null;
-  const top = capCeiling(app.level);
+  if (!syncActive(app)) return null;
+  const byLevel = levelSyncOn(app),
+    top = byLevel ? capCeiling(app.level) : MAX_REAL;
   if (app.cap <= top) return null;
-  const lowered = { from: app.cap, to: top, level: app.level };
+  const lowered = { from: app.cap, to: top, level: byLevel ? app.level : null };
   app.cap = top;
   return lowered;
 }
