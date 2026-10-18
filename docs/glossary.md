@@ -138,6 +138,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into both generated data files and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
 
+**Regain cut.** In tier ranking: a limit an earlier stage's proven most of its key puts on a later search. Each piece's regain is how much of that key a swap for a comparable piece could add; their sum may not pass the most minus the key's hold, which every gear set the later search can return meets. Exact. See [tier-ranking.md, section 4.4](engineering/tier-ranking.md#44-regain-cuts-from-the-stages-before).
+
 **Reduced-cost fixing.** Dropping a candidate before the search because no gear set holding it can beat a set already in hand, shown with a bound that prices every limit (a Lagrangian bound). Exact. See [tier-ranking.md, section 4.2](engineering/tier-ranking.md#42-pruning-against-the-set-in-hand).
 
 **Seed.** A gear set that already meets every limit of a search, given to it as a start: the search then only looks for a better one. Tier ranking passes each stage the stage before's set. See [tier-ranking.md, section 2](engineering/tier-ranking.md#2-the-stages).
@@ -171,6 +173,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 **Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals, with each ranked stat held one point above the start of its best tier (roadmap A7; the page's Rank by tier switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md).
 
 **Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints).
+
+**Trial search.** In a search with a seed: the branch and bound run first for at most 20,000 nodes. Most tier ranking searches end there; only the others build Pareto fronts. Not the same as a probe (a measurement). See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
 
 ## Outside sources
 

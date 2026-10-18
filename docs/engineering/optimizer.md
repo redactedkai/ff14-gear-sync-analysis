@@ -83,7 +83,7 @@ Standard references for these problems are Kellerer, Pferschy and Pisinger (2004
 
 **Blocked slots.** $B(i)$ is the off-hand for a two-handed weapon, the head for a cloak, the feet for legs that cover them, the hands, legs and feet for Herklaedi, nothing otherwise. It comes from the item's slot code. A piece with no slot code (a hand-made or generated piece, which the page no longer makes but the engine still accepts) blocks nothing, except that a weapon on a two-handed job blocks the off-hand. The conflict rows make a loadout legal only if every slot in $B(i)$ of a chosen $i$ is empty, and a blocked slot takes no item and adds 0. Dominance (section 4) and the bounds (section 5) both respect blocked slots.
 
-**Branching order.** The positions are taken in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring, except that a slot some pool item can leave empty (the off-hand; the head, hands, legs or feet when a piece covering them is in the pool) moves to the end, in the same order. So a blocked slot always comes after the piece that blocks it, and the search knows whether a slot is blocked when it reaches it.
+**Branching order.** The positions are taken in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring, except that a slot some pool item can leave empty (the off-hand; the head, hands, legs or feet when a piece covering them is in the pool) moves to the end, in the same order. So a blocked slot always comes after the piece that blocks it, and the search knows whether a slot is blocked when it reaches it. The search then reorders the slots that nothing can block by the length of their lists after its filters (section 5); the blockable ones stay last.
 
 **Loadouts.** A loadout $L$ is a feasible assignment; write $i \in L$ for its items, and $\varnothing$ for an empty slot, with $v(\varnothing) = 0$. Emptiness is never a free decision, and two policies follow from that, both deliberate:
 
@@ -233,7 +233,7 @@ With a few dozen candidates per slot left, how is the optimum found and proved? 
 
 ![A three-slot example: heads H1 and H2, bodies B1 and B2, necks N1 and N2. The first descent H1, B1, N1 gives 43. N2 gives 41. Body B2 is pruned because 34 + 8 cannot beat 43, and head H2 because 12 + 23 cannot. Seven of fifteen nodes are visited.](../diagrams/optimizer-search-tree.svg)
 
-**Branching.** Positions are fixed in the order of section 2; at each position the candidates are branched on in decreasing score, then stat sum (exact ties keep pool order). The incumbent, with score $\sigma^*$, is replaced only by a strictly higher score, so among equal scores the first one found is kept.
+**Branching.** Positions come in the order of section 2, except that after the filters the slots nothing can block are searched shortest list first (the ring list counts twice); the blockable slots stay last, in their order. Any order fills every slot, so the answer's score is the same; short lists first keep the top of the tree narrow and leave the long lists for the depths where the bounds and the memo are tightest (2026-10-17, from Perplexity's solver review: on one Black Mage stage, 699,000 nodes and 4.6 s became 341,000 and 1.3 s in its measurements). At each position the candidates are branched on in decreasing score, then stat sum (exact ties keep pool order). The incumbent, with score $\sigma^*$, is replaced only by a strictly higher score, so among equal scores the first one found is kept.
 
 **Fathoming.** At a node where positions $1, \dots, p-1$ are fixed, with partial score $\sigma$ and partial totals $T_d$, the node is fathomed when one of these bounds fails:
 
@@ -244,9 +244,11 @@ With a few dozen candidates per slot left, how is the optimum found and proved? 
 | Speed maximum | Feasibility test | Nothing | Speed maximum |
 | Speed tables | Exact DP, speed as weight | Copies, other limits | Speed range |
 | Per-stat tables | Exact DP per stat; least taken | Copies, other limits | Stat minimums |
+| Band reach | Exact DP, speed as weight, a held stat as value; a feasibility test | Copies, other limits | Speed band and minimums |
+| Regain cut | Valid inequality from an earlier stage | Nothing (cuts no feasible set) | Tier ranking |
 | Lagrangian bound | Limits priced into objective | Limit rows | Tier ranking |
 
-The first three rows are below; the tables are in the two subsections that follow, and the Lagrangian bound is in [tier-ranking.md, section 4.2](tier-ranking.md#42-pruning-against-the-set-in-hand). With the best multipliers the Lagrangian bound equals the linear-programming relaxation's value (as tier-ranking.md notes), so it is the only bound here that relaxes integrality.
+The first three rows are below; the tables and band reach are in the two subsections that follow, the regain cut in [tier-ranking.md, section 4.4](tier-ranking.md#44-regain-cuts-from-the-stages-before) and the Lagrangian bound in [tier-ranking.md, section 4.2](tier-ranking.md#42-pruning-against-the-set-in-hand). With the best multipliers the Lagrangian bound equals the linear-programming relaxation's value (as tier-ranking.md notes), so it is the only bound here that relaxes integrality.
 
 **Score bound: the separable relaxation.** Drop every limit row and every copy row except the ring pair's; what is left decomposes by position, and the remaining positions can add at most
 
@@ -318,11 +320,16 @@ A search may also hold any stat to a minimum (tier ranking, roadmap A7), alone o
 
 The bound is the **smallest** of the tables. Each table is the exact value of a relaxation that keeps one limit row and drops the others, so each is an upper bound and so is the smallest. A joint table over every limited stat would be the exact DP but far too large ($10^{10}$ cells at level 100). Candidates must be prepared for the stats that may get a minimum, since pruning and meld versions depend on them.
 
-Tier ranking's searches hold two or three stats near their most, often with a speed band, where these tables alone are weak. Three more steps run before the search there, all explained in [tier-ranking.md](tier-ranking.md):
+**Band reach (2026-10-17).** The minimum check above takes each remaining slot's most of a held stat, ignoring speed. Under a speed band, each held stat also gets a table of the most of it the remaining slots can add while speed still lands in the band: the band table of the previous subsection with the held stat as the value instead of the score. A node is fathomed when even that cannot reach the minimum. It keeps the speed rows and one minimum row exactly and drops the copy rows, like every table, so it cuts no feasible set. On White Mage at level 100, item level 690, Piety > Critical Hit > Determination, Perplexity measured 6.0 s against 4.1 s on its prototype.
+
+**Groups with several limits.** A group's value for a limit other than the first must give a table bound at least every member's: the most any member adds for a minimum only (its table only rises with the total so far), the least for a maximum only (its table only falls: a regain cut), and a second band goes into the group key. Until 2026-10-17 the code took the most for every limit, which was right only because speed, the first limit, was the only one with a maximum.
+
+Tier ranking's searches hold two or three stats near their most, often with a speed band, where these tables alone are weak. More steps run before the search there, all explained in [tier-ranking.md](tier-ranking.md):
 
 - a shortfall filter, which fixes to 0 every candidate that cannot reach a minimum even with the best of every other slot ([section 4.1](tier-ranking.md#41-the-shortfall-filter));
 - pruning against a set already in hand (a seed): the Lagrangian relaxation of the limit rows (Geoffrion 1974; Fisher 1981, *Management Science*), with multipliers from subgradient steps, and reduced-cost fixing of candidates against the seed's score (as in Crowder, Johnson and Padberg 1983, *Operations Research*) ([section 4.2](tier-ranking.md#42-pruning-against-the-set-in-hand)); its bound is also used at nodes, with the multipliers fixed at the root;
-- Pareto fronts, the Nemhauser and Ullmann (1969, *Management Science*) dynamic program with Morin and Marsten's bounding, which often settle the search without a tree ([section 5](tier-ranking.md#5-pareto-fronts)).
+- regain cuts: each earlier stage's proven most of its key becomes a valid inequality on how much of it the pieces give up against a swap ([section 4.4](tier-ranking.md#44-regain-cuts-from-the-stages-before));
+- a trial search of at most 20,000 nodes, and only when it does not finish, Pareto fronts, the Nemhauser and Ullmann (1969, *Management Science*) dynamic program with Morin and Marsten's bounding, which often settle the search without a tree ([section 5](tier-ranking.md#5-pareto-fronts)).
 
 The shortfall filter also runs on Target GCD searches (their speed minimum).
 
@@ -386,6 +393,7 @@ A stat with a minimum (tier ranking) joins the keys the same way as speed with a
 - Among splits with the same gains, the one with the fewest stones wins, then the fewest big stones, as for one best split ([materia.md, section 2](../mechanics/materia.md)).
 - A small stone in a big slot can be the split shown, but never adds a version: with a maximum its lower speed could, yet it found no better set in 2,045 Target GCD runs for about 14% more search work (owner, 2026-10-16).
 - The lists are cached by stones and room. Room beyond what all the stones can add changes nothing, so it is clamped first, and more pieces share one list.
+- Tier ranking's stages build one candidate list each, all on the same version keys, so each piece's versions are built once per ranking and copied into each list (2026-10-17; Perplexity measured 5 to 15% off a tier ranking).
 - Example: the full Sage pool, unsynced, Critical Hit then Determination (the table in section 4). After pruning, a band keeps 1,406 candidates, a minimum 84, and no speed range 257.
 
 **What failed.** The first version of this kept only the splits beaten by nothing on every key, including speed, even with a maximum. That dropped splits with less speed that a band needed. Perplexity's review flagged it too, and the exhaustive test with a band now covers it.
@@ -600,8 +608,8 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 
 - **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own message instead ("No gear to search") when the gear groups left out leave nothing.
 - **Missing slot types** are left out of the loadout.
-- **Truncated results** may not be optimal, so the page puts a note under them. In a single search, no real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); before the speed tables, only a speed range could reach it (section 5). Tier ranking runs several searches with minimums, and one of its cases still stops early: White Mage at level 100, exactly 2.32, at 1.07 million nodes ([tier-ranking.md, section 8](tier-ranking.md#8-performance)).
-- **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order.
+- **Truncated results** may not be optimal, so the page puts a note under them. In a single search, no real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); before the speed tables, only a speed range could reach it (section 5). Tier ranking runs several searches with minimums, and a few of its cases still stop early: 4 of 5,028 in the 2026-10-17 sweep, healers at level 100, item level 690, GCD 2.29 ([tier-ranking.md, section 8](tier-ranking.md#8-performance)).
+- **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order. Since 2026-10-17 the slot order depends on the lists left after the filters (section 5), so which of several tied loadouts comes back can differ from before; the score, and so the target and tiebreak totals, cannot.
 - **Meals of equal goal:** Target GCD picks the meal whose set scores most on the goal and tiebreaks, then the one that adds most in total. That last step uses whichever tied set each meal's search returned, so it is not the most any tied set could get with that meal (71 of 252,112 sweep runs changed meal when the search order changed; the goal and tiebreaks were the same).
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. For Target GCD this is the "none" answer.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
@@ -613,7 +621,8 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 | --- | --- |
 | Effective stats, item vectors, score weights, dominance pruning, candidate lists | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
-| Bounds, limit tables, filters before the search and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `limitTables`, `dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `branchAndBound`; `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots) |
+| Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `limitTables`, `dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, `branchAndBound`; `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts) |
+| Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
 | Entry points: candidates once, search many times; which stats may get a minimum | `src/core/optimizer/index.js` (`prepare` with `minStats`, `solve`, `optimize`) |
 | Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`); `src/core/speed.js` (`speedForGcd`, `hasteFor`) |
@@ -624,4 +633,4 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 | Page use: the job's gear, gear groups, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `NODE_LIMIT`, `optimizerView`) |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
-| Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js`, `tests/unit/target-gcd.test.js`, `tests/unit/target-gcd-exhaustive.test.js`, `tests/unit/stat-minimums.test.js` |
+| Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js`, `tests/unit/target-gcd.test.js`, `tests/unit/target-gcd-exhaustive.test.js`, `tests/unit/stat-minimums.test.js`, `tests/unit/regain.test.js` |

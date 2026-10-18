@@ -60,8 +60,9 @@ Which file tests what? One line per file; the file itself says the rest.
 | optimizer-exhaustive | random pools, regressions, policies |
 | target-gcd | Target GCD: GCD reached, modes, meals |
 | target-gcd-exhaustive | Target GCD against the brute force |
-| stat-minimums | minimums on any stat against the brute force; seeds; the filters and fronts on tight cases against the plain search |
-| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out) |
+| stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone |
+| regain | regain cuts from a proven maximum against the brute force |
+| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 360 more random cases |
 | views | what each tab shows |
 | sync-explainer-view | How the math works: a piece and a full set against the melded cap, the item level range, melds from the Goal, the special substat caps |
 | tiers-view | Tiers: the ladder's columns, rows and wording; values from the optimizer result only for the same settings; typed values |

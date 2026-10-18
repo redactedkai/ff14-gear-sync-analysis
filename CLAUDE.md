@@ -89,7 +89,7 @@ PLD and BST use a 1H weapon and a shield; the rest use 2H. Level caps: BLU 80, B
 
 Details: `docs/engineering/optimizer.md`.
 
-Branch and bound over slots, after removing dominated items. Each item gets one integer score for (goal, tiebreak 1, tiebreak 2). It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. A Target GCD (`src/core/target-gcd.js`) becomes a speed band, counting food and the always-on haste of MNK, NIN, SAM and VPR. Rank by tier (`src/core/tier-rank.js`, on by default) ranks the goal and tiebreaks by tier first: one search per key, each holding the keys before it through stat minimums (docs: `tier-ranking.md`). **If you change scoring, pruning or the search, keep the exhaustive-search tests passing and re-run `npm run perf`.**
+Branch and bound over slots, after removing dominated items. Each item gets one integer score for (goal, tiebreak 1, tiebreak 2). It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. A Target GCD (`src/core/target-gcd.js`) becomes a speed band, counting food and the always-on haste of MNK, NIN, SAM and VPR. Rank by tier (`src/core/tier-rank.js`, on by default) ranks the goal and tiebreaks by tier first: one search per key, each holding the keys before it through stat minimums (docs: `tier-ranking.md`). Later stages cut by what earlier ones proved (`src/core/optimizer/regain.js`), and a seeded search tries 20,000 nodes before building Pareto fronts. **If you change scoring, pruning or the search, keep the exhaustive-search tests passing and re-run `npm run perf`.**
 
 ## Page rules
 

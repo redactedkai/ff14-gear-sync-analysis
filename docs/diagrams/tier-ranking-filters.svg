@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 540" role="img" aria-labelledby="t d">
   <title id="t">Filters before the search</title>
-  <desc id="d">Search 3 of the Dark Knight example: maximize Direct Hit with Critical Hit at least 2,159 and Determination at least 1,277 in gear points, speed 1,035 to 1,092. The candidate lists hold 11,045 pieces with their meld versions. The shortfall filter, which fixes pieces short of their slot's best by more than the budget (5 points of Critical Hit), leaves 137; pruning against the set in hand from search 2 (reduced-cost fixing with a Lagrangian bound) leaves 120. The shortfall filter repeats after each fixing, until nothing more is dropped. Pareto fronts then settle the search: the largest front holds 6,958 partial sets, and no set beats the one in hand, so Direct Hit 0 is proven best (265 ms). If a front passes 150,000 entries, or the extensions pass 1,000,000 in all, the branch and bound runs instead, still with the set in hand and the reduced lists.</desc>
+  <desc id="d">Search 3 of the Dark Knight example: maximize Direct Hit with Critical Hit at least 2,159 and Determination at least 1,277 in gear points, speed 1,035 to 1,092. The candidate lists hold 10,846 pieces with their meld versions. The shortfall filter, which fixes pieces short of their slot's best by more than the budget (5 points of Critical Hit), leaves 133; pruning against the set in hand from search 2 (reduced-cost fixing with a Lagrangian bound) leaves 117; the regain cuts from what searches 1 and 2 proved (room 5 points of Critical Hit and 11 of Determination) leave 68. The shortfall filter repeats after each fixing, until nothing more is dropped. A short search (the trial search, at most 20,000 nodes) then settles it in 2,648 nodes: no set beats the one in hand, so Direct Hit 0 is proven best. Only if the trial search does not finish do Pareto fronts run, and only if a front passes 150,000 entries, or the extensions pass 1,000,000 in all, the full branch and bound, still with the set in hand and the reduced lists.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -33,51 +33,59 @@
       <path d="M0,0 L10,5 L0,10 z" class="accent"/>
     </marker>
   </defs>
-  <rect class="bg" x="0" y="0" width="720" height="470"/>
+  <rect class="bg" x="0" y="0" width="720" height="540"/>
 
   <text class="fg title" x="40" y="36">Before the search: drop what provably cannot matter</text>
   <text class="muted small" x="40" y="58">Search 3 of the example: most Direct Hit, with Critical Hit ≥ 2,159 and Determination ≥ 1,277 in gear points</text>
   <text class="muted small" x="40" y="76">and speed 1,035–1,092. Bar length: the number of candidates, on a log scale.</text>
 
-  <!-- bars: width = 320 x log10(n) / log10(11,045) -->
+  <!-- bars: width = 320 x log10(n) / log10(10,846) -->
   <text class="fg head" x="60" y="112">Prepared</text>
   <rect class="bar" x="290" y="96" width="320" height="22" rx="4"/>
-  <text class="fg mono small" x="680" y="112" text-anchor="end">11,045</text>
+  <text class="fg mono small" x="680" y="112" text-anchor="end">10,846</text>
   <text class="muted small" x="60" y="132">every piece × its meld versions</text>
 
   <path class="accentStroke" d="M140,140 L140,158" marker-end="url(#arrow)"/>
 
   <text class="fg head" x="60" y="182">Shortfall filter</text>
-  <rect class="bar" x="290" y="166" width="169" height="22" rx="4"/>
-  <text class="fg mono small" x="680" y="182" text-anchor="end">137</text>
+  <rect class="bar" x="290" y="166" width="168" height="22" rx="4"/>
+  <text class="fg mono small" x="680" y="182" text-anchor="end">133</text>
   <text class="muted small" x="60" y="202">fixes pieces short of their slot's best by more than the budget (5 points of Critical Hit)</text>
 
   <path class="accentStroke" d="M140,210 L140,228" marker-end="url(#arrow)"/>
 
   <text class="fg head" x="60" y="252">Pruning against the set in hand</text>
-  <rect class="bar" x="290" y="236" width="165" height="22" rx="4"/>
-  <text class="fg mono small" x="680" y="252" text-anchor="end">120</text>
+  <rect class="bar" x="290" y="236" width="164" height="22" rx="4"/>
+  <text class="fg mono small" x="680" y="252" text-anchor="end">117</text>
   <text class="muted small" x="60" y="272">reduced-cost fixing: a Lagrangian bound against the set from search 2</text>
 
+  <path class="accentStroke" d="M140,280 L140,298" marker-end="url(#arrow)"/>
+
+  <text class="fg head" x="60" y="322">Regain cuts</text>
+  <rect class="bar" x="290" y="306" width="145" height="22" rx="4"/>
+  <text class="fg mono small" x="680" y="322" text-anchor="end">68</text>
+  <text class="muted small" x="60" y="342">from what searches 1 and 2 proved: room 5 points of Critical Hit, 11 of Determination</text>
+
   <!-- loop back: the shortfall filter repeats after each fixing -->
-  <path class="accentStroke" d="M54,258 L36,258 Q28,258 28,250 L28,185 Q28,177 36,177 L52,177" marker-end="url(#arrow)"/>
-  <text class="accent small" x="60" y="294">↺ the shortfall filter runs again after each fixing, until nothing more drops</text>
+  <path class="accentStroke" d="M54,328 L36,328 Q28,328 28,320 L28,185 Q28,177 36,177 L52,177" marker-end="url(#arrow)"/>
+  <text class="accent small" x="60" y="364">↺ the shortfall filter runs again after each fixing, until nothing more drops</text>
 
-  <path class="accentStroke" d="M140,304 L140,322" marker-end="url(#arrow)"/>
+  <path class="accentStroke" d="M140,374 L140,392" marker-end="url(#arrow)"/>
 
-  <!-- fronts, and the fallback -->
-  <rect class="box" x="40" y="328" width="350" height="118" rx="8"/>
-  <text class="fg head" x="60" y="354">Pareto fronts settle it in one pass</text>
-  <text class="fg small" x="60" y="378">10 steps from the last slot back;</text>
-  <text class="fg small" x="60" y="398">the largest front holds 6,958 partial sets.</text>
-  <text class="good small" x="60" y="424">Direct Hit 0 is proven best (265 ms).</text>
+  <!-- the trial search, and the fallbacks -->
+  <rect class="box" x="40" y="398" width="350" height="118" rx="8"/>
+  <text class="fg head" x="60" y="424">A short trial search settles it</text>
+  <text class="fg small" x="60" y="448">at most 20,000 nodes; this one needs 2,648.</text>
+  <text class="fg small" x="60" y="468">No set beats the one in hand:</text>
+  <text class="good small" x="60" y="494">Direct Hit 0 is proven best.</text>
 
-  <path class="mutedStroke" d="M390,387 L424,387"/>
-  <path class="accentStroke" d="M424,387 L428,387" marker-end="url(#arrow)"/>
+  <path class="mutedStroke" d="M390,457 L424,457"/>
+  <path class="accentStroke" d="M424,457 L428,457" marker-end="url(#arrow)"/>
 
-  <rect class="box" x="430" y="328" width="250" height="118" rx="8"/>
-  <text class="fg head" x="450" y="354">Fallback: branch and bound</text>
-  <text class="muted small" x="450" y="378">if a front passes 150,000 entries</text>
-  <text class="muted small" x="450" y="398">or 1,000,000 extensions in all;</text>
-  <text class="muted small" x="450" y="418">same set in hand, same lists</text>
+  <rect class="box" x="430" y="398" width="250" height="118" rx="8"/>
+  <text class="fg head" x="450" y="424">If it does not finish</text>
+  <text class="muted small" x="450" y="448">Pareto fronts; if a front passes</text>
+  <text class="muted small" x="450" y="468">150,000 entries or 1,000,000</text>
+  <text class="muted small" x="450" y="488">extensions, the full search;</text>
+  <text class="muted small" x="450" y="508">same set in hand, same lists</text>
 </svg>

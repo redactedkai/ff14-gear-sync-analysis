@@ -1,6 +1,6 @@
 # Tier ranking
 
-How the optimizer ranks gear sets by the **tiers** of the target and tiebreak stats instead of their raw totals (roadmap A7), and the three reductions that make those searches fast enough. In optimization terms: a preemptive (lexicographic) objective over step functions of the totals, solved as a sequence of multi-dimensional multiple-choice knapsack problems (MMKP) with minimums; each is reduced by bound-based variable fixing (the shortfall filter), Lagrangian reduced-cost fixing against a known feasible set, and a bounded Pareto-front dynamic program (Nemhauser–Ullmann with Morin–Marsten fathoming) that usually settles it without a search tree. Written for a reader versed in integer programming and knapsack methods but new to this code base and the game; notation follows [optimizer.md, section 2](optimizer.md#2-formal-statement).
+How the optimizer ranks gear sets by the **tiers** of the target and tiebreak stats instead of their raw totals (roadmap A7), and the reductions that make those searches fast enough. In optimization terms: a preemptive (lexicographic) objective over step functions of the totals, solved as a sequence of multi-dimensional multiple-choice knapsack problems (MMKP) with minimums; each is reduced by bound-based variable fixing (the shortfall filter), Lagrangian reduced-cost fixing against a known feasible set, and valid inequalities from the earlier stages' proven optima (regain cuts), then settled by a short trial search or, failing that, a bounded Pareto-front dynamic program (Nemhauser–Ullmann with Morin–Marsten fathoming), with the branch and bound as the last resort. Written for a reader versed in integer programming and knapsack methods but new to this code base and the game; notation follows [optimizer.md, section 2](optimizer.md#2-formal-statement).
 
 Related pages: [optimizer.md](optimizer.md) (the model and the search this builds on), [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers) (tiers, speed and food), [materia.md](../mechanics/materia.md) (melds), [glossary.md](../glossary.md).
 
@@ -71,16 +71,18 @@ which is the plain optimizer under three extra minimum rows, scalarized as in [o
 
 **Seeds (warm starts).** Each stage after the first starts from the previous stage's optimal set for that meal. That set is feasible for the next stage (each hold is at most what it reached), so it is an incumbent with score $\sigma^\star$ from the start: the next stage only has to find something strictly better, and if it stops early (its node limit) it still returns a feasible set. Sections 4.2 and 5 use $\sigma^\star$ for fixing and fathoming.
 
-The worked example above, as the code runs it (Dark Knight, level 90, item level 660, exactly 2.30, every meal; measured 2026-10-16 on this machine, data `d9582a6`):
+**Proven maxima.** A stage that finishes (does not stop at its node limit) also proves $M_q$, the most of its key under its rows. Every later stage of the meal has those rows and more, so it gets $M_q$ as a cut (section 4.4).
+
+The worked example above, as the code runs it (Dark Knight, level 90, item level 660, exactly 2.30, every meal, the page's pool without Savage, Ultimate and PvP gear; measured 2026-10-17, data `d9582a6`):
 
 | Search | Limits (gear points) | Candidates | Kept after the filters | Settled by | Result (with food) |
 | --- | --- | --- | --- | --- | --- |
-| Most Critical Hit (one per meal band, 6) | speed band only | 1,358 | 1,210 | search, 10–17 nodes | 2,310 with Nachos |
-| Most Determination | Critical Hit ≥ 2,159 | 2,975 | 78 | fronts | 1,288 |
-| Most Direct Hit | and Determination ≥ 1,277 | 11,045 | 120 | fronts | 0 |
-| Raw order | all three | 2,976 | 77 | fronts | 2,310 / 1,288 / 0 |
+| Most Critical Hit (one per meal band, 6) | speed band only | 1,192 | 1,192 | search, 12 nodes | 2,310 with Nachos |
+| Most Determination | Critical Hit ≥ 2,159 | 2,935 | 74 | trial search, 764 nodes | 1,288 |
+| Most Direct Hit | and Determination ≥ 1,277 | 10,846 | 68 | trial search, 2,648 nodes | 0 |
+| Raw order | all three | 10,846 | 76 | trial search, 5,262 nodes | 2,310 / 1,288 / 0 |
 
-"Candidates" counts the variables $x_{s,i}$ after dominance reduction: every piece with each meld version worth keeping ([optimizer.md, section 6](optimizer.md#6-melds-in-the-search)); a version is a way to fill the piece's materia slots, and each is one item of its class.
+"Candidates" counts the variables $x_{s,i}$ after dominance reduction: every piece with each meld version worth keeping ([optimizer.md, section 6](optimizer.md#6-melds-in-the-search)); a version is a way to fill the piece's materia slots, and each is one item of its class. Before the changes of 2026-10-17 (section 4.4, section 5) the last three searches were settled by Pareto fronts.
 
 ## 3. Why the plain search struggles here
 
@@ -91,13 +93,13 @@ The engine is a depth-first branch and bound over the 11 or 12 slot positions ([
 - **Many more candidates.** Dominance reduction ([optimizer.md, section 4](optimizer.md#4-fewer-candidates-dominance-pruning)) may drop a piece only for one at least as good on the score and every limited stat, and under a speed maximum only for one with the same speed. The full White Mage pool at level 100 keeps 19 to 26 candidates per slot in a plain search, 115 to 173 with a GCD band, and 770 to 1,570 in a tier stage with a band: about $10^{35}$ sets.
 - **Weak bounds.** The engine's bound under minimums is the smallest of one exact DP table per limited stat ([optimizer.md, section 5](optimizer.md#with-minimums-on-other-stats)); each table keeps one limit row and drops the others, so each accepts sets that trade the other held stat, or the speed band, away. Joint infeasibility of the limit rows is only detected at complete assignments. In one White Mage stage the true best had Direct Hit 0, and proving that nothing reaches 1 took 1.2 million nodes.
 
-The difficulty is usually the optimality proof, not finding the optimum: the seed is usually already optimal. Not always: the seed is the best set for the previous key, and it can be far from the best for this one (section 4.3). Sections 4 and 5 replace most of that proof. All three techniques are exact: they only remove variables or partial solutions that provably cannot be part of a set better than the incumbent.
+The difficulty is usually the optimality proof, not finding the optimum: the seed is usually already optimal. Not always: the seed is the best set for the previous key, and it can be far from the best for this one (section 4.3). Sections 4 and 5 replace most of that proof. Every technique there is exact: it only removes variables or partial solutions that provably cannot be part of a set better than the incumbent.
 
 ## 4. Before the search: filters
 
-Which variables can be fixed to 0 before the search? Two fixing arguments, applied in turn: one from the minimum rows alone, one from a Lagrangian bound against the seed.
+Which variables can be fixed to 0 before the search? Three arguments, applied in turn: one from the minimum rows alone, one from a Lagrangian bound against the seed, and one from what the earlier stages proved.
 
-![The filters on the example's third search: 11,045 candidates, 137 after the shortfall filter (a budget of 5 points of Critical Hit), 120 after pruning against the set in hand from search 2; the shortfall filter runs again after each fixing until nothing more drops. Pareto fronts then settle it, the largest holding 6,958 partial sets (265 ms); past 150,000 entries in one front or 1,000,000 extensions in all, the branch and bound runs instead with the same set in hand and lists.](../diagrams/tier-ranking-filters.svg)
+![The filters on the example's third search: 10,846 candidates, 133 after the shortfall filter (a budget of 5 points of Critical Hit), 117 after pruning against the set in hand from search 2, 68 after the regain cuts from searches 1 and 2 (room 5 points of Critical Hit and 11 of Determination); the shortfall filter runs again after each fixing until nothing more drops. A trial search of at most 20,000 nodes then settles it in 2,648 nodes; only if it does not finish do Pareto fronts run, and past 150,000 entries in one front or 1,000,000 extensions in all, the full branch and bound, with the same set in hand and lists.](../diagrams/tier-ranking-filters.svg)
 
 ### 4.1 The shortfall filter
 
@@ -111,7 +113,7 @@ $$
 
 If that is below $m_d$, the row cannot hold with $x_{s,i} = 1$, so fix $x_{s,i} = 0$. Equivalently, the set may fall short of "the best in every slot" by at most the **budget** $U_d - m_d$ in total (the row's slack at maximum activity), and a candidate whose own shortfall $u_{d,s} - v_d(i)$ exceeds the budget is out.
 
-**Why it matters here.** Holding a key one point above its tier start leaves a tiny budget: 5 points of Critical Hit in the example, 43 points of Piety for White Mage at level 100. Most meld versions spend a stone elsewhere and fall short by more than that, so the filter fixes most variables (11,045 candidates to 137 in the example). Fixing variables lowers the $u_{d,s}$, which can shrink the budget, so the filter repeats to a fixed point.
+**Why it matters here.** Holding a key one point above its tier start leaves a tiny budget: 5 points of Critical Hit in the example, 43 points of Piety for White Mage at level 100. Most meld versions spend a stone elsewhere and fall short by more than that, so the filter fixes most variables (10,846 candidates to 133 in the example). Fixing variables lowers the $u_{d,s}$, which can shrink the budget, so the filter repeats to a fixed point.
 
 **The conflict and copy rows.** The maximum activities are the same separable bounds the search uses: a piece that leaves later slots empty (a two-handed weapon and the off-hand) is counted at its value minus those slots' bounds, and the two ring positions share one list, so a ring is bounded with the best ring as its partner.
 
@@ -160,7 +162,7 @@ Points to note:
 - **Ties.** A set equal to $\sigma^\star$ has the same target and tiebreak totals (the score packs them exactly, [optimizer.md, section 3](optimizer.md#3-turning-the-lexicographic-order-into-one-number)), so fixing at "$\le \sigma^\star$" loses nothing.
 - **Its limit.** The subproblem has the integrality property, so the dual bound equals the linear-programming relaxation's value (Geoffrion 1974; strictly, the LP relaxation of the model without its copy and conflict rows, since the subproblem drops them): it may mix fractions of two candidates to land exactly in the speed band, which no real set can. Re-optimizing the multipliers at every node therefore cut nothing (section 6); it is used for fixing, not as the search's main bound.
 
-In the example the shortfall filter does most of the work (137 to 120 here), but on other cases reduced-cost fixing matters more: Black Mage at level 90, exactly 2.30, takes 2.8 s with it and 6.4 s without, Summoner 2.1 s and 6.1 s (measured 2026-10-16).
+In the example the shortfall filter does most of the work (133 to 117 here), but on other cases reduced-cost fixing matters more: Black Mage at level 90, exactly 2.30, takes 2.8 s with it and 6.4 s without, Summoner 2.1 s and 6.1 s (measured 2026-10-16).
 
 ### 4.3 Improving the seed first
 
@@ -172,9 +174,46 @@ The fixing above is only as strong as $\sigma^\star$. The seed is the previous s
   - It needed 812,472 nodes to finish. The Lagrangian gap was 885 points of Determination against the seed.
   - With the swaps, the seed starts at 710, the gap is 361 points, fixing keeps 330 of 2,268 candidates, and the search needs 7,397 nodes.
 
+### 4.4 Regain cuts from the stages before
+
+The hard stages are the last ones: the key is held near its most, the answer is often 0 or a few points, and the search must prove that nothing does better. The earlier stages already proved something about those sets: stage $q$ found $M_q$, the most of key $k_q$ under its rows. Can a later stage use that? Yes, as a valid inequality (a cut).
+
+**The exchange argument.** Take any set $x$ feasible for a later stage $q' > q$ (or $P_3$). Its rows include stage $q$'s: the same speed rule, and holds on the same keys that are no lower. In each position, swap the chosen piece $i$ for a piece $j$ of the same position that
+
+- leaves the same positions empty (so the conflict rows still hold);
+- has the same speed under a band, or at least as much under a minimum only;
+- has at least $i$'s value of every key stage $q$ held;
+- for a ring: is another meld version of $i$, or a ring with 2 copies (so the two ring positions never hold one Unique ring twice).
+
+Other positions each hold a different item, so any such swaps together give a legal set $x'$ that meets stage $q$'s rows. So $T_{k_q}(x') \le M_q$. With the **regain** $\rho_q(i)$ = the most of $k_q$ such a swap adds to piece $i$ (0 when none adds any),
+
+$$
+T_{k_q}(x) + \sum_s \rho_q(x_s) \;\le\; M_q, \qquad\text{and since } T_{k_q}(x) \ge h_q:\qquad \sum_s \rho_q(x_s) \;\le\; M_q - h_q .
+$$
+
+Every feasible set of the later stage meets this row, so adding it removes no feasible set. The room $M_q - h_q$ is the hold margin plus whatever the tier start leaves, usually less than one materia stone, so the row says: the set may put almost no stone, and no whole piece, against key $k_q$ where a swap could have put it back.
+
+**In the search.** The regain is a column of a new knapsack row with a small capacity:
+
+- a candidate whose own regain passes the room is fixed to 0;
+- the row joins the search's limits as a maximum, with its own limit table (an exact DP on the row, [optimizer.md, section 5](optimizer.md#with-a-speed-range));
+- it is computed after the other filters, on the few candidates left, with the full lists (and each piece's every meld version) as the pieces a swap may bring in.
+
+Three details keep it exact:
+
+- **Only finished stages.** A stage stopped at its node limit proves nothing; a wrong $M_q$ would cut good sets. Such a stage passes no cut.
+- **The memo ignores the row.** Two partial sets with the same totals of the real rows have the same completions that meet those rows, and every such full set meets the cut, so the row's total stays out of the state key ([optimizer.md, section 5](optimizer.md#with-minimums-on-other-stats)).
+- **The fronts ignore it too.** An entry is compared on the real rows only (section 5), for the same reason; entries past the room are dropped.
+
+**Gain.** In the example's third search, the cuts from stages 1 and 2 (room 5 points of Critical Hit and 11 of Determination) keep 68 candidates of 117 and the trial search needs 2,648 nodes against 4,800 without them, in about the same time (120 against 106 ms: working out the regains costs what the nodes save). On the hardest stages the gain is far larger. With the other changes of 2026-10-17, White Mage at level 100, sync off, Direct Hit > Critical Hit > Determination, exactly 2.25, food off, went from 8.9 s and a stop at the node limit to 1.1 s and 1,118 nodes in all (section 8). In Perplexity's ablation (each change switched off in turn, on its prototype), the cuts and the band-reach tables ([optimizer.md, section 5](optimizer.md#with-minimums-on-other-stats)) were what turned the healer stages that stopped at the node limit into finished proofs.
+
+The idea and its proof came from a solver review the owner commissioned through Perplexity (2026-10-17), with a prototype; the code here is that prototype rewritten. In integer-programming terms it is an exchange (swap) argument turned into a valid inequality; Perplexity's review found no tighter bound that was cheap enough (section 6).
+
 ## 5. Pareto fronts
 
 After fixing, each position holds about 10 to 100 candidates. Can the stage be solved without a tree? Yes, by the multi-criteria dynamic program over positions: keep, per stage, the nondominated partial solutions in (score, limited totals) space, fathom the ones that cannot beat the incumbent, and read the optimum off the last stage.
+
+**A trial search first (2026-10-17).** Building the fronts takes 0.1 to 1.4 s, often for a stage the branch and bound finishes in a few hundred nodes, and on the hard stages the fronts grew too large and were given up after that time was spent (Perplexity's profile of the slow cases: 25 to 40% of their time). So the branch and bound runs first for at most 20,000 nodes. Only if it does not finish are fronts built, starting from the best set it found; most stages never build them (the example in section 2 builds none). Exact: the trial search is the same search with a lower node limit, and a stage it finishes is proven.
 
 ![A toy example with three slots and a minimum of 100 Determination: from the last slot back, the partial sets no other one beats are kept; the best set meeting the minimum, 95, is in the last front.](../diagrams/tier-ranking-fronts.svg)
 
@@ -186,10 +225,17 @@ $$
 
 and the answer is the best entry of $F_1$ that meets every limit. This is Nemhauser and Ullmann's dynamic program for knapsack problems (1969, *Management Science*), with one criterion per limited stat instead of one weight.
 
-**State dominance.** Entries $e$ and $f$ compare only when they leave the same positions empty, their pieces block the same positions and, under a speed maximum, they have the same speed. Then $e$ dominates $f$ when it has at least $f$'s score and at least $f$'s total of every other limited stat. Any completion of $f$ is also a completion of $e$, with no lower score and no broken limit, so $f$ can go. Two state truncations make far more entries comparable:
+**State dominance.** Entries $e$ and $f$ compare only when they leave the same positions empty, their pieces block the same positions and, under a speed band, they have the same speed. Then $e$ dominates $f$ when it has at least $f$'s score and at least $f$'s total of every other limited stat (at most, for a stat with a maximum only). Any completion of $f$ is also a completion of $e$, with no lower score and no broken limit, so $f$ can go. Two state truncations make far more entries comparable:
 
 - **A total past its minimum counts as the minimum.** Once Determination reaches 1,277, more of it cannot matter to the row, so 1,280 and 1,300 compare as equal.
 - **Speed past its minimum counts as the minimum when there is no maximum.** With a maximum (a band) speed stays exact, since more speed can break it.
+
+Two more rules, for rows the stages did not have before 2026-10-17:
+
+- **A regain cut (section 4.4) is not compared.** Entries past its room go, but two entries are compared on the real rows only: any completion of $f$ that meets the real rows is a completion of $e$ that meets them too, and a full set meeting the real rows always meets the cut.
+- **A second band** (a maximum and a minimum on a stat other than speed) makes the fronts give up, and the search runs. Only speed has a band today; the rule keeps the dominance test right if another one is added.
+
+**The filter.** The kept entries of a group are compared with each new one, best score first. With at most two compared totals (the usual case: one or two held keys under a speed band) the kept entries of a group reduce to a staircase, and one binary search per entry decides it (Kung, Luccio and Preparata 1975, *Journal of the ACM*, on the maxima of a set of vectors). With three or more, each kept entry is compared in turn.
 
 **Fathoming (Morin and Marsten).** An entry whose score plus the most the earlier positions can add cannot beat $\sigma^\star$ goes, and so does one that cannot reach a minimum even with the most the earlier positions add of that stat. This is the bounding of Morin and Marsten (1976, *Operations Research*, "Branch-and-bound strategies for dynamic programming"); [optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound) uses the reverse, DP state dominance inside the branch and bound.
 
@@ -197,9 +243,9 @@ and the answer is the best entry of $F_1$ that meets every limit. This is Nemhau
 
 **Why this replaces the proof.** Branch and bound spends most of a tier stage proving that nothing beats the incumbent. With fronts the proof is built in: every full set is either in $F_1$ or was dropped for one at least as good on everything that matters, so the best feasible entry of $F_1$ is optimal.
 
-**When it fails.** A front grows when a held stat has a wide budget: many partial totals sit below the minimum, where the truncation merges nothing. The Determination budget in the example's third search is 887 points, and its largest front holds 6,958 entries (265 ms). The fronts give up past 150,000 entries in one front, 1,000,000 extensions in all, or 30 million entry comparisons in the dominance filter in all, and the branch and bound runs instead, still with the seed and the reduced lists. Giving up never changes the answer, only who proves it.
+**When it fails.** A front grows when a held stat has a wide budget: many partial totals sit below the minimum, where the truncation merges nothing. Measured 2026-10-16, when fronts settled the example's third search: its Determination budget was 887 points, and its largest front held 6,958 entries (265 ms). The fronts give up past 150,000 entries in one front, 1,000,000 extensions in all, or 30 million entry comparisons in the dominance filter in all, and the branch and bound runs instead, still with the seed and the reduced lists, from the top with its memo cleared (the trial search's memo holds states it never finished). Giving up never changes the answer, only who proves it.
 
-- **Why the comparison limit.** The filter compares each new entry with the kept ones of its group, so a large front costs its size squared. Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit, food off, spent 21 s in that loop before the front gave up on its size; the search after it took 25,359 nodes. With the limit the whole run takes 1.3 s.
+- **Why the comparison limit.** Without the staircase, the filter compares each new entry with the kept ones of its group, so a large front costs its size squared. Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit, food off, spent 21 s in that loop before the front gave up on its size; the search after it took 25,359 nodes. With the limit the whole run takes 1.3 s. The limit now applies only with three or more compared totals.
 - **Ring pairs.** The ring stage gives up before building its pairs when they alone pass the extension limit. Building 2 million pairs (Direct Hit first, GCD 2.30 or 2.31, healers at level 100) overflowed the stack and showed an error on the page.
 
 What is specific here, beyond the classic method that Perplexity's report pointed to, is the truncation at the minimums and the game's slot rules.
@@ -217,6 +263,14 @@ Recorded so that nobody tries them again without a new idea.
 | Meet in the middle (enumerating the last positions' completions) | No consistent gain once the fronts existed |
 | A score to beat without the tiebreaks | Same nodes (11.75 against 11.77 million) |
 | Fronts for feasibility only | 716 million extensions at the third stage |
+| A stage that looks only for the next tier | No gain on the slow cases; looser regain cuts (P) |
+| A stage that maximizes its key alone | No gain; one healer stage stopped at the node limit again (P) |
+| Proven maxima as plain maxima on the keys | No effect on the LP bound; unsafe with the old group bounds (P) |
+| Regain filter only, without the sum row | No faster; one run stopped at the node limit (P) |
+| Slot order by the lists before the filters | Slower than the old fixed order (P) |
+| Two-row exact DP and surrogate DP bounds | Bounds of 72 to 1,330 where the answer is 0 (P) |
+
+(P): tried on Perplexity's prototype in its review (2026-10-17), its measurements.
 
 Notes:
 
@@ -230,9 +284,12 @@ Notes:
 | Claim | Status | Evidence |
 | --- | --- | --- |
 | The stages give the lexicographic optimum of tiers then raw totals | **Verified** | Tests against a reference that enumerates every set and meal and applies the stage rule with its own tier and food formulas: two and three keys, main stat, food off, one meal and every meal, levels 50 and 100, Target GCD in both modes with haste |
-| The shortfall filter, the pruning against the seed and the fronts change no result | **Verified** | A test on 120 tight cases (bigger pools, a minimum within 5 points of the most, a narrow speed band) against the plain search, which also checks that pieces were dropped and that fronts settled some searches; 2,000 more random cases by script |
+| The shortfall filter, the pruning against the seed, the trial search and the fronts change no result | **Verified** | A test on 120 tight cases (bigger pools, a minimum within 5 points of the most, a narrow speed band) against the plain search, which also checks that pieces were dropped and that the trial search or fronts settled some searches; 2,000 more random cases by script |
+| The fronts alone give the best set, for each way they compare entries | **Verified** | A test of the fronts without the trial search against the plain search: a band with one or two held stats (the staircase), a speed minimum with two (pairwise), a speed maximum alone (less is better) |
+| The regain cuts remove no feasible set | **Verified** | A test against the brute-force reference on small real pools: the proof's maximum, the second search's totals, and every piece of the plain search's answer passing the cut with its regains summing to at most the room; 360 more random tier ranking cases against the reference (three keys with a Target GCD among them) |
+| The 2026-10-17 changes (regain cuts, trial search, slot order, band reach) change no ranked result | **Verified** | A sweep against the code before, section 8: the same ranked totals, held tiers and meal in every case |
 | Minimums on any stat are exact in the search | **Verified** | Tests against the brute-force reference, with and without melds, with blocked slots and a speed band |
-| The tests catch errors in these parts | **Verified** | Broken on purpose: pruning twice as aggressive, fronts comparing the score only, tier holds at the start instead of one above, Tenacity's damage step, no haste: each made a test fail |
+| The tests catch errors in these parts | **Verified** | Broken on purpose: pruning twice as aggressive, fronts comparing the score only, tier holds at the start instead of one above, Tenacity's damage step, no haste: each made a test fail. Since 2026-10-17 also: a Unique ring allowed to swap for any ring, the regain ignoring the held keys, the fronts comparing a maximum-only total the wrong way, the staircase ignoring its second total |
 | A seed that breaks a limit is ignored | **Verified** | A test |
 | The tier formulas and food formula | **Community reference** / **inferred** | As in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers) |
 
@@ -268,12 +325,48 @@ The Black Mage and Sage times came from the fronts' dominance filter, not from n
 
 The remaining time is mostly building the candidate lists (meld versions and dominance reduction), which happens once per stage.
 
+### After the regain cuts, the trial search, the slot order and band reach (2026-10-17)
+
+A sweep of six jobs (White Mage, Sage, Black Mage, Paladin, Monk, Dancer), six settings (level 100 with no sync and synced to 690, 90 to 660, 80 to 475, 70 to 345, 50 to 123), 10 to 13 goals per role, food off and every meal, and no Target GCD or one at a quarter, half and three quarters of the way from the GCD with no speed to the fastest the gear reaches, in both modes: 5,028 cases, each ranked both ways, on the page's pool. Eight workers on the owner's machine, Node 22, data `d9582a6`. "Before" is the code at `582568f`, swept on the same machine earlier the same day; other work may have shared the machine in either run.
+
+| Tier ranking (runs) | Median | 95th percentile | Slowest | Over 1.5 s | Over 5 s | Stopped at the node limit |
+| --- | --- | --- | --- | --- | --- | --- |
+| No Target GCD (780), before | 0.30 s | 0.59 s | 2.5 s | 1 | 0 | 0 |
+| No Target GCD (780), after | 0.23 s | 0.44 s | 0.6 s | 0 | 0 | 0 |
+| Exactly (2,124), before | 0.69 s | 5.9 s | 37 s | 445 | 132 | 35 |
+| Exactly (2,124), after | 0.47 s | 1.5 s | 18 s | 105 | 10 | 2 |
+| Or faster (2,124), before | 0.53 s | 3.0 s | 23 s | 323 | 52 | 25 |
+| Or faster (2,124), after | 0.34 s | 1.0 s | 17 s | 18 | 8 | 2 |
+
+- **In all:** tier ranking took 2,671 s against 5,710 s. Raw ranking (with a Target GCD it uses the same search, with no stage proofs) is about the same: slowest 1.0 s against 1.8 s, medians within 0.02 s.
+- **Same answers:** in every case both rankings give the same totals of the ranked keys and the same meal; the held tiers are the same in all but one, where the code before had stopped at the node limit in a stage and held Critical Hit one tier lower (Paladin, level 100, item level 690, Determination > Direct Hit > Critical Hit, exactly 2.30, food off; the final totals are the same). Other pieces with the same score came back in 1,802 tier and 984 raw cases (the search now visits sets in another order, which decides which of several tied sets it finds first).
+- **Still stopped at the node limit:** 4, White Mage and Sage at level 100, item level 690, Piety > Critical Hit > Determination, GCD 2.29 (section 9); all 4 stopped before too.
+
+Slow cases, one at a time on an idle machine, before (the code at `b923b1d`) and after:
+
+| Case | Before | After |
+| --- | --- | --- |
+| BLM 90, cap 660, exactly 2.32, Crit > Det > DH, no food | 6.7 s | 2.1 s |
+| WAR 100, no sync, exactly 2.33, DH > Crit > Det, food | 15.5 s, truncated | 1.7 s |
+| WHM 100, no sync, exactly 2.25, DH > Crit > Det, no food | 8.9 s, truncated | 1.1 s |
+| WHM 100, cap 690, exactly 2.29, Piety > Crit > Det, no food | 7.3 s, truncated | 5.8 s |
+| WHM 100, cap 690, exactly 2.29, Piety > Crit > Det, food | 8.0 s, truncated | 6.9 s, truncated |
+| WHM 100, cap 690, exactly 2.29, Piety > Det > DH, food | 7.5 s, truncated | 5.6 s |
+| SGE 100, cap 690, 2.29 or faster, Piety > Crit > Det, no food | 4.9 s, truncated | 6.2 s, truncated |
+| WHM 100, cap 690, exactly 2.36, Piety > Crit > Det, food | 5.5 s, truncated | 4.1 s |
+| SCH 100, cap 690, exactly 2.36, Piety > Crit > Det, food | 4.7 s, truncated | 2.5 s |
+
+The worked example of section 2 takes 1.0 s in all. The quick benchmark of the plain optimizer (`npm run perf`, no limits, so no proofs or trial search) is unchanged: median 19.0 ms with melds and 12.7 ms without, against 18.8 and 12.8; its largest searches fell from 555 to 458 nodes with melds and 380 to 310 without (the slot order).
+
+The owner's check of Perplexity's prototype, which gives the same sets as this code in all 5,028 cases above, ran all 23 jobs (17,648 cases): node-limit stops in tier ranking fell from 138 to 4, with the same ranked results.
+
 ## 9. Known limits
 
 - **Searches that stop early.** A few cases still reach the node limit; they return the seed or better, marked as possibly not the best, like any truncated result.
-  - They are the fastest bands: GCDs 2.30 and 2.31 for healers at level 100, and Sage at cap 690, 2.36 or faster. Of 264 runs near the White Mage case (Scholar, Astrologian and Sage with food, White Mage without; GCDs 2.30 to 2.40; six goals), 14 stop early, against 5 before; 9 of the 14 showed an error before (the ring pairs, section 5).
-  - In each one checked (five), the seed already was the best; the search could not prove it. Finished with no node limit they took 1.1 to 11.8 million nodes (White Mage, exactly 2.31, Piety > Determination > Direct Hit, food off: 11.8 million, 78 s, to show Direct Hit cannot leave 0).
-  - The rows that make "one more point of the target" impossible are three or four tight limits at once (the speed band and two held keys). Every bound here keeps or prices one row at a time, or relaxes integrality, so none sees it. The Lagrangian bound allows 213 points of Direct Hit in that case.
+  - They are the fastest bands for healers at level 100. In the 2026-10-17 sweep (section 8), 4 of 5,028: White Mage and Sage at item level 690, Piety > Critical Hit > Determination, GCD 2.29.
+  - Before the regain cuts (2026-10-16): of 264 runs near the White Mage case (Scholar, Astrologian and Sage with food, White Mage without; GCDs 2.30 to 2.40; six goals), 14 stopped early. In each one checked (five), the seed already was the best; the search could not prove it. Finished with no node limit they took 1.1 to 11.8 million nodes (White Mage, exactly 2.31, Piety > Determination > Direct Hit, food off: 11.8 million, 78 s, to show Direct Hit cannot leave 0).
+  - The rows that make "one more point of the target" impossible are three or four tight limits at once (the speed band and two held keys). Every bound here keeps or prices one row at a time, or relaxes integrality, so none sees it. The Lagrangian bound allows 213 points of Direct Hit in that case. The regain cuts see one earlier stage's row each, which is why they help, but not all of them together.
+  - Open: a bound that sees the held rows, the band and the copy and conflict rows at once. Perplexity measured a linear-programming relaxation with those rows at 17 points of Direct Hit on a Black Mage stage where the Lagrangian bound here allows 191; nothing of the kind is built.
 - **Time per node.** Searches run about 5 to 12 µs a node, so the node limit bounds the time of the search part (about 4 to 8 s at 700,000). The fronts are bounded by their own limits (section 5); before the comparison limit, a front that gave up could take minutes first.
 - **Haste jobs in the sweep.** Monk, Samurai, Ninja and Viper have a GCD below 2.50 s with no speed at all; the sweep's halfway GCD lands above it, so those runs end at once ("unreachable") and are left out of the timings.
 - **The page.** Tier ranking is on by default and holds the page's thread while it solves (about 0.2 s without a Target GCD, up to a few seconds with one), so a progress bar shows meanwhile; the controls and readout are in [optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters).
@@ -282,12 +375,13 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 
 | Concept | File |
 | --- | --- |
-| The stages, holds, meals and seeds | `src/core/tier-rank.js` (`rankByTier`) |
+| The stages, holds, meals and seeds; each stage's proven maximum | `src/core/tier-rank.js` (`rankByTier`, `provenMost`) |
 | Tier per stat for ranking, tier start | `src/core/tiers.js` (`rankTierOf`, `tierStart`) |
 | A speed band per meal | `src/core/target-gcd.js` (`gearBand`) |
 | Minimums on any stat, seeds | `src/core/optimizer/index.js` (`prepare`, `solve`) |
-| Pruning with limits | `src/core/optimizer/candidates.js` (`pruneForLimits`) |
-| Shortfall filter, Lagrangian bound, reduced-cost fixing, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `branchAndBound`) |
-| Pareto fronts | `src/core/optimizer/front.js` (`frontSearch`) |
+| Pruning with limits; meld versions built once per ranking | `src/core/optimizer/candidates.js` (`pruneForLimits`, `itemVersions` with `versionCache`) |
+| Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, `TRIAL_NODES`, `branchAndBound`) |
+| Regain cuts | `src/core/optimizer/regain.js` (`addRegainCuts`) |
+| Pareto fronts, the staircase dominance | `src/core/optimizer/front.js` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
 | The page: switch, readout, held marks, progress bar | `src/ui/views/optimizer.js` (`optimizerView`, `tierLists`), `src/ui/components/optimizer.js` (`solve`), `src/index.html` (`#o-by-tier`, `#o-held`, `#o-busy`) |
-| Tests | `tests/unit/tier-rank.test.js`, `tests/unit/stat-minimums.test.js`; the page in `tests/unit/views.test.js` and `tests/e2e/smoke.mjs` (`checkRankByTier`) |
+| Tests | `tests/unit/tier-rank.test.js`, `tests/unit/stat-minimums.test.js`, `tests/unit/regain.test.js`; the page in `tests/unit/views.test.js` and `tests/e2e/smoke.mjs` (`checkRankByTier`) |
