@@ -207,3 +207,17 @@ test('one piece: at or below the cap the table rows say below the cap and at the
     [169, 'melded'],
   ]);
 });
+
+/* An overgeared piece that only matches the melded one counts too (owner's screenshot, 2026-10-18: the earring synced to
+   169 reaches the melded 74 from item level 289, but the chart shaded nothing and the note said no earring has more). */
+test('overgeared chart: an overgeared piece with as much as the melded one is shaded and named', () => {
+  const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
+  assert.equal(
+    v.curveNote,
+    'Synced to 169, an earring from item level 289 (+120) has as much as an item level 169 earring with 2 × Grade V Critical Hit (+6 each), +11 after the cap, never more: 74 points vs 74.',
+  );
+  assert.match(v.curveChartSvg, /data-shade="289-309"/);
+  // the level 80 body: as much from one item level, more from a later one
+  const body = explainerView(app('RPR', { level: 80, ilvl: 590 }));
+  assert.match(body.curveNote, /from item level 624 \(\+94\)/);
+});

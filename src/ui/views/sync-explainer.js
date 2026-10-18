@@ -113,6 +113,9 @@ export function explainerItemLevel(app) {
   return { range, il: clampTo(range, app.piece.ilvl ?? cap + DEFAULT_OVER), note };
 }
 
+/* "a" or "an" before `word` (a slot name: "an earring", "a head"). */
+const article = word => (/^[aeiou]/i.test(word) ? 'an' : 'a');
+
 /* A piece's melds in words, in two parts: {stones: "2 × Grade X Skill Speed (+54 each)", afterCap: "+90 after the cap"
    when the piece's cap cuts the stones, else ''}. */
 function meldParts(job, meld) {
@@ -229,14 +232,20 @@ export function explainerView(app, widths = {}) {
     });
   }
   const over = curve.filter(p => p.il > cap);
-  const more = over.filter(p => p.points > atCap.points);
+  // the note: from which item level an overgeared piece has as much as the melded one, and from which it has more
+  const asMuch = over.find(p => p.points >= atCap.points),
+    more = over.find(p => p.points > atCap.points);
   const peak = over.length ? Math.max(...over.map(p => p.points)) : null;
   const atCapText = `an item level ${cap} ${slotName} with ${meldSummary(job, atCap.meld)}`;
-  const curveNote = !over.length
-    ? ''
-    : more.length
-      ? `Synced to ${cap}, a ${slotName} from item level ${more[0].il} (+${more[0].il - cap}) has more than ${atCapText}: at most ${peak} points vs ${atCap.points}.`
-      : `Synced to ${cap}, no ${slotName} above item level ${cap} has more than ${atCapText}: at most ${peak} points vs ${atCap.points}.`;
+  const from = p => `from item level ${p.il} (+${p.il - cap})`;
+  const tail = `at most ${peak} points vs ${atCap.points}.`;
+  const lead = `Synced to ${cap}, ${article(slotName)} ${slotName}`;
+  let curveNote = ''; // empty when no item level of the range is above the cap
+  if (over.length && !asMuch) curveNote = `Synced to ${cap}, no ${slotName} above item level ${cap} has as much as ${atCapText}: ${tail}`;
+  else if (asMuch && !more)
+    curveNote = `${lead} ${from(asMuch)} has as much as ${atCapText}, never more: ${peak} points vs ${atCap.points}.`;
+  else if (more && more === asMuch) curveNote = `${lead} ${from(more)} has more than ${atCapText}: ${tail}`;
+  else if (more) curveNote = `${lead} ${from(asMuch)} has as much as ${atCapText}, and ${from(more)} more: ${tail}`;
 
   // ---------- GCD: a full set (every slot the job wears, rings twice) at `il` and at the cap
   const spdShown = subs.includes('spd') || keys.includes('spd');
@@ -302,7 +311,7 @@ export function explainerView(app, widths = {}) {
       .map(s => job.label[s])
       .join(
         ' + ',
-      )} of a ${slotName} in a duty synced to ${cap}, by the ${slotName}’s item level. Up to item level ${cap} it keeps its melds: ${meldSummary(job, atCap.meld)}.`,
+      )} of ${article(slotName)} ${slotName} in a duty synced to ${cap}, by the ${slotName}’s item level. Up to item level ${cap} it keeps its melds: ${meldSummary(job, atCap.meld)}.`,
     curveChartSvg: overgearChartSvg({
       curve,
       cap,

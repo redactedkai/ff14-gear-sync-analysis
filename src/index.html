@@ -161,7 +161,7 @@
     <div class="legend" id="p-curve-legend">
       <template x-for="b in view.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
       <span><i style="background:var(--gold);height:2px"></i><span x-text="`Item level ${view.cap} with its melds`"></span></span>
-      <span><i style="background:var(--fg);opacity:.12"></i>Overgeared has more</span>
+      <span><i style="background:var(--fg);opacity:.12"></i>Overgeared has as much or more</span>
     </div>
     <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-html="view.curveChartSvg"></div>
     <p class="callout small" id="p-curve-note" x-show="view.curveNote" x-text="view.curveNote"></p>

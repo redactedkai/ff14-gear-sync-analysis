@@ -22,11 +22,11 @@ function xAxis(x0, x1, X, H, B, caption) {
   return g + `<text x="${(X(x0) + X(x1)) / 2}" y="${H - 4}" text-anchor="middle">${caption}</text>`;
 }
 
-/* The cap line, the item level marker of the chosen piece or set, and the shaded range where it has more. */
+/* The cap line, the item level marker of the chosen piece or set, and the shaded range `more` (item levels, in order). */
 function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
   let g = '';
   if (more.length)
-    g += `<rect x="${X(more[0])}" y="${T}" width="${Math.max(1, X(more[more.length - 1]) - X(more[0]))}" height="${H - T - B}" fill="var(--fg)" opacity=".07"/>`;
+    g += `<rect data-shade="${more[0]}-${more[more.length - 1]}" x="${X(more[0])}" y="${T}" width="${Math.max(1, X(more[more.length - 1]) - X(more[0]))}" height="${H - T - B}" fill="var(--fg)" opacity=".07"/>`;
   if (cap >= x0 && cap <= x1)
     g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3"/><text class="lbl" x="${X(cap) + 5}" y="${T + 12}">Synced item level ${cap}</text>`;
   const right = X(il) > W * 0.75;
@@ -80,8 +80,9 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], c
   });
   g += `<path d="${curve.map((p, i) => `${i ? 'L' : 'M'}${X(p.il).toFixed(1)},${Y(p.points).toFixed(1)}`).join('')}" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
 
-  // the shading where overgeared has more, the cap line, the chosen item level, and the piece at the cap
-  const more = curve.filter(p => p.il > cap && p.points > ref).map(p => p.il);
+  // the shading where overgeared has as much as the melded piece or more, the cap line, the chosen item level, and the
+  // piece at the cap
+  const more = curve.filter(p => p.il > cap && p.points >= ref).map(p => p.il);
   const at = curve.find(p => p.il === il) || curve[curve.length - 1];
   g += marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY: Y(at.points) });
   g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="6 3"/><text x="${L + 6}" y="${Y(ref) - 6}" style="fill:var(--gold)">${ref}: item level ${cap} with its melds</text>`;
