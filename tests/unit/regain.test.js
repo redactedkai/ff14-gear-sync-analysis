@@ -79,3 +79,30 @@ test('regain cuts: the search with a proven maximum gives the exhaustive totals,
   assert.ok(runs >= 25, `${runs} runs`);
   assert.ok(cutSome >= 20, `${cutSome} runs where the cut dropped pieces`);
 });
+
+test('regain cuts: under a speed minimum only, a swap may not lower speed', () => {
+  // one head slot: a fast piece with no Critical Hit, and a slow piece with 50. The proof says Critical Hit is at most 60
+  // under a speed minimum, and this search holds it at 50, a room of 10. Swapping the fast piece for the slow one would
+  // gain 50 Critical Hit but lose speed, which could break the minimum, so that swap does not count: the fast piece's
+  // regain is 0 and it stays. (Counting it would drop the fast piece, which the minimum may need.)
+  const fast = { item: { id: 'fast' }, eff: { spd: 40, crit: 0 }, blocks: [], copies: 1 };
+  const slow = { item: { id: 'slow' }, eff: { spd: 0, crit: 50 }, blocks: [], copies: 1 };
+  const proof = { stat: 'crit', most: 60, minStats: [], speed: 'min' };
+  const limits = [
+    { stat: 'spd', min: 30, max: null },
+    { stat: 'crit', min: 50, max: null },
+  ];
+  const cut = addRegainCuts({
+    slotList: ['head'],
+    posList: [[fast, slow]],
+    fullLists: [[fast, slow]],
+    dims: ['spd', 'crit'],
+    limits,
+    proven: [proof],
+  });
+  const kept = cut.posList[0].map(c => c.original.item.id);
+  assert.deepEqual(kept, ['fast', 'slow']);
+  assert.equal(cut.posList[0][0].eff.regain0, 0);
+  // the slow piece may become the fast one (speed rises), which gains no Critical Hit
+  assert.equal(cut.posList[0][1].eff.regain0, 0);
+});
