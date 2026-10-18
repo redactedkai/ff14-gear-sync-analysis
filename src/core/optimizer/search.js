@@ -4,6 +4,7 @@
    what each limited stat still needs (limit tables), tries children in order of that bound, and cuts states it has
    already seen (the memo). */
 import { frontSearch } from './front.js';
+import { addRegainCuts } from './regain.js';
 
 /* Most two rings can add together on f(a) >= 0: the best ring twice only if that item has 2 copies, otherwise the best
    plus the best other item (the best alone when there is no other: the second ring slot stays empty). Any legal pair
@@ -74,8 +75,10 @@ export function suffixBounds(slotList, posList, dims) {
      prefix maximum (when the minimum is already met) or a window maximum the band's width.
    Values below 0 count as 0; candidates above the maximum are left out (they can never be worn). `empty`: the
    positions of slots a piece already chosen blocks, which add nothing. Each returned function has `top(i)`, its most
-   at any total so far. Returns null when the limit has neither a minimum above 0 nor a maximum. */
-export function limitTables(slotList, posList, valueFn, min, max, empty = null) {
+   at any total so far. Returns null when the limit has neither a minimum above 0 nor a maximum. `scoreFn` (default:
+   the candidate's score) is what the tables add up: the search's band-reach tables add another limited stat instead,
+   for the most of it the remaining slots can add while speed lands in its band. */
+export function limitTables(slotList, posList, valueFn, min, max, empty = null, scoreFn = a => a.score) {
   const n = slotList.length;
   const lo = min > 0 ? min : 0;
   const blockable = new Set(posList.flatMap(list => list.flatMap(a => a.blocks)));
@@ -111,7 +114,7 @@ export function limitTables(slotList, posList, valueFn, min, max, empty = null) 
 
       // this slot's choices as [score, value], highest value first; the frontier keeps one only if it outscores every
       // higher one
-      const choices = blockedNow(i) ? [] : posList[i].map(a => [a.score, statOf(a)]);
+      const choices = blockedNow(i) ? [] : posList[i].map(a => [scoreFn(a), statOf(a)]);
       if (blockedNow(i) || canEmpty(i)) choices.push([0, 0]);
       choices.sort((x, y) => y[1] - x[1] || y[0] - x[0]);
       const frontier = [];
@@ -187,7 +190,8 @@ export function limitTables(slotList, posList, valueFn, min, max, empty = null) 
     const bestAt = new Map();
     for (const a of blockedNow(i) ? [] : posList[i]) {
       const value = statOf(a);
-      if (value <= max && !(bestAt.get(value) >= a.score)) bestAt.set(value, a.score);
+      const score = scoreFn(a);
+      if (value <= max && !(bestAt.get(value) >= score)) bestAt.set(value, score);
     }
     if ((blockedNow(i) || canEmpty(i)) && !(bestAt.get(0) >= 0)) bestAt.set(0, 0);
 
@@ -400,45 +404,99 @@ export function fixByReducedCost(list, lagr, i, known) {
   });
 }
 
+/* The order branchAndBound searches the slots in, after its filters: the slots no piece can block, shortest list first
+   (the ring list counts twice: it fills two slots), then the slots a piece can block, in their order (still after
+   every slot that blocks them; the two ring slots stay side by side). Returns perm, with perm[new position] = old
+   position, or null when the order is the same.
+   Exact: the search fills every slot whatever the order. Short lists first keep the top of the tree narrow and leave
+   the long lists for the depths where the bounds and the memo are tightest. The order must come from the filtered
+   lists: ordering by the lists before the filters (in buildCandidates) was slower than the order there (Perplexity's
+   measurement, 2026-10-17). */
+export function shortListsFirst(slotList, posList) {
+  const blockable = new Set(posList.flatMap(list => list.flatMap(a => a.blocks)));
+  const types = [...new Set(slotList)];
+  const size = type => posList[slotList.indexOf(type)].length * (type === 'ring' ? 2 : 1);
+  const free = types.filter(t => !blockable.has(t)).sort((x, y) => size(x) - size(y));
+  const order = [];
+  for (const type of [...free, ...types.filter(t => blockable.has(t))]) {
+    order.push(type);
+    if (type === 'ring') order.push('ring');
+  }
+  // each type's positions in the old order (the two ring slots keep theirs)
+  const taken = new Set();
+  const perm = order.map(type => {
+    const old = slotList.findIndex((t, i) => t === type && !taken.has(i));
+    taken.add(old);
+    return old;
+  });
+  return perm.some((old, i) => old !== i) ? perm : null;
+}
+
 /* A search this small is over before a limit table for its blocked slots would pay for itself (one table takes 1 to
    50 ms; WHM at level 100 with sync off needs a few hundred nodes, synced searches 100,000 and more without them). */
 const LAZY_TABLES = 2000;
+
+/* With a known set, the search first runs this many nodes at most (the trial search) before it builds Pareto fronts:
+   fronts take 0.1 to 1.4 s to build, often for a search the trial search settles in a few dozen nodes (Perplexity's
+   measurements, 2026-10-17: 25 to 40% of the time on hard stages went to fronts built and then given up). */
+const TRIAL_NODES = 20000;
 
 /* The most states one memo key keeps when states compare by dominance (branchAndBound's memo). */
 const MEMO_FRONT = 32;
 
 /* limits: [{stat, min, max}], each a minimum (null or 0 for none) and a maximum (null for none) on a stat's total; the
-   stat must be in dims. Target GCD sets one on speed, tier ranking minimums on other stats.
+   stat must be in dims. Target GCD sets one on speed, tier ranking minimums on other stats. The regain cuts add their
+   own inside (a maximum on a synthetic stat, marked `cut: true`; regain.js).
    start: {best, score}, a loadout known to meet every limit (in the shape of `best` below) and its score; the search
    then looks only for a strictly better one and returns `start` when there is none, or when it stops early.
-   Returns {best, nodes, truncated, method, kept, frontSizes}; method is 'fronts' or 'search', kept the candidates left
-   after the filters (summed over slot lists, rings once), frontSizes the fronts' sizes when they settled it; best[i] = {cand: candidate | null, rank, blockedBy?} or best = null if nothing is
-   feasible. A slot is left empty when a chosen piece blocks it (blockedBy: that candidate; buildCandidates puts
-   blockable slots last) or when every candidate's copies are used up. A blocked slot adds 0, so while a chosen piece
-   blocks a later slot, that slot's best score and limited stats come off the bounds (without this a cloak's branch,
-   whose bound still counted a head, was almost never pruned under sync).
-   Before the search, with limits (docs/engineering/tier-ranking.md, section 4), all exact:
-   - candidates that cannot reach a minimum go (dropShortfalls);
-   - with a known set (`start`, which tier ranking always has after its first stage): the set is first made better by
-     one-piece swaps (improveStart), then the candidates the Lagrangian bound shows cannot beat it go (fixByReducedCost), the shortfall filter runs again on what is left, and Pareto fronts
-     (front.js) try to settle the search in one pass; only when a front grows too large does the search below run.
-   In the search, with limits, three more things, all exact:
+   proven: maxima earlier searches proved under limits these include, [{stat, most, minStats, speed}] (regain.js;
+   tier ranking passes its finished stages').
+   Returns {best, nodes, truncated, method, kept, frontSizes}; method is 'trial' (the short trial search settled it),
+   'fronts' or 'search', kept the candidates left after the filters (summed over slot lists, rings once), frontSizes
+   the fronts' sizes when they settled it; best[i] = {cand: candidate | null, rank, blockedBy?}, in the caller's slot
+   order, or best = null if nothing is feasible. A slot is left empty when a chosen piece blocks it (blockedBy: that
+   candidate; buildCandidates puts blockable slots last) or when every candidate's copies are used up. A blocked slot
+   adds 0, so while a chosen piece blocks a later slot, that slot's best score and limited stats come off the bounds
+   (without this a cloak's branch, whose bound still counted a head, was almost never pruned under sync).
+   Before the search, all exact (docs/engineering/tier-ranking.md, section 4):
+   - with limits, candidates that cannot reach a minimum go (dropShortfalls);
+   - with a known set (`start`, which tier ranking always has after its first stage) and limits: the set is first made
+     better by one-piece swaps (improveStart), then the candidates the Lagrangian bound shows cannot beat it go
+     (fixByReducedCost), and the shortfall filter runs again on what is left;
+   - with proven maxima, the regain cuts (regain.js) drop more and add a limit each;
+   - the slots are put in the order that suits the lists left (shortListsFirst).
+   Then, with a known set and limits, a search of TRIAL_NODES nodes at most; only when it does not finish, Pareto fronts
+   (front.js) try to settle the search in one pass, and only when a front grows too large does the full search run.
+   In the search, with limits, four more things, all exact:
    - the limit tables (limitTables) bound the score by what each limited stat still needs; with several limits the
      bound is the smallest of their tables (each is an upper bound with the other limits dropped, so the smallest is
      one too). One set of tables per set of blocked slots, where those slots add nothing (with one set for all, a
      White Mage search with a two-handed weapon still counted the best shield and ran 110,000 to 420,000 nodes at item
      level 400 instead of under 120);
+   - under a speed band, each other minimum is checked against what the remaining slots can add with speed in the band
+     (band reach, below);
    - children are grouped by the first limit's value and the slots they block, groups tried best bound first, and each
      group scanned by score down to the first candidate that cannot beat the best loadout so far;
    - the memo: two partial loadouts at the same slot with the same limited totals (a total past a minimum with no
      maximum counts as the minimum: nothing after it can tell them apart), the same blocked slots and, at the second
      ring slot, the same first ring have the same completions, so the later one is cut unless it scores more; with
      several limits, a later one with no more score and no more of any minimum-only total is cut too (dominance). */
-export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit, plain = false, lazyTables = LAZY_TABLES, start = null }) {
+export function branchAndBound({
+  slotList,
+  posList,
+  dims,
+  limits = [],
+  nodeLimit,
+  plain = false,
+  lazyTables = LAZY_TABLES,
+  start = null,
+  proven = null,
+}) {
   const nSlots = slotList.length;
   limits = limits.filter(l => dims.includes(l.stat) && (l.min > 0 || l.max != null));
   const hasMinimum = limits.some(l => l.min > 0);
   const keptCount = () => [...new Set(posList)].reduce((n, list) => n + list.length, 0);
+  const fullLists = posList; // before the filters: the pieces a regain cut's swaps may bring in
 
   // 1. drop the candidates that cannot reach a minimum
   if (!plain && hasMinimum) posList = dropShortfalls(slotList, posList, dims, limits);
@@ -448,7 +506,7 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
   // share one list, so they share the filtered one too), and the shortfalls that leaves
   if (!plain && start && limits.length) start = improveStart(slotList, posList, limits, start);
   const known = start ? start.score : -Infinity; // the score to beat
-  const lagr = !plain && start && limits.length ? lagrangeBound(posList, limits, start.score) : null;
+  let lagr = !plain && start && limits.length ? lagrangeBound(posList, limits, start.score) : null;
   if (lagr) {
     const filtered = new Map();
     posList = posList.map((list, i) => {
@@ -458,14 +516,40 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
     if (hasMinimum) posList = dropShortfalls(slotList, posList, dims, limits);
   }
 
-  // 3. with lists that short, Pareto fronts often settle it in one pass (front.js); when a front grows too large, search
-  if (lagr) {
-    const fronts = frontSearch(slotList, posList, limits, known);
-    if (fronts) {
-      const best = fronts.best ? fronts.best.slots : start.best;
-      return { best, nodes: fronts.entries, truncated: false, method: 'fronts', kept: keptCount(), frontSizes: fronts.sizes };
-    }
+  // 3. the regain cuts from earlier searches' proven maxima (regain.js), on the few candidates the filters left, then
+  // the shortfalls that leaves. From here on `limits` and `dims` hold the cuts' synthetic stats too
+  if (!plain && proven?.length) {
+    ({ posList, dims, limits } = addRegainCuts({ slotList, posList, fullLists, dims, limits, proven }));
+    if (hasMinimum) posList = dropShortfalls(slotList, posList, dims, limits);
   }
+
+  // 4. the slots in the order that suits the filtered lists (shortListsFirst); every list by position follows, and the
+  // result goes back to the caller's order (restore, below)
+  const callerSlotList = slotList;
+  const perm = plain ? null : shortListsFirst(slotList, posList);
+  if (perm) {
+    slotList = perm.map(old => callerSlotList[old]);
+    const lists = posList;
+    posList = perm.map(old => lists[old]);
+    if (lagr) {
+      const slotAug = lagr.slotAug;
+      lagr = { ...lagr, slotAug: Float64Array.from(perm, old => slotAug[old]) };
+    }
+    if (start) start = { ...start, best: perm.map(old => start.best[old]) };
+  }
+  // a loadout in this search's order and candidates as the caller's: the caller's order, and each candidate a regain cut
+  // copied as its original (a blocked slot's blockedBy may stay a copy: only its item is read)
+  const restore = loadout => {
+    if (!loadout) return loadout;
+    const asCaller = slot => (slot?.cand?.original ? { ...slot, cand: slot.cand.original } : slot);
+    if (!perm) return loadout.map(asCaller);
+    const out = new Array(nSlots);
+    perm.forEach((old, i) => {
+      out[old] = asCaller(loadout[i]);
+    });
+    return out;
+  };
+
   const { remMax, remSc, slotMax, slotSc } = suffixBounds(slotList, posList, dims);
   const nLimits = limits.length;
   const limitStats = limits.map(l => l.stat);
@@ -566,23 +650,27 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
 
   // groups[pos]: the slot's candidates split by (the first limit's value, blocked slots), each group's [rank, candidate]
   // list by score, highest first, and the groups by their best score, highest first; `i` keeps a group's first-seen
-  // order for ties. A group's `values` are, per limit, the most any member adds: exact for the first limit (speed, the
-  // only one that can have a maximum, comes first), and for the others, which are minimums only, a bound that never
-  // falls below a member's (a minimum's table only rises with the total so far). Grouping by every limited value
-  // instead made nearly every candidate its own group, and scoring each group at every node cost more than it saved
-  // (Sage at level 100, three limits: 9 s)
+  // order for ties. A group's `values` are, per limit, a value whose table bound is at least every member's: exact for
+  // the first limit (speed's band, when there is one, comes first) and for any other band (both in the key), the most
+  // any member adds for a minimum only (its table only rises with the total so far) and the least for a maximum only
+  // (a regain cut: its table only falls). Grouping by every limited value instead made nearly every candidate its own
+  // group, and scoring each group at every node cost more than it saved (Sage at level 100, three limits: 9 s)
+  const isBand = limits.map(l => l.max != null && l.min > 0);
   const groups = limitBound
     ? posList.map(list => {
         const byKey = new Map();
         list.forEach((a, rank) => {
           const values = limitStats.map(s => Math.max(0, a.eff[s] || 0));
           const mask = blockMaskOf.get(a);
-          const key = `${values[0]}|${mask}`;
+          let key = `${values[0]}|${mask}`;
+          for (let k = 1; k < nLimits; k++) if (isBand[k]) key += `|${values[k]}`;
           const group = byKey.get(key);
           // each entry keeps the candidate's own values, for its own bound (several limits)
           if (!group) byKey.set(key, { values: [...values], mask, list: [[rank, a, values]] });
           else {
-            for (let k = 1; k < nLimits; k++) if (values[k] > group.values[k]) group.values[k] = values[k];
+            for (let k = 1; k < nLimits; k++) {
+              if (limits[k].max == null ? values[k] > group.values[k] : values[k] < group.values[k]) group.values[k] = values[k];
+            }
             group.list.push([rank, a, values]);
           }
         });
@@ -602,8 +690,10 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
     // 50,000 (< 1e5). Several: the same numbers in a string
     const head = ((prev ? prev.rank + 1 : 0) * 4096 + blockedMask) * 32 + pos;
     if (nLimits === 1) return head * 1e5 + memoValue[0](limitTotals[0]) + 5e4;
+    // a regain cut's total stays out: two states with the same real totals have the same completions that meet the real
+    // limits, and every such loadout meets the cut too (regain.js), so the earlier state's search has covered them
     let key = `${head}`;
-    for (let k = 0; k < nLimits; k++) if (!(coarse && dominanceLimit[k])) key += `,${memoValue[k](limitTotals[k])}`;
+    for (let k = 0; k < nLimits; k++) if (!limits[k].cut && !(coarse && dominanceLimit[k])) key += `,${memoValue[k](limitTotals[k])}`;
     return key;
   };
 
@@ -693,9 +783,34 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
     return true;
   }
 
+  // band reach: under a speed band (the first limit), for each other minimum, the most of its stat the slots from i on
+  // can add while speed still lands in the band (limitTables with that stat as the score), as [k, table]. The check
+  // above it, each slot's most of the stat, ignores speed. Copies and blocking are relaxed as in every limit table, so a
+  // loadout that meets the limits is never cut. White Mage at level 100, item level 690, Piety > Critical Hit >
+  // Determination: 6.0 to 4.1 s (Perplexity's measurement, 2026-10-17)
+  const bandReach = [];
+  if (!plain && nLimits > 1 && isBand[0]) {
+    const speed = limits[0];
+    for (let k = 1; k < nLimits; k++) {
+      if (!(limits[k].min > 0)) continue;
+      const stat = limits[k].stat;
+      const table = limitTables(
+        slotList,
+        posList,
+        a => a.eff[speed.stat],
+        speed.min,
+        speed.max,
+        null,
+        a => a.eff[stat] || 0,
+      );
+      if (table) bandReach.push([k, table]);
+    }
+  }
+
+  let searchLimit = nodeLimit; // the trial search below runs with a lower one
   function dfs(pos, scoreSoFar) {
     if (truncated) return;
-    if (++nodes > nodeLimit) {
+    if (++nodes > searchLimit) {
       truncated = true;
       return;
     }
@@ -714,6 +829,7 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
       const min = limits[k].min;
       if (min > 0 && limitTotals[k] + remMax[limitStats[k]][pos] - blockedLimit[k] < min) return;
     }
+    for (const [k, table] of bandReach) if (limitTotals[k] + table(pos, limitTotals[0]) < limits[k].min) return;
     if (limitBound && scoreSoFar + limitBoundFor(blockedMask).at(pos, null) <= bestScore) return;
     // the Lagrangian bound here; a child gives up its slot's most minus its own priced value from it
     let nodeLagr = Infinity;
@@ -803,6 +919,31 @@ export function branchAndBound({ slotList, posList, dims, limits = [], nodeLimit
     }
   }
 
+  // 5. with a known set, a short trial search first (TRIAL_NODES); only when it does not finish, Pareto fronts
+  // from its best set (front.js: with lists this short they often settle it in one pass); only when a front grows too
+  // large, the full search, from the top with the memo cleared (a run cut short leaves states in it it never finished)
+  if (lagr) {
+    searchLimit = Math.min(TRIAL_NODES, nodeLimit);
+    dfs(0, 0);
+    if (!truncated) return { best: restore(best), nodes, truncated, method: 'trial', kept: keptCount() };
+    const fronts = frontSearch(slotList, posList, limits, bestScore);
+    if (fronts) {
+      const frontsBest = fronts.best ? fronts.best.slots : best;
+      return {
+        best: restore(frontsBest),
+        nodes: nodes + fronts.entries,
+        truncated: false,
+        method: 'fronts',
+        kept: keptCount(),
+        frontSizes: fronts.sizes,
+      };
+    }
+    if (nodeLimit <= TRIAL_NODES) return { best: restore(best), nodes, truncated, method: 'search', kept: keptCount() };
+    truncated = false;
+    seen?.clear();
+    seenFronts?.clear();
+    searchLimit = nodeLimit;
+  }
   dfs(0, 0);
-  return { best, nodes, truncated, method: 'search', kept: keptCount() };
+  return { best: restore(best), nodes, truncated, method: 'search', kept: keptCount() };
 }

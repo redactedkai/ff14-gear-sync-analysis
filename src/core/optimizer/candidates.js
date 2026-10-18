@@ -9,7 +9,9 @@
      blocks  slot types it leaves empty (a two-handed weapon the off-hand, a cloak the head)
      meld    its melds (bestMeld in meld.js) or null
      score   [target, tiebreak 1, tiebreak 2] packed into one number (makeScorer); set by buildCandidates
-     sum     its stat total, the sort tiebreak; set by buildCandidates */
+     sum     its stat total, the sort tiebreak; set by buildCandidates
+     versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.js) may
+             swap a ring for any of them, including those pruning dropped */
 import { SLOT_TYPES } from '../constants.js';
 import { capsFor, syncStats } from '../formulas.js';
 import { equipLevel, meldInfo, scalesWithLevel, slotInfo } from '../items.js';
@@ -119,11 +121,28 @@ function withMeld(job, item, synced, meld) {
 
 /* With limits (a speed rule, stat minimums) and melds: one candidate per meld version of the piece (meldVersions) on
    `keys`, the objective's keys and the limited stats, all sharing the item, so copies and Unique rings still count
-   once per piece (pruneDominated counts by `it`, the search by item id). */
-function itemVersions(job, item, sync, keys, exactSpd) {
-  const synced = effStats(job, item, sync);
-  if (itemSyncIlvl(item, sync) != null) return [withMeld(job, item, synced, null)];
-  return meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld));
+   once per piece (pruneDominated counts by `it`, the search by item id). Each keeps the whole list as `versions`.
+   `versionCache` (optional, a Map): the versions built before for the same item, keys and speed rule, from the same
+   job and sync. They depend on nothing else (not on the objective), so tier ranking's stages, one candidate list
+   each, build them once; each list gets its own shallow copies, since buildCandidates writes each candidate's score
+   and sum. */
+function itemVersions(job, item, sync, keys, exactSpd, versionCache) {
+  const build = () => {
+    const synced = effStats(job, item, sync);
+    if (itemSyncIlvl(item, sync) != null) return [withMeld(job, item, synced, null)];
+    const versions = meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld));
+    for (const v of versions) v.versions = versions;
+    return versions;
+  };
+  if (!versionCache) return build();
+  const key = `${job.jobId}|${sync.cap}|${sync.sync}|${sync.level}|${keys.join()}|${exactSpd}`;
+  let byKey = versionCache.get(item);
+  if (!byKey) {
+    byKey = new Map();
+    versionCache.set(item, byKey);
+  }
+  if (!byKey.has(key)) byKey.set(key, build());
+  return byKey.get(key).map(v => ({ ...v }));
 }
 
 /* A (`rival` in the code) beats B (`cand`) when A is >= on every dimension and either > on one of them or, for an exact tie, comes first, and A
@@ -245,13 +264,14 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpd = false) {
    With any limit, every piece brings each of its meld versions (itemVersions) when melds are on, and pruning compares
    the score and the limited stats only (pruneForLimits). The versions are on the objective's keys and the limited
    stats, after `versionKeys` (more stats keep more versions, which is still exact): tier ranking passes every key of
-   its goal, in one order, so its stages share meldVersions' memo instead of each enumerating its own. */
+   its goal, in one order, so its stages share meldVersions' memo instead of each enumerating its own, and a
+   `versionCache` (itemVersions), so they build each piece's versions once. */
 export function buildCandidates(
   job,
   pool,
   sync,
   { target, tiebreak = [] },
-  { prune = true, melds = false, speed = null, minStats = [], versionKeys = [] } = {},
+  { prune = true, melds = false, speed = null, minStats = [], versionKeys = [], versionCache = null } = {},
 ) {
   const dims = vectorDims(job);
   // the stats the search may hold to a minimum or band, speed first
@@ -263,7 +283,9 @@ export function buildCandidates(
     const items = pool.filter(i => i.type === t);
     candsByType[t] =
       melds && limitStats.length
-        ? items.flatMap(it => itemVersions(job, it, sync, [...new Set([...versionKeys, ...keys, ...limitStats])], speed === 'exact'))
+        ? items.flatMap(it =>
+            itemVersions(job, it, sync, [...new Set([...versionKeys, ...keys, ...limitStats])], speed === 'exact', versionCache),
+          )
         : items.map(it => itemCandidate(job, it, sync, keys));
   });
   const blockable = new Set(SLOT_TYPES.flatMap(t => candsByType[t].flatMap(a => a.blocks)));

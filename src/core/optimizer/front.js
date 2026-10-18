@@ -6,15 +6,17 @@
    fronts settle it in one pass.
 
    A partial loadout (an entry) holds its score, its total of each limited stat, the slots it leaves empty and the slots
-   its pieces block. Two entries compare only with the same empty and blocked slots and, under a speed maximum, the
+   its pieces block. Two entries compare only with the same empty and blocked slots and, under a speed band, the
    same speed: then the one with at least the score and at least every other limited total (a total past its minimum
    counts as the minimum, and so does speed past its minimum when it has no maximum: nothing before it can tell them
-   apart) beats the other, since every way to finish the beaten one finishes the other with no less score and no
-   broken limit. Entries that cannot beat `known` even with the most the earlier slots can add, or cannot reach a
-   minimum, go too (Morin and Marsten's bounded dynamic programming). The rules for empty slots are the search's: a slot
-   is empty when a chosen piece blocks it (checked on the whole loadout), when it has no candidates, or, for the second
-   ring, when no ring has a copy left; the two ring slots are filled together, as a pair (the same item twice only with
-   2 copies). */
+   apart; for a total with a maximum only, at most) beats the other, since every way to finish the beaten one finishes
+   the other with no less score and no broken limit. A regain cut's total (search.js, regain.js) is not compared: any
+   way to finish the beaten one into a loadout meeting the real limits finishes the other into one too, and such a
+   loadout always meets the cut. Entries that cannot beat `known` even with the most the earlier slots can add, or
+   cannot reach a minimum, go too (Morin and Marsten's bounded dynamic programming). The rules for empty slots are the
+   search's: a slot is empty when a chosen piece blocks it (checked on the whole loadout), when it has no candidates,
+   or, for the second ring, when no ring has a copy left; the two ring slots are filled together, as a pair (the same
+   item twice only with 2 copies). */
 
 /* The most entries one slot's front may hold, and the most extensions it may try over all slots (front x choices), before
    frontSearch gives up (the caller then searches as before). */
@@ -30,7 +32,7 @@ const FRONT_COMPARES = 30000000;
  * @param known     the score to beat (a set already in hand), or -Infinity
  * @returns {best, entries, sizes} with best in branchAndBound's shape (null when nothing beats `known`) and sizes the
  *          front's size after each stage, last slot first; or null when a front grew too large (FRONT_MOST, FRONT_TRIES,
- *          FRONT_COMPARES)
+ *          FRONT_COMPARES) or a limit other than the first band is a band too
  */
 export function frontSearch(slotList, posList, limits, known = -Infinity) {
   const n = slotList.length;
@@ -48,7 +50,13 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   const blockable = posList.reduce((m, list) => m | list.reduce((x, a) => x | blocksOf.get(a), 0), 0);
   // a limited total as entries compare it: capped at the minimum unless the stat has a maximum
   const capOf = limits.map(l => (l.max == null ? (l.min > 0 ? l.min : 0) : Infinity));
-  const exactK = limits.findIndex(l => l.max != null);
+  // how entries compare on each limit: a band (speed's, exactK) only between equal totals; a maximum only, less is
+  // better; a regain cut not at all (entries past its maximum go, and no loadout meeting the real limits breaks it:
+  // regain.js), the rest more is better. A second band is not supported: the caller then searches
+  const isBand = limits.map(l => l.max != null && l.min > 0);
+  const exactK = isBand.indexOf(true);
+  if (isBand.lastIndexOf(true) !== exactK) return null;
+  const compare = limits.map((l, k) => (k === exactK || l.cut ? 0 : l.max != null ? -1 : 1));
 
   // stages from the last slot back: one per slot, the two ring slots as one; each stage's choices as
   // {score, vals, blocks, slots: [{cand} per position]}
@@ -132,7 +140,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
       }
     }
     entries += out.length;
-    front = paretoFilter(out, nL, exactK, work);
+    front = paretoFilter(out, exactK, compare, work);
     if (front) sizes.push(front.length);
   });
   if (!front) return null;
@@ -183,43 +191,62 @@ function ringChoices(list) {
   return [{ cands: [null, null] }];
 }
 
-/* The entries no other one beats: same empty and blocked slots (and the same speed under a maximum, limit `exactK`),
-   at least the score and every other limited total. By score, highest first, so a beater is always kept first.
-   Null as soon as more than FRONT_MOST are kept, or the comparisons (work.compares, summed over the stages) pass
-   FRONT_COMPARES: each entry is compared with every kept one of its group, so a large front costs its size squared
-   (Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit, food off: 21 s
-   in this loop before the front gave up on its size, then a 25,000-node search). */
-function paretoFilter(entries, nL, exactK, work) {
+/* The entries no other one beats: same empty and blocked slots (and the same speed under a band, limit `exactK`), at
+   least the score and at least every compared total (compare[k]: 1 more is better, -1 less is better, 0 not compared;
+   frontSearch). By score, highest first, so a beater is always kept first.
+   With at most two compared totals (the common case) a group's kept entries reduce to a staircase (beatenOnStairs):
+   one binary search per entry. With more, each entry is compared with every kept one of its group, so a large front
+   costs its size squared: null as soon as those comparisons (work.compares, summed over the stages) pass
+   FRONT_COMPARES (Black Mage at level 90, item level 660, 2.32 or faster, Critical Hit > Determination > Direct Hit,
+   food off: 21 s in this loop before the front gave up on its size, then a 25,000-node search). Null too as soon as
+   more than FRONT_MOST are kept. */
+function paretoFilter(entries, exactK, compare, work) {
   entries.sort((x, y) => y.score - x.score);
+  // the compared totals of an entry, each turned so that more is better
+  const compared = compare.flatMap((sign, k) => (sign ? [k] : []));
+  const comparedValue = (e, j) => (j < compared.length ? compare[compared[j]] * e.vals[compared[j]] : 0);
   const groups = new Map();
   const kept = [];
   for (const e of entries) {
     const key = `${e.empty}|${e.blocked}|${exactK >= 0 ? e.vals[exactK] : ''}`;
-    let g = groups.get(key);
-    if (!g) {
-      g = [];
-      groups.set(key, g);
+    let group = groups.get(key);
+    if (!group) {
+      group = { stairs: [], values: [] };
+      groups.set(key, group);
     }
-    let beaten = false;
-    work.compares += g.length;
-    if (work.compares > FRONT_COMPARES) return null;
-    for (const f of g) {
-      let all = true;
-      for (let k = 0; k < nL; k++) {
-        if (k !== exactK && f.vals[k] < e.vals[k]) {
-          all = false;
-          break;
-        }
-      }
-      if (all) {
-        beaten = true;
-        break;
-      }
+    if (compared.length <= 2) {
+      work.compares++;
+      if (beatenOnStairs(group.stairs, comparedValue(e, 0), comparedValue(e, 1))) continue;
+    } else {
+      work.compares += group.values.length;
+      if (work.compares > FRONT_COMPARES) return null;
+      const values = compared.map((_, j) => comparedValue(e, j));
+      if (group.values.some(other => other.every((v, j) => v >= values[j]))) continue;
+      group.values.push(values);
     }
-    if (beaten) continue;
-    g.push(e);
     kept.push(e);
     if (kept.length > FRONT_MOST) return null;
   }
   return kept;
+}
+
+/* Dominance in two totals (x, y) by a staircase: `stairs` holds the kept points by x falling, y rising, so the points
+   with x >= a new point's x are a prefix, and the last of them has the most y. Returns true when that one has
+   y >= the new y (some kept point beats it); otherwise puts the new point in, dropping the points after it that it
+   beats (x below it and y <= its y: a run from where it goes), and returns false. One total: y is 0 for every point;
+   none: x and y are 0, and the first point beats every later one. */
+function beatenOnStairs(stairs, x, y) {
+  // first index with a smaller x
+  let lo = 0,
+    hi = stairs.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (stairs[mid].x >= x) lo = mid + 1;
+    else hi = mid;
+  }
+  if (lo > 0 && stairs[lo - 1].y >= y) return true;
+  let end = lo;
+  while (end < stairs.length && stairs[end].y <= y) end++;
+  stairs.splice(lo, end - lo, { x, y });
+  return false;
 }

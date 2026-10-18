@@ -21,8 +21,9 @@ function speedRule(opts) {
    may get a minimum), never on the limits' values. A list built for 'exact' also serves a speed minimum alone (its
    pruning keeps more), one for 'min' serves only minimums, one for null only searches with no speed rule; a search may
    hold any of `minStats`, or none. 'spd' in minStats is a speed rule of 'min' (unless `speed` is set).
-   `versionKeys`: stats the meld versions are also on (buildCandidates).
-   opts = {target='spd', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[]}.
+   `versionKeys`: stats the meld versions are also on, and `versionCache`: meld versions shared with other lists of
+   the same job and sync (buildCandidates).
+   opts = {target='spd', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache}.
    Returns {slotList, posList, dims, noMeldData, speed, minStats}. */
 export function prepare(job, pool, sync, opts) {
   opts = opts || {};
@@ -36,7 +37,7 @@ export function prepare(job, pool, sync, opts) {
     pool,
     sync,
     { target, tiebreak },
-    { melds: !!opts.melds, speed, minStats, versionKeys: opts.versionKeys || [] },
+    { melds: !!opts.melds, speed, minStats, versionKeys: opts.versionKeys || [], versionCache: opts.versionCache },
   );
   return { ...cands, speed, minStats };
 }
@@ -98,16 +99,19 @@ export function seedStart(prep, picks) {
 /* The most search nodes before a search stops and reports `truncated` (the page passes its own, lower NODE_LIMIT). */
 const DEFAULT_NODE_LIMIT = 1500000;
 
-/* Search prepared candidates under {spdMin, spdMax, mins, nodeLimit=DEFAULT_NODE_LIMIT, plain, lazyTables}; same result
-   as optimize. mins = {stat: gear points}: minimums on stats prepared for them (prepare's minStats; mins.spd joins
-   spdMin). `plain` turns off every extra for limits (the filters, the Lagrangian bound, fronts, limit tables, groups,
-   memo), for checking them;
+/* Search prepared candidates under {spdMin, spdMax, mins, nodeLimit=DEFAULT_NODE_LIMIT, plain, lazyTables, seed,
+   proven}; same result as optimize. mins = {stat: gear points}: minimums on stats prepared for them (prepare's
+   minStats; mins.spd joins spdMin). `plain` turns off every extra (the filters, the Lagrangian bound, regain cuts, slot
+   order, trial search, fronts, limit tables, groups, memo), for checking them;
    `lazyTables` (tests only) is the node count after which the tables for blocked slots are built (search.js
    LAZY_TABLES). `seed`: the picks of an earlier result that meets every limit of this search (tier ranking passes the
    stage before's); the search starts from it, so it returns at least as good a loadout, that one when it stops early.
    On a tie with the seed the seed is returned. A seed that breaks a limit is ignored. With a seed and limits the
-   search filters by the Lagrangian bound and may settle by Pareto fronts (search.js branchAndBound). The result adds
-   `method` ('fronts' or 'search'), `kept` (candidates left after the filters) and `frontSizes` to optimize's. */
+   search filters by the Lagrangian bound and may settle by a short trial search or Pareto fronts (search.js
+   branchAndBound). `proven`: maxima earlier searches proved, [{stat, most, minStats, speed}] (regain.js), each under
+   limits this search's include (the same speed rule, minimums no lower on minStats); tier ranking passes its
+   finished stages'. The result adds `method` ('trial', 'fronts' or 'search'), `kept` (candidates left after the
+   filters) and `frontSizes` to optimize's. */
 export function solve(prep, opts) {
   opts = opts || {};
   const limits = limitsFor(prep, opts);
@@ -123,6 +127,7 @@ export function solve(prep, opts) {
     plain: !!opts.plain,
     lazyTables: opts.lazyTables,
     start,
+    proven: opts.proven,
   });
   if (!best) return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
 

@@ -174,12 +174,13 @@ test('a seed gives the same totals; a seed that is already the best comes back',
 /* The filters before the search (shortfalls, the Lagrangian bound against a seed) and the Pareto fronts, on tight
    cases: bigger pools, a minimum within 5 points of the most the pool reaches and a narrow speed band, against the
    plain search (none of them) on the same candidates. The run also checks that they did something: pieces dropped,
-   and some searches settled by fronts. */
-test('tight minimums with a seed: the filters and fronts give the plain search totals', () => {
+   and some searches settled in one pass. Since the trial search before the fronts (search.js TRIAL_NODES), most of
+   these small cases are settled by it (method 'trial') and never build fronts, so both count. */
+test('tight minimums with a seed: the filters, the trial search and fronts give the plain search totals', () => {
   const rand = rng(5),
     int = n => Math.floor(rand() * n);
   let runs = 0,
-    byFronts = 0,
+    onePass = 0,
     before = 0,
     after = 0;
   for (let t = 0; t < 120; t++) {
@@ -204,12 +205,12 @@ test('tight minimums with a seed: the filters and fronts give the plain search t
     const label = `${job.jobId} #${t} ${target} > ${other} ${JSON.stringify(limits)}`;
     assert.deepEqual([full.totals[target], full.totals[other]], [plain.totals[target], plain.totals[other]], label);
     runs++;
-    if (full.method === 'fronts') byFronts++;
+    if (full.method === 'trial' || full.method === 'fronts') onePass++;
     before += prep.posList.reduce((n, l) => n + l.length, 0);
     after += full.kept;
   }
   assert.ok(runs >= 60, `${runs} runs`);
-  assert.ok(byFronts >= 20, `${byFronts} runs settled by fronts`);
+  assert.ok(onePass >= 20, `${onePass} runs settled by the trial search or fronts`);
   assert.ok(after < before * 0.8, `kept ${after} of ${before} candidates`);
 });
 
@@ -306,4 +307,58 @@ test('frontSearch gives up on too many ring pairs or too much filtering, without
   const limits = [{ stat: 'det', min: 2000, max: null }];
   assert.equal(frontSearch(['neck', 'head', 'body'], [[cand('n', 0, 2000)], ...lists], limits), null);
   assert.ok(performance.now() - t < 3000, `${Math.round(performance.now() - t)} ms`);
+});
+
+/* The fronts on their own (most searches are settled by the trial search before them, search.js TRIAL_NODES), against the
+   plain search on the same candidates, for each way paretoFilter compares entries: a speed band with one or two
+   minimums (the staircase: at most two compared totals), a speed minimum with two more (each kept entry compared), and
+   a speed maximum alone with a minimum (less speed is better). */
+test('frontSearch alone gives the plain search best: staircase, pairwise, and a maximum only', () => {
+  const rand = rng(41),
+    int = n => Math.floor(rand() * n);
+  const settled = { band1: 0, band2: 0, min3: 0, max1: 0 };
+  for (let t = 0; t < 32; t++) {
+    const job = makeJobContext(['SGE', 'WAR', 'PLD', 'NIN'][t % 4]);
+    const pool = smallPool(job, rand, ['head', 'body', 'hands', 'legs', 'neck', 'ring'], 3);
+    if (!pool.length) continue;
+    const [target, a, b] = job.substats.filter(s => s !== 'spd').sort(() => rand() - 0.5);
+    const prep = prepare(job, pool, NO_SYNC, { target, melds: true, speed: 'exact', minStats: [a, b] });
+    // tight limits, so that dominance decides: speed at most a little below the free result's, each minimum between
+    // the free result's total and the most the pool reaches
+    const free = optimize(job, pool, NO_SYNC, { target, melds: true }).totals;
+    const spd = Math.max(1, free.spd - int(40));
+    const below = s => {
+      const most = optimize(job, pool, NO_SYNC, { target: s, melds: true }).totals[s];
+      return Math.max(1, free[s] + int(most - free[s] + 1));
+    };
+    const kind = Object.keys(settled)[t % 4];
+    const limits = {
+      band1: [
+        { stat: 'spd', min: spd, max: spd + 20 },
+        { stat: a, min: below(a), max: null },
+      ],
+      band2: [
+        { stat: 'spd', min: spd, max: spd + 20 },
+        { stat: a, min: below(a), max: null },
+        { stat: b, min: below(b), max: null },
+      ],
+      min3: [
+        { stat: 'spd', min: spd, max: null },
+        { stat: a, min: below(a), max: null },
+        { stat: b, min: below(b), max: null },
+      ],
+      max1: [
+        { stat: 'spd', min: null, max: spd },
+        { stat: a, min: below(a), max: null },
+      ],
+    }[kind];
+    const fronts = frontSearch(prep.slotList, prep.posList, limits);
+    if (!fronts) continue; // gave up: the search would run
+    const mins = Object.fromEntries(limits.slice(1).map(l => [l.stat, l.min]));
+    const plain = solve(prep, { spdMin: limits[0].min ?? 0, spdMax: limits[0].max, mins, plain: true });
+    const label = `${job.jobId} #${t} ${kind} ${JSON.stringify(limits)}`;
+    assert.equal(fronts.best ? fronts.best.score : null, plain.ok ? prep.score(plain.totals) : null, label);
+    settled[kind]++;
+  }
+  for (const [kind, n] of Object.entries(settled)) assert.ok(n >= 6, `${kind}: ${n} settled by fronts`);
 });
