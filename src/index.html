@@ -172,6 +172,7 @@
       <span x-show="calc.byLevel" x-text="`Level sync: at level ${calc.level}, gear with a higher equip level is synced to item level ${calc.cap}, used as the cap here.`"></span>
       <span x-show="calc.status === 'below'" x-text="`This piece is at or below the cap (${calc.cap}), so sync leaves it untouched.`"></span>
       <span x-show="calc.status === 'above'" x-text="`This piece is above the cap (${calc.cap}): each line is cut to the cap for its slot.`"></span>
+      <span class="hovernote" id="p-why"><button type="button" class="help shelp" aria-describedby="p-why-pop" aria-label="What are 100% and 70%?">?</button><span class="popover statpop" id="p-why-pop" role="tooltip"><b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.</span></span></span>
     </p>
     <div class="tablewrap"><table class="compact">
       <thead><tr><th>Stat</th><th class="n" x-text="'Budget at ilvl ' + calc.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-show="calc.cap != null" x-text="'Synced to ' + calc.cap"></th></tr></thead>
@@ -187,9 +188,6 @@
         </template>
       </tbody>
     </table></div>
-  </div>
-  <div class="note small" id="p-why">
-    <b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.</span>
   </div>
   <h3>Stat budget by item level</h3>
   <div class="legend"><span><i style="background:var(--accent)"></i>Substat budget</span><span><i style="background:var(--gold)"></i>Main stat budget</span><span x-show="calc.cap != null"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>

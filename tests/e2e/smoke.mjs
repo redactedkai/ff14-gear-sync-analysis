@@ -273,6 +273,28 @@ async function openSteps(pg) {
   if (!(await pg.locator('#p-steps').evaluate(d => d.open))) await pg.click('#p-steps > summary');
 }
 
+/** A closed details panel ("Each stat, step by step") is only its summary plus padding: the flex gap of the panel must
+    not add space for the hidden content (it added 14 px, 2026-10-17). */
+async function checkClosedPanel(pg) {
+  await showMath(pg, 'piece');
+  if (await pg.locator('#p-steps').evaluate(d => d.open)) await pg.click('#p-steps > summary');
+  const extra = await pg.locator('#p-steps').evaluate(d => {
+    const cs = getComputedStyle(d);
+    const frame = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + parseFloat(cs[k]), 0);
+    return d.getBoundingClientRect().height - frame - d.querySelector('summary').getBoundingClientRect().height;
+  });
+  check(Math.abs(extra) < 1, `closed #p-steps has ${extra.toFixed(1)} px beyond its summary and padding`);
+
+  // the 100% / 70% note: hidden until its ? is hovered
+  await pg.click('#p-steps > summary');
+  await expect(pg.locator('#p-why-pop')).toBeHidden();
+  await pg.hover('#p-why button');
+  await expect(pg.locator('#p-why-pop')).toBeVisible();
+  await expect(pg.locator('#p-why-pop')).toContainText('70%');
+  await pg.mouse.move(0, 0);
+  await pg.click('#p-steps > summary');
+}
+
 /** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
 async function checkPieceLab(pg) {
   await showMath(pg, 'piece');
@@ -1213,7 +1235,7 @@ const walk = job => ({ name: `walkJobs ${job}`, run: walkJob(job) });
 const step = fn => ({ name: fn.name, run: fn });
 const GROUPS = [
   { fresh: true, steps: [step(checkDefaults)] },
-  { steps: [step(checkPieceLab), step(checkJobSwitch), step(checkPldOffhand)] },
+  { steps: [step(checkPieceLab), step(checkClosedPanel), step(checkJobSwitch), step(checkPldOffhand)] },
   ...OPT_CASES.map(c => ({ slow: true, steps: [realGear(c)] })),
   { slow: true, steps: [step(checkTypingDebounce)] },
   { slow: true, steps: [step(checkRingCopies), step(checkGearGroups)] },

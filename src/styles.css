@@ -946,6 +946,10 @@ details summary {
   cursor: pointer;
   font-weight: 600;
 }
+/* a closed details panel: its hidden content is still a flex item, so the panel's gap would add space below the summary */
+details.panel:not([open]) {
+  gap: 0;
+}
 /* dev builds only (scripts/build/build.mjs, buildMarks) */
 .build-badge {
   display: inline-block;
@@ -1138,6 +1142,21 @@ table.ladder th {
   margin-left: 2px;
   text-transform: none;
   letter-spacing: 0;
+}
+/* a "?" whose note shows while it is hovered or focused (Piece stats: the 100% and 70% shares) */
+.hovernote {
+  position: relative;
+  display: inline-block;
+}
+.hovernote .popover {
+  display: none;
+  left: 0;
+  font-weight: 400;
+  color: var(--fg);
+}
+.hovernote:hover .popover,
+.hovernote:focus-within .popover {
+  display: block;
 }
 .popover.statpop {
   right: auto;
