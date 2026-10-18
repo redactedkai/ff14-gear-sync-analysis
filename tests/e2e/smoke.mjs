@@ -935,14 +935,10 @@ async function checkCapValidation(pg) {
   await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
   await pg.fill('#cap', '123');
   await expect(pg.locator('#cap-error')).toBeHidden();
-  // no duty pairs level 1 with cap 123: an error under the field, and nothing computed (state.js capOutOfRange)
+  // level 1 with cap 123: no error; gear made for a higher level is held to the best gear made for level 1 (capCeiling)
   await setNumber(pg, '#level', '1');
-  await expect(pg.locator('#cap-error')).toHaveText(
-    'No duty at level 1 has a cap above item level 6. Lower the cap, raise the synced level, or turn item level sync off.',
-  );
-  check((await pg.getAttribute('#cap', 'aria-invalid')) === 'true', 'a cap no duty pairs with the level is not marked invalid');
-  await setNumber(pg, '#level', '50');
-  await expect(pg.locator('#cap-error')).toBeHidden(); // cap 123 at level 50 is real (T13)
+  await expect(pg.locator('#cap-error')).toBeHidden();
+  check((await pg.getAttribute('#cap', 'aria-invalid')) !== 'true', 'a cap far above the level is marked invalid');
   await setNumber(pg, '#level', '100');
   await pg.locator('#sync').uncheck();
 }

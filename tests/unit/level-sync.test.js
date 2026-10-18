@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { IL, ITEMS } from '../../src/core/tables.js';
 import { JOBS } from '../../src/core/constants.js';
-import { dutyCapMax, levelSyncIlvl, syncTarget } from '../../src/core/sync-target.js';
+import { capCeiling, levelSyncIlvl, syncTarget } from '../../src/core/sync-target.js';
 import { capsFor } from '../../src/core/formulas.js';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../src/core/items.js';
 import { effStats, itemSyncIlvl, optimize } from '../../src/core/optimizer/index.js';
@@ -44,6 +44,13 @@ test('syncTarget: the item level trigger, the level trigger, both, and neither',
   assert.equal(t(666, 95, true, 665, 90), 665);
   // only the level triggers: level 94 gear at item level 663, under the 665 cap -> 660 (the same report)
   assert.equal(t(663, 94, true, 665, 90), 660);
+  // both, with the cap far above the level's item level, which no duty does: gear made for a higher level goes no
+  // higher than the best gear made for the level (capCeiling: 135, level 50's weapons), so level 50 with cap 400 syncs
+  // a level 70 piece to 135, not 400, while a level 60 piece under the cap gets 130 (owner's decision, 2026-10-18)
+  assert.equal(t(405, 70, true, 400, 50), 135);
+  assert.equal(t(270, 60, true, 400, 50), 130);
+  assert.equal(t(405, 50, true, 400, 50), 400); // wearable at the level: the cap alone
+  assert.equal(t(669, 96, true, 665, 90), 665); // Aloalo Island: the cap is the ceiling itself
   // no equip level (generated or hand-made pieces) or no synced level: only the item level cap
   assert.equal(t(790, null, false, null, 50), null);
   assert.equal(t(790, null, true, 700, 50), 700);
@@ -205,9 +212,12 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
   });
 }
 
-/* Real duties (ContentFinderCondition at datamining d9582a6): the highest cap at each synced level below 100 is at most
-   its level sync item level + 5; at 100 caps run to the highest item level, so there is no limit to warn about. */
-test('dutyCapMax: the highest real cap at a level fits every duty below level 100', () => {
+/* capCeiling is the best gear made for a level: the Wiki's table (Item Level page, "Item Level vs. Class Level") at the
+   level caps, 130 for armor and 5 more for weapons; between them the level's own item level. Real duties
+   (ContentFinderCondition at datamining d9582a6): the highest cap at each synced level below 100 is at or under it, so
+   holding gear made for a higher level to it changes no real duty. At 100 no gear is made for a higher level. */
+test('capCeiling: the best gear made for a level, at or above the highest real cap there', () => {
+  assert.deepEqual([50, 55, 60, 70, 75, 80, 90, 95, 99].map(capCeiling), [135, 136, 275, 405, 406, 535, 665, 666, 678]);
   // [level, highest cap a real duty has there]
   for (const [level, cap] of [
     [15, 5],
@@ -222,10 +232,7 @@ test('dutyCapMax: the highest real cap at a level fits every duty below level 10
     [95, 666],
     [98, 675],
   ]) {
-    assert.ok(cap <= dutyCapMax(level), `level ${level}: cap ${cap} above ${dutyCapMax(level)}`);
+    assert.ok(cap <= capCeiling(level), `level ${level}: cap ${cap} above ${capCeiling(level)}`);
   }
-  assert.equal(dutyCapMax(90), 665); // Mount Rokkon and Aloalo Island, the most above the level's 660
-  assert.equal(dutyCapMax(1), 6);
-  assert.equal(dutyCapMax(50), 135);
-  assert.equal(dutyCapMax(100), null);
+  assert.equal(capCeiling(90), 665); // Mount Rokkon and Aloalo Island, the most above the level's 660
 });

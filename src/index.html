@@ -112,7 +112,7 @@
   </div></template>
 </div>
 
-<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab !== 'tiers'" x-text="capOutOfRange($store.app) ? capRangeMessage($store.app) : $store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
+<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab !== 'tiers'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
 
 <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
 <section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
@@ -167,7 +167,7 @@
   </div>
 </div></template>
 
-<details class="panel" id="p-steps" x-show="!capOutOfRange($store.app)">
+<details class="panel" id="p-steps">
   <summary>Each stat, step by step</summary>
   <div id="p-out" class="steps">
     <p class="steps-sum" x-text="calc.summary"></p>
@@ -331,7 +331,6 @@
     <div id="o-out">
       <div class="progress" id="o-busy" x-show="busy" x-cloak role="progressbar" aria-label="Solving"><span></span></div>
       <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
-      <template x-if="view && view.kind === 'badcap'"><div class="panel"><div class="empty" id="o-badcap"><b class="bad" x-text="view.message"></b></div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'nogcd'"><div class="panel"><div class="empty" id="o-nogcd">No set fits this GCD.</div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>

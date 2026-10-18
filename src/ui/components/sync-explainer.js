@@ -3,7 +3,6 @@
 import Alpine from 'alpinejs';
 import { explainerItemLevel, explainerView } from '../views/sync-explainer.js';
 import { pieceView, withSub } from '../views/piece.js';
-import { capOutOfRange, capRangeMessage } from '../state.js';
 
 export function syncExplainer() {
   return {
@@ -13,9 +12,6 @@ export function syncExplainer() {
     il: 1,
     rangeNote: '',
     helpOpen: false,
-    // a cap no duty pairs with the synced level: the tab shows the message instead of its panels
-    capOutOfRange,
-    capRangeMessage,
     // the charts' container widths (px): each chart is drawn at its own width, so its text keeps the page's size
     widths: { piece: 0, gcd: 0 },
     init() {

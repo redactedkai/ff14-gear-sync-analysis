@@ -3,7 +3,6 @@ import { JOBS, JOB_ROWS, SLOT_LABEL } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
 import { tierFill } from '../views/tiers.js';
-import { capOutOfRange, capRangeMessage } from '../state.js';
 
 export function page() {
   return {
@@ -50,7 +49,6 @@ export function settings() {
       const app = this.$store.app;
       if (!app.sync) return '';
       if (this.capTypedBad) return `Enter a whole item level from 1 to ${app.maxReal}`;
-      if (capOutOfRange(app)) return capRangeMessage(app);
       return app.cap == null ? 'Enter a sync cap' : '';
     },
     /* every setting back to its default, after the browser's own confirmation dialog */

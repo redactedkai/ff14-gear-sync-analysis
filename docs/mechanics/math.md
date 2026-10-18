@@ -258,7 +258,18 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 - The same holds for a limited job at its own cap (Blue Mage 80, Beastmaster 50, section 1): it cannot wear gear of a higher equip level, so How the math works shows no level sync there.
 - Scaling gear (above) is the exception: at 80 a Blue Mage wears Azeyma's and Halone's Earrings (item level 560 and 690) at 530, at 50 a Beastmaster wears the five scaling accessories it can equip at 130.
 
-**When both apply, the item level cap wins**, even where it is the higher of the two. In Aloalo Island (level 90, item level 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660; level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). *Second-hand*: a player's report quoted by xivgear, which applies the same order; not captured by this project. In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
+**When both apply, the item level cap wins**, even where it is the higher of the two, **up to $\text{top}(L)$**, the highest item level of gear made for level $L$. In Aloalo Island (level 90, item level 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660; level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). *Second-hand*: a player's report quoted by xivgear, which applies the same order; not captured by this project. In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
+
+**The ceiling $\text{top}(L)$.** It is the highest item level of gear with equip level $L$ (scaling gear left out, since its item level is not tied to its equip level), or $\text{sync}(L)$ where that is higher. It is the Wiki's "the max IL achievable by gear matching the class level" ([Item Level, "Item Level vs. Class Level"](https://ffxiv.consolegameswiki.com/wiki/Item_Level)), read from the page's database:
+
+| Level $L$ | 50 | 55 | 60 | 70 | 75 | 80 | 90 | 95 | 99 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| $\text{sync}(L)$ | 130 | 136 | 270 | 400 | 406 | 530 | 660 | 666 | 678 |
+| $\text{top}(L)$ | 135 | 136 | 275 | 405 | 406 | 535 | 665 | 666 | 678 |
+
+- At each level cap the weapons are 5 above the rest (the Wiki's table: 130, weapons 135, at level 50; 660, weapons 665, at 90), and between them $\text{top}(L) = \text{sync}(L)$. Below level 50 it is up to 5 above $L$, and 50 at level 1 (Ala Mhigan Earrings, equip level 1, item level 50).
+- Aloalo Island's 665 is $\text{top}(90)$, and every real duty cap below level 100 is at or under $\text{top}(L)$ (**verified**: the 492 caps of every duty with a level sync, Minimum IL ones included, at the datamining commit in the footer). So the ceiling changes no real duty.
+- What a cap above it does is *untested*: no duty has one. The ceiling keeps such settings to what a duty can do. At level 50 with cap 400, a level 70 piece at item level 405 is synced to 135, not 400; a level 60 piece at 270, under the cap, to 130. Without it the cap alone gave level 50 characters item level 400 stats and a 1.50 s GCD. A cap at or under $\text{top}(L)$ is used as typed.
 
 **Caps real duties use** (**verified**, game files: `ContentFinderCondition.ClassJobLevelSync` and `ItemLevelSync`, 567 duties at the datamining commit in the footer). Real duties pair the level and the cap closely:
 
@@ -280,7 +291,7 @@ What the table leaves out (the evidence is in the duty sync research of 2026-10-
 - **Some duties set stats instead of syncing**: The Bozjan Southern Front, Zadnor, Delubrum Reginae (normal and Savage) and The Merchant's Tale set every character to level 80 (100) and give each slot fixed stats at item level 430 (765), with melds ignored (**verified**: the Wiki; `ContentFinderCondition.FixedItemLevelSync`). The page does not model them; their caps in the table are not clamps.
 - **Minimum Item Level** syncs gear to the duty's minimum item level (`ItemLevelRequired`) and also forces level sync, even in an unrestricted party (**verified**: the patch 3.0 notes, read by the research agent). Only duties with `AllowMinimumIL` offer it; Ultimates do not.
 
-The page computes nothing for a higher cap (the owner's decision, 2026-10-18; until then it computed as typed and only warned). The cap field shows an error that no duty at that level has such a cap (above $\text{sync}(L) + 5$, never at level 100) and offers lowering the cap, raising the synced level, or turning item level sync off (the setting for a character below a duty's level), and the optimizer and How the math works show it in place of results. Such settings would give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
+The page takes any cap with any synced level (the owner's decision, 2026-10-18; for a day before that it computed nothing for a cap above $\text{sync}(L) + 5$ and showed an error). A cap above $\text{top}(L)$ needs no error: the ceiling above holds gear made for a higher level to what level $L$ allows, so the results are those of a duty at level $L$ with a cap of at most $\text{top}(L)$.
 
 **The rule in one formula.** The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 
@@ -289,20 +300,21 @@ t =
 \begin{cases}
 \min(C, \text{sync}(L)) & \text{if the piece scales, } \text{sync}(L) < i \text{ and item level sync is on with } i > C \\
 \text{sync}(L) & \text{else if the piece scales and } \text{sync}(L) < i \\
+\min(C, \text{top}(L)) & \text{else if item level sync is on, } i > C \text{ and } e > L \\
 C & \text{else if item level sync is on and } i > C \\
 \text{sync}(L) & \text{else if } e > L \\
 \text{none (untouched)} & \text{otherwise}
 \end{cases}
 $$
 
-![Decision flow for the synced item level, tried top to bottom, first yes decides. A piece that scales with the wearer, with sync(L) below its item level, goes to sync(L), or to the cap C where lower (with item level sync on and the item level above C); at T13 (level 50, cap 123, sync(50) = 130) a scaling earring at 560 goes to 123. Otherwise, with item level sync on and the item level above C, it goes to C, even above sync(L); the worked example head at 130 goes to 123. Otherwise, with the equip level above the synced level, it goes to sync(L); item level 120, equip level 51 goes to 130. Otherwise it is untouched (item level 120, equip level 50). Each stat is then clamped at the target; a target at or above the piece's own item level keeps its stats, and only its materia stops counting.](../diagrams/math-sync-target.svg)
+![Decision flow for the synced item level, tried top to bottom, first yes decides. A piece that scales with the wearer, with sync(L) below its item level, goes to sync(L), or to the cap C where lower (with item level sync on and the item level above C); at T13 (level 50, cap 123, sync(50) = 130) a scaling earring at 560 goes to 123. Otherwise, with item level sync on and the item level above C, it goes to C, even above sync(L), but for a piece whose equip level is above L no higher than top(L), the best gear made for level L; the worked example head at 130 goes to 123. Otherwise, with the equip level above the synced level, it goes to sync(L); item level 120, equip level 51 goes to 130. Otherwise it is untouched (item level 120, equip level 50). Each stat is then clamped at the target; a target at or above the piece's own item level keeps its stats, and only its materia stops counting.](../diagrams/math-sync-target.svg)
 
 The clamp below is applied with $t$ in place of $C$.
 
 **Two edge cases.**
 
 - **Weapons.** The game file has one `ItemLevelSync` column for every slot. xivgear's sheet code uses a separate weapon table from its own data service for the sheet-wide target, but syncs each item with the one table. That weapons use the same value is *inferred*; the player report above saw level 100 weapons synced to item level 660 in P12S, a level 90 duty, which fits it at level 90.
-- **Pieces with no equip level.** Generated and hand-made pieces, and How the math works (which has no item behind it), know only an item level. A generated or hand-made pool piece is synced only by the item level cap. How the math works uses the item level cap when item level sync is on; with it off and a synced level below 100, they show $\text{sync}(L)$, the cap a piece with a higher equip level gets.
+- **Pieces with no equip level.** Generated and hand-made pieces, and How the math works (which has no item behind it), know only an item level. A generated or hand-made pool piece is synced only by the item level cap. How the math works uses the item level cap when item level sync is on; with it off and a synced level below 100, or with a cap above $\text{top}(L)$, it shows $\text{sync}(L)$, the item level a piece with a higher equip level gets (under the cap).
 
 **What it changes, measured on the current data.** At T13 (level 50, cap 123), 71 pieces (all equip level 51, item level 120) are synced by their level alone, to 130. That is above their item level, and a direct clamp to the item level 130 caps lowers none of their stats for any job that can wear them, so no stat changes. Every other piece is synced exactly as by the cap alone.
 
@@ -591,7 +603,7 @@ Notes:
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
-| The highest cap a real duty pairs with a level ($\text{sync}(L) + 5$), above which the page computes nothing | `src/core/sync-target.js` (`dutyCapMax`), `src/ui/state.js` (`capOutOfRange`) |
+| The ceiling $\text{top}(L)$ on gear made for a higher level | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); How the math works: `src/ui/state.js` (`shownSync`) |
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
 | The 1.50 s GCD floor | `src/core/constants.js` (`GCD_FLOOR_MS`) |

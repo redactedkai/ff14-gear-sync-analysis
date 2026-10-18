@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 570" role="img" aria-label="Decision flow for the item level a piece is synced to: scaling gear first, then the item level cap, then level sync, else untouched, with T13 examples">
-<desc>Tried top to bottom, the first yes decides. 1: the piece scales with the wearer and sync(L) is below its item level i: synced to sync(L), or to the cap C where that is lower (C counts only with item level sync on and i above C); at T13 a scaling earring at item level 560 goes to 123. 2: item level sync is on and i is above C: synced to C, even where C is above sync(L); at T13 the worked example head piece at 130 goes to 123. 3: the equip level e is above the synced level L: synced to sync(L); at T13 a piece of item level 120 and equip level 51 goes to 130. Otherwise untouched; at T13 a piece of item level 120 and equip level 50. T13 is level 50 with cap 123, and sync(50) is 130. Each stat is then clamped to its cap at the target; a target at or above the piece’s own item level keeps its stats, and only its materia stops counting.</desc>
+<desc>Tried top to bottom, the first yes decides. 1: the piece scales with the wearer and sync(L) is below its item level i: synced to sync(L), or to the cap C where that is lower (C counts only with item level sync on and i above C); at T13 a scaling earring at item level 560 goes to 123. 2: item level sync is on and i is above C: synced to C, even where C is above sync(L), but no higher than top(L), the highest item level of gear made for level L, when e is above L; at T13 the worked example head piece at 130 goes to 123. 3: the equip level e is above the synced level L: synced to sync(L); at T13 a piece of item level 120 and equip level 51 goes to 130. Otherwise untouched; at T13 a piece of item level 120 and equip level 50. T13 is level 50 with cap 123, and sync(50) is 130. Each stat is then clamped to its cap at the target; a target at or above the piece’s own item level keeps its stats, and only its materia stops counting.</desc>
 <style>
   .bg { fill: #fffdf7; }
   .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -60,8 +60,8 @@
 <text class="fg" x="36" y="257">Item level sync on</text>
 <text class="fg" x="36" y="277">and i &gt; C?</text>
 <rect class="box" x="380" y="222" width="320" height="80" rx="8"/>
-<text class="fg strong" x="396" y="248">C</text>
-<text class="small muted" x="396" y="268">even where C is above sync(L)</text>
+<text class="fg strong" x="396" y="248">C, or top(L) where lower and e &gt; L</text>
+<text class="small muted" x="396" y="268">top(L): the best gear made for level L</text>
 <text class="small accent" x="396" y="288">T13: worked example head, 130 → 123</text>
 <line class="s-muted" x1="302" y1="262" x2="377" y2="262" stroke-width="1.5" marker-end="url(#arrow)"/>
 <text class="small good" x="340" y="254" text-anchor="middle">yes</text>

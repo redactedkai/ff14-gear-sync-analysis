@@ -16,7 +16,7 @@ import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { JOBS, SOURCES } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { DEFAULT_EXCLUDE, capOutOfRange, syncSettings } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE, shownSync, syncSettings } from '../../src/ui/state.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
    tier off: these tests check the plain ranking against brute force and the core; tier ranking has its own tests. */
@@ -657,18 +657,18 @@ test('Rank by tier with a Target GCD: the GCD line and band come from the tier s
   assert.equal(none.gcdLine.bad, true);
 });
 
-/* A cap above every real duty's at the synced level computes nothing (owner's screenshot, 2026-10-18: level 50 with cap
-   500 showed a 1.50 s GCD for item level 470 to 540 sets). Level 50's highest duty cap is 135; level 100 has none. */
-test('a cap no duty pairs with the synced level: no optimizer result and no explainer, only the message', () => {
-  const bad = appState({ job: 'SGE', sync: true, cap: 500, level: 50 }, {});
-  assert.equal(capOutOfRange(bad), true);
-  const message = 'No duty at level 50 has a cap above item level 135. Lower the cap, raise the synced level, or turn item level sync off.';
-  assert.deepEqual(optimizerView(bad), { kind: 'badcap', message });
-  assert.equal(explainerView(bad), null);
-  assert.equal(pieceView(bad).status, 'off');
-  // the highest real cap, sync off, and level 100 are all fine
-  assert.equal(capOutOfRange(appState({ job: 'SGE', sync: true, cap: 135, level: 50 }, {})), false);
-  assert.equal(capOutOfRange(appState({ job: 'SGE', sync: false, cap: 500, level: 50 }, {})), false);
-  assert.equal(capOutOfRange(appState({ job: 'SGE', sync: true, cap: 795, level: 100 }, {})), false);
-  assert.notEqual(explainerView(appState({ job: 'SGE', sync: true, cap: 135, level: 50 }, {})), null);
+/* A cap far above the synced level's item level (owner's screenshot, 2026-10-18: level 50 with cap 500 showed a 1.50 s
+   GCD for item level 470 to 540 sets). Gear made for a higher level goes no higher than the best gear made for the
+   level (capCeiling, 135), so every view computes what a level 50 duty can. */
+test('a cap far above the synced level: gear made for a higher level is held to the level, and every view computes', () => {
+  const high = makeApp('SGE', { cap: 500, sync: true, level: 50 });
+  assert.deepEqual(shownSync(high), { cap: 130, level: 50, byLevel: true }); // as with sync off at level 50
+  const v = optimizerView(high, gamePool(high.jobCtx, { ilvlMin: 120, ilvlMax: 540 }));
+  assert.equal(v.kind, 'ok');
+  assert.ok(Number(v.gcd) >= 2.1, `GCD ${v.gcd}`); // 1.50 s before the fix
+  assert.notEqual(explainerView(high), null);
+  assert.equal(pieceView(high).cap, 130);
+  // a cap at or under the ceiling, and level 100, keep the cap as typed
+  assert.deepEqual(shownSync(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });
+  assert.deepEqual(shownSync(makeApp('SGE', { cap: 795, sync: true, level: 100 })), { cap: 795, level: 100, byLevel: false });
 });
