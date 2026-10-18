@@ -291,7 +291,7 @@ What the table leaves out (the evidence is in the duty sync research of 2026-10-
 - **Some duties set stats instead of syncing**: The Bozjan Southern Front, Zadnor, Delubrum Reginae (normal and Savage) and The Merchant's Tale set every character to level 80 (100) and give each slot fixed stats at item level 430 (765), with melds ignored (**verified**: the Wiki; `ContentFinderCondition.FixedItemLevelSync`). The page does not model them; their caps in the table are not clamps.
 - **Minimum Item Level** syncs gear to the duty's minimum item level (`ItemLevelRequired`) and also forces level sync, even in an unrestricted party (**verified**: the patch 3.0 notes, read by the research agent). Only duties with `AllowMinimumIL` offer it; Ultimates do not.
 
-The page takes any cap with any synced level (the owner's decision, 2026-10-18; for a day before that it computed nothing for a cap above $\text{sync}(L) + 5$ and showed an error). A cap above $\text{top}(L)$ needs no error: the ceiling above holds gear made for a higher level to what level $L$ allows, so the results are those of a duty at level $L$ with a cap of at most $\text{top}(L)$.
+The page lowers a cap above $\text{top}(L)$ to $\text{top}(L)$ (the owner's decision, 2026-10-18; for a day before that it computed nothing for a cap above $\text{sync}(L) + 5$ and showed an error). It does so once the level field settles (typing 80 passes through 8), when a cap is entered, when item level sync is switched on, and on loading a saved state, and only while level sync can apply. Above $\text{top}(L)$ the level, not the cap, decides what gear made for a higher level syncs to, so the field shows the cap that applies. A cap is never raised: a low cap is a real duty's (Minimum IL).
 
 **The rule in one formula.** The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 
@@ -603,7 +603,7 @@ Notes:
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/optimizer/candidates.js` |
-| The ceiling $\text{top}(L)$ on gear made for a higher level | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); How the math works: `src/ui/state.js` (`shownSync`) |
+| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/state.js` (`limitCapToLevel`, called by the settings component in `src/ui/components/page.js`; `shownSync` for How the math works) |
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
 | The 1.50 s GCD floor | `src/core/constants.js` (`GCD_FLOOR_MS`) |

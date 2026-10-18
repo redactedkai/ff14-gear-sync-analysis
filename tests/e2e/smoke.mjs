@@ -935,10 +935,21 @@ async function checkCapValidation(pg) {
   await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
   await pg.fill('#cap', '123');
   await expect(pg.locator('#cap-error')).toBeHidden();
-  // level 1 with cap 123: no error; gear made for a higher level is held to the best gear made for level 1 (capCeiling)
-  await setNumber(pg, '#level', '1');
+  // the cap follows the level: at level 40 cap 123 is lowered to 43, the best gear made for level 40 (capCeiling),
+  // once the level settles; back at level 50 it stays 43 (never raised), with no error either way
+  await setNumber(pg, '#level', '40');
+  await expect(pg.locator('#cap')).toHaveValue('43');
   await expect(pg.locator('#cap-error')).toBeHidden();
-  check((await pg.getAttribute('#cap', 'aria-invalid')) !== 'true', 'a cap far above the level is marked invalid');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered from 123 to 43, the highest for level 40.');
+  check(await pg.locator('#cap').evaluate(e => e.classList.contains('lowered')), 'the lowered cap field does not flash');
+  await setNumber(pg, '#level', '50');
+  await expect(pg.locator('#cap')).toHaveValue('43');
+  await expect(pg.locator('#cap-lowered')).toBeHidden(); // the note goes with the next change
+  // a cap entered above what the level allows is lowered once it commits
+  await pg.fill('#cap', '500');
+  await expect(pg.locator('#cap')).toHaveValue('135');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered from 500 to 135, the highest for level 50.');
+  await pg.fill('#cap', '123');
   await setNumber(pg, '#level', '100');
   await pg.locator('#sync').uncheck();
 }

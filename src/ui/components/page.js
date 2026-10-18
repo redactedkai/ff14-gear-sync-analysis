@@ -3,6 +3,8 @@ import { JOBS, JOB_ROWS, SLOT_LABEL } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
 import { tierFill } from '../views/tiers.js';
+import { limitCapToLevel } from '../state.js';
+import { TYPING_DEBOUNCE_MS } from '../helpers.js';
 
 export function page() {
   return {
@@ -33,10 +35,35 @@ export function settings() {
     },
     /* the cap field holds text that is not a whole item level in range (the store keeps its last valid cap) */
     capTypedBad: false,
+    // the cap the page last lowered, {from, to, level} (limitCapToLevel), for the note under the field and the field's
+    // flash; null once the cap or the level changes again
+    capLowered: null,
     init() {
-      this.$watch('$store.app.cap', () => {
+      this.$watch('$store.app.cap', cap => {
         this.capTypedBad = false; // changed from elsewhere (reset, or a valid entry)
+        if (cap === this.capLowered?.to) return; // the page's own lowering
+        this.lowerCap(); // a cap entered above what the level allows (the field commits once typing settles)
       });
+      this.$watch('$store.app.sync', () => this.lowerCap());
+      // the cap follows the level once the level settles: the level field commits on every keystroke, and typing 80
+      // passes through 8, which would lower the cap to level 8's
+      let timer = null;
+      this.$watch('$store.app.level', () => {
+        this.capLowered = null;
+        clearTimeout(timer);
+        timer = setTimeout(() => this.lowerCap(), TYPING_DEBOUNCE_MS);
+      });
+    },
+    /* limitCapToLevel, keeping what it lowered for the note; cleared first so a second lowering flashes the field again */
+    lowerCap() {
+      this.capLowered = null;
+      const lowered = limitCapToLevel(this.$store.app);
+      if (lowered) this.$nextTick(() => (this.capLowered = lowered));
+    },
+    /* under the cap field after the page lowered it: "Lowered from 500 to 135, the highest for level 50." */
+    get capLoweredNote() {
+      const c = this.capLowered;
+      return c && !this.capError ? `Lowered from ${c.from} to ${c.to}, the highest for level ${c.level}.` : '';
     },
     onCapInput(text) {
       const app = this.$store.app,

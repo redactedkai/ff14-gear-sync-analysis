@@ -14,7 +14,6 @@ import { OVERGEAR_BANDS, gcdChartSvg, overgearChartSvg } from '../sync-charts.js
 
 /* The item level range the slider and both charts cover, relative to the cap (item levels). */
 export const RANGE_BELOW = 30; // from 30 below the cap
-export const DEFAULT_OVER = 60; // the slider starts 60 above it
 const RANGE_MIN_OVER = 40; // the range always reaches 40 above it
 const RANGE_PAST_LAST = 20; // and 20 past the last item level where a full set's substats still change
 const RANGE_MAX_OVER = 150; // but never more than 150 above it
@@ -95,7 +94,7 @@ function computeRange(job, cap, subs) {
 }
 
 /* The slider's range and the chosen item level: {range: [lo, hi], il, note}. With a sync, explainerRange and the saved
-   item level (null: DEFAULT_OVER above the cap); without one, every real item level (null: the highest). `note`
+   item level (null: the cap, where Reset puts it; owner's decision, 2026-10-18); without one, every real item level (null: the highest). `note`
    says where the range comes from (the slider's tooltip). */
 export function explainerItemLevel(app) {
   const sync = shownSync(app);
@@ -110,7 +109,7 @@ export function explainerItemLevel(app) {
     range[1] === MAX_REAL
       ? `From ${RANGE_BELOW} below the synced item level (${cap}) to the highest real item level, ${MAX_REAL}`
       : `From ${RANGE_BELOW} below the synced item level (${cap}) to ${range[1] - cap} above it, past which a full set's substats no longer change`;
-  return { range, il: clampTo(range, app.piece.ilvl ?? cap + DEFAULT_OVER), note };
+  return { range, il: clampTo(range, app.piece.ilvl ?? cap), note };
 }
 
 /* A piece's melds in words, in two parts: {stones: "2 × Grade X Skill Speed (+54 each)", afterCap: "+90 after the cap"

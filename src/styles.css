@@ -446,6 +446,20 @@ input.invalid {
   color: var(--muted);
   font-size: 0.78rem;
 }
+/* the page lowered the cap to what the level allows (settings component, capLowered): the field flashes gold once,
+   and its note is gold */
+.field-note.lowered {
+  color: var(--gold);
+}
+input.lowered {
+  border-color: var(--gold);
+  animation: cap-lowered 1.2s ease-out;
+}
+@keyframes cap-lowered {
+  from {
+    background: color-mix(in srgb, var(--gold) 30%, transparent);
+  }
+}
 input:disabled,
 button:disabled {
   opacity: 0.45;
@@ -1491,6 +1505,9 @@ td.held {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  input.lowered {
+    animation: none;
+  }
   .progress > span {
     animation: none;
     width: 100%;

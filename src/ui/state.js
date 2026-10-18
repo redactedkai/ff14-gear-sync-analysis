@@ -50,6 +50,21 @@ export function shownSync(app) {
   return null;
 }
 
+/* The cap follows the synced level: a cap above what the level allows (capCeiling, the best gear made for it) is
+   lowered to it, while item level sync is on and level sync can apply. Above it the level, not the cap, decides what
+   gear made for a higher level syncs to (syncTarget), so the field shows the cap that applies (owner's decision,
+   2026-10-18). A cap is never raised: a low cap is a real duty's (Minimum IL). Called when the level settles, when a
+   cap is entered, when sync is switched on, and on restore. Returns {from, to, level} when it lowered the cap (the
+   note under the field), else null. */
+export function limitCapToLevel(app) {
+  if (!syncActive(app) || !levelSyncOn(app)) return null;
+  const top = capCeiling(app.level);
+  if (app.cap <= top) return null;
+  const lowered = { from: app.cap, to: top, level: app.level };
+  app.cap = top;
+  return lowered;
+}
+
 export const STORE_KEY = 'ilvl-stat-lab-v4';
 export const TABS = ['opt', 'browse', 'math'];
 export const MATH_TABS = ['piece', 'gcd', 'tiers'];
@@ -62,7 +77,7 @@ export function defaultState() {
     level: DEFAULT_LEVEL,
     tab: 'opt',
     mathTab: 'piece',
-    // How the math works: the piece's item level (null: 60 above the cap, DEFAULT_OVER in views/sync-explainer.js),
+    // How the math works: the piece's item level (null: the cap; explainerItemLevel in views/sync-explainer.js),
     // slot and two ranked substats
     piece: { ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
     // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
@@ -189,6 +204,7 @@ export function restoreState(raw) {
   s.cap = r.cap === null ? null : ilvlIn(r.cap, s.cap);
   s.sync = bool(r.sync, s.sync);
   s.level = intIn(r.level, 1, job.maxLevel, s.level);
+  limitCapToLevel(s); // a save from before the cap followed the level
   restoreTabs(s, r);
 
   const piece = isObj(r.piece) ? r.piece : {};

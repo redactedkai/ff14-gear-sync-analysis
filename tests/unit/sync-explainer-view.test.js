@@ -44,9 +44,10 @@ test('level 80 (level sync, item level 530): a body at 590 against the melded 53
 });
 
 test('level 50, cap 130: overgeared gear has more almost at once, materia adds little', () => {
-  const v = explainerView(app('RPR', { level: 50, cap: 130 }));
+  assert.equal(explainerView(app('RPR', { level: 50, cap: 130 })).il, 130); // no saved item level: the cap, as Reset sets
+  const v = explainerView(app('RPR', { level: 50, cap: 130, ilvl: 170 }));
   assert.deepEqual(v.range, [100, 170]); // the full set stops changing at 150
-  assert.equal(v.il, 170); // 60 above the cap, held to the range
+  assert.equal(v.il, 170);
   assert.deepEqual(
     v.vsRows.map(r => r.points),
     [98, 91],
@@ -98,7 +99,7 @@ test('the range: 30 below the cap to 20 past the last change, at most the highes
   const a = app('SGE', { level: 100, cap: 690 });
   const pick = explainerItemLevel(a);
   assert.deepEqual(pick.range, [660, MAX_REAL]);
-  assert.equal(pick.il, 750);
+  assert.equal(pick.il, 690); // no saved item level: the cap
   assert.match(pick.note, /highest real item level, 795/);
   // a saved item level outside the range is held to it
   assert.equal(explainerItemLevel({ ...a, piece: { ...a.piece, ilvl: 300 } }).il, 660);

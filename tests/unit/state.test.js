@@ -2,7 +2,7 @@
    falls back to its default on its own, leaving the rest. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE } from '../../src/ui/state.js';
+import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE, limitCapToLevel } from '../../src/ui/state.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { DEFAULT_JOB } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
@@ -142,7 +142,7 @@ test('nested objects that are not objects fall back to their defaults', () => {
 });
 
 test('piece fields', () => {
-  assert.equal(D.piece.ilvl, null); // null: 60 above the cap (DEFAULT_OVER in views/sync-explainer.js)
+  assert.equal(D.piece.ilvl, null); // null: the cap (explainerItemLevel in views/sync-explainer.js)
   expectFieldDefault('piece.ilvl', 'abc', null);
   expectFieldDefault('piece.ilvl', null, null);
   expectFieldDefault('piece.ilvl', 900, MAX_REAL); // an older save's number is kept, held to the real item levels
@@ -288,4 +288,36 @@ test('Food fields: off by default; a meal the job cannot use, a wrong type or an
   assert.equal(restoreState({ job: 'DRG', opt: { food: true, foodPair: 'spd+spec' } }).opt.foodPair, '');
   assert.equal(restoreState({ job: 'SGE', opt: { food: 'yes', foodPair: 7 } }).opt.food, false);
   assert.equal(restoreState({ job: 'SGE', opt: { foodPair: 'nope' } }).opt.foodPair, '');
+});
+
+/* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level
+   (capCeiling) is lowered to it, never raised, and only while item level sync is on and level sync can apply. */
+test('limitCapToLevel: lowers a cap above what the level allows, and leaves every other cap', () => {
+  const app = s => Object.assign(defaultState(), { sync: true }, s);
+  for (const [cap, level, want] of [
+    [500, 50, 135], // level 50's weapons
+    [500, 55, 136], // between level caps: the level's own item level
+    [700, 90, 665], // Aloalo Island's cap
+  ]) {
+    const a = app({ cap, level });
+    assert.deepEqual(limitCapToLevel(a), { from: cap, to: want, level }, `cap ${cap} level ${level}`);
+    assert.equal(a.cap, want);
+  }
+  for (const s of [
+    { cap: 123, level: 50 }, // T13: never raised
+    { cap: 135, level: 50 },
+    { cap: 795, level: 100 }, // no gear above level 100
+    { cap: 500, level: 50, sync: false },
+    { cap: null, level: 50 },
+  ]) {
+    const a = app(s);
+    assert.equal(limitCapToLevel(a), null, JSON.stringify(s));
+    assert.equal(a.cap, s.cap);
+  }
+});
+
+test('restoreState: a saved cap above what the saved level allows is lowered', () => {
+  const s = restoreState({ job: 'SGE', sync: true, cap: 500, level: 50 });
+  assert.equal(s.cap, 135);
+  assert.equal(restoreState({ job: 'SGE', sync: false, cap: 500, level: 50 }).cap, 500);
 });
