@@ -1102,7 +1102,7 @@ async function checkJobLevelCap(pg) {
   await setJob(pg, 'SGE');
 }
 
-// How the math works, Tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
+// How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
 // starts at 613 on the panel (gear speed 193; validation.md section 5).
 const TIERS_SHORT = { crit: 'CRT', det: 'DET', dh: 'DHT', spd: 'SpS', spec: 'PIE' };
 
@@ -1120,6 +1120,7 @@ async function checkTiers(pg) {
   await setNumber(pg, '#level', '100');
   await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level 100');
   await expect(pg.locator('#t-fill')).toBeDisabled();
+  check(Number(await pg.$eval('#t-fill', e => getComputedStyle(e).opacity)) < 1, 'the disabled Fill chip does not look disabled');
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
   await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
   await setNumber(pg, '#t-table [data-n="spd"]', '624');

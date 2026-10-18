@@ -446,9 +446,13 @@ input.invalid {
   color: var(--muted);
   font-size: 0.78rem;
 }
-input:disabled {
+input:disabled,
+button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+button:disabled:hover {
+  border-color: var(--line);
 }
 input:focus-visible,
 select:focus-visible,

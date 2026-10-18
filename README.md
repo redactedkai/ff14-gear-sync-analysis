@@ -26,7 +26,7 @@ Once a job is chosen, the page has two working tabs and one reference tab:
 
 1. **Gear optimizer** (opens first): picks one item per slot (two rings) from every piece the job can wear to maximize one stat, with two optional tiebreakers. A Materia switch (on by default) gives each piece its best melds. Under **Gear to search**, unticking a group (crafted, tomestone, relic, current Savage, ultimate, PvP) leaves its gear out; current Savage, ultimate and PvP are left out by default.
 2. **Gear browser**: one table of real gear for the selected job, with filters and its synced stats, for looking gear up. It has its own gear group boxes. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2.
-3. **How the math works** (reference): Piece stats (what sync does to one piece, and when an overgeared piece has more than a melded one at the cap) and GCD (the same for a full set's GCD), with how each stat is built, checked against real gear and the Wiki; and Tiers (where each substat's tiers start around your value, as on the character panel).
+3. **How the math works** (reference): Piece stats (what sync does to one piece, and when an overgeared piece has more than a melded one at the cap) and GCD (the same for a full set's GCD), with how each stat is built, checked against real gear and the Wiki; and Substat tiers (where each substat's tiers start around your value, as on the character panel).
 
 ## Develop
 

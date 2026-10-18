@@ -71,7 +71,7 @@ export function optimizer() {
       const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks)));
       this.solveMs = Math.max(1, Math.round(performance.now() - t0));
       this.view = view;
-      // the result's panel values with the settings they were solved for, for How the math works (Tiers)
+      // the result's panel values with the settings they were solved for, for How the math works (Substat tiers)
       const values = resultPanel(raw.jobCtx, view);
       this.$store.app.optPanel = values && Object.freeze({ key: optimizerKey(raw), values: Object.freeze(values) });
       performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs

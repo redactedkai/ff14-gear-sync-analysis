@@ -38,7 +38,7 @@ export function tierText(spd, level, haste = 0) {
 
 /* The settings an optimizer result depends on, as one string: a result is for the current settings exactly when it
    was solved with the same key. Read synchronously, it also makes an effect track every one of them (the optimizer
-   component). How the math works (Tiers) fills its values from a result only when its key matches. */
+   component). How the math works (Substat tiers) fills its values from a result only when its key matches. */
 export function optimizerKey(app) {
   const o = app.opt;
   return JSON.stringify([

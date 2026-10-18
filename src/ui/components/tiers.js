@@ -1,4 +1,4 @@
-/* How the math works, Tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts from the
+/* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts from the
    optimizer result when it is for the current settings, else at the substat's base, and what the user types or clicks
    is kept on top until the job, the level or that result changes. The values are worked out on every read (no effect
    that refills them later), so a level typed in the settings shows its own tiers and values in one render. The math

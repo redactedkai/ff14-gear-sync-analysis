@@ -56,14 +56,14 @@
   <button role="tab" data-tab="math" type="button" class="aside" :aria-selected="String($store.app.tab === 'math')" @click="$store.app.showTab('math')">How the math works</button>
 </nav>
 
-<!-- THE MATH: what sync does to one piece (Piece stats) and to a full set's GCD (GCD), and the substats' tiers (Tiers);
+<!-- THE MATH: what sync does to one piece (Piece stats) and to a full set's GCD (GCD), and the substats' tiers (Substat tiers);
      controls in a sticky bar, each shown on the sub-tabs it applies to -->
 <section class="tab" id="tab-math" role="tabpanel" hidden :hidden="$store.app.tab !== 'math'" x-data="syncExplainer" @keydown.escape.window="helpOpen = false">
 <div class="mathbar" id="m-bar">
   <nav class="subtabs" aria-label="Math views">
     <button data-sub="piece" type="button" :aria-pressed="String($store.app.mathTab === 'piece')" @click="$store.app.showSub('piece')">Piece stats</button>
     <button data-sub="gcd" type="button" :aria-pressed="String($store.app.mathTab === 'gcd')" @click="$store.app.showSub('gcd')">GCD</button>
-    <button data-sub="tiers" type="button" :aria-pressed="String($store.app.mathTab === 'tiers')" @click="$store.app.showSub('tiers')">Tiers</button>
+    <button data-sub="tiers" type="button" :aria-pressed="String($store.app.mathTab === 'tiers')" @click="$store.app.showSub('tiers')">Substat tiers</button>
   </nav>
   <label class="mctl" x-show="$store.app.mathTab === 'piece'">Slot
     <select id="p-slot" @change="$store.app.piece.slot = $event.target.value">

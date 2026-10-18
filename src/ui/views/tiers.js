@@ -1,4 +1,4 @@
-/* How the math works, Tiers: every substat of the job as a column group of tiers (a ladder), each around its value, the
+/* How the math works, Substat tiers: every substat of the job as a column group of tiers (a ladder), each around its value, the
    value's tier on the middle row (core/tiers.js tierLadder). Values are character panel numbers (base + gear, and food
    when the optimizer result counts it). The tiers follow the job and the synced level; item level sync does not change
    them. The view object is built here; the template only shows it. */

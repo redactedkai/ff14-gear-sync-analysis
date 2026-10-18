@@ -102,7 +102,7 @@ function tierAt(effects, g, level, haste) {
   return { start, next };
 }
 
-/* For How the math works (Tiers): the tiers of `stat` around `total`, a character panel value (base + gear, plus food
+/* For How the math works (Substat tiers): the tiers of `stat` around `total`, a character panel value (base + gear, plus food
    when the caller counts it), at `level`, with the job's `haste` (percent; speed only). Null for a stat without tiers.
    Returns {base, kinds, rows, spare, toNext, under}:
    - base: the character's own value (statBase), the panel's lowest; under: `total` was below it (it counts as base);
