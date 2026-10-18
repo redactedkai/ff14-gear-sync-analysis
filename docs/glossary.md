@@ -102,7 +102,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Budget table.** The game's `ItemLevel` sheet: one row per item level (0 to 920), holding a stat budget for each of 12 stats. A piece's stats are fractions of the budget at its item level. In practice it holds three curves: main stat, substats and Vitality. See [math.md, section 2](mechanics/math.md#2-the-budget-table).
 
-**Candidate.** A pool item that is still in its slot's list after dominance pruning, and so enters the search. See [optimizer.md, section 4](engineering/optimizer.md#4-fewer-candidates-dominance-pruning).
+**Candidate.** A pool item that is still in its slot's list after dominance pruning, and so enters the search. With a speed range or a stat minimum (Target GCD, tier ranking) and melds on, a piece can enter as several candidates, one per kept meld version. See [optimizer.md, sections 4 and 6](engineering/optimizer.md#4-fewer-candidates-dominance-pruning).
 
 **Dominance.** Within one slot, item A beats item B when A has at least as much of every stat of the job (not only the target and tiebreaks) and leaves no slot empty that B does not. B is removed before the search only when the items beating it have enough copies to fill every slot of its kind (two for rings). See [optimizer.md, section 4](engineering/optimizer.md#4-fewer-candidates-dominance-pruning).
 
