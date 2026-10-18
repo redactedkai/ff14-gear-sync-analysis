@@ -24,11 +24,12 @@ over the same feasible set: first the best tier of each key in order, then the r
 
 The step functions make the first three criteria non-linear in $x$, so the weighted-sum scalarization of [optimizer.md, section 3](optimizer.md#3-turning-the-lexicographic-order-into-one-number) does not apply to them directly. Section 2 turns them into linear minimums instead.
 
-**Choices by the owner (2026-10-16).**
+**Choices by the owner (2026-10-16, the first two rows revisited 2026-10-17).**
 
 | Choice | Decision |
 | --- | --- |
-| Default | On, for now; a later comparison with raw ranking may change it |
+| Default | On; kept after a comparison with raw ranking (2026-10-17) |
+| Tied sets | No tie rule yet (2026-10-17; section 9) |
 | Leftover points | To the target (order A above) |
 | Where a key is held | One point above its tier start, so a one-point model error does not drop the tier |
 | Speed's tier | The GCD step |
@@ -41,7 +42,7 @@ The step functions make the first three criteria non-linear in $x$, so the weigh
 
 How is a lexicographic objective over step functions solved with a linear-objective engine? As a preemptive (goal-programming) sequence: one problem per key, each adding a minimum that fixes the previous key's optimal tier.
 
-![Four searches for Dark Knight at level 90, item level 660, a GCD of exactly 2.30 with food: the most Critical Hit (2,310, held at 2,310 or more), the most Determination with that hold (1,288, held at 1,277 or more), the most Direct Hit with both holds (0), then the raw order under all three holds.](../diagrams/tier-ranking-stages.svg)
+![Four searches for Dark Knight at level 90, item level 660, a GCD of exactly 2.30 with food: the most Critical Hit (2,310, held at 2,310 or more; it proves at most 2,164 gear points), the most Determination with that hold (1,288, held at 1,277 or more; proves at most 1,288), the most Direct Hit with both holds (0, proven), then the raw order under all three holds. Each proof becomes a regain cut in every later search. The first search is a full search of 12 nodes; the others start from the set before and end in a trial search of 764, 2,648 and 5,262 nodes.](../diagrams/tier-ranking-stages.svg)
 
 **The sequence.** Let $X$ be the feasible set of [optimizer.md, section 2](optimizer.md#2-formal-statement) (choice, conflict, copy and speed rows). For $q = 0, 1, 2$:
 
@@ -287,7 +288,7 @@ Notes:
 | The shortfall filter, the pruning against the seed, the trial search and the fronts change no result | **Verified** | A test on 120 tight cases (bigger pools, a minimum within 5 points of the most, a narrow speed band) against the plain search, which also checks that pieces were dropped and that the trial search or fronts settled some searches; 2,000 more random cases by script |
 | The fronts alone give the best set, for each way they compare entries | **Verified** | A test of the fronts without the trial search against the plain search: a band with one or two held stats (the staircase), a speed minimum with two (pairwise), a speed maximum alone (less is better) |
 | The regain cuts remove no feasible set | **Verified** | A test against the brute-force reference on small real pools: the proof's maximum, the second search's totals, and every piece of the plain search's answer passing the cut with its regains summing to at most the room; 360 more random tier ranking cases against the reference (three keys with a Target GCD among them) |
-| The 2026-10-17 changes (regain cuts, trial search, slot order, band reach) change no ranked result | **Verified** | A sweep against the code before, section 8: the same ranked totals, held tiers and meal in every case |
+| The 2026-10-17 changes (regain cuts, trial search, slot order, band reach) change no ranked result | **Verified** | Sweeps against the code before, section 8: the same ranked totals and meal in all 5,028 cases (held tiers too, but for one the code before had cut short), and the same ranked totals in 17,648 more on every job (the prototype, which gives the same sets) |
 | Minimums on any stat are exact in the search | **Verified** | Tests against the brute-force reference, with and without melds, with blocked slots and a speed band |
 | The tests catch errors in these parts | **Verified** | Broken on purpose: pruning twice as aggressive, fronts comparing the score only, tier holds at the start instead of one above, Tenacity's damage step, no haste: each made a test fail. Since 2026-10-17 also: a Unique ring allowed to swap for any ring, the regain ignoring the held keys, the fronts comparing a maximum-only total the wrong way, the staircase ignoring its second total |
 | A seed that breaks a limit is ignored | **Verified** | A test |
@@ -358,15 +359,28 @@ Slow cases, one at a time on an idle machine, before (the code at `b923b1d`) and
 
 The worked example of section 2 takes 1.0 s in all. The quick benchmark of the plain optimizer (`npm run perf`, no limits, so no proofs or trial search) is unchanged: median 19.0 ms with melds and 12.7 ms without, against 18.8 and 12.8; its largest searches fell from 555 to 458 nodes with melds and 380 to 310 without (the slot order).
 
-The owner's check of Perplexity's prototype, which gives the same sets as this code in all 5,028 cases above, ran all 23 jobs (17,648 cases): node-limit stops in tier ranking fell from 138 to 4, with the same ranked results.
+**The owner's check on all 23 jobs (2026-10-17).** Before the merge, Perplexity's prototype was swept against the code before it on every job: six sync settings, 10 to 12 goals per role, food off and every meal, and no Target GCD or one at a quarter, half and three quarters of the way from the slowest GCD to the fastest, in both modes. That is 17,648 cases, eight workers. The prototype gives the same sets as the merged code in all 5,028 cases above, so these numbers carry over.
+
+| Tier ranking with a Target GCD | Median | 95th percentile | Slowest | Over 1.5 s |
+| --- | --- | --- | --- | --- |
+| Exactly, before | 0.60 s | 3.9 s | 44.2 s | 1,201 |
+| Exactly, after | 0.30 s | 0.97 s | 15.2 s | 155 |
+| Or faster, before | 0.49 s | 2.3 s | 24.2 s | 836 |
+| Or faster, after | 0.21 s | 0.61 s | 12.7 s | 34 |
+
+- **Speed:** with a Target GCD, tier ranking runs 2 to 4 times faster (about twice at the median, about four times at the 95th percentile). Exactly mode over 5 s: 252 runs before, 8 after. The whole sweep took 930 s against 2,333 s.
+- **Same answers:** the ranked totals are the same in all 17,648 cases, in both rankings.
+- **Stopped at the node limit:** 138 tier ranking runs before, 4 after. The 4 are the White Mage and Sage cases at 2.29 of section 9 (9.5 to 15.2 s); they stopped before too, with the same ranked totals.
+- **Tied sets:** 905 tier and 529 raw cases returned another set with the same ranked totals (section 9).
 
 ## 9. Known limits
 
 - **Searches that stop early.** A few cases still reach the node limit; they return the seed or better, marked as possibly not the best, like any truncated result.
-  - They are the fastest bands for healers at level 100. In the 2026-10-17 sweep (section 8), 4 of 5,028: White Mage and Sage at item level 690, Piety > Critical Hit > Determination, GCD 2.29.
+  - They are the fastest bands for healers at level 100. In the 2026-10-17 sweeps (section 8), 4 of 5,028 and 4 of 17,648 (138 before the 2026-10-17 changes): White Mage and Sage at item level 690, Piety > Critical Hit > Determination, GCD 2.29.
   - Before the regain cuts (2026-10-16): of 264 runs near the White Mage case (Scholar, Astrologian and Sage with food, White Mage without; GCDs 2.30 to 2.40; six goals), 14 stopped early. In each one checked (five), the seed already was the best; the search could not prove it. Finished with no node limit they took 1.1 to 11.8 million nodes (White Mage, exactly 2.31, Piety > Determination > Direct Hit, food off: 11.8 million, 78 s, to show Direct Hit cannot leave 0).
   - The rows that make "one more point of the target" impossible are three or four tight limits at once (the speed band and two held keys). Every bound here keeps or prices one row at a time, or relaxes integrality, so none sees it. The Lagrangian bound allows 213 points of Direct Hit in that case. The regain cuts see one earlier stage's row each, which is why they help, but not all of them together.
   - Open: a bound that sees the held rows, the band and the copy and conflict rows at once. Perplexity measured a linear-programming relaxation with those rows at 17 points of Direct Hit on a Black Mage stage where the Lagrangian bound here allows 191; nothing of the kind is built.
+- **Tied sets.** Several sets can share the same ranked totals; the search returns the first it finds, so which one comes back depends on the search order (the slot order since 2026-10-17, [optimizer.md, section 9](optimizer.md#9-known-behaviours-and-limits)). They can differ in the stats that are not ranked. In the 17,648-case sweep (section 8), where the two versions returned different tied sets, the expected damage per second differed by −2.8% to +2.9% in tier ranking and −1.5% to +1.9% in raw ranking. That estimate uses Character Panel Refined's expected damage per hit (**community reference**) divided by the GCD; it is not a simulation. There is no tie rule (**owner's decision**, 2026-10-17: the search may still change); options discussed were the most main stat then the least spare speed, or the tiers of the unranked substats.
 - **Time per node.** Searches run about 5 to 12 µs a node, so the node limit bounds the time of the search part (about 4 to 8 s at 700,000). The fronts are bounded by their own limits (section 5); before the comparison limit, a front that gave up could take minutes first.
 - **Haste jobs in the sweep.** Monk, Samurai, Ninja and Viper have a GCD below 2.50 s with no speed at all; the sweep's halfway GCD lands above it, so those runs end at once ("unreachable") and are left out of the timings.
 - **The page.** Tier ranking is on by default and holds the page's thread while it solves (about 0.2 s without a Target GCD, up to a few seconds with one), so a progress bar shows meanwhile; the controls and readout are in [optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters).

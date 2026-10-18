@@ -425,7 +425,7 @@ What does the page hand to the engine, and what does it show back?
 
 **Rank by tier on the page** (roadmap A7; owner's decisions, 2026-10-16).
 
-- A "Rank by tier" switch beside Materia and Food, **on by default** (a later comparison of tier and raw results may change that); it is saved, and a save from before it existed restores it on.
+- A "Rank by tier" switch beside Materia and Food, **on by default** (kept after comparing tier and raw results, owner's decision, 2026-10-17); it is saved, and a save from before it existed restores it on.
 - On, the search is tier ranking ([tier-ranking.md](tier-ranking.md)): meal and gear are chosen together, with or without a Target GCD, since every tier counts food.
 - A line under the readout names the keys in order with the effect each holds ("Ranked by tier: Piety +165 MP, then Direct Hit 2.1%, then Determination +1.2%"); Tenacity shows its mitigation step, the one it is ranked by. In the Tier row the held stats are highlighted.
 - A thin progress bar shows from the first frame of a solve until the result: the solve holds the page's thread, and the bar's animation runs on the compositor meanwhile.
@@ -518,6 +518,7 @@ Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, includin
 | Unsynced, Critical Hit, Spell Speed at least 2,000 | 2,645 (3,238) | ~10 ms | – |
 | Unsynced, Critical Hit, Spell Speed at most 1,000 (pruning off) | 2,194 (558,548) | ~7 ms (was ~450 ms) | – |
 
+- **Rerun on 2026-10-18** with the code and data of that day, the first four runs: the same results and node counts, except two runs with melds: synced to 123 with Spell Speed now takes 146 nodes (148 above), unsynced with Spell Speed 223 (234 above).
 - **Sync shrinks the lists.** Synced runs leave fewer candidates after pruning (119 against 169 unsynced): sync cuts many pieces down to the same stats, so they differ only by item level.
 - **Across pools.** Across the Sage and Warrior full pools, caps 123 to 660 and no sync, and five objectives, the slowest run takes about 20 ms without melds and 42 ms with them.
 - **The real-gear probe.** Across the 9,800 real-gear runs, the median is 69 nodes, the 99th percentile 149 and the largest 203 (Summoner, items 260 to 300, unsynced). Before the ring-pair bound they were 73, 18,178 and 191,023. The largest was Ninja and Viper, items 600 to 640, unsynced, Skill Speed: most armor there has no Skill Speed, so many candidates tie at a score of 0, and the best ring is Unique, so counting it twice left the bound 42 points too high to cut those ties. Rerun on 2026-10-12 with both searches side by side: the same total in all 9,800 runs, none truncated.
@@ -609,7 +610,7 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 - **Empty pool:** the result is "ok" with no picks and all totals 0 (**verified** by test). The page shows its own message instead ("No gear to search") when the gear groups left out leave nothing.
 - **Missing slot types** are left out of the loadout.
 - **Truncated results** may not be optimal, so the page puts a note under them. In a single search, no real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); before the speed tables, only a speed range could reach it (section 5). Tier ranking runs several searches with minimums, and a few of its cases still stop early: 4 of 5,028 in the 2026-10-17 sweep, healers at level 100, item level 690, GCD 2.29 ([tier-ranking.md, section 8](tier-ranking.md#8-performance)).
-- **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order. Since 2026-10-17 the slot order depends on the lists left after the filters (section 5), so which of several tied loadouts comes back can differ from before; the score, and so the target and tiebreak totals, cannot.
+- **Ties:** among loadouts with exactly the same score, the first one found wins: higher-ranked items first, then pool order. Since 2026-10-17 the slot order depends on the lists left after the filters (section 5), so which of several tied loadouts comes back can differ from before; the score, and so the target and tiebreak totals, cannot. Tied sets can differ in the stats that are not ranked, and there is no tie rule yet (owner's decision; [tier-ranking.md, section 9](tier-ranking.md#9-known-limits)).
 - **Meals of equal goal:** Target GCD picks the meal whose set scores most on the goal and tiebreaks, then the one that adds most in total. That last step uses whichever tied set each meal's search returned, so it is not the most any tied set could get with that meal (71 of 252,112 sweep runs changed meal when the search order changed; the goal and tiebreaks were the same).
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. For Target GCD this is the "none" answer.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.

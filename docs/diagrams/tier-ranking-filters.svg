@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 540" role="img" aria-labelledby="t d">
   <title id="t">Filters before the search</title>
-  <desc id="d">Search 3 of the Dark Knight example: maximize Direct Hit with Critical Hit at least 2,159 and Determination at least 1,277 in gear points, speed 1,035 to 1,092. The candidate lists hold 10,846 pieces with their meld versions. The shortfall filter, which fixes pieces short of their slot's best by more than the budget (5 points of Critical Hit), leaves 133; pruning against the set in hand from search 2 (reduced-cost fixing with a Lagrangian bound) leaves 117; the regain cuts from what searches 1 and 2 proved (room 5 points of Critical Hit and 11 of Determination) leave 68. The shortfall filter repeats after each fixing, until nothing more is dropped. A short search (the trial search, at most 20,000 nodes) then settles it in 2,648 nodes: no set beats the one in hand, so Direct Hit 0 is proven best. Only if the trial search does not finish do Pareto fronts run, and only if a front passes 150,000 entries, or the extensions pass 1,000,000 in all, the full branch and bound, still with the set in hand and the reduced lists.</desc>
+  <desc id="d">Search 3 of the Dark Knight example: maximize Direct Hit with Critical Hit at least 2,159 and Determination at least 1,277 in gear points, speed 1,035 to 1,092. The candidate lists hold 10,846 pieces with their meld versions. The shortfall filter, which fixes pieces short of their slot's best by more than the budget (5 points of Critical Hit), leaves 133; pruning against the set in hand from search 2 (reduced-cost fixing with a Lagrangian bound) leaves 117; the regain cuts from what searches 1 and 2 proved (room 5 points of Critical Hit and 11 of Determination) leave 68. The shortfall filter repeats after each fixing, until nothing more is dropped. The slots are then ordered, shortest list first. A short search (the trial search, at most 20,000 nodes) then settles it in 2,648 nodes: no set beats the one in hand, so Direct Hit 0 is proven best. Only if the trial search does not finish do Pareto fronts run, and only if a front passes 150,000 entries, or the extensions pass 1,000,000 in all, the full branch and bound, still with the set in hand and the reduced lists.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -71,6 +71,7 @@
   <text class="accent small" x="60" y="364">↺ the shortfall filter runs again after each fixing, until nothing more drops</text>
 
   <path class="accentStroke" d="M140,374 L140,392" marker-end="url(#arrow)"/>
+  <text class="muted small" x="156" y="388">then the slots are ordered, shortest list first</text>
 
   <!-- the trial search, and the fallbacks -->
   <rect class="box" x="40" y="398" width="350" height="118" rx="8"/>
