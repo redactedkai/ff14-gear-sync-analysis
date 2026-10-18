@@ -81,8 +81,8 @@ class GenItemsTest(unittest.TestCase):
 
     def test_row_shape(self):
         for r in self.rows:
-            self.assertEqual(len(r), 16, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales, cat = r
+            self.assertEqual(len(r), 20, r)
+            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales, cat, *dd = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(15))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
@@ -96,8 +96,17 @@ class GenItemsTest(unittest.TestCase):
             self.assertIsInstance(game_id, int)
             self.assertIn(scales, (0, 1))
             self.assertIn(cat, range(len(load_format()['category']['list'])))
+            self.assertTrue(all(isinstance(v, int) and v >= 0 for v in dd), r)
         ids = [r[13] for r in self.rows]
         self.assertEqual(len(set(ids)), len(ids))
+
+    def test_damage_defense_fields(self):
+        """Fields 16-19 are DamagePhys, DamageMag, DefensePhys, DefenseMag, plus the HQ bonus (BaseParamSpecial pairs 12, 13,
+        21, 24) only when the item can be HQ: Test Sallet HQ and NoHQ carry the same +14 defense pairs and 300/200 base."""
+        self.assertEqual(self.row('Test Greataxe')[16:], [120, 60, 0, 0])
+        self.assertEqual(self.row('Test Sallet HQ')[16:], [0, 0, 314, 214])
+        self.assertEqual(self.row('Test Sallet NoHQ')[16:], [0, 0, 300, 200])
+        self.assertEqual(self.row('Test Sword')[16:], [0, 0, 0, 0])
 
     def test_meld_fields(self):
         """meldSlots and overmeld are Item.MateriaSlotCount and IsAdvancedMeldingPermitted, after the source mask and kind."""
@@ -348,6 +357,11 @@ ITEM_LEVEL_COLUMNS = {
     # no ItemLevel column of their own: the main-stat and substat columns (equal to Strength and Direct Hit)
     'mainAttr': 'Strength',
     'secAttr': 'DirectHitRate',
+    # weapon damage and defense (`damageDefense` in item-format.json)
+    'damagePhys': 'PhysicalDamage',
+    'damageMag': 'MagicalDamage',
+    'defensePhys': 'Defense',
+    'defenseMag': 'MagicDefense',
 }
 PARAM_GROW_HEADER = (
     '#,ExpToNext,MpModifier,BaseSpeed,LevelModifier,HuntingLogExpReward,MonsterNoteSeals,ScaledQuestXP,HpModifier,'
@@ -389,7 +403,7 @@ class GenItemLevelTest(unittest.TestCase):
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
         doc = json.loads(out.read_text(encoding='utf-8'))
-        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG', 'MP'])
+        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG', 'MP', 'SHARES'])
         self.assertIsNone(doc['source'])
         self.assertIn('commit unknown', doc['_generated'])
         src = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
@@ -403,11 +417,23 @@ class GenItemLevelTest(unittest.TestCase):
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out))
         mp = json.loads(out.read_text(encoding='utf-8'))['MP']
-        self.assertEqual(list(mp), STAT_ORDER)
+        self.assertEqual(list(mp), [*STAT_ORDER, 'damagePhys', 'damageMag', 'defensePhys', 'defenseMag'])
         self.assertEqual(mp['vit'], [90, 100, 100, 100, 100, 90, 90, 100, 90, 100, 100, 100, 100])
+        # the real BaseParam rows 13 (Magic Damage) and 21 (Defense)
+        self.assertEqual(mp['damageMag'], [50, 50, 50, 50, 50, 100, 100, 50, 100, 30, 50, 50, 50])
+        self.assertEqual(mp['defensePhys'], [66, 100, 70, 55, 55, 40, 40, 100, 40, 33, 55, 55, 55])
         self.assertEqual(mp['mind'], [90, 70, 70, 70, 70, 70, 100, 70, 100, 100, 70, 70, 70])
         self.assertEqual(mp['str'][0], 90)  # kind 0: all four main stats at 90
         self.assertEqual(mp['crit'], [100] * 13)
+
+    def test_damage_defense_slot_shares(self):
+        """SHARES: the real BaseParam slot shares per slot code for weapon damage (weapons only) and defense (armor only)."""
+        out = self.dir / 'item-level.json'
+        run_quiet(gen_item_level.main, str(self.dir), str(out))
+        shares = json.loads(out.read_text(encoding='utf-8'))['SHARES']
+        damage = [1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        defense = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824]
+        self.assertEqual(shares, {'damagePhys': damage, 'damageMag': damage, 'defensePhys': defense, 'defenseMag': defense})
 
     def test_item_level_columns(self):
         il, _ = self.generate()

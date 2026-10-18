@@ -143,6 +143,10 @@ export const JOBS = Object.freeze(
    id in makeJobContext. The page itself starts with no job. */
 export const DEFAULT_JOB = JOBS[0][0];
 export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']); /* 1H weapon + shield; everyone else uses a 2H weapon */
+/* Jobs whose weapons carry no real weapon damage, so the optimizer does not rank it (damage-defense.js): Blue Mage's
+   weapons all hold 6 physical and 1 magic damage (Item.csv); its weapon damage comes from Intelligence instead
+   (xivgear's bluWdfromInt), which a goal covers when Intelligence is in it (owner's decision 2026-10-18). */
+export const NO_WEAPON_DAMAGE_JOBS = Object.freeze(['BLU']);
 /* Limited jobs stop below the game's level cap. The game files hold no level cap (ClassJob has no such column; its
    IsLimitedJob flag marks exactly these two jobs), so these come from the official patch notes on the Lodestone:
    Blue Mage "The level cap for blue mage has been increased to 80" (Patch 6.45 Notes,
@@ -234,7 +238,11 @@ export const ROW = Object.freeze({
   gameId: ITEM_FORMAT.gameId.rowField,
   scales: ITEM_FORMAT.levelScaled.rowField,
   category: ITEM_FORMAT.category.rowField,
+  ...Object.fromEntries(ITEM_FORMAT.damageDefense.entries.map(e => [e.key, e.rowField])),
 });
+/* The weapon damage and defense keys of a row (`damageDefense` in item-format.json): damagePhys, damageMag,
+   defensePhys, defenseMag. */
+export const DAMAGE_DEFENSE_KEYS = Object.freeze(ITEM_FORMAT.damageDefense.entries.map(e => e.key));
 /* The gear categories, in the order of a row's category field: {key, label} (where a piece comes from: Crafted,
    Dungeon, Raid, ...; gear_categories.py). */
 export const GEAR_CATEGORIES = Object.freeze(ITEM_FORMAT.category.list.map(c => Object.freeze({ key: c.key, label: c.label })));

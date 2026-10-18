@@ -10,6 +10,7 @@ import {
   EXPANSIONS,
   ROW,
   GEAR_CATEGORIES,
+  DAMAGE_DEFENSE_KEYS,
 } from './constants.js';
 import { expansionBounds } from './speed.js';
 import { ITEMS, MP } from './tables.js';
@@ -176,10 +177,18 @@ function rowFacts(item) {
         slots: f ? f.slots : r[ROW.meldSlots],
         overmeld: f ? f.overmeld : !!r[ROW.overmeld],
         category: f ? f.category : r[ROW.category],
+        damageDefense: f ? f.damageDefense : Object.fromEntries(DAMAGE_DEFENSE_KEYS.map(k => [k, r[ROW[k]]])),
       });
     }
   }
   return rowIndex.get(poolKey(item)) || null;
+}
+
+/* A pool item's weapon damage and defense facts: {slotCode, kind, values: {damagePhys, damageMag, defensePhys,
+   defenseMag}} (with the HQ bonus when it can be HQ), or null for items not from the database. */
+export function damageDefenseFacts(item) {
+  const f = rowFacts(item);
+  return f ? { slotCode: f.slotCode, kind: f.kind, values: f.damageDefense } : null;
 }
 
 /* The source bit mask (SOURCES) of a pool item. Items not from the database have none. */
@@ -192,6 +201,15 @@ export function sourceMask(item) {
 export function categoryOf(item) {
   const f = rowFacts(item);
   return f ? GEAR_CATEGORIES[f.category] : null;
+}
+
+/* True for a relic whose substats the player allocates in game (Zodiac Zeta, Anima, Eureka, Resistance, Manderville,
+   Phantom Occultum, ...): a database piece of the Relic category with no substat and no materia slot, as the game files
+   list them. The optimizer cannot model the allocation, so its search leaves them out (owner's decision 2026-10-18,
+   option 2 of docs/scratchpad/weapon-damage/spec.md): as listed, with main stat only, they would win on main stat or
+   weapon damage while giving up every substat. */
+export function allocatedRelic(job, item) {
+  return categoryOf(item)?.key === 'relic' && meldInfo(item)?.slots === 0 && job.substats.every(s => !item.stats[s]);
 }
 
 /* A pool item's equip level (the level a character needs to wear it), or null for items not from the database. */

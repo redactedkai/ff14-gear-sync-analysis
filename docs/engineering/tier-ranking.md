@@ -34,6 +34,7 @@ The step functions make the first three criteria non-linear in $x$, so the weigh
 | Where a key is held | One point above its tier start, so a one-point model error does not drop the tier |
 | Speed's tier | The GCD step |
 | Tenacity's tier | Its mitigation step |
+| Weapon damage | Ranked before every key, held at its most (2026-10-18; section 2) |
 
 - **Speed:** the GCD step, not the finer step of damage-over-time ticks.
 - **Tenacity:** its mitigation step ($\lfloor 200\, g / \text{div} \rfloor$), since players stack Tenacity for damage taken; the result table's Tier row still shows the damage step.
@@ -67,6 +68,8 @@ which is the plain optimizer under three extra minimum rows, scalarized as in [o
 **Why this is exact.** Since $\tau_d$ is non-decreasing, $\{x : \tau_d(T_d(x)) \ge t\} = \{x : T_d(x) \ge \text{start}_d(t)\}$, a single linear covering row. So the sets whose $k_0$ is in its best tier are exactly the feasible sets with $T_{k_0} \ge \text{start}(t_0)$; maximizing $T_{k_1}$ over them finds the best $\tau_{k_1}$ among them (monotonicity again), and so on by induction. This is the standard preemptive scheme (Ehrgott 2005, *Multicriteria Optimization*, Springer, on lexicographic optimization), with the optimal value of each stage turned into a minimum for the next. The "+ 1" narrows each set to the ones a point inside the tier; that is the owner's rule, not a relaxation.
 
 **Food.** A meal adds $f(g) = \min(\text{max}, \lfloor p\,(b + g)/100 \rfloor)$ to a stat with $g$ gear points ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)). $g + f(g)$ is non-decreasing in $g$, so a hold on the total with food becomes a minimum on gear points: the least $g$ whose total reaches the hold (found by bisection). Each meal runs the stages on its own. After each stage only the meals that reach the best tier go on (the others lose on that tier whatever follows), and meals asking for the same problem share it.
+
+**Weapon damage first.** Every search ranks the weapon's weapon damage before the target ([optimizer.md, section 1](optimizer.md#1-the-problem); not for Blue Mage). Tier ranking runs it as one more stage before $(P_0)$: weapon damage has no tiers, so its stage finds the most, $M_{	ext{wd}}$, and holds it there ($h_{	ext{wd}} = M_{	ext{wd}}$, no "+ 1"). The keys above then run under that hold, and the last stage ranks weapon damage first among the raw totals. A stage of its own keeps the regain cuts (section 4.4) valid: each later stage has every row of the one before. Weapon damage is not named in the "Ranked by tier" line; a note under the result says it comes first.
 
 **A Target GCD** turns into a band on gear speed per meal ([optimizer.md, section 2](optimizer.md#target-gcd-from-a-gcd-to-a-speed-range)), a capacity and a covering row present in every stage.
 

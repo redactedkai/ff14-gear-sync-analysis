@@ -13,8 +13,9 @@ import {
   BASE_SLOT_PCT,
   ROW,
   GEAR_CATEGORIES,
+  DAMAGE_DEFENSE_KEYS,
 } from '../../src/core/constants.js';
-import { IL, PG, ITEMS, MP, MATERIA } from '../../src/core/tables.js';
+import { IL, PG, ITEMS, MP, MATERIA, SHARES } from '../../src/core/tables.js';
 import { JOB_ICONS } from '../../src/data/job-icons.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 
@@ -36,8 +37,8 @@ test('job bit order, stat order and slot codes come from item-format.json', () =
   });
 });
 
-test('ItemLevel table has one column per stat, all the same length', () => {
-  assert.deepEqual(Object.keys(IL).sort(), ITEM_STAT_ORDER.slice().sort());
+test('ItemLevel table has one column per stat and per weapon damage and defense value, all the same length', () => {
+  assert.deepEqual(Object.keys(IL).sort(), [...ITEM_STAT_ORDER, ...DAMAGE_DEFENSE_KEYS].sort());
   const lengths = new Set(Object.values(IL).map(c => c.length));
   assert.equal(lengths.size, 1);
   assert.equal(PG.length, 100);
@@ -47,7 +48,7 @@ test('every item row has the documented shape', () => {
   const maxMask = 2 ** ITEM_FORMAT.jobs.length;
   for (const r of ITEMS) {
     const where = JSON.stringify(r).slice(0, 80);
-    assert.equal(r.length, 16, where);
+    assert.equal(r.length, 20, where);
     assert.ok(
       Number.isInteger(r[ROW.slotCode]) && r[ROW.slotCode] >= 0 && r[ROW.slotCode] < ITEM_FORMAT.slots.length,
       'slot code ' + where,
@@ -70,8 +71,18 @@ test('every item row has the documented shape', () => {
     assert.ok(Number.isInteger(r[ROW.gameId]) && r[ROW.gameId] > 0, 'game id ' + where);
     assert.ok(r[ROW.scales] === 0 || r[ROW.scales] === 1, 'level-scaled flag ' + where);
     assert.ok(Number.isInteger(r[ROW.category]) && r[ROW.category] >= 0 && r[ROW.category] < GEAR_CATEGORIES.length, 'category ' + where);
+    for (const k of DAMAGE_DEFENSE_KEYS) assert.ok(Number.isInteger(r[ROW[k]]) && r[ROW[k]] >= 0, `${k} ${where}`);
   }
   assert.equal(new Set(ITEMS.map(r => r[ROW.gameId])).size, ITEMS.length, 'game ids are unique');
+});
+
+/* BaseParam's slot shares for weapon damage (rows 12, 13) and defense (21, 24) in slot code order (2H, 1H, off-hand,
+   head, body, hands, legs, feet, ear, neck, wrist, ring, body + head, legs + feet, body + hands + legs + feet), as of
+   patch 7.50, typed in from BaseParam.csv: weapon damage on weapons only, defense on armor only. */
+test('weapon damage and defense slot shares: weapons only, armor only', () => {
+  const damage = [1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const defense = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824];
+  assert.deepEqual(SHARES, { damagePhys: damage, damageMag: damage, defensePhys: defense, defenseMag: defense });
 });
 
 test('the materia table has one entry per grade', () => {
@@ -83,9 +94,9 @@ test('the materia table has one entry per grade', () => {
   assert.ok(MATERIA.high.every(g => Number.isInteger(g) && g >= 1 && g <= n));
 });
 
-test('the stat factor table has one row of percents per stat, one column per item kind', () => {
-  assert.deepEqual(Object.keys(MP), ITEM_STAT_ORDER);
-  for (const k of ITEM_STAT_ORDER) {
+test('the stat factor table has one row of percents per stat and weapon damage and defense value, one column per item kind', () => {
+  assert.deepEqual(Object.keys(MP), [...ITEM_STAT_ORDER, ...DAMAGE_DEFENSE_KEYS]);
+  for (const k of Object.keys(MP)) {
     assert.equal(MP[k].length, ITEM_FORMAT.statFactor.count, k);
     assert.ok(
       MP[k].every(v => Number.isInteger(v) && v >= 1 && v <= 100),

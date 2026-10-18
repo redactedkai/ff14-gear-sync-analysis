@@ -22,8 +22,9 @@ function speedRule(opts) {
    pruning keeps more), one for 'min' serves only minimums, one for null only searches with no speed rule; a search may
    hold any of `minStats`, or none. 'spd' in minStats is a speed rule of 'min' (unless `speed` is set).
    `versionKeys`: stats the meld versions are also on, and `versionCache`: meld versions shared with other lists of
-   the same job and sync (buildCandidates).
-   opts = {target='spd', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache}.
+   the same job and sync (buildCandidates). `weaponFirst` (default true): rank weapon damage before the objective
+   (rankedKeys in candidates.js); fastestGcd turns it off.
+   opts = {target='spd', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst}.
    Returns {slotList, posList, dims, noMeldData, speed, minStats}. */
 export function prepare(job, pool, sync, opts) {
   opts = opts || {};
@@ -37,7 +38,14 @@ export function prepare(job, pool, sync, opts) {
     pool,
     sync,
     { target, tiebreak },
-    { melds: !!opts.melds, speed, minStats, versionKeys: opts.versionKeys || [], versionCache: opts.versionCache },
+    {
+      melds: !!opts.melds,
+      speed,
+      minStats,
+      versionKeys: opts.versionKeys || [],
+      versionCache: opts.versionCache,
+      weaponFirst: opts.weaponFirst !== false,
+    },
   );
   return { ...cands, speed, minStats };
 }

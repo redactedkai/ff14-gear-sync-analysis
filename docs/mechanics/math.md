@@ -229,6 +229,26 @@ Take a healer head piece at item level 130 with Spell Speed and Piety, plus the 
 
 Every value matches the real piece. The Vitality line also shows the half-up rule at work: 31.5 rounds to 32. Piece stats, given Spell Speed and Piety, shows the first four lines; the Direct Hit line comes from the accuracy check's model.
 
+### Weapon damage and defense
+
+Besides its 14 stats, a piece carries four more numbers, read from their own `Item` columns (plus the HQ bonus, `BaseParamSpecial` ids 12, 13, 21 and 24, when the item can be HQ):
+
+| Number | `Item` column | Budget column (`ItemLevel`) | Carried by |
+| --- | --- | --- | --- |
+| Physical weapon damage | `DamagePhys` | `PhysicalDamage` | main-hand weapons |
+| Magic weapon damage | `DamageMag` | `MagicalDamage` | main-hand weapons |
+| Defense | `Defense` | `Defense` | armor, shields |
+| Magic Defense | `MagicDefense` | `MagicDefense` | armor, shields |
+
+**Weapon damage** multiplies nearly all of a job's damage, so a higher one is worth more than any substat difference within a tier. A job uses physical weapon damage when its main stat is Strength or Dexterity, magic weapon damage when it is Intelligence or Mind. Blue Mage uses neither: its spells scale with Intelligence only. A weapon's own value equals the `ItemLevel` budget at its item level on 5,566 of the 5,579 combat weapons (**verified**, game files; for example 157 at item level 790, 131 at 660, 64 at 123). The optimizer ranks it before the goal ([optimizer.md](../engineering/optimizer.md)).
+
+**Defense** reduces damage taken: the share removed, in whole percent, is $\lfloor 15 \times \text{defense} / \text{DIV}(L) \rfloor$, with $\text{DIV}(L)$ the level's `LevelModifier` (2,780 at level 100; AkhMorning's Defense page, **community reference**). For example, 2,958 Defense at level 100 removes 15%. It multiplies with cooldowns. The page shows each set's Defense and Magic Defense and their shares; the optimizer never ranks them.
+
+**Under sync** each of the four is clamped like a stat (section 5): to the cap $\operatorname{round}(\lfloor \lfloor \text{budget} \times \text{factor}\% / 100 \rfloor \times \text{share} / 100 \rfloor / 10)$ at the synced item level, with the column's own factor per item kind (`BaseParam.MeldParam`) and slot share (`BaseParam`, per mille). Weapon damage has share 1,000 on main-hand weapons and 0 elsewhere. Defense has head, hands and feet 176, body and legs 236, the two-slot body and legs codes 412, the full-body code 824, and 0 on weapons, shields and accessories.
+
+- Defense under sync: **verified** in-instance by xivgear's tests: item level 663 chests synced to 660 go from 842 to 837 Defense (Maiming) and from 481 to 478 Defense (Healing), and an accessory's 1 goes to 0. The formula gives all of them (tests/unit/damage-defense.test.js).
+- Weapon damage under sync: **guessed**. xivgear and ffxiv-gearing clamp it the same way in code; no in-game measurement was found. The page marks a lowered value "(a guess)".
+
 ## 5. Item level sync
 
 What happens to a piece when a duty lowers gear? Two questions, one subsection each: which item level is the piece synced to, and what does that do to each stat (the clamp rule). Section 4's worked example, synced to 123, runs through both.
@@ -570,6 +590,10 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 | Both triggers: the item level cap wins | Second-hand | xivgear issue #317 |
 | Weapons use the same level sync item level | Inferred | One column; same report |
 | No scaling up under sync | Verified for substats (published) | Wiki Item Level page |
+| Weapon damage = the `ItemLevel` budget at the weapon's item level | Verified (game files) | 5,566 of 5,579 weapons |
+| Defense clamped like a stat under sync | Verified (in-instance, second-hand) | xivgear's tests, 3 of 3 |
+| Weapon damage clamped like a stat under sync | Guessed (as xivgear and ffxiv-gearing do) | No in-game value |
+| Defense removes $\lfloor 15 \times \text{defense} / \text{DIV} \rfloor$ % | Community reference (AkhMorning) | [Weapon damage and defense](#weapon-damage-and-defense) |
 | GCD and tick formulas | Community reference (AkhMorning) | AkhMorning tier tables (9) |
 | Haste percentages and levels | Verified (official job guides) | [Haste](#haste) |
 | Haste applied after the speed step, rounded down again | Inferred (xivgear's formula) | Its best-in-slot GCD tiers |
@@ -609,6 +633,7 @@ Notes:
 | The 1.50 s GCD floor | `src/core/constants.js` (`GCD_FLOOR_MS`) |
 | Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
 | Food: bonus, base, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json`; main stat base `LEVEL_MAIN` in `src/core/constants.js` |
+| Weapon damage and defense: synced values, a set's defense, mitigation | `src/core/damage-defense.js`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.js` |
 | Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
 | Tests for the above | `tests/unit/formulas.test.js`, `sync.test.js`, `sync-cap-order.test.js`, `level-sync.test.js`, `speed.test.js`, `validation.test.js`, `stat-factor.test.js` |

@@ -3,14 +3,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { bestFood, foodChoices, statBase } from '../../src/core/food.js';
-import { browseItems, mkItem, poolItemFromRow, poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
+import { allocatedRelic, browseItems, mkItem, poolItemFromRow, poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
 import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
-import { jobGear, optimizerView, panelBase, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
+import { jobGear, optimizerView, panelBase, relicsLeftOut, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
@@ -156,14 +156,14 @@ test('piece lab view: every real item level 130 Sage head piece with three subst
 
 /* With no gear passed in, the optimizer searches every database piece the job can wear, minus its own left-out groups
    (Current Savage, Ultimate and PvP by default), and finds the same loadout as optimize() on that pool. */
-test('optimizer view: every job searches all the gear it can wear, minus its left-out groups', () => {
+test('optimizer view: every job searches all the gear it can wear, minus its left-out groups and allocated relics', () => {
   for (const [id] of JOBS) {
     const app = makeApp(id, { level: Math.min(50, makeJobContext(id).maxLevel) });
     const job = app.jobCtx;
     const all = browseItems(job, {});
     assert.equal(jobGear(job).length, all.length, id);
     assert.equal(jobGear(job), jobGear(job), `${id}: built once per job`);
-    const searched = withoutSources(jobGear(job), [...DEFAULT_EXCLUDE]);
+    const searched = withoutSources(jobGear(job), [...DEFAULT_EXCLUDE]).filter(i => !allocatedRelic(job, i));
     assert.deepEqual(searchCount(app), { searched: searched.length, left: all.length - searched.length }, id);
     assert.ok(searched.length > 100, id);
     const v = optimizerView(app);
@@ -190,7 +190,8 @@ test('gear view: every match of the filters, with its synced stats', () => {
 test('left-out groups: the optimizer and the browser each go by their own list', () => {
   const tome = SOURCES.find(s => s.key === 'tomestone').bit; // the window has tomestone gear, no crafted
   const app = makeApp('WAR', { cap: 123 });
-  const pool = windowPool(app.jobCtx);
+  // the window's relics with player-allocated substats (Zodiac Zeta) are never searched (allocatedRelic)
+  const pool = windowPool(app.jobCtx).filter(i => !allocatedRelic(app.jobCtx, i));
   const nTome = pool.filter(i => sourceMask(i) & tome).length;
   assert.ok(nTome > 0 && nTome < pool.length);
   Object.assign(app.browse, { min: 125, max: 135, lvl: 50, exclude: [] });
@@ -237,9 +238,10 @@ test("Gear to search: the browser's filters, on the optimizer's own values", () 
       const want = withoutSources(
         rows.map(r => poolItemFromRow(job, r)),
         DEFAULT_EXCLUDE,
-      );
+      ).filter(i => !allocatedRelic(job, i));
       assert.deepEqual(keys(searchPool(app)), keys(want), `${id} ${JSON.stringify(f)}`);
       assert.deepEqual(searchCount(app), { searched: want.length, left: jobGear(job).length - want.length });
+      assert.equal(relicsLeftOut(app), rows.filter(r => allocatedRelic(job, poolItemFromRow(job, r))).length, `${id} relics`);
     }
     // the browser's filters leave the optimizer alone, and the other way round
     Object.assign(app.opt, { expOff: [], min: '', max: '', lvl: 100 });
@@ -592,8 +594,9 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
   const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
   assert.equal(o.synced, true);
-  // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear
-  assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'] })[0]);
+  // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear. With melds, as the page: the
+  // most weapon damage is the item level 665 weapon (132) the level does not sync, which keeps its melds
+  assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'], melds: true })[0]);
   // gear no piece of which is synced at this level is not marked synced
   assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
 });
@@ -618,7 +621,10 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
   assert.equal(v.food.name, r.food.name);
   // every key keeps the tier the core held it at (the rows may show other pieces with the same tiers, same-result.js)
   const stats = app.jobCtx.stats;
-  for (const h of r.held) {
+  // weapon damage is held first (no tiers) and has no column: the readout leaves it out
+  assert.equal(r.held[0].stat, 'wd');
+  assert.ok(!v.heldText.includes('wd') && !v.heldText.toLowerCase().includes('weapon'));
+  for (const h of r.held.filter(x => x.stat !== 'wd')) {
     const shown = v.tiers[stats.indexOf(h.stat)];
     assert.equal(shown.held, true, h.stat);
     assert.equal(shown.effect, statTier(app.jobCtx, h.stat, r.withFood[h.stat], app.level).effect, h.stat);
@@ -671,4 +677,32 @@ test('a cap far above the synced level: gear made for a higher level is held to 
   // a cap at or under the ceiling, and level 100, keep the cap as typed
   assert.deepEqual(shownSync(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });
   assert.deepEqual(shownSync(makeApp('SGE', { cap: 795, sync: true, level: 100 })), { cap: 795, level: 100, byLevel: false });
+});
+
+/* Relics whose substats the player allocates in game (Zodiac Zeta, Anima, Eureka, Resistance, Manderville, Phantom
+   Occultum) are listed in the game files with main stat only: the optimizer leaves them out and says so (owner's
+   decision 2026-10-18). Other weapons with no substat (Gold Saucer gear) and relics with substats stay. */
+test('allocated relics: left out of the search and counted in the note; other relics and stat-less gear stay', () => {
+  const sge = makeJobContext('SGE');
+  const pieces = name => jobGear(sge).filter(i => i.name === name);
+  const [occultum] = pieces('Phantom Pendulums Occultum');
+  const [eclipticum] = pieces('Phantom Pendulums Eclipticum');
+  const [mandervillous] = pieces('Mandervillous Wings');
+  assert.ok(occultum && eclipticum && mandervillous);
+  assert.equal(allocatedRelic(sge, occultum), true);
+  assert.equal(allocatedRelic(sge, mandervillous), true);
+  assert.equal(allocatedRelic(sge, eclipticum), false, 'a relic with substats');
+  const ai = jobGear(makeJobContext('WAR')).find(i => i.name.startsWith('Ai Apaec'));
+  if (ai) assert.equal(allocatedRelic(makeJobContext('WAR'), ai), false, 'Gold Saucer gear with no substat');
+  const app = makeApp('SGE', { sync: false, cap: null, level: 100 });
+  app.opt.target = 'crit';
+  // by name: jobGear keeps one job's gear at a time, so the Warrior lookup above rebuilt Sage's
+  const searched = new Set(searchPool(app).map(i => i.name));
+  assert.ok(!searched.has(occultum.name));
+  assert.ok(searched.has(eclipticum.name));
+  const v = optimizerView(app);
+  assert.ok(v.relicsLeftOut > 0);
+  // the weapon is the Eclipticum (weapon damage 157), not the Occultum (158, no substat)
+  assert.equal(v.rows[0].item.name, 'Phantom Pendulums Eclipticum');
+  assert.equal(v.rows[0].weaponDamage, 'Weapon damage 157');
 });

@@ -4,6 +4,7 @@ import { SLOT_TYPES } from '../../../src/core/constants.js';
 import { capsFor } from '../../../src/core/formulas.js';
 import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/index.js';
+import { weaponDamage } from '../../../src/core/damage-defense.js';
 import { statBase } from '../../../src/core/food.js';
 import { MATERIA } from '../../../src/core/tables.js';
 
@@ -82,8 +83,16 @@ export function meldVectors(job, item, sync, keys, { exactSpd = false } = {}) {
   return byKey.get(ck);
 }
 
+/* A piece's effective stats (effStats) plus its weapon damage after sync under 'wd' when the job ranks it
+   (weaponDamage, checked against real weapons in damage-defense.test.js). */
+function effWithWd(job, item, sync) {
+  const v = { ...effStats(job, item, sync) };
+  if (job.damageKey) v.wd = weaponDamage(job, item, itemSyncIlvl(item, sync));
+  return v;
+}
+
 function enumerateVectors(job, item, sync, keys, exactSpd) {
-  const base = effStats(job, item, sync);
+  const base = effWithWd(job, item, sync);
   const info = meldInfo(item);
   if (itemSyncIlvl(item, sync) != null || !info || !info.slots) return [base];
   const best = high => {
@@ -129,7 +138,9 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
   });
 }
 
-/* Best [target, tiebreak1, tiebreak2] totals over every legal loadout, or null if none meets the constraints.
+/* Best [target, tiebreak1, tiebreak2] totals over every legal loadout, or null if none meets the constraints, ranked
+   with weapon damage first when the job ranks it (owner's decision 2026-10-18: no set gives it up for more of the
+   goal's stats; Blue Mage has none): the most weapon damage, then the goal, but only the goal's totals are returned.
    One item per slot that has items; two rings (the same item twice only if it has 2 copies).
 
    Two engine policies are copied here on purpose, not derived independently (docs/engineering/optimizer.md, section 5,
@@ -142,11 +153,12 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
    Blocked slots are checked on the whole loadout, independently of the engine's slot order: a slot is empty exactly
    when a chosen piece blocks it (a two-handed weapon blocks the off-hand, a cloak the head).
 
-   Effective (synced) stats come from the optimizer's own effStats, so this reference does not check the sync
-   clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
+   Effective (synced) stats come from the optimizer's own effStats and weaponDamage, so this reference does not check
+   the sync clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
    `mins` = {stat: total}: minimums on any stat's total, checked like spdMin. */
 export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, mins = {}, melds = false }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
+  const ranked = job.damageKey ? ['wd', ...keys] : keys;
   // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones.
   // With a speed rule speed is one of the meld keys, and with a maximum more speed is not always better; a stat with a
   // minimum is a meld key too
@@ -158,20 +170,20 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
     if (spdMin != null && get('spd') < spdMin) return;
     if (spdMax != null && get('spd') > spdMax) return;
     if (minStats.some(s => get(s) < mins[s])) return;
-    const v = keys.map(get);
+    const v = ranked.map(get);
     if (!best || lexGreater(v, best)) best = v;
   });
-  return best;
+  return best && best.slice(ranked.length - keys.length);
 }
 
 /* Call visit(get) once for every legal loadout (see exhaustive for the rules), where get(stat) is the loadout's total
-   of a neutral stat. With melds every piece brings each of its meld vectors on `meldKeys` (meldVectors; exactSpd as
-   there). */
+   of a neutral stat, or of weapon damage (wd) when the job ranks it. With melds every piece brings each of its meld
+   vectors on `meldKeys` (meldVectors; exactSpd as there). */
 export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], exactSpd = false }, visit) {
-  const stats = job.stats;
+  const stats = job.damageKey ? [...job.stats, 'wd'] : job.stats;
   const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
   const blockable = blockableTypes(job, pool);
-  const vectorsOf = i => (melds ? meldVectors(job, i, sync, meldKeys, { exactSpd }) : [effStats(job, i, sync)]);
+  const vectorsOf = i => (melds ? meldVectors(job, i, sync, meldKeys, { exactSpd }) : [effWithWd(job, i, sync)]);
   /* each choice (an item, a ring pair, or empty) as its effective stat totals in job.stats order and what it blocks */
   const choices = slots.map(t => {
     const list = choicesFor(pool, t).flatMap(items => {

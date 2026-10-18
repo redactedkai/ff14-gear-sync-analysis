@@ -621,7 +621,7 @@ async function checkFood(pg) {
   const food = pg.locator('#o-food');
   check(!(await food.isChecked()), 'Food is on by default');
   await expect(pg.locator('#o-food-row')).toHaveCount(0);
-  const gearCells = () => pg.locator('#o-result tbody td:nth-child(2) > span').allInnerTexts();
+  const gearCells = () => pg.locator('#o-result tbody tr:not(.total, .food, .tier) td:nth-child(2) > span').allInnerTexts();
   const gearItems = await gearCells();
   await food.check();
   await expect(pg.locator('#o-food-row')).toBeVisible();
@@ -676,7 +676,7 @@ async function checkRankByTier(pg) {
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
 }
 
-/** Target GCD: the box is empty (any GCD) with no line; a GCD one step from the free result is met exactly, the
+/** Target GCD (and, at level 100, the note on relics left out): the box is empty (any GCD) with no line; a GCD one step from the free result is met exactly, the
  * result's GCD is the one typed and the line gives the speed on the character panel; "or faster" and the GCD are
  * saved; the goal speed disables the box; a hasted job names its haste, a job switch clears the box, and a GCD the job
  * cannot have says why. Runs in its own group: it leaves Ninja at level 100 with sync off. */
@@ -687,6 +687,8 @@ async function checkTargetGcd(pg) {
   await waitOptimizer(pg);
   await pg.selectOption('#o-target', 'crit');
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
+  // level 100 relics whose substats the player allocates (Phantom Pendulums Occultum) are left out, with a note
+  await expect(pg.locator('#o-relic-note')).toHaveText(/^\d+ relic weapons? left out: you choose (their|its) substats in game/);
   const box = pg.locator('#o-gcd');
   check((await box.inputValue()) === '' && (await box.isEnabled()), 'the Target GCD box is not empty and enabled by default');
   await expect(pg.locator('#o-gcd-line')).toHaveCount(0);
@@ -1226,6 +1228,16 @@ const walkJob = job => async pg => {
   await expect(pg.locator('#o-count')).toContainText(' pieces');
   await checkNoBadText(pg, `${job}/opt`);
   await expect(pg.locator('#o-food-row')).toBeVisible();
+  // weapon damage on the weapon's row and its note, none for Blue Mage (Intelligence scales its damage); defense always
+  const wd = pg.locator('#o-result .wd');
+  if (job === 'BLU') {
+    await expect(wd).toHaveCount(0);
+    await expect(pg.locator('#o-wd-note')).toBeHidden();
+  } else {
+    await expect(wd).toHaveText(/^Weapon damage \d+(, synced \(a guess\))?$/);
+    await expect(pg.locator('#o-wd-note')).toBeVisible();
+  }
+  await expect(pg.locator('#o-defense td.defense')).toHaveText(/^Physical [\d,]+ · Magic [\d,]+ · −\d+% \/ −\d+% damage taken$/);
   await showMath(pg, 'piece');
   await expect(pg.locator('#p-bars .num').first()).toBeVisible();
   await checkNoBadText(pg, `${job}/math:piece`);

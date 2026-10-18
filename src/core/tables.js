@@ -12,6 +12,9 @@ export const PG = ITEM_LEVEL_FILE.PG;
 /* MP: the per-item stat factor table (BaseParam MeldParam), {raw stat key: [percent per item kind]}. An item row's kind
    field (row[ROW.kind], its BaseParamModifier) picks the kind: on that item a stat's full-share value is multiplied by the percent. */
 export const MP = ITEM_LEVEL_FILE.MP;
+/* SHARES: slot shares in thousandths per slot code for weapon damage and defense, {key: [share]} (BaseParam; the stats'
+   shares are the slot percents of item-format.json, these differ: weapon damage only on weapons, defense only on armor). */
+export const SHARES = ITEM_LEVEL_FILE.SHARES;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
 /* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...]] (food.js). */

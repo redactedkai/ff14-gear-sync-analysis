@@ -2,6 +2,8 @@
    raw totals (order A, owner 2026-10-16: leftover points go to the target). Tiers and totals count food; speed's tier is
    its GCD with the job's haste, Tenacity's its mitigation step, main stat and Vitality have none (every point counts;
    tiers.js rankTierOf). Spec: docs/scratchpad/a7-tier-ranking/spec.md.
+   - Weapon damage comes first when the job ranks it (rankedKeys in optimizer/candidates.js; owner 2026-10-18), as a key
+     without tiers; the "Ranked by tier" line leaves it out (views/optimizer.js).
    - One search per key, in order: maximize the key under the minimums so far, note the tier it reaches, then hold the
      key there through a minimum on its gear points (gearNeeded) for every later search. A key is held one point above
      its tier start (HOLD_MARGIN, owner 2026-10-16: a one-point model error should not drop the tier), or at the most
@@ -15,6 +17,7 @@
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
 import { betterRank, foodBonus, gearNeeded, mealRank, mealsFor, withFood } from './food.js';
 import { prepare, solve } from './optimizer/index.js';
+import { rankedKeys } from './optimizer/candidates.js';
 import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
 import { fastestGcd, gearBand } from './target-gcd.js';
 import { rankTierOf, tierStart } from './tiers.js';
@@ -48,7 +51,9 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   const level = opts.level ?? sync.level ?? job.maxLevel;
   const haste = hasteFor(job.jobId, level);
   const pct = haste ? haste.pct : 0;
-  const keys = [...new Set([opts.target || 'spd', ...(opts.tiebreak || [])].filter(Boolean))];
+  // weapon damage first when the job ranks it (rankedKeys): a stage of its own, with no tiers, held at the most reached
+  // like main stat, so every later stage's proven maximum holds under it (regain cuts stay exact)
+  const keys = rankedKeys(job, opts.target || 'spd', opts.tiebreak || []);
   const gcdMode = opts.gcd != null ? (opts.mode === 'min' ? 'min' : 'exact') : null;
   const base = { haste, level, asked: opts.gcd ?? null, mode: gcdMode };
 

@@ -6,10 +6,11 @@
      turns that into a minimum (or band) on gear speed (gearNeeded). Food is no longer picked after the search: the meal
      changes which gear fits. Every meal that asks for the same gear speed shares one search, on candidates built once
      (prepare), so only the search repeats.
-   - Among meals the winner has the highest totals with food on the target and tiebreaks, then the most food points,
-     then the first in the job's food choices (bestFood's order). */
+   - Among meals the winner has the highest totals with food on weapon damage (ranked first, rankedKeys), the target and
+     tiebreaks, then the most food points, then the first in the job's food choices (bestFood's order). */
 import { betterRank, foodBonus, gearNeeded, mealRank, mealsFor, withFood } from './food.js';
 import { prepare, solve } from './optimizer/index.js';
+import { rankedKeys } from './optimizer/candidates.js';
 import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
 
 /**
@@ -35,7 +36,9 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   const pct = haste ? haste.pct : 0;
   const target = opts.target || 'spd';
   const tiebreak = (opts.tiebreak || []).filter(Boolean);
-  const keys = [target, ...tiebreak];
+  // meals rank by the totals with food in the search's order, weapon damage first: meals give different speed bands,
+  // so their best sets can differ in it
+  const keys = rankedKeys(job, target, tiebreak);
   const base = { asked: opts.gcd, mode, haste, level };
   const band = speedForGcd(opts.gcd, level, mode, pct);
   if (!band) return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
@@ -106,11 +109,12 @@ export function gearBand(job, meal, band, level) {
 
 /* The shortest GCD the pool can reach: the most speed, with the meal that adds the most speed when food is on (the
    loadout with the most gear speed also has the most with any speed meal, since gear + food rises with gear), with the
-   job's haste. opts = {melds, food, nodeLimit, level} as for optimizeGcd. Null when the pool has no loadout. */
+   job's haste. The most speed at any weapon damage (weaponFirst off): a search for a faster GCD may take a weapon with
+   less. opts = {melds, food, nodeLimit, level} as for optimizeGcd. Null when the pool has no loadout. */
 export function fastestGcd(job, pool, sync, opts) {
   const level = opts.level ?? sync.level ?? job.maxLevel;
   const pct = hasteFor(job.jobId, level)?.pct ?? 0;
-  const r = solve(prepare(job, pool, sync, { target: 'spd', melds: opts.melds }), { nodeLimit: opts.nodeLimit });
+  const r = solve(prepare(job, pool, sync, { target: 'spd', melds: opts.melds, weaponFirst: false }), { nodeLimit: opts.nodeLimit });
   if (!r.ok) return null;
   const meals = mealsFor(job, opts.food);
   let spd = r.totals.spd || 0;

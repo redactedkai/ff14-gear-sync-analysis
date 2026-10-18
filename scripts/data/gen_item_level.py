@@ -3,7 +3,7 @@
 
 Usage: python scripts/data/gen_item_level.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
-Output: {"_generated": notice, "source": ..., "IL": ..., "PG": ..., "MP": ...}
+Output: {"_generated": notice, "source": ..., "IL": ..., "PG": ..., "MP": ..., "SHARES": ...}
 _generated = one-line "do not edit" notice naming the source commit.
 source = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown (the page's DATA_SOURCE).
 IL = per-stat budget by item level (index = item level, 921 rows as of patch 7.50), one array per stat key
@@ -11,6 +11,10 @@ IL = per-stat budget by item level (index = item level, 921 rows as of patch 7.5
 PG = [[BaseSpeed, LevelModifier, ItemLevelSync]] for character levels 1..100 (index = level - 1).
 MP = per-item stat factor table, {stat key: [percent for BaseParamModifier 0..12]}, from each stat's BaseParam row
      (MeldParam columns; `statFactor` in src/core/item-format.json). An item row's last field indexes it.
+IL and MP also hold the weapon damage and defense entries (`damageDefense` in item-format.json): their ItemLevel column
+     and their BaseParam row's MeldParam percents.
+SHARES = {weapon damage or defense key: [slot share in thousandths per slot code]}, from their BaseParam rows (the stats'
+     shares are the slot `percent`s in item-format.json; these differ).
 
 Also checks BaseParam.csv: every stat's slot shares must equal the slot `percent`s in src/core/item-format.json, which
 the page uses. Missing columns or a mismatch stop the generator with exit status 1.
@@ -21,7 +25,7 @@ import json
 from pathlib import Path
 
 import provenance
-from item_format import check_slot_percents, load_format, read_csv, run_main, stat_factors
+from item_format import check_slot_percents, load_format, read_csv, run_main, slot_shares, stat_factors
 
 
 def main(csv_dir, out, source='detect'):
@@ -31,15 +35,18 @@ def main(csv_dir, out, source='detect'):
     d = Path(csv_dir)
     fmt = load_format()
     check_slot_percents(d / 'BaseParam.csv', fmt)
-    MP = stat_factors(d / 'BaseParam.csv', fmt)
-    il_cols = {s['key']: s['itemLevelColumn'] for s in fmt['stats']}
+    extra = fmt['damageDefense']['entries']
+    MP = {**stat_factors(d / 'BaseParam.csv', fmt), **stat_factors(d / 'BaseParam.csv', fmt, extra)}
+    SHARES = slot_shares(d / 'BaseParam.csv', fmt, extra)
+    il_cols = {s['key']: s['itemLevelColumn'] for s in [*fmt['stats'], *extra]}
     il_rows = read_csv(d / 'ItemLevel.csv', ['#', *il_cols.values()])
     assert [int(r['#']) for r in il_rows] == list(range(len(il_rows))), 'ItemLevel ids not contiguous'
     IL = {k: [int(r[c]) for r in il_rows] for k, c in il_cols.items()}
     pg_rows = {int(r['#']): r for r in read_csv(d / 'ParamGrow.csv', ['#', 'BaseSpeed', 'LevelModifier', 'ItemLevelSync'])}
     PG = [[int(pg_rows[lvl]['BaseSpeed']), int(pg_rows[lvl]['LevelModifier']), int(pg_rows[lvl]['ItemLevelSync'])] for lvl in range(1, 101)]
-    # one line, compact: {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]}}
-    doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP}
+    # one line, compact: {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
+    # "SHARES": {key: [share per slot code]}}
+    doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP, 'SHARES': SHARES}
     provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')
 
 

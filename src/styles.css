@@ -264,6 +264,10 @@ select {
 td.item {
   white-space: normal;
 }
+/* the result's Defense row: one cell across the stat columns, wrapping at 960 px instead of widening the table */
+td.defense {
+  white-space: normal;
+}
 .same {
   position: relative;
 }

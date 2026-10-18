@@ -112,9 +112,16 @@ export function capDerivation(job, stat, ilvl, type, pct, factor = null) {
   const factorPct = Math.round((factor ?? jobFactor(job, stat)) * 100); // 0.9 -> 90, so the arithmetic stays integer
   const share = pct ?? job.slotPct[type]; // per mille
   // the factor first, floored; then the slot share, floored, in tenths of a point; then rounded to whole points
+  return { base, factorPct, ...capFromBudget(base, factorPct, share), pct: share };
+}
+
+/* The sync cap of one value from its ItemLevel budget `base`, its factor in percent and its slot share in thousandths:
+   {afterFactor, exact, value}. The factor first, floored; then the slot share, floored, in tenths of a point; then
+   rounded to whole points. Shared by the stats (capDerivation) and weapon damage and defense (damage-defense.js). */
+export function capFromBudget(base, factorPct, share) {
   const afterFactor = Math.floor((base * factorPct) / 100);
   const exact = Math.floor((afterFactor * share) / 100) / 10;
-  return { base, factorPct, afterFactor, pct: share, exact, value: rnd(exact) };
+  return { afterFactor, exact, value: rnd(exact) };
 }
 
 /* Per-stat ceiling under sync: each stat's capValue for the piece's slot and kind at the cap item level. `pct`: the

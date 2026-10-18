@@ -22,11 +22,12 @@ What does the optimizer choose, and from what?
 
 **The task.** The user's job decides which items are wearable; they form the **pool** of candidate items (real gear from the game data). The optimizer chooses a **loadout**, one item per slot, that:
 
-1. maximizes the total of a **target** stat (for example Spell Speed or Tenacity),
-2. then, among loadouts with the same target total, maximizes **tiebreak 1**,
-3. then **tiebreak 2**.
+1. maximizes the weapon's **weapon damage** (the job's physical or magic one; skipped for Blue Mage, whose spells scale with Intelligence only),
+2. then, among loadouts with the most weapon damage, the total of a **target** stat (for example Spell Speed or Tenacity),
+3. then, among loadouts with the same target total, **tiebreak 1**,
+4. then **tiebreak 2**.
 
-This is a lexicographic order: a tiebreak only matters between loadouts that are equal on every higher-ranked stat.
+This is a lexicographic order: a tiebreak only matters between loadouts that are equal on every higher-ranked stat. Weapon damage comes first on every search (owner's decision, 2026-10-18): it multiplies nearly all of a job's damage, so no set should give it up for more of the goal's stats. It is an implicit key: the page does not offer it as a goal, names it only in a note under the result, and the rest of this page calls the target the first key the user picks. Its values, and its sync rule (a guess), are in [math.md, section 4](../mechanics/math.md#weapon-damage-and-defense). The Target GCD's fastest-GCD search leaves it out, since it only asks how fast the gear can go.
 
 **Constraints.**
 
@@ -134,7 +135,7 @@ $$
 W_2 = 1, \qquad W_1 = R_2 + 1, \qquad W_0 = R_1 W_1 + R_2 + 1 = (R_1 + 1)(R_2 + 1).
 $$
 
-In general $W_q = 1 + \sum_{q' > q} R_{q'} W_{q'}$. With fewer keys, the missing ones are dropped (one key gives $W_0 = 1$).
+In general $W_q = 1 + \sum_{q' > q} R_{q'} W_{q'}$. With fewer keys, the missing ones are dropped (one key gives $W_0 = 1$). With weapon damage first (section 1) there are up to four keys, weapon damage as $k_0$ and the target and tiebreaks after it; the rule is the same. Only the weapon slot carries weapon damage, so $R_0$ is the spread of the pool's weapons, and the weights above it barely grow.
 
 **Why this is lexicographic.** Take two loadouts that first differ at key $q$, by at least 1 (stats are integers). The keys below $q$ can change the score difference by at most $\sum_{q' > q} R_{q'} W_{q'} = W_q - 1$. So the score difference is at least $W_q - (W_q - 1) = 1 > 0$, and the loadout that is better on key $q$ always scores higher.
 
@@ -343,7 +344,7 @@ Notation from there: a piece has $B$ **big** stones (guaranteed slots and the fi
 
 ### The best melds of one piece
 
-The objective ranks substats in order, keys $k_1, k_2, k_3$: the target, then up to two tiebreaks. Only keys that are combat substats can take stones; a main stat target alone melds nothing.
+The objective ranks substats in order, keys $k_1, k_2, k_3$: the target, then up to two tiebreaks. Only keys that are combat substats can take stones; a main stat target alone melds nothing, and weapon damage (section 1) takes none.
 
 **Example: greedy filling is not exact.** Putting the biggest stone into the first key that still has room loses on some pieces. Courtly Lover's Earrings of Healing (item level 770) has Critical Hit 142 against a cap of 203, so 61 of room, and takes 2 big stones (XII, 54) and 3 small (XI, 18), as in the diagram in [materia.md, section 2](../mechanics/materia.md#2-the-rules). With Critical Hit as the target and Determination as the tiebreak:
 
@@ -412,7 +413,8 @@ What does the page hand to the engine, and what does it show back?
 - Expansion, item level from and to, equip level up to (each empty means no limit; the equip level starts at the job's level cap), and the gear groups.
 - A piece passes exactly when the browser would list it with the same filters and no name or slot. The filters only narrow the pool, so they never make the search slower.
 - One checkbox per group (in a row; two columns when the window is narrower than 560 px) leaves crafted, tomestone, relic, current Savage, ultimate or PvP gear out when unticked. Current Savage, ultimate and PvP are left out by default (the owner's decision, 2026-10-14); a saved choice, including every box ticked, is kept. Current Savage is the current expansion's Savage gear only; relic includes the Eureka, Bozja and Occult Crescent armor. The groups are the gear that is hardest to get. An item's groups come from the game files ([data-pipeline.md, section 4](data-pipeline.md#sources)).
-- The heading counts the pieces searched out of every piece the job can wear (for Sage with the default filters, "searching 2,331 of 2,422 pieces", 2026-10-16).
+- The heading counts the pieces searched out of every piece the job can wear (for Sage at level 50 with the default filters, "searching 2,328 of 2,422 pieces", 2026-10-18).
+- **Relics whose substats the player allocates** are always left out, with a note under the result that counts them (owner's decision, 2026-10-18). Such a relic has no substats in the game files (category relic, no meld slots, no substats; `allocatedRelic`), but the highest weapon damage of its time, so with weapon damage first it would win with none of the goal's stats. Modeling the allocation is a roadmap item.
 - The Gear browser has its own filters, so looking gear up never changes the search; when no piece passes, the page says so instead of a result.
 
 **Target GCD on the page** (owner's decisions, 2026-10-16).
@@ -614,13 +616,15 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 - **Meals of equal goal:** Target GCD picks the meal whose set scores most on the goal and tiebreaks, then the one that adds most in total. That last step uses whichever tied set each meal's search returned, so it is not the most any tied set could get with that meal (71 of 252,112 sweep runs changed meal when the search order changed; the goal and tiebreaks were the same).
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible loadout", even though leaving that slot empty would satisfy it. For Target GCD this is the "none" answer.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
+- **Relics with allocated substats** are left out of the search (section 7); a set that would use one, with the player's own allocation, is not found.
 - **Model assumptions** carry over from the stat model: synced stats follow the clamp rule in [math.md](../mechanics/math.md) (verified against the Wiki's item level 475 caps); melds follow [materia.md](../mechanics/materia.md), with every meld assumed to succeed. Items in the pool use their real stats, so the empirical substat shares do not affect the optimizer.
 
 ## Where this lives
 
 | Concept | File |
 | --- | --- |
-| Effective stats, item vectors, score weights, dominance pruning, candidate lists | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
+| Effective stats, item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
+| A weapon's weapon damage after sync | `src/core/damage-defense.js` (`weaponDamage`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
 | Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `limitTables`, `dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, `branchAndBound`; `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts) |
 | Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
@@ -631,7 +635,7 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
 | Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameResult`); the menus in `src/ui/views/optimizer.js` (`sameCandidates`, `sameMenu`); the unpruned candidates are `buildCandidates` with pruning off |
-| Page use: the job's gear, gear groups, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `NODE_LIMIT`, `optimizerView`) |
+| Page use: the job's gear, gear groups, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `relicsLeftOut`, `NODE_LIMIT`, `optimizerView`); relics with allocated substats `allocatedRelic` in `src/core/items.js` |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
 | Tests | `tests/unit/optimizer.test.js`, `tests/unit/optimizer-exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/optimizer-constraints.test.js`, `tests/unit/target-gcd.test.js`, `tests/unit/target-gcd-exhaustive.test.js`, `tests/unit/stat-minimums.test.js`, `tests/unit/regain.test.js` |

@@ -2,7 +2,8 @@
    place without changing what the result does. Under sync many pieces reach the same caps, so a player can often wear
    an easier piece instead of the one the search happened to pick.
 
-   "The same result" is the same main stat (it has no tiers: every point counts) and every substat at the same tier,
+   "The same result" is the same main stat (it has no tiers: every point counts), the same weapon damage (ranked before
+   the goal, owner's decision 2026-10-18: a menu never offers a weapon with less) and every substat at the same tier,
    counted with the result's meal: the points between two tiers do nothing, so they may differ. The tiers are the ones
    tier ranking uses (rankTierOf, roadmap A7): speed by its GCD alone, with the job's haste (its DoT/HoT tick scaling
    may drop a step: the GCD matters far more), and Tenacity by its mitigation step (200) alone (its damage bonus may
@@ -14,16 +15,17 @@
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
 import { foodBonus, withFood } from './food.js';
 import { equipLevel, poolKey, slotInfo } from './items.js';
+import { vectorDims } from './optimizer/candidates.js';
 import { rankTierOf } from './tiers.js';
 
-/* What a set does, as one comparable string: its main stat, the goal stat's points if asked, then each substat's
-   tiers, from gear totals ({neutral stat: points}) with the meal's bonus. ctx = {level, food, haste, goal}: the synced
+/* What a set does, as one comparable string: its main stat, its weapon damage (wd; empty for a job that does not rank
+   it), the goal stat's points if asked, then each substat's tiers, from gear totals ({neutral stat: points}) with the meal's bonus. ctx = {level, food, haste, goal}: the synced
    level, the meal (a foodChoices entry) or null, the job's always-on haste in percent (hasteFor; 0 for none), and the
    neutral stat whose exact points must stay (the plain optimizer's goal), or null for tiers only (tier ranking). */
 export function resultOf(job, gearTotals, { level, food, haste = 0, goal = null }) {
   const t = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
   const tiers = job.substats.map(s => rankTierOf(job, s, level, haste)?.(t[s] || 0) ?? '');
-  return [t.main || 0, goal ? t[goal] || 0 : '', ...tiers].join('|');
+  return [t.main || 0, job.damageKey ? t.wd || 0 : '', goal ? t[goal] || 0 : '', ...tiers].join('|');
 }
 
 /* The pieces each row can show without changing the result, and the piece it shows.
@@ -61,7 +63,7 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
       if (blocksKey(c.blocks) !== pickBlocks[i]) continue;
       if ((c.copies || 1) === 1 && others.some(o => o.item === c.item)) continue;
       const totals = { ...rest };
-      for (const s of job.stats) totals[s] = (totals[s] || 0) + (c.eff[s] || 0);
+      for (const s of vectorDims(job)) totals[s] = (totals[s] || 0) + (c.eff[s] || 0);
       if (resultOf(job, totals, ctx) !== target) continue;
       seen.add(c.item);
       out.push(c);
@@ -91,11 +93,13 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
 /* The main stat of a resultOf string. */
 const mainOf = result => Number(result.slice(0, result.indexOf('|')));
 
-/* The gear totals of a list of picks ({eff}; empty slots count nothing). */
+/* The gear totals of a list of picks ({eff}; empty slots count nothing): the job's stats, and weapon damage when the job
+   ranks it (vectorDims). */
 function sumOf(job, picks) {
+  const dims = vectorDims(job);
   const t = {};
-  for (const s of job.stats) t[s] = 0;
-  for (const p of picks) if (p.item) for (const s of job.stats) t[s] += p.eff[s] || 0;
+  for (const s of dims) t[s] = 0;
+  for (const p of picks) if (p.item) for (const s of dims) t[s] += p.eff[s] || 0;
   return t;
 }
 

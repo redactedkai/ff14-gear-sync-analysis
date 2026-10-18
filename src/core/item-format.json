@@ -172,6 +172,15 @@
       { "key": "promotional", "label": "Promotional" }
     ]
   },
+  "damageDefense": {
+    "_comment": "Weapon damage and defense (docs/scratchpad/weapon-damage/spec.md). Item rows carry each entry's value at `rowField`: the Item.csv `itemColumn`, plus, when the item can be HQ (CanBeHq), its HQ bonus (a BaseParamSpecial pair whose stat is `baseParam`). Zero on pieces without it (weapon damage on armor, defense on weapons and accessories). gen_item_level.py writes, per entry, the `itemLevelColumn` of ItemLevel.csv to IL, the `baseParam` row's MeldParam percents to MP and its slot share per slot code (each slot's `baseParamColumn`) to SHARES, so a synced value is capped like a stat (formulas.js capValue). Not in `stats`: their slot shares differ from the stats' (weapon damage 1000 on weapons only; defense 176/236 on armor, 0 on accessories).",
+    "entries": [
+      { "key": "damagePhys", "itemColumn": "DamagePhys", "baseParam": 12, "itemLevelColumn": "PhysicalDamage", "rowField": 16 },
+      { "key": "damageMag", "itemColumn": "DamageMag", "baseParam": 13, "itemLevelColumn": "MagicalDamage", "rowField": 17 },
+      { "key": "defensePhys", "itemColumn": "DefensePhys", "baseParam": 21, "itemLevelColumn": "Defense", "rowField": 18 },
+      { "key": "defenseMag", "itemColumn": "DefenseMag", "baseParam": 24, "itemLevelColumn": "MagicDefense", "rowField": 19 }
+    ]
+  },
   "statFactor": {
     "_comment": "Per-item stat factor. Field 9 of an item row is the item's `itemColumn` (Item.csv), an index 0..count-1 into the `baseParamColumn`[0..count-1] columns of BaseParam.csv. Each stat's BaseParam row holds there the percent its full-share slot value is multiplied by on that kind of item (Vitality 90 on Intelligence/Mind gear, every main stat 90 on gear that carries all four). gen_item_level.py writes the table to item-level.json (MP); gen_items.py stops on an index outside it.",
     "itemColumn": "BaseParamModifier",

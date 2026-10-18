@@ -3,7 +3,7 @@ loadout in tests/unit). Run in a worker thread by smoke.mjs: each call takes up 
 would otherwise stall every page the smoke test is driving. */
 
 import { isMainThread, parentPort } from 'node:worker_threads';
-import { browseItems, poolItemFromRow, sourcesMask, withoutSources } from '../../src/core/items.js';
+import { allocatedRelic, browseItems, poolItemFromRow, sourcesMask, withoutSources } from '../../src/core/items.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
@@ -13,7 +13,7 @@ import { panelBase } from '../../src/ui/views/optimizer.js';
 export { DEFAULT_EXCLUDE };
 
 // The optimizer searches every piece the job can wear, minus the gear groups unticked under Gear to search (Current
-// Savage, Ultimate and PvP by default). Totals are character panel numbers as the page shows them: the level's base
+// Savage, Ultimate and PvP by default) and the relics whose substats the player allocates (allocatedRelic). Totals are character panel numbers as the page shows them: the level's base
 // added for a substat (panelBase; its values are checked against AkhMorning in tests/unit/views.test.js).
 
 /** The core's best `target` over every piece `jobId` can wear minus the default left-out groups, with materia on
@@ -21,7 +21,7 @@ export { DEFAULT_EXCLUDE };
 export function coreGear(jobId, sync, target, extra = [], def = DEFAULT_EXCLUDE) {
   const job = makeJobContext(jobId);
   const gear = browseItems(job, {}).map(r => poolItemFromRow(job, r));
-  const pool = withoutSources(gear, def);
+  const pool = withoutSources(gear, def).filter(i => !allocatedRelic(job, i));
   const base = panelBase(job, target, sync.level ?? 100);
   const best = (p, melds) => optimize(job, p, sync, { target, melds }).totals[target] + base;
   return {
@@ -34,14 +34,14 @@ export function coreGear(jobId, sync, target, extra = [], def = DEFAULT_EXCLUDE)
 }
 
 /** The optimizer's gear filters (Gear to search): the pieces browseItems keeps with the same filters, minus the default
- * left-out groups. */
+ * left-out groups and the allocated relics. */
 export function coreFiltered(jobId, sync, target, f) {
   const job = makeJobContext(jobId);
   const all = browseItems(job, {}).length;
   const pool = withoutSources(
     browseItems(job, f).map(r => poolItemFromRow(job, r)),
     DEFAULT_EXCLUDE,
-  );
+  ).filter(i => !allocatedRelic(job, i));
   const on = optimize(job, pool, sync, { target, melds: true }).totals[target] + panelBase(job, target, sync.level ?? 100);
   return { all, searched: pool.length, on };
 }

@@ -4,15 +4,17 @@
 
    A candidate (built by withMeld, read by search.js and solve in index.js):
      item    the pool item
-     eff     its effective stats: after sync, plus its melds ({neutral stat: points}, the job's stats only)
+     eff     its effective stats: after sync, plus its melds ({neutral stat: points}, the job's stats), and its weapon
+             damage after sync under WD_KEY when the job ranks it (damage-defense.js; 0 off the weapon)
      copies  how many of it can be worn (2 for a non-Unique ring), counted per item, not per candidate
      blocks  slot types it leaves empty (a two-handed weapon the off-hand, a cloak the head)
      meld    its melds (bestMeld in meld.js) or null
-     score   [target, tiebreak 1, tiebreak 2] packed into one number (makeScorer); set by buildCandidates
+     score   [weapon damage, target, tiebreak 1, tiebreak 2] packed into one number (makeScorer); set by buildCandidates
      sum     its stat total, the sort tiebreak; set by buildCandidates
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.js) may
              swap a ring for any of them, including those pruning dropped */
 import { SLOT_TYPES } from '../constants.js';
+import { WD_KEY, weaponDamage } from '../damage-defense.js';
 import { capsFor, syncStats } from '../formulas.js';
 import { equipLevel, meldInfo, scalesWithLevel, slotInfo } from '../items.js';
 import { bestMeld, meldCaps, meldVersions } from '../meld.js';
@@ -49,7 +51,10 @@ export function itemCaps(job, item, sync) {
   return capsFor(job, item.type, target, s.pct, s.factors);
 }
 
-/* Lexicographic score [target, tiebreak 1, tiebreak 2] packed into one number, so the search can add and
+/* The most keys a score ranks: weapon damage, the target and two tiebreaks. */
+const MAX_KEYS = 4;
+
+/* Lexicographic score [target, tiebreak 1, tiebreak 2] (weapon damage first, when ranked) packed into one number, so the search can add and
    bound it like any sum. Fixed weights (1e8 / 1e4 / 1) are only lexicographic while tiebreak totals stay below
    10,000 (docs/history.md), so the weights are derived from the pool instead: with R2 = the range a loadout's
    tiebreak-2 total can span (sum over slots of max - min, 0 included for an empty slot) and R1 likewise,
@@ -58,7 +63,7 @@ export function itemCaps(job, item, sync) {
    Number.MAX_SAFE_INTEGER; that is checked, and a pool too large for it throws instead of ranking wrongly.
    `slotVectors[i]` is the list of stat vectors for slot i of the loadout (the ring list appears twice). */
 export function makeScorer(target, tiebreaks, slotVectors) {
-  const keys = [target, ...tiebreaks.filter(Boolean)].slice(0, 3);
+  const keys = [target, ...tiebreaks.filter(Boolean)].slice(0, MAX_KEYS);
   const keySpan = k =>
     slotVectors.reduce(
       (acc, vs) => {
@@ -94,9 +99,16 @@ export function makeScorer(target, tiebreaks, slotVectors) {
   };
 }
 
-/* Dimensions tracked per item: the job's stats. */
+/* Dimensions tracked per item: the job's stats, and weapon damage (WD_KEY) when the job ranks it (job.damageKey). */
 export function vectorDims(job) {
-  return job.stats.slice();
+  return job.damageKey ? [...job.stats, WD_KEY] : job.stats.slice();
+}
+
+/* The keys a score ranks, in order: weapon damage first when the job ranks it and `weaponFirst` (owner's decision
+   2026-10-18: no set gives it up for more of the goal's stats; only the weapon carries it), then the target and
+   tiebreaks, each once. fastestGcd turns `weaponFirst` off: it asks for the most speed at any weapon damage. */
+export function rankedKeys(job, target, tiebreak, weaponFirst = true) {
+  return [...new Set([...(weaponFirst && job.damageKey ? [WD_KEY] : []), target, ...tiebreak.filter(Boolean)])];
 }
 
 /* A pool item's candidate: its effective stat vector and, when `keys` is given (melds on) and the piece is not synced,
@@ -105,17 +117,20 @@ export function vectorDims(job) {
    giving every worn piece its own best melds never lowers a loadout (docs/engineering/optimizer.md, section 6). A synced piece
    keeps no melds (verified in game by the owner). */
 function itemCandidate(job, item, sync, keys) {
+  const target = itemSyncIlvl(item, sync);
   const synced = effStats(job, item, sync);
-  const meld = keys && itemSyncIlvl(item, sync) == null ? bestMeld(job, item, keys) : null;
-  return withMeld(job, item, synced, meld);
+  const meld = keys && target == null ? bestMeld(job, item, keys) : null;
+  return withMeld(job, item, synced, meld, target);
 }
 
-/* A candidate for `item`: its synced stats plus the melds' gains. */
-function withMeld(job, item, synced, meld) {
+/* A candidate for `item`: its synced stats plus the melds' gains, and its weapon damage (WD_KEY) after sync when the job
+   ranks it. `target`: the item level it is synced to (itemSyncIlvl), null when untouched. */
+function withMeld(job, item, synced, meld, target) {
   const v = {};
   job.stats.forEach(s => {
     v[s] = (synced[s] || 0) + (meld?.gain[s] || 0);
   });
+  if (job.damageKey) v[WD_KEY] = weaponDamage(job, item, target);
   return { item, eff: v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld };
 }
 
@@ -128,9 +143,10 @@ function withMeld(job, item, synced, meld) {
    and sum. */
 function itemVersions(job, item, sync, keys, exactSpd, versionCache) {
   const build = () => {
+    const target = itemSyncIlvl(item, sync);
     const synced = effStats(job, item, sync);
-    if (itemSyncIlvl(item, sync) != null) return [withMeld(job, item, synced, null)];
-    const versions = meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld));
+    if (target != null) return [withMeld(job, item, synced, null, target)];
+    const versions = meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld, null));
     for (const v of versions) v.versions = versions;
     return versions;
   };
@@ -253,7 +269,8 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpd = false) {
   return keep;
 }
 
-/* objective = {target, tiebreak}. Returns {slotList, posList, dims, noMeldData, score}: slotList is the slot sequence to fill (slots that
+/* objective = {target, tiebreak}, ranked after weapon damage (rankedKeys; `weaponFirst` false: the objective alone).
+   Returns {slotList, posList, dims, noMeldData, score}: slotList is the slot sequence to fill (slots that
    have items, 'ring' twice); posList[i] is the candidate list for slotList[i], best score first. Each candidate lists
    the slot types it leaves empty (`blocks`); a slot some candidate can block comes after every other slot, so the
    search knows whether it is blocked when it gets there. The pool holds only gear the job can wear (it is emptied on a
@@ -271,12 +288,14 @@ export function buildCandidates(
   pool,
   sync,
   { target, tiebreak = [] },
-  { prune = true, melds = false, speed = null, minStats = [], versionKeys = [], versionCache = null } = {},
+  { prune = true, melds = false, speed = null, minStats = [], versionKeys = [], versionCache = null, weaponFirst = true } = {},
 ) {
   const dims = vectorDims(job);
+  const ranked = rankedKeys(job, target, tiebreak, weaponFirst);
   // the stats the search may hold to a minimum or band, speed first
   const limitStats = [...new Set([...(speed ? ['spd'] : []), ...minStats])];
-  // melds are chosen per piece from the objective's keys, before the score weights are derived from the vectors
+  // melds are chosen per piece from the objective's keys (meld.js keeps the substats among them; weapon damage is no
+  // meld's), before the score weights are derived from the vectors
   const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, 3) : null;
   const candsByType = {};
   SLOT_TYPES.forEach(t => {
@@ -298,8 +317,8 @@ export function buildCandidates(
     if (t === 'ring') slotList.push('ring');
   });
   const score = makeScorer(
-    target,
-    tiebreak,
+    ranked[0],
+    ranked.slice(1),
     slotList.map(t => candsByType[t].map(a => a.eff)),
   );
   const prunedByType = {};

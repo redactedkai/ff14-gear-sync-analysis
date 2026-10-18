@@ -14,6 +14,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Critical Hit.** A substat that raises the chance and the size of critical hits (attacks or heals that land for extra). Every job uses it.
 
+**Defense, Magic Defense.** Numbers on armor and shields that reduce physical and magic damage taken by a percentage that depends on the level. The page shows a set's totals; the optimizer does not rank them. See [math.md, section 4](mechanics/math.md#weapon-damage-and-defense).
+
 **Determination.** A substat that raises all damage and healing by a small flat percentage. Every job uses it.
 
 **Diadem gear.** Heavensward gear from the Diadem, with random substats, that can no longer be obtained (**verified**, Console Games Wiki). The database leaves its 293 pieces out. See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md).
@@ -91,6 +93,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 **Unique.** An item that can be equipped only once at a time. It matters for rings: two copies of the same Unique ring cannot be worn together, while any other ring can fill both ring slots. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
 
 **Vitality.** The stat that sets maximum hit points. Every piece has it. On Intelligence and Mind gear it is 90% of the slot value (rounded again), on Strength and Dexterity gear 100%; pieces with all four main stats also have 90%. This is the piece's stat factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item).
+
+**Weapon damage.** A number on every main-hand weapon, physical for Strength and Dexterity jobs and magic for Intelligence and Mind jobs, that multiplies nearly all of the job's damage (Blue Mage's spells use Intelligence instead). It follows the weapon's item level. The optimizer ranks it before the goal. See [math.md, section 4](mechanics/math.md#weapon-damage-and-defense).
 
 ## Project terms
 

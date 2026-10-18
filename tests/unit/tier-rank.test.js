@@ -1,6 +1,8 @@
 /* Rank by tier (core/tier-rank.js) against a reference written out here: every legal loadout (forEachLoadout, with its
    own stone enumeration), every meal, food and tiers computed from the formulas (not gearNeeded or rankTierOf), and the
-   stage rule of the spec applied to the whole list. Pools are small real ones from three item level windows. */
+   stage rule of the spec applied to the whole list, with weapon damage first when the job ranks it (a key without
+   tiers, held at its most; owner's decision 2026-10-18). Pools are small real ones from three item level windows, with
+   a weapon slot in place of the necklace, so weapon damage can differ between sets. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { foodChoices } from '../../src/core/food.js';
@@ -27,7 +29,8 @@ function refTier(job, stat, total, level, haste) {
    per meal, for each key, keep the loadouts whose total is at least one above the start of the best tier left (or the
    most left, if less), then the best totals in key order; across meals, the best tiers, then the best totals. Null when
    no loadout meets the GCD. */
-function tierLex(job, pool, sync, { keys, melds, meals, level, gcd = null, mode = 'exact' }) {
+function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd = null, mode = 'exact' }) {
+  const keys = job.damageKey ? ['wd', ...goal] : goal;
   const haste = hasteFor(job.jobId, level)?.pct ?? 0;
   const stats = [...new Set([...keys, 'spd'])];
   const meldKeys = gcd != null ? [...new Set([...keys, 'spd'])] : keys;
@@ -54,7 +57,7 @@ function tierLex(job, pool, sync, { keys, melds, meals, level, gcd = null, mode 
     if (!left.length) continue;
     const tiers = [];
     for (const k of keys) {
-      const most = Math.max(...left.map(x => total(x, k)));
+      const most = left.reduce((m, x) => Math.max(m, total(x, k)), Number.NEGATIVE_INFINITY);
       const tier = refTier(job, k, most, level, haste);
       let hold = most;
       if (tier != null) {
@@ -81,8 +84,10 @@ function lexGreater(a, b) {
   return i >= 0 && a[i] > b[i];
 }
 
-/* The engine's result as the reference reads it: [tier per key, total with food per key]. */
-function asVector(job, r, keys, level) {
+/* The engine's result as the reference reads it: [tier per key, total with food per key], weapon damage first when the
+   job ranks it (as tierLex). */
+function asVector(job, r, goal, level) {
+  const keys = job.damageKey ? ['wd', ...goal] : goal;
   const haste = hasteFor(job.jobId, level)?.pct ?? 0;
   return [
     ...keys.map(k => refTier(job, k, r.withFood[k] || 0, level, haste) ?? (r.withFood[k] || 0)),
@@ -102,7 +107,9 @@ function checkNoGcd(seed, count) {
     const job = makeJobContext(['SGE', 'WAR', 'SAM', 'BLM', 'DRK', 'WHM'][t % 6]);
     const level = t % 3 === 0 ? 50 : 100;
     const sync = { cap: null, sync: false, level };
-    const pool = smallPool(job, rand, ['head', 'body', 'neck', 'ring'], 2);
+    // every other case without weapons: with two, weapon damage (the first key) often leaves one, and the raw and
+    // tier orders then rarely differ on the rest
+    const pool = smallPool(job, rand, t % 2 ? ['weapon', 'head', 'body', 'ring'] : ['head', 'body', 'neck', 'ring'], 2);
     if (!pool.length) continue;
     const melds = rand() < 0.7;
     const subs = [...job.substats].sort(() => rand() - 0.5);
@@ -135,7 +142,7 @@ function checkGcd(seed, count, threeKeys = false) {
     const job = makeJobContext(['SAM', 'SGE', 'NIN', 'PLD'][t % 4]);
     const level = 100;
     const sync = { cap: null, sync: false, level };
-    const pool = smallPool(job, rand, ['head', 'body', 'neck', 'ring'], 2);
+    const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
     if (!pool.length) continue;
     const subs = job.substats.filter(s => s !== 'spd').sort(() => rand() - 0.5);
     const keys = subs.slice(0, threeKeys && t % 3 !== 0 ? 3 : 2);

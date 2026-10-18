@@ -4,7 +4,7 @@
 Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
 
 Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources, statFactor, meldSlots, overmeld, rarity,
-            gameId, scales, category]
+            gameId, scales, category, damagePhys, damageMag, defensePhys, defenseMag]
   slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring,
              12=body that also covers the head)
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
@@ -21,6 +21,8 @@ Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sou
   scales    : 1 when the item's item level follows the wearer's level (Item.SubStatCategory 2, `levelScaled` in
              item-format.json), else 0
   category  : the piece's gear category (gear_categories.py) as an index into `category.list` of item-format.json
+  damagePhys, damageMag, defensePhys, defenseMag : weapon damage and defense (`damageDefense` in item-format.json):
+             Item.DamagePhys etc., plus the HQ bonus (a BaseParamSpecial pair) when the item can be HQ; 0 when it has none
 
 The file also holds the materia table {values, gate, high} (`materia` in item-format.json, see materia_table()).
 """
@@ -135,6 +137,22 @@ def materia_table(csv_dir, fmt):
     return {'values': values, 'gate': gate, 'high': high}, decoys
 
 
+def damage_defense(row, fmt):
+    """[damagePhys, damageMag, defensePhys, defenseMag] of an Item.csv row (`damageDefense` in item-format.json): each
+    entry's item column, plus its HQ bonus (the BaseParamSpecial pair naming the entry's BaseParam row) when the item
+    can be HQ, as for stats. A value that is not a whole number counts as 0 (rows without it leave it empty)."""
+    out = []
+    for e in fmt['damageDefense']['entries']:
+        v = row[e['itemColumn']]
+        total = int(v) if v.isdigit() else 0
+        if row['CanBeHq'] == 'True':
+            for i in range(N_ITEM_PARAMS):
+                if row[f'BaseParamSpecial[{i}]'] == str(e['baseParam']):
+                    total += int(row[f'BaseParamValueSpecial[{i}]'])
+        out.append(total)
+    return out
+
+
 def select(csv_dir):
     """The gear the database keeps: (kept, multi_slot, crafter_gatherer), where kept is a list of (Item.csv row,
     database row) pairs in Item.csv order, multi_slot names the pieces left out because they block a combination of
@@ -243,6 +261,7 @@ def select(csv_dir):
                     int(r[rarity_col]) if r[rarity_col].isdigit() else -1,
                     int(r['#']) if r['#'].isdigit() else -1,
                     1 if r[scaled['itemColumn']] == str(scaled['value']) else 0,
+                    *damage_defense(r, fmt),
                 ],
             )
         )
@@ -295,10 +314,25 @@ def main(csv_dir, out, source='detect'):
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     masks = gear_categories.source_masks(kept, cats)
     cat_index = category_index(fmt)
-    rows = [[*row[:8], masks[r['#']], *row[9:], cat_index[cats[r['#']]]] for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
-    # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields and the rowField
-    # of rarity, gameId, levelScaled and category)
-    fields = {**fmt['materia']['rowFields'], **{k: fmt[k]['rowField'] for k in ('rarity', 'gameId', 'levelScaled', 'category')}}
+    # select() leaves the sources at 8 to fill here and has no category: it goes between levelScaled and the weapon damage
+    # and defense fields (at cat_at, the category's rowField)
+    cat_at = fmt['category']['rowField']
+    rows = [
+        [*row[:8], masks[r['#']], *row[9:cat_at], cat_index[cats[r['#']]], *row[cat_at:]]
+        for r, row in kept
+        if cats[r['#']] not in gear_categories.LEFT_OUT
+    ]
+    # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields, the rowField
+    # of rarity, gameId, levelScaled and category, and the damageDefense entries)
+    fields = {
+        **fmt['materia']['rowFields'],
+        **{k: fmt[k]['rowField'] for k in ('rarity', 'gameId', 'levelScaled', 'category')},
+        **{e['key']: e['rowField'] for e in fmt['damageDefense']['entries']},
+    }
+    if fields['category'] != fmt['levelScaled']['rowField'] + 1 or sorted(e['rowField'] for e in fmt['damageDefense']['entries']) != list(
+        range(cat_at + 1, cat_at + 1 + len(fmt['damageDefense']['entries']))
+    ):
+        raise SchemaError(f'item-format.json: category must follow levelScaled and the damageDefense fields the category: {fields}')
     if rows and len(rows[0]) != max(fields.values()) + 1:
         raise SchemaError(f'item rows have {len(rows[0])} fields, item-format.json row fields expect {fields}')
     materia, decoys = materia_table(csv_dir, fmt)

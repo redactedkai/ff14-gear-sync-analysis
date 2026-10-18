@@ -216,7 +216,7 @@ $$
 
 ### Stats and the HQ bonus
 
-*Which stats does the row hold?* An `Item` row lists up to six stats as pairs (stat id, value), plus up to six more pairs for the high-quality (HQ) bonus that a crafted HQ copy gets on top. Each id is looked up in the stat order and added to that position; ids outside the 14 (Defense, Magic Defense and similar) are ignored. In the figure, the helm's four pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) land in positions 0, 4, 10 and 9.
+*Which stats does the row hold?* An `Item` row lists up to six stats as pairs (stat id, value), plus up to six more pairs for the high-quality (HQ) bonus that a crafted HQ copy gets on top. Each id is looked up in the stat order and added to that position; other ids are ignored, apart from the HQ bonus to weapon damage and defense (ids 12, 13, 21 and 24), which is added to those fields (section *Row format and order*). In the figure, the helm's four pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) land in positions 0, 4, 10 and 9.
 
 For stat position $k$ with `BaseParam` id $\text{id}(k)$:
 
@@ -363,7 +363,7 @@ Only 25 rows carry items: the seven combat substats; the main stat, Vitality and
 
 ### Row format and order
 
-Each database row is a fixed list of sixteen fields:
+Each database row is a fixed list of twenty fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -383,12 +383,14 @@ Each database row is a fixed list of sixteen fields:
 | game id | integer | The item's row id in `Item` (section *Game id*). |
 | scales | 0 or 1 | 1 when its item level follows the wearer's level (section *Scales with level*). |
 | category | integer 0 to 23 | Its gear category, an index into the format file's category list (section *Gear category*). |
+| physical, magic weapon damage | integers | `DamagePhys`, `DamageMag`, HQ bonus included when the item can be HQ; 0 on anything but a weapon. |
+| defense, magic defense | integers | `Defense`, `MagicDefense`, HQ bonus included when the item can be HQ. |
 
 The example row is
 
-| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity | game id | scales | category |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 13119 | 0 | 5 (alliance raid) |
+| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity | game id | scales | category | damage | defense |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 13119 | 0 | 5 (alliance raid) | 0, 0 | 242, 242 |
 
 The file holds the rows and the materia table next to each other, under the same source record (section 6).
 
@@ -396,7 +398,7 @@ Rows are sorted by item level (highest first), then slot code, then name. The st
 
 ## 5. Item level table and level data
 
-*What, besides the gear itself, does the stat math need?* The formulas turn an item level into stats, a character level into speed constants, and an item's kind into stat percentages. The second generator writes one file with all of that, in four parts.
+*What, besides the gear itself, does the stat math need?* The formulas turn an item level into stats, a character level into speed constants, and an item's kind into stat percentages. The second generator writes one file with all of that, in five parts.
 
 **Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. The budget curves and example values are in [math.md, section 2](../mechanics/math.md#2-the-budget-table); how a budget becomes the stat on a piece is in [math.md, section 4](../mechanics/math.md#4-the-stats-on-a-piece).
 
@@ -417,6 +419,8 @@ A missing level or column stops the generator with an error. The values at level
 - Critical Hit, Determination, Direct Hit, both speeds and Tenacity are 100 everywhere.
 
 How it is used is in [math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item).
+
+**Weapon damage and defense.** The same three tables for physical and magic weapon damage and Defense and Magic Defense (`damageDefense` in the shared format definition): the `ItemLevel` columns `PhysicalDamage`, `MagicalDamage`, `Defense` and `MagicDefense` as budgets, the `MeldParam` columns of `BaseParam` rows 12, 13, 21 and 24 as factors, and their slot shares per slot code (`SHARES`, per mille, from the same `BaseParam` rows; the 14 stats keep their shares in the format file). They cap these values under sync ([math.md, section 4](../mechanics/math.md#weapon-damage-and-defense)).
 
 **Source record.** Which datamining commit the data came from (next section).
 
@@ -543,7 +547,7 @@ Some test expectations are allowed to move after a patch and others must not; th
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has sixteen fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag and a category index last), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has twenty fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 

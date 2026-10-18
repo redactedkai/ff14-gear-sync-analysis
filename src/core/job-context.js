@@ -5,6 +5,7 @@ import {
   JOBS,
   DEFAULT_JOB,
   ONE_HANDED_JOBS,
+  NO_WEAPON_DAMAGE_JOBS,
   JOB_LEVEL_CAPS,
   PROFILES,
   SLOT_TYPES,
@@ -66,6 +67,10 @@ export function makeJobContext(jobId) {
     vitFactor: profile.main === 'mind' || profile.main === 'int' ? 0.9 : 1,
     /* the job's level cap: limited jobs stop below the game's (JOB_LEVEL_CAPS); it cannot wear gear of a higher equip level */
     maxLevel: JOB_LEVEL_CAPS[id] ?? MAX_LEVEL,
+    // the weapon damage the job's damage uses (damage-defense.js): physical for Strength and Dexterity jobs, magic for
+    // Intelligence and Mind jobs; null for a job whose weapons carry none (NO_WEAPON_DAMAGE_JOBS), which the optimizer
+    // then does not rank
+    damageKey: NO_WEAPON_DAMAGE_JOBS.includes(id) ? null : profile.main === 'str' || profile.main === 'dex' ? 'damagePhys' : 'damageMag',
   };
   deepFreeze(ctx);
   cache.set(id, ctx);

@@ -50,7 +50,8 @@ def item_columns():
     cols = ['Name', 'EquipSlotCategory', 'LevelItem', 'LevelEquip', 'ClassJobCategory', 'CanBeHq', 'IsUnique', *pairs]
     materia = fmt['materia']
     trailing = [fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn']]
-    return [*cols, *trailing, fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn']]
+    extra = [e['itemColumn'] for e in fmt['damageDefense']['entries']]
+    return [*cols, *trailing, fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
 
 
 def meld_fields(row, fmt):
@@ -63,15 +64,16 @@ def meld_fields(row, fmt):
     return int(slots), 1 if over == 'True' else 0
 
 
-def stat_factors(base_param_csv, fmt):
+def stat_factors(base_param_csv, fmt, entries=None):
     """The per-item stat factor table: {stat key: [percent for item kind 0..count-1]}, read from each stat's BaseParam
-    row (`statFactor` in item-format.json). An Item row's BaseParamModifier picks the kind. Raises SchemaError on a
-    missing column or stat row, or a value that is not a percent from 1 to 100."""
+    row (`statFactor` in item-format.json). An Item row's BaseParamModifier picks the kind. `entries`: the {key,
+    baseParam} rows to read, the stats by default (gen_item_level.py also reads the `damageDefense` entries). Raises
+    SchemaError on a missing column or stat row, or a value that is not a percent from 1 to 100."""
     sf = fmt['statFactor']
     cols = [f'{sf["baseParamColumn"]}[{i}]' for i in range(sf['count'])]
     rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *cols])}
     table, problems = {}, []
-    for st in fmt['stats']:
+    for st in fmt['stats'] if entries is None else entries:
         r = rows.get(str(st['baseParam']))
         if r is None:
             problems.append(f'no row {st["baseParam"]} ({st["key"]})')
@@ -101,6 +103,31 @@ def check_slot_percents(base_param_csv, fmt):
                 problems.append(f'{st["key"]} {s["baseParamColumn"]} = {r[s["baseParamColumn"]]}, page uses {s["percent"]}')
     if problems:
         raise SchemaError(f'{Path(base_param_csv).name} slot shares differ from {FORMAT_PATH.name}: ' + '; '.join(problems))
+
+
+def slot_shares(base_param_csv, fmt, entries):
+    """{key: [slot share in thousandths per slot code]} for each {key, baseParam} entry, read from its BaseParam row's
+    slot columns (each slot's `baseParamColumn`, in slot code order). For values whose shares differ from the stats'
+    (`damageDefense` in item-format.json: weapon damage only on weapons, defense only on armor). Raises SchemaError on
+    a missing row or a share that is not a whole number."""
+    slots = sorted(fmt['slots'], key=lambda s: s['code'])
+    if [s['code'] for s in slots] != list(range(len(slots))):
+        raise SchemaError(f'{FORMAT_PATH.name} slot codes are not 0..{len(slots) - 1}')
+    rows = {r['#']: r for r in read_csv(base_param_csv, ['#', *(s['baseParamColumn'] for s in slots)])}
+    table, problems = {}, []
+    for e in entries:
+        r = rows.get(str(e['baseParam']))
+        if r is None:
+            problems.append(f'no row {e["baseParam"]} ({e["key"]})')
+            continue
+        vals = [r[s['baseParamColumn']] for s in slots]
+        if not all(v.isdigit() for v in vals):
+            problems.append(f'{e["key"]} slot shares {",".join(vals)}, expected whole numbers')
+            continue
+        table[e['key']] = [int(v) for v in vals]
+    if problems:
+        raise SchemaError(f'{Path(base_param_csv).name} slot shares: ' + '; '.join(problems))
+    return table
 
 
 def run_main(main, *args):
