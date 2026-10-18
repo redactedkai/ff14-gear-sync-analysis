@@ -1338,7 +1338,8 @@ ul.facts li::marker {
 }
 .bar .keep,
 .bar .rise,
-.bar .cut {
+.bar .cut,
+.bar .meld {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1353,6 +1354,16 @@ ul.facts li::marker {
 }
 .bar .cut {
   opacity: 0.55;
+}
+/* the melds a piece keeps: the stones' accent, outlined like the materia chips */
+.bar .meld,
+.legend i.meldbox {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.bars .meldtxt {
+  color: var(--accent);
+  font-size: 0.8rem;
 }
 .bar .capmark {
   position: absolute;

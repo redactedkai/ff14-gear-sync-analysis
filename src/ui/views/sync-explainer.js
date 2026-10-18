@@ -151,11 +151,14 @@ export function explainerView(app, widths = {}) {
     { stat: 'vit', label: job.label.vit, w: null },
     ...subs.map((s, i) => (s ? { stat: s, label: job.label[s], w: SUB_WEIGHTS[i] } : null)).filter(Boolean),
   ];
-  const scale = Math.max(...lines.map(l => Math.max(piece.raw[l.stat], caps[l.stat]))) * 1.05;
+  // the melds a piece keeps (at or below the cap) add to its stats
+  const meldOf = stat => (piece.kept && piece.meld ? piece.meld.gain[stat] || 0 : 0);
+  const scale = Math.max(...lines.map(l => Math.max(piece.raw[l.stat] + meldOf(l.stat), caps[l.stat]))) * 1.05;
   const pct = v => `${((100 * v) / scale).toFixed(2)}%`;
   const bars = lines.map(l => {
     const raw = piece.raw[l.stat],
       kept = piece.synced[l.stat],
+      melds = meldOf(l.stat),
       // a substat's value on the piece at the cap: the part above it is what overgearing adds (gold)
       native = l.w ? atCap.raw[l.stat] : null;
     const base = native != null ? Math.min(native, kept) : kept;
@@ -169,6 +172,11 @@ export function explainerView(app, widths = {}) {
       rise: native != null && kept > native ? pct(kept - native) : '0%',
       cutLeft: pct(kept),
       cut: raw > kept ? pct(raw - kept) : '0%',
+      // the melds, after the stat's own points; total is what the piece has in the duty
+      melds,
+      total: kept + melds,
+      meldLeft: pct(kept),
+      meldWidth: pct(melds),
       capAt: pct(caps[l.stat]),
     };
   });

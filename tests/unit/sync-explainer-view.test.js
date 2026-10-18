@@ -162,3 +162,18 @@ test('the overgeared chart: the substats named, a band each and the melds, and w
   assert.match(v.curveChartSvg, />31: at the cap from 131</);
   assert.match(v.curveChartSvg, />31: at the cap from 149</);
 });
+
+/* A piece at or below the cap keeps its materia, so its bars include the melds (owner's screenshot, 2026-10-18: an item
+   level 169 head synced to 169 with two Grade V Critical Hit stones showed Critical Hit 25 → 25). Above the cap the
+   melds are lost and no bar has any. */
+test('one piece: a piece that keeps its melds shows them on its bars; a synced piece has none', () => {
+  const kept = explainerView(app('SGE', { level: 100, cap: 169, slot: 'head', ilvl: 169, subs: ['dh', 'crit'] }));
+  const crit = kept.bars.find(b => b.label.startsWith('Critical Hit'));
+  const gain = kept.vsRows[0].points - kept.bars.filter(b => b.label.includes('·')).reduce((a, b) => a + b.kept, 0);
+  assert.ok(gain > 0, 'the piece keeps some melds');
+  assert.equal(crit.melds, gain); // both stones are Critical Hit
+  assert.equal(crit.total, crit.kept + crit.melds);
+  assert.ok(kept.bars.filter(b => b !== crit).every(b => b.melds === 0 && b.total === b.kept));
+  const synced = explainerView(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170, subs: ['dh', 'crit'] }));
+  assert.ok(synced.bars.every(b => b.melds === 0 && b.total === b.kept));
+});

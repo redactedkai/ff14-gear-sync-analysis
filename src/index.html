@@ -125,8 +125,8 @@
       <template x-for="b in view.bars" :key="b.label">
         <div style="display:contents">
           <div class="small" x-text="b.label"></div>
-          <div class="bar"><div class="keep" :style="`width:${b.keep}`"></div><div class="rise" :style="`left:${b.riseLeft};width:${b.rise}`"></div><div class="cut" :style="`left:${b.cutLeft};width:${b.cut}`"></div><div class="capmark" :style="`left:${b.capAt}`"></div></div>
-          <div class="num"><span x-text="b.raw"></span> → <b x-text="b.kept"></b><span class="gold" x-show="b.extra" x-text="` +${b.extra}`"></span></div>
+          <div class="bar"><div class="keep" :style="`width:${b.keep}`"></div><div class="rise" :style="`left:${b.riseLeft};width:${b.rise}`"></div><div class="cut" :style="`left:${b.cutLeft};width:${b.cut}`"></div><div class="meld" x-show="b.melds" :style="`left:${b.meldLeft};width:${b.meldWidth}`"></div><div class="capmark" :style="`left:${b.capAt}`"></div></div>
+          <div class="num"><span x-text="b.raw"></span> → <b x-text="b.total"></b><span class="gold" x-show="b.extra" x-text="` +${b.extra}`"></span><span class="meldtxt" x-show="b.melds" x-text="` +${b.melds}`"></span></div>
         </div>
       </template>
       <div class="small">Materia</div>
@@ -138,6 +138,7 @@
     <p class="small dim" x-show="view.goalNote" x-text="view.goalNote"></p>
     <div class="legend">
       <span><i class="box" style="background:var(--accent)"></i>Kept</span>
+      <span x-show="view.bars.some(b => b.melds)"><i class="box meldbox"></i>Materia</span>
       <span><i class="hatch"></i>Cut by sync</span>
       <span><i class="box" style="background:var(--gold)"></i><span x-text="`More than an item level ${view.cap} piece has`"></span></span>
       <span><i style="background:var(--fg);width:2px"></i><span x-text="`Cap at item level ${view.cap}`"></span></span>
