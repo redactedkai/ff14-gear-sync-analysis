@@ -113,9 +113,6 @@ export function explainerItemLevel(app) {
   return { range, il: clampTo(range, app.piece.ilvl ?? cap + DEFAULT_OVER), note };
 }
 
-/* "a" or "an" before `word` (a slot name: "an earring", "a head"). */
-const article = word => (/^[aeiou]/i.test(word) ? 'an' : 'a');
-
 /* A piece's melds in words, in two parts: {stones: "2 × Grade X Skill Speed (+54 each)", afterCap: "+90 after the cap"
    when the piece's cap cuts the stones, else ''}. */
 function meldParts(job, meld) {
@@ -124,12 +121,6 @@ function meldParts(job, meld) {
   const full = meld.stones.reduce((a, s) => a + s.n * MATERIA.values[s.grade - 1], 0);
   const gain = Object.values(meld.gain).reduce((a, b) => a + b, 0);
   return { stones: parts.join(', '), afterCap: gain < full ? `+${gain} after the cap` : '' };
-}
-
-/* "2 × Grade X Skill Speed (+54 each)", with ", +90 after the cap" when the piece's cap cuts the stones. */
-function meldSummary(job, meld) {
-  const { stones, afterCap } = meldParts(job, meld);
-  return afterCap ? `${stones}, ${afterCap}` : stones;
 }
 
 /* Everything the two sub-tabs show, or null while no sync applies. `widths`: the chart containers' widths in px
@@ -235,17 +226,14 @@ export function explainerView(app, widths = {}) {
   // the note: from which item level an overgeared piece has as much as the melded one, and from which it has more
   const asMuch = over.find(p => p.points >= atCap.points),
     more = over.find(p => p.points > atCap.points);
-  const peak = over.length ? Math.max(...over.map(p => p.points)) : null;
-  const atCapText = `an item level ${cap} ${slotName} with ${meldSummary(job, atCap.meld)}`;
-  const from = p => `from item level ${p.il} (+${p.il - cap})`;
-  const tail = `at most ${peak} points vs ${atCap.points}.`;
-  const lead = `Synced to ${cap}, ${article(slotName)} ${slotName}`;
+  const peak = over.length ? Math.max(...over.map(p => p.points)) : null,
+    ref = atCap.points;
+  const from = p => `item level ${p.il} (+${p.il - cap})`;
   let curveNote = ''; // empty when no item level of the range is above the cap
-  if (over.length && !asMuch) curveNote = `Synced to ${cap}, no ${slotName} above item level ${cap} has as much as ${atCapText}: ${tail}`;
-  else if (asMuch && !more)
-    curveNote = `${lead} ${from(asMuch)} has as much as ${atCapText}, never more: ${peak} points vs ${atCap.points}.`;
-  else if (more && more === asMuch) curveNote = `${lead} ${from(more)} has more than ${atCapText}: ${tail}`;
-  else if (more) curveNote = `${lead} ${from(asMuch)} has as much as ${atCapText}, and ${from(more)} more: ${tail}`;
+  if (over.length && !asMuch) curveNote = `No overgeared ${slotName} reaches the melded one: up to ${peak} vs ${ref}.`;
+  else if (asMuch && !more) curveNote = `From ${from(asMuch)}, overgeared has as much (${ref}), never more.`;
+  else if (more && more === asMuch) curveNote = `From ${from(more)}, overgeared has more: up to ${peak} vs ${ref}.`;
+  else if (more) curveNote = `From ${from(asMuch)}, overgeared has as much; from ${from(more)}, more: up to ${peak} vs ${ref}.`;
 
   // ---------- GCD: a full set (every slot the job wears, rings twice) at `il` and at the cap
   const spdShown = subs.includes('spd') || keys.includes('spd');
@@ -306,12 +294,6 @@ export function explainerView(app, widths = {}) {
     vsRows,
     verdict,
     curveNote,
-    curveLead: `${subs
-      .filter(Boolean)
-      .map(s => job.label[s])
-      .join(
-        ' + ',
-      )} of ${article(slotName)} ${slotName} in a duty synced to ${cap}, by the ${slotName}’s item level. Up to item level ${cap} it keeps its melds: ${meldSummary(job, atCap.meld)}.`,
     curveChartSvg: overgearChartSvg({
       curve,
       cap,
@@ -322,8 +304,11 @@ export function explainerView(app, widths = {}) {
       ceilings: subs.filter(Boolean).map(s => caps[s]),
       width: widths.piece,
     }),
-    // the chart's legend: its bands, bottom up (OVERGEAR_BANDS)
-    curveBands: [...subs.filter(Boolean).map((s, i) => `${job.label[s]} (${SUB_WEIGHTS[i]}%)`), 'Melds'].map((label, k, all) => ({
+    // the chart's legend: its bands, bottom up (OVERGEAR_BANDS); the melds band names the stones of the piece at the cap
+    curveBands: [
+      ...subs.filter(Boolean).map((s, i) => `${job.label[s]} (${SUB_WEIGHTS[i]}%)`),
+      `Melds: ${meldParts(job, atCap.meld).stones}`,
+    ].map((label, k, all) => ({
       label,
       ...OVERGEAR_BANDS[k === all.length - 1 ? 2 : k],
     })),

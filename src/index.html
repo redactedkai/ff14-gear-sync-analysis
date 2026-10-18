@@ -143,7 +143,7 @@
       <span><i class="box" style="background:var(--gold)"></i><span x-text="`More than an item level ${view.cap} piece has`"></span></span>
       <span><i style="background:var(--fg);width:2px"></i><span x-text="`Cap at item level ${view.cap}`"></span></span>
     </div>
-    <div class="versus" id="p-vs">
+    <div class="versus flat" id="p-vs">
       <div class="tablewrap"><table class="compact">
         <colgroup><col class="c-il"><col><col class="c-pts"></colgroup>
         <thead><tr><th>Item level</th><th>Materia</th><th class="n">In the duty</th></tr></thead>
@@ -157,7 +157,6 @@
   </div>
   <div class="panel" id="p-curve">
     <h2>Overgeared or melded: which has more?</h2>
-    <p class="small" id="p-curve-lead" x-text="view.curveLead"></p>
     <div class="legend" id="p-curve-legend">
       <template x-for="b in view.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
       <span><i style="background:var(--gold);height:2px"></i><span x-text="`Item level ${view.cap} with its melds`"></span></span>

@@ -31,7 +31,7 @@ test('level 80 (level sync, item level 530): a body at 590 against the melded 53
   );
   assert.equal(v.verdict, 'The melded body (item level 530) has 13 more.');
   // the same slot at every item level: the overgeared body has more from 624 (+94)
-  assert.match(v.curveNote, /from item level 624 \(\+94\)/);
+  assert.match(v.curveNote, /item level 624 \(\+94\)/);
   // a full set: 1,300 Skill Speed synced (2.17 s) against 1,442 melded (2.14 s)
   assert.deepEqual(
     v.gcd.rows.map(r => [r.il, r.spd, r.gcd]),
@@ -52,7 +52,7 @@ test('level 50, cap 130: overgeared gear has more almost at once, materia adds l
     [98, 91],
   );
   assert.equal(v.verdict, 'The overgeared body (item level 170) has 7 more.');
-  assert.match(v.curveNote, /from item level 143 \(\+13\)/);
+  assert.match(v.curveNote, /item level 143 \(\+13\)/);
   assert.deepEqual(
     v.gcd.rows.map(r => r.gcd),
     [2.15, 2.18],
@@ -149,14 +149,11 @@ test('cap 123: one substat over all eleven slots is at most 344, a 2.17 s GCD at
    substat, Goal: main stat). */
 test('the overgeared chart: the substats named, a band each and the melds, and where each reaches the cap', () => {
   const v = explainerView(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170 }));
-  assert.equal(
-    v.curveLead,
-    'Critical Hit + Spell Speed of a head in a duty synced to 130, by the head’s item level. Up to item level 130 it keeps its melds: 2 × Grade IV Spell Speed (+4 each).',
-  );
   assert.deepEqual(
     v.curveBands.map(b => b.label),
-    ['Critical Hit (100%)', 'Spell Speed (70%)', 'Melds'],
+    ['Critical Hit (100%)', 'Spell Speed (70%)', 'Melds: 2 × Grade IV Spell Speed (+4 each)'],
   );
+  assert.equal(v.curveNote, 'From item level 148 (+18), overgeared has as much; from item level 149 (+19), more: up to 62 vs 61.');
   assert.equal((v.curveChartSvg.match(/<polygon /g) || []).length, 3);
   // Critical Hit is at its 31 cap from 131, Spell Speed (70%) from 149
   assert.match(v.curveChartSvg, />31: at the cap from 131</);
@@ -212,12 +209,15 @@ test('one piece: at or below the cap the table rows say below the cap and at the
    169 reaches the melded 74 from item level 289, but the chart shaded nothing and the note said no earring has more). */
 test('overgeared chart: an overgeared piece with as much as the melded one is shaded and named', () => {
   const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
-  assert.equal(
-    v.curveNote,
-    'Synced to 169, an earring from item level 289 (+120) has as much as an item level 169 earring with 2 × Grade V Critical Hit (+6 each), +11 after the cap, never more: 74 points vs 74.',
-  );
+  assert.equal(v.curveNote, 'From item level 289 (+120), overgeared has as much (74), never more.');
   assert.match(v.curveChartSvg, /data-shade="289-309"/);
-  // the level 80 body: as much from one item level, more from a later one
-  const body = explainerView(app('RPR', { level: 80, ilvl: 590 }));
-  assert.match(body.curveNote, /from item level 624 \(\+94\)/);
+  // as much, then more; and never as much
+  assert.equal(
+    explainerView(app('RPR', { level: 80, ilvl: 590 })).curveNote,
+    'From item level 620 (+90), overgeared has as much; from item level 624 (+94), more: up to 400 vs 388.',
+  );
+  assert.equal(
+    explainerView(app('SGE', { level: 100, cap: 790, slot: 'head', ilvl: 795 })).curveNote,
+    'No overgeared head reaches the melded one: up to 459 vs 538.',
+  );
 });

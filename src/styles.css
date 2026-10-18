@@ -1295,6 +1295,11 @@ ul.facts li::marker {
 .versus col.c-pts {
   width: 5.5rem;
 }
+/* the piece's table sits straight in its panel: no shaded box around the bordered table */
+.versus.flat {
+  background: none;
+  padding: 0;
+}
 .versus tr.spacer {
   visibility: hidden;
 }
