@@ -228,12 +228,13 @@ export function explainerView(app, widths = {}) {
     more = over.find(p => p.points > atCap.points);
   const peak = over.length ? Math.max(...over.map(p => p.points)) : null,
     ref = atCap.points;
-  const from = p => `item level ${p.il} (+${p.il - cap})`;
+  const at = p => `item level ${p.il} (+${p.il - cap})`,
+    melded = `the melded ${slotName} (${ref})`;
   let curveNote = ''; // empty when no item level of the range is above the cap
-  if (over.length && !asMuch) curveNote = `No overgeared ${slotName} reaches the melded one: up to ${peak} vs ${ref}.`;
-  else if (asMuch && !more) curveNote = `From ${from(asMuch)}, overgeared has as much (${ref}), never more.`;
-  else if (more && more === asMuch) curveNote = `From ${from(more)}, overgeared has more: up to ${peak} vs ${ref}.`;
-  else if (more) curveNote = `From ${from(asMuch)}, overgeared has as much; from ${from(more)}, more: up to ${peak} vs ${ref}.`;
+  if (over.length && !asMuch) curveNote = `Overgeared never reaches ${melded}: at most ${peak}.`;
+  else if (asMuch && !more) curveNote = `Overgeared matches ${melded} at ${at(asMuch)}, never more.`;
+  else if (more && more === asMuch) curveNote = `Overgeared passes ${melded} at ${at(more)}, up to ${peak}.`;
+  else if (more) curveNote = `Overgeared matches ${melded} at ${at(asMuch)} and passes it at ${at(more)}, up to ${peak}.`;
 
   // ---------- GCD: a full set (every slot the job wears, rings twice) at `il` and at the cap
   const spdShown = subs.includes('spd') || keys.includes('spd');

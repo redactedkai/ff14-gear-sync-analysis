@@ -153,7 +153,10 @@ test('the overgeared chart: the substats named, a band each and the melds, and w
     v.curveBands.map(b => b.label),
     ['Critical Hit (100%)', 'Spell Speed (70%)', 'Melds: 2 × Grade IV Spell Speed (+4 each)'],
   );
-  assert.equal(v.curveNote, 'From item level 148 (+18), overgeared has as much; from item level 149 (+19), more: up to 62 vs 61.');
+  assert.equal(
+    v.curveNote,
+    'Overgeared matches the melded head (61) at item level 148 (+18) and passes it at item level 149 (+19), up to 62.',
+  );
   assert.equal((v.curveChartSvg.match(/<polygon /g) || []).length, 3);
   // Critical Hit is at its 31 cap from 131, Spell Speed (70%) from 149
   assert.match(v.curveChartSvg, />31: at the cap from 131</);
@@ -209,15 +212,15 @@ test('one piece: at or below the cap the table rows say below the cap and at the
    169 reaches the melded 74 from item level 289, but the chart shaded nothing and the note said no earring has more). */
 test('overgeared chart: an overgeared piece with as much as the melded one is shaded and named', () => {
   const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
-  assert.equal(v.curveNote, 'From item level 289 (+120), overgeared has as much (74), never more.');
+  assert.equal(v.curveNote, 'Overgeared matches the melded earring (74) at item level 289 (+120), never more.');
   assert.match(v.curveChartSvg, /data-shade="289-309"/);
   // as much, then more; and never as much
   assert.equal(
     explainerView(app('RPR', { level: 80, ilvl: 590 })).curveNote,
-    'From item level 620 (+90), overgeared has as much; from item level 624 (+94), more: up to 400 vs 388.',
+    'Overgeared matches the melded body (388) at item level 620 (+90) and passes it at item level 624 (+94), up to 400.',
   );
   assert.equal(
     explainerView(app('SGE', { level: 100, cap: 790, slot: 'head', ilvl: 795 })).curveNote,
-    'No overgeared head reaches the melded one: up to 459 vs 538.',
+    'Overgeared never reaches the melded head (538): at most 459.',
   );
 });
