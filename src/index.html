@@ -153,9 +153,8 @@
   <div class="panel" id="p-curve">
     <h2>Overgeared or melded: which has more?</h2>
     <p class="small" id="p-curve-lead" x-text="view.curveLead"></p>
-    <div class="legend">
-      <span><i style="background:var(--accent);height:2px"></i>Substats + melds in the duty</span>
-      <span><i style="background:var(--muted);height:2px"></i>Substats only</span>
+    <div class="legend" id="p-curve-legend">
+      <template x-for="b in view.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
       <span><i style="background:var(--gold);height:2px"></i><span x-text="`Item level ${view.cap} with its melds`"></span></span>
       <span><i style="background:var(--fg);opacity:.12"></i>Overgeared has more</span>
     </div>

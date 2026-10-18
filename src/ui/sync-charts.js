@@ -36,20 +36,18 @@ function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
   return g;
 }
 
-/* "31 + 22 + 8 melds = 61": a curve point's points by part, the chosen substats in their order (the chart's subtitle
-   names them). */
-function partsText(p) {
-  const parts = p.parts.map(String);
-  if (p.melds) parts.push(`${p.melds} melds`);
-  return `${parts.join(' + ')} = ${p.points}`;
-}
+/* The overgeared chart's bands, bottom up: the 1st substat, the 2nd, then the melds (the legend uses them too). */
+export const OVERGEAR_BANDS = Object.freeze([
+  { fill: 'var(--accent)', opacity: 0.55 },
+  { fill: 'var(--gold)', opacity: 0.5 },
+  { fill: 'var(--fg)', opacity: 0.22 },
+]);
 
-/* About how wide a chart label is, in px (12px sans-serif), to keep it inside the chart. */
-const labelWidth = text => text.length * 6.6;
-
-/* curve: [{il, points, bare, parts, melds, s2full}] in item level order (parts: each chosen substat's points); ref: the
-   piece at the cap's points (with its melds). */
-export function overgearChartSvg({ curve, cap, il, ref, slotName, width }) {
+/* curve: [{il, points, parts, melds}] in item level order (parts: each chosen substat's points after sync, melds: the
+   points the piece's melds add); ref: the piece at the cap's points (with its melds); labels and ceilings: each chosen
+   substat's name and its cap at the synced item level. Drawn as stacked bands (the substats, then the melds), so the top
+   edge is the piece's points and each band shows where its substat reaches its ceiling. */
+export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], ceilings = [], width }) {
   if (!curve.length) return '';
   const W = Math.max(MIN_WIDTH, Math.round(width || DEFAULT_WIDTH)),
     H = 300,
@@ -59,48 +57,51 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, width }) {
     B = 34;
   const x0 = curve[0].il,
     x1 = curve[curve.length - 1].il;
-  const lo = Math.min(...curve.map(p => p.bare)),
-    hi = Math.max(ref, ...curve.map(p => p.points));
-  const step = niceStep(hi - lo || 10),
-    ymin = Math.max(0, Math.floor((lo - step / 2) / step) * step),
+  // the bands stack from 0
+  const hi = Math.max(ref, ...curve.map(p => p.points));
+  const step = niceStep(hi || 10),
     ymax = hi + step * 0.6;
   const X = v => L + ((v - x0) / Math.max(1, x1 - x0)) * (W - L - R),
-    Y = v => T + (1 - (v - ymin) / (ymax - ymin)) * (H - T - B);
-  const path = f => curve.map((p, i) => `${i ? 'L' : 'M'}${X(p.il).toFixed(1)},${Y(f(p)).toFixed(1)}`).join('');
+    Y = v => T + (1 - v / ymax) * (H - T - B);
 
   let g = '';
-  for (let v = ymin; v <= ymax; v += step)
+  for (let v = 0; v <= ymax; v += step)
     g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
   g += xAxis(x0, x1, X, H, B, `Item level of the ${slotName}`);
+
+  // the bands: each substat on the ones below it, then the melds; a band is the area between two running totals
+  const layers = [...curve[0].parts.map((_, i) => p => p.parts[i]), p => p.melds];
+  const below = (p, k) => layers.slice(0, k).reduce((a, f) => a + f(p), 0);
+  layers.forEach((f, k) => {
+    const band = OVERGEAR_BANDS[Math.min(k === layers.length - 1 ? 2 : k, 2)];
+    const top = curve.map(p => `${X(p.il).toFixed(1)},${Y(below(p, k) + f(p)).toFixed(1)}`);
+    const bottom = curve.map(p => `${X(p.il).toFixed(1)},${Y(below(p, k)).toFixed(1)}`).reverse();
+    g += `<polygon points="${top.join(' ')} ${bottom.join(' ')}" fill="${band.fill}" opacity="${band.opacity}"/>`;
+  });
+  g += `<path d="${curve.map((p, i) => `${i ? 'L' : 'M'}${X(p.il).toFixed(1)},${Y(p.points).toFixed(1)}`).join('')}" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
+
+  // the shading where overgeared has more, the cap line, the chosen item level, and the piece at the cap
   const more = curve.filter(p => p.il > cap && p.points > ref).map(p => p.il);
   const at = curve.find(p => p.il === il) || curve[curve.length - 1];
   g += marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY: Y(at.points) });
-  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="2"/><text x="${L + 6}" y="${Y(ref) + 16}" style="fill:var(--gold)">${ref}: item level ${cap} with its melds</text>`;
-  g += `<path d="${path(p => p.bare)}" fill="none" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
-  g += `<path d="${path(p => p.points)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
-  // annotations, each with the points by part: the piece at the cap with its melds, the melds lost one item level over
-  // the cap, and where the 2nd substat reaches the cap
-  // to the left of the point when it fits, else to the right
-  const label = (x, y, text) => {
-    const left = x - 8 - labelWidth(text) > L;
-    return `<text class="lbl" x="${x + (left ? -8 : 8)}" text-anchor="${left ? 'end' : 'start'}" y="${y}">${text}</text>`;
-  };
-  const before = curve.find(p => p.il === cap),
-    after = curve.find(p => p.il === cap + 1);
-  if (before && before.melds) {
-    g += `<circle cx="${X(cap)}" cy="${Y(before.points)}" r="4" fill="var(--accent)"/>`;
-    g += label(X(cap), Y(before.points) - 10, partsText(before));
-  }
-  if (after && before && before.points > after.points)
-    g += `<circle cx="${X(after.il)}" cy="${Y(after.points)}" r="4" fill="var(--accent)"/><text class="lbl" x="${X(after.il) + 8}" y="${Y(after.points) + 20}">melds lost: ${partsText(after)}</text>`;
-  const full = curve.find(p => p.s2full);
-  if (full) {
-    // under the flat line to its right (the points stay level from there), kept inside the chart
-    const text = `${partsText(full)}: both at the cap`;
-    const x = Math.min(X(full.il) + 8, W - R - labelWidth(text));
-    g += `<circle cx="${X(full.il)}" cy="${Y(full.points)}" r="4" fill="var(--accent)"/><text class="lbl" x="${x}" y="${Y(full.points) + 20}">${text}</text>`;
-  }
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Substat points in the duty by item level">${g}</svg>`;
+  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="6 3"/><text x="${L + 6}" y="${Y(ref) - 6}" style="fill:var(--gold)">${ref}: item level ${cap} with its melds</text>`;
+
+  // band labels: each substat's name at the left, inside its band; where it reaches its ceiling at the right
+  const first = curve[Math.min(2, curve.length - 1)],
+    last = curve[curve.length - 1];
+  labels.forEach((name, i) => {
+    const mid = p => Y(below(p, i) + p.parts[i] / 2) + 4;
+    if (Y(below(first, i)) - Y(below(first, i) + first.parts[i]) >= 16)
+      g += `<text class="lbl" x="${X(first.il) + 4}" y="${mid(first)}">${name}</text>`;
+    const capped = curve.find(p => p.il > cap && p.parts[i] >= ceilings[i]);
+    if (capped && Y(below(last, i)) - Y(below(last, i) + last.parts[i]) >= 16)
+      g += `<text class="lbl" x="${X(x1) - 4}" text-anchor="end" y="${mid(last)}">${ceilings[i]}: at the cap from ${capped.il}</text>`;
+  });
+  // the melds' label like the substats', inside its band at the left, or over the line when the band is thin
+  const melds = layers.length - 1;
+  if (first.melds)
+    g += `<text class="lbl" x="${X(first.il) + 4}" y="${Y(below(first, melds)) - Y(first.points) >= 16 ? Y(below(first, melds) + first.melds / 2) + 4 : Y(first.points) - 6}">Melds</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Substat points in the duty by item level, by substat and melds">${g}</svg>`;
 }
 
 /* curve: [{il, gcd}] (seconds) in item level order; ref: the set at the cap's GCD. A longer GCD sits lower, so losing

@@ -10,7 +10,7 @@ import { mkItem } from '../../core/items.js';
 import { bestMeld } from '../../core/meld.js';
 import { BASE_GCD_MS, gcdFor, gcdTierAt, hasteFor } from '../../core/speed.js';
 import { shownSync } from '../state.js';
-import { gcdChartSvg, overgearChartSvg } from '../sync-charts.js';
+import { OVERGEAR_BANDS, gcdChartSvg, overgearChartSvg } from '../sync-charts.js';
 
 /* The item level range the slider and both charts cover, relative to the cap (item levels). */
 export const RANGE_BELOW = 30; // from 30 below the cap
@@ -207,11 +207,9 @@ export function explainerView(app, widths = {}) {
     curve.push({
       il: x,
       points: p.points,
-      bare: p.bare,
-      // the points by part, for the chart's labels: each chosen substat after sync, then the melds the piece keeps
+      // the points by part, for the chart's bands: each chosen substat after sync, then the melds the piece keeps
       parts: subs.filter(Boolean).map(s => p.synced[s]),
       melds: p.points - p.bare,
-      s2full: !!subs[1] && x > cap && p.synced[subs[1]] >= caps[subs[1]],
     });
   }
   const over = curve.filter(p => p.il > cap);
@@ -295,8 +293,15 @@ export function explainerView(app, widths = {}) {
       il,
       ref: atCap.points,
       slotName,
+      labels: subs.filter(Boolean).map(s => job.label[s]),
+      ceilings: subs.filter(Boolean).map(s => caps[s]),
       width: widths.piece,
     }),
+    // the chart's legend: its bands, bottom up (OVERGEAR_BANDS)
+    curveBands: [...subs.filter(Boolean).map((s, i) => `${job.label[s]} (${SUB_WEIGHTS[i]}%)`), 'Melds'].map((label, k, all) => ({
+      label,
+      ...OVERGEAR_BANDS[k === all.length - 1 ? 2 : k],
+    })),
     // GCD (null when neither chosen substat nor any meld is speed)
     gcd,
     spdLabel: job.label.spd,

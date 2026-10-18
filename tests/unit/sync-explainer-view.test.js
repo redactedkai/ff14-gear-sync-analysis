@@ -144,16 +144,21 @@ test('cap 123: one substat over all eleven slots is at most 344, a 2.17 s GCD at
   assert.equal(gcdFor(total, 50), 2.17);
 });
 
-/* The overgeared chart names its substats and breaks its points down at the three points that matter (the piece at the
-   cap with its melds, the drop one item level above, and where the 2nd substat reaches the cap). Sage head, Critical
-   Hit / Spell Speed, synced to 130: the melds go into Spell Speed (the 2nd substat, Goal: main stat). */
-test('the overgeared chart: the substats named, the points by part at the cap, after it and where both are capped', () => {
+/* The overgeared chart names its substats and draws its points as bands: each substat, then the melds, with where each
+   substat reaches its cap. Sage head, Critical Hit / Spell Speed, synced to 130: the melds go into Spell Speed (the 2nd
+   substat, Goal: main stat). */
+test('the overgeared chart: the substats named, a band each and the melds, and where each reaches the cap', () => {
   const v = explainerView(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170 }));
   assert.equal(
     v.curveLead,
     'Critical Hit + Spell Speed of a head in a duty synced to 130, by the head’s item level. Up to item level 130 it keeps its melds: 2 × Grade IV Spell Speed (+4 each).',
   );
-  assert.match(v.curveChartSvg, />31 \+ 22 \+ 8 melds = 61</);
-  assert.match(v.curveChartSvg, />melds lost: 31 \+ 22 = 53</);
-  assert.match(v.curveChartSvg, />31 \+ 31 = 62: both at the cap</);
+  assert.deepEqual(
+    v.curveBands.map(b => b.label),
+    ['Critical Hit (100%)', 'Spell Speed (70%)', 'Melds'],
+  );
+  assert.equal((v.curveChartSvg.match(/<polygon /g) || []).length, 3);
+  // Critical Hit is at its 31 cap from 131, Spell Speed (70%) from 149
+  assert.match(v.curveChartSvg, />31: at the cap from 131</);
+  assert.match(v.curveChartSvg, />31: at the cap from 149</);
 });
