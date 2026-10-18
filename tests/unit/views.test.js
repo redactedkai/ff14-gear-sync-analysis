@@ -316,8 +316,9 @@ test('piece lab: each stat against its ceiling, with the sentences and the arith
   assert.equal(vit.ownFormula, '460 × 8.5% = 39.1 → 39; × 0.9 = 35.1 → 35');
   assert.equal(vit.capFormula, '414 × 90% = 372; × 8.5% = 31.6 → 32');
   assert.match(vit.ownText, /then 90% on Mind gear\.$/);
-  assert.match(spd.ownText, /then 70%: it is the second substat\.$/);
-  assert.match(spd.capText, /Full share, not 70%\.$/);
+  assert.match(spd.ownText, /then 70% for the 2nd substat\.$/);
+  assert.match(spd.capText, /\(363\), with no 70% for the 2nd substat\.$/);
+  assert.match(vit.capText, /\(414\), with 90% on Mind gear\.$/);
   assert.equal(spd.capFormula, '363 × 8.5% = 30.8 → 31');
   // the slices: the job's slots with both rings make up the whole budget, the head marked
   assert.equal(

@@ -36,17 +36,19 @@ function ownSentence(steps, il, main) {
   let text = `${sharePct(first.pct)} of the item level ${il} budget (${first.base})`;
   for (const s of steps.slice(1)) {
     if (s.kind === 'factor') text += `, then ${Math.round(s.factor * 100)}% on ${main} gear`;
-    if (s.kind === 'share') text += `, then ${s.weight}%: it is the second substat`;
+    if (s.kind === 'share') text += `, then ${s.weight}% for the 2nd substat`;
   }
   return `${text}.`;
 }
 
-/* One sentence for where a stat's ceiling comes from (capDerivation), for the substat share `w`. */
-function capSentence(d, cap, w) {
+/* One sentence for where a stat's ceiling comes from (capDerivation), for the substat share `w`, worded like
+   ownSentence's; `main`: the job's main stat name. */
+function capSentence(d, cap, w, main) {
   if (d.offhand) return `The two-handed cap ${d.offhand.two} minus the one-handed cap ${d.offhand.one}.`;
   let text = `${sharePct(d.pct)} of the item level ${cap} budget (${d.base})`;
-  if (d.factorPct !== 100) text += `, with the same ${d.factorPct}% Vitality`;
-  return `${text}.${w != null && w !== 100 ? ` Full share, not ${w}%.` : ''}`;
+  if (d.factorPct !== 100) text += `, with ${d.factorPct}% on ${main} gear`;
+  if (w != null && w !== 100) text += `, with no ${w}% for the 2nd substat`;
+  return `${text}.`;
 }
 
 /* The slots of a full set as slices of one budget, in per mille: the job's slots with both rings (they add up to the
@@ -98,7 +100,7 @@ export function pieceView(app, ilvl) {
       ownText: ownSentence(d.steps, il, job.label.main),
       ownFormula: formulaText(d.steps),
       cap: c?.value ?? null,
-      capText: c ? capSentence(c, cap, sub ? w : null) : '',
+      capText: c ? capSentence(c, cap, sub ? w : null, job.label.main) : '',
       capFormula: c ? capFormulaText(c) : '',
       // the number the duty keeps: the piece's own, unless it is above the cap and over its ceiling
       ownKept: status !== 'above' || raw <= c.value,
