@@ -28,13 +28,14 @@ function capFormulaText(d) {
   return `${head}${sharePct(d.pct)} = ${d.exact.toFixed(1)} → ${d.value}`;
 }
 
-/* One sentence for where a stat's value on the piece comes from (statDerivation's steps). */
-function ownSentence(steps, il) {
+/* One sentence for where a stat's value on the piece comes from (statDerivation's steps); `main`: the job's main stat
+   name, for the Vitality factor. */
+function ownSentence(steps, il, main) {
   const first = steps[0];
   if (first.kind === 'offhand') return `The two-handed weapon's ${first.two} minus the one-handed weapon's ${first.one}.`;
   let text = `${sharePct(first.pct)} of the item level ${il} budget (${first.base})`;
   for (const s of steps.slice(1)) {
-    if (s.kind === 'factor') text += `, then ${Math.round(s.factor * 100)}%: Intelligence and Mind gear has less Vitality`;
+    if (s.kind === 'factor') text += `, then ${Math.round(s.factor * 100)}% on ${main} gear`;
     if (s.kind === 'share') text += `, then ${s.weight}%: it is the second substat`;
   }
   return `${text}.`;
@@ -45,7 +46,7 @@ function capSentence(d, cap, w) {
   if (d.offhand) return `The two-handed cap ${d.offhand.two} minus the one-handed cap ${d.offhand.one}.`;
   let text = `${sharePct(d.pct)} of the item level ${cap} budget (${d.base})`;
   if (d.factorPct !== 100) text += `, with the same ${d.factorPct}% Vitality`;
-  return `${text}.${w != null && w !== 100 ? ` The full share, even for the ${w}% stat.` : ''}`;
+  return `${text}.${w != null && w !== 100 ? ` Full share, not ${w}%.` : ''}`;
 }
 
 /* The slots of a full set as slices of one budget, in per mille: the job's slots with both rings (they add up to the
@@ -94,7 +95,7 @@ export function pieceView(app, ilvl) {
       raw,
       syn,
       lost: raw - syn,
-      ownText: ownSentence(d.steps, il),
+      ownText: ownSentence(d.steps, il, job.label.main),
       ownFormula: formulaText(d.steps),
       cap: c?.value ?? null,
       capText: c ? capSentence(c, cap, sub ? w : null) : '',
