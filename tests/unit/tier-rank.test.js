@@ -90,12 +90,15 @@ function asVector(job, r, keys, level) {
   ];
 }
 
-test('rank by tier matches the reference: two and three keys, main stat, food off / one meal / every meal, levels 50 and 100', () => {
-  const rand = rng(7070),
+/* `count` random cases with no Target GCD from seed `seed`, each against the reference: six jobs, levels 50 and 100,
+   two or three keys (sometimes main stat), melds on or off, food off / one meal / every meal. Returns {runs, differs}:
+   the cases run, and those where the tier order picks other totals than the raw order (the reason for A7). */
+function checkNoGcd(seed, count) {
+  const rand = rng(seed),
     int = n => Math.floor(rand() * n);
   let runs = 0,
     differs = 0;
-  for (let t = 0; t < 36; t++) {
+  for (let t = 0; t < count; t++) {
     const job = makeJobContext(['SGE', 'WAR', 'SAM', 'BLM', 'DRK', 'WHM'][t % 6]);
     const level = t % 3 === 0 ? 50 : 100;
     const sync = { cap: null, sync: false, level };
@@ -114,27 +117,28 @@ test('rank by tier matches the reference: two and three keys, main stat, food of
     runs++;
     assert.ok(r.ok && !r.truncated, label);
     assert.deepEqual(asVector(job, r, keys, level), want, label);
-    // how often the tier order picks another set than the raw order (the reason for A7)
     const raw = optimize(job, pool, sync, { target: keys[0], tiebreak: keys.slice(1), melds });
     if (keys.some(k => raw.totals[k] !== r.totals[k])) differs++;
   }
-  assert.ok(runs >= 30, `${runs} runs`);
-  assert.ok(differs >= 3, `${differs} runs where tier ranking changes the set`);
-});
+  return { runs, differs };
+}
 
-test('rank by tier with a Target GCD (both modes, haste, food) matches the reference', () => {
-  const rand = rng(8181),
+/* `count` random cases with a Target GCD from seed `seed`, each against the reference: four jobs (two with always-on
+   haste), level 100, both GCD modes, food off or every meal, a GCD at the free result's or one step either side; two
+   keys, or with `threeKeys` three in two cases of three. Returns {runs, infeasible}. */
+function checkGcd(seed, count, threeKeys = false) {
+  const rand = rng(seed),
     int = n => Math.floor(rand() * n);
   let runs = 0,
     infeasible = 0;
-  for (let t = 0; t < 24; t++) {
+  for (let t = 0; t < count; t++) {
     const job = makeJobContext(['SAM', 'SGE', 'NIN', 'PLD'][t % 4]);
     const level = 100;
     const sync = { cap: null, sync: false, level };
     const pool = smallPool(job, rand, ['head', 'body', 'neck', 'ring'], 2);
     if (!pool.length) continue;
     const subs = job.substats.filter(s => s !== 'spd').sort(() => rand() - 0.5);
-    const keys = subs.slice(0, 2);
+    const keys = subs.slice(0, threeKeys && t % 3 !== 0 ? 3 : 2);
     const choices = foodChoices(job);
     const food = [null, 'best'][t % 2];
     const meals = food === 'best' ? choices : [null];
@@ -155,7 +159,34 @@ test('rank by tier with a Target GCD (both modes, haste, food) matches the refer
     assert.ok(r.ok && !r.truncated, label);
     assert.deepEqual(asVector(job, r, keys, level), want, label);
   }
+  return { runs, infeasible };
+}
+
+test('rank by tier matches the reference: two and three keys, main stat, food off / one meal / every meal, levels 50 and 100', () => {
+  const { runs, differs } = checkNoGcd(7070, 36);
+  assert.ok(runs >= 30, `${runs} runs`);
+  // how often the tier order picks another set than the raw order (the reason for A7)
+  assert.ok(differs >= 3, `${differs} runs where tier ranking changes the set`);
+});
+
+test('rank by tier with a Target GCD (both modes, haste, food) matches the reference', () => {
+  const { runs, infeasible } = checkGcd(8181, 24);
   assert.ok(runs >= 20, `${runs} runs`);
+  assert.ok(infeasible < runs / 2, `${infeasible} infeasible`);
+});
+
+/* More random cases, for the search's speed-ups (regain cuts, slot order, trial search, band reach; docs/engineering/
+   tier-ranking.md, section 4): each changes which partial loadouts the search visits, never the answer. Three keys
+   with a Target GCD are where the regain cuts work: a band, and two held keys before the last stage. Perplexity's
+   review ran 720 such cases (six seeds) on its prototype; these are three of its seeds, whose reference runs in
+   seconds (two of its Target GCD seeds take one to two minutes there). */
+test('rank by tier, more cases: with and without a Target GCD, three keys, against the reference', () => {
+  for (const seed of [11707, 22707]) {
+    const { runs } = checkNoGcd(seed, 120);
+    assert.ok(runs >= 100, `seed ${seed}: ${runs} runs`);
+  }
+  const { runs, infeasible } = checkGcd(33818, 120, true);
+  assert.ok(runs >= 100, `${runs} runs`);
   assert.ok(infeasible < runs / 2, `${infeasible} infeasible`);
 });
 

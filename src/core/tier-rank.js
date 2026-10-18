@@ -10,7 +10,9 @@
    - Meals: each meal runs the stages on its own; after each stage only the meals reaching the best tier go on (the
      others lose on that tier whatever follows), and meals asking for the same search share it. Among the meals left,
      the totals with food decide, then the most food points, then the first in the job's food choices (as bestFood).
-   - With a Target GCD the meal's speed band holds in every search (gearBand, as optimizeGcd). */
+   - With a Target GCD the meal's speed band holds in every search (gearBand, as optimizeGcd).
+   - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
+     proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
 import { betterRank, foodBonus, gearNeeded, mealRank, mealsFor, withFood } from './food.js';
 import { prepare, solve } from './optimizer/index.js';
 import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
@@ -19,6 +21,13 @@ import { rankTierOf, tierStart } from './tiers.js';
 
 /* Points a held key keeps above its tier start, when the loadouts reach that many. */
 const HOLD_MARGIN = 1;
+
+/* What a finished stage search `result` proves for a meal's `state` (rankByTier's): {stat, most, minStats, speed}, the
+   most gear points of `stat` under the state's minimums and speed band (optimizer/regain.js). */
+function provenMost(state, stat, result) {
+  const speed = !state.gear ? null : state.gear.gearMax != null ? 'band' : 'min';
+  return { stat, most: result.totals[stat] || 0, minStats: Object.keys(state.mins), speed };
+}
 
 /**
  * @param job   JobContext
@@ -51,17 +60,18 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     base.band = band;
   }
 
-  // 2. one state per meal: its gear speed band and the minimums (gear points) held so far
+  // 2. one state per meal: its gear speed band, the minimums (gear points) held so far and the maxima its stages proved
   let meals = [];
   for (const meal of mealsFor(job, opts.food)) {
     const gear = band ? gearBand(job, meal, band, level) : null;
     if (band && !gear) continue; // the meal jumps over the band
-    meals.push({ meal, gear, mins: {}, held: [], last: null });
+    meals.push({ meal, gear, mins: {}, held: [], last: null, proven: [] });
   }
 
   // every stage's meld versions on all the keys (and speed with a Target GCD), in one order: the stages share the meld
-  // memo (prepare's versionKeys)
+  // memo (prepare's versionKeys) and build each piece's versions once (versionCache)
   const versionKeys = gcdMode ? [...keys, 'spd'] : keys;
+  const versionCache = new Map();
 
   // searches shared by meals asking the same, and candidate lists per objective and limited stats. Each search after
   // the first starts from the meal's last result (`seed`), which meets every limit so far: it only looks for a better
@@ -73,12 +83,14 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   const search = (state, target, tiebreak) => {
     const minStats = Object.keys(state.mins);
     const prepKey = `${target}|${tiebreak.join()}|${minStats.join()}|${gcdMode}|${!!opts.melds}`;
-    if (!cache.has(prepKey))
-      cache.set(prepKey, prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: gcdMode, minStats, versionKeys }));
+    if (!cache.has(prepKey)) {
+      const prepOpts = { target, tiebreak, melds: opts.melds, speed: gcdMode, minStats, versionKeys, versionCache };
+      cache.set(prepKey, prepare(job, pool, sync, prepOpts));
+    }
     const limits = { spdMin: state.gear?.gearMin, spdMax: state.gear?.gearMax, mins: state.mins };
-    const runKey = `${prepKey}|${JSON.stringify(limits)}`;
+    const runKey = `${prepKey}|${JSON.stringify(limits)}|${JSON.stringify(state.proven)}`;
     if (!runs.has(runKey)) {
-      const r = solve(cache.get(prepKey), { ...limits, seed: state.last?.picks, nodeLimit: opts.nodeLimit });
+      const r = solve(cache.get(prepKey), { ...limits, seed: state.last?.picks, nodeLimit: opts.nodeLimit, proven: state.proven });
       truncated ||= !!r.truncated;
       nodes += r.nodes || 0;
       runs.set(runKey, r);
@@ -111,7 +123,11 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
       const r = search(state, stat, keys.slice(0, keys.indexOf(stat)));
       if (!r.ok) continue;
       const most = withMeal(state, r).totals[stat] || 0;
-      reached.push({ state: { ...state, last: r }, most, tier: tierOf ? tierOf(most) : most });
+      // a search that finished proves the most gear points of `stat` under its limits (its score ranks `stat` first):
+      // a regain cut for every later search, whose limits include these (the same band, minimums that only rise). One
+      // that stopped at its node limit proves nothing, and a wrong maximum would cut good loadouts
+      const proven = r.truncated ? state.proven : [...state.proven, provenMost(state, stat, r)];
+      reached.push({ state: { ...state, last: r, proven }, most, tier: tierOf ? tierOf(most) : most });
     }
     if (!reached.length) return none();
     const bestTier = Math.max(...reached.map(x => x.tier));
