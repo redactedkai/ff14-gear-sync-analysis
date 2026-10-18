@@ -1100,6 +1100,81 @@ async function checkJobLevelCap(pg) {
   await setJob(pg, 'SGE');
 }
 
+// How the math works, Tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
+// starts at 613 on the panel (gear speed 193; validation.md section 5).
+const TIERS_SHORT = { crit: 'CRT', det: 'DET', dh: 'DHT', spd: 'SpS', spec: 'PIE' };
+
+/** Tiers (Sage, level 100, item level sync off): with no optimizer result for these settings each value starts at its
+ * base and Fill is off; a typed Spell Speed lands in AkhMorning's tier; once the optimizer has run, the values are its
+ * Total row's substats; a level typed into the settings shows its tiers while the field still has focus (no change
+ * event, no typing wait); with sync on and no cap there is no "enter a sync cap" message on Tiers; Paladin's Tenacity
+ * has two effect columns; no sideways scroll at NARROW. */
+async function checkTiers(pg) {
+  await pg.setViewportSize(NARROW);
+  await setJob(pg, 'SGE');
+  // settings changed away from the optimizer tab: it has no result for them yet
+  await showMath(pg, 'tiers');
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', '100');
+  await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level 100');
+  await expect(pg.locator('#t-fill')).toBeDisabled();
+  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
+  await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
+  await setNumber(pg, '#t-table [data-n="spd"]', '624');
+  await expect(pg.locator('#t-table tbody tr.cur td[data-to^="spd:"]').first()).toHaveText('613');
+  await expect(pg.locator('#t-table tbody tr.cur td[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
+
+  // the optimizer's result fills the boxes: its Total row, substat by substat. The panel of the last result shows at
+  // once, so wait for a solve for these settings
+  const runs = await pg.evaluate("performance.getEntriesByName('optimizer').length");
+  await waitOptimizer(pg);
+  await pg.waitForFunction(n => performance.getEntriesByName('optimizer').length > n, runs, { timeout: TIMEOUT });
+  // header cells are shown in capitals (CSS), so compare in upper case
+  const heads = (await pg.locator('#o-out thead tr').first().locator('th').allInnerTexts()).map(t => t.trim().toUpperCase());
+  const total = (await pg.locator('#o-out tr.total').first().locator('td').allInnerTexts()).map(t => t.trim());
+  await showMath(pg, 'tiers');
+  await expect(pg.locator('#t-fill')).toBeEnabled();
+  for (const [stat, short] of Object.entries(TIERS_SHORT)) {
+    const want = total[heads.indexOf(short.toUpperCase())];
+    check(
+      want != null && (await pg.inputValue(`#t-table [data-n="${stat}"]`)) === want,
+      `Tiers ${stat} is not the optimizer's Total ${want}`,
+    );
+  }
+  await setNumber(pg, '#t-table [data-n="crit"]', '5');
+  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
+  await expect(pg.locator('#t-table .lnote').first()).toHaveText('Under the base of 420; shown at 420.');
+  await pg.click('#t-fill');
+  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue(total[heads.indexOf(TIERS_SHORT.crit)]);
+
+  // the level follows each valid keystroke, while the field keeps focus
+  await pg.focus('#level');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('90');
+  await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level 90');
+  check((await pg.evaluate(() => document.activeElement?.id)) === 'level', 'the level field lost focus while typing');
+  await pg.keyboard.press('Tab');
+
+  // a ? note says what the substat does and how big its tiers are here (level 90 DIV 1900: 1900/200 = 9.5)
+  await pg.click('#t-table [data-help="crit"]');
+  await expect(pg.locator('#t-pop')).toContainText('At level 90, each tier is 9 or 10 points.');
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#t-pop')).toBeHidden();
+
+  // sync settings do not matter here
+  await pg.locator('#sync').check();
+  await setNumber(pg, '#cap', '');
+  await expect(pg.locator('#t-table')).toBeVisible();
+  check(!(await pg.isVisible('#m-off')), 'the "enter a sync cap" message shows on Tiers');
+
+  await setJob(pg, 'PLD');
+  const names = (await pg.locator('#t-table tr.lcols th').allInnerTexts()).map(t => t.trim().toLowerCase());
+  check(same(names.slice(-3), ['from', 'dmg & heal', 'dmg taken']), `Paladin's Tenacity columns: ${JSON.stringify(names)}`);
+  await checkNoBadText(pg, 'math:tiers');
+  check(!(await hasHScroll(pg)), `Tiers: horizontal page scroll at ${NARROW.width} px`);
+  await pg.screenshot({ path: shot('tiers.png'), fullPage: true });
+}
+
 /** Every tab for one job: no undefined/NaN/null text, correct sync caps, page fits NARROW width. Food is on, as it is
  * for the later jobs of a sequential walk. One step per job; the last job takes the screenshot. */
 const walkJob = job => async pg => {
@@ -1121,6 +1196,9 @@ const walkJob = job => async pg => {
   await showMath(pg, 'gcd');
   await expect(pg.locator('#g-chart svg')).toBeVisible();
   await checkNoBadText(pg, `${job}/math:gcd`);
+  await showMath(pg, 'tiers');
+  await expect(pg.locator('#t-table tbody tr.cur')).toBeVisible();
+  await checkNoBadText(pg, `${job}/math:tiers`);
   check(!(await hasHScroll(pg)), `${job}: horizontal page scroll at ${NARROW.width} px`);
   if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
 };
@@ -1160,6 +1238,7 @@ const GROUPS = [
   { slow: true, steps: [step(checkCorruptedStorage)] },
   { slow: true, steps: [step(checkLevelSync), step(checkJobLevelCap)] },
   { slow: true, steps: [step(checkSameResult)] },
+  { slow: true, steps: [step(checkTiers)] },
   { steps: ['SGE', 'WAR', 'PLD'].map(walk) },
   { steps: ['BLM', 'NIN', 'DRG'].map(walk) },
   { steps: ['BST', 'BLU'].map(walk) },

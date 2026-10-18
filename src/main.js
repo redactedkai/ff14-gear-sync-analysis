@@ -9,6 +9,7 @@ import { syncExplainer } from './ui/components/sync-explainer.js';
 import { validationPanel } from './ui/components/validation-panel.js';
 import { gear } from './ui/components/gear.js';
 import { optimizer } from './ui/components/optimizer.js';
+import { tierTable } from './ui/components/tiers.js';
 
 const SAVE_DEBOUNCE_MS = 150;
 
@@ -16,10 +17,11 @@ Alpine.store('app', createAppStore(restoreState(loadSaved())));
 const app = Alpine.store('app');
 
 /* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only (a bound
-   that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)) */
-Alpine.magic('num', () => (path, lo, hi) => storeNumberField(app, path, lo, hi));
+   that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)); a fourth
+   argument {live: true} commits each valid value as typed (storeNumberField) */
+Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-Object.entries({ page, settings, syncExplainer, validationPanel, gear, optimizer }).forEach(([name, factory]) => {
+Object.entries({ page, settings, syncExplainer, validationPanel, gear, optimizer, tierTable }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });
 

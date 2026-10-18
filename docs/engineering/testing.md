@@ -48,7 +48,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | level-sync | level sync, its triggers, the optimizer under it |
 | speed | GCD tiers, DoT scalars, haste, tier lookup |
 | same-result | other pieces with the same result (A9): shared spare points, Unique rings, cloaks, the owner's level 50 case |
-| tiers | substat tiers |
+| tiers | substat tiers; the Tiers sub-tab's ladder and tier sizes |
 | food | food bonus, meal choices, best meal |
 | validation | Wiki caps, accuracy per band, special lines |
 | items | gear filtering, row conversion, item fields |
@@ -64,6 +64,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out) |
 | views | what each tab shows |
 | sync-explainer-view | How the math works: a piece and a full set against the melded cap, the item level range, melds from the Goal, the special substat caps |
+| tiers-view | Tiers: the ladder's columns, rows and wording; values from the optimizer result only for the same settings; typed values |
 | piece-subs | Piece stats substat ranks |
 | data-format | generated data shape |
 | provenance | source record and footer |

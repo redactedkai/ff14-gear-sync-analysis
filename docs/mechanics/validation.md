@@ -212,6 +212,8 @@ The GCD and DoT/HoT formulas are AkhMorning's community formulas, not game files
 | GCD, level 100 | equals AkhMorning's speed table code at every speed 420 to 3,785 and seven recasts (1.5 to 4.0 s) | External truth | Speed |
 | Effects on panel numbers | Critical Hit, Direct Hit, Determination, Tenacity, Piety and GCD by AkhMorning's formulas on base + gear equal the tool's: two jobs, nine levels, seven gear values | External truth | Tiers |
 | Panel totals, Sage level 50 | Total = gear + 341 (Critical Hit, Direct Hit, Spell Speed), + 202 (Determination, Piety), + 0 (Mind, Vitality); With food adds the Food row | External truth (bases) | Views, smoke |
+| Tiers sub-tab, level 100 | speed tiers on the panel 442, 527, 613 (2.49, 2.48, 2.47 s); tier sizes Critical Hit 13 or 14 (2780/200 = 13.9, as AkhMorning states), speed 85 or 86, level 50 speed 10 or 11 | External truth | Tiers |
+| Tenacity tiers, level 100 | 1,617: 1,616 to 1,629, +4.8% and −8.6% (both effects worked by hand) | Derivation | Tiers |
 | Tier lookup, every level | equals a scan of the formula | Independent reference | Speed |
 | Generic maximum at cap 123 | 296 → 2.22 s at level 50 | Derivation; AkhMorning | Caps, optimizer, views |
 

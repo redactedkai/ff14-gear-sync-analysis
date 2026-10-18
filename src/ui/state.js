@@ -48,7 +48,7 @@ export function shownSync(app) {
 
 export const STORE_KEY = 'ilvl-stat-lab-v4';
 export const TABS = ['opt', 'browse', 'math'];
-export const MATH_TABS = ['piece', 'gcd'];
+export const MATH_TABS = ['piece', 'gcd', 'tiers'];
 
 export function defaultState() {
   return {

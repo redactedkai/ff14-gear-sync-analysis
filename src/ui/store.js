@@ -12,6 +12,9 @@ export function createAppStore(initial) {
     ...initial,
     jobCtx: makeJobContext(initial.job),
     maxReal: MAX_REAL,
+    // the optimizer's last result as the character panel shows its substats, with the settings it was solved for:
+    // {key: optimizerKey, values: {stat: value}}, or null. Not saved; set by the optimizer component, read by Tiers
+    optPanel: null,
 
     /* Switching to a different job resets the job-specific selections (resetForJob). */
     setJob(id) {

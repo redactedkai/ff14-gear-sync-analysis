@@ -78,7 +78,7 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 
 ### One shared store
 
-All state that matters lives in one shared store: the saved settings, plus one derived value that is not saved, the **current job context**, replaced whenever the job changes. Until the user picks a job, the default job's context stands in.
+All state that matters lives in one shared store: the saved settings, plus two values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **optimizer's last panel values** (`optPanel`) come with the settings they were solved for (`optimizerKey`), so the Tiers sub-tab fills from them only while those settings still hold.
 
 There is no gear pool to keep: the optimizer searches every piece the job can wear ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters)), so the store holds only settings. Until 2026-10-15 the user built a pool on a Gear pool tab first; dropping that step costs nothing in speed (building a job's gear takes about 5 to 10 ms, `docs/scratchpad/gear-merge`).
 
@@ -87,7 +87,7 @@ Changes go through store actions: set job, reset everything, switch tab or math 
 **Number inputs.** They are bound to store fields through a helper with two rules:
 
 - A value is committed only when it is inside the allowed range, rounded to a whole number. An out-of-range value is ignored rather than corrected under the user's cursor.
-- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-and-only-when-visible)). The gear browser's typed filters wait the same way.
+- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-and-only-when-visible)). The gear browser's typed filters wait the same way. The exception is the synced level: it commits each valid value as it is typed (owner, 2026-10-17), and the optimizer still waits its own 120 ms.
 
 **Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
 
@@ -203,10 +203,10 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
 | Budget chart | `src/ui/chart.js` |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`); charts in `src/ui/chart.js` and `src/ui/sync-charts.js` |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/chart.js` and `src/ui/sync-charts.js` |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
-| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `validation-panel.js`, `gear.js`, `optimizer.js`) |
+| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `validation-panel.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |

@@ -36,6 +36,41 @@ export function tierText(spd, level, haste = 0) {
   return `tier starts at ${t.start + sub}${t.next != null ? `, next at ${t.next + sub} (+${t.next - spd})` : ''}`;
 }
 
+/* The settings an optimizer result depends on, as one string: a result is for the current settings exactly when it
+   was solved with the same key. Read synchronously, it also makes an effect track every one of them (the optimizer
+   component). How the math works (Tiers) fills its values from a result only when its key matches. */
+export function optimizerKey(app) {
+  const o = app.opt;
+  return JSON.stringify([
+    app.job,
+    app.cap,
+    app.sync,
+    app.level,
+    o.target,
+    o.tb,
+    o.tb2,
+    o.exclude.join(),
+    o.expOff.join(),
+    o.min,
+    o.max,
+    o.lvl,
+    o.melds,
+    o.food,
+    o.foodPair,
+    o.gcd,
+    o.gcdMode,
+    o.byTier,
+  ]);
+}
+
+/* A result's substats as the character panel shows them, {stat: value}: the With food row with Food on, else Total;
+   null for a view without a result (`view` from optimizerView). */
+export function resultPanel(job, view) {
+  if (view?.kind !== 'ok') return null;
+  const row = view.food?.totals ?? view.totals;
+  return Object.fromEntries(job.substats.map(s => [s, row[job.stats.indexOf(s)]]));
+}
+
 /* What the character panel adds to a stat: the level's base for a substat (statBase), 0 for the main stat and
    Vitality (their base depends on the job and clan, which the page does not ask for; owner's decision 2026-10-16). */
 export function panelBase(job, stat, level) {

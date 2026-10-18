@@ -123,6 +123,7 @@ test('tab and mathTab', () => {
   expectFieldDefault('tab', 'nope', 'opt');
   expectFieldDefault('tab', 'pool', 'browse'); // the old Gear pool tab is now the Gear browser
   expectFieldDefault('mathTab', 'nope', 'piece');
+  assert.equal(corrupt('mathTab', 'tiers').mathTab, 'tiers'); // the Tiers sub-tab is kept
   // older saves used the sub-view names as tabs
   const s = corrupt('tab', 'piece');
   assert.equal(s.tab, 'math');

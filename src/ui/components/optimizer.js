@@ -1,7 +1,7 @@
 /* Gear optimizer tab: the best loadout for the chosen stat from every piece the job can wear, recomputed (debounced)
    only while the tab is open. */
 import Alpine from 'alpinejs';
-import { optimizerView, searchCount } from '../views/optimizer.js';
+import { optimizerKey, optimizerView, resultPanel, searchCount } from '../views/optimizer.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearGroupToggles } from '../helpers.js';
 import { foodChoices, foodLabel } from '../../core/food.js';
 
@@ -30,31 +30,11 @@ export function optimizer() {
         Alpine,
         () => {
           const app = this.$store.app;
-          // read every input synchronously so the effect tracks it
-          const deps = [
-            app.tab,
-            app.cap,
-            app.sync,
-            app.level,
-            app.jobCtx,
-            app.opt.target,
-            app.opt.tb,
-            app.opt.tb2,
-            app.opt.exclude.join(),
-            app.opt.expOff.join(),
-            app.opt.min,
-            app.opt.max,
-            app.opt.lvl,
-            app.opt.melds,
-            app.opt.food,
-            app.opt.foodPair,
-            app.opt.gcd,
-            app.opt.gcdMode,
-            app.opt.byTier,
-          ];
+          // read every input synchronously so the effect tracks it (optimizerKey reads them all)
+          const tab = app.tab,
+            key = optimizerKey(app);
           return () => {
-            if (deps[0] !== 'opt') return;
-            const key = JSON.stringify(deps);
+            if (tab !== 'opt') return;
             if (key !== this.lastDeps) {
               this.picks = {};
               this.menuOpen = null;
@@ -91,6 +71,9 @@ export function optimizer() {
       const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks)));
       this.solveMs = Math.max(1, Math.round(performance.now() - t0));
       this.view = view;
+      // the result's panel values with the settings they were solved for, for How the math works (Tiers)
+      const values = resultPanel(raw.jobCtx, view);
+      this.$store.app.optPanel = values && Object.freeze({ key: optimizerKey(raw), values: Object.freeze(values) });
       performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
       const c = searchCount(raw);
       this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;

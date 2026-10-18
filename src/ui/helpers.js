@@ -17,9 +17,11 @@ export const TYPING_DEBOUNCE_MS = 300;
 /* x-bind object for a number input that only commits whole, in-range values (out-of-range typing is ignored,
    not corrected). Typing commits TYPING_DEBOUNCE_MS after the last keystroke; Enter or leaving the field (change)
    commits at once. While the field has focus and already shows the stored value, the typed text is left alone. A bound
-   may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap). */
+   may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap).
+   live: commit each valid value as it is typed, with no wait (the synced level: owner, 2026-10-17); typing "90" then
+   shows level 9 for a moment, which is cheap, and the optimizer has its own wait. */
 const bound = b => (typeof b === 'function' ? b() : b);
-export function numberField(get, set, lo, hi) {
+export function numberField(get, set, lo, hi, live = false) {
   let timer = null;
   const commit = raw => {
     clearTimeout(timer);
@@ -35,7 +37,8 @@ export function numberField(get, set, lo, hi) {
     '@input'(e) {
       const raw = e.target.value;
       clearTimeout(timer);
-      timer = setTimeout(() => commit(raw), TYPING_DEBOUNCE_MS);
+      if (live) commit(raw);
+      else timer = setTimeout(() => commit(raw), TYPING_DEBOUNCE_MS);
     },
     '@change'(e) {
       commit(e.target.value);
@@ -53,9 +56,9 @@ export function debouncedEffect(Alpine, compute, ms) {
   });
 }
 
-/* numberField bound to a dotted path in the store, e.g. storeNumberField(store, 'piece.ilvl', 1, 795).
-   Registered as the $num magic in main.js. */
-export function storeNumberField(store, path, lo, hi) {
+/* numberField bound to a dotted path in the store, e.g. storeNumberField(store, 'piece.ilvl', 1, 795); options:
+   {live} (numberField). Registered as the $num magic in main.js. */
+export function storeNumberField(store, path, lo, hi, { live = false } = {}) {
   const keys = path.split('.'),
     last = keys.pop();
   const target = () => keys.reduce((o, k) => o[k], store);
@@ -66,6 +69,7 @@ export function storeNumberField(store, path, lo, hi) {
     },
     lo,
     hi,
+    live,
   );
 }
 

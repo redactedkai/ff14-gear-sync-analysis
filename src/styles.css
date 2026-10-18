@@ -1018,6 +1018,144 @@ footer {
   min-width: 3ch;
   text-align: center;
 }
+/* Tiers: the substats' tier ladder (components/tiers.js). Columns of a fixed table: row labels, then per substat a
+   narrow From column and one column per effect, a line before each substat */
+.panelhead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.panelhead h2 {
+  margin: 0;
+}
+.ladder {
+  table-layout: fixed;
+}
+.ladder col.lrowcol {
+  width: 64px;
+}
+.ladder col.gfirst {
+  width: 62px;
+}
+.ladder .gfirst {
+  border-left: 1px solid var(--line);
+}
+table.ladder th {
+  vertical-align: top;
+  white-space: normal;
+}
+.ladder th .lname {
+  white-space: nowrap;
+  font: 600 0.8rem var(--sans);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg);
+}
+.ladder th input {
+  width: 84px;
+  font-family: var(--mono);
+  margin: 4px 0;
+}
+/* the effect lines under a substat's box, one per effect; room for two in every header, so the rows line up */
+.ladder th .leff {
+  display: block;
+  min-height: 2.7em;
+  font: 600 0.74rem / 1.35 var(--mono);
+  color: var(--fg);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ladder th .lline {
+  display: block;
+  white-space: nowrap;
+}
+.ladder .lnote {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--gold);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ladder tr.lcols th {
+  font-size: 0.68rem;
+  padding: 4px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.ladder td.lrow {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.ladder tbody td {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.ladder tbody td[data-to] {
+  cursor: pointer;
+}
+.ladder tbody td.eff {
+  color: var(--muted);
+}
+.ladder tbody tr.cur td {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.ladder tbody tr.cur td.eff,
+.ladder tbody td.chg2 {
+  color: var(--fg);
+}
+.ladder tbody td.chg2 {
+  font-weight: 600;
+}
+/* the tier under the mouse, all its cells in the substat */
+.ladder tbody td.hov {
+  background: var(--surface2);
+}
+.ladder tbody tr.cur td.hov {
+  background: var(--accent-soft);
+  box-shadow:
+    inset 0 1px 0 var(--accent),
+    inset 0 -1px 0 var(--accent);
+}
+.ladder tfoot td {
+  background: var(--surface2);
+  border-top: 1px solid var(--line);
+}
+.ladder .lfoot {
+  font-family: var(--sans);
+}
+.ladder .lfoot span {
+  display: block;
+  white-space: nowrap;
+}
+/* a substat's ? and its note */
+.help.shelp {
+  width: 20px;
+  height: 20px;
+  font-size: 0.72rem;
+  vertical-align: 1px;
+  margin-left: 2px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.popover.statpop {
+  right: auto;
+  width: 340px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.statpop h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+.statpop p {
+  margin: 0 0 6px;
+}
+.statpop p:last-child {
+  margin: 0;
+}
 /* the "?" button and its popup, which stands apart from the panels: raised background, accent border, dimmed page */
 .helpwrap {
   margin-left: auto;

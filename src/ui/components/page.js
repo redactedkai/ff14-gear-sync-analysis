@@ -3,6 +3,7 @@ import { JOBS, JOB_ROWS, SLOT_LABEL } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
 import { dutyCapMax } from '../../core/sync-target.js';
+import { tierFill } from '../views/tiers.js';
 
 export function page() {
   return {
@@ -18,6 +19,10 @@ export function page() {
     },
     get substatOptions() {
       return this.job.substats.map(s => [s, this.job.label[s]]);
+    },
+    /* the optimizer has a result for the current settings, so Tiers can fill its values from it (the math bar's chip) */
+    get tierFillReady() {
+      return !!tierFill(this.$store.app);
     },
   };
 }
