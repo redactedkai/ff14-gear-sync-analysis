@@ -662,7 +662,7 @@ test('Rank by tier with a Target GCD: the GCD line and band come from the tier s
 test('a cap no duty pairs with the synced level: no optimizer result and no explainer, only the message', () => {
   const bad = appState({ job: 'SGE', sync: true, cap: 500, level: 50 }, {});
   assert.equal(capOutOfRange(bad), true);
-  const message = 'No duty at level 50 has a cap above item level 135. Lower the cap or raise the synced level.';
+  const message = 'No duty at level 50 has a cap above item level 135. Lower the cap, raise the synced level, or turn item level sync off.';
   assert.deepEqual(optimizerView(bad), { kind: 'badcap', message });
   assert.equal(explainerView(bad), null);
   assert.equal(pieceView(bad).status, 'off');

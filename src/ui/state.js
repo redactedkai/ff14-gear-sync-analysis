@@ -29,7 +29,7 @@ export function capOutOfRange(app) {
 /* What the page says while capOutOfRange: under the cap field, and in place of the optimizer's and the explainer's
    results. */
 export function capRangeMessage(app) {
-  return `No duty at level ${app.level} has a cap above item level ${dutyCapMax(app.level)}. Lower the cap or raise the synced level.`;
+  return `No duty at level ${app.level} has a cap above item level ${dutyCapMax(app.level)}. Lower the cap, raise the synced level, or turn item level sync off.`;
 }
 
 /* Level sync can apply: the synced level is below the job's level cap (MAX_LEVEL before a job context exists), so gear

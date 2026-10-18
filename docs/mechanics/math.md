@@ -260,7 +260,7 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 
 **When both apply, the item level cap wins**, even where it is the higher of the two. In Aloalo Island (level 90, item level 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660; level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). *Second-hand*: a player's report quoted by xivgear, which applies the same order; not captured by this project. In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
 
-**Caps real duties use** (**verified**, game files: `ContentFinderCondition.ClassJobLevelSync` and `ItemLevelSync`, 567 duties at the datamining commit in the footer). The page accepts any cap at any level, but real duties pair them closely:
+**Caps real duties use** (**verified**, game files: `ContentFinderCondition.ClassJobLevelSync` and `ItemLevelSync`, 567 duties at the datamining commit in the footer). Real duties pair the level and the cap closely:
 
 | Synced level | Caps in real duties | $\text{sync}(L)$ |
 | --- | --- | ---: |
@@ -272,9 +272,15 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 | 90 | 550 to 665 | 660 |
 | 100 | 680 to 795 | 690 |
 
-Below level 100 no duty's cap is more than 5 above $\text{sync}(L)$; the 7 that are above it are the level 90 Mount Rokkon and Aloalo Island duties (665) and Second Master's Board (level 50, 135).
+Below level 100 no duty's cap is more than 5 above $\text{sync}(L)$; the 7 that are above it are the level 90 Mount Rokkon and Aloalo Island duties (665) and Second Master's Board (level 50, 135). This holds for every kind of duty (**verified**, all 567 rows).
 
-The page computes nothing for a higher cap (the owner's decision, 2026-10-18; until then it computed as typed and only warned). The cap field shows an error that no duty at that level has such a cap (above $\text{sync}(L) + 5$, never at level 100), and the optimizer and How the math works show it in place of results. Such settings would give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
+What the table leaves out (the evidence is in the duty sync research of 2026-10-18):
+
+- **A character below a duty's level keeps its own level**: level sync only lowers (**verified**: the Wiki's Level Sync page). Many duties can be entered below their synced level (Mt. Gulg: entered at 79, synced to 80, cap 420). Such a character's cap lowers nothing it can wear: at level 79 the best gear a Sage can wear is item level 418 (**verified**, the page's database), so its setting is level 79 with item level sync off.
+- **Some duties set stats instead of syncing**: The Bozjan Southern Front, Zadnor, Delubrum Reginae (normal and Savage) and The Merchant's Tale set every character to level 80 (100) and give each slot fixed stats at item level 430 (765), with melds ignored (**verified**: the Wiki; `ContentFinderCondition.FixedItemLevelSync`). The page does not model them; their caps in the table are not clamps.
+- **Minimum Item Level** syncs gear to the duty's minimum item level (`ItemLevelRequired`) and also forces level sync, even in an unrestricted party (**verified**: the patch 3.0 notes, read by the research agent). Only duties with `AllowMinimumIL` offer it; Ultimates do not.
+
+The page computes nothing for a higher cap (the owner's decision, 2026-10-18; until then it computed as typed and only warned). The cap field shows an error that no duty at that level has such a cap (above $\text{sync}(L) + 5$, never at level 100) and offers lowering the cap, raising the synced level, or turning item level sync off (the setting for a character below a duty's level), and the optimizer and How the math works show it in place of results. Such settings would give results no duty can: at level 1, where the GCD divisor is 56 (2,780 at level 100), item level 123 gear takes an Astrologian's fastest GCD down to the 1.50 s floor (section 6), while in Sastasha (level 18, no cap) it is 2.41 s (2.38 s with food; a Samurai, with Fuka, 2.17 and 2.14).
 
 **The rule in one formula.** The synced item level $t$ of a piece at item level $i$ with equip level $e$ is therefore
 

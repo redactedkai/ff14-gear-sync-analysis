@@ -397,12 +397,12 @@ const checkRealGearOptimizer =
 async function checkTypingDebounce(pg) {
   await setJob(pg, 'SGE');
   await waitOptimizer(pg);
-  await setCap(pg, '200');
+  await setCap(pg, '130'); // a cap level 50 allows (135 at most), not the 123 the typing below ends on
   await expect(pg.locator('#o-time')).toHaveText(/^Solved in \d+ ms\.$/);
   await pg.waitForTimeout(600); // longer than the typing and optimizer waits: nothing pending
   const runs = () => pg.evaluate("performance.getEntriesByName('optimizer').length");
   const before = await runs();
-  // Typing replaces the selected 200, as a user would: three input events, 60 ms apart (faster than the 300 ms typing
+  // Typing replaces the selected 130, as a user would: three input events, 60 ms apart (faster than the 300 ms typing
   // wait). The keys are sent from inside the page, so a busy machine cannot stretch the pauses between them.
   await pg.evaluate(async () => {
     const cap = document.querySelector('#cap');
@@ -878,7 +878,7 @@ async function checkCorruptedStorage(pg) {
 /** Reset to defaults asks with the browser's own dialog: Cancel keeps everything, OK restores every default. */
 async function checkReset(pg) {
   await setJob(pg, 'SGE');
-  await setCap(pg, '200');
+  await setCap(pg, '130'); // a cap level 50 allows (135 at most)
   await fillBrowser(pg, 100, '', 100);
   await pg.fill('#b-q', 'Ring');
   await waitSaved(pg, "s => s.browse.q === 'Ring' && +s.browse.min === 100"); // typed filters commit after a short wait
@@ -892,7 +892,7 @@ async function checkReset(pg) {
   answer(false);
   await pg.click('#reset');
   await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'SGE');
-  check((await pg.inputValue('#cap')) === '200', 'Cancel changed the cap');
+  check((await pg.inputValue('#cap')) === '130', 'Cancel changed the cap');
   check((await pg.inputValue('#b-q')) === 'Ring', 'Cancel changed the name filter');
   answer(true);
   await pg.click('#reset');
@@ -938,7 +938,7 @@ async function checkCapValidation(pg) {
   // no duty pairs level 1 with cap 123: an error under the field, and nothing computed (state.js capOutOfRange)
   await setNumber(pg, '#level', '1');
   await expect(pg.locator('#cap-error')).toHaveText(
-    'No duty at level 1 has a cap above item level 6. Lower the cap or raise the synced level.',
+    'No duty at level 1 has a cap above item level 6. Lower the cap, raise the synced level, or turn item level sync off.',
   );
   check((await pg.getAttribute('#cap', 'aria-invalid')) === 'true', 'a cap no duty pairs with the level is not marked invalid');
   await setNumber(pg, '#level', '50');

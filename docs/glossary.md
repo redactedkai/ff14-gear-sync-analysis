@@ -56,7 +56,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Materia, melds.** Materia are stones that can be attached ("melded") to gear to add one combat substat each, in grades I to XII. A piece has up to 5 slots; crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot. Each substat on a piece is capped at the piece's own cap. On synced-down gear melds do not count (**verified** by the owner in game). The gear optimizer gives each piece that is not synced its best melds (the "Materia" switch, on by default). See [materia.md](mechanics/materia.md).
 
-**Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level; the Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123. See [math.md, section 1](mechanics/math.md#1-terms).
+**Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level, and their level synced too, even in an unrestricted party (**verified**: patch 3.0 notes); the Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123. See [math.md, section 1](mechanics/math.md#1-terms).
 
 **Patch.** A game update, numbered like 4.0 or 7.56; the first digit is the expansion. The game data is tied to a patch through its datamining commit. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
 
