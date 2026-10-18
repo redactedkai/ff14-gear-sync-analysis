@@ -1298,6 +1298,9 @@ ul.facts li::marker {
 .versus tr.spacer {
   visibility: hidden;
 }
+.versus td.n {
+  vertical-align: top;
+}
 .versus tr.solo td {
   border-bottom: 0;
 }

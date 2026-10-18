@@ -191,3 +191,19 @@ test('one piece: the table splits the materia into the stones and what is left a
   );
   assert.equal(v.verdict, 'Both have the same.');
 });
+
+/* Every row of the table has its second line filled (owner's screenshot, 2026-10-18: at 168 with the cap at 169 the
+   line under each item level was blank). */
+test('one piece: at or below the cap the table rows say below the cap and at the cap', () => {
+  const tags = ilvl =>
+    explainerView(app('SGE', { level: 100, cap: 169, slot: 'neck', ilvl, subs: ['dh', 'crit'] })).vsRows.map(r => [r.il, r.tag]);
+  assert.deepEqual(tags(168), [
+    [168, 'below the cap'],
+    [169, 'at the cap'],
+  ]);
+  assert.deepEqual(tags(169), [[169, 'at the cap']]);
+  assert.deepEqual(tags(170), [
+    [170, 'overgeared'],
+    [169, 'melded'],
+  ]);
+});

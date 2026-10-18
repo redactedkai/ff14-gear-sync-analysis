@@ -200,9 +200,11 @@ export function explainerView(app, widths = {}) {
   // the table under the bars: the piece, then the piece at the cap (or the one row when they are the same; the page
   // keeps the second row's space so the panel does not jump as the slider passes the cap)
   const tag = p => (synced ? (p.il > cap ? 'overgeared' : 'melded') : '');
+  // each row's second line: overgeared against melded above the cap, else where the piece is against the cap
+  const rowTag = p => tag(p) || (p.il === cap ? 'at the cap' : 'below the cap');
   const vsRows = (il === cap ? [atCap] : [piece, atCap]).map(p => {
     const parts = p.kept ? meldParts(job, p.meld) : { stones: 'none', afterCap: 'ignored while synced' };
-    return { il: p.il, tag: tag(p), materia: parts.stones, materiaNote: parts.afterCap, points: p.points };
+    return { il: p.il, tag: rowTag(p), materia: parts.stones, materiaNote: parts.afterCap, points: p.points };
   });
   const diff = piece.points - atCap.points;
   const verdict =
