@@ -94,7 +94,9 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 ## Project terms
 
-**Branch and bound.** The search method the optimizer uses: fill one slot at a time, trying the best candidates first, and abandon a partial gear set as soon as an upper bound shows it cannot beat the best complete set found so far. The answer is exact unless the search hits its node limit. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
+**Band reach.** Under a speed band with other minimums: a table of the most of a held stat the remaining slots can add while speed still lands in the band. A partial gear set that cannot reach the minimum even so is dropped. Exact. See [optimizer.md, section 5](engineering/optimizer.md#with-minimums-on-other-stats).
+
+**Branch and bound.** The search method the optimizer uses: fill one slot at a time (shortest candidate list first, slots a piece can leave empty last), trying the best candidates first, and abandon a partial gear set as soon as an upper bound shows it cannot beat the best complete set found so far. The answer is exact unless the search hits its node limit. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
 **Brute-force reference.** The tests' independent check of the optimizer: it tries every legal loadout of a small pool and keeps the best. It uses the optimizer's own synced stats, so it checks the search, not the sync clamp. See [testing.md, section 2.1](engineering/testing.md#21-the-brute-force-reference-and-the-real-gear-pools).
 

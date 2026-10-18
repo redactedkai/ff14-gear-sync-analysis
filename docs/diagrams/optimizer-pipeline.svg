@@ -53,7 +53,7 @@
 <text class="small b muted" x="392" y="84">Example</text>
 <rect class="box" x="20" y="100" width="340" height="62" rx="8"/>
 <text class="fg b" x="34" y="125">Pool</text>
-<text class="small muted" x="34" y="146">items you added: slot, item level, stats, copies</text>
+<text class="small muted" x="34" y="146">every piece the job can wear that passes the filters</text>
 <line class="s-muted" x1="368" y1="131.0" x2="386" y2="131.0" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num accent b" x="392" y="125">1,999 items</text>
 <text class="small fg" x="392" y="144">every piece Sage can equip, item level 100 and up</text>
@@ -82,7 +82,7 @@
 <line class="s-muted" x1="190" y1="422" x2="190" y2="441" stroke-width="1.5" marker-end="url(#arrow)"/>
 <rect class="box-accent" x="20" y="444" width="340" height="62" rx="8"/>
 <text class="fg b" x="34" y="469">Branch and bound</text>
-<text class="small muted" x="34" y="490">depth-first; cut by score bound and constraints</text>
+<text class="small muted" x="34" y="490">depth-first, shortest lists first; cut by bounds</text>
 <line class="s-muted" x1="368" y1="475.0" x2="386" y2="475.0" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num accent b" x="392" y="469">137 nodes</text>
 <text class="small fg" x="392" y="488">about 13 ms in Node</text>
