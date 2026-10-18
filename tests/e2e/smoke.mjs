@@ -313,7 +313,7 @@ async function checkPieceLab(pg) {
   );
   await expect(pg.locator('#p-slices span.on')).toHaveText(/Head\s*8\.5%/);
   // the explainer: the item level 130 head against the melded item level 123 head, and the curve
-  await expect(pg.locator('#p-vs')).toContainText('(melded)');
+  await expect(pg.locator('#p-vs')).toContainText('melded');
   await expect(pg.locator('#p-vs b')).toContainText(' more.');
   await expect(pg.locator('#p-curve-chart svg')).toBeVisible();
   await pg.click('#p-ilvl-reset');

@@ -1285,6 +1285,22 @@ ul.facts li::marker {
 .versus table td {
   white-space: normal;
 }
+/* fixed columns, two lines per row and a held second row: the table keeps its shape as the slider moves */
+.versus table {
+  table-layout: fixed;
+}
+.versus col.c-il {
+  width: 7rem;
+}
+.versus col.c-pts {
+  width: 5.5rem;
+}
+.versus tr.spacer {
+  visibility: hidden;
+}
+.versus tr.solo td {
+  border-bottom: 0;
+}
 .versus {
   padding: 10px 12px;
   border-radius: 8px;
@@ -1381,6 +1397,10 @@ ul.facts li::marker {
   gap: 6px;
   align-items: center;
   grid-column: 2 / 4;
+}
+/* the stones' names always on their own line, so a longer name does not wrap the row */
+.chips .meldnote {
+  flex-basis: 100%;
 }
 /* a materia stone: struck through while the piece is synced (its melds are ignored), solid while kept */
 .meldchip {

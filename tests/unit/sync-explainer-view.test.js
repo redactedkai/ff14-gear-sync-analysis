@@ -177,3 +177,17 @@ test('one piece: a piece that keeps its melds shows them on its bars; a synced p
   const synced = explainerView(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170, subs: ['dh', 'crit'] }));
   assert.ok(synced.bars.every(b => b.melds === 0 && b.total === b.kept));
 });
+
+/* The table under the bars names the stones and, on a second line, what the cap leaves of them, so a longer meld does
+   not wrap the row (owner's screenshots, 2026-10-18: the earring synced to 169 jumped in height along the slider). */
+test('one piece: the table splits the materia into the stones and what is left after the cap', () => {
+  const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
+  assert.deepEqual(
+    v.vsRows.map(r => [r.il, r.tag, r.materia, r.materiaNote, r.points]),
+    [
+      [291, 'overgeared', 'none', 'ignored while synced', 74],
+      [169, 'melded', '2 × Grade V Critical Hit (+6 each)', '+11 after the cap', 74],
+    ],
+  );
+  assert.equal(v.verdict, 'Both have the same.');
+});

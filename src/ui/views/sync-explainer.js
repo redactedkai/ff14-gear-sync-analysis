@@ -113,13 +113,20 @@ export function explainerItemLevel(app) {
   return { range, il: clampTo(range, app.piece.ilvl ?? cap + DEFAULT_OVER), note };
 }
 
-/* "2 × Grade X Skill Speed (+54 each)"; with stones cut by the piece's cap, the points they add after it. */
-function meldSummary(job, meld) {
-  if (!meld?.stones.length) return 'none';
+/* A piece's melds in words, in two parts: {stones: "2 × Grade X Skill Speed (+54 each)", afterCap: "+90 after the cap"
+   when the piece's cap cuts the stones, else ''}. */
+function meldParts(job, meld) {
+  if (!meld?.stones.length) return { stones: 'none', afterCap: '' };
   const parts = meld.stones.map(s => `${s.n} × Grade ${ROMAN[s.grade - 1]} ${job.label[s.stat]} (+${MATERIA.values[s.grade - 1]} each)`);
   const full = meld.stones.reduce((a, s) => a + s.n * MATERIA.values[s.grade - 1], 0);
   const gain = Object.values(meld.gain).reduce((a, b) => a + b, 0);
-  return parts.join(', ') + (gain < full ? `, +${gain} after the cap` : '');
+  return { stones: parts.join(', '), afterCap: gain < full ? `+${gain} after the cap` : '' };
+}
+
+/* "2 × Grade X Skill Speed (+54 each)", with ", +90 after the cap" when the piece's cap cuts the stones. */
+function meldSummary(job, meld) {
+  const { stones, afterCap } = meldParts(job, meld);
+  return afterCap ? `${stones}, ${afterCap}` : stones;
 }
 
 /* Everything the two sub-tabs show, or null while no sync applies. `widths`: the chart containers' widths in px
@@ -190,14 +197,13 @@ export function explainerView(app, widths = {}) {
     ? ''
     : `The Goal (${job.label[app.opt.target] || app.opt.target}) takes no materia, so melds go into the substats above.`;
 
-  // the table under the bars: the piece, then the piece at the cap (or the one row when they are the same)
+  // the table under the bars: the piece, then the piece at the cap (or the one row when they are the same; the page
+  // keeps the second row's space so the panel does not jump as the slider passes the cap)
   const tag = p => (synced ? (p.il > cap ? 'overgeared' : 'melded') : '');
-  const vsRows = (il === cap ? [atCap] : [piece, atCap]).map(p => ({
-    il: p.il,
-    tag: tag(p),
-    materia: p.kept ? meldSummary(job, p.meld) : 'none (synced)',
-    points: p.points,
-  }));
+  const vsRows = (il === cap ? [atCap] : [piece, atCap]).map(p => {
+    const parts = p.kept ? meldParts(job, p.meld) : { stones: 'none', afterCap: 'ignored while synced' };
+    return { il: p.il, tag: tag(p), materia: parts.stones, materiaNote: parts.afterCap, points: p.points };
+  });
   const diff = piece.points - atCap.points;
   const verdict =
     il === cap
