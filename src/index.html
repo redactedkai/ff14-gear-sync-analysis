@@ -152,7 +152,7 @@
   </div>
   <div class="panel" id="p-curve">
     <h2>Overgeared or melded: which has more?</h2>
-    <p class="small" x-text="`Substat points of a ${view.slotName} in a duty synced to ${view.cap}, by the ${view.slotName}’s item level. Melds count only up to item level ${view.cap}.`"></p>
+    <p class="small" id="p-curve-lead" x-text="view.curveLead"></p>
     <div class="legend">
       <span><i style="background:var(--accent);height:2px"></i>Substats + melds in the duty</span>
       <span><i style="background:var(--muted);height:2px"></i>Substats only</span>
@@ -166,33 +166,35 @@
 
 <details class="panel" id="p-steps">
   <summary>Each stat, step by step</summary>
-  <div id="p-out" style="margin-top:12px">
-    <p class="small" style="margin-bottom:10px">
-      <span x-show="calc.status === 'off'">No sync cap applies: stats are shown as on the item.</span>
-      <span x-show="calc.byLevel" x-text="`Level sync: at level ${calc.level}, gear with a higher equip level is synced to item level ${calc.cap}, used as the cap here.`"></span>
-      <span x-show="calc.status === 'below'" x-text="`This piece is at or below the cap (${calc.cap}), so sync leaves it untouched.`"></span>
-      <span x-show="calc.status === 'above'" x-text="`This piece is above the cap (${calc.cap}): each line is cut to the cap for its slot.`"></span>
-      <span class="hovernote" id="p-why"><button type="button" class="help shelp" aria-describedby="p-why-pop" aria-label="What are 100% and 70%?">?</button><span class="popover statpop" id="p-why-pop" role="tooltip"><b>What are 100% and 70%?</b> A piece’s best substat gets the slot’s full budget (<b>100%</b>), the second <b>70%</b> of that.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at <b>20%</b>, outside these two.</span></span></span>
-    </p>
-    <div class="tablewrap"><table class="compact">
-      <thead><tr><th>Stat</th><th class="n" x-text="'Budget at ilvl ' + calc.il"></th><th>Calculation</th><th class="n">Raw</th><th class="n" x-show="calc.cap != null" x-text="'Synced to ' + calc.cap"></th></tr></thead>
+  <div id="p-out" class="steps">
+    <p class="steps-sum" x-text="calc.summary"></p>
+    <p class="small" x-show="calc.byLevel" x-text="`Level sync: at level ${calc.level}, gear with a higher equip level is synced to item level ${calc.cap}, used as the cap here.`"></p>
+    <div>
+      <p class="small"><b>Where the numbers come from.</b> Every item level has a budget for each stat, and each slot takes a fixed share of it; with both rings the shares add up to the whole budget. <span x-text="calc.slotShare ? `The ${calc.slotName} takes ${calc.slotShare}` : 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'"></span>; its best substat gets all of that (<b>100%</b>), the second <b>70%</b> of it.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at 20%, outside these two.</span></p>
+      <div class="slices" id="p-slices" role="img" aria-label="Each slot's share of the budget">
+        <template x-for="(s, i) in calc.slices" :key="i"><span :class="{ on: s.on }" :style="`flex:${s.width}`"><b x-text="s.label"></b><i x-text="s.share"></i></span></template>
+      </div>
+    </div>
+    <p class="steps-rule" x-show="calc.status !== 'off'"><b>In the duty, each stat is the lower of two numbers:</b> <span x-text="`what this ${calc.slotName} has, and what a ${calc.slotName} at the synced item level has (its ceiling).`"></span></p>
+    <div class="tablewrap"><table class="compact steps-table">
+      <thead><tr>
+        <th>Stat</th>
+        <th x-text="`This ${calc.slotName} (item level ${calc.il})`"></th>
+        <th x-show="calc.status !== 'off'" x-text="`A ${calc.slotName} at item level ${calc.cap} (the ceiling)`"></th>
+        <th class="n" x-show="calc.status !== 'off'">In the duty</th>
+      </tr></thead>
       <tbody>
-        <template x-for="(r, i) in calc.rows" :key="i">
+        <template x-for="r in calc.rows" :key="r.stat">
           <tr>
-            <td><span x-text="r.label"></span> <span class="dim" x-text="r.w + '%'"></span></td>
-            <td class="n" x-text="r.base"></td>
-            <td class="formula" x-text="r.formula"></td>
-            <td class="n" x-text="r.raw"></td>
-            <td class="n" x-show="calc.cap != null" :class="{ clamp: r.syn < r.raw }"><span x-text="r.syn"></span><template x-if="r.syn < r.raw"><span class="small" x-text="` (−${r.raw - r.syn})`"></span></template></td>
+            <td><b x-text="r.label"></b><div class="dim small" x-text="r.w + '%'"></div></td>
+            <td><span class="num big" :class="{ dim: !r.ownKept }" x-text="r.raw"></span> <span class="small" x-text="r.ownText"></span><div class="formula" x-text="r.ownFormula"></div></td>
+            <td x-show="calc.status !== 'off'"><span class="num big" :class="{ dim: r.ownKept }" x-text="r.cap"></span> <span class="small" x-text="r.capText"></span><div class="formula" x-text="r.capFormula"></div></td>
+            <td class="n" x-show="calc.status !== 'off'"><span class="big" :class="{ clamp: r.lost }" x-text="r.syn"></span><template x-if="r.lost"><div class="small clamp" x-text="`−${r.lost}`"></div></template></td>
           </tr>
         </template>
       </tbody>
     </table></div>
   </div>
-  <h3>Stat budget by item level</h3>
-  <div class="legend"><span><i style="background:var(--accent)"></i>Substat budget</span><span><i style="background:var(--gold)"></i>Main stat budget</span><span x-show="calc.cap != null"><i style="background:var(--bad);height:2px"></i>Sync cap</span></div>
-  <div id="p-chart" x-html="calc.chartSvg"></div>
-  <p class="small dim">A piece’s stats come from these two budgets at its item level, scaled by its slot’s share. Dotted lines split the expansions.</p>
 </details>
 </section>
 

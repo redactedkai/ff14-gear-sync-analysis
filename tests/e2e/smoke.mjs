@@ -284,15 +284,6 @@ async function checkClosedPanel(pg) {
     return d.getBoundingClientRect().height - frame - d.querySelector('summary').getBoundingClientRect().height;
   });
   check(Math.abs(extra) < 1, `closed #p-steps has ${extra.toFixed(1)} px beyond its summary and padding`);
-
-  // the 100% / 70% note: hidden until its ? is hovered
-  await pg.click('#p-steps > summary');
-  await expect(pg.locator('#p-why-pop')).toBeHidden();
-  await pg.hover('#p-why button');
-  await expect(pg.locator('#p-why-pop')).toBeVisible();
-  await expect(pg.locator('#p-why-pop')).toContainText('70%');
-  await pg.mouse.move(0, 0);
-  await pg.click('#p-steps > summary');
 }
 
 /** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
@@ -303,24 +294,24 @@ async function checkPieceLab(pg) {
   await pg.selectOption('#p-s2', 'spec');
   await setNumber(pg, '#p-ilvl', '130');
   await openSteps(pg);
-  await expect(pg.locator('#p-out thead')).toContainText('Budget at ilvl 130');
+  await expect(pg.locator('#p-out thead')).toContainText('This head (item level 130)');
   await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
   await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
-  const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };
+  // columns: stat (name, then its share), this head (its value first), the head at the cap (the ceiling), in the duty
   const rows = await tableRows(pg, '#p-out');
-  const got = {};
-  for (const r of rows) got[r[0].slice(0, r[0].lastIndexOf(' '))] = r[3]; // "Spell Speed 100%" -> "Spell Speed"
-  for (const [stat, v] of Object.entries(expected)) {
-    check(got[stat] === String(v), `Piece stats ilvl 130 head ${stat} raw '${got[stat]}', expected ${v}`);
-  }
-  // 130 is above the 123 cap: the head caps (29 substat, 30 main) must apply in the synced column
-  const synced = {};
-  for (const r of rows) synced[r[0].slice(0, r[0].lastIndexOf(' '))] = r[4].split(' ')[0];
-  check(
-    synced.Mind === '30' && synced['Spell Speed'] === '29',
-    `Piece stats synced Mind/Spell Speed ${synced.Mind}/${synced['Spell Speed']}, expected 30/29`,
+  const byStat = Object.fromEntries(
+    rows.map(r => [r[0].split('\n')[0], { raw: parseInt(r[1], 10), ceiling: parseInt(r[2], 10), duty: parseInt(r[3], 10) }]),
   );
-  await expect(pg.locator('#p-chart svg')).toBeVisible();
+  const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };
+  for (const [stat, v] of Object.entries(expected)) {
+    check(byStat[stat]?.raw === v, `Piece stats ilvl 130 head ${stat} raw ${byStat[stat]?.raw}, expected ${v}`);
+  }
+  // 130 is above the 123 cap: the head caps (29 substat, 30 main) are the ceiling, and the duty keeps the lower number
+  check(
+    byStat.Mind?.ceiling === 30 && byStat['Spell Speed']?.ceiling === 29 && byStat.Mind?.duty === 30 && byStat['Spell Speed']?.duty === 29,
+    `Piece stats ceiling / duty Mind ${byStat.Mind?.ceiling}/${byStat.Mind?.duty}, Spell Speed ${byStat['Spell Speed']?.ceiling}/${byStat['Spell Speed']?.duty}, expected 30/30 and 29/29`,
+  );
+  await expect(pg.locator('#p-slices span.on')).toHaveText(/Head\s*8\.5%/);
   // the explainer: the item level 130 head against the melded item level 123 head, and the curve
   await expect(pg.locator('#p-vs')).toContainText('(melded)');
   await expect(pg.locator('#p-vs b')).toContainText(' more.');

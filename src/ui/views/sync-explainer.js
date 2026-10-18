@@ -204,7 +204,15 @@ export function explainerView(app, widths = {}) {
   const curve = [];
   for (let x = lo; x <= hi; x++) {
     const p = pieceAt(job, type, x, cap, subs, keys);
-    curve.push({ il: x, points: p.points, bare: p.bare, s2full: !!subs[1] && x > cap && p.synced[subs[1]] >= caps[subs[1]] });
+    curve.push({
+      il: x,
+      points: p.points,
+      bare: p.bare,
+      // the points by part, for the chart's labels: each chosen substat after sync, then the melds the piece keeps
+      parts: subs.filter(Boolean).map(s => p.synced[s]),
+      melds: p.points - p.bare,
+      s2full: !!subs[1] && x > cap && p.synced[subs[1]] >= caps[subs[1]],
+    });
   }
   const over = curve.filter(p => p.il > cap);
   const more = over.filter(p => p.points > atCap.points);
@@ -275,7 +283,20 @@ export function explainerView(app, widths = {}) {
     vsRows,
     verdict,
     curveNote,
-    curveChartSvg: overgearChartSvg({ curve, cap, il, ref: atCap.points, slotName, width: widths.piece }),
+    curveLead: `${subs
+      .filter(Boolean)
+      .map(s => job.label[s])
+      .join(
+        ' + ',
+      )} of a ${slotName} in a duty synced to ${cap}, by the ${slotName}’s item level. Up to item level ${cap} it keeps its melds: ${meldSummary(job, atCap.meld)}.`,
+    curveChartSvg: overgearChartSvg({
+      curve,
+      cap,
+      il,
+      ref: atCap.points,
+      slotName,
+      width: widths.piece,
+    }),
     // GCD (null when neither chosen substat nor any meld is speed)
     gcd,
     spdLabel: job.label.spd,

@@ -102,7 +102,7 @@ test('piece lab view: the default two substats both reach the cap; the healer no
   );
   assert.equal(rpr.evenSubs, true);
   assert.equal(rpr.healerNote, false);
-  assert.match(rpr.rows[0].formula, /^6050 × 8\.5% = 514\.3 → 514/);
+  assert.match(rpr.rows[0].ownFormula, /^6050 × 8\.5% = 514\.3 → 514/);
   assert.equal(pieceView(makeApp('SGE', { cap: 123, sync: true, level: 50 })).healerNote, true);
   // no sync, or a piece at the cap: nothing is cut
   assert.equal(pieceView(makeApp('RPR', { sync: false, cap: null, level: 100 })).evenSubs, false);
@@ -277,14 +277,81 @@ test('level cap: the optimizer searches no piece above the job cap, and level sy
   assert.equal(explainerView({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
 });
 
-test('sync off: piece lab leaves stats as they are and draws no cap line', () => {
+test('sync off: piece lab leaves stats as they are and shows no ceiling', () => {
   const app = makeApp('SGE', { cap: 123, sync: false });
   app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec'] };
   const v = pieceView(app);
   assert.equal(v.status, 'off');
-  assert.ok(v.rows.every(r => r.syn === r.raw));
-  assert.doesNotMatch(v.chartSvg, /cap 123/);
-  assert.match(pieceView({ ...app, sync: true }).chartSvg, /cap 123/);
+  assert.ok(v.rows.every(r => r.syn === r.raw && r.cap == null && r.ownKept));
+  assert.match(v.summary, /^No sync applies/);
+  assert.deepEqual(
+    pieceView({ ...app, sync: true }).rows.map(r => r.cap),
+    [30, 29, 29, 29],
+  );
+});
+
+/* Piece stats' step by step, the example the layout was designed on: a Sage head at item level 170 with Critical Hit
+   and Spell Speed, synced to 130. Each line is the lower of the head's own value and the item level 130 head's (its
+   ceiling); the ceiling's arithmetic is capValue's own order (the factor first, the slot share floored in tenths). */
+test('piece lab: each stat against its ceiling, with the sentences and the arithmetic', () => {
+  const app = makeApp('SGE', { cap: 130, sync: true, level: 100 });
+  app.piece = { ilvl: 170, slot: 'head', subs: ['crit', 'spd'] };
+  const v = pieceView(app);
+  assert.equal(v.status, 'above');
+  assert.deepEqual(
+    v.rows.map(r => [r.stat, r.raw, r.cap, r.syn, r.ownKept]),
+    [
+      ['main', 40, 33, 33, false],
+      ['vit', 35, 32, 32, false],
+      ['crit', 47, 31, 31, false],
+      ['spd', 33, 31, 31, false],
+    ],
+  );
+  assert.equal(
+    v.summary,
+    'Synced to 130, this item level 170 head keeps 62 of its 80 substat points. Critical Hit, its 100% stat, loses the most (−16).',
+  );
+  const vit = v.rows[1],
+    spd = v.rows[3];
+  assert.equal(vit.ownFormula, '460 × 8.5% = 39.1 → 39; × 0.9 = 35.1 → 35');
+  assert.equal(vit.capFormula, '414 × 90% = 372; × 8.5% = 31.6 → 32');
+  assert.match(vit.ownText, /then 90%: Intelligence and Mind gear has less Vitality\.$/);
+  assert.match(spd.ownText, /then 70%: it is the second substat\.$/);
+  assert.match(spd.capText, /The full share, even for the 70% stat\.$/);
+  assert.equal(spd.capFormula, '363 × 8.5% = 30.8 → 31');
+  // the slices: the job's slots with both rings make up the whole budget, the head marked
+  assert.equal(
+    v.slices.reduce((a, s) => a + s.width, 0),
+    1000,
+  );
+  assert.deepEqual(
+    v.slices.filter(s => s.on).map(s => [s.label, s.share]),
+    [['Head', '8.5%']],
+  );
+  assert.equal(v.slotShare, '8.5%');
+  // at the cap: nothing is cut, the head's own numbers are kept
+  app.piece = { ...app.piece, ilvl: 130 };
+  const at = pieceView(app);
+  assert.equal(at.status, 'below');
+  assert.ok(at.rows.every(r => r.ownKept && r.lost === 0));
+});
+
+test('piece lab: an off-hand is the two-handed value minus the one-handed one, its ceiling too', () => {
+  const app = makeApp('PLD', { cap: 130, sync: true, level: 100 });
+  app.piece = { ilvl: 170, slot: 'offhand', subs: ['crit', 'det'] };
+  const v = pieceView(app);
+  const crit = v.rows.find(r => r.stat === 'crit');
+  assert.match(crit.ownText, /^The two-handed weapon's \d+ minus the one-handed weapon's \d+\.$/);
+  assert.match(crit.capText, /^The two-handed cap \d+ minus the one-handed cap \d+\.$/);
+  assert.equal(v.slotShare, null);
+  assert.deepEqual(
+    v.slices.filter(s => s.on).map(s => s.label),
+    ['Off-hand'],
+  );
+  assert.equal(
+    v.slices.reduce((a, s) => a + s.width, 0),
+    1000,
+  );
 });
 
 /* "At cap" marks: a target or tiebreak number at the most its piece can have. Sage, Critical Hit. Level 100, no sync:

@@ -1143,20 +1143,73 @@ table.ladder th {
   text-transform: none;
   letter-spacing: 0;
 }
-/* a "?" whose note shows while it is hovered or focused (Piece stats: the 100% and 70% shares) */
-.hovernote {
-  position: relative;
-  display: inline-block;
+/* Piece stats, step by step: the summary, the slot shares of the budget, the rule, and the table */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
 }
-.hovernote .popover {
-  display: none;
-  left: 0;
-  font-weight: 400;
-  color: var(--fg);
+.steps p {
+  margin: 0;
 }
-.hovernote:hover .popover,
-.hovernote:focus-within .popover {
+.steps-sum {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.steps-rule {
+  border-left: 3px solid var(--accent);
+  background: var(--surface2);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+.slices {
+  display: flex;
+  gap: 2px;
+  margin-top: 8px;
+}
+.slices span {
+  min-width: 0;
+  padding: 5px 2px;
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  overflow: hidden;
+}
+.slices span b,
+.slices span i {
   display: block;
+  font-weight: 500;
+  font-style: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slices span.on {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.slices span.on b {
+  font-weight: 600;
+}
+.steps-table td,
+.steps-table th {
+  white-space: normal;
+  vertical-align: top;
+}
+.steps-table .big {
+  font: 600 1.1rem var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.steps-table .big.dim {
+  font-weight: 400;
+}
+.steps .clamp {
+  color: var(--bad);
 }
 .popover.statpop {
   right: auto;

@@ -97,16 +97,24 @@ export function buildPiece(job, ilvl, type, subs) {
    Azeyma's Earrings at 430 (docs/mechanics/math.md, section 5). For a factor of 1 both orders give the same number. `pct` and
    `factor` as in slotBudget; an off-hand is the two-handed cap minus the one-handed cap (isOffhand). */
 export function capValue(job, stat, ilvl, type, pct, factor = null) {
+  return capDerivation(job, stat, ilvl, type, pct, factor).value;
+}
+
+/* capValue step by step, for display: {base, factorPct, afterFactor, pct, exact, value} with exact the value in tenths
+   of a point before the last rounding; an off-hand is {offhand: {two, one}, value} (two-handed cap minus one-handed). */
+export function capDerivation(job, stat, ilvl, type, pct, factor = null) {
   if (isOffhand(type, pct)) {
     const two = capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['2h'], factor);
-    return two - capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['1h+oh'], factor);
+    const one = capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['1h+oh'], factor);
+    return { offhand: { two, one }, value: two - one };
   }
   const base = statColumn(job, stat)[clampIlvl(ilvl)];
   const factorPct = Math.round((factor ?? jobFactor(job, stat)) * 100); // 0.9 -> 90, so the arithmetic stays integer
   const share = pct ?? job.slotPct[type]; // per mille
   // the factor first, floored; then the slot share, floored, in tenths of a point; then rounded to whole points
   const afterFactor = Math.floor((base * factorPct) / 100);
-  return rnd(Math.floor((afterFactor * share) / 100) / 10);
+  const exact = Math.floor((afterFactor * share) / 100) / 10;
+  return { base, factorPct, afterFactor, pct: share, exact, value: rnd(exact) };
 }
 
 /* Per-stat ceiling under sync: each stat's capValue for the piece's slot and kind at the cap item level. `pct`: the

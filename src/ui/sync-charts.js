@@ -36,7 +36,19 @@ function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
   return g;
 }
 
-/* curve: [{il, points, bare, s2full}] in item level order; ref: the piece at the cap's points (with its melds). */
+/* "31 + 22 + 8 melds = 61": a curve point's points by part, the chosen substats in their order (the chart's subtitle
+   names them). */
+function partsText(p) {
+  const parts = p.parts.map(String);
+  if (p.melds) parts.push(`${p.melds} melds`);
+  return `${parts.join(' + ')} = ${p.points}`;
+}
+
+/* About how wide a chart label is, in px (12px sans-serif), to keep it inside the chart. */
+const labelWidth = text => text.length * 6.6;
+
+/* curve: [{il, points, bare, parts, melds, s2full}] in item level order (parts: each chosen substat's points); ref: the
+   piece at the cap's points (with its melds). */
 export function overgearChartSvg({ curve, cap, il, ref, slotName, width }) {
   if (!curve.length) return '';
   const W = Math.max(MIN_WIDTH, Math.round(width || DEFAULT_WIDTH)),
@@ -63,18 +75,30 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, width }) {
   const more = curve.filter(p => p.il > cap && p.points > ref).map(p => p.il);
   const at = curve.find(p => p.il === il) || curve[curve.length - 1];
   g += marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY: Y(at.points) });
-  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="2"/><text x="${L + 6}" y="${Y(ref) - 6}" style="fill:var(--gold)">${ref}: item level ${cap} with its melds</text>`;
+  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="2"/><text x="${L + 6}" y="${Y(ref) + 16}" style="fill:var(--gold)">${ref}: item level ${cap} with its melds</text>`;
   g += `<path d="${path(p => p.bare)}" fill="none" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
   g += `<path d="${path(p => p.points)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
-  // annotations: the melds lost one item level over the cap, and where the 2nd substat reaches the cap
-  const after = curve.find(p => p.il === cap + 1),
-    before = curve.find(p => p.il === cap);
+  // annotations, each with the points by part: the piece at the cap with its melds, the melds lost one item level over
+  // the cap, and where the 2nd substat reaches the cap
+  // to the left of the point when it fits, else to the right
+  const label = (x, y, text) => {
+    const left = x - 8 - labelWidth(text) > L;
+    return `<text class="lbl" x="${x + (left ? -8 : 8)}" text-anchor="${left ? 'end' : 'start'}" y="${y}">${text}</text>`;
+  };
+  const before = curve.find(p => p.il === cap),
+    after = curve.find(p => p.il === cap + 1);
+  if (before && before.melds) {
+    g += `<circle cx="${X(cap)}" cy="${Y(before.points)}" r="4" fill="var(--accent)"/>`;
+    g += label(X(cap), Y(before.points) - 10, partsText(before));
+  }
   if (after && before && before.points > after.points)
-    g += `<text class="lbl" x="${X(cap) + 8}" y="${Y(after.points) + 18}">↓ melds lost</text>`;
+    g += `<circle cx="${X(after.il)}" cy="${Y(after.points)}" r="4" fill="var(--accent)"/><text class="lbl" x="${X(after.il) + 8}" y="${Y(after.points) + 20}">melds lost: ${partsText(after)}</text>`;
   const full = curve.find(p => p.s2full);
   if (full) {
-    const right = X(full.il) > W * 0.7;
-    g += `<circle cx="${X(full.il)}" cy="${Y(full.points)}" r="4" fill="var(--accent)"/><text class="lbl" x="${X(full.il) + (right ? -8 : 8)}" text-anchor="${right ? 'end' : 'start'}" y="${Y(full.points) + 20}">2nd substat reaches the cap at ${full.il} (+${full.il - cap})</text>`;
+    // under the flat line to its right (the points stay level from there), kept inside the chart
+    const text = `${partsText(full)}: both at the cap`;
+    const x = Math.min(X(full.il) + 8, W - R - labelWidth(text));
+    g += `<circle cx="${X(full.il)}" cy="${Y(full.points)}" r="4" fill="var(--accent)"/><text class="lbl" x="${x}" y="${Y(full.points) + 20}">${text}</text>`;
   }
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Substat points in the duty by item level">${g}</svg>`;
 }

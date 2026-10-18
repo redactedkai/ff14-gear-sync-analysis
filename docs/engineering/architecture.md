@@ -202,8 +202,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
-| Budget chart | `src/ui/chart.js` |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/chart.js` and `src/ui/sync-charts.js` |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
 | Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
