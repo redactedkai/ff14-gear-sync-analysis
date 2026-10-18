@@ -214,6 +214,8 @@ test('overgeared chart: an overgeared piece with as much as the melded one is sh
   const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
   assert.equal(v.curveNote, 'Overgeared matches the melded earring (74) at item level 289 (+120), never more.');
   assert.match(v.curveChartSvg, /data-shade="289-309"/);
+  // the synced item level's line is named in the page's legend, not inside the chart (owner, 2026-10-18)
+  assert.doesNotMatch(v.curveChartSvg, /Synced item level/);
   // as much, then more; and never as much
   assert.equal(
     explainerView(app('RPR', { level: 80, ilvl: 590 })).curveNote,

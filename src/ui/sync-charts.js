@@ -22,13 +22,13 @@ function xAxis(x0, x1, X, H, B, caption) {
   return g + `<text x="${(X(x0) + X(x1)) / 2}" y="${H - 4}" text-anchor="middle">${caption}</text>`;
 }
 
-/* The cap line, the item level marker of the chosen piece or set, and the shaded range `more` (item levels, in order). */
+/* The cap line (unlabelled: the legend names it), the item level marker of the chosen piece or set, and the shaded range `more` (item levels, in order). */
 function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
   let g = '';
   if (more.length)
     g += `<rect data-shade="${more[0]}-${more[more.length - 1]}" x="${X(more[0])}" y="${T}" width="${Math.max(1, X(more[more.length - 1]) - X(more[0]))}" height="${H - T - B}" fill="var(--fg)" opacity=".07"/>`;
   if (cap >= x0 && cap <= x1)
-    g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3"/><text class="lbl" x="${X(cap) + 5}" y="${T + 12}">Synced item level ${cap}</text>`;
+    g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3"/>`; // named in the page's legend
   const right = X(il) > W * 0.75;
   g += `<line x1="${X(il)}" x2="${X(il)}" y1="${T}" y2="${H - B}" stroke="var(--fg)" opacity=".5"/>`;
   g += `<circle cx="${X(il)}" cy="${markerY}" r="6" fill="none" stroke="var(--fg)" stroke-width="2"/>`;

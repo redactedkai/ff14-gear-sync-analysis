@@ -158,7 +158,8 @@
     <h2>Overgeared or melded: which has more?</h2>
     <div class="legend" id="p-curve-legend">
       <template x-for="b in view.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
-      <span><i style="background:var(--fg);opacity:.12"></i>Overgeared has as much or more</span>
+      <span><i class="dash"></i><span x-text="`Synced item level ${view.cap}`"></span></span>
+      <span><i style="background:var(--fg);opacity:.12"></i>Overgeared ≥ melded</span>
     </div>
     <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-html="view.curveChartSvg"></div>
     <p class="callout small" id="p-curve-note" x-show="view.curveNote" x-text="view.curveNote"></p>
@@ -219,6 +220,7 @@
       <p class="small" x-text="view.gcd.step != null ? `The set’s GCD by its item level. At level ${view.level}, one GCD step (0.01 s) is about ${view.gcd.step} ${view.spdLabel}.` : `The set’s GCD by its item level.`"></p>
       <div class="legend">
         <span><i style="background:var(--accent);height:2px"></i>Set at each item level</span>
+          <span><i class="dash"></i><span x-text="`Synced item level ${view.cap}`"></span></span>
           <span><i style="background:var(--fg);opacity:.12"></i>Shorter GCD than the melded set</span>
       </div>
       <div class="chartbox" id="g-chart" x-ref="gcdChart" x-html="view.gcd.chartSvg"></div>

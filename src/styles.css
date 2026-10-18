@@ -1355,6 +1355,11 @@ ul.facts li::marker {
 .bar .cut {
   background: repeating-linear-gradient(45deg, var(--bad) 0 3px, transparent 3px 7px);
 }
+.legend i.dash {
+  height: 0;
+  border-top: 2px dashed var(--bad);
+  border-radius: 0;
+}
 .legend i.hatch,
 .legend i.box {
   height: 10px;
