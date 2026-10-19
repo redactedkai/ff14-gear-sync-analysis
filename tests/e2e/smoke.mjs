@@ -850,8 +850,11 @@ async function checkTargetGcd(pg) {
   await waitOptimizer(pg);
   await expect(pg.locator('#o-gcd-line')).toHaveCount(0);
   await expect(gcdCard).toHaveText(`${asked.toFixed(2)}s`);
+  // the chosen option is marked by a class, not only by :has(), which Firefox before 121 lacks (audit 13, finding 2)
+  await expect(pg.locator('#o-gcd-mode label.on')).toHaveText('exactly');
   await pg.locator('#o-gcd-mode label', { hasText: 'or faster' }).click();
   await waitOptimizer(pg);
+  await expect(pg.locator('#o-gcd-mode label.on')).toHaveText('or faster');
   await expect(pg.locator('#o-gcd-line')).toBeVisible();
   await waitSaved(pg, `s => s.opt.gcd == ${asked} && s.opt.gcdMode === 'min'`);
   await checkNoBadText(pg, 'target gcd');

@@ -945,6 +945,12 @@ button.run {
   opacity: 0;
   pointer-events: none;
 }
+/* the chosen option: .on is bound in the template, for browsers without :has() (Firefox before 121). It must stay a rule
+   of its own: a browser that does not know :has() drops a whole selector list that contains it */
+.seg label.on {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
 .seg label:has(input:checked) {
   background: var(--accent);
   color: var(--accent-fg);
