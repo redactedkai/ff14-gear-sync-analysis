@@ -579,7 +579,6 @@ async function checkMelds(pg) {
   check(!(await pg.locator('#o-food').isChecked()), 'Food is on by default');
   await expectTotal(pg, want.on, 'melds on');
   await expect(pg.locator('#o-result .meld').first()).toBeVisible();
-  await expect(pg.locator('#o-meld-note')).toBeVisible();
   // every pick has its target at its cap here (melded up to it), so each target cell is marked
   const rows = await pg.locator('#o-result tbody tr:not(.total):not(.tier)').count();
   await expect(pg.locator('#o-result td.gold .atcap')).toHaveCount(rows);
@@ -687,7 +686,9 @@ async function checkTargetGcd(pg) {
   await pg.selectOption('#o-target', 'crit');
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
   // level 100 relics whose substats the player allocates (Phantom Pendulums Occultum) are left out, with a note
-  await expect(pg.locator('#o-relic-note')).toHaveText(/^\d+ relic weapons? left out: you choose (their|its) substats in game/);
+  await expect(pg.locator('#o-relic-note')).toHaveText(
+    'Relic weapons with customizable substats are left out: the optimizer can’t model your choice yet.',
+  );
   const box = pg.locator('#o-gcd');
   check((await box.inputValue()) === '' && (await box.isEnabled()), 'the Target GCD box is not empty and enabled by default');
   await expect(pg.locator('#o-gcd-line')).toHaveCount(0);

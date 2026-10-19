@@ -449,9 +449,7 @@ function buildOptimizerView(app, gear, chosen) {
     dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
     rows,
     truncated: res.truncated,
-    melds: !!o.melds,
     melded: picks.filter(p => p.meld).length,
-    noMeldData: res.noMeldData,
     // {phys, mag, physPct, magPct}: the Defense row
     defense,
     // the note that weapon damage is ranked first; false for a job that does not rank it (Blue Mage)

@@ -384,10 +384,9 @@
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
         <p class="small dim" id="o-wd-note" x-show="view.weaponFirst">Weapon damage comes first, before the goal.</p>
-        <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note" x-text="`${view.relicsLeftOut} relic weapon${view.relicsLeftOut > 1 ? 's' : ''} left out: you choose ${view.relicsLeftOut > 1 ? 'their' : 'its'} substats in game, which the optimizer can’t model yet.`"></p></template>
+        <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note">Relic weapons with customizable substats are left out: the optimizer can’t model your choice yet.</p></template>
         <p class="small dim" id="o-total-note">Totals match the character panel; <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span> (the panel adds your job's and clan's base).</p>
         <template x-if="view.food"><p class="small dim" id="o-food-note">Food (community formula): a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. Vitality from food is not counted.<span x-show="!view.gcdOn"> The gear set is the same with any meal.</span></p></template>
-        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: every overmeld assumed to succeed.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>
   </div>
