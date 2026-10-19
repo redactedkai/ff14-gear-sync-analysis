@@ -52,22 +52,24 @@ export function itemCaps(job, item, sync) {
   return capsFor(job, item.type, target, s.pct, s.factors);
 }
 
-/* The most keys a score ranks: weapon damage, the target and two tiebreaks. A fifth key would push the packed score
-   past 2^53 on real pools (about 150 × 3,500³ ≈ 6e12 for four keys), so makeScorer throws rather than drop it. */
-const MAX_KEYS = 4;
+/* The most keys of a goal: the target and two tiebreaks. Melds are chosen for these (weapon damage is no meld's). */
+const MAX_GOAL_KEYS = 3;
+/* The most keys a score ranks: weapon damage and the goal's keys. A fifth key would push the packed score past 2^53 on
+   real pools (about 150 × 3,500³ ≈ 6e12 for four keys), so makeScorer throws rather than drop it. */
+const MAX_KEYS = MAX_GOAL_KEYS + 1;
 
-/* Lexicographic score [target, tiebreak 1, tiebreak 2] (weapon damage first, when ranked) packed into one number, so the search can add and
-   bound it like any sum. Fixed weights (1e8 / 1e4 / 1) are only lexicographic while tiebreak totals stay below
-   10,000 (docs/history.md), so the weights are derived from the pool instead: with R2 = the range a loadout's
-   tiebreak-2 total can span (sum over slots of max - min, 0 included for an empty slot) and R1 likewise,
-   W2 = 1, W1 = R2 + 1, W0 = R1 * W1 + R2 + 1. Then a tiebreak difference can never outweigh one unit of a
+/* Lexicographic score over `keys` (rankedKeys: weapon damage first when ranked, then the target and tiebreaks; empty
+   ones ignored) packed into one number, so the search can add and bound it like any sum. Fixed weights (1e8 / 1e4 / 1)
+   are only lexicographic while tiebreak totals stay below 10,000 (docs/history.md), so the weights are derived from
+   the pool instead: with R2 = the range a loadout's tiebreak-2 total can span (sum over slots of max - min, 0 included
+   for an empty slot) and R1 likewise, W2 = 1, W1 = R2 + 1, W0 = R1 * W1 + R2 + 1. Then a tiebreak difference can never outweigh one unit of a
    higher key, for any totals. Stats are integers, so the scores are exact while they stay within
    Number.MAX_SAFE_INTEGER; that is checked, and a pool too large for it throws instead of ranking wrongly.
    `slotVectors[i]` is the list of stat vectors for slot i of the loadout (the ring list appears twice). */
-export function makeScorer(target, tiebreaks, slotVectors) {
-  const keys = [target, ...tiebreaks.filter(Boolean)];
-  if (keys.length > MAX_KEYS) {
-    throw new Error(`Optimizer: at most ${MAX_KEYS} ranked keys fit one score, got ${keys.length} (${keys.join(', ')})`);
+export function makeScorer(keys, slotVectors) {
+  const ranked = keys.filter(Boolean);
+  if (ranked.length > MAX_KEYS) {
+    throw new Error(`Optimizer: at most ${MAX_KEYS} ranked keys fit one score, got ${ranked.length} (${ranked.join(', ')})`);
   }
   const keySpan = k =>
     slotVectors.reduce(
@@ -83,14 +85,14 @@ export function makeScorer(target, tiebreaks, slotVectors) {
       },
       { span: 0, abs: 0 },
     );
-  const spans = keys.map(keySpan);
-  const weights = new Array(keys.length).fill(1);
+  const spans = ranked.map(keySpan);
+  const weights = new Array(ranked.length).fill(1);
   // the last key weighs 1; each higher key weighs more than every lower key together can swing, so packed scores
   // order like the key tuples
-  for (let i = keys.length - 2; i >= 0; i--) {
+  for (let i = ranked.length - 2; i >= 0; i--) {
     // W_i = (span of everything below key i, in score units) + 1
     let below = 0;
-    for (let j = i + 1; j < keys.length; j++) below += spans[j].span * weights[j];
+    for (let j = i + 1; j < ranked.length; j++) below += spans[j].span * weights[j];
     weights[i] = below + 1;
   }
   const maxAbs = spans.reduce((a, span, i) => a + span.abs * weights[i], 0);
@@ -99,7 +101,7 @@ export function makeScorer(target, tiebreaks, slotVectors) {
   }
   return v => {
     let score = 0;
-    for (let i = 0; i < keys.length; i++) score += (v[keys[i]] || 0) * weights[i];
+    for (let i = 0; i < ranked.length; i++) score += (v[ranked[i]] || 0) * weights[i];
     return score;
   };
 }
@@ -141,7 +143,7 @@ function withMeld(job, item, synced, meld, target) {
 
 /* With limits (a speed rule, stat minimums) and melds: one candidate per meld version of the piece (meldVersions) on
    `keys`, the objective's keys and the limited stats, all sharing the item, so copies and Unique rings still count
-   once per piece (pruneDominated counts by `it`, the search by item id). Each keeps the whole list as `versions`.
+   once per piece (pruneDominated counts by `item`, the search by item id). Each keeps the whole list as `versions`.
    `versionCache` (optional, a Map): the versions built before for the same item, keys and speed rule, from the same
    job and sync. They depend on nothing else (not on the objective), so tier ranking's stages, one candidate list
    each, build them once; each list gets its own shallow copies, since buildCandidates writes each candidate's score
@@ -172,7 +174,7 @@ function itemVersions(job, item, sync, keys, exactSpd, versionCache) {
    this type (`slotsOfType`: 1, or 2 for rings). Then any loadout using B can swap it for one of them without
    losing anything. For rings, a single better Unique ring is not enough: the best pair may be that ring plus B
    (docs/history.md). Dropped items' own beaters also beat B, so the kept set always has enough copies.
-   Copies are counted once per item: several candidates of one item (`it`) are still one item's copies.
+   Copies are counted once per item: several candidates of one item (`item`) are still one item's copies.
    `sorted`: every beater of a candidate comes before it in arr (buildCandidates sorts by score, then stat sum, ties in
    pool order). Then B is compared with the kept candidates only: since the kept beaters always have enough copies (see
    above), that drops exactly the same candidates, and the kept list is much shorter than arr. buildCandidates always
@@ -295,16 +297,16 @@ export function buildCandidates(
   const limitStats = [...new Set([...(speed ? ['spd'] : []), ...minStats])];
   // melds are chosen per piece from the objective's keys (meld.js keeps the substats among them; weapon damage is no
   // meld's), before the score weights are derived from the vectors
-  const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, 3) : null;
+  const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, MAX_GOAL_KEYS) : null;
   const candsByType = {};
   SLOT_TYPES.forEach(t => {
     const items = pool.filter(i => i.type === t);
     candsByType[t] =
       melds && limitStats.length
-        ? items.flatMap(it =>
-            itemVersions(job, it, sync, [...new Set([...versionKeys, ...keys, ...limitStats])], speed === 'exact', versionCache),
+        ? items.flatMap(item =>
+            itemVersions(job, item, sync, [...new Set([...versionKeys, ...keys, ...limitStats])], speed === 'exact', versionCache),
           )
-        : items.map(it => itemCandidate(job, it, sync, keys));
+        : items.map(item => itemCandidate(job, item, sync, keys));
   });
   const blockable = blockableTypes(SLOT_TYPES.map(t => candsByType[t]));
   // slots some candidate can leave empty go last, so the search knows whether a chosen piece blocks them
@@ -316,8 +318,7 @@ export function buildCandidates(
     if (t === 'ring') slotList.push('ring');
   });
   const score = makeScorer(
-    ranked[0],
-    ranked.slice(1),
+    ranked,
     slotList.map(t => candsByType[t].map(a => a.eff)),
   );
   const prunedByType = {};

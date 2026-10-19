@@ -108,9 +108,9 @@ test('dominance pruning counts the copies of one item once', () => {
    target and two tiebreaks only (docs/engineering/optimizer.md section 3), so more keys must fail loudly. */
 test('makeScorer: four keys rank in order, a fifth throws', () => {
   const vectors = [[{ wd: 1, crit: 2, det: 3, dh: 4, spd: 5 }]];
-  const score = makeScorer('wd', ['crit', 'det', 'dh'], vectors);
+  const score = makeScorer(['wd', 'crit', 'det', 'dh'], vectors);
   assert.ok(score({ wd: 1 }) > score({ crit: 2, det: 3, dh: 4 }));
-  assert.throws(() => makeScorer('wd', ['crit', 'det', 'dh', 'spd'], vectors), /at most 4 ranked keys/);
+  assert.throws(() => makeScorer(['wd', 'crit', 'det', 'dh', 'spd'], vectors), /at most 4 ranked keys/);
 });
 
 /* Audit 01, finding 20: the three entry points defaulted the goal to Spell or Skill Speed, from the Sage-only days.

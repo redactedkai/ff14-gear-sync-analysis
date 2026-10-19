@@ -69,8 +69,7 @@ function replica() {
     if (ty === 'ring') slotList.push('ring');
   });
   const score = makeScorer(
-    target,
-    tiebreak,
+    [target, ...tiebreak],
     slotList.map(ty => all[ty].map(a => a.eff)),
   );
   t0 = lap('scorer', t0);
