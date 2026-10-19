@@ -22,7 +22,7 @@
 <section class="panel" aria-label="Job and sync settings" x-data="settings" :data-job="$store.app.job || ''">
   <div class="settings">
     <div class="f jobpick">
-      <div class="row"><span id="job-label">Job: <b id="job-name" x-text="$store.app.job ? job.jobName : 'none chosen'"></b></span><span style="flex:1"></span><button class="chip" id="reset" type="button" @click="requestReset()">Reset to defaults</button></div>
+      <div class="row"><span id="job-label">Job: <b id="job-name" x-text="$store.app.job ? jobCtx.jobName : 'none chosen'"></b></span><span style="flex:1"></span><button class="chip" id="reset" type="button" @click="requestReset()">Reset to defaults</button></div>
       <div class="jobrows" role="radiogroup" aria-labelledby="job-label">
         <template x-for="row in jobRows" :key="row.label">
           <div class="jobrow" role="group" :aria-label="row.label">
@@ -343,7 +343,7 @@
         </div>
         <div class="tablekey"><p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
         <div class="tablewrap menus" id="o-table"><table @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
-          <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="job.stats[k]" class="n" x-text="h"></th></template></tr></thead>
+          <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="jobCtx.stats[k]" class="n" x-text="h"></th></template></tr></thead>
           <tbody>
             <template x-for="(r, i) in view.rows" :key="i">
               <tr>
@@ -369,10 +369,10 @@
                   <template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template>
                 </td></template>
                 <template x-if="r.item"><td class="n" data-col="ilvl" x-text="r.item.ilvl"></td></template>
-                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="job.stats[k]" class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
+                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="jobCtx.stats[k]" class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
               </tr>
             </template>
-            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="job.stats[k]" class="n" x-text="v"></td></template></tr>
+            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="jobCtx.stats[k]" class="n" x-text="v"></td></template></tr>
             <template x-if="view.food">
               <tr class="food" id="o-food-row"><td>Food</td><td class="item">
                 <div class="same" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
@@ -392,13 +392,13 @@
                   </div>
                 </div>
                 <div class="small dim" id="o-meal-note" x-text="view.food.best ? 'HQ, best for goal' : 'HQ, picked'"></div>
-              </td><td class="n" data-col="ilvl" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td :data-col="job.stats[k]" class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
+              </td><td class="n" data-col="ilvl" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td :data-col="jobCtx.stats[k]" class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
             </template>
             <template x-if="view.food">
-              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td :data-col="job.stats[k]" class="n" x-text="v"></td></template></tr>
+              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td :data-col="jobCtx.stats[k]" class="n" x-text="v"></td></template></tr>
             </template>
-            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="job.stats[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
-            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="job.stats[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c && c.held ? 'Held at this tier by Spare points to tiebreaks' : null" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
+            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c && c.held ? 'Held at this tier by Spare points to tiebreaks' : null" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
             <tr class="tier" id="o-defense"><td>Defense</td><td class="defense" :colspan="view.headers.length + 2">Physical <b x-text="view.defense.phys.toLocaleString('en-US')"></b> · Magic <b x-text="view.defense.mag.toLocaleString('en-US')"></b> · <span class="dim" x-text="`−${view.defense.physPct}% / −${view.defense.magPct}% damage taken`"></span></td></tr>
           </tbody>
         </table></div>
@@ -435,15 +435,15 @@
     <template x-if="view && view.anySynced"><div class="tablekey"><span></span><p class="small dim" id="b-key"><b class="atcap">48</b> synced to this piece’s cap · <span class="keywas">795</span> the piece’s own, before sync</p></div></template>
     <div class="tablewrap tall"><table id="gear-table" @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
       <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters. <template x-if="filtered"><button type="button" class="linkbtn" @click="resetBrowseFilters()">Reset filters</button></template></td></tr></tbody></template>
-      <template x-if="view && view.shown.length"><thead><tr><th :aria-sort="sortState('name')"><button type="button" class="sortbtn" data-sort="name" @click="sortBy('name')">Item</button></th><th>Slot</th><th class="n" data-col="lvl" :aria-sort="sortState('lvl')"><button type="button" class="sortbtn" data-sort="lvl" @click="sortBy('lvl')">Lv</button></th><th class="n" data-col="ilvl" :aria-sort="sortState('ilvl')"><button type="button" class="sortbtn" data-sort="ilvl" @click="sortBy('ilvl')">ilvl</button></th><template x-for="s in job.stats" :key="s"><th class="n" :data-col="s" :aria-sort="sortState(s)"><button type="button" class="sortbtn" :data-sort="s" :title="`Sort by synced ${job.label[s]}`" @click="sortBy(s)" x-text="job.short[s]"></button></th></template></tr></thead></template>
+      <template x-if="view && view.shown.length"><thead><tr><th :aria-sort="sortState('name')"><button type="button" class="sortbtn" data-sort="name" @click="sortBy('name')">Item</button></th><th>Slot</th><th class="n" data-col="lvl" :aria-sort="sortState('lvl')"><button type="button" class="sortbtn" data-sort="lvl" @click="sortBy('lvl')">Lv</button></th><th class="n" data-col="ilvl" :aria-sort="sortState('ilvl')"><button type="button" class="sortbtn" data-sort="ilvl" @click="sortBy('ilvl')">ilvl</button></th><template x-for="s in jobCtx.stats" :key="s"><th class="n" :data-col="s" :aria-sort="sortState(s)"><button type="button" class="sortbtn" :data-sort="s" :title="`Sort by synced ${jobCtx.label[s]}`" @click="sortBy(s)" x-text="jobCtx.short[s]"></button></th></template></tr></thead></template>
       <template x-if="view && view.shown.length"><tbody>
         <template x-for="x in view.shown" :key="x.key">
           <tr :data-key="x.key" :class="{ synced: x.synced }">
             <td><template x-for="(part, j) in x.nameParts" :key="j"><span :class="{ mark: part.hit }" x-text="part.text"></span></template><span class="hq" x-show="x.hq" title="High quality (crafted): stats include the HQ bonus">HQ</span><template x-if="x.synced"><span class="was">before sync</span></template></td><td><span x-text="x.slot"></span><span class="x2" x-show="x.copies === 2" title="Not Unique: can be worn on both ring fingers"> ×2</span></td><td class="n dim" data-col="lvl" x-text="x.lvl"></td><td class="n" data-col="ilvl" :class="{ cut: x.synced }"><span x-text="x.synced ? x.syncedIlvl : x.ilvl"></span><template x-if="x.synced"><span class="was" x-text="x.ilvl"></span></template></td>
-            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="job.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'At this piece’s cap' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
+            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="jobCtx.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'At this piece’s cap' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
           </tr>
         </template>
-        <template x-if="view.hidden"><tr><td :colspan="job.stats.length + 4" class="dim small" x-text="view.hidden + ' more matches not shown. Narrow the filters to view them.'"></td></tr></template>
+        <template x-if="view.hidden"><tr><td :colspan="jobCtx.stats.length + 4" class="dim small" x-text="view.hidden + ' more matches not shown. Narrow the filters to view them.'"></td></tr></template>
       </tbody></template>
     </table></div>
   </div>

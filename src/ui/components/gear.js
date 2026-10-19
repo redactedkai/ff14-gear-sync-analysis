@@ -10,6 +10,10 @@ import { expansionToggles, gearFromToggles } from '../helpers.js';
 export function gear() {
   return {
     view: null,
+    /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
+    get jobCtx() {
+      return this.$store.app.jobCtx;
+    },
     init() {
       Alpine.effect(() => {
         const app = this.$store.app;
@@ -42,11 +46,11 @@ export function gear() {
     },
     /* some filter is off its default: Reset filters shows (views browseFiltered) */
     get filtered() {
-      return browseFiltered(this.job, this.$store.app.browse);
+      return browseFiltered(this.jobCtx, this.$store.app.browse);
     },
     /* Reset filters: every filter back to its default (defaultBrowse; the sort stays) */
     resetBrowseFilters() {
-      const { sort, dir, ...filters } = defaultBrowse(this.job);
+      const { sort, dir, ...filters } = defaultBrowse(this.jobCtx);
       Object.assign(this.$store.app.browse, filters);
     },
     /* "/" anywhere on the tab but in a box jumps to the name search, as on many sites */

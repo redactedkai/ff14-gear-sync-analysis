@@ -3,6 +3,8 @@
 import Alpine from 'alpinejs';
 import { explainerItemLevel, explainerView } from '../views/sync-explainer.js';
 import { pieceView, withSub } from '../views/piece.js';
+import { rankChoices } from '../views/ranks.js';
+import { SLOT_LABEL } from '../../core/constants.js';
 
 export function syncExplainer() {
   return {
@@ -12,6 +14,22 @@ export function syncExplainer() {
     il: 1,
     rangeNote: '',
     helpOpen: false,
+    /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
+    get jobCtx() {
+      return this.$store.app.jobCtx;
+    },
+    /* the math bar's Slot, 1st substat and 2nd substat menus: [value, label] */
+    get slotOptions() {
+      return this.jobCtx.activeSlotTypes.map(t => [t, SLOT_LABEL[t]]);
+    },
+    get substatOptions() {
+      return this.jobCtx.substats.map(s => [s, this.jobCtx.label[s]]);
+    },
+    /* the 2nd substat's options: none, then every substat but the 1st (views/ranks.js) */
+    get substat2Options() {
+      const subs = this.$store.app.piece.subs;
+      return [['', 'none']].concat(rankChoices(subs, 1, this.jobCtx.substats).map(s => [s, this.jobCtx.label[s]]));
+    },
     // the chart's container width (px): the chart is drawn at its own width, so its text keeps the page's size
     widths: { piece: 0 },
     init() {
@@ -39,7 +57,7 @@ export function syncExplainer() {
     },
     setSub(i, value) {
       const p = this.$store.app.piece;
-      p.subs = withSub(p.subs, i, value, this.job.substats);
+      p.subs = withSub(p.subs, i, value, this.jobCtx.substats);
     },
     setIlvl(value) {
       const v = Math.round(Number(value));

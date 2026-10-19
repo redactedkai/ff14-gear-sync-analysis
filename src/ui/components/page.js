@@ -1,36 +1,26 @@
-/* Page root and the job / sync settings panel. Nested components inherit the root's `job` and helpers. */
-import { JOBS, JOB_ROWS, SLOT_LABEL } from '../../core/constants.js';
+/* Page root and the job / sync settings panel. Each component reads the job through its own `jobCtx` getter, not
+   through a parent's scope. */
+import { JOBS, JOB_ROWS } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
-import { rankChoices } from '../views/ranks.js';
 import { limitCapToLevel } from '../state.js';
 import { TYPING_DEBOUNCE_MS } from '../helpers.js';
 
+/* The page root: the footer. */
 export function page() {
   return {
-    slotLabel: SLOT_LABEL,
     /* footer note naming the datamining commit; empty when unknown */
     dataSource: dataSourceLabel(),
-    /* the current JobContext */
-    get job() {
-      return this.$store.app.jobCtx;
-    },
-    get slotOptions() {
-      return this.job.activeSlotTypes.map(t => [t, SLOT_LABEL[t]]);
-    },
-    get substatOptions() {
-      return this.job.substats.map(s => [s, this.job.label[s]]);
-    },
-    /* the 2nd substat's options: none, then every substat but the 1st (views/ranks.js) */
-    get substat2Options() {
-      const subs = this.$store.app.piece.subs;
-      return [['', 'none']].concat(rankChoices(subs, 1, this.job.substats).map(s => [s, this.job.label[s]]));
-    },
   };
 }
 
+/* The job and sync settings panel: the job picker, the synced level, the cap and the sync switch. */
 export function settings() {
   return {
+    /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
+    get jobCtx() {
+      return this.$store.app.jobCtx;
+    },
     requestJob(id) {
       this.$store.app.setJob(id); // job-specific settings reset (resetForJob); nothing else is lost, so no confirmation
     },

@@ -22,6 +22,10 @@ const DEBOUNCE_MS = 120;
 export function optimizer() {
   return {
     view: null,
+    /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
+    get jobCtx() {
+      return this.$store.app.jobCtx;
+    },
     /* "searching 1,939 of 1,999 pieces" in the Gear to search heading: searched of every piece the job can wear */
     countText: '',
     /* "Gear from" boxes with nothing for the job and the other filters (greyed out in the menu) */
@@ -218,18 +222,18 @@ export function optimizer() {
     ...expansionToggles('opt'),
     ...gearFromToggles('opt'),
     get statOptions() {
-      return this.job.stats.map(s => [s, this.job.label[s]]);
+      return this.jobCtx.stats.map(s => [s, this.jobCtx.label[s]]);
     },
     /* Tiebreak i's options (1 or 2): none, then every stat not picked above it (views/ranks.js) */
     tiebreakOptions(i) {
       const o = this.$store.app.opt;
-      return [['', 'none']].concat(rankChoices([o.target, o.tb, o.tb2], i, this.job.stats).map(s => [s, this.job.label[s]]));
+      return [['', 'none']].concat(rankChoices([o.target, o.tb, o.tb2], i, this.jobCtx.stats).map(s => [s, this.jobCtx.label[s]]));
     },
     /* Maximize (0), Tiebreak 1 or Tiebreak 2 set to `value`: a stat another of them holds swaps with this one's old
        one (views/ranks.js withRank) */
     setGoal(i, value) {
       const o = this.$store.app.opt;
-      [o.target, o.tb, o.tb2] = withRank([o.target, o.tb, o.tb2], i, value, this.job.stats).map(r => r ?? '');
+      [o.target, o.tb, o.tb2] = withRank([o.target, o.tb, o.tb2], i, value, this.jobCtx.stats).map(r => r ?? '');
     },
   };
 }
