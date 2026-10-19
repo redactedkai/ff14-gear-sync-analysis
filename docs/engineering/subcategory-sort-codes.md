@@ -151,6 +151,6 @@ The codes do not follow the step number: 11, 12 and 13 mark single steps, and th
 | --- | --- |
 | Code to category table, overrides, gear left out | `scripts/data/gear_categories.py` (`CATEGORY_BY_CODE`, `CURRENCY_OVERRIDES`, `ITEM_OVERRIDES`, `LEFT_OUT`) |
 | Savage currencies and the dye-slot cross-check | `scripts/data/gear_categories.py` (`savage_items`, `check`) |
-| Ultimate totems, recipe and tomestone flags | `scripts/data/gear_sources.py` (`ULTIMATE_TOTEMS`) |
-| Categories of each source group | `src/core/item-format.json` (`sources`) |
-| How the categories become source bits | [data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation) |
+| Ultimate totems and the recipe flag | `scripts/data/gear_sources.py` (`ULTIMATE_TOTEMS`) |
+| A category's activity for a piece with no way in ("Gear from") | `scripts/data/gear_activities.py` (`DROP_ACTIVITY`) |
+| How pieces get their "Gear from" routes | [data-pipeline.md, section 4](data-pipeline.md#sources) |

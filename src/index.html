@@ -284,12 +284,25 @@
           <label class="f">Item level from<input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.opt.min"></label>
           <label class="f">Item level to<input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.opt.max"></label>
           <label class="f">Equip level up to<input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.opt.lvl"></label>
-        </div>
-        <div class="row groups-row" id="o-groups" role="group" aria-labelledby="o-groups-label">
-          <span class="dim small" id="o-groups-label">Gear groups</span>
-          <template x-for="g in gearGroups" :key="g.key">
-            <label class="chk"><input type="checkbox" :data-source="g.key" :checked="groupOn(g.key)" @change="setGroup(g.key, $event.target.checked)"><span x-text="g.label"></span></label>
-          </template>
+          <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+            <span id="o-from-label">Gear from</span>
+            <button type="button" class="multi-btn" id="o-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="o-from-label o-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
+            <div class="multi-menu from-menu" x-ref="fromMenu" id="o-from-menu" role="group" aria-labelledby="o-from-label" x-show="open" x-cloak @mouseleave="fromPointed = null">
+              <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear<small>Tradeable pieces show whatever their source.</small></span><input type="checkbox" role="switch" id="o-market" :checked="$store.app.opt.market" @change="$store.app.opt.market = $event.target.checked"></label>
+              <div class="from-head"><button type="button" class="linkbtn" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" @click="setFromAll('default')">Default</button></div>
+              <div class="from-cols">
+                <template x-for="col in gearFromColumns" :key="col.key"><div>
+                  <template x-for="sec in col.sections" :key="sec.title"><div>
+                    <div class="from-sec" x-text="sec.title"></div>
+                    <template x-for="a in sec.boxes" :key="a.key">
+                      <label class="multi-opt" :class="{ 'from-empty': fromEmpty(a.key) }" @mouseenter="fromPointed = a.key" @focusin="fromPointed = a.key"><input type="checkbox" :data-activity="a.key" :checked="fromOn(a.key)" @change="setFromOn(a.key, $event.target.checked)"><span x-text="a.label"></span></label>
+                    </template>
+                  </div></template>
+                </div></template>
+              </div>
+              <p class="from-desc" id="o-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template><template x-if="!fromDescription()"><span>Point at a box to see what it covers.</span></template></p>
+            </div>
+          </div>
         </div>
       </div>
       <div class="part" id="o-goal" role="group" aria-labelledby="o-goal-h">
@@ -335,7 +348,7 @@
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'nogcd'"><div class="panel"><div class="empty" id="o-nogcd">No set fits this GCD.</div></div></template>
       <template x-if="view && view.kind === 'noset'"><div class="panel"><div class="empty" id="o-noset">No set found.</div></div></template>
-      <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>
+      <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Untick more boxes under Gear from and try again.</div></div></template>
       <template x-if="view && view.kind === 'ok'"><div class="panel" id="o-result" :data-target="view.target">
         <div class="readout">
           <div><b x-text="view.total"></b><span x-text="view.totalLabel"></span></div>
@@ -383,7 +396,7 @@
             <tr class="tier" id="o-defense"><td>Defense</td><td class="defense" :colspan="view.headers.length + 2">Physical <b x-text="view.defense.phys.toLocaleString('en-US')"></b> · Magic <b x-text="view.defense.mag.toLocaleString('en-US')"></b> · <span class="dim" x-text="`−${view.defense.physPct}% / −${view.defense.magPct}% damage taken`"></span></td></tr>
           </tbody>
         </table></div>
-        <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
+        <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Untick more boxes under Gear from.</div></template>
         <p class="small dim" id="o-wd-note" x-show="view.weaponFirst">Weapon damage comes first, before the goal.</p>
         <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note">Relic weapons with customizable substats are left out.</p></template>
         <p class="small dim" id="o-total-note" x-text="`Clan bonuses can affect ${view.headers[0]} and ${view.headers[1]}.`"></p>
@@ -409,6 +422,25 @@
       <label class="f">Item level from<input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.browse.min"></label>
       <label class="f">Item level to<input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.browse.max"></label>
       <label class="f">Equip level up to<input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.browse.lvl"></label>
+      <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+        <span id="b-from-label">Gear from</span>
+        <button type="button" class="multi-btn" id="b-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="b-from-label b-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
+        <div class="multi-menu from-menu" x-ref="fromMenu" id="b-from-menu" role="group" aria-labelledby="b-from-label" x-show="open" x-cloak @mouseleave="fromPointed = null">
+          <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear<small>Tradeable pieces show whatever their source.</small></span><input type="checkbox" role="switch" id="b-market" :checked="$store.app.browse.market" @change="$store.app.browse.market = $event.target.checked"></label>
+          <div class="from-head"><button type="button" class="linkbtn" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" @click="setFromAll('default')">Default</button></div>
+          <div class="from-cols">
+            <template x-for="col in gearFromColumns" :key="col.key"><div>
+              <template x-for="sec in col.sections" :key="sec.title"><div>
+                <div class="from-sec" x-text="sec.title"></div>
+                <template x-for="a in sec.boxes" :key="a.key">
+                  <label class="multi-opt" :class="{ 'from-empty': fromEmpty(a.key) }" @mouseenter="fromPointed = a.key" @focusin="fromPointed = a.key"><input type="checkbox" :data-activity="a.key" :checked="fromOn(a.key)" @change="setFromOn(a.key, $event.target.checked)"><span x-text="a.label"></span></label>
+                </template>
+              </div></template>
+            </div></template>
+          </div>
+          <p class="from-desc" id="b-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template><template x-if="!fromDescription()"><span>Point at a box to see what it covers.</span></template></p>
+        </div>
+      </div>
       <label class="f">Name contains<input type="text" id="b-q" autocomplete="off" x-model.debounce.300ms="$store.app.browse.q"></label>
       <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
         <template x-for="o in typeOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.type"></option></template>
@@ -416,12 +448,6 @@
       <label class="f">Sort by<select id="b-sort" @change="$store.app.browse.sort = $event.target.value">
         <template x-for="o in sortOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.sort"></option></template>
       </select></label>
-    </div>
-    <div class="row groups-row" id="b-groups" role="group" aria-labelledby="b-groups-label">
-      <span class="dim small" id="b-groups-label">Gear groups</span>
-      <template x-for="g in gearGroups" :key="g.key">
-        <label class="chk"><input type="checkbox" :data-source="g.key" :checked="groupOn(g.key)" @change="setGroup(g.key, $event.target.checked)"><span x-text="g.label"></span></label>
-      </template>
     </div>
     <div class="tablewrap tall"><table id="gear-table">
       <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters.</td></tr></tbody></template>

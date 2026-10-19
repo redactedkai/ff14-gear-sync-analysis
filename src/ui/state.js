@@ -1,6 +1,6 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
-import { JOBS, DEFAULT_JOB, SOURCES, EXPANSIONS } from '../core/constants.js';
+import { JOBS, DEFAULT_JOB, ACTIVITIES, EXPANSIONS } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
@@ -9,9 +9,10 @@ import { foodChoices } from '../core/food.js';
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
 
-/* Gear groups left out until the user ticks them back in, in the optimizer and the gear browser alike: Current Savage,
-   Ultimate and PvP (owner's decision, 2026-10-14). In SOURCES order. */
-export const DEFAULT_EXCLUDE = Object.freeze(['savage', 'ultimate', 'pvp']);
+/* "Gear from" boxes left out until the user ticks them back in, in the optimizer and the gear browser alike: those with
+   `on: false` in item-format.json (owner's decision, 2026-10-18: Miscellaneous, Deep dungeons, Wondrous Tails,
+   Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions). In ACTIVITIES order. */
+export const DEFAULT_EXCLUDE = Object.freeze(ACTIVITIES.filter(a => !a.on).map(a => a.key));
 
 /* Sync applies only when it is switched on and a cap is set. */
 export function syncActive(app) {
@@ -82,9 +83,10 @@ export function defaultState() {
     // How the math works: the piece's item level (null: the cap; explainerItemLevel in views/sync-explainer.js),
     // slot and two ranked substats
     piece: { ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
-    // the Gear browser's filters. expOff: expansions switched off. exclude: SOURCES keys (gear groups) left out of the list
-    browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], min: '', max: '', lvl: 100, sort: 'ilvl' },
-    // melds: give pieces their best materia melds. expOff, exclude, min, max, lvl: Gear to search, the browser's
+    // the Gear browser's filters. expOff: expansions switched off. exclude: ACTIVITIES keys ("Gear from" boxes) left out;
+    // market: tradeable pieces listed whatever their source (the market board switch, on by default)
+    browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: 100, sort: 'ilvl' },
+    // melds: give pieces their best materia melds. expOff, exclude, market, min, max, lvl: Gear to search, the browser's
     // filters with their own values. food: add a meal to the result; foodPair: its key in foodChoices (core/food.js),
     // '' = best for the goal. gcd: the Target GCD in seconds, '' for any; gcdMode: 'exact' (exactly that GCD) or 'min'
     // (that GCD or faster); exact by default, like xivgear (owner's decision 2026-10-16). byTier: rank the goal and
@@ -96,6 +98,7 @@ export function defaultState() {
       melds: true,
       expOff: [],
       exclude: [...DEFAULT_EXCLUDE],
+      market: true,
       min: '',
       max: '',
       lvl: 100,
@@ -187,10 +190,12 @@ function restoreTabs(s, raw) {
   }
 }
 
-/* A saved gear-group list (SOURCES keys), in SOURCES order. A saved list is kept as it is, an empty one too (every group
-   ticked back in); only a missing one gets the fallback. */
+/* A saved "Gear from" list (ACTIVITIES keys left out), in ACTIVITIES order. A saved list is kept as it is, an empty one
+   too (every box ticked); a missing one gets the fallback, and so does one from before the boxes were activities (any
+   key that is not a box, such as the old gear groups 'tomestone' or 'savage'). */
 function restoreExclude(raw, fallback) {
-  return Array.isArray(raw) ? SOURCES.map(x => x.key).filter(k => raw.includes(k)) : fallback;
+  if (!Array.isArray(raw) || raw.some(k => !ACTIVITIES.some(a => a.key === k))) return fallback;
+  return ACTIVITIES.map(a => a.key).filter(k => raw.includes(k));
 }
 
 /* Build a valid state from parsed localStorage JSON (or null). Every field is checked for type and range;
@@ -219,6 +224,7 @@ export function restoreState(raw) {
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
   restoreGearFilter(s.browse, b, job);
   s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);
+  s.browse.market = bool(b.market, s.browse.market);
   s.browse.sort = oneOf(b.sort, ['ilvl', ...job.stats], s.browse.sort);
 
   const o = isObj(r.opt) ? r.opt : {};
@@ -235,6 +241,7 @@ export function restoreState(raw) {
   // starts from the browser's
   const oldSave = isObj(r.opt) && !('exclude' in r.opt);
   s.opt.exclude = restoreExclude(oldSave ? b.exclude : o.exclude, s.opt.exclude);
+  s.opt.market = bool(o.market, s.opt.market);
   restoreGearFilter(s.opt, o, job);
   return s;
 }

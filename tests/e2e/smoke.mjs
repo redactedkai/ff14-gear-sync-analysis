@@ -28,7 +28,7 @@ SMOKE_WORKERS (groups at once, default half the cores up to 6), SMOKE_TRACE=1 (t
 
 import assert from 'node:assert';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -54,8 +54,11 @@ const STORE_KEY = 'ilvl-stat-lab-v4'; // localStorage key of the saved state (sr
 
 // Defaults owe nothing to any player's setup: no job chosen, no sync cap (sync off), level 100.
 const [DEFAULT_JOB, DEFAULT_CAP, DEFAULT_LEVEL] = ['', '', '100'];
-// Every gear group in SOURCES order (src/core/item-format.json); DEFAULT_EXCLUDE (smoke-core.mjs) are left out by default.
-const SOURCE_KEYS = ['crafted', 'tomestone', 'relic', 'savage', 'ultimate', 'pvp'];
+// The "Gear from" boxes in ACTIVITIES order (src/core/item-format.json); DEFAULT_EXCLUDE (smoke-core.mjs) are left out by
+// default.
+const ACTIVITY_KEYS = JSON.parse(readFileSync(new URL('../../src/core/item-format.json', import.meta.url), 'utf8')).activities.map(
+  a => a.key,
+);
 
 // Sync caps at item level 123: slot -> [substat cap, main stat cap]. Same for every job (slot shares are job-neutral).
 const CAPS_123 = {
@@ -371,7 +374,7 @@ const OPT_CASES = [
 ];
 
 /** For a healer and a tank, with no gear chosen by hand: the page searches every piece the job can wear (minus the
- * default left-out groups), says how many, and its best speed stat, synced to 123 and with item level sync off (level
+ * default "Gear from" boxes), says how many, and its best speed stat, synced to 123 and with item level sync off (level
  * sync to 50 still applies), equals the core's optimizer over the same gear. The optimizer itself is checked against a
  * brute force over every loadout in tests/unit. One step per case. */
 const checkRealGearOptimizer =
@@ -464,54 +467,78 @@ async function checkRingCopies(pg) {
   await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
 }
 
-/** The gear-group checkboxes of the optimizer ('o-gear') or the browser ('b-groups'). */
-const groupBoxes = (pg, where) => pg.locator(`#${where} input[data-source]`);
-const groupBox = (pg, where, key) => pg.locator(`#${where} input[data-source="${key}"]`);
+/** The ticked "Gear from" boxes of the optimizer (pre 'o') or the browser ('b'), in ACTIVITIES order, read from the DOM
+ * (the menu may be closed). */
+async function ticked(pg, pre) {
+  return pg.locator(`#${pre}-from-menu input[data-activity]`).evaluateAll(bs => bs.filter(b => b.checked).map(b => b.dataset.activity));
+}
 
-async function ticked(pg, where) {
-  const out = [];
-  for (const b of await groupBoxes(pg, where).all()) if (await b.isChecked()) out.push(await b.getAttribute('data-source'));
-  return out;
+/** Open the "Gear from" menu of `pre` if it is closed. */
+async function openFrom(pg, pre) {
+  if ((await pg.getAttribute(`#${pre}-from`, 'aria-expanded')) !== 'true') await pg.click(`#${pre}-from`);
+  await expect(pg.locator(`#${pre}-from-menu`)).toBeVisible();
+}
+
+/** Tick or untick one "Gear from" box (or the market board switch, key 'market'), then close the menu. */
+async function setFrom(pg, pre, key, on) {
+  await openFrom(pg, pre);
+  const box = key === 'market' ? pg.locator(`#${pre}-market`) : pg.locator(`#${pre}-from-menu input[data-activity="${key}"]`);
+  await (on ? box.check() : box.uncheck());
+  await pg.keyboard.press('Escape');
 }
 
 // A setting where crafted gear and materia both change the best Critical Hit (Sage, level 100, no sync).
 const GROUPS_CASE = ['SGE', { cap: null, sync: false, level: 100 }, 'crit'];
 
-/** Gear to search: six gear groups in one row after their label, every group but Current Savage, Ultimate and PvP
- * ticked (searched) by default. Unticking crafted gear changes the total to what the core computes without it and the
- * count in the heading with it; the choice is saved. The browser has its own groups: the optimizer's choice does not
- * change them. */
-async function checkGearGroups(pg) {
+/** Gear to search, "Gear from": the default boxes ticked, the button reads "11 of 20", the menu has two columns and a
+ * line describing the box under the pointer, and fits the window. With the market board switch off (the button says
+ * so), unticking Crafted changes the total to what the core computes without it, and the count in the heading with it;
+ * the choice is saved. The browser has its own boxes: the optimizer's choice does not change them. */
+async function checkGearFrom(pg) {
   const [job, sync, target] = GROUPS_CASE;
-  const want = await coreGear(job, sync, target, ['crafted']);
-  if (!check(want.without < want.on, `${job}: leaving crafted gear out does not lower the total; pick another case`)) return;
+  const noMarket = await coreGear(job, sync, target, ['crafted'], DEFAULT_EXCLUDE, false);
+  if (!check(noMarket.without < noMarket.on, `${job}: leaving crafted gear out does not lower the total; pick another case`)) return;
+  const want = await coreGear(job, sync, target);
   await setJob(pg, job);
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', String(sync.level));
   await waitOptimizer(pg);
   await pg.selectOption('#o-target', target);
-  const searchedDefault = SOURCE_KEYS.filter(s => !DEFAULT_EXCLUDE.includes(s));
-  const t0 = await ticked(pg, 'o-gear');
+  const searchedDefault = ACTIVITY_KEYS.filter(k => !DEFAULT_EXCLUDE.includes(k));
+  const t0 = await ticked(pg, 'o');
   check(same(t0, searchedDefault), `searched by default: ${JSON.stringify(t0)}, expected ${JSON.stringify(searchedDefault)}`);
-  const labels = (await pg.locator('#o-groups label').allInnerTexts()).map(t => t.trim());
-  check(same(labels.slice(3, 4), ['Current Savage']), `the Current Savage box reads ${JSON.stringify(labels.slice(3, 4))}`);
-  const row = await pg
-    .locator('#o-groups label')
-    .evaluateAll(ls => ls.map(l => [Math.round(l.getBoundingClientRect().left), Math.round(l.getBoundingClientRect().top)]));
-  check(row.length === 6 && new Set(row.map(r => r[1])).size === 1, `gear groups are not one row: ${JSON.stringify(row)}`);
-  await expectTotal(pg, want.on, `${job} ${target}, default groups`);
-  const crafted = groupBox(pg, 'o-gear', 'crafted');
-  await crafted.uncheck();
-  await expectTotal(pg, want.without, `${job} ${target}, crafted left out`);
-  const nCrafted = want.searched - (await coreGear(job, sync, target, [], ['crafted', ...DEFAULT_EXCLUDE])).searched;
-  await expect(pg.locator('#o-count')).toHaveText(countText(want.searched - nCrafted, want.all));
-  await waitSaved(pg, `s => s.opt.exclude.join() === ${JSON.stringify(['crafted', ...DEFAULT_EXCLUDE].join(','))}`);
+  await expect(pg.locator('#o-from')).toHaveText(`${searchedDefault.length} of ${ACTIVITY_KEYS.length}`);
+  await expectTotal(pg, want.on, `${job} ${target}, default boxes`);
+  await expect(pg.locator('#o-count')).toHaveText(countText(want.searched, want.all));
+
+  // the menu: two columns, the description line follows the pointer, inside the window
+  await openFrom(pg, 'o');
+  const cols = await pg.locator('#o-from-menu .from-cols > div').count();
+  check(cols === 2, `the Gear from menu has ${cols} columns, expected 2`);
+  await pg.hover('#o-from-menu [data-activity="hunts"]');
+  await expect(pg.locator('#o-from-desc')).toContainText('Hunts: Allied Seals, Centurio Seals, Sacks of Nuts.');
+  const inside = await pg.locator('#o-from-menu').evaluate(m => m.getBoundingClientRect().right <= document.documentElement.clientWidth);
+  check(inside, 'the Gear from menu runs past the right edge of the window');
+  await pg.keyboard.press('Escape');
+
+  // the market board switch off, then Crafted left out
+  await setFrom(pg, 'o', 'market', false);
+  await expect(pg.locator('#o-from')).toHaveText(`${searchedDefault.length} of ${ACTIVITY_KEYS.length} \u00b7 no market board`);
+  await expectTotal(pg, noMarket.on, `${job} ${target}, no market board`);
+  await setFrom(pg, 'o', 'crafted', false);
+  await expectTotal(pg, noMarket.without, `${job} ${target}, no market board, crafted left out`);
+  const nCrafted = noMarket.searched - (await coreGear(job, sync, target, [], ['crafted', ...DEFAULT_EXCLUDE], false)).searched;
+  await expect(pg.locator('#o-count')).toHaveText(countText(noMarket.searched - nCrafted, noMarket.all));
+  const savedOff = ACTIVITY_KEYS.filter(k => k === 'crafted' || DEFAULT_EXCLUDE.includes(k)).join(',');
+  await waitSaved(pg, `s => s.opt.market === false && s.opt.exclude.join() === ${JSON.stringify(savedOff)}`);
   await showTab(pg, 'browse');
-  const tb = await ticked(pg, 'b-groups');
-  check(same(tb, searchedDefault), `the browser groups followed the optimizer: ${JSON.stringify(tb)}`);
+  const tb = await ticked(pg, 'b');
+  check(same(tb, searchedDefault), `the browser boxes followed the optimizer: ${JSON.stringify(tb)}`);
+  await expect(pg.locator('#b-from')).toHaveText(`${searchedDefault.length} of ${ACTIVITY_KEYS.length}`);
   await waitOptimizer(pg);
-  await crafted.check();
-  await expectTotal(pg, want.on, `${job} ${target}, crafted back in`);
+  await setFrom(pg, 'o', 'crafted', true);
+  await setFrom(pg, 'o', 'market', true);
+  await expectTotal(pg, want.on, `${job} ${target}, back to the defaults`);
   await pg.locator('#sync').check();
   await setNumber(pg, '#level', '50');
 }
@@ -718,14 +745,15 @@ async function checkTargetGcd(pg) {
   await pg.screenshot({ path: shot('target-gcd.png'), fullPage: true });
 }
 
-/** Build a non-default state (job, cap, sync off, level, optimizer target, tiebreaks and gear groups, browser
- * filters and gear groups, Piece stats slot and item level, Gear optimizer tab open), reload, and every part comes
+/** Build a non-default state (job, cap, sync off, level, optimizer target, tiebreaks and Gear from boxes, browser
+ * filters, Gear from boxes and market board switch, Piece stats slot and item level, Gear optimizer tab open), reload, and every part comes
  * back: the inputs, the open tab and the same optimizer total. Nothing like a gear pool is saved. */
 async function checkReloadPersists(pg) {
   const [job, lo, hi, lvl] = ['DRG', 130, 135, 50]; // not the default job, a different role from the other checks
   await setJob(pg, job);
   await fillBrowser(pg, lo, hi, lvl);
-  await groupBox(pg, 'b-groups', 'tomestone').uncheck();
+  await setFrom(pg, 'b', 'tomes_legacy', false);
+  await setFrom(pg, 'b', 'market', false);
 
   await setCap(pg, '130');
   await setNumber(pg, '#level', '60');
@@ -736,7 +764,7 @@ async function checkReloadPersists(pg) {
   await pg.selectOption('#p-slot', 'body');
   await setNumber(pg, '#p-ilvl', '300');
   await waitOptimizer(pg);
-  await groupBox(pg, 'o-gear', 'relic').uncheck();
+  await setFrom(pg, 'o', 'relics', false);
   await pg.selectOption('#o-tb1', 'det');
   await pg.selectOption('#o-tb2', 'vit');
   await pg.selectOption('#o-target', 'crit'); // last, so the result below includes every change
@@ -759,15 +787,9 @@ async function checkReloadPersists(pg) {
     '#o-tb1': 'det',
     '#o-tb2': 'vit',
   };
-  const groups = { 'o-gear': await ticked(pg, 'o-gear'), 'b-groups': await ticked(pg, 'b-groups') };
-  check(
-    !groups['o-gear'].includes('relic') && groups['o-gear'].includes('tomestone'),
-    `optimizer groups before reload: ${JSON.stringify(groups['o-gear'])}`,
-  );
-  check(
-    !groups['b-groups'].includes('tomestone') && groups['b-groups'].includes('relic'),
-    `browser groups before reload: ${JSON.stringify(groups['b-groups'])}`,
-  );
+  const groups = { o: await ticked(pg, 'o'), b: await ticked(pg, 'b') };
+  check(!groups.o.includes('relics') && groups.o.includes('tomes_legacy'), `optimizer boxes before reload: ${JSON.stringify(groups.o)}`);
+  check(!groups.b.includes('tomes_legacy') && groups.b.includes('relics'), `browser boxes before reload: ${JSON.stringify(groups.b)}`);
   for (const [sel, v] of Object.entries(inputs)) {
     const got = await fieldValue(pg, sel);
     check(got === v, `reload setup: ${sel} is '${got}' before reload, expected '${v}'`);
@@ -777,8 +799,8 @@ async function checkReloadPersists(pg) {
     pg,
     `s => s.job === '${job}' && s.cap === 130 && s.level === 60 && s.sync === false && s.tab === 'opt'
     && s.opt.target === 'crit' && s.opt.tb === 'det' && s.opt.tb2 === 'vit' && s.piece.slot === 'body'
-    && s.piece.ilvl === 300 && s.opt.exclude.includes('relic') && s.browse.exclude.includes('tomestone')
-    && !('pool' in s)`,
+    && s.piece.ilvl === 300 && s.opt.exclude.includes('relics') && s.browse.exclude.includes('tomes_legacy')
+    && s.browse.market === false && s.opt.market === true && !('pool' in s)`,
   );
 
   await pg.reload();
@@ -789,10 +811,11 @@ async function checkReloadPersists(pg) {
     const got = await fieldValue(pg, sel);
     check(got === v, `after reload ${sel} is '${got}', expected '${v}'`);
   }
-  for (const [where, want] of Object.entries(groups)) {
-    const got = await ticked(pg, where);
-    check(same(got, want), `after reload the ${where} groups are ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+  for (const [pre, want] of Object.entries(groups)) {
+    const got = await ticked(pg, pre);
+    check(same(got, want), `after reload the ${pre}-from boxes are ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
   }
+  check(!(await pg.locator('#b-market').isChecked()), 'after reload the browser market board switch is on, expected off');
   check(!(await pg.locator('#sync').isChecked()), 'after reload sync is on, expected off');
   await waitOptimizer(pg);
   try {
@@ -802,9 +825,10 @@ async function checkReloadPersists(pg) {
     const got = (await total.count()) ? await total.innerText() : 'no result';
     check(false, `after reload the optimizer total is '${got}', expected '${before}' as before reload`);
   }
-  await groupBox(pg, 'o-gear', 'relic').check();
+  await setFrom(pg, 'o', 'relics', true);
   await showTab(pg, 'browse');
-  await groupBox(pg, 'b-groups', 'tomestone').check();
+  await setFrom(pg, 'b', 'tomes_legacy', true);
+  await setFrom(pg, 'b', 'market', true);
   await pg.locator('#sync').check(); // leave sync on for the later checks
   await expect(pg.locator('#cap')).toBeEnabled();
   const cap = await pg.inputValue('#cap');
@@ -1270,7 +1294,7 @@ const GROUPS = [
   { steps: [step(checkPieceLab), step(checkClosedPanel), step(checkJobSwitch), step(checkPldOffhand)] },
   ...OPT_CASES.map(c => ({ slow: true, steps: [realGear(c)] })),
   { slow: true, steps: [step(checkTypingDebounce)] },
-  { slow: true, steps: [step(checkRingCopies), step(checkGearGroups)] },
+  { slow: true, steps: [step(checkRingCopies), step(checkGearFrom)] },
   { slow: true, steps: [step(checkOptFilters)] },
   { slow: true, steps: [step(checkMelds), step(checkFood), step(checkRankByTier)] },
   { slow: true, steps: [step(checkTargetGcd)] },

@@ -71,7 +71,7 @@ Details: `docs/engineering/data-pipeline.md`.
 
 - Source: xivapi/ffxiv-datamining CSVs. The commit appears in the generated files and the page footer.
 - Kept: combat gear from A Realm Reborn on, item level 15+, with at least one stat. Dropped: crafter and gatherer gear, and the codes in `gear_categories.LEFT_OUT`. HQ bonus only if `CanBeHq`.
-- Gear groups (crafted, tomestone, Savage, ...) come from game codes and shop data, never item names. The generator stops on anything unknown.
+- "Gear from" boxes (quests, crafted, Savage, ...: what a player does to get a piece) and gear categories come from game codes and shop data, never item names (`scripts/data/gear_activities.py`). The generator stops on anything unknown.
 - The highest real item level is **795**. `ItemLevel` rows 796 to 920 have no gear. Don't call them "placeholders" or "intentional".
 
 ## Jobs
@@ -104,7 +104,7 @@ Branch and bound over slots, after removing dominated items. Each item gets one 
 
 - Keep it short and plain. Fewer controls beats more explanation.
 - Check claims against the game files, the Wiki or real items, and say what is verified and what is guessed. Log retracted claims in `docs/history.md`.
-- Neutral defaults: no job, level 100, sync off, main stat, no tiebreaks. The one exception: Savage, Ultimate and PvP gear are hidden by default.
+- Neutral defaults: no job, level 100, sync off, main stat, no tiebreaks. The one exception: nine "Gear from" boxes are off by default (Miscellaneous, Deep dungeons, Wondrous Tails, Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions; `on` in `item-format.json`), and the market board switch is on.
 - For a bug from a screenshot, reproduce it in a test first, then fix it.
 - Fix root causes.
 - No new dependencies without asking. Keep the Google Fonts link, and make sure the page works without it.

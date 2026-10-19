@@ -1,5 +1,7 @@
 /* Small presentation helpers shared by the components. */
-import { EXPANSIONS, SOURCES } from '../core/constants.js';
+import { ACTIVITIES, EXPANSIONS } from '../core/constants.js';
+import { CURRENT_TOMES, MAX_LEVEL } from '../core/tables.js';
+import { DEFAULT_EXCLUDE } from './state.js';
 
 export const fmtInt = n => n.toLocaleString();
 
@@ -73,21 +75,79 @@ export function storeNumberField(store, path, lo, hi, { live = false } = {}) {
   );
 }
 
-/* The gear groups as checkboxes, ticked = searched or listed: {key, label}, in SOURCES order. "Current Savage" is the
-   newest expansion's Savage gear; it no longer names its patch series ("(7.x)"), which wrapped on phones (owner's
-   decision, 2026-10-15). */
-export const GEAR_GROUPS = SOURCES.map(s => ({ key: s.key, label: s.label }));
+/* The "Gear from" menu's two columns of sections (owner's layout, 2026-10-18): each {key, sections: [{title, boxes}]},
+   boxes being ACTIVITIES entries in their order. */
+const FROM_COLUMNS = [
+  ['Everyday', 'Time-limited'],
+  ['Side content', 'Hard content'],
+];
+export const GEAR_FROM_COLUMNS = Object.freeze(
+  FROM_COLUMNS.map(titles =>
+    Object.freeze({
+      key: titles.join('|'),
+      sections: Object.freeze(titles.map(title => Object.freeze({ title, boxes: ACTIVITIES.filter(a => a.section === title) }))),
+    }),
+  ),
+);
+/* The patch series of the level cap ("7.x" at level 100): A Realm Reborn is 2.x, each expansion one more. */
+const CAP_PATCH = `${EXPANSIONS.findIndex(e => e[2] === MAX_LEVEL) + 2}.x`;
 
-/* Component methods for one gear-group list, `$store.app[part].exclude` (SOURCES keys left out, in SOURCES order). */
-export function gearGroupToggles(part) {
+/* What a "Gear from" box covers, for the line under the menu: its hint with the current tomestones and the level cap's
+   patch series filled in. */
+export function gearFromHint(activity) {
+  return activity.hint.replace('{currentTomes}', CURRENT_TOMES.join(' or ')).replace('{capPatch}', CAP_PATCH);
+}
+
+/* The "Gear from" button's text: "All", "None", "All but N" (up to 5 left out) or "N of M", plus " · no market board"
+   when the switch is off (it is on by default, so only the unusual state is named). off: the ACTIVITIES keys left out. */
+export function gearFromSummary(off, market) {
+  const on = ACTIVITIES.length - off.length;
+  let text = !off.length ? 'All' : !on ? 'None' : off.length <= 5 ? `All but ${off.length}` : `${on} of ${ACTIVITIES.length}`;
+  if (!market) text += ' · no market board';
+  return text;
+}
+
+/* Component members for one "Gear from" filter: `$store.app[part].exclude` (ACTIVITIES keys left out, in ACTIVITIES
+   order) and `$store.app[part].market` (the market board switch). The component provides `emptyBoxes`, the keys with
+   nothing for the current job and filters (greyed out). `fromPointed` is the box (or 'market') under the pointer or
+   keyboard focus, described under the menu. Methods, not getters (see expansionToggles). */
+export function gearFromToggles(part) {
   return {
-    gearGroups: GEAR_GROUPS,
-    groupOn(key) {
+    gearFromColumns: GEAR_FROM_COLUMNS,
+    fromPointed: null,
+    fromSummary() {
+      return gearFromSummary(this.$store.app[part].exclude, this.$store.app[part].market);
+    },
+    fromOn(key) {
       return !this.$store.app[part].exclude.includes(key);
     },
-    setGroup(key, on) {
-      const ex = this.$store.app[part].exclude;
-      this.$store.app[part].exclude = SOURCES.map(s => s.key).filter(k => (k === key ? !on : ex.includes(k)));
+    setFromOn(key, on) {
+      const off = this.$store.app[part].exclude;
+      this.$store.app[part].exclude = ACTIVITIES.map(a => a.key).filter(k => (k === key ? !on : off.includes(k)));
+    },
+    /* Opened near the window's right edge, the menu would make the page scroll sideways: it then opens leftwards, its
+       right edge on the button's. */
+    fitFromMenu(menu) {
+      if (!menu) return;
+      menu.classList.remove('to-left');
+      if (menu.getBoundingClientRect().right > document.documentElement.clientWidth - 8) menu.classList.add('to-left');
+    },
+    /* "All", "None" or "Default" at the top of the menu */
+    setFromAll(which) {
+      this.$store.app[part].exclude = which === 'all' ? [] : which === 'none' ? ACTIVITIES.map(a => a.key) : [...DEFAULT_EXCLUDE];
+    },
+    fromEmpty(key) {
+      return (this.emptyBoxes || []).includes(key);
+    },
+    /* {label, text} for the line under the menu, or null with nothing pointed at */
+    fromDescription() {
+      const key = this.fromPointed;
+      if (key === 'market')
+        return { label: 'Market board', text: 'Any piece you can buy from another player shows, whatever its boxes say.' };
+      const a = ACTIVITIES.find(x => x.key === key);
+      if (!a) return null;
+      const empty = this.fromEmpty(key) ? ' Nothing from it matches the job, level and item level filters right now.' : '';
+      return { label: a.label, text: `${gearFromHint(a)}.${empty}` };
     },
   };
 }

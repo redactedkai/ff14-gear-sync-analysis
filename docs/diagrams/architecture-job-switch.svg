@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-labelledby="t d">
   <title id="t">What a job switch resets and what it keeps</title>
-  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal choice (best for the goal), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the gear groups left out in both lists, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
+  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal choice (best for the goal), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the Gear from boxes and market board switch of both tabs, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -68,7 +68,7 @@
   <text class="good t" x="526" y="96">Kept</text>
   <line class="rule" x1="526" y1="108" x2="684" y2="108"/>
   <text class="fg s" x="526" y="130">Sync cap and sync switch</text>
-  <text class="fg s" x="526" y="156">Gear groups left out</text>
+  <text class="fg s" x="526" y="156">Gear from boxes</text>
   <text class="muted s" x="526" y="172">(both lists)</text>
   <text class="fg s" x="526" y="198">Expansion and</text>
   <text class="fg s" x="526" y="214">item level filters</text>

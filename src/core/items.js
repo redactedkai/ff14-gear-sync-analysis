@@ -6,7 +6,8 @@ import {
   DB_SLOT_TYPE,
   DB_SLOT_PCT,
   DB_SLOT_BLOCKS,
-  SOURCES,
+  ACTIVITIES,
+  ACTIVITY_MARKET_BIT,
   EXPANSIONS,
   ROW,
   GEAR_CATEGORIES,
@@ -105,7 +106,7 @@ export function parseRow(r) {
     st: rowStats(r),
     unique: !!r[ROW.unique],
     hq: !!r[ROW.hq], // can be high quality: the stats are the HQ ones
-    sources: r[ROW.sources] | 0, // bit mask over SOURCES
+    routes: r[ROW.routes], // ways to get it: bit masks over ACTIVITIES (routesAllow)
     kind: r[ROW.kind], // item kind: the column of the stat factor table MP (kindFactors)
     meldSlots: r[ROW.meldSlots], // guaranteed materia slots
     overmeld: !!r[ROW.overmeld], // overmelding allowed
@@ -157,19 +158,19 @@ export function browseItems(job, f) {
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 let rowIndex = null;
-/* The database facts about a pool item ({sources, slotCode, kind, lvl, scales, slots, overmeld, category}), looked up by its pool key, so saved pools need no
+/* The database facts about a pool item ({routes, slotCode, kind, lvl, scales, slots, overmeld, category}), looked up by its pool key, so saved pools need no
    repair when a fact is added. Null for items not from the database (hand-made, generated). */
 function rowFacts(item) {
   if (item.src !== 'game') return null;
   if (!rowIndex) {
-    // built once: several rows can share a pool key (the same piece from two sources); their source bits are joined,
-    // every other fact comes from the first such row
+    // built once: several rows can share a pool key (the same piece from two sources); their routes are joined (any
+    // one gets it), every other fact comes from the first such row
     rowIndex = new Map();
     for (const r of ITEMS) {
       const k = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });
       const f = rowIndex.get(k);
       rowIndex.set(k, {
-        sources: (f?.sources || 0) | (r[ROW.sources] | 0),
+        routes: f ? [...new Set([...f.routes, ...r[ROW.routes]])] : r[ROW.routes],
         slotCode: f ? f.slotCode : r[ROW.slotCode],
         kind: f ? f.kind : r[ROW.kind],
         lvl: f ? f.lvl : r[ROW.equipLevel],
@@ -191,9 +192,9 @@ export function damageDefenseFacts(item) {
   return f ? { slotCode: f.slotCode, kind: f.kind, values: f.damageDefense } : null;
 }
 
-/* The source bit mask (SOURCES) of a pool item. Items not from the database have none. */
-export function sourceMask(item) {
-  return rowFacts(item)?.sources || 0;
+/* A pool item's routes (bit masks over ACTIVITIES, see routesAllow), or null for items not from the database. */
+export function itemRoutes(item) {
+  return rowFacts(item)?.routes ?? null;
 }
 
 /* A pool item's gear category ({key, label} of GEAR_CATEGORIES: where it comes from), or null for items not from the
@@ -258,9 +259,24 @@ export function slotLabel(type, blocks) {
   return [SLOT_LABEL[type], ...blocks.filter(t => t !== 'offhand').map(t => SLOT_LABEL[t])].join(' + ');
 }
 
-/* The source bit mask of a list of SOURCES keys. */
-export function sourcesMask(keys) {
-  return SOURCES.filter(s => keys.includes(s.key)).reduce((m, s) => m | s.bit, 0);
+/* The route bits the "Gear from" filter allows: every ACTIVITIES box not in `off` (a list of keys), plus the market
+   board when `market` is on. */
+export function allowedActivities(off, market) {
+  const boxes = ACTIVITIES.filter(a => !off.includes(a.key)).reduce((m, a) => m | a.bit, 0);
+  return market ? boxes | ACTIVITY_MARKET_BIT : boxes;
+}
+
+/* True when one of the routes needs only allowed bits (allowedActivities): that way of getting the piece is open. */
+export function routesAllow(routes, allowed) {
+  return routes.some(m => (m & ~allowed) === 0);
+}
+
+/* The ACTIVITIES keys no piece in `routeLists` can come from (an array of route lists): boxes with nothing for the
+   current job and filters, which the menu greys out. */
+export function emptyActivities(routeLists) {
+  let seen = 0;
+  for (const routes of routeLists) for (const m of routes) seen |= m;
+  return ACTIVITIES.filter(a => !(seen & a.bit)).map(a => a.key);
 }
 
 /* Pool items matching the gear filters {expOff, ilvlMin, ilvlMax, lvlMax}: browseItems' filters, for pool items (the
@@ -277,10 +293,14 @@ export function filterGear(pool, f) {
   });
 }
 
-/* The pool without items from any excluded source (a list of SOURCES keys). */
-export function withoutSources(pool, exclude) {
-  const mask = sourcesMask(exclude);
-  return mask ? pool.filter(i => !(sourceMask(i) & mask)) : pool;
+/* The pool items the "Gear from" filter lets through: `off` is the list of ACTIVITIES keys left out, `market` the market
+   board switch. Items not from the database (hand-made, generated) always pass. */
+export function withActivities(pool, off, market) {
+  const allowed = allowedActivities(off, market);
+  return pool.filter(i => {
+    const routes = itemRoutes(i);
+    return routes === null || routesAllow(routes, allowed);
+  });
 }
 
 /* How many of a piece can be worn at once: a ring that is not Unique twice, anything else once. */

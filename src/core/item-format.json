@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `python scripts/data/regen.py` afterwards. `sources`: bit i of an item row's source mask is sources[i], the groups the Gear pool tab can exclude, in the order the page shows them: set when the piece's category (scripts/data/gear_categories.py) is in `categories`, or when gear_sources.py flags it (crafted, tomestone, ultimate). `currentOnly`: only pieces of the current expansion, whose equip level is the highest in the database. A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; 13: legs that also cover the feet; 14: a body piece that also covers the hands, legs and feet; a `twoHanded` weapon blocks the off-hand). BaseParam's share columns follow EquipSlotCategory rows in order and their names are the dataminers' own: code 14 (EquipSlotCategory 16) reads the 16th column, named ChestHeadLegsFeetPercent although the piece leaves the head free (440 fits Herklaedi's stats). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv. `crafterGathererParams`: crafter and gatherer stats (BaseParam row id and name); gen_items.py leaves out any piece that carries one, normal or HQ, and stops if a row id no longer has that name.",
+  "_comment": "Single source of truth for the generated data format, read by src/core/constants.js and scripts/data/*.py. Changing an order here changes the meaning of src/data/items.json: re-run `python scripts/data/regen.py` afterwards. `activities`: the boxes of the \"Gear from\" filter, in the order the page lists them (by section). An item row's routes (field 8) are bit masks over them: bit i = activities[i], bit len(activities) = the market board (tradeable pieces); a piece shows when every bit of one of its routes is allowed (scripts/data/gear_activities.py). `section` groups the boxes in the menu; `on`: ticked by default; `hint`: what the box covers, shown for the box under the pointer, where {currentTomes} is filled from items.json and {capPatch} from the level cap (7.x at level 100). A slot's `blocks` lists the slot types it leaves empty (code 12: a body piece that also covers the head; 13: legs that also cover the feet; 14: a body piece that also covers the hands, legs and feet; a `twoHanded` weapon blocks the off-hand). BaseParam's share columns follow EquipSlotCategory rows in order and their names are the dataminers' own: code 14 (EquipSlotCategory 16) reads the 16th column, named ChestHeadLegsFeetPercent although the piece leaves the head free (440 fits Herklaedi's stats). Slot `percent` is the share of the ItemLevel budget in thousandths; gen_item_level.py checks it against the `baseParamColumn` of every stat row in BaseParam.csv. `crafterGathererParams`: crafter and gatherer stats (BaseParam row id and name); gen_items.py leaves out any piece that carries one, normal or HQ, and stops if a row id no longer has that name.",
   "jobs": [
     "PLD",
     "WAR",
@@ -101,13 +101,69 @@
       "baseParamColumn": "ChestHeadLegsFeetPercent"
     }
   ],
-  "sources": [
-    { "key": "crafted", "label": "Crafted", "categories": ["crafted"] },
-    { "key": "tomestone", "label": "Tomestone", "categories": ["tomestone"] },
-    { "key": "relic", "label": "Relic", "categories": ["relic", "field_op"] },
-    { "key": "savage", "label": "Current Savage", "categories": ["savage"], "currentOnly": true },
-    { "key": "ultimate", "label": "Ultimate", "categories": ["ultimate"] },
-    { "key": "pvp", "label": "PvP", "categories": ["pvp"] }
+  "activities": [
+    { "key": "quests", "label": "Quests & story", "section": "Everyday", "on": true, "hint": "Quest rewards and achievements" },
+    { "key": "crafted", "label": "Crafted", "section": "Everyday", "on": true, "hint": "Made via crafting" },
+    {
+      "key": "normal_duties",
+      "label": "Normal duties",
+      "section": "Everyday",
+      "on": true,
+      "hint": "Dungeons, trials, normal and alliance raids"
+    },
+    { "key": "tomes_legacy", "label": "Tomestones (Legacy)", "section": "Everyday", "on": true, "hint": "Bought with Poetics" },
+    { "key": "tomes_current", "label": "Tomestones (Current)", "section": "Everyday", "on": true, "hint": "Bought with {currentTomes}" },
+    { "key": "grand_company", "label": "Grand Company", "section": "Everyday", "on": true, "hint": "Company seals" },
+    { "key": "hunts", "label": "Hunts", "section": "Everyday", "on": true, "hint": "Allied Seals, Centurio Seals, Sacks of Nuts" },
+    { "key": "misc", "label": "Miscellaneous", "section": "Everyday", "on": false, "hint": "Ventures, FATEs, untradeable gil vendor gear" },
+    { "key": "deep_dungeons", "label": "Deep dungeons", "section": "Side content", "on": false, "hint": "Deep dungeon weapons" },
+    { "key": "gold_saucer", "label": "Gold Saucer", "section": "Side content", "on": true, "hint": "MGP" },
+    {
+      "key": "relics",
+      "label": "Relics & Field ops",
+      "section": "Side content",
+      "on": true,
+      "hint": "Eureka, Bozja, Occult Crescent, relic weapons"
+    },
+    {
+      "key": "wondrous_tails",
+      "label": "Wondrous Tails",
+      "section": "Side content",
+      "on": false,
+      "hint": "Ornate gear from the weekly journal"
+    },
+    {
+      "key": "variant",
+      "label": "Variant & Criterion",
+      "section": "Side content",
+      "on": false,
+      "hint": "Exquisite weapons, upgraded with Elevated Ester"
+    },
+    { "key": "pvp", "label": "PvP", "section": "Side content", "on": false, "hint": "Wolf Marks" },
+    {
+      "key": "extreme_legacy",
+      "label": "Extreme (Legacy)",
+      "section": "Hard content",
+      "on": true,
+      "hint": "Extreme trials before {capPatch}, Baldesion Arsenal, Delubrum Reginae (Savage)"
+    },
+    {
+      "key": "extreme_current",
+      "label": "Extreme (Current)",
+      "section": "Hard content",
+      "on": false,
+      "hint": "{capPatch} Extreme trials, Cloud of Darkness (Chaotic)"
+    },
+    { "key": "savage_legacy", "label": "Savage (Legacy)", "section": "Hard content", "on": true, "hint": "Savage before {capPatch}" },
+    { "key": "savage_current", "label": "Savage (Current)", "section": "Hard content", "on": false, "hint": "{capPatch} Savage" },
+    { "key": "ultimate", "label": "Ultimate", "section": "Hard content", "on": false, "hint": "Ultimate weapons" },
+    {
+      "key": "events",
+      "label": "Events & promotions",
+      "section": "Time-limited",
+      "on": false,
+      "hint": "Seasonal events, collaborations, campaigns"
+    }
   ],
   "materia": {
     "_comment": "Melding. Item rows carry two more fields at `rowFields`: meldSlots, the item's `slotColumn` (guaranteed slots, 0 to `maxSlots`; gen_items.py stops above it), and overmeld, 1 when its `overmeldColumn` is True (overmelding allowed). The materia table in items.json ({values, gate, high}, one entry per grade I to `grades`) comes from the `sheet` rows whose `statColumn` is one of `statKeys` (BaseParam row ids from `stats`) and whose `itemColumn`[0] is non-zero; rows with values but no items are decoys and are skipped. The rows must agree: values from `valueColumn`[0..grades-1], gate = the `gateColumn` (Item.csv) of each grade's materia item, item and value columns past the last grade all 0, gates non-decreasing. high: the grades whose `highColumn` in `gradeSheet` (row = grade - 1) is 0, which must be the grades worth more than each neighbouring grade.",

@@ -3,15 +3,16 @@
 
 Usage: python scripts/data/gen_items.py <path-to-ffxiv-datamining>/csv/en  [out.js]  [--source-commit SHA --source-date ISO]
 
-Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sources, statFactor, meldSlots, overmeld, rarity,
+Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, routes, statFactor, meldSlots, overmeld, rarity,
             gameId, scales, category, damagePhys, damageMag, defensePhys, defenseMag]
   slotCode : index into `slots` in src/core/item-format.json (0=2H weapon 1=1H weapon 2=off-hand 3=head ... 11=ring,
              12=body that also covers the head)
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
   stats    : in the order of `stats` in src/core/item-format.json  (HQ values = NQ + BaseParamValueSpecial)
   hq       : 1 when the item can be high quality (CanBeHq), so its stats are the HQ ones
-  sources  : bit i set when the item is in group `sources[i]` of item-format.json (crafted, tomestone, ultimate,
-             savage, relic): from its category (gear_categories.py) and the shop and recipe flags (gear_sources.py)
+  routes   : the ways to get the piece for the "Gear from" filter (gear_activities.py): a list of bit masks, any one of
+             which gets it; bit i of a mask = `activities[i]` of item-format.json, and bit len(activities) the market
+             board (tradeable pieces). Empty for a piece that can no longer be obtained
   statFactor : the item's BaseParamModifier, an index into the stat factor table MP of item-level.json (`statFactor` in
              item-format.json): stat k's full-share value on this item is multiplied by MP[k][statFactor] / 100
   meldSlots : guaranteed materia slots (Item.MateriaSlotCount, 0 to `materia.maxSlots` in item-format.json)
@@ -24,16 +25,18 @@ Row format: [name, slotCode, ilvl, equipLevel, jobMask, "stats", unique, hq, sou
   damagePhys, damageMag, defensePhys, defenseMag : weapon damage and defense (`damageDefense` in item-format.json):
              Item.DamagePhys etc., plus the HQ bonus (a BaseParamSpecial pair) when the item can be HQ; 0 when it has none
 
-The file also holds the materia table {values, gate, high} (`materia` in item-format.json, see materia_table()).
+The file also holds the materia table {values, gate, high} (`materia` in item-format.json, see materia_table()) and
+currentTomes, the short names of the two current tomestones (for the "Tomestones (Current)" box's hint).
 """
 
 import argparse
 import json
 from pathlib import Path
 
+import gear_activities
 import gear_categories
 import provenance
-from gear_sources import sources as gear_sources
+from gear_sources import flags as gear_flags
 from item_format import N_ITEM_PARAMS, SchemaError, item_columns, load_format, meld_fields, read_csv, run_main, stat_factors
 
 MIN_ILVL = 15
@@ -198,7 +201,7 @@ def select(csv_dir):
         return e is not None and any(v == '-1' for c, v in e.items() if c != '#')
 
     items = read_csv(d / 'Item.csv', ['#', *item_columns()])
-    src = gear_sources(d, items)
+    src = gear_flags(d, items)
     kept, multi_slot, crafter_gatherer, bad_kind, bad_meld, bad_rarity = [], [], [], [], [], []
     rarity_col = fmt['rarity']['itemColumn']
     scaled = fmt['levelScaled']
@@ -312,16 +315,13 @@ def main(csv_dir, out, source='detect'):
     problems = gear_categories.check(kept, cats)
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
-    masks = gear_categories.source_masks(kept, cats)
+    kept = [(r, row) for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
+    routes = gear_activities.routes(csv_dir, kept, cats)
     cat_index = category_index(fmt)
-    # select() leaves the sources at 8 to fill here and has no category: it goes between levelScaled and the weapon damage
-    # and defense fields (at cat_at, the category's rowField)
+    # select() leaves the gear flags at 8 (the routes go there) and has no category: it goes between levelScaled and the
+    # weapon damage and defense fields (at cat_at, the category's rowField)
     cat_at = fmt['category']['rowField']
-    rows = [
-        [*row[:8], masks[r['#']], *row[9:cat_at], cat_index[cats[r['#']]], *row[cat_at:]]
-        for r, row in kept
-        if cats[r['#']] not in gear_categories.LEFT_OUT
-    ]
+    rows = [[*row[:8], routes[r['#']], *row[9:cat_at], cat_index[cats[r['#']]], *row[cat_at:]] for r, row in kept]
     # the generator and item-format.json must agree on where the trailing fields sit (materia.rowFields, the rowField
     # of rarity, gameId, levelScaled and category, and the damageDefense entries)
     fields = {
@@ -344,8 +344,14 @@ def main(csv_dir, out, source='detect'):
     if absent:
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
     rows.sort(key=lambda x: (-x[2], x[1], x[0]))
-    # one line, compact: {"_generated": notice, "source": provenance, "materia": table, "items": [rows]}
-    doc = {'_generated': provenance.note(source), 'source': source, 'materia': materia, 'items': rows}
+    # one line, compact: {"_generated": notice, "source": provenance, "materia": table, "currentTomes": names, "items": [rows]}
+    doc = {
+        '_generated': provenance.note(source),
+        'source': source,
+        'materia': materia,
+        'currentTomes': gear_activities.current_tome_names(csv_dir),
+        'items': rows,
+    }
     provenance.write_generated(out, json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n')
     # the one message: gear of a new kind a patch added that the format cannot place yet (none today)
     if multi_slot:

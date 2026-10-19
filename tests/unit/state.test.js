@@ -30,7 +30,8 @@ function validSave() {
       q: 'Robe',
       type: 'body',
       expOff: ['ARR', 'SB'],
-      exclude: ['tomestone', 'ultimate'],
+      exclude: ['tomes_current', 'ultimate'],
+      market: false,
       min: 110,
       max: 140,
       lvl: 50,
@@ -43,6 +44,7 @@ function validSave() {
       melds: false,
       expOff: ['HW'],
       exclude: ['crafted', 'pvp'],
+      market: false,
       min: '',
       max: 300,
       lvl: 60,
@@ -192,15 +194,32 @@ test('opt fields', () => {
   expectFieldDefault('opt.tb', 'nope', D.opt.tb);
   expectFieldDefault('opt.tb', null, D.opt.tb);
   expectFieldDefault('opt.tb2', 3, D.opt.tb2);
-  // Current Savage, Ultimate and PvP left out by default, in the optimizer and the browser, each its own list
-  assert.deepEqual(DEFAULT_EXCLUDE, ['savage', 'ultimate', 'pvp']);
+  // nine "Gear from" boxes left out by default (owner, 2026-10-18), in the optimizer and the browser, each its own list;
+  // the market board switch on
+  assert.deepEqual(DEFAULT_EXCLUDE, [
+    'misc',
+    'deep_dungeons',
+    'wondrous_tails',
+    'variant',
+    'pvp',
+    'extreme_current',
+    'savage_current',
+    'ultimate',
+    'events',
+  ]);
+  assert.equal(D.browse.market, true);
+  assert.equal(D.opt.market, true);
   assert.deepEqual(D.browse.exclude, DEFAULT_EXCLUDE);
   assert.deepEqual(D.opt.exclude, DEFAULT_EXCLUDE);
   assert.notEqual(D.opt.exclude, D.browse.exclude);
   for (const part of ['browse', 'opt']) {
     expectFieldDefault(`${part}.exclude`, 'ultimate', DEFAULT_EXCLUDE); // not a list: the default
-    expectFieldDefault(`${part}.exclude`, [], []); // every group ticked back in: kept, not the default
-    expectFieldDefault(`${part}.exclude`, ['ultimate', 'nope', 3, 'crafted'], ['crafted', 'ultimate']); // unknown keys drop; SOURCES order
+    expectFieldDefault(`${part}.exclude`, [], []); // every box ticked: kept, not the default
+    expectFieldDefault(`${part}.exclude`, ['ultimate', 'crafted'], ['crafted', 'ultimate']); // ACTIVITIES order
+    // a list with a key that is no box (an old gear-group save: 'savage', 'tomestone') starts over from the default
+    expectFieldDefault(`${part}.exclude`, ['ultimate', 'savage'], DEFAULT_EXCLUDE);
+    expectFieldDefault(`${part}.exclude`, ['ultimate', 3], DEFAULT_EXCLUDE);
+    expectFieldDefault(`${part}.market`, 'yes', true); // not a boolean: the default
   }
   expectFieldDefault('browse.exclude', null, DEFAULT_EXCLUDE);
   const older = validSave();
@@ -211,7 +230,7 @@ test('opt fields', () => {
   // saves from the gear pool days had one list, browse.exclude, for both: the optimizer starts from it
   const shared = validSave();
   delete shared.opt.exclude;
-  assert.deepEqual(restoreState(shared).opt.exclude, ['tomestone', 'ultimate']);
+  assert.deepEqual(restoreState(shared).opt.exclude, ['tomes_current', 'ultimate']);
   assert.equal(D.opt.melds, true); // melds on by default
   expectFieldDefault('opt.melds', 'yes', true);
   expectFieldDefault('opt.melds', null, true);

@@ -216,7 +216,8 @@ export const JOB_ROWS = Object.freeze([
    - jobMask: bit i set when JOBS[i] can wear it
    - stats: comma-joined raw stats in ITEM_STAT_ORDER (rowStats in items.js splits them)
    - unique: 1 when only one can be worn (rings); hq: 1 when it can be high quality (the stats are then the HQ ones)
-   - sources: bit mask over SOURCES (gear groups)
+   - routes: the ways to get the piece, a list of bit masks over ACTIVITIES (bit ACTIVITY_MARKET_BIT: the market board);
+     any one route whose every bit is allowed lists it (routesAllow in items.js). Empty: it can no longer be obtained
    - kind: the item's stat factor kind, a column of the stat factor table MP in tables.js (kindFactors in items.js)
    - meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed (`materia` in item-format.json)
    - rarity: Item.Rarity (1 white, 2 green, 3 blue, 4 purple, 7 pink); gameId: the game's item id (Item.csv row)
@@ -230,7 +231,7 @@ export const ROW = Object.freeze({
   stats: 5,
   unique: 6,
   hq: 7,
-  sources: 8,
+  routes: 8,
   kind: 9,
   meldSlots: ITEM_FORMAT.materia.rowFields.meldSlots,
   overmeld: ITEM_FORMAT.materia.rowFields.overmeld,
@@ -261,8 +262,15 @@ export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
 /* slot code -> the slot types a piece in it leaves empty: the off-hand for a two-handed weapon, the head for a cloak */
 export const DB_SLOT_BLOCKS = Object.freeze(ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])));
-/* Gear groups the optimizer can leave out (crafted, tomestone, ultimate, savage, relic): bit i of a row's source mask = SOURCES[i]. */
-export const SOURCES = Object.freeze(ITEM_FORMAT.sources.map((s, i) => Object.freeze({ key: s.key, label: s.label, bit: 1 << i })));
+/* The boxes of the "Gear from" filter, by what a player does to get a piece (scripts/data/gear_activities.py):
+   {key, label, section, on (ticked by default), hint, bit}, in the menu's order. Bit i of a route mask = ACTIVITIES[i]. */
+export const ACTIVITIES = Object.freeze(
+  ITEM_FORMAT.activities.map((a, i) =>
+    Object.freeze({ key: a.key, label: a.label, section: a.section, on: a.on, hint: a.hint, bit: 1 << i }),
+  ),
+);
+/* The route bit of the market board: a tradeable piece has the route made of this bit alone. */
+export const ACTIVITY_MARKET_BIT = 1 << ITEM_FORMAT.activities.length;
 
 /* The character's base main stat at each level 1..100 (index = level - 1), the base that Determination and Piety start
    from (Critical Hit, Direct Hit, speed and Tenacity start from ParamGrow BaseSpeed). Not in the game files (no sheet

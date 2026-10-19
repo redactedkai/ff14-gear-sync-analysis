@@ -182,7 +182,7 @@ Notes on the measurements and checks run by hand (none is part of `npm run check
 - **`target-gcd-sweep.mjs`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
   - every job;
   - every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync);
-  - the page's default gear groups;
+  - the page's default "Gear from" boxes;
   - every goal and tiebreak order;
   - six GCDs, from the no-speed one to the fastest the gear reaches;
   - both modes;

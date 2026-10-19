@@ -9,8 +9,10 @@ import {
   expansionOf,
   filterGear,
   poolItemFromRow,
+  itemRoutes,
   poolKey,
-  withoutSources,
+  withActivities,
+  emptyActivities,
   slotInfo,
   slotLabel,
   wearable,
@@ -52,6 +54,7 @@ export function optimizerKey(app) {
     o.tb,
     o.tb2,
     o.exclude.join(),
+    o.market,
     o.expOff.join(),
     o.min,
     o.max,
@@ -100,19 +103,26 @@ export function jobGear(job) {
 }
 
 /* The pool the optimizer searches: the gear (every piece the job can wear, unless a test passes its own) that passes the
-   filters under Gear to search (expansions, item level range, equip level, gear groups left out: the opt fields), minus
+   filters under Gear to search (expansions, item level range, equip level, Gear from and the market board: the opt fields), minus
    any piece above the job's level cap (jobGear has none; this guards gear passed in) and the relics whose substats the
    player allocates (allocatedRelic in items.js; relicsLeftOut counts them). */
 export function searchPool(app, gear = jobGear(app.jobCtx)) {
-  const pool = filterGear(withoutSources(gear, app.opt.exclude || []), gearFilter(app.opt));
+  const pool = filterGear(withActivities(gear, app.opt.exclude || [], app.opt.market !== false), gearFilter(app.opt));
   return pool.filter(i => wearable(app.jobCtx, i) && !allocatedRelic(app.jobCtx, i));
 }
 
 /* How many relics with player-allocated substats (allocatedRelic) pass the filters under Gear to search but are left out
    of the search, for the result's note. */
 export function relicsLeftOut(app, gear = jobGear(app.jobCtx)) {
-  const pool = filterGear(withoutSources(gear, app.opt.exclude || []), gearFilter(app.opt));
+  const pool = filterGear(withActivities(gear, app.opt.exclude || [], app.opt.market !== false), gearFilter(app.opt));
   return pool.filter(i => wearable(app.jobCtx, i) && allocatedRelic(app.jobCtx, i)).length;
+}
+
+/* The "Gear from" boxes with nothing for the job and the other filters under Gear to search (emptyActivities): the
+   menu greys them out. */
+export function emptyGearFrom(app, gear = jobGear(app.jobCtx)) {
+  const pool = filterGear(gear, gearFilter(app.opt)).filter(i => wearable(app.jobCtx, i) && !allocatedRelic(app.jobCtx, i));
+  return emptyActivities(pool.map(itemRoutes).filter(Boolean));
 }
 
 /* Sync changes something in this pool: item level sync is on, or some piece is level-synced. */
@@ -150,7 +160,17 @@ let fastCache = { key: null, gcd: null };
 function poolSettingsKey(app, gear) {
   const o = app.opt;
   if (gear && gear !== jobGear(app.jobCtx)) return null;
-  return [app.jobCtx.jobId, JSON.stringify(syncSettings(app)), o.exclude.join(), o.expOff.join(), o.min, o.max, o.lvl, !!o.melds].join('|');
+  return [
+    app.jobCtx.jobId,
+    JSON.stringify(syncSettings(app)),
+    o.exclude.join(),
+    o.market,
+    o.expOff.join(),
+    o.min,
+    o.max,
+    o.lvl,
+    !!o.melds,
+  ].join('|');
 }
 
 /* What the Target GCD line shows before any search: the box label, its range hint, whether it is off. */

@@ -22,7 +22,7 @@ test('A1: switching to another job in the same role resets the job-specific sett
   assert.equal(store.cap, 200); // not job-specific: kept
   assert.equal(store.opt.gcd, ''); // the GCDs a job can reach depend on its haste: cleared
   assert.equal(store.opt.gcdMode, 'min'); // the mode is a preference: kept
-  assert.deepEqual(store.opt.exclude, ['crafted']); // gear groups are not job-specific: kept
+  assert.deepEqual(store.opt.exclude, ['crafted']); // "Gear from" boxes are not job-specific: kept
 });
 
 test('switching to a job with a lower level cap clamps the synced level and the equip level filter to it', () => {

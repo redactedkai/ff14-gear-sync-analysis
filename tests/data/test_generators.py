@@ -29,6 +29,7 @@ FIXTURES = Path(__file__).resolve().parent / 'fixtures'
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 
 import fetch  # noqa: E402
+import gear_activities  # noqa: E402
 import gear_categories  # noqa: E402
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
@@ -83,13 +84,14 @@ class GenItemsTest(unittest.TestCase):
     def test_row_shape(self):
         for r in self.rows:
             self.assertEqual(len(r), 20, r)
-            name, slot, ilvl, lvl, mask, st, unique, hq, sources, kind, meld_slots, overmeld, rarity, game_id, scales, cat, *dd = r
+            name, slot, ilvl, lvl, mask, st, unique, hq, routes, kind, meld_slots, overmeld, rarity, game_id, scales, cat, *dd = r
             self.assertIsInstance(name, str)
             self.assertIn(slot, range(15))
             self.assertEqual(len(st.split(',')), len(STAT_ORDER))
             self.assertIn(unique, (0, 1))
             self.assertIn(hq, (0, 1))
-            self.assertIn(sources, range(64))
+            n_boxes = len(load_format()['activities'])
+            self.assertTrue(isinstance(routes, list) and all(0 < m < 1 << (n_boxes + 1) for m in routes), r)
             self.assertIn(kind, range(13))
             self.assertIn(meld_slots, range(6))
             self.assertIn(overmeld, (0, 1))
@@ -110,7 +112,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.row('Test Sword')[16:], [0, 0, 0, 0])
 
     def test_meld_fields(self):
-        """meldSlots and overmeld are Item.MateriaSlotCount and IsAdvancedMeldingPermitted, after the source mask and kind."""
+        """meldSlots and overmeld are Item.MateriaSlotCount and IsAdvancedMeldingPermitted, after the routes and kind."""
         expect = {
             'Test Sallet HQ': (2, 1),
             'Test Robe': (5, 0),
@@ -150,31 +152,47 @@ class GenItemsTest(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(self.row(name)[9], kind)
 
-    def test_sources(self):
-        """Each SpecialShop and Recipe rule in the fixtures (scripts/data/gear_sources.py), plus the bits that come from
-        the category (gear_categories.py). Bits: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate, 32 pvp."""
+    def test_routes(self):
+        """Each "Gear from" rule in the fixtures (scripts/data/gear_activities.py), as box keys; every fixture piece but
+        Test Ring Unique is tradeable, so each also has the market board route ('market')."""
         expect = {
-            'Test Sallet HQ': 1,  # a recipe result
-            'Test Hood of Healing': 2 | 8,  # type 4, code 1 (Poetics); code 20 with a dye slot: Savage
-            'Test Alpha Mail': 2,  # type 4, code 2 (the second current tomestone)
-            'Test Sword': 16,  # Dreadwyrm Totem
-            'Test Gloves': 4,  # type 8: gil; code 10 armor: field_op, in the relic group
-            'Test Tonban': 0,  # type 16, code 2: a crafter scrip
-            'Test Shoes': 2,  # type 16, code 1 (Poetics)
-            'Test Earring': 2,  # type 2, code 1 (Poetics) plus a piece traded in
-            'Test Choker': 0,  # the piece traded in: not flagged
-            'Test Bracelet': 2,  # type 2, code 2
-            'Test Ring Plain': 0,  # traded in for Test Bracelet: not flagged
-            'Test Shield': 2,  # Poetics by item id
-            'Test Robe': 2,  # an old tomestone by item id
-            'Test Zeta Helm': 2,  # Heliometry by item id, and Poetics plus Test Alpha Helm
-            'Test Alpha Helm': 0,  # the base piece an exchange turns into Test Zeta Helm: not flagged
-            'Test Tank Helm': 2,  # made by trading in Test Zeta Helm (tomestone gear) plus a non-gear item
-            'Test Greataxe': 4,  # in no shop and no recipe; code 10 weapon: relic
+            'Test Greataxe': ['relics'],  # category relic: a relic, whatever its other ways in
+            'Test Sword': ['ultimate'],  # Dreadwyrm Totem: no way in, buys ultimate gear
+            'Test Shield': ['tomes_legacy'],  # Poetics by item id
+            'Test Hood of Healing': ['tomes_legacy'],  # type 4, code 1 (Poetics)
+            'Test Robe': ['normal_duties'],  # an old tomestone by item id (slot 0: retired): a raid drop
+            'Test Gloves': [],  # type 8 (gil), tradeable: the market board decides
+            'Test Tonban': ['hunts'],  # Allied Seals
+            'Test Shoes': ['tomes_legacy'],  # type 16, code 1 (Poetics)
+            'Test Earring': ['normal_duties+tomes_legacy'],  # Test Choker (a dungeon drop) traded in, plus Poetics
+            'Test Choker': ['normal_duties'],  # no way in: its category's drop
+            'Test Bracelet': ['normal_duties'],  # code 2 at item level 130 while code 2 sells 140: retired listing
+            'Test Ring Unique': ['misc'],  # an untradeable piece from a gil vendor; no market board route
+            'Test Ring Plain': [],  # a tradeable piece from a gil vendor
+            'Test Caster Hat': ['quests'],  # a quest reward
+            'Test Min Ilvl': ['quests'],  # a job quest reward (QuestClassJobReward)
+            'Test Preorder Earring': ['quests'],  # an achievement reward
+            'Test Sallet HQ': ['crafted'],  # a recipe result
+            'Test Sallet NoHQ': ['grand_company'],  # company seals
+            'Test Alpha Helm': ['events'],  # a seasonal event gil shop (GilShop.FestivalId)
+            'Test Alpha Mail': ['tomes_current'],  # code 2 at the newest item level
+            'Test Zeta Helm': ['tomes_legacy+events', 'tomes_current'],  # Alpha Helm plus Poetics, or Heliometry
+            'Test Tank Helm': ['normal_duties+tomes_legacy+events', 'normal_duties+tomes_current'],  # Zeta Helm + an item
+            'Test Flanchard': ['quests'],  # a Calamity Salvager rebuy: the quest it asks for
+            'Test Cloak': ['events'],  # a rebuy gated by a seasonal event quest
         }
-        for name, bits in expect.items():
+        keys = [a['key'] for a in load_format()['activities']]
+        market = 1 << len(keys)
+
+        def as_keys(masks):
+            return sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in masks if m != market)  # keys in box order
+
+        for name, want in expect.items():
             with self.subTest(name=name):
-                self.assertEqual(self.row(name)[8], bits)
+                routes = self.row(name)[8]
+                self.assertEqual(as_keys(routes), sorted(want))
+                self.assertEqual(market in routes, name != 'Test Ring Unique')
+        self.assertEqual(self.doc['currentTomes'], ['Heliometry', 'Mathematics'])  # TomestonesItem slots 2 and 3
 
     def test_slot_detection(self):
         expect = {
@@ -559,7 +577,8 @@ class GearCategoriesTest(unittest.TestCase):
     Test Greataxe 8010 (relic weapon), Test Sword 2060 (bought with a totem -> ultimate), Test Shield 2060 (trial),
     Test Hood of Healing 47020 with a dye slot (Savage seed), Test Robe 47020 (raid, bought with a Normal token),
     Test Gloves 8010 (not a weapon -> field_op), Test Earring 49020 (no dye, bought with the Savage book -> savage),
-    Test Sallet HQ 8320 (a recipe result -> crafted); every other piece 8270 (dungeon)."""
+    Test Sallet HQ 8320 (a recipe result -> crafted); every other piece 8270 (dungeon). Hood and Earring are also sold
+    for the Savage book, which has no way in and buys Savage gear: their "Gear from" routes include Savage."""
 
     WEAPON_SLOTS = {0, 1, 2}
 
@@ -609,39 +628,28 @@ class GearCategoriesTest(unittest.TestCase):
                 self.assertEqual(cats[name], cat)
         self.assertEqual(gear_categories.check(kept, ids), [])
 
-    def test_source_masks(self):
-        # category groups (item-format.json `sources`) on top of the shop and recipe flags; field_op is in the relic group
+    def routes(self):
+        """{name: routes as box keys} from gear_activities.py on this test's copy of the fixtures."""
         cats, kept, ids = self.categories()
-        names = {r['#']: r['Name'] for r, _ in kept}
-        masks = {names[i]: m for i, m in gear_categories.source_masks(kept, ids).items()}
-        expect = {
-            'Test Sallet HQ': 1,  # crafted
-            'Test Sword': 16,  # ultimate
-            'Test Earring': 2 | 8,  # tomestone flag, and savage (bought with the Savage book)
-            'Test Robe': 2,  # tomestone flag; Normal raid is in no group
-            'Test Greataxe': 4,  # relic
-            'Test Gloves': 4,  # field_op
-            'Test Shield': 2,  # tomestone flag; trial is in no group
-            'Test Tank Helm': 2,  # tomestone flag; dungeon is in no group
-        }
-        for name, mask in expect.items():
-            with self.subTest(name=name):
-                self.assertEqual(masks[name], mask)
+        kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]
+        keys = [a['key'] for a in load_format()['activities']]
+        out = gear_activities.routes(self.dir, kept, ids)
+        return {r['Name']: sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in out[r['#']]) for r, _ in kept}
 
-    def test_savage_group_takes_only_the_current_expansion(self):
-        # Savage is `currentOnly`: a Savage piece below the highest equip level in the data (an older expansion) is
-        # still categorized savage but left out of the group
+    def test_savage_splits_at_the_level_cap(self):
+        # Savage at the highest equip level of the kept gear (the level cap) is Savage (Current), below it Savage (Legacy)
+        routes = self.routes()
+        self.assertIn('savage_current', routes['Test Earring'])
+        self.assertIn('savage_current', routes['Test Hood of Healing'])
+
         def fn(rows):
             lv = rows[0].index('LevelEquip')
             next(r for r in rows if r[0] == '1009')[lv] = '40'
 
         edit_csv(self.dir / 'Item.csv', fn)
-        cats, kept, ids = self.categories()
-        names = {r['#']: r['Name'] for r, _ in kept}
-        masks = {names[i]: m for i, m in gear_categories.source_masks(kept, ids).items()}
-        self.assertEqual(cats['Test Earring'], 'savage')
-        self.assertEqual(masks['Test Earring'], 2)  # tomestone flag only
-        self.assertEqual(masks['Test Hood of Healing'], 2 | 8)  # equip level 50, the highest: current
+        routes = self.routes()
+        self.assertIn('savage_legacy', routes['Test Earring'])
+        self.assertIn('savage_current', routes['Test Hood of Healing'])  # equip level 50, the highest: current
 
     def test_code_250_and_990_are_left_out(self):
         # code 250 is Diadem gear at equip level 60 and Aetherial gear at 50 or below (both random secondary
@@ -762,12 +770,54 @@ class SchemaDriftTest(unittest.TestCase):
         self.assert_fails(gen_items, 'ultimate totem', 'Oracle Totem')
 
     def test_missing_source_columns(self):
-        for sheet, col in (('Recipe.csv', 'ItemResult'), ('SpecialShop.csv', 'UseCurrencyType'), ('TomestonesItem.csv', 'Item')):
+        cols = (
+            ('Recipe.csv', 'ItemResult'),
+            ('SpecialShop.csv', 'UseCurrencyType'),
+            ('TomestonesItem.csv', 'Item'),
+            ('TomestonesItem.csv', 'Tomestones'),
+            ('Quest.csv', 'Reward[0]'),
+            ('Quest.csv', 'Festival'),
+            ('QuestClassJobReward.csv', 'RewardItem[0]'),
+            ('Achievement.csv', 'Item'),
+            ('GCScripShopItem.csv', 'Item'),
+            ('GilShop.csv', 'FestivalId'),
+            ('GilShopItem.csv', 'QuestRequired[1]'),
+            ('GilShopItem.csv', 'AchievementRequired'),
+        )
+        for sheet, col in cols:
             with self.subTest(col=col):
                 shutil.copy(FIXTURES / sheet, self.dir / sheet)
                 rename_column(self.dir / sheet, col, col + 'X')
                 self.assert_fails(gen_items, sheet, col)
                 shutil.copy(FIXTURES / sheet, self.dir / sheet)
+
+    def test_changed_currency_id(self):
+        # a currency the game files cannot place is keyed by id with its name: a patch that reuses the id stops the run
+        def fn(rows):
+            col = rows[0].index('Name')
+            next(r for r in rows if r[0] == '26533')[col] = 'Something Else'
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'currency', 'Sack of Nuts')
+
+    def test_changed_retired_shop_id(self):
+        def fn(rows):
+            col = rows[0].index('Name')
+            next(r for r in rows if r[0] == '1769983')[col] = 'Something Else'
+
+        edit_csv(self.dir / 'SpecialShop.csv', fn)
+        self.assert_fails(gen_items, 'retired shop', 'Deepshadow Gear Exchange')
+
+    def test_activity_with_no_box(self):
+        # combat gear sold for a crafters' scrip (type 16, code 2) has no "Gear from" box: a new kind of source stops the run
+        def fn(rows):
+            h = rows[0]
+            r = next(r for r in rows if r[0] == '1769003')
+            k = next(k for k in range(60) if r[h.index(f'Item[{k}].Item[0]')] == '1007')
+            r[h.index(f'Item[{k}].ItemCost[0]')] = '2'
+
+        edit_csv(self.dir / 'SpecialShop.csv', fn)
+        self.assert_fails(gen_items, 'Scrips', 'Test Tonban', 'has no box')
 
     def test_missing_item_level_stat_column(self):
         rename_column(self.dir / 'ItemLevel.csv', 'DirectHitRate', 'DirectHit')

@@ -1,5 +1,5 @@
 /* Item queries (src/core/items.js): gear filtering per job, picked by properties, never by name; database rows to pool
-   items; copies, HQ, gear groups, expansions and meld slots of real pieces; the materia table. */
+   items; copies, HQ, "Gear from" routes, expansions and meld slots of real pieces; the materia table. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
@@ -8,13 +8,15 @@ import {
   poolItemFromRow,
   parseRow,
   mkItem,
-  sourceMask,
-  withoutSources,
+  itemRoutes,
+  withActivities,
+  emptyActivities,
   expansionOf,
   meldInfo,
   rowStats,
 } from '../../src/core/items.js';
-import { SOURCES, EXPANSIONS, ROW } from '../../src/core/constants.js';
+import { ACTIVITIES, ACTIVITY_MARKET_BIT, EXPANSIONS, ROW } from '../../src/core/constants.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
 import { ITEMS, MATERIA } from '../../src/core/tables.js';
 import { itemRow } from './helpers/common.js';
 
@@ -237,54 +239,77 @@ test('HQ flag: a pool item keeps whether its database row is HQ-capable', () => 
   );
 });
 
-/* Gear sources on real pieces whose Lodestone pages agree: a recipe (Ra'Kaznar), Allagan Tomestones of Mnemonics
-   (Bygone Brass), Mad Harlequin's Totem (Palazzo Diamond), a Savage raid book (Dark Horse Champion's, Dawntrail: current Savage;
-   Genji, Stormblood: legacy Savage, in no group), the Bozja and Occult Crescent
-   field operations (Bozjan, Phantom Vision: in the relic group) and a relic weapon (Phantom Gunblade); Mistwake gear
-   drops in a dungeon, which is in no group; Lionsmane Armet is sold for Wolf Marks (PvP). */
-test('source flags of real items, and leaving sources out of a pool', () => {
-  const find = name => parseRow(itemRow(name));
+/* A route as box keys joined by "+" in ACTIVITIES order, 'market' for the market board route; the routes sorted. */
+/* "Gear from" routes of real pieces whose Lodestone pages agree: a recipe (Ra'Kaznar, tradeable: also the market board),
+   the current tomestones (Bygone Brass), Mad Harlequin's Totem (Palazzo Diamond, Ultimate), a Savage raid book (Dark Horse
+   Champion's, Dawntrail: Savage (Current); Genji, Stormblood: Savage (Legacy)), the Bozja and Occult Crescent field
+   operations (Bozjan, Phantom Vision) and a relic weapon (Phantom Gunblade), a dungeon drop (Mistwake), Wolf Marks
+   (Lionsmane Armet). Augmented Bygone Brass is the tomestone piece plus Thundersteeped Twine, which drops in Savage or is
+   sold for Sacks of Nuts (Hunts; game files). The base Radiant's set (item level 590) can no longer be obtained. */
+const routeKeys = routes =>
+  routes
+    .map(m =>
+      m === ACTIVITY_MARKET_BIT
+        ? 'market'
+        : ACTIVITIES.filter(a => m & a.bit)
+            .map(a => a.key)
+            .join('+'),
+    )
+    .sort();
+
+test('"Gear from" routes of real items, and filtering a pool by them', () => {
   const cases = {
-    "Ra'Kaznar Helm of Fending": ['crafted', 'WAR'],
-    'Bygone Brass Earrings of Casting': ['tomestone', 'BLM'],
-    'Palazzo Diamond Codex': ['ultimate', 'SCH'],
-    "Dark Horse Champion's Gloves of Scouting": ['savage', 'NIN'],
-    'Genji Ring of Aiming': [null, 'BRD'],
-    'Bozjan Trousers of Casting': ['relic', 'BLM'],
-    'Phantom Vision Boots of Scouting': ['relic', 'NIN'],
-    'Phantom Gunblade Obscurum': ['relic', 'GNB'],
-    'Mistwake Visor of Fending': [null, 'WAR'],
-    'Lionsmane Armet': ['pvp', 'PLD'],
+    "Ra'Kaznar Helm of Fending": [['crafted', 'market'], 'WAR'],
+    'Bygone Brass Earrings of Casting': [['tomes_current'], 'BLM'],
+    'Palazzo Diamond Codex': [['ultimate'], 'SCH'],
+    "Dark Horse Champion's Gloves of Scouting": [['savage_current'], 'NIN'],
+    'Genji Ring of Aiming': [['savage_legacy'], 'BRD'],
+    'Bozjan Trousers of Casting': [['relics'], 'BLM'],
+    'Phantom Vision Boots of Scouting': [['relics'], 'NIN'],
+    'Phantom Gunblade Obscurum': [['relics'], 'GNB'],
+    'Mistwake Visor of Fending': [['normal_duties'], 'WAR'],
+    'Lionsmane Armet': [['pvp'], 'PLD'],
+    'Augmented Bygone Brass Earrings of Casting': [['tomes_current+hunts', 'tomes_current+savage_current'], 'BLM'],
+    "Radiant's Helm of Fending": [[], 'PLD'],
   };
   const pool = [];
-  for (const [name, [src, jobId]] of Object.entries(cases)) {
-    const row = find(name);
-    const bit = src ? SOURCES.find(s => s.key === src).bit : 0;
-    assert.equal(row.sources, bit, name);
+  for (const [name, [want, jobId]] of Object.entries(cases)) {
+    const row = parseRow(itemRow(name));
+    assert.deepEqual(routeKeys(row.routes), want, name);
     const it = poolItemFromRow(makeJobContext(jobId), row);
-    assert.equal(sourceMask(it), bit, name);
+    assert.deepEqual(routeKeys(itemRoutes(it)), want, name);
     pool.push(it);
   }
   const hand = mkItem('Hand-made', 'head', 700, { spd: 10 });
   pool.push(hand);
-  assert.equal(withoutSources(pool, []), pool);
+  assert.equal(itemRoutes(hand), null);
+  const names = (off, market) => withActivities(pool, off, market).map(i => i.name);
+
+  // every box and the market board: all but the retired piece; hand-made pieces always pass
+  assert.deepEqual(names([], true), [...Object.keys(cases).filter(n => n !== "Radiant's Helm of Fending"), 'Hand-made']);
+  // the defaults leave out Ultimate, Savage (Current) and PvP among others
+  const hiddenByDefault = ['Palazzo Diamond Codex', "Dark Horse Champion's Gloves of Scouting", 'Lionsmane Armet'];
   assert.deepEqual(
-    withoutSources(pool, ['crafted', 'ultimate', 'relic', 'pvp']).map(i => i.name),
-    [
-      'Bygone Brass Earrings of Casting',
-      "Dark Horse Champion's Gloves of Scouting",
-      'Genji Ring of Aiming',
-      'Mistwake Visor of Fending',
-      'Hand-made',
-    ],
+    names([...DEFAULT_EXCLUDE], true),
+    names([], true).filter(n => !hiddenByDefault.includes(n)),
   );
+  // a tradeable crafted piece stays while the market board is on, whatever the Crafted box says
+  assert.ok(names(['crafted'], true).includes("Ra'Kaznar Helm of Fending"));
+  assert.ok(!names(['crafted'], false).includes("Ra'Kaznar Helm of Fending"));
+  // a piece with two routes stays while either is open
+  assert.ok(names(['hunts'], true).includes('Augmented Bygone Brass Earrings of Casting'));
+  assert.ok(!names(['hunts', 'savage_current'], true).includes('Augmented Bygone Brass Earrings of Casting'));
+  // every box off and no market board: only what is not from the database
   assert.deepEqual(
-    withoutSources(
-      pool,
-      SOURCES.map(s => s.key),
-    ).map(i => i.name),
-    ['Genji Ring of Aiming', 'Mistwake Visor of Fending', 'Hand-made'], // in no group: never left out
+    names(
+      ACTIVITIES.map(a => a.key),
+      false,
+    ),
+    ['Hand-made'],
   );
+  // boxes no piece comes from
+  const empty = emptyActivities(pool.map(itemRoutes).filter(Boolean));
+  assert.ok(empty.includes('gold_saucer') && !empty.includes('relics') && !empty.includes('hunts'), empty.join());
 });
 
 /* The expansion of a piece is its equip level band (the level caps 50, 60 ... 100). Real pieces on each side of a band

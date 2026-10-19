@@ -5,7 +5,7 @@
    warm: the median of N more calls. */
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
-import { withoutSources } from '../../src/core/items.js';
+import { withActivities } from '../../src/core/items.js';
 import { meldCacheStats } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.mjs';
@@ -56,14 +56,14 @@ for (const id of jobIds) {
   if (workload === 'X') {
     const syncs = SYNCS.filter(s => ['off', 'cap 123', 'cap 660'].includes(s.label));
     for (const ex of excludeMasks()) {
-      const pool = withoutSources(full, ex);
+      const pool = withActivities(full, ex.off, ex.market);
       for (const sync of syncs) {
         for (const o of [{ target: job.substats[0], tiebreak: [job.substats[1]] }]) {
           const { res, first, warm } = timeRun(job, pool, sync, o, true);
           rows.push({
             job: id,
             pool: pool.length,
-            exclude: ex.join('+'),
+            exclude: ex.off.join('+') + (ex.market ? '' : ' (no market board)'),
             sync: sync.label,
             ...o,
             melds: true,

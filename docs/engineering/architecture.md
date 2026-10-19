@@ -91,7 +91,7 @@ Changes go through store actions: set job, reset everything, switch tab or math 
 
 **Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
 
-![Switching to any other job, even one in the same role, happens at once without asking. Reset to the new job's defaults: Piece stats substats (Critical Hit, then speed), Piece stats slot (head, only if the new job lacks it), optimizer target (main stat), tiebreaks 1 and 2 (none), meal (best for the goal), Target GCD (any), gear browser slot (any slot) and sort (item level). Held to the new job's level cap, lowered only if above it (90 becomes 80 for Blue Mage): the synced level and both equip level filters. Kept: sync cap and sync switch, the gear groups left out in both lists, expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and search text.](../diagrams/architecture-job-switch.svg)
+![Switching to any other job, even one in the same role, happens at once without asking. Reset to the new job's defaults: Piece stats substats (Critical Hit, then speed), Piece stats slot (head, only if the new job lacks it), optimizer target (main stat), tiebreaks 1 and 2 (none), meal (best for the goal), Target GCD (any), gear browser slot (any slot) and sort (item level). Held to the new job's level cap, lowered only if above it (90 becomes 80 for Blue Mage): the synced level and both equip level filters. Kept: sync cap and sync switch, the "Gear from" boxes and market board switch of both tabs, expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and search text.](../diagrams/architecture-job-switch.svg)
 
 **Reset to defaults** puts every setting back, with no job chosen, after the browser's own confirmation dialog. The open tab and math sub-tab stay as they are.
 
@@ -122,8 +122,8 @@ Notes:
 
 - **Settings, How the math works** are cheap: a few formulas per piece; the explainer's curves (a few thousand generic pieces per setting) are remembered per setting, so a slider move costs a few milliseconds.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
-- **Gear browser**: the database matches of its filters (including its own left-out gear groups), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
-- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, item level range, equip level, gear groups; the browser's filters with the optimizer's own values). Triggered by a change of those filters, job, cap, sync, level or optimizer settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
+- **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
+- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, item level range, equip level, Gear from; the browser's filters with the optimizer's own values). Triggered by a change of those filters, job, cap, sync, level or optimizer settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
 **How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart run the optimizer once, not $k$ times. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
@@ -135,7 +135,7 @@ Notes:
 
 The page remembers the user's settings in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Piece stats inputs (slot, substats, item level), browse filters and sort, the optimizer settings with its gear groups. The job context, the job's gear, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Piece stats inputs (slot, substats, item level), browse filters and sort, the optimizer settings with its Gear from boxes and market board switch. The job context, the job's gear, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object, which makes it depend on every saved field, and writes it 150 ms after the last change.
 
@@ -148,7 +148,7 @@ A saved job id that is not a known job means no job is chosen; the job-dependent
 - numbers are rounded and clamped (item levels to 1 to 795, the highest real item level; character level to 1 to the job's level cap, 100 or the limited job's own);
 - choices (tab, slot, stat, sort, filter) must be one of the values valid for this job;
 - substat lists drop unknown or repeated entries, and an older third substat rank is dropped;
-- older saves are translated: the math sub-view stored as the tab, the Gear pool tab (now the Gear browser), and the one gear-group list the pool days had for both tabs (the optimizer starts from it). A saved pool is ignored.
+- older saves are translated: the math sub-view stored as the tab, the Gear pool tab (now the Gear browser), and the one gear-group list the pool days had for both tabs (the optimizer starts from it). A saved pool is ignored. A list of left-out boxes with a key that is no box (the six gear groups before 2026-10-18) starts over from the default boxes.
 
 An invalid field falls back to its default and the valid ones are kept. The state unit tests cover this field by field ([testing.md, section 2](testing.md#2-what-each-file-covers)).
 

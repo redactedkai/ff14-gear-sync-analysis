@@ -57,9 +57,10 @@ test('every item row has the documented shape', () => {
     assert.equal(r[ROW.stats].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
     assert.ok(r[ROW.unique] === 0 || r[ROW.unique] === 1, 'unique flag ' + where);
     assert.ok(r[ROW.hq] === 0 || r[ROW.hq] === 1, 'HQ flag ' + where);
+    const routes = r[ROW.routes];
     assert.ok(
-      Number.isInteger(r[ROW.sources]) && r[ROW.sources] >= 0 && r[ROW.sources] < 2 ** ITEM_FORMAT.sources.length,
-      'source mask ' + where,
+      Array.isArray(routes) && routes.every(m => Number.isInteger(m) && m > 0 && m < 2 ** (ITEM_FORMAT.activities.length + 1)),
+      'routes ' + where,
     );
     assert.ok(Number.isInteger(r[ROW.kind]) && r[ROW.kind] >= 0 && r[ROW.kind] < ITEM_FORMAT.statFactor.count, 'stat factor kind ' + where);
     assert.ok(

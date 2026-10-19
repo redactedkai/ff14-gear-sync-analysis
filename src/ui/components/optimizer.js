@@ -1,8 +1,8 @@
 /* Gear optimizer tab: the best loadout for the chosen stat from every piece the job can wear, recomputed (debounced)
    only while the tab is open. */
 import Alpine from 'alpinejs';
-import { optimizerKey, optimizerView, resultPanel, searchCount } from '../views/optimizer.js';
-import { debouncedEffect, expansionToggles, fmtInt, gearGroupToggles } from '../helpers.js';
+import { emptyGearFrom, optimizerKey, optimizerView, resultPanel, searchCount } from '../views/optimizer.js';
+import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
 import { foodChoices, foodLabel } from '../../core/food.js';
 
 const DEBOUNCE_MS = 120;
@@ -12,6 +12,8 @@ export function optimizer() {
     view: null,
     /* "searching 1,939 of 1,999 pieces" in the Gear to search heading: searched of every piece the job can wear */
     countText: '',
+    /* "Gear from" boxes with nothing for the job and the other filters (greyed out in the menu) */
+    emptyBoxes: [],
     /* how long the last solve took (building the job's gear included, the first time), shown under the result */
     solveMs: 0,
     /* pieces picked from the rows' menus of pieces with the same result: {row index: pool key}. Not saved; cleared when
@@ -77,6 +79,7 @@ export function optimizer() {
       performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
       const c = searchCount(raw);
       this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
+      this.emptyBoxes = emptyGearFrom(raw);
     },
     /* A piece picked from row i's menu: the row shows it, and the other rows are checked again against it. */
     pick(i, key) {
@@ -84,9 +87,10 @@ export function optimizer() {
       this.menuOpen = null;
       this.solve();
     },
-    /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude), not the browser's */
+    /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude, opt.market), not the
+       browser's */
     ...expansionToggles('opt'),
-    ...gearGroupToggles('opt'),
+    ...gearFromToggles('opt'),
     get statOptions() {
       return this.job.stats.map(s => [s, this.job.label[s]]);
     },

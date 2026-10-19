@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { bestFood, foodChoices, statBase } from '../../src/core/food.js';
-import { allocatedRelic, browseItems, mkItem, poolItemFromRow, poolKey, sourceMask, withoutSources } from '../../src/core/items.js';
+import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
 import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
@@ -14,7 +14,7 @@ import { jobGear, optimizerView, panelBase, relicsLeftOut, searchCount, searchPo
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
-import { JOBS, SOURCES } from '../../src/core/constants.js';
+import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE, shownSync, syncSettings } from '../../src/ui/state.js';
 
@@ -166,16 +166,16 @@ test('piece lab view: every real item level 130 Sage head piece with three subst
   );
 });
 
-/* With no gear passed in, the optimizer searches every database piece the job can wear, minus its own left-out groups
-   (Current Savage, Ultimate and PvP by default), and finds the same loadout as optimize() on that pool. */
-test('optimizer view: every job searches all the gear it can wear, minus its left-out groups and allocated relics', () => {
+/* With no gear passed in, the optimizer searches every database piece the job can wear that its own "Gear from" filter
+   lets through (the default boxes, market board on), and finds the same loadout as optimize() on that pool. */
+test('optimizer view: every job searches all the gear it can wear, minus what Gear from leaves out and allocated relics', () => {
   for (const [id] of JOBS) {
     const app = makeApp(id, { level: Math.min(50, makeJobContext(id).maxLevel) });
     const job = app.jobCtx;
     const all = browseItems(job, {});
     assert.equal(jobGear(job).length, all.length, id);
     assert.equal(jobGear(job), jobGear(job), `${id}: built once per job`);
-    const searched = withoutSources(jobGear(job), [...DEFAULT_EXCLUDE]).filter(i => !allocatedRelic(job, i));
+    const searched = withActivities(jobGear(job), [...DEFAULT_EXCLUDE], true).filter(i => !allocatedRelic(job, i));
     assert.deepEqual(searchCount(app), { searched: searched.length, left: all.length - searched.length }, id);
     assert.ok(searched.length > 100, id);
     const v = optimizerView(app);
@@ -186,11 +186,12 @@ test('optimizer view: every job searches all the gear it can wear, minus its lef
   }
 });
 
-/* The browser's list: database rows matching its filters, minus its own left-out groups; no pool. */
+/* The browser's list: database rows matching its filters that its own "Gear from" filter lets through; no pool. With
+   every box ticked, only pieces that can no longer be obtained (no route) are left out. */
 test('gear view: every match of the filters, with its synced stats', () => {
   const app = makeApp('SGE');
   app.browse = { ...app.browse, q: '', min: 130, max: 130, lvl: 50, exclude: [] };
-  const rows = browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 });
+  const rows = browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).filter(r => r.routes.length);
   assert.ok(rows.length >= 9);
   const v = gearView(app);
   assert.equal(v.shown.length, rows.length);
@@ -199,39 +200,39 @@ test('gear view: every match of the filters, with its synced stats', () => {
   assert.ok(v.shown.some(x => x.cells.some(c => c.text.includes('→'))));
 });
 
-/* The optimizer and the browser each have their own list of left-out gear groups. */
-test('left-out groups: the optimizer and the browser each go by their own list', () => {
-  const tome = SOURCES.find(s => s.key === 'tomestone').bit; // the window has tomestone gear, no crafted
+/* The optimizer and the browser each have their own "Gear from" filter. */
+test('Gear from: the optimizer and the browser each go by their own boxes', () => {
   const app = makeApp('WAR', { cap: 123 });
   // the window's relics with player-allocated substats (Zodiac Zeta) are never searched (allocatedRelic)
   const pool = windowPool(app.jobCtx).filter(i => !allocatedRelic(app.jobCtx, i));
-  const nTome = pool.filter(i => sourceMask(i) & tome).length;
+  // the window has Poetics gear (Tomestones (Legacy)) and other gear
+  const nTome = pool.length - withActivities(pool, ['tomes_legacy'], true).length;
   assert.ok(nTome > 0 && nTome < pool.length);
   Object.assign(app.browse, { min: 125, max: 135, lvl: 50, exclude: [] });
   app.opt.exclude = [];
   const listed = gearView(app).shown.length;
-  assert.equal(searchPool(app, pool).length, pool.length);
-  // leaving tomestone gear out of the browser changes nothing in the optimizer, and the other way round
-  app.browse.exclude = ['tomestone'];
+  const all = searchPool(app, pool).length;
+  // leaving Poetics gear out of the browser changes nothing in the optimizer, and the other way round
+  app.browse.exclude = ['tomes_legacy'];
   assert.ok(gearView(app).shown.length < listed);
-  assert.equal(searchPool(app, pool).length, pool.length);
+  assert.equal(searchPool(app, pool).length, all);
   app.browse.exclude = [];
-  app.opt.exclude = ['tomestone'];
+  app.opt.exclude = ['tomes_legacy'];
   assert.equal(gearView(app).shown.length, listed);
-  assert.equal(searchPool(app, pool).length, pool.length - nTome);
-  assert.deepEqual(searchCount(app, pool), { searched: pool.length - nTome, left: nTome });
+  assert.equal(searchPool(app, pool).length, all - nTome);
+  assert.deepEqual(searchCount(app, pool), { searched: all - nTome, left: pool.length - all + nTome });
   const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
   const best = exhaustive(app.jobCtx, searchPool(app, pool), { cap: 123, sync: true }, { target: app.opt.target })[0];
   assert.equal(o.total, best + panelBase(app.jobCtx, app.opt.target, app.level));
-  app.opt.exclude = SOURCES.map(s => s.key);
-  assert.equal(
-    optimizerView(
-      app,
-      pool.filter(i => sourceMask(i) & tome),
-    ).kind,
-    'excluded',
-  );
+  // the market board switch is the browser's own too
+  app.opt.exclude = [];
+  app.browse.market = false;
+  assert.equal(searchPool(app, pool).length, all);
+  // every box off and no market board: nothing from the database is left
+  app.opt.exclude = ACTIVITIES.map(a => a.key);
+  app.opt.market = false;
+  assert.equal(optimizerView(app, pool).kind, 'excluded');
 });
 
 /* Gear to search has the browser's filters with its own values: the optimizer searches exactly the pieces the browser
@@ -249,9 +250,10 @@ test("Gear to search: the browser's filters, on the optimizer's own values", () 
     for (const f of cases) {
       Object.assign(app.opt, f, { exclude: [...DEFAULT_EXCLUDE] });
       const rows = browseItems(job, { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 });
-      const want = withoutSources(
+      const want = withActivities(
         rows.map(r => poolItemFromRow(job, r)),
         DEFAULT_EXCLUDE,
+        true,
       ).filter(i => !allocatedRelic(job, i));
       assert.deepEqual(keys(searchPool(app)), keys(want), `${id} ${JSON.stringify(f)}`);
       assert.deepEqual(searchCount(app), { searched: want.length, left: jobGear(job).length - want.length });
@@ -271,8 +273,9 @@ test("Gear to search: the browser's filters, on the optimizer's own values", () 
 
 test('level cap: the optimizer searches no piece above the job cap, and level sync at the cap is off', () => {
   const app = makeApp('BLU', { sync: false, cap: null, level: 80 });
-  // two pieces per slot (small enough for the exhaustive reference), all at equip level 80 or below
-  const all = gamePool(app.jobCtx, { ilvlMin: 520, ilvlMax: 560 });
+  app.opt.exclude = []; // every "Gear from" box: only the level cap leaves pieces out
+  // two pieces per slot (small enough for the exhaustive reference), all at equip level 80 or below and obtainable
+  const all = gamePool(app.jobCtx, { ilvlMin: 520, ilvlMax: 560 }).filter(i => itemRoutes(i).length);
   const wearableRows = all.filter(i => all.filter(j => j.type === i.type).indexOf(i) < 2);
   // pieces this job's mask allows but its level cap does not (jobGear never has them; gear passed in might)
   const above = browseItems(makeJobContext('BLM'), { ilvlMin: 520, ilvlMax: 560 })

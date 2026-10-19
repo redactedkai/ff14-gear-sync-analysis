@@ -19,6 +19,9 @@ export const SHARES = ITEM_LEVEL_FILE.SHARES;
 export const JOB_MODS = ITEM_LEVEL_FILE.JOBS;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
+/* CURRENT_TOMES: the short names of the two current tomestones (e.g. ['Mathematics', 'Mnemonics']), for the
+   "Tomestones (Current)" box's hint. */
+export const CURRENT_TOMES = Object.freeze([...(ITEMS_FILE.currentTomes ?? [])]);
 /* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...], [Vitality HQ
    percent, HQ max] or null] (food.js). */
 export const FOODS = FOOD_FILE.foods;

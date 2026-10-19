@@ -120,6 +120,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **F1, F3.** Labels from an engineering audit for two optimizer bugs, both fixed and covered by regression tests. F1: dominance pruning could drop the second-best ring. F3: fixed score weights let a large tiebreak outrank the target. See [history.md](history.md#results-of-the-tool).
 
+**Gear from, route, market board switch.** The filter in Gear to search and the Gear browser that leaves gear out by what a player does to get it: 20 boxes (Quests & story, Crafted, Normal duties, Hunts, Savage (Current) ...) and a market board switch. A piece's **routes** are its ways to get it, each needing every box in it; a piece is listed when one route needs only ticked boxes, or, with the switch on, when it is tradeable. See [data-pipeline.md, section 4](engineering/data-pipeline.md#sources) and [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters).
+
 **Generated piece, hand-made piece.** A pool piece built by the formula rather than read from the database. It has no equip level, so only the item level cap syncs it. Old saves drop the hypothetical and hand-entered pieces of the removed Advanced section ([testing.md, section 2](engineering/testing.md#2-what-each-file-covers)). See [math.md, section 5](mechanics/math.md#which-pieces-are-synced).
 
 **Generic maximum.** The most speed gear can give under cap 123 with full-share speed in every armor and accessory slot: 296, a 2.22 s GCD at level 50 (344 and 2.17 s with the weapon). It is derived from budget row 123, since no gear exists at item level 123. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
@@ -138,7 +140,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Pareto front.** In tier ranking's searches: the partial gear sets, built from the last slot back, that no other partial set beats on score and every held stat. The best full set meeting every limit is always in the last front, so no search tree is needed. See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
 
-**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, item level range, equip level, gear groups); the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, item level range, equip level, Gear from); the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 

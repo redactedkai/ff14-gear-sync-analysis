@@ -68,7 +68,8 @@ if (isMainThread) {
 } else {
   const { performance } = await import('node:perf_hooks');
   const { fullPool, job: ctx, rng, SYNCS } = await import('./workloads.mjs');
-  const { withoutSources } = await import(`${ROOT}src/core/items.js`);
+  const { withActivities } = await import(`${ROOT}src/core/items.js`);
+  const { DEFAULT_EXCLUDE } = await import(`${ROOT}src/ui/state.js`);
   const { optimize, solve } = await import(`${ROOT}src/core/optimizer/index.js`);
   const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.js`);
   const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.js`);
@@ -82,7 +83,7 @@ if (isMainThread) {
     const sync = { cap: s.cap, sync: s.sync, level: s.level };
     const level = s.level;
     const haste = hasteFor(job.jobId, level)?.pct ?? 0;
-    const pool = withoutSources(fullPool(job), ['savage', 'ultimate', 'pvp']);
+    const pool = withActivities(fullPool(job), DEFAULT_EXCLUDE, true);
     const rows = [];
     const base = { id: task.id, level, cap: s.cap, sync: s.sync, haste };
     const fastSpd = optimize(job, pool, sync, { target: 'spd', melds: true }).totals?.spd ?? 0;

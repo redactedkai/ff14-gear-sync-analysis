@@ -14,6 +14,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
+import gear_activities
 import gear_sources
 import progress
 from item_format import load_format, read_csv
@@ -34,6 +35,7 @@ FILES = [
     'ItemAction',
     'ItemFood',
     *gear_sources.FILES,
+    *gear_activities.FILES,
 ]
 ICON_DIR = ROOT / 'data' / 'icons'
 USER_AGENT = 'ff14-gear-sync-analysis data fetch (+https://github.com/redactedkai/ff14-gear-sync-analysis)'

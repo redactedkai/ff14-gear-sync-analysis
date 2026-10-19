@@ -240,38 +240,55 @@ Melds (materia) are not part of these stats: a database row holds the item as it
 
 ### Sources
 
-*Where does a piece come from, so the page can leave out gear that is hard to get?* Each row carries a bit mask of the six gear groups the page can leave out (in the optimizer and the gear browser): crafted, tomestone, ultimate, savage, relic and PvP. A gear piece can be in none, one or several. (The groups are game terms: [Savage](../glossary.md#game-terms) and [Ultimate](../glossary.md#game-terms) are hard raids, [tomestones](../glossary.md#game-terms) are a currency, a [relic](../glossary.md#game-terms) is a weapon upgraded through a long grind.)
+*Where does a piece come from, so the page can leave out gear a player won't go and get?* Each row carries the piece's **routes** for the "Gear from" filter of the optimizer and the gear browser. The filter's 20 boxes name what a player does: quests, crafting, normal duties, tomestones, hunts, Savage and so on ([Savage](../glossary.md#game-terms), [Ultimate](../glossary.md#game-terms), [tomestones](../glossary.md#game-terms) and [relics](../glossary.md#game-terms) are game terms). The boxes are listed in `activities` of the shared format file, with their menu section, whether they are ticked by default and the hint the menu shows.
 
-**Two signals.** A group's bit is set from the piece's **category**, from `Item.SubcategorySort` and shop data (the generator's category rules; every code and how it was checked is in [subcategory-sort-codes.md](subcategory-sort-codes.md)), and for crafted, tomestone and ultimate also from the **shop and recipe flags** below. Each group lists its categories in the shared format file. The figure shows which signals feed each group, with the counts in the current data (2026-10-16).
+**Routes.** A route is a bit mask over the boxes; bit *i* is the *i*-th box. A piece has one or more routes, and any one gets it; a route needs every box in it. Augmented Bygone Brass Earrings of Casting, for example, has two: current tomestones plus Hunts, or current tomestones plus Savage (Current), because the tomestone piece is upgraded with Thundersteeped Twine, which drops in Savage and is also sold for Sacks of Nuts. A tradeable piece also has the route made of the market board bit alone (the bit after the last box), so the market board switch lists it whatever its source. The page lists a piece when every bit of one of its routes is allowed. A piece with no route can no longer be obtained and is never listed.
 
-![Which gear categories and flags set each source group bit, with rows in the current data: the crafted category (5,243) and the recipe flag set crafted, bit 1 (5,243 rows); the tomestone category (2,882) and the tomestone flag (1,833) set tomestone, bit 2 (2,947); the relic (748) and field op (856) categories set relic, bit 4 (1,604); the Savage category (1,117) sets savage, bit 8 (231, the three Dawntrail tiers), only at equip level 100, the level cap, so 886 legacy Savage pieces are in no group; the ultimate category (136) and the totem flag (136) set ultimate, bit 16 (136); the PvP category (532) sets PvP, bit 32 (532); dungeon gear (3,942) and the 16 other categories set no bit](../diagrams/data-sources.svg)
+**How the routes are found** (`gear_activities.py`; game files only, no item names):
 
-- **field_op** is Eureka, Bozja and Occult Crescent armor and accessories, which take the same zone grind as the relic weapons from those zones.
-- **pvp** is the item level 100 to 205 sets sold for Wolf Marks, still on sale and with normal stats outside PvP (**verified** on the Lodestone at patch 7.56).
+- **Ways in.** A recipe (crafting), a gil shop (vendor), a Grand Company seal shop, a quest reward (`Quest.Reward`, `OptionalItemReward`, `QuestClassJobReward`), an achievement reward, a seasonal event gil shop (`GilShop.FestivalId`), or an exchange listing (`SpecialShop`), which needs everything it costs.
+- **Costs.** A cost is a currency or a piece traded in, resolved the same way, recursively, up to 8 trade-ins deep. Every way to pay each cost is kept: two costs with two ways each give four routes. A route that needs more than another one is dropped.
+- **Currency codes.** A cost below 8 is a code read through the shop's `UseCurrencyType`, as SaintCoinach's shop reader does. Types 2 and 4: code 1 is Poetics, codes 2 and 3 the current tomestones (the slots of `TomestonesItem`); code 4 of type 4 is a gatherers' scrip. Type 16: code 1 is Poetics, the others crafter and gatherer scrips. Type 8: gil. The Lodestone shows type 2's code 1 as Poetics ("Deepshadow Necklace of Healing ×1 + Allagan Tomestone of Poetics ×100").
+- **Tomestones by item id.** Slot 1 of `TomestonesItem` is Poetics, slots 2 to 4 current (4 is last patch's, still exchanged), slot 0 retired.
+- **Retired tomestone shops.** A code means "the *n*-th current tomestone", so a shop left over from an earlier patch decodes to today's tomestone. For codes 2 and 3, only the gear at the highest item level sold for that code is live; older listings for the same code are retired. On every patch from 6.05 to 7.4 the live set was the highest one, but that SE keeps doing this is a judgment (**inferred**). Six retired Poetics shops (code 1), which nothing in the world opens, are listed by id.
+- **Rebuys.** A gil listing that needs a quest or an achievement is a Calamity Salvager rebuy: the piece was earned first. Its quest becomes the route (Events & promotions when the quest belongs to a seasonal event), or its achievement when that achievement gives the piece. This matched the salvager NPCs' own shops on all 433 listings of kept gear.
+- **Relics.** Relic weapons (category relic) are Relics & Field ops, whatever their quest or tomestone route (owner's ruling: the activity, not the currency).
+- **No way in.** The game files do not record drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). A kept piece with no way in takes the activity of its category (dungeon, raid, trial ...; artifact rings drop in dungeons). In the categories where every obtainable piece has a source (tomestone, artifact, crafted, gil vendor, Gold Saucer, Grand Company, PvP, quest, achievement, Savage, Ultimate, deep dungeon, seasonal event) an untradeable piece with none is retired. A currency with no way in takes the activity of the gear it buys most (**inferred**; 200 of 201 such currencies buy over 90% one category); trial totems mean Extreme trials.
+- **Hand-kept tables**, each keyed by id with the expected name, so a patch that reuses an id stops the run: 42 currencies the game files cannot place (Hunts seals, Savage and Extreme tokens, Elevated Ester, crafting certificates, retired event tomestones; checked on the Console Games Wiki), the six retired shops, and one piece given through a sheet not read (Neophyte's Ring, a quest reward).
+- **Boxes.** Each activity maps to a box. Savage and Extreme split at the level cap (the highest equip level in the data, 100 today): Current at the cap, Legacy below it, since content below the cap can be farmed unsynced. Ultimate is one box: ultimates cannot be run unsynced. Untradeable gil-vendor gear is Miscellaneous; tradeable gil-vendor gear has only the market board route.
 
-**Consistency checks.** The generator stops if a code has no known category, if a category named in the format file does not exist, or if the two signals contradict each other (a recipe result outside crafted, a totem purchase outside ultimate, a Savage armor piece or weapon without a dye slot).
+The boxes in the current data (2026-10-18):
 
-**Dungeon gear is in no group.** The game files do not record dungeon drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: the loot-related sheets `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). Dungeon gear can still be told apart by its code (270), but it is in no group.
+| Box | Section | Default | From it | Needs it, board off | Needs it, board on |
+| --- | --- | --- | ---: | ---: | ---: |
+| Quests & story | Everyday | on | 2,198 | 1,199 | 1,196 |
+| Crafted | Everyday | on | 5,286 | 4,358 | 867 |
+| Normal duties | Everyday | on | 5,771 | 5,771 | 5,713 |
+| Tomestones (Legacy) | Everyday | on | 1,291 | 1,079 | 1,079 |
+| Tomestones (Current) | Everyday | on | 539 | 539 | 539 |
+| Grand Company | Everyday | on | 407 | 407 | 407 |
+| Hunts | Everyday | on | 1,096 | 935 | 935 |
+| Miscellaneous | Everyday | off | 50 | 50 | 15 |
+| Deep dungeons | Side content | off | 154 | 154 | 154 |
+| Gold Saucer | Side content | on | 27 | 27 | 27 |
+| Relics & Field ops | Side content | on | 1,526 | 1,526 | 1,516 |
+| Wondrous Tails | Side content | off | 91 | 91 | 0 |
+| Variant & Criterion | Side content | off | 22 | 22 | 22 |
+| PvP | Side content | off | 655 | 655 | 587 |
+| Extreme (Legacy) | Hard content | on | 661 | 661 | 654 |
+| Extreme (Current) | Hard content | off | 209 | 209 | 209 |
+| Savage (Legacy) | Hard content | on | 886 | 886 | 886 |
+| Savage (Current) | Hard content | off | 429 | 319 | 319 |
+| Ultimate | Hard content | off | 136 | 136 | 136 |
+| Events & promotions | Time-limited | off | 273 | 83 | 81 |
 
-**Savage is current-only.** The savage group takes only pieces whose equip level is the highest in the database (the level cap, 100 today). Legacy Savage gear, which is far easier to get now, stays in the pool, and the group moves on by itself when an expansion raises the cap. No item names are used.
+- "From it": pieces with a route through the box. "Needs it": pieces every route of which needs the box, so unticking it hides them, with the market board switch off and on.
+- 4,718 of the 20,031 rows are tradeable; 1,110 have no route (970 base tomestone sets no longer sold, 75 base Radiant's, 65 Antiquated Heavensward).
+- Relics & Field ops covers Eureka, Bozja and Occult Crescent gear and the relic weapons; Extreme (Legacy) also covers Baldesion Arsenal and Delubrum Reginae (Savage); Variant & Criterion is the Exquisite weapons, upgraded with Elevated Ester (the rest those dungeons sell is glamour).
 
-The shop and recipe flags:
+**Checks.** The generator stops on an activity with no box (combat gear sold for scrips, for example), a hand-kept id with another name, or a category with no drop activity.
 
-- **Crafted** (bit 0): the item is the `ItemResult` of a recipe. When last counted (item level 100 and up, before the floor moved to 15): 3,450 rows, all in the crafted category; the other 857 crafted pieces are augmented crafted gear bought with certificates (675) and pieces with no recipe of their own. **Verified** against the Lodestone (section 10).
-- **Tomestone** (bit 1): an exchange listing costs a tomestone to get it, or it is made by trading in such a piece. 1,833 rows. Details below.
-- **Ultimate** (bit 4): an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). 136 rows: the 16, 16, 18, 20, 22, 22 and 22 weapons of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
-
-How the tomestone flag is read:
-
-- **Currency codes.** Shops do not store most currency costs as item ids: a cost below 8 is a code, read through the shop's `UseCurrencyType` as SaintCoinach's shop reader does.
-  - Types 4 and 2: codes 1 to 4 are the current tomestones. Code 1 is Poetics; SaintCoinach does not decode type 2, and the Lodestone shows its code 1 as Poetics (for example "Deepshadow Necklace of Healing ×1 + Allagan Tomestone of Poetics ×100").
-  - Type 16: code 1 is Poetics; 2, 4, 6 and 7 are crafter and gatherer scrips.
-  - Type 8: gil.
-- **Other costs that count.** A tomestone's own item id as a cost, and a listing that also takes a piece of gear in (augmentation and repair exchanges).
-- **Trade-ins.** A piece made by trading in tomestone gear counts too (for example Augmented Quetzalli, made from Quetzalli and Surgelight Twine), repeated until nothing changes.
-- **Counts.** 1,768 of the 1,833 are tomestone-category pieces; the other 65 are Heavensward artifact armor (item level 210) bought with Allagan Tomestones of Esoterics, which the group includes. The category adds 1,114 tomestone pieces with no current tomestone cost (retired sets).
-- **Retired sets.** The piece traded in is not flagged by that trade, and sets no longer sold (the un-augmented Ironworks, Shire, Lost Allagan, Scaevan, Deepshadow, Crystarium, Cryptlurker, Lunar Envoy and Credendum pieces, removed in patch 5.3 or later) carry no tomestone cost in the current game files, so they get no flag. No source checked (Lodestone, Garland Tools, the Console Games Wiki) records how they were sold. The flag therefore means "the game files sell it for tomestones, or it is made from such a piece".
-- **Unused shops.** A shop the game no longer uses can still be in the files: the Allagan Tomestones of Heliometry shop still sells Quetzalli gear, while the Lodestone shows only today's Sack of Nuts exchange.
+**Two flags for the categories.** `gear_sources.py` marks a piece **crafted** when it is the `ItemResult` of a recipe, and **ultimate** when an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). The category rules use them (the ultimate weapons share code 60 with trial gear) and cross-check them: the generator stops on a recipe result outside crafted, a totem purchase outside ultimate, or a Savage armor piece or weapon without a dye slot. The totem flag covers 136 weapons: the 16, 16, 18, 20, 22, 22 and 22 of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
 ### Stat factor kind
 
@@ -329,7 +346,7 @@ Field 14 is 1 when `Item.SubStatCategory` is 2, else 0: gear whose item level fo
 
 ### Gear category
 
-*Where, in plain words, does a piece come from?* The last field (position 15) is the piece's gear category, the one its `sources` groups are built from (section *Sources*; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)). It is stored as an index into the category list of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9).
+*Where, in plain words, does a piece come from?* The last field (position 15) is the piece's gear category, which a piece with no way in takes its route from (section *Sources*; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)). It is stored as an index into the category list of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9).
 
 **Checks.** The list must hold every category a kept piece can have (the generator's categories minus the three left out) exactly once and nothing else. A missing, unknown or repeated key stops the generator, so a category added after a patch can't reach the page without a label.
 
@@ -375,7 +392,7 @@ Each database row is a fixed list of twenty fields:
 | stats | 14 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
 | unique | 0 or 1 | 1 when only one copy can be worn. |
 | hq | 0 or 1 | 1 when the item can be high quality (`CanBeHq`), so its stats are the HQ ones; the page marks it HQ. |
-| sources | integer 0 to 63 | Bit mask: 1 crafted, 2 tomestone, 4 relic, 8 savage, 16 ultimate, 32 PvP (section *Sources*). |
+| routes | list of integers | Ways to get it: bit masks over the 20 "Gear from" boxes, bit 20 the market board; empty when it can no longer be obtained (section *Sources*). |
 | stat factor kind | integer 0 to 12 | `BaseParamModifier`: the column of the stat factor table (section *Stat factor kind*). |
 | meld slots | integer 0 to 5 | `MateriaSlotCount`: guaranteed materia slots (section *Materia slots*). |
 | overmeld | 0 or 1 | 1 when overmelding is allowed (`IsAdvancedMeldingPermitted`). |
@@ -388,9 +405,9 @@ Each database row is a fixed list of twenty fields:
 
 The example row is
 
-| name | slot | item level | equip level | job mask | stats | unique | hq | sources | kind | meld slots | overmeld | rarity | game id | scales | category | damage | defense |
+| name | slot | item level | equip level | job mask | stats | unique | hq | routes | kind | meld slots | overmeld | rarity | game id | scales | category | damage | defense |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 13119 | 0 | 5 (alliance raid) | 0, 0 | 242, 242 |
+| Void Ark Helm of Fending | 3 | 200 | 60 | 15 | 46,0,0,0,45,0,0,0,0,35,50,0,0,0 | 1 | 0 | [4] (Normal duties) | 1 | 0 | 0 | 3 | 13119 | 0 | 5 (alliance raid) | 0, 0 | 242, 242 |
 
 The file holds the rows and the materia table next to each other, under the same source record (section 6).
 
@@ -549,7 +566,7 @@ Some test expectations are allowed to move after a patch and others must not; th
 
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and the level data has 100 rows;
-- every database row has twenty fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a source mask below 64; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has twenty fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a list of routes, each below $2^{21}$; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
@@ -598,7 +615,8 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Item database generator; materia table and decoy rows | `scripts/data/gen_items.py` (`materia_table`, `select`) |
 | Gear categories (subcategory codes, Savage currencies; the list of categories) | `scripts/data/gear_categories.py` (`CATEGORIES`) |
 | Category list and labels; current-only Savage group | `category.list` and `currentOnly` in `src/core/item-format.json` |
-| Shop and recipe flags | `scripts/data/gear_sources.py` |
+| "Gear from" routes | `scripts/data/gear_activities.py` |
+| Crafted and ultimate flags | `scripts/data/gear_sources.py` |
 | Meld fields of an Item row | `scripts/data/item_format.py` (`meld_fields`), `materia` in `src/core/item-format.json` |
 | Meld fields of a pool item | `src/core/items.js` (`parseRow`, `meldInfo`) |
 | Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
@@ -614,4 +632,4 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:data`) |
 | Format and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
-| Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg`, `docs/diagrams/data-selection.svg`, `docs/diagrams/data-sources.svg` |
+| Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg`, `docs/diagrams/data-selection.svg` |
