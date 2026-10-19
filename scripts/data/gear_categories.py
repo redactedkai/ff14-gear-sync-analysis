@@ -23,7 +23,7 @@ from collections import Counter
 from pathlib import Path
 
 from gear_sources import CODE_LIMIT, FLAGS, ULTIMATE_TOTEMS, shop_listings
-from item_format import ACCESSORY_TYPES, WEAPON_TYPES, SchemaError, check_ids, load_format, read_csv, slot_codes
+from item_format import ACCESSORY_TYPES, WEAPON_TYPES, SchemaError, check_ids, load_format, read_csv, read_item_sheet, slot_codes
 
 # SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/engineering/subcategory-sort-codes.md).
 CATEGORY_BY_CODE = {
@@ -131,10 +131,11 @@ def override_items(csv_dir, items):
     return out
 
 
-def categorize(csv_dir, kept, weapon_slots):
+def categorize(csv_dir, kept, weapon_slots, items=None):
     """{Item.csv id: category} for the kept gear (gen_items.select). weapon_slots: the database slot codes of weapons
-    and shields. Raises SchemaError on a code with no known meaning."""
-    items = read_csv(Path(csv_dir) / 'Item.csv', ['#', 'Name', 'SubcategorySort', 'DyeCount', 'EquipSlotCategory'])
+    and shields. items: the Item.csv rows (read_item_sheet), read here when None. Raises SchemaError on a code with
+    no known meaning."""
+    items = read_item_sheet(csv_dir, items)
     gear = {r['#'] for r in items if r['EquipSlotCategory'] not in ('', '0')}
     savage, _ = savage_items(csv_dir, items, gear)
     overrides = override_items(csv_dir, items)

@@ -59,7 +59,8 @@ def check_bools(rows, columns, sheet):
 
 
 def item_columns():
-    """The Item.csv columns gen_items.py reads (read_csv raises SchemaError on any that is missing)."""
+    """The Item.csv columns the item database generator reads: gen_items.py and, through it, gear_categories.py and
+    gear_activities.py (read_csv raises SchemaError on any that is missing)."""
     fmt = load_format()
     pairs = [
         f'{c}[{i}]' for c in ('BaseParam', 'BaseParamValue', 'BaseParamSpecial', 'BaseParamValueSpecial') for i in range(N_ITEM_PARAMS)
@@ -68,7 +69,17 @@ def item_columns():
     materia = fmt['materia']
     trailing = [fmt['statFactor']['itemColumn'], materia['slotColumn'], materia['overmeldColumn']]
     extra = [e['itemColumn'] for e in fmt['damageDefense']['entries']]
-    return [*cols, *trailing, fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
+    categories = ['SubcategorySort', 'DyeCount']  # gear_categories.py
+    routes = ['IsUntradable']  # gear_activities.py
+    item_row = [fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
+    return ['#', *cols, *trailing, *item_row, *categories, *routes, materia['gateColumn']]
+
+
+def read_item_sheet(csv_dir, items=None):
+    """All rows of Item.csv (dicts, as read_csv gives them), checked for every column of item_columns(). `items`: rows
+    read already, returned as they are, so the item database generator reads the largest sheet once and passes it on
+    to the functions that need it; each of them reads it itself when called alone (tests, gear_categories.py)."""
+    return items if items is not None else read_csv(Path(csv_dir) / 'Item.csv', item_columns())
 
 
 WEAPON_TYPES = ('weapon', 'offhand')  # slot types of weapons and shields

@@ -36,7 +36,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from gear_sources import CODE_LIMIT, shop_listings
-from item_format import ACCESSORY_TYPES, SchemaError, check_bools, check_ids, load_format, read_csv, slot_codes
+from item_format import ACCESSORY_TYPES, SchemaError, check_bools, check_ids, load_format, read_csv, read_item_sheet, slot_codes
 
 GIL, WOLF_MARK, MGP = 1, 25, 29
 FIXED_ITEMS = {GIL: 'Gil', WOLF_MARK: 'Wolf Mark', MGP: 'MGP'}  # item id -> expected name; their activities in activities_of
@@ -310,12 +310,13 @@ def ways_in(csv_dir, kept_ids, ilvl_of):
     return out, rebuys
 
 
-def routes(csv_dir, kept, cats):
+def routes(csv_dir, kept, cats, items=None):
     """{Item.csv id (str): sorted list of route masks} for the kept gear (gen_items.select, LEFT_OUT categories
-    removed). cats: {Item.csv id (str): category} (gear_categories.categorize). Raises SchemaError on an activity with
+    removed). cats: {Item.csv id (str): category} (gear_categories.categorize). items: the Item.csv rows
+    (read_item_sheet), read here when None. Raises SchemaError on an activity with
     no box, an override id that names another item, or a kept piece whose category has no drop activity."""
     d = Path(csv_dir)
-    items = {int(r['#']): r for r in read_csv(d / 'Item.csv', ['#', 'Name', 'IsUntradable', 'LevelItem'])}
+    items = {int(r['#']): r for r in read_item_sheet(csv_dir, items)}
     check_bools(items.values(), ['IsUntradable'], 'Item.csv')
     names = {i: r['Name'] for i, r in items.items()}
     check_names(names, CURRENCIES, 'currency', 'CURRENCIES')
@@ -446,11 +447,12 @@ def routes(csv_dir, kept, cats):
 TOME_NAME_PREFIX = 'Allagan Tomestone of '
 
 
-def current_tome_names(csv_dir):
+def current_tome_names(csv_dir, items=None):
     """The short names of the current tomestones (TomestonesItem slots 2 and 3, in that order), e.g. ['Mathematics',
-    'Mnemonics']. Raises SchemaError when a slot is empty."""
+    'Mnemonics']. items: the Item.csv rows (read_item_sheet), read here when None. Raises SchemaError when a slot is
+    empty."""
     d = Path(csv_dir)
-    names = {r['#']: r['Name'] for r in read_csv(d / 'Item.csv', ['#', 'Name'])}
+    names = {r['#']: r['Name'] for r in read_item_sheet(csv_dir, items)}
     slot_item = {int(r['Tomestones']): r['Item'] for r in read_csv(d / 'TomestonesItem.csv', ['Item', 'Tomestones'])}
     missing = [c for c in sorted(CURRENT_TOME_CODES) if slot_item.get(c, '0') == '0']
     if missing:

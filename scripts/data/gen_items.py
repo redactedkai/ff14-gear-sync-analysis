@@ -42,10 +42,10 @@ from item_format import (
     WEAPON_TYPES,
     SchemaError,
     check_bools,
-    item_columns,
     load_format,
     meld_fields,
     read_csv,
+    read_item_sheet,
     row_fields,
     run_main,
     slot_codes,
@@ -69,7 +69,7 @@ def crafter_gatherer_params(base_param_csv, fmt):
     return {p['baseParam'] for p in fmt['crafterGathererParams']}
 
 
-def materia_table(csv_dir, fmt):
+def materia_table(csv_dir, fmt, items=None):
     """The materia table {values, gate, high}, one entry per grade (I first), from the Materia sheet (`materia` in
     item-format.json):
       values: what a grade adds to a combat substat (Materia Value);
@@ -78,7 +78,7 @@ def materia_table(csv_dir, fmt):
     Uses the rows of the `statKeys` stats that carry items; rows with values but no items are decoys and are skipped.
     Raises SchemaError when a stat has no row or several, the rows disagree, a grade is missing or extra, a gate is
     unknown or lower than the grade before, or the high grades are not the ones worth more than their neighbours.
-    Returns (table, number of decoy rows skipped)."""
+    items: the Item.csv rows (read_item_sheet), read here when None. Returns (table, number of decoy rows skipped)."""
     d = Path(csv_dir)
     m = fmt['materia']
     n = m['grades']
@@ -88,7 +88,7 @@ def materia_table(csv_dir, fmt):
     item_cols = [f'{m["itemColumn"]}[{g}]' for g in range(n)]
     value_cols = [f'{m["valueColumn"]}[{g}]' for g in range(n)]
     rows = read_csv(d / sheet, ['#', m['statColumn'], *item_cols, *value_cols])
-    level = {r['#']: r[m['gateColumn']] for r in read_csv(d / 'Item.csv', ['#', m['gateColumn']])}
+    level = {r['#']: r[m['gateColumn']] for r in read_item_sheet(csv_dir, items)}
 
     by_stat, decoys, problems = {}, 0, []
     for r in rows:
@@ -181,13 +181,13 @@ DROP_RULES = {
 }
 
 
-def select(csv_dir):
+def select(csv_dir, items=None):
     """The gear the database keeps: (kept, multi_slot, dropped), where kept is a list of (Item.csv row, piece) pairs in
     Item.csv order. A piece is a dict of the row's fields by `itemRow.fields` name (item-format.json) except routes and
     category, which main() adds, plus `flags` (gear_sources.FLAGS: crafted, ultimate) for the categories. multi_slot
     names the pieces left out because they block a combination of slots with no slot code in item-format.json, and
     dropped is {DROP_RULES key: rows that rule left out} (a crafter or gatherer stat marks gear a combat job can wear
-    but made for crafting or gathering)."""
+    but made for crafting or gathering). items: the Item.csv rows (read_item_sheet), read here when None."""
     d = Path(csv_dir)
     fmt = load_format()
     param_idx = {s['baseParam']: i for i, s in enumerate(fmt['stats'])}  # BaseParam row id -> stat index
@@ -227,7 +227,7 @@ def select(csv_dir):
         """True for gear that occupies another slot too (EquipSlotCategory value -1)."""
         return e is not None and any(v == '-1' for c, v in e.items() if c != '#')
 
-    items = read_csv(d / 'Item.csv', ['#', *item_columns()])
+    items = read_item_sheet(csv_dir, items)
     check_bools(items, ['CanBeHq', 'IsUnique'], 'Item.csv')
     src = gear_flags(d, items)
     kept, multi_slot, bad_kind, bad_meld = [], [], [], []
@@ -343,21 +343,22 @@ def main(csv_dir, out, source='detect'):
     if source == 'detect':
         source = provenance.detect(csv_dir)
     fmt = load_format()
-    kept, multi_slot, dropped = select(csv_dir)
+    items = read_item_sheet(csv_dir)  # the largest sheet, read once and passed on
+    kept, multi_slot, dropped = select(csv_dir, items)
     n_items = len(kept) + sum(dropped.values())
-    cats = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES))
+    cats = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES), items)
     problems = gear_categories.check(kept, cats)
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     left_out = Counter(cats[r['#']] for r, _ in kept if cats[r['#']] in gear_categories.LEFT_OUT)
     kept = [(r, row) for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
-    routes = gear_activities.routes(csv_dir, kept, cats)
+    routes = gear_activities.routes(csv_dir, kept, cats, items)
     cat_index = category_index(fmt)
     # each kept piece's fields plus its routes and category, in the order of `itemRow.fields` (row_fields raises if the
     # format file's rowField entries disagree with that list)
     fields = list(row_fields(fmt))
     pieces = [{**piece, 'routes': routes[r['#']], 'category': cat_index[cats[r['#']]]} for r, piece in kept]
-    materia, _decoys = materia_table(csv_dir, fmt)
+    materia, _decoys = materia_table(csv_dir, fmt, items)
     # A job no item is left for means the job columns or their values changed shape (e.g. 'True' became '1').
     seen = 0
     for piece in pieces:
@@ -373,7 +374,7 @@ def main(csv_dir, out, source='detect'):
         '_generated': provenance.note(source),
         'source': source,
         'materia': materia,
-        'currentTomes': gear_activities.current_tome_names(csv_dir),
+        'currentTomes': gear_activities.current_tome_names(csv_dir, items),
         'items': rows,
     }
     provenance.write_generated(out, provenance.json_lines(doc, expand=('items',), ensure_ascii=False))
