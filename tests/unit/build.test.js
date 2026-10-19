@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMarks, esbuildOptions } from '../../scripts/build/build.mjs';
+import { buildMarks, esbuildOptions, expandIncludes } from '../../scripts/build/build.mjs';
 
 /* A build marks itself as a test build everywhere but main (CLAUDE.md, Branches). */
 test('build marks: none on main or an unknown branch; DEV elsewhere, with branch and commit', () => {
@@ -34,4 +34,25 @@ test('build keeps the MIT notices of Alpine.js and @vue/reactivity', () => {
   assert.match(banner, /MIT/);
   assert.match(banner, /Alpine\.js, \(c\) 2019-present Caleb Porzio/);
   assert.match(banner, /@vue\/reactivity.*Evan\) You/);
+});
+
+/* Audit 02, finding 3: the Expansion and "Gear from" menus were copied in index.html for the optimizer and the
+   browser. One partial each now, filled in at build time with the tab's id prefix and store part. */
+test('build includes: a partial is filled in, indented like its marker, its leading comment dropped', () => {
+  const partials = { 'm.html': '<!-- about m: {{id}} -->\n<div id="{{id}}-x">\n  <i x-text="$store.app.{{part}}.q"></i>\n</div>\n' };
+  const out = expandIncludes('<p>\n    <!-- INCLUDE m.html id=o part=opt -->\n</p>', name => partials[name]);
+  assert.equal(out, '<p>\n    <div id="o-x">\n      <i x-text="$store.app.opt.q"></i>\n    </div>\n</p>');
+  assert.throws(() => expandIncludes('<!-- INCLUDE m.html id=o -->', name => partials[name]), /no value for \{\{part\}\}/);
+});
+
+test('page template: both tabs take their filter menus from the partials', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const html = await readFile(new URL('../../src/index.html', import.meta.url), 'utf8');
+  const page = expandIncludes(html);
+  for (const id of ['o', 'b']) {
+    for (const el of [`${id}-exp-menu`, `${id}-from-menu`, `${id}-market`, `${id}-from-desc`]) assert.match(page, new RegExp(`id="${el}"`));
+  }
+  assert.match(page, /\$store\.app\.opt\.market = /);
+  assert.match(page, /\$store\.app\.browse\.market = /);
+  assert.doesNotMatch(page, /\{\{|INCLUDE/);
 });

@@ -1,0 +1,11 @@
+<!-- The Expansion filter's dropdown, shared by the optimizer and the browser (helpers.js expansionToggles).
+     {{id}}: the id prefix of the tab ('o' or 'b'). -->
+<div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+  <span id="{{id}}-exp-label">Expansion</span>
+  <button type="button" class="multi-btn" id="{{id}}-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-exp-label {{id}}-exp" @click="open = !open" x-text="expSummary()"></button>
+  <div class="multi-menu" id="{{id}}-exp-menu" role="group" aria-labelledby="{{id}}-exp-label" x-show="open" x-cloak>
+    <template x-for="e in expansions" :key="e[0]">
+      <label class="multi-opt"><input type="checkbox" :data-exp="e[0]" :checked="expShown(e[0])" @change="setExpShown(e[0], $event.target.checked)"><span x-text="e[1]"></span></label>
+    </template>
+  </div>
+</div>

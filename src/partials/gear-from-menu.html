@@ -1,0 +1,21 @@
+<!-- The "Gear from" filter's dropdown, shared by the optimizer and the browser (helpers.js gearFromToggles).
+     {{id}}: the id prefix of the tab ('o' or 'b'); {{part}}: its settings in the store ('opt' or 'browse'). -->
+<div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+  <span id="{{id}}-from-label">Gear from</span>
+  <button type="button" class="multi-btn" id="{{id}}-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-from-label {{id}}-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
+  <div class="multi-menu from-menu" x-ref="fromMenu" id="{{id}}-from-menu" role="group" aria-labelledby="{{id}}-from-label" x-show="open" x-cloak @mouseleave="fromPointed = null">
+    <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear<small>Tradeable pieces show whatever their source.</small></span><input type="checkbox" role="switch" id="{{id}}-market" :checked="$store.app.{{part}}.market" @change="$store.app.{{part}}.market = $event.target.checked"></label>
+    <div class="from-head"><button type="button" class="linkbtn" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" @click="setFromAll('default')">Default</button></div>
+    <div class="from-cols">
+      <template x-for="col in gearFromColumns" :key="col.key"><div>
+        <template x-for="sec in col.sections" :key="sec.title"><div>
+          <div class="from-sec" x-text="sec.title"></div>
+          <template x-for="a in sec.boxes" :key="a.key">
+            <label class="multi-opt" :class="{ 'from-empty': fromEmpty(a.key) }" @mouseenter="fromPointed = a.key" @focusin="fromPointed = a.key"><input type="checkbox" :data-activity="a.key" :checked="fromOn(a.key)" @change="setFromOn(a.key, $event.target.checked)"><span x-text="a.label"></span></label>
+          </template>
+        </div></template>
+      </div></template>
+    </div>
+    <p class="from-desc" id="{{id}}-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template><template x-if="!fromDescription()"><span>Point at a box to see what it covers.</span></template></p>
+  </div>
+</div>

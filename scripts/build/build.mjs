@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const SRC = join(ROOT, 'src');
 export const DIST = join(ROOT, 'dist');
+export const PARTIALS = join(SRC, 'partials');
 
 /* The MIT notices of the bundled libraries, kept at the top of the page's script. esbuild's own legal comments are
    off (legalComments: 'none'): its 'eof' mode keeps only the Vue notice, since Alpine.js ships none in its bundle. */
@@ -70,6 +71,33 @@ export function buildMarks({ branch, commit }) {
   };
 }
 
+/* The template with every `<!-- INCLUDE name.html key=value ... -->` line replaced by src/partials/name.html: each
+   {{key}} in the partial becomes its value, the partial's leading comment (what it is and its keys) is dropped, and its
+   lines take the marker's indentation. One copy of markup the page shows twice (the Expansion and "Gear from" menus of
+   the optimizer and the browser). Throws on a missing partial or a {{key}} the marker does not give. */
+export function expandIncludes(template, readPartial = name => readFileSync(join(PARTIALS, name), 'utf8')) {
+  return template.replace(/^([ \t]*)<!-- INCLUDE (\S+)((?: [\w-]+=\S+)*) -->\r?$/gm, (_, indent, name, args) => {
+    const values = Object.fromEntries(
+      args
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(arg => arg.split('=')),
+    );
+    const body = readPartial(name)
+      .replace(/^<!--[\s\S]*?-->\r?\n/, '')
+      .replace(/\{\{(\w+)\}\}/g, (__, key) => {
+        if (!(key in values)) throw new Error(`${name}: no value for {{${key}}}`);
+        return values[key];
+      });
+    return body
+      .replace(/\r?\n$/, '')
+      .split(/\r?\n/)
+      .map(line => (line ? indent + line : line))
+      .join('\n');
+  });
+}
+
 /* Inline the bundle outputs into the HTML template and write dist/index.html. Returns the byte size. `info`: the
    branch and commit (buildInfo), which decide the test-build marks. */
 export function writePage(outputFiles, info = buildInfo()) {
@@ -82,7 +110,8 @@ export function writePage(outputFiles, info = buildInfo()) {
     css = pick('.css');
   if (!js) throw new Error('esbuild produced no JavaScript output');
   if (/<\/script/i.test(js)) throw new Error('bundle contains "</script", which would end the inline script early');
-  const template = readFileSync(join(SRC, 'index.html'), 'utf8');
+  const template = expandIncludes(readFileSync(join(SRC, 'index.html'), 'utf8'));
+  if (template.includes('<!-- INCLUDE')) throw new Error('src/index.html has an INCLUDE marker the build cannot read');
   for (const marker of ['<!-- STYLES -->', '<!-- SCRIPT -->', '<!-- BUILD_BADGE -->', '<!-- BUILD_INFO -->']) {
     if (!template.includes(marker)) throw new Error(`src/index.html is missing the ${marker} marker`);
   }
