@@ -19,14 +19,16 @@ const COLUMN = { rate: 'Rate', onCrit: 'On crit', dmgHeal: 'Dmg & heal', dmgTake
 const lineWord = kind => (kind === 'gcd' || kind === 'mp' ? COLUMN[kind] : COLUMN[kind].toLowerCase());
 
 /* What each substat does, for its ? note (AkhMorning, checked 2026-10-17; a direct hit adds 25% damage). Keyed by the
-   neutral stat, with spec split into the job's special substat. */
+   neutral stat, with spec split by what the job's special substat does (JobContext.specKind). */
 const AFFECTS = {
   crit: 'Raises the chance of a critical hit (Rate) and how much a critical hit adds (On crit), for damage and healing. On crit is always the rate + 35%.',
   det: 'Raises all damage and healing done (Dmg & heal). Heals received are not affected.',
   dh: 'Raises the chance of a direct hit (Rate), which adds 25% damage. Damage only, not healing.',
   spd: 'Shortens the GCD (the recast of weaponskills and spells) in 0.01 s steps. Points between two steps still add a little to damage and healing over time and to auto-attacks.',
-  piety: 'Raises the MP regained every 3 seconds (MP).',
-  ten: 'Tanks only. Raises damage and healing done (Dmg & heal) and lowers damage taken (Dmg taken).',
+  spec: {
+    mp: 'Raises the MP regained every 3 seconds (MP).',
+    mitigation: 'Tanks only. Raises damage and healing done (Dmg & heal) and lowers damage taken (Dmg taken).',
+  },
 };
 
 /* "13 or 14", "85, 86, 128 or 129" */
@@ -57,13 +59,13 @@ export function tierInput(app, stat, text, level = app.level) {
 
 /* The ? note of a substat: {title, affects, size}. */
 function helpOf(job, stat, level, haste) {
-  const key = stat === 'spec' ? job.profile.spec : stat;
+  const affects = stat === 'spec' ? AFFECTS.spec[job.specKind] : AFFECTS[stat];
   let size;
-  if (key === 'ten')
+  if (stat === 'spec' && job.specKind === 'mitigation')
     size = `At level ${level}, Dmg & heal steps every ${sizeList(tierSizes(job, stat, level, 0, 'dmgHeal'))} points and Dmg taken every ${sizeList(tierSizes(job, stat, level, 0, 'dmgTaken'))}.`;
   else
-    size = `At level ${level}, each ${key === 'spd' ? '0.01 s step' : 'tier'} is ${sizeList(tierSizes(job, stat, level, haste))} points.`;
-  return { title: job.label[stat], affects: AFFECTS[key], size };
+    size = `At level ${level}, each ${stat === 'spd' ? '0.01 s step' : 'tier'} is ${sizeList(tierSizes(job, stat, level, haste))} points.`;
+  return { title: job.label[stat], affects, size };
 }
 
 /* The Tiers view at `level` for `values` ({stat: panel value}), or null with no job: {level, cards}, one card per

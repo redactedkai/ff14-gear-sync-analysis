@@ -23,6 +23,9 @@ import { IL, JOB_MODS, MAX_LEVEL } from './tables.js';
 
 const cache = new Map();
 
+/* The special substat's raw key (PROFILES' spec) to what it does: JobContext.specKind. */
+const SPEC_KIND = Object.freeze({ piety: 'mp', ten: 'mitigation' });
+
 /** @param {string} jobId e.g. 'SGE'. Unknown ids fall back to DEFAULT_JOB. Results are cached and frozen. */
 export function makeJobContext(jobId) {
   let jobIndex = JOBS.findIndex(j => j[0] === jobId);
@@ -66,6 +69,10 @@ export function makeJobContext(jobId) {
     /* the job's modifiers of its main stat and Vitality, in percent (ClassJob): its base is the level's main stat base x
        the modifier (food.js statBase) */
     attributeMods: Object.freeze({ main: JOB_MODS[id][profile.main], vit: JOB_MODS[id].vit }),
+    /* what the job's special substat (`spec`) does, so shared code never names the job keys: 'mp' for Piety (healers:
+       MP per tick; it starts from the level's main stat base, like Determination), 'mitigation' for Tenacity (tanks:
+       damage and healing done, and a cut to damage taken), null for jobs without one */
+    specKind: profile.spec ? SPEC_KIND[profile.spec] : null,
     /* Vitality for Int/Mind jobs is the Vit budget x 0.9 (rounded again) */
     vitFactor: profile.main === 'mind' || profile.main === 'int' ? 0.9 : 1,
     /* the job's level cap: limited jobs stop below the game's (JOB_LEVEL_CAPS); it cannot wear gear of a higher equip level */

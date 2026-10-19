@@ -26,18 +26,21 @@ const EFFECTS = {
   ],
   det: [['dmgHeal', 140]],
   dh: [['rate', 550]],
-  piety: [['mp', 150]],
-  ten: [
+  spd: [['gcd', null]],
+};
+/* The special substat's effects, by what it does (JobContext.specKind): Piety's MP, Tenacity's mitigation. */
+const SPEC_EFFECTS = {
+  mp: [['mp', 150]],
+  mitigation: [
     ['dmgHeal', 112],
     ['dmgTaken', TEN_MITIGATION_STEP],
   ],
-  spd: [['gcd', null]],
 };
 
 /* The effects of a neutral stat for the job ([kind, step] pairs), or null for stats without tiers (main, vit, a missing
    spec). */
 function effectsOf(job, stat) {
-  if (stat === 'spec') return job.profile.spec ? EFFECTS[job.profile.spec] : null;
+  if (stat === 'spec') return job.specKind ? SPEC_EFFECTS[job.specKind] : null;
   return EFFECTS[stat] ?? null;
 }
 
@@ -185,7 +188,7 @@ export function tierSizes(job, stat, level, haste = 0, kind = null, count = 60) 
    higher; Tenacity's is its mitigation step (TEN_MITIGATION_STEP); the others as statTier. */
 export function rankTierOf(job, stat, level, haste = 0) {
   if (stat === 'spd') return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
-  const step = stat === 'spec' && job.profile.spec === 'ten' ? TEN_MITIGATION_STEP : stepOf(job, stat);
+  const step = stat === 'spec' && job.specKind === 'mitigation' ? TEN_MITIGATION_STEP : stepOf(job, stat);
   if (step == null) return null;
   const { div } = speedParams(level);
   return total => Math.floor((step * Math.max(0, total)) / div);

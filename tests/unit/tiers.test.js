@@ -5,6 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
+import { JOBS } from '../../src/core/constants.js';
 import { statTier, tierLadder, tierSizes } from '../../src/core/tiers.js';
 import { AKH_LEVEL } from './helpers/common.js';
 
@@ -182,4 +183,16 @@ test("Monk's haste skips some 0.01 s GCD steps, so a few speed tiers are longer"
 test('no ladder for main stat, Vitality or a missing special substat', () => {
   assert.equal(tierLadder(sge, 'main', 100, 500, 3), null);
   assert.equal(tierLadder(blm, 'spec', 100, 500, 3), null);
+});
+
+/* Shared code reads what the special substat does from JobContext.specKind, never the job keys (audit 01, finding 13):
+   Piety for every healer, Tenacity for every tank, none for the other roles. */
+test('specKind: MP for healers, mitigation for tanks, none for the rest', () => {
+  const kinds = {};
+  for (const [id, , profileId] of JOBS) kinds[profileId] = [...(kinds[profileId] ?? []), makeJobContext(id).specKind];
+  assert.deepEqual(new Set(kinds.healer), new Set(['mp']));
+  assert.deepEqual(new Set(kinds.tank), new Set(['mitigation']));
+  for (const role of Object.keys(kinds).filter(r => r !== 'healer' && r !== 'tank')) {
+    assert.deepEqual(new Set(kinds[role]), new Set([null]), role);
+  }
 });

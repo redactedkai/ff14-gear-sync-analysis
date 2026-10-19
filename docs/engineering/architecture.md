@@ -195,7 +195,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/food.json`, `src/data/job-icons.js` |
 | Tables and limits derived from the data | `src/core/tables.js` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
-| Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
+| Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `specKind`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
 | Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
 | Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |

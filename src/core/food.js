@@ -28,7 +28,7 @@ export function statBase(job, stat, level) {
   // the main stat and Vitality: the job's share of the main stat base
   if (stat === 'main' || stat === 'vit') return Math.floor((LEVEL_MAIN[lv - 1] * job.attributeMods[stat]) / 100);
   // Determination and Piety start from the main stat base, the other substats from the speed base
-  if (stat === 'det' || (stat === 'spec' && job.profile.spec === 'piety')) return LEVEL_MAIN[lv - 1];
+  if (stat === 'det' || (stat === 'spec' && job.specKind === 'mp')) return LEVEL_MAIN[lv - 1];
   return speedParams(lv).sub;
 }
 
