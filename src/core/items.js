@@ -118,11 +118,13 @@ export function parseRow(r) {
 /* Item level span of each expansion: from the previous expansion's level-cap sync item level to its own (the last
    one is open-ended). [{short, name, from, to}], `from` of the first and `to` of the last are null. */
 export function expansionBounds() {
-  return EXPANSIONS.map(([short, name, cap], i) => ({
+  // the item level gear is synced to at each expansion's level cap
+  const capSync = EXPANSIONS.map(([, , levelCap]) => levelParams(levelCap).sync);
+  return EXPANSIONS.map(([short, name], i) => ({
     short,
     name,
-    from: i ? levelParams(EXPANSIONS[i - 1][2]).sync : null,
-    to: i < EXPANSIONS.length - 1 ? levelParams(cap).sync : null,
+    from: i ? capSync[i - 1] : null,
+    to: i < EXPANSIONS.length - 1 ? capSync[i] : null,
   }));
 }
 
@@ -132,7 +134,10 @@ export function expansionBounds() {
    are new jobs' weapons added to old content, which belong with it. Level-1 pieces (gift earrings and rings released
    later) use the item level band of expansionBounds instead. */
 export function expansionOf(lvl, ilvl) {
-  if (lvl > 1) return (EXPANSIONS.find(e => lvl <= e[2]) || EXPANSIONS[EXPANSIONS.length - 1])[0];
+  if (lvl > 1) {
+    const [short] = EXPANSIONS.find(([, , levelCap]) => lvl <= levelCap) ?? EXPANSIONS.at(-1);
+    return short;
+  }
   const b = expansionBounds().find(x => (x.from == null || ilvl > x.from) && (x.to == null || ilvl <= x.to));
   return b.short;
 }

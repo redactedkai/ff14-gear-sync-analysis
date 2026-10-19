@@ -13,7 +13,7 @@ import { statBase } from './food.js';
    stack Tenacity for mitigation (owner, 2026-10-16). The optimizer's Tier row shows the damage step (112). */
 const TEN_MITIGATION_STEP = 200;
 
-/* Each substat's effects, in the order the page shows them: [kind, step], step the c in floor(c x g / div) (speed has
+/* Each substat's effects, in the order the page shows them: {kind, step}, step the c in floor(c x g / div) (speed has
    none: its GCD comes from speed.js). Kinds:
      rate: the chance of a critical hit (from 5%) or a direct hit; onCrit: what a critical hit adds (from 40%, always
      the rate + 35%, the same step); dmgHeal: damage and healing done; dmgTaken: Tenacity's cut to damage taken; mp:
@@ -22,23 +22,23 @@ const TEN_MITIGATION_STEP = 200;
    too, Direct Hit to damage only. The first effect is the one the optimizer's Tier row shows (statTier). */
 const EFFECTS = {
   crit: [
-    ['rate', 200],
-    ['onCrit', 200],
+    { kind: 'rate', step: 200 },
+    { kind: 'onCrit', step: 200 },
   ],
-  det: [['dmgHeal', 140]],
-  dh: [['rate', 550]],
-  spd: [['gcd', null]],
+  det: [{ kind: 'dmgHeal', step: 140 }],
+  dh: [{ kind: 'rate', step: 550 }],
+  spd: [{ kind: 'gcd', step: null }],
 };
 /* The special substat's effects, by what it does (JobContext.specKind): Piety's MP, Tenacity's mitigation. */
 const SPEC_EFFECTS = {
-  mp: [['mp', 150]],
+  mp: [{ kind: 'mp', step: 150 }],
   mitigation: [
-    ['dmgHeal', 112],
-    ['dmgTaken', TEN_MITIGATION_STEP],
+    { kind: 'dmgHeal', step: 112 },
+    { kind: 'dmgTaken', step: TEN_MITIGATION_STEP },
   ],
 };
 
-/* The effects of a neutral stat for the job ([kind, step] pairs), or null for stats without tiers (main, vit, a missing
+/* The effects of a neutral stat for the job ({kind, step} objects), or null for stats without tiers (main, vit, a missing
    spec). */
 function effectsOf(job, stat) {
   if (stat === 'spec') return job.specKind ? SPEC_EFFECTS[job.specKind] : null;
@@ -47,7 +47,7 @@ function effectsOf(job, stat) {
 
 /* The step size of a neutral stat's first effect, or null for speed and stats without tiers. */
 function stepOf(job, stat) {
-  return effectsOf(job, stat)?.[0][1] ?? null;
+  return effectsOf(job, stat)?.[0].step ?? null;
 }
 
 /* A per mille value as a percent with one decimal: 193 -> "19.3%". */
@@ -77,7 +77,7 @@ export function statTier(job, stat, points, level) {
   }
   const effects = effectsOf(job, stat);
   if (effects == null) return null;
-  const [kind, step] = effects[0];
+  const { kind, step } = effects[0];
   const { div } = levelParams(level);
   // the effect in per mille (MP for Piety), and the fewest points that give it and the next one: the smallest g with
   // floor(step x g / div) >= tier, and >= tier + 1
@@ -87,18 +87,18 @@ export function statTier(job, stat, points, level) {
   return { effect: effectText(kind, stat, tier) + (kind === 'mp' ? ' MP' : ''), start, next };
 }
 
-/* The tier that gear points g fall in, for some or all of a stat's effects ([kind, step] pairs from effectsOf):
+/* The tier that gear points g fall in, for some or all of a stat's effects ({kind, step} objects from effectsOf):
    {start, next} in gear points, next null past the last GCD step. With several effects a tier ends where any of them
    changes. haste in percent (speed only). */
 function tierAt(effects, g, level, haste) {
-  if (effects[0][0] === 'gcd') {
+  if (effects[0].kind === 'gcd') {
     const t = gcdTierAt(g, level, BASE_GCD_MS, haste);
     return { start: t.start, next: t.next };
   }
   const { div } = levelParams(level);
   let start = 0,
     next = Infinity;
-  for (const [, step] of effects) {
+  for (const { step } of effects) {
     const tier = Math.floor((step * g) / div);
     start = Math.max(start, Math.ceil((tier * div) / step));
     next = Math.min(next, Math.ceil(((tier + 1) * div) / step));
@@ -125,7 +125,7 @@ export function tierLadder(job, stat, level, total, near, haste = 0) {
   const base = statBase(job, stat, level);
   const { div } = levelParams(level);
   const valuesAt = g =>
-    effects.map(([kind, step]) =>
+    effects.map(({ kind, step }) =>
       effectText(kind, stat, kind === 'gcd' ? gcdFor(g, level, BASE_GCD_MS, haste) : Math.floor((step * g) / div)),
     );
 
@@ -157,7 +157,7 @@ export function tierLadder(job, stat, level, total, near, haste = 0) {
   const at = tiers[cur];
   return {
     base,
-    kinds: effects.map(e => e[0]),
+    kinds: effects.map(effect => effect.kind),
     rows,
     cur,
     spare: gear - at.start,
@@ -173,11 +173,11 @@ export function tierLadder(job, stat, level, total, near, haste = 0) {
 export function tierSizes(job, stat, level, haste = 0, kind = null, count = 60) {
   const all = effectsOf(job, stat);
   if (all == null) return null;
-  const effects = kind == null ? all : all.filter(e => e[0] === kind);
+  const effects = kind == null ? all : all.filter(effect => effect.kind === kind);
   const sizes = new Set();
   let t = tierAt(effects, 0, level, haste);
   for (let k = 0; k < count && t.next != null; k++) {
-    if (k > 0 || effects[0][0] !== 'gcd') sizes.add(t.next - t.start);
+    if (k > 0 || effects[0].kind !== 'gcd') sizes.add(t.next - t.start);
     t = tierAt(effects, t.next, level, haste);
   }
   return [...sizes].sort((a, b) => a - b);

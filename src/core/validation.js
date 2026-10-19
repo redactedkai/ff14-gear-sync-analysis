@@ -42,19 +42,20 @@ export function bandAccuracy(items = ITEMS) {
   return out;
 }
 
-/* Published substat caps at item level 475 (FFXIV Wiki, Item Level Sync page): [label, slot type, cap, slot share]. */
+/* Published substat caps at item level 475 (FFXIV Wiki, Item Level Sync page): {label, type (slot type), published
+   (the cap), share (slot share, per mille)}. */
 export const WIKI475 = Object.freeze(
   [
-    ['Accessory', 'ear', 88, 67],
-    ['Head / hands / feet', 'head', 112, 85],
-    ['Body / legs', 'body', 177, 135],
-    ['One-handed weapon', 'weapon', 131, 100],
-    ['Off-hand (shield)', 'offhand', 53, 40],
-  ].map(r => Object.freeze(r)),
+    { label: 'Accessory', type: 'ear', published: 88, share: 67 },
+    { label: 'Head / hands / feet', type: 'head', published: 112, share: 85 },
+    { label: 'Body / legs', type: 'body', published: 177, share: 135 },
+    { label: 'One-handed weapon', type: 'weapon', published: 131, share: 100 },
+    { label: 'Off-hand (shield)', type: 'offhand', published: 53, share: 40 },
+  ].map(row => Object.freeze(row)),
 );
 
 export function wikiChecks() {
-  return WIKI475.map(([label, type, published, share]) => {
+  return WIKI475.map(({ label, type, published, share }) => {
     // the slot's share of Critical Hit's budget (statLine's first step); the off-hand is the two-handed value minus
     // the one-handed value (offhandParts)
     const full = pct => statLine(IL.crit[475], pct).value;

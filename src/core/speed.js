@@ -18,9 +18,9 @@ export function hasteFor(jobId, level) {
   const haste = HASTE[jobId];
   if (!haste) return null;
   // steps are [from level, percent, source] in level order: the last one the level has reached applies
-  let step = null;
-  for (const st of haste.steps) if (level >= st[0]) step = st;
-  return step ? { name: haste.name, pct: step[1], level: step[0], source: step[2] } : null;
+  let reached = null;
+  for (const [fromLevel, pct, source] of haste.steps) if (level >= fromLevel) reached = { name: haste.name, pct, level: fromLevel, source };
+  return reached;
 }
 
 /* The recast multiplier in per mille for `gearSpd` speed above the level's base: 1000 minus SPEED_STEP per `div` points (the
