@@ -32,6 +32,7 @@ currentTomes, the short names of the two current tomestones (for the "Tomestones
 """
 
 import argparse
+import json
 from collections import Counter
 from pathlib import Path
 from typing import NamedTuple
@@ -424,9 +425,10 @@ def category_index(fmt):
     return {k: i for i, k in enumerate(keys)}
 
 
-def main(csv_dir, out, source='detect'):
+def main(csv_dir, out, source='detect', report=None):
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir. Only written as a header comment;
-    the DATA_SOURCE constant lives in item-level.json."""
+    the DATA_SOURCE constant lives in item-level.json. report: a path to write this run's counts to as JSON (the
+    funnel, LEFT_OUT categories, dangling ids and inferred routes), for summary.py; regen.py passes one."""
     if source == 'detect':
         source = provenance.detect(csv_dir)
     fmt = load_format()
@@ -473,6 +475,16 @@ def main(csv_dir, out, source='detect'):
     if selection.multi_slot:
         multi_slot = selection.multi_slot
         print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
+    if report:
+        counts = {
+            'itemSheetRows': n_items,
+            'dropped': dropped,
+            'leftOut': dict(sorted(left_out.items())),
+            'dangling': dict(sorted(selection.dangling.items())),
+            'inferredPieces': dict(sorted(inferred['pieces'].items())),
+            'inferredCurrencies': dict(sorted(inferred['currencies'].items())),
+        }
+        provenance.write_generated(report, json.dumps(counts) + '\n')
 
 
 def drop_report(n_items, dropped, left_out, n_kept, dangling=None):
@@ -498,5 +510,6 @@ if __name__ == '__main__':
     ap.add_argument('csv_dir')
     ap.add_argument('out', nargs='?', default='src/data/items.json')
     provenance.add_cli_args(ap)
+    ap.add_argument('--report', help="write this run's counts to this JSON file (for summary.py)")
     args = ap.parse_args()
-    run_main(main, args.csv_dir, args.out, provenance.from_args(args))
+    run_main(main, args.csv_dir, args.out, provenance.from_args(args), args.report)

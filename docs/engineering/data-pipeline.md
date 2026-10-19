@@ -499,6 +499,8 @@ The full regeneration refuses to run when it cannot read the clone's commit. A g
 
 **Edited clones.** The record names a commit, not the files, so data generated from a CSV edited in the local clone would claim to be that commit's. The full regeneration therefore refuses to run while any tracked file in the clone differs from its commit, and lists the files. `regen.py --allow-dirty` runs anyway, with a warning, for trying out an edit; what it writes should not be committed. Untracked files in the clone are not checked: the generators read only tracked sheets.
 
+**The input files.** The summary file (`src/data/summary.json`, section 9) also records the git blob id of each of the twenty CSVs at that commit (`git ls-tree <commit> csv/en` gives the same ids). Two summaries thus show which sheets a patch changed, and a reader can check that a CSV is the exact file the data was made from (`git hash-object <file>`).
+
 **Reproducing older data.** Since every generated file names the full commit, its data can be rebuilt with `fetch.py --commit <id>` followed by `regen.py` (section 2).
 
 **The newest commit, not the newest change.** The recorded commit is the clone's newest commit, not the newest commit that changed one of the fetched sheets. Commit `d9582a6` ("TC 7.25") changed no English CSV. Six of the sheets were last changed by:
@@ -571,8 +573,11 @@ One command, `npm run update-data`, does steps 1 and 2.
 
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the generators (the data files record the new commit) and rebuild the page. It refuses to start while a CSV in the clone has local edits (section 6). Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The item database step also prints its funnel line (section 4): compare it with the last run's, and look into any rule whose count jumped. It then prints the inferred routes line (section 4, *Sources*): a jump there means many new pieces or currencies were placed by a fallback rule rather than the game files. The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
-3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. **Review** the change in the generated files with `git diff`: each changed item, budget column, level or meal is its own line (section 4). Then update counts quoted in the docs, such as the 20,031 rows above.
+3. **Compare**: the last step before the build writes `src/data/summary.json` and compares its counts with the committed one (see below). Read every count it names.
+4. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
+5. **Review** the change in the generated files with `git diff`: each changed item, budget column, level or meal is its own line (section 4). Then update counts quoted in the docs, such as the 20,031 rows above, and add a few words to the new line in [data-changelog.md](../data-changelog.md).
+
+**The summary and the drift check.** `scripts/data/summary.py` writes `src/data/summary.json`: the source record, `formatVersion`, the blob id of each CSV (section 6) and the counts a patch could change without any check failing: the selection funnel (rows each rule left out, the `LEFT_OUT` categories, dangling ids), the rows kept, the highest item level, the rows per slot code, per gear category and per "Gear from" box, the pieces with no route, the inferred routes by activity, and the meals. Before writing it, it reads the committed one, and prints every count that moved by more than 10% (and by more than 5), appeared or went away, for example `byCategory.savage 1,117 -> 0 (-100%)`; otherwise `No count moved by more than 10% since the last run`. It only warns: a patch that adds a tier of gear moves several counts on purpose. When the source commit has no line in [data-changelog.md](../data-changelog.md) yet, it adds one (date, short commit, its message, rows and meals with their change); `--allow-dirty` runs skip that.
 
 Some test expectations are allowed to move after a patch and others must not; the list is in [testing.md, section 6](testing.md#6-after-a-game-patch).
 
@@ -661,7 +666,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 
 **Job icon tests**: the generator tests check the icon numbering, a missing icon and a file that is not a 64 × 64 PNG; a format test (Node) checks that every job is in the picker exactly once and has an embedded 64 × 64 PNG.
 
-**Provenance tests** (Node): the source record names the datamining repository, a full 40-character commit id and an ISO date; the item, item level, food and most-speed files carry the same source record, and the first three name its commit in their notice; the footer text is short and empty when the source is unknown.
+**Provenance tests** (Node): the source record names the datamining repository, a full 40-character commit id and an ISO date; the item, item level, food, most-speed and summary files carry the same source record, and all but the most-speed file name its commit in their notice; the footer text is short and empty when the source is unknown.
 
 **Source flags against the Lodestone** (a manual check, not part of the test suite):
 
@@ -717,8 +722,9 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
 | Source commit detection, the edited-clone check, the generated-file notice and the one-row-per-line writer | `scripts/data/provenance.py` (`detect`, `local_edits`, `note`, `json_lines`) |
 | Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
+| Counts, CSV blob ids, drift since the last run, the changelog line | `scripts/data/summary.py` (`summarize`, `drift`, `csv_blobs`), `src/data/summary.json`, `docs/data-changelog.md` |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
-| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/max-speed.json` |
+| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/max-speed.json`, `src/data/summary.json` (not part of the page) |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |

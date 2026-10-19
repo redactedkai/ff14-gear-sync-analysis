@@ -43,7 +43,7 @@ test('ROW names the item row fields at the positions of itemRow.fields in item-f
 });
 
 test('every generated data file names the format version of item-format.json', () => {
-  for (const name of ['items.json', 'item-level.json', 'food.json', 'max-speed.json']) {
+  for (const name of ['items.json', 'item-level.json', 'food.json', 'max-speed.json', 'summary.json']) {
     const doc = JSON.parse(readFileSync(new URL(`../../src/data/${name}`, import.meta.url), 'utf8'));
     assert.equal(doc.formatVersion, ITEM_FORMAT.formatVersion, `${name} formatVersion`);
   }

@@ -5,4 +5,5 @@ src/data/item-level.json linguist-generated=true
 src/data/food.json       linguist-generated=true
 src/data/max-speed.json  linguist-generated=true
 src/data/job-icons.js    linguist-generated=true
+src/data/summary.json    linguist-generated=true
 * text=auto eol=lf

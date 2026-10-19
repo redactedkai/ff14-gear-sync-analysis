@@ -53,4 +53,5 @@ Shorter paths:
 | [glossary.md](glossary.md) | FFXIV terms, project terms and outside sources, each linked to the page that explains it |
 | [roadmap.md](roadmap.md) | Feature ideas: to build, built, out of scope |
 | [history.md](history.md) | Claims and results that were corrected: what replaced them, how the mistake was found, and when |
+| [data-changelog.md](data-changelog.md) | One line per game data update: the datamining commit, rows and meals |
 | [diagrams/STYLE.md](diagrams/STYLE.md) | Where a page goes, how to link, how to write and mark claims, how to draw a diagram |

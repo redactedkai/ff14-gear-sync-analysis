@@ -35,6 +35,7 @@ import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
 import gen_job_icons  # noqa: E402
 import provenance  # noqa: E402
+import summary  # noqa: E402
 from item_format import SchemaError, load_format, row_fields  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
@@ -1129,6 +1130,51 @@ class PinningTest(unittest.TestCase):
             self.assertEqual(provenance.local_edits(clone / 'csv'), [])  # untracked files are not edits
             (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Edited\n', encoding='utf-8')
             self.assertEqual(provenance.local_edits(clone / 'csv'), [' M csv/Item.csv'])
+
+            # summary.json names each sheet's blob id at the commit (an untracked or missing sheet has none)
+            blob = subprocess.run(['git', '-C', str(clone), 'rev-parse', 'HEAD:csv/Item.csv'], capture_output=True, text=True)
+            self.assertEqual(summary.csv_blobs(clone / 'csv', ['Item', 'Scratch', 'Missing']), {'Item': blob.stdout.strip()})
+            self.assertIsNone(summary.csv_blobs(clone / 'missing', ['Item']))
+
+
+class SummaryTest(unittest.TestCase):
+    """summary.py: the counts of summary.json, the drift between two runs and the changelog line."""
+
+    FMT = {
+        'itemRow': {'fields': ['name', 'slotCode', 'ilvl', 'routes', 'category']},
+        'activities': [{'key': 'quests'}, {'key': 'crafted'}],
+        'category': {'list': [{'key': 'crafted'}, {'key': 'dungeon'}]},
+    }
+    REPORT = {'itemSheetRows': 10, 'dropped': {'name': 4}, 'leftOut': {}, 'dangling': {}, 'inferredPieces': {'Dungeon': 1}}
+
+    def test_counts(self):
+        # routes: bit 0 quests, bit 1 crafted, bit 2 the market board
+        rows = [['A', 3, 100, [2, 4], 0], ['B', 3, 90, [1], 1], ['C', 11, 50, [], 1]]
+        counts = summary.summarize({'items': rows}, {'foods': [[], []]}, {**self.REPORT, 'inferredCurrencies': {}}, self.FMT)
+        self.assertEqual((counts['rows'], counts['maxIlvl'], counts['noRoute'], counts['meals']), (3, 100, 1, 2))
+        self.assertEqual(counts['bySlot'], {'3': 2, '11': 1})
+        self.assertEqual(counts['byCategory'], {'crafted': 1, 'dungeon': 2})
+        self.assertEqual(counts['byBox'], {'quests': 1, 'crafted': 1, 'market_board': 1})
+        self.assertEqual(counts['dropped'], {'name': 4})
+
+    def test_drift(self):
+        old = {'rows': 20000, 'byCategory': {'savage': 1000, 'event': 4, 'old': 7}}
+        new = {'rows': 21000, 'byCategory': {'savage': 500, 'event': 9, 'fresh': 12}}
+        # rows +5% and event +5 stay quiet; savage -50% is reported, so are a category gone and a new one
+        self.assertEqual(
+            summary.drift(old, new),
+            ['byCategory.fresh new: 12', 'byCategory.old gone (was 7)', 'byCategory.savage 1,000 -> 500 (-50%)'],
+        )
+        self.assertEqual(summary.drift(new, new), [])
+
+    def test_changelog_line(self):
+        source = provenance.make('d9582a624eaec69d45649366dee801c2f3a6e9b3', '2026-09-30T03:03:49-05:00')
+        counts, old = {'rows': 20031, 'meals': 296}, {'rows': 19000, 'meals': 300}
+        self.assertEqual(
+            summary.changelog_line(source, 'TC 7.25', counts, old),
+            '- 2026-09-30, `d9582a6` "TC 7.25": 20,031 rows (+1,031), 296 meals (-4)',
+        )
+        self.assertEqual(summary.changelog_line(source, '', counts, None), '- 2026-09-30, `d9582a6`: 20,031 rows, 296 meals')
 
 
 if __name__ == '__main__':
