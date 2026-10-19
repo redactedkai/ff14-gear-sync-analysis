@@ -51,7 +51,8 @@ export function itemCaps(job, item, sync) {
   return capsFor(job, item.type, target, s.pct, s.factors);
 }
 
-/* The most keys a score ranks: weapon damage, the target and two tiebreaks. */
+/* The most keys a score ranks: weapon damage, the target and two tiebreaks. A fifth key would push the packed score
+   past 2^53 on real pools (about 150 × 3,500³ ≈ 6e12 for four keys), so makeScorer throws rather than drop it. */
 const MAX_KEYS = 4;
 
 /* Lexicographic score [target, tiebreak 1, tiebreak 2] (weapon damage first, when ranked) packed into one number, so the search can add and
@@ -63,7 +64,10 @@ const MAX_KEYS = 4;
    Number.MAX_SAFE_INTEGER; that is checked, and a pool too large for it throws instead of ranking wrongly.
    `slotVectors[i]` is the list of stat vectors for slot i of the loadout (the ring list appears twice). */
 export function makeScorer(target, tiebreaks, slotVectors) {
-  const keys = [target, ...tiebreaks.filter(Boolean)].slice(0, MAX_KEYS);
+  const keys = [target, ...tiebreaks.filter(Boolean)];
+  if (keys.length > MAX_KEYS) {
+    throw new Error(`Optimizer: at most ${MAX_KEYS} ranked keys fit one score, got ${keys.length} (${keys.join(', ')})`);
+  }
   const keySpan = k =>
     slotVectors.reduce(
       (acc, vs) => {

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { pruneDominated } from '../../src/core/optimizer/candidates.js';
+import { pruneDominated, makeScorer } from '../../src/core/optimizer/candidates.js';
 import { suffixBounds } from '../../src/core/optimizer/search.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
@@ -100,4 +100,13 @@ test('dominance pruning counts the copies of one item once', () => {
     pruneDominated(arr, ['spd'], 2).map(a => a.item.id),
     ['U', 'U', 'D'],
   );
+});
+
+/* Audit 16, R7: a fifth ranked key was sliced off without a word. The packed score has room for weapon damage, the
+   target and two tiebreaks only (docs/engineering/optimizer.md section 3), so more keys must fail loudly. */
+test('makeScorer: four keys rank in order, a fifth throws', () => {
+  const vectors = [[{ wd: 1, crit: 2, det: 3, dh: 4, spd: 5 }]];
+  const score = makeScorer('wd', ['crit', 'det', 'dh'], vectors);
+  assert.ok(score({ wd: 1 }) > score({ crit: 2, det: 3, dh: 4 }));
+  assert.throws(() => makeScorer('wd', ['crit', 'det', 'dh', 'spd'], vectors), /at most 4 ranked keys/);
 });
