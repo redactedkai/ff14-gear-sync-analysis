@@ -30,6 +30,10 @@ import { allMeals, bestFood, foodBonus, foodChoices, foodLabel, statBase, withFo
 import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
 import { gearFilter, syncSettings } from '../state.js';
 
+/* The page's search node budget: a search that visits more nodes stops, keeps the best set found so far and is marked
+   truncated (the result's "node limit" note). Lower than the engine's own default (1,500,000), since the search holds
+   the page's thread; a synthetic worst-case pool reached it in about 0.5 s, and real pools stay far below it
+   (docs/engineering/optimizer.md section 5, Node limit). Each search of a solve has its own budget. */
 export const NODE_LIMIT = 700000;
 
 /* The GCD step of `spd` speed from gear, in character panel numbers (the level's base speed added; AkhMorning's tables
@@ -43,7 +47,7 @@ export function tierText(spd, level, haste = 0) {
 
 /* The settings an optimizer result depends on, as one string: a result is for the current settings exactly when it
    was solved with the same key. Read synchronously, it also makes an effect track every one of them (the optimizer
-   component). How the math works (Substat tiers) fills its values from a result only when its key matches. */
+   component). */
 export function optimizerKey(app) {
   const o = app.opt;
   return JSON.stringify([
@@ -547,7 +551,7 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
       totals: job.stats.map(panel),
     },
     tiers,
-    // by tier: "Critical Hit 29.3%, then Determination +9.4%, then Direct Hit +0.0%"; null for the plain ranking
+    // true when the goal and tiebreaks were ranked by tier first (the "Spare points to tiebreaks" switch)
     byTier,
     synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level, BASE_GCD_MS, pct).toFixed(2),

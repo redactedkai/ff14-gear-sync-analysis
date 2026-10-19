@@ -1,8 +1,8 @@
-/* How the math works, Substat tiers: every substat of the job as a column group of tiers (a ladder), each around its value, the
-   value's tier on the middle row unless it is near the base or the last tier (core/tiers.js tierLadder). Values are character panel numbers (base + gear, and food
-   when the optimizer result counts it). The tiers follow the job and the sub-tab's own level (the synced level until
-   the user types another); item level sync does not change them. The view object is built here; the template only
-   shows it. */
+/* How the math works, Substat tiers: every substat of the job as a card of tiers (a ladder), each around its value, the
+   value's tier on the middle row unless it is near the base or the last tier (core/tiers.js tierLadder). Values are
+   character panel numbers: each starts at the substat's base (tierValues), and the user types or clicks others. The
+   tiers follow the job and the sub-tab's own level (the synced level until the user types another); item level sync
+   does not change them. The view object is built here; the template only shows it. */
 import { tierLadder, tierSizes } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
 import { statBase } from '../../core/food.js';

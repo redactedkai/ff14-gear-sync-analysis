@@ -686,8 +686,10 @@ export function branchAndBound({
   const memoKey = (pos, coarse) => {
     const prev = slotList[pos] === 'ring' && slotList[pos - 1] === 'ring' ? chosen[pos - 1] : null;
     // one limit: the state packed into one integer, exact below 2^53: the first ring's rank + 1 at the second ring
-    // slot, else 0 (< 256); the blocked-slot mask (12 slots, < 4096); the position (< 32); the total so far plus
-    // 50,000 (< 1e5). Several: the same numbers in a string
+    // slot, else 0; the blocked-slot mask (12 slots, < 4096); the position (< 32); the total so far plus 50,000
+    // (< 1e5). The fields are multiplied, not masked, so the ring rank has no fixed width: the key stays exact while
+    // rank + 1 < 2^53 / (4096 × 32 × 1e5), about 687,000, far above a full pool's ring list (about 2,000; front.js).
+    // Several limits: the same numbers in a string
     const head = ((prev ? prev.rank + 1 : 0) * 4096 + blockedMask) * 32 + pos;
     if (nLimits === 1) return head * 1e5 + memoValue[0](limitTotals[0]) + 5e4;
     // a regain cut's total stays out: two states with the same real totals have the same completions that meet the real
