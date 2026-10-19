@@ -31,6 +31,17 @@ def detect(csv_dir):
     return make(commit, date)
 
 
+def local_edits(csv_dir):
+    """The tracked files changed in the clone containing csv_dir since its commit (git status --porcelain lines, for
+    example ' M csv/en/Item.csv'), [] when it is clean, or None when git cannot tell. The provenance names the commit
+    only, so data generated from an edited clone would claim to be that commit's."""
+    try:
+        r = subprocess.run(['git', '-C', str(csv_dir), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True)
+    except OSError:  # git not installed
+        return None
+    return [line for line in r.stdout.splitlines() if line.strip()] if r.returncode == 0 else None
+
+
 def make(commit, date):
     return {'repo': REPO, 'commit': commit, 'date': date}
 

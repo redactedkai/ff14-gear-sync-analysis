@@ -34,6 +34,7 @@ import gear_categories  # noqa: E402
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
 import gen_job_icons  # noqa: E402
+import provenance  # noqa: E402
 from item_format import SchemaError, load_format  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
@@ -1058,6 +1059,38 @@ class SchemaDriftTest(unittest.TestCase):
         self.assertEqual(p.returncode, 1)
         self.assertIn('SGE', p.stderr)
         self.assertNotIn('Traceback', p.stderr)
+
+
+class PinningTest(unittest.TestCase):
+    """fetch.py --commit takes a full commit id only; provenance.local_edits finds edits in the data clone, which
+    regen.py refuses to run on."""
+
+    def test_fetch_commit_option(self):
+        self.assertIsNone(fetch.parse_args([]).commit)
+        sha = 'd9582a624eaec69d45649366dee801c2f3a6e9b3'
+        self.assertEqual(fetch.parse_args(['--commit', sha]).commit, sha)
+        for bad in ('d9582a6', 'not-a-commit', sha + '0'):
+            with self.subTest(bad=bad), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                fetch.parse_args(['--commit', bad])
+
+    def test_local_edits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            clone = Path(tmp)
+            self.assertIsNone(provenance.local_edits(clone / 'missing'))
+
+            def run(*args):
+                cmd = ['git', '-c', 'user.name=test', '-c', 'user.email=test@example.com', '-C', str(clone), *args]
+                subprocess.run(cmd, check=True, capture_output=True)
+
+            run('init', '--quiet')
+            (clone / 'csv').mkdir()
+            (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Test\n', encoding='utf-8')
+            run('add', '.')
+            run('commit', '--quiet', '-m', 'data')
+            (clone / 'csv' / 'Scratch.csv').write_text('untracked\n', encoding='utf-8')
+            self.assertEqual(provenance.local_edits(clone / 'csv'), [])  # untracked files are not edits
+            (clone / 'csv' / 'Item.csv').write_text('#,Name\n1,Edited\n', encoding='utf-8')
+            self.assertEqual(provenance.local_edits(clone / 'csv'), [' M csv/Item.csv'])
 
 
 if __name__ == '__main__':

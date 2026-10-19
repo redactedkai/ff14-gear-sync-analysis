@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json, src/data/job-icons.js and
-src/data/max-speed.json from what fetch.py saved in data/, then rebuild dist/."""
+src/data/max-speed.json from what fetch.py saved in data/, then rebuild dist/.
 
+Usage: python scripts/data/regen.py [--allow-dirty]
+
+It refuses to run when a tracked file in the data clone has local edits: the generated files name the clone's commit,
+so they would claim that commit's data while holding other data. --allow-dirty runs anyway (to try out an edit); don't
+commit what it writes."""
+
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -14,9 +21,26 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import progress  # noqa: E402
 import provenance  # noqa: E402
 
+ap = argparse.ArgumentParser(description='Regenerate src/data/ from the datamining clone in data/, then rebuild dist/.')
+ap.add_argument('--allow-dirty', action='store_true', help='run even when the data clone has local edits (do not commit the result)')
+args = ap.parse_args()
+
 src = provenance.detect(CSV)
 if src is None:
     sys.exit(f'Could not read the git commit of {CSV}. Run: python scripts/data/fetch.py')
+edits = provenance.local_edits(CSV)
+if edits is None:
+    sys.exit(f'Could not read the git status of {CSV}. Run: python scripts/data/fetch.py')
+if edits:
+    listed = '\n  '.join(edits[:10]) + ('\n  ...' if len(edits) > 10 else '')
+    message = (
+        f'The data clone has local edits, so the generated files would name commit {src["commit"][:7]} but hold other '
+        f'data:\n  {listed}\nUndo them (git checkout -- csv, in data/ffxiv-datamining), or pass --allow-dirty to '
+        'regenerate from them anyway and not commit the result.'
+    )
+    if not args.allow_dirty:
+        sys.exit(message)
+    print('Warning: ' + message, flush=True)
 prov = ['--source-commit', src['commit'], '--source-date', src['date']]
 py = sys.executable
 DATA = ROOT / 'scripts' / 'data'
