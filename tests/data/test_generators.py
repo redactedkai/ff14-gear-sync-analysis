@@ -10,7 +10,7 @@ position) so a wrong column shows up as a wrong number. ClassJob holds the real 
 class (Gladiator). ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest
 edits copies of the fixtures to check that renamed columns and changed slot shares stop the generators.
 
-Run: npm run test:data
+Run: npm run test:data (npm run check:all runs them too)
 """
 
 import contextlib
