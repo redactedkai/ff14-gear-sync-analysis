@@ -29,6 +29,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # lint, build, unit tests and the browser smoke test; a failure stops the deploy
       - run: npm run check
+      # the long random sweep of tier ranking against its reference (tests/full/), kept out of npm test for speed
+      - run: node --test "tests/full/*.test.js"
       - if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - if: github.ref == 'refs/heads/main'

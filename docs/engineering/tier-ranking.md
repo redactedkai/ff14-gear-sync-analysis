@@ -422,4 +422,4 @@ Raw and tier ranking, each run, on `dev` at `ef9575a`, data `cce7f34`: all 23 jo
 | Regain cuts | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts, the staircase dominance | `src/core/optimizer/front.js` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
 | The page: switch, held marks, progress bar | `src/ui/views/optimizer.js` (`optimizerView`, `tierLists`), `src/ui/components/optimizer.js` (`solve`), `src/index.html` (`#o-by-tier`, `#o-busy`) |
-| Tests | `tests/unit/tier-rank.test.js`, `tests/unit/stat-minimums.test.js`, `tests/unit/regain.test.js`; the page in `tests/unit/views.test.js` and `tests/e2e/smoke.mjs` (`checkRankByTier`) |
+| Tests | `tests/unit/tier-rank.test.js` (reference in `tests/unit/helpers/tier-reference.js`; 360 more cases in `tests/full/`, `npm run test:full`), `tests/unit/stat-minimums.test.js`, `tests/unit/regain.test.js`; the page in `tests/unit/views.test.js` and `tests/e2e/smoke.mjs` (`checkRankByTier`) |

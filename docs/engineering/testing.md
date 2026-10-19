@@ -21,7 +21,8 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 303 tests in 32 files (2026-10-18) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 325 tests in 34 files, about 40 s (2026-10-19) |
+| Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 83 tests in 2 files (2026-10-18) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
 
@@ -62,7 +63,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | target-gcd-exhaustive | Target GCD against the brute force |
 | stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone |
 | regain | regain cuts from a proven maximum against the brute force |
-| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 360 more random cases |
+| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; 360 more random cases in `tests/full/` |
 | views | what each tab shows |
 | sync-explainer-view | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
 | gcd-view | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
@@ -77,7 +78,7 @@ Which file tests what? One line per file; the file itself says the rest.
 Notes:
 
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
-- **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), and seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`).
+- **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), and the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`.
 - **The kind of evidence** each test uses (published numbers, game data, a derivation, the brute force) is in [validation.md, section 7](../mechanics/validation.md#7-which-tests-assert-what).
 
 ### 2.1 The brute-force reference and the real-gear pools
@@ -159,6 +160,7 @@ Which command runs which check? Run from the repository root.
 | `npm run check` | Lint, build, unit tests, smoke (diagram above) |
 | `npm run check:all` | `check`, then `lint:py` and `test:data` |
 | `npm test` | Unit tests |
+| `npm run test:full` | Unit tests and the long sweep in `tests/full/` (about 90 s); run it before changing scoring, pruning or the search. CI runs it |
 | `npm run test:data` | Generator tests (Python) |
 | `npm run smoke` | Browser smoke test |
 | `npm run lint` | Biome, no file changes |
@@ -172,7 +174,7 @@ Which command runs which check? Run from the repository root.
 
 Notes on the pass/fail commands:
 
-- **`npm test`** runs the unit tests with Node's built-in test runner. **`npm run test:data`** runs the generator tests with Python `unittest`.
+- **`npm test`** runs the unit tests with Node's built-in test runner, which runs files in parallel, so the slowest file sets the time. **`npm run test:full`** adds `tests/full/`: 360 random cases of tier ranking against its reference, which take about 80 s on their own and are split in five files so they run at the same time. `npm test` keeps the first 20 of the Target GCD cases. **`npm run test:data`** runs the generator tests with Python `unittest`.
 - **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 12 s; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
 - **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
 - **`npm run check`** and **`npm run check:all`** run the steps in the diagram above; `check` is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at 960 px.
@@ -279,6 +281,7 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | Unit tests | `tests/unit/<name>.test.js`, one file per name in section 2 |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`, `loadoutCount`) |
 | Shared test helpers and typed-in outside values | `tests/unit/helpers/common.js` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
+| Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.js` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/full/` |
 | View builders tested without the browser | `src/ui/views/` |
 | Accuracy check against real items and the Wiki | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_generators.py`, `tests/data/fixtures/` |

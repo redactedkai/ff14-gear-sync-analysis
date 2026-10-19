@@ -14,7 +14,7 @@ The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23
 - `src/ui/`: state, Alpine store, view builders (`views/`, unit-tested), components.
 - `src/data/`: **generated, never edit by hand.** Change `scripts/data/` and run `python scripts/data/regen.py`.
 - `scripts/`: build, data generators, perf, and validation against ffxiv-gearing and xivgear (run by hand).
-- `tests/`: `unit/`, `data/` (generators), `e2e/smoke.mjs`.
+- `tests/`: `unit/`, `full/` (long optimizer sweep), `data/` (generators), `e2e/smoke.mjs`.
 - `docs/`: `mechanics/` (the game), `engineering/` (the code), plus glossary, roadmap, history.
 
 Pushing to `main` deploys to GitHub Pages (the only workflow).
@@ -28,7 +28,7 @@ Feature branch → `dev` → `main`, one way, fast-forward when possible. Never 
 Needs Node 22+ (`npm install`, then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests.
 
 - `npm run build`, `npm run dev`
-- `npm test`: Node unit tests, all must pass (`npm run test:data`: Python generator tests)
+- `npm test`: Node unit tests, all must pass (`npm run test:full` adds the long optimizer sweep; `npm run test:data`: Python generator tests)
 - `npm run smoke`: must print `no errors`
 - `npm run lint`, `npm run format` (Biome; `lint:py` and `format:py` for Ruff)
 - `npm run check`: lint, build, test, smoke; no Python needed. **Run it before saying something works.** Run `npm run check:all` (adds `lint:py`, `test:data`) when touching `scripts/data/` or after `update-data`. For UI changes, also look at the page at full width and at 960 px.
@@ -90,7 +90,7 @@ PLD and BST use a 1H weapon and a shield; the rest use 2H. Level caps: BLU 80, B
 
 Details: `docs/engineering/optimizer.md`.
 
-Branch and bound over slots, after removing dominated items. Each item gets one integer score for (weapon damage, goal, tiebreak 1, tiebreak 2): weapon damage is an implicit first key in every search (none for BLU). Relics whose substats the player allocates are left out, with a note. It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. A Target GCD (`src/core/target-gcd.js`) becomes a speed band, counting food and the always-on haste of MNK, NIN, SAM and VPR. Rank by tier (`src/core/tier-rank.js`, on by default) ranks the goal and tiebreaks by tier first: one search per key, each holding the keys before it through stat minimums (docs: `tier-ranking.md`). Later stages cut by what earlier ones proved (`src/core/optimizer/regain.js`), and a seeded search tries 20,000 nodes before building Pareto fronts. **If you change scoring, pruning or the search, keep the exhaustive-search tests passing and re-run `npm run perf`.** Check its node counts and truncations; timing matters only above about 0.5 s, so ignore the bench's budget misses below that and don't rerun or investigate them.
+Branch and bound over slots, after removing dominated items. Each item gets one integer score for (weapon damage, goal, tiebreak 1, tiebreak 2): weapon damage is an implicit first key in every search (none for BLU). Relics whose substats the player allocates are left out, with a note. It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. A Target GCD (`src/core/target-gcd.js`) becomes a speed band, counting food and the always-on haste of MNK, NIN, SAM and VPR. Rank by tier (`src/core/tier-rank.js`, on by default) ranks the goal and tiebreaks by tier first: one search per key, each holding the keys before it through stat minimums (docs: `tier-ranking.md`). Later stages cut by what earlier ones proved (`src/core/optimizer/regain.js`), and a seeded search tries 20,000 nodes before building Pareto fronts. **If you change scoring, pruning or the search, run `npm run test:full` (the exhaustive-search tests and the long sweep) and `npm run perf`.** Check its node counts and truncations; timing matters only above about 0.5 s, so ignore the bench's budget misses below that and don't rerun or investigate them.
 
 ## Page rules
 

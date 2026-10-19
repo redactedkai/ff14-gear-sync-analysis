@@ -35,6 +35,7 @@ Once a job is chosen, the page has two working tabs and one reference tab:
 | `npm run build` | Bundle everything into `dist/index.html` (opens straight from disk) |
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
 | `npm test` | Unit tests (core logic, page views, data format, saved state) |
+| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`); run it before changing the search |
 | `npm run test:data` | The Python data generator tests |
 | `npm run smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
 | `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check |

@@ -11,6 +11,7 @@
     "build": "node scripts/build/build.mjs",
     "dev": "node scripts/build/dev.mjs",
     "test": "node --test \"tests/unit/*.test.js\"",
+    "test:full": "node --test \"tests/unit/*.test.js\" \"tests/full/*.test.js\"",
     "test:data": "python -m unittest discover -s tests/data -p \"test_*.py\"",
     "smoke": "node tests/e2e/smoke.mjs",
     "lint": "biome lint . && biome format .",

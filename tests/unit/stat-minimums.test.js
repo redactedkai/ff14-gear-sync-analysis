@@ -296,7 +296,8 @@ test('improveStart: the improved seed is a legal set meeting the limits, and the
    2,000 ring candidates make 2 million pairs, which overflowed the stack (Scholar at level 100, a Target GCD, Direct
    Hit first); two slots of about 1,000 candidates trading score for Determination one for one stay under FRONT_TRIES
    but make a million entries in about 2,000 tied pairs, whose dominance filter alone would take seconds
-   (FRONT_COMPARES). Synthetic candidates. */
+   (FRONT_COMPARES). Synthetic candidates. The clock check only catches a give-up that no longer works (minutes):
+   alone this runs in about a second, but up to 7 s while the other test files share the machine. */
 test('frontSearch gives up on too many ring pairs or too much filtering, without throwing', () => {
   const cand = (id, score, det) => ({ item: { id }, eff: { det }, score, blocks: [], copies: 1 });
   const rings = Array.from({ length: 2000 }, (_, i) => cand(`r${i}`, i, 2000 - i));
@@ -306,7 +307,7 @@ test('frontSearch gives up on too many ring pairs or too much filtering, without
   const t = performance.now();
   const limits = [{ stat: 'det', min: 2000, max: null }];
   assert.equal(frontSearch(['neck', 'head', 'body'], [[cand('n', 0, 2000)], ...lists], limits), null);
-  assert.ok(performance.now() - t < 3000, `${Math.round(performance.now() - t)} ms`);
+  assert.ok(performance.now() - t < 30000, `${Math.round(performance.now() - t)} ms`);
 });
 
 /* The fronts on their own (most searches are settled by the trial search before them, search.js TRIAL_NODES), against the
