@@ -335,7 +335,7 @@ Field 12 is `Item.Rarity`, the item's colour in game, copied as is (1 white, 2 g
 
 ### Game id
 
-Field 13 is the item's row id in `Item`, the id the game, its data files and other tools use for the item (**verified**, game data). Ids are unique; a duplicate or a value that is not a whole number stops the generator. The page does not show it. It lets a piece be matched with other tools: the check against ffxiv-gearing's sync caps (roadmap A5) and links to and from xivgear (A6). It adds about 0.1 MB to the file.
+Field 13 is the item's row id in `Item`, the id the game, its data files and other tools use for the item (**verified**, game data). Ids are unique; a duplicate or a value that is not a whole number stops the generator. The page does not show it. It lets a piece be matched with other tools: the check against ffxiv-gearing's sync caps (roadmap A5) and checks against xivgear. It adds about 0.1 MB to the file.
 
 ### Scales with level
 

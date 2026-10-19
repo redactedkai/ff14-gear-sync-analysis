@@ -1,21 +1,31 @@
 # Roadmap: feature ideas
 
-Feature ideas, built or not; each needs the owner's go-ahead. **Built**: ✅ on `dev` at least (live once it reaches `main`), ❌ not yet. The page has felt "overwhelming" before, so a new feature should replace or simplify controls where it can.
+Feature ideas only; each needs the owner's go-ahead. An ID (A1, A2, ...) names an idea; IDs are never reused. A new feature should replace or simplify controls where it can: the page has felt "overwhelming" before. Findings and open questions belong on the page they concern (in-game captures still needed: [validation.md, section 8](mechanics/validation.md#8-open-question-in-game-captures)).
 
-Each idea has an ID for referring to it (A1, A2, ...); IDs give no order and are never reused. **Priority**: the build order of the ideas not built, 1 first (owner, 2026-10-15); A3 goes after the features whose settings it saves, A6 (specced, deferred) last. Feature ideas only. Findings and open evidence questions belong on the page they concern; the in-game captures the sync model still needs are in [validation.md, section 8](mechanics/validation.md#8-open-question-in-game-captures).
+## To build
 
-Related pages: [optimizer.md](engineering/optimizer.md), [materia.md](mechanics/materia.md), [validation.md](mechanics/validation.md).
+In build order (owner, 2026-10-15).
 
-| ID | Idea | Built | Priority | Notes |
-| --- | --- | --- | --- | --- |
-| A10 | Rethink the gear group filter | ✅ | – | Built as **Gear from** (owner's design, 2026-10-18): 20 boxes by what a player does to get a piece, in four sections, with a market board switch (on) that lists any tradeable piece; nine boxes off by default. Each piece's routes come from the game files ([data-pipeline.md, section 4](engineering/data-pipeline.md#sources); the page in [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). Research in docs/scratchpad/gear-groups. |
-| A4 | Gear sets and comparison | ❌ | 4 | Keep several gear sets side by side and compare their stats and tiers: optimizer results under different targets or tiebreaks, and sets the player enters (the gear they own). Could also limit the optimizer to owned gear (it searches every piece the job can wear since the gear pool step was dropped, 2026-10-15). |
-| A3 | Save and share a result | ❌ | 5 | As a JSON file or a URL. After A1, A7 and A4, so it saves their settings and sets too, and the pieces picked from A9's menus. |
-| A11 | Model relics with allocated substats | ❌ | 6 | Relic weapons whose substats the player allocates have no substats in the game files, so the optimizer leaves them out, with a note under the result ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). Model the allocation so the optimizer can pick one and split its substats for the goal. After A4: one of its mockups lets the player fill part of a set and lock it (their relic, with the substats they chose) while the optimizer fills the rest. Owner, 2026-10-18. |
-| A6 | Export to and import from xivgear | ❌ | 7 | Export a result as an xivgear link (the set in the URL, with the item level cap; no login or server), import a set from an xivgear link. xivgear drops gear below item level 290 (except Blue Mage and Beastmaster), so the export is off for such sets, with a reason. Needs game item and materia ids in the item data first. Testing: a semi-exhaustive browser sweep (every job, each sync setting, several optimizer targets) that opens each exported set in xivgear and checks items, melds and synced stats against ours, plus import round trips. |
-| A8 | Breakpoint visualizer | ✅ | – | The Substat tiers sub-tab of How the math works: every substat of the job as a column group (a ladder), From and one column per effect, the tiers around each value with the current one on the middle row, on the character panel's scale. Values start from the optimizer result when it was solved for the current settings, else at each base; type a value or click a tier. Each substat's ? says what it does and how big its tiers are at the level. Follows the job and synced level (typed live); item level sync does not change tiers. Core: `tierLadder`, `tierSizes` (core/tiers.js), checked against AkhMorning's tier tables ([validation.md, section 5](mechanics/validation.md#5-speed-and-gcd)). Owner's request 2026-10-16, built 2026-10-17 (mockups in docs/scratchpad/a8-breakpoints). |
-| A7 | Rank tiebreaks by tier | ✅ | – | After A1: hold the target at the start of its best tier, counted with food, then maximize the tiebreaks, each held at its best tier in turn. Exact with the engine's stat minimums; gear points for a total with food come from `gearNeeded` (core/food.js). Owner's go, 2026-10-15 (it had been dropped on 2026-10-14 until food and stat minimums existed). Built 2026-10-16: the core ([tier-ranking.md](engineering/tier-ranking.md)) and the page's Rank by tier switch (on by default), readout of the held tiers, highlighted Tier cells and progress bar ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). Tier ranking stays the default (owner, 2026-10-17, after comparing it with raw ranking). Speed-ups 2026-10-17 (regain cuts, a trial search, slot order, band reach; [tier-ranking.md](engineering/tier-ranking.md)). Open: with a Target GCD, a few tier searches still stop at the node limit (White Mage and Sage at level 100 synced to 690, Piety first, 2.29 s). |
-| A9 | Other pieces with the same result | ✅ | – | Each result row shows a piece with the same result (the same main stat and goal points, every other substat at the same tier, with food), the lowest equip level first, and its item cell is a menu of the others, by expansion, each with its gear category; under sync most slots have many ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). The gear category is a field of the item data ([data-pipeline.md, section 4](engineering/data-pipeline.md#gear-category)). Owner's request, 2026-10-16. |
-| A2 | Food | ✅ | – | HQ meals in the optimizer result, with "Best for the goal" as the default meal; without a Target GCD the gear the optimizer picks is the same with any meal ([math.md, section 6](mechanics/math.md#food)). |
-| A5 | Check sync caps against ffxiv-gearing | ✅ | – | Validation only, not an integration: compare our synced stats with [ffxiv-gearing](https://asvel.github.io/ffxiv-gearing/) at every duty sync it offers, as was done with xivgear's meld caps ([materia.md, section 3](mechanics/materia.md)). A first test (2026-10-14) matched except where a stat factor is below 100% (it rounds the cap once, off by 1 in 839 of 28,386 cases) and shields (it uses the 40% share). Built: `scripts/validate/gearing/`, results in [validation.md, section 9](mechanics/validation.md#9-against-another-tool-ffxiv-gearing). |
-| A1 | Target GCD | ✅ | – | "Reach this GCD tier, then maximize the target", through the engine's speed range. "Exactly" or "or faster", with food and haste. Haste for MNK, NIN, SAM and VPR; with a GCD set, meal and gear are chosen together ([optimizer.md, section 2](engineering/optimizer.md#target-gcd-from-a-gcd-to-a-speed-range)). |
+| ID | Idea | Notes |
+| --- | --- | --- |
+| A4 | Gear sets and comparison | A sheet of sets for one job, level and cap: optimizer results and the player's own sets, compared by their stats and tiers. The player's own sets come first. |
+| A3 | Save and share | A JSON file or a URL, holding the settings, the sets and the pieces picked from the same-result menus. After A4. |
+| A11 | Relics with allocated substats | The optimizer leaves these relics out today, since the game files hold no substats for them ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). Model the allocation so it can pick one. After A4. |
+
+## Built
+
+On `dev` at least; live once on `main`.
+
+| ID | Idea | Details |
+| --- | --- | --- |
+| A1 | Target GCD | [optimizer.md, section 2](engineering/optimizer.md#target-gcd-from-a-gcd-to-a-speed-range) |
+| A2 | Food | [math.md, section 6](mechanics/math.md#food) |
+| A5 | Check sync caps against ffxiv-gearing | [validation.md, section 9](mechanics/validation.md#9-against-another-tool-ffxiv-gearing) |
+| A7 | Rank by tier | [tier-ranking.md](engineering/tier-ranking.md) |
+| A8 | Substat tiers (breakpoints) | [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints) |
+| A9 | Other pieces with the same result | [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters) |
+| A10 | Gear from filter | [data-pipeline.md, section 4](engineering/data-pipeline.md#sources) |
+
+## Out of scope
+
+- **A6, export to and import from xivgear** (owner, 2026-10-18). xivgear has no gear below item level 290 outside Blue Mage and Beastmaster, so it would not work below level 70. It would also tie the page to another project's format. xivgear stays a reference for checking our math.
