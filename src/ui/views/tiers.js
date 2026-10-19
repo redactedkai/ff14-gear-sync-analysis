@@ -7,7 +7,6 @@ import { tierLadder, tierSizes } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
 import { statBase } from '../../core/food.js';
 import { MAX_SPEED } from '../../core/tables.js';
-import { fmtInt } from '../helpers.js';
 
 /* Tiers shown either side of each value's tier (15 rows; there is no More tiers button: owner, 2026-10-19). */
 export const TIER_NEAR = 7;
@@ -89,7 +88,8 @@ export function tiersView(app, values, level = app.level) {
         cur = i === ladder.cur;
       const some = ladder.kinds.length > 1 && !t.changed.every(Boolean);
       return [
-        { text: fmtInt(t.start), eff: false, mark: false, cur, to, title },
+        // plain numbers, as the box above shows them: a separator from 1,000 on made the column jump (owner, 2026-10-19)
+        { text: String(t.start), eff: false, mark: false, cur, to, title },
         ...t.values.map((text, k) => ({ text, eff: true, mark: some && t.changed[k], cur, to, title })),
       ];
     });
@@ -104,7 +104,7 @@ export function tiersView(app, values, level = app.level) {
       help: helpOf(job, stat, level, haste?.pct ?? 0),
       names: ['From', ...ladder.kinds.map(kind => COLUMN[kind])],
       rows,
-      foot: { spare: fmtInt(ladder.spare), toNext: ladder.toNext == null ? null : fmtInt(ladder.toNext) },
+      foot: { spare: String(ladder.spare), toNext: ladder.toNext == null ? null : String(ladder.toNext) },
     };
   });
   return { level, cards };

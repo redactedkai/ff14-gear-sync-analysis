@@ -54,6 +54,11 @@ test('rows: the same count in every card, its current tier in the middle unless 
   // a click on any cell of a tier sets the value to the tier's start
   assert.deepEqual([crit.rows[TIER_NEAR][0].to, crit.rows[TIER_NEAR][1].to], ['crit:3020', 'crit:3020']);
   assert.deepEqual(crit.foot, { spare: '2', toNext: '12' });
+  // no thousands separator: four-digit starts line up with three-digit ones, as in the box
+  assert.ok(
+    crit.rows.every(r => /^\d+$/.test(r[0].text)),
+    crit.rows.map(r => r[0].text).join(' '),
+  );
 });
 
 test('Paladin: Tenacity has Dmg & heal and Dmg taken, the one that changes at a tier marked', () => {
@@ -64,7 +69,7 @@ test('Paladin: Tenacity has Dmg & heal and Dmg taken, the one that changes at a 
   assert.deepEqual(
     ten.rows[TIER_NEAR].map(c => [c.text, !!c.mark]),
     [
-      ['1,616', false],
+      ['1616', false],
       ['+4.8%', false],
       ['−8.6%', true],
     ],
