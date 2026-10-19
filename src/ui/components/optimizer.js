@@ -109,8 +109,12 @@ export function optimizer() {
         requestAnimationFrame(() =>
           setTimeout(() => {
             if (id !== this.solveId) return;
-            this.solveNow();
-            this.busy = false;
+            // finally: a throw past optimizerView's own catch must not leave the Optimize button disabled
+            try {
+              this.solveNow();
+            } finally {
+              this.busy = false;
+            }
           }),
         ),
       );
