@@ -433,8 +433,6 @@ function buildOptimizerView(app, gear, chosen) {
       cells: job.stats.map(s => (bonus[s] ? { value: bonus[s].bonus, capped: bonus[s].capped } : null)),
       totals: job.stats.map(panel),
     },
-    // a GCD target changes which gear fits a meal, so "the same gear with any meal" no longer holds
-    gcdOn: asked != null,
     tiers,
     // by tier: "Critical Hit 29.3%, then Determination +9.4%, then Direct Hit +0.0%"; null for the plain ranking
     byTier,
