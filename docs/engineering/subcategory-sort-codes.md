@@ -6,7 +6,7 @@ Related pages: [data-pipeline.md, section 4](data-pipeline.md#gear-category) (ho
 
 ## How a code is read
 
-`SubcategorySort` is a number on every item. On gear, only its last three digits say where the piece comes from; the digits above them vary between pieces of one source, even within one set. For example (read from the local game files with `docs/scratchpad/docs-rewrite/subcat-examples.py`, 2026-10-16):
+`SubcategorySort` is a number on every item. On gear, only its last three digits say where the piece comes from; the digits above them vary between pieces of one source, even within one set. For example (read from the local game files, `Item.csv`, 2026-10-16):
 
 | Piece | SubcategorySort | Code |
 |---|---|---|

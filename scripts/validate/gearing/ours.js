@@ -3,7 +3,7 @@
    theirs through the page's store (window.store, which the page exposes on purpose), ours through effStats, the
    function the Gear pool and the optimizer use. Exposes globalThis.OURS = { setup, settings, compare }.
 
-   Every difference is tagged with the known cause it matches (plan in docs/scratchpad/gearing-validation/plan.md):
+   Every difference is tagged with the known cause it matches (docs/mechanics/validation.md, section 9):
      D1 rounding order of the cap (±1 where the stat factor is below 100%)
      D2 shield caps (their 40% share; ours two-handed minus one-handed)
      (D3, gear whose item level scales with the character, was fixed on our side: both tools now sync it to the

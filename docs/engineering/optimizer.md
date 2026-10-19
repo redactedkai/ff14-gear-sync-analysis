@@ -392,7 +392,7 @@ A stat with a minimum (tier ranking) joins the keys the same way as speed with a
 **Details.**
 
 - Among splits with the same gains, the one with the fewest stones wins, then the fewest big stones, as for one best split ([materia.md, section 2](../mechanics/materia.md)).
-- A small stone in a big slot can be the split shown, but never adds a version: with a maximum its lower speed could, yet it found no better set in 2,045 Target GCD runs for about 14% more search work (owner, 2026-10-16).
+- A small stone in a big slot can be the split shown, but never adds a version: with a maximum its lower speed could, but it was left out for no gain in sets ([materia.md, "Which stones are shown"](../mechanics/materia.md#which-stones-are-shown)).
 - The lists are cached by stones and room. Room beyond what all the stones can add changes nothing, so it is clamped first, and more pieces share one list.
 - Tier ranking's stages build one candidate list each, all on the same version keys, so each piece's versions are built once per ranking and copied into each list (2026-10-17; Perplexity measured 5 to 15% off a tier ranking).
 - Example: the full Sage pool, unsynced, Critical Hit then Determination (the table in section 4). After pruning, a band keeps 1,406 candidates, a minimum 84, and no speed range 257.
@@ -406,7 +406,7 @@ What does the page hand to the engine, and what does it show back?
 **No pool to build.** The optimizer searches every database piece the job can wear (built once per job, about 5 to 10 ms) that passes the filters under **Gear to search**.
 
 - Until 2026-10-15 the user picked pieces into a pool on a Gear pool tab first (often with "Add all"); the owner dropped that step once searching everything proved as fast.
-- A sweep then compared that with era gear only (pieces the sync leaves untouched, which keep their materia): over 1,971 runs (every job, 17 sync settings, every target, materia on), searching every piece gave a better target total in 70% of runs (median +2%, at most +35%), never a worse one (era gear is a subset), and its best loadouts are about three quarters synced high-level pieces (docs/scratchpad/gear-merge, era-vs-synced).
+- A sweep then compared that with era gear only (pieces the sync leaves untouched, which keep their materia): over 1,971 runs (every job, 17 sync settings, every target, materia on), searching every piece gave a better target total in 70% of runs (median +2%, at most +35%), never a worse one (era gear is a subset), and its best loadouts are about three quarters synced high-level pieces (a one-off sweep on 2026-10-15, measured once; the script is not kept).
 
 **Gear to search** has the Gear browser's filters, in the same order, with the optimizer's own values (added 2026-10-15 at the owner's request):
 
@@ -547,6 +547,24 @@ The time grows with the pool (each piece is scored and pruned before the search)
 ### Stress test (2026-10-14)
 
 Measured on the same PC before Beastmaster was added (22 jobs), with the scripts listed in [testing.md, section 3](testing.md#3-commands).
+
+**What the perf scripts measure.** The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` and `memory.mjs`.
+
+- **Workloads:** W1, every job with its full pool, sync settings, levels, melds on and off and about 40 objectives; X, all exclude masks; OFULL, every target with every first and second tiebreak; and adversarial pools (`adversarial.mjs`: near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation).
+- **Budgets** (`bench.mjs --strict` exits 1 on a miss):
+
+| Metric | Budget |
+| --- | --- |
+| Melds on, median / 95th / largest | 35 / 60 / 80 ms |
+| Melds on, first call in a process | 60 ms |
+| Melds off, 95th percentile | 30 ms |
+| Nodes per run | 1,000 |
+| Truncated runs | 0 |
+| Second identical sweep (`memory.mjs`) | 0 new meld memo entries, 1 MB of heap |
+
+- **Known misses on this PC:** the first call and the node count (83.9 ms and 1,209 nodes in the table below), and everything after the item level floor drop (section above). Per the owner's rule, timing matters only above about 0.5 s.
+- **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo; last, a Web Worker, which changes the single-file design, so ask the owner first.
+- **`compare.mjs`** checks that a faster version gives the same answers. Copy `src/` of the old commit to `<dir>/src` (outside the repo, or under the gitignored `scripts/perf/out/baseline/<label>`; it aborts if `items.json` differs), then run `node scripts/perf/compare.mjs --baseline <dir> [--quick] [--nodes-may-differ]`. Both copies get the same item objects. Picks, totals and truncation must be byte-equal, and so must node counts unless the search was meant to change; `--quick` runs four jobs.
 
 **Every job's full pool.** Each of the 22 jobs with every piece it can equip (1,899 to 2,641 items), 18 sync settings (none; item level caps 123 to 795; level sync at 50 to 90; five level and cap pairs) and about 40 objectives (every single target, every target and tiebreak pair of substats, and random three-key orders), with melds off and on: 27,936 runs, each timed as the median of 3 calls.
 

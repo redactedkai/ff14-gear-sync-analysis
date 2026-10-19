@@ -1,12 +1,12 @@
 # Data pipeline
 
-How game data gets from the game client into the page. The page needs, for every piece of combat gear, its slot, its item level, who can wear it and its stats, plus the game's tables that turn an item level into stats. All of that is in the game client's own data tables, spread over fourteen of them, and most of their rows are not gear at all. This page covers where the data comes from, which rules turn it into the compact data tables the page uses, and how to refresh it after a game patch. How the numbers are then used is in [math.md](../mechanics/math.md) (stat budgets, sync caps, speed) and [optimizer.md](optimizer.md) (gear search).
+How game data gets from the game client into the page. The page needs, for every piece of combat gear, its slot, its item level, who can wear it and its stats, plus the game's tables that turn an item level into stats. All of that is in the game client's own data tables, spread over twenty of them, and most of their rows are not gear at all. This page covers where the data comes from, which rules turn it into the compact data tables the page uses, and how to refresh it after a game patch. How the numbers are then used is in [math.md](../mechanics/math.md) (stat budgets, sync caps, speed) and [optimizer.md](optimizer.md) (gear search).
 
 Related pages: [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [architecture.md](architecture.md), [testing.md](testing.md), [subcategory-sort-codes.md](subcategory-sort-codes.md), [glossary.md](../glossary.md).
 
 **The whole pipeline in one picture.** A JSON file that both the Python generators and the JavaScript page read (the shared format) defines what each number in a generated row means. The browser never loads data at run time.
 
-![Flow from the game client through the datamining repository to the fetch step, which copies the 14 needed CSV files and the 23 job icons to this machine. Four Python generators, all reading the shared format, write four generated files: the item database (20,031 rows, item level 15 to 795), the item level table, the food table (296 meals) and the job icons. The esbuild page bundle, which also reads the shared format, packs code, styles and the generated files into one HTML file that the browser opens from disk; the footer names the source commit](../diagrams/data-flow.svg)
+![Flow from the game client through the datamining repository to the fetch step, which copies the 20 needed CSV files and the 23 job icons to this machine. Four Python generators, all reading the shared format, write four generated files: the item database (20,031 rows, item level 15 to 795), the item level table, the food table (296 meals) and the job icons. The esbuild page bundle, which also reads the shared format, packs code, styles and the generated files into one HTML file that the browser opens from disk; the footer names the source commit](../diagrams/data-flow.svg)
 
 **Which data.** Every count on this page was produced by running the generators' rules over the CSVs in the local clone, or by importing the generated tables in Node. They describe datamining commit `d9582a6` (30 September 2026).
 
@@ -18,7 +18,7 @@ Related pages: [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [a
 
 The data comes from [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining), a public repository of the game client's data sheets saved as CSV files. A *sheet* is one of the game's internal data tables, for example `Item` (one row per item). The files are exported straight from the client, by XIVData Oxidizer since January 2026 and by SaintCoinach before that. The miners do not compute or derive anything: a row in a CSV is a row in the game's own data. **Verified**: the repository's own commit history shows the exporter change (commit `d3eb86d`, 4 January 2026, "Migrate to XIVData Oxidizer").
 
-The project fetches fourteen sheets (English column names, `csv/en/`). The generators read thirteen of them. `ClassJob` is read only by the fetch step, to know which icon belongs to which job (section 2).
+The project fetches twenty sheets (English column names, `csv/en/`). The fetch step reads `ClassJob` for the job icons (section 2); the item level generator reads it for the job modifiers.
 
 | Sheet | Read by | Gives | Rows |
 | --- | --- | --- | --- |
@@ -35,7 +35,13 @@ The project fetches fourteen sheets (English column names, `csv/en/`). The gener
 | `ItemAction` | food generator | what using an item does | 3,051 |
 | `ItemFood` | food generator | meal and medicine bonuses | 714 |
 | `BaseParam` | item database and item level generators | slot shares, stat factors | |
-| `ClassJob` | fetch step | job icon numbers | |
+| `ClassJob` | fetch step, item level generator | job icon numbers, job modifiers | |
+| `Quest` | item database generator | quest rewards | |
+| `QuestClassJobReward` | item database generator | job-specific quest rewards | |
+| `Achievement` | item database generator | achievement rewards | |
+| `GCScripShopItem` | item database generator | Grand Company seal shop | |
+| `GilShop` | item database generator | event shops (`FestivalId`) | |
+| `GilShopItem` | item database generator | gil shop listings | |
 
 What each sheet holds, and which of its columns are read:
 
@@ -52,7 +58,8 @@ What each sheet holds, and which of its columns are read:
 - **`BaseParam`**: one row per stat. It holds the share of the budget each slot gets, in thousandths (values in [math.md, section 3](../mechanics/math.md#3-slot-shares)), and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). The item level generator copies the stat factors (section 5) and only checks the slot shares, which are kept in the shared format definition (section 3). The item database generator checks the item kinds and the names of the crafter and gatherer stats.
 - **`ItemAction`**: what using an item does. A meal's row has `Action` 844 or 845, `Data[0]` 48 (the Well Fed status) and `Data[1]` its `ItemFood` row.
 - **`ItemFood`**: up to three stats per meal or medicine: `BaseParam[0..2]`, `IsRelative[0..2]` (a percentage, or a flat bonus), `Value`/`Max` for normal quality and `ValueHQ`/`MaxHQ` for HQ, in one row.
-- **`ClassJob`**: one row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon.
+- **`ClassJob`**: one row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon, and the `Modifier` columns of Strength, Dexterity, Intelligence, Mind and Vitality are the job modifiers (section 5).
+- **`Quest`, `QuestClassJobReward`, `Achievement`, `GCScripShopItem`, `GilShop`, `GilShopItem`**: the ways a player gets a piece other than crafting and `SpecialShop` shops (quest and achievement rewards, seal shops, gil shops and seasonal event shops). Which columns are read is in section 4, *Sources*.
 
 ### Guarding against a changed game file
 
@@ -82,13 +89,13 @@ An error exits with status 1 and writes no file, so the full regeneration stops 
 The fetch step makes a **sparse, shallow, blobless** clone of the datamining repository into `data/ffxiv-datamining/` (gitignored):
 
 - *shallow*: only the latest commit, no history;
-- *sparse*: only the fourteen `csv/en/<Sheet>.csv` paths are checked out;
+- *sparse*: only the twenty `csv/en/<Sheet>.csv` paths are checked out;
 - *blobless*: file contents are downloaded only for those paths.
 
 For the current data that is about 7 MB of git data and 20 MB of CSV files on disk, mostly `Item.csv`, instead of the whole repository.
 
 - **Refreshing.** Running the fetch again when the clone exists does a fast-forward pull, which picks up whatever the miners published since.
-- **Completeness.** The step fails if any of the fourteen files is missing afterwards.
+- **Completeness.** The step fails if any of the twenty files is missing afterwards.
 - **Adding a sheet.** A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run. To add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
 
 ### Job icons
@@ -226,7 +233,7 @@ $$
 
 **The rule.** The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. With the rule, the bonus is applied to 5,395 rows (2026-10-16).
 
-**Why the flag matters.** 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 stats although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)).
+**Why the flag matters.** 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 named stats (the 14 stored stats without Main and Secondary Attribute) although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)).
 
 - **Which pieces.** By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each) and Beastmaster's own 35 pieces.
 - **Beastmaster's.** They carry its Crucible bonus there (Strength and Vitality, `ItemSpecialBonus` 11; +9 / +9 on Guttler), which the game applies only inside the Crucible of the Unbroken (**second-hand**, Console Games Wiki). The tool leaves it out, as it does the Eureka and Bozja bonuses.
@@ -327,7 +334,7 @@ In the current data:
 | 4 | 0 | 16 |
 | 5 | 566 | 0 |
 
-Only 16 pieces have 4 slots, all with the overmeld flag. The 15 pieces with no slot but the overmeld flag are old crafted Paladin shields, item level 180 to 415 (for example Dwarven Mythril Shield). Whether they take any materia in game is not known (**inferred** that they take none: a piece overmelds only past its guaranteed slots, report in `docs/scratchpad/materia/`).
+Only 16 pieces have 4 slots, all with the overmeld flag. The 15 pieces with no slot but the overmeld flag are old crafted Paladin shields, item level 180 to 415 (for example Dwarven Mythril Shield). Whether they take any materia in game is not known (**inferred** that they take none: a piece overmelds only past its guaranteed slots, [materia.md, section 2](../mechanics/materia.md#slots-big-and-small-stones)).
 
 ### Rarity
 
@@ -346,7 +353,7 @@ Field 14 is 1 when `Item.SubStatCategory` is 2, else 0: gear whose item level fo
 
 ### Gear category
 
-*Where, in plain words, does a piece come from?* The last field (position 15) is the piece's gear category, which a piece with no way in takes its route from (section *Sources*; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)). It is stored as an index into the category list of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9).
+*Where, in plain words, does a piece come from?* The category field (position 15, counting from 0; the damage and defense values follow) is the piece's gear category, which a piece with no way in takes its route from (section *Sources*; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)). It is stored as an index into the category list of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9).
 
 **Checks.** The list must hold every category a kept piece can have (the generator's categories minus the three left out) exactly once and nothing else. A missing, unknown or repeated key stops the generator, so a category added after a patch can't reach the page without a label.
 
@@ -440,6 +447,8 @@ How it is used is in [math.md, section 4](../mechanics/math.md#the-stat-factor-o
 **Weapon damage and defense.** The same three tables for physical and magic weapon damage and Defense and Magic Defense (`damageDefense` in the shared format definition): the `ItemLevel` columns `PhysicalDamage`, `MagicalDamage`, `Defense` and `MagicDefense` as budgets, the `MeldParam` columns of `BaseParam` rows 12, 13, 21 and 24 as factors, and their slot shares per slot code (`SHARES`, per mille, from the same `BaseParam` rows; the 14 stats keep their shares in the format file). They cap these values under sync ([math.md, section 4](../mechanics/math.md#weapon-damage-and-defense)).
 
 **Job modifiers.** For each of the 23 combat jobs, its `ClassJob` modifiers of Strength, Dexterity, Intelligence, Mind and Vitality, in percent (`jobModifiers` in the shared format definition): the character's base main stat and Vitality are the level's base times these ([math.md, section 6](../mechanics/math.md#totals-as-on-the-character-panel)). A job with no row, or a modifier that is not a positive whole number, stops the generator.
+
+**Not from the game files.** `LEVEL_MAIN` (`src/core/constants.js`: the main stat base at each level, 1 to 100; food is a percentage of the whole stat) is carried by hand from AkhMorning's Level Modifiers table (**inferred**: no sheet holds it; it equals xivgear's at levels 50, 60, ..., 100). The generators do not touch it.
 
 **Source record.** Which datamining commit the data came from (next section).
 
@@ -601,7 +610,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Mad Harlequin's Totem comes from Dancing Mad | verified | Console Games Wiki (section 4) |
 | Crafted, tomestone and ultimate flags | verified | 167 of 175 agree with the Lodestone (section 10) |
 | Kind, meld fields, rarity, game id, scaling flag | verified | copied from game data (section 4) |
-| The 15 shields with no slot but the overmeld flag take no materia | inferred | report in `docs/scratchpad/materia/` (section 4) |
+| The 15 shields with no slot but the overmeld flag take no materia | inferred | [materia.md, section 2](../mechanics/materia.md#slots-big-and-small-stones) (section 4) |
 | Every kept meal stat is 10% HQ | verified by count | section 5 |
 | `ItemLevel` rows 796 to 920 are budget room for future gear | inferred | smooth, near-linear values (section 7) |
 

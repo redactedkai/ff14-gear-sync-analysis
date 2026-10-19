@@ -30,6 +30,8 @@ A stone's grade fixes its value, and each grade fits only gear at or above a min
 - **Main stats and Vitality cannot be melded:** their materia have value 0 (**verified**).
 - **Grades VI, VIII, X and XII** (the **high grades**) go into a guaranteed slot or the first overmeld slot, never later. Their overmeld success rate is 0% past the first overmeld slot (game files, `MateriaGrade`; **verified**).
 
+- **Retrieval:** `MateriaGrade.ReturnRate` (the chance a stone comes back when the piece is retrieved or discarded) is 100 for grades I to X, 80 for XI and 40 for XII (**verified**, game files). Retrieval plays no part in the model.
+
 From grade VI on, the values alternate: each even grade is worth far more than the odd grade gated with it (VIII 24 against VII 8, XII 54 against XI 18), and only the even grades carry the slot restriction.
 
 ### Slots: big and small stones
@@ -73,6 +75,8 @@ h_k = \max(0,\ C_k - x_k),
 $$
 
 and the stones put into substat $k$ add $\min(h_k,\ \text{their total value})$ to it. A meld never lowers a stat already above its cap.
+
+**Exceptions.** The top substat of 16,957 of 16,979 checked pieces equals this cap (**verified**, game files and the formula). 22 pieces miss it: 18 A Realm Reborn relic steps, Neophyte's Ring, Alexandrian Metal Blade (72 against 71), Alexandrian Metal Buckler (28 against 29) and Troian Hose of Fending (253 against 254). Their meld cap is unknown.
 
 **Evidence.** This is **verified** for substats with a stat factor of 100: the top substat of real pieces equals it, and the Wiki's Kirin's Osode of Fending (item level 300 body) caps at 110 with its 77 melded up to 110. Where the factor is below 100 (for example Piety on kind 0 earrings, at 90%), the cap uses the factor-first cap order, which is **inferred** beyond three second-hand in-game values.
 

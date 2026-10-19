@@ -46,7 +46,7 @@ Notes on the table:
 
 Where do a piece's stats come from? From one row of a game table, picked by the item level.
 
-The game's `ItemLevel` sheet has one row per item level (rows 0 to 920). Each row holds a budget for each of the 12 stats. Most columns repeat each other. In this data:
+The game's `ItemLevel` sheet has one row per item level (rows 0 to 920). Each row holds a budget for each of the 12 stat columns the tool reads (the 14 stored stats use these 12: Main Attribute reads the Strength column and Secondary Attribute the Direct Hit one; weapon damage and defense have their own columns, section 5). Most columns repeat each other. In this data:
 
 - The four main-stat columns (Strength, Dexterity, Intelligence, Mind) are identical in every row.
 - Determination, Direct Hit, Skill Speed and Spell Speed are identical to Critical Hit in every row.

@@ -1,4 +1,4 @@
-/* Performance workloads for the gear optimizer (plan: docs/scratchpad/perf/plan.md, section 1).
+/* Performance workloads for the gear optimizer (docs/engineering/optimizer.md, section 8).
    Every pool is built fresh from the item database, so a new pool means new item objects (cold caches keyed by item). */
 import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';

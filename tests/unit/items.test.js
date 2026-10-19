@@ -358,7 +358,7 @@ test('meld slots and overmelding of real pieces; none for hand-made pieces', () 
 });
 
 /* The materia table against the game files' values (Materia sheet) and the Lodestone's item level requirements
-   (docs/scratchpad/materia/report.md sections 1 to 3). */
+   (docs/mechanics/materia.md, "Stone values and item level gates"). */
 test('materia table: values, item level gates and the grades limited to the first overmeld slot', () => {
   assert.deepEqual(MATERIA.values, [1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54]);
   assert.deepEqual(MATERIA.gate, [15, 30, 45, 70, 160, 290, 420, 420, 560, 560, 690, 690]);

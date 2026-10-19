@@ -21,17 +21,17 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 256 tests in 29 files (2026-10-16) |
-| Generator tests (Python) | the data generators, on small test files | 77 tests (2026-10-16) |
-| Smoke test (browser) | the built page in headless Chromium | one script, 16 groups of checks |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 303 tests in 32 files (2026-10-18) |
+| Generator tests (Python) | the data generators, on small test files | 83 tests in 2 files (2026-10-18) |
+| Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
 
 Notes:
 
 - **Unit tests** import the core logic, the page's view builders and the saved-state repair directly, with the real generated game data. They check formulas, sync, speed, item queries, optimizer correctness on real gear, what each tab shows, data format, provenance and saved state. A shared brute-force helper serves the optimizer tests (section 2.1).
 - **Generator tests** run the item level, item database and job icon generators and the gear category rules on small test CSV and icon files. They check row selection, slot detection, multi-slot gear (a cloak kept on its own slot code, an unsupported combination left out), stat placement, the HQ rule, job mask, sort order, budget table and level data, stat factor kind and table, gear categories and source flags, schema drift, and job icon embedding and numbering.
-- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 16 groups, each on a fresh page (section 2, *Smoke test*).
+- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 18 groups, each on a fresh page (section 2, *Smoke test*).
 
-**Why most tests need no browser.** The core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects, so both run in plain Node. The unit tests load the full item database, so they check the model against all 17,316 real pieces, not just hand-made examples. The smoke test is left with only what needs a real page: wiring, layout and interaction.
+**Why most tests need no browser.** The core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects, so both run in plain Node. The unit tests load the full item database, so they check the model against all 20,031 real pieces, not just hand-made examples. The smoke test is left with only what needs a real page: wiring, layout and interaction.
 
 ## 2. What each file covers
 
@@ -178,7 +178,7 @@ Notes on the pass/fail commands:
 
 Notes on the measurements and checks run by hand (none is part of `npm run check`):
 
-- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a saved copy of `src/`.
+- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit that you make yourself, outside the repo or under the gitignored `scripts/perf/out/` (how to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14)).
 - **`target-gcd-sweep.mjs`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
   - every job;
   - every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync);

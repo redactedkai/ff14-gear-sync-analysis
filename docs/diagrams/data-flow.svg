@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 620" role="img" aria-labelledby="t d">
   <title id="t">Data pipeline: from the game client to the page</title>
-  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the fourteen CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,031 rows, item level 15 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
+  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the twenty CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,031 rows, item level 15 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -53,7 +53,7 @@
 
   <rect class="box" x="500" y="30" width="200" height="72" rx="8"/>
   <text class="fg t" x="600" y="57" text-anchor="middle">Fetch step</text>
-  <text class="muted s" x="600" y="76" text-anchor="middle">14 CSVs, latest commit</text>
+  <text class="muted s" x="600" y="76" text-anchor="middle">20 CSVs, latest commit</text>
   <text class="muted s" x="600" y="92" text-anchor="middle">+ 23 job icons (PNG)</text>
 
   <line class="flow" x1="220" y1="66" x2="258" y2="66" marker-end="url(#arrow)"/>

@@ -1,7 +1,8 @@
 /* Results must not change when the optimizer is made faster: runs the same workloads through a baseline copy of src/
-   and the working tree, with the same item objects, and requires identical results (plan section 5).
-   node scripts/perf/compare.mjs --baseline docs/scratchpad/perf/baseline/<label> [--quick] [--nodes-may-differ]
-   The baseline is a copy of src/ taken before a change (with meta.json); the item data must be the same. */
+   and the working tree, with the same item objects, and requires identical results (optimizer.md, section 8).
+   node scripts/perf/compare.mjs --baseline <dir> [--quick] [--nodes-may-differ]
+   <dir> holds a fresh copy of src/ from the old commit, as <dir>/src (outside the repo, or under the gitignored
+   scripts/perf/out/baseline/<label>); the item data must be the same. No other file is read. */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

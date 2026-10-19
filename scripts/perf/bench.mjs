@@ -1,4 +1,4 @@
-/* Times optimize() over the workloads in workloads.mjs and checks the budgets (docs/scratchpad/perf/plan.md, section 4).
+/* Times optimize() over the workloads in workloads.mjs and checks the budgets (docs/engineering/optimizer.md, section 8).
    node scripts/perf/bench.mjs [--workload W1|X|OFULL] [--jobs SGE,WAR] [--quick] [--repeats N] [--strict]
    Writes one JSON row per run to scripts/perf/out/<workload>.jsonl and prints a summary.
    first: the first call of a run in this process (new pool objects per job, so caches keyed by item start cold);
@@ -157,7 +157,7 @@ worst.forEach(r => {
   );
 });
 
-// budgets (plan section 4); "first" stands in for the cold budget
+// budgets (optimizer.md, section 8, "What the perf scripts measure"); "first" stands in for the cold budget
 const fails = [];
 const check = (ok, msg) => {
   if (!ok) fails.push(msg);

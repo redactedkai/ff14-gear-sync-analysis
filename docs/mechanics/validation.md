@@ -283,6 +283,24 @@ Which parts of the sync model rest on no capture of the game by this project, an
 - one in a level-synced duty with item level sync off (a roulette), with one piece above the level's item level, would check the level item level directly;
 - one in a duty whose item level cap is above that level's item level, with a piece above both, would check the order.
 
+### Optional in-game checks
+
+Checks that could move a stat by more than 1, if the owner wants more captures. The values are for Sage, from the model. Read a value in the synced duty or FATE by swapping the one piece out of combat and noting the change on the character sheet.
+
+| # | Check | Where | Model says | If wrong |
+| --- | --- | --- | --- | --- |
+| 1 | Main stat and Vitality clamp | Cap 123, item level 130 head | Mind 30, Vit 29 | Mind 33, Vit 32 |
+| 2 | Cap uses the piece's own factor | Cap 123, Field Commander's Coat | Mind 43, Vit 45 | Mind 48, Vit 51 |
+| 3 | Lower substat clamps to the full cap | Cap 123, item level 130 head | Piety 22 | Piety 20 |
+| 4 | Item level cap beats the level's | Level 90, cap 665, gear above both | Head substat 186 | 184 |
+| 5 | Weapon uses the level's item level | Level 50 FATE, no item level sync | Weapon Mind 54 | Another value |
+| 6 | No scaling up | Cap 123, a piece below 123 | Stats unchanged | Stats raised |
+
+- **1 and 3** use one real item level 130 healer head: Mind 33, Vitality 32, Spell Speed 31, Piety 22, Direct Hit 6.
+- **2:** Field Commander's Coat is item level 160 with all four main stats, for every job.
+- **4:** the player report behind the current rule was Aloalo Island (level 90, item level 665).
+- **5:** FATEs sync level only, so a weapon above level 50 syncs to item level 130 by level alone.
+
 ### Second-hand in-game values (xivgear's test notes)
 
 Not captured by this project; quoted from code comments in xivgear's tests (commit `6c3c878`, [`sync_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/stats/sync_stats_tests.ts), [`item_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/item_stats_tests.ts)). The budgets are this project's `ItemLevel` rows.
@@ -345,7 +363,7 @@ Notes on the rows:
 What it shows:
 
 - **Strongly supports question 2.** The forum report is the only value where the two rules differ. Its poster asked Square Enix to switch to the own-share rule, which implies the game uses the full-share one. Nothing found contradicts it. Square Enix has not published how sync reduces individual stats.
-- Found by research on 2026-10-12 (notes in `docs/scratchpad/materia/report.md`, section 9).
+- Found by research on 2026-10-12.
 
 ### Food and what a capture should contain
 
@@ -401,6 +419,13 @@ Notes:
 
 Re-run after a patch or a new ffxiv-gearing version: see the scripts in the table below (not part of `npm run check`; they need the clone and a browser).
 
+**How the check runs.** It runs ffxiv-gearing's real code, not a port: its page exposes its store and game constants (`window.store`, `window.game`), so the harness bundles this project's core into that page and both tools compute every stat there.
+
+- **Sync it models.** Which item level a piece syncs to: the duty's item level if below the piece's own; otherwise, if the job level is below the equip level, the lower of the piece's item level and the level's item level; pieces that scale with the character always to the level's. The cap is one rounded product of budget, slot share and stat factor, from the same `ItemLevel`, `BaseParam` and `MeldParam` columns as this project's.
+- **Tags.** Each difference is tagged with the known cause it matches (D1 to D6 above; D5 is its hand-written item level 790 for level 100 against `ParamGrow.ItemLevelSync`'s 690, unused today because no gear needs level 100 sync). A difference matching none is `unexplained`, and one where the tools sync a piece to different item levels is `target`. The check passes with no `unexplained` and no `target`.
+- **Caps alone.** A second sweep compares its caps with this project's at every item level its data defines, every slot code and stat factor kind (466,440 compared on 2026-10-15, none off by more than 1).
+- **Pinned version.** `fetch.py` clones commit `8d75ef8` (2026-10-13, data 7.57) into `data/ffxiv-gearing`, which is gitignored. Output goes to `scripts/validate/out/gearing-<site>.json`, also gitignored.
+
 ## 10. Against another tool: xivgear
 
 Does the most used planner, with its own code and its own item data, agree too? xivgear ([xivgear.app](https://xivgear.app), [github.com/xiv-gear-planner/gear-planner](https://github.com/xiv-gear-planner/gear-planner)) is the most used gear planner; it computes synced stats with its own TypeScript core and reads its item data from its own data service. Like ffxiv-gearing it is a community reference, not external truth: agreeing with it shows the two models match, not that either matches the game.
@@ -430,7 +455,9 @@ Notes:
 - **X2.** xivgear has no rule for gear whose item level follows the wearer's level (`Item.SubStatCategory` 2, not in its data): such a piece keeps its full stats under level sync (Halone's Earring at level 50: main stat 212 there, 23 here) and takes the cap alone under a cap above the level's item level. **Corrected in the check** with this project's rule, the same as ffxiv-gearing's (section 9, D3): 909 piece checks.
 - **Pieces.** At each job's first setting 1,237 to 3,719 pieces are in both. xivgear has 1,028 to 3,399 a job that this project does not (below the item level 15 floor, crafter and gatherer gear, Aetherial and 1.0 gear, and for Beastmaster gear above its level cap); this project has up to 966 a job that its data service does not return (some item levels below 300). Not compared.
 
-Report with charts: `docs/scratchpad/xivgear-validation/report.html` (not committed). Re-run after a patch or a new xivgear version: see the scripts in the table below (not part of `npm run check`; they need the clone, and the first run fetches its data service).
+Re-run after a patch or a new xivgear version with the scripts in the table below; they write `scripts/validate/out/xivgear.json` (not part of `npm run check`; they need the clone, and the first run fetches its data service).
+
+**Why xivgear is a check, not an import target.** It loads only items of item level 290 or higher (the floor for the job's minimum level 70; Blue Mage's is 50), so it dropped item level 130 pieces from a level 50, item level 123 set in a live test (2026-10-14) (**verified** in its source, `LEVEL_ITEMS[job.minLevel].minILvl`, and by that test). See [roadmap.md](../roadmap.md), out of scope.
 
 ## 11. Verified and assumed
 

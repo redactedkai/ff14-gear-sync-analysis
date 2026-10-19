@@ -1,4 +1,4 @@
-/* Stress test 5 (plan section 1, A7): how large can a search get, and how long does a search that hits the node limit
+/* Stress test 5 (docs/engineering/optimizer.md, section 8): how large can a search get, and how long does a search that hits the node limit
    take?
    Part 1, hunt: random hostile pools (near-ties, cloaks, two-handed weapons, shields, Unique ring storms), then a hill
    climb that mutates the worst pool found to push the node count up. Pools are "game clones": real database pieces

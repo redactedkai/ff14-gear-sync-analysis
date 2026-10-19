@@ -1,4 +1,4 @@
-/* Browser timing of the gear optimizer (stress-test plan, docs/scratchpad/perf/plan.md, section 3, P4).
+/* Browser timing of the gear optimizer (docs/engineering/optimizer.md, section 8).
 
 Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures:
 'optimizer' (one optimizer run: src/ui/components/optimizer.js) and 'save' (serializing the saved state: src/main.js).

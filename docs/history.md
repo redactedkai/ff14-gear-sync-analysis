@@ -13,7 +13,7 @@ Most entries below come from one of these patterns:
 - **An inference stated as a fact.** Say what the data shows, and label the explanation as inferred ("unused", not "placeholder").
 - **A rounded or remembered number instead of a re-run.** Re-run the code before quoting a figure, and keep one decimal for percentages; 99.5% is not 100%.
 - **A result checked only against the code that produced it.** Prefer an independent reference: game data, the Wiki, exhaustive search.
-- **Job-specific thinking in a job-agnostic tool.** The owner plays Sage, but the tool serves all 22 combat jobs.
+- **Job-specific thinking in a job-agnostic tool.** The owner plays Sage, but the tool serves all 23 combat jobs.
 
 ## Stat model and data
 
@@ -49,6 +49,6 @@ Most entries below come from one of these patterns:
 
 | When | What was claimed or done | What is true | How it was found |
 | --- | --- | --- | --- |
-| Not recorded | Sage-specific behaviour (Eukrasian spells' effect on the GCD and similar) belonged in the page. | Removed. The tool is job-agnostic: all 22 combat jobs, cap and synced level are settings. Do not reintroduce Sage-only wording, presets or logic. | Not recorded; removed on purpose. |
+| Not recorded | Sage-specific behaviour (Eukrasian spells' effect on the GCD and similar) belonged in the page. | Removed. The tool is job-agnostic: all 23 combat jobs, cap and synced level are settings. Do not reintroduce Sage-only wording, presets or logic. | Not recorded; removed on purpose. |
 | Not recorded | This is the first item level sync calculator. | Not confirmed. A search found none, but absence was not proven. Do not claim novelty without checking again. | Not recorded. |
 | 2026-10-12 | The item database holds every stat a piece carries. | It dropped the game's generic Main Attribute and Secondary Attribute (`BaseParam` 55 and 56), so the 16 pieces carrying them lost their main stat and never appeared in the gear browser or optimizer. Both are now stored and mapped to the job's own stats. | Comparing with xivgear's rules index: its "Main/Secondary Attribute" handling had no counterpart here. |

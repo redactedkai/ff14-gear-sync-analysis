@@ -1,4 +1,4 @@
-/* Memory checks (plan section 2): a second identical sweep adds no meld memo entries and little heap; the memo size after
+/* Memory checks (docs/engineering/optimizer.md, section 8): a second identical sweep adds no meld memo entries and little heap; the memo size after
    the O-full sweep; a dropped pool is freed (the per-item cap cache is a WeakMap).
    node --expose-gc scripts/perf/memory.mjs [--jobs SGE,WAR] */
 import { meldCacheStats } from '../../src/core/meld.js';

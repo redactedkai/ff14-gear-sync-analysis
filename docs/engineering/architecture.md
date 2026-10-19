@@ -80,7 +80,7 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 
 All state that matters lives in one shared store: the saved settings, plus two values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **optimizer's last panel values** (`optPanel`) come with the settings they were solved for (`optimizerKey`), so the Substat tiers sub-tab fills from them only while those settings still hold.
 
-There is no gear pool to keep: the optimizer searches every piece the job can wear ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters)), so the store holds only settings. Until 2026-10-15 the user built a pool on a Gear pool tab first; dropping that step costs nothing in speed (building a job's gear takes about 5 to 10 ms, `docs/scratchpad/gear-merge`).
+There is no gear pool to keep: the optimizer searches every piece the job can wear ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters)), so the store holds only settings. Until 2026-10-15 the user built a pool on a Gear pool tab first; dropping that step costs nothing in speed (building a job's gear takes about 5 to 10 ms, measured once on 2026-10-15; a whole optimizer run takes about 20 ms, see [optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
 
 Changes go through store actions: set job, reset everything, switch tab or math sub-tab.
 

@@ -169,7 +169,7 @@ export function bestMeld(job, item, keys) {
    speed can break it), a vector beats another only at the same speed, so versions with less speed survive too.
    Only gain vectors that the lo stones reach from the later overmeld slots alone are versions: a lo stone in a big slot
    only lowers a gain, so it adds a vector only under a maximum, and there it found no better set in 2,045 Target GCD
-   runs while adding about 14% search work (docs/scratchpad/materia/prototype; owner, 2026-10-16: dropped). It can
+   runs while adding about 14% search work (docs/mechanics/materia.md, "Which stones are shown"; owner, 2026-10-16: dropped). It can
    still be the placement shown for a vector. A piece that takes no stones has one version, no melds: [null]. */
 const versionMemo = new Map();
 export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
