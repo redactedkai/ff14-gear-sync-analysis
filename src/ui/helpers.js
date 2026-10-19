@@ -3,7 +3,9 @@ import { ACTIVITIES, EXPANSIONS } from '../core/constants.js';
 import { CURRENT_TOMES, MAX_LEVEL } from '../core/tables.js';
 import { DEFAULT_EXCLUDE } from './state.js';
 
-export const fmtInt = n => n.toLocaleString();
+/* A whole number with en-US thousands separators ("1,234"), whatever the browser's locale: in a German browser
+   "1.234" would read like a decimal next to GCDs such as "2.48s". The Defense row formats the same way. */
+export const fmtInt = n => n.toLocaleString('en-US');
 
 /* How long a typed number waits before it is committed: typing "123" commits once, not 1, 12 and 123, so the views
    (and the optimizer) do not recompute for the numbers on the way. */

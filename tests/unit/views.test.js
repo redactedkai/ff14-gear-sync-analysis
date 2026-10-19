@@ -31,6 +31,7 @@ import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { MAX_REAL } from '../../src/core/tables.js';
 import { DEFAULT_EXCLUDE, shownSync, syncSettings } from '../../src/ui/state.js';
+import { fmtInt } from '../../src/ui/helpers.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
    tier off: these tests check the plain ranking against brute force and the core; tier ranking has its own tests. */
@@ -1020,4 +1021,21 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
   }
   assert.equal(walked.size, JOBS.length, 'every job walked');
   assert.ok(states > 10000, `${states} states walked`);
+});
+
+/* Audit 13, finding 6: counts followed the browser's locale ("1.234" in German reads like a decimal next to "2.48s").
+   The default locale of this process cannot be changed, so the test watches which locale fmtInt asks for. */
+test('fmtInt: thousands separators in en-US whatever the browser locale', () => {
+  const plain = Number.prototype.toLocaleString;
+  const asked = [];
+  Number.prototype.toLocaleString = function (locale, options) {
+    asked.push(locale);
+    return plain.call(this, locale, options);
+  };
+  try {
+    assert.equal(fmtInt(1234567), '1,234,567');
+  } finally {
+    Number.prototype.toLocaleString = plain;
+  }
+  assert.deepEqual(asked, ['en-US']);
 });
