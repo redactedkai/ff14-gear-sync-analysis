@@ -14,6 +14,12 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const SRC = join(ROOT, 'src');
 export const DIST = join(ROOT, 'dist');
 
+/* The MIT notices of the bundled libraries, kept at the top of the page's script. esbuild's own legal comments are
+   off (legalComments: 'none'): its 'eof' mode keeps only the Vue notice, since Alpine.js ships none in its bundle. */
+export const LICENSE_BANNER = `/*! Bundles third-party code under the MIT licence (https://opensource.org/license/mit):
+  Alpine.js, (c) 2019-present Caleb Porzio and contributors
+  @vue/reactivity and @vue/shared, (c) 2018-present Yuxi (Evan) You and Vue contributors */`;
+
 export function esbuildOptions({ minify = true } = {}) {
   return {
     entryPoints: [join(SRC, 'main.js')],
@@ -21,6 +27,7 @@ export function esbuildOptions({ minify = true } = {}) {
     format: 'iife',
     target: 'es2020',
     minify,
+    banner: { js: LICENSE_BANNER },
     legalComments: 'none',
     write: false,
     outdir: join(DIST, 'assets'), // required for the separate CSS output; nothing is written there

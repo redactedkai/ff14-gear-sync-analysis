@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMarks } from '../../scripts/build/build.mjs';
+import { buildMarks, esbuildOptions } from '../../scripts/build/build.mjs';
 
 /* A build marks itself as a test build everywhere but main (CLAUDE.md, Branches). */
 test('build marks: none on main or an unknown branch; DEV elsewhere, with branch and commit', () => {
@@ -25,4 +25,13 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
   assert.match(outside[0], /media="print"/);
   assert.match(outside[0], /onload="this\.media='all'"/);
   assert.match(noscript, /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com/);
+});
+
+/* The bundled libraries' MIT notices reach the page (their own comments are stripped by legalComments: 'none'). */
+test('build keeps the MIT notices of Alpine.js and @vue/reactivity', () => {
+  const banner = esbuildOptions().banner.js;
+  assert.match(banner, /^\/\*!/);
+  assert.match(banner, /MIT/);
+  assert.match(banner, /Alpine\.js, \(c\) 2019-present Caleb Porzio/);
+  assert.match(banner, /@vue\/reactivity.*Evan\) You/);
 });
