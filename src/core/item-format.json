@@ -165,20 +165,30 @@
       "hint": "Seasonal events, collaborations, campaigns"
     }
   ],
-  "row": {
-    "_comment": "The first fields of an item row in items.json (gen_items.py writes them; constants.js ROW reads them): name; slotCode (an index into `slots`); ilvl; equipLevel (the level needed to wear it); jobMask (bit i: `jobs`[i] can wear it); stats (comma-joined raw stats in `stats` order); unique (1: only one can be worn); hq (1: it can be HQ, the stats are the HQ ones); routes (bit masks over `activities`, see its comment); kind (the stat factor kind, see `statFactor`). The fields after them sit at the `rowField`s of the sections below.",
-    "fields": {
-      "name": 0,
-      "slotCode": 1,
-      "ilvl": 2,
-      "equipLevel": 3,
-      "jobMask": 4,
-      "stats": 5,
-      "unique": 6,
-      "hq": 7,
-      "routes": 8,
-      "kind": 9
-    }
+  "itemRow": {
+    "_comment": "The fields of an item row in items.json, in order: field i is `fields`[i] (docs/engineering/data-pipeline.md, Row format and order). scripts/data/item_format.py reads and builds rows by these names (row_fields), and ROW in src/core/constants.js names the same positions (data-format.test.js checks). The `rowField` of materia, rarity, gameId, levelScaled, category and the damageDefense entries must be the position of its name here (meldSlots, overmeld, rarity, gameId, scales, category, damagePhys ...); gen_items.py stops otherwise.",
+    "fields": [
+      "name",
+      "slotCode",
+      "ilvl",
+      "equipLevel",
+      "jobMask",
+      "stats",
+      "unique",
+      "hq",
+      "routes",
+      "kind",
+      "meldSlots",
+      "overmeld",
+      "rarity",
+      "gameId",
+      "scales",
+      "category",
+      "damagePhys",
+      "damageMag",
+      "defensePhys",
+      "defenseMag"
+    ]
   },
   "materia": {
     "_comment": "Melding. Item rows carry two more fields at `rowFields`: meldSlots, the item's `slotColumn` (guaranteed slots, 0 to `maxSlots`; gen_items.py stops above it), and overmeld, 1 when its `overmeldColumn` is True (overmelding allowed). The materia table in items.json ({values, gate, high}, one entry per grade I to `grades`) comes from the `sheet` rows whose `statColumn` is one of `statKeys` (BaseParam row ids from `stats`) and whose `itemColumn`[0] is non-zero; rows with values but no items are decoys and are skipped. The rows must agree: values from `valueColumn`[0..grades-1], gate = the `gateColumn` (Item.csv) of each grade's materia item, item and value columns past the last grade all 0, gates non-decreasing. high: the grades whose `highColumn` in `gradeSheet` (row = grade - 1) is 0, which must be the grades worth more than each neighbouring grade.",

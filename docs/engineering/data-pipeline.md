@@ -697,7 +697,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | --- | --- |
 | Fetch (sparse clone, `--commit`, job icons) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
-| Item row field positions | `row.fields` (the first ten) and each section's `rowField` in `src/core/item-format.json`; `ROW` in `src/core/constants.js` |
+| Item row field positions | `itemRow.fields` in `src/core/item-format.json` (each section's `rowField` agrees); `ROW` in `src/core/constants.js` |
 | Format loading, CSV reading, the column, yes/no and slot share checks, the stat factor table | `scripts/data/item_format.py` (`read_csv`, `check_bools`, `check_slot_percents`, `stat_factors`) |
 | Item database generator; materia table and decoy rows; selection rules and their funnel line | `scripts/data/gen_items.py` (`materia_table`, `select`, `DROP_RULES`, `drop_report`) |
 | Gear categories (subcategory codes, Savage currencies; the list of categories) | `scripts/data/gear_categories.py` (`CATEGORIES`) |

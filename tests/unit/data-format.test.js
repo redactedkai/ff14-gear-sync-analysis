@@ -167,3 +167,20 @@ test('job picker: every job appears exactly once, each with an embedded 64 x 64 
     assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [64, 64], id);
   }
 });
+
+/* ROW names the positions of itemRow.fields, and every section's rowField points at its own name there. */
+test('ROW agrees with itemRow.fields and the sections that name a rowField', () => {
+  const fields = ITEM_FORMAT.itemRow.fields;
+  assert.deepEqual(Object.keys(ROW), fields);
+  for (const [name, position] of Object.entries(ROW)) assert.equal(fields[position], name);
+  const sectionFields = {
+    ...ITEM_FORMAT.materia.rowFields,
+    rarity: ITEM_FORMAT.rarity.rowField,
+    gameId: ITEM_FORMAT.gameId.rowField,
+    scales: ITEM_FORMAT.levelScaled.rowField,
+    category: ITEM_FORMAT.category.rowField,
+    ...Object.fromEntries(ITEM_FORMAT.damageDefense.entries.map(e => [e.key, e.rowField])),
+  };
+  for (const [name, position] of Object.entries(sectionFields)) assert.equal(ROW[name], position, name);
+  assert.equal(ITEMS[0].length, fields.length);
+});
