@@ -1,7 +1,7 @@
 /* Rank by tier (roadmap A7): the best loadout by the tiers of the target and tiebreaks, in that order, then by their
    raw totals (order A, owner 2026-10-16: leftover points go to the target). Tiers and totals count food; speed's tier is
    its GCD with the job's haste, Tenacity's its mitigation step, main stat and Vitality have none (every point counts;
-   tiers.js rankTierOf). Spec: docs/scratchpad/a7-tier-ranking/spec.md.
+   tiers.js rankTierOf). Spec: docs/engineering/tier-ranking.md.
    - Weapon damage comes first when the job ranks it (rankedKeys in optimizer/candidates.js; owner 2026-10-18), as a key
      without tiers; the "Ranked by tier" line leaves it out (views/optimizer.js).
    - One search per key, in order: maximize the key under the minimums so far, note the tier it reaches, then hold the

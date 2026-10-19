@@ -217,8 +217,8 @@ export function categoryOf(item) {
 
 /* True for a relic whose substats the player allocates in game (Zodiac Zeta, Anima, Eureka, Resistance, Manderville,
    Phantom Occultum, ...): a database piece of the Relic category with no substat and no materia slot, as the game files
-   list them. The optimizer cannot model the allocation, so its search leaves them out (owner's decision 2026-10-18,
-   option 2 of docs/scratchpad/weapon-damage/spec.md): as listed, with main stat only, they would win on main stat or
+   list them. The optimizer cannot model the allocation, so its search leaves them out (owner's decision 2026-10-18;
+   docs/engineering/optimizer.md section 7): as listed, with main stat only, they would win on main stat or
    weapon damage while giving up every substat. */
 export function allocatedRelic(job, item) {
   return categoryOf(item)?.key === 'relic' && meldInfo(item)?.slots === 0 && job.substats.every(s => !item.stats[s]);

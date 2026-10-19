@@ -1,4 +1,4 @@
-/* Weapon damage and defense (docs/scratchpad/weapon-damage/spec.md; docs/mechanics/math.md).
+/* Weapon damage and defense (docs/mechanics/math.md, "Weapon damage and defense"; docs/engineering/optimizer.md section 1).
    - Weapon damage: the optimizer ranks it before the goal (owner's decision 2026-10-18), so no set gives it up for more
      of the goal's stats. A job uses physical or magic damage (JobContext damageKey); Blue Mage none.
    - Defense: shown under the result table with the share of damage it removes; never ranked.

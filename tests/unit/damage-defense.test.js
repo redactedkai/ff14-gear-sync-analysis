@@ -1,5 +1,5 @@
 /* Weapon damage and defense (core/damage-defense.js) on real items, and the optimizer ranking weapon damage first
-   (owner's decision 2026-10-18; docs/scratchpad/weapon-damage/spec.md). Expected values: the game files and xivgear's
+   (owner's decision 2026-10-18; docs/engineering/optimizer.md section 1). Expected values: the game files and xivgear's
    in-instance sync tests (defense). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -64,7 +64,7 @@ test('defense: real armor with the HQ bonus, synced as measured in game, and its
 });
 
 /* The optimizer never gives up weapon damage for the goal's stats: its weapon has the most weapon damage of the pool
-   after sync, in cases where it used to pick another (the 2026-10-18 check, docs/scratchpad/weapon-damage/spec.md). */
+   after sync, in cases where it used to pick another (the 2026-10-18 check). */
 test('the optimizer takes the most weapon damage, then the goal', () => {
   for (const [id, sync, target, tiebreak, ilvlMin, ilvlMax] of [
     ['GNB', { cap: 475, sync: true, level: 80 }, 'dh', ['crit', 'det'], 400, 520],
