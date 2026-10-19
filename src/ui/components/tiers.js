@@ -5,6 +5,7 @@
    another into the title's box (not saved). The values are worked out on every read (no effect that refills them
    later), so a level typed in the settings shows its own tiers and values in one render. The Fill chip sends
    'tier-fill', which puts the result's values in at the synced level. */
+import { numberField } from '../helpers.js';
 import { tierFill, tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 
 /* Space kept between a ? note and the panel's edge, and between it and its button (px); the note starts HELP_SHIFT px
@@ -67,12 +68,27 @@ export function tierTable() {
       this.edits = Object.fromEntries(Object.entries(values).map(([stat, value]) => [stat, { value, note: '' }]));
       this.editsFor = this.editsKey;
     },
-    /* a level typed into the title's box (Enter or leaving it); empty, or the synced level itself, follows the synced
-       level again */
-    typeLevel(el) {
-      const v = Math.round(Number(el.value));
-      this.typedLevel = el.value === '' || !Number.isFinite(v) || v === this.$store.app.level ? null : v;
-      el.value = this.level;
+    /* the title's level box: each valid level counts as it is typed, as in the settings' level box (owner, 2026-10-19);
+       the synced level itself follows the synced level again */
+    get levelField() {
+      const app = this.$store.app;
+      const field = numberField(
+        () => this.level,
+        v => {
+          this.typedLevel = v === app.level ? null : v;
+        },
+        1,
+        () => app.jobCtx.maxLevel,
+        true,
+      );
+      // an empty box, left or entered, follows the synced level again
+      const commit = field['@change'];
+      field['@change'] = e => {
+        if (e.target.value !== '') return commit(e);
+        this.typedLevel = null;
+        e.target.value = this.level;
+      };
+      return field;
     },
     /* a value typed into a substat's box (Enter or leaving the box); the box shows the value kept */
     type(stat, el) {

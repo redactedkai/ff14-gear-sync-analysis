@@ -816,7 +816,7 @@ async function checkRankByTier(pg) {
 }
 
 /** Target GCD (and, at level 100, the note on relics left out): the box is empty (any GCD) with no line; a GCD one step from the free result is met exactly, the
- * result's GCD is the one typed and the line gives the speed on the character panel; "or faster" and the GCD are
+ * result's GCD is the one typed with no line under the box; "or faster" and the GCD are
  * saved; the goal speed disables the box; a hasted job names its haste, a job switch clears the box, and a GCD the job
  * cannot have says why. Runs in its own group: it leaves Ninja at level 100 with sync off. */
 async function checkTargetGcd(pg) {
@@ -831,13 +831,24 @@ async function checkTargetGcd(pg) {
   await expect(pg.locator('#o-relic-note')).toHaveText('Relic weapons with customizable substats are left out.');
   const box = pg.locator('#o-gcd');
   check((await box.inputValue()) === '' && (await box.isEnabled()), 'the Target GCD box is not empty and enabled by default');
+  // the range beside the box follows the settings before the next Optimize (it showed none once a setting changed)
+  const gcdLabel = pg.locator('#o-gcd-row > label');
+  await expect(gcdLabel).toHaveText(/^Target GCD \(2\.50 to 2\.\d\d\)$/);
+  await setCap(pg, '123');
+  await expect(gcdLabel).toHaveText(/^Target GCD \(2\.50 to 2\.\d\d\)$/);
+  const capped = await gcdLabel.innerText();
+  await setCap(pg, '600');
+  await expect(gcdLabel).not.toHaveText(capped);
+  await expect(gcdLabel).toHaveText(/^Target GCD \(2\.50 to 2\.\d\d\)$/);
+  await pg.locator('#sync').uncheck();
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-gcd-line')).toHaveCount(0);
   const gcdCard = pg.locator('#o-out .readout > div').nth(1).locator('b');
   const free = Number.parseFloat(await gcdCard.innerText());
   const asked = Math.round((free >= 2.5 ? free - 0.01 : free + 0.01) * 100) / 100;
   await setNumber(pg, '#o-gcd', asked.toFixed(2));
   await waitOptimizer(pg);
-  await expect(pg.locator('#o-gcd-line')).toHaveText(/^Spell Speed \d+ to \d+ \(character panel\)$/);
+  await expect(pg.locator('#o-gcd-line')).toHaveCount(0);
   await expect(gcdCard).toHaveText(`${asked.toFixed(2)}s`);
   await pg.locator('#o-gcd-mode label', { hasText: 'or faster' }).click();
   await waitOptimizer(pg);
@@ -1383,6 +1394,15 @@ async function checkTiers(pg) {
   await setNumber(pg, '#t-level', '');
   await expect(pg.locator('#t-level')).toHaveValue('60');
   await setNumber(pg, '#level', '90');
+  await expect(pg.locator('#t-level')).toHaveValue('90');
+
+  // the sub-tab's level follows each valid keystroke too (no Enter needed), and keeps focus
+  await pg.focus('#t-level');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('80');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
+  check((await pg.evaluate(() => document.activeElement?.id)) === 't-level', 'the tiers level box lost focus while typing');
+  await setNumber(pg, '#t-level', '');
   await expect(pg.locator('#t-level')).toHaveValue('90');
 
   // a ? note says what the substat does and how big its tiers are here (level 90 DIV 1900: 1900/200 = 9.5)

@@ -1,10 +1,11 @@
 /* Gear optimizer tab: the best loadout for the chosen stat from every piece the job can wear, searched when the user
    presses Optimize (owner, 2026-10-18: no search on every setting change). A setting changed since the last search
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
-   from" boxes still follow the settings as they change. */
+   from" boxes and the Target GCD range still follow the settings as they change. */
 import Alpine from 'alpinejs';
 import {
   emptyGearFrom,
+  gcdLabel,
   mealEmptyReason,
   mealPillOff,
   mealsPassing,
@@ -26,6 +27,9 @@ export function optimizer() {
     countText: '',
     /* "Gear from" boxes with nothing for the job and the other filters (greyed out in the menu) */
     emptyBoxes: [],
+    /* the Target GCD label for the settings now ("Target GCD (2.50 to 2.10)"), shown while the result is missing or out
+       of date */
+    gcdLabel: 'Target GCD',
     /* how long the last solve took (building the job's gear included, the first time), shown under the result */
     solveMs: 0,
     /* pieces picked from the rows' menus of pieces with the same result: {row index: pool key}. Not saved; cleared when
@@ -78,6 +82,7 @@ export function optimizer() {
             const c = searchCount(raw);
             this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
             this.emptyBoxes = emptyGearFrom(raw);
+            this.gcdLabel = gcdLabel(raw);
           };
         },
         DEBOUNCE_MS,

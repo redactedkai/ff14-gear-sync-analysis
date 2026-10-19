@@ -127,7 +127,7 @@ Notes:
 
 **How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart update the optimizer's piece count once, not $k$ times. The optimizer's own number fields commit at once (no typing wait), so pressing Optimize right after typing searches with the value typed. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
-![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open gear browser recompute at once; the optimizer's piece count updates once 120 ms later (the search itself waits for Optimize); the saved state is written 150 ms later. Each wait restarts on every change.](../diagrams/architecture-timing.svg)
+![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open gear browser recompute at once; the optimizer's piece count and Target GCD range update once 120 ms later (the search itself waits for Optimize); the saved state is written 150 ms later. Each wait restarts on every change.](../diagrams/architecture-timing.svg)
 
 ## 4. Persistence
 

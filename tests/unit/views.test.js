@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { allMeals, bestFood, foodChoices, statBase } from '../../src/core/food.js';
+import { allMeals, bestFood, foodChoices } from '../../src/core/food.js';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
@@ -658,12 +658,8 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
       );
       assert.equal(v.gcd, r.gcd.toFixed(2));
       if (mode === 'exact') assert.equal(v.gcd, asked.toFixed(2));
-      const base = statBase(job, 'spd', 100);
       if (r.faster) assert.equal(v.gcdLine.text, `${r.gcd.toFixed(2)}, faster than asked`);
-      else {
-        const need = mode === 'exact' ? `${base + r.band.min} to ${base + r.band.max}` : `${base + r.band.min} or more`;
-        assert.equal(v.gcdLine.text, `${job.label.spd} ${need} (character panel)`);
-      }
+      else assert.equal(v.gcdLine, null, `${jobId} ${mode}: a set that meets the GCD has no line`);
       if (food) assert.equal(v.food?.name, r.food?.name, 'the meal chosen with the gear');
     }
     assert.equal(met, 2, `${jobId}: both modes find a set`);
@@ -830,7 +826,7 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
   assert.ok(plain.tiers.every(c => !c?.held));
 });
 
-test('Rank by tier with a Target GCD: the GCD line and band come from the tier search', () => {
+test('Rank by tier with a Target GCD: the GCD and the GCD line come from the tier search', () => {
   const app = makeApp('SGE', { sync: false });
   const pool = windowPool(app.jobCtx);
   const fastest = optimizerView({ ...app, opt: { ...app.opt, target: 'spd', byTier: false } }, pool);
@@ -840,8 +836,7 @@ test('Rank by tier with a Target GCD: the GCD line and band come from the tier s
   const v = optimizerView(app, pool);
   assert.equal(v.kind, 'ok');
   assert.equal(v.gcd, gcd.toFixed(2));
-  assert.equal(v.gcdLine.bad, false);
-  assert.match(v.gcdLine.text, /^Spell Speed \d+ to \d+ \(character panel\)$/);
+  assert.equal(v.gcdLine, null);
   // a GCD faster than any set reaches: no set, said on the GCD line
   app.opt.gcd = 1.6;
   const none = optimizerView(app, pool);

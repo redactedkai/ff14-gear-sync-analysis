@@ -203,10 +203,17 @@ function gcdControls(app, pool, gear, meal) {
   };
 }
 
-/* The line under the Target GCD box, short and plain (owner's request): the speed the GCD asks for on the character
-   panel, or why no set fits. The fastest GCD the gear reaches is already in the range beside the box. */
-function gcdLine(job, r, ui, level) {
-  const base = statBase(job, 'spd', level);
+/* The Target GCD field's label for the settings as they are now, with the best meal when Food is on: shown while there
+   is no result or the result is out of date, so the range follows the settings before the next Optimize (it is one
+   search for the most speed, cached; 20 to 100 ms). `gear`: as for searchPool. */
+export function gcdLabel(app, gear = jobGear(app.jobCtx)) {
+  return gcdControls(app, searchPool(app, gear), gear, null).label;
+}
+
+/* The line under the Target GCD box, short and plain (owner's request): why no set fits, or that the set came out
+   faster than asked; null when the set meets the GCD (owner, 2026-10-19: no line giving the speed it needs). The
+   fastest GCD the gear reaches is already in the range beside the box. */
+function gcdLine(job, r, ui) {
   if (r.reason === 'unreachable' && r.asked < GCD_FLOOR_MS / 1000) {
     return { bad: true, text: `The GCD can't go below ${(GCD_FLOOR_MS / 1000).toFixed(2)}` };
   }
@@ -216,9 +223,7 @@ function gcdLine(job, r, ui, level) {
   }
   if (!r.ok) return { bad: true, text: `No set at ${r.mode === 'exact' ? 'exactly ' : ''}${r.asked.toFixed(2)}` };
   if (r.faster) return { bad: false, text: `${r.gcd.toFixed(2)}, faster than asked` };
-  const lo = base + r.band.min;
-  const need = r.band.max == null ? `${lo} or more` : `${lo} to ${base + r.band.max}`;
-  return { bad: false, text: `${job.label.spd} ${need} (character panel)` };
+  return null;
 }
 
 /* Every piece of the pool as a candidate for the goal, unpruned, by slot type: what sameResult checks each row's
@@ -409,7 +414,7 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
       },
       tierLists(app, gear),
     );
-    if (asked != null) line = gcdLine(job, r, ui, app.level);
+    if (asked != null) line = gcdLine(job, r, ui);
     if (!r.ok) {
       if (asked != null) return { kind: r.truncated ? 'infeasible' : 'nogcd', gcdUi: ui, gcdLine: line, truncated: r.truncated };
       return { kind: r.truncated ? 'infeasible' : 'noset', gcdUi: ui, truncated: r.truncated };
@@ -431,7 +436,7 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
       prep,
     );
     if (key != null && r.prep) prepCache = { key, prep: r.prep };
-    line = gcdLine(job, r, ui, app.level);
+    line = gcdLine(job, r, ui);
     if (!r.ok) return { kind: r.truncated ? 'infeasible' : 'nogcd', gcdUi: ui, gcdLine: line, truncated: r.truncated };
     res = r;
     food = r.food;

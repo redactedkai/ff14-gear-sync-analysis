@@ -234,7 +234,7 @@
 <!-- TIERS: every substat's tiers around its value (a ladder); not about sync, so it shows whatever the sync settings -->
 <section class="subtab" id="tab-tiers" hidden :hidden="$store.app.mathTab !== 'tiers'" x-data="tierTable" @tier-fill.window="fill()" @keydown.escape.window="helpFor = null" @click.window="if (helpFor && !$event.target.closest('#t-pop, [data-help]')) helpFor = null">
 <template x-if="view"><div class="panel" id="t-panel" x-ref="panel" style="position:relative">
-  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" :value="view.level" aria-label="Level of the tiers" @change="typeLevel($el)"><span class="f-range" id="t-level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span><span style="flex:1"></span>
+  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" x-bind="levelField" aria-label="Level of the tiers"><span class="f-range" id="t-level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span><span style="flex:1"></span>
     <span class="subtabs small"><button type="button" id="t-more" :aria-pressed="String(more)" @click="more = !more">More tiers</button></span></div>
   <div class="tablewrap"><table class="compact ladder" id="t-table">
     <colgroup><col class="lrowcol"><template x-for="(c, k) in view.cols" :key="k"><col :class="c.first ? 'gfirst' : ''"></template></colgroup>
@@ -317,7 +317,7 @@
             <template x-for="o in tiebreakOptions(2)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
           </select></label>
           <div class="f field gcd-field" id="o-gcd-row">
-          <label for="o-gcd" x-text="(!stale && view?.gcdUi?.label) || 'Target GCD'"></label>
+          <label for="o-gcd" x-text="(!stale && view?.gcdUi?.label) || gcdLabel"></label>
           <div class="row">
             <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-model="$store.app.opt.gcd">
             <div class="seg" id="o-gcd-mode" role="radiogroup" aria-label="Target GCD mode" :class="{ off: $store.app.opt.target === 'spd' }">
