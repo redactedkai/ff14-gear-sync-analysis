@@ -385,7 +385,7 @@
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
         <p class="small dim" id="o-wd-note" x-show="view.weaponFirst">Weapon damage comes first, before the goal.</p>
         <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note">Relic weapons with customizable substats are left out: the optimizer can’t model your choice yet.</p></template>
-        <p class="small dim" id="o-total-note">Totals match the character panel; <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span> (the panel adds your job's and clan's base).</p>
+        <p class="small dim" id="o-total-note" x-text="`${view.headers[0]} and ${view.headers[1]} are gear only; the other totals match the character panel.`"></p>
         <template x-if="view.food"><p class="small dim" id="o-food-note">Food (community formula; Vitality not counted).<span x-show="!view.gcdOn"> The gear set is the same with any meal.</span></p></template>
       </div></template>
     </div>
