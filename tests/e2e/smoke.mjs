@@ -705,6 +705,13 @@ async function checkFood(pg) {
     .catch(() => false);
   check(focused, 'the Food menu opened without focus in its search box');
   const meals = pg.locator('#o-meal-menu [data-meal]');
+  // with Best for goal off another pill can be picked; turning it back on puts the pills back to the goal's
+  await pg.locator('#o-meal-best').uncheck();
+  await pg.click('#o-meal-menu [data-stat="det"]');
+  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(2);
+  await pg.locator('#o-meal-best').check();
+  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(1);
+  await expect(pg.locator('#o-meal-menu [data-stat="spd"]')).toHaveAttribute('aria-pressed', 'true');
   await pg.click('#o-meal-menu [data-stat="spd"]'); // the rest of the check starts with no pill
   const bestCount = await meals.count();
   await pg.locator('#o-meal-best').uncheck();

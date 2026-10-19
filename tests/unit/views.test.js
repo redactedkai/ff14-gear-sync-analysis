@@ -818,7 +818,6 @@ const MEALS = [
   { name: 'Popoto Potage', stats: ['crit', 'spd'], best: true },
   { name: 'Rroneek au Gratin', stats: ['crit', 'dh'], best: false },
 ];
-const SHORT = { crit: 'CRT', det: 'DET', dh: 'DHT', spd: 'SpS' };
 const filters = (stats, query = '', bestOnly = true) => ({ stats, query, bestOnly });
 
 test('Food menu filters: the switch, every picked stat, every search word', () => {
@@ -847,12 +846,68 @@ test('Food menu pills: one that would leave no meal is greyed out, a picked one 
   assert.equal(mealPillOff(MEALS, 'spd', filters(['crit', 'det'], '', false)), true);
 });
 
-test('Food menu empty list: why, and the one change that brings meals back', () => {
-  assert.equal(mealEmptyReason(MEALS, filters(['crit']), SHORT), null);
-  assert.deepEqual(mealEmptyReason(MEALS, filters(['crit', 'dh']), SHORT), {
-    text: 'No best-for-goal meal has CRT and DHT.',
-    action: 'best',
-  });
-  assert.deepEqual(mealEmptyReason(MEALS, filters(['crit'], 'xyz '), SHORT), { text: 'No meal matches "xyz".', action: 'query' });
-  assert.deepEqual(mealEmptyReason(MEALS, filters(['det', 'dh'], '', false), SHORT), { text: 'No meal has DET and DHT.', action: 'stats' });
+test('Food menu empty list: only a search empties it, and Clear search brings meals back', () => {
+  assert.equal(mealEmptyReason(MEALS, filters(['crit'])), null);
+  assert.deepEqual(mealEmptyReason(MEALS, filters(['crit'], 'xyz ')), { text: 'No meal matches "xyz".', action: 'query' });
+  // a state the menu cannot reach (CRT and DHT with Best for goal on: turning the switch on resets the pills) has
+  // nothing to offer
+  assert.deepEqual(mealEmptyReason(MEALS, filters(['crit', 'dh'])), { text: 'No meals match.', action: null });
+});
+
+/* Every state the Food menu can reach, for every job's real meals (owner, 2026-10-18: prove the empty list's advice).
+   From each start (a shown meal tagged best for goal, the other meals tagged with it, the preset the goal can give: a
+   subset of the tagged meal's stats, two at most), the walk applies every move the menu allows: a pill on or off (on
+   only while mealPillOff allows it), the switch (on resets the pills to the preset), and a search (none, one matching
+   no meal, one word of a meal's name). In every state the pills and switch leave a meal with no search, so an empty
+   list always comes from the search, and Clear search brings meals back. */
+test('Food menu: in every reachable state only a search empties the list, and Clear search brings meals back', () => {
+  let states = 0;
+  const walked = new Set();
+  for (const [jobId] of JOBS) {
+    const job = makeJobContext(jobId);
+    walked.add(job.jobId);
+    const items = allMeals(job).map(m => ({ key: m.key, name: m.name, stats: m.stats.map(x => x.stat), best: false }));
+    if (!items.length) continue;
+    const pills = job.substats.filter(s => items.some(x => x.stats.includes(s)));
+    const words = [items[0], items[items.length >> 1], items.at(-1)].map(x => x.name.split(' ')[0].toLowerCase());
+    const queries = ['', 'zzzz', ...words];
+    // tagged meals spread over the list: one alone, or with every meal of the same stats
+    const shownAt = [0, 1, items.length >> 2, items.length >> 1, (3 * items.length) >> 2, items.length - 1];
+    for (const at of [...new Set(shownAt)]) {
+      const shown = items[at];
+      for (const tagSame of [false, true]) {
+        const tagged = items.map(x => ({ ...x, best: x === shown || (tagSame && x.stats.join() === shown.stats.join()) }));
+        const own = shown.stats.filter(s => pills.includes(s));
+        for (const preset of [[], ...own.map(s => [s]), ...(own.length === 2 ? [own] : [])]) {
+          const key = f => `${[...f.stats].sort().join()}|${f.query}|${f.bestOnly}`;
+          const seen = new Set();
+          // the menu opens with the preset, the switch on or off as the player left it
+          const queue = [true, false].map(bestOnly => ({ stats: preset, query: '', bestOnly }));
+          while (queue.length) {
+            const f = queue.pop();
+            const k = key(f);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            states++;
+            const where = `${jobId} tagged ${shown.name} preset ${preset} at ${k}`;
+            assert.ok(mealsPassing(tagged, { ...f, query: '' }).length > 0, `the pills and switch leave no meal: ${where}`);
+            const reason = mealEmptyReason(tagged, f);
+            if (reason) {
+              assert.equal(reason.action, 'query', where);
+              assert.ok(mealsPassing(tagged, { ...f, query: '' }).length > 0, `Clear search brings no meal back: ${where}`);
+            }
+            // every move the menu allows
+            for (const p of pills) {
+              if (f.stats.includes(p)) queue.push({ ...f, stats: f.stats.filter(s => s !== p) });
+              else if (!mealPillOff(tagged, p, f)) queue.push({ ...f, stats: [...f.stats, p] });
+            }
+            queue.push(f.bestOnly ? { ...f, bestOnly: false } : { ...f, bestOnly: true, stats: preset });
+            for (const q of queries) queue.push({ ...f, query: q });
+          }
+        }
+      }
+    }
+  }
+  assert.equal(walked.size, JOBS.length, 'every job walked');
+  assert.ok(states > 10000, `${states} states walked`);
 });

@@ -284,8 +284,10 @@ function sameMenu(options, shown) {
      expansion, newest first: {label, items: [{key, name, ilvl, label, stats, adds, best, on}]}, label "Spell Speed +
      Direct Hit" (the row's hover text; the row shows what the meal adds instead), stats its neutral stats (for the pills), adds what it gives on this gear ("SpS +44 DHT +41 VIT +54"),
      best its result is the best's, on the row shows it. pills: the job's substats some meal has, {stat, short, label}.
-     preset: the pills the menu starts with (owner, 2026-10-18): the goal's substats in order (target, tiebreak 1,
-     tiebreak 2), only those the shown meal has, so it is never filtered out, and two at most (a meal has two stats). */
+     preset: the pills the menu starts with, and goes back to when "Best for goal" is turned on (owner, 2026-10-18): the
+     goal's substats in order (target, tiebreak 1, tiebreak 2), only those the newest meal tagged best for goal has, so
+     the switch on with them always lists a meal, and two at most (a meal has two stats). From a tagged meal, not the
+     one shown: a picked meal need not be tagged. */
 function foodRow(app, gearTotals, food, picked, haste) {
   const job = app.jobCtx,
     o = app.opt,
@@ -320,8 +322,8 @@ function foodRow(app, gearTotals, food, picked, haste) {
   const pills = job.substats
     .filter(s => meals.some(m => m.stats.some(x => x.stat === s)))
     .map(s => ({ stat: s, short: job.short[s], label: job.label[s] }));
-  const shownStats = meal.stats.map(x => x.stat);
-  const preset = [...new Set(keys)].filter(k => pills.some(p => p.stat === k) && shownStats.includes(k)).slice(0, 2);
+  const bestStats = meals.findLast(m => tagged.has(m)).stats.map(x => x.stat);
+  const preset = [...new Set(keys)].filter(k => pills.some(p => p.stat === k) && bestStats.includes(k)).slice(0, 2);
   return { meal, best: tagged.has(meal), menu: { count: tagged.size, groups, pills, preset } };
 }
 
@@ -344,18 +346,16 @@ export function mealPillOff(items, stat, filters) {
   return mealsPassing(items, { ...filters, stats: [...filters.stats, stat] }).length === 0;
 }
 
-/* Why the Food menu lists no meal, and the one change that brings meals back, or null while some meal passes:
-   {text, action}, action 'query' (clear the search), 'best' (turn "Best for goal" off) or 'stats' (clear the pills).
-   The search is blamed first when meals pass without it; then the switch; then the pills. `short`: {stat: short name}
-   for the text ("CRT and DHT"). */
-export function mealEmptyReason(items, filters, short) {
+/* Why the Food menu lists no meal, or null while some meal passes: {text, action}, action 'query' (clear the search)
+   or null (nothing to offer). Only a search can empty the menu: the pills and switch always leave a meal with no
+   search, since a pill is picked only while some meal passes with it (mealPillOff), turning the switch on resets the
+   pills to the preset, which a tagged meal has, and turning it off or removing a pill only adds meals (a test walks
+   every state the menu can reach). */
+export function mealEmptyReason(items, filters) {
   if (mealsPassing(items, filters).length) return null;
-  const pair = filters.stats.map(s => short[s]).join(' and ');
-  if (filters.query.trim() && mealsPassing(items, { ...filters, query: '' }).length)
-    return { text: `No meal matches "${filters.query.trim()}".`, action: 'query' };
-  if (filters.bestOnly && mealsPassing(items, { ...filters, bestOnly: false }).length)
-    return { text: filters.stats.length ? `No best-for-goal meal has ${pair}.` : 'No best-for-goal meal matches.', action: 'best' };
-  return { text: filters.stats.length ? `No meal has ${pair}.` : 'No meals match.', action: 'stats' };
+  const query = filters.query.trim();
+  if (query && mealsPassing(items, { ...filters, query: '' }).length) return { text: `No meal matches "${query}".`, action: 'query' };
+  return { text: 'No meals match.', action: null };
 }
 
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message

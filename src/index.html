@@ -395,13 +395,13 @@
                     <div class="meal-tools">
                       <span class="meal-search"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"></span>
                       <div class="meal-pills" role="group" aria-label="Meal stats"><template x-for="p in view.food.menu.pills" :key="p.stat"><button type="button" class="meal-pill" :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))" :disabled="mealPillOff(p.stat)" :title="p.label" :data-stat="p.stat" @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
-                      <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" x-model="mealBestOnly"><span>Best for goal</span></label>
+                      <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" :checked="mealBestOnly" @change="setMealBest($event.target.checked)"><span>Best for goal</span></label>
                     </div>
                     <div class="meal-list" x-ref="mealList">
                       <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
                         <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`" @click="pickMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl" x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
                       </div></template>
-                      <template x-if="mealEmpty"><div class="meal-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <button type="button" class="linkbtn" @click="clearMealFilter(mealEmpty.action)" x-text="{ query: 'Clear search', best: 'Show all meals', stats: 'Clear stats' }[mealEmpty.action]"></button></div></template>
+                      <template x-if="mealEmpty"><div class="meal-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <template x-if="mealEmpty.action === 'query'"><button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></template></div></template>
                     </div>
                   </div>
                 </div>

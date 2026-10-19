@@ -39,9 +39,10 @@ export function optimizer() {
     mealOpen: false,
     mealQuery: '',
     mealStats: [],
-    /* the search (lastDeps) the pills were last preset for: the menu presets them once per Optimize, then keeps the
-       player's changes */
+    /* the result (viewId, one per search, a meal pick included) the pills were last preset for: the menu presets them
+       on its first opening for each result, then keeps the player's changes */
     mealPresetFor: null,
+    viewId: 0,
     mealBestOnly: true,
     /* the ? note of the "Spare points to tiebreaks" switch (tier ranking): open or not */
     rankHelp: false,
@@ -115,6 +116,7 @@ export function optimizer() {
       const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks), this.mealPick));
       this.solveMs = Math.max(1, Math.round(performance.now() - t0));
       this.view = view;
+      this.viewId++;
       this.viewJob = raw.job;
       this.nowDeps = optimizerKey(raw);
       // the result's panel values with the settings they were solved for, for How the math works (Substat tiers)
@@ -139,10 +141,11 @@ export function optimizer() {
     toggleMealMenu() {
       this.mealOpen = !this.mealOpen;
       if (!this.mealOpen) return;
-      // the first opening after an Optimize starts from the goal's stats (view.food.menu.preset)
-      if (this.mealPresetFor !== this.lastDeps) {
+      // the first opening for a result starts from the goal's stats (view.food.menu.preset): a meal pick reruns the
+      // search, which can change the meals tagged best for goal
+      if (this.mealPresetFor !== this.viewId) {
         this.mealStats = [...(this.view?.food?.menu?.preset ?? [])];
-        this.mealPresetFor = this.lastDeps;
+        this.mealPresetFor = this.viewId;
       }
       // after x-show has shown the menu (a hidden box takes no focus and has no layout)
       this.$nextTick(() =>
@@ -179,16 +182,15 @@ export function optimizer() {
         .map(g => ({ label: g.label, items: g.items.filter(x => passing.has(x.key)) }))
         .filter(g => g.items.length);
     },
-    /* why the list is empty and the way out ({text, action}), or null (views mealEmptyReason) */
+    /* why the list is empty ({text, action}), or null (views mealEmptyReason) */
     get mealEmpty() {
-      const short = Object.fromEntries((this.view?.food?.menu?.pills ?? []).map(p => [p.stat, p.short]));
-      return mealEmptyReason(this.mealItems, this.mealFilters, short);
+      return mealEmptyReason(this.mealItems, this.mealFilters);
     },
-    /* the empty list's button: undo the filter that empties it */
-    clearMealFilter(action) {
-      if (action === 'query') this.mealQuery = '';
-      else if (action === 'best') this.mealBestOnly = false;
-      else this.mealStats = [];
+    /* "Best for goal" on or off; on, the pills go back to the goal's (view.food.menu.preset), which a tagged meal has,
+       so the switch never empties the list */
+    setMealBest(on) {
+      this.mealBestOnly = on;
+      if (on) this.mealStats = [...(this.view?.food?.menu?.preset ?? [])];
     },
     /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude, opt.market), not the
        browser's */
