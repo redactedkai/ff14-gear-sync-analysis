@@ -113,6 +113,25 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(lines[start + 1 + len(self.rows) :], [']', '}'])
         self.assertTrue(self.text.endswith('\n'))
 
+    def test_drop_report(self):
+        """select() counts the rows each rule left out; with the kept rows they add up to the whole Item.csv. The report
+        line names each rule that left something out, the LEFT_OUT categories, and the rows kept."""
+        kept, _, dropped = gen_items.select(FIXTURES)
+        with open(FIXTURES / 'Item.csv', encoding='utf-8', newline='') as f:
+            n_items = sum(1 for _ in csv.DictReader(f))
+        self.assertEqual(list(dropped), list(gen_items.DROP_RULES))
+        self.assertEqual(len(kept) + sum(dropped.values()), n_items)
+        # the fixture's empty names, belt, soul crystal and non-gear rows, item level 14 piece, base-class-only pieces,
+        # no-stat pieces, crafter and gatherer pieces and unsupported multi-slot piece
+        self.assertEqual(dropped, {'name': 2, 'slot': 147, 'ilvl': 1, 'job': 4, 'stats': 3, 'crafter_gatherer': 2, 'multi_slot': 1})
+        report = gen_items.drop_report(n_items, dropped, {'diadem': 2}, 22)
+        self.assertEqual(
+            report,
+            f'Item.csv {n_items} rows: no name -2, no slot code (belts, soul crystals, not gear) -147, item level under 15 -1, '
+            'no combat job -4, no stats -3, crafter or gatherer stat -2, multi-slot with no slot code -1, '
+            'category diadem (LEFT_OUT) -2; kept 22',
+        )
+
     def test_damage_defense_fields(self):
         """Fields 16-19 are DamagePhys, DamageMag, DefensePhys, DefenseMag, plus the HQ bonus (BaseParamSpecial pairs 12, 13,
         21, 24) only when the item can be HQ: Test Sallet HQ and NoHQ carry the same +14 defense pairs and 300/200 base."""

@@ -30,6 +30,7 @@ currentTomes, the short names of the two current tomestones (for the "Tomestones
 """
 
 import argparse
+from collections import Counter
 from pathlib import Path
 
 import gear_activities
@@ -155,11 +156,23 @@ def damage_defense(row, fmt):
     return out
 
 
+# The selection rules of select(), in the order they apply, with the words the drop report uses for each.
+DROP_RULES = {
+    'name': 'no name',
+    'slot': 'no slot code (belts, soul crystals, not gear)',
+    'ilvl': f'item level under {MIN_ILVL}',
+    'job': 'no combat job',
+    'stats': 'no stats',
+    'crafter_gatherer': 'crafter or gatherer stat',
+    'multi_slot': 'multi-slot with no slot code',
+}
+
+
 def select(csv_dir):
-    """The gear the database keeps: (kept, multi_slot, crafter_gatherer), where kept is a list of (Item.csv row,
-    database row) pairs in Item.csv order, multi_slot names the pieces left out because they block a combination of
-    slots with no slot code in item-format.json, and crafter_gatherer names the pieces left out because they carry a
-    crafter or gatherer stat (gear a combat job can wear but made for crafting or gathering)."""
+    """The gear the database keeps: (kept, multi_slot, dropped), where kept is a list of (Item.csv row, database row)
+    pairs in Item.csv order, multi_slot names the pieces left out because they block a combination of slots with no
+    slot code in item-format.json, and dropped is {DROP_RULES key: rows that rule left out} (a crafter or gatherer stat
+    marks gear a combat job can wear but made for crafting or gathering)."""
     d = Path(csv_dir)
     fmt = load_format()
     param_idx = {s['baseParam']: i for i, s in enumerate(fmt['stats'])}  # BaseParam row id -> stat index
@@ -202,21 +215,28 @@ def select(csv_dir):
     items = read_csv(d / 'Item.csv', ['#', *item_columns()])
     check_bools(items, ['CanBeHq', 'IsUnique'], 'Item.csv')
     src = gear_flags(d, items)
-    kept, multi_slot, crafter_gatherer, bad_kind, bad_meld, bad_rarity = [], [], [], [], [], []
+    kept, multi_slot, bad_kind, bad_meld = [], [], [], []
+    dropped = dict.fromkeys(DROP_RULES, 0)
     rarity_col = fmt['rarity']['itemColumn']
     scaled = fmt['levelScaled']
     known_scaled = {str(v) for v in scaled['known']}
     for r in items:
         if not r['Name']:
+            dropped['name'] += 1
             continue
         e = esc.get(r['EquipSlotCategory'])
         slot = slot_of(e)
         unsupported = slot is None and blocks_other_slots(e)  # multi-slot gear with no slot code: listed, not kept
         if slot is None and not unsupported:
+            dropped['slot'] += 1
             continue
         ilvl = int(r['LevelItem'])
+        if ilvl < MIN_ILVL:
+            dropped['ilvl'] += 1
+            continue
         mask = cjc.get(r['ClassJobCategory'], 0)
-        if ilvl < MIN_ILVL or not mask:
+        if not mask:
+            dropped['job'] += 1
             continue
         st = [0] * n_stats
         for i in range(N_ITEM_PARAMS):
@@ -229,13 +249,15 @@ def select(csv_dir):
                 if p in param_idx:
                     st[param_idx[p]] += int(r[f'BaseParamValueSpecial[{i}]'])
         if not any(st):
+            dropped['stats'] += 1
             continue
         if any(int(r[f'{c}[{i}]']) in dohdol for c in ('BaseParam', 'BaseParamSpecial') for i in range(N_ITEM_PARAMS)):
-            crafter_gatherer.append(f'{r["Name"]} (item level {ilvl})')
+            dropped['crafter_gatherer'] += 1
             continue
         # Multi-slot gear needs its own slot code (summed slot share, blocked slots); a combination without one is
         # left out and listed, so a patch that adds more of it is noticed.
         if unsupported:
+            dropped['multi_slot'] += 1
             multi_slot.append(f'{r["Name"]} (item level {ilvl})')
             continue
         kind = r[sf['itemColumn']]
@@ -286,7 +308,7 @@ def select(csv_dir):
         m = fmt['materia']
         expect = f'{m["slotColumn"]} 0 to {m["maxSlots"]}, {m["overmeldColumn"]} True or False'
         raise SchemaError(f'Item.csv meld fields outside {expect}: ' + ', '.join(bad_meld[:10]))
-    return kept, multi_slot, crafter_gatherer
+    return kept, multi_slot, dropped
 
 
 def category_index(fmt):
@@ -309,12 +331,14 @@ def main(csv_dir, out, source='detect'):
     if source == 'detect':
         source = provenance.detect(csv_dir)
     fmt = load_format()
-    kept, multi_slot, crafter_gatherer = select(csv_dir)
+    kept, multi_slot, dropped = select(csv_dir)
+    n_items = len(kept) + sum(dropped.values())
     weapon_slots = {s['code'] for s in fmt['slots'] if s['type'] in ('weapon', 'offhand')}
     cats = gear_categories.categorize(csv_dir, kept, weapon_slots)
     problems = gear_categories.check(kept, cats)
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
+    left_out = Counter(cats[r['#']] for r, _ in kept if cats[r['#']] in gear_categories.LEFT_OUT)
     kept = [(r, row) for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
     routes = gear_activities.routes(csv_dir, kept, cats)
     cat_index = category_index(fmt)
@@ -354,9 +378,20 @@ def main(csv_dir, out, source='detect'):
         'items': rows,
     }
     provenance.write_generated(out, provenance.json_lines(doc, expand=('items',), ensure_ascii=False))
-    # the one message: gear of a new kind a patch added that the format cannot place yet (none today)
+    print(drop_report(n_items, dropped, left_out, len(rows)))
+    # gear of a new kind a patch added that the format cannot place yet (none today)
     if multi_slot:
         print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
+
+
+def drop_report(n_items, dropped, left_out, n_kept):
+    """One line: how many Item.csv rows each selection rule left out, in rule order, then the LEFT_OUT categories
+    (gear_categories.py) by name, and the rows kept, for example 'Item.csv 52,801 rows: no name -1,921, ...; kept
+    20,031'. A rule that left nothing out is skipped. The counts follow the selection figure of
+    docs/engineering/data-pipeline.md, section 4."""
+    parts = [f'{DROP_RULES[k]} -{n:,}' for k, n in dropped.items() if n]
+    parts += [f'category {cat} (LEFT_OUT) -{n:,}' for cat, n in sorted(left_out.items())]
+    return f'Item.csv {n_items:,} rows: ' + ', '.join(parts) + f'; kept {n_kept:,}'
 
 
 if __name__ == '__main__':
