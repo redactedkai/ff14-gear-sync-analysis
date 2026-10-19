@@ -257,6 +257,47 @@ select {
     calc(100% - 18.5px) calc(50% + 1px),
     calc(100% - 14px) calc(50% + 1px);
 }
+/* the open list of a select, drawn like the Gear from menu: browsers with customizable selects (Chrome and Edge 135+)
+   draw it from these rules; the others keep their own list. The chevron above stays, so the built-in icon and the
+   tick next to the chosen option are hidden. */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+  select::picker-icon,
+  option::checkmark {
+    display: none;
+  }
+  /* below the select, above it only when the list does not fit (Chrome's default picks the side with more room) */
+  ::picker(select) {
+    position-try-order: normal;
+    position-try-fallbacks: flip-block;
+    margin: 4px 0;
+    padding: 4px;
+    max-height: 340px;
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  option {
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.92rem;
+    font-weight: 400;
+    cursor: pointer;
+  }
+  option:hover,
+  option:focus-visible {
+    background: var(--surface2);
+    outline: none;
+  }
+  option:checked {
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+}
 /* a dropdown of checkboxes (the gear browser's Expansion filter), drawn like a select */
 .f.multi {
   position: relative;
