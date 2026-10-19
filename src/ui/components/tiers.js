@@ -14,6 +14,8 @@ const HELP_SHIFT = 20;
 const HELP_WIDTH = 340;
 
 export function tierTable() {
+  // the last view and what it was built from: the template and `help` read `view` many times a render
+  let cached = { key: null, view: null };
   return {
     /* values typed or clicked, {stat: value}, and the settings they were made under (editsKey) */
     edits: {},
@@ -35,10 +37,14 @@ export function tierTable() {
     get liveEdits() {
       return this.editsFor === this.editsKey ? this.edits : {};
     },
+    /* the cards (views/tiers.js tiersView), or null with no job; built again only when the job, the level or the edits
+       change */
     get view() {
       const app = this.$store.app;
       if (!app.job) return null;
-      return tiersView(app, { ...tierValues(app, this.level), ...this.liveEdits }, this.level);
+      const key = JSON.stringify([app.job, this.level, this.liveEdits]);
+      if (cached.key !== key) cached = { key, view: tiersView(app, { ...tierValues(app, this.level), ...this.liveEdits }, this.level) };
+      return cached.view;
     },
     get help() {
       return this.view?.cards.find(g => g.stat === this.helpFor)?.help ?? null;

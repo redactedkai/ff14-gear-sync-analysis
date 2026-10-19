@@ -10,6 +10,9 @@ function tabLevel(app) {
 
 /* The sub-tab: the facts, the chart and the step table. A bar or a row clicked sets the level or the speed. */
 export function gcdTab() {
+  // the last view and the settings it was built for: the template reads `view` several times a render, and a build
+  // walks every level for the chart
+  let cached = { key: null, view: null };
   return {
     // the chart's container width (px): the chart is drawn at its width, so its text keeps the page's size
     width: 0,
@@ -20,9 +23,13 @@ export function gcdTab() {
       });
       this.$nextTick(() => observer.observe(this.$refs.chart));
     },
+    /* the tab's view (views/gcd.js gcdView), built again only when its settings or the chart's width change */
     get view() {
       const app = this.$store.app;
-      return gcdView(tabLevel(app), app.gcd.haste, app.gcd.speed, this.width);
+      const args = [tabLevel(app), app.gcd.haste, app.gcd.speed, this.width];
+      const key = args.join('|');
+      if (cached.key !== key) cached = { key, view: gcdView(...args) };
+      return cached.view;
     },
     /* a bar of the chart: its level */
     pickLevel(e) {
@@ -45,6 +52,8 @@ export function gcdControls() {
     speedTimer = null;
   return {
     hasteOptions: HASTE_OPTIONS,
+    /* the highest level the Level box takes (every level of the game: views/gcd.js GCD_LEVELS) */
+    gcdLevels: GCD_LEVELS,
     /* the box's hover text after a correction ("Lowered to 100, the highest level."), or for text that is no level */
     levelNote: '',
     levelError: '',
