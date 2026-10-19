@@ -15,9 +15,12 @@ export const MP = ITEM_LEVEL_FILE.MP;
 /* SHARES: slot shares in thousandths per slot code for weapon damage and defense, {key: [share]} (BaseParam; the stats'
    shares are the slot percents of item-format.json, these differ: weapon damage only on weapons, defense only on armor). */
 export const SHARES = ITEM_LEVEL_FILE.SHARES;
+/* JOB_MODS: each job's attribute modifiers in percent, {job: {str, dex, int, mind, vit}} (ClassJob; job-context.js). */
+export const JOB_MODS = ITEM_LEVEL_FILE.JOBS;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
-/* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...]] (food.js). */
+/* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...], [Vitality HQ
+   percent, HQ max] or null] (food.js). */
 export const FOODS = FOOD_FILE.foods;
 /* MATERIA: the materia table, one entry per grade I to XII. values: what a grade adds to a combat substat; gate: the
    lowest gear item level that takes it; high: the grades (1-based) that cannot go past the first overmeld slot. */

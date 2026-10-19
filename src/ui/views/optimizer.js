@@ -73,10 +73,10 @@ export function resultPanel(job, view) {
   return Object.fromEntries(job.substats.map(s => [s, row[job.stats.indexOf(s)]]));
 }
 
-/* What the character panel adds to a stat: the level's base for a substat (statBase), 0 for the main stat and
-   Vitality (their base depends on the job and clan, which the page does not ask for; owner's decision 2026-10-16). */
+/* What the character panel adds to a stat at `level`: the character's base (statBase). For the main stat and Vitality
+   that is the job's share of the level's base, without the clan's bonus (-3 to +3; owner's decision 2026-10-18). */
 export function panelBase(job, stat, level) {
-  return job.substats.includes(stat) ? statBase(job, stat, level) : 0;
+  return statBase(job, stat, level);
 }
 
 /* The meal the result shows, or null with Food off: the chosen pair (opt.foodPair), or with '' the one that raises the
@@ -344,7 +344,7 @@ function buildOptimizerView(app, gear, chosen) {
   // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
   const t = withFood(gearTotals, bonus),
     spd = t.spd;
-  // the character panel's numbers: substats with the level's base added, main stat and Vitality as gear points
+  // the character panel's numbers: every stat with the character's base added (clan bonus aside)
   const panel = s => t[s] + panelBase(job, s, app.level),
     base = s => panelBase(job, s, app.level);
   // 5. one row per slot, in the character panel's order; rings are numbered
@@ -422,7 +422,7 @@ function buildOptimizerView(app, gear, chosen) {
     targetLabel: job.label[o.target],
     spdLabel: job.label.spd,
     total: panel(o.target),
-    totalLabel: `${job.label[o.target]} (${[base(o.target) && 'base', 'gear', food && 'food'].filter(Boolean).join(' + ')}${poolSynced(pool, sync) ? ', synced' : ''})`,
+    totalLabel: `${job.label[o.target]} (${[base(o.target) && 'base', 'gear', bonus[o.target] && 'food'].filter(Boolean).join(' + ')}${poolSynced(pool, sync) ? ', synced' : ''})`,
     totals: job.stats.map(s => gearTotals[s] + base(s)),
     // the Food row and the totals with it; null with Food off
     food: food && {

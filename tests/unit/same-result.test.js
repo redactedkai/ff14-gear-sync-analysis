@@ -146,10 +146,11 @@ test("the owner's case: every row has others, shows the lowest equip level, and 
   const v = optimizerView(app);
   assert.equal(v.kind, 'ok');
   assert.ok(v.rows.every(r => r.same && r.same.count > 1));
-  // the result the readout and the Effect row show (gear only, gear and food) is the optimizer's
+  // the result the readout and the Effect row show (gear only, gear and food) is the optimizer's: Mind 356 from gear
+  // plus Sage's base 232 at level 50 (202 x 115%)
   assert.deepEqual(
     [v.total, v.gcd, ...v.tiers.map(t => t?.effect ?? null)],
-    [356, '2.50', null, null, '29.1%', '+16.3%', '0.0%', '2.50s', '+0 MP'],
+    [588, '2.50', null, null, '29.1%', '+16.3%', '0.0%', '2.50s', '+0 MP'],
   );
   for (const r of v.rows) {
     const items = r.same.groups.flatMap(g => g.items);

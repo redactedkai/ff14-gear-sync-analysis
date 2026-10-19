@@ -187,8 +187,18 @@
     "baseParamColumn": "MeldParam",
     "count": 13
   },
+  "jobModifiers": {
+    "_comment": "Each job's attribute modifiers, for item-level.json's JOBS (gen_item_level.py): the ClassJob.csv column of each attribute key (stat keys above), in percent. A character's base attribute is floor(the level's main stat base x modifier / 100) plus the clan's bonus (docs/mechanics/math.md, Totals as on the character panel).",
+    "columns": {
+      "str": "ModifierStrength",
+      "dex": "ModifierDexterity",
+      "int": "ModifierIntelligence",
+      "mind": "ModifierMind",
+      "vit": "ModifierVitality"
+    }
+  },
   "food": {
-    "_comment": "Meals, for food.json (gen_food.py). A meal is an Item.csv row whose `uiCategoryColumn` is `uiCategory` (Meal); its `actionColumn` names an ItemAction row whose Action is one of `actions` and whose Data[0] is `status` (Well Fed). That row's `foodRowColumn` is the ItemFood row: up to three stats (BaseParam[i], IsRelative[i], ValueHQ[i] percent, MaxHQ[i] cap). Kept: HQ-able meals whose stats are all relative and all in `stats` (raw stat keys from `stats` above), with at least one substat; carried: HQ values of every substat, Vitality left out (the page does not use it). Medicine (tinctures) uses ItemFood too but another category and action.",
+    "_comment": "Meals, for food.json (gen_food.py). A meal is an Item.csv row whose `uiCategoryColumn` is `uiCategory` (Meal); its `actionColumn` names an ItemAction row whose Action is one of `actions` and whose Data[0] is `status` (Well Fed). That row's `foodRowColumn` is the ItemFood row: up to three stats (BaseParam[i], IsRelative[i], ValueHQ[i] percent, MaxHQ[i] cap). Kept: HQ-able meals whose stats are all relative and all in `stats` (raw stat keys from `stats` above), with at least one substat; carried: HQ values of every substat, and of Vitality (`vitality`) apart from them. Medicine (tinctures) uses ItemFood too but another category and action.",
     "uiCategoryColumn": "ItemUICategory",
     "uiCategory": 46,
     "actionColumn": "ItemAction",
@@ -196,6 +206,7 @@
     "status": 48,
     "foodRowColumn": "Data[1]",
     "stats": ["vit", "piety", "ten", "dh", "crit", "det", "sks", "sps"],
-    "carried": ["piety", "ten", "dh", "crit", "det", "sks", "sps"]
+    "carried": ["piety", "ten", "dh", "crit", "det", "sks", "sps"],
+    "vitality": "vit"
   }
 }

@@ -38,13 +38,13 @@ class GenFoodTest(unittest.TestCase):
         cls.doc = generate(FIXTURES)
 
     def test_kept_meals_with_their_hq_substats(self):
-        # HQ values of the real ItemFood rows; Vitality is not carried
+        # HQ values of the real ItemFood rows; Vitality carried apart, as [percent, max]
         self.assertEqual(
             self.doc['foods'],
             [
-                ['Royal Toast', 656, [['crit', 10, 107]]],
-                ['Prune Ponzecake', 770, [['piety', 10, 151], ['det', 10, 91]]],
-                ['Rroneek au Gratin', 770, [['sps', 10, 151], ['dh', 10, 91]]],
+                ['Royal Toast', 656, [['crit', 10, 107]], [10, 158]],
+                ['Prune Ponzecake', 770, [['piety', 10, 151], ['det', 10, 91]], [10, 297]],
+                ['Rroneek au Gratin', 770, [['sps', 10, 151], ['dh', 10, 91]], [10, 297]],
             ],
         )
 

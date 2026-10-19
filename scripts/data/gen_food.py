@@ -3,9 +3,10 @@
 
 Usage: python scripts/data/gen_food.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
-Output: {"_generated": notice, "source": ..., "foods": [[name, item level, [[stat key, percent, max], ...]], ...]}
+Output: {"_generated": notice, "source": ..., "foods": [[name, item level, [[stat key, percent, max], ...], vitality], ...]}
 One row per meal, sorted by item level, then name. Stats are the HQ values of the meal's substats in the order of its
-ItemFood row (primary first). Which rows count as meals, and which are kept: `food` in src/core/item-format.json.
+ItemFood row (primary first); vitality is its HQ Vitality as [percent, max], or null when it has none. Which rows
+count as meals, and which are kept: `food` in src/core/item-format.json.
 
 Stops with exit status 1 (SchemaError) on a missing column, a meal whose ItemFood row does not exist, or a kept stat
 whose HQ percent is not 1 to 100 or whose HQ maximum is not positive.
@@ -25,10 +26,11 @@ def food_columns():
     return [f'{c}[{i}]' for c in ('BaseParam', 'IsRelative', 'ValueHQ', 'MaxHQ') for i in range(N_FOOD_PARAMS)]
 
 
-def meal_stats(food_row, stat_of, carried):
-    """[[key, percent, max], ...] of a kept meal's carried stats, or None when the meal is left out: a stat that is not a
-    combat stat, a flat (non-relative) bonus, or no substat at all."""
-    out, any_sub = [], False
+def meal_stats(food_row, stat_of, carried, vitality=None):
+    """([[key, percent, max], ...], [percent, max] or None): a kept meal's carried stats and its Vitality (key
+    `vitality`), or None when the meal is left out: a stat that is not a combat stat, a flat (non-relative) bonus, or no
+    substat at all."""
+    out, any_sub, vit = [], False, None
     for i in range(N_FOOD_PARAMS):
         param = int(food_row[f'BaseParam[{i}]'])
         if not param:
@@ -36,16 +38,19 @@ def meal_stats(food_row, stat_of, carried):
         key = stat_of.get(param)
         if key is None or food_row[f'IsRelative[{i}]'] != 'True':
             return None
-        if key not in carried:
+        if key not in carried and key != vitality:
             continue
-        any_sub = True
         pct, mx = int(food_row[f'ValueHQ[{i}]']), int(food_row[f'MaxHQ[{i}]'])
         if not (1 <= pct <= 100 and mx > 0):
             raise SchemaError(
                 f'ItemFood row {food_row["#"]}: {key} HQ {pct}% up to {mx}, expected a percent 1 to 100 and a positive maximum'
             )
+        if key == vitality:
+            vit = [pct, mx]
+            continue
+        any_sub = True
         out.append([key, pct, mx])
-    return out if any_sub else None
+    return (out, vit) if any_sub else None
 
 
 def main(csv_dir, out, source='detect'):
@@ -69,9 +74,9 @@ def main(csv_dir, out, source='detect'):
         row = food_rows.get(act[fd['foodRowColumn']])
         if row is None:
             raise SchemaError(f'meal {it["#"]} ({it["Name"]}) points at ItemFood row {act[fd["foodRowColumn"]]}, which does not exist')
-        st = meal_stats(row, stat_of, fd['carried'])
-        if st is not None:
-            foods.append([it['Name'], int(it['LevelItem']), st])
+        kept = meal_stats(row, stat_of, fd['carried'], fd['vitality'])
+        if kept is not None:
+            foods.append([it['Name'], int(it['LevelItem']), *kept])
     foods.sort(key=lambda f: (f[1], f[0]))
     doc = {'_generated': provenance.note(source), 'source': source, 'foods': foods}
     provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')

@@ -19,7 +19,7 @@ import {
   SPEC_NAME,
   SPEC_SHORT,
 } from './constants.js';
-import { IL, MAX_LEVEL } from './tables.js';
+import { IL, JOB_MODS, MAX_LEVEL } from './tables.js';
 
 const cache = new Map();
 
@@ -63,6 +63,9 @@ export function makeJobContext(jobId) {
     weaponMode,
     slotPct: { ...BASE_SLOT_PCT, weapon: WEAPON_PCT[weaponMode] },
     activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || weaponMode === '1h+oh'),
+    /* the job's modifiers of its main stat and Vitality, in percent (ClassJob): its base is the level's main stat base x
+       the modifier (food.js statBase) */
+    attributeMods: Object.freeze({ main: JOB_MODS[id][profile.main], vit: JOB_MODS[id].vit }),
     /* Vitality for Int/Mind jobs is the Vit budget x 0.9 (rounded again) */
     vitFactor: profile.main === 'mind' || profile.main === 'int' ? 0.9 : 1,
     /* the job's level cap: limited jobs stop below the game's (JOB_LEVEL_CAPS); it cannot wear gear of a higher equip level */

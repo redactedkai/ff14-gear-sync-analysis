@@ -3,7 +3,7 @@
 
 Usage: python scripts/data/gen_item_level.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
-Output: {"_generated": notice, "source": ..., "IL": ..., "PG": ..., "MP": ..., "SHARES": ...}
+Output: {"_generated": notice, "source": ..., "IL": ..., "PG": ..., "MP": ..., "SHARES": ..., "JOBS": ...}
 _generated = one-line "do not edit" notice naming the source commit.
 source = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown (the page's DATA_SOURCE).
 IL = per-stat budget by item level (index = item level, 921 rows as of patch 7.50), one array per stat key
@@ -15,6 +15,7 @@ IL and MP also hold the weapon damage and defense entries (`damageDefense` in it
      and their BaseParam row's MeldParam percents.
 SHARES = {weapon damage or defense key: [slot share in thousandths per slot code]}, from their BaseParam rows (the stats'
      shares are the slot `percent`s in item-format.json; these differ).
+JOBS = {job: {attribute key: modifier in percent}} for every job in item-format.json, from ClassJob.csv (`jobModifiers`).
 
 Also checks BaseParam.csv: every stat's slot shares must equal the slot `percent`s in src/core/item-format.json, which
 the page uses. Missing columns or a mismatch stop the generator with exit status 1.
@@ -25,7 +26,23 @@ import json
 from pathlib import Path
 
 import provenance
-from item_format import check_slot_percents, load_format, read_csv, run_main, slot_shares, stat_factors
+from item_format import SchemaError, check_slot_percents, load_format, read_csv, run_main, slot_shares, stat_factors
+
+
+def job_modifiers(class_job_csv, fmt):
+    """{job: {attribute key: percent}} for every job in fmt['jobs'], from the ClassJob columns in fmt['jobModifiers'].
+    A job with no row, or a modifier that is not a positive whole number, stops the generator (SchemaError)."""
+    cols = fmt['jobModifiers']['columns']
+    rows = {r['Abbreviation']: r for r in read_csv(class_job_csv, ['Abbreviation', *cols.values()])}
+    out = {}
+    for job in fmt['jobs']:
+        if job not in rows:
+            raise SchemaError(f'ClassJob.csv has no row for {job}')
+        mods = {k: rows[job][c] for k, c in cols.items()}
+        if not all(v.isdigit() and int(v) > 0 for v in mods.values()):
+            raise SchemaError(f'ClassJob.csv {job}: modifiers {mods}, expected positive whole numbers')
+        out[job] = {k: int(v) for k, v in mods.items()}
+    return out
 
 
 def main(csv_dir, out, source='detect'):
@@ -44,9 +61,10 @@ def main(csv_dir, out, source='detect'):
     IL = {k: [int(r[c]) for r in il_rows] for k, c in il_cols.items()}
     pg_rows = {int(r['#']): r for r in read_csv(d / 'ParamGrow.csv', ['#', 'BaseSpeed', 'LevelModifier', 'ItemLevelSync'])}
     PG = [[int(pg_rows[lvl]['BaseSpeed']), int(pg_rows[lvl]['LevelModifier']), int(pg_rows[lvl]['ItemLevelSync'])] for lvl in range(1, 101)]
+    JOBS = job_modifiers(d / 'ClassJob.csv', fmt)
     # one line, compact: {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
-    # "SHARES": {key: [share per slot code]}}
-    doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP, 'SHARES': SHARES}
+    # "SHARES": {key: [share per slot code]}, "JOBS": {job: {attribute: %}}}
+    doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP, 'SHARES': SHARES, 'JOBS': JOBS}
     provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')
 
 

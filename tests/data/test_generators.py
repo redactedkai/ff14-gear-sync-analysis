@@ -6,7 +6,8 @@ ClassJobCategory rows, and the BaseParam rows of the 12 stats, are copied from t
 built on the real header, plus the 84 real materia items of the seven combat substats (text fields blanked). Materia
 holds the real rows 0, 2 (Strength: items, no values), the seven combat substats, 18 (a gathering stat) and two decoys
 (44, 48: values but no items); MateriaGrade is the whole real sheet. ItemLevel values are synthetic (row * 1000 + column
-position) so a wrong column shows up as a wrong number. ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest
+position) so a wrong column shows up as a wrong number. ClassJob holds the real rows of the 23 combat jobs and one base
+class (Gladiator). ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest
 edits copies of the fixtures to check that renamed columns and changed slot shares stop the generators.
 
 Run: npm test (runs these after the unit tests)
@@ -386,6 +387,7 @@ class GenItemLevelTest(unittest.TestCase):
         self.dir = Path(self.tmp.name)
         shutil.copy(FIXTURES / 'ItemLevel.csv', self.dir / 'ItemLevel.csv')
         shutil.copy(FIXTURES / 'BaseParam.csv', self.dir / 'BaseParam.csv')
+        shutil.copy(FIXTURES / 'ClassJob.csv', self.dir / 'ClassJob.csv')
         write_param_grow(self.dir / 'ParamGrow.csv', range(0, 101))
         with open(FIXTURES / 'ItemLevel.csv', encoding='utf-8', newline='') as f:
             self.header = next(csv.reader(f))
@@ -403,7 +405,7 @@ class GenItemLevelTest(unittest.TestCase):
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
         doc = json.loads(out.read_text(encoding='utf-8'))
-        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG', 'MP', 'SHARES'])
+        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG', 'MP', 'SHARES', 'JOBS'])
         self.assertIsNone(doc['source'])
         self.assertIn('commit unknown', doc['_generated'])
         src = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}
@@ -434,6 +436,17 @@ class GenItemLevelTest(unittest.TestCase):
         damage = [1000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         defense = [0, 0, 0, 176, 236, 176, 236, 176, 0, 0, 0, 0, 412, 412, 824]
         self.assertEqual(shares, {'damagePhys': damage, 'damageMag': damage, 'defensePhys': defense, 'defenseMag': defense})
+
+    def test_job_modifiers(self):
+        """JOBS: each combat job's attribute modifiers from the real ClassJob rows; base classes left out."""
+        out = self.dir / 'item-level.json'
+        run_quiet(gen_item_level.main, str(self.dir), str(out))
+        jobs = json.loads(out.read_text(encoding='utf-8'))['JOBS']
+        self.assertEqual(len(jobs), 23)
+        self.assertNotIn('GLA', jobs)
+        self.assertEqual(jobs['SGE'], {'str': 60, 'dex': 100, 'int': 115, 'mind': 115, 'vit': 100})
+        self.assertEqual(jobs['WAR'], {'str': 105, 'dex': 95, 'int': 40, 'mind': 55, 'vit': 110})
+        self.assertEqual(jobs['DRG']['vit'], 105)
 
     def test_item_level_columns(self):
         il, _ = self.generate()
@@ -759,6 +772,10 @@ class SchemaDriftTest(unittest.TestCase):
     def test_missing_item_level_stat_column(self):
         rename_column(self.dir / 'ItemLevel.csv', 'DirectHitRate', 'DirectHit')
         self.assert_fails(gen_item_level, 'ItemLevel.csv', 'DirectHitRate')
+
+    def test_missing_class_job_column(self):
+        rename_column(self.dir / 'ClassJob.csv', 'ModifierVitality', 'ModifierVit')
+        self.assert_fails(gen_item_level, 'ClassJob.csv', 'ModifierVitality')
 
     def test_missing_param_grow_column(self):
         rename_column(self.dir / 'ParamGrow.csv', 'LevelModifier', 'LevelMod')

@@ -169,7 +169,8 @@ test('optimizer view: every job searches all the gear it can wear, minus its lef
     const v = optimizerView(app);
     assert.equal(v.kind, 'ok', id);
     const want = optimize(job, searched, syncSettings(app), { target: app.opt.target, melds: app.opt.melds });
-    assert.equal(v.total, want.totals[app.opt.target], id);
+    // the card shows the character panel's number: gear plus the character's base
+    assert.equal(v.total, want.totals[app.opt.target] + panelBase(job, app.opt.target, app.level), id);
   }
 });
 
@@ -209,7 +210,8 @@ test('left-out groups: the optimizer and the browser each go by their own list',
   assert.deepEqual(searchCount(app, pool), { searched: pool.length - nTome, left: nTome });
   const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
-  assert.equal(o.total, exhaustive(app.jobCtx, searchPool(app, pool), { cap: 123, sync: true }, { target: app.opt.target })[0]);
+  const best = exhaustive(app.jobCtx, searchPool(app, pool), { cap: 123, sync: true }, { target: app.opt.target })[0];
+  assert.equal(o.total, best + panelBase(app.jobCtx, app.opt.target, app.level));
   app.opt.exclude = SOURCES.map(s => s.key);
   assert.equal(
     optimizerView(
@@ -269,7 +271,8 @@ test('level cap: the optimizer searches no piece above the job cap, and level sy
   assert.equal(searchPool(app, pool).length, wearableRows.length);
   const o = optimizerView(app, pool);
   assert.equal(o.kind, 'ok');
-  assert.equal(o.total, exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0]);
+  const best = exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0];
+  assert.equal(o.total, best + panelBase(app.jobCtx, app.opt.target, 80));
   // at the job's own cap no gear it can wear is level-synced: How the math works shows no sync
   assert.equal(pieceView(app).status, 'off');
   assert.equal(explainerView(app), null);
@@ -393,11 +396,14 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
 });
 
 /* Character panel numbers against AkhMorning's Level Modifiers table (AKH_LEVEL, helpers/common.js). */
-test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB)', () => {
-  for (const [id, stats] of [
-    ['SGE', ['crit', 'det', 'dh', 'spd', 'spec']],
-    ['WAR', ['crit', 'det', 'dh', 'spd', 'spec']],
-    ['BLM', ['crit', 'det', 'dh', 'spd']],
+/* The main stat and Vitality: MAIN x the job's modifier (ClassJob.csv: Sage Mind 115, Vitality 100; Warrior Strength
+   105, Vitality 110; Black Mage Intelligence 115, Vitality 100), floored, as AkhMorning and xivgear count it, without
+   the clan's bonus. */
+test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB, the main stat and Vitality from MAIN x the job modifier)', () => {
+  for (const [id, stats, mainMod, vitMod] of [
+    ['SGE', ['crit', 'det', 'dh', 'spd', 'spec'], 115, 100],
+    ['WAR', ['crit', 'det', 'dh', 'spd', 'spec'], 105, 110],
+    ['BLM', ['crit', 'det', 'dh', 'spd'], 115, 100],
   ]) {
     const job = makeJobContext(id);
     for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
@@ -406,23 +412,23 @@ test('panel base: AkhMorning level table (Determination and Piety from MAIN, the
         const fromMain = s === 'det' || (s === 'spec' && job.profile.spec === 'piety');
         assert.equal(panelBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);
       }
-      assert.equal(panelBase(job, 'main', +lv), 0, 'main stat stays gear points');
-      assert.equal(panelBase(job, 'vit', +lv), 0, 'Vitality stays gear points');
+      assert.equal(panelBase(job, 'main', +lv), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
+      assert.equal(panelBase(job, 'vit', +lv), Math.floor((main * vitMod) / 100), `${id} Vitality level ${lv}`);
     }
   }
 });
 
-/* The page's Total and With food rows equal gear (and food) plus the level's base for substats, gear only for the main
-   stat and Vitality; at level 50 Sage that is base 341 for Critical Hit, Direct Hit and Spell Speed, 202 for
-   Determination and Piety (AkhMorning). */
-test('optimizer totals are character panel numbers for substats', () => {
+/* The page's Total and With food rows equal gear (and food) plus the character's base; at level 50 Sage that is base 341
+   for Critical Hit, Direct Hit and Spell Speed, 202 for Determination, Piety and Vitality, and 232 for Mind (202 x 115%)
+   (AkhMorning; ClassJob). */
+test('optimizer totals are character panel numbers', () => {
   const app = makeApp('SGE', { level: 50 });
   Object.assign(app.opt, { target: 'spd', food: true });
   const v = optimizerView(app, windowPool(app.jobCtx));
   assert.equal(v.kind, 'ok');
   const job = app.jobCtx;
   const gear = job.stats.map((s, k) => v.rows.reduce((a, r) => a + (r.cells?.[k].value ?? 0), 0));
-  const want = { main: 0, vit: 0, crit: 341, det: 202, dh: 341, spd: 341, spec: 202 };
+  const want = { main: 232, vit: 202, crit: 341, det: 202, dh: 341, spd: 341, spec: 202 };
   job.stats.forEach((s, k) => {
     assert.equal(v.totals[k], gear[k] + want[s], s);
     assert.equal(v.food.totals[k], gear[k] + want[s] + (v.food.cells[k]?.value ?? 0), `${s} with food`);
@@ -549,8 +555,11 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   assert.equal(on.gcd, gcdFor(want, 50).toFixed(2));
   assert.equal(on.spdText, `${341 + want} Spell Speed (341 base, ${gearSpd} gear, ${want - gearSpd} food)`);
   assert.equal(on.tiers[i].effect, statTier(job, 'spd', want, 50).effect);
-  // main stat and Vitality get no food cell
-  assert.deepEqual([on.food.cells[0], on.food.cells[1]], [null, null]);
+  // no food cell for the main stat; Vitality's is the meal's percent of base 202 (level 50, Sage's modifier 100) plus
+  // gear, up to its maximum
+  assert.equal(on.food.cells[0], null);
+  const vitWant = Math.min(meal.vit.max, Math.floor((meal.vit.pct * (202 + gearTotals.vit)) / 100));
+  assert.deepEqual(on.food.cells[1], { value: vitWant, capped: vitWant === meal.vit.max });
 
   app.opt.foodPair = 'det+crit'; // a chosen meal
   const det = optimizerView(app, pool);

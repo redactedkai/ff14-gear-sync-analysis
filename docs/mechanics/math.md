@@ -526,11 +526,12 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 
 ### Totals as on the character panel
 
-Which number does the page show for a total: gear points only, or what the character panel in game shows? The result's Total and With food rows show each substat as the character panel does: the level's base plus gear (plus food).
+Which number does the page show for a total: gear points only, or what the character panel in game shows? The result's Total and With food rows show every stat as the character panel does: the character's base plus gear (plus food), apart from the clan's bonus.
 
 - The base is $\text{sub}$ for Critical Hit, Direct Hit, Skill or Spell Speed and Tenacity, and the level's base main stat (AkhMorning's table, in no game sheet; **inferred**) for Determination and Piety: at level 50, 341 and 202; at level 100, 420 and 440.
 - The effects and tiers come out the same either way, since each formula subtracts that base again.
-- The main stat and Vitality stay gear points: their panel base also depends on the job and clan, which the page does not ask for (owner's decision, 2026-10-16).
+- The main stat and Vitality start from $\lfloor \text{main}(L) \times m / 100 \rfloor$, with $\text{main}(L)$ the level's base main stat above and $m$ the job's modifier of that attribute (`ClassJob`, **verified** game file: Sage Mind 115 and Vitality 100, Warrior Strength 105 and Vitality 110; tanks' Vitality 110, Dragoon's and Reaper's 105, everyone else's 100). The formula is AkhMorning's and xivgear's (**inferred**). At level 50 a Sage starts from 232 Mind and 202 Vitality.
+- The panel also adds the clan's bonus (`Tribe`, **verified** game file): −1 to +3 Strength, −3 to +3 Dexterity and Intelligence, −2 to +3 Mind and Vitality. The page does not ask for the clan, so its main stat and Vitality can be up to 3 points off the panel's (owner's decision, 2026-10-18; until then both stayed gear points).
 - AkhMorning's level table equals the tool's at all 100 levels, and its effect formulas on panel numbers equal the tool's ([validation.md, section 5](validation.md#5-speed-and-gcd)).
 
 ### Food
@@ -557,7 +558,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 
 - Within one ordered stat pair (primary, secondary), a newer meal never has a lower maximum (all 255 two-substat meals), so each pair is represented by its newest meal.
 - A meal is left out when another one has each of its stats at an equal or higher maximum (an old Critical Hit + Determination meal next to a new Determination + Critical Hit one), so a job has 7 to 13 choices.
-- Vitality from food is not counted: it has no tier, and its base needs the job and clan modifiers.
+- Vitality from food is counted like a substat's, from the Vitality base above (since 2026-10-18). Without the clan's bonus it can be a point lower than in game. It never decides the meal unless Vitality is the goal or a tiebreak: the "most food points" step after the goal and tiebreaks counts substats only.
 
 **Food does not change the gear** (with no target GCD). For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged. With a target GCD the meal does change which gear fits, since its speed counts toward the GCD; meal and gear are then chosen together ([Target GCD](#target-gcd)). "Best for the goal" keeps the optimizer's gear and takes the meal that gives the highest target, then tiebreak 1, then tiebreak 2, with food added. A test checks this against every (gear set, meal) pair of a small pool.
 

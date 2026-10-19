@@ -398,7 +398,7 @@ Rows are sorted by item level (highest first), then slot code, then name. The st
 
 ## 5. Item level table and level data
 
-*What, besides the gear itself, does the stat math need?* The formulas turn an item level into stats, a character level into speed constants, and an item's kind into stat percentages. The second generator writes one file with all of that, in five parts.
+*What, besides the gear itself, does the stat math need?* The formulas turn an item level into stats, a character level into speed constants, and an item's kind into stat percentages. The second generator writes one file with all of that, in six parts.
 
 **Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. The budget curves and example values are in [math.md, section 2](../mechanics/math.md#2-the-budget-table); how a budget becomes the stat on a piece is in [math.md, section 4](../mechanics/math.md#4-the-stats-on-a-piece).
 
@@ -422,6 +422,8 @@ How it is used is in [math.md, section 4](../mechanics/math.md#the-stat-factor-o
 
 **Weapon damage and defense.** The same three tables for physical and magic weapon damage and Defense and Magic Defense (`damageDefense` in the shared format definition): the `ItemLevel` columns `PhysicalDamage`, `MagicalDamage`, `Defense` and `MagicDefense` as budgets, the `MeldParam` columns of `BaseParam` rows 12, 13, 21 and 24 as factors, and their slot shares per slot code (`SHARES`, per mille, from the same `BaseParam` rows; the 14 stats keep their shares in the format file). They cap these values under sync ([math.md, section 4](../mechanics/math.md#weapon-damage-and-defense)).
 
+**Job modifiers.** For each of the 23 combat jobs, its `ClassJob` modifiers of Strength, Dexterity, Intelligence, Mind and Vitality, in percent (`jobModifiers` in the shared format definition): the character's base main stat and Vitality are the level's base times these ([math.md, section 6](../mechanics/math.md#totals-as-on-the-character-panel)). A job with no row, or a modifier that is not a positive whole number, stops the generator.
+
 **Source record.** Which datamining commit the data came from (next section).
 
 ### The food table
@@ -430,7 +432,7 @@ A third generator writes the meals that raise combat substats, one row per meal:
 
 - **a meal** is an `Item` row in the Meal category (46) whose `ItemAction` is a food action (844 or 845) with the Well Fed status (48); its `ItemFood` row is `Data[1]`. Medicine (tinctures) uses `ItemFood` too, with another category and action, and is left out;
 - **kept**: meals that can be HQ, whose stats are all percentages and all combat stats (Vitality and the seven substats), with at least one substat. That leaves out crafter and gatherer meals and the flat-bonus novelty meals of item level 15 and below;
-- **carried**: the HQ percent and maximum of each substat in `ItemFood` order. Vitality is left out: the page does not count it.
+- **carried**: the HQ percent and maximum of each substat in `ItemFood` order, and the meal's Vitality apart from them (`[percent, max]`, or null).
 
 A meal whose `ItemFood` row is missing, or a kept stat whose HQ percent is not 1 to 100 or whose maximum is not positive, stops the generator. In the current data: 296 meals, 255 with two substats and 41 with one; every kept stat is 10% HQ (**verified** by count). How the page uses them is in [math.md, section 6](../mechanics/math.md#food).
 

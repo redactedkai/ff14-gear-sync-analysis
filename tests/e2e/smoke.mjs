@@ -634,7 +634,7 @@ async function checkFood(pg) {
   await expect(pg.locator('#o-result .readout')).toContainText(
     `${withFood} Spell Speed (${base} base, ${gearSpd - base} gear, ${bonus} food)`,
   );
-  await expect(pg.locator('#o-total-note')).toContainText('MND and VIT are gear only');
+  await expect(pg.locator('#o-total-note')).toContainText("apart from your clan's bonus to MND and VIT");
   await expect(pg.locator('#o-effect')).toContainText('gear and food');
   await expect(pg.locator('#o-food-note')).toBeVisible();
   await waitSaved(pg, "s => s.opt.food === true && s.opt.foodPair === ''");

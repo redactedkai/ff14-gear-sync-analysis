@@ -1,8 +1,8 @@
-/* Food: HQ meals raise one or two combat substats by a percentage of the whole stat (the character's base at the level
-   plus gear), up to the meal's maximum: bonus = min(max, floor(percent x (base + gear) / 100)). Community formula
-   (xivgear, Ariyala); applied unchanged under item level and level sync (player reports, xivgear). Both inferred
-   (docs/mechanics/math.md, section 6, Food). Vitality from food is not counted: it has no tier and its base needs the job and
-   clan modifiers.
+/* Food: HQ meals raise one or two combat substats, and Vitality, by a percentage of the whole stat (the character's
+   base at the level plus gear), up to the meal's maximum: bonus = min(max, floor(percent x (base + gear) / 100)).
+   Community formula (xivgear, Ariyala); applied unchanged under item level and level sync (player reports, xivgear).
+   Both inferred (docs/mechanics/math.md, section 6, Food). Vitality's base leaves out the clan's bonus (-2 to +3), which
+   the page does not ask for, so its food can be a point lower than in game.
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
@@ -19,10 +19,14 @@ function neutralOf(job, raw) {
   return null;
 }
 
-/* The base a neutral substat starts from at character level `level`: the level's main stat base for Determination and
-   Piety (LEVEL_MAIN), ParamGrow BaseSpeed for the others. */
+/* The base a neutral stat starts from at character level `level`, as the character panel counts it: for the main stat
+   and Vitality the level's main stat base (LEVEL_MAIN) x the job's modifier (ClassJob; floor, as AkhMorning and xivgear
+   do), without the clan's bonus (-3 to +3, which the page does not ask for); the level's main stat base for
+   Determination and Piety; ParamGrow BaseSpeed for the other substats. */
 export function statBase(job, stat, level) {
   const lv = Math.max(1, Math.min(100, level | 0));
+  // the main stat and Vitality: the job's share of the main stat base
+  if (stat === 'main' || stat === 'vit') return Math.floor((LEVEL_MAIN[lv - 1] * job.attributeMods[stat]) / 100);
   // Determination and Piety start from the main stat base, the other substats from the speed base
   if (stat === 'det' || (stat === 'spec' && job.profile.spec === 'piety')) return LEVEL_MAIN[lv - 1];
   return speedParams(lv).sub;
@@ -34,7 +38,8 @@ function covers(a, b) {
   return b.stats.every(s => a.stats.some(x => x.stat === s.stat && x.pct >= s.pct && x.max >= s.max));
 }
 
-/* The job's food choices, in the job's substat order: {key, name, ilvl, stats: [{stat, pct, max}]}, key = the neutral
+/* The job's food choices, in the job's substat order: {key, name, ilvl, stats: [{stat, pct, max}], vit: {stat: 'vit',
+   pct, max} or null}, key = the neutral
    stats joined by '+', primary first ('det+crit'). Only meals whose every stat the job has. Each stat pair (or single
    stat) is its newest meal: FOODS is sorted by item level, and within a pair a newer meal never has a lower maximum
    (tests/unit/food.test.js). A choice that another one covers (every stat at least as high) is left out, since it can
@@ -45,10 +50,11 @@ export function foodChoices(job) {
   if (choiceCache.has(job.jobId)) return choiceCache.get(job.jobId);
   // FOODS is sorted by item level, so a later meal with the same stats replaces an older one
   const byKey = new Map();
-  for (const [name, ilvl, stats] of FOODS) {
+  for (const [name, ilvl, stats, vitality] of FOODS) {
     const mapped = stats.map(([raw, pct, max]) => ({ stat: neutralOf(job, raw), pct, max }));
     if (mapped.some(s => s.stat == null)) continue;
-    byKey.set(mapped.map(s => s.stat).join('+'), { name, ilvl, stats: mapped });
+    const vit = vitality ? Object.freeze({ stat: 'vit', pct: vitality[0], max: vitality[1] }) : null;
+    byKey.set(mapped.map(s => s.stat).join('+'), { name, ilvl, stats: mapped, vit });
   }
   const all = [...byKey].map(([key, f]) => ({ key, ...f }));
   // drop a choice another one covers; of two that cover each other, the later one goes
@@ -72,10 +78,10 @@ export function foodLabel(job, food) {
 }
 
 /* What `food` adds to gear totals `totals` ({neutral stat: gear points}) at `level`: {stat: {bonus, capped}}, capped when
-   the percentage reaches the meal's maximum. */
+   the percentage reaches the meal's maximum; its substats, and Vitality when the meal has some (food.vit). */
 export function foodBonus(job, food, totals, level) {
   const out = {};
-  for (const s of food.stats) {
+  for (const s of food.vit ? [...food.stats, food.vit] : food.stats) {
     const uncapped = Math.floor((s.pct * (statBase(job, s.stat, level) + (totals[s.stat] || 0))) / 100);
     out[s.stat] = { bonus: Math.min(s.max, uncapped), capped: uncapped >= s.max };
   }
@@ -90,9 +96,10 @@ export function withFood(totals, bonus) {
 }
 
 /* How a meal ranks for the objective `keys` (non-empty target and tiebreak keys): the totals with food on each key, then
-   the food points in all. Ranked by betterRank. */
+   the substat food points in all (Vitality left out, so it ranks only as a key). Ranked by betterRank. */
 export function mealRank(keys, totalsWithFood, bonus) {
-  return [...keys.map(k => totalsWithFood[k] || 0), Object.values(bonus).reduce((n, b) => n + b.bonus, 0)];
+  const subPoints = Object.entries(bonus).reduce((n, [stat, b]) => (stat === 'vit' ? n : n + b.bonus), 0);
+  return [...keys.map(k => totalsWithFood[k] || 0), subPoints];
 }
 
 /* True when rank vector `a` beats `b`: higher at the first position where they differ (equal vectors: false, so the

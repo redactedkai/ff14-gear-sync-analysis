@@ -33,7 +33,7 @@ test('base: Determination and Piety from the main stat base, the other substats 
 
 test('food data: real HQ meals from the game files', () => {
   const byName = Object.fromEntries(FOODS.map(f => [f[0], f]));
-  // ItemFood rows of these meals (datamining d9582a6): HQ 10% up to 151 / 91, Vitality left out
+  // ItemFood rows of these meals (datamining d9582a6): HQ 10% up to 151 / 91, and their Vitality, 10% up to 297
   assert.deepEqual(byName['Rroneek au Gratin'], [
     'Rroneek au Gratin',
     770,
@@ -41,6 +41,7 @@ test('food data: real HQ meals from the game files', () => {
       ['sps', 10, 151],
       ['dh', 10, 91],
     ],
+    [10, 297],
   ]);
   assert.deepEqual(byName['Prune Ponzecake'], [
     'Prune Ponzecake',
@@ -49,9 +50,10 @@ test('food data: real HQ meals from the game files', () => {
       ['piety', 10, 151],
       ['det', 10, 91],
     ],
+    [10, 297],
   ]);
   // a one-substat meal (Vitality plus Critical Hit)
-  assert.deepEqual(byName['Royal Toast'], ['Royal Toast', 656, [['crit', 10, 107]]]);
+  assert.deepEqual(byName['Royal Toast'], ['Royal Toast', 656, [['crit', 10, 107]], [10, 158]]);
   assert.ok(FOODS.every(f => f[2].length >= 1 && f[2].length <= 2 && f[2].every(([k]) => k !== 'vit')));
   assert.ok(
     FOODS.every((f, i) => i === 0 || f[1] >= FOODS[i - 1][1]),
@@ -166,7 +168,9 @@ function bruteBest(job, choices, totals, level, keys) {
   const vals = c => {
     const b = foodBonus(job, c, totals, level);
     const t = withFood(totals, b);
-    return [...keys.filter(Boolean).map(k => t[k] || 0), Object.values(b).reduce((n, x) => n + x.bonus, 0)];
+    // then the substat food points, Vitality's left out
+    const subPoints = Object.entries(b).reduce((n, [stat, x]) => (stat === 'vit' ? n : n + x.bonus), 0);
+    return [...keys.filter(Boolean).map(k => t[k] || 0), subPoints];
   };
   return [...choices].sort((a, b) => {
     const va = vals(a),
