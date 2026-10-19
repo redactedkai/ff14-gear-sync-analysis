@@ -11,25 +11,40 @@ export const fmtInt = n => n.toLocaleString('en-US');
    (and the optimizer) do not recompute for the numbers on the way. */
 export const TYPING_DEBOUNCE_MS = 300;
 
-/* x-bind object for a number input that only commits whole, in-range values (out-of-range typing is ignored,
-   not corrected). Typing commits TYPING_DEBOUNCE_MS after the last keystroke; Enter or leaving the field (change)
-   commits at once. While the field has focus and already shows the stored value, the typed text is left alone. A bound
-   may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap).
-   live: commit each valid value as it is typed, with no wait (the synced level: owner, 2026-10-17); typing "90" then
-   shows level 9 for a moment, which is cheap, and the optimizer has its own wait. */
+/* x-bind object for a number input that only commits in-range values (out-of-range typing is ignored, not corrected):
+   the page's one pattern for number boxes bound to a setting (as $num, storeNumberField). Typing commits
+   TYPING_DEBOUNCE_MS after the last keystroke; Enter or leaving the field (change) commits at once. While the field has
+   focus and already shows the stored value, the typed text is left alone ("2.40" stays as typed). A bound may be a
+   function, read at each input, for a limit that changes while the field is bound (the job's level cap). Options:
+   - live: commit each valid value as it is typed, with no wait (the synced level: owner, 2026-10-17); typing "90" then
+     shows level 9 for a moment, which is cheap, and the optimizer has its own wait.
+   - decimals: the digits kept after the point (0, whole numbers, by default; the Target GCD keeps 2).
+   - empty: the value an emptied box commits, as it is typed (a filter's '' for no limit); left out, an empty box
+     commits nothing.
+   - onEmpty(input): called when an empty box is left or entered (change), for a field that then goes back to a value
+     it follows (the tiers' level).
+   Boxes with another rule keep their own handlers: the GCD tab's level and speed correct what is typed and say so,
+   and Piece stats' item level and the tiers' substat boxes commit only on change, since a value on the way would be
+   held to its range while typing. */
 const bound = b => (typeof b === 'function' ? b() : b);
-export function numberField(get, set, lo, hi, live = false) {
+export function numberField(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty } = {}) {
   let timer = null;
+  const scale = 10 ** decimals;
+  const round = v => Math.round(v * scale) / scale;
   const commit = raw => {
     clearTimeout(timer);
+    if (raw === '') {
+      if (empty !== undefined && get() !== empty) set(empty);
+      return;
+    }
     const v = +raw;
-    if (raw !== '' && v >= bound(lo) && v <= bound(hi) && Math.round(v) !== get()) set(Math.round(v));
+    if (v >= bound(lo) && v <= bound(hi) && round(v) !== get()) set(round(v));
   };
   return {
     ':value'() {
       const v = get(),
         el = this.$el;
-      return el === document.activeElement && Math.round(+el.value) === v ? el.value : v;
+      return el === document.activeElement && round(+el.value) === v ? el.value : v;
     },
     '@input'(e) {
       const raw = e.target.value;
@@ -39,6 +54,7 @@ export function numberField(get, set, lo, hi, live = false) {
     },
     '@change'(e) {
       commit(e.target.value);
+      if (e.target.value === '' && onEmpty) onEmpty(e.target);
     },
   };
 }
@@ -53,9 +69,9 @@ export function debouncedEffect(Alpine, compute, ms) {
   });
 }
 
-/* numberField bound to a dotted path in the store, e.g. storeNumberField(store, 'piece.ilvl', 1, 795); options:
-   {live} (numberField). Registered as the $num magic in main.js. */
-export function storeNumberField(store, path, lo, hi, { live = false } = {}) {
+/* numberField bound to a dotted path in the store, e.g. storeNumberField(store, 'piece.ilvl', 1, 795); options as for
+   numberField. Registered as the $num magic in main.js. */
+export function storeNumberField(store, path, lo, hi, options = {}) {
   const keys = path.split('.'),
     last = keys.pop();
   const target = () => keys.reduce((o, k) => o[k], store);
@@ -66,7 +82,7 @@ export function storeNumberField(store, path, lo, hi, { live = false } = {}) {
     },
     lo,
     hi,
-    live,
+    options,
   );
 }
 

@@ -18,7 +18,8 @@ const app = Alpine.store('app');
 
 /* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only (a bound
    that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)); a fourth
-   argument {live: true} commits each valid value as typed (storeNumberField) */
+   argument takes numberField's options, e.g. {live: true} to commit each valid value as typed, or {empty: ''} for a
+   filter an emptied box clears (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
 Object.entries({ page, settings, syncExplainer, gear, optimizer, tierTable, gcdTab, gcdControls, tierControls }).forEach(

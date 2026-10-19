@@ -630,7 +630,7 @@ async function checkOptFilters(pg) {
   await waitOptimizer(pg);
   await expectTotal(pg, want.on, `${job} ${target}, optimizer filters`);
   await expect(pg.locator('#o-count')).toHaveText(countText(want.searched, want.all));
-  // number inputs bound with x-model save strings
+  // the box commits a number (older saves held strings, from x-model)
   await waitSaved(pg, `s => s.opt.expOff.join() === 'ARR,HW,SB,ShB' && String(s.opt.max) === '${OPT_FILTER.ilvlMax}'`);
   await setNumber(pg, '#o-min', '9999');
   await waitOptimizer(pg);

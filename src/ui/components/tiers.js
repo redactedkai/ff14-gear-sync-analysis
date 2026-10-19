@@ -88,22 +88,21 @@ export function tierControls() {
        synced level itself, or an empty box left or entered, follows the synced level again */
     get levelField() {
       const app = this.$store.app;
-      const field = numberField(
+      return numberField(
         () => this.level,
         v => {
           app.tiers.level = v === app.level ? null : v;
         },
         1,
         () => app.jobCtx.maxLevel,
-        true,
+        {
+          live: true,
+          onEmpty: input => {
+            app.tiers.level = null;
+            input.value = this.level;
+          },
+        },
       );
-      const commit = field['@change'];
-      field['@change'] = e => {
-        if (e.target.value !== '') return commit(e);
-        app.tiers.level = null;
-        e.target.value = this.level;
-      };
-      return field;
     },
   };
 }
