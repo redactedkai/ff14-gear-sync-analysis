@@ -26,6 +26,7 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { capCeiling } from '../../src/core/sync-target.js';
 import { MAX_LEVEL } from '../../src/core/tables.js';
+import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
 
 /* the cap case starts here (see above) */
 const CAP_FROM_LEVEL = 15;
@@ -96,5 +97,5 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     console.error('Raise NODE_LIMIT in scripts/data/gen_max_speed.mjs and run it again. Nothing was written.');
     process.exit(1);
   }
-  writeFileSync(out, `${JSON.stringify({ source: levelFile.source ?? null, total })}\n`);
+  writeFileSync(out, `${JSON.stringify({ source: levelFile.source ?? null, formatVersion: ITEM_FORMAT.formatVersion, total })}\n`);
 }

@@ -1,6 +1,7 @@
 /* The generated data must match src/core/item-format.json, the format shared by the page and the generators. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
 import {
   JOBS,
@@ -15,7 +16,7 @@ import {
   GEAR_CATEGORIES,
   DAMAGE_DEFENSE_KEYS,
 } from '../../src/core/constants.js';
-import { IL, PG, ITEMS, MP, MATERIA, SHARES } from '../../src/core/tables.js';
+import { IL, PG, ITEMS, MP, MATERIA, SHARES, MAX_ILVL } from '../../src/core/tables.js';
 import { JOB_ICONS } from '../../src/data/job-icons.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 
@@ -41,6 +42,13 @@ test('ROW names the item row fields at the positions of itemRow.fields in item-f
   assert.deepEqual(ROW, Object.fromEntries(ITEM_FORMAT.itemRow.fields.map((name, i) => [name, i])));
 });
 
+test('every generated data file names the format version of item-format.json', () => {
+  for (const name of ['items.json', 'item-level.json', 'food.json', 'max-speed.json']) {
+    const doc = JSON.parse(readFileSync(new URL(`../../src/data/${name}`, import.meta.url), 'utf8'));
+    assert.equal(doc.formatVersion, ITEM_FORMAT.formatVersion, `${name} formatVersion`);
+  }
+});
+
 test('ItemLevel table has one column per stat and per weapon damage and defense value, all the same length', () => {
   assert.deepEqual(Object.keys(IL).sort(), [...ITEM_STAT_ORDER, ...DAMAGE_DEFENSE_KEYS].sort());
   const lengths = new Set(Object.values(IL).map(c => c.length));
@@ -59,6 +67,11 @@ test('every item row has the documented shape', () => {
       'slot code ' + where,
     );
     assert.ok(r[ROW.jobMask] > 0 && r[ROW.jobMask] < maxMask, 'job mask ' + where);
+    // the page reads IL[stat][ilvl] directly: an item above the item level table would give NaN
+    assert.ok(
+      Number.isInteger(r[ROW.ilvl]) && r[ROW.ilvl] >= 0 && r[ROW.ilvl] <= MAX_ILVL,
+      'item level within the ItemLevel table ' + where,
+    );
     assert.equal(r[ROW.stats].split(',').length, ITEM_STAT_ORDER.length, 'stat count ' + where);
     assert.ok(r[ROW.unique] === 0 || r[ROW.unique] === 1, 'unique flag ' + where);
     assert.ok(r[ROW.hq] === 0 || r[ROW.hq] === 1, 'HQ flag ' + where);

@@ -456,11 +456,12 @@ def main(csv_dir, out, source='detect'):
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
     pieces.sort(key=lambda p: (-p['ilvl'], p['slotCode'], p['name']))
     rows = [[piece[f] for f in fields] for piece in pieces]
-    # {"_generated": notice, "source": provenance, "materia": table, "currentTomes": names, "items": [rows]}, one item
+    # {"_generated": notice, "source": provenance, "formatVersion": n, "materia": table, "currentTomes": names, "items": [rows]}, one item
     # row per line so a patch's diff lists the rows that changed
     doc = {
         '_generated': provenance.note(source),
         'source': source,
+        'formatVersion': fmt['formatVersion'],
         'materia': materia,
         'currentTomes': gear_activities.current_tome_names(csv_dir, items),
         'items': rows,

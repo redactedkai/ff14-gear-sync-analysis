@@ -3,9 +3,10 @@
 
 Usage: python scripts/data/gen_item_level.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
-Output: {"_generated": notice, "source": ..., "IL": ..., "PG": ..., "MP": ..., "SHARES": ..., "JOBS": ...}
+Output: {"_generated": notice, "source": ..., "formatVersion": n, "IL": ..., "PG": ..., "MP": ..., "SHARES": ..., "JOBS": ...}
 _generated = one-line "do not edit" notice naming the source commit.
 source = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown (the page's DATA_SOURCE).
+formatVersion = `formatVersion` of src/core/item-format.json, the format the file follows (in every generated file).
 IL = per-stat budget by item level (index = item level, 921 rows as of patch 7.50), one array per stat key
      in src/core/item-format.json.
 PG = [[BaseSpeed, LevelModifier, ItemLevelSync]] for character levels 1 to the top level (100 today; the highest
@@ -86,9 +87,18 @@ def main(csv_dir, out, source='detect'):
     IL = {k: [int(r[c]) for r in il_rows] for k, c in il_cols.items()}
     PG = level_data(d / 'ParamGrow.csv')
     JOBS = job_modifiers(d / 'ClassJob.csv', fmt)
-    # {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
+    # {"_generated": notice, "source": provenance, "formatVersion": n, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
     # "SHARES": {key: [share per slot code]}, "JOBS": {job: {attribute: %}}}: one stat, level or job per line
-    doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP, 'SHARES': SHARES, 'JOBS': JOBS}
+    doc = {
+        '_generated': provenance.note(source),
+        'source': source,
+        'formatVersion': fmt['formatVersion'],
+        'IL': IL,
+        'PG': PG,
+        'MP': MP,
+        'SHARES': SHARES,
+        'JOBS': JOBS,
+    }
     provenance.write_generated(out, provenance.json_lines(doc, expand=('IL', 'PG', 'MP', 'SHARES', 'JOBS')))
 
 

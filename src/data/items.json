@@ -1,6 +1,7 @@
 {
 "_generated":"GENERATED from xivapi/ffxiv-datamining d9582a624eaec69d45649366dee801c2f3a6e9b3 (2026-09-30T03:03:49-05:00). Do not edit; see docs/engineering/data-pipeline.md.",
 "source":{"repo":"xivapi/ffxiv-datamining","commit":"d9582a624eaec69d45649366dee801c2f3a6e9b3","date":"2026-09-30T03:03:49-05:00"},
+"formatVersion":1,
 "materia":{"values":[1,2,3,4,6,16,8,24,12,36,18,54],"gate":[15,30,45,70,160,290,420,420,560,560,690,690],"high":[6,8,10,12]},
 "currentTomes":["Mathematics","Mnemonics"],
 "items":[

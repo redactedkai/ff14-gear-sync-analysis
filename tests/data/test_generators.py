@@ -469,7 +469,7 @@ class GenItemLevelTest(unittest.TestCase):
         out = self.dir / 'item-level.json'
         run_quiet(gen_item_level.main, str(self.dir), str(out), None)
         doc = json.loads(out.read_text(encoding='utf-8'))
-        self.assertEqual(list(doc), ['_generated', 'source', 'IL', 'PG', 'MP', 'SHARES', 'JOBS'])
+        self.assertEqual(list(doc), ['_generated', 'source', 'formatVersion', 'IL', 'PG', 'MP', 'SHARES', 'JOBS'])
         self.assertIsNone(doc['source'])
         self.assertIn('commit unknown', doc['_generated'])
         src = {'repo': 'xivapi/ffxiv-datamining', 'commit': 'a' * 40, 'date': '2026-01-01T00:00:00Z'}

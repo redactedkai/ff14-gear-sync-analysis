@@ -1,6 +1,7 @@
 {
 "_generated":"GENERATED from xivapi/ffxiv-datamining d9582a624eaec69d45649366dee801c2f3a6e9b3 (2026-09-30T03:03:49-05:00). Do not edit; see docs/engineering/data-pipeline.md.",
 "source":{"repo":"xivapi/ffxiv-datamining","commit":"d9582a624eaec69d45649366dee801c2f3a6e9b3","date":"2026-09-30T03:03:49-05:00"},
+"formatVersion":1,
 "foods":[
 ["Bubble Chocolate",11,[["sps",10,5],["dh",10,3]],[10,2]],
 ["Grilled Dodo",11,[["sks",10,5],["dh",10,3]],[10,2]],

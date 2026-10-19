@@ -179,6 +179,8 @@ Belts (`Waist`) and soul crystals have no slot code, so items in those slots are
 
 **Changing the file.** Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
 
+**Format version.** `formatVersion` (1 today) numbers the format. Every generated data file except the job icons copies it, and a unit test checks that each one names the file's current version, so a file generated under an older format is caught even when its row width has not changed. Raise it with any change that gives a field or an order another meaning (a slot code reordered, a field added), then regenerate.
+
 ## 4. Item database generation
 
 *Which of the 52,801 `Item` rows become gear in the page, and how is each one packed into a row?*
@@ -490,7 +492,7 @@ A meal whose `ItemFood` row is missing, or a kept stat whose HQ percent is not 1
 *Which version of the game does the page's data describe?* When the data is regenerated, the commit id and commit date of the local datamining clone are recorded. They appear in three places:
 
 - in the item, item level and food files, a one-line "do not edit" notice naming the repository, the full commit id and the date;
-- in those three files and the most-speed file, a source record (repository, commit, date); the page reads it from the item level file;
+- in those three files and the most-speed file, a source record (repository, commit, date); the page reads it from the item level file; next to it, `formatVersion`, the version of the shared format the file follows (section 3);
 - the page footer, as "Game data: ffxiv-datamining" plus the short commit id and the date. The current footer reads `Game data: ffxiv-datamining d9582a6, 2026-09-30`.
 
 The full regeneration refuses to run when it cannot read the clone's commit. A generator run on its own (for example on test files) writes "commit unknown" and no source record, and the footer then shows nothing.
@@ -652,7 +654,8 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 - the page's job order, stat order and slot table equal the shared format definition;
 - the budget table has one column per stat, all the same length, and each level data row has three values;
 - every table keyed by level reaches the level cap (the highest equip level in the database): the level data, the most-speed table, and the hand-kept main stat base per level, expansion list and haste steps. A patch that raises the cap fails here, naming the table to extend, instead of showing NaN on the page;
-- every database row has twenty fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a list of routes, each below $2^{21}$; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every generated data file but the icons names the shared format's `formatVersion`, and the page's `ROW` names the positions of `itemRow.fields`;
+- every database row has twenty fields (an item level within the `ItemLevel` table, so the page never reads past its end, an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a list of routes, each below $2^{21}$; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 

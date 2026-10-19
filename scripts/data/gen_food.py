@@ -3,7 +3,8 @@
 
 Usage: python scripts/data/gen_food.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
-Output: {"_generated": notice, "source": ..., "foods": [[name, item level, [[stat key, percent, max], ...], vitality], ...]}
+Output: {"_generated": notice, "source": ..., "formatVersion": n,
+         "foods": [[name, item level, [[stat key, percent, max], ...], vitality], ...]}
 One row per meal, sorted by item level, then name. Stats are the HQ values of the meal's substats in the order of its
 ItemFood row (primary first); vitality is its HQ Vitality as [percent, max], or null when it has none. Which rows
 count as meals, and which are kept: `food` in src/core/item-format.json.
@@ -80,7 +81,7 @@ def main(csv_dir, out, source='detect'):
         if kept is not None:
             foods.append([item['Name'], int(item['LevelItem']), *kept])
     foods.sort(key=lambda f: (f[1], f[0]))
-    doc = {'_generated': provenance.note(source), 'source': source, 'foods': foods}
+    doc = {'_generated': provenance.note(source), 'source': source, 'formatVersion': fmt['formatVersion'], 'foods': foods}
     provenance.write_generated(out, provenance.json_lines(doc, expand=('foods',)))  # one meal per line
 
 
