@@ -1,8 +1,8 @@
 /* Validation of the stat model against external truth (real items, the Wiki's item level 475 caps), for the unit
    tests. */
-import { RAW_SUBSTAT_IDX, ROW, WEAPON_PCT } from './constants.js';
+import { RAW_SUBSTAT_IDX, ROW } from './constants.js';
 import { IL, ITEMS } from './tables.js';
-import { rnd, predictRaw } from './formulas.js';
+import { offhandParts, predictRaw, statLine } from './formulas.js';
 import { rowStats } from './items.js';
 
 /* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).
@@ -55,9 +55,10 @@ export const WIKI475 = Object.freeze(
 
 export function wikiChecks() {
   return WIKI475.map(([label, type, published, share]) => {
-    // the off-hand is the two-handed value minus the one-handed value (formulas.js isOffhand)
-    const full = pct => rnd((IL.crit[475] * pct) / 1000);
-    const computed = type === 'offhand' ? full(WEAPON_PCT['2h']) - full(WEAPON_PCT['1h+oh']) : full(share);
+    // the slot's share of Critical Hit's budget (statLine's first step); the off-hand is the two-handed value minus
+    // the one-handed value (offhandParts)
+    const full = pct => statLine(IL.crit[475], pct).value;
+    const computed = type === 'offhand' ? offhandParts(full).value : full(share);
     return { label, type, published, share, computed, match: computed === published };
   });
 }

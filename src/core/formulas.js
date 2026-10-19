@@ -45,16 +45,34 @@ export function jobFactor(job, stat) {
   return stat === 'vit' ? job.vitFactor : 1;
 }
 
-/* The 100%-share value of `stat` for a slot at an item level. Rounded twice when the stat factor is not 1: first the
-   slot budget (table x slot share / 1000), then the factor (Vitality x 0.9 on Int/Mind gear). `pct`: the piece's own
-   slot share when it differs from the job's share for the slot type (a one-handed weapon on a two-handed job, a cloak
-   covering the head). `factor`: the piece's own stat factor (a real item's, see kindFactors in items.js); null for the
-   job's (jobFactor). */
-export function slotBudget(job, stat, ilvl, type, pct = job.slotPct[type], factor = null) {
-  const base = statColumn(job, stat)[clampIlvl(ilvl)]; // the ItemLevel table's budget for this stat
-  const fraction = factor ?? jobFactor(job, stat); // 1, or 0.9 for Vitality on Int/Mind gear
-  const full = rnd((base * pct) / 1000); // step 1: the slot's share of the budget (pct is per mille)
-  return fraction === 1 ? full : rnd(full * fraction); // step 2: the stat factor, rounded again
+/* One stat line from its ItemLevel budget `base`, rounded after each step: the slot's share of the budget (`pct`, per
+   mille), then the stat factor (`factor`, a fraction: 0.9 for Vitality on Int/Mind gear; skipped at 1), then the
+   substat share (`weight`, percent: 70 for the second substat; skipped at 100 or null). The rule of every item stat
+   (pieceValue, statDerivation, predictRaw, the Wiki checks in validation.js), written once. Returns {base, steps,
+   value}: steps holds each step that applies, with its unrounded value: {kind: 'slot', base, pct, exact, value},
+   {kind: 'factor', factor, exact, value}, {kind: 'share', weight, exact, value}; value is the last step's. */
+export function statLine(base, pct, factor = 1, weight = 100) {
+  const steps = [];
+
+  // step 1: the slot's share of the budget
+  const slotExact = (base * pct) / 1000;
+  let value = rnd(slotExact);
+  steps.push({ kind: 'slot', base, pct, exact: slotExact, value });
+
+  // step 2: the stat factor, rounded again
+  if (factor !== 1) {
+    const exact = value * factor;
+    value = rnd(exact);
+    steps.push({ kind: 'factor', factor, exact, value });
+  }
+
+  // step 3: the substat share, rounded once more
+  if (weight != null && weight !== 100) {
+    const exact = (value * weight) / 100;
+    value = rnd(exact);
+    steps.push({ kind: 'share', weight, exact, value });
+  }
+  return { base, steps, value };
 }
 
 /* An off-hand (shield) is not its own 40-per-mille share: each of its stats is the two-handed weapon's value minus the
@@ -64,16 +82,24 @@ export function isOffhand(type, pct) {
   return type === 'offhand' && (pct == null || pct === BASE_SLOT_PCT.offhand);
 }
 
-/* A stat at a given substat share (percent). 100 or null means the full slot budget. `factor` as in slotBudget. */
+/* An off-hand's value by the rule above: {two, one, value}, the two-handed and one-handed values and their difference.
+   `valueAt(share)` gives the same line on a weapon of slot share `share` (per mille). Shared by item stats, caps,
+   derivations and the accuracy checks. */
+export function offhandParts(valueAt) {
+  const two = valueAt(WEAPON_PCT['2h']);
+  const one = valueAt(WEAPON_PCT['1h+oh']);
+  return { two, one, value: two - one };
+}
+
+/* A stat at a given substat share (`weight`, percent; 100 or null means the full slot budget), rounded after each step
+   (statLine). `pct`: the piece's own slot share (per mille) when it differs from the job's share for the slot type (a
+   one-handed weapon on a two-handed job, a cloak covering the head); null for the job's. `factor`: the piece's own stat
+   factor (a fraction; a real item's, see kindFactors in items.js); null for the job's (jobFactor). */
 export function pieceValue(job, stat, ilvl, type, weight, pct, factor = null) {
   // a shield: the two-handed weapon's value minus the one-handed weapon's (isOffhand)
-  if (isOffhand(type, pct)) {
-    const two = pieceValue(job, stat, ilvl, 'weapon', weight, WEAPON_PCT['2h'], factor);
-    return two - pieceValue(job, stat, ilvl, 'weapon', weight, WEAPON_PCT['1h+oh'], factor);
-  }
-  const full = slotBudget(job, stat, ilvl, type, pct, factor);
-  // step 3: the substat share (70 for the second substat), rounded once more
-  return weight == null || weight === 100 ? full : rnd((full * weight) / 100);
+  if (isOffhand(type, pct)) return offhandParts(share => pieceValue(job, stat, ilvl, 'weapon', weight, share, factor)).value;
+  const base = statColumn(job, stat)[clampIlvl(ilvl)]; // the ItemLevel table's budget for this stat
+  return statLine(base, pct ?? job.slotPct[type], factor ?? jobFactor(job, stat), weight).value;
 }
 
 /* Generic piece: full main stat and Vitality, substats `subs` at the ranked shares (100/70). */
@@ -91,11 +117,11 @@ export function buildPiece(job, ilvl, type, subs) {
 /* The sync cap of one stat for a slot at the cap item level, rounded in a different order from an item's own stats:
    the stat factor first, then the slot share, flooring both and rounding once at the end,
    round(floor(floor(B x f) x pct / 100) / 10) with f in percent and pct in thousandths. An item's own stats
-   (slotBudget, pieceValue) round the slot share first and then apply the factor, which fits real items far better. The
+   (statLine, pieceValue) round the slot share first and then apply the factor, which fits real items far better. The
    cap order reproduces three in-game sync values quoted second-hand in xivgear's tests: Vitality 56 on a Blue Mage head
    at item level 270, Vitality 123 on a Red Mage head at 530 (the native 530 head carries 122) and main stat 71 on
    Azeyma's Earrings at 430 (docs/mechanics/math.md, section 5). For a factor of 1 both orders give the same number. `pct` and
-   `factor` as in slotBudget; an off-hand is the two-handed cap minus the one-handed cap (isOffhand). */
+   `factor` as in pieceValue; an off-hand is the two-handed cap minus the one-handed cap (isOffhand). */
 export function capValue(job, stat, ilvl, type, pct, factor = null) {
   return capDerivation(job, stat, ilvl, type, pct, factor).value;
 }
@@ -104,9 +130,8 @@ export function capValue(job, stat, ilvl, type, pct, factor = null) {
    of a point before the last rounding; an off-hand is {offhand: {two, one}, value} (two-handed cap minus one-handed). */
 export function capDerivation(job, stat, ilvl, type, pct, factor = null) {
   if (isOffhand(type, pct)) {
-    const two = capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['2h'], factor);
-    const one = capValue(job, stat, ilvl, 'weapon', WEAPON_PCT['1h+oh'], factor);
-    return { offhand: { two, one }, value: two - one };
+    const { two, one, value } = offhandParts(share => capValue(job, stat, ilvl, 'weapon', share, factor));
+    return { offhand: { two, one }, value };
   }
   const base = statColumn(job, stat)[clampIlvl(ilvl)];
   const factorPct = Math.round((factor ?? jobFactor(job, stat)) * 100); // 0.9 -> 90, so the arithmetic stays integer
@@ -148,38 +173,16 @@ export function syncStats(job, stats, type, capIlvl, itemIlvl, pct, factors = nu
   return out;
 }
 
-/* Step-by-step derivation of one stat line, for display. Each step keeps the exact value and its rounding. An off-hand
-   line is one step: the two-handed value minus the one-handed value (each derived as below). */
-export function statDerivation(job, stat, ilvl, type, weight) {
-  if (isOffhand(type)) {
-    const two = statDerivation(job, stat, ilvl, 'weapon2h', weight);
-    const one = statDerivation(job, stat, ilvl, 'weapon1h', weight);
-    const value = two.value - one.value;
-    return { base: two.base, steps: [{ kind: 'offhand', two: two.value, one: one.value, value }], value };
+/* Step-by-step derivation of one stat line of a generic piece (the job's stat factor), for display: statLine's {base,
+   steps, value}. `pct`: the slot share in per mille, the job's for the type when missing. An off-hand line is one step,
+   {kind: 'offhand', two, one, value}: the two-handed value minus the one-handed value (offhandParts). */
+export function statDerivation(job, stat, ilvl, type, weight, pct = job.slotPct[type]) {
+  const base = statColumn(job, stat)[clampIlvl(ilvl)];
+  if (isOffhand(type, pct)) {
+    const { two, one, value } = offhandParts(share => statDerivation(job, stat, ilvl, 'weapon', weight, share).value);
+    return { base, steps: [{ kind: 'offhand', two, one, value }], value };
   }
-  // 'weapon2h' and 'weapon1h' are this function's own types, for the two halves of an off-hand above
-  const base = statColumn(job, stat)[clampIlvl(ilvl)],
-    pct = type === 'weapon2h' ? WEAPON_PCT['2h'] : type === 'weapon1h' ? WEAPON_PCT['1h+oh'] : job.slotPct[type];
-  const steps = [];
-
-  // the same three steps as slotBudget and pieceValue, each kept with its unrounded value
-  const slotExact = (base * pct) / 1000;
-  let value = rnd(slotExact);
-  steps.push({ kind: 'slot', base, pct, exact: slotExact, value });
-
-  const factor = jobFactor(job, stat);
-  if (factor !== 1) {
-    const exact = value * factor;
-    value = rnd(exact);
-    steps.push({ kind: 'factor', factor, exact, value });
-  }
-
-  if (weight !== 100) {
-    const exact = (value * weight) / 100;
-    value = rnd(exact);
-    steps.push({ kind: 'share', weight, exact, value });
-  }
-  return { base, steps, value };
+  return statLine(base, pct, jobFactor(job, stat), weight);
 }
 
 const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind'),
@@ -212,18 +215,13 @@ export function predictRaw(il, slotCode, raw, kind, item = {}) {
   if (item.name?.endsWith(ATMA_NAME_SUFFIX)) il = ATMA_STAT_ILVL;
   const accessoryFactors = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '') ? ALL_JOBS_ACCESSORY_FACTORS[item.name] : {};
 
-  // one stat line at a slot share (per mille): the slot value, times the item's stat factor (percent), times the
-  // substat share (percent); rounded after each step
-  const line = (key, pct, weight) => {
-    const factorPct = accessoryFactors[key] ?? MP[key][kind];
-    let v = rnd((IL[key][il] * pct) / 1000);
-    if (factorPct !== 100) v = rnd((v * factorPct) / 100);
-    return weight === 100 ? v : rnd((v * weight) / 100);
-  };
+  // one stat line at a slot share (per mille), the item's stat factor (MP and the accessory factors are percents, so
+  // / 100) and a substat share (percent), rounded after each step (statLine)
+  const line = (key, pct, weight) => statLine(IL[key][il], pct, (accessoryFactors[key] ?? MP[key][kind]) / 100, weight).value;
   // the line on this piece's slot; a shield is the two-handed line minus the one-handed line (isOffhand)
   const isShield = isOffhand(DB_SLOT_TYPE[slotCode], DB_SLOT_PCT[slotCode]);
   const value = (key, weight) =>
-    isShield ? line(key, WEAPON_PCT['2h'], weight) - line(key, WEAPON_PCT['1h+oh'], weight) : line(key, DB_SLOT_PCT[slotCode], weight);
+    isShield ? offhandParts(share => line(key, share, weight)).value : line(key, DB_SLOT_PCT[slotCode], weight);
 
   const out = new Array(raw.length).fill(0);
 
