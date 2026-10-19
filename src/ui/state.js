@@ -89,6 +89,10 @@ export function defaultBrowse(job = null) {
   };
 }
 
+/* The longest name search the browser takes (characters): the box stops there, and a longer saved one is cut on
+   restore (no gear name comes close; it bounds the one free-text field the page saves). */
+export const SEARCH_MAX_LENGTH = 100;
+
 /* The localStorage key of the saved state. Kept when the saved shape changes: restoreState repairs an older one (no
    users to migrate yet; CLAUDE.md, Page rules). */
 export const STORE_KEY = 'ilvl-stat-lab-v4';
@@ -249,7 +253,7 @@ export function restoreState(raw) {
   s.piece.subs = restorePieceSubs(piece.subs, job);
 
   const b = isObj(r.browse) ? r.browse : {};
-  s.browse.q = str(b.q, s.browse.q);
+  s.browse.q = str(b.q, s.browse.q).slice(0, SEARCH_MAX_LENGTH);
   s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
   restoreGearFilter(s.browse, b, job);
   s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);

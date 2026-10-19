@@ -9,6 +9,7 @@ import {
   resetForJob,
   defaultSubs,
   DEFAULT_EXCLUDE,
+  SEARCH_MAX_LENGTH,
   limitCapToLevel,
 } from '../../src/ui/state.js';
 import { browseFiltered } from '../../src/ui/views/gear.js';
@@ -386,4 +387,11 @@ test('defaultBrowse: what a job starts with, and no filter by its own check', ()
   assert.equal(defaultBrowse(null).lvl, 100);
   // each call is a fresh object: Reset filters assigns its arrays into the store
   assert.notEqual(defaultBrowse(null).exclude, defaultBrowse(null).exclude);
+});
+
+/* Audit 12, finding 9: the browser's name search was the one saved field with no bound (a 5 MB string restored). */
+test('restore: a saved name search is cut to SEARCH_MAX_LENGTH', () => {
+  assert.equal(SEARCH_MAX_LENGTH, 100);
+  assert.equal(restoreState({ job: 'SGE', browse: { q: 'x'.repeat(5000) } }).browse.q, 'x'.repeat(SEARCH_MAX_LENGTH));
+  assert.equal(restoreState({ job: 'SGE', browse: { q: 'ring of healing' } }).browse.q, 'ring of healing');
 });

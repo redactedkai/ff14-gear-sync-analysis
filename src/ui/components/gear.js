@@ -3,7 +3,7 @@
    counts and, while a filter is changed, Reset at their end (its place kept while hidden); one row of filters; sorting from the table's
    headings. */
 import Alpine from 'alpinejs';
-import { defaultBrowse } from '../state.js';
+import { SEARCH_MAX_LENGTH, defaultBrowse } from '../state.js';
 import { browseFiltered, gearView } from '../views/gear.js';
 import { expansionToggles, gearFromToggles } from '../helpers.js';
 
@@ -12,6 +12,8 @@ import { expansionToggles, gearFromToggles } from '../helpers.js';
 export function gear() {
   return {
     view: null,
+    /* the name search box's maxlength (state.js SEARCH_MAX_LENGTH) */
+    searchMaxLength: SEARCH_MAX_LENGTH,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
     get jobCtx() {
       return this.$store.app.jobCtx;

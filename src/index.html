@@ -421,7 +421,7 @@
   <div class="panel" x-data="gear" @keydown.window="slashToSearch($event)">
     <div class="titleline">
       <h2>Gear browser</h2>
-      <span class="menu-search big-search"><input type="text" id="b-q" x-ref="search" placeholder="Search gear by name" autocomplete="off" aria-label="Search gear by name" x-model.debounce.300ms="$store.app.browse.q"><span class="kbd" x-show="!$store.app.browse.q" title="Press / to search">/</span><button type="button" class="clear" x-show="$store.app.browse.q" x-cloak aria-label="Clear the search" @click="$store.app.browse.q = ''; $refs.search.focus()">×</button></span>
+      <span class="menu-search big-search"><input type="text" id="b-q" x-ref="search" placeholder="Search gear by name" autocomplete="off" :maxlength="searchMaxLength" aria-label="Search gear by name" x-model.debounce.300ms="$store.app.browse.q"><span class="kbd" x-show="!$store.app.browse.q" title="Press / to search">/</span><button type="button" class="clear" x-show="$store.app.browse.q" x-cloak aria-label="Clear the search" @click="$store.app.browse.q = ''; $refs.search.focus()">×</button></span>
       <span class="count" id="b-count" x-text="view ? view.countText : ''"></span>
     </div>
     <div class="pillline">
