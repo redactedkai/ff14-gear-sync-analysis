@@ -25,6 +25,8 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
   assert.match(outside[0], /media="print"/);
   assert.match(outside[0], /onload="this\.media='all'"/);
   assert.match(noscript, /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com/);
+  // audit 12, finding 7: no referrer, so Google is not told which page loaded the fonts
+  for (const link of links) assert.match(link, /referrerpolicy="no-referrer"/);
 });
 
 /* The bundled libraries' MIT notices reach the page (their own comments are stripped by legalComments: 'none'). */
