@@ -128,8 +128,12 @@
     <button type="button" class="chip" id="g-reset" @click="resetSpeed()">Reset</button>
   </div>
   </div></template>
-  <template x-if="$store.app.mathTab === 'tiers'"><div style="display:contents">
-  <button type="button" class="chip" id="t-fill" :disabled="!tierFillReady" :title="tierFillReady ? 'The optimizer result as the character panel shows it' : 'No optimizer result for these settings: press Optimize on the Gear optimizer tab'" @click="$dispatch('tier-fill')">Fill from the optimizer result</button>
+  <!-- TIERS: its own level ($store.app.tiers) -->
+  <template x-if="$store.app.mathTab === 'tiers'"><div style="display:contents" x-data="tierControls">
+  <label class="mctl">Level
+    <input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" x-bind="levelField" aria-label="Level of the tiers">
+    <span class="f-range" id="t-level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span>
+  </label>
   </div></template>
 </div>
 
@@ -242,29 +246,23 @@
 </section>
 
 <!-- TIERS: every substat's tiers around its value (a ladder); not about sync, so it shows whatever the sync settings -->
-<section class="subtab" id="tab-tiers" hidden :hidden="$store.app.mathTab !== 'tiers'" x-data="tierTable" @tier-fill.window="fill()" @keydown.escape.window="helpFor = null" @click.window="if (helpFor && !$event.target.closest('#t-pop, [data-help]')) helpFor = null">
-<template x-if="view"><div class="panel" id="t-panel" x-ref="panel" style="position:relative">
-  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" x-bind="levelField" aria-label="Level of the tiers"><span class="f-range" id="t-level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span><span style="flex:1"></span>
-    <span class="subtabs small"><button type="button" id="t-more" :aria-pressed="String(more)" @click="more = !more">More tiers</button></span></div>
-  <div class="tablewrap"><table class="compact ladder" id="t-table">
-    <colgroup><template x-for="(c, k) in view.cols" :key="k"><col :class="c.first ? 'gfirst' : ''"></template></colgroup>
+<section class="subtab" id="tab-tiers" hidden :hidden="$store.app.mathTab !== 'tiers'" x-data="tierTable" @keydown.escape.window="helpFor = null" @click.window="if (helpFor && !$event.target.closest('#t-pop, [data-help]')) helpFor = null">
+<template x-if="view"><div id="t-panel" x-ref="panel" style="position:relative">
+  <!-- a card per substat, each its own small table -->
+  <div class="tiercards" id="t-table"><template x-for="g in view.cards" :key="g.stat"><div class="tablewrap"><table class="compact ladder" :data-stat="g.stat">
     <thead>
-      <tr><template x-for="g in view.groups" :key="g.stat">
-        <th class="n gfirst" :colspan="g.span" :data-stat="g.stat">
-          <div class="lname"><span x-text="g.label"></span> <button type="button" class="help shelp" :data-help="g.stat" :aria-expanded="String(helpFor === g.stat)" aria-controls="t-pop" :title="`About ${g.label}`" @click.stop="toggleHelp(g.stat, $el)">?</button></div>
-          <input type="number" min="0" step="1" inputmode="numeric" :data-n="g.stat" :value="g.value" :aria-label="`${g.label} on the character panel`" @change="type(g.stat, $el)">
-          <div class="leff"><template x-for="(line, k) in g.lines" :key="k"><span class="lline" x-text="line"></span></template></div>
-          <div class="lnote" x-show="g.note" x-text="g.note"></div>
-        </th>
-      </template></tr>
-      <tr class="lcols"><template x-for="(n, k) in view.names" :key="k"><th class="n" :class="{ gfirst: n.first }" x-text="n.text"></th></template></tr>
+      <tr><th class="n" :colspan="g.names.length">
+        <div class="lname"><span x-text="g.label"></span> <button type="button" class="help shelp" :data-help="g.stat" :aria-expanded="String(helpFor === g.stat)" aria-controls="t-pop" :title="`About ${g.label}`" @click.stop="toggleHelp(g.stat, $el)">?</button></div>
+        <input type="number" min="0" step="1" inputmode="numeric" :data-n="g.stat" :value="g.value" :aria-label="`${g.label} on the character panel`" @change="type(g.stat, $el)">
+        <div class="leff"><template x-for="(line, k) in g.lines" :key="k"><span class="lline" x-text="line"></span></template><span class="lline lhaste" x-show="g.haste" x-text="g.haste"></span></div>
+      </th></tr>
+      <tr class="lcols"><template x-for="(n, k) in g.names" :key="k"><th class="n" x-text="n"></th></template></tr>
     </thead>
-    <tbody><template x-for="(r, i) in view.rows" :key="i"><tr>
-      <template x-for="(c, k) in r.cells" :key="k"><td class="n" :class="{ gfirst: c.first, eff: c.eff, chg2: c.mark, cur: c.cur, hov: c.to && hover === c.to }" :data-to="c.to" :title="c.title" x-text="c.text" @click="c.to && pick(c.to)" @mouseenter="hover = c.to || ''" @mouseleave="hover = ''"></td></template>
+    <tbody><template x-for="(r, i) in g.rows" :key="i"><tr>
+      <template x-for="(c, k) in r" :key="k"><td class="n" :class="{ eff: c.eff, chg2: c.mark, cur: c.cur, hov: hover === c.to }" :data-to="c.to" :title="c.title" x-text="c.text" @click="pick(c.to)" @mouseenter="hover = c.to" @mouseleave="hover = ''"></td></template>
     </tr></template></tbody>
-    <tfoot><tr><template x-for="(f, k) in view.foot" :key="k"><td class="n small lfoot gfirst" :colspan="f.span"><span><b x-text="f.spare"></b> spare</span><span x-show="f.toNext != null"><b x-text="`+${f.toNext}`"></b> to next</span><span x-show="f.toNext == null">last tier</span></td></template></tr></tfoot>
-  </table></div>
-  <p class="small dim" id="t-note" x-show="view.haste" x-text="`The GCD includes ${view.haste}.`"></p>
+    <tfoot><tr><td class="n small lfoot" :colspan="g.names.length"><span><b x-text="g.foot.spare"></b> spare</span><span x-show="g.foot.toNext != null"><b x-text="`+${g.foot.toNext}`"></b> to next</span><span x-show="g.foot.toNext == null">last tier</span></td></tr></tfoot>
+  </table></div></template></div>
   <div class="popover statpop" id="t-pop" x-ref="pop" role="dialog" :aria-label="help ? `About ${help.title}` : 'About this substat'" x-show="help" :style="`top:${helpAt.top}px;left:${helpAt.left}px`">
     <template x-if="help"><div><h3 x-text="help.title"></h3><p x-text="help.affects"></p><p x-text="help.size"></p></div></template>
   </div>

@@ -66,7 +66,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | views | what each tab shows |
 | sync-explainer-view | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
 | gcd-view | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
-| tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; the optimizer result offered to Fill only for the same settings, never filled on its own; typed values; the sub-tab's own level |
+| tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
 | piece-subs | Piece stats substat ranks |
 | data-format | generated data shape |
 | provenance | source record and footer |

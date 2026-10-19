@@ -11,7 +11,6 @@ import {
   mealsPassing,
   optimizerKey,
   optimizerView,
-  resultPanel,
   samePassing,
   searchCount,
 } from '../views/optimizer.js';
@@ -127,9 +126,6 @@ export function optimizer() {
       this.viewId++;
       this.viewJob = raw.job;
       this.nowDeps = optimizerKey(raw);
-      // the result's panel values with the settings they were solved for, for How the math works (Substat tiers)
-      const values = resultPanel(raw.jobCtx, view);
-      this.$store.app.optPanel = values && Object.freeze({ key: optimizerKey(raw), values: Object.freeze(values) });
       performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
     },
     /* A piece picked from row i's menu: the row shows it, and the other rows are checked again against it. */

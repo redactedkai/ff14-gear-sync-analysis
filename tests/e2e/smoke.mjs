@@ -1327,54 +1327,31 @@ async function checkJobLevelCap(pg) {
 
 // How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
 // starts at 613 on the panel (gear speed 193; validation.md section 5).
-const TIERS_SHORT = { crit: 'CRT', det: 'DET', dh: 'DHT', spd: 'SpS', spec: 'PIE' };
 
-/** Tiers (Sage, level 100, item level sync off): with no optimizer result for these settings each value starts at its
- * base and Fill is off; a typed Spell Speed lands in AkhMorning's tier; once the optimizer has run, the values are its
- * Total row's substats; a level typed into the settings shows its tiers while the field still has focus (no change
+/** Tiers (Sage, level 100, item level sync off): each value starts at its base; a typed Spell Speed lands in
+ * AkhMorning's tier; a value out of range is held to it, with no note; a level typed into the settings shows its tiers while the field still has focus (no change
  * event, no typing wait); a level typed into the sub-tab's own box holds when the settings' level changes, and an
  * empty box goes back to the settings' level; with sync on and no cap there is no "enter a sync cap" message on Tiers; Paladin's Tenacity
  * has two effect columns; no sideways scroll at NARROW. */
 async function checkTiers(pg) {
   await pg.setViewportSize(NARROW);
   await setJob(pg, 'SGE');
-  // settings changed away from the optimizer tab: it has no result for them yet
   await showMath(pg, 'tiers');
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', '100');
-  await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level');
   await expect(pg.locator('#t-level')).toHaveValue('100');
-  await expect(pg.locator('#t-fill')).toBeDisabled();
-  check(Number(await pg.$eval('#t-fill', e => getComputedStyle(e).opacity)) < 1, 'the disabled Fill chip does not look disabled');
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
   await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
   await setNumber(pg, '#t-table [data-n="spd"]', '624');
   await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').first()).toHaveText('613');
   await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
 
-  // the optimizer's result fills the boxes only from the Fill chip (owner, 2026-10-18): its Total row, substat by
-  // substat. The panel of the last result shows at once, so wait for a solve for these settings
-  await waitOptimizer(pg);
-  // header cells are shown in capitals (CSS), so compare in upper case
-  const heads = (await pg.locator('#o-out thead tr').first().locator('th').allInnerTexts()).map(t => t.trim().toUpperCase());
-  const total = (await pg.locator('#o-out tr.total').first().locator('td').allInnerTexts()).map(t => t.trim());
-  await showMath(pg, 'tiers');
-  await expect(pg.locator('#t-fill')).toBeEnabled();
-  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420'); // not filled on its own
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('624'); // the typed value is kept
-  await pg.click('#t-fill');
-  for (const [stat, short] of Object.entries(TIERS_SHORT)) {
-    const want = total[heads.indexOf(short.toUpperCase())];
-    check(
-      want != null && (await pg.inputValue(`#t-table [data-n="${stat}"]`)) === want,
-      `Tiers ${stat} is not the optimizer's Total ${want}`,
-    );
-  }
+  // a value under the base is shown at the base, a speed above the most any job can have at the most; no note
   await setNumber(pg, '#t-table [data-n="crit"]', '5');
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
-  await expect(pg.locator('#t-table .lnote').first()).toHaveText('Under the base of 420; shown at 420.');
-  await pg.click('#t-fill');
-  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue(total[heads.indexOf(TIERS_SHORT.crit)]);
+  await setNumber(pg, '#t-table [data-n="spd"]', '99999');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('3679');
+  await setNumber(pg, '#t-table [data-n="spd"]', '624');
 
   // the level follows each valid keystroke, while the field keeps focus
   await pg.focus('#level');

@@ -1383,8 +1383,8 @@ svg.chart .hasteline {
   width: 72px;
 }
 
-/* Tiers: the substats' tier ladder (components/tiers.js). Columns of a fixed table: row labels, then per substat a
-   narrow From column and one column per effect, a line before each substat */
+/* Tiers: the substats' tier ladders (components/tiers.js), a card per substat in a grid that wraps on a narrow window;
+   each card a small table: From, then one column per effect */
 .panelhead {
   display: flex;
   align-items: baseline;
@@ -1401,14 +1401,14 @@ svg.chart .hasteline {
   margin-left: -4px;
   font-weight: 600;
 }
+.tiercards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
 .ladder {
-  table-layout: fixed;
-}
-.ladder col.gfirst {
-  width: 62px;
-}
-.ladder .gfirst {
-  border-left: 1px solid var(--line);
+  width: 100%;
 }
 table.ladder th {
   vertical-align: top;
@@ -1439,12 +1439,10 @@ table.ladder th {
   display: block;
   white-space: nowrap;
 }
-.ladder .lnote {
-  font-size: 0.72rem;
+/* the haste the GCD counts, under the speed column's GCD */
+.ladder th .lhaste {
   font-weight: 400;
-  color: var(--gold);
-  text-transform: none;
-  letter-spacing: 0;
+  color: var(--muted);
 }
 .ladder tr.lcols th {
   font-size: 0.68rem;

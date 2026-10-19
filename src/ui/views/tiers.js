@@ -6,12 +6,11 @@
 import { tierLadder, tierSizes } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
 import { statBase } from '../../core/food.js';
+import { MAX_SPEED } from '../../core/tables.js';
 import { fmtInt } from '../helpers.js';
-import { optimizerKey } from './optimizer.js';
 
-/* Tiers shown either side of each value's tier: the default, and with More tiers. */
-export const TIER_NEAR = 3;
-export const TIER_NEAR_MORE = 7;
+/* Tiers shown either side of each value's tier (15 rows; there is no More tiers button: owner, 2026-10-19). */
+export const TIER_NEAR = 7;
 /* The highest value a box takes: far above any real total (a few thousand), and inside the speed search (speed.js). */
 export const TIER_VALUE_MAX = 99999;
 
@@ -40,28 +39,20 @@ export function tierLevel(app, typed) {
   return Math.max(1, Math.min(app.jobCtx.maxLevel, typed));
 }
 
-/* The optimizer result's substat values ({stat: value}) when it was solved for the current settings, else null. */
-export function tierFill(app) {
-  const p = app.optPanel;
-  return p && p.key === optimizerKey(app) ? p.values : null;
-}
-
-/* Each substat's starting value at `level`: its base there, {stat: value}. The optimizer result comes in only from
-   the Fill chip (owner, 2026-10-18: not on its own after an Optimize; tierFill). */
+/* Each substat's starting value at `level`: its base there, {stat: value}. */
 export function tierValues(app, level = app.level) {
   const job = app.jobCtx;
   return Object.fromEntries(job.substats.map(s => [s, statBase(job, s, level)]));
 }
 
-/* A value typed into a substat's box: {value, note}, held to the base at `level` and TIER_VALUE_MAX with a note saying
-   so; null for text that is not a number. */
+/* A value typed into a substat's box, held to the base at `level` and the most it can be there, with no note (the box
+   shows the value kept: owner, 2026-10-19); null for text that is not a number. The most: for speed, the most total
+   speed any job can have at the level (MAX_SPEED, as the GCD tab's slider); for the others, TIER_VALUE_MAX. */
 export function tierInput(app, stat, text, level = app.level) {
   const v = Math.round(Number(text));
   if (text === '' || !Number.isFinite(v)) return null;
-  const base = statBase(app.jobCtx, stat, level);
-  if (v < base) return { value: base, note: `Under the base of ${fmtInt(base)}; shown at ${fmtInt(base)}.` };
-  if (v > TIER_VALUE_MAX) return { value: TIER_VALUE_MAX, note: `Shown at ${fmtInt(TIER_VALUE_MAX)}.` };
-  return { value: v, note: '' };
+  const most = stat === 'spd' ? MAX_SPEED[level - 1] : TIER_VALUE_MAX;
+  return Math.max(statBase(app.jobCtx, stat, level), Math.min(most, v));
 }
 
 /* The ? note of a substat: {title, affects, size}. */
@@ -75,76 +66,46 @@ function helpOf(job, stat, level, haste) {
   return { title: job.label[stat], affects: AFFECTS[key], size };
 }
 
-/* The Tiers view at `level` for `values` ({stat: panel value}), `notes` ({stat: text} under a box) and `more` (More
-   tiers), or null with no job. Shape, in the table's order:
-   - title (before the level box), level; cols: [{first}] one per table column after the row labels (first: a substat's From column);
-   - groups: one per substat {stat, label, span (its columns), value, lines (header effect lines), note, help};
-   - names: [{text, first}] the column names; rows: [{cells: [{text, first, eff, mark, cur, to, title}]}], cells empty
-     ({text: ''}) where a substat has fewer tiers; cur: the cell is in its substat's current tier (each substat's sits
-     in the middle row unless its value is near the base or the last tier: tierLadder); to: 'stat:start' to set the
-     value by a click;
-   - foot: [{span, spare, toNext}]; haste: "Greased Lightning (20% haste)" or ''. */
-export function tiersView(app, values, notes, more, level = app.level) {
+/* The Tiers view at `level` for `values` ({stat: panel value}), or null with no job: {level, cards}, one card per
+   substat, each its own small table (owner, 2026-10-19: a table across all substats read as one row of stats, with
+   empty space between a From column and its effects). A card: {stat, label, value, lines (the effect lines under its
+   box), haste (speed's: the job's haste at the level, "with Fuka 10%", else ''), help, names (its column names),
+   rows, foot: {spare, toNext}}. rows: [[{text, eff, mark, cur, to, title}]], From first; cur: the value's tier (the
+   middle row unless the value is near the base or the last tier: tierLadder); mark: with two effects, the one that
+   changes at the tier; to: 'stat:start' to set the value by a click. */
+export function tiersView(app, values, level = app.level) {
   if (!app.job) return null;
   const job = app.jobCtx;
-  const near = more ? TIER_NEAR_MORE : TIER_NEAR;
   const haste = hasteFor(job.jobId, level);
-
-  // 1. each substat's tiers around its value
-  const ladders = job.substats.map(stat => {
+  const cards = job.substats.map(stat => {
+    // 1. the substat's tiers around its value
     const value = values[stat] ?? statBase(job, stat, level);
-    return { stat, value, ladder: tierLadder(job, stat, level, value, near, haste?.pct ?? 0) };
-  });
+    const ladder = tierLadder(job, stat, level, value, TIER_NEAR, haste?.pct ?? 0);
 
-  // 2. the header: names, boxes, the effect lines in the column names' words, the ? notes
-  const groups = ladders.map(({ stat, value, ladder }) => ({
-    stat,
-    label: job.label[stat],
-    span: 1 + ladder.kinds.length,
-    value,
-    lines: ladder.kinds.map((kind, k) => `${ladder.rows[ladder.cur].values[k]} ${lineWord(kind)}`),
-    note: notes[stat] || '',
-    help: helpOf(job, stat, level, haste?.pct ?? 0),
-  }));
-  const cols = ladders.flatMap(({ ladder }) => [{ first: true }, ...ladder.kinds.map(() => ({ first: false }))]);
-  const names = ladders.flatMap(({ ladder }) => [
-    { text: 'From', first: true },
-    ...ladder.kinds.map(kind => ({ text: COLUMN[kind], first: false })),
-  ]);
-
-  // 3. one row per tier of each substat's window; with two effects, the one that changes at a tier is marked
-  const rows = [];
-  for (let i = 0; i < 2 * near + 1; i++) {
-    const cells = ladders.flatMap(({ stat, ladder }) => {
-      const t = ladder.rows[i];
-      if (!t) return [{ text: '', first: true }, ...ladder.kinds.map(() => ({ text: '', first: false }))];
+    // 2. one row per tier, the value's tier highlighted
+    const rows = ladder.rows.map((t, i) => {
       const to = `${stat}:${t.start}`,
-        title = `Set ${job.label[stat]} to ${t.start}`;
-      const some = ladder.kinds.length > 1 && !t.changed.every(Boolean),
+        title = `Set ${job.label[stat]} to ${t.start}`,
         cur = i === ladder.cur;
+      const some = ladder.kinds.length > 1 && !t.changed.every(Boolean);
       return [
-        { text: fmtInt(t.start), first: true, eff: false, mark: false, cur, to, title },
-        ...t.values.map((text, k) => ({ text, first: false, eff: true, mark: some && t.changed[k], cur, to, title })),
+        { text: fmtInt(t.start), eff: false, mark: false, cur, to, title },
+        ...t.values.map((text, k) => ({ text, eff: true, mark: some && t.changed[k], cur, to, title })),
       ];
     });
-    rows.push({ cells });
-  }
 
-  // 4. the footer: spare and to next per substat
-  const foot = ladders.map(({ ladder }) => ({
-    span: 1 + ladder.kinds.length,
-    spare: fmtInt(ladder.spare),
-    toNext: ladder.toNext == null ? null : fmtInt(ladder.toNext),
-  }));
-
-  return {
-    title: `${job.jobName} substat tiers at level`,
-    level,
-    cols,
-    groups,
-    names,
-    rows,
-    foot,
-    haste: haste ? `${haste.name} (${haste.pct}% haste)` : '',
-  };
+    // 3. the header, the column names and the footer
+    return {
+      stat,
+      label: job.label[stat],
+      value,
+      lines: ladder.kinds.map((kind, k) => `${ladder.rows[ladder.cur].values[k]} ${lineWord(kind)}`),
+      haste: stat === 'spd' && haste ? `with ${haste.name} ${haste.pct}%` : '',
+      help: helpOf(job, stat, level, haste?.pct ?? 0),
+      names: ['From', ...ladder.kinds.map(kind => COLUMN[kind])],
+      rows,
+      foot: { spare: fmtInt(ladder.spare), toNext: ladder.toNext == null ? null : fmtInt(ladder.toNext) },
+    };
+  });
+  return { level, cards };
 }

@@ -3,7 +3,6 @@ import { JOBS, JOB_ROWS, SLOT_LABEL } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
 import { rankChoices } from '../views/ranks.js';
-import { tierFill } from '../views/tiers.js';
 import { limitCapToLevel } from '../state.js';
 import { TYPING_DEBOUNCE_MS } from '../helpers.js';
 
@@ -26,10 +25,6 @@ export function page() {
     get substat2Options() {
       const subs = this.$store.app.piece.subs;
       return [['', 'none']].concat(rankChoices(subs, 1, this.job.substats).map(s => [s, this.job.label[s]]));
-    },
-    /* the optimizer has a result for the current settings, so Tiers can fill its values from it (the math bar's chip) */
-    get tierFillReady() {
-      return !!tierFill(this.$store.app);
     },
   };
 }

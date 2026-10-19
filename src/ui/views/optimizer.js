@@ -68,14 +68,6 @@ export function optimizerKey(app) {
   ]);
 }
 
-/* A result's substats as the character panel shows them, {stat: value}: the With food row with Food on, else Total;
-   null for a view without a result (`view` from optimizerView). */
-export function resultPanel(job, view) {
-  if (view?.kind !== 'ok') return null;
-  const row = view.food?.totals ?? view.totals;
-  return Object.fromEntries(job.substats.map(s => [s, row[job.stats.indexOf(s)]]));
-}
-
 /* What the character panel adds to a stat at `level`: the character's base (statBase). For the main stat and Vitality
    that is the job's share of the level's base, without the clan's bonus (-3 to +3; owner's decision 2026-10-18). */
 export function panelBase(job, stat, level) {

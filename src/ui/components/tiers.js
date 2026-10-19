@@ -1,12 +1,10 @@
 /* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts at
-   the substat's base, and what the user types, clicks or fills is kept on top until the job or the level changes. The
-   optimizer result comes in only from the math bar's Fill chip (owner, 2026-10-18), never on its own after an
-   Optimize. The level is the synced level until the user types
-   another into the title's box (not saved). The values are worked out on every read (no effect that refills them
-   later), so a level typed in the settings shows its own tiers and values in one render. The Fill chip sends
-   'tier-fill', which puts the result's values in at the synced level. */
+   the substat's base, and what the user types or clicks is kept on top until the job or the level changes. The level is the synced level until the user types another into the math bar's box; it is in
+   $store.app.tiers (not saved), shared by the bar (tierControls) and the table (tierTable), as the GCD tab's
+   are (owner, 2026-10-19: every sub-tab's controls in the bar). The values are worked out on every read (no effect
+   that refills them later), so a level typed in the settings shows its own tiers and values in one render. */
 import { numberField } from '../helpers.js';
-import { tierFill, tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
+import { tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 
 /* Space kept between a ? note and the panel's edge, and between it and its button (px); the note starts HELP_SHIFT px
    left of its button, so the button stays in view above the note's start. */
@@ -17,15 +15,11 @@ const HELP_WIDTH = 340;
 
 export function tierTable() {
   return {
-    /* values typed or clicked, {stat: {value, note}}, and the settings they were made under (editsKey) */
+    /* values typed or clicked, {stat: value}, and the settings they were made under (editsKey) */
     edits: {},
     editsFor: '',
-    /* More tiers: 7 either side instead of 3 */
-    more: false,
-    /* a level typed into the title's box, or null to follow the synced level */
-    typedLevel: null,
     get level() {
-      return tierLevel(this.$store.app, this.typedLevel);
+      return tierLevel(this.$store.app, this.$store.app.tiers.level);
     },
     /* the tier under the mouse ('stat:start'): all its cells are highlighted, since a click on any of them sets it */
     hover: '',
@@ -44,63 +38,27 @@ export function tierTable() {
     get view() {
       const app = this.$store.app;
       if (!app.job) return null;
-      const values = tierValues(app, this.level),
-        notes = {};
-      for (const [stat, e] of Object.entries(this.liveEdits)) {
-        values[stat] = e.value;
-        notes[stat] = e.note;
-      }
-      return tiersView(app, values, notes, this.more, this.level);
+      return tiersView(app, { ...tierValues(app, this.level), ...this.liveEdits }, this.level);
     },
     get help() {
-      return this.view?.groups.find(g => g.stat === this.helpFor)?.help ?? null;
+      return this.view?.cards.find(g => g.stat === this.helpFor)?.help ?? null;
     },
-    /* keep `edit` ({value, note}) for a substat, dropping edits made under other settings */
-    setEdit(stat, edit) {
-      this.edits = { ...this.liveEdits, [stat]: edit };
+    /* keep `value` for a substat, dropping edits made under other settings */
+    setEdit(stat, value) {
+      this.edits = { ...this.liveEdits, [stat]: value };
       this.editsFor = this.editsKey;
-    },
-    /* the Fill chip: the optimizer result's values (tierFill, for the current settings only), at the synced level;
-       typed and clicked values are dropped */
-    fill() {
-      this.typedLevel = null;
-      const values = tierFill(this.$store.app) ?? {};
-      this.edits = Object.fromEntries(Object.entries(values).map(([stat, value]) => [stat, { value, note: '' }]));
-      this.editsFor = this.editsKey;
-    },
-    /* the title's level box: each valid level counts as it is typed, as in the settings' level box (owner, 2026-10-19);
-       the synced level itself follows the synced level again */
-    get levelField() {
-      const app = this.$store.app;
-      const field = numberField(
-        () => this.level,
-        v => {
-          this.typedLevel = v === app.level ? null : v;
-        },
-        1,
-        () => app.jobCtx.maxLevel,
-        true,
-      );
-      // an empty box, left or entered, follows the synced level again
-      const commit = field['@change'];
-      field['@change'] = e => {
-        if (e.target.value !== '') return commit(e);
-        this.typedLevel = null;
-        e.target.value = this.level;
-      };
-      return field;
     },
     /* a value typed into a substat's box (Enter or leaving the box); the box shows the value kept */
     type(stat, el) {
-      const r = tierInput(this.$store.app, stat, el.value, this.level);
-      if (!r) return;
-      this.setEdit(stat, r);
-      el.value = r.value;
+      const value = tierInput(this.$store.app, stat, el.value, this.level);
+      if (value == null) return;
+      this.setEdit(stat, value);
+      el.value = value;
     },
     /* a tier clicked: the value goes to its start */
     pick(to) {
       const [stat, start] = to.split(':');
-      this.setEdit(stat, { value: Number(start), note: '' });
+      this.setEdit(stat, Number(start));
     },
     /* open or close a substat's ? note, under its button and inside the panel */
     toggleHelp(stat, button) {
@@ -116,6 +74,36 @@ export function tierTable() {
         left: Math.round(Math.max(HELP_GAP, Math.min(r.left - panel.left - HELP_SHIFT, panel.width - width - HELP_GAP))),
       };
       this.helpFor = stat;
+    },
+  };
+}
+
+/* The math bar's Substat tiers control: its Level box. */
+export function tierControls() {
+  return {
+    get level() {
+      return tierLevel(this.$store.app, this.$store.app.tiers.level);
+    },
+    /* the level box: each valid level counts as it is typed, as in the settings' level box (owner, 2026-10-19); the
+       synced level itself, or an empty box left or entered, follows the synced level again */
+    get levelField() {
+      const app = this.$store.app;
+      const field = numberField(
+        () => this.level,
+        v => {
+          app.tiers.level = v === app.level ? null : v;
+        },
+        1,
+        () => app.jobCtx.maxLevel,
+        true,
+      );
+      const commit = field['@change'];
+      field['@change'] = e => {
+        if (e.target.value !== '') return commit(e);
+        app.tiers.level = null;
+        e.target.value = this.level;
+      };
+      return field;
     },
   };
 }
