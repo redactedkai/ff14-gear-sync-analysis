@@ -8,9 +8,9 @@ import { performance } from 'node:perf_hooks';
 import { withActivities } from '../../src/core/items.js';
 import { meldCacheStats } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
 import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.mjs';
 
-const NODE_LIMIT = 700000; // the page's
 const arg = (name, dflt) => {
   const i = process.argv.indexOf(`--${name}`);
   return i < 0 ? dflt : process.argv[i + 1];

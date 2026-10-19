@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
 import { buildCandidates, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
 import { fullPool, JOB_IDS, job as ctx, objectivesLite, SYNCS } from './workloads.mjs';
 
@@ -50,7 +51,7 @@ for (const id of jobIds) {
   for (const melds of [false, true]) {
     for (const sync of SYNCS) {
       for (const o of objectivesLite(job)) {
-        const opts = { target: o.target, tiebreak: o.tiebreak, nodeLimit: 700000, melds };
+        const opts = { target: o.target, tiebreak: o.tiebreak, nodeLimit: NODE_LIMIT, melds };
         const a = optimize(job, pool, sync, opts);
         const b = B.optimize(bjob, pool, sync, opts);
         runs++;

@@ -21,11 +21,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import { STORE_KEY } from '../../src/ui/state.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PAGE = pathToFileURL(resolve(ROOT, 'dist', 'index.html')).href;
 const OUT = resolve(ROOT, 'scripts', 'perf', 'out');
-const STORE_KEY = 'ilvl-stat-lab-v4'; // src/ui/state.js
 const TIMEOUT = 120_000;
 
 // long tasks (main thread blocked over 50 ms), recorded from the first moment of every page

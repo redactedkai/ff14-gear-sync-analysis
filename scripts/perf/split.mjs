@@ -8,6 +8,7 @@ import { slotInfo } from '../../src/core/items.js';
 import { bestMeld } from '../../src/core/meld.js';
 import { buildCandidates, effStats, itemSyncIlvl, makeScorer, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
 import { branchAndBound } from '../../src/core/optimizer/search.js';
+import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
 import { fullPool, job as ctx, SYNCS } from './workloads.mjs';
 
 const arg = (name, dflt) => {
@@ -92,7 +93,7 @@ function replica() {
   });
   t0 = lap('prune', t0);
   const posList = slotList.map(ty => cand[ty]);
-  const r = branchAndBound({ slotList, posList, dims, nodeLimit: 700000 });
+  const r = branchAndBound({ slotList, posList, dims, nodeLimit: NODE_LIMIT });
   lap('search', t0);
   return { slotList, posList, nodes: r.nodes };
 }
