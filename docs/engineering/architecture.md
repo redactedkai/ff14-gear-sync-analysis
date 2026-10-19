@@ -78,7 +78,7 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 
 ### One shared store
 
-All state that matters lives in one shared store: the saved settings, plus two values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **optimizer's last panel values** (`optPanel`) come with the settings they were solved for (`optimizerKey`), so the Substat tiers sub-tab fills from them only while those settings still hold.
+All state that matters lives in one shared store: the saved settings, plus a few values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in, so they follow the synced level until the user sets one. The optimizer's result is not in the store: its component keeps it, together with the settings it was solved for (`optimizerKey`), so the page can tell when a setting has changed since the last **Optimize**.
 
 There is no gear pool to keep: the optimizer searches every piece the job can wear ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters)), so the store holds only settings. Until 2026-10-15 the user built a pool on a Gear pool tab first; dropping that step costs nothing in speed (building a job's gear takes about 5 to 10 ms, measured once on 2026-10-15; a whole optimizer run takes about 20 ms, see [optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
 
@@ -87,7 +87,7 @@ Changes go through store actions: set job, reset everything, switch tab or math 
 **Number inputs.** They are bound to store fields through a helper with two rules:
 
 - A value is committed only when it is inside the allowed range, rounded to a whole number. An out-of-range value is ignored rather than corrected under the user's cursor.
-- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-and-only-when-visible)). The gear browser's typed filters wait the same way. The exception is the synced level: it commits each valid value as it is typed (owner, 2026-10-17), and the optimizer still waits its own 120 ms.
+- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-only-when-visible-or-on-request)). The gear browser's typed filters wait the same way. The exception is the synced level: it commits each valid value as it is typed (owner, 2026-10-17), and the optimizer still waits its own 120 ms.
 
 **Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
 
@@ -200,8 +200,8 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
-| Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
-| Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
+| Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`); the optimizer's settings key in `src/ui/views/optimizer.js` (`optimizerKey`) |
+| Debounced effect, number-field binding, "Gear from" boxes | `src/ui/helpers.js` (`debouncedEffect`, `numberField`, `storeNumberField`, `gearFromToggles`, `expansionToggles`) |
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |

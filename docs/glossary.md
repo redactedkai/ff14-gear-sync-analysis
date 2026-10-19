@@ -42,7 +42,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **HQ / NQ.** High quality and normal quality. A crafted item can come out HQ, with bonus stats on top of the NQ version. The item database stores the HQ stats for every item that can be HQ and the only version of everything else. See [data-pipeline.md, section 4](engineering/data-pipeline.md#stats-and-the-hq-bonus).
 
-**Item level.** A number on every piece of gear. It is not a strength rating in itself: it is a row number in the budget table, and the piece's stats follow from that row and its slot. Real gear goes from 1 to 795 (the project's data starts at 100). See [math.md, section 2](mechanics/math.md#2-the-budget-table).
+**Item level.** A number on every piece of gear. It is not a strength rating in itself: it is a row number in the budget table, and the piece's stats follow from that row and its slot. Real gear goes from 1 to 795 (the project's data starts at 15). See [math.md, section 2](mechanics/math.md#2-the-budget-table).
 
 **Item level sync, sync cap.** Some content lowers gear to a fixed item level, the **sync cap**. Each stat on a piece above the cap is cut to that stat's cap; pieces at or below the cap are unchanged. For substats the cap is what a full-share piece of the same slot at the cap carries (**verified**: the Wiki's caps at item level 475); for a stat with a factor below 100% it can differ by 1 (**verified** by three second-hand in-game values; **inferred** in general). That the main stat and Vitality are clamped the same way is **inferred**. The owner's main case is cap 123. See [math.md, section 5](mechanics/math.md#5-item-level-sync); the evidence is in [validation.md, section 8](mechanics/validation.md#8-open-question-in-game-captures).
 
@@ -178,7 +178,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
 
-**Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals, with each ranked stat held one point above the start of its best tier (roadmap A7; the page's Rank by tier switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md).
+**Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals, with each ranked stat held one point above the start of its best tier (roadmap A7, "Rank by tier"; the page's Spare points to tiebreaks switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md).
 
 **Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints).
 

@@ -56,6 +56,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | multi-slot | cloaks, tank multi-slot gear, White Mage shields |
 | stat-factor | per-item stat factors |
 | meld | materia melds on real items |
+| damage-defense | weapon damage and defense on real items; weapon damage ranked first |
 | optimizer | real-gear pools, ring-pair bound |
 | optimizer-constraints | speed minimum, maximum and range |
 | optimizer-exhaustive | random pools, regressions, policies |
@@ -69,6 +70,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | gcd-view | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
 | tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
 | piece-subs | Piece stats substat ranks |
+| ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | data-format | generated data shape |
 | level-tables | every table keyed by level reaches the level cap |
 | provenance | source record and footer |
@@ -146,7 +148,12 @@ Two Python files: `test_generators.py` (the item database, the item level data, 
 Notes:
 
 - **What fails it.** Any uncaught page error or console error. Network errors are ignored, since the web fonts cannot load offline.
-- **Waits.** Every wait is on a concrete condition (an element appears, a text matches), except a fixed wait of 600 ms in the typing step, which checks that typing runs no search. The optimizer runs only on Optimize: the smoke test presses it (`waitOptimizer`) and waits for that search's timing mark.
+- **Waits.** Almost every wait is on a concrete condition (an element appears, a text matches). Five are fixed, and each checks that something does *not* happen, so a busy machine can make them pass wrongly but not fail:
+  - the typing step (`checkTypingDebounce`): two waits of 600 ms, before and after typing a cap, to show typing runs no search;
+  - the cap check (`checkCapValidation`): 60 ms between up-arrow presses, then 400 ms, to show the "Lowered to" note stays put;
+  - the level cap check (`checkJobLevelCap`): 400 ms, longer than the save debounce, to show a level above the job's cap is not saved.
+
+  The optimizer runs only on Optimize: the smoke test presses it (`waitOptimizer`) and waits for that search's timing mark.
 - **Screenshots.** Of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, written to the smoke test's output folder (gitignored).
 - **Success** prints `no errors`.
 
@@ -176,7 +183,7 @@ Which command runs which check? Run from the repository root.
 Notes on the pass/fail commands:
 
 - **`npm test`** runs the unit tests with Node's built-in test runner, which runs files in parallel, so the slowest file sets the time. **`npm run test:full`** adds `tests/full/`: 360 random cases of tier ranking against its reference, which take about 80 s on their own and are split in five files so they run at the same time. `npm test` keeps the first 20 of the Target GCD cases. **`npm run test:data`** runs the generator tests with Python `unittest`. The Python npm scripts (`test:data`, `lint:py`, `format:py`, `update-data`) start Python through `scripts/py.mjs`, which runs `python3` or `python`, whichever exists, so they work on Windows, macOS and Linux.
-- **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 12 s; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
+- **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (25 to 55 s on a 12-thread machine, depending on its load, measured 2026-10-19; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
 - **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
 - **`npm run check`** and **`npm run check:all`** run the steps in the diagram above; `check` is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at 960 px.
 

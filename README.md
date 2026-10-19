@@ -56,7 +56,7 @@ Which test numbers may change after a patch and which must not is in [data-pipel
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` runs the unit tests, builds `dist/index.html` and publishes it on every push to `main` (or by hand from the Actions tab). One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
+`.github/workflows/pages.yml` runs `npm run check` and the long `tests/full/` sweep on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
 
 ## Documentation
 
