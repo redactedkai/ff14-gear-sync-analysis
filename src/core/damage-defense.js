@@ -28,7 +28,8 @@ function damageDefenseCap(key, slotCode, ilvl, kind) {
 /* A pool item's `key` value after sync. `target`: the item level it is synced to (itemSyncIlvl), null when untouched.
    A database piece has its own value (with the HQ bonus when it can be HQ), capped at the target; a piece not from the
    database (hand-made, generated) has the ItemLevel table's value at its item level (exact for weapon damage on 5,566 of
-   5,579 combat weapons), at the target when synced, scaled by the slot share of its type's first slot code. */
+   the 5,579 combat weapons in Item.csv and 5,412 of the 5,425 in the database; docs/mechanics/math.md), at the target
+   when synced, scaled by the slot share of its type's first slot code. */
 export function syncedValue(item, key, target) {
   const f = damageDefenseFacts(item);
   if (f) {
