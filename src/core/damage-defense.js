@@ -21,7 +21,7 @@ const MITIGATION_PER_DIV = 15;
 
 /* The cap of `key` (a DAMAGE_DEFENSE_KEYS entry) on a piece of slot code `slotCode` and item kind `kind` at item level
    `ilvl` (capFromBudget: budget x factor, x slot share). */
-export function damageDefenseCap(key, slotCode, ilvl, kind) {
+function damageDefenseCap(key, slotCode, ilvl, kind) {
   return capFromBudget(IL[key][clampIlvl(ilvl)], MP[key][kind], SHARES[key][slotCode]).value;
 }
 

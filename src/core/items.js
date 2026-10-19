@@ -44,7 +44,7 @@ export function genericItems(job, ilvl, subsAllowed, types) {
 }
 
 /* The position of a raw stat key ('crit', 'sps', 'mainAttr', ...) in a row's stats (ITEM_STAT_ORDER). */
-export function statIdx(key) {
+function statIdx(key) {
   return ITEM_STAT_ORDER.indexOf(key);
 }
 

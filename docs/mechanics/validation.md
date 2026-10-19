@@ -489,7 +489,7 @@ The status of each claim this page checks, in one place. Details are in the sect
 
 | Concept | File |
 | --- | --- |
-| Band accuracy, Wiki 475 table | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`, `WIKI475`) |
+| Band accuracy, Wiki 475 table | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Prediction of a real piece's stats | `src/core/formulas.js` (`predictRaw`) |
 | Caps used by the tests above | `src/core/formulas.js` (`capsFor`, `capValue`) |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js` (`syncTarget`, `levelSyncIlvl`) |
