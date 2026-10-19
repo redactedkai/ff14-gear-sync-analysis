@@ -657,8 +657,9 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 | Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`suffixBounds`, `limitTables`, `dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, `branchAndBound`; `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts) |
 | Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
+| Slot positions and blocked-slot masks | `src/core/optimizer/slot-index.js` (`slotPositions`, `positionMask`, `blockableTypes`, `typeMask`) |
 | Entry points: candidates once, search many times; which stats may get a minimum | `src/core/optimizer/index.js` (`prepare` with `minStats`, `solve`, `optimize`) |
-| Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`); `src/core/speed.js` (`speedForGcd`, `hasteFor`) |
+| Target GCD: GCD to speed band, meals, haste | `src/core/target-gcd.js` (`optimizeGcd`, `goalSettings`); `src/core/speed.js` (`speedForGcd`, `hasteFor`); the meal choice `pickMeal` in `src/core/food.js` |
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |

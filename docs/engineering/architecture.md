@@ -197,7 +197,10 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `specKind`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
 | Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
-| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `validation.js`, `optimizer/` |
+| Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
+| Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
+| Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
+| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`); the optimizer's settings key in `src/ui/views/optimizer.js` (`optimizerKey`) |

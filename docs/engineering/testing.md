@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 338 tests in 35 files, about 40 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 344 tests in 36 files, about 40 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 91 tests in 2 files (2026-10-19) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
@@ -52,12 +52,13 @@ Which file tests what? One line per file; the file itself says the rest.
 | tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
 | food | food bonus, meal choices, best meal |
 | validation | Wiki caps, accuracy per band, special lines |
-| items | gear filtering, row conversion, item fields |
+| items | gear filtering, row conversion, item fields; rows sharing a pool key agree |
 | multi-slot | cloaks, tank multi-slot gear, White Mage shields |
 | stat-factor | per-item stat factors |
 | meld | materia melds on real items |
 | damage-defense | weapon damage and defense on real items; weapon damage ranked first |
 | optimizer | real-gear pools, ring-pair bound |
+| slot-index | slot positions and blocked-slot masks |
 | optimizer-constraints | speed minimum, maximum and range |
 | optimizer-exhaustive | random pools, regressions, policies |
 | target-gcd | Target GCD: GCD reached, modes, meals |
@@ -71,7 +72,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
 | piece-subs | Piece stats substat ranks |
 | ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
-| data-format | generated data shape |
+| data-format | generated data shape; `ROW` against the format's row fields |
 | level-tables | every table keyed by level reaches the level cap |
 | provenance | source record and footer |
 | state | restoring saved state |
