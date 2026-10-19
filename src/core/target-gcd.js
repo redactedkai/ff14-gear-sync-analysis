@@ -17,7 +17,7 @@ import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level} as for optimize
- * @param opts  {target, tiebreak=[], melds=false, nodeLimit, gcd (seconds), mode: 'exact' | 'min',
+ * @param opts  {target='main', tiebreak=[], melds=false, nodeLimit, gcd (seconds), mode: 'exact' | 'min',
  *              food: null (no food) | a foodChoices entry | 'best' (every choice of the job), level (for haste, food and
  *              the GCD; default sync.level, else the job's level cap)}
  * @param prep  optional candidates from an earlier call with the same pool, sync, objective, melds and mode (returned
@@ -34,7 +34,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   const mode = opts.mode === 'min' ? 'min' : 'exact';
   const haste = hasteFor(job.jobId, level);
   const pct = haste ? haste.pct : 0;
-  const target = opts.target || 'spd';
+  const target = opts.target || 'main';
   const tiebreak = (opts.tiebreak || []).filter(Boolean);
   // meals rank by the totals with food in the search's order, weapon damage first: meals give different speed bands,
   // so their best sets can differ in it

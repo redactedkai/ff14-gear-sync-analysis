@@ -36,7 +36,7 @@ function provenMost(state, stat, result) {
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level} as for optimize
- * @param opts  {target, tiebreak=[], melds=false, nodeLimit, food: null | a foodChoices entry | 'best', level (default
+ * @param opts  {target='main', tiebreak=[], melds=false, nodeLimit, food: null | a foodChoices entry | 'best', level (default
  *              sync.level, else the job's level cap), gcd (seconds, optional: a Target GCD), mode: 'exact' | 'min'}
  * @param cache optional Map for candidate lists (prepare) from earlier calls with the same pool, sync, keys, melds and
  *              GCD mode; filled as it goes, so a new GCD or meal only reruns the searches
@@ -53,7 +53,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   const pct = haste ? haste.pct : 0;
   // weapon damage first when the job ranks it (rankedKeys): a stage of its own, with no tiers, held at the most reached
   // like main stat, so every later stage's proven maximum holds under it (regain cuts stay exact)
-  const keys = rankedKeys(job, opts.target || 'spd', opts.tiebreak || []);
+  const keys = rankedKeys(job, opts.target || 'main', opts.tiebreak || []);
   const gcdMode = opts.gcd != null ? (opts.mode === 'min' ? 'min' : 'exact') : null;
   const base = { haste, level, asked: opts.gcd ?? null, mode: gcdMode };
 

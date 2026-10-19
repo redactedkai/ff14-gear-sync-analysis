@@ -7,6 +7,8 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { pruneDominated, makeScorer } from '../../src/core/optimizer/candidates.js';
 import { suffixBounds } from '../../src/core/optimizer/search.js';
+import { optimizeGcd } from '../../src/core/target-gcd.js';
+import { rankByTier } from '../../src/core/tier-rank.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 
 const sge = makeJobContext('SGE');
@@ -109,4 +111,23 @@ test('makeScorer: four keys rank in order, a fifth throws', () => {
   const score = makeScorer('wd', ['crit', 'det', 'dh'], vectors);
   assert.ok(score({ wd: 1 }) > score({ crit: 2, det: 3, dh: 4 }));
   assert.throws(() => makeScorer('wd', ['crit', 'det', 'dh', 'spd'], vectors), /at most 4 ranked keys/);
+});
+
+/* Audit 01, finding 20: the three entry points defaulted the goal to Spell or Skill Speed, from the Sage-only days.
+   The neutral default is the main stat (CLAUDE.md); the page always passes a goal, so this only guards other callers. */
+test('optimize, optimizeGcd and rankByTier: no goal given means the main stat', () => {
+  const job = makeJobContext('SGE');
+  const pool = gamePool(job, { ilvlMin: 690, ilvlMax: 730 });
+  const sync = { cap: null, sync: false, level: 100 };
+  const pickIds = res => res.picks.map(p => p.item?.id ?? null);
+  for (const run of [
+    opts => optimize(job, pool, sync, opts),
+    opts => optimizeGcd(job, pool, sync, { ...opts, gcd: 2.45, mode: 'min' }),
+    opts => rankByTier(job, pool, sync, opts),
+  ]) {
+    const noGoal = run({ tiebreak: ['crit'] });
+    assert.ok(noGoal.ok);
+    assert.deepEqual(pickIds(noGoal), pickIds(run({ target: 'main', tiebreak: ['crit'] })));
+    assert.notDeepEqual(pickIds(noGoal), pickIds(run({ target: 'spd', tiebreak: ['crit'] })));
+  }
 });

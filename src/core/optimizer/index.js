@@ -24,11 +24,11 @@ function speedRule(opts) {
    `versionKeys`: stats the meld versions are also on, and `versionCache`: meld versions shared with other lists of
    the same job and sync (buildCandidates). `weaponFirst` (default true): rank weapon damage before the objective
    (rankedKeys in candidates.js); fastestGcd turns it off.
-   opts = {target='spd', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst}.
+   opts = {target='main', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst}.
    Returns {slotList, posList, dims, noMeldData, speed, minStats}. */
 export function prepare(job, pool, sync, opts) {
   opts = opts || {};
-  const target = opts.target || 'spd';
+  const target = opts.target || 'main';
   const tiebreak = (opts.tiebreak || []).filter(Boolean);
   const asked = [...new Set((opts.minStats || []).filter(Boolean))];
   const speed = opts.speed || (asked.includes('spd') ? 'min' : null);
@@ -163,7 +163,7 @@ export function solve(prep, opts) {
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl)
- * @param opts  {target='spd', tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false}: mins = {stat: gear
+ * @param opts  {target='main', tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false}: mins = {stat: gear
  *              points}, minimums on any stat's total; melds gives every piece that is not synced its best materia melds
  *              for the objective; with a speed range or minimums, every meld split worth keeping (meldVersions in
  *              meld.js), since the best melds of a piece then depend on the rest of the loadout
