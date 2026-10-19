@@ -104,12 +104,15 @@ function tierAt(effects, g, level, haste) {
 
 /* For How the math works (Substat tiers): the tiers of `stat` around `total`, a character panel value (base + gear, plus food
    when the caller counts it), at `level`, with the job's `haste` (percent; speed only). Null for a stat without tiers.
-   Returns {base, kinds, rows, spare, toNext, under}:
+   Returns {base, kinds, rows, cur, spare, toNext, under}:
    - base: the character's own value (statBase), the panel's lowest; under: `total` was below it (it counts as base);
    - kinds: the stat's effect kinds (EFFECTS), one value per kind in each row;
-   - rows: 2 x near + 1 entries with the value's tier in the middle; null where there is no tier (below the base, past
-     the last GCD step), else {start, next, values, changed}: start and next on the panel scale (next null for the last
-     tier), values as text, changed[k] true when value k differs from the tier before (all true for the first tier);
+   - rows: 2 x near + 1 tiers with the value's tier in the middle; near either end (the base, or the last GCD step) the
+     rows stop at the end and run on past the other side instead of leaving rows empty (owner, 2026-10-19), so the
+     value's tier moves off the middle. Each {start, next, values, changed}: start and next on the panel scale (next
+     null for the last tier), values as text, changed[k] true when value k differs from the tier before (all true for
+     the first tier). Fewer rows only when the stat has fewer tiers;
+   - cur: the index of the value's tier in rows;
    - spare: points above the tier's start; toNext: points to the next tier (null for the last).
    A tier ends where any of the stat's effects changes, so Tenacity's two effects make tiers of uneven size. */
 export function tierLadder(job, stat, level, total, near, haste = 0) {
@@ -122,12 +125,16 @@ export function tierLadder(job, stat, level, total, near, haste = 0) {
       effectText(kind, stat, kind === 'gcd' ? gcdFor(g, level, BASE_GCD_MS, haste) : Math.floor((step * g) / div)),
     );
 
-  // 1. the value's tier, then up to `near` tiers below it and above it
+  // 1. the value's tier, up to `near` tiers below it and above it, then more on one side for the rows the other lacks
   const gear = Math.max(0, Math.floor(total) - base);
   const tiers = [tierAt(effects, gear, level, haste)];
-  for (let k = 0; k < near && tiers[0].start > 0; k++) tiers.unshift(tierAt(effects, tiers[0].start - 1, level, haste));
-  const missingBelow = near + 1 - tiers.length;
-  for (let k = 0; k < near && tiers.at(-1).next != null; k++) tiers.push(tierAt(effects, tiers.at(-1).next, level, haste));
+  const lower = () => tiers.unshift(tierAt(effects, tiers[0].start - 1, level, haste));
+  const higher = () => tiers.push(tierAt(effects, tiers.at(-1).next, level, haste));
+  for (let k = 0; k < near && tiers[0].start > 0; k++) lower();
+  for (let k = 0; k < near && tiers.at(-1).next != null; k++) higher();
+  while (tiers.length < 2 * near + 1 && tiers.at(-1).next != null) higher();
+  while (tiers.length < 2 * near + 1 && tiers[0].start > 0) lower();
+  const cur = tiers.findIndex(t => t.start <= gear && (t.next == null || gear < t.next));
 
   // 2. each tier on the panel scale, with its values and which of them changed at its start
   const row = t => {
@@ -140,17 +147,17 @@ export function tierLadder(job, stat, level, total, near, haste = 0) {
       changed: values.map((v, k) => !before || v !== before[k]),
     };
   };
-  const rows = [...Array(missingBelow).fill(null), ...tiers.map(row)];
-  while (rows.length < 2 * near + 1) rows.push(null);
+  const rows = tiers.map(row);
 
   // 3. where the value sits in its tier
-  const cur = tiers[near - missingBelow];
+  const at = tiers[cur];
   return {
     base,
     kinds: effects.map(e => e[0]),
     rows,
-    spare: gear - cur.start,
-    toNext: cur.next == null ? null : cur.next - gear,
+    cur,
+    spare: gear - at.start,
+    toNext: at.next == null ? null : at.next - gear,
     under: Math.floor(total) < base,
   };
 }

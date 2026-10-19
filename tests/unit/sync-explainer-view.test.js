@@ -1,4 +1,4 @@
-/* How the math works (src/ui/views/sync-explainer.js): one piece and a full set against the same at the cap with their
+/* How the math works, Piece stats (src/ui/views/sync-explainer.js): one piece against the same at the cap with its
    melds, the item level range, melds from the optimizer's Goal, and the caps behind them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,15 +32,6 @@ test('level 80 (level sync, item level 530): a body at 590 against the melded 53
   assert.equal(v.verdict, 'The melded body (item level 530) has 13 more.');
   // the same slot at every item level: the overgeared body has more from 624 (+94)
   assert.match(v.curveNote, /item level 624 \(\+94\)/);
-  // a full set: 1,300 Skill Speed synced (2.17 s) against 1,442 melded (2.14 s)
-  assert.deepEqual(
-    v.gcd.rows.map(r => [r.il, r.spd, r.gcd]),
-    [
-      [590, 1300, 2.17],
-      [530, 1442, 2.14],
-    ],
-  );
-  assert.equal(v.gcd.verdict, 'The melded set (item level 530) has a GCD 0.03 s shorter.');
 });
 
 test('level 50, cap 130: overgeared gear has more almost at once, materia adds little', () => {
@@ -54,10 +45,6 @@ test('level 50, cap 130: overgeared gear has more almost at once, materia adds l
   );
   assert.equal(v.verdict, 'The overgeared body (item level 170) has 7 more.');
   assert.match(v.curveNote, /item level 143 \(\+13\)/);
-  assert.deepEqual(
-    v.gcd.rows.map(r => r.gcd),
-    [2.15, 2.18],
-  );
 });
 
 test("the Wiki's item level 475 example: rings at 500 and 600 synced to 475", () => {
@@ -88,11 +75,6 @@ test("melds follow the optimizer's Goal; a main stat Goal falls back to the two 
   const v = explainerView(goalDet);
   assert.equal(v.goalNote, '');
   assert.match(v.vsRows[0].materia, /^2 × Grade VIII Determination \(\+24 each\)$/);
-});
-
-test('the GCD sub-tab needs speed: as a chosen substat, or as a meld from the Goal', () => {
-  assert.equal(explainerView(app('RPR', { level: 80, subs: ['crit', 'det'] })).gcd, null);
-  assert.notEqual(explainerView(app('RPR', { level: 80, subs: ['crit', 'det'], target: 'spd' })).gcd, null);
 });
 
 test('the range: 30 below the cap to 20 past the last change, at most the highest real item level', () => {

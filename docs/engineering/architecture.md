@@ -53,7 +53,7 @@ The tool computes all of this **once per job** into a *job context*: a small, fr
 What a job context contains:
 
 - **Neutral stat names and their meaning for this job.** Shared code always uses the same seven role-neutral names: main stat, Vitality, Critical Hit, Determination, Direct Hit, speed, special substat. The context says that, for example, "main stat" means Mind for a healer and Strength for a tank, and "speed" means Spell Speed or Skill Speed. It also lists which of these the job actually has (six or seven stats) and their display names.
-- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin, Beastmaster). This fixes the list of active slots for Piece stats, the GCD sub-tab's full set and the slot filter, and the weapon's [slot share](../glossary.md) (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
+- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin, Beastmaster). This fixes the list of active slots for Piece stats and the slot filter, and the weapon's [slot share](../glossary.md) (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
 - **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise. This is the factor the job's own gear carries. It is used only where no real item is involved (How the math works). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
 - **Level cap.** 100, or the limited job's own: Blue Mage 80, Beastmaster 50 (a constant from the Lodestone patch notes; the game files have none, [math.md, section 1](../mechanics/math.md#1-terms)). The synced level and the equip level filter stop there, and gear above it is left out of the gear list and the search.
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
@@ -202,10 +202,10 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
 | Debounced effect, number-field binding, cell formatting | `src/ui/helpers.js` (`debouncedEffect`, `storeNumberField`, `statCell`) |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
-| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
+| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`), `src/styles.css` |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |

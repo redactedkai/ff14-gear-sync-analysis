@@ -1349,8 +1349,8 @@ async function checkTiers(pg) {
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
   await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
   await setNumber(pg, '#t-table [data-n="spd"]', '624');
-  await expect(pg.locator('#t-table tbody tr.cur td[data-to^="spd:"]').first()).toHaveText('613');
-  await expect(pg.locator('#t-table tbody tr.cur td[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
+  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').first()).toHaveText('613');
+  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
 
   // the optimizer's result fills the boxes only from the Fill chip (owner, 2026-10-18): its Total row, substat by
   // substat. The panel of the last result shows at once, so wait for a solve for these settings
@@ -1450,9 +1450,10 @@ const walkJob = job => async pg => {
   await checkSyncCaps(pg, job);
   await showMath(pg, 'gcd');
   await expect(pg.locator('#g-chart svg')).toBeVisible();
+  await expect(pg.locator('#g-table tbody tr')).toHaveCount(13);
   await checkNoBadText(pg, `${job}/math:gcd`);
   await showMath(pg, 'tiers');
-  await expect(pg.locator('#t-table tbody tr.cur')).toBeVisible();
+  await expect(pg.locator('#t-table tbody td.cur').first()).toBeVisible();
   await checkNoBadText(pg, `${job}/math:tiers`);
   check(!(await hasHScroll(pg)), `${job}: horizontal page scroll at ${NARROW.width} px`);
   if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
@@ -1470,6 +1471,62 @@ async function checkDefaults(pg) {
   check(await pg.locator('#cap').isDisabled(), 'the cap field is enabled while sync is off');
   await expect(pg.locator('#no-job')).toBeVisible(); // no job yet: no gear table
   await checkCapValidation(pg);
+}
+
+/** How the math works, GCD: its own level (the synced level until one is typed), haste and speed. The level box waits
+ * for typing to stop and corrects a level out of range with a note; the speed box holds a typed speed to the level's
+ * range once typing stops; a row or a bar clicked sets the speed or the level; a haste marks its levels; Piece stats'
+ * controls stay off the tab, and the step table never has empty rows. */
+async function checkGcdTab(pg) {
+  await setNumber(pg, '#level', '50'); // the step before leaves another level
+  await showMath(pg, 'gcd');
+  await expect(pg.locator('#p-slot')).toBeHidden();
+  await expect(pg.locator('#p-range')).toBeHidden();
+  await expect(pg.locator('#g-level')).toHaveValue('50');
+  // the base: 341 at level 50, its step first in the table, no empty rows
+  await expect(pg.locator('#g-speed')).toHaveValue('341');
+  await expect(pg.locator('#g-table tbody tr')).toHaveCount(13);
+  check((await pg.locator('#g-table tbody tr').first().getAttribute('class'))?.includes('cur'), 'at the base the base step is not first');
+  // the speed box waits for typing to stop, then holds the speed to the range ("1" is the base only afterwards)
+  await pg.focus('#g-speed');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('753');
+  await expect(pg.locator('#g-facts')).toContainText('2.10s');
+  await expect(pg.locator('#g-facts')).toContainText('more to reach 2.09s');
+  await expect(pg.locator('#g-table tbody tr.cur')).toHaveText(/753\s*2\.10s\s*−15\.7%/);
+  check(
+    (await pg.locator('#g-table tbody tr').nth(6).getAttribute('class'))?.includes('cur'),
+    'the step of the speed is not in the middle row',
+  );
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('1');
+  check((await pg.inputValue('#g-speed')) === '1', 'the speed box changed while typing');
+  await expect(pg.locator('#g-speed')).toHaveValue('341');
+  await setNumber(pg, '#g-speed', '5000');
+  await expect(pg.locator('#g-speed')).toHaveValue('800');
+  await expect(pg.locator('#g-most')).toHaveText('800, any job and sync');
+  // a row sets the speed; the steps past the most are greyed out and do nothing
+  await pg.locator('#g-table tbody tr:not(.out)').nth(2).click();
+  check((await pg.inputValue('#g-speed')) !== '800', 'a row click did not set the speed');
+  await pg.click('#g-reset');
+  await expect(pg.locator('#g-speed')).toHaveValue('341');
+  // the level box: a level out of range is corrected with a note once typing stops; a bar sets the level
+  await pg.focus('#g-level');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('150');
+  await expect(pg.locator('#g-level')).toHaveValue('100');
+  await expect(pg.locator('#g-level-note')).toHaveText('Lowered to 100, the highest level.');
+  await expect(pg.locator('#g-speed')).toHaveValue('420');
+  await pg.locator('#g-chart [data-level="78"]').click();
+  await expect(pg.locator('#g-level')).toHaveValue('78');
+  // a haste: its levels marked on the chart, its percent among the facts
+  await pg.selectOption('#g-haste', 'SAM');
+  await expect(pg.locator('#g-chart .hasteline')).toHaveCount(2);
+  await expect(pg.locator('#g-facts')).toContainText('haste (Fuka)');
+  await checkNoBadText(pg, 'math:gcd');
+  await pg.selectOption('#g-haste', '');
+  await setNumber(pg, '#g-level', '');
+  await expect(pg.locator('#g-level')).toHaveValue('50');
 }
 
 // The steps, in groups. A group runs its steps one after the other on a fresh page (own browser context, so own saved
@@ -1493,7 +1550,7 @@ const GROUPS = [
   { slow: true, steps: [step(checkCorruptedStorage)] },
   { slow: true, steps: [step(checkLevelSync), step(checkJobLevelCap)] },
   { slow: true, steps: [step(checkSameResult)] },
-  { slow: true, steps: [step(checkTiers)] },
+  { slow: true, steps: [step(checkTiers), step(checkGcdTab)] },
   { steps: ['SGE', 'WAR', 'PLD'].map(walk) },
   { steps: ['BLM', 'NIN', 'DRG'].map(walk) },
   { steps: ['BST', 'BLU'].map(walk) },

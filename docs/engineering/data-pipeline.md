@@ -98,6 +98,12 @@ For the current data that is about 7 MB of git data and 20 MB of CSV files on di
 - **Completeness.** The step fails if any of the twenty files is missing afterwards.
 - **Adding a sheet.** A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run. To add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
 
+### The most speed per level
+
+The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.mjs` works it out with the optimizer (JavaScript, so `regen.py` runs it with Node after the item and food tables) and writes `src/data/max-speed.json`, one number per level.
+
+For each job, at each level up to its cap, the most gear speed is the best of three searches with melds: gear made for the level without sync, every piece level synced, and every piece at the highest item level cap the level allows (`capCeiling`, from level 15: below that the cap case comes only from Ala Mhigan Earrings, equip level 1 and item level 50, and no duty syncs that low). The HQ meal that adds the most speed goes on top. Jobs that wear the same pieces give the same answer, so each group is searched once. It takes about two minutes. Level 50, for example: 341 base + 387 gear (level 100 gear synced to the 135 cap) + 72 food = 800.
+
 ### Job icons
 
 The job picker shows the game's framed, role-coloured job icons. The CSVs hold no images, so the fetch step downloads them from xivapi's asset endpoint, which converts the game's own icon textures to PNG, into `data/icons/<JOB>.png` (gitignored).
@@ -631,10 +637,11 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
 | Food table generator; which meals, `food` in the format file | `scripts/data/gen_food.py`, `src/core/item-format.json` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |
+| Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
 | Source commit detection and the generated-file notice | `scripts/data/provenance.py` |
 | Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
-| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js` |
+| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/max-speed.json` |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |

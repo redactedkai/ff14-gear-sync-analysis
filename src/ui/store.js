@@ -15,6 +15,10 @@ export function createAppStore(initial) {
     // the optimizer's last result as the character panel shows its substats, with the settings it was solved for:
     // {key: optimizerKey, values: {stat: value}}, or null. Not saved; set by the optimizer component, read by Tiers
     optPanel: null,
+    // How the math works, GCD: its own settings, not saved (views/gcd.js). level: a level typed into its box, or null
+    // to follow the synced level; haste: a HASTE job id, or '' for none; speed: the total speed asked for, or null for
+    // the level's base (the view holds it to the level's range)
+    gcd: { level: null, haste: '', speed: null },
 
     /* Switching to a different job resets the job-specific selections (resetForJob). */
     setJob(id) {

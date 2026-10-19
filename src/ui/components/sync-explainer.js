@@ -1,4 +1,4 @@
-/* How the math works: what sync does to one piece and to a full set's GCD (views/sync-explainer.js), the step-by-step
+/* How the math works: what sync does to one piece (views/sync-explainer.js), the step-by-step
    table for the same piece (views/piece.js), and the "How sync works" popup. */
 import Alpine from 'alpinejs';
 import { explainerItemLevel, explainerView } from '../views/sync-explainer.js';
@@ -12,14 +12,13 @@ export function syncExplainer() {
     il: 1,
     rangeNote: '',
     helpOpen: false,
-    // the charts' container widths (px): each chart is drawn at its own width, so its text keeps the page's size
-    widths: { piece: 0, gcd: 0 },
+    // the chart's container width (px): the chart is drawn at its own width, so its text keeps the page's size
+    widths: { piece: 0 },
     init() {
       const observer = new ResizeObserver(entries => {
         for (const e of entries) {
-          const key = e.target.id === 'g-chart' ? 'gcd' : 'piece';
           const w = Math.round(e.contentRect.width);
-          if (w && w !== this.widths[key]) this.widths[key] = w;
+          if (w && w !== this.widths.piece) this.widths.piece = w;
         }
       });
       Alpine.effect(() => {
@@ -28,11 +27,11 @@ export function syncExplainer() {
         this.range = pick.range;
         this.il = pick.il;
         this.rangeNote = pick.note;
-        this.view = explainerView(app, { piece: this.widths.piece, gcd: this.widths.gcd });
+        this.view = explainerView(app, { piece: this.widths.piece });
         this.calc = pieceView(app, pick.il);
         // the chart boxes exist only while a view is shown: watch whichever are there after this render
         this.$nextTick(() =>
-          this.$root.querySelectorAll('.chartbox').forEach(el => {
+          this.$root.querySelectorAll('#tab-piece .chartbox').forEach(el => {
             observer.observe(el);
           }),
         );

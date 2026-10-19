@@ -1,5 +1,5 @@
 /* How the math works, Substat tiers: every substat of the job as a column group of tiers (a ladder), each around its value, the
-   value's tier on the middle row (core/tiers.js tierLadder). Values are character panel numbers (base + gear, and food
+   value's tier on the middle row unless it is near the base or the last tier (core/tiers.js tierLadder). Values are character panel numbers (base + gear, and food
    when the optimizer result counts it). The tiers follow the job and the sub-tab's own level (the synced level until
    the user types another); item level sync does not change them. The view object is built here; the template only
    shows it. */
@@ -79,8 +79,10 @@ function helpOf(job, stat, level, haste) {
    tiers), or null with no job. Shape, in the table's order:
    - title (before the level box), level; cols: [{first}] one per table column after the row labels (first: a substat's From column);
    - groups: one per substat {stat, label, span (its columns), value, lines (header effect lines), note, help};
-   - names: [{text, first}] the column names; rows: [{label, cur, cells: [{text, first, eff, mark, to, title}]}], cells
-     empty ({text: ''}) where a substat has no tier; to: 'stat:start' to set the value by a click;
+   - names: [{text, first}] the column names; rows: [{cells: [{text, first, eff, mark, cur, to, title}]}], cells empty
+     ({text: ''}) where a substat has fewer tiers; cur: the cell is in its substat's current tier (each substat's sits
+     in the middle row unless its value is near the base or the last tier: tierLadder); to: 'stat:start' to set the
+     value by a click;
    - foot: [{span, spare, toNext}]; haste: "Greased Lightning (20% haste)" or ''. */
 export function tiersView(app, values, notes, more, level = app.level) {
   if (!app.job) return null;
@@ -100,7 +102,7 @@ export function tiersView(app, values, notes, more, level = app.level) {
     label: job.label[stat],
     span: 1 + ladder.kinds.length,
     value,
-    lines: ladder.kinds.map((kind, k) => `${ladder.rows[near].values[k]} ${lineWord(kind)}`),
+    lines: ladder.kinds.map((kind, k) => `${ladder.rows[ladder.cur].values[k]} ${lineWord(kind)}`),
     note: notes[stat] || '',
     help: helpOf(job, stat, level, haste?.pct ?? 0),
   }));
@@ -110,22 +112,22 @@ export function tiersView(app, values, notes, more, level = app.level) {
     ...ladder.kinds.map(kind => ({ text: COLUMN[kind], first: false })),
   ]);
 
-  // 3. one row per offset from the values' tiers; with two effects, the one that changes at a tier is marked
+  // 3. one row per tier of each substat's window; with two effects, the one that changes at a tier is marked
   const rows = [];
   for (let i = 0; i < 2 * near + 1; i++) {
-    const off = i - near;
     const cells = ladders.flatMap(({ stat, ladder }) => {
       const t = ladder.rows[i];
       if (!t) return [{ text: '', first: true }, ...ladder.kinds.map(() => ({ text: '', first: false }))];
       const to = `${stat}:${t.start}`,
         title = `Set ${job.label[stat]} to ${t.start}`;
-      const some = ladder.kinds.length > 1 && !t.changed.every(Boolean);
+      const some = ladder.kinds.length > 1 && !t.changed.every(Boolean),
+        cur = i === ladder.cur;
       return [
-        { text: fmtInt(t.start), first: true, eff: false, mark: false, to, title },
-        ...t.values.map((text, k) => ({ text, first: false, eff: true, mark: some && t.changed[k], to, title })),
+        { text: fmtInt(t.start), first: true, eff: false, mark: false, cur, to, title },
+        ...t.values.map((text, k) => ({ text, first: false, eff: true, mark: some && t.changed[k], cur, to, title })),
       ];
     });
-    rows.push({ label: off === 0 ? 'Current' : `${off < 0 ? '−' : '+'}${Math.abs(off)}`, cur: off === 0, cells });
+    rows.push({ cells });
   }
 
   // 4. the footer: spare and to next per substat

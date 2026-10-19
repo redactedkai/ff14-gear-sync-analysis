@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json and src/data/job-icons.js from what
-fetch.py saved in data/, then rebuild dist/."""
+"""Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json, src/data/job-icons.js and
+src/data/max-speed.json from what fetch.py saved in data/, then rebuild dist/."""
 
 import subprocess
 import sys
@@ -26,6 +26,8 @@ STEPS = [
     ('Generating the item database', [py, str(DATA / 'gen_items.py'), str(CSV), str(OUT / 'items.json'), *prov]),
     ('Generating the food table', [py, str(DATA / 'gen_food.py'), str(CSV), str(OUT / 'food.json'), *prov]),
     ('Generating the job icons', [py, str(DATA / 'gen_job_icons.py')]),
+    # the most speed per level comes from the optimizer (JavaScript), over the item and food tables made above
+    ('Generating the most speed per level', ['node', str(DATA / 'gen_max_speed.mjs'), str(OUT / 'max-speed.json')]),
     ('Building the page', ['node', str(ROOT / 'scripts' / 'build' / 'build.mjs')]),
 ]
 

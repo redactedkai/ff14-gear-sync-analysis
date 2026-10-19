@@ -46,7 +46,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | sync-cap-order | rounding order of sync caps |
 | caps-real-items | caps at 123 from real pieces, the 296 maximum |
 | level-sync | level sync, its triggers, the optimizer under it |
-| speed | GCD tiers, DoT scalars, haste, tier lookup |
+| speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
 | same-result | other pieces with the same result (A9): shared spare points, Unique rings, cloaks, the owner's level 50 case |
 | tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
 | food | food bonus, meal choices, best meal |
@@ -64,8 +64,9 @@ Which file tests what? One line per file; the file itself says the rest.
 | regain | regain cuts from a proven maximum against the brute force |
 | tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 360 more random cases |
 | views | what each tab shows |
-| sync-explainer-view | How the math works: a piece and a full set against the melded cap, the item level range, melds from the Goal, the special substat caps |
-| tiers-view | Substat tiers: the ladder's columns, rows and wording; the optimizer result offered to Fill only for the same settings, never filled on its own; typed values; the sub-tab's own level |
+| sync-explainer-view | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
+| gcd-view | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
+| tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; the optimizer result offered to Fill only for the same settings, never filled on its own; typed values; the sub-tab's own level |
 | piece-subs | Piece stats substat ranks |
 | data-format | generated data shape |
 | provenance | source record and footer |

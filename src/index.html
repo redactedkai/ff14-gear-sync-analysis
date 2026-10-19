@@ -71,17 +71,17 @@
       <template x-for="o in slotOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.slot"></option></template>
     </select>
   </label>
-  <label class="mctl" x-show="$store.app.mathTab !== 'tiers'">1st substat
+  <label class="mctl" x-show="$store.app.mathTab === 'piece'">1st substat
     <select id="p-s1" @change="setSub(0, $event.target.value)">
       <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.subs[0]"></option></template>
     </select>
   </label>
-  <label class="mctl" x-show="$store.app.mathTab !== 'tiers'">2nd substat
+  <label class="mctl" x-show="$store.app.mathTab === 'piece'">2nd substat
     <select id="p-s2" @change="setSub(1, $event.target.value)">
       <template x-for="o in substat2Options" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
     </select>
   </label>
-  <div class="helpwrap" x-show="$store.app.mathTab !== 'tiers'">
+  <div class="helpwrap" x-show="$store.app.mathTab === 'piece'">
     <button type="button" class="help" id="m-help" :aria-expanded="String(helpOpen)" aria-controls="m-help-pop" title="How sync works" @click.stop="helpOpen = !helpOpen">?</button>
     <div class="backdrop" x-show="helpOpen" @click="helpOpen = false"></div>
     <div class="popover" id="m-help-pop" role="dialog" aria-label="How sync works" x-show="helpOpen" @click.outside="helpOpen = false">
@@ -100,7 +100,7 @@
       <p class="small dim">Sources: FFXIV Wiki, <a href="https://ffxiv.consolegameswiki.com/wiki/Item_Level" target="_blank" rel="noopener">Item Level</a> and <a href="https://ffxiv.consolegameswiki.com/wiki/Level_Sync" target="_blank" rel="noopener">Level Sync</a>; game data from <a href="https://github.com/xivapi/ffxiv-datamining" target="_blank" rel="noopener">ffxiv-datamining</a>.</p>
     </div>
   </div>
-  <div class="ilctl small" x-show="$store.app.mathTab !== 'tiers'">
+  <div class="ilctl small" x-show="$store.app.mathTab === 'piece'">
     <label for="p-range">Gear item level</label>
     <span class="bound" x-text="range[0]" :title="rangeNote"></span>
     <input type="range" id="p-range" :min="range[0]" :max="range[1]" step="1" :value="il" :style="`--fill: ${rangeFill}%`" :title="rangeNote" @input="setIlvl($event.target.value)">
@@ -108,12 +108,33 @@
     <input type="number" id="p-ilvl" :min="range[0]" :max="range[1]" step="1" inputmode="numeric" :value="il" aria-label="Gear item level" @change="setIlvl($event.target.value)">
     <button type="button" class="chip" id="p-ilvl-reset" @click="resetIlvl()">Reset</button>
   </div>
+  <!-- GCD: its own level, haste and speed ($store.app.gcd), whatever the job and sync -->
+  <template x-if="$store.app.mathTab === 'gcd'"><div style="display:contents" x-data="gcdControls">
+  <label class="mctl">Level
+    <input type="number" id="g-level" class="tlevel" min="1" max="100" step="1" inputmode="numeric" :value="level" aria-label="Level of the GCD tab" :class="{ lowered: !!levelNote, invalid: !!levelError }" aria-describedby="g-level-note" @input="typeLevel($el)" @change="typeLevel($el, true)">
+    <span class="f-range">1–100</span>
+    <span class="field-note lowered" id="g-level-note" x-show="levelNote || levelError" :class="{ 'field-error': !!levelError }" x-text="levelError || levelNote" aria-live="polite"></span>
+  </label>
+  <label class="mctl">Haste
+    <select id="g-haste" @change="$store.app.gcd.haste = $event.target.value">
+      <template x-for="o in hasteOptions" :key="o.value"><option :value="o.value" x-text="o.label" :selected="o.value === $store.app.gcd.haste"></option></template>
+    </select>
+  </label>
+  <div class="ilctl small">
+    <label for="g-range">Speed (base + gear + food)</label>
+    <span class="bound" x-text="range.base"></span>
+    <input type="range" id="g-range" :min="range.base" :max="range.most" step="1" :value="speed" :style="`--fill: ${fill}%`" :title="`From the base at level ${level} to the most any job and sync can have there: the best gear with melds, and the best HQ meal`" @input="slide($event.target.value)">
+    <span class="bound" id="g-most" x-text="`${range.most}, any job and sync`"></span>
+    <input type="number" id="g-speed" :min="range.base" :max="range.most" step="1" inputmode="numeric" :value="speed" aria-label="Speed (base + gear + food)" @input="typeSpeed($el)" @change="typeSpeed($el, true)">
+    <button type="button" class="chip" id="g-reset" @click="resetSpeed()">Reset</button>
+  </div>
+  </div></template>
   <template x-if="$store.app.mathTab === 'tiers'"><div style="display:contents">
   <button type="button" class="chip" id="t-fill" :disabled="!tierFillReady" :title="tierFillReady ? 'The optimizer result as the character panel shows it' : 'No optimizer result for these settings: press Optimize on the Gear optimizer tab'" @click="$dispatch('tier-fill')">Fill from the optimizer result</button>
   </div></template>
 </div>
 
-<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab !== 'tiers'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
+<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab === 'piece'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
 
 <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
 <section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
@@ -202,33 +223,23 @@
 </details>
 </section>
 
-<!-- GCD: a full set at the chosen item level against the same set at the cap -->
-<section class="subtab" id="tab-gcd" hidden :hidden="$store.app.mathTab !== 'gcd'">
-<template x-if="view"><div>
-  <p class="panel small" id="g-none" x-show="!view.gcd" x-text="`The GCD needs ${view.spdLabel} as one of the two substats. Pick it in the 1st or 2nd substat menu above.`"></p>
-  <template x-if="view.gcd"><div class="twopanel">
-    <div class="panel" id="g-sets">
-      <h2>Full set: two item levels compared</h2>
-      <p class="small" x-text="`A full set (every slot, ${view.spdLabel} on every piece as one of the two substats) in a duty synced to ${view.cap}. At or below ${view.cap} each piece keeps its melds.`"></p>
-      <div class="tablewrap"><table class="compact" id="g-table">
-        <thead><tr><th>Set item level</th><th class="n" x-text="view.spdLabel"></th><th class="n">GCD</th><th class="n">Past last step</th><th class="n">To next step</th></tr></thead>
-        <tbody><template x-for="r in view.gcd.rows" :key="r.il"><tr><td><span x-text="r.il"></span> <span class="dim" x-show="r.tag" x-text="`(${r.tag})`"></span></td><td class="n" x-text="r.spd"></td><td class="n" x-text="r.gcd.toFixed(2) + 's'"></td><td class="n" x-text="r.past"></td><td class="n" x-text="r.next ?? '–'"></td></tr></template></tbody>
-      </table></div>
-      <p class="small dim" x-text="`The GCD changes in 0.01 s steps. Points past the last step don’t shorten it until the next step (they still add a little DoT and auto-attack damage).${view.gcd.haste ? ` Includes ${view.gcd.haste}.` : ''}`"></p>
-      <div class="versus" id="g-vs" x-show="view.gcd.verdict"><b x-text="view.gcd.verdict"></b></div>
-    </div>
-    <div class="panel" id="g-curve">
-      <h2>Full set GCD by item level</h2>
-      <p class="small" x-text="view.gcd.step != null ? `The set’s GCD by its item level. At level ${view.level}, one GCD step (0.01 s) is about ${view.gcd.step} ${view.spdLabel}.` : `The set’s GCD by its item level.`"></p>
-      <div class="legend">
-        <span><i style="background:var(--accent);height:2px"></i>Set at each item level</span>
-          <span><i class="dash"></i><span x-text="`Synced item level ${view.cap}`"></span></span>
-          <span><i style="background:var(--fg);opacity:.12"></i>Shorter GCD than the melded set</span>
-      </div>
-      <div class="chartbox" id="g-chart" x-ref="gcdChart" x-html="view.gcd.chartSvg"></div>
-    </div>
-  </div></template>
-</div></template>
+<!-- GCD: how speed becomes the GCD at a level, on its own settings (views/gcd.js) -->
+<section class="subtab" id="tab-gcd" hidden :hidden="$store.app.mathTab !== 'gcd'" x-data="gcdTab">
+<div class="gcdgrid">
+  <div class="panel" id="g-facts"><div class="gfacts"><template x-for="f in view.facts" :key="f.label"><div><b x-text="f.value"></b><span x-text="f.label"></span></div></template></div></div>
+  <div class="panel" id="g-curve">
+    <h2>Speed per 0.01 s, by level</h2>
+    <p class="small dim">How much speed it takes to shorten the GCD by 0.01 s at each level. Click a bar to see that level.</p>
+    <div class="chartbox" id="g-chart" x-ref="chart" x-html="view.chartSvg" @click="pickLevel($event)"></div>
+  </div>
+  <div class="panel" id="g-steps">
+    <h2>GCD steps</h2>
+    <table class="compact gsteps" id="g-table">
+      <thead><tr><th class="n">Speed</th><th class="n">GCD</th><th class="n" title="How much speed (and haste) cut every cast and recast time, before rounding">Reduction</th></tr></thead>
+      <tbody><template x-for="r in view.steps" :key="r.speed"><tr :class="{ cur: r.cur, out: r.out }" :title="r.out ? 'More than any job can have at this level' : `Use ${r.speed} speed`" @click="pickSpeed(r)"><td class="n" x-text="r.speed"></td><td class="n" x-text="r.gcd"></td><td class="n" x-text="r.cut"></td></tr></template></tbody>
+    </table>
+  </div>
+</div>
 </section>
 
 <!-- TIERS: every substat's tiers around its value (a ladder); not about sync, so it shows whatever the sync settings -->
@@ -237,9 +248,9 @@
   <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" x-bind="levelField" aria-label="Level of the tiers"><span class="f-range" id="t-level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span><span style="flex:1"></span>
     <span class="subtabs small"><button type="button" id="t-more" :aria-pressed="String(more)" @click="more = !more">More tiers</button></span></div>
   <div class="tablewrap"><table class="compact ladder" id="t-table">
-    <colgroup><col class="lrowcol"><template x-for="(c, k) in view.cols" :key="k"><col :class="c.first ? 'gfirst' : ''"></template></colgroup>
+    <colgroup><template x-for="(c, k) in view.cols" :key="k"><col :class="c.first ? 'gfirst' : ''"></template></colgroup>
     <thead>
-      <tr><th rowspan="2"></th><template x-for="g in view.groups" :key="g.stat">
+      <tr><template x-for="g in view.groups" :key="g.stat">
         <th class="n gfirst" :colspan="g.span" :data-stat="g.stat">
           <div class="lname"><span x-text="g.label"></span> <button type="button" class="help shelp" :data-help="g.stat" :aria-expanded="String(helpFor === g.stat)" aria-controls="t-pop" :title="`About ${g.label}`" @click.stop="toggleHelp(g.stat, $el)">?</button></div>
           <input type="number" min="0" step="1" inputmode="numeric" :data-n="g.stat" :value="g.value" :aria-label="`${g.label} on the character panel`" @change="type(g.stat, $el)">
@@ -249,11 +260,10 @@
       </template></tr>
       <tr class="lcols"><template x-for="(n, k) in view.names" :key="k"><th class="n" :class="{ gfirst: n.first }" x-text="n.text"></th></template></tr>
     </thead>
-    <tbody><template x-for="r in view.rows" :key="r.label"><tr :class="{ cur: r.cur }">
-      <td class="lrow" x-text="r.label"></td>
-      <template x-for="(c, k) in r.cells" :key="k"><td class="n" :class="{ gfirst: c.first, eff: c.eff, chg2: c.mark, hov: c.to && hover === c.to }" :data-to="c.to" :title="c.title" x-text="c.text" @click="c.to && pick(c.to)" @mouseenter="hover = c.to || ''" @mouseleave="hover = ''"></td></template>
+    <tbody><template x-for="(r, i) in view.rows" :key="i"><tr>
+      <template x-for="(c, k) in r.cells" :key="k"><td class="n" :class="{ gfirst: c.first, eff: c.eff, chg2: c.mark, cur: c.cur, hov: c.to && hover === c.to }" :data-to="c.to" :title="c.title" x-text="c.text" @click="c.to && pick(c.to)" @mouseenter="hover = c.to || ''" @mouseleave="hover = ''"></td></template>
     </tr></template></tbody>
-    <tfoot><tr><td class="lrow"></td><template x-for="(f, k) in view.foot" :key="k"><td class="n small lfoot gfirst" :colspan="f.span"><span><b x-text="f.spare"></b> spare</span><span x-show="f.toNext != null"><b x-text="`+${f.toNext}`"></b> to next</span><span x-show="f.toNext == null">last tier</span></td></template></tr></tfoot>
+    <tfoot><tr><template x-for="(f, k) in view.foot" :key="k"><td class="n small lfoot gfirst" :colspan="f.span"><span><b x-text="f.spare"></b> spare</span><span x-show="f.toNext != null"><b x-text="`+${f.toNext}`"></b> to next</span><span x-show="f.toNext == null">last tier</span></td></template></tr></tfoot>
   </table></div>
   <p class="small dim" id="t-note" x-show="view.haste" x-text="`The GCD includes ${view.haste}.`"></p>
   <div class="popover statpop" id="t-pop" x-ref="pop" role="dialog" :aria-label="help ? `About ${help.title}` : 'About this substat'" x-show="help" :style="`top:${helpAt.top}px;left:${helpAt.left}px`">

@@ -9,6 +9,7 @@ import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';
 import { optimizer } from './ui/components/optimizer.js';
 import { tierTable } from './ui/components/tiers.js';
+import { gcdControls, gcdTab } from './ui/components/gcd.js';
 
 const SAVE_DEBOUNCE_MS = 150;
 
@@ -20,7 +21,7 @@ const app = Alpine.store('app');
    argument {live: true} commits each valid value as typed (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-Object.entries({ page, settings, syncExplainer, gear, optimizer, tierTable }).forEach(([name, factory]) => {
+Object.entries({ page, settings, syncExplainer, gear, optimizer, tierTable, gcdTab, gcdControls }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });
 

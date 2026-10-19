@@ -35,18 +35,26 @@ export function hasteFor(jobId, level) {
   return step ? { name: haste.name, pct: step[1], level: step[0], source: step[2] } : null;
 }
 
+/* The recast multiplier in per mille for `gearSpd` speed above the level's base: 1000 minus 130 per `div` points (the
+   part step rounds toward 1000, so it gives nothing), never below 0. Every cast and recast time is multiplied by it. */
+function speedModifier(gearSpd, level) {
+  const { div } = speedParams(level);
+  return Math.max(0, 1000 - Math.floor((130 * gearSpd) / div));
+}
+
+/* What `gearSpd` speed above the base and `haste` (percent) multiply every cast and recast time by, before the result
+   is rounded down to 0.01 s: e.g. 0.843 for a 15.7% cut (How the math works, GCD: "cast and recast times"). */
+export function recastMult(gearSpd, level, haste = 0) {
+  return (speedModifier(gearSpd, level) / 1000) * ((100 - haste) / 100);
+}
+
 /* GCD in seconds for `gearSpd` speed from gear (the base `sub` is added here), base recast in ms, `haste` in percent.
    The haste comes after the speed step is rounded down, then the result is rounded down again (xivgear's formula,
    xivmath.ts; with no haste it is AkhMorning's). The speed multiplier is at least 0 and the result at least 1.50 s
    (GCD_FLOOR_MS: the game client's floor, second-hand; xivgear and AkhMorning have none). */
 export function gcdFor(gearSpd, level, baseMs, haste = 0) {
-  const { sub, div } = speedParams(level);
   baseMs = baseMs || BASE_GCD_MS;
-  const speed = sub + gearSpd;
-  // the recast multiplier in per mille: 1000 minus 130 per `div` points of speed above the base (Math.ceil of the
-  // negative term rounds toward 1000, so a part step gives nothing), never below 0
-  const speedMod = Math.max(0, 1000 + Math.ceil((130 * (sub - speed)) / div));
-  const recastMs = Math.floor((baseMs * speedMod) / 1000);
+  const recastMs = Math.floor((baseMs * speedModifier(gearSpd, level)) / 1000);
   // haste in percent, then down to hundredths of a second (ms x (100 - haste) / 100 / 10, floored), no shorter than the
   // floor (GCD_FLOOR_MS / 10 in hundredths); / 100 gives seconds
   return Math.max(GCD_FLOOR_MS / 10, Math.floor((recastMs * (100 - haste)) / 1000)) / 100;

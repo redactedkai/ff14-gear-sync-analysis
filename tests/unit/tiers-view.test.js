@@ -41,7 +41,7 @@ test('Sage: a column group per substat, From and one column per effect, in the c
   assert.equal(v.haste, '');
 });
 
-test('rows: the same count for every value, the current tier in the middle; empty cells keep the columns', () => {
+test('rows: the same count for every value, each current tier in the middle unless near its base', () => {
   const a = app('SGE');
   for (const [more, near] of [
     [false, TIER_NEAR],
@@ -49,16 +49,16 @@ test('rows: the same count for every value, the current tier in the middle; empt
   ]) {
     const v = tiersView(a, { crit: 3022 }, {}, more);
     assert.equal(v.rows.length, 2 * near + 1);
-    assert.equal(v.rows[near].label, 'Current');
-    assert.ok(v.rows[near].cur);
-    assert.equal(v.rows[0].label, `−${near}`);
-    // every row has a cell per column, at the base too (Direct Hit has no tiers below it)
+    assert.ok(v.rows[near].cells[0].cur, 'Critical Hit, far above its base: the middle row');
+    // every row has a cell per column, and no empty ones at the base (Direct Hit's rows run on above it)
     for (const r of v.rows) assert.equal(r.cells.length, v.names.length);
+    assert.ok(v.rows.every(r => r.cells.every(c => c.text !== '')));
   }
   const v = tiersView(a, { crit: 3022 }, {}, false);
   const dhFrom = v.names.findIndex((n, i) => n.text === 'From' && v.names[i + 1].text === 'Rate' && i > 2);
-  assert.equal(v.rows[0].cells[dhFrom].text, '');
-  assert.equal(v.rows[TIER_NEAR].cells[dhFrom].text, '420');
+  assert.equal(v.rows[0].cells[dhFrom].text, '420');
+  assert.ok(v.rows[0].cells[dhFrom].cur);
+  assert.ok(!v.rows[TIER_NEAR].cells[dhFrom].cur);
   // a click on any cell of a tier sets the value to the tier's start
   assert.equal(v.rows[TIER_NEAR].cells[0].to, 'crit:3020');
   assert.equal(v.rows[TIER_NEAR].cells[1].to, 'crit:3020');

@@ -114,14 +114,18 @@ test('speed ladder: AkhMorning level 100 tiers on the panel scale (SUB 420)', ()
   assert.deepEqual([l.rows[4].start, l.rows[4].values[0]], [698, '2.46s']);
 });
 
-test('ladder at and under the base: empty rows below, the base tier current', () => {
-  // Direct Hit at level 100: floor(550 g / 2780) steps every 5.05 points, so 420, 426, 431, 436 (g 0, 6, 11, 16)
+test('ladder at and under the base: no empty rows, the base tier first and current', () => {
+  // Direct Hit at level 100: floor(550 g / 2780) steps every 5.05 points, so 420, 426, 431, 436, 441, 446, 451 (g 0, 6,
+  // 11, 16, 21, 26, 31); the rows the base lacks below run on above it (owner, 2026-10-19)
   const l = tierLadder(sge, 'dh', 100, 420, 3);
-  assert.deepEqual(startsOf(l), [null, null, null, 420, 426, 431, 436]);
+  assert.deepEqual(startsOf(l), [420, 426, 431, 436, 441, 446, 451]);
+  assert.equal(l.cur, 0);
   assert.deepEqual([l.spare, l.toNext, l.under], [0, 6, false]);
   const under = tierLadder(sge, 'dh', 100, 100, 3);
   assert.equal(under.under, true);
-  assert.equal(under.rows[3].start, 420);
+  assert.deepEqual([under.rows[0].start, under.cur], [420, 0]);
+  // two tiers up: the window still starts at the base, the value's tier third
+  assert.equal(tierLadder(sge, 'dh', 100, 432, 3).cur, 2);
 });
 
 test('Critical Hit has two values per tier, rate and what a critical hit adds (rate + 35%)', () => {
@@ -144,11 +148,12 @@ test('Tenacity: a tier ends where either effect steps, and says which one did', 
   assert.deepEqual([l.rows[0].start, l.rows[0].changed], [1612, [true, false]]);
 });
 
-test('the last GCD step has no next tier', () => {
+test('the last GCD step has no next tier: the rows run on below it, the last one current', () => {
   const l = tierLadder(sge, 'spd', 100, 99999, 2);
-  assert.equal(l.rows[2].values[0], '1.50s');
+  assert.equal(l.rows.length, 5);
+  assert.equal(l.cur, 4);
+  assert.equal(l.rows[4].values[0], '1.50s');
   assert.equal(l.toNext, null);
-  assert.deepEqual(l.rows.slice(3), [null, null]);
 });
 
 test('tier sizes: div / step points (AkhMorning: Critical Hit every 13.9 at level 100)', () => {

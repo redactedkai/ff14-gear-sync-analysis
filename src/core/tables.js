@@ -2,6 +2,7 @@
 import ITEM_LEVEL_FILE from '../data/item-level.json' with { type: 'json' };
 import ITEMS_FILE from '../data/items.json' with { type: 'json' };
 import FOOD_FILE from '../data/food.json' with { type: 'json' };
+import MAX_SPEED_FILE from '../data/max-speed.json' with { type: 'json' };
 import { ROW } from './constants.js';
 
 /* {repo, commit, date} of the xivapi/ffxiv-datamining commit the tables were generated from, or null when unknown. */
@@ -25,6 +26,10 @@ export const CURRENT_TOMES = Object.freeze([...(ITEMS_FILE.currentTomes ?? [])])
 /* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...], [Vitality HQ
    percent, HQ max] or null] (food.js). */
 export const FOODS = FOOD_FILE.foods;
+/* MAX_SPEED: the most total speed (base + gear + food) any job can have at each level, [level 1, ..., level 100]: the
+   top of How the math works, GCD's speed slider (scripts/data/gen_max_speed.mjs: the best gear with melds, at any sync,
+   and the best HQ meal). */
+export const MAX_SPEED = Object.freeze([...MAX_SPEED_FILE.total]);
 /* MATERIA: the materia table, one entry per grade I to XII. values: what a grade adds to a combat substat; gate: the
    lowest gear item level that takes it; high: the grades (1-based) that cannot go past the first overmeld slot. */
 export const MATERIA = Object.freeze({

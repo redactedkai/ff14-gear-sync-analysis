@@ -1,6 +1,7 @@
-/* The sync explainer's two charts, as SVG markup built only from numbers (safe for x-html):
-   - overgearChartSvg: one piece's substat points in the duty by its item level, with the piece at the cap (melded);
-   - gcdChartSvg: a full set's GCD by its item level, with the set at the cap.
+/* How the math works' charts, as SVG markup built only from numbers (safe for x-html):
+   - overgearChartSvg (Piece stats): one piece's substat points in the duty by its item level, with the piece at the
+     cap (melded);
+   - speedStepChartSvg (GCD): the speed one 0.01 s GCD step takes at each level, with a haste's levels.
    Each is drawn at its container's width (`width`, px), so its text stays at the page's size. */
 
 const DEFAULT_WIDTH = 760;
@@ -105,44 +106,38 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], c
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Substat points in the duty by item level, by substat and melds">${g}</svg>`;
 }
 
-/* curve: [{il, gcd}] (seconds) in item level order; ref: the set at the cap's GCD. A longer GCD sits lower, so losing
-   the melds is a drop, as in overgearChartSvg. */
-export function gcdChartSvg({ curve, cap, il, ref, width }) {
-  if (!curve.length) return '';
+/* bars: [{level, speed}] for levels 1 to 100 in order (speed: points per 0.01 s step there); level: the bar to
+   highlight and label; marks: [{level, pct}], a dotted line where a haste starts or grows. A click on a bar is read from
+   its data-level. */
+export function speedStepChartSvg({ bars, level, marks: hasteMarks = [], width }) {
+  if (!bars.length) return '';
   const W = Math.max(MIN_WIDTH, Math.round(width || DEFAULT_WIDTH)),
-    H = 270,
-    L = 50,
-    R = 16,
-    T = 28,
+    H = 250,
+    L = 40,
+    R = 10,
+    T = 34,
     B = 34;
-  const x0 = curve[0].il,
-    x1 = curve[curve.length - 1].il;
-  const gs = curve.map(p => p.gcd);
-  const g0 = Math.floor(Math.min(ref, ...gs) * 100 - 1) / 100,
-    g1 = Math.ceil(Math.max(ref, ...gs) * 100 + 1) / 100;
-  const X = v => L + ((v - x0) / Math.max(1, x1 - x0)) * (W - L - R),
-    Y = v => T + ((v - g0) / (g1 - g0)) * (H - T - B);
+  const top = Math.max(...bars.map(b => b.speed));
+  const slot = (W - L - R) / bars.length,
+    X = lv => L + (lv - 1) * slot,
+    Y = v => H - B - (v / top) * (H - T - B);
 
   let g = '';
-  // one grid line per 0.01 s step, labelled every few
-  const every = Math.max(1, Math.ceil(((g1 - g0) * 100) / 8));
-  for (let c = Math.round(g0 * 100); c <= Math.round(g1 * 100); c++) {
-    g += `<line x1="${L}" x2="${W - R}" y1="${Y(c / 100)}" y2="${Y(c / 100)}" stroke="var(--line)" opacity="${c % every ? 0.35 : 1}"/>`;
-    if (!(c % every)) g += `<text x="${L - 6}" y="${Y(c / 100) + 4}" text-anchor="end">${(c / 100).toFixed(2)}</text>`;
+  for (const f of [0, 0.5, 1])
+    g += `<line x1="${L}" x2="${W - R}" y1="${Y(top * f)}" y2="${Y(top * f)}" stroke="var(--line)"/><text x="${L - 6}" y="${Y(top * f) + 4}" text-anchor="end">${Math.round(top * f)}</text>`;
+  for (const b of bars)
+    g += `<rect class="stepbar${b.level === level ? ' on' : ''}" data-level="${b.level}" x="${(X(b.level) + 1).toFixed(1)}" y="${Y(b.speed).toFixed(1)}" width="${Math.max(1, slot - 2).toFixed(1)}" height="${Math.max(1, H - B - Y(b.speed)).toFixed(1)}"><title>Level ${b.level}: about ${Math.round(b.speed)} speed per step</title></rect>`;
+  // a dotted line where the haste starts or grows, labelled at the top (on its left side near the right edge)
+  for (const m of hasteMarks) {
+    const x = X(m.level),
+      end = x > W - 90;
+    g += `<line class="hasteline" x1="${x}" x2="${x}" y1="${T - 18}" y2="${H - B}"/><text x="${end ? x - 4 : x + 4}" y="${T - 22}" text-anchor="${end ? 'end' : 'start'}">${m.pct}% at ${m.level}</text>`;
   }
-  g += `<text x="4" y="12">GCD (s)</text>`;
-  g += xAxis(x0, x1, X, H, B, 'Item level of every piece in the set');
-  const more = curve.filter(p => p.il > cap && p.gcd < ref).map(p => p.il);
-  const at = curve.find(p => p.il === il) || curve[curve.length - 1];
-  g += marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY: Y(at.gcd) });
-  g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="2"/><text x="${L + 6}" y="${Y(ref) - 6}" style="fill:var(--gold)">${ref.toFixed(2)}s: item level ${cap} with its melds</text>`;
-  // the GCD moves in steps: a step line
-  const d = curve
-    .map((p, i) => (i ? `H${X(p.il).toFixed(1)}V${Y(p.gcd).toFixed(1)}` : `M${X(p.il).toFixed(1)},${Y(p.gcd).toFixed(1)}`))
-    .join('');
-  g += `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
-  const after = curve.find(p => p.il === cap + 1),
-    before = curve.find(p => p.il === cap);
-  if (after && before && after.gcd > before.gcd) g += `<text class="lbl" x="${X(cap) + 8}" y="${Y(after.gcd) + 16}">↓ melds lost</text>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="GCD of a full set by item level">${g}</svg>`;
+  for (const lv of [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    g += `<text x="${X(lv) + slot / 2}" y="${H - B + 16}" text-anchor="middle">${lv}</text>`;
+  g += `<text x="${(W + L) / 2}" y="${H - 2}" text-anchor="middle">Level</text>`;
+  const at = bars.find(b => b.level === level);
+  if (at)
+    g += `<text class="lbl" x="${Math.min(X(level) + slot + 4, W - 110)}" y="${Math.max(Y(at.speed) - 6, T + 10)}">level ${level}: ~${Math.round(at.speed)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Speed per 0.01 s GCD step by level">${g}</svg>`;
 }
