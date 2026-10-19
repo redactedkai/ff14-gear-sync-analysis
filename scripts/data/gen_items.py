@@ -39,6 +39,7 @@ import provenance
 from gear_sources import flags as gear_flags
 from item_format import (
     N_ITEM_PARAMS,
+    WEAPON_TYPES,
     SchemaError,
     check_bools,
     item_columns,
@@ -47,6 +48,7 @@ from item_format import (
     read_csv,
     row_fields,
     run_main,
+    slot_codes,
     stat_factors,
 )
 
@@ -343,8 +345,7 @@ def main(csv_dir, out, source='detect'):
     fmt = load_format()
     kept, multi_slot, dropped = select(csv_dir)
     n_items = len(kept) + sum(dropped.values())
-    weapon_slots = {s['code'] for s in fmt['slots'] if s['type'] in ('weapon', 'offhand')}
-    cats = gear_categories.categorize(csv_dir, kept, weapon_slots)
+    cats = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES))
     problems = gear_categories.check(kept, cats)
     if problems:
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))

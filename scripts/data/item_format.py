@@ -71,6 +71,27 @@ def item_columns():
     return [*cols, *trailing, fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
 
 
+WEAPON_TYPES = ('weapon', 'offhand')  # slot types of weapons and shields
+ACCESSORY_TYPES = ('ear', 'neck', 'wrist', 'ring')  # slot types of accessories (no dye slots on any of them)
+
+
+def slot_codes(fmt, types):
+    """The slot codes (item-format.json `slots`) whose type is one of `types`, for example slot_codes(fmt,
+    ACCESSORY_TYPES) = {8, 9, 10, 11}."""
+    return {s['code'] for s in fmt['slots'] if s['type'] in types}
+
+
+def check_ids(names, expected, sheet, what, table):
+    """Raises SchemaError when a hand-kept id no longer names what it was kept for. names: {id: name} of `sheet`;
+    expected: {id: expected name}; what: what the ids are (for the message, e.g. 'currency'); table: the table and file
+    to update, e.g. 'CURRENCIES (scripts/data/gear_activities.py)'. A patch that reuses an id thus stops the run
+    instead of placing another item."""
+    wrong = [f'{i} is {names.get(i)!r}, expected {name!r}' for i, name in expected.items() if names.get(i) != name]
+    if wrong:
+        hint = f'A patch reused the ids: find each by name in {sheet} and update its id in {table}.'
+        raise SchemaError(f'{sheet}: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
+
+
 def row_fields(fmt):
     """{field name: position} of an items.json row, from `itemRow.fields` of item-format.json (name 0, slotCode 1, ...,
     defenseMag 19). The generators build and read rows by these names, never by position. Raises SchemaError when the

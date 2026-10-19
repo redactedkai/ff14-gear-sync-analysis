@@ -35,8 +35,8 @@ stops the run.
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from gear_sources import CODE_LIMIT, listing_count
-from item_format import SchemaError, check_bools, load_format, read_csv
+from gear_sources import CODE_LIMIT, shop_listings
+from item_format import ACCESSORY_TYPES, SchemaError, check_bools, check_ids, load_format, read_csv, slot_codes
 
 GIL, WOLF_MARK, MGP = 1, 25, 29
 FIXED_ITEMS = {GIL: 'Gil', WOLF_MARK: 'Wolf Mark', MGP: 'MGP'}  # item id -> expected name; their activities in activities_of
@@ -146,7 +146,6 @@ MUST_HAVE_SOURCE = {
     'deep_dungeon',
     'seasonal_event',
 }
-ACCESSORY_SLOTS = {8, 9, 10, 11}  # database slot codes: ear, neck, wrist, ring
 
 # Activity -> box key (`activities` in item-format.json). Vendor is untradeable gil-vendor gear (a tradeable piece
 # already has the market board route); Savage and Extreme are split at the level cap in box_of().
@@ -198,11 +197,8 @@ def box_bits():
 def check_names(names, table, what, table_name):
     """Raises SchemaError when an id of `table` ({id: (expected name, ...)}) names another item in Item.csv. The message
     names `table_name`, the table in this file to update."""
-    wrong = [f'{i} is {names.get(i)!r}, expected {v[0]!r}' for i, v in table.items() if names.get(i) != v[0]]
-    if wrong:
-        hint = f'A patch reused the ids: find each item by name in Item.csv and update its id in {table_name}'
-        hint += ' (scripts/data/gear_activities.py).'
-        raise SchemaError(f'Item.csv: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
+    expected = {i: entry[0] for i, entry in table.items()}
+    check_ids(names, expected, 'Item.csv', what, f'{table_name} (scripts/data/gear_activities.py)')
 
 
 def ways_in(csv_dir, kept_ids, ilvl_of):
@@ -262,21 +258,9 @@ def ways_in(csv_dir, kept_ids, ilvl_of):
     # SpecialShop listings
     shops = read_csv(d / 'SpecialShop.csv', ['#', 'Name', 'UseCurrencyType', 'Quest'])
     shop_names = {int(s['#']): s['Name'] for s in shops}
-    wrong = [f'{i} is {shop_names.get(i)!r}, expected {n!r}' for i, n in RETIRED_SHOPS.items() if shop_names.get(i) != n]
-    if wrong:
-        hint = (
-            'A patch reused the ids: find each shop by name in SpecialShop.csv and update RETIRED_SHOPS (scripts/data/gear_activities.py).'
-        )
-        raise SchemaError('SpecialShop.csv: retired shop ids changed: ' + '; '.join(wrong) + '. ' + hint)
+    check_ids(shop_names, RETIRED_SHOPS, 'SpecialShop.csv', 'retired shop', 'RETIRED_SHOPS (scripts/data/gear_activities.py)')
     shops = [s for s in shops if int(s['#']) not in RETIRED_SHOPS]
-    n = listing_count(shops[0].keys()) if shops else 0
-    listings = []  # (shop row, listing index, given, costs)
-    for s in shops:
-        for k in range(n):
-            given = [g for j in range(2) if (g := int(s[f'Item[{k}].Item[{j}]']))]
-            if given:
-                costs = [c for j in range(3) if (c := int(s[f'Item[{k}].ItemCost[{j}]']))]
-                listings.append((s, k, given, costs))
+    listings = [listing for listing in shop_listings(shops) if listing[2]]  # (shop row, listing index, given, costs)
 
     def tome_code(s, c):
         """The tomestone code of a cost below CODE_LIMIT, or None when it is not a tomestone."""
@@ -341,6 +325,7 @@ def routes(csv_dir, kept, cats):
     slot_of = {int(r['#']): piece['slotCode'] for r, piece in kept}
     level_of = {int(r['#']): piece['equipLevel'] for r, piece in kept}
     ilvl_of = {i: int(r['LevelItem']) for i, r in items.items() if r['LevelItem'].isdigit()}
+    accessory_slots = slot_codes(load_format(), ACCESSORY_TYPES)
     missing = sorted({c for c in category.values() if c not in DROP_ACTIVITY})
     if missing:
         raise SchemaError(
@@ -411,7 +396,7 @@ def routes(csv_dir, kept, cats):
             cat = category[item]
             if item in KNOWN_SOURCE:
                 return single(KNOWN_SOURCE[item][1])
-            if cat == 'artifact' and slot_of[item] in ACCESSORY_SLOTS:
+            if cat == 'artifact' and slot_of[item] in accessory_slots:
                 return single('Dungeon')
             if cat in MUST_HAVE_SOURCE:
                 if item in rebuys:  # earned through a quest or coffer these sheets do not hold

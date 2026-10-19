@@ -15,7 +15,7 @@ UseCurrencyType (tomestones, scrips, gil; gear_activities.py decodes them).
 import re
 from pathlib import Path
 
-from item_format import SchemaError, read_csv
+from item_format import SchemaError, check_ids, read_csv
 
 ULTIMATE_TOTEMS = {
     21197: 'Dreadwyrm Totem',  # The Unending Coil of Bahamut
@@ -28,6 +28,7 @@ ULTIMATE_TOTEMS = {
 }
 CODE_LIMIT = 8  # costs below this are currency codes, not item ids
 FLAGS = {'crafted': 1, 'ultimate': 2}
+LISTING_GIVES, LISTING_COSTS = 2, 3  # items a SpecialShop listing gives (Item[k].Item[j]) and costs (Item[k].ItemCost[j])
 
 
 def listing_count(header):
@@ -36,6 +37,19 @@ def listing_count(header):
     if not ks:
         raise SchemaError('SpecialShop.csv has no Item[k].Item[0] columns. Did a game patch rename them?')
     return max(ks) + 1
+
+
+def shop_listings(shops):
+    """(shop row, listing index k, given, costs) for every listing of every SpecialShop row (dicts from read_csv):
+    given is the item ids the listing gives (Item[k].Item[0..1]), costs what it costs (Item[k].ItemCost[0..2]), as
+    ints with the zeros left out. A cost below CODE_LIMIT is a currency code, read through the shop's UseCurrencyType
+    (gear_activities.py). Listings that give nothing are included (given empty)."""
+    n = listing_count(shops[0].keys()) if shops else 0
+    for shop in shops:
+        for k in range(n):
+            given = [item for j in range(LISTING_GIVES) if (item := int(shop[f'Item[{k}].Item[{j}]']))]
+            costs = [cost for j in range(LISTING_COSTS) if (cost := int(shop[f'Item[{k}].ItemCost[{j}]']))]
+            yield shop, k, given, costs
 
 
 def flags(csv_dir, items):
@@ -51,20 +65,12 @@ def flags(csv_dir, items):
         mark(int(r['ItemResult']), 'crafted')
 
     names = {int(r['#']): r['Name'] for r in items}
-    wrong = [f'{i} is {names.get(i)!r}, expected {n!r}' for i, n in ULTIMATE_TOTEMS.items() if names.get(i) != n]
-    if wrong:
-        hint = 'A patch reused the ids: find each item by name in Item.csv and update its id in ULTIMATE_TOTEMS'
-        hint += ' (scripts/data/gear_sources.py).'
-        raise SchemaError('Item.csv: ultimate totem ids changed: ' + '; '.join(wrong) + '. ' + hint)
+    check_ids(names, ULTIMATE_TOTEMS, 'Item.csv', 'ultimate totem', 'ULTIMATE_TOTEMS (scripts/data/gear_sources.py)')
 
-    shops = read_csv(d / 'SpecialShop.csv', ['UseCurrencyType'])
-    n = listing_count(shops[0].keys()) if shops else 0
-    for s in shops:
-        for k in range(n):
-            costs = [int(s[f'Item[{k}].ItemCost[{j}]']) for j in range(3)]
-            if any(c in ULTIMATE_TOTEMS for c in costs):
-                for j in range(2):
-                    mark(int(s[f'Item[{k}].Item[{j}]']), 'ultimate')
+    for _shop, _k, given, costs in shop_listings(read_csv(d / 'SpecialShop.csv', ['UseCurrencyType'])):
+        if any(c in ULTIMATE_TOTEMS for c in costs):
+            for item in given:
+                mark(item, 'ultimate')
     return out
 
 

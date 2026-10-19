@@ -22,8 +22,8 @@ import argparse
 from collections import Counter
 from pathlib import Path
 
-from gear_sources import FLAGS, ULTIMATE_TOTEMS, listing_count
-from item_format import SchemaError, read_csv
+from gear_sources import CODE_LIMIT, FLAGS, ULTIMATE_TOTEMS, shop_listings
+from item_format import ACCESSORY_TYPES, WEAPON_TYPES, SchemaError, check_ids, load_format, read_csv, slot_codes
 
 # SubcategorySort % 1000 -> category, for gear. Verified codes only (docs/engineering/subcategory-sort-codes.md).
 CATEGORY_BY_CODE = {
@@ -98,20 +98,16 @@ def savage_items(csv_dir, items, gear):
     piece also takes. Returns (ids, currencies)."""
     by_id = {r['#']: r for r in items}
     seed = {i for i in gear if code_of(by_id[i]) == 20 and by_id[i]['DyeCount'] not in ('', '0')}
-    shops = read_csv(Path(csv_dir) / 'SpecialShop.csv', ['UseCurrencyType'])
-    n = listing_count(shops[0].keys()) if shops else 0
-    listings = []
-    currencies = set()
-    for s in shops:
-        shop_costs, sells_seed = set(), False
-        for k in range(n):
-            given = [g for j in range(2) if (g := s[f'Item[{k}].Item[{j}]']) != '0']
-            costs = [c for j in range(3) if int(c := s[f'Item[{k}].ItemCost[{j}]']) >= 8]  # below 8: currency codes
-            listings.append((given, costs))
-            shop_costs.update(c for c in costs if c not in gear)
-            sells_seed = sells_seed or any(g in seed for g in given)
-        if sells_seed:
-            currencies |= shop_costs
+    listings = []  # (given, costs) as Item.csv ids (text, as in `gear`)
+    costs_of_shop, shops_selling_seed = {}, set()  # by shop row id
+    for shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['#', 'UseCurrencyType'])):
+        given = [str(g) for g in given]
+        costs = [str(c) for c in costs if c >= CODE_LIMIT]  # below CODE_LIMIT: currency codes
+        listings.append((given, costs))
+        costs_of_shop.setdefault(shop['#'], set()).update(c for c in costs if c not in gear)
+        if any(g in seed for g in given):
+            shops_selling_seed.add(shop['#'])
+    currencies = set().union(*(costs_of_shop[s] for s in shops_selling_seed))
     savage = set(seed)
     for given, costs in listings:
         if any(c in currencies for c in costs):
@@ -123,23 +119,15 @@ def override_items(csv_dir, items):
     """{item id: category} from ITEM_OVERRIDES and CURRENCY_OVERRIDES. Raises SchemaError if an id no longer has its
     expected name."""
     names = {int(r['#']): r['Name'] for r in items}
-    listed = {**{i: n for i, (n, _) in ITEM_OVERRIDES.items()}, **{i: n for i, (n, _) in CURRENCY_OVERRIDES.items()}}
-    wrong = [f'{i} is {names.get(i)!r}, expected {n!r}' for i, n in listed.items() if names.get(i) != n]
-    if wrong:
-        hint = (
-            'A patch reused the ids: find each item by name in Item.csv and update its id in ITEM_OVERRIDES or '
-            'CURRENCY_OVERRIDES (scripts/data/gear_categories.py).'
-        )
-        raise SchemaError('Item.csv: category override ids changed: ' + '; '.join(wrong) + '. ' + hint)
-    out = {str(i): c for i, (_, c) in ITEM_OVERRIDES.items()}
-    currencies = {str(i): c for i, (_, c) in CURRENCY_OVERRIDES.items()}
-    shops = read_csv(Path(csv_dir) / 'SpecialShop.csv', ['UseCurrencyType'])
-    n = listing_count(shops[0].keys()) if shops else 0
-    for s in shops:
-        for k in range(n):
-            cat = next((currencies[c] for j in range(3) if (c := s[f'Item[{k}].ItemCost[{j}]']) in currencies), None)
-            if cat:
-                out.update({g: cat for j in range(2) if (g := s[f'Item[{k}].Item[{j}]']) != '0'})
+    listed = {i: name for table in (ITEM_OVERRIDES, CURRENCY_OVERRIDES) for i, (name, _) in table.items()}
+    where = 'ITEM_OVERRIDES or CURRENCY_OVERRIDES (scripts/data/gear_categories.py)'
+    check_ids(names, listed, 'Item.csv', 'category override', where)
+    out = {str(i): cat for i, (_, cat) in ITEM_OVERRIDES.items()}
+    currencies = {i: cat for i, (_, cat) in CURRENCY_OVERRIDES.items()}
+    for _shop, _k, given, costs in shop_listings(read_csv(Path(csv_dir) / 'SpecialShop.csv', ['UseCurrencyType'])):
+        cat = next((currencies[c] for c in costs if c in currencies), None)
+        if cat:
+            out.update({str(g): cat for g in given})
     return out
 
 
@@ -175,17 +163,15 @@ def categorize(csv_dir, kept, weapon_slots):
     return out
 
 
-ACCESSORY_SLOTS = {8, 9, 10, 11}  # ear, neck, wrist, ring: no dye slots on any gear
-
-
 def check(kept, cats):
     """Cross-checks between the categories and the shop/recipe flags. Returns a list of problems (empty when fine).
     A Savage armor piece or weapon without a dye slot means a shop that sells Savage gear also took a currency used for
     other gear (for example a Normal-raid token), which the shop-level currency rule would wrongly treat as Savage."""
     problems = []
+    accessory_slots = slot_codes(load_format(), ACCESSORY_TYPES)  # no dye slots on any of them
     for r, piece in kept:
         cat, src = cats[r['#']], piece['flags']
-        if cat == 'savage' and piece['slotCode'] not in ACCESSORY_SLOTS and r['DyeCount'] in ('', '0'):
+        if cat == 'savage' and piece['slotCode'] not in accessory_slots and r['DyeCount'] in ('', '0'):
             problems.append(f'{r["Name"]}: categorized savage but has no dye slot (a currency shared with other gear?)')
         if src & FLAGS['ultimate'] and cat != 'ultimate':
             problems.append(f'{r["Name"]}: bought with an ultimate totem but categorized {cat}')
@@ -196,11 +182,9 @@ def check(kept, cats):
 
 def main(csv_dir):
     import gen_items  # here, so importing this module stays cheap
-    from item_format import load_format
 
     kept, *_ = gen_items.select(csv_dir)
-    weapon_slots = {s['code'] for s in load_format()['slots'] if s['type'] in ('weapon', 'offhand')}
-    cats = categorize(csv_dir, kept, weapon_slots)
+    cats = categorize(csv_dir, kept, slot_codes(load_format(), WEAPON_TYPES))
     problems = check(kept, cats)
     counts = Counter(cats.values())
     print(f'{len(cats)} pieces')
