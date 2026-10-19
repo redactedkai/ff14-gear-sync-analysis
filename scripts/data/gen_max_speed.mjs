@@ -2,6 +2,7 @@
    highest equip level in the item database, as the page uses), for the speed slider on How the math works, GCD:
    src/data/max-speed.json. Run by regen.py after the item and food tables (it reads them through src/core).
    Usage: node scripts/data/gen_max_speed.mjs <out.json>
+          node scripts/data/gen_max_speed.mjs --check <file.json>   (is the file's `inputs` hash still current?)
 
    For each job, at each level up to its cap, the most gear speed is the best of three searches, with melds (the
    optimizer, target speed, weapon damage not first):
@@ -15,9 +16,13 @@
    same answer, so each such group is searched once.
 
    A search that stops at NODE_LIMIT may miss the true most speed, so the generator then writes nothing and exits with
-   status 1, naming the searches; raise NODE_LIMIT and run it again. */
+   status 1, naming the searches; raise NODE_LIMIT and run it again.
+
+   The answer depends on code as well as data (the optimizer, sync, food), so the file records `inputs`, a sha256 over
+   the data files and the code it is computed from (inputsHash). --check recomputes it without searching, and exits 1
+   when the file is stale: run regen.py (or this script) again. */
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { JOBS } from '../../src/core/constants.js';
 import { allMeals, foodBonus, statBase } from '../../src/core/food.js';
@@ -31,6 +36,27 @@ import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
 /* the cap case starts here (see above) */
 const CAP_FROM_LEVEL = 15;
 const NODE_LIMIT = 2e6;
+
+/* The files the table is computed from, relative to the repo root, sorted: the item, food and item level data, the
+   shared format, every module under src/core and this script. */
+export function inputFiles() {
+  const root = new URL('../../', import.meta.url);
+  const core = readdirSync(new URL('src/core/', root), { recursive: true })
+    .map(path => `src/core/${String(path).replaceAll('\\', '/')}`)
+    .filter(path => path.endsWith('.js') || path.endsWith('.json'));
+  const data = ['src/data/items.json', 'src/data/food.json', 'src/data/item-level.json'];
+  return [...data, ...core, 'scripts/data/gen_max_speed.mjs'].sort();
+}
+
+/* 'sha256:<hex>' over each input file's path and text (line endings as LF, so a Windows checkout hashes the same). */
+export function inputsHash(files = inputFiles()) {
+  const hash = createHash('sha256');
+  for (const path of files) {
+    const text = readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+    hash.update(`${path}\0${text}\0`);
+  }
+  return `sha256:${hash.digest('hex')}`;
+}
 
 /* Jobs grouped by what decides their answer: [{jobs: [id], job (the first one's JobContext), pool, meals}]. */
 export function jobGroups() {
@@ -80,10 +106,16 @@ export function maxSpeedTable(groups = jobGroups(), levels = MAX_LEVEL, truncate
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const out = process.argv[2];
+  const check = process.argv[2] === '--check';
+  const out = process.argv[check ? 3 : 2];
   if (!out) {
-    console.error('Usage: node scripts/data/gen_max_speed.mjs <out.json>');
+    console.error('Usage: node scripts/data/gen_max_speed.mjs <out.json> | --check <file.json>');
     process.exit(2);
+  }
+  if (check) {
+    const current = JSON.parse(readFileSync(out, 'utf8')).inputs === inputsHash();
+    console.log(current ? `${out} is current.` : `${out} is stale: its data or code changed. Run python scripts/data/regen.py.`);
+    process.exit(current ? 0 : 1);
   }
   // the data source the item tables were made from, so the file says which game data it describes
   const levelFile = JSON.parse(readFileSync(new URL('../../src/data/item-level.json', import.meta.url), 'utf8'));
@@ -97,5 +129,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     console.error('Raise NODE_LIMIT in scripts/data/gen_max_speed.mjs and run it again. Nothing was written.');
     process.exit(1);
   }
-  writeFileSync(out, `${JSON.stringify({ source: levelFile.source ?? null, formatVersion: ITEM_FORMAT.formatVersion, total })}\n`);
+  const doc = { source: levelFile.source ?? null, formatVersion: ITEM_FORMAT.formatVersion, inputs: inputsHash(), total };
+  writeFileSync(out, `${JSON.stringify(doc)}\n`);
 }

@@ -109,6 +109,8 @@ For each job, at each level up to its cap, the most gear speed is the best of th
 
 A search that stops at its node limit (2,000,000 nodes) may miss the true most speed. The generator then writes nothing, names each such search (jobs, level and case) and exits with status 1; raise its node limit and run it again. No search stops there today (**verified**: full run on `d9582a6`, 2026-10-19).
 
+The table depends on code as well as data: a change to the optimizer, sync or food code can change it while the source commit stays the same. The file therefore records `inputs`, a sha256 over the item, food and item level files, the shared format, every module under `src/core` and the generator itself (line endings counted as LF). `node scripts/data/gen_max_speed.mjs --check src/data/max-speed.json` recomputes it in under a second, without searching, and exits with status 1 when the file is stale; then regenerate. No test runs it, since most code changes leave the table as it is; the GCD view test re-derives level 50.
+
 ### Job icons
 
 The job picker shows the game's framed, role-coloured job icons. The CSVs hold no images, so the fetch step downloads them from xivapi's asset endpoint, which converts the game's own icon textures to PNG, into `data/icons/<JOB>.png` (gitignored).
