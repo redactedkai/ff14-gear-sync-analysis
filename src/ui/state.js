@@ -89,10 +89,15 @@ export function defaultBrowse(job = null) {
   };
 }
 
+/* The localStorage key of the saved state. Kept when the saved shape changes: restoreState repairs an older one (no
+   users to migrate yet; CLAUDE.md, Page rules). */
 export const STORE_KEY = 'ilvl-stat-lab-v4';
+/* The page's tabs (`tab`) and the math tab's sub-tabs (`mathTab`). */
 export const TABS = ['opt', 'browse', 'math'];
 export const MATH_TABS = ['piece', 'gcd', 'tiers'];
 
+/* Every saved setting at its default, with no job chosen: the shape saved under STORE_KEY. The job-dependent fields
+   are set for a job by resetForJob. */
 export function defaultState() {
   return {
     job: null, // none until the user picks one
@@ -282,6 +287,7 @@ export function loadSaved() {
   }
 }
 
+/* Save the state (`json`, already serialized) under STORE_KEY; a storage that throws is ignored. */
 export function save(json) {
   try {
     localStorage.setItem(STORE_KEY, json);

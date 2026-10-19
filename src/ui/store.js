@@ -5,8 +5,11 @@ import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL } from '../core/tables.js';
 import { restoreState, resetForJob, TABS, MATH_TABS } from './state.js';
 
+/* The store's fields that are saved (defaultState's); the rest (jobCtx, maxReal, gcd, tiers and the actions) are not. */
 export const PERSISTED_KEYS = ['job', 'cap', 'sync', 'level', 'tab', 'mathTab', 'piece', 'browse', 'opt'];
 
+/* The store object for Alpine.store('app') from a restored state (restoreState): the state, the fields derived from it
+   (jobCtx, maxReal), the sub-tabs' unsaved settings and the actions. */
 export function createAppStore(initial) {
   return {
     ...initial,

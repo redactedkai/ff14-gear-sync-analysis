@@ -13,6 +13,7 @@ const HELP_SHIFT = 20;
 /* The note's width before it has been shown once (px; the CSS width of .statpop). */
 const HELP_WIDTH = 340;
 
+/* The Substat tiers sub-tab: the cards, the values typed or clicked, and each substat's ? note. */
 export function tierTable() {
   // the last view and what it was built from: the template and `help` read `view` many times a render
   let cached = { key: null, view: null };

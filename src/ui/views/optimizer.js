@@ -70,6 +70,7 @@ export function chosenFood(app, totals, meal = null) {
    job and kept while the job stays (~5-10 ms to build): the per-item meld cap cache (core/meld.js) is keyed by these
    objects, so it stays warm from run to run. */
 let gearCache = { job: null, gear: null };
+/* jobGear(job): the frozen pool items for `job` (a JobContext), from gearCache. */
 export function jobGear(job) {
   if (gearCache.job !== job) gearCache = { job, gear: Object.freeze(browseItems(job, {}).map(r => poolItemFromRow(job, r))) };
   return gearCache.gear;

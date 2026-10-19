@@ -4,6 +4,7 @@
    and a meal picked here goes to its pickMeal. */
 import { mealEmptyReason, mealPillOff, mealsPassing } from '../views/optimizer.js';
 
+/* The Food menu's component (x-data="mealMenu" on the Food row): its open state, search and pills. */
 export function mealMenu() {
   return {
     /* open or not, its search text (meal names) and the stats picked on its pills (a meal must have each; two at most,

@@ -7,6 +7,8 @@ import { defaultBrowse } from '../state.js';
 import { browseFiltered, gearView } from '../views/gear.js';
 import { expansionToggles, gearFromToggles } from '../helpers.js';
 
+/* The browser's component: its view (gearView, rebuilt while the tab is open), its two filter menus, the sort and Reset
+   filters. */
 export function gear() {
   return {
     view: null,

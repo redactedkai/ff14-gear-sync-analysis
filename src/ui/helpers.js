@@ -11,6 +11,9 @@ export const fmtInt = n => n.toLocaleString('en-US');
    (and the optimizer) do not recompute for the numbers on the way. */
 export const TYPING_DEBOUNCE_MS = 300;
 
+/* A bound of numberField: a number, or a function read at each input. */
+const bound = b => (typeof b === 'function' ? b() : b);
+
 /* x-bind object for a number input that only commits in-range values (out-of-range typing is ignored, not corrected):
    the page's one pattern for number boxes bound to a setting (as $num, storeNumberField). Typing commits
    TYPING_DEBOUNCE_MS after the last keystroke; Enter or leaving the field (change) commits at once. While the field has
@@ -26,7 +29,6 @@ export const TYPING_DEBOUNCE_MS = 300;
    Boxes with another rule keep their own handlers: the GCD tab's level and speed correct what is typed and say so,
    and Piece stats' item level and the tiers' substat boxes commit only on change, since a value on the way would be
    held to its range while typing. */
-const bound = b => (typeof b === 'function' ? b() : b);
 export function numberField(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty } = {}) {
   let timer = null;
   const scale = 10 ** decimals;
@@ -92,6 +94,7 @@ const FROM_COLUMNS = [
   ['Everyday', 'Time-limited'],
   ['Side content', 'Hard content'],
 ];
+/* FROM_COLUMNS with each section's boxes filled in, frozen: what the "Gear from" menu lays out. */
 export const GEAR_FROM_COLUMNS = Object.freeze(
   FROM_COLUMNS.map(titles =>
     Object.freeze({

@@ -7,8 +7,11 @@ import { emptyGearFrom, gcdLabel, optimizerKey, optimizerView, samePassing, sear
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
 import { rankChoices, withRank } from '../views/ranks.js';
 
+/* How long the settings must rest before the piece count, the empty boxes and the Target GCD label follow them (ms). */
 const DEBOUNCE_MS = 120;
 
+/* The optimizer tab's component: the result (`view`), whether it is out of date, the solve, the rows' menus of pieces
+   with the same result, and the filters under Gear to search. */
 export function optimizer() {
   return {
     view: null,

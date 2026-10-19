@@ -6,6 +6,7 @@ import { pieceView, withSub } from '../views/piece.js';
 import { rankChoices } from '../views/ranks.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
+/* The math tab's component (x-data on the whole tab): Piece stats' views and its controls in the math bar. */
 export function syncExplainer() {
   return {
     /* Piece stats' two panels (explainerView), or null while no sync applies; and its step-by-step section (pieceView).

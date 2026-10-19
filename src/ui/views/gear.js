@@ -19,7 +19,8 @@ import { fmtInt } from '../helpers.js';
 import { defaultBrowse, gearFilter, syncSettings } from '../state.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
-export const SHOW_LIMIT = 100; /* rows rendered */
+/* The most rows the table renders; the rest are counted in its last row. */
+export const SHOW_LIMIT = 100;
 
 /* The slot pills' groups, in the order they show (owner, 2026-10-18): weapon and shield, armor, accessories. */
 const SLOT_GROUPS = [

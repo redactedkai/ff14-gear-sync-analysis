@@ -68,6 +68,7 @@ function buildPieceAt(job, type, il, cap, subs, keys) {
    where a full set's chosen substats still change after sync (the 2nd substat reaching the cap in the slowest slot),
    at least RANGE_MIN_OVER and at most RANGE_MAX_OVER above the cap, never past the highest real item level. */
 const rangeMemo = new Map();
+/* explainerRange(job, cap, subs): that range, memoized by job, cap and substats. */
 export function explainerRange(job, cap, subs) {
   const key = `${job.jobId}|${cap}|${subs.join(',')}`;
   if (!rangeMemo.has(key)) rangeMemo.set(key, computeRange(job, cap, subs));
@@ -120,8 +121,6 @@ function meldParts(job, meld) {
   return { stones: parts.join(', '), afterCap: gain < full ? `+${gain} after the cap` : '' };
 }
 
-/* Everything Piece stats shows, or null while no sync applies. `widths`: the chart container's width in px ({piece}),
-   so the chart is drawn at its own size and its text stays at the page's size. */
 /* What Piece stats says while no sync applies (explainerView is null): with item level sync on, that a cap is missing;
    off, why nothing is synced and how to see it. */
 export function explainerOffText(app) {
@@ -130,6 +129,8 @@ export function explainerOffText(app) {
     : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.';
 }
 
+/* Everything Piece stats shows, or null while no sync applies. `widths`: the chart container's width in px ({piece}),
+   so the chart is drawn at its own size and its text stays at the page's size. */
 export function explainerView(app, widths = {}) {
   const sync = shownSync(app);
   if (!sync) return null;
