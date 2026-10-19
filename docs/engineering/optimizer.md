@@ -419,17 +419,20 @@ What does the page hand to the engine, and what does it show back?
 
 **Target GCD on the page** (owner's decisions, 2026-10-16).
 
-- A line under the Goal grid holds the box (empty means any GCD), "exactly" / "or faster" ("exactly" by default, as in xivgear) and the range of GCDs the gear reaches.
-- For Monk, Ninja, Samurai and Viper the label names the haste ("Target GCD (Fuka 13%)") and the box takes the hasted GCD; the result shows both ("2.14s · GCD (Fuka 13%; 2.47 without)").
+- The Goal row's last two columns (owner, 2026-10-18: the Goal and Gear to search rows share five columns) hold the box (empty means any GCD) and "exactly" / "or faster" ("exactly" by default, as in xivgear); the label gives the range of GCDs the gear reaches in parentheses ("Target GCD (2.50 to 2.10)").
+- For Monk, Ninja, Samurai and Viper the label also names the haste ("Target GCD (2.12 to 1.80 with Fuka 13%)") and the box takes the hasted GCD; the result shows both ("2.14s · GCD (Fuka 13%; 2.47 without)").
 - One short line under the box, in plain text, says what the GCD needs ("Skill Speed 677 to 783 (character panel)") or that the set came out faster in "or faster" mode ("2.17, faster than asked"); when no set fits it says why in a warning box ("Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)", "The GCD can't go below 1.50", "No set at exactly 2.10").
-- The fastest GCD the gear reaches is in the range beside the box. The box is disabled while the goal is speed and cleared on a job switch.
-- The page keeps the candidate lists and the fastest GCD between runs, so typing a new GCD reruns only the search.
+- The range comes from a search, so the label shows it only while the result is for the current settings. The box is disabled while the goal is speed (the label then reads "Target GCD (off: the goal is speed)") and cleared on a job switch.
+- The page keeps the candidate lists and the fastest GCD between runs, so a new GCD reruns only the search.
+
+**Optimize** (owner, 2026-10-18). The search runs only when the user presses Optimize, at the right of the switches' line, after tier ranking's switch; before the first press the page says "Press Optimize to find the best set for the goal." A setting changed after a search dims the result, with "The settings changed since this result. Press Optimize to update it." above it, and turns its menus off (a pick would search with the new settings); a job switch clears it. A piece or meal picked from the menus of a current result still updates it at once.
 
 **Rank by tier on the page** (roadmap A7; owner's decisions, 2026-10-16).
 
-- A "Rank by tier" switch beside Materia and Food, **on by default** (kept after comparing tier and raw results, owner's decision, 2026-10-17); it is saved, and a save from before it existed restores it on.
+- A "Spare points to tiebreaks" switch at the right of the Materia and Food line, before Optimize, **on by default** (kept after comparing tier and raw results, owner's decision, 2026-10-17); it is saved, and a save from before it existed restores it on.
+- Its label and ? note ("Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.") were chosen on 2026-10-18 after an independent review of the words players use: "tier" is the community's word (AkhMorning, The Balance, xivgear), and "wasted" was avoided, since melding guides use it for materia past an item's cap. It was "Rank by tier" before.
 - On, the search is tier ranking ([tier-ranking.md](tier-ranking.md)): meal and gear are chosen together, with or without a Target GCD, since every tier counts food.
-- A line under the readout names the keys in order with the effect each holds ("Ranked by tier: Piety +165 MP, then Direct Hit 2.1%, then Determination +1.2%"); Tenacity shows its mitigation step, the one it is ranked by. In the Tier row the held stats are highlighted.
+- In the Tier row the held stats are highlighted. (A line under the readout named them in order with the effect each held, "Ranked by tier: Piety +165 MP, then ..."; dropped on 2026-10-18 by the owner, since the Goal selects give the order and the Effect row the effects.)
 - A thin progress bar shows from the first frame of a solve until the result: the solve holds the page's thread, and the bar's animation runs on the compositor meanwhile.
 
 **Character panel totals.** The Total and With food rows show each substat as the in-game character panel does: the level's base plus gear (plus food); docs/mechanics/math.md, "Totals as on the character panel". Main stat and Vitality stay gear points: their base depends on the job and clan, which the page does not ask for (owner's decision). The party bonus is not counted. The Target GCD line's speed band uses the same numbers.
@@ -444,7 +447,7 @@ What does the page hand to the engine, and what does it show back?
 
 **The Food row's menu** (owner's design, 2026-10-18; it replaced the Meal (HQ) box). With Food on, the search uses the best meal for the goal, and the Food row's meal is a menu like the rows' above, made to serve sets built by hand later (A4) as well:
 
-- **Which meal the row shows:** the oldest meal with the same result as the best (`sameMeals`: the same as for pieces, plus the same total on every goal key without tiers, since every meal adds Vitality), tagged "best for goal" and counted ("1 of 11"). Under sync many meals tie: for Astrologian at level 50, item level 123, Mind > Vitality > Direct Hit, 11 meals from Dawntrail, Endwalker and Shadowbringers give the same bonus, and the row shows the Shadowbringers one.
+- **Which meal the row shows:** the highest item level meal with the same result as the best (owner, 2026-10-18) (`sameMeals`: the same as for pieces, plus the same total on every goal key without tiers, since every meal adds Vitality), tagged "best for goal" and counted ("1 of 11"). Under sync many meals tie: for Astrologian at level 50, item level 123, Mind > Vitality > Direct Hit, 11 meals from Dawntrail, Endwalker and Shadowbringers give the same bonus, and the row shows the newest Dawntrail one.
 - **The menu** lists every meal the job can use (`allMeals`; 182 for Astrologian), by expansion, newest first, each with its stats, item level and what it adds on this gear ("SpS +44 DHT +41 VIT +54"). No deltas and no "same result" labels. Above the list: a search box (meal names), stat pills (CRT, DET, DHT, SpS, PIE; a meal must have each pill picked, and after two the rest are greyed out, since a meal has at most two stats) and a "Best for goal" switch, on by default, that keeps only the tagged meals.
 - **A picked meal** reruns the search with it in place of the best, since with tier ranking or a Target GCD the meal can change which gear wins; the row then says "HQ, picked". Like the rows' picks it is not saved and any setting change clears it.
 - **Limit:** the tags compare meals on the gear the search found with the best meal. Under tier ranking or a Target GCD another meal could lead the search to other gear; checking that would take a search per meal, so it is left to a pick.

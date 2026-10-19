@@ -54,8 +54,8 @@ test("optimizer view: Vitality as a tiebreak with the best meal finds a set (own
 
 /* The Food row's menu (owner's design, 2026-10-18), on the owner's Astrologian case: level 50, cap 123, A Realm Reborn
    gear, Mind > Vitality > Direct Hit, best meal, rank by tier. Under sync meals from three expansions give the same
-   bonus; the row shows the oldest of them, and the menu lists every meal the job can use. */
-test('optimizer view: the Food menu shows the oldest meal with the best result, every meal by expansion, and a pick', () => {
+   bonus; the row shows the highest item level one, and the menu lists every meal the job can use. */
+test('optimizer view: the Food menu shows the highest item level meal with the best result, every meal by expansion, and a pick', () => {
   const app = makeApp('AST', { level: 50 });
   Object.assign(app.opt, { target: 'main', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
   app.opt.expOff = ['HW', 'SB', 'ShB', 'EW', 'DT'];
@@ -72,18 +72,18 @@ test('optimizer view: the Food menu shows the oldest meal with the best result, 
     menu.pills.map(p => p.short),
     ['CRT', 'DET', 'DHT', 'SpS', 'PIE'],
   );
-  // the meals with the best's result: the row shows the oldest, tagged and counted
+  // the meals with the best's result: the row shows the highest item level one, tagged and counted
   const best = items.filter(x => x.best);
   assert.equal(menu.count, best.length);
   assert.ok(best.length > 1, `${best.length} meals with the best result`);
-  const oldest = best.reduce((a, b) => (b.ilvl < a.ilvl ? b : a));
-  assert.equal(v.food.name, oldest.name);
+  const newest = best.reduce((a, b) => (b.ilvl > a.ilvl ? b : a));
+  assert.equal(v.food.name, newest.name);
   assert.deepEqual([v.food.best, v.food.picked], [true, false]);
-  assert.equal(items.find(x => x.on).name, oldest.name);
+  assert.equal(items.find(x => x.on).name, newest.name);
   // Vitality is a tiebreak (every point counts): every tagged meal adds the same Vitality
   assert.equal(new Set(best.map(x => x.adds.match(/VIT \+(\d+)/)[1])).size, 1);
   // what a meal adds, on this gear: its stats, then Vitality
-  assert.match(oldest.adds, /^\S+ \+\d+ (\S+ \+\d+ )?VIT \+\d+$/);
+  assert.match(newest.adds, /^\S+ \+\d+ (\S+ \+\d+ )?VIT \+\d+$/);
   // a meal picked from the menu: shown, marked picked, its bonus in the Food row; the menu still tags the best
   const other = items.find(x => !x.best && x.stats.includes('crit'));
   const p = optimizerView(app, undefined, {}, other.key);
@@ -511,7 +511,9 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
     const pct = hasteFor(jobId, 100)?.pct ?? 0;
     const free = optimizerView(app, pool);
     assert.equal(free.gcdLine, null, 'an empty box: no line');
-    assert.equal(free.gcdUi.label, pct ? 'Target GCD (Fuka 13%)' : 'Target GCD');
+    // the label carries the range, slowest to fastest, and the job's haste after it
+    const range = `${free.gcdUi.top.toFixed(2)} to ${free.gcdUi.fastest.toFixed(2)}`;
+    assert.equal(free.gcdUi.label, pct ? `Target GCD (${range} with Fuka 13%)` : `Target GCD (${range})`);
     assert.equal(free.gcd, gcdFor(free.spd, 100, 2500, pct).toFixed(2));
     if (pct) assert.equal(free.hasteText, ` (Fuka 13%; ${gcdFor(free.spd, 100).toFixed(2)} without)`);
     else assert.equal(free.hasteText, '');
@@ -579,6 +581,7 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
   assert.equal(spd.kind, 'ok');
   assert.equal(spd.gcdLine, null);
   assert.equal(spd.gcdUi.off, true);
+  assert.equal(spd.gcdUi.label, 'Target GCD (off: the goal is speed)');
 });
 
 test('optimizer view: Food adds a meal row and the totals with it, counts tiers and the GCD with food, keeps the gear', () => {
@@ -604,9 +607,10 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   );
   assert.deepEqual(on.totals, off.totals, 'the gear totals row is unchanged');
   const gearTotals = Object.fromEntries(job.stats.map((s, k) => [s, off.totals[k] - panelBase(job, s, 50)]));
-  // the row shows the oldest meal with the best meal's result (sameMeals), so its points may differ within the tiers
+  // the row shows the highest item level meal with the best meal's result (sameMeals), so its points may differ within
+  // the tiers
   const best = bestFood(job, foodChoices(job), gearTotals, 50, ['spd', 'crit', '']);
-  const meal = sameMeals(job, gearTotals, best, allMeals(job), { level: 50, haste: 0, goal: 'spd' }, ['spd', 'crit'])[0];
+  const meal = sameMeals(job, gearTotals, best, allMeals(job), { level: 50, haste: 0, goal: 'spd' }, ['spd', 'crit']).at(-1);
   assert.equal(on.food.name, meal.name);
   assert.equal(on.food.best, true);
   const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'spd').max, Math.floor((341 + gearSpd) / 10));
@@ -689,36 +693,33 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
   const v = optimizerView(app, pool);
   assert.equal(v.kind, 'ok');
   assert.equal(v.byTier, true);
-  // the meal: the oldest with the result of the one tier ranking chose with the gear; the Food menu tags them all
+  // the meal: the highest item level one with the result of the one tier ranking chose with the gear; the Food menu tags them all
   const tagged = v.food.menu.groups.flatMap(g => g.items).filter(x => x.best);
   assert.ok(
     tagged.some(x => x.name === r.food.name),
     r.food.name,
   );
-  assert.equal(v.food.name, tagged.reduce((a, b) => (b.ilvl < a.ilvl ? b : a)).name);
+  assert.equal(v.food.name, tagged.reduce((a, b) => (b.ilvl > a.ilvl ? b : a)).name);
   assert.equal(v.food.best, true);
   // every key keeps the tier the core held it at (the rows may show other pieces with the same tiers, same-result.js)
   const stats = app.jobCtx.stats;
-  // weapon damage is held first (no tiers) and has no column: the readout leaves it out
+  // weapon damage is held first (no tiers) and has no column
   assert.equal(r.held[0].stat, 'wd');
-  assert.ok(!v.heldText.includes('wd') && !v.heldText.toLowerCase().includes('weapon'));
   for (const h of r.held.filter(x => x.stat !== 'wd')) {
     const shown = v.tiers[stats.indexOf(h.stat)];
     assert.equal(shown.held, true, h.stat);
     assert.equal(shown.effect, statTier(app.jobCtx, h.stat, r.withFood[h.stat], app.level).effect, h.stat);
   }
-  // only the keys are marked; the readout names them in order
+  // only the keys are marked
   assert.deepEqual(
     stats.filter((s, k) => v.tiers[k]?.held),
     stats.filter(s => ['crit', 'det', 'dh'].includes(s)),
   );
-  assert.match(v.heldText, /^Critical Hit [\d.]+%, then Determination \+[\d.]+%, then Direct Hit [\d.]+%$/);
 
   // switched off: the plain ranking (the same view as before tier ranking existed)
   app.opt.byTier = false;
   const plain = optimizerView(app, pool);
   assert.equal(plain.byTier, false);
-  assert.equal(plain.heldText, null);
   assert.ok(plain.tiers.every(c => !c?.held));
 });
 

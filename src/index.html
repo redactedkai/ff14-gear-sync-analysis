@@ -103,13 +103,13 @@
   <div class="ilctl small" x-show="$store.app.mathTab !== 'tiers'">
     <label for="p-range">Gear item level</label>
     <span class="bound" x-text="range[0]" :title="rangeNote"></span>
-    <input type="range" id="p-range" :min="range[0]" :max="range[1]" step="1" :value="il" :title="rangeNote" @input="setIlvl($event.target.value)">
+    <input type="range" id="p-range" :min="range[0]" :max="range[1]" step="1" :value="il" :style="`--fill: ${rangeFill}%`" :title="rangeNote" @input="setIlvl($event.target.value)">
     <span class="bound" x-text="range[1]" :title="rangeNote"></span>
     <input type="number" id="p-ilvl" :min="range[0]" :max="range[1]" step="1" inputmode="numeric" :value="il" aria-label="Gear item level" @change="setIlvl($event.target.value)">
     <button type="button" class="chip" id="p-ilvl-reset" @click="resetIlvl()">Reset</button>
   </div>
   <template x-if="$store.app.mathTab === 'tiers'"><div style="display:contents">
-  <button type="button" class="chip" id="t-fill" :disabled="!tierFillReady" :title="tierFillReady ? 'The optimizer result as the character panel shows it' : 'No optimizer result for these settings: open the Gear optimizer to get one'" @click="$dispatch('tier-fill')">Fill from the optimizer result</button>
+  <button type="button" class="chip" id="t-fill" :disabled="!tierFillReady" :title="tierFillReady ? 'The optimizer result as the character panel shows it' : 'No optimizer result for these settings: press Optimize on the Gear optimizer tab'" @click="$dispatch('tier-fill')">Fill from the optimizer result</button>
   </div></template>
 </div>
 
@@ -281,9 +281,9 @@
               </template>
             </div>
           </div>
-          <label class="f">Equip level up to<input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.opt.lvl"></label>
-          <label class="f">Item level from<input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.opt.min"></label>
-          <label class="f">Item level to<input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.opt.max"></label>
+          <label class="f">Equip level up to<input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model="$store.app.opt.lvl"></label>
+          <label class="f">Item level from<input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.opt.min"></label>
+          <label class="f">Item level to<input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.opt.max"></label>
           <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
             <span id="o-from-label">Gear from</span>
             <button type="button" class="multi-btn" id="o-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="o-from-label o-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
@@ -317,28 +317,36 @@
           <label class="f">Tiebreak 2<select id="o-tb2" @change="$store.app.opt.tb2 = $event.target.value">
             <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
           </select></label>
-        </div>
-        <div class="gcd-row" id="o-gcd-row">
-          <label class="f" for="o-gcd" x-text="view?.gcdUi?.label || 'Target GCD'"></label>
+          <div class="f field gcd-field" id="o-gcd-row">
+          <label for="o-gcd" x-text="(!stale && view?.gcdUi?.label) || 'Target GCD'"></label>
           <div class="row">
-            <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-model.debounce.300ms="$store.app.opt.gcd">
+            <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-model="$store.app.opt.gcd">
             <div class="seg" id="o-gcd-mode" role="radiogroup" aria-label="Target GCD mode" :class="{ off: $store.app.opt.target === 'spd' }">
               <label><input type="radio" name="o-gcd-mode" value="exact" :disabled="$store.app.opt.target === 'spd'" :checked="$store.app.opt.gcdMode === 'exact'" @change="$store.app.opt.gcdMode = 'exact'">exactly</label>
               <label><input type="radio" name="o-gcd-mode" value="min" :disabled="$store.app.opt.target === 'spd'" :checked="$store.app.opt.gcdMode === 'min'" @change="$store.app.opt.gcdMode = 'min'">or faster</label>
             </div>
-            <span class="small dim" id="o-gcd-hint" x-text="view?.gcdUi?.hint || ''"></span>
+          </div>
           </div>
         </div>
-        <template x-if="view?.gcdLine"><div class="gcd-line" id="o-gcd-line" :class="{ bad: view.gcdLine.bad }" x-text="view.gcdLine.text"></div></template>
+        <template x-if="!stale && view?.gcdLine"><div class="gcd-line" id="o-gcd-line" :class="{ bad: view.gcdLine.bad }" x-text="view.gcdLine.text"></div></template>
         <div class="row switches">
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-melds" :checked="$store.app.opt.melds" @change="$store.app.opt.melds = $event.target.checked"><span>Materia</span></label>
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-food" :checked="$store.app.opt.food" @change="$store.app.opt.food = $event.target.checked"><span>Food</span></label>
-          <label class="toggle" title="Rank the goal and tiebreaks by their tiers (the steps their effects move in) before their points"><input type="checkbox" role="switch" class="switch" id="o-by-tier" :checked="$store.app.opt.byTier" @change="$store.app.opt.byTier = $event.target.checked"><span>Rank by tier</span></label>
+          <span class="grow"></span>
+          <span class="rankwrap" @click.outside="rankHelp = false" @keydown.escape.window="rankHelp = false">
+            <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-by-tier" :checked="$store.app.opt.byTier" @change="$store.app.opt.byTier = $event.target.checked"><span>Spare points to tiebreaks</span></label>
+            <button type="button" class="help shelp" id="o-rank-help" aria-controls="o-rank-pop" :aria-expanded="String(rankHelp)" title="About this switch" @click="rankHelp = !rankHelp">?</button>
+            <div class="popover statpop" id="o-rank-pop" role="dialog" aria-label="About Spare points to tiebreaks" x-show="rankHelp" x-cloak><p>Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.</p></div>
+          </span>
+          <button type="button" class="primary run" id="o-run" :disabled="busy" @click="run()">Optimize</button>
         </div>
       </div>
     </div>
     <div id="o-out">
       <div class="progress" id="o-busy" x-show="busy" x-cloak role="progressbar" aria-label="Solving"><span></span></div>
+      <template x-if="!view && !busy"><div class="panel"><div class="empty" id="o-none">Press Optimize to find the best set for the goal.</div></div></template>
+      <p class="small stale-note" id="o-stale" x-show="stale" x-cloak>The settings changed since this result. Press Optimize to update it.</p>
+      <div :class="{ 'is-stale': stale }">
       <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'nogcd'"><div class="panel"><div class="empty" id="o-nogcd">No set fits this GCD.</div></div></template>
@@ -350,7 +358,6 @@
           <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD${view.hasteText} with ${view.spdText} · ${view.tierText}`"></span></div>
           <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
         </div>
-        <template x-if="view.byTier"><p class="small" id="o-held"><b>Ranked by tier:</b> <span x-text="view.heldText"></span>.</p></template>
         <p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p>
         <div class="tablewrap menus" id="o-table"><table>
           <thead><tr><th>Slot</th><th>Item</th><th class="n">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
@@ -413,6 +420,7 @@
         <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note">Relic weapons with customizable substats are left out.</p></template>
         <p class="small dim" id="o-total-note" x-text="`Clan bonuses can affect ${view.headers[0]} and ${view.headers[1]}.`"></p>
       </div></template>
+      </div>
     </div>
   </div>
 </section>

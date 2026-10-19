@@ -107,27 +107,27 @@ The functions that build views are pure and live apart from the components, with
 - The views with long lists (the gear browser's rows, the optimizer result, the accuracy panel) are frozen before they are stored on the component.
 - The job's gear the optimizer searches is built once per job, frozen, and kept in a module-level cache outside the store. The optimizer reads the store through `Alpine.raw`, without the proxies.
 
-### Heavy work: debounced and only when visible
+### Heavy work: debounced, only when visible, or on request
 
-Cheap areas recompute at once; expensive ones wait, and run only while the user can see them:
+Cheap areas recompute at once; expensive ones wait, run only while the user can see them, or run only when asked:
 
 | Page area | When it recomputes |
 | --- | --- |
 | Settings, How the math works | On every relevant change |
 | Real-gear accuracy check | Once, when its panel is first opened |
 | Gear browser | On a relevant change, while the Gear browser tab is open |
-| Optimizer result | 120 ms after the last change, while the Gear optimizer tab is open |
+| Optimizer result | When the user presses Optimize (the piece count under Gear to search: 120 ms after the last change) |
 
 Notes:
 
 - **Settings, How the math works** are cheap: a few formulas per piece; the explainer's curves (a few thousand generic pieces per setting) are remembered per setting, so a slider move costs a few milliseconds.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
 - **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches.
-- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the optimizer's own values). Triggered by a change of those filters, job, cap, sync, level or optimizer settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
+- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the optimizer's own values). Searched only when the user presses Optimize (owner, 2026-10-18; it used to rerun on every change of those filters, job, cap, sync, level or optimizer settings). A setting changed after a search leaves the result shown but dimmed, with a note and its menus off, until Optimize runs again; a job switch clears it. The count in the heading and the greyed-out Gear from boxes still follow the settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
-**How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart run the optimizer once, not $k$ times. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+**How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart update the optimizer's piece count once, not $k$ times. The optimizer's own number fields commit at once (no typing wait), so pressing Optimize right after typing searches with the value typed. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
-![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open gear browser recompute at once; the open optimizer runs once 120 ms later; the saved state is written 150 ms later. Each wait restarts on every change.](../diagrams/architecture-timing.svg)
+![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open gear browser recompute at once; the optimizer's piece count updates once 120 ms later (the search itself waits for Optimize); the saved state is written 150 ms later. Each wait restarts on every change.](../diagrams/architecture-timing.svg)
 
 ## 4. Persistence
 

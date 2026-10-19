@@ -20,7 +20,7 @@ import {
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { buildCandidates } from '../../core/optimizer/candidates.js';
 import { sameMeals, sameResult } from '../../core/same-result.js';
-import { WD_KEY, mitigationPct, setDefense } from '../../core/damage-defense.js';
+import { mitigationPct, setDefense } from '../../core/damage-defense.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
 import { rankByTier } from '../../core/tier-rank.js';
 import { meldText } from '../../core/meld.js';
@@ -170,7 +170,8 @@ function poolSettingsKey(app, gear) {
   ].join('|');
 }
 
-/* What the Target GCD line shows before any search: the box label, its range hint, whether it is off. */
+/* What the Target GCD field shows before any search: its label with the range in parentheses ("Target GCD (2.50 to
+   2.10)", the job's haste after it, or "off: the goal is speed"), whether it is off. */
 function gcdControls(app, pool, gear, meal) {
   const job = app.jobCtx,
     o = app.opt;
@@ -189,10 +190,12 @@ function gcdControls(app, pool, gear, meal) {
     });
     if (key != null) fastCache = { key, gcd: fastest };
   }
+  const off = o.target === 'spd';
+  const range = fastest == null ? '' : `${top.toFixed(2)} to ${fastest.toFixed(2)}`;
+  const note = off ? 'off: the goal is speed' : [range, haste ? `with ${haste.name} ${haste.pct}%` : ''].filter(Boolean).join(' ');
   return {
-    label: haste ? `Target GCD (${haste.name} ${haste.pct}%)` : 'Target GCD',
-    off: o.target === 'spd',
-    hint: o.target === 'spd' ? 'off: the goal is speed' : fastest == null ? '' : `${top.toFixed(2)} to ${fastest.toFixed(2)}`,
+    label: note ? `Target GCD (${note})` : 'Target GCD',
+    off,
     top,
     fastest,
     haste,
@@ -275,8 +278,8 @@ function sameMenu(options, shown) {
 /* The Food row of a result with food: the meal it shows and its menu (owner's design, 2026-10-18). `food`: the meal the
    search used; `picked`: the meal the player picked from the menu, or null; `haste`: the job's always-on haste in
    percent. Returns {meal, best, menu}:
-   - meal: the allMeals entry the row shows, the pick or else the oldest meal with the best's result (sameMeals), as the
-     rows show the easiest piece; best: it has the best's result
+   - meal: the allMeals entry the row shows, the pick or else the highest item level meal with the best's result
+     (sameMeals; owner, 2026-10-18); best: it has the best's result
    - menu: {count, groups, pills}. count: how many meals have the best's result. groups: every meal the job can use, by
      expansion, newest first: {label, items: [{key, name, ilvl, label, stats, adds, best, on}]}, label "Spell Speed +
      Direct Hit", stats its neutral stats (for the pills), adds what it gives on this gear ("SpS +44 DHT +41 VIT +54"),
@@ -290,7 +293,8 @@ function foodRow(app, gearTotals, food, picked, haste) {
   // the best meal for the goal on this gear: the search's own, or with a pick the one the search would have taken
   const best = picked ? bestFood(job, foodChoices(job), gearTotals, level, keys) : food;
   const tagged = new Set(sameMeals(job, gearTotals, best, meals, { level, haste, goal: o.target }, keys));
-  const meal = picked ?? meals.find(m => tagged.has(m));
+  // allMeals is oldest first, so the last tagged meal has the highest item level
+  const meal = picked ?? meals.findLast(m => tagged.has(m));
   const item = m => {
     const bonus = foodBonus(job, m, gearTotals, level);
     const lines = [...m.stats.map(x => x.stat), ...(m.vit ? ['vit'] : [])];
@@ -414,7 +418,7 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
   const picks = same.map(r => r.pick);
   const gearTotals = Object.fromEntries(job.stats.map(s => [s, picks.reduce((sum, p) => sum + (p.item ? p.eff[s] || 0 : 0), 0)]));
 
-  // 4. the meal the Food row shows (the pick, else the oldest with the best's result) and its menu
+  // 4. the meal the Food row shows (the pick, else the highest item level one with the best's result) and its menu
   const meal = food ? foodRow(app, gearTotals, food, picked, pct) : null;
   if (meal) bonus = foodBonus(job, meal.meal, gearTotals, app.level);
 
@@ -472,20 +476,6 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
       held: heldStats.has(s),
     };
   });
-  // tier ranking's readout: each key in order, with the effect it holds (its points for a stat without tiers)
-  // (Tenacity is ranked by its mitigation step, rankTierOf, not the damage step the Effect row shows)
-  const heldEffect = h => {
-    if (h.tier == null) return '(every point counts)';
-    if (h.stat === 'spec' && job.profile.spec === 'ten') return `−${(h.tier / 10).toFixed(1)}% damage taken`;
-    return tiers[job.stats.indexOf(h.stat)]?.effect ?? '';
-  };
-  // weapon damage, ranked first, is left out of the readout (owner's decision 2026-10-18)
-  const heldText = byTier
-    ? res.held
-        .filter(h => h.stat !== WD_KEY)
-        .map(h => `${job.label[h.stat]} ${heldEffect(h)}`.trim())
-        .join(', then ')
-    : null;
   // the set's defense after sync and the share of damage it removes at this level (shown, never ranked)
   const def = setDefense(picks.filter(p => p.item).map(p => ({ item: p.item, target: itemSyncIlvl(p.item, sync) })));
   const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, app.level), magPct: mitigationPct(def.mag, app.level) };
@@ -517,7 +507,6 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
     tiers,
     // by tier: "Critical Hit 29.3%, then Determination +9.4%, then Direct Hit +0.0%"; null for the plain ranking
     byTier,
-    heldText,
     synced: poolSynced(pool, sync),
     gcd: gcdFor(spd, app.level, BASE_GCD_MS, pct).toFixed(2),
     // hasted jobs: the haste and the GCD without it (owner's decision 2026-10-16: both, labelled)

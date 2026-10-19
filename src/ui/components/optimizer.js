@@ -1,5 +1,7 @@
-/* Gear optimizer tab: the best loadout for the chosen stat from every piece the job can wear, recomputed (debounced)
-   only while the tab is open. */
+/* Gear optimizer tab: the best loadout for the chosen stat from every piece the job can wear, searched when the user
+   presses Optimize (owner, 2026-10-18: no search on every setting change). A setting changed since the last search
+   leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
+   from" boxes still follow the settings as they change. */
 import Alpine from 'alpinejs';
 import { emptyGearFrom, optimizerKey, optimizerView, resultPanel, searchCount } from '../views/optimizer.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
@@ -29,34 +31,52 @@ export function optimizer() {
     mealQuery: '',
     mealStats: [],
     mealBestOnly: true,
-    /* the settings the result was last solved for, to tell a new result from a pick */
+    /* the ? note of the "Spare points to tiebreaks" switch (tier ranking): open or not */
+    rankHelp: false,
+    /* the settings the result was last solved for (optimizerKey), and the settings now: they differ once a setting
+       changes after a search, and the result is then out of date */
     lastDeps: '',
+    nowDeps: '',
+    get stale() {
+      return !!this.view && this.nowDeps !== this.lastDeps;
+    },
     /* a solve is pending or running: shows the progress bar */
     busy: false,
     /* the latest solve asked for; an older one still waiting is dropped */
     solveId: 0,
     init() {
+      // the settings as they change: whether the result is out of date (a job switch drops it), and the piece count and
+      // empty boxes under Gear to search
       debouncedEffect(
         Alpine,
         () => {
           const app = this.$store.app;
           // read every input synchronously so the effect tracks it (optimizerKey reads them all)
-          const tab = app.tab,
-            key = optimizerKey(app);
+          const key = optimizerKey(app),
+            job = app.job;
           return () => {
-            if (tab !== 'opt') return;
-            if (key !== this.lastDeps) {
-              this.picks = {};
-              this.menuOpen = null;
-              this.mealPick = null;
-              this.mealOpen = false;
-              this.lastDeps = key;
-            }
-            this.solve();
+            this.nowDeps = key;
+            if (this.view && job !== this.viewJob) this.view = null;
+            if (!job) return;
+            const raw = Alpine.raw(this.$store.app);
+            const c = searchCount(raw);
+            this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
+            this.emptyBoxes = emptyGearFrom(raw);
           };
         },
         DEBOUNCE_MS,
       );
+    },
+    /* the job the shown result is for */
+    viewJob: null,
+    /* Optimize: search with the settings as they are now; the menu picks of the last result are dropped. */
+    run() {
+      this.picks = {};
+      this.menuOpen = null;
+      this.mealPick = null;
+      this.mealOpen = false;
+      this.lastDeps = optimizerKey(Alpine.raw(this.$store.app));
+      this.solve();
     },
     /* Solve and show the result, with the menu picks made so far. The solve holds the page's thread (tier ranking up to
        a few seconds under a Target GCD), so the progress bar is shown first: after the next frame is painted. */
@@ -83,13 +103,12 @@ export function optimizer() {
       const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks), this.mealPick));
       this.solveMs = Math.max(1, Math.round(performance.now() - t0));
       this.view = view;
+      this.viewJob = raw.job;
+      this.nowDeps = optimizerKey(raw);
       // the result's panel values with the settings they were solved for, for How the math works (Substat tiers)
       const values = resultPanel(raw.jobCtx, view);
       this.$store.app.optPanel = values && Object.freeze({ key: optimizerKey(raw), values: Object.freeze(values) });
       performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
-      const c = searchCount(raw);
-      this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
-      this.emptyBoxes = emptyGearFrom(raw);
     },
     /* A piece picked from row i's menu: the row shows it, and the other rows are checked again against it. */
     pick(i, key) {

@@ -143,7 +143,7 @@ Two Python files: `test_generators.py` (the item database, the item level data, 
 Notes:
 
 - **What fails it.** Any uncaught page error or console error. Network errors are ignored, since the web fonts cannot load offline.
-- **Waits.** Every wait is on a concrete condition (an element appears, a text matches), except a few fixed waits of 600 ms that let the optimizer's debounce settle (the typing and same-result steps).
+- **Waits.** Every wait is on a concrete condition (an element appears, a text matches), except a fixed wait of 600 ms in the typing step, which checks that typing runs no search. The optimizer runs only on Optimize: the smoke test presses it (`waitOptimizer`) and waits for that search's timing mark.
 - **Screenshots.** Of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, written to the smoke test's output folder (gitignored).
 - **Success** prints `no errors`.
 

@@ -46,6 +46,11 @@ export function syncExplainer() {
       const v = Math.round(Number(value));
       if (Number.isFinite(v)) this.$store.app.piece.ilvl = Math.max(this.range[0], Math.min(this.range[1], v));
     },
+    /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
+    get rangeFill() {
+      const [lo, hi] = this.range;
+      return hi > lo ? ((this.il - lo) / (hi - lo)) * 100 : 0;
+    },
     resetIlvl() {
       this.$store.app.piece.ilvl = null;
     },

@@ -207,10 +207,14 @@ async function showMath(pg, sub) {
   await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
 }
 
-/** The optimizer output is debounced and only renders on its tab: wait until a result panel is shown. */
+/** The optimizer searches only when Optimize is pressed: open its tab, press it, and wait until that search has
+ * finished and its output is shown (a result, or a message such as "No set fits this GCD"). */
 async function waitOptimizer(pg) {
   await showTab(pg, 'opt');
-  await expect(pg.locator('#o-out .panel')).toBeVisible();
+  const runs = await pg.evaluate("performance.getEntriesByName('optimizer').length");
+  await pg.click('#o-run');
+  await pg.waitForFunction(n => performance.getEntriesByName('optimizer').length > n, runs, { timeout: TIMEOUT });
+  await expect(pg.locator('#o-out .panel').first()).toBeVisible();
 }
 
 /** Body rows of a table (CSS selector or Locator) as lists of the texts of its visible cells. Hidden cells are
@@ -383,11 +387,13 @@ const checkRealGearOptimizer =
     await setJob(pg, job);
     await waitOptimizer(pg);
     await pg.selectOption('#o-target', target);
+    await waitOptimizer(pg);
     const speed = (await pg.locator(`#o-target option[value="${target}"]`).innerText()).trim();
     await expect(pg.locator('#o-result')).toHaveAttribute('data-target', target);
     for (const synced of [true, false]) {
       const want = await coreGear(job, { cap: 123, sync: synced, level: 50 }, target);
       await pg.locator('#sync').setChecked(synced);
+      await waitOptimizer(pg);
       await expect(pg.locator('#o-count')).toHaveText(countText(want.searched, want.all));
       await expectTotal(pg, want.on, `${job} ${synced ? 'synced' : 'unsynced'} ${speed}`);
       check((await pg.locator('#o-out .readout').innerText()).includes(speed), `${job}: optimizer result does not name ${speed}`);
@@ -395,12 +401,14 @@ const checkRealGearOptimizer =
     }
   };
 
-/** Typing a number commits once, after a pause: typing a cap of 123 key by key runs the optimizer once (for 123),
- * not for 1 and 12 on the way; the result says how long the solve took. */
+/** Typing a number commits once, after a pause, and never searches: typing a cap of 123 key by key saves 123 and runs
+ * no search (the optimizer runs only on Optimize), leaving the last result marked out of date; Optimize then runs once
+ * and the result says how long the solve took. */
 async function checkTypingDebounce(pg) {
   await setJob(pg, 'SGE');
   await waitOptimizer(pg);
   await setCap(pg, '130'); // a cap level 50 allows (135 at most), not the 123 the typing below ends on
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-time')).toHaveText(/^Solved in \d+ ms\.$/);
   await pg.waitForTimeout(600); // longer than the typing and optimizer waits: nothing pending
   const runs = () => pg.evaluate("performance.getEntriesByName('optimizer').length");
@@ -420,7 +428,11 @@ async function checkTypingDebounce(pg) {
   await waitSaved(pg, 's => s.cap === 123');
   await pg.waitForTimeout(600);
   const n = (await runs()) - before;
-  check(n === 1, `typing a cap of 123 ran the optimizer ${n} times, expected once`);
+  check(n === 0, `typing a cap of 123 ran the optimizer ${n} times, expected none (it runs on Optimize)`);
+  await expect(pg.locator('#o-stale')).toBeVisible();
+  await waitOptimizer(pg);
+  check((await runs()) - before === 1, 'Optimize did not run the optimizer once');
+  await expect(pg.locator('#o-stale')).toBeHidden();
   await expect(pg.locator('#o-time')).toHaveText(/^Solved in \d+ ms\.$/);
 }
 
@@ -430,11 +442,15 @@ async function checkJobSwitch(pg) {
   await setJob(pg, 'WAR');
   await waitOptimizer(pg);
   await pg.selectOption('#o-target', 'crit');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
   await pg.click('[data-job-id="GNB"]'); // same role as WAR
   await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'GNB');
   const t = await pg.inputValue('#o-target');
   check(t === 'main', `after a job switch the target is '${t}'`);
+  // the other job's result goes: Optimize finds this one's
+  await expect(pg.locator('#o-none')).toBeVisible();
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
 }
 
@@ -502,8 +518,9 @@ async function checkGearFrom(pg) {
   await setJob(pg, job);
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', String(sync.level));
-  await waitOptimizer(pg);
+  await showTab(pg, 'opt');
   await pg.selectOption('#o-target', target);
+  await waitOptimizer(pg);
   const searchedDefault = ACTIVITY_KEYS.filter(k => !DEFAULT_EXCLUDE.includes(k));
   const t0 = await ticked(pg, 'o');
   check(same(t0, searchedDefault), `searched by default: ${JSON.stringify(t0)}, expected ${JSON.stringify(searchedDefault)}`);
@@ -524,8 +541,10 @@ async function checkGearFrom(pg) {
   // the market board switch off, then Crafted left out
   await setFrom(pg, 'o', 'market', false);
   await expect(pg.locator('#o-from')).toHaveText(`${searchedDefault.length} of ${ACTIVITY_KEYS.length} \u00b7 no market board`);
+  await waitOptimizer(pg);
   await expectTotal(pg, noMarket.on, `${job} ${target}, no market board`);
   await setFrom(pg, 'o', 'crafted', false);
+  await waitOptimizer(pg);
   await expectTotal(pg, noMarket.without, `${job} ${target}, no market board, crafted left out`);
   const nCrafted = noMarket.searched - (await coreGear(job, sync, target, [], ['crafted', ...DEFAULT_EXCLUDE], false)).searched;
   await expect(pg.locator('#o-count')).toHaveText(countText(noMarket.searched - nCrafted, noMarket.all));
@@ -538,6 +557,7 @@ async function checkGearFrom(pg) {
   await waitOptimizer(pg);
   await setFrom(pg, 'o', 'crafted', true);
   await setFrom(pg, 'o', 'market', true);
+  await waitOptimizer(pg);
   await expectTotal(pg, want.on, `${job} ${target}, back to the defaults`);
   await pg.locator('#sync').check();
   await setNumber(pg, '#level', '50');
@@ -560,7 +580,7 @@ async function checkOptFilters(pg) {
   await fillBrowser(pg, '', '', 100);
   await waitSaved(pg, "s => s.browse.min === '' && s.browse.max === '' && String(s.browse.lvl) === '100'");
   const browseCount = await pg.locator('#b-count').innerText();
-  await waitOptimizer(pg);
+  await showTab(pg, 'opt');
   await pg.selectOption('#o-target', target);
   await pg.click('#o-exp');
   for (const b of await pg.locator('#o-exp-menu input').all()) {
@@ -569,11 +589,13 @@ async function checkOptFilters(pg) {
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#o-exp')).toHaveText('2 expansions');
   await setNumber(pg, '#o-max', String(OPT_FILTER.ilvlMax));
+  await waitOptimizer(pg);
   await expectTotal(pg, want.on, `${job} ${target}, optimizer filters`);
   await expect(pg.locator('#o-count')).toHaveText(countText(want.searched, want.all));
   // number inputs bound with x-model save strings
   await waitSaved(pg, `s => s.opt.expOff.join() === 'ARR,HW,SB,ShB' && String(s.opt.max) === '${OPT_FILTER.ilvlMax}'`);
   await setNumber(pg, '#o-min', '9999');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-excluded')).toBeVisible();
   await showTab(pg, 'browse');
   await expect(pg.locator('#b-exp')).toHaveText('All expansions');
@@ -585,6 +607,7 @@ async function checkOptFilters(pg) {
   await pg.click('#o-exp');
   for (const b of await pg.locator('#o-exp-menu input').all()) await b.check();
   await pg.keyboard.press('Escape');
+  await waitOptimizer(pg);
   await expectTotal(pg, full.on, `${job} ${target}, filters cleared`);
   await pg.locator('#sync').check();
   await setNumber(pg, '#level', '50');
@@ -599,8 +622,9 @@ async function checkMelds(pg) {
   await setJob(pg, job);
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', String(sync.level));
-  await waitOptimizer(pg);
+  await showTab(pg, 'opt');
   await pg.selectOption('#o-target', target);
+  await waitOptimizer(pg);
   const melds = pg.locator('#o-melds');
   check(await melds.isChecked(), 'melds are on by default');
   check(!(await pg.locator('#o-food').isChecked()), 'Food is on by default');
@@ -612,14 +636,16 @@ async function checkMelds(pg) {
   await expect(pg.locator('#o-effect')).toContainText('%'); // the tier rows: Critical Hit rate
   await checkNoBadText(pg, 'melds/on');
   await melds.uncheck();
+  await waitOptimizer(pg);
   await expectTotal(pg, want.off, 'melds off');
   await expect(pg.locator('#o-result .meld')).toHaveCount(0);
   await waitSaved(pg, 's => s.opt.melds === false');
   await melds.check();
+  await waitOptimizer(pg);
   await expectTotal(pg, want.on, 'melds back on');
-  // leave the target on the main stat: the result is only recomputed while this tab is open, and a later check that
-  // waits for a Critical Hit result would otherwise read this one
+  // leave the target on the main stat, as the other checks expect
   await pg.selectOption('#o-target', 'main');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
   await pg.locator('#sync').check();
   await setNumber(pg, '#level', '50');
@@ -640,8 +666,9 @@ async function checkFood(pg) {
   await pg.locator('#sync').check();
   await setCap(pg, '123');
   await setNumber(pg, '#level', '50');
-  await waitOptimizer(pg);
+  await showTab(pg, 'opt');
   await pg.selectOption('#o-target', 'spd');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'spd');
   const food = pg.locator('#o-food');
   check(!(await food.isChecked()), 'Food is on by default');
@@ -649,6 +676,7 @@ async function checkFood(pg) {
   const gearCells = () => pg.locator('#o-result tbody tr:not(.total, .food, .tier) td:nth-child(2) > span').allInnerTexts();
   const gearItems = await gearCells();
   await food.check();
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-food-row')).toBeVisible();
   await expect(pg.locator('#o-meal-note')).toHaveText('HQ, best for goal');
   check(same((await gearCells()).slice(0, gearItems.length), gearItems), 'Food changed the gear');
@@ -693,34 +721,43 @@ async function checkFood(pg) {
   check((await columnValues(pg, '#o-food-total', 'SpS')) === gearSpd, 'a meal without speed changed Spell Speed');
   check((await columnValues(pg, '#o-food-row', 'DET')) > 0, 'the Determination meal adds no Determination');
   await checkNoBadText(pg, 'food');
-  // a new setting clears the pick, as it clears the rows' picks
+  // a new search clears the pick, as it clears the rows' picks
   await pg.selectOption('#o-target', 'main');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
   await expect(pg.locator('#o-meal-note')).toHaveText('HQ, best for goal');
 }
 
-/** Rank by tier: on by default; the readout names the goal and tiebreaks in order and the Tier row marks them; off, both
- * go and the choice is saved. */
+/** Tier ranking ("Spare points to tiebreaks"): on by default; its ? opens a note and Escape closes it; the Tier row
+ * marks the goal and tiebreaks it holds; off, the marks go and the choice is saved. */
 async function checkRankByTier(pg) {
   await setJob(pg, 'SGE');
   await waitOptimizer(pg);
   const byTier = pg.locator('#o-by-tier');
-  check(await byTier.isChecked(), 'Rank by tier is off by default');
+  check(await byTier.isChecked(), 'Spare points to tiebreaks is off by default');
+  await pg.click('#o-rank-help');
+  await expect(pg.locator('#o-rank-pop')).toHaveText(
+    'Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.',
+  );
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#o-rank-pop')).toBeHidden();
   await pg.selectOption('#o-target', 'crit');
   await pg.selectOption('#o-tb1', 'det');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
-  await expect(pg.locator('#o-held')).toHaveText(/^Ranked by tier: Critical Hit [\d.]+%, then Determination \+[\d.]+%/);
   await expect(pg.locator('#o-tier td.held')).toHaveCount(2);
   await byTier.uncheck();
-  await expect(pg.locator('#o-held')).toHaveCount(0);
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-tier td.held')).toHaveCount(0);
   await waitSaved(pg, 's => s.opt.byTier === false');
   await byTier.check();
-  await expect(pg.locator('#o-held')).toBeVisible();
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-tier td.held')).toHaveCount(2);
   await waitSaved(pg, 's => s.opt.byTier === true');
   await checkNoBadText(pg, 'rank by tier');
   await pg.selectOption('#o-tb1', '');
   await pg.selectOption('#o-target', 'main');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
 }
 
@@ -732,8 +769,9 @@ async function checkTargetGcd(pg) {
   await setJob(pg, 'SGE');
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', '100');
-  await waitOptimizer(pg);
+  await showTab(pg, 'opt');
   await pg.selectOption('#o-target', 'crit');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
   // level 100 relics whose substats the player allocates (Phantom Pendulums Occultum) are left out, with a note
   await expect(pg.locator('#o-relic-note')).toHaveText('Relic weapons with customizable substats are left out.');
@@ -744,27 +782,32 @@ async function checkTargetGcd(pg) {
   const free = Number.parseFloat(await gcdCard.innerText());
   const asked = Math.round((free >= 2.5 ? free - 0.01 : free + 0.01) * 100) / 100;
   await setNumber(pg, '#o-gcd', asked.toFixed(2));
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-gcd-line')).toHaveText(/^Spell Speed \d+ to \d+ \(character panel\)$/);
   await expect(gcdCard).toHaveText(`${asked.toFixed(2)}s`);
   await pg.locator('#o-gcd-mode label', { hasText: 'or faster' }).click();
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-gcd-line')).toBeVisible();
   await waitSaved(pg, `s => s.opt.gcd == ${asked} && s.opt.gcdMode === 'min'`);
   await checkNoBadText(pg, 'target gcd');
   await pg.selectOption('#o-target', 'spd');
+  await waitOptimizer(pg);
   await expect(box).toBeDisabled();
   await expect(pg.locator('#o-gcd-line')).toHaveCount(0);
-  await expect(pg.locator('#o-gcd-hint')).toHaveText('off: the goal is speed');
+  await expect(pg.locator('#o-gcd-row > label')).toHaveText('Target GCD (off: the goal is speed)');
   await setJob(pg, 'NIN');
   await waitOptimizer(pg);
   check((await box.inputValue()) === '', 'a job switch kept the Target GCD');
-  await expect(pg.locator('#o-gcd-row')).toContainText('Target GCD (Increase Attack Speed 15%)');
+  await expect(pg.locator('#o-gcd-row > label')).toContainText('with Increase Attack Speed 15%)');
   await pg.selectOption('#o-target', 'crit');
   await pg.locator('#o-gcd-mode label', { hasText: 'exactly' }).click();
   await setNumber(pg, '#o-gcd', '2.40');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-gcd-line')).toContainText("Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)");
   await expect(pg.locator('#o-nogcd')).toBeVisible();
   await checkNoBadText(pg, 'target gcd/none');
   await setNumber(pg, '#o-gcd', '');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toBeVisible();
   await pg.screenshot({ path: shot('target-gcd.png'), fullPage: true });
 }
@@ -787,12 +830,12 @@ async function checkReloadPersists(pg) {
   await showMath(pg, 'piece');
   await pg.selectOption('#p-slot', 'body');
   await setNumber(pg, '#p-ilvl', '300');
-  await waitOptimizer(pg);
+  await showTab(pg, 'opt');
   await setFrom(pg, 'o', 'relics', false);
   await pg.selectOption('#o-tb1', 'det');
   await pg.selectOption('#o-tb2', 'vit');
-  await pg.selectOption('#o-target', 'crit'); // last, so the result below includes every change
-  // the result is debounced: wait until it is for the new target before reading the total
+  await pg.selectOption('#o-target', 'crit');
+  await waitOptimizer(pg);
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
   const total = optTotal(pg);
   const before = await total.innerText();
@@ -904,7 +947,7 @@ async function checkCorruptedStorage(pg) {
     if (wantJob) {
       await expect(pg.locator('#tab-browse')).toBeVisible(); // the old Gear pool tab opens as the Gear browser
       await expect(browserRows(pg).first()).toBeVisible();
-      await showTab(pg, 'opt');
+      await waitOptimizer(pg);
       await expect(pg.locator('#o-result')).toBeVisible();
     } else {
       await expect(pg.locator('#no-job')).toBeVisible();
@@ -1092,8 +1135,6 @@ const hasHScroll = pg => pg.evaluate(() => document.documentElement.scrollWidth 
 async function checkSameResult(pg) {
   await pg.setViewportSize(NARROW);
   await waitOptimizer(pg);
-  // a solve for changed settings closes any open menu: let the group's setup settle first
-  await pg.waitForTimeout(600);
   const button = pg.locator('#o-table .same-btn').first();
   await expect(button).toBeVisible();
   const total = await optTotal(pg).innerText();
@@ -1109,11 +1150,12 @@ async function checkSameResult(pg) {
   await expect(button.locator('span').first()).toHaveText(name);
   await expect(optTotal(pg)).toHaveText(total);
   await checkNoBadText(pg, 'same result/picked');
-  // a setting change gives a new result, and the rows start again from the easiest pieces
-  // (one solve apart: settings changed and changed back within the optimizer's wait keep the pick)
+  // a setting change leaves the result out of date, its menus off; Optimize gives a new result, and the rows start
+  // again from the easiest pieces
   await pg.selectOption('#o-tb1', 'crit');
-  await pg.waitForTimeout(600);
+  await expect(pg.locator('#o-stale')).toBeVisible();
   await pg.selectOption('#o-tb1', '');
+  await waitOptimizer(pg);
   await expect(button.locator('span').first()).toHaveText(first);
 }
 
@@ -1212,9 +1254,7 @@ async function checkTiers(pg) {
 
   // the optimizer's result fills the boxes: its Total row, substat by substat. The panel of the last result shows at
   // once, so wait for a solve for these settings
-  const runs = await pg.evaluate("performance.getEntriesByName('optimizer').length");
   await waitOptimizer(pg);
-  await pg.waitForFunction(n => performance.getEntriesByName('optimizer').length > n, runs, { timeout: TIMEOUT });
   // header cells are shown in capitals (CSS), so compare in upper case
   const heads = (await pg.locator('#o-out thead tr').first().locator('th').allInnerTexts()).map(t => t.trim().toUpperCase());
   const total = (await pg.locator('#o-out tr.total').first().locator('td').allInnerTexts()).map(t => t.trim());

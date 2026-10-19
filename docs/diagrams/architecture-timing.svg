@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="t d">
   <title id="t">What happens after typing 123 into a number field</title>
-  <desc id="d">A timeline in milliseconds. The user types 1, 12 and 123 into the sync cap field, 100 ms apart as an example. The field commits 300 ms after the last keystroke, so 1 and 12 are never committed and only 123 reaches the store; Enter or leaving the field would commit at once. When the store changes, Settings and How the math works recompute at once, and so does the gear browser while its tab is open. The optimizer, while its tab is open, runs once 120 ms after the last change: changes less than 120 ms apart reset its timer. The saved state is written to browser storage 150 ms after the last change.</desc>
+  <desc id="d">A timeline in milliseconds. The user types 1, 12 and 123 into the sync cap field, 100 ms apart as an example. The field commits 300 ms after the last keystroke, so 1 and 12 are never committed and only 123 reaches the store; Enter or leaving the field would commit at once. When the store changes, Settings and How the math works recompute at once, and so does the gear browser while its tab is open. The optimizer's piece count updates once 120 ms after the last change: changes less than 120 ms apart reset its timer. The optimizer searches only when Optimize is pressed. The saved state is written to browser storage 150 ms after the last change.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .fg { fill: #1b2a2c; }
@@ -67,11 +67,11 @@
   <text class="fg s" x="570" y="214">at once</text>
 
   <!-- Lane 5: optimizer -->
-  <text class="fg l" x="20" y="264">Optimizer (tab open)</text>
+  <text class="fg l" x="20" y="264">Optimizer piece count</text>
   <line class="wait" x1="560" y1="260" x2="633" y2="260"/>
   <circle class="accent" cx="637" cy="260" r="4"/>
   <text class="muted s" x="598" y="250" text-anchor="middle">120 ms</text>
-  <text class="fg s" x="647" y="264">runs once</text>
+  <text class="fg s" x="647" y="264">updates</text>
 
   <!-- Lane 6: save -->
   <text class="fg l" x="20" y="314">Saved to browser storage</text>

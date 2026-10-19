@@ -94,7 +94,7 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
    resultOf, and the same total with food on each of `keys` (the goal's target and tiebreaks) that has no tiers. Every
    meal adds Vitality, so with Vitality as a key a meal with less of it is not the same, though resultOf leaves it out.
    ctx as for resultOf (its food is ignored). Returns them in `meals` order. For the result's Food menu: the meals it
-   tags "best for goal", the oldest of which the Food row shows. The gear stays as the search found it with `meal`;
+   tags "best for goal", the one of the highest item level of which the Food row shows. The gear stays as the search found it with `meal`;
    under tier ranking or a Target GCD another meal could make the search choose other gear, which this does not check. */
 export function sameMeals(job, gearTotals, meal, meals, ctx, keys) {
   const exact = keys.filter(k => k && !rankTierOf(job, k, ctx.level, ctx.haste ?? 0));

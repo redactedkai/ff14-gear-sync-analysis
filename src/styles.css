@@ -230,6 +230,15 @@ select,
   min-width: 0;
   width: 100%;
 }
+/* number boxes without the browser's grey step arrows, which ignore the theme; the arrow keys still step */
+input[type="number"] {
+  appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
 /* selects draw their own chevron, inset from the right edge like the multi-select's (the native arrow sits against
    the border); two diagonal strokes in the text colour, so it follows the theme */
 select {
@@ -562,11 +571,33 @@ td.defense {
 .multi-opt:hover {
   background: var(--surface2);
 }
+/* the menus' checkboxes, drawn in the theme: an outlined box, filled with the accent and a tick when on */
 .multi-opt input {
-  accent-color: var(--accent);
+  appearance: none;
+  flex: none;
+  position: relative;
   width: 16px;
   height: 16px;
   margin: 0;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.multi-opt input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.multi-opt input:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-fg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 input.invalid {
   border-color: var(--bad);
@@ -640,9 +671,47 @@ button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* the slider: a thin track filled with the accent up to the thumb (--fill, set by the page), a round accent thumb */
 input[type="range"] {
   width: 100%;
-  accent-color: var(--accent);
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--line) var(--fill, 0%));
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 .toggle {
   display: flex;
@@ -685,17 +754,33 @@ input[type="range"] {
   background: var(--accent-fg);
   transform: translateX(18px);
 }
-.chk {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
+button {
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
   color: var(--fg);
+  padding: 7px 12px;
+  cursor: pointer;
 }
-.chk input {
-  accent-color: var(--accent);
-  width: 16px;
-  height: 16px;
+button:hover {
+  border-color: var(--accent);
+}
+button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+button.chip {
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  border-radius: 99px;
+}
+button.x {
+  padding: 2px 8px;
+  color: var(--bad);
 }
 button {
   font: inherit;
@@ -753,87 +838,49 @@ button.x {
 .switches {
   gap: 4px 28px;
 }
-.chk {
-  display: flex;
+/* the optimizer's two rows of fields on the same five columns, so Goal lines up with Gear to search */
+#o-controls .grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+/* Target GCD: the Goal row's last two columns, the box growing beside the exactly / or faster buttons */
+.gcd-field {
+  grid-column: span 2;
+}
+.gcd-field .row {
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+.gcd-field input[type="number"] {
+  flex: 1 1 0;
+  min-width: 70px;
+}
+/* the switches' line ends with tier ranking's switch ("Spare points to tiebreaks", its ? and note) and the Optimize
+   button, at the right */
+.rankwrap {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--fg);
-}
-.chk input {
-  accent-color: var(--accent);
-  width: 16px;
-  height: 16px;
-}
-button {
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 500;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  background: var(--surface2);
-  color: var(--fg);
-  padding: 7px 12px;
-  cursor: pointer;
-}
-button:hover {
-  border-color: var(--accent);
-}
-button.primary {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
-}
-button.chip {
-  padding: 3px 9px;
-  font-size: 0.78rem;
-  border-radius: 99px;
-}
-button.x {
-  padding: 2px 8px;
-  color: var(--bad);
-}
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-/* the optimizer's controls: one panel, Gear to search, then Goal under a rule */
-.part {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-.part + .part {
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
-}
-/* the count after a tab's or part's heading ("· searching 1,939 of 1,999 pieces") */
-.count {
-  display: inline-block; /* wraps as one piece under a long heading */
-  font-family: var(--sans);
-  font-size: 0.82rem;
-  font-weight: 400;
-  color: var(--muted);
-}
-.switches {
-  gap: 4px 28px;
-}
-/* Target GCD: the box, the exactly / or faster buttons and the range, on a dashed line under the Goal grid */
-.gcd-row {
-  display: flex;
-  flex-direction: column;
   gap: 6px;
-  border-top: 1px dashed var(--line);
-  padding-top: 12px;
 }
-.gcd-row .row {
-  gap: 8px 16px;
+.rankwrap .popover.statpop {
+  right: 0;
 }
-.gcd-row input[type="number"] {
-  width: 150px;
+.switches .grow {
+  flex: 1;
+}
+button.run {
+  min-width: 120px;
+  padding: 8px 18px;
+  font-weight: 600;
+}
+/* a result older than the settings: shown dimmed, its menus off, until Optimize runs again */
+.is-stale {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.stale-note {
+  margin: 0 0 8px;
+  color: var(--fg);
 }
 .seg {
   display: inline-flex;
@@ -1200,11 +1247,12 @@ footer {
 .panelhead h2 {
   margin: 0;
 }
-/* the sub-tab's own level, right after the title's "at level" */
+/* the sub-tab's own level, right after the title's "at level": drawn like the substat boxes under it (bold digits),
+   its digits on the title's baseline */
 .panelhead .tlevel {
-  width: 4.5em;
+  width: 88px;
   margin-left: -4px;
-  align-self: center;
+  font-weight: 600;
 }
 .ladder {
   table-layout: fixed;
