@@ -21,9 +21,9 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 325 tests in 34 files, about 40 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 331 tests in 35 files, about 40 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
-| Generator tests (Python) | the data generators, on small test files | 83 tests in 2 files (2026-10-18) |
+| Generator tests (Python) | the data generators, on small test files | 91 tests in 2 files (2026-10-19) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
 
 Notes:
@@ -70,6 +70,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
 | piece-subs | Piece stats substat ranks |
 | data-format | generated data shape |
+| level-tables | every table keyed by level reaches the level cap |
 | provenance | source record and footer |
 | state | restoring saved state |
 | store | job switch and reset |
@@ -263,6 +264,7 @@ Run the whole check afterwards. A new test is only useful if it passes on the fi
 | Wiki caps at 475, caps at 123 | must not move |
 | Generic maximum at cap 123 | must not move |
 | Format, row shape, provenance, generator tests | must not move |
+| Level tables | fail when the level cap rises, until extended |
 
 The rule behind the table: a value that depends on what gear exists may move; a value that depends only on old, unchanged game rows must not.
 
@@ -273,6 +275,7 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 - **The Wiki caps at item level 475** are published numbers; a change means the game changed old `ItemLevel` rows. The same holds for the item level 123 caps.
 - **The generic maximum at cap 123** (296 Spell Speed, 2.22 s GCD) depends only on `ItemLevel` rows 123 and 475. Investigate if it moves.
 - **Format, row shape, provenance and generator tests** test the pipeline, not the game data.
+- **Level tables** fail when a patch raises the level cap, naming each hand-kept table that stops short (the main stat base per level, the expansion list, the haste steps). Extend those tables; see [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).
 
 ## Where this lives
 

@@ -54,7 +54,7 @@ What each sheet holds, and which of its columns are read:
 - **`SpecialShop`**: exchange shops, up to 60 listings each, with what a listing gives (`Item`) and costs (`ItemCost`), and the shop's `UseCurrencyType`.
 - **`TomestonesItem`**: the tomestone currencies and which are current (`Tomestones` 1 to 4).
 - **`ItemLevel`**: the stat budget of every stat at every item level. Ids 0 to 920.
-- **`ParamGrow`**: per character level data, including the speed constants. Rows 0 to 201; levels 1 to 100 are used.
+- **`ParamGrow`**: per character level data, including the speed constants. Rows 0 to 201; levels 1 to the level cap (100 today) are used (section 5).
 - **`BaseParam`**: one row per stat. It holds the share of the budget each slot gets, in thousandths (values in [math.md, section 3](../mechanics/math.md#3-slot-shares)), and the stat factor per item kind (`MeldParam[0]` to `MeldParam[12]`, in percent). The item level generator copies the stat factors (section 5) and only checks the slot shares, which are kept in the shared format definition (section 3). The item database generator checks the item kinds and the names of the crafter and gatherer stats.
 - **`ItemAction`**: what using an item does. A meal's row has `Action` 844 or 845, `Data[0]` 48 (the Well Fed status) and `Data[1]` its `ItemFood` row.
 - **`ItemFood`**: up to three stats per meal or medicine: `BaseParam[0..2]`, `IsRelative[0..2]` (a percentage, or a flat bonus), `Value`/`Max` for normal quality and `ValueHQ`/`MaxHQ` for HQ, in one row.
@@ -65,7 +65,7 @@ What each sheet holds, and which of its columns are read:
 
 A game patch can rename a column, change a number the page relies on, or change how values are written. The generators check for all three before they write anything, so such a change stops the regeneration with an error instead of producing wrong data quietly.
 
-**Slot shares, verified on every regeneration.** For all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the share the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). The columns checked are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent`, `RingPercent` and `ChestHeadPercent` (the body that covers the head, section 4). The sheet has more columns for other multi-slot gear; the project has no slot code for that gear, so they are not checked. See [math.md](../mechanics/math.md) for how the shares are used.
+**Slot shares, verified on every regeneration.** For all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the share the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). The columns checked are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent`, `RingPercent`, and the three multi-slot columns that have a slot code (section 4): `ChestHeadPercent` (the body that covers the head), `LegsFeetPercent` and `ChestHeadLegsFeetPercent`. The sheet has more multi-slot columns (`HeadChestHandsLegsFeetPercent`, `ChestLegsGlovesPercent`, `ChestLegsFeetPercent`, plus `WaistPercent` and `UnderArmorPercent`); the project has no slot code for that gear, so those are not checked. See [math.md](../mechanics/math.md) for how the shares are used.
 
 **Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers:
 
@@ -80,7 +80,9 @@ A game patch can rename a column, change a number the page relies on, or change 
 
 **Value checks.** A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`).
 
-An error exits with status 1 and writes no file, so the full regeneration stops too.
+**Yes/no columns.** The generators read `CanBeHq`, `IsUnique` and `IsUntradable` in `Item`, and `IsRelative` in `ItemFood`, as the word `True`. A value other than `True` or `False` in any row stops them with an error naming the sheet, the column and the values found. Without the check, an exporter that wrote `1`/`0` would make every one of these false without notice: no HQ bonus, no Unique ring, every piece tradeable, no meal kept. Today every value is `True` or `False` (**verified** by count over all 52,801 `Item` rows).
+
+An error exits with status 1 and writes no file, so the full regeneration stops too. The errors a patch is most likely to cause name what to edit: an activity with no box names `ACTIVITY_BOX`, a category with no drop activity names `DROP_ACTIVITY`, and a hand-kept id that now names another item names its table (section 9).
 
 ## 2. Fetching
 
@@ -95,14 +97,17 @@ The fetch step makes a **sparse, shallow, blobless** clone of the datamining rep
 For the current data that is about 7 MB of git data and 20 MB of CSV files on disk, mostly `Item.csv`, instead of the whole repository.
 
 - **Refreshing.** Running the fetch again when the clone exists does a fast-forward pull, which picks up whatever the miners published since.
+- **A given commit.** `fetch.py --commit <id>` fetches that one commit (the full 40-digit id, which every generated file names, section 6) and checks it out instead of the newest one, so the data of an older page can be rebuilt with one fetch and one regeneration. A later fetch without it goes back to the newest commit. The job icons are always fetched as they are today.
 - **Completeness.** The step fails if any of the twenty files is missing afterwards.
 - **Adding a sheet.** A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run. To add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
 
 ### The most speed per level
 
-The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.mjs` works it out with the optimizer (JavaScript, so `regen.py` runs it with Node after the item and food tables) and writes `src/data/max-speed.json`, one number per level.
+The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.mjs` works it out with the optimizer (JavaScript, so `regen.py` runs it with Node after the item and food tables) and writes `src/data/max-speed.json`, one number per level from 1 to the level cap (the highest equip level in the item database, as the page computes it).
 
-For each job, at each level up to its cap, the most gear speed is the best of three searches with melds: gear made for the level without sync, every piece level synced, and every piece at the highest item level cap the level allows (`capCeiling`, from level 15: below that the cap case comes only from Ala Mhigan Earrings, equip level 1 and item level 50, and no duty syncs that low). The HQ meal that adds the most speed goes on top. Jobs that wear the same pieces give the same answer, so each group is searched once. It takes about two minutes. Level 50, for example: 341 base + 387 gear (level 100 gear synced to the 135 cap) + 72 food = 800.
+For each job, at each level up to its cap, the most gear speed is the best of three searches with melds: gear made for the level without sync, every piece level synced, and every piece at the highest item level cap the level allows (`capCeiling`, from level 15: below that the cap case comes only from Ala Mhigan Earrings, equip level 1 and item level 50, and no duty syncs that low). The HQ meal that adds the most speed goes on top. Jobs that wear the same pieces give the same answer, so each group is searched once. It takes about two and a half minutes. Level 50, for example: 341 base + 387 gear (level 100 gear synced to the 135 cap) + 72 food = 800.
+
+A search that stops at its node limit (2,000,000 nodes) may miss the true most speed. The generator then writes nothing, names each such search (jobs, level and case) and exits with status 1; raise its node limit and run it again. No search stops there today (**verified**: full run on `d9582a6`, 2026-10-19).
 
 ### Job icons
 
@@ -182,7 +187,15 @@ The figure follows one real piece, Void Ark Helm of Fending (a tank head piece),
 
 ### Selection
 
-An `Item` row becomes a database row when it passes all eight rules below, applied in order. The figure shows how many rows of the current data each rule leaves.
+An `Item` row becomes a database row when it passes all eight rules below, applied in order. The figure shows how many rows of the current data each rule leaves. The item database generator prints the same funnel on every run, as one line of rows each rule left out, so a patch that suddenly drops many more rows shows there:
+
+```
+Item.csv 52,801 rows: no name -1,921, no slot code (belts, soul crystals, not gear) -21,854, item level under 15 -4,248,
+no combat job -2,623, no stats -1,338, crafter or gatherer stat -5, category aetherial (LEFT_OUT) -487,
+category diadem (LEFT_OUT) -293, category legacy (LEFT_OUT) -1; kept 20,031
+```
+
+(One line in the output; wrapped here. A rule that leaves nothing out, rule 7 today, is not listed.)
 
 ![Funnel of the eight selection rules over the 52,801 Item rows, with the rows left after each: 1, has a name, 50,880; 2, its equip slot category resolves to a slot (section Slot), which rules out belts, soul crystals and non-gear, 29,026; 3, item level at least 15, 24,778; 4, at least one of the 23 combat jobs may equip it (job mask above 0), which rules out crafter and gatherer gear and gear only a base class such as Gladiator can wear, 22,155; 5, at least one of its 14 stats is non-zero after the HQ rule below, 20,817; 6, no crafter or gatherer stat, normal or HQ, 20,812; 7, its slots match a slot code, else the piece is left out and its name printed, 20,812; 8, not retired (Diadem, Aetherial and legacy gear left out), 20,031](../diagrams/data-selection.svg)
 
@@ -193,7 +206,7 @@ Notes on the rules:
 - **Rule 8.** Three categories are left out (checked on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)):
   - Code 250 gear has random secondary attributes, so the stats in the game files are not what a piece has (**second-hand**: the item text, which the export does not carry). That is the Heavensward Diadem gear (equip level 60, 293 pieces, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below, 487 pieces).
   - Code 990 is gear that can no longer be obtained (1 piece reaches this rule, the Chocobo Mask; the version 1.0 "Dated" gear has no combat stats and stops earlier).
-  - The generator prints nothing about them; the counts are in the figure (781 rows: 293 + 487 + 1).
+  - 781 rows in all (293 + 487 + 1), printed per category in the generator's funnel line above.
 
 **Why item level 15.** The floor is a choice of this project (**owner's decision**, 2026-10-15), not a game rule. Sastasha, the lowest dungeon, opens at level 15 and syncs to level 18 with no item level requirement or item level sync (`ContentFinderCondition`, **verified**), so gear from item level 15 up can be worn there. Until then the floor was 100. Below 100 the database carries each piece's own stats, but the stat model's patterns (substat shares, factors) were measured at 100 and up only ([validation.md](../mechanics/validation.md)), and the item stat accuracy check starts at 110.
 
@@ -299,7 +312,7 @@ The boxes in the current data (2026-10-18):
 - 4,718 of the 20,031 rows are tradeable; 1,110 have no route (970 base tomestone sets no longer sold, 75 base Radiant's, 65 Antiquated Heavensward).
 - Relics & Field ops covers Eureka, Bozja and Occult Crescent gear and the relic weapons; Extreme (Legacy) also covers Baldesion Arsenal and Delubrum Reginae (Savage); Variant & Criterion is the Exquisite weapons, upgraded with Elevated Ester (the rest those dungeons sell is glamour).
 
-**Checks.** The generator stops on an activity with no box (combat gear sold for scrips, for example), a hand-kept id with another name, or a category with no drop activity.
+**Checks.** The generator stops on an activity with no box (combat gear sold for scrips, for example), a hand-kept id with another name, or a category with no drop activity. Each error names the table to edit (section 9).
 
 **Two flags for the categories.** `gear_sources.py` marks a piece **crafted** when it is the `ItemResult` of a recipe, and **ultimate** when an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). The category rules use them (the ultimate weapons share code 60 with trial gear) and cross-check them: the generator stops on a recipe result outside crafted, a totem purchase outside ultimate, or a Savage armor piece or weapon without a dye slot. The totem flag covers 136 weapons: the 16, 16, 18, 20, 22, 22 and 22 of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
@@ -426,13 +439,15 @@ The file holds the rows and the materia table next to each other, under the same
 
 Rows are sorted by item level (highest first), then slot code, then name. The stats are stored as one string per row to keep the file small; the page splits it when it reads a row.
 
+**One row per line.** The file is JSON with each database row on a line of its own (and the source record, materia table and tomestone names on one line each), so after a patch `git diff` lists the rows added, removed or changed. The other generated tables are written the same way: one stat, level or job per line in the item level file, one meal per line in the food file. The line breaks cost about 20 KB in the item file and nothing in the page, which the bundler minifies (section 8).
+
 ## 5. Item level table and level data
 
 *What, besides the gear itself, does the stat math need?* The formulas turn an item level into stats, a character level into speed constants, and an item's kind into stat percentages. The second generator writes one file with all of that, in six parts.
 
 **Stat budgets.** For each of the 14 stats, the `ItemLevel` column of that stat as a list indexed by item level: $\text{budget}_s(\ell)$ for $\ell = 0, \dots, 920$. The ids must run 0, 1, 2, ... without gaps, so that the list position equals the item level; the generator stops with an error otherwise. The budget curves and example values are in [math.md, section 2](../mechanics/math.md#2-the-budget-table); how a budget becomes the stat on a piece is in [math.md, section 4](../mechanics/math.md#4-the-stats-on-a-piece).
 
-**Level data.** For character levels 1 to 100, three `ParamGrow` columns, each stored as a list indexed by level:
+**Level data.** For character levels 1 to the top level, three `ParamGrow` columns, each stored as a list indexed by level. The top level is read from the sheet, not written in the code: it is the highest row with an `ItemLevelSync`, 100 today. The rows above the level cap are zero (101 to 200), and the last row (201) holds 100 and 100 with no `ItemLevelSync`, so neither counts. A level cap raised by a patch therefore lengthens the list by itself; a unit test then checks that every table keyed by level reaches the new cap (section 10).
 
 | Column | Meaning | Used in |
 | --- | --- | --- |
@@ -440,7 +455,7 @@ Rows are sorted by item level (highest first), then slot code, then name. The st
 | LevelModifier | the divisor in the speed formulas | [speed](../mechanics/math.md#6-speed-and-substat-tiers) |
 | ItemLevelSync | item level gear is synced to at that level | [level sync](../mechanics/math.md#which-pieces-are-synced) |
 
-A missing level or column stops the generator with an error. The values at levels 90 and 100 are in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers); the `ItemLevelSync` mapping and when a piece is synced are in [math.md, section 5](../mechanics/math.md#which-pieces-are-synced).
+A missing column, or a level from 1 to the top with a missing row or a value that is not a positive whole number, stops the generator with an error. The values at levels 90 and 100 are in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers); the `ItemLevelSync` mapping and when a piece is synced are in [math.md, section 5](../mechanics/math.md#which-pieces-are-synced).
 
 **Stat factor table.** For each stat, its `BaseParam` row's 13 `MeldParam` columns, in percent: $f_s(k)$ for item kind $k = 0, \dots, 12$. For example:
 
@@ -454,7 +469,7 @@ How it is used is in [math.md, section 4](../mechanics/math.md#the-stat-factor-o
 
 **Job modifiers.** For each of the 23 combat jobs, its `ClassJob` modifiers of Strength, Dexterity, Intelligence, Mind and Vitality, in percent (`jobModifiers` in the shared format definition): the character's base main stat and Vitality are the level's base times these ([math.md, section 6](../mechanics/math.md#totals-as-on-the-character-panel)). A job with no row, or a modifier that is not a positive whole number, stops the generator.
 
-**Not from the game files.** `LEVEL_MAIN` (`src/core/constants.js`: the main stat base at each level, 1 to 100; food is a percentage of the whole stat) is carried by hand from AkhMorning's Level Modifiers table (**inferred**: no sheet holds it; it equals xivgear's at levels 50, 60, ..., 100). The generators do not touch it.
+**Not from the game files.** `LEVEL_MAIN` (`src/core/constants.js`: the main stat base at each level, 1 to 100; food is a percentage of the whole stat) is carried by hand from AkhMorning's Level Modifiers table (**inferred**: no sheet holds it; it equals xivgear's at levels 50, 60, ..., 100). The generators do not touch it, so a patch that raises the level cap needs its new levels added by hand; the level table test fails until they are.
 
 **Source record.** Which datamining commit the data came from (next section).
 
@@ -472,11 +487,15 @@ A meal whose `ItemFood` row is missing, or a kept stat whose HQ percent is not 1
 
 *Which version of the game does the page's data describe?* When the data is regenerated, the commit id and commit date of the local datamining clone are recorded. They appear in three places:
 
-- in the item and item level files, a one-line "do not edit" notice naming the repository, the full commit id and the date;
-- in the same two files, a source record (repository, commit, date); the page reads it from the item level file;
+- in the item, item level and food files, a one-line "do not edit" notice naming the repository, the full commit id and the date;
+- in those three files and the most-speed file, a source record (repository, commit, date); the page reads it from the item level file;
 - the page footer, as "Game data: ffxiv-datamining" plus the short commit id and the date. The current footer reads `Game data: ffxiv-datamining d9582a6, 2026-09-30`.
 
 The full regeneration refuses to run when it cannot read the clone's commit. A generator run on its own (for example on test files) writes "commit unknown" and no source record, and the footer then shows nothing.
+
+**Edited clones.** The record names a commit, not the files, so data generated from a CSV edited in the local clone would claim to be that commit's. The full regeneration therefore refuses to run while any tracked file in the clone differs from its commit, and lists the files. `regen.py --allow-dirty` runs anyway, with a warning, for trying out an edit; what it writes should not be committed. Untracked files in the clone are not checked: the generators read only tracked sheets.
+
+**Reproducing older data.** Since every generated file names the full commit, its data can be rebuilt with `fetch.py --commit <id>` followed by `regen.py` (section 2).
 
 **The newest commit, not the newest change.** The recorded commit is the clone's newest commit, not the newest commit that changed one of the fetched sheets. Commit `d9582a6` ("TC 7.25") changed no English CSV. Six of the sheets were last changed by:
 
@@ -533,29 +552,77 @@ The page bundle takes the page code, the stylesheet and the generated data files
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 2,090,977 bytes |
-| item level table, level data and stat factor table (generated file) | 61,152 bytes |
+| item database (generated file) | 2,422,348 bytes |
+| item level table, level data and stat factor table (generated file) | 78,584 bytes |
 | job icons (generated file) | 216,622 bytes |
-| food (generated file) | 15,573 bytes |
-| finished page, minified | 2,576,604 bytes at the last build, 2026-10-16 (about 2.6 MB) |
+| food (generated file) | 18,290 bytes |
+| most speed per level (generated file) | 575 bytes |
+| finished page, minified | 2,964,555 bytes (about 3.0 MB) |
 
-The item database is about 81% of the page, the icons about 8%.
+Measured 2026-10-19 on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,310 bytes, about 81% of the page; the icons are about 7%.
 
 ## 9. Updating after a game patch
 
 One command, `npm run update-data`, does steps 1 and 2.
 
 1. **Fetch**: pull the newest CSVs into the local clone.
-2. **Regenerate**: run the generators (the item and item level ones record the new commit) and rebuild the page. Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
+2. **Regenerate**: run the generators (the data files record the new commit) and rebuild the page. It refuses to start while a CSV in the clone has local edits (section 6). Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The item database step also prints its funnel line (section 4): compare it with the last run's, and look into any rule whose count jumped. The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-4. Review the change in the two generated files (the diff shows new items and any changed table rows) and update counts quoted in the docs, such as the 20,031 rows above.
+4. **Review** the change in the generated files with `git diff`: each changed item, budget column, level or meal is its own line (section 4). Then update counts quoted in the docs, such as the 20,031 rows above.
 
 Some test expectations are allowed to move after a patch and others must not; the list is in [testing.md, section 6](testing.md#6-after-a-game-patch).
 
+**When the regeneration stops.** Each error says what to edit:
+
+| Error | Edit |
+| --- | --- |
+| a sheet is missing columns | the shared format definition or the generator that reads them |
+| slot shares differ from the format file | the slot `percent`s in the format file, after checking the math |
+| a yes/no column holds other values | the generators that read the column |
+| an activity has no box | `ACTIVITY_BOX` in `gear_activities.py` (and `activities` in the format file for a new box) |
+| no drop activity for a category | `DROP_ACTIVITY` in `gear_activities.py` |
+| an unknown `SubcategorySort` code | `gear_categories.py`, see [subcategory-sort-codes.md](subcategory-sort-codes.md) |
+| hand-kept ids changed | the table it names: `CURRENCIES`, `KNOWN_SOURCE`, `FIXED_ITEMS`, `RETIRED_SHOPS`, `ITEM_OVERRIDES`, `CURRENCY_OVERRIDES` or `ULTIMATE_TOTEMS` |
+| a most-speed search stopped at its node limit | its node limit in `gen_max_speed.mjs` |
+
+A hand-kept id that changed means a patch reused it: find the item by its expected name in `Item.csv` and update the id.
+
 **When a patch changes the format.**
 
-- If a patch adds a job or a stat, the shared format definition and the page's job table have to be extended first; the format test fails until both agree.
+- If a patch adds a job or a stat, follow the checklist below; the format test fails until the shared format definition and the page's tables agree.
+- If a patch raises the level cap, the level data, the item database's level cap and the most-speed table follow the data by themselves. The hand-kept tables do not, and the level table test fails, naming each one, until they reach the new cap: the main stat base per level (`LEVEL_MAIN`), the expansion list (`EXPANSIONS`, add the new expansion) and the haste steps (`HASTE`, any new trait level).
 - If a patch renames a column the generators read, or changes a slot share in `BaseParam`, the regeneration stops with an error naming it (section 1). Update the shared format definition (and, for a slot share, check the math) rather than working around it.
+
+### Adding a job or a stat
+
+Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its follow-up `56fe76b`; the stat steps come from reading the same code. Files under `src/` and `tests/` unless marked.
+
+**A job:**
+
+| File | What changes |
+| --- | --- |
+| `core/item-format.json` | append the job to `jobs` (append only, so no other job's bit moves; the job mask has room for 8 more jobs in a 32-bit integer) |
+| `core/constants.js` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); `ONE_HANDED_JOBS` if it uses a shield; `JOB_LEVEL_CAPS` if it is a limited job (the cap from the patch notes); `HASTE` if it has always-on haste; `NO_WEAPON_DAMAGE_JOBS` if it has no weapon damage |
+| `core/job-context.js` | nothing for a job like the others; Beastmaster added `maxLevel` for limited jobs, which now covers any |
+| `ui/` (state, store, views, `index.html`) | nothing for a job like the others; Beastmaster made the level inputs, restore and the optimizer pool follow `maxLevel` |
+| `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | the job list (typed out in both) |
+| `tests/data/fixtures/ClassJob.csv`, `ClassJobCategory.csv` | the job's real rows and column |
+| `tests/data/test_generators.py` | `ALL_JOBS_MASK` (all jobs' bits); the job count in the job modifier test |
+| `tests/unit/stat-factor.test.js` and others | the all-jobs mask ($2^{n} - 1$); tests for a new rule (Beastmaster: level cap, shield, its own gear) |
+| `tests/e2e/smoke.mjs` | a check of what is new on the page (Beastmaster: the level cap in the inputs) |
+| data | `fetch.py` (the new job's icon), then `regen.py`; the job's `ClassJob` modifiers and icon number are read by job abbreviation |
+| docs | `CLAUDE.md` jobs table; this page, section 3 (job order); [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [testing.md](testing.md), [validation.md](../mechanics/validation.md) and the glossary where they count or list jobs |
+
+**A stat** (a new combat stat on gear):
+
+| File | What changes |
+| --- | --- |
+| `core/item-format.json` | append to `stats` (key, `ItemLevel` column, `BaseParam` id), so existing positions keep their meaning; add it to `materia.statKeys` if materia raise it, and to `food` if meals do |
+| `core/constants.js` | the neutral key and role profiles (`PROFILES`, `ALL_STATS`) if jobs use it; names and short names for the page |
+| `tests/data/fixtures/BaseParam.csv`, `ItemLevel.csv` | the stat's real `BaseParam` row; its `ItemLevel` column |
+| `tests/data/test_generators.py` | `STAT_ORDER` and the item level column map |
+| data | `regen.py`: every row gains a value in its stats string, and the slot shares of the new row are checked against the format file |
+| docs | this page, section 3 (stat order table); [math.md](../mechanics/math.md) |
 
 ## 10. How the pipeline is tested
 
@@ -566,9 +633,10 @@ Some test expectations are allowed to move after a patch and others must not; th
 - **Test files.** They use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - **Synthetic values that expose a wrong column.** `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
 - **Real rows where the values matter.** The `BaseParam` test file holds the real rows of the 14 stats.
-- **What they check.** Slot detection (two-handed vs one-handed, every slot type, the cloak's own slot code and an unsupported multi-slot piece), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind and the meld fields of a few items, the materia table (with two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats), the stat factor table (the `BaseParam` test file holds the real rows), the rarity field, the source flags and gear categories, the category field and its list's check (a missing, unknown or repeated key), levels 1 to 100, and the errors for a missing level and for non-contiguous `ItemLevel` ids.
+- **What they check.** Slot detection (two-handed vs one-handed, every slot type, the cloak's own slot code and an unsupported multi-slot piece), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind and the meld fields of a few items, the materia table (with two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats), the stat factor table (the `BaseParam` test file holds the real rows), the rarity field, the source flags and gear categories, the category field and its list's check (a missing, unknown or repeated key), the funnel counts (they add up to the whole `Item` test file), one item row per line and one level data entry per line, the top level read from `ParamGrow` (100, or 110 for a sheet that goes on, with the zero rows above the cap left out), and the errors for a missing level and for non-contiguous `ItemLevel` ids. Two smaller checks cover the pinning: the fetch step takes only a full 40-digit commit id, and an edited tracked file in a test git clone counts as a local edit while an untracked file does not.
 - **Schema drift**, on edited copies of the test files. Each of these stops the generator with an error naming the sheet and column, and no file is written:
   - a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`;
+  - `CanBeHq`, `IsUnique` or `IsUntradable` in `Item`, or `IsRelative` in `ItemFood`, written as `1`/`0`;
   - missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column;
   - a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0, an item kind with no `MeldParam` column;
   - a missing meld column in `Item`, `Materia` or `MateriaGrade`, a slot count of 6, an overmeld value other than `True`/`False`, a rarity that is not a whole number;
@@ -580,14 +648,15 @@ Some test expectations are allowed to move after a patch and others must not; th
 **Format tests** (Node, on the real generated data):
 
 - the page's job order, stat order and slot table equal the shared format definition;
-- the budget table has one column per stat, all the same length, and the level data has 100 rows;
+- the budget table has one column per stat, all the same length, and each level data row has three values;
+- every table keyed by level reaches the level cap (the highest equip level in the database): the level data, the most-speed table, and the hand-kept main stat base per level, expansion list and haste steps. A patch that raises the cap fails here, naming the table to extend, instead of showing NaN on the page;
 - every database row has twenty fields (an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a list of routes, each below $2^{21}$; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
 **Job icon tests**: the generator tests check the icon numbering, a missing icon and a file that is not a 64 × 64 PNG; a format test (Node) checks that every job is in the picker exactly once and has an embedded 64 × 64 PNG.
 
-**Provenance tests** (Node): the source record names the datamining repository, a full 40-character commit id and an ISO date; both generated data files carry the same source record and name its commit in their notice; the footer text is short and empty when the source is unknown.
+**Provenance tests** (Node): the source record names the datamining repository, a full 40-character commit id and an ISO date; the item, item level, food and most-speed files carry the same source record, and the first three name its commit in their notice; the footer text is short and empty when the source is unknown.
 
 **Source flags against the Lodestone** (a manual check, not part of the test suite):
 
@@ -604,6 +673,8 @@ The claims on this page that rest on evidence outside the code, collected from t
 | --- | --- | --- |
 | The CSVs are the client's own rows; exporter changed in January 2026 | verified | repository history, commit `d3eb86d` (section 1) |
 | Slot shares in the format file equal `BaseParam` | verified | checked on every regeneration (section 1) |
+| The yes/no columns hold only `True` and `False` | verified | checked on every regeneration (section 1) |
+| No most-speed search stops at its node limit | verified | full run, 2026-10-19 (section 2) |
 | Job icon number is $62100 + r$ | verified | all 23 icons looked at (section 2) |
 | Main Attribute and Secondary Attribute mapping | second-hand; tank case inferred | xivgear's tests (section 3) |
 | The four main-stat budget columns are equal | verified | game data (section 3) |
@@ -624,10 +695,10 @@ The claims on this page that rest on evidence outside the code, collected from t
 
 | Concept | File |
 | --- | --- |
-| Fetch (sparse clone and job icons) | `scripts/data/fetch.py` |
+| Fetch (sparse clone, `--commit`, job icons) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
-| Format loading, CSV reading, the column and slot share checks, the stat factor table | `scripts/data/item_format.py` (`read_csv`, `check_slot_percents`, `stat_factors`) |
-| Item database generator; materia table and decoy rows | `scripts/data/gen_items.py` (`materia_table`, `select`) |
+| Format loading, CSV reading, the column, yes/no and slot share checks, the stat factor table | `scripts/data/item_format.py` (`read_csv`, `check_bools`, `check_slot_percents`, `stat_factors`) |
+| Item database generator; materia table and decoy rows; selection rules and their funnel line | `scripts/data/gen_items.py` (`materia_table`, `select`, `DROP_RULES`, `drop_report`) |
 | Gear categories (subcategory codes, Savage currencies; the list of categories) | `scripts/data/gear_categories.py` (`CATEGORIES`) |
 | Category list and labels; current-only Savage group | `category.list` and `currentOnly` in `src/core/item-format.json` |
 | "Gear from" routes | `scripts/data/gear_activities.py` |
@@ -638,14 +709,14 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Food table generator; which meals, `food` in the format file | `scripts/data/gen_food.py`, `src/core/item-format.json` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
-| Source commit detection and the generated-file notice | `scripts/data/provenance.py` |
-| Regenerate everything | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
+| Source commit detection, the edited-clone check, the generated-file notice and the one-row-per-line writer | `scripts/data/provenance.py` (`detect`, `local_edits`, `note`, `json_lines`) |
+| Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
 | Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/max-speed.json` |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
 | Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:data`) |
-| Format and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/provenance.test.js` |
+| Format, level table and provenance tests | `tests/unit/data-format.test.js`, `tests/unit/level-tables.test.js`, `tests/unit/provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
 | Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg`, `docs/diagrams/data-selection.svg` |

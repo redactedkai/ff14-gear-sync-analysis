@@ -144,7 +144,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
-**Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into both generated data files and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
+**Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into every generated data file and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
 
 **Regain cut.** In tier ranking: a limit an earlier stage's proven most of its key puts on a later search. Each piece's regain is how much of that key a swap for a comparable piece could add; their sum may not pass the most minus the key's hold, which every gear set the later search can return meets. Exact. See [tier-ranking.md, section 4.4](engineering/tier-ranking.md#44-regain-cuts-from-the-stages-before).
 
