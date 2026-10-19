@@ -841,7 +841,7 @@ class SchemaDriftTest(unittest.TestCase):
             next(r for r in rows if r[0] == '44743')[col] = 'Something Else'
 
         edit_csv(self.dir / 'Item.csv', fn)
-        self.assert_fails(gen_items, 'ultimate totem', 'Oracle Totem')
+        self.assert_fails(gen_items, 'ultimate totem', 'Oracle Totem', 'ULTIMATE_TOTEMS')
 
     def test_missing_source_columns(self):
         cols = (
@@ -891,7 +891,7 @@ class SchemaDriftTest(unittest.TestCase):
             r[h.index(f'Item[{k}].ItemCost[0]')] = '2'
 
         edit_csv(self.dir / 'SpecialShop.csv', fn)
-        self.assert_fails(gen_items, 'Scrips', 'Test Tonban', 'has no box')
+        self.assert_fails(gen_items, 'Scrips', 'Test Tonban', 'has no box', 'ACTIVITY_BOX')
 
     def test_missing_item_level_stat_column(self):
         rename_column(self.dir / 'ItemLevel.csv', 'DirectHitRate', 'DirectHit')

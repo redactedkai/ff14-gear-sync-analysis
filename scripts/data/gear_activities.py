@@ -195,11 +195,14 @@ def box_bits():
     return {k: 1 << i for i, k in enumerate(keys)}, 1 << len(keys)
 
 
-def check_names(names, table, what):
-    """Raises SchemaError when an id of `table` ({id: (expected name, ...)}) names another item in Item.csv."""
+def check_names(names, table, what, table_name):
+    """Raises SchemaError when an id of `table` ({id: (expected name, ...)}) names another item in Item.csv. The message
+    names `table_name`, the table in this file to update."""
     wrong = [f'{i} is {names.get(i)!r}, expected {v[0]!r}' for i, v in table.items() if names.get(i) != v[0]]
     if wrong:
-        raise SchemaError(f'Item.csv: {what} ids changed: ' + '; '.join(wrong))
+        hint = f'A patch reused the ids: find each item by name in Item.csv and update its id in {table_name}'
+        hint += ' (scripts/data/gear_activities.py).'
+        raise SchemaError(f'Item.csv: {what} ids changed: ' + '; '.join(wrong) + '. ' + hint)
 
 
 def ways_in(csv_dir, kept_ids, ilvl_of):
@@ -261,7 +264,10 @@ def ways_in(csv_dir, kept_ids, ilvl_of):
     shop_names = {int(s['#']): s['Name'] for s in shops}
     wrong = [f'{i} is {shop_names.get(i)!r}, expected {n!r}' for i, n in RETIRED_SHOPS.items() if shop_names.get(i) != n]
     if wrong:
-        raise SchemaError('SpecialShop.csv: retired shop ids changed: ' + '; '.join(wrong))
+        hint = (
+            'A patch reused the ids: find each shop by name in SpecialShop.csv and update RETIRED_SHOPS (scripts/data/gear_activities.py).'
+        )
+        raise SchemaError('SpecialShop.csv: retired shop ids changed: ' + '; '.join(wrong) + '. ' + hint)
     shops = [s for s in shops if int(s['#']) not in RETIRED_SHOPS]
     n = listing_count(shops[0].keys()) if shops else 0
     listings = []  # (shop row, listing index, given, costs)
@@ -328,16 +334,19 @@ def routes(csv_dir, kept, cats):
     items = {int(r['#']): r for r in read_csv(d / 'Item.csv', ['#', 'Name', 'IsUntradable', 'LevelItem'])}
     check_bools(items.values(), ['IsUntradable'], 'Item.csv')
     names = {i: r['Name'] for i, r in items.items()}
-    check_names(names, CURRENCIES, 'currency')
-    check_names(names, KNOWN_SOURCE, 'known source')
-    check_names(names, {i: (n,) for i, n in FIXED_ITEMS.items() if i != GIL}, 'fixed currency')
+    check_names(names, CURRENCIES, 'currency', 'CURRENCIES')
+    check_names(names, KNOWN_SOURCE, 'known source', 'KNOWN_SOURCE')
+    check_names(names, {i: (n,) for i, n in FIXED_ITEMS.items() if i != GIL}, 'fixed currency', 'FIXED_ITEMS')
     category = {int(r['#']): cats[r['#']] for r, _ in kept}
     slot_of = {int(r['#']): row[1] for r, row in kept}
     level_of = {int(r['#']): row[3] for r, row in kept}
     ilvl_of = {i: int(r['LevelItem']) for i, r in items.items() if r['LevelItem'].isdigit()}
     missing = sorted({c for c in category.values() if c not in DROP_ACTIVITY})
     if missing:
-        raise SchemaError(f'gear_activities.py: no drop activity for categories {missing}')
+        raise SchemaError(
+            f'gear_activities.py: no drop activity for categories {missing}. Add each to DROP_ACTIVITY in '
+            'scripts/data/gear_activities.py: the activity a piece of that category with no source in the game files takes.'
+        )
     # tomestone item -> its slot: 1 Poetics, 2 and 3 the current ones, 4 last patch's (still exchanged), 0 retired
     tome_slot = {
         int(r['Item']): int(r['Tomestones']) for r in read_csv(d / 'TomestonesItem.csv', ['Item', 'Tomestones']) if r['Item'] != '0'
@@ -423,7 +432,11 @@ def routes(csv_dir, kept, cats):
             return market  # tradeable gil-vendor gear: the market board switch decides
         key = ACTIVITY_BOX.get(activity)
         if key is None:
-            raise SchemaError(f'gear_activities.py: activity {activity!r} (item {item} {names.get(item)!r}) has no box')
+            raise SchemaError(
+                f'gear_activities.py: activity {activity!r} (item {item} {names.get(item)!r}) has no box. Map it to a box in '
+                'ACTIVITY_BOX (scripts/data/gear_activities.py); for a new box, also add it to `activities` in '
+                'src/core/item-format.json.'
+            )
         if key in SPLIT_AT_CAP:
             key += '_current' if level_of[item] == cap else '_legacy'
         return bits[key]

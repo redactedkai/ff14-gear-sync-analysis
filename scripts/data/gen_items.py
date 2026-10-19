@@ -356,7 +356,11 @@ def main(csv_dir, out, source='detect'):
     if fields['category'] != fmt['levelScaled']['rowField'] + 1 or sorted(e['rowField'] for e in fmt['damageDefense']['entries']) != list(
         range(cat_at + 1, cat_at + 1 + len(fmt['damageDefense']['entries']))
     ):
-        raise SchemaError(f'item-format.json: category must follow levelScaled and the damageDefense fields the category: {fields}')
+        raise SchemaError(
+            'src/core/item-format.json: row fields out of order. category.rowField must be levelScaled.rowField + 1, and '
+            'the damageDefense entries must take the fields right after it; fix the rowField values there (and ROW in '
+            f'src/core/constants.js) to match the row gen_items.py builds: {fields}'
+        )
     if rows and len(rows[0]) != max(fields.values()) + 1:
         raise SchemaError(f'item rows have {len(rows[0])} fields, item-format.json row fields expect {fields}')
     materia, decoys = materia_table(csv_dir, fmt)

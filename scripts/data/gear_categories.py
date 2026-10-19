@@ -126,7 +126,11 @@ def override_items(csv_dir, items):
     listed = {**{i: n for i, (n, _) in ITEM_OVERRIDES.items()}, **{i: n for i, (n, _) in CURRENCY_OVERRIDES.items()}}
     wrong = [f'{i} is {names.get(i)!r}, expected {n!r}' for i, n in listed.items() if names.get(i) != n]
     if wrong:
-        raise SchemaError('Item.csv: category override ids changed: ' + '; '.join(wrong))
+        hint = (
+            'A patch reused the ids: find each item by name in Item.csv and update its id in ITEM_OVERRIDES or '
+            'CURRENCY_OVERRIDES (scripts/data/gear_categories.py).'
+        )
+        raise SchemaError('Item.csv: category override ids changed: ' + '; '.join(wrong) + '. ' + hint)
     out = {str(i): c for i, (_, c) in ITEM_OVERRIDES.items()}
     currencies = {str(i): c for i, (_, c) in CURRENCY_OVERRIDES.items()}
     shops = read_csv(Path(csv_dir) / 'SpecialShop.csv', ['UseCurrencyType'])

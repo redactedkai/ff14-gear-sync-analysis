@@ -53,7 +53,9 @@ def flags(csv_dir, items):
     names = {int(r['#']): r['Name'] for r in items}
     wrong = [f'{i} is {names.get(i)!r}, expected {n!r}' for i, n in ULTIMATE_TOTEMS.items() if names.get(i) != n]
     if wrong:
-        raise SchemaError('Item.csv: ultimate totem ids changed: ' + '; '.join(wrong))
+        hint = 'A patch reused the ids: find each item by name in Item.csv and update its id in ULTIMATE_TOTEMS'
+        hint += ' (scripts/data/gear_sources.py).'
+        raise SchemaError('Item.csv: ultimate totem ids changed: ' + '; '.join(wrong) + '. ' + hint)
 
     shops = read_csv(d / 'SpecialShop.csv', ['UseCurrencyType'])
     n = listing_count(shops[0].keys()) if shops else 0
