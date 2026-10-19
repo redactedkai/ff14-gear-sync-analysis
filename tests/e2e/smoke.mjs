@@ -1228,15 +1228,10 @@ const walkJob = job => async pg => {
   await expect(pg.locator('#o-count')).toContainText(' pieces');
   await checkNoBadText(pg, `${job}/opt`);
   await expect(pg.locator('#o-food-row')).toBeVisible();
-  // weapon damage on the weapon's row and its note, none for Blue Mage (Intelligence scales its damage); defense always
-  const wd = pg.locator('#o-result .wd');
-  if (job === 'BLU') {
-    await expect(wd).toHaveCount(0);
-    await expect(pg.locator('#o-wd-note')).toBeHidden();
-  } else {
-    await expect(wd).toHaveText(/^Weapon damage \d+(, synced \(a guess\))?$/);
-    await expect(pg.locator('#o-wd-note')).toBeVisible();
-  }
+  // the note that weapon damage comes first (its value is not shown), none for Blue Mage (Intelligence scales its
+  // damage); defense always
+  if (job === 'BLU') await expect(pg.locator('#o-wd-note')).toBeHidden();
+  else await expect(pg.locator('#o-wd-note')).toHaveText('Weapon damage comes first, before the goal.');
   await expect(pg.locator('#o-defense td.defense')).toHaveText(/^Physical [\d,]+ · Magic [\d,]+ · −\d+% \/ −\d+% damage taken$/);
   await showMath(pg, 'piece');
   await expect(pg.locator('#p-bars .num').first()).toBeVisible();

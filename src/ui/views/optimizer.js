@@ -18,7 +18,7 @@ import {
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { buildCandidates } from '../../core/optimizer/candidates.js';
 import { sameResult } from '../../core/same-result.js';
-import { WD_KEY, mitigationPct, setDefense, syncedValue } from '../../core/damage-defense.js';
+import { WD_KEY, mitigationPct, setDefense } from '../../core/damage-defense.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
 import { rankByTier } from '../../core/tier-rank.js';
 import { meldText } from '../../core/meld.js';
@@ -365,9 +365,6 @@ function buildOptimizerView(app, gear, chosen) {
       label,
       item: p.item,
       meld: meldText(job, p.meld),
-      // the weapon's damage after sync, ranked before the goal (damage-defense.js): "Weapon damage 157", marked a guess
-      // when sync lowered it (the clamp is not measured in game); null off the weapon and for a job without it
-      weaponDamage: weaponDamageText(job, p, sync),
       // where the piece comes from: its gear category ({key, label}), and "HW · lvl 60" (both null for a piece not
       // from the database)
       category: categoryOf(p.item),
@@ -464,14 +461,4 @@ function buildOptimizerView(app, gear, chosen) {
     // relics with player-allocated substats left out of the search (searchPool), for the note; 0 hides it
     relicsLeftOut: relicsLeftOut(app, gear),
   };
-}
-
-/* "Weapon damage 157" for a weapon row (its damage after sync, from its candidate's eff), with ", synced (a guess)"
-   when sync lowered it: the clamp is how the tools sync weapon damage, not measured in game. Null off the weapon and
-   for a job that does not rank weapon damage (job.damageKey null). */
-function weaponDamageText(job, pick, sync) {
-  if (!job.damageKey || pick.type !== 'weapon') return null;
-  const value = pick.eff[WD_KEY] ?? 0;
-  const lowered = value < syncedValue(pick.item, job.damageKey, null);
-  return `Weapon damage ${value}${lowered ? ', synced (a guess)' : ''}`;
 }

@@ -247,7 +247,7 @@ Besides its 14 stats, a piece carries four more numbers, read from their own `It
 **Under sync** each of the four is clamped like a stat (section 5): to the cap $\operatorname{round}(\lfloor \lfloor \text{budget} \times \text{factor}\% / 100 \rfloor \times \text{share} / 100 \rfloor / 10)$ at the synced item level, with the column's own factor per item kind (`BaseParam.MeldParam`) and slot share (`BaseParam`, per mille). Weapon damage has share 1,000 on main-hand weapons and 0 elsewhere. Defense has head, hands and feet 176, body and legs 236, the two-slot body and legs codes 412, the full-body code 824, and 0 on weapons, shields and accessories.
 
 - Defense under sync: **verified** in-instance by xivgear's tests: item level 663 chests synced to 660 go from 842 to 837 Defense (Maiming) and from 481 to 478 Defense (Healing), and an accessory's 1 goes to 0. The formula gives all of them (tests/unit/damage-defense.test.js).
-- Weapon damage under sync: **guessed**. xivgear and ffxiv-gearing clamp it the same way in code; no in-game measurement was found. The page marks a lowered value "(a guess)".
+- Weapon damage under sync: that sync lowers it is **verified second-hand** (players' reports from synced duties, 2019: a higher-level relic in The Weapon's Refrain, synced to 375, hit like the 375 weapons or one point under; Square Enix forum threads 385429 and 385378). The exact value, the `ItemLevel` table's at the synced item level, is **inferred**: the formula gives every weapon's own weapon damage at its own item level (5,452 of 5,465; the exceptions are 10 Atma weapons and 3 at item level 30), and xivgear and ffxiv-gearing clamp it so in code, but no synced value was measured. In 2019 the server seemed to use a value one under the client table's at 375 (raised from 104 to 105 in the 2018 game files), so the two tables have differed before. The page does not show weapon damage, so it marks nothing; the optimizer still ranks it first.
 
 ## 5. Item level sync
 
@@ -592,7 +592,8 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 | No scaling up under sync | Verified for substats (published) | Wiki Item Level page |
 | Weapon damage = the `ItemLevel` budget at the weapon's item level | Verified (game files) | 5,566 of 5,579 weapons |
 | Defense clamped like a stat under sync | Verified (in-instance, second-hand) | xivgear's tests, 3 of 3 |
-| Weapon damage clamped like a stat under sync | Guessed (as xivgear and ffxiv-gearing do) | No in-game value |
+| Sync lowers weapon damage | Verified second-hand (player reports) | Square Enix forum, 2019 |
+| Synced weapon damage = the table's at the synced item level | Inferred (as xivgear and ffxiv-gearing do) | No in-game value |
 | Defense removes $\lfloor 15 \times \text{defense} / \text{DIV} \rfloor$ % | Community reference (AkhMorning) | [Weapon damage and defense](#weapon-damage-and-defense) |
 | GCD and tick formulas | Community reference (AkhMorning) | AkhMorning tier tables (9) |
 | Haste percentages and levels | Verified (official job guides) | [Haste](#haste) |

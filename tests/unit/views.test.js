@@ -704,5 +704,4 @@ test('allocated relics: left out of the search and counted in the note; other re
   assert.ok(v.relicsLeftOut > 0);
   // the weapon is the Eclipticum (weapon damage 157), not the Occultum (158, no substat)
   assert.equal(v.rows[0].item.name, 'Phantom Pendulums Eclipticum');
-  assert.equal(v.rows[0].weaponDamage, 'Weapon damage 157');
 });
