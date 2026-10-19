@@ -120,11 +120,19 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **F1, F3.** Labels from an engineering audit for two optimizer bugs, both fixed and covered by regression tests. F1: dominance pruning could drop the second-best ring. F3: fixed score weights let a large tiebreak outrank the target. See [history.md](history.md#results-of-the-tool).
 
+**Fathom.** To abandon a partial gear set (a node of the search tree) because a bound shows that no way of filling the remaining slots can beat the incumbent or meet a limit. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
+
+**Feasible.** A gear set is feasible when it meets every rule and limit of the search at hand: one item per slot (two rings), Unique items, blocked slots, the speed range and any stat minimums. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
+
 **Gear from, route, market board switch.** The filter in Gear to search and the Gear browser that leaves gear out by what a player does to get it: 20 boxes (Quests & story, Crafted, Normal duties, Hunts, Savage (Current) ...) and a market board switch. A piece's **routes** are its ways to get it, each needing every box in it; a piece is listed when one route needs only ticked boxes, or, with the switch on, when it is tradeable. See [data-pipeline.md, section 4](engineering/data-pipeline.md#sources) and [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters).
 
 **Generated piece, hand-made piece.** A pool piece built by the formula rather than read from the database. It has no equip level, so only the item level cap syncs it. Old saves drop the hypothetical and hand-entered pieces of the removed Advanced section ([testing.md, section 2](engineering/testing.md#2-what-each-file-covers)). See [math.md, section 5](mechanics/math.md#which-pieces-are-synced).
 
 **Generic maximum.** The most speed gear can give under cap 123 with full-share speed in every armor and accessory slot: 296, a 2.22 s GCD at level 50 (344 and 2.17 s with the weapon). It is derived from budget row 123, since no gear exists at item level 123. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
+
+**Hold, stage.** In tier ranking: one **stage** is one search, which maximizes one ranked stat; the **hold** is the minimum then put on that stat for every later stage (the start of the best tier it reached, plus one point). See [tier-ranking.md, section 2](engineering/tier-ranking.md#2-the-stages).
+
+**Incumbent.** The best complete gear set a search has found so far. Branch and bound compares every partial set against it, and a seed is the first incumbent. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
 **Job context.** Everything job-dependent (stat mapping, weapon mode, active slots, the job's Vitality factor), computed once per job into a frozen object that every core function takes as its first argument. See [architecture.md, section 2](engineering/architecture.md#2-the-job-context).
 
@@ -134,7 +142,13 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Loadout.** One item per gear slot (two rings), the optimizer's answer. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
+**MCKP, MMKP.** The multiple-choice knapsack problem: pick exactly one item from each class (here, each slot) to maximize the total profit (the score) while a total weight (speed) stays within a limit. The multi-dimensional version (MMKP) has several weight rows, one per stat minimum. The optimizer's problem is an MCKP with extra rules for rings, Unique items and blocked slots. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
+
+**Memo.** In the search with limits: a record of the partial gear sets already explored, keyed by the slot reached, the limited stats' totals and the blocked slots. A later partial set with the same key has the same completions, so it is cut unless it scores more. Exact. See [optimizer.md, section 5](engineering/optimizer.md#with-minimums-on-other-stats).
+
 **Node limit, truncated.** The search counts the nodes it visits and stops at a limit (700,000 for the page's main result). A result cut off there is marked truncated and may not be the best. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
+
+**Order A.** The owner's choice (2026-10-16) of where tier ranking sends the points left over once every ranked stat's tier is fixed: to the target's raw total first, then the tiebreaks'. See [tier-ranking.md, section 1](engineering/tier-ranking.md#1-the-problem).
 
 **Owner.** The repository's owner. "Verified by the owner in game" means the owner checked it in game; it counts as verified.
 
@@ -145,6 +159,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
 **Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into every generated data file and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
+
+**Relaxation, bound.** A relaxation is an easier version of the remaining problem with some rules dropped (for example, ring copies or a stat minimum). Its best value is an upper **bound** on what the real problem can reach, so if even the bound cannot beat the incumbent, the branch is fathomed. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
 **Regain cut.** In tier ranking: a limit an earlier stage's proven most of its key puts on a later search. Each piece's regain is how much of that key a swap for a comparable piece could add; their sum may not pass the most minus the key's hold, which every gear set the later search can return meets. Exact. See [tier-ranking.md, section 4.4](engineering/tier-ranking.md#44-regain-cuts-from-the-stages-before).
 
@@ -176,7 +192,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Target GCD.** A GCD the optimizer must reach, "exactly" or "or faster", counted with food and haste. It becomes a speed range, and the best set by the goal within it wins. On the page it is a box under the Goal grid, empty by default. See [math.md, section 6](mechanics/math.md#target-gcd) and [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
-**Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
+**Target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between loadouts with the same target total. The page calls the three together the **Goal** (its Goal row: Maximize, Tiebreak 1, Tiebreak 2); the docs say target. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
 
 **Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals, with each ranked stat held one point above the start of its best tier (roadmap A7, "Rank by tier"; the page's Spare points to tiebreaks switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md).
 
