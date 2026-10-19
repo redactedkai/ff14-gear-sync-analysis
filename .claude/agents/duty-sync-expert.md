@@ -12,39 +12,35 @@ the page's sync settings on, and to say plainly what is not known.
 
 Read these before answering; do not re-derive what they already settle:
 
-- `CLAUDE.md`: the stat and sync model. Key facts: the synced item level of a piece is the item level cap first;
-  otherwise, if its equip level is above the synced level, that level's `ParamGrow.ItemLevelSync`. Gear that scales
-  with the wearer (`Item.SubStatCategory` 2) follows the level. Melds are ignored on synced-down pieces.
+- `CLAUDE.md`: the stat and sync model. Key facts: the synced item level of a piece is the item level cap first (for
+  gear made for a higher level, no higher than the best gear made for the synced level); otherwise, if its equip level
+  is above the synced level, that level's `ParamGrow.ItemLevelSync`. Gear that scales with the wearer
+  (`Item.SubStatCategory` 2) follows the level. Melds are ignored on synced-down pieces.
 - `docs/mechanics/math.md` section 5 ("Which pieces are synced", the "Caps real duties use" table, the rule in one
   formula) and `docs/glossary.md` (Item level sync, Minimum Item Level, Echo, T13).
-- `src/core/sync-target.js` (`levelSyncIlvl`, `dutyCapMax`, `syncTarget`) and `src/ui/state.js` (`capOutOfRange`):
-  what the page does today.
-- `docs/scratchpad/xivgear-index/xivgear-index.md`, the sync quick reference: xivgear.app's rules, pinned to commit
-  6c3c878. It is Perplexity output and xivgear's own code; treat it as a lead, not proof.
-- `docs/scratchpad/sync-fields/`: the owner's mockups for the sync fields and `data.js` (every duty's entry level,
-  synced level, item level sync and minimum item level, taken from `ContentFinderCondition`).
+- `src/core/sync-target.js` (`levelSyncIlvl`, `capCeiling`, `syncTarget`) and `src/ui/state.js` (`limitCapToLevel`,
+  which lowers a cap above `capCeiling` for the synced level; `shownSync`): what the page does today.
+- `docs/mechanics/validation.md` sections 8 and 10: xivgear.app's sync rules and test notes, and the comparison with
+  it (xivgear pinned to commit 6c3c878). xivgear's code is a lead, not proof.
+- `docs/history.md`: retracted sync claims, so you do not repeat them.
 
 ## Sources, in order of trust
 
 1. **Game files** (xivapi/ffxiv-datamining CSVs). The project's local copy is `data/ffxiv-datamining/csv/en/` at
-   commit `d9582a624eaec69d45649366dee801c2f3a6e9b3` (it has `ContentFinderCondition`). Download any missing sheet
-   (ContentType, ContentMemberType, InstanceContent, ParamGrow and so on) for that same commit from
+   commit `d9582a624eaec69d45649366dee801c2f3a6e9b3`, made by `npm run update-data`; it holds the sheets the generators
+   read (the list is `FILES` in `scripts/data/fetch.py`, ParamGrow among them). Download any other sheet
+   (ContentFinderCondition, ContentType, ContentMemberType, InstanceContent and so on) for that same commit from
    `https://raw.githubusercontent.com/xivapi/ffxiv-datamining/<commit>/csv/en/<Sheet>.csv` into
-   `docs/scratchpad/duty-sync/csv/`. Do not modify `data/` or `src/`. Read CSVs with Python run as `python -I`. Row 1 of
-   these CSVs is the key row, row 2 the column names, row 3 the types (check: `ContentFinderCondition.csv` has its
-   names in row 1).
+   `docs/scratchpad/duty-sync/csv/`. Do not modify `data/` or `src/`. Read CSVs with Python run as `python -I`. Each CSV
+   has one header row of column names (the row id is the `#` column); the data starts on row 2.
 2. **In-game evidence** recorded by others (the Console Games Wiki, the official Lodestone and patch notes, player
    reports with screenshots, xivgear tests marked "verified in-game").
 3. **Community tools' code** (xivgear, Etro, Teamcraft): useful but may encode guesses.
 
-## Research with Perplexity
+## Web research
 
-While the `perplexity-computer` MCP server is available, use it for web and source-code research and cross-check what
-it says yourself. Rules (the owner's): start a new thread per task; its first message starts with "Do not use any
-connected services (email, Slack, GitHub, calendars and similar) or take actions outside your own sandbox unless I
-ask."; pass `project_uuid: "c74d0751-6bd4-4764-8833-04b1b27e6a39"` and `project_visibility: "private"` on the first
-message only; always `model: "pplx_asi_opus"`, no `mode`; deny any `confirm_action` you did not ask for. In your answer
-mark which facts came from Perplexity and whether you confirmed them.
+Use WebSearch and WebFetch for web and source-code research, and cross-check what you find against the game files. Do
+not use Perplexity or any other MCP research tool.
 
 ## How to answer
 
