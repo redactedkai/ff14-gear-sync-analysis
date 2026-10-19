@@ -37,7 +37,7 @@
     <label class="f"><span>Synced level <span class="f-range" id="level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span>
       <input type="number" id="level" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" x-bind="$num('level', 1, () => $store.app.jobCtx.maxLevel, { live: true })">
     </label>
-    <div class="f field"><label for="cap">Sync cap (item level) <span class="f-range" id="cap-range" x-text="`1–${$store.app.maxReal}`"></span></label>
+    <div class="f field"><label for="cap">Synced item level <span class="f-range" id="cap-range" x-text="`1–${$store.app.maxReal}`"></span></label>
       <input type="number" id="cap" x-ref="cap" :disabled="!$store.app.sync" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric"
         x-bind="$num('cap', 1, Infinity)" @input="onCapInput($event.target.value)" :class="{ invalid: !!capError, lowered: !!capLoweredNote }" :aria-invalid="String(!!capError)" aria-describedby="cap-error cap-lowered">
       <span class="field-error" id="cap-error" x-show="capError" x-text="capError"></span>
@@ -78,7 +78,7 @@
   </label>
   <label class="mctl" x-show="$store.app.mathTab !== 'tiers'">2nd substat
     <select id="p-s2" @change="setSub(1, $event.target.value)">
-      <template x-for="o in [['', 'none']].concat(substatOptions)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
+      <template x-for="o in substat2Options" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
     </select>
   </label>
   <div class="helpwrap" x-show="$store.app.mathTab !== 'tiers'">
@@ -234,7 +234,7 @@
 <!-- TIERS: every substat's tiers around its value (a ladder); not about sync, so it shows whatever the sync settings -->
 <section class="subtab" id="tab-tiers" hidden :hidden="$store.app.mathTab !== 'tiers'" x-data="tierTable" @tier-fill.window="fill()" @keydown.escape.window="helpFor = null" @click.window="if (helpFor && !$event.target.closest('#t-pop, [data-help]')) helpFor = null">
 <template x-if="view"><div class="panel" id="t-panel" x-ref="panel" style="position:relative">
-  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" :value="view.level" aria-label="Level of the tiers" @change="typeLevel($el)"><span style="flex:1"></span>
+  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" :value="view.level" aria-label="Level of the tiers" @change="typeLevel($el)"><span class="f-range" id="t-level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span><span style="flex:1"></span>
     <span class="subtabs small"><button type="button" id="t-more" :aria-pressed="String(more)" @click="more = !more">More tiers</button></span></div>
   <div class="tablewrap"><table class="compact ladder" id="t-table">
     <colgroup><col class="lrowcol"><template x-for="(c, k) in view.cols" :key="k"><col :class="c.first ? 'gfirst' : ''"></template></colgroup>
@@ -281,9 +281,8 @@
               </template>
             </div>
           </div>
-          <label class="f">Equip level up to<input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model="$store.app.opt.lvl"></label>
-          <label class="f">Item level from<input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.opt.min"></label>
-          <label class="f">Item level to<input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model="$store.app.opt.max"></label>
+          <label class="f"><span>Equip level up to <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model="$store.app.opt.lvl"></label>
+          <div class="f field ilvl-field"><span id="o-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="o-ilvl-label"><input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-model="$store.app.opt.min"><span aria-hidden="true">–</span><input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-model="$store.app.opt.max"></div></div>
           <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
             <span id="o-from-label">Gear from</span>
             <button type="button" class="multi-btn" id="o-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="o-from-label o-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
@@ -308,14 +307,14 @@
       <div class="part" id="o-goal" role="group" aria-labelledby="o-goal-h">
         <h3 id="o-goal-h">Goal</h3>
         <div class="grid">
-          <label class="f">Maximize<select id="o-target" @change="$store.app.opt.target = $event.target.value">
+          <label class="f">Maximize<select id="o-target" @change="setGoal(0, $event.target.value)">
             <template x-for="o in statOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.target"></option></template>
           </select></label>
-          <label class="f">Tiebreak 1<select id="o-tb1" @change="$store.app.opt.tb = $event.target.value">
-            <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb"></option></template>
+          <label class="f">Tiebreak 1<select id="o-tb1" @change="setGoal(1, $event.target.value)">
+            <template x-for="o in tiebreakOptions(1)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb"></option></template>
           </select></label>
-          <label class="f">Tiebreak 2<select id="o-tb2" @change="$store.app.opt.tb2 = $event.target.value">
-            <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
+          <label class="f">Tiebreak 2<select id="o-tb2" @change="setGoal(2, $event.target.value)">
+            <template x-for="o in tiebreakOptions(2)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
           </select></label>
           <div class="f field gcd-field" id="o-gcd-row">
           <label for="o-gcd" x-text="(!stale && view?.gcdUi?.label) || 'Target GCD'"></label>
@@ -358,9 +357,9 @@
           <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD${view.hasteText} with ${view.spdText} · ${view.tierText}`"></span></div>
           <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
         </div>
-        <p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p>
-        <div class="tablewrap menus" id="o-table"><table>
-          <thead><tr><th>Slot</th><th>Item</th><th class="n">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
+        <div class="tablekey"><p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
+        <div class="tablewrap menus" id="o-table"><table @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
+          <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="job.stats[k]" class="n" x-text="h"></th></template></tr></thead>
           <tbody>
             <template x-for="(r, i) in view.rows" :key="i">
               <tr>
@@ -369,50 +368,53 @@
                 <template x-if="r.item"><td class="item">
                   <template x-if="!r.same"><span x-text="r.item.name"></span></template>
                   <template x-if="r.same"><div class="same" @click.outside="if (menuOpen === i) menuOpen = null" @keydown.escape="menuOpen = null">
-                    <button type="button" class="same-btn" :aria-expanded="menuOpen === i" :title="`${r.same.count} pieces give the same result here`" @click="menuOpen = menuOpen === i ? null : i"><span x-text="r.item.name"></span><span class="same-count" x-text="`1 of ${r.same.count}`"></span></button>
-                    <div class="same-menu" x-show="menuOpen === i" x-cloak>
-                      <template x-for="g in r.same.groups" :key="g.label">
-                        <div><div class="same-head" x-text="g.label"></div>
-                          <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill" :class="'cat-' + x.category.key" x-text="x.category.label"></span></template></span><span class="same-lvl" x-text="`${x.ilvl}, lvl ${x.lvl}`"></span></button></template>
-                        </div>
-                      </template>
-                      <div class="same-foot" x-text="`All ${r.same.count} give the same result here (counted with the other rows as shown).`"></div>
+                    <button type="button" class="same-btn" :aria-expanded="menuOpen === i" :title="`${r.same.count} pieces give the same result here`" @click="toggleSameMenu(i, $el.parentElement)"><span x-text="r.item.name"></span><span class="same-count" x-text="`1 of ${r.same.count}`"></span></button>
+                    <div class="same-menu search-menu" x-show="menuOpen === i" x-cloak>
+                      <div class="menu-tools"><span class="menu-search"><input type="text" placeholder="Search pieces" autocomplete="off" aria-label="Search pieces" x-model="sameQuery"></span></div>
+                      <div class="menu-list">
+                        <template x-for="g in sameGroups(r.same.groups)" :key="g.label">
+                          <div><div class="same-head" x-text="g.label"></div>
+                            <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill" :class="'cat-' + x.category.key" x-text="x.category.label"></span></template></span><span class="same-lvl" x-text="`${x.ilvl}, lvl ${x.lvl}`"></span></button></template>
+                          </div>
+                        </template>
+                        <template x-if="menuOpen === i && !sameGroups(r.same.groups).length"><div class="menu-empty"><span x-text="`No piece matches &quot;${sameQuery.trim()}&quot;.`"></span> <button type="button" class="linkbtn" @click="sameQuery = ''">Clear search</button></div></template>
+                      </div>
                     </div>
                   </div></template>
                   <template x-if="r.from"><div class="from"><template x-if="r.category"><span class="pill" :class="'cat-' + r.category.key" x-text="r.category.label"></span></template><span x-text="r.from"></span></div></template>
                   <template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template>
                 </td></template>
-                <template x-if="r.item"><td class="n" x-text="r.item.ilvl"></td></template>
-                <template x-for="(c, k) in (r.cells || [])" :key="k"><td class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
+                <template x-if="r.item"><td class="n" data-col="ilvl" x-text="r.item.ilvl"></td></template>
+                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="job.stats[k]" class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
               </tr>
             </template>
-            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="job.stats[k]" class="n" x-text="v"></td></template></tr>
             <template x-if="view.food">
               <tr class="food" id="o-food-row"><td>Food</td><td class="item">
                 <div class="same" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
                   <button type="button" class="same-btn" id="o-meal-btn" :aria-expanded="mealOpen" @click="toggleMealMenu()"><span x-text="view.food.name"></span><template x-if="view.food.best && view.food.menu.count > 1"><span class="same-count" x-text="`1 of ${view.food.menu.count}`"></span></template></button>
-                  <div class="same-menu meal-menu" id="o-meal-menu" x-show="mealOpen" x-cloak>
-                    <div class="meal-tools">
-                      <span class="meal-search"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"></span>
+                  <div class="same-menu search-menu meal-menu" id="o-meal-menu" x-show="mealOpen" x-cloak>
+                    <div class="menu-tools">
+                      <span class="menu-search"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"></span>
                       <div class="meal-pills" role="group" aria-label="Meal stats"><template x-for="p in view.food.menu.pills" :key="p.stat"><button type="button" class="meal-pill" :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))" :disabled="mealPillOff(p.stat)" :title="p.label" :data-stat="p.stat" @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
                       <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" :checked="mealBestOnly" @change="setMealBest($event.target.checked)"><span>Best for goal</span></label>
                     </div>
-                    <div class="meal-list" x-ref="mealList">
+                    <div class="menu-list" x-ref="mealList">
                       <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
                         <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`" @click="pickMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl" x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
                       </div></template>
-                      <template x-if="mealEmpty"><div class="meal-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <template x-if="mealEmpty.action === 'query'"><button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></template></div></template>
+                      <template x-if="mealEmpty"><div class="menu-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <template x-if="mealEmpty.action === 'query'"><button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></template></div></template>
                     </div>
                   </div>
                 </div>
                 <div class="small dim" id="o-meal-note" x-text="view.food.best ? 'HQ, best for goal' : 'HQ, picked'"></div>
-              </td><td class="n" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
+              </td><td class="n" data-col="ilvl" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td :data-col="job.stats[k]" class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
             </template>
             <template x-if="view.food">
-              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
+              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td :data-col="job.stats[k]" class="n" x-text="v"></td></template></tr>
             </template>
-            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
-            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c && c.held ? 'Held at this tier by Rank by tier' : null" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="job.stats[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
+            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="job.stats[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c && c.held ? 'Held at this tier by Rank by tier' : null" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
             <tr class="tier" id="o-defense"><td>Defense</td><td class="defense" :colspan="view.headers.length + 2">Physical <b x-text="view.defense.phys.toLocaleString('en-US')"></b> · Magic <b x-text="view.defense.mag.toLocaleString('en-US')"></b> · <span class="dim" x-text="`−${view.defense.physPct}% / −${view.defense.magPct}% damage taken`"></span></td></tr>
           </tbody>
         </table></div>
@@ -428,9 +430,19 @@
 
 <!-- GEAR BROWSER -->
 <section class="tab" id="tab-browse" role="tabpanel" hidden :hidden="$store.app.tab !== 'browse'">
-  <div class="panel" x-data="gear">
-    <h2>Gear browser <span class="count" id="b-count" x-text="view ? '· ' + view.countText : ''"></span></h2>
-    <div class="grid">
+  <div class="panel" x-data="gear" @keydown.window="slashToSearch($event)">
+    <div class="titleline">
+      <h2>Gear browser</h2>
+      <span class="menu-search big-search"><input type="text" id="b-q" x-ref="search" placeholder="Search gear by name" autocomplete="off" aria-label="Search gear by name" x-model.debounce.300ms="$store.app.browse.q"><span class="kbd" x-show="!$store.app.browse.q" title="Press / to search">/</span><button type="button" class="clear" x-show="$store.app.browse.q" x-cloak aria-label="Clear the search" @click="$store.app.browse.q = ''; $refs.search.focus()">×</button></span>
+      <span class="count" id="b-count" x-text="view ? view.countText : ''"></span>
+    </div>
+    <div class="pillline">
+    <div class="slotpills" id="b-slots" role="group" aria-label="Slot">
+      <template x-for="(p, k) in (view ? view.slots : [])" :key="p.key"><span style="display:contents"><template x-if="k && p.group !== view.slots[k - 1].group"><span class="sep" aria-hidden="true"></span></template><button type="button" :data-slot="p.key" :class="{ on: $store.app.browse.type === p.key }" :aria-pressed="String($store.app.browse.type === p.key)" :disabled="!p.count && $store.app.browse.type !== p.key" @click="$store.app.browse.type = p.key"><span x-text="p.label"></span><span class="n" x-text="p.count"></span></button></span></template>
+    </div>
+      <button type="button" class="resetbtn" id="b-reset" :class="{ off: !filtered }" :disabled="!filtered" :aria-hidden="String(!filtered)" title="Reset filters" aria-label="Reset filters" @click="resetBrowseFilters()">Reset</button>
+    </div>
+    <div class="grid browse-filters">
       <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
         <span id="b-exp-label">Expansion</span>
         <button type="button" class="multi-btn" id="b-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="b-exp-label b-exp" @click="open = !open" x-text="expSummary()"></button>
@@ -440,9 +452,8 @@
           </template>
         </div>
       </div>
-      <label class="f">Equip level up to<input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.browse.lvl"></label>
-      <label class="f">Item level from<input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.browse.min"></label>
-      <label class="f">Item level to<input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="any" x-model.debounce.300ms="$store.app.browse.max"></label>
+      <label class="f"><span>Equip level up to <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.browse.lvl"></label>
+      <div class="f field ilvl-field"><span id="b-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="b-ilvl-label"><input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-model.debounce.300ms="$store.app.browse.min"><span aria-hidden="true">–</span><input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-model.debounce.300ms="$store.app.browse.max"></div></div>
       <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
         <span id="b-from-label">Gear from</span>
         <button type="button" class="multi-btn" id="b-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="b-from-label b-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
@@ -462,28 +473,21 @@
           <p class="from-desc" id="b-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template><template x-if="!fromDescription()"><span>Point at a box to see what it covers.</span></template></p>
         </div>
       </div>
-      <label class="f">Name contains<input type="text" id="b-q" autocomplete="off" x-model.debounce.300ms="$store.app.browse.q"></label>
-      <label class="f">Slot<select id="b-type" @change="$store.app.browse.type = $event.target.value">
-        <template x-for="o in typeOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.type"></option></template>
-      </select></label>
-      <label class="f">Sort by<select id="b-sort" @change="$store.app.browse.sort = $event.target.value">
-        <template x-for="o in sortOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.browse.sort"></option></template>
-      </select></label>
     </div>
-    <div class="tablewrap tall"><table id="gear-table">
-      <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters.</td></tr></tbody></template>
-      <template x-if="view && view.shown.length"><thead><tr><th>Item</th><th>Slot</th><th class="n">Lv</th><th class="n">ilvl</th><template x-for="s in job.stats" :key="s"><th class="n" x-text="job.short[s]"></th></template></tr></thead></template>
+    <template x-if="view && view.anySynced"><div class="tablekey"><span></span><p class="small dim" id="b-key"><b class="atcap">48</b> synced to this piece’s cap · <span class="keywas">795</span> the piece’s own, before sync</p></div></template>
+    <div class="tablewrap tall"><table id="gear-table" @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
+      <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters. <template x-if="filtered"><button type="button" class="linkbtn" @click="resetBrowseFilters()">Reset filters</button></template></td></tr></tbody></template>
+      <template x-if="view && view.shown.length"><thead><tr><th :aria-sort="sortState('name')"><button type="button" class="sortbtn" data-sort="name" @click="sortBy('name')">Item</button></th><th>Slot</th><th class="n" data-col="lvl" :aria-sort="sortState('lvl')"><button type="button" class="sortbtn" data-sort="lvl" @click="sortBy('lvl')">Lv</button></th><th class="n" data-col="ilvl" :aria-sort="sortState('ilvl')"><button type="button" class="sortbtn" data-sort="ilvl" @click="sortBy('ilvl')">ilvl</button></th><template x-for="s in job.stats" :key="s"><th class="n" :data-col="s" :aria-sort="sortState(s)"><button type="button" class="sortbtn" :data-sort="s" :title="`Sort by synced ${job.label[s]}`" @click="sortBy(s)" x-text="job.short[s]"></button></th></template></tr></thead></template>
       <template x-if="view && view.shown.length"><tbody>
         <template x-for="x in view.shown" :key="x.key">
-          <tr :data-key="x.key">
-            <td><span x-text="x.name"></span><span class="hq" x-show="x.hq" title="High quality (crafted): stats include the HQ bonus">HQ</span></td><td><span x-text="x.slot"></span><span class="x2" x-show="x.copies === 2" title="Not Unique: can be worn on both ring fingers"> ×2</span></td><td class="n dim" x-text="x.lvl"></td><td class="n" x-text="x.ilvl"></td>
-            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" x-text="c.text"></td></template>
+          <tr :data-key="x.key" :class="{ synced: x.synced }">
+            <td><template x-for="(part, j) in x.nameParts" :key="j"><span :class="{ mark: part.hit }" x-text="part.text"></span></template><span class="hq" x-show="x.hq" title="High quality (crafted): stats include the HQ bonus">HQ</span><template x-if="x.synced"><span class="was">before sync</span></template></td><td><span x-text="x.slot"></span><span class="x2" x-show="x.copies === 2" title="Not Unique: can be worn on both ring fingers"> ×2</span></td><td class="n dim" data-col="lvl" x-text="x.lvl"></td><td class="n" data-col="ilvl" :class="{ cut: x.synced }"><span x-text="x.synced ? x.syncedIlvl : x.ilvl"></span><template x-if="x.synced"><span class="was" x-text="x.ilvl"></span></template></td>
+            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="job.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'At this piece’s cap' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
           </tr>
         </template>
         <template x-if="view.hidden"><tr><td :colspan="job.stats.length + 4" class="dim small" x-text="view.hidden + ' more matches not shown. Narrow the filters to view them.'"></td></tr></template>
       </tbody></template>
     </table></div>
-    <p class="small dim">This list is for looking gear up; the optimizer has its own filters under Gear to search. A ring marked ×2 is not Unique, so it can be worn on both hands. <span class="num">raw → synced</span> where sync bites (item level above the cap with item level sync on, or equip level above the synced level); craftable gear shows high-quality stats.</p>
   </div>
 
 </section>

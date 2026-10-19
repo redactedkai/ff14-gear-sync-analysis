@@ -19,13 +19,14 @@ import {
   optimizerView,
   panelBase,
   relicsLeftOut,
+  samePassing,
   searchCount,
   searchPool,
   tierText,
 } from '../../src/ui/views/optimizer.js';
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
-import { gearView } from '../../src/ui/views/gear.js';
+import { browseFiltered, gearView, markWords } from '../../src/ui/views/gear.js';
 import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE, shownSync, syncSettings } from '../../src/ui/state.js';
@@ -255,8 +256,99 @@ test('gear view: every match of the filters, with its synced stats', () => {
   const v = gearView(app);
   assert.equal(v.shown.length, rows.length);
   assert.equal(v.countText, `${rows.length} matches`);
-  // item level 130 is above the cap of 123: every stat is shown raw → synced where the cap bites
-  assert.ok(v.shown.some(x => x.cells.some(c => c.text.includes('→'))));
+  // item level 130 is above the cap of 123: the row shows the synced item level and stats, the own ones under them
+  assert.ok(v.shown.every(x => x.synced && x.syncedIlvl === 123));
+  const cut = v.shown.flatMap(x => x.cells).filter(c => c.was != null);
+  assert.ok(cut.length > 0 && cut.every(c => Number(c.text) < Number(c.was) && c.cls === 'n cut'));
+});
+
+/* The gear browser's layout (owner, 2026-10-18): slot pills with counts, sorting from the headings, Reset filters. */
+test('gear view: slot pills count the matches of each slot under the other filters; the list keeps the chosen one', () => {
+  const app = makeApp('SGE');
+  Object.assign(app.browse, { min: 130, max: 130, lvl: 50, exclude: [] });
+  const all = gearView(app);
+  const [any, ...slots] = all.slots;
+  assert.deepEqual([any.key, any.count], ['any', all.shown.length]);
+  assert.equal(
+    slots.reduce((n, p) => n + p.count, 0),
+    any.count,
+  );
+  // Sage has no off-hand; the groups run weapon, armor, accessories
+  assert.ok(!slots.some(p => p.key === 'offhand'));
+  assert.deepEqual([...new Set(slots.map(p => p.group))], [1, 2, 3]);
+  app.browse.type = 'ring';
+  const rings = gearView(app);
+  assert.equal(rings.shown.length, slots.find(p => p.key === 'ring').count);
+  assert.ok(rings.shown.every(x => x.type === 'ring'));
+  // the counts stay those of every slot, so another pill can be picked
+  assert.deepEqual(
+    rings.slots.map(p => p.count),
+    all.slots.map(p => p.count),
+  );
+});
+
+test('gear view: a heading sorts high first, again low first; names A to Z', () => {
+  const app = makeApp('SGE');
+  Object.assign(app.browse, { min: 100, max: 140, lvl: 50, exclude: [] });
+  const order = (sort, dir) => {
+    app.browse.sort = sort;
+    app.browse.dir = dir;
+    return gearView(app).shown;
+  };
+  const crit = order('crit', 'desc').map(x => x.eff.crit || 0);
+  assert.deepEqual(
+    crit,
+    [...crit].sort((a, b) => b - a),
+  );
+  const lvl = order('lvl', 'asc').map(x => x.lvl);
+  assert.deepEqual(
+    lvl,
+    [...lvl].sort((a, b) => a - b),
+  );
+  const names = order('name', 'asc').map(x => x.name);
+  assert.deepEqual(
+    names,
+    [...names].sort((a, b) => a.localeCompare(b)),
+  );
+});
+
+test('gear browser search: every word, in any order; the words found are marked in the name', () => {
+  const app = makeApp('SGE');
+  Object.assign(app.browse, { exclude: [], q: 'ring healing' });
+  const v = gearView(app);
+  assert.ok(v.shown.length > 0);
+  assert.ok(v.shown.every(x => /ring/i.test(x.name) && /healing/i.test(x.name)));
+  assert.deepEqual(markWords('Genta Ring of Healing', 'heal ring'), [
+    { text: 'Genta ', hit: false },
+    { text: 'Ring', hit: true },
+    { text: ' of ', hit: false },
+    { text: 'Heal', hit: true },
+    { text: 'ing', hit: false },
+  ]);
+  assert.deepEqual(markWords('Ring', ''), [{ text: 'Ring', hit: false }]);
+});
+
+test('gear browser Reset filters: shown once any filter is off its default, not for the sort', () => {
+  const app = makeApp('BLU');
+  const b = app.browse;
+  assert.equal(browseFiltered(app.jobCtx, b), false);
+  // Blue Mage's level cap is 80: the default 100 is held there, and 80 or empty is no filter
+  assert.equal(browseFiltered(app.jobCtx, { ...b, lvl: 80 }), false);
+  assert.equal(browseFiltered(app.jobCtx, { ...b, lvl: '' }), false);
+  assert.equal(browseFiltered(app.jobCtx, { ...b, sort: 'crit', dir: 'asc' }), false);
+  for (const change of [
+    { q: ' ring ' },
+    { type: 'ring' },
+    { min: 300 },
+    { max: 400 },
+    { lvl: 70 },
+    { expOff: ['ARR'] },
+    { market: false },
+    { exclude: [] },
+  ])
+    assert.equal(browseFiltered(app.jobCtx, { ...b, ...change }), true, JSON.stringify(change));
+  // the default boxes in another order are still the default
+  assert.equal(browseFiltered(app.jobCtx, { ...b, exclude: [...b.exclude].reverse() }), false);
 });
 
 /* The optimizer and the browser each have their own "Gear from" filter. */
@@ -834,6 +926,28 @@ test('Food menu filters: the switch, every picked stat, every search word', () =
     mealsPassing(MEALS, filters([], 'popoto pot')).map(x => x.name),
     ['Popoto Potage'],
   );
+});
+
+test('Same-result menu search: every word in the name or the gear category, empty groups dropped', () => {
+  const groups = [
+    { label: 'Heavensward', items: [{ name: "Plague Doctor's Ring", category: { key: 'dungeon', label: 'Dungeon' } }] },
+    {
+      label: 'Stormblood',
+      items: [
+        { name: 'Genta Ring of Healing', category: { key: 'raid', label: 'Raid' } },
+        { name: 'Omicron Ring of Healing', category: null },
+      ],
+    },
+  ];
+  const names = query => samePassing(groups, query).flatMap(g => g.items.map(x => x.name));
+  assert.equal(names('').length, 3);
+  assert.deepEqual(names('RING heal'), ['Genta Ring of Healing', 'Omicron Ring of Healing']);
+  assert.deepEqual(names('raid'), ['Genta Ring of Healing']);
+  assert.deepEqual(
+    samePassing(groups, 'plague').map(g => g.label),
+    ['Heavensward'],
+  );
+  assert.deepEqual(names('zzzz'), []);
 });
 
 test('Food menu pills: one that would leave no meal is greyed out, a picked one never is, a third always is', () => {

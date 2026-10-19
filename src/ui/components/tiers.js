@@ -1,9 +1,10 @@
-/* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts from the
-   optimizer result when it is for the current settings, else at the substat's base, and what the user types or clicks
-   is kept on top until the job, the level or that result changes. The level is the synced level until the user types
+/* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts at
+   the substat's base, and what the user types, clicks or fills is kept on top until the job or the level changes. The
+   optimizer result comes in only from the math bar's Fill chip (owner, 2026-10-18), never on its own after an
+   Optimize. The level is the synced level until the user types
    another into the title's box (not saved). The values are worked out on every read (no effect that refills them
-   later), so a level typed in the settings shows its own tiers and values in one render. The math bar's Fill chip
-   sends 'tier-fill' to put the result back, at the synced level. */
+   later), so a level typed in the settings shows its own tiers and values in one render. The Fill chip sends
+   'tier-fill', which puts the result's values in at the synced level. */
 import { tierFill, tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 
 /* Space kept between a ? note and the panel's edge, and between it and its button (px); the note starts HELP_SHIFT px
@@ -30,10 +31,10 @@ export function tierTable() {
     /* the substat whose ? note is open, or null, and where the note sits in the panel */
     helpFor: null,
     helpAt: { top: 0, left: 0 },
-    /* the job, level and optimizer result the values start from: edits made under another key are dropped */
+    /* the job and levels the values were made under: edits made under another key are dropped */
     get editsKey() {
       const app = this.$store.app;
-      return JSON.stringify([app.job, this.level, app.level, tierFill(app)]);
+      return JSON.stringify([app.job, this.level, app.level]);
     },
     /* the edits that still apply: none once the settings they were made under have changed */
     get liveEdits() {
@@ -58,10 +59,13 @@ export function tierTable() {
       this.edits = { ...this.liveEdits, [stat]: edit };
       this.editsFor = this.editsKey;
     },
-    /* the optimizer result's values (or each base) again, at the synced level: typed and clicked values are dropped */
+    /* the Fill chip: the optimizer result's values (tierFill, for the current settings only), at the synced level;
+       typed and clicked values are dropped */
     fill() {
-      this.edits = {};
       this.typedLevel = null;
+      const values = tierFill(this.$store.app) ?? {};
+      this.edits = Object.fromEntries(Object.entries(values).map(([stat, value]) => [stat, { value, note: '' }]));
+      this.editsFor = this.editsKey;
     },
     /* a level typed into the title's box (Enter or leaving it); empty, or the synced level itself, follows the synced
        level again */

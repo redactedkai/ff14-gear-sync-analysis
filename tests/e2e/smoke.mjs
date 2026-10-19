@@ -461,11 +461,11 @@ const RINGS_WINDOW = ['SGE', 140, 150, 60];
 async function fillBrowser(pg, lo, hi, lvl, slot = 'any') {
   await showTab(pg, 'browse');
   await pg.fill('#b-q', '');
-  await pg.selectOption('#b-type', slot);
   await allExpansions(pg);
   await pg.fill('#b-min', String(lo));
   await pg.fill('#b-max', String(hi));
   await pg.fill('#b-lvl', String(lvl));
+  await pg.click(`#b-slots [data-slot="${slot}"]`); // after the filters, so its pill has matches
 }
 
 const browserRows = pg => pg.locator('#gear-table tbody tr[data-key]');
@@ -478,9 +478,47 @@ async function checkRingCopies(pg) {
     return;
   await setJob(pg, job);
   await fillBrowser(pg, lo, hi, lvl, 'ring');
-  await expect(pg.locator('#b-count')).toHaveText(`· ${want.count} matches`);
+  await expect(pg.locator('#b-count')).toHaveText(`${want.count} matches`);
+  // the ring pill counts them; Reset filters shows while filters are set
+  await expect(pg.locator('#b-slots [data-slot="ring"] .n')).toHaveText(String(want.count));
+  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#b-reset')).toBeVisible();
   await expect(browserRows(pg)).toHaveCount(want.count);
   await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
+  // a heading sorts by its column, and again the other way
+  // the sort goes by the piece's own item level: the muted line's on a synced row, else the cell's
+  const ilvls = () =>
+    pg
+      .locator('#gear-table tbody tr[data-key] td[data-col="ilvl"]')
+      .evaluateAll(cells => cells.map(c => Number((c.querySelector('.was') ?? c).textContent)));
+  const ilvlHead = pg.locator('#gear-table th:has([data-sort="ilvl"])');
+  await pg.click('#gear-table [data-sort="ilvl"]');
+  await expect(ilvlHead).toHaveAttribute('aria-sort', 'ascending');
+  const up = await ilvls();
+  check(
+    up.every((v, i) => !i || up[i - 1] <= v),
+    `ilvl ascending is not sorted: ${up}`,
+  );
+  await pg.click('#gear-table [data-sort="ilvl"]');
+  await expect(ilvlHead).toHaveAttribute('aria-sort', 'descending');
+  // the column under the pointer is tinted, its cells and its heading alike
+  await pg.hover('#gear-table tbody tr[data-key] td[data-col="crit"] >> nth=0');
+  await expect(pg.locator('#gear-table')).toHaveAttribute('data-col', 'crit');
+  const tint = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="crit"]', e => getComputedStyle(e).backgroundColor);
+  const plain = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="det"]', e => getComputedStyle(e).backgroundColor);
+  check(tint !== plain, `the hovered column is not tinted (${tint} vs ${plain})`);
+  // "/" jumps to the search, and the word is marked in the names; Reset filters clears every filter and hides
+  await pg.locator('#b-count').click();
+  await pg.keyboard.press('/');
+  await pg.waitForFunction(() => document.activeElement?.id === 'b-q');
+  await pg.keyboard.type('ring');
+  await expect(pg.locator('#gear-table tbody tr[data-key] .mark').first()).toHaveText(/ring/i);
+  await pg.click('#b-reset');
+  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#b-q')).toHaveValue('');
+  await expect(pg.locator('#b-min')).toHaveValue('');
+  await expect(pg.locator('#b-reset')).toBeHidden();
+  await expect(pg.locator('#gear-table th:has([data-sort="ilvl"])')).toHaveAttribute('aria-sort', 'descending'); // the sort stays
 }
 
 /** The ticked "Gear from" boxes of the optimizer (pre 'o') or the browser ('b'), in ACTIVITIES order, read from the DOM
@@ -860,7 +898,6 @@ async function checkReloadPersists(pg) {
     '#job': job,
     '#cap': '130',
     '#level': '60',
-    '#b-type': 'any',
     '#b-min': String(lo),
     '#b-max': String(hi),
     '#b-lvl': String(lvl),
@@ -1129,12 +1166,11 @@ async function checkExpansionFilter(pg) {
 async function checkPldOffhand(pg) {
   await setJob(pg, 'PLD');
   await showTab(pg, 'browse');
-  let opts = await pg.locator('#b-type option').allInnerTexts();
-  check(opts.includes('Off-hand'), `PLD slot filter has no Off-hand: ${JSON.stringify(opts)}`);
+  // the slot pills (data-slot keys); waited for, since the list is worked out after the job switch
+  await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(1);
   await pg.screenshot({ path: shot('browser.png'), fullPage: true });
   await setJob(pg, 'WAR');
-  opts = await pg.locator('#b-type option').allInnerTexts();
-  check(!opts.includes('Off-hand'), `WAR slot filter offers Off-hand: ${JSON.stringify(opts)}`);
+  await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(0);
 }
 
 // Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
@@ -1153,12 +1189,40 @@ async function checkSameResult(pg) {
   await waitOptimizer(pg);
   const button = pg.locator('#o-table .same-btn').first();
   await expect(button).toBeVisible();
+  // every row here reaches the caps: the key above the table says what the bar means
+  await expect(pg.locator('#o-key')).toContainText('at this piece');
+  await pg.hover('#o-table tbody td[data-col="crit"] >> nth=0');
+  await expect(pg.locator('#o-table table')).toHaveAttribute('data-col', 'crit');
   const total = await optTotal(pg).innerText();
   const first = await button.locator('span').first().innerText();
   await button.click();
   const menu = pg.locator('#o-table .same-menu').first();
   await expect(menu).toBeVisible();
   check(!(await hasHScroll(pg)), 'the same-result menu scrolls the page sideways at 960 px');
+  // scrolled under the sticky headings, a row's menu button stays below them (it drew over them)
+  await pg.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  const covered = await pg.evaluate(() => {
+    const head = document.querySelector('#o-table thead th');
+    const row = document.querySelectorAll('#o-table .same-btn')[1];
+    window.scrollBy(0, row.getBoundingClientRect().top - 4); // the row to the window's top, where the headings stick
+    const h = head.getBoundingClientRect();
+    const b = row.getBoundingClientRect();
+    const hit = document.elementFromPoint(b.left + 10, h.top + h.height / 2);
+    return hit?.closest('th') ? '' : hit?.outerHTML.slice(0, 80);
+  });
+  check(!covered, `a row's menu button draws over the table's sticky headings: ${covered}`);
+  await button.click();
+  await expect(menu).toBeVisible();
+  // its search box takes the keys; a search that matches nothing says so, and Clear search brings the pieces back
+  const search = menu.locator('input[type="text"]');
+  await pg.waitForFunction(() => document.activeElement?.matches('#o-table .same-menu input'));
+  const count = await menu.locator('.same-item').count();
+  await search.fill('zzzz');
+  await expect(menu.locator('.same-item')).toHaveCount(0);
+  await expect(menu.locator('.menu-empty')).toContainText('No piece matches "zzzz".');
+  await menu.locator('.menu-empty button').click();
+  await expect(menu.locator('.same-item')).toHaveCount(count);
   const other = menu.locator('.same-item:not(.on)').first();
   const name = await other.locator('span span').first().innerText();
   await other.click();
@@ -1170,6 +1234,12 @@ async function checkSameResult(pg) {
   // again from the easiest pieces
   await pg.selectOption('#o-tb1', 'crit');
   await expect(pg.locator('#o-stale')).toBeVisible();
+  // a stat holds one rank of the goal: a tiebreak hides Maximize's stat, and Maximize set to Tiebreak 1's swaps them
+  await expect(pg.locator('#o-tb1 option[value="main"]')).toHaveCount(0);
+  await expect(pg.locator('#o-tb2 option[value="crit"]')).toHaveCount(0);
+  await pg.selectOption('#o-target', 'crit');
+  check((await pg.inputValue('#o-tb1')) === 'main', 'Maximize set to the stat of Tiebreak 1 did not swap them');
+  await pg.selectOption('#o-target', 'main');
   await pg.selectOption('#o-tb1', '');
   await waitOptimizer(pg);
   await expect(button.locator('span').first()).toHaveText(first);
@@ -1184,7 +1254,10 @@ async function checkLevelSync(pg) {
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', '90');
   await fillBrowser(pg, 780, '', 100, 'head');
-  await expect(browserRows(pg).first()).toContainText(`→${HEAD_MAIN_CAP_660}`);
+  // the synced main stat on top with the cap bar, the head's own value on the muted line under it
+  check(/\bsynced\b/.test((await browserRows(pg).first().getAttribute('class')) || ''), 'a synced browser row is not marked synced');
+  await expect(pg.locator('#b-key')).toBeVisible();
+  await expect(browserRows(pg).first().locator('td.cut .atcap').first()).toHaveText(String(HEAD_MAIN_CAP_660));
   await checkNoBadText(pg, 'level sync/browse');
   await waitOptimizer(pg);
   await expect(pg.locator('#o-out .readout')).toContainText('synced');
@@ -1268,14 +1341,17 @@ async function checkTiers(pg) {
   await expect(pg.locator('#t-table tbody tr.cur td[data-to^="spd:"]').first()).toHaveText('613');
   await expect(pg.locator('#t-table tbody tr.cur td[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
 
-  // the optimizer's result fills the boxes: its Total row, substat by substat. The panel of the last result shows at
-  // once, so wait for a solve for these settings
+  // the optimizer's result fills the boxes only from the Fill chip (owner, 2026-10-18): its Total row, substat by
+  // substat. The panel of the last result shows at once, so wait for a solve for these settings
   await waitOptimizer(pg);
   // header cells are shown in capitals (CSS), so compare in upper case
   const heads = (await pg.locator('#o-out thead tr').first().locator('th').allInnerTexts()).map(t => t.trim().toUpperCase());
   const total = (await pg.locator('#o-out tr.total').first().locator('td').allInnerTexts()).map(t => t.trim());
   await showMath(pg, 'tiers');
   await expect(pg.locator('#t-fill')).toBeEnabled();
+  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420'); // not filled on its own
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('624'); // the typed value is kept
+  await pg.click('#t-fill');
   for (const [stat, short] of Object.entries(TIERS_SHORT)) {
     const want = total[heads.indexOf(short.toUpperCase())];
     check(

@@ -5,13 +5,6 @@ import { DEFAULT_EXCLUDE } from './state.js';
 
 export const fmtInt = n => n.toLocaleString();
 
-/* A table cell for a stat: "raw→synced" in the clamp colour when sync cuts it, dimmed when zero. */
-export function statCell(raw, synced) {
-  raw = raw || 0;
-  synced = synced || 0;
-  return synced < raw ? { text: `${raw}→${synced}`, cls: 'n clamp' } : { text: String(raw), cls: raw ? 'n' : 'n dim' };
-}
-
 /* How long a typed number waits before it is committed: typing "123" commits once, not 1, 12 and 123, so the views
    (and the optimizer) do not recompute for the numbers on the way. */
 export const TYPING_DEBOUNCE_MS = 300;

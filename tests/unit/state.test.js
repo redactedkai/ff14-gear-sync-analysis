@@ -36,6 +36,7 @@ function validSave() {
       max: 140,
       lvl: 50,
       sort: 'spd',
+      dir: 'asc',
     },
     opt: {
       target: 'spec',
@@ -163,6 +164,9 @@ test('browse fields', () => {
   expectFieldDefault('browse.q', 5, '');
   expectFieldDefault('browse.type', 'belt', 'any');
   expectFieldDefault('browse.sort', 'nope', 'ilvl');
+  expectFieldDefault('browse.sort', 'name', 'name');
+  expectFieldDefault('browse.dir', 'up', 'desc');
+  expectFieldDefault('browse.dir', 'asc', 'asc');
 });
 
 test('the gear filters, the same rules in the browser and the optimizer (each its own values)', () => {

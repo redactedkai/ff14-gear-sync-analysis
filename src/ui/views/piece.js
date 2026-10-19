@@ -4,6 +4,7 @@ import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';
 import { MAX_REAL } from '../../core/tables.js';
 import { shownSync } from '../state.js';
+import { withRank } from './ranks.js';
 
 /* A slot share in per mille as a percent: one decimal shows it exactly (85 ‰ = 8.5%). */
 const sharePct = perMille => `${perMille / 10}%`;
@@ -139,15 +140,10 @@ export function pieceView(app, ilvl) {
   };
 }
 
-/* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`. A substat can hold only one rank:
-   choosing one already used elsewhere swaps the two. Rank 1 is never empty; rank 2 may be. */
+/* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`: the shared rule of ranked dropdowns
+   (views/ranks.js withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
 export function withSub(subs, i, value, substats) {
-  const out = subs.slice(0, 2);
-  while (out.length < 2) out.push(null);
-  const v = value || null;
-  const j = v == null ? -1 : out.indexOf(v);
-  if (j >= 0 && j !== i) out[j] = out[i];
-  out[i] = v;
-  if (out[0] == null) out[0] = substats.find(s => !out.includes(s)) ?? null;
-  return out;
+  const two = subs.slice(0, 2);
+  while (two.length < 2) two.push(null);
+  return withRank(two, i, value, substats);
 }

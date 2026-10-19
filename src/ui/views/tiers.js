@@ -46,12 +46,11 @@ export function tierFill(app) {
   return p && p.key === optimizerKey(app) ? p.values : null;
 }
 
-/* Each substat's starting value at `level`: the optimizer result's (tierFill) when `level` is the synced level it was
-   solved for, else the substat's base at `level`. {stat: value} */
+/* Each substat's starting value at `level`: its base there, {stat: value}. The optimizer result comes in only from
+   the Fill chip (owner, 2026-10-18: not on its own after an Optimize; tierFill). */
 export function tierValues(app, level = app.level) {
-  const job = app.jobCtx,
-    fill = level === app.level ? tierFill(app) : null;
-  return Object.fromEntries(job.substats.map(s => [s, fill?.[s] ?? statBase(job, s, level)]));
+  const job = app.jobCtx;
+  return Object.fromEntries(job.substats.map(s => [s, statBase(job, s, level)]));
 }
 
 /* A value typed into a substat's box: {value, note}, held to the base at `level` and TIER_VALUE_MAX with a note saying

@@ -96,7 +96,7 @@ test('Monk: no special substat, and the GCD includes its haste', () => {
   assert.match(v.groups[3].help.size, /each 0\.01 s step is 85, 86, .* points/);
 });
 
-test('values: from the optimizer result only when it was solved for the current settings, else each base', () => {
+test('values: each base; the optimizer result (for the Fill chip) only when it was solved for the current settings', () => {
   const a = app('SGE');
   assert.equal(tierFill(a), null);
   assert.deepEqual(tierValues(a), { crit: 420, det: 440, dh: 420, spd: 420, spec: 440 });
@@ -104,7 +104,8 @@ test('values: from the optimizer result only when it was solved for the current 
   const values = resultPanel(a.jobCtx, view);
   a.optPanel = { key: optimizerKey(a), values };
   assert.deepEqual(tierFill(a), values);
-  assert.deepEqual(tierValues(a), values);
+  // a result never fills the boxes on its own (owner, 2026-10-18): only the Fill chip puts it in
+  assert.deepEqual(tierValues(a), { crit: 420, det: 440, dh: 420, spd: 420, spec: 440 });
   // the With food row's substats (Food is off by default: the Total row), base included
   assert.equal(values.crit, view.totals[a.jobCtx.stats.indexOf('crit')]);
   // any setting the result depends on: the result no longer applies
@@ -134,8 +135,7 @@ test("the sub-tab's own level: the synced level until one is typed, held to the 
   assert.equal(tierValues(a, 80).spd, AKH_LEVEL[80][1]);
   assert.deepEqual(tierInput(a, 'crit', '5', 80), { value: 380, note: 'Under the base of 380; shown at 380.' });
   assert.equal(tiersView(a, {}, {}, false, 80).level, 80);
-  // the optimizer result is for the synced level only
+  // a result for the settings leaves the bases at another level as they are
   a.optPanel = { key: optimizerKey(a), values: resultPanel(a.jobCtx, optimizerView(a)) };
-  assert.equal(tierValues(a).crit, a.optPanel.values.crit);
   assert.equal(tierValues(a, 80).crit, 380);
 });

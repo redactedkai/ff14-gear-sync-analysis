@@ -11,6 +11,7 @@ import {
   poolItemFromRow,
   itemRoutes,
   poolKey,
+  searchMatches,
   withActivities,
   emptyActivities,
   slotInfo,
@@ -331,10 +332,15 @@ function foodRow(app, gearTotals, food, picked, haste) {
    (the pills picked, neutral keys; a meal must have each), query (its search text; every word must be in the name),
    bestOnly (the "Best for goal" switch: tagged meals only)}. Returns the passing items, in order. */
 export function mealsPassing(items, { stats, query, bestOnly }) {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  return items.filter(
-    x => (!bestOnly || x.best) && stats.every(s => x.stats.includes(s)) && words.every(w => x.name.toLowerCase().includes(w)),
-  );
+  return items.filter(x => (!bestOnly || x.best) && stats.every(s => x.stats.includes(s)) && searchMatches(x.name, query));
+}
+
+/* A same-result menu's groups ({label, items}, sameMenu) after its search: a piece passes on its name or its gear
+   category ("raid", "crafted"); empty groups are dropped. */
+export function samePassing(groups, query) {
+  return groups
+    .map(g => ({ label: g.label, items: g.items.filter(x => searchMatches(`${x.name} ${x.category?.label ?? ''}`, query)) }))
+    .filter(g => g.items.length);
 }
 
 /* Whether a stat pill is greyed out (owner, 2026-10-18): one already picked never is; otherwise when two are picked
@@ -529,6 +535,8 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
     total: panel(o.target),
     totalLabel: `${job.label[o.target]} (${[base(o.target) && 'base', 'gear', bonus[o.target] && 'food'].filter(Boolean).join(' + ')}${poolSynced(pool, sync) ? ', synced' : ''})`,
     totals: job.stats.map(s => gearTotals[s] + base(s)),
+    // some cell has the cap bar: the key above the table shows
+    anyAtCap: rows.some(r => (r.cells || []).some(c => c.atCap)),
     // the Food row and the totals with it; null with Food off. best: the meal has the best's result; picked: the player
     // picked it from the menu ({count, groups, pills}: foodRow)
     food: meal && {

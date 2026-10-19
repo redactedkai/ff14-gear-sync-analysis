@@ -126,6 +126,17 @@ export function expansionOf(lvl, ilvl) {
   return b.short;
 }
 
+/* Whether `text` passes a search box: every word of `query` is in it, ignoring case; an empty search passes
+   everything. The rule of every search on the page (the gear browser, the Food menu, pieces with the same result). */
+export function searchMatches(text, query) {
+  const lower = text.toLowerCase();
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every(w => lower.includes(w));
+}
+
 /* Database rows this job can equip, matching the filter {q, type, expOff, ilvlMin, ilvlMax, lvlMax} (expOff: the
    EXPANSIONS short names to hide). Returns parsed rows. Rows above the job's level cap (job.maxLevel) are left out
    whatever lvlMax says: the job can never wear them.
@@ -134,7 +145,7 @@ export function expansionOf(lvl, ilvl) {
 export function browseItems(job, f) {
   const bit = 1 << job.jobIndex,
     out = [];
-  const q = (f.q || '').trim().toLowerCase();
+  const q = (f.q || '').trim();
   const mainIdx = statIdx(job.profile.main),
     attrIdx = statIdx('mainAttr');
   for (let k = 0; k < ITEMS.length; k++) {
@@ -146,7 +157,7 @@ export function browseItems(job, f) {
     if (f.ilvlMin && r[ROW.ilvl] < f.ilvlMin) continue;
     if (f.ilvlMax && r[ROW.ilvl] > f.ilvlMax) continue;
     if (r[ROW.equipLevel] > job.maxLevel || (f.lvlMax && r[ROW.equipLevel] > f.lvlMax)) continue;
-    if (q && r[ROW.name].toLowerCase().indexOf(q) < 0) continue;
+    if (q && !searchMatches(r[ROW.name], q)) continue;
     const p = parseRow(r);
     if (!p.st[mainIdx] && !p.st[attrIdx]) continue; // must carry this job's main stat, or Main Attribute
     out.push(p);

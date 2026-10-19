@@ -11,9 +11,11 @@ import {
   optimizerKey,
   optimizerView,
   resultPanel,
+  samePassing,
   searchCount,
 } from '../views/optimizer.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
+import { rankChoices, withRank } from '../views/ranks.js';
 
 const DEBOUNCE_MS = 120;
 
@@ -29,8 +31,9 @@ export function optimizer() {
     /* pieces picked from the rows' menus of pieces with the same result: {row index: pool key}. Not saved; cleared when
        any setting changes, since the result and its rows change with them */
     picks: {},
-    /* the row whose menu is open, or null */
+    /* the row whose menu is open, or null, and the search text of that menu (cleared when a menu opens) */
     menuOpen: null,
+    sameQuery: '',
     /* the meal picked from the Food row's menu (an allMeals key), or null for the best for the goal. Not saved; cleared
        with the picks */
     mealPick: null,
@@ -130,6 +133,19 @@ export function optimizer() {
       this.menuOpen = null;
       this.solve();
     },
+    /* Open or close row i's menu; opened, its search box (in `box`, the row's menu wrapper) starts empty and takes the
+       keys. */
+    toggleSameMenu(i, box) {
+      this.menuOpen = this.menuOpen === i ? null : i;
+      if (this.menuOpen === null) return;
+      this.sameQuery = '';
+      // after x-show has shown the menu (a hidden box takes no focus)
+      this.$nextTick(() => requestAnimationFrame(() => box.querySelector('input')?.focus()));
+    },
+    /* row i's menu groups after its search (views samePassing) */
+    sameGroups(groups) {
+      return samePassing(groups, this.sameQuery);
+    },
     /* A meal picked from the Food row's menu: the search runs again with it in place of the best (with tier ranking or
        a Target GCD the meal can change which gear wins). */
     pickMeal(key) {
@@ -199,8 +215,16 @@ export function optimizer() {
     get statOptions() {
       return this.job.stats.map(s => [s, this.job.label[s]]);
     },
-    get tiebreakOptions() {
-      return [['', 'none']].concat(this.statOptions);
+    /* Tiebreak i's options (1 or 2): none, then every stat not picked above it (views/ranks.js) */
+    tiebreakOptions(i) {
+      const o = this.$store.app.opt;
+      return [['', 'none']].concat(rankChoices([o.target, o.tb, o.tb2], i, this.job.stats).map(s => [s, this.job.label[s]]));
+    },
+    /* Maximize (0), Tiebreak 1 or Tiebreak 2 set to `value`: a stat another of them holds swaps with this one's old
+       one (views/ranks.js withRank) */
+    setGoal(i, value) {
+      const o = this.$store.app.opt;
+      [o.target, o.tb, o.tb2] = withRank([o.target, o.tb, o.tb2], i, value, this.job.stats).map(r => r ?? '');
     },
   };
 }

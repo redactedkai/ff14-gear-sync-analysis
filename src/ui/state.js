@@ -4,6 +4,7 @@ import { JOBS, DEFAULT_JOB, ACTIVITIES, EXPANSIONS } from '../core/constants.js'
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
+import { uniqueRanks } from './views/ranks.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
@@ -83,8 +84,20 @@ export function defaultState() {
     // slot and two ranked substats
     piece: { ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
     // the Gear browser's filters. expOff: expansions switched off. exclude: ACTIVITIES keys ("Gear from" boxes) left out;
-    // market: tradeable pieces listed whatever their source (the market board switch, on by default)
-    browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: 100, sort: 'ilvl' },
+    // market: tradeable pieces listed whatever their source (the market board switch, on by default). sort: the table
+    // heading it is sorted by ('name', 'lvl', 'ilvl' or a stat); dir: 'desc' (high first) or 'asc'
+    browse: {
+      q: '',
+      type: 'any',
+      expOff: [],
+      exclude: [...DEFAULT_EXCLUDE],
+      market: true,
+      min: '',
+      max: '',
+      lvl: 100,
+      sort: 'ilvl',
+      dir: 'desc',
+    },
     // melds: give pieces their best materia melds. expOff, exclude, market, min, max, lvl: Gear to search, the browser's
     // filters with their own values. food: add the best meal for the goal to the result (a meal picked from the Food
     // row's menu is not saved, like the rows' picks; a save's old foodPair is dropped). gcd: the Target GCD in seconds,
@@ -133,6 +146,7 @@ export function resetForJob(s, job) {
   s.opt.gcd = ''; // the GCDs a job can reach depend on its haste
   s.browse.type = 'any';
   s.browse.sort = 'ilvl';
+  s.browse.dir = 'desc';
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */
@@ -223,12 +237,15 @@ export function restoreState(raw) {
   restoreGearFilter(s.browse, b, job);
   s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);
   s.browse.market = bool(b.market, s.browse.market);
-  s.browse.sort = oneOf(b.sort, ['ilvl', ...job.stats], s.browse.sort);
+  s.browse.sort = oneOf(b.sort, ['name', 'lvl', 'ilvl', ...job.stats], s.browse.sort);
+  s.browse.dir = oneOf(b.dir, ['desc', 'asc'], s.browse.dir);
 
   const o = isObj(r.opt) ? r.opt : {};
   s.opt.target = oneOf(o.target, job.stats, s.opt.target);
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
+  // a goal saved before a stat could hold only one rank: a repeat of a rank above is cleared (views/ranks.js)
+  [s.opt.target, s.opt.tb, s.opt.tb2] = uniqueRanks([s.opt.target, s.opt.tb, s.opt.tb2]).map(r => r ?? '');
   s.opt.melds = bool(o.melds, s.opt.melds);
   s.opt.food = bool(o.food, s.opt.food);
   s.opt.byTier = bool(o.byTier, s.opt.byTier);
