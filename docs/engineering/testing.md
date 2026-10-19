@@ -65,7 +65,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 360 more random cases |
 | views | what each tab shows |
 | sync-explainer-view | How the math works: a piece and a full set against the melded cap, the item level range, melds from the Goal, the special substat caps |
-| tiers-view | Substat tiers: the ladder's columns, rows and wording; values from the optimizer result only for the same settings; typed values |
+| tiers-view | Substat tiers: the ladder's columns, rows and wording; values from the optimizer result only for the same settings; typed values; the sub-tab's own level |
 | piece-subs | Piece stats substat ranks |
 | data-format | generated data shape |
 | provenance | source record and footer |

@@ -3,9 +3,9 @@
    tiers.test.js; here, the table's shape and wording. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appState } from './helpers/common.js';
+import { AKH_LEVEL, appState } from './helpers/common.js';
 import { optimizerKey, optimizerView, resultPanel } from '../../src/ui/views/optimizer.js';
-import { TIER_NEAR, TIER_NEAR_MORE, tierFill, tierInput, tiersView, tierValues } from '../../src/ui/views/tiers.js';
+import { TIER_NEAR, TIER_NEAR_MORE, tierFill, tierInput, tierLevel, tiersView, tierValues } from '../../src/ui/views/tiers.js';
 
 const app = (job, patch = {}) => appState({ job, level: 100, sync: false }, patch);
 
@@ -17,7 +17,8 @@ test('Sage: a column group per substat, From and one column per effect, in the c
   const a = app('SGE');
   // 2380 Critical Hit at level 100: 1960 gear, floor(200 x 1960 / 2780) = 141 -> 19.1% rate, +54.1% on a critical hit
   const v = tiersView(a, { crit: 2380 }, {}, false);
-  assert.equal(v.title, 'Sage substat tiers at level 100');
+  assert.equal(v.title, 'Sage substat tiers at level');
+  assert.equal(v.level, 100);
   assert.deepEqual(
     v.groups.map(g => [g.stat, g.span]),
     [
@@ -121,4 +122,20 @@ test('a typed value: held to the base and the box limit, with a note; not a numb
   assert.equal(tierInput(a, 'crit', '1e9').value, 99999);
   assert.equal(tierInput(a, 'crit', ''), null);
   assert.equal(tierInput(a, 'crit', 'abc'), null);
+});
+
+test("the sub-tab's own level: the synced level until one is typed, held to the job's cap; bases and the result follow it", () => {
+  const a = app('SGE');
+  assert.equal(tierLevel(a, null), 100);
+  assert.equal(tierLevel(a, 80), 80);
+  assert.equal(tierLevel(a, 0), 1);
+  assert.equal(tierLevel(app('BLU'), 100), 80);
+  // AkhMorning's SUB at level 80 is 380 (AKH_LEVEL); the view says the level it shows
+  assert.equal(tierValues(a, 80).spd, AKH_LEVEL[80][1]);
+  assert.deepEqual(tierInput(a, 'crit', '5', 80), { value: 380, note: 'Under the base of 380; shown at 380.' });
+  assert.equal(tiersView(a, {}, {}, false, 80).level, 80);
+  // the optimizer result is for the synced level only
+  a.optPanel = { key: optimizerKey(a), values: resultPanel(a.jobCtx, optimizerView(a)) };
+  assert.equal(tierValues(a).crit, a.optPanel.values.crit);
+  assert.equal(tierValues(a, 80).crit, 380);
 });

@@ -234,7 +234,7 @@
 <!-- TIERS: every substat's tiers around its value (a ladder); not about sync, so it shows whatever the sync settings -->
 <section class="subtab" id="tab-tiers" hidden :hidden="$store.app.mathTab !== 'tiers'" x-data="tierTable" @tier-fill.window="fill()" @keydown.escape.window="helpFor = null" @click.window="if (helpFor && !$event.target.closest('#t-pop, [data-help]')) helpFor = null">
 <template x-if="view"><div class="panel" id="t-panel" x-ref="panel" style="position:relative">
-  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><span style="flex:1"></span>
+  <div class="panelhead"><h2 id="t-title" x-text="view.title"></h2><input type="number" id="t-level" class="tlevel" min="1" :max="$store.app.jobCtx.maxLevel" step="1" inputmode="numeric" :value="view.level" aria-label="Level of the tiers" @change="typeLevel($el)"><span style="flex:1"></span>
     <span class="subtabs small"><button type="button" id="t-more" :aria-pressed="String(more)" @click="more = !more">More tiers</button></span></div>
   <div class="tablewrap"><table class="compact ladder" id="t-table">
     <colgroup><col class="lrowcol"><template x-for="(c, k) in view.cols" :key="k"><col :class="c.first ? 'gfirst' : ''"></template></colgroup>
@@ -255,7 +255,7 @@
     </tr></template></tbody>
     <tfoot><tr><td class="lrow"></td><template x-for="(f, k) in view.foot" :key="k"><td class="n small lfoot gfirst" :colspan="f.span"><span><b x-text="f.spare"></b> spare</span><span x-show="f.toNext != null"><b x-text="`+${f.toNext}`"></b> to next</span><span x-show="f.toNext == null">last tier</span></td></template></tr></tfoot>
   </table></div>
-  <p class="small dim" id="t-note">Values include the base, as on the character panel. Click a tier to set the value to its start.<span x-show="view.haste" x-text="` The GCD includes ${view.haste}.`"></span></p>
+  <p class="small dim" id="t-note" x-show="view.haste" x-text="`The GCD includes ${view.haste}.`"></p>
   <div class="popover statpop" id="t-pop" x-ref="pop" role="dialog" :aria-label="help ? `About ${help.title}` : 'About this substat'" x-show="help" :style="`top:${helpAt.top}px;left:${helpAt.left}px`">
     <template x-if="help"><div><h3 x-text="help.title"></h3><p x-text="help.affects"></p><p x-text="help.size"></p></div></template>
   </div>

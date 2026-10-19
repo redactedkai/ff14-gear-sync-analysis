@@ -1,9 +1,10 @@
 /* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts from the
    optimizer result when it is for the current settings, else at the substat's base, and what the user types or clicks
-   is kept on top until the job, the level or that result changes. The values are worked out on every read (no effect
-   that refills them later), so a level typed in the settings shows its own tiers and values in one render. The math
-   bar's Fill chip sends 'tier-fill' to put the result back. */
-import { tierFill, tierInput, tiersView, tierValues } from '../views/tiers.js';
+   is kept on top until the job, the level or that result changes. The level is the synced level until the user types
+   another into the title's box (not saved). The values are worked out on every read (no effect that refills them
+   later), so a level typed in the settings shows its own tiers and values in one render. The math bar's Fill chip
+   sends 'tier-fill' to put the result back, at the synced level. */
+import { tierFill, tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 
 /* Space kept between a ? note and the panel's edge, and between it and its button (px); the note starts HELP_SHIFT px
    left of its button, so the button stays in view above the note's start. */
@@ -19,6 +20,11 @@ export function tierTable() {
     editsFor: '',
     /* More tiers: 7 either side instead of 3 */
     more: false,
+    /* a level typed into the title's box, or null to follow the synced level */
+    typedLevel: null,
+    get level() {
+      return tierLevel(this.$store.app, this.typedLevel);
+    },
     /* the tier under the mouse ('stat:start'): all its cells are highlighted, since a click on any of them sets it */
     hover: '',
     /* the substat whose ? note is open, or null, and where the note sits in the panel */
@@ -27,7 +33,7 @@ export function tierTable() {
     /* the job, level and optimizer result the values start from: edits made under another key are dropped */
     get editsKey() {
       const app = this.$store.app;
-      return JSON.stringify([app.job, app.level, tierFill(app)]);
+      return JSON.stringify([app.job, this.level, app.level, tierFill(app)]);
     },
     /* the edits that still apply: none once the settings they were made under have changed */
     get liveEdits() {
@@ -36,13 +42,13 @@ export function tierTable() {
     get view() {
       const app = this.$store.app;
       if (!app.job) return null;
-      const values = tierValues(app),
+      const values = tierValues(app, this.level),
         notes = {};
       for (const [stat, e] of Object.entries(this.liveEdits)) {
         values[stat] = e.value;
         notes[stat] = e.note;
       }
-      return tiersView(app, values, notes, this.more);
+      return tiersView(app, values, notes, this.more, this.level);
     },
     get help() {
       return this.view?.groups.find(g => g.stat === this.helpFor)?.help ?? null;
@@ -52,13 +58,21 @@ export function tierTable() {
       this.edits = { ...this.liveEdits, [stat]: edit };
       this.editsFor = this.editsKey;
     },
-    /* the optimizer result's values (or each base) again: typed and clicked values are dropped */
+    /* the optimizer result's values (or each base) again, at the synced level: typed and clicked values are dropped */
     fill() {
       this.edits = {};
+      this.typedLevel = null;
+    },
+    /* a level typed into the title's box (Enter or leaving it); empty, or the synced level itself, follows the synced
+       level again */
+    typeLevel(el) {
+      const v = Math.round(Number(el.value));
+      this.typedLevel = el.value === '' || !Number.isFinite(v) || v === this.$store.app.level ? null : v;
+      el.value = this.level;
     },
     /* a value typed into a substat's box (Enter or leaving the box); the box shows the value kept */
     type(stat, el) {
-      const r = tierInput(this.$store.app, stat, el.value);
+      const r = tierInput(this.$store.app, stat, el.value, this.level);
       if (!r) return;
       this.setEdit(stat, r);
       el.value = r.value;

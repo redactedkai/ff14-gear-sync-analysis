@@ -1190,7 +1190,8 @@ const TIERS_SHORT = { crit: 'CRT', det: 'DET', dh: 'DHT', spd: 'SpS', spec: 'PIE
 /** Tiers (Sage, level 100, item level sync off): with no optimizer result for these settings each value starts at its
  * base and Fill is off; a typed Spell Speed lands in AkhMorning's tier; once the optimizer has run, the values are its
  * Total row's substats; a level typed into the settings shows its tiers while the field still has focus (no change
- * event, no typing wait); with sync on and no cap there is no "enter a sync cap" message on Tiers; Paladin's Tenacity
+ * event, no typing wait); a level typed into the sub-tab's own box holds when the settings' level changes, and an
+ * empty box goes back to the settings' level; with sync on and no cap there is no "enter a sync cap" message on Tiers; Paladin's Tenacity
  * has two effect columns; no sideways scroll at NARROW. */
 async function checkTiers(pg) {
   await pg.setViewportSize(NARROW);
@@ -1199,7 +1200,8 @@ async function checkTiers(pg) {
   await showMath(pg, 'tiers');
   await pg.locator('#sync').uncheck();
   await setNumber(pg, '#level', '100');
-  await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level 100');
+  await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level');
+  await expect(pg.locator('#t-level')).toHaveValue('100');
   await expect(pg.locator('#t-fill')).toBeDisabled();
   check(Number(await pg.$eval('#t-fill', e => getComputedStyle(e).opacity)) < 1, 'the disabled Fill chip does not look disabled');
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
@@ -1235,9 +1237,21 @@ async function checkTiers(pg) {
   await pg.focus('#level');
   await pg.keyboard.press('Control+A');
   await pg.keyboard.type('90');
-  await expect(pg.locator('#t-title')).toHaveText('Sage substat tiers at level 90');
+  await expect(pg.locator('#t-level')).toHaveValue('90');
   check((await pg.evaluate(() => document.activeElement?.id)) === 'level', 'the level field lost focus while typing');
   await pg.keyboard.press('Tab');
+
+  // the sub-tab's own level: Spell Speed's base at level 80 while the settings say 50, kept when they say 60; an empty
+  // box goes back to the settings' level
+  await setNumber(pg, '#level', '50');
+  await setNumber(pg, '#t-level', '80');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
+  await setNumber(pg, '#level', '60');
+  await expect(pg.locator('#t-level')).toHaveValue('80');
+  await setNumber(pg, '#t-level', '');
+  await expect(pg.locator('#t-level')).toHaveValue('60');
+  await setNumber(pg, '#level', '90');
+  await expect(pg.locator('#t-level')).toHaveValue('90');
 
   // a ? note says what the substat does and how big its tiers are here (level 90 DIV 1900: 1900/200 = 9.5)
   await pg.click('#t-table [data-help="crit"]');

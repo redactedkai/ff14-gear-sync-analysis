@@ -1200,6 +1200,12 @@ footer {
 .panelhead h2 {
   margin: 0;
 }
+/* the sub-tab's own level, right after the title's "at level" */
+.panelhead .tlevel {
+  width: 4.5em;
+  margin-left: -4px;
+  align-self: center;
+}
 .ladder {
   table-layout: fixed;
 }

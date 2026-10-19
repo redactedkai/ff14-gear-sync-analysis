@@ -1,7 +1,8 @@
 /* How the math works, Substat tiers: every substat of the job as a column group of tiers (a ladder), each around its value, the
    value's tier on the middle row (core/tiers.js tierLadder). Values are character panel numbers (base + gear, and food
-   when the optimizer result counts it). The tiers follow the job and the synced level; item level sync does not change
-   them. The view object is built here; the template only shows it. */
+   when the optimizer result counts it). The tiers follow the job and the sub-tab's own level (the synced level until
+   the user types another); item level sync does not change them. The view object is built here; the template only
+   shows it. */
 import { tierLadder, tierSizes } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
 import { statBase } from '../../core/food.js';
@@ -32,25 +33,33 @@ const AFFECTS = {
 /* "13 or 14", "85, 86, 128 or 129" */
 const sizeList = sizes => (sizes.length === 1 ? String(sizes[0]) : `${sizes.slice(0, -1).join(', ')} or ${sizes.at(-1)}`);
 
+/* The sub-tab's level: `typed` (a level typed into its box, or null) held to 1 and the job's level cap, else the synced
+   level. */
+export function tierLevel(app, typed) {
+  if (typed == null) return app.level;
+  return Math.max(1, Math.min(app.jobCtx.maxLevel, typed));
+}
+
 /* The optimizer result's substat values ({stat: value}) when it was solved for the current settings, else null. */
 export function tierFill(app) {
   const p = app.optPanel;
   return p && p.key === optimizerKey(app) ? p.values : null;
 }
 
-/* Each substat's starting value: the optimizer result's (tierFill), else the substat's base. {stat: value} */
-export function tierValues(app) {
+/* Each substat's starting value at `level`: the optimizer result's (tierFill) when `level` is the synced level it was
+   solved for, else the substat's base at `level`. {stat: value} */
+export function tierValues(app, level = app.level) {
   const job = app.jobCtx,
-    fill = tierFill(app);
-  return Object.fromEntries(job.substats.map(s => [s, fill?.[s] ?? statBase(job, s, app.level)]));
+    fill = level === app.level ? tierFill(app) : null;
+  return Object.fromEntries(job.substats.map(s => [s, fill?.[s] ?? statBase(job, s, level)]));
 }
 
-/* A value typed into a substat's box: {value, note}, held to the base and TIER_VALUE_MAX with a note saying so; null
-   for text that is not a number. */
-export function tierInput(app, stat, text) {
+/* A value typed into a substat's box: {value, note}, held to the base at `level` and TIER_VALUE_MAX with a note saying
+   so; null for text that is not a number. */
+export function tierInput(app, stat, text, level = app.level) {
   const v = Math.round(Number(text));
   if (text === '' || !Number.isFinite(v)) return null;
-  const base = statBase(app.jobCtx, stat, app.level);
+  const base = statBase(app.jobCtx, stat, level);
   if (v < base) return { value: base, note: `Under the base of ${fmtInt(base)}; shown at ${fmtInt(base)}.` };
   if (v > TIER_VALUE_MAX) return { value: TIER_VALUE_MAX, note: `Shown at ${fmtInt(TIER_VALUE_MAX)}.` };
   return { value: v, note: '' };
@@ -67,17 +76,16 @@ function helpOf(job, stat, level, haste) {
   return { title: job.label[stat], affects: AFFECTS[key], size };
 }
 
-/* The Tiers view for `values` ({stat: panel value}), `notes` ({stat: text} under a box) and `more` (More tiers), or null
-   with no job. Shape, in the table's order:
-   - title; cols: [{first}] one per table column after the row labels (first: a substat's From column);
+/* The Tiers view at `level` for `values` ({stat: panel value}), `notes` ({stat: text} under a box) and `more` (More
+   tiers), or null with no job. Shape, in the table's order:
+   - title (before the level box), level; cols: [{first}] one per table column after the row labels (first: a substat's From column);
    - groups: one per substat {stat, label, span (its columns), value, lines (header effect lines), note, help};
    - names: [{text, first}] the column names; rows: [{label, cur, cells: [{text, first, eff, mark, to, title}]}], cells
      empty ({text: ''}) where a substat has no tier; to: 'stat:start' to set the value by a click;
    - foot: [{span, spare, toNext}]; haste: "Greased Lightning (20% haste)" or ''. */
-export function tiersView(app, values, notes, more) {
+export function tiersView(app, values, notes, more, level = app.level) {
   if (!app.job) return null;
-  const job = app.jobCtx,
-    level = app.level;
+  const job = app.jobCtx;
   const near = more ? TIER_NEAR_MORE : TIER_NEAR;
   const haste = hasteFor(job.jobId, level);
 
@@ -129,7 +137,8 @@ export function tiersView(app, values, notes, more) {
   }));
 
   return {
-    title: `${job.jobName} substat tiers at level ${level}`,
+    title: `${job.jobName} substat tiers at level`,
+    level,
     cols,
     groups,
     names,
