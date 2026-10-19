@@ -11,11 +11,13 @@ test('DATA_SOURCE names the datamining repo, a full commit sha and an ISO date',
   assert.ok(!Number.isNaN(Date.parse(DATA_SOURCE.date)));
 });
 
-test('both generated data files name the same source commit', () => {
-  for (const name of ['item-level.json', 'items.json']) {
+test('every generated data file names the same source commit', () => {
+  // max-speed.json (written by Node) carries the source record but no "do not edit" notice; a partial regeneration
+  // that skipped a file shows up here as an older commit
+  for (const name of ['item-level.json', 'items.json', 'food.json', 'max-speed.json']) {
     const doc = JSON.parse(readFileSync(new URL(`../../src/data/${name}`, import.meta.url), 'utf8'));
     assert.deepEqual(doc.source, DATA_SOURCE, `${name} source`);
-    assert.ok(doc._generated.includes(DATA_SOURCE.commit), `${name} notice names ${DATA_SOURCE.commit}`);
+    if (name !== 'max-speed.json') assert.ok(doc._generated.includes(DATA_SOURCE.commit), `${name} notice names ${DATA_SOURCE.commit}`);
   }
 });
 
