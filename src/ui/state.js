@@ -129,7 +129,7 @@ export function defaultSubs() {
   return ['crit', 'spd'];
 }
 
-/* The synced level and the two "Equip level up to" filters held to the job's level cap. */
+/* The synced level and the two "Equip level" filters held to the job's level cap. */
 export function clampLevels(s, job) {
   if (s.level > job.maxLevel) s.level = job.maxLevel;
   for (const f of [s.browse, s.opt]) if (f.lvl !== '' && f.lvl > job.maxLevel) f.lvl = job.maxLevel;

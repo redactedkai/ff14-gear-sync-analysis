@@ -288,7 +288,7 @@
               </template>
             </div>
           </div>
-          <label class="f"><span>Equip level up to <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model="$store.app.opt.lvl"></label>
+          <label class="f"><span>Equip level <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model="$store.app.opt.lvl"></label>
           <div class="f field ilvl-field"><span id="o-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="o-ilvl-label"><input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-model="$store.app.opt.min"><span aria-hidden="true">–</span><input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-model="$store.app.opt.max"></div></div>
           <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
             <span id="o-from-label">Gear from</span>
@@ -459,7 +459,7 @@
           </template>
         </div>
       </div>
-      <label class="f"><span>Equip level up to <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.browse.lvl"></label>
+      <label class="f"><span>Equip level <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-model.debounce.300ms="$store.app.browse.lvl"></label>
       <div class="f field ilvl-field"><span id="b-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="b-ilvl-label"><input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-model.debounce.300ms="$store.app.browse.min"><span aria-hidden="true">–</span><input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-model.debounce.300ms="$store.app.browse.max"></div></div>
       <div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
         <span id="b-from-label">Gear from</span>
