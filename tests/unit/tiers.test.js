@@ -96,7 +96,7 @@ test('effects equal AkhMorning formulas at every level in their table', () => {
 
 const pld = makeJobContext('PLD');
 const mnk = makeJobContext('MNK');
-const startsOf = ladder => ladder.rows.map(r => r && r.start);
+const startsOf = ladder => ladder.rows.map(r => r?.start);
 
 test('speed ladder: AkhMorning level 100 tiers on the panel scale (SUB 420)', () => {
   // AkhMorning: gear speed 22 -> 2.49 s, 107 -> 2.48 s, 193 -> 2.47 s; on the panel 442, 527, 613 (validation.md section 5)

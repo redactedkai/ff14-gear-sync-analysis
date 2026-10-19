@@ -594,7 +594,7 @@ test('optimizer totals are character panel numbers', () => {
   const v = optimizerView(app, windowPool(app.jobCtx));
   assert.equal(v.kind, 'ok');
   const job = app.jobCtx;
-  const gear = job.stats.map((s, k) => v.rows.reduce((a, r) => a + (r.cells?.[k].value ?? 0), 0));
+  const gear = job.stats.map((_stat, k) => v.rows.reduce((a, r) => a + (r.cells?.[k].value ?? 0), 0));
   const want = { main: 232, vit: 202, crit: 341, det: 202, dh: 341, spd: 341, spec: 202 };
   job.stats.forEach((s, k) => {
     assert.equal(v.totals[k], gear[k] + want[s], s);
@@ -816,7 +816,7 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
   }
   // only the keys are marked
   assert.deepEqual(
-    stats.filter((s, k) => v.tiers[k]?.held),
+    stats.filter((_stat, k) => v.tiers[k]?.held),
     stats.filter(s => ['crit', 'det', 'dh'].includes(s)),
   );
 

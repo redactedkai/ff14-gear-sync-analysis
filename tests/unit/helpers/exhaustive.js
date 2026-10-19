@@ -173,7 +173,7 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
     const v = ranked.map(get);
     if (!best || lexGreater(v, best)) best = v;
   });
-  return best && best.slice(ranked.length - keys.length);
+  return best === null ? null : best.slice(ranked.length - keys.length);
 }
 
 /* Call visit(get) once for every legal loadout (see exhaustive for the rules), where get(stat) is the loadout's total
