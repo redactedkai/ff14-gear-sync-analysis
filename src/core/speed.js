@@ -1,5 +1,5 @@
 /* Speed stat -> GCD and DoT/HoT tick scaling (AkhMorning's formulas), using ParamGrow level data. */
-import { PG } from './tables.js';
+import { MAX_LEVEL, PG } from './tables.js';
 import { EXPANSIONS, HASTE, GCD_FLOOR_MS } from './constants.js';
 
 /* The recast of a weaponskill or spell before speed: 2.5 s, in ms (the GCD every speed formula here starts from). */
@@ -10,7 +10,8 @@ const SPEED_SEARCH_LIMIT = 100000;
 /* sub = BaseSpeed (the character's own speed at this level), div = LevelModifier,
    sync = the item level gear is synced to at this level (ParamGrow.ItemLevelSync; level sync, sync-target.js) */
 export function speedParams(level) {
-  const row = PG[Math.max(1, Math.min(100, level | 0)) - 1]; // PG has one row per level 1..100
+  // PG has one row per level from 1 to the level cap (tests/unit/level-tables.test.js holds it to MAX_LEVEL)
+  const row = PG[Math.max(1, Math.min(MAX_LEVEL, level | 0)) - 1];
   return { sub: row[0], div: row[1], sync: row[2] };
 }
 

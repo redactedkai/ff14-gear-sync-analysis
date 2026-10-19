@@ -7,7 +7,8 @@ import { ROW } from './constants.js';
 
 /* {repo, commit, date} of the xivapi/ffxiv-datamining commit the tables were generated from, or null when unknown. */
 export const DATA_SOURCE = ITEM_LEVEL_FILE.source ?? null;
-/* IL: per-stat budget by item level (ItemLevel sheet). PG: [BaseSpeed, LevelModifier, ItemLevelSync] per level 1..100. */
+/* IL: per-stat budget by item level (ItemLevel sheet). PG: [BaseSpeed, LevelModifier, ItemLevelSync] per level from 1 to
+   the level cap (the highest ParamGrow row with an ItemLevelSync). */
 export const IL = ITEM_LEVEL_FILE.IL;
 export const PG = ITEM_LEVEL_FILE.PG;
 /* MP: the per-item stat factor table (BaseParam MeldParam), {raw stat key: [percent per item kind]}. An item row's kind
@@ -26,7 +27,7 @@ export const CURRENT_TOMES = Object.freeze([...(ITEMS_FILE.currentTomes ?? [])])
 /* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...], [Vitality HQ
    percent, HQ max] or null] (food.js). */
 export const FOODS = FOOD_FILE.foods;
-/* MAX_SPEED: the most total speed (base + gear + food) any job can have at each level, [level 1, ..., level 100]: the
+/* MAX_SPEED: the most total speed (base + gear + food) any job can have at each level, [level 1, ..., MAX_LEVEL]: the
    top of How the math works, GCD's speed slider (scripts/data/gen_max_speed.mjs: the best gear with melds, at any sync,
    and the best HQ meal). */
 export const MAX_SPEED = Object.freeze([...MAX_SPEED_FILE.total]);
