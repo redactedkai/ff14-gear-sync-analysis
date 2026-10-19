@@ -282,7 +282,7 @@ function sameMenu(options, shown) {
      (sameMeals; owner, 2026-10-18); best: it has the best's result
    - menu: {count, groups, pills}. count: how many meals have the best's result. groups: every meal the job can use, by
      expansion, newest first: {label, items: [{key, name, ilvl, label, stats, adds, best, on}]}, label "Spell Speed +
-     Direct Hit", stats its neutral stats (for the pills), adds what it gives on this gear ("SpS +44 DHT +41 VIT +54"),
+     Direct Hit" (the row's hover text; the row shows what the meal adds instead), stats its neutral stats (for the pills), adds what it gives on this gear ("SpS +44 DHT +41 VIT +54"),
      best its result is the best's, on the row shows it. pills: the job's substats some meal has, {stat, short, label}. */
 function foodRow(app, gearTotals, food, picked, haste) {
   const job = app.jobCtx,

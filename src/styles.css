@@ -437,8 +437,8 @@ td.defense {
   font-size: 0.82rem;
   color: var(--muted);
 }
-/* The Food row's menu: a search box, the "Best for goal" switch and stat pills above the meals; only the list scrolls,
-   and each expansion's heading stays in view while its meals pass */
+/* The Food row's menu: one line of search box, stat pills and the "Best for goal" switch above the meals (owner,
+   2026-10-18); only the list scrolls, and each expansion's heading stays in view while its meals pass */
 .meal-menu {
   display: flex;
   flex-direction: column;
@@ -449,31 +449,53 @@ td.defense {
 .meal-tools {
   flex: none;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--line);
 }
-.meal-line {
+/* the search box: slim and round, sans text after a magnifier drawn in the muted colour, a border when focused */
+.meal-search {
+  position: relative;
+  flex: 1 1 120px;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
 }
-.meal-line input[type="text"] {
-  flex: 1;
-  min-width: 0;
+.meal-search::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  width: 13px;
+  height: 13px;
+  background: var(--muted);
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M10.5 10.5 15 15' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  pointer-events: none;
 }
-.meal-line .toggle {
+.meal-search input[type="text"] {
+  padding: 5px 8px 5px 28px;
+  font: 400 0.86rem var(--sans);
+  border-radius: 999px;
+}
+.meal-search input[type="text"]:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+.meal-tools .toggle {
   white-space: nowrap;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  gap: 6px;
+  min-height: 0;
 }
 .meal-pills {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex: none;
+  gap: 4px;
 }
 .meal-pill {
-  padding: 2px 10px;
+  padding: 3px 9px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: none;
@@ -506,11 +528,26 @@ td.defense {
   z-index: 1;
   background: var(--surface);
 }
-.meal-sub {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 400;
+/* a meal on one line: its item level first ("i770", as players write it), the name, what it adds at the right */
+.same-item.meal-item {
+  align-items: center;
+}
+.meal-lead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.meal-ilvl {
+  flex: none;
+  width: 2.7em;
+  font: 400 0.76rem var(--mono);
   color: var(--muted);
+}
+.meal-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .meal-empty {
   padding: 10px;

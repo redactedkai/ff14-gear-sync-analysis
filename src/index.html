@@ -393,12 +393,13 @@
                   <button type="button" class="same-btn" id="o-meal-btn" :aria-expanded="mealOpen" @click="toggleMealMenu()"><span x-text="view.food.name"></span><template x-if="view.food.best && view.food.menu.count > 1"><span class="same-count" x-text="`1 of ${view.food.menu.count}`"></span></template></button>
                   <div class="same-menu meal-menu" id="o-meal-menu" x-show="mealOpen" x-cloak>
                     <div class="meal-tools">
-                      <div class="meal-line"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"><label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" x-model="mealBestOnly"><span>Best for goal</span></label></div>
+                      <span class="meal-search"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"></span>
                       <div class="meal-pills" role="group" aria-label="Meal stats"><template x-for="p in view.food.menu.pills" :key="p.stat"><button type="button" class="meal-pill" :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))" :disabled="mealStats.length >= 2 && !mealStats.includes(p.stat)" :title="p.label" :data-stat="p.stat" @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
+                      <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" x-model="mealBestOnly"><span>Best for goal</span></label>
                     </div>
                     <div class="meal-list" x-ref="mealList">
                       <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
-                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" :data-meal="x.key" @click="pickMeal(x.key)"><span><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template><span class="meal-sub" x-text="`${x.label} · ilvl ${x.ilvl}`"></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
+                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`" @click="pickMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl" x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
                       </div></template>
                       <template x-if="!mealGroups.length"><div class="meal-empty">No meals match.</div></template>
                     </div>
