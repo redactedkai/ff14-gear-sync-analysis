@@ -115,7 +115,7 @@ The job picker shows the game's framed, role-coloured job icons. The CSVs hold n
 
 Each job's icon number is $62100 + r$, where $r$ is the job's row in `ClassJob`. For example Paladin is row 19, so its icon is 062119. **Verified** by looking at all 23 icons; the rule itself is a numbering pattern of the game's icon files, not a column in any sheet. The high-resolution versions (64 × 64 pixels) are used.
 
-The icon generator embeds the 23 PNG files in `src/data/job-icons.js` as data URLs, so the page still makes no image requests. It stops with an error if a job's icon is missing or is not a 64 × 64 PNG. FINAL FANTASY XIV icons © SQUARE ENIX; the page footer says so.
+The icon generator embeds the 23 PNG files in `src/data/job-icons.js` as data URLs, so the page still makes no image requests. It stops with an error if a job's icon is missing or is not a 64 × 64 PNG. The endpoint has no version to pin, so the generated file's header records the fetch date (fetch.py writes it to `data/icons/fetched.txt`; without that file, the newest icon's file date) and the sha256 of each PNG, and a later fetch that changes an icon shows in its diff. FINAL FANTASY XIV icons © SQUARE ENIX; the page footer says so.
 
 ## 3. The shared format definition
 

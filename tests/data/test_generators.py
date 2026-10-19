@@ -17,6 +17,7 @@ import contextlib
 import csv
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -595,6 +596,21 @@ class GenJobIconsTest(unittest.TestCase):
             self.assertTrue(url.startswith('data:image/png;base64,'), job)
             data = __import__('base64').b64decode(url.split(',', 1)[1])
             self.assertEqual(data, (self.icons / f'{job}.png').read_bytes(), job)
+
+    def test_header_names_fetch_date_and_hashes(self):
+        """The header records the fetch date (fetch.py's record, else the newest file date) and each PNG's sha256."""
+        (self.icons / gen_job_icons.FETCH_RECORD).write_text('2026-10-12\n', encoding='utf-8')
+        run_quiet(gen_job_icons.main, self.icons, self.out)
+        text = self.out.read_text(encoding='utf-8')
+        self.assertIn('Fetched 2026-10-12 (fetch.py)', text)
+        sage = __import__('hashlib').sha256((self.icons / 'SGE.png').read_bytes()).hexdigest()
+        self.assertIn(f'   SGE {sage}\n', text)
+        (self.icons / gen_job_icons.FETCH_RECORD).unlink()
+        os.utime(self.icons / 'PLD.png', (0, 1767225600))  # 2026-01-01 00:00 UTC
+        for job in JOBS[1:]:
+            os.utime(self.icons / f'{job}.png', (0, 0))
+        run_quiet(gen_job_icons.main, self.icons, self.out)
+        self.assertIn('Fetched 2026-01-01 (newest file date)', self.out.read_text(encoding='utf-8'))
 
     def test_missing_icon_fails(self):
         (self.icons / 'SGE.png').unlink()

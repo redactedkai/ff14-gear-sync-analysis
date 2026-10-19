@@ -16,10 +16,12 @@ import re
 import subprocess
 import sys
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 import gear_activities
 import gear_sources
+import gen_job_icons
 import progress
 from item_format import load_format, read_csv
 
@@ -71,6 +73,8 @@ def fetch_icons(csv_dir):
         req = urllib.request.Request(icon_url(icon), headers={'User-Agent': USER_AGENT})  # the default one is refused
         with urllib.request.urlopen(req, timeout=30) as r:
             (ICON_DIR / f'{job}.png').write_bytes(r.read())
+    # the endpoint has no version: the job icon generator writes this date and each icon's sha256 into its header
+    (ICON_DIR / gen_job_icons.FETCH_RECORD).write_text(datetime.now(timezone.utc).date().isoformat() + '\n', encoding='utf-8')
 
 
 def git_out(*args, cwd=None):
