@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { recastMult, speedParams } from '../../src/core/speed.js';
-import { MAX_SPEED } from '../../src/core/tables.js';
+import { MAX_LEVEL, MAX_SPEED } from '../../src/core/tables.js';
 import { GCD_STEPS_NEAR, HASTE_OPTIONS, gcdLevelInput, gcdView, speedPerStep, speedRange } from '../../src/ui/views/gcd.js';
 import { groupMaxSpeed, jobGroups } from '../../scripts/data/gen_max_speed.mjs';
 
@@ -24,16 +24,19 @@ test('level box: out of range is corrected, with a note for its hover text; othe
 });
 
 test('the stored most speed: one value per level, at least the base, and level 50 as the searches give it', () => {
-  assert.equal(MAX_SPEED.length, 100);
+  assert.equal(MAX_SPEED.length, MAX_LEVEL);
   for (const [i, v] of MAX_SPEED.entries()) assert.ok(v >= speedParams(i + 1).sub, `level ${i + 1}`);
   // level 50: 341 base + 387 gear (level 100 gear synced to the 135 cap, melds) + 72 food
   assert.equal(MAX_SPEED[49], 800);
   const groups = jobGroups();
+  const truncated = [];
   assert.equal(
-    Math.max(...groups.map(g => groupMaxSpeed(g, 50) ?? 0)),
+    Math.max(...groups.map(g => groupMaxSpeed(g, 50, truncated) ?? 0)),
     MAX_SPEED[49],
     'regenerate: node scripts/data/gen_max_speed.mjs src/data/max-speed.json',
   );
+  // no search stopped at the generator's node limit, so 800 is the true most speed
+  assert.deepEqual(truncated, []);
   // above a limited job's level cap it has no value
   assert.equal(
     groupMaxSpeed(
