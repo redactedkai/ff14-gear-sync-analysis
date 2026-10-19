@@ -201,179 +201,191 @@ def check_names(names, table, what, table_name):
     check_ids(names, expected, 'Item.csv', what, f'{table_name} (scripts/data/gear_activities.py)')
 
 
+def is_id(value):
+    """True for a cell that names a row: a whole number other than 0."""
+    return value.isdigit() and int(value) != 0
+
+
+def reward_ways(csv_path, ways):
+    """Adds the rewards and recipes to `ways` ({item id: [way]}, see ways_in): quest rewards (Quest.Reward,
+    OptionalItemReward, QuestClassJobReward), achievement rewards, recipe results and Grand Company seal shop items.
+    Returns (festival_quests, achievement_item) for the gil shops: the ids of seasonal event quests, and {achievement
+    id: the item it gives}."""
+    reward_cols = [*(f'Reward[{j}]' for j in range(7)), *(f'OptionalItemReward[{j}]' for j in range(5))]
+    quests = read_csv(csv_path / 'Quest.csv', ['#', 'Festival', *reward_cols])
+    for quest in quests:
+        for col in reward_cols:
+            if is_id(quest[col]):
+                ways[int(quest[col])].append(('activity', 'Quest'))
+    job_reward_cols = [f'RewardItem[{j}]' for j in range(4)]
+    for row in read_csv(csv_path / 'QuestClassJobReward.csv', job_reward_cols):
+        for col in job_reward_cols:
+            if is_id(row[col]):
+                ways[int(row[col])].append(('activity', 'Quest'))
+    achievements = read_csv(csv_path / 'Achievement.csv', ['#', 'Item'])
+    for achievement in achievements:
+        if is_id(achievement['Item']):
+            ways[int(achievement['Item'])].append(('activity', 'Achievement'))
+    for sheet, col, activity in (('Recipe', 'ItemResult', 'Crafting'), ('GCScripShopItem', 'Item', 'Grand Company')):
+        for row in read_csv(csv_path / f'{sheet}.csv', [col]):
+            if is_id(row[col]):
+                ways[int(row[col])].append(('activity', activity))
+    festival_quests = {int(q['#']) for q in quests if q['Festival'] not in ('', '0')}
+    achievement_item = {int(a['#']): int(a['Item']) for a in achievements if a['Item'].isdigit()}
+    return festival_quests, achievement_item
+
+
+def gil_shop_ways(csv_path, ways, rebuys, festival_quests, achievement_item):
+    """Adds the gil shop listings to `ways`: a seasonal event shop's listing is Event; a listing that needs a quest or
+    an achievement is a Calamity Salvager rebuy (added to `rebuys`), whose way is the quest (Event for a seasonal event
+    quest) or the achievement when that achievement gives the piece; any other listing is Vendor."""
+    festival_shops = {int(r['#']) for r in read_csv(csv_path / 'GilShop.csv', ['#', 'FestivalId']) if r['FestivalId'] not in ('', '0')}
+    quest_cols = ('QuestRequired[0]', 'QuestRequired[1]')
+    for row in read_csv(csv_path / 'GilShopItem.csv', ['#', 'Item', *quest_cols, 'AchievementRequired']):
+        if not is_id(row['Item']):
+            continue
+        got, shop = int(row['Item']), int(float(row['#']))  # '#' is "shop.listing"
+        quests_needed = [int(row[col]) for col in quest_cols if row[col] not in ('', '0')]
+        achievement = int(row['AchievementRequired'] or 0)
+        if shop in festival_shops:
+            ways[got].append(('activity', 'Event'))
+        elif quests_needed or achievement:
+            rebuys.add(got)
+            for quest in quests_needed:
+                ways[got].append(('activity', 'Event' if quest in festival_quests else 'Quest'))
+            if achievement and achievement_item.get(achievement) == got:
+                ways[got].append(('activity', 'Achievement'))
+        else:
+            ways[got].append(('activity', 'Vendor'))
+
+
+def tome_code(shop, cost):
+    """The tomestone code of a cost below CODE_LIMIT in `shop` (read through its UseCurrencyType: 1 Poetics, 2 and 3
+    the current tomestones), or None when it is not a tomestone (a scrip)."""
+    currency_type = shop['UseCurrencyType']
+    if (currency_type, cost) == GATHERER_SCRIP:
+        return None
+    return cost if currency_type in TOME_TYPES or (currency_type == '16' and cost == 1) else None
+
+
+def live_tome_ilvls(listings, kept_ids, ilvl_of):
+    """{current tomestone code: the highest item level of kept gear sold for it}: the live gear of each code. A code
+    names "the nth current tomestone", so a listing for it at a lower item level is a retired shop's."""
+    newest = {}
+    for shop, _k, given, costs in listings:
+        for cost in costs:
+            code = tome_code(shop, cost) if cost < CODE_LIMIT else None
+            if code in CURRENT_TOME_CODES:
+                for item in given:
+                    if item in kept_ids:
+                        newest[code] = max(newest.get(code, 0), ilvl_of[item])
+    return newest
+
+
+def listing_costs(shop, given, costs, newest, kept_ids, ilvl_of):
+    """(resolved costs, retired) of a SpecialShop listing: each cost as ('item', id) or ('activity', name) (gil:
+    Vendor; tomestone codes: Poetics or Tomestones; other codes: Scrips), and True when the listing sells current
+    tomestone gear below that code's live item level (newest, from live_tome_ilvls)."""
+    resolved, retired = [], False
+    for cost in costs:
+        if cost >= CODE_LIMIT:
+            resolved.append(('item', cost))
+            continue
+        if shop['UseCurrencyType'] == '8':
+            resolved.append(('activity', 'Vendor'))
+            continue
+        code = tome_code(shop, cost)
+        if code is None:
+            resolved.append(('activity', 'Scrips'))
+        elif code == 1:
+            resolved.append(('activity', 'Poetics'))
+        else:
+            resolved.append(('activity', 'Tomestones'))
+            gear_given = [item for item in given if item in kept_ids]
+            retired = retired or bool(gear_given) and all(ilvl_of[item] < newest.get(code, 0) for item in gear_given)
+    return resolved, retired
+
+
+def listing_gate(shop, k):
+    """'quest' when listing k of `shop` (or the whole shop) needs a quest first, 'achievement' when it needs an
+    achievement, else None."""
+    if shop[f'Item[{k}].Quest'] not in ('', '0') or shop['Quest'] not in ('', '0'):
+        return 'quest'
+    return 'achievement' if shop[f'Item[{k}].AchievementUnlock'] not in ('', '0') else None
+
+
+def special_shop_ways(csv_path, ways, kept_ids, ilvl_of):
+    """Adds the SpecialShop listings to `ways` as ('shop', costs, gate) (see ways_in), leaving out the RETIRED_SHOPS
+    and the retired tomestone listings (listing_costs). Raises SchemaError when a RETIRED_SHOPS id names another shop."""
+    shops = read_csv(csv_path / 'SpecialShop.csv', ['#', 'Name', 'UseCurrencyType', 'Quest'])
+    shop_names = {int(s['#']): s['Name'] for s in shops}
+    check_ids(shop_names, RETIRED_SHOPS, 'SpecialShop.csv', 'retired shop', 'RETIRED_SHOPS (scripts/data/gear_activities.py)')
+    shops = [s for s in shops if int(s['#']) not in RETIRED_SHOPS]
+    listings = [listing for listing in shop_listings(shops) if listing[2]]  # (shop row, listing index, given, costs)
+    newest = live_tome_ilvls(listings, kept_ids, ilvl_of)
+    for shop, k, given, costs in listings:
+        resolved, retired = listing_costs(shop, given, costs, newest, kept_ids, ilvl_of)
+        if retired:
+            continue
+        for got in given:
+            ways[got].append(('shop', tuple(resolved), listing_gate(shop, k)))
+
+
 def ways_in(csv_dir, kept_ids, ilvl_of):
     """({item id: [way]}, rebuys) for every item. A way is ('activity', name) or ('shop', costs, gate): costs is a tuple
     of ('activity', name) and ('item', id); gate is 'quest', 'achievement' or None (the listing needs a quest or an
     achievement first). rebuys: the items a Calamity Salvager sells back. ilvl_of: {item id: item level}, for the
     retired tomestone listings."""
-    d = Path(csv_dir)
-    out = defaultdict(list)
+    csv_path = Path(csv_dir)
+    ways = defaultdict(list)
     rebuys = set()
-
-    # rewards and recipes
-    quests = read_csv(
-        d / 'Quest.csv', ['#', 'Festival', *(f'Reward[{j}]' for j in range(7)), *(f'OptionalItemReward[{j}]' for j in range(5))]
-    )
-    for q in quests:
-        for col in [*(f'Reward[{j}]' for j in range(7)), *(f'OptionalItemReward[{j}]' for j in range(5))]:
-            if q[col].isdigit() and int(q[col]):
-                out[int(q[col])].append(('activity', 'Quest'))
-    for r in read_csv(d / 'QuestClassJobReward.csv', [f'RewardItem[{j}]' for j in range(4)]):
-        for j in range(4):
-            v = r[f'RewardItem[{j}]']
-            if v.isdigit() and int(v):
-                out[int(v)].append(('activity', 'Quest'))
-    achievements = read_csv(d / 'Achievement.csv', ['#', 'Item'])
-    for a in achievements:
-        if a['Item'].isdigit() and int(a['Item']):
-            out[int(a['Item'])].append(('activity', 'Achievement'))
-    for r in read_csv(d / 'Recipe.csv', ['ItemResult']):
-        if r['ItemResult'].isdigit() and int(r['ItemResult']):
-            out[int(r['ItemResult'])].append(('activity', 'Crafting'))
-    for r in read_csv(d / 'GCScripShopItem.csv', ['Item']):
-        if r['Item'].isdigit() and int(r['Item']):
-            out[int(r['Item'])].append(('activity', 'Grand Company'))
-
-    # gil shops: seasonal event shops, Calamity Salvager rebuys (a listing with a requirement), plain vendors
-    festival_quest = {int(q['#']) for q in quests if q['Festival'] not in ('', '0')}
-    achievement_item = {int(a['#']): int(a['Item']) for a in achievements if a['Item'].isdigit()}
-    festival_shops = {int(r['#']) for r in read_csv(d / 'GilShop.csv', ['#', 'FestivalId']) if r['FestivalId'] not in ('', '0')}
-    for r in read_csv(d / 'GilShopItem.csv', ['#', 'Item', 'QuestRequired[0]', 'QuestRequired[1]', 'AchievementRequired']):
-        if not (r['Item'].isdigit() and int(r['Item'])):
-            continue
-        got, shop = int(r['Item']), int(float(r['#']))  # '#' is "shop.listing"
-        quests_needed = [int(r[c]) for c in ('QuestRequired[0]', 'QuestRequired[1]') if r[c] not in ('', '0')]
-        achievement = int(r['AchievementRequired'] or 0)
-        if shop in festival_shops:
-            out[got].append(('activity', 'Event'))
-        elif quests_needed or achievement:
-            rebuys.add(got)
-            for q in quests_needed:
-                out[got].append(('activity', 'Event' if q in festival_quest else 'Quest'))
-            if achievement and achievement_item.get(achievement) == got:
-                out[got].append(('activity', 'Achievement'))
-        else:
-            out[got].append(('activity', 'Vendor'))
-
-    # SpecialShop listings
-    shops = read_csv(d / 'SpecialShop.csv', ['#', 'Name', 'UseCurrencyType', 'Quest'])
-    shop_names = {int(s['#']): s['Name'] for s in shops}
-    check_ids(shop_names, RETIRED_SHOPS, 'SpecialShop.csv', 'retired shop', 'RETIRED_SHOPS (scripts/data/gear_activities.py)')
-    shops = [s for s in shops if int(s['#']) not in RETIRED_SHOPS]
-    listings = [listing for listing in shop_listings(shops) if listing[2]]  # (shop row, listing index, given, costs)
-
-    def tome_code(s, c):
-        """The tomestone code of a cost below CODE_LIMIT, or None when it is not a tomestone."""
-        t = s['UseCurrencyType']
-        if (t, c) == GATHERER_SCRIP:
-            return None
-        return c if t in TOME_TYPES or (t == '16' and c == 1) else None
-
-    # the live gear for each current-tomestone code: the highest item level sold for it
-    newest = {}
-    for s, _listing, given, costs in listings:
-        for c in costs:
-            code = tome_code(s, c) if c < CODE_LIMIT else None
-            if code in CURRENT_TOME_CODES:
-                for g in given:
-                    if g in kept_ids:
-                        newest[code] = max(newest.get(code, 0), ilvl_of[g])
-
-    for s, k, given, costs in listings:
-        resolved = []
-        retired = False
-        for c in costs:
-            if c >= CODE_LIMIT:
-                resolved.append(('item', c))
-                continue
-            if s['UseCurrencyType'] == '8':
-                resolved.append(('activity', 'Vendor'))
-                continue
-            code = tome_code(s, c)
-            if code is None:
-                resolved.append(('activity', 'Scrips'))
-            elif code == 1:
-                resolved.append(('activity', 'Poetics'))
-            else:
-                resolved.append(('activity', 'Tomestones'))
-                gear_given = [g for g in given if g in kept_ids]
-                retired = retired or bool(gear_given) and all(ilvl_of[g] < newest.get(code, 0) for g in gear_given)
-        if retired:
-            continue
-        gate = (
-            'quest'
-            if s[f'Item[{k}].Quest'] not in ('', '0') or s['Quest'] not in ('', '0')
-            else ('achievement' if s[f'Item[{k}].AchievementUnlock'] not in ('', '0') else None)
-        )
-        for got in given:
-            out[got].append(('shop', tuple(resolved), gate))
-    return out, rebuys
+    festival_quests, achievement_item = reward_ways(csv_path, ways)
+    gil_shop_ways(csv_path, ways, rebuys, festival_quests, achievement_item)
+    special_shop_ways(csv_path, ways, kept_ids, ilvl_of)
+    return ways, rebuys
 
 
-def routes(csv_dir, kept, cats, items=None):
-    """{Item.csv id (str): sorted list of route masks} for the kept gear (gen_items.select, LEFT_OUT categories
-    removed). cats: {Item.csv id (str): category} (gear_categories.categorize). items: the Item.csv rows
-    (read_item_sheet), read here when None. Raises SchemaError on an activity with
-    no box, an override id that names another item, or a kept piece whose category has no drop activity."""
-    d = Path(csv_dir)
-    items = {int(r['#']): r for r in read_item_sheet(csv_dir, items)}
-    check_bools(items.values(), ['IsUntradable'], 'Item.csv')
-    names = {i: r['Name'] for i, r in items.items()}
-    check_names(names, CURRENCIES, 'currency', 'CURRENCIES')
-    check_names(names, KNOWN_SOURCE, 'known source', 'KNOWN_SOURCE')
-    check_names(names, {i: (n,) for i, n in FIXED_ITEMS.items() if i != GIL}, 'fixed currency', 'FIXED_ITEMS')
-    category = {int(r['#']): cats[r['#']] for r, _ in kept}
-    slot_of = {int(r['#']): piece['slotCode'] for r, piece in kept}
-    level_of = {int(r['#']): piece['equipLevel'] for r, piece in kept}
-    ilvl_of = {i: int(r['LevelItem']) for i, r in items.items() if r['LevelItem'].isdigit()}
-    accessory_slots = slot_codes(load_format(), ACCESSORY_TYPES)
-    missing = sorted({c for c in category.values() if c not in DROP_ACTIVITY})
-    if missing:
-        raise SchemaError(
-            f'gear_activities.py: no drop activity for categories {missing}. Add each to DROP_ACTIVITY in '
-            'scripts/data/gear_activities.py: the activity a piece of that category with no source in the game files takes.'
-        )
-    # tomestone item -> its slot: 1 Poetics, 2 and 3 the current ones, 4 last patch's (still exchanged), 0 retired
-    tome_slot = {
-        int(r['Item']): int(r['Tomestones']) for r in read_csv(d / 'TomestonesItem.csv', ['Item', 'Tomestones']) if r['Item'] != '0'
-    }
-    ways, rebuys = ways_in(csv_dir, set(category), ilvl_of)
-    currency_routes = {i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()}
+def single(activity):
+    """The routes of something got one way only: one route of one activity."""
+    return frozenset({frozenset({activity})})
 
-    def single(activity):
-        return frozenset({frozenset({activity})})
 
-    def buys_most(currency):
-        """The category of the kept gear a currency buys most, or None."""
-        count = Counter(
-            category[got] for got, ws in ways.items() if got in category for w in ws if w[0] == 'shop' and ('item', currency) in w[1]
-        )
-        return count.most_common(1)[0][0] if count else None
+class RouteFinder:
+    """Works out an item's routes (activities_of): frozensets of activities, any one of which gets it.
+    ways, rebuys: from ways_in; category: {kept piece id: category}; slot_of: {kept piece id: slot code}; untradable:
+    the ids whose IsUntradable is True; tome_slot: {tomestone item id: its TomestonesItem slot}; accessory_slots: slot
+    codes of accessories. The routes are memoised per (item, depth), since trade-in chains share their pieces."""
 
-    memo = {}
+    def __init__(self, ways, rebuys, category, slot_of, untradable, tome_slot, accessory_slots):
+        self.ways, self.rebuys, self.category, self.slot_of = ways, rebuys, category, slot_of
+        self.untradable, self.tome_slot, self.accessory_slots = untradable, tome_slot, accessory_slots
+        self.currency_routes = {i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()}
+        self.memo = {}
 
-    def activities_of(item, depth=0):
+    def activities_of(self, item, depth=0):
         """The item's routes: a frozenset of frozensets of activities (empty: no way in at all)."""
-        if (item, depth) in memo:
-            return memo[(item, depth)]
-        if item in tome_slot:
-            slot = tome_slot[item]
+        if (item, depth) in self.memo:
+            return self.memo[(item, depth)]
+        if item in self.tome_slot:
+            slot = self.tome_slot[item]
             result = single('Poetics' if slot == 1 else RETIRED if slot == 0 else 'Tomestones')
         elif item in FIXED_ITEMS:
             result = single({GIL: 'Vendor', WOLF_MARK: 'PvP', MGP: 'Gold Saucer'}[item])
-        elif item in currency_routes:
-            result = currency_routes[item] or single(RETIRED)
-        elif category.get(item) == 'relic':
+        elif item in self.currency_routes:
+            result = self.currency_routes[item] or single(RETIRED)
+        elif self.category.get(item) == 'relic':
             result = single('Relic')
         else:
-            result = resolve(item, depth)
-        memo[(item, depth)] = result
+            result = self.resolve(item, depth)
+        self.memo[(item, depth)] = result
         return result
 
-    def resolve(item, depth):
+    def resolve(self, item, depth):
+        """The routes through the item's ways in: every way to pay all the costs of each way, a gil or free listing
+        behind a quest or an achievement counting as that quest or achievement. With no live way in: no_way_in."""
         found = set()
         needs_retired = False  # some way in costs something retired
-        for way in ways.get(item, ()):
+        for way in self.ways.get(item, ()):
             if way[0] == 'activity':
                 found.add(frozenset({way[1]}))
                 continue
@@ -382,8 +394,8 @@ def routes(csv_dir, kept, cats, items=None):
             _, costs, gate = way
             needs = {frozenset()}  # every way to pay all the costs: one route per cost, combined
             for kind, value in costs:
-                options = {frozenset({value})} if kind == 'activity' else activities_of(value, depth + 1)
-                needs = {n | o for n in needs for o in options}
+                options = {frozenset({value})} if kind == 'activity' else self.activities_of(value, depth + 1)
+                needs = {have | option for have in needs for option in options}
             for need in needs:
                 if RETIRED in need:
                     needs_retired = True
@@ -391,57 +403,120 @@ def routes(csv_dir, kept, cats, items=None):
                 if gate and need <= {'Vendor'}:  # a gil (or free) listing behind a quest or an achievement
                     need = frozenset({'Quest' if gate == 'quest' else 'Achievement'})
                 found.add(need or frozenset({'Vendor'}))
-        if found:
-            return frozenset(found)
-        if item in category:  # a kept piece with no live way in
-            cat = category[item]
+        return frozenset(found) if found else self.no_way_in(item, needs_retired)
+
+    def no_way_in(self, item, needs_retired):
+        """The routes of an item with no live way in (inferred, docs/engineering/data-pipeline.md, Sources): a kept
+        piece takes KNOWN_SOURCE, Dungeon for an artifact accessory, or its category's DROP_ACTIVITY (retired, or Quest
+        for a rebuy, in a MUST_HAVE_SOURCE category); a currency whose ways in all cost something retired is retired;
+        another currency takes the activity of the gear it buys most."""
+        if item in self.category:
+            cat = self.category[item]
             if item in KNOWN_SOURCE:
                 return single(KNOWN_SOURCE[item][1])
-            if cat == 'artifact' and slot_of[item] in accessory_slots:
+            if cat == 'artifact' and self.slot_of[item] in self.accessory_slots:
                 return single('Dungeon')
             if cat in MUST_HAVE_SOURCE:
-                if item in rebuys:  # earned through a quest or coffer these sheets do not hold
+                if item in self.rebuys:  # earned through a quest or coffer these sheets do not hold
                     return single('Quest')
-                if items[item]['IsUntradable'] == 'True':
+                if item in self.untradable:
                     return single(RETIRED)
             return single(DROP_ACTIVITY[cat])
-        if needs_retired:  # a currency whose ways in all cost something retired
+        if needs_retired:
             return single(RETIRED)
-        cat = buys_most(item)  # a currency with no way in
+        cat = self.buys_most(item)
         return single(CURRENCY_FROM_CATEGORY.get(cat, DROP_ACTIVITY[cat])) if cat else frozenset()
 
-    bits, market = box_bits()
-    cap = max(level_of.values()) if level_of else 0
+    def buys_most(self, currency):
+        """The category of the kept gear a currency buys most, or None (a tie goes to the first category counted)."""
+        count = Counter(
+            self.category[got]
+            for got, ways in self.ways.items()
+            if got in self.category
+            for way in ways
+            if way[0] == 'shop' and ('item', currency) in way[1]
+        )
+        return count.most_common(1)[0][0] if count else None
 
-    def box_of(activity, item):
-        if activity == 'Vendor' and items[item]['IsUntradable'] == 'False':
-            return market  # tradeable gil-vendor gear: the market board switch decides
+
+class Boxes:
+    """Turns routes into the page's box masks (`activities` in item-format.json). level_of: {kept piece id: equip
+    level}, whose highest is the level cap where Savage and Extreme split; tradeable: the ids whose IsUntradable is
+    False; names: {item id: name}, for the error message."""
+
+    def __init__(self, level_of, tradeable, names):
+        self.bits, self.market = box_bits()
+        self.level_of, self.tradeable, self.names = level_of, tradeable, names
+        self.cap = max(level_of.values()) if level_of else 0
+
+    def bit(self, activity, item):
+        """The box bit of one activity of a kept piece. Raises SchemaError on an activity with no box."""
+        if activity == 'Vendor' and item in self.tradeable:
+            return self.market  # tradeable gil-vendor gear: the market board switch decides
         key = ACTIVITY_BOX.get(activity)
         if key is None:
             raise SchemaError(
-                f'gear_activities.py: activity {activity!r} (item {item} {names.get(item)!r}) has no box. Map it to a box in '
+                f'gear_activities.py: activity {activity!r} (item {item} {self.names.get(item)!r}) has no box. Map it to a box in '
                 'ACTIVITY_BOX (scripts/data/gear_activities.py); for a new box, also add it to `activities` in '
                 'src/core/item-format.json.'
             )
         if key in SPLIT_AT_CAP:
-            key += '_current' if level_of[item] == cap else '_legacy'
-        return bits[key]
+            key += '_current' if self.level_of[item] == self.cap else '_legacy'
+        return self.bits[key]
 
-    out = {}
-    for item in category:
+    def masks(self, item, routes):
+        """The sorted route masks of a kept piece: one per route that needs nothing retired, the market board bit alone
+        when it is tradeable, and none that needs more than another one (it would add nothing)."""
         masks = set()
-        for route in activities_of(item):
+        for route in routes:
             if RETIRED in route:
                 continue
             mask = 0
             for activity in route:
-                mask |= box_of(activity, item)
+                mask |= self.bit(activity, item)
             masks.add(mask)
-        if items[item]['IsUntradable'] == 'False':
-            masks.add(market)
-        # a route that needs more than another one adds nothing
-        out[str(item)] = sorted(m for m in masks if not any(o != m and o & m == o for o in masks))
-    return out
+        if item in self.tradeable:
+            masks.add(self.market)
+        return sorted(m for m in masks if not any(o != m and o & m == o for o in masks))
+
+
+def routes(csv_dir, kept, cats, items=None):
+    """{Item.csv id (str): sorted list of route masks} for the kept gear (gen_items.select, LEFT_OUT categories
+    removed). cats: {Item.csv id (str): category} (gear_categories.categorize). items: the Item.csv rows
+    (read_item_sheet), read here when None. Raises SchemaError on an activity with no box, an override id that names
+    another item, or a kept piece whose category has no drop activity."""
+    csv_path = Path(csv_dir)
+
+    # the sheets, and the hand-kept tables checked against them
+    items = {int(r['#']): r for r in read_item_sheet(csv_dir, items)}
+    check_bools(items.values(), ['IsUntradable'], 'Item.csv')
+    names = {i: r['Name'] for i, r in items.items()}
+    check_names(names, CURRENCIES, 'currency', 'CURRENCIES')
+    check_names(names, KNOWN_SOURCE, 'known source', 'KNOWN_SOURCE')
+    check_names(names, {i: (name,) for i, name in FIXED_ITEMS.items() if i != GIL}, 'fixed currency', 'FIXED_ITEMS')
+    category = {int(r['#']): cats[r['#']] for r, _ in kept}
+    missing = sorted({c for c in category.values() if c not in DROP_ACTIVITY})
+    if missing:
+        raise SchemaError(
+            f'gear_activities.py: no drop activity for categories {missing}. Add each to DROP_ACTIVITY in '
+            'scripts/data/gear_activities.py: the activity a piece of that category with no source in the game files takes.'
+        )
+    # tomestone item -> its slot: 1 Poetics, 2 and 3 the current ones, 4 last patch's (still exchanged), 0 retired
+    tome_rows = read_csv(csv_path / 'TomestonesItem.csv', ['Item', 'Tomestones'])
+    tome_slot = {int(r['Item']): int(r['Tomestones']) for r in tome_rows if r['Item'] != '0'}
+
+    # every item's ways in, then each kept piece's routes
+    ilvl_of = {i: int(r['LevelItem']) for i, r in items.items() if r['LevelItem'].isdigit()}
+    ways, rebuys = ways_in(csv_dir, set(category), ilvl_of)
+    untradable = {i for i, r in items.items() if r['IsUntradable'] == 'True'}
+    slot_of = {int(r['#']): piece['slotCode'] for r, piece in kept}
+    accessory_slots = slot_codes(load_format(), ACCESSORY_TYPES)
+    finder = RouteFinder(ways, rebuys, category, slot_of, untradable, tome_slot, accessory_slots)
+
+    # the routes as box masks
+    tradeable = {i for i, r in items.items() if r['IsUntradable'] == 'False'}
+    boxes = Boxes({int(r['#']): piece['equipLevel'] for r, piece in kept}, tradeable, names)
+    return {str(item): boxes.masks(item, finder.activities_of(item)) for item in category}
 
 
 TOME_NAME_PREFIX = 'Allagan Tomestone of '

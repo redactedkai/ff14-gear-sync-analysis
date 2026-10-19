@@ -56,28 +56,29 @@ def main(csv_dir, out, source='detect'):
     """source: provenance dict, None for unknown, or 'detect' to ask git about csv_dir."""
     if source == 'detect':
         source = provenance.detect(csv_dir)
-    d = Path(csv_dir)
+    csv_path = Path(csv_dir)
     fmt = load_format()
-    fd = fmt['food']
-    stat_of = {s['baseParam']: s['key'] for s in fmt['stats'] if s['key'] in fd['stats']}
-    items = read_csv(d / 'Item.csv', ['#', 'Name', 'LevelItem', 'CanBeHq', fd['uiCategoryColumn'], fd['actionColumn']])
-    actions = {r['#']: r for r in read_csv(d / 'ItemAction.csv', ['#', 'Action', 'Data[0]', fd['foodRowColumn']])}
-    food_rows = {r['#']: r for r in read_csv(d / 'ItemFood.csv', ['#', *food_columns()])}
+    food = fmt['food']
+    stat_of = {s['baseParam']: s['key'] for s in fmt['stats'] if s['key'] in food['stats']}
+    items = read_csv(csv_path / 'Item.csv', ['#', 'Name', 'LevelItem', 'CanBeHq', food['uiCategoryColumn'], food['actionColumn']])
+    actions = {r['#']: r for r in read_csv(csv_path / 'ItemAction.csv', ['#', 'Action', 'Data[0]', food['foodRowColumn']])}
+    food_rows = {r['#']: r for r in read_csv(csv_path / 'ItemFood.csv', ['#', *food_columns()])}
     check_bools(items, ['CanBeHq'], 'Item.csv')
     check_bools(food_rows.values(), [f'IsRelative[{i}]' for i in range(N_FOOD_PARAMS)], 'ItemFood.csv')
     foods = []
-    for it in items:
-        if it[fd['uiCategoryColumn']] != str(fd['uiCategory']) or it['CanBeHq'] != 'True':
+    for item in items:
+        if item[food['uiCategoryColumn']] != str(food['uiCategory']) or item['CanBeHq'] != 'True':
             continue
-        act = actions.get(it[fd['actionColumn']])
-        if act is None or int(act['Action']) not in fd['actions'] or act['Data[0]'] != str(fd['status']):
+        action = actions.get(item[food['actionColumn']])
+        if action is None or int(action['Action']) not in food['actions'] or action['Data[0]'] != str(food['status']):
             continue
-        row = food_rows.get(act[fd['foodRowColumn']])
+        row = food_rows.get(action[food['foodRowColumn']])
         if row is None:
-            raise SchemaError(f'meal {it["#"]} ({it["Name"]}) points at ItemFood row {act[fd["foodRowColumn"]]}, which does not exist')
-        kept = meal_stats(row, stat_of, fd['carried'], fd['vitality'])
+            missing = action[food['foodRowColumn']]
+            raise SchemaError(f'meal {item["#"]} ({item["Name"]}) points at ItemFood row {missing}, which does not exist')
+        kept = meal_stats(row, stat_of, food['carried'], food['vitality'])
         if kept is not None:
-            foods.append([it['Name'], int(it['LevelItem']), *kept])
+            foods.append([item['Name'], int(item['LevelItem']), *kept])
     foods.sort(key=lambda f: (f[1], f[0]))
     doc = {'_generated': provenance.note(source), 'source': source, 'foods': foods}
     provenance.write_generated(out, provenance.json_lines(doc, expand=('foods',)))  # one meal per line
