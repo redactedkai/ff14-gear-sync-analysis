@@ -132,11 +132,22 @@ export function pieceView(app, ilvl) {
     summary,
     slotName,
     slotShare: isOffhand(t) ? null : sharePct(job.slotPct[t]),
+    // the sentences and headings of the section: the level sync line, where the slot's share comes from, the rule under
+    // sync, and the two value columns' headings
+    byLevelText: sync?.byLevel
+      ? `Level sync: at level ${sync.level}, gear with a higher equip level is synced to item level ${cap}, used as the cap here.`
+      : '',
+    shareText: isOffhand(t)
+      ? 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'
+      : `The ${slotName} takes ${sharePct(job.slotPct[t])}`,
+    ruleText: `what this ${slotName} has, and what a ${slotName} at the synced item level has (its ceiling).`,
+    ownHead: `This ${slotName} (item level ${il})`,
+    capHead: `A ${slotName} at item level ${cap} (the ceiling)`,
     slices: budgetSlices(job, t),
     // sync cuts the 70% line to the full-share cap, so it ends up level with the first (math.md section 5)
     evenSubs: status === 'above' && rows.some(r => r.w === SUB_WEIGHTS[1] && r.syn === r.cap),
-    // the fixed Direct Hit line exists only on older Mind gear
-    healerNote: job.profile.main === 'mind',
+    // the fixed Direct Hit line exists only on older healer gear: the jobs whose special substat (Piety) gives MP
+    healerNote: job.specKind === 'mp',
   };
 }
 

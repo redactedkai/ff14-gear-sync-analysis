@@ -1,7 +1,7 @@
 /* How the math works: what sync does to one piece (views/sync-explainer.js), the step-by-step
    table for the same piece (views/piece.js), and the "How sync works" popup. */
 import Alpine from 'alpinejs';
-import { explainerItemLevel, explainerView } from '../views/sync-explainer.js';
+import { explainerItemLevel, explainerOffText, explainerView } from '../views/sync-explainer.js';
 import { pieceView, withSub } from '../views/piece.js';
 import { rankChoices } from '../views/ranks.js';
 import { SLOT_LABEL } from '../../core/constants.js';
@@ -20,6 +20,10 @@ export function syncExplainer() {
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
     get jobCtx() {
       return this.$store.app.jobCtx;
+    },
+    /* what Piece stats says while no sync applies (views explainerOffText) */
+    get offText() {
+      return explainerOffText(this.$store.app);
     },
     /* the math bar's Slot, 1st substat and 2nd substat menus: [value, label] */
     get slotOptions() {

@@ -29,6 +29,7 @@ import { statTier } from '../../core/tiers.js';
 import { allMeals, bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
 import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
 import { defaultState, gearFilter, syncSettings } from '../state.js';
+import { fmtInt } from '../helpers.js';
 
 /* The page's search node budget: a search that visits more nodes stops, keeps the best set found so far and is marked
    truncated (the result's "node limit" note). Lower than the engine's own default (1,500,000), since the search holds
@@ -54,12 +55,6 @@ const OPT_KEYS = Object.freeze(Object.keys(defaultState().opt));
    it also makes an effect track every one of them (the optimizer component). */
 export function optimizerKey(app) {
   return JSON.stringify([app.job, app.cap, app.sync, app.level, ...OPT_KEYS.map(k => app.opt[k])]);
-}
-
-/* What the character panel adds to a stat at `level`: the character's base (statBase). For the main stat and Vitality
-   that is the job's share of the level's base, without the clan's bonus (-3 to +3; owner's decision 2026-10-18). */
-export function panelBase(job, stat, level) {
-  return statBase(job, stat, level);
 }
 
 /* The meal the plain search's result uses, or null with Food off: the player's pick from the Food menu (`meal`, an
@@ -452,11 +447,12 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
 
   // 5. totals: gear only, with food, and as the character panel shows them
   // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
-  const t = withFood(gearTotals, bonus),
-    spd = t.spd;
-  // the character panel's numbers: every stat with the character's base added (clan bonus aside)
-  const panel = s => t[s] + panelBase(job, s, app.level),
-    base = s => panelBase(job, s, app.level);
+  const foodTotals = withFood(gearTotals, bonus),
+    spd = foodTotals.spd;
+  // the character panel's numbers: every stat with the character's base added (statBase: for the main stat and
+  // Vitality the job's share of the level's base, without the clan's bonus of -3 to +3; owner's decision 2026-10-18)
+  const base = s => statBase(job, s, app.level),
+    panel = s => foodTotals[s] + base(s);
   // 6. one row per slot, in the character panel's order; rings are numbered
   const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
@@ -466,7 +462,11 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
       ringN++;
       label = 'Ring ' + ringN;
     }
-    if (!p.item) return { label, item: null, blockedBy: p.blockedBy?.name ?? '' };
+    // an empty slot: covered by a piece in another slot, or no copy of a Unique piece left
+    if (!p.item) {
+      const blockedBy = p.blockedBy?.name ?? '';
+      return { label, item: null, blockedBy, emptyText: blockedBy ? `covered by ${blockedBy}` : 'empty (no copy left)' };
+    }
     // a piece covering more than one slot says so ("Body + Head")
     if (p.type !== 'ring') label = slotLabel(p.type, slotInfo(job, p.item).blocks);
     const caps = itemCaps(job, p.item, sync);
@@ -493,22 +493,45 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
   const heldStats = new Set(byTier ? res.held.map(h => h.stat) : []);
   const tiers = job.stats.map(s => {
     // speed with the job's haste: its GCD and steps are the hasted ones, as in the GCD card
-    const g = s === 'spd' && pct ? gcdTierAt(t[s] || 0, app.level, BASE_GCD_MS, pct) : null;
-    const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, t[s], app.level);
+    const value = foodTotals[s];
+    const g = s === 'spd' && pct ? gcdTierAt(value || 0, app.level, BASE_GCD_MS, pct) : null;
+    const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, value, app.level);
     if (!tier) return null;
+    const spare = value - tier.start,
+      toNext = tier.next == null ? null : tier.next - value,
+      held = heldStats.has(s);
     return {
       effect: tier.effect,
-      spare: t[s] - tier.start,
-      toNext: tier.next == null ? null : tier.next - t[s],
-      zero: !t[s],
-      held: heldStats.has(s),
+      spare,
+      toNext,
+      // the Tier row's cell ("3 · +16", "0 · –" at the last tier) and its hover text when tier ranking holds it
+      text: `${spare} · ${toNext == null ? '–' : `+${toNext}`}`,
+      title: held ? 'Held at this tier by Spare points to tiebreaks' : null,
+      zero: !value,
+      held,
     };
   });
   // the set's defense after sync and the share of damage it removes at this level (shown, never ranked)
   const def = setDefense(picks.filter(p => p.item).map(p => ({ item: p.item, target: itemSyncIlvl(p.item, sync) })));
-  const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, app.level), magPct: mitigationPct(def.mag, app.level) };
+  const physPct = mitigationPct(def.phys, app.level),
+    magPct = mitigationPct(def.mag, app.level);
+  const defense = {
+    phys: def.phys,
+    mag: def.mag,
+    physPct,
+    magPct,
+    physText: fmtInt(def.phys),
+    magText: fmtInt(def.mag),
+    takenText: `−${physPct}% / −${magPct}% damage taken`,
+  };
 
   // 8. everything the template shows
+  const gcd = gcdFor(spd, app.level, BASE_GCD_MS, pct).toFixed(2),
+    dot = ((dotMult(spd, app.level) - 1) * 100).toFixed(1);
+  // hasted jobs: the haste and the GCD without it (owner's decision 2026-10-16: both, labelled)
+  const hasteText = ui.haste ? ` (${ui.haste.name} ${pct}%; ${gcdFor(spd, app.level).toFixed(2)} without)` : '';
+  const spdText = `${panel('spd')} ${job.label.spd} (${base('spd')} base, ${gearTotals.spd} gear${bonus.spd ? `, ${bonus.spd.bonus} food` : ''})`;
+  const speedTier = tierText(spd, app.level, pct);
   return {
     kind: 'ok',
     gcdUi: ui,
@@ -531,25 +554,35 @@ function buildOptimizerView(app, gear, chosen, mealKey) {
       best: meal.best,
       picked: !!picked,
       menu: meal.menu,
+      // the line under the meal's name
+      note: meal.best ? 'HQ, best for goal' : 'HQ, picked',
       cells: job.stats.map(s => (bonus[s] ? { value: bonus[s].bonus, capped: bonus[s].capped } : null)),
       totals: job.stats.map(panel),
     },
     tiers,
+    // what the Effect and Tier rows count
+    effectNote: meal ? 'gear and food' : 'gear only, no food',
     // true when the goal and tiebreaks were ranked by tier first (the "Spare points to tiebreaks" switch)
     byTier,
     synced: poolSynced(pool, sync),
-    gcd: gcdFor(spd, app.level, BASE_GCD_MS, pct).toFixed(2),
-    // hasted jobs: the haste and the GCD without it (owner's decision 2026-10-16: both, labelled)
-    hasteText: ui.haste ? ` (${ui.haste.name} ${pct}%; ${gcdFor(spd, app.level).toFixed(2)} without)` : '',
+    // the readout's GCD and DoT/HoT boxes: "2.49s" over "GCD with 443 Spell Speed (...) · tier starts at 442, ...",
+    // and "+0.1%"
+    gcd,
+    gcdText: `${gcd}s`,
+    hasteText,
     spd,
-    spdText: `${panel('spd')} ${job.label.spd} (${base('spd')} base, ${gearTotals.spd} gear${bonus.spd ? `, ${bonus.spd.bonus} food` : ''})`,
-    tierText: tierText(spd, app.level, pct),
-    dot: ((dotMult(spd, app.level) - 1) * 100).toFixed(1),
+    spdText,
+    tierText: speedTier,
+    gcdNote: `GCD${hasteText} with ${spdText} · ${speedTier}`,
+    dot,
+    dotText: `+${dot}%`,
     rows,
     truncated: res.truncated,
     melded: picks.filter(p => p.meld).length,
-    // {phys, mag, physPct, magPct}: the Defense row
+    // {phys, mag, physPct, magPct, physText, magText, takenText}: the Defense row
     defense,
+    // the note under the table: the clan's bonus is left out of the main stat and Vitality (statBase)
+    clanNote: `Clan bonuses can affect ${job.short.main} and ${job.short.vit}.`,
     // the note that weapon damage is ranked first; false for a job that does not rank it (Blue Mage)
     weaponFirst: !!job.damageKey,
     // relics with player-allocated substats left out of the search (searchPool), for the note; 0 hides it

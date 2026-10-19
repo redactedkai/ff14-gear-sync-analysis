@@ -7,14 +7,14 @@ import { allocatedRelic, allowedActivities, browseItems, poolItemFromRow, routes
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
-import { panelBase } from '../../src/ui/views/optimizer.js';
+import { statBase } from '../../src/core/food.js';
 
 // "Gear from" boxes left out by default, in the optimizer and the browser (owner's decision); smoke.mjs uses them too.
 export { DEFAULT_EXCLUDE };
 
 // The optimizer searches every piece the job can wear that "Gear from" lets through (the default boxes, market board on)
 // minus the relics whose substats the player allocates (allocatedRelic). Totals are character panel numbers as the page
-// shows them: the level's base added for a substat (panelBase; its values are checked against AkhMorning in
+// shows them: the level's base added for a substat (statBase; its values are checked against AkhMorning in
 // tests/unit/views.test.js).
 
 /** The core's best `target` over every piece `jobId` can wear that the boxes left out (`def`) and the market board
@@ -25,7 +25,7 @@ export function coreGear(jobId, sync, target, extra = [], def = DEFAULT_EXCLUDE,
   const gear = browseItems(job, {}).map(r => poolItemFromRow(job, r));
   const searched = off => withActivities(gear, off, market).filter(i => !allocatedRelic(job, i));
   const pool = searched(def);
-  const base = panelBase(job, target, sync.level ?? 100);
+  const base = statBase(job, target, sync.level ?? 100);
   const best = (p, melds) => optimize(job, p, sync, { target, melds }).totals[target] + base;
   return {
     all: gear.length,
@@ -46,7 +46,7 @@ export function coreFiltered(jobId, sync, target, f) {
     DEFAULT_EXCLUDE,
     true,
   ).filter(i => !allocatedRelic(job, i));
-  const on = optimize(job, pool, sync, { target, melds: true }).totals[target] + panelBase(job, target, sync.level ?? 100);
+  const on = optimize(job, pool, sync, { target, melds: true }).totals[target] + statBase(job, target, sync.level ?? 100);
   return { all, searched: pool.length, on };
 }
 

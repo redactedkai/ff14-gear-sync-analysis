@@ -86,11 +86,11 @@ export function browseCell(raw, synced) {
   return { text: String(raw), cls: raw ? 'n' : 'n dim', was: null };
 }
 
-/* The gear browser's list: {shown, countText, hidden, emptyBoxes, slots}. shown: the first SHOW_LIMIT matches, in the
+/* The gear browser's list: {shown, countText, hidden, hiddenText (the last row's line), emptyBoxes, slots}. shown: the first SHOW_LIMIT matches, in the
    heading's order, each with its cells (browseCell), its name cut for the search's highlight (nameParts), and, when sync
    lowers its item level, `synced` true and `syncedIlvl` the item level it is synced to (owner, 2026-10-19: what the
    player gets on the top line, the piece's own numbers on a muted line under it). slots: the slot pills,
-   [{key, label, count, group}], 'any' first (group 0), then the job's slots by group (1 to 3), count the matches in
+   [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by group (1 to 3), count the matches in
    that slot under the other filters. */
 export function gearView(app) {
   const job = app.jobCtx,
@@ -138,10 +138,12 @@ export function gearView(app) {
   // the slot pills: how many matches each slot has under the other filters
   const counts = {};
   for (const r of listed) counts[r.type] = (counts[r.type] || 0) + 1;
-  const slots = [{ key: 'any', label: 'Any', count: listed.length, group: 0 }];
+  // sep: a gap before the pill, where a new group starts
+  const slots = [{ key: 'any', label: 'Any', count: listed.length, group: 0, sep: false }];
   SLOT_GROUPS.forEach((group, g) => {
     for (const t of group)
-      if (job.activeSlotTypes.includes(t)) slots.push({ key: t, label: SLOT_LABEL[t], count: counts[t] || 0, group: g + 1 });
+      if (job.activeSlotTypes.includes(t))
+        slots.push({ key: t, label: SLOT_LABEL[t], count: counts[t] || 0, group: g + 1, sep: slots.at(-1).group !== g + 1 });
   });
 
   const n = all.length;
@@ -151,6 +153,7 @@ export function gearView(app) {
     anySynced: shown.some(x => x.synced),
     countText: n ? `${fmtInt(n)} matches${n > SHOW_LIMIT ? `, showing the first ${SHOW_LIMIT}` : ''}` : 'No matches',
     hidden: n > SHOW_LIMIT ? fmtInt(n - SHOW_LIMIT) : '',
+    hiddenText: n > SHOW_LIMIT ? `${fmtInt(n - SHOW_LIMIT)} more matches not shown. Narrow the filters to view them.` : '',
     // "Gear from" boxes with nothing for the job and the other filters: greyed out in the menu
     emptyBoxes: Object.freeze(emptyActivities(rows.filter(inSlot).map(r => r.routes))),
     slots: Object.freeze(slots),

@@ -49,6 +49,10 @@ export function optimizer() {
     get stale() {
       return !!this.view && this.nowDeps !== this.lastDeps;
     },
+    /* the Target GCD box's label: the result's own while it is up to date, else the one for the settings now */
+    get gcdFieldLabel() {
+      return (!this.stale && this.view?.gcdUi?.label) || this.gcdLabel;
+    },
     /* a solve is pending or running: shows the progress bar */
     busy: false,
     /* the latest solve asked for; an older one still waiting is dropped */

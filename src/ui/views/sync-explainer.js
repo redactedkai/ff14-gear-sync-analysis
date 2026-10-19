@@ -122,6 +122,14 @@ function meldParts(job, meld) {
 
 /* Everything Piece stats shows, or null while no sync applies. `widths`: the chart container's width in px ({piece}),
    so the chart is drawn at its own size and its text stays at the page's size. */
+/* What Piece stats says while no sync applies (explainerView is null): with item level sync on, that a cap is missing;
+   off, why nothing is synced and how to see it. */
+export function explainerOffText(app) {
+  return app.sync
+    ? 'Enter a sync cap (item level) at the top to see what sync does.'
+    : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.';
+}
+
 export function explainerView(app, widths = {}) {
   const sync = shownSync(app);
   if (!sync) return null;

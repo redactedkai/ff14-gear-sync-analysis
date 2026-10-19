@@ -143,7 +143,7 @@
   </div></template>
 </div>
 
-<p class="panel empty" id="m-off" x-show="!explainer && $store.app.mathTab === 'piece'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
+<p class="panel empty" id="m-off" x-show="!explainer && $store.app.mathTab === 'piece'" x-text="offText"></p>
 
 <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
 <section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
@@ -202,19 +202,19 @@
   <summary>Each stat, step by step</summary>
   <div id="p-out" class="steps">
     <p class="steps-sum" x-text="steps.summary"></p>
-    <p class="small" x-show="steps.byLevel" x-text="`Level sync: at level ${steps.level}, gear with a higher equip level is synced to item level ${steps.cap}, used as the cap here.`"></p>
+    <p class="small" x-show="steps.byLevel" x-text="steps.byLevelText"></p>
     <div>
-      <p class="small"><b>Where the numbers come from.</b> Every item level has a budget for each stat, and each slot takes a fixed share of it; with both rings the shares add up to the whole budget. <span x-text="steps.slotShare ? `The ${steps.slotName} takes ${steps.slotShare}` : 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'"></span>; its best substat gets all of that (<b>100%</b>), the second <b>70%</b> of it.<span x-show="steps.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at 20%, outside these two.</span></p>
+      <p class="small"><b>Where the numbers come from.</b> Every item level has a budget for each stat, and each slot takes a fixed share of it; with both rings the shares add up to the whole budget. <span x-text="steps.shareText"></span>; its best substat gets all of that (<b>100%</b>), the second <b>70%</b> of it.<span x-show="steps.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at 20%, outside these two.</span></p>
       <div class="slices" id="p-slices" role="img" aria-label="Each slot's share of the budget">
         <template x-for="(s, i) in steps.slices" :key="i"><span :class="{ on: s.on }" :style="`flex:${s.width}`"><b x-text="s.label"></b><i x-text="s.share"></i></span></template>
       </div>
     </div>
-    <p class="steps-rule" x-show="steps.status !== 'off'"><b>In the duty, each stat is the lower of two numbers:</b> <span x-text="`what this ${steps.slotName} has, and what a ${steps.slotName} at the synced item level has (its ceiling).`"></span></p>
+    <p class="steps-rule" x-show="steps.status !== 'off'"><b>In the duty, each stat is the lower of two numbers:</b> <span x-text="steps.ruleText"></span></p>
     <div class="tablewrap"><table class="compact steps-table">
       <thead><tr>
         <th>Stat</th>
-        <th x-text="`This ${steps.slotName} (item level ${steps.il})`"></th>
-        <th x-show="steps.status !== 'off'" x-text="`A ${steps.slotName} at item level ${steps.cap} (the ceiling)`"></th>
+        <th x-text="steps.ownHead"></th>
+        <th x-show="steps.status !== 'off'" x-text="steps.capHead"></th>
         <th class="n" x-show="steps.status !== 'off'">In the duty</th>
       </tr></thead>
       <tbody>
@@ -304,7 +304,7 @@
             <template x-for="o in tiebreakOptions(2)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
           </select></label>
           <div class="f field gcd-field" id="o-gcd-row">
-          <label for="o-gcd" x-text="(!stale && view?.gcdUi?.label) || gcdLabel"></label>
+          <label for="o-gcd" x-text="gcdFieldLabel"></label>
           <div class="row">
             <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-bind="$num('opt.gcd', 0, Infinity, { decimals: 2, empty: '' })">
             <div class="seg" id="o-gcd-mode" role="radiogroup" aria-label="Target GCD mode" :class="{ off: $store.app.opt.target === 'spd' }">
@@ -341,8 +341,8 @@
       <template x-if="view && view.kind === 'ok'"><div class="panel" id="o-result" :data-target="view.target">
         <div class="readout">
           <div><b x-text="view.total"></b><span x-text="view.totalLabel"></span></div>
-          <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD${view.hasteText} with ${view.spdText} · ${view.tierText}`"></span></div>
-          <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
+          <div><b x-text="view.gcdText"></b><span x-text="view.gcdNote"></span></div>
+          <div><b x-text="view.dotText"></b><span>DoT/HoT tick scaling</span></div>
         </div>
         <div class="tablekey"><p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
         <div class="tablewrap menus" id="o-table"><table @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
@@ -351,7 +351,7 @@
             <template x-for="(r, i) in view.rows" :key="i">
               <tr>
                 <td x-text="r.label"></td>
-                <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.blockedBy ? 'covered by ' + r.blockedBy : 'empty (no copy left)'"></td></template>
+                <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.emptyText"></td></template>
                 <template x-if="r.item"><td class="item">
                   <template x-if="!r.same"><span x-text="r.item.name"></span></template>
                   <template x-if="r.same"><div class="same" @click.outside="if (menuOpen === i) menuOpen = null" @keydown.escape="menuOpen = null">
@@ -394,21 +394,21 @@
                     </div>
                   </div>
                 </div>
-                <div class="small dim" id="o-meal-note" x-text="view.food.best ? 'HQ, best for goal' : 'HQ, picked'"></div>
+                <div class="small dim" id="o-meal-note" x-text="view.food.note"></div>
               </td><td class="n" data-col="ilvl" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td :data-col="jobCtx.stats[k]" class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
             </template>
             <template x-if="view.food">
               <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td :data-col="jobCtx.stats[k]" class="n" x-text="v"></td></template></tr>
             </template>
-            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.food ? 'gear and food' : 'gear only, no food'"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
-            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c && c.held ? 'Held at this tier by Spare points to tiebreaks' : null" x-text="c ? `${c.spare} · ${c.toNext == null ? '–' : '+' + c.toNext}` : ''"></td></template></tr>
-            <tr class="tier" id="o-defense"><td>Defense</td><td class="defense" :colspan="view.headers.length + 2">Physical <b x-text="view.defense.phys.toLocaleString('en-US')"></b> · Magic <b x-text="view.defense.mag.toLocaleString('en-US')"></b> · <span class="dim" x-text="`−${view.defense.physPct}% / −${view.defense.magPct}% damage taken`"></span></td></tr>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.effectNote"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
+            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c ? c.title : null" x-text="c ? c.text : ''"></td></template></tr>
+            <tr class="tier" id="o-defense"><td>Defense</td><td class="defense" :colspan="view.headers.length + 2">Physical <b x-text="view.defense.physText"></b> · Magic <b x-text="view.defense.magText"></b> · <span class="dim" x-text="view.defense.takenText"></span></td></tr>
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Untick more boxes under Gear from.</div></template>
         <p class="small dim" id="o-wd-note" x-show="view.weaponFirst">Weapon damage comes first, before the goal.</p>
         <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note">Relic weapons with customizable substats are left out.</p></template>
-        <p class="small dim" id="o-total-note" x-text="`Clan bonuses can affect ${view.headers[0]} and ${view.headers[1]}.`"></p>
+        <p class="small dim" id="o-total-note" x-text="view.clanNote"></p>
       </div></template>
       </div>
     </div>
@@ -425,7 +425,7 @@
     </div>
     <div class="pillline">
     <div class="slotpills" id="b-slots" role="group" aria-label="Slot">
-      <template x-for="(p, k) in (view ? view.slots : [])" :key="p.key"><span style="display:contents"><template x-if="k && p.group !== view.slots[k - 1].group"><span class="sep" aria-hidden="true"></span></template><button type="button" :data-slot="p.key" :class="{ on: $store.app.browse.type === p.key }" :aria-pressed="String($store.app.browse.type === p.key)" :disabled="!p.count && $store.app.browse.type !== p.key" @click="$store.app.browse.type = p.key"><span x-text="p.label"></span><span class="n" x-text="p.count"></span></button></span></template>
+      <template x-for="(p, k) in (view ? view.slots : [])" :key="p.key"><span style="display:contents"><template x-if="p.sep"><span class="sep" aria-hidden="true"></span></template><button type="button" :data-slot="p.key" :class="{ on: $store.app.browse.type === p.key }" :aria-pressed="String($store.app.browse.type === p.key)" :disabled="!p.count && $store.app.browse.type !== p.key" @click="$store.app.browse.type = p.key"><span x-text="p.label"></span><span class="n" x-text="p.count"></span></button></span></template>
     </div>
       <button type="button" class="resetbtn" id="b-reset" :class="{ off: !filtered }" :disabled="!filtered" :aria-hidden="String(!filtered)" title="Reset filters" aria-label="Reset filters" @click="resetBrowseFilters()">Reset</button>
     </div>
@@ -446,7 +446,7 @@
             <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="jobCtx.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'At this piece’s cap' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
           </tr>
         </template>
-        <template x-if="view.hidden"><tr><td :colspan="jobCtx.stats.length + 4" class="dim small" x-text="view.hidden + ' more matches not shown. Narrow the filters to view them.'"></td></tr></template>
+        <template x-if="view.hidden"><tr><td :colspan="jobCtx.stats.length + 4" class="dim small" x-text="view.hiddenText"></td></tr></template>
       </tbody></template>
     </table></div>
   </div>
