@@ -37,6 +37,10 @@ test('job bit order, stat order and slot codes come from item-format.json', () =
   });
 });
 
+test('ROW names the item row fields at the positions of itemRow.fields in item-format.json (the generators build rows by it)', () => {
+  assert.deepEqual(ROW, Object.fromEntries(ITEM_FORMAT.itemRow.fields.map((name, i) => [name, i])));
+});
+
 test('ItemLevel table has one column per stat and per weapon damage and defense value, all the same length', () => {
   assert.deepEqual(Object.keys(IL).sort(), [...ITEM_STAT_ORDER, ...DAMAGE_DEFENSE_KEYS].sort());
   const lengths = new Set(Object.values(IL).map(c => c.length));

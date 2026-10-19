@@ -35,7 +35,7 @@ import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
 import gen_job_icons  # noqa: E402
 import provenance  # noqa: E402
-from item_format import SchemaError, load_format  # noqa: E402
+from item_format import SchemaError, load_format, row_fields  # noqa: E402
 
 # Raw stat order of a generated row (src/core/item-format.json), written out independently here.
 STAT_ORDER = ['str', 'dex', 'int', 'mind', 'vit', 'piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps', 'mainAttr', 'secAttr']
@@ -104,6 +104,17 @@ class GenItemsTest(unittest.TestCase):
             self.assertTrue(all(isinstance(v, int) and v >= 0 for v in dd), r)
         ids = [r[13] for r in self.rows]
         self.assertEqual(len(set(ids)), len(ids))
+
+    def test_row_fields_come_from_the_format(self):
+        """Rows are built by the field names of itemRow.fields; a rowField elsewhere in the format file that disagrees
+        with that list stops the generator."""
+        fmt = load_format()
+        self.assertEqual(list(row_fields(fmt)), fmt['itemRow']['fields'])
+        self.assertEqual(row_fields(fmt)['category'], fmt['category']['rowField'])
+        fmt['rarity']['rowField'] = 13
+        with self.assertRaises(SchemaError) as cm:
+            row_fields(fmt)
+        self.assertIn('rarity rowField 13', str(cm.exception))
 
     def test_one_row_per_line(self):
         """Each item row is a line of its own (so a patch's diff lists the rows that changed), and the text parses to the

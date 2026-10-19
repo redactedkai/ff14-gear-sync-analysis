@@ -152,19 +152,19 @@ def categorize(csv_dir, kept, weapon_slots):
     overrides = override_items(csv_dir, items)
     unknown = Counter()
     out = {}
-    for r, row in kept:
+    for r, piece in kept:
         code = code_of(r)
         cat = CATEGORY_BY_CODE.get(code)
         if cat is None:
             unknown[code] += 1
             continue
-        if code == 10 and row[1] not in weapon_slots:
+        if code == 10 and piece['slotCode'] not in weapon_slots:
             cat = 'field_op'
         elif code == 20 and r['#'] in savage:
             cat = 'savage'
-        elif code in (60, 61) and row[8] & FLAGS['ultimate']:  # bought with an ultimate totem
+        elif code in (60, 61) and piece['flags'] & FLAGS['ultimate']:  # bought with an ultimate totem
             cat = 'ultimate'
-        elif code == 250 and row[3] <= AETHERIAL_MAX_EQUIP:
+        elif code == 250 and piece['equipLevel'] <= AETHERIAL_MAX_EQUIP:
             cat = 'aetherial'
         out[r['#']] = overrides.get(r['#'], cat)
     if unknown:
@@ -183,9 +183,9 @@ def check(kept, cats):
     A Savage armor piece or weapon without a dye slot means a shop that sells Savage gear also took a currency used for
     other gear (for example a Normal-raid token), which the shop-level currency rule would wrongly treat as Savage."""
     problems = []
-    for r, row in kept:
-        cat, src = cats[r['#']], row[8]
-        if cat == 'savage' and row[1] not in ACCESSORY_SLOTS and r['DyeCount'] in ('', '0'):
+    for r, piece in kept:
+        cat, src = cats[r['#']], piece['flags']
+        if cat == 'savage' and piece['slotCode'] not in ACCESSORY_SLOTS and r['DyeCount'] in ('', '0'):
             problems.append(f'{r["Name"]}: categorized savage but has no dye slot (a currency shared with other gear?)')
         if src & FLAGS['ultimate'] and cat != 'ultimate':
             problems.append(f'{r["Name"]}: bought with an ultimate totem but categorized {cat}')

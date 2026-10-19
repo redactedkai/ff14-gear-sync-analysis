@@ -71,6 +71,31 @@ def item_columns():
     return [*cols, *trailing, fmt['rarity']['itemColumn'], fmt['levelScaled']['itemColumn'], *extra]
 
 
+def row_fields(fmt):
+    """{field name: position} of an items.json row, from `itemRow.fields` of item-format.json (name 0, slotCode 1, ...,
+    defenseMag 19). The generators build and read rows by these names, never by position. Raises SchemaError when the
+    `rowField` of another entry (materia.rowFields, rarity, gameId, levelScaled, category, the damageDefense entries)
+    is not the position of its name in the list, so the two places in the file cannot disagree."""
+    fields = fmt['itemRow']['fields']
+    position = {name: i for i, name in enumerate(fields)}
+    declared = {
+        **fmt['materia']['rowFields'],
+        'rarity': fmt['rarity']['rowField'],
+        'gameId': fmt['gameId']['rowField'],
+        'scales': fmt['levelScaled']['rowField'],
+        'category': fmt['category']['rowField'],
+        **{e['key']: e['rowField'] for e in fmt['damageDefense']['entries']},
+    }
+    wrong = [
+        f'{name} rowField {at}, itemRow.fields has it at {position.get(name)}' for name, at in declared.items() if position.get(name) != at
+    ]
+    if len(position) != len(fields):
+        wrong.append('a name is listed twice')
+    if wrong:
+        raise SchemaError(f'{FORMAT_PATH.name}: itemRow.fields and the rowField entries disagree: ' + '; '.join(wrong))
+    return position
+
+
 def meld_fields(row, fmt):
     """(meldSlots, overmeld) of an Item.csv row: the guaranteed materia slots (0 to `maxSlots`) and 1 when overmelding is
     allowed. None when either value is out of range or not of the expected form; the caller lists those and raises."""

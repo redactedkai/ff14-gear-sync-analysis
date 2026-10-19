@@ -173,6 +173,8 @@ Belts (`Waist`) and soul crystals have no slot code, so items in those slots are
 - the most guaranteed slots a piece may have (5);
 - where the materia table comes from: the `Materia` sheet and its columns, the number of grades (12), the seven combat substats whose rows are read (Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed), the `Item` column that gives each grade's item level gate (`LevelItem`) and the `MateriaGrade` column that marks the high grades (`OvermeldNQPercent[1]`).
 
+**Row fields.** `itemRow.fields` names the twenty fields of a database row in order (`name`, `slotCode`, ..., `defenseMag`; section *Row format and order*). The Python generators build and read rows by these names, never by position, and the page's `ROW` names the same positions (a unit test checks). The `rowField` that other entries give (the meld fields, rarity, game id, scaling flag, category, weapon damage and defense) must be the position of its name in that list; the item database generator stops otherwise.
+
 **Other entries.** The file also lists the six source groups and their categories (section 4), the crafter and gatherer stats that keep a piece out of the database, the `Item` column and row position of the rarity, and the gear categories with their labels (section 4, *Gear category*).
 
 **Changing the file.** Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
@@ -406,7 +408,7 @@ Only 25 rows carry items: the seven combat substats; the main stat, Vitality and
 
 ### Row format and order
 
-Each database row is a fixed list of twenty fields:
+Each database row is a fixed list of twenty fields, in the order of `itemRow.fields` in the shared format file (section 3):
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -698,7 +700,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Fetch (sparse clone, `--commit`, job icons) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
 | Item row field positions | `itemRow.fields` in `src/core/item-format.json` (each section's `rowField` agrees); `ROW` in `src/core/constants.js` |
-| Format loading, CSV reading, the column, yes/no and slot share checks, the stat factor table | `scripts/data/item_format.py` (`read_csv`, `check_bools`, `check_slot_percents`, `stat_factors`) |
+| Format loading, CSV reading, the column, yes/no and slot share checks, the stat factor table, the row field names | `scripts/data/item_format.py` (`read_csv`, `check_bools`, `check_slot_percents`, `stat_factors`, `row_fields`) |
 | Item database generator; materia table and decoy rows; selection rules and their funnel line | `scripts/data/gen_items.py` (`materia_table`, `select`, `DROP_RULES`, `drop_report`) |
 | Gear categories (subcategory codes, Savage currencies; the list of categories) | `scripts/data/gear_categories.py` (`CATEGORIES`) |
 | Category list and labels; current-only Savage group | `category.list` and `currentOnly` in `src/core/item-format.json` |

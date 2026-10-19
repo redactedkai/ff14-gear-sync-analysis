@@ -338,8 +338,8 @@ def routes(csv_dir, kept, cats):
     check_names(names, KNOWN_SOURCE, 'known source', 'KNOWN_SOURCE')
     check_names(names, {i: (n,) for i, n in FIXED_ITEMS.items() if i != GIL}, 'fixed currency', 'FIXED_ITEMS')
     category = {int(r['#']): cats[r['#']] for r, _ in kept}
-    slot_of = {int(r['#']): row[1] for r, row in kept}
-    level_of = {int(r['#']): row[3] for r, row in kept}
+    slot_of = {int(r['#']): piece['slotCode'] for r, piece in kept}
+    level_of = {int(r['#']): piece['equipLevel'] for r, piece in kept}
     ilvl_of = {i: int(r['LevelItem']) for i, r in items.items() if r['LevelItem'].isdigit()}
     missing = sorted({c for c in category.values() if c not in DROP_ACTIVITY})
     if missing:
