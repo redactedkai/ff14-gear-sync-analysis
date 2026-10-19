@@ -60,8 +60,32 @@ Which test numbers may change after a patch and which must not is in [data-pipel
 
 ## Documentation
 
-[docs/README.md](docs/README.md) is the index, with a reading order. `docs/mechanics/` covers the game side: the stat model and sync, validation against game data, materia. `docs/engineering/` covers the code: architecture, the data pipeline, the optimizer, testing. [docs/glossary.md](docs/glossary.md) defines the game and project terms. [CLAUDE.md](CLAUDE.md) is the working brief and the owner's rules for Claude Code sessions in this repo.
+[docs/README.md](docs/README.md) is the index, with a reading order. `docs/mechanics/` covers the game side: the stat model and sync, validation against game data, materia. `docs/engineering/` covers the code: architecture, the data pipeline, the optimizer, testing. [docs/glossary.md](docs/glossary.md) defines the game and project terms. [CLAUDE.md](CLAUDE.md) holds the project's working rules, for people and for Claude Code sessions alike.
+
+## Contributing
+
+The full rules are in [CLAUDE.md](CLAUDE.md); start the docs at [docs/README.md](docs/README.md). The ones that matter most:
+
+- **Branches.** Work on a feature branch off `dev`, merge it into `dev`, and move `dev` to `main` (fast-forward when possible). Never commit on `main`: a push to `main` deploys the live page. Builds from any other branch show a DEV badge.
+- **Done means `npm run check` passes.** For UI changes, also look at the page at full width and at 960 px. Run `npm run check:all` when touching `scripts/data/`, and `npm run test:full` and `npm run perf` when changing the optimizer's scoring, pruning or search.
+- **Code rules** (details in [architecture.md](docs/engineering/architecture.md)):
+  - Core code takes a JobContext (`makeJobContext(jobId)`) and uses its neutral stat keys (`main`, `crit`, `det`, `dh`, `spd`, `spec`, `vit`), never job-specific ones such as `piety` or `mind`.
+  - Read item database rows through `ROW` (`row[ROW.ilvl]`), never by position.
+  - Keep big data (the item database, search results) out of Alpine's reactive state; components build a `view` object and templates only display it.
+  - Write a rule once and share it; two copies drift.
+  - `src/data/` is generated: change `scripts/data/` and regenerate, never edit it by hand.
+- **Tests.** Unit tests go in `tests/unit/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/smoke.mjs`. Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -l "core/sync-target.js" tests/unit/*.js`. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
 
 ## Data
 
 Item stats, the item level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data; the page footer names the commit used. The speed-to-GCD formulas follow AkhMorning's guide, a community reference rather than game files. The substat share rule (100/70%, plus a fixed 20% Direct Hit line on older healer gear) is inferred: a pattern measured on real items, not something stored in the game files. Only Piece stats depends on it; the optimizer and the gear browser use each item's real stats.
+
+## License and credits
+
+- **Code and docs:** MIT, see [LICENSE](LICENSE).
+- **Game data and icons:** the FINAL FANTASY XIV game data in `src/data/` (item names and stats, level tables, food) and the 23 job icons in `src/data/job-icons.js` are © SQUARE ENIX CO., LTD. and are not covered by the MIT licence. This is an unofficial, non-commercial fan tool.
+- **Data source:** [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining); each generated file records the commit it came from.
+- **Formulas:** the speed, GCD, tier, defense and food formulas follow [AkhMorning](https://www.akhmorning.com/); sync rules and caps were checked against [xivgear](https://xivgear.app/) and the [Console Games Wiki](https://ffxiv.consolegameswiki.com/). Each is credited where it is used (`docs/mechanics/`); they are re-implemented from the published maths, and no code is copied from them.
+- **Bundled:** Alpine.js and @vue/reactivity, both MIT; the build keeps their notices at the top of the page's script.
+
+**Privacy.** The page loads its fonts from Google Fonts, which sees each visitor's IP address. It has no analytics or cookies; settings are saved only in the browser's `localStorage`.
