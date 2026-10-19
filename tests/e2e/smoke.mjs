@@ -636,7 +636,6 @@ async function checkFood(pg) {
   );
   await expect(pg.locator('#o-total-note')).toHaveText('Clan bonuses can affect MND and VIT.');
   await expect(pg.locator('#o-effect')).toContainText('gear and food');
-  await expect(pg.locator('#o-food-note')).toBeVisible();
   await waitSaved(pg, "s => s.opt.food === true && s.opt.foodPair === ''");
   await pg.selectOption('#o-food-pair', 'det+crit');
   await expect(pg.locator('#o-food-row')).not.toContainText('best for the goal');
@@ -686,9 +685,7 @@ async function checkTargetGcd(pg) {
   await pg.selectOption('#o-target', 'crit');
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
   // level 100 relics whose substats the player allocates (Phantom Pendulums Occultum) are left out, with a note
-  await expect(pg.locator('#o-relic-note')).toHaveText(
-    'Relic weapons with customizable substats are left out: the optimizer can’t model your choice yet.',
-  );
+  await expect(pg.locator('#o-relic-note')).toHaveText('Relic weapons with customizable substats are left out.');
   const box = pg.locator('#o-gcd');
   check((await box.inputValue()) === '' && (await box.isEnabled()), 'the Target GCD box is not empty and enabled by default');
   await expect(pg.locator('#o-gcd-line')).toHaveCount(0);

@@ -349,7 +349,7 @@ What it shows:
 
 ### Food and what a capture should contain
 
-**Food.** The food formula (a percentage of base plus gear, floored, then capped) and food being unchanged under sync are community knowledge, with no capture ([math.md, section 6](math.md#food)). One reading settles both: at a known synced level, Critical Hit on the character sheet before and after eating a known HQ meal, with the bonus below the meal's maximum; it should equal $\min(M, \lfloor 0.1 \times \text{before} \rfloor)$.
+**Food.** The food formula (a percentage of base plus gear, floored, then capped) is **verified** by the owner in game (2026-10-18). Food being unchanged under sync is community knowledge, with no capture ([math.md, section 6](math.md#food)). One reading settles it: at a known synced level, Critical Hit on the character sheet before and after eating a known HQ meal, with the bonus below the meal's maximum; it should equal $\min(M, \lfloor 0.1 \times \text{before} \rfloor)$.
 
 Captures from the game are **the single most valuable evidence the project does not have**. A useful capture:
 
@@ -455,7 +455,8 @@ The status of each claim this page checks, in one place. Details are in the sect
 | Order when both sync triggers apply | **Second-hand** | xivgear issue #317 (section 8) |
 | A piece synced to its own item level is untouched | **Not verified** | xivgear differs by 1 (section 10) |
 | GCD, DoT and tier formulas | **Community reference** | Match AkhMorning's tables (section 5) |
-| Food formula, food under sync | Community knowledge, no capture | Section 8 |
+| Food formula | Verified (owner, in game, 2026-10-18) | Section 8 |
+| Food under sync | Community knowledge, no capture | Section 8 |
 | Optimizer finds the best loadout for the model's stats | Brute-force reference | Equal in every case (section 6) |
 
 ## Where this lives
