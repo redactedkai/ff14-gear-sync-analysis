@@ -6,6 +6,7 @@ import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE, 
 import { makeJobContext } from '../../src/core/job-context.js';
 import { DEFAULT_JOB } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
+import { capCeiling } from '../../src/core/sync-target.js';
 
 const D = defaultState();
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -345,4 +346,20 @@ test('restoreState: a saved cap above what the saved level allows is lowered', (
   const s = restoreState({ job: 'SGE', sync: true, cap: 500, level: 50 });
   assert.equal(s.cap, 135);
   assert.equal(restoreState({ job: 'SGE', sync: false, cap: 500, level: 50 }).cap, 500);
+});
+
+/* Audit 02, finding 1: restore ran limitCapToLevel without the job context, so a Blue Mage or Beastmaster at its own
+   level cap counted as level synced and a saved cap of 700 came back as 535. The live store keeps 700. */
+test('restoreState: a job at its own level cap keeps its saved cap, as the live page does', () => {
+  for (const [job, level] of [
+    ['BLU', 80],
+    ['BST', 50],
+  ]) {
+    const restored = restoreState({ job, sync: true, cap: 700, level });
+    assert.equal(restored.cap, 700, job);
+    const live = { ...restored, jobCtx: makeJobContext(job) };
+    assert.equal(limitCapToLevel(live), null, job);
+  }
+  // below the job's level cap, level sync applies and the cap is still lowered
+  assert.equal(restoreState({ job: 'BLU', sync: true, cap: 700, level: 70 }).cap, capCeiling(70));
 });

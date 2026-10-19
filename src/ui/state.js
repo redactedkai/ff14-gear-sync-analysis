@@ -223,7 +223,10 @@ export function restoreState(raw) {
   s.cap = r.cap === null ? null : ilvlIn(r.cap, s.cap);
   s.sync = bool(r.sync, s.sync);
   s.level = intIn(r.level, 1, job.maxLevel, s.level);
-  limitCapToLevel(s); // a save from before the cap followed the level
+  // a save from before the cap followed the level. The plain state has no jobCtx yet, and without it levelSyncOn would
+  // take the game's level cap: Blue Mage at 80 or Beastmaster at 50 would count as level synced, unlike the live page
+  const lowered = limitCapToLevel({ ...s, jobCtx: job });
+  if (lowered) s.cap = lowered.to;
   restoreTabs(s, r);
 
   const piece = isObj(r.piece) ? r.piece : {};
