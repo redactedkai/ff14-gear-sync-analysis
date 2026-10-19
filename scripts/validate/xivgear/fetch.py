@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 CLONE = ROOT / 'data' / 'xivgear'
 REPO = 'https://github.com/xiv-gear-planner/gear-planner.git'
-COMMIT = '6c3c878e'  # 2026-10-11, "Use specific items endpoint for basedata. (#963)"; main on 2026-10-16
+COMMIT = '6c3c878e708b9d98f1c4cb091723a2a0a6343603'  # 2026-10-11, "Use specific items endpoint for basedata. (#963)"; main on 2026-10-16
 PNPM = 'pnpm@9.12.3'  # package.json packageManager at COMMIT
 
 

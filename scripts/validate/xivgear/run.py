@@ -33,7 +33,7 @@ CACHE = ROOT / 'data' / 'xivgear-cache'
 OUT = ROOT / 'scripts' / 'validate' / 'out'
 BUNDLE = OUT / 'xivgear-ours.cjs'
 TEST = CORE / 'src' / 'test' / 'zz_gear_sync_analysis_test.ts'
-JOBS = 'PLD WAR DRK GNB WHM SCH AST SGE MNK DRG SAM RPR NIN VPR BRD MCH DNC BLM SMN RDM PCT BLU BST'.split()
+JOBS = json.loads((ROOT / 'src' / 'core' / 'item-format.json').read_text(encoding='utf-8'))['jobs']  # the 23 combat jobs
 # X1 (level sync item level) and X2 (level-scaling gear) are corrected on their side before comparing (ours.js)
 PASS_TAGS = {'X3', 'D1', 'D2'}
 

@@ -22,6 +22,7 @@ import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
+import ITEM_FORMAT from '../../../src/core/item-format.json' with { type: 'json' };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CLONE = join(ROOT, 'data', 'ffxiv-gearing');
@@ -29,7 +30,7 @@ const OUT = join(ROOT, 'scripts', 'validate', 'out');
 const BUNDLE = join(OUT, 'gearing-ours.js');
 const LIVE_URL = 'https://asvel.github.io/ffxiv-gearing/';
 const DATA_VERSION = '7.57'; // the data version the pinned commit carries (fetch.py COMMIT); the live page must show it too
-const JOBS = 'PLD WAR DRK GNB WHM SCH AST SGE MNK DRG SAM RPR NIN VPR BRD MCH DNC BLM SMN RDM PCT BLU BST'.split(' ');
+const JOBS = ITEM_FORMAT.jobs; // the 23 combat jobs, in the shared format's order
 const TIMEOUT = 120_000;
 // D3 (level-scaling gear) fixed on our side; D4 (tank Main Attribute) and D6 (bonus stats) corrected on theirs
 const PASS_TAGS = new Set(['D1', 'D2', 'D5']);

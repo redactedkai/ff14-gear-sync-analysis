@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 CLONE = ROOT / 'data' / 'ffxiv-gearing'
 REPO = 'https://github.com/Asvel/ffxiv-gearing.git'
-COMMIT = '8d75ef8'  # 2026-10-13, "Update game data to 7.57."
+COMMIT = '8d75ef89c317401727066a28025fb4d860a92f20'  # 2026-10-13, "Update game data to 7.57."
 
 
 def run(*cmd):
