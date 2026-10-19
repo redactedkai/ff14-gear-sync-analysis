@@ -369,7 +369,6 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
     det = stats.indexOf('det');
   const v = optimizerView(app);
   assert.equal(v.kind, 'ok');
-  assert.ok(v.anyAtCap);
   const row = (view, name) => view.rows.find(r => r.item?.name === name);
   const wpn = row(v, 'Phantom Pendulums Eclipticum');
   assert.deepEqual([wpn.cells[k].value, wpn.cells[k].atCap, wpn.meld], [443, true, '2 slots empty']);

@@ -580,10 +580,9 @@ async function checkMelds(pg) {
   await expectTotal(pg, want.on, 'melds on');
   await expect(pg.locator('#o-result .meld').first()).toBeVisible();
   await expect(pg.locator('#o-meld-note')).toBeVisible();
-  // every pick has its target at its cap here (melded up to it), so each target cell is marked and the legend shows
+  // every pick has its target at its cap here (melded up to it), so each target cell is marked
   const rows = await pg.locator('#o-result tbody tr:not(.total):not(.tier)').count();
   await expect(pg.locator('#o-result td.gold .atcap')).toHaveCount(rows);
-  await expect(pg.locator('#o-cap-note')).toBeVisible();
   await expect(pg.locator('#o-effect')).toContainText('%'); // the tier rows: Critical Hit rate
   await checkNoBadText(pg, 'melds/on');
   await melds.uncheck();

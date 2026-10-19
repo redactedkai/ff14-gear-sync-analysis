@@ -341,7 +341,7 @@
           <div><b x-text="view.gcd + 's'"></b><span x-text="`GCD${view.hasteText} with ${view.spdText} · ${view.tierText}`"></span></div>
           <div><b x-text="'+' + view.dot + '%'"></b><span>DoT/HoT tick scaling</span></div>
         </div>
-        <template x-if="view.byTier"><p class="small" id="o-held"><b>Ranked by tier:</b> <span x-text="view.heldText"></span>. Each keeps its tier; points left over go to the goal first, then the tiebreaks.</p></template>
+        <template x-if="view.byTier"><p class="small" id="o-held"><b>Ranked by tier:</b> <span x-text="view.heldText"></span>.</p></template>
         <p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p>
         <div class="tablewrap menus" id="o-table"><table>
           <thead><tr><th>Slot</th><th>Item</th><th class="n">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th class="n" x-text="h"></th></template></tr></thead>
@@ -383,14 +383,11 @@
           </tbody>
         </table></div>
         <template x-if="view.truncated"><div class="note small">Search hit its node limit, so this result may not be optimal. Leave out more gear groups.</div></template>
-        <template x-if="view.sameCount"><p class="small dim" id="o-same-note" x-text="`${view.sameCount} other piece${view.sameCount > 1 ? 's give' : ' gives'} the same result: the same ${view.target === 'main' ? view.targetLabel : 'main stat and ' + view.targetLabel}, and every other substat at the same tier. Each row shows the one with the lowest equip level; its menu lists the rest.`"></p></template>
-        <template x-if="view.anyAtCap"><p class="small dim" id="o-cap-note">A line over a number: the piece is at its cap for that stat (its sync cap, or its own cap with melds), so nothing raises it there.</p></template>
         <p class="small dim" id="o-wd-note" x-show="view.weaponFirst">Weapon damage comes first, before the goal.</p>
         <template x-if="view.relicsLeftOut"><p class="small dim" id="o-relic-note" x-text="`${view.relicsLeftOut} relic weapon${view.relicsLeftOut > 1 ? 's' : ''} left out: you choose ${view.relicsLeftOut > 1 ? 'their' : 'its'} substats in game, which the optimizer can’t model yet.`"></p></template>
-        <p class="small dim" id="o-total-note">Total and With food are what the character panel shows at this level for every substat: the level's base plus gear (and food). <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span>: the panel adds your job's and clan's own base to them.</p>
-        <p class="small dim" id="o-tier-note">Each substat's effect moves in steps (tiers). <b>Spare</b>: points above the start of the current step, which add nothing until the next; <b>to next</b>: points needed for the next step. <span x-text="view.food ? 'Counted with food.' : 'Gear only: food moves every total (switch Food on).'"></span><span x-show="view.byTier"> A highlighted cell is a stat Rank by tier holds at its tier.</span></p>
+        <p class="small dim" id="o-total-note">Totals match the character panel; <span x-text="`${view.headers[0]} and ${view.headers[1]} are gear only`"></span> (the panel adds your job's and clan's base).</p>
         <template x-if="view.food"><p class="small dim" id="o-food-note">Food (community formula): a percentage of each stat (your base at the synced level plus gear) up to the meal's maximum, marked max when reached; applied unchanged under sync. Vitality from food is not counted.<span x-show="!view.gcdOn"> The gear set is the same with any meal.</span></p></template>
-        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: the best stones each piece's item level allows, only where they raise the target or a tiebreak, every overmeld assumed to succeed; synced pieces lose theirs.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
+        <template x-if="view.melds"><p class="small dim" id="o-meld-note" x-text="`Materia: every overmeld assumed to succeed.${view.noMeldData ? ` ${view.noMeldData} hand-made or generated piece${view.noMeldData > 1 ? 's have' : ' has'} no slot data and take${view.noMeldData > 1 ? '' : 's'} none.` : ''}`"></p></template>
       </div></template>
     </div>
   </div>

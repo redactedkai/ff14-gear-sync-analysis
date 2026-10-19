@@ -450,9 +450,7 @@ function buildOptimizerView(app, gear, chosen) {
     rows,
     truncated: res.truncated,
     melds: !!o.melds,
-    anyAtCap: rows.some(r => r.cells?.some(c => c.atCap)),
     melded: picks.filter(p => p.meld).length,
-    sameCount: rows.reduce((n, r) => n + (r.same ? r.same.count - 1 : 0), 0),
     noMeldData: res.noMeldData,
     // {phys, mag, physPct, magPct}: the Defense row
     defense,
