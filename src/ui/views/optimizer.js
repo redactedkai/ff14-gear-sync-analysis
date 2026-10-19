@@ -28,7 +28,7 @@ import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { allMeals, bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
 import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
-import { gearFilter, syncSettings } from '../state.js';
+import { defaultState, gearFilter, syncSettings } from '../state.js';
 
 /* The page's search node budget: a search that visits more nodes stops, keeps the best set found so far and is marked
    truncated (the result's "node limit" note). Lower than the engine's own default (1,500,000), since the search holds
@@ -45,31 +45,15 @@ export function tierText(spd, level, haste = 0) {
   return `tier starts at ${t.start + sub}${t.next != null ? `, next at ${t.next + sub} (+${t.next - spd})` : ''}`;
 }
 
-/* The settings an optimizer result depends on, as one string: a result is for the current settings exactly when it
-   was solved with the same key. Read synchronously, it also makes an effect track every one of them (the optimizer
-   component). */
+/* The optimizer's settings: every field of the store's `opt` (state.js defaultState), so a field added there is part of
+   optimizerKey without another edit. */
+const OPT_KEYS = Object.freeze(Object.keys(defaultState().opt));
+
+/* The settings an optimizer result depends on, as one string: the job and sync settings and every optimizer setting
+   (OPT_KEYS). A result is for the current settings exactly when it was solved with the same key. Read synchronously,
+   it also makes an effect track every one of them (the optimizer component). */
 export function optimizerKey(app) {
-  const o = app.opt;
-  return JSON.stringify([
-    app.job,
-    app.cap,
-    app.sync,
-    app.level,
-    o.target,
-    o.tb,
-    o.tb2,
-    o.exclude.join(),
-    o.market,
-    o.expOff.join(),
-    o.min,
-    o.max,
-    o.lvl,
-    o.melds,
-    o.food,
-    o.gcd,
-    o.gcdMode,
-    o.byTier,
-  ]);
+  return JSON.stringify([app.job, app.cap, app.sync, app.level, ...OPT_KEYS.map(k => app.opt[k])]);
 }
 
 /* What the character panel adds to a stat at `level`: the character's base (statBase). For the main stat and Vitality

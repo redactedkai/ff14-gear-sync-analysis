@@ -17,6 +17,7 @@ import {
   mealEmptyReason,
   mealPillOff,
   mealsPassing,
+  optimizerKey,
   optimizerView,
   panelBase,
   relicsLeftOut,
@@ -31,7 +32,7 @@ import { browseFiltered, gearView, markWords } from '../../src/ui/views/gear.js'
 import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { MAX_REAL } from '../../src/core/tables.js';
-import { DEFAULT_EXCLUDE, shownSync, syncSettings } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE, defaultState, shownSync, syncSettings } from '../../src/ui/state.js';
 import { fmtInt } from '../../src/ui/helpers.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
@@ -1039,4 +1040,19 @@ test('fmtInt: thousands separators in en-US whatever the browser locale', () => 
     Number.prototype.toLocaleString = plain;
   }
   assert.deepEqual(asked, ['en-US']);
+});
+
+/* Audit 02, finding 6: a new optimizer setting had to be added to optimizerKey by hand, or a result never showed as
+   out of date after it changed. Every field of opt, and the job and sync settings, must change the key. */
+test('optimizerKey: every optimizer, job and sync setting changes it', () => {
+  const other = v => (typeof v === 'boolean' ? !v : Array.isArray(v) ? [...v, 'x'] : v === 'x' ? 'y' : 'x');
+  const app = makeApp('WAR');
+  const key = optimizerKey(app);
+  for (const field of Object.keys(defaultState().opt)) {
+    const changed = { ...app, opt: { ...app.opt, [field]: other(app.opt[field]) } };
+    assert.notEqual(optimizerKey(changed), key, `opt.${field}`);
+  }
+  for (const field of ['job', 'cap', 'sync', 'level']) assert.notEqual(optimizerKey({ ...app, [field]: other(app[field]) }), key, field);
+  // the menu-only and display state is not part of it
+  assert.equal(optimizerKey({ ...app, tab: 'browse', browse: { ...app.browse, q: 'ring' } }), key);
 });
