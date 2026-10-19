@@ -3,7 +3,7 @@
    counts and, while a filter is changed, Reset at their end (its place kept while hidden); one row of filters; sorting from the table's
    headings. */
 import Alpine from 'alpinejs';
-import { DEFAULT_EXCLUDE } from '../state.js';
+import { defaultBrowse } from '../state.js';
 import { browseFiltered, gearView } from '../views/gear.js';
 import { expansionToggles, gearFromToggles } from '../helpers.js';
 
@@ -44,18 +44,10 @@ export function gear() {
     get filtered() {
       return browseFiltered(this.job, this.$store.app.browse);
     },
-    /* Reset filters: every filter back to its default (the sort stays) */
+    /* Reset filters: every filter back to its default (defaultBrowse; the sort stays) */
     resetBrowseFilters() {
-      Object.assign(this.$store.app.browse, {
-        q: '',
-        type: 'any',
-        min: '',
-        max: '',
-        lvl: this.job.maxLevel,
-        expOff: [],
-        exclude: [...DEFAULT_EXCLUDE],
-        market: true,
-      });
+      const { sort, dir, ...filters } = defaultBrowse(this.job);
+      Object.assign(this.$store.app.browse, filters);
     },
     /* "/" anywhere on the tab but in a box jumps to the name search, as on many sites */
     slashToSearch(event) {

@@ -68,6 +68,27 @@ export function limitCapToLevel(app) {
   return lowered;
 }
 
+/* The Gear browser's settings at their defaults for `job` (a JobContext, or null before one is chosen). The one copy of
+   them: defaultState, the job reset (resetForJob), Reset filters (components/gear.js) and its check (views/gear.js
+   browseFiltered) all read it. expOff: expansions switched off. exclude: ACTIVITIES keys ("Gear from" boxes) left out;
+   market: tradeable pieces listed whatever their source (the market board switch, on by default). lvl: the "Equip
+   level" filter, the job's level cap (DEFAULT_LEVEL with no job). sort: the table heading it is sorted by ('name',
+   'lvl', 'ilvl' or a stat); dir: 'desc' (high first) or 'asc'. */
+export function defaultBrowse(job = null) {
+  return {
+    q: '',
+    type: 'any',
+    expOff: [],
+    exclude: [...DEFAULT_EXCLUDE],
+    market: true,
+    min: '',
+    max: '',
+    lvl: job?.maxLevel ?? DEFAULT_LEVEL,
+    sort: 'ilvl',
+    dir: 'desc',
+  };
+}
+
 export const STORE_KEY = 'ilvl-stat-lab-v4';
 export const TABS = ['opt', 'browse', 'math'];
 export const MATH_TABS = ['piece', 'gcd', 'tiers'];
@@ -83,21 +104,8 @@ export function defaultState() {
     // How the math works: the piece's item level (null: the cap; explainerItemLevel in views/sync-explainer.js),
     // slot and two ranked substats
     piece: { ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
-    // the Gear browser's filters. expOff: expansions switched off. exclude: ACTIVITIES keys ("Gear from" boxes) left out;
-    // market: tradeable pieces listed whatever their source (the market board switch, on by default). sort: the table
-    // heading it is sorted by ('name', 'lvl', 'ilvl' or a stat); dir: 'desc' (high first) or 'asc'
-    browse: {
-      q: '',
-      type: 'any',
-      expOff: [],
-      exclude: [...DEFAULT_EXCLUDE],
-      market: true,
-      min: '',
-      max: '',
-      lvl: 100,
-      sort: 'ilvl',
-      dir: 'desc',
-    },
+    // the Gear browser's filters and sort (defaultBrowse)
+    browse: defaultBrowse(),
     // melds: give pieces their best materia melds. expOff, exclude, market, min, max, lvl: Gear to search, the browser's
     // filters with their own values. food: add the best meal for the goal to the result (a meal picked from the Food
     // row's menu is not saved, like the rows' picks; a save's old foodPair is dropped). gcd: the Target GCD in seconds,
@@ -144,9 +152,10 @@ export function resetForJob(s, job) {
   s.opt.tb = '';
   s.opt.tb2 = '';
   s.opt.gcd = ''; // the GCDs a job can reach depend on its haste
-  s.browse.type = 'any';
-  s.browse.sort = 'ilvl';
-  s.browse.dir = 'desc';
+  const browse = defaultBrowse(job);
+  s.browse.type = browse.type;
+  s.browse.sort = browse.sort;
+  s.browse.dir = browse.dir;
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */

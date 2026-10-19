@@ -2,9 +2,18 @@
    falls back to its default on its own, leaving the rest. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restoreState, defaultState, resetForJob, defaultSubs, DEFAULT_EXCLUDE, limitCapToLevel } from '../../src/ui/state.js';
+import {
+  restoreState,
+  defaultState,
+  defaultBrowse,
+  resetForJob,
+  defaultSubs,
+  DEFAULT_EXCLUDE,
+  limitCapToLevel,
+} from '../../src/ui/state.js';
+import { browseFiltered } from '../../src/ui/views/gear.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { DEFAULT_JOB } from '../../src/core/constants.js';
+import { DEFAULT_JOB, JOBS } from '../../src/core/constants.js';
 import { MAX_REAL } from '../../src/core/tables.js';
 import { capCeiling } from '../../src/core/sync-target.js';
 
@@ -362,4 +371,19 @@ test('restoreState: a job at its own level cap keeps its saved cap, as the live 
   }
   // below the job's level cap, level sync applies and the cap is still lowered
   assert.equal(restoreState({ job: 'BLU', sync: true, cap: 700, level: 70 }).cap, capCeiling(70));
+});
+
+/* Audit 02, finding 7: the browser's defaults were written in defaultState, Reset filters and browseFiltered, with
+   the equip level as 100 in one and the job's level cap in the others. defaultBrowse is the one copy. */
+test('defaultBrowse: what a job starts with, and no filter by its own check', () => {
+  for (const [id] of JOBS) {
+    const job = makeJobContext(id);
+    assert.deepEqual(restoreState({ job: id }).browse, defaultBrowse(job), id);
+    assert.equal(defaultBrowse(job).lvl, job.maxLevel, id);
+    assert.equal(browseFiltered(job, defaultBrowse(job)), false, id);
+  }
+  assert.deepEqual(defaultState().browse, defaultBrowse(null));
+  assert.equal(defaultBrowse(null).lvl, 100);
+  // each call is a fresh object: Reset filters assigns its arrays into the store
+  assert.notEqual(defaultBrowse(null).exclude, defaultBrowse(null).exclude);
 });

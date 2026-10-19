@@ -16,7 +16,7 @@ import {
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { fmtInt } from '../helpers.js';
-import { DEFAULT_EXCLUDE, gearFilter, syncSettings } from '../state.js';
+import { defaultBrowse, gearFilter, syncSettings } from '../state.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
 export const SHOW_LIMIT = 100; /* rows rendered */
@@ -56,19 +56,23 @@ export function markWords(name, query) {
   return parts;
 }
 
-/* Whether any of the browser's filters is off its default (Reset filters shows only then): the name search, the slot,
-   the item level range, the equip level (its default is the job's level cap, or empty), the expansions, or Gear from
-   (its boxes or the market board switch). The sort is not a filter. */
+/* The same keys, in any order. */
+const sameSet = (a, b) => [...a].sort().join() === [...b].sort().join();
+
+/* Whether any of the browser's filters is off its default (defaultBrowse; Reset filters shows only then): the name
+   search (spaces aside), the slot, the item level range, the equip level (empty or the job's level cap is no filter), the
+   expansions, or Gear from (its boxes in any order, or the market board switch). The sort is not a filter. */
 export function browseFiltered(job, b) {
+  const d = defaultBrowse(job);
   return (
-    !!b.q.trim() ||
-    b.type !== 'any' ||
-    b.min !== '' ||
-    b.max !== '' ||
-    (b.lvl !== '' && b.lvl < job.maxLevel) ||
-    b.expOff.length > 0 ||
-    !b.market ||
-    [...b.exclude].sort().join() !== [...DEFAULT_EXCLUDE].sort().join()
+    b.q.trim() !== d.q ||
+    b.type !== d.type ||
+    b.min !== d.min ||
+    b.max !== d.max ||
+    (b.lvl !== '' && b.lvl < d.lvl) ||
+    !sameSet(b.expOff, d.expOff) ||
+    b.market !== d.market ||
+    !sameSet(b.exclude, d.exclude)
   );
 }
 
