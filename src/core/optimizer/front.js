@@ -17,6 +17,7 @@
    search's: a slot is empty when a chosen piece blocks it (checked on the whole loadout), when it has no candidates,
    or, for the second ring, when no ring has a copy left; the two ring slots are filled together, as a pair (the same
    item twice only with 2 copies). */
+import { blockableTypes, positionMask, slotPositions } from './slot-index.js';
 
 /* The most entries one slot's front may hold, and the most extensions it may try over all slots (front x choices), before
    frontSearch gives up (the caller then searches as before). */
@@ -37,17 +38,11 @@ const FRONT_COMPARES = 30000000;
 export function frontSearch(slotList, posList, limits, known = -Infinity) {
   const n = slotList.length;
   const nL = limits.length;
-  const posOf = new Map(slotList.map((t, i) => [t, i]));
-  const bitOf = t => (posOf.has(t) ? 1 << posOf.get(t) : 0);
+  // each candidate's blocked slots, and every slot some candidate can block, as position masks
+  const positions = slotPositions(slotList);
   const blocksOf = new Map();
-  for (const list of posList)
-    for (const a of list)
-      if (!blocksOf.has(a))
-        blocksOf.set(
-          a,
-          a.blocks.reduce((m, b) => m | bitOf(b), 0),
-        );
-  const blockable = posList.reduce((m, list) => m | list.reduce((x, a) => x | blocksOf.get(a), 0), 0);
+  for (const list of posList) for (const cand of list) if (!blocksOf.has(cand)) blocksOf.set(cand, positionMask(cand.blocks, positions));
+  const blockable = positionMask([...blockableTypes(posList)], positions);
   // a limited total as entries compare it: capped at the minimum unless the stat has a maximum
   const capOf = limits.map(l => (l.max == null ? (l.min > 0 ? l.min : 0) : Infinity));
   // how entries compare on each limit: a band (speed's, exactK) only between equal totals; a maximum only, less is

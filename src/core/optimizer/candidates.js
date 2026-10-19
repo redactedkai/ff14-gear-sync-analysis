@@ -19,6 +19,7 @@ import { capsFor, syncStats } from '../formulas.js';
 import { equipLevel, meldInfo, scalesWithLevel, slotInfo } from '../items.js';
 import { bestMeld, meldCaps, meldVersions } from '../meld.js';
 import { syncTarget } from '../sync-target.js';
+import { blockableTypes, typeMask } from './slot-index.js';
 
 /* The item level a pool item is synced to, or null when it is untouched (syncTarget). sync = {cap, sync, level}: the
    item level cap, whether item level sync is on (with a cap set), and the synced character level (null or missing: no
@@ -230,20 +231,14 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpd = false) {
     for (const group of bySpd.values()) for (const a of pruneForLimits(group, slotsOfType, stats)) kept.add(a);
     return arr.filter(a => kept.has(a));
   }
-  // blocked slots as a bit mask, so the inner loop does no allocation
-  const slotBit = new Map();
-  const maskOf = a =>
-    a.blocks.reduce((m, t) => {
-      if (!slotBit.has(t)) slotBit.set(t, 1 << slotBit.size);
-      return m | slotBit.get(t);
-    }, 0);
+  // blocked slots as a bit mask (typeMask), so the inner loop does no allocation
   // the kept candidates' score, limited values (keptValues[k][j] for stats[k]) and mask, in arrays for the inner loop
   const keep = [],
     keptScore = [],
     keptValues = stats.map(() => []),
     keptMask = [];
   for (const cand of arr) {
-    const candMask = maskOf(cand),
+    const candMask = typeMask(cand.blocks),
       candValues = stats.map(s => cand.eff[s] || 0);
     let copies = 0;
     const counted = new Set();
@@ -311,7 +306,7 @@ export function buildCandidates(
           )
         : items.map(it => itemCandidate(job, it, sync, keys));
   });
-  const blockable = new Set(SLOT_TYPES.flatMap(t => candsByType[t].flatMap(a => a.blocks)));
+  const blockable = blockableTypes(SLOT_TYPES.map(t => candsByType[t]));
   // slots some candidate can leave empty go last, so the search knows whether a chosen piece blocks them
   const order = [...SLOT_TYPES.filter(t => !blockable.has(t)), ...SLOT_TYPES.filter(t => blockable.has(t))];
   const slotList = [];
