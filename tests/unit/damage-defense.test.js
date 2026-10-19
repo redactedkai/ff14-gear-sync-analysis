@@ -99,6 +99,6 @@ test('a speed limit only a lower weapon meets: the most weapon damage that meets
 test('same result: a weapon with less weapon damage is not the same result', () => {
   const ctx = { level: 100, food: null, haste: 0, goal: null };
   const t = { main: 800, vit: 800, crit: 400, det: 300, dh: 0, spd: 0, spec: 0 };
-  assert.notEqual(resultOf(sge, { ...t, wd: 157 }, ctx), resultOf(sge, { ...t, wd: 156 }, ctx));
-  assert.equal(resultOf(sge, { ...t, wd: 157 }, ctx), resultOf(sge, { ...t, wd: 157 }, ctx));
+  assert.notDeepEqual(resultOf(sge, { ...t, wd: 157 }, ctx), resultOf(sge, { ...t, wd: 156 }, ctx));
+  assert.deepEqual(resultOf(sge, { ...t, wd: 157 }, ctx), resultOf(sge, { ...t, wd: 157 }, ctx));
 });

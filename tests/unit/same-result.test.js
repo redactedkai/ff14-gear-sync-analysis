@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { equipLevel, mkItem, poolKey } from '../../src/core/items.js';
-import { resultOf, sameResult } from '../../src/core/same-result.js';
+import { resultOf, sameOutcome, sameResult } from '../../src/core/same-result.js';
 import { dotMult, gcdFor } from '../../src/core/speed.js';
 import { rankTierOf, statTier } from '../../src/core/tiers.js';
 import { optimizerView } from '../../src/ui/views/optimizer.js';
@@ -42,9 +42,9 @@ function sharedSpare() {
 test('resultOf: points within a tier give the same result, a tier lost or a main stat point does not', () => {
   const start = statTier(sge, 'crit', 1000, 100).start;
   const at = crit => resultOf(sge, { main: 300, crit }, CTX);
-  assert.equal(at(start), at(start + 1));
-  assert.notEqual(at(start - 1), at(start));
-  assert.notEqual(resultOf(sge, { main: 301, crit: start }, CTX), at(start));
+  assert.deepEqual(at(start), at(start + 1));
+  assert.notDeepEqual(at(start - 1), at(start));
+  assert.notDeepEqual(resultOf(sge, { main: 301, crit: start }, CTX), at(start));
 });
 
 test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (owner, 2026-10-16)', () => {
@@ -52,16 +52,17 @@ test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (o
   let spd = 400;
   while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) spd++;
   const at = points => resultOf(sge, { main: 300, spd: points }, CTX);
-  assert.equal(at(spd - 1), at(spd));
+  assert.deepEqual(at(spd - 1), at(spd));
   // a GCD step lost is a different result
   let step = 400;
   while (gcdFor(step, 100) === gcdFor(step - 1, 100)) step++;
-  assert.notEqual(at(step - 1), at(step));
+  assert.notDeepEqual(at(step - 1), at(step));
 });
 
 test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) may drop (owner, 2026-10-16)', () => {
   const war = makeJobContext('WAR');
-  const at = (ten, mitigation) => resultOf(war, { main: 300, spec: ten }, CTX) === resultOf(war, { main: 300, spec: mitigation }, CTX);
+  const at = (ten, mitigation) =>
+    sameOutcome(resultOf(war, { main: 300, spec: ten }, CTX), resultOf(war, { main: 300, spec: mitigation }, CTX));
   // the first Tenacity above 400 where one step moves and the other doesn't, each way
   const mit = rankTierOf(war, 'spec', 100);
   const dmg = p => statTier(war, 'spec', p, 100).effect;
@@ -76,8 +77,8 @@ test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) 
 test('resultOf: the goal stat keeps its exact points when asked (the plain optimizer), only its tier without (tier ranking)', () => {
   const start = statTier(sge, 'crit', 1000, 100).start;
   const at = (crit, goal) => resultOf(sge, { main: 300, crit }, { ...CTX, goal });
-  assert.notEqual(at(start, 'crit'), at(start + 5, 'crit'));
-  assert.equal(at(start, null), at(start + 5, null));
+  assert.notDeepEqual(at(start, 'crit'), at(start + 5, 'crit'));
+  assert.deepEqual(at(start, null), at(start + 5, null));
 });
 
 test('each swap alone fits, so both rows list their other piece; the shown set keeps the result', () => {
@@ -106,7 +107,7 @@ test('rows share their spare points: after one swap, the other row no longer off
     ['Body A'],
   );
   const totals = Object.fromEntries(sge.stats.map(s => [s, rows.reduce((n, r) => n + r.pick.eff[s], 0)]));
-  assert.equal(resultOf(sge, totals, CTX), resultOf(sge, { main: 300, crit: statTier(sge, 'crit', 1000, 100).start }, CTX));
+  assert.deepEqual(resultOf(sge, totals, CTX), resultOf(sge, { main: 300, crit: statTier(sge, 'crit', 1000, 100).start }, CTX));
 });
 
 test('a pick that no longer fits is ignored', () => {

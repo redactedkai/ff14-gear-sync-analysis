@@ -662,7 +662,7 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 | Which slots a job uses | `src/core/job-context.js` (`activeSlotTypes` in `makeJobContext`) |
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
-| Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameResult`); the menus in `src/ui/views/optimizer.js` (`sameCandidates`, `sameMenu`); the unpruned candidates are `buildCandidates` with pruning off |
+| Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameOutcome`, `sameResult`); the menus in `src/ui/views/optimizer.js` (`sameCandidates`, `sameMenu`); the unpruned candidates are `buildCandidates` with pruning off |
 | The Food row's menu | `allMeals` in `src/core/food.js`, `sameMeals` in `src/core/same-result.js`; `foodRow` in `src/ui/views/optimizer.js`; its search, pills and switch in `src/ui/components/optimizer.js` (`mealGroups`) |
 | Page use: the job's gear, Gear from, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `relicsLeftOut`, `emptyGearFrom`, `NODE_LIMIT`, `optimizerView`); the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.js`; the menu `gearFromToggles` in `src/ui/helpers.js` |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |

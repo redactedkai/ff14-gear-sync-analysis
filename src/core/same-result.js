@@ -13,19 +13,31 @@
    found.
    Rows share their spare points: two swaps that are each fine alone can push a tier down together. So every check is
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
+import { WD_KEY } from './damage-defense.js';
 import { foodBonus, withFood } from './food.js';
 import { equipLevel, poolKey, slotInfo } from './items.js';
 import { vectorDims } from './optimizer/candidates.js';
 import { rankTierOf } from './tiers.js';
 
-/* What a set does, as one comparable string: its main stat, its weapon damage (wd; empty for a job that does not rank
-   it), the goal stat's points if asked, then each substat's tiers, from gear totals ({neutral stat: points}) with the meal's bonus. ctx = {level, food, haste, goal}: the synced
-   level, the meal (a foodChoices entry) or null, the job's always-on haste in percent (hasteFor; 0 for none), and the
-   neutral stat whose exact points must stay (the plain optimizer's goal), or null for tiers only (tier ranking). */
+/* What a set does, from gear totals ({neutral stat: points}, and weapon damage under WD_KEY) with the meal's bonus:
+   {main, wd, goal, tiers}: its main stat; its weapon damage (null for a job that does not rank it); the goal stat's
+   points if asked (else null); each substat's tier in job.substats order (rankTierOf; null for a stat without tiers).
+   Two results are the same when sameOutcome says so. ctx = {level, food, haste, goal}: the synced level, the meal (a
+   foodChoices entry) or null, the job's always-on haste in percent (hasteFor; 0 for none), and the neutral stat whose
+   exact points must stay (the plain optimizer's goal), or null for tiers only (tier ranking). */
 export function resultOf(job, gearTotals, { level, food, haste = 0, goal = null }) {
-  const t = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
-  const tiers = job.substats.map(s => rankTierOf(job, s, level, haste)?.(t[s] || 0) ?? '');
-  return [t.main || 0, job.damageKey ? t.wd || 0 : '', goal ? t[goal] || 0 : '', ...tiers].join('|');
+  const totals = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
+  return {
+    main: totals.main || 0,
+    wd: job.damageKey ? totals[WD_KEY] || 0 : null,
+    goal: goal ? totals[goal] || 0 : null,
+    tiers: job.substats.map(s => rankTierOf(job, s, level, haste)?.(totals[s] || 0) ?? null),
+  };
+}
+
+/* True when two resultOf results (of the same job and ctx) are the same: equal in every field. */
+export function sameOutcome(a, b) {
+  return a.main === b.main && a.wd === b.wd && a.goal === b.goal && a.tiers.every((tier, i) => tier === b.tiers[i]);
 }
 
 /* The pieces each row can show without changing the result, and the piece it shows.
@@ -55,7 +67,7 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
     const rest = sumOf(job, others);
     // the main stat has no tiers and food never raises it: a piece must bring exactly what the set is missing (a
     // cheap first check that rules out most of the pool)
-    const mainNeeded = mainOf(target) - rest.main;
+    const mainNeeded = target.main - rest.main;
     const out = [];
     const seen = new Set();
     for (const c of cands[p.type] || []) {
@@ -64,7 +76,7 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
       if ((c.copies || 1) === 1 && others.some(o => o.item === c.item)) continue;
       const totals = { ...rest };
       for (const s of vectorDims(job)) totals[s] = (totals[s] || 0) + (c.eff[s] || 0);
-      if (resultOf(job, totals, ctx) !== target) continue;
+      if (!sameOutcome(resultOf(job, totals, ctx), target)) continue;
       seen.add(c.item);
       out.push(c);
     }
@@ -98,16 +110,17 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
    under tier ranking or a Target GCD another meal could make the search choose other gear, which this does not check. */
 export function sameMeals(job, gearTotals, meal, meals, ctx, keys) {
   const exact = keys.filter(k => k && !rankTierOf(job, k, ctx.level, ctx.haste ?? 0));
+  // the result with meal `m`, and its totals with food on the exact keys
   const resultWith = m => {
-    const t = withFood(gearTotals, foodBonus(job, m, gearTotals, ctx.level));
-    return resultOf(job, gearTotals, { ...ctx, food: m }) + '|' + exact.map(k => t[k] || 0).join();
+    const totals = withFood(gearTotals, foodBonus(job, m, gearTotals, ctx.level));
+    return { result: resultOf(job, gearTotals, { ...ctx, food: m }), exact: exact.map(k => totals[k] || 0) };
   };
   const target = resultWith(meal);
-  return meals.filter(m => resultWith(m) === target);
+  return meals.filter(m => {
+    const other = resultWith(m);
+    return sameOutcome(other.result, target.result) && other.exact.every((points, i) => points === target.exact[i]);
+  });
 }
-
-/* The main stat of a resultOf string. */
-const mainOf = result => Number(result.slice(0, result.indexOf('|')));
 
 /* The gear totals of a list of picks ({eff}; empty slots count nothing): the job's stats, and weapon damage when the job
    ranks it (vectorDims). */
