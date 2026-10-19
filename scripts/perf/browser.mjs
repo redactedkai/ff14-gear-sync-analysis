@@ -22,6 +22,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { STORE_KEY } from '../../src/ui/state.js';
+import { listOption, numberOption } from './args.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PAGE = pathToFileURL(resolve(ROOT, 'dist', 'index.html')).href;
@@ -37,10 +38,6 @@ try {
 } catch (e) {}
 `;
 
-const arg = (name, dflt) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i < 0 ? dflt : process.argv[i + 1];
-};
 const median = xs => {
   const s = [...xs].sort((a, b) => a - b);
   const m = s.length >> 1;
@@ -159,9 +156,9 @@ async function coldAndWarm(browser, state, rate, targets, warm) {
 const fmt = xs => `median ${median(xs).toFixed(0)}, max ${Math.max(...xs).toFixed(0)}`;
 
 async function main() {
-  const runsN = Number(arg('runs', 5));
-  const jobs = arg('jobs', 'PLD,SGE').split(',');
-  const rates = arg('rates', '1,4,6').split(',').map(Number);
+  const runsN = numberOption('runs', 5);
+  const jobs = listOption('jobs', ['PLD', 'SGE']);
+  const rates = listOption('rates', ['1', '4', '6']).map(Number);
   mkdirSync(OUT, { recursive: true });
   const results = [];
   const browser = await chromium.launch();

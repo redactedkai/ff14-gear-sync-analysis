@@ -8,8 +8,8 @@
      must give the same score or also find nothing;
    - per task, small random pools against the exhaustive reference (tests/unit/helpers/exhaustive.js), which shares
      no code with meld versions, pruning or the search.
-   node scripts/perf/target-gcd-sweep.mjs [workers=5] [jobs=all] [resume]
-   resume keeps the rows already in the output and runs only the job x sync tasks missing from it (a task's rows are
+   node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]
+   --resume keeps the rows already in the output and runs only the job x sync tasks missing from it (a task's rows are
    written together, so a task is either there whole or not at all).
    Writes scripts/perf/out/target-gcd-sweep.jsonl (one row per run) and prints progress and a summary. */
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -20,12 +20,13 @@ const ROOT = new URL('../../', import.meta.url).href;
 
 if (isMainThread) {
   const { JOB_IDS, SYNCS } = await import('./workloads.mjs');
-  const nWorkers = Number(process.argv[2] || 5);
-  const jobs = process.argv[3] ? process.argv[3].split(',') : JOB_IDS;
+  const { flag, listOption, numberOption } = await import('./args.mjs');
+  const nWorkers = numberOption('workers', 5);
+  const jobs = listOption('jobs', JOB_IDS);
   mkdirSync(new URL('./out/', import.meta.url), { recursive: true });
   const outFile = new URL('./out/target-gcd-sweep.jsonl', import.meta.url);
   const all = [];
-  if (process.argv[4] === 'resume' && existsSync(outFile)) {
+  if (flag('resume') && existsSync(outFile)) {
     for (const l of readFileSync(outFile, 'utf8').split('\n')) if (l) all.push(JSON.parse(l));
   } else writeFileSync(outFile, '');
   const taskKey = (id, s) => `${id}|${s.level}|${s.cap}|${s.sync}`;

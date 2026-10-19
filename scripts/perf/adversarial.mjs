@@ -10,15 +10,12 @@ import { performance } from 'node:perf_hooks';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { numberOption } from './args.mjs';
 import { fullPool, job as ctx, rng } from './workloads.mjs';
 
-const arg = (name, dflt) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i < 0 ? dflt : Number(process.argv[i + 1]);
-};
-const nPools = arg('pools', 2000);
-const nClimb = arg('climb', 400);
-const r = rng(arg('seed', 1));
+const nPools = numberOption('pools', 2000);
+const nClimb = numberOption('climb', 400);
+const r = rng(numberOption('seed', 1));
 const int = (lo, hi) => lo + Math.floor(r() * (hi - lo + 1));
 const pick = xs => xs[Math.floor(r() * xs.length)];
 

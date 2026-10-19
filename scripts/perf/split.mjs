@@ -9,18 +9,15 @@ import { bestMeld } from '../../src/core/meld.js';
 import { buildCandidates, effStats, itemSyncIlvl, makeScorer, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
 import { branchAndBound } from '../../src/core/optimizer/search.js';
 import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { flag, listOption, numberOption, option } from './args.mjs';
 import { fullPool, job as ctx, SYNCS } from './workloads.mjs';
 
-const arg = (name, dflt) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i < 0 ? dflt : process.argv[i + 1];
-};
-const job = ctx(arg('job', 'SGE'));
-const sync = SYNCS.find(s => s.label === arg('sync', 'off'));
-const target = arg('target', 'spd');
-const tiebreak = arg('tb', '') ? arg('tb').split(',') : [];
-const melds = process.argv.includes('--melds');
-const repeats = Number(arg('repeats', 20));
+const job = ctx(option('job', 'SGE'));
+const sync = SYNCS.find(s => s.label === option('sync', 'off'));
+const target = option('target', 'spd');
+const tiebreak = listOption('tb', []);
+const melds = flag('melds');
+const repeats = numberOption('repeats', 20);
 if (!sync) throw new Error(`unknown sync; one of: ${SYNCS.map(s => s.label).join(', ')}`);
 
 const pool = fullPool(job);

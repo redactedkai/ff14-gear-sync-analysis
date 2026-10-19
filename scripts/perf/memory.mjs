@@ -3,11 +3,11 @@
    node --expose-gc scripts/perf/memory.mjs [--jobs SGE,WAR] */
 import { meldCacheStats } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { listOption } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesFull, SYNCS } from './workloads.mjs';
 
 if (!global.gc) throw new Error('run with node --expose-gc');
-const i = process.argv.indexOf('--jobs');
-const jobIds = i < 0 ? JOB_IDS : process.argv[i + 1].split(',');
+const jobIds = listOption('jobs', JOB_IDS);
 const syncs = SYNCS.filter(s => ['off', 'cap 123', 'cap 660', 'lvl 90 cap 635'].includes(s.label));
 const heap = () => {
   global.gc();

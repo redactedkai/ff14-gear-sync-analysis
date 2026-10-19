@@ -10,13 +10,10 @@ import { pathToFileURL } from 'node:url';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
 import { buildCandidates, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
+import { flag, option } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesLite, SYNCS } from './workloads.mjs';
 
-const arg = name => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i < 0 ? null : process.argv[i + 1];
-};
-const base = arg('baseline');
+const base = option('baseline');
 if (!base) throw new Error('--baseline <dir> is required');
 const sha = p => createHash('sha256').update(readFileSync(p)).digest('hex');
 if (sha(`${base}/src/data/items.json`) !== sha('src/data/items.json'))
@@ -27,8 +24,8 @@ const B = {
   optimize: (await imp('core/optimizer/index.js')).optimize,
   ctx: (await imp('core/job-context.js')).makeJobContext,
 };
-const nodesMayDiffer = process.argv.includes('--nodes-may-differ');
-const jobIds = process.argv.includes('--quick') ? ['SGE', 'WAR', 'PLD', 'BLM'] : JOB_IDS;
+const nodesMayDiffer = flag('nodes-may-differ');
+const jobIds = flag('quick') ? ['SGE', 'WAR', 'PLD', 'BLM'] : JOB_IDS;
 
 // the parts of a result that must be equal; items by pool key, so both module copies' objects compare
 const key = i => (i ? `${i.name}|${i.type}|${i.ilvl}` : null);

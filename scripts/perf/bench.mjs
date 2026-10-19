@@ -9,17 +9,13 @@ import { withActivities } from '../../src/core/items.js';
 import { meldCacheStats } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { flag, listOption, numberOption, option } from './args.mjs';
 import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.mjs';
 
-const arg = (name, dflt) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i < 0 ? dflt : process.argv[i + 1];
-};
-const flag = name => process.argv.includes(`--${name}`);
-const workload = arg('workload', 'W1');
-const repeats = Number(arg('repeats', 2));
+const workload = option('workload', 'W1');
+const repeats = numberOption('repeats', 2);
 const QUICK = ['SGE', 'WAR', 'PLD', 'BLM', 'DNC', 'SAM'];
-const jobIds = arg('jobs') ? arg('jobs').split(',') : flag('quick') ? QUICK : JOB_IDS;
+const jobIds = listOption('jobs', flag('quick') ? QUICK : JOB_IDS);
 
 function median(xs) {
   const s = [...xs].sort((a, b) => a - b);

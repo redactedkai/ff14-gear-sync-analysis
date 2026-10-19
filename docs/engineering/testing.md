@@ -179,7 +179,7 @@ Which command runs which check? Run from the repository root.
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
 | `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
-| `node scripts/perf/target-gcd-sweep.mjs [workers] [jobs]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
+| `node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
 
 Notes on the pass/fail commands:
 
@@ -190,7 +190,7 @@ Notes on the pass/fail commands:
 
 Notes on the measurements and checks run by hand (none is part of `npm run check`):
 
-- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit that you make yourself, outside the repo or under the gitignored `scripts/perf/out/` (how to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14)).
+- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit that you make yourself, outside the repo or under the gitignored `scripts/perf/out/` (how to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#stress-test-2026-10-14)). Every perf script takes its options the same way, `--name value` or a bare `--flag` (`scripts/perf/args.mjs`).
 - **`target-gcd-sweep.mjs`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
   - every job;
   - every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync);
