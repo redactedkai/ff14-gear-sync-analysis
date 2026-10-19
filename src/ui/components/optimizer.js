@@ -3,7 +3,16 @@
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
    from" boxes still follow the settings as they change. */
 import Alpine from 'alpinejs';
-import { emptyGearFrom, optimizerKey, optimizerView, resultPanel, searchCount } from '../views/optimizer.js';
+import {
+  emptyGearFrom,
+  mealEmptyReason,
+  mealPillOff,
+  mealsPassing,
+  optimizerKey,
+  optimizerView,
+  resultPanel,
+  searchCount,
+} from '../views/optimizer.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
 
 const DEBOUNCE_MS = 120;
@@ -30,6 +39,9 @@ export function optimizer() {
     mealOpen: false,
     mealQuery: '',
     mealStats: [],
+    /* the search (lastDeps) the pills were last preset for: the menu presets them once per Optimize, then keeps the
+       player's changes */
+    mealPresetFor: null,
     mealBestOnly: true,
     /* the ? note of the "Spare points to tiebreaks" switch (tier ranking): open or not */
     rankHelp: false,
@@ -127,6 +139,11 @@ export function optimizer() {
     toggleMealMenu() {
       this.mealOpen = !this.mealOpen;
       if (!this.mealOpen) return;
+      // the first opening after an Optimize starts from the goal's stats (view.food.menu.preset)
+      if (this.mealPresetFor !== this.lastDeps) {
+        this.mealStats = [...(this.view?.food?.menu?.preset ?? [])];
+        this.mealPresetFor = this.lastDeps;
+      }
       // after x-show has shown the menu (a hidden box takes no focus and has no layout)
       this.$nextTick(() =>
         requestAnimationFrame(() => {
@@ -137,22 +154,41 @@ export function optimizer() {
         }),
       );
     },
-    /* A stat pill: on or off; a third stays off (no meal has three stats; the template greys it out). */
+    /* A stat pill: on or off; a greyed-out one stays off (mealPillOff: a third, or one that would leave no meal). */
     toggleMealStat(stat) {
       if (this.mealStats.includes(stat)) this.mealStats = this.mealStats.filter(s => s !== stat);
-      else if (this.mealStats.length < 2) this.mealStats = [...this.mealStats, stat];
+      else if (!this.mealPillOff(stat)) this.mealStats = [...this.mealStats, stat];
+    },
+    /* the Food menu's filters now: its pills, search text and "Best for goal" switch (views mealsPassing) */
+    get mealFilters() {
+      return { stats: this.mealStats, query: this.mealQuery, bestOnly: this.mealBestOnly };
+    },
+    /* every meal of the Food menu, in its order */
+    get mealItems() {
+      return (this.view?.food?.menu?.groups ?? []).flatMap(g => g.items);
+    },
+    mealPillOff(stat) {
+      return mealPillOff(this.mealItems, stat, this.mealFilters);
     },
     /* The Food menu's groups after its switch, pills and search: [{label, items}] (view.food.menu.groups, empty groups
        dropped). */
     get mealGroups() {
-      const menu = this.view?.food?.menu;
-      if (!menu) return [];
-      const words = this.mealQuery.toLowerCase().split(/\s+/).filter(Boolean);
-      const fits = x =>
-        (!this.mealBestOnly || x.best) &&
-        this.mealStats.every(s => x.stats.includes(s)) &&
-        words.every(w => x.name.toLowerCase().includes(w));
-      return menu.groups.map(g => ({ label: g.label, items: g.items.filter(fits) })).filter(g => g.items.length);
+      // by key: Alpine's proxies make the same meal two different objects on two reads
+      const passing = new Set(mealsPassing(this.mealItems, this.mealFilters).map(x => x.key));
+      return (this.view?.food?.menu?.groups ?? [])
+        .map(g => ({ label: g.label, items: g.items.filter(x => passing.has(x.key)) }))
+        .filter(g => g.items.length);
+    },
+    /* why the list is empty and the way out ({text, action}), or null (views mealEmptyReason) */
+    get mealEmpty() {
+      const short = Object.fromEntries((this.view?.food?.menu?.pills ?? []).map(p => [p.stat, p.short]));
+      return mealEmptyReason(this.mealItems, this.mealFilters, short);
+    },
+    /* the empty list's button: undo the filter that empties it */
+    clearMealFilter(action) {
+      if (action === 'query') this.mealQuery = '';
+      else if (action === 'best') this.mealBestOnly = false;
+      else this.mealStats = [];
     },
     /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude, opt.market), not the
        browser's */

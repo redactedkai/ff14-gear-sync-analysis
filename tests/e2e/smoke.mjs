@@ -692,9 +692,12 @@ async function checkFood(pg) {
   await expect(pg.locator('#o-total-note')).toHaveText('Clan bonuses can affect MND and VIT.');
   await expect(pg.locator('#o-effect')).toContainText('gear and food');
   await waitSaved(pg, 's => s.opt.food === true');
-  // the Food row's menu: the search box takes the keys; "Best for goal" lists the meals with the best's result, off
-  // every meal; two stat pills narrow it to a pair and grey out the rest; the search matches meal names
+  // the Food row's menu: it opens with the goal's stat picked (Spell Speed, which the shown meal has); the search box
+  // takes the keys; "Best for goal" lists the meals with the best's result, off every meal; two stat pills narrow it to
+  // a pair and grey out the rest; the search matches meal names, and one that matches nothing says so
   await pg.click('#o-meal-btn');
+  await expect(pg.locator('#o-meal-menu [data-stat="spd"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(1);
   // the box takes focus a frame after the menu shows
   const focused = await pg
     .waitForFunction(() => document.activeElement?.id === 'o-meal-q', null, { timeout: 2000 })
@@ -702,6 +705,7 @@ async function checkFood(pg) {
     .catch(() => false);
   check(focused, 'the Food menu opened without focus in its search box');
   const meals = pg.locator('#o-meal-menu [data-meal]');
+  await pg.click('#o-meal-menu [data-stat="spd"]'); // the rest of the check starts with no pill
   const bestCount = await meals.count();
   await pg.locator('#o-meal-best').uncheck();
   const allCount = await meals.count();
@@ -711,6 +715,11 @@ async function checkFood(pg) {
   check(await pg.locator('#o-meal-menu [data-stat="dh"]').isDisabled(), 'a third stat pill is not greyed out');
   const pairCount = await meals.count();
   check(pairCount >= 1 && pairCount < allCount, `the DET and CRT pills list ${pairCount} of ${allCount} meals`);
+  // a search that matches nothing says so and offers to clear itself
+  await pg.fill('#o-meal-q', 'zzzz');
+  await expect(pg.locator('#o-meal-empty')).toContainText('No meal matches "zzzz".');
+  await pg.locator('#o-meal-empty button').click();
+  check((await meals.count()) === pairCount, 'Clear search did not bring the meals back');
   const name = await meals.first().getAttribute('data-meal');
   await pg.fill('#o-meal-q', name.split(' ')[0].toLowerCase());
   check((await meals.count()) >= 1, `searching "${name.split(' ')[0]}" finds no meal`);

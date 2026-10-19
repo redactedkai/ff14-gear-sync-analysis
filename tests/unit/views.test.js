@@ -11,7 +11,18 @@ import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
 import { sameMeals } from '../../src/core/same-result.js';
-import { jobGear, optimizerView, panelBase, relicsLeftOut, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
+import {
+  jobGear,
+  mealEmptyReason,
+  mealPillOff,
+  mealsPassing,
+  optimizerView,
+  panelBase,
+  relicsLeftOut,
+  searchCount,
+  searchPool,
+  tierText,
+} from '../../src/ui/views/optimizer.js';
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
@@ -80,6 +91,10 @@ test('optimizer view: the Food menu shows the highest item level meal with the b
   assert.equal(v.food.name, newest.name);
   assert.deepEqual([v.food.best, v.food.picked], [true, false]);
   assert.equal(items.find(x => x.on).name, newest.name);
+  // the pills it starts with: the goal's substats the shown meal has (Mind and Vitality have no pill), so Direct Hit
+  // when the shown meal has it
+  const shownStats = items.find(x => x.on).stats;
+  assert.deepEqual(menu.preset, shownStats.includes('dh') ? ['dh'] : []);
   // Vitality is a tiebreak (every point counts): every tagged meal adds the same Vitality
   assert.equal(new Set(best.map(x => x.adds.match(/VIT \+(\d+)/)[1])).size, 1);
   // what a meal adds, on this gear: its stats, then Vitality
@@ -783,4 +798,61 @@ test('allocated relics: left out of the search and counted in the note; other re
   assert.ok(v.relicsLeftOut > 0);
   // the weapon is the Eclipticum (weapon damage 157), not the Occultum (158, no substat)
   assert.equal(v.rows[0].item.name, 'Phantom Pendulums Eclipticum');
+});
+
+test('optimizer view: the Food menu presets its pills from the goal, in order, only those the shown meal has, two at most', () => {
+  const app = makeApp('SGE', { level: 50 });
+  Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: 'dh', melds: true, food: true });
+  const v = optimizerView(app);
+  assert.equal(v.kind, 'ok');
+  const { preset, groups } = v.food.menu;
+  const shownStats = groups.flatMap(g => g.items).find(x => x.on).stats;
+  assert.deepEqual(preset, ['crit', 'det', 'dh'].filter(s => shownStats.includes(s)).slice(0, 2));
+  assert.ok(preset.length >= 1 && preset.length <= 2, JSON.stringify(preset));
+});
+
+/* The Food menu's filters on a hand-made list: two tagged meals (Critical Hit + Determination, Critical Hit + Spell
+   Speed) and one other (Critical Hit + Direct Hit). */
+const MEALS = [
+  { name: 'Caramel Popcorn', stats: ['det', 'crit'], best: true },
+  { name: 'Popoto Potage', stats: ['crit', 'spd'], best: true },
+  { name: 'Rroneek au Gratin', stats: ['crit', 'dh'], best: false },
+];
+const SHORT = { crit: 'CRT', det: 'DET', dh: 'DHT', spd: 'SpS' };
+const filters = (stats, query = '', bestOnly = true) => ({ stats, query, bestOnly });
+
+test('Food menu filters: the switch, every picked stat, every search word', () => {
+  assert.deepEqual(
+    mealsPassing(MEALS, filters([])).map(x => x.name),
+    ['Caramel Popcorn', 'Popoto Potage'],
+  );
+  assert.deepEqual(mealsPassing(MEALS, filters(['crit'], '', false)).length, 3);
+  assert.deepEqual(
+    mealsPassing(MEALS, filters(['crit', 'dh'], '', false)).map(x => x.name),
+    ['Rroneek au Gratin'],
+  );
+  assert.deepEqual(
+    mealsPassing(MEALS, filters([], 'popoto pot')).map(x => x.name),
+    ['Popoto Potage'],
+  );
+});
+
+test('Food menu pills: one that would leave no meal is greyed out, a picked one never is, a third always is', () => {
+  // the owner's case (2026-10-18): CRT picked, Best for goal on: no tagged meal has Direct Hit
+  assert.equal(mealPillOff(MEALS, 'dh', filters(['crit'])), true);
+  assert.equal(mealPillOff(MEALS, 'det', filters(['crit'])), false);
+  assert.equal(mealPillOff(MEALS, 'crit', filters(['crit'])), false);
+  // the switch off: a Direct Hit meal exists
+  assert.equal(mealPillOff(MEALS, 'dh', filters(['crit'], '', false)), false);
+  assert.equal(mealPillOff(MEALS, 'spd', filters(['crit', 'det'], '', false)), true);
+});
+
+test('Food menu empty list: why, and the one change that brings meals back', () => {
+  assert.equal(mealEmptyReason(MEALS, filters(['crit']), SHORT), null);
+  assert.deepEqual(mealEmptyReason(MEALS, filters(['crit', 'dh']), SHORT), {
+    text: 'No best-for-goal meal has CRT and DHT.',
+    action: 'best',
+  });
+  assert.deepEqual(mealEmptyReason(MEALS, filters(['crit'], 'xyz '), SHORT), { text: 'No meal matches "xyz".', action: 'query' });
+  assert.deepEqual(mealEmptyReason(MEALS, filters(['det', 'dh'], '', false), SHORT), { text: 'No meal has DET and DHT.', action: 'stats' });
 });
