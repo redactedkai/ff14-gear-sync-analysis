@@ -7,10 +7,10 @@
    xivgear's tests (item level 663 chests at 660: 842 → 837 and 481 → 478 Defense); weapon damage under sync is a
    guess (the tools clamp it the same way; no in-game measurement was found). */
 import { DB_SLOT_TYPE } from './constants.js';
-import { capFromBudget } from './formulas.js';
+import { capFromBudget, clampIlvl } from './formulas.js';
 import { damageDefenseFacts } from './items.js';
 import { speedParams } from './speed.js';
-import { IL, MAX_ILVL, MP, SHARES } from './tables.js';
+import { IL, MP, SHARES } from './tables.js';
 
 /* The weapon damage key on candidates and totals (optimizer): one of the job's weapon damage, on the weapon only. */
 export const WD_KEY = 'wd';
@@ -18,8 +18,6 @@ export const WD_KEY = 'wd';
 /* Defense points per percent of damage removed is level-dependent: mitigation % = floor(15 x defense / DIV), DIV the
    level's ParamGrow LevelModifier (2780 at level 100). AkhMorning, Allagan Studies, Defense (community reference). */
 const MITIGATION_PER_DIV = 15;
-
-const clampIlvl = ilvl => Math.max(0, Math.min(MAX_ILVL, ilvl | 0));
 
 /* The cap of `key` (a DAMAGE_DEFENSE_KEYS entry) on a piece of slot code `slotCode` and item kind `kind` at item level
    `ilvl` (capFromBudget: budget x factor, x slot share). */
