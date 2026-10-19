@@ -16,12 +16,13 @@ The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23
 - `scripts/`: build, data generators, perf, and validation against ffxiv-gearing and xivgear (run by hand).
 - `tests/`: `unit/`, `full/` (long optimizer sweep), `data/` (generators), `e2e/smoke.mjs`.
 - `docs/`: `mechanics/` (the game), `engineering/` (the code), plus glossary, roadmap, history.
+- `docs/scratchpad/`: gitignored. Reports, mockups and agent output go in `docs/scratchpad/<topic>/`; nothing committed links to it.
 
 Pushing to `main` deploys to GitHub Pages (the only workflow).
 
 ## Branches
 
-Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check` on `dev`, `main` and PRs, and deploys only from `main`.
+Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check` and the `tests/full/` sweep on `dev`, `main` and PRs, and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner.
 
 ## Commands
 
@@ -103,10 +104,15 @@ Branch and bound over slots, after removing dominated items. Each item gets one 
 ## Working with the owner
 
 - Keep it short and plain. Fewer controls beats more explanation.
+- Tables: a few words per cell; details go in notes below the table.
+- Page text is neutral and self-contained: no "wins" or advice between overgeared and melded gear, and no "this", "that" or "here" without naming the thing.
+- A mockup is an HTML page the owner can click, in `docs/scratchpad/<topic>/`, opened in the default browser.
 - Check claims against the game files, the Wiki or real items, and say what is verified and what is guessed. Log retracted claims in `docs/history.md`.
 - Neutral defaults: no job, level 100, sync off, main stat, no tiebreaks. The one exception: nine "Gear from" boxes are off by default (Miscellaneous, Deep dungeons, Wondrous Tails, Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions; `on` in `item-format.json`), and the market board switch is on.
 - For a bug from a screenshot, reproduce it in a test first, then fix it.
 - Fix root causes.
+- Item level 123 is one example: check a rule across all item levels and slots. A ±1 stat mismatch passes; don't add special rules only to fix one.
+- Never kill processes by name (`taskkill /IM node.exe`): other sessions' processes share the machine. Stop only what you started.
 - No new dependencies without asking. Keep the Google Fonts link, and make sure the page works without it.
 - Don't commit or push unless asked.
 - No AI attribution in commits or PR descriptions: no `Co-Authored-By` or "Generated with" lines.
