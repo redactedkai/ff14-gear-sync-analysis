@@ -644,14 +644,6 @@ td.defense {
 input.invalid {
   border-color: var(--bad);
 }
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
 .x2 {
   color: var(--muted);
   font-size: 0.8rem;
@@ -976,9 +968,6 @@ button.run {
   background: var(--warn-bg);
   color: var(--fg);
 }
-.chk {
-  cursor: pointer;
-}
 .tabs {
   display: flex;
   gap: 2px;
@@ -1224,16 +1213,6 @@ svg.chart text.exp {
   margin-right: 6px;
   vertical-align: middle;
 }
-.cons {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
-  gap: 10px;
-}
-.cons .pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
 .empty {
   padding: 22px;
   text-align: center;
@@ -1391,22 +1370,6 @@ svg.chart .hasteline {
 
 /* Tiers: the substats' tier ladders (components/tiers.js), a card per substat in a grid that wraps on a narrow window;
    each card a small table: From, then one column per effect */
-.panelhead {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.panelhead h2 {
-  margin: 0;
-}
-/* the sub-tab's own level, right after the title's "at level": drawn like the substat boxes under it (bold digits),
-   its digits on the title's baseline */
-.panelhead .tlevel {
-  width: 88px;
-  margin-left: -4px;
-  font-weight: 600;
-}
 .tiercards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
