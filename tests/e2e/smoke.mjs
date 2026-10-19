@@ -1474,7 +1474,7 @@ async function checkDefaults(pg) {
 }
 
 /** How the math works, GCD: its own level (the synced level until one is typed), haste and speed. The level box waits
- * for typing to stop and corrects a level out of range with a note; the speed box holds a typed speed to the level's
+ * for typing to stop and corrects a level out of range (its note as hover text); the speed box holds a typed speed to the level's
  * range once typing stops; a row or a bar clicked sets the speed or the level; a haste marks its levels; Piece stats'
  * controls stay off the tab, and the step table never has empty rows. */
 async function checkGcdTab(pg) {
@@ -1510,12 +1510,12 @@ async function checkGcdTab(pg) {
   check((await pg.inputValue('#g-speed')) !== '800', 'a row click did not set the speed');
   await pg.click('#g-reset');
   await expect(pg.locator('#g-speed')).toHaveValue('341');
-  // the level box: a level out of range is corrected with a note once typing stops; a bar sets the level
+  // the level box: a level out of range is corrected once typing stops, the note as hover text; a bar sets the level
   await pg.focus('#g-level');
   await pg.keyboard.press('Control+A');
   await pg.keyboard.type('150');
   await expect(pg.locator('#g-level')).toHaveValue('100');
-  await expect(pg.locator('#g-level-note')).toHaveText('Lowered to 100, the highest level.');
+  await expect(pg.locator('#g-level')).toHaveAttribute('title', 'Lowered to 100, the highest level.');
   await expect(pg.locator('#g-speed')).toHaveValue('420');
   await pg.locator('#g-chart [data-level="78"]').click();
   await expect(pg.locator('#g-level')).toHaveValue('78');

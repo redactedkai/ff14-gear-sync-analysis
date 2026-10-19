@@ -111,9 +111,8 @@
   <!-- GCD: its own level, haste and speed ($store.app.gcd), whatever the job and sync -->
   <template x-if="$store.app.mathTab === 'gcd'"><div style="display:contents" x-data="gcdControls">
   <label class="mctl">Level
-    <input type="number" id="g-level" class="tlevel" min="1" max="100" step="1" inputmode="numeric" :value="level" aria-label="Level of the GCD tab" :class="{ lowered: !!levelNote, invalid: !!levelError }" aria-describedby="g-level-note" @input="typeLevel($el)" @change="typeLevel($el, true)">
+    <input type="number" id="g-level" class="tlevel" min="1" max="100" step="1" inputmode="numeric" :value="level" aria-label="Level of the GCD tab" :class="{ invalid: !!levelError }" :title="levelError || levelNote" :aria-invalid="String(!!levelError)" @input="typeLevel($el)" @change="typeLevel($el, true)">
     <span class="f-range">1–100</span>
-    <span class="field-note lowered" id="g-level-note" x-show="levelNote || levelError" :class="{ 'field-error': !!levelError }" x-text="levelError || levelNote" aria-live="polite"></span>
   </label>
   <label class="mctl">Haste
     <select id="g-haste" @change="$store.app.gcd.haste = $event.target.value">

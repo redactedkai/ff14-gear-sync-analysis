@@ -38,13 +38,14 @@ export function gcdTab() {
 
 /* The math bar's GCD controls: Level, Haste, and the speed row (slider, box, Reset). The boxes count a typed number
    once typing stops (TYPING_DEBOUNCE_MS) or at once on Enter or leaving the box, then show what is used: a level out of
-   range is corrected with a note, as the Synced item level field does; a speed is held to the level's range. */
+   range is corrected, its note as the box's hover text (no note beside the box, which moved the controls after it, and
+   no gold border or flash: owner, 2026-10-19); a speed is held to the level's range. */
 export function gcdControls() {
   let levelTimer = null,
     speedTimer = null;
   return {
     hasteOptions: HASTE_OPTIONS,
-    /* the note under a corrected level ("Lowered to 100, the highest level."), or an error for text that is no level */
+    /* the box's hover text after a correction ("Lowered to 100, the highest level."), or for text that is no level */
     levelNote: '',
     levelError: '',
     get level() {
@@ -86,12 +87,6 @@ export function gcdControls() {
       app.gcd.level = r.level === app.level ? null : r.level;
       el.value = r.level;
       this.levelNote = r.note;
-      // restart the flash on each correction: drop the class, let the browser see it gone, add it back
-      if (r.note) {
-        el.classList.remove('flash');
-        void el.offsetWidth;
-        el.classList.add('flash');
-      }
     },
     typeSpeed(el, now = false) {
       clearTimeout(speedTimer);

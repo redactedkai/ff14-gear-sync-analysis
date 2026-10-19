@@ -16,7 +16,7 @@ test('recastMult: the speed modifier times the haste share (level 50, DIV 341)',
   assert.equal(recastMult(412, 50, 13), 0.843 * 0.87);
 });
 
-test('level box: out of range is corrected with a note, as Synced item level is; other text is no level', () => {
+test('level box: out of range is corrected, with a note for its hover text; other text is no level', () => {
   assert.deepEqual(gcdLevelInput('50'), { level: 50, note: '' });
   assert.deepEqual(gcdLevelInput('150'), { level: 100, note: 'Lowered to 100, the highest level.' });
   assert.deepEqual(gcdLevelInput('0'), { level: 1, note: 'Raised to 1, the lowest level.' });
