@@ -7,7 +7,7 @@ It builds to a single self-contained HTML page, `dist/index.html`, that opens fr
 ## Requirements
 
 - Node 22 or later. Run `npm install` once, and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
-- Python 3.9 or later, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`.
+- Python 3, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`. CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9. The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
 
 Run all commands from the repo root.
 

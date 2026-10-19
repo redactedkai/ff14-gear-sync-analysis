@@ -174,7 +174,7 @@ Which command runs which check? Run from the repository root.
 
 Notes on the pass/fail commands:
 
-- **`npm test`** runs the unit tests with Node's built-in test runner, which runs files in parallel, so the slowest file sets the time. **`npm run test:full`** adds `tests/full/`: 360 random cases of tier ranking against its reference, which take about 80 s on their own and are split in five files so they run at the same time. `npm test` keeps the first 20 of the Target GCD cases. **`npm run test:data`** runs the generator tests with Python `unittest`.
+- **`npm test`** runs the unit tests with Node's built-in test runner, which runs files in parallel, so the slowest file sets the time. **`npm run test:full`** adds `tests/full/`: 360 random cases of tier ranking against its reference, which take about 80 s on their own and are split in five files so they run at the same time. `npm test` keeps the first 20 of the Target GCD cases. **`npm run test:data`** runs the generator tests with Python `unittest`. The Python npm scripts (`test:data`, `lint:py`, `format:py`, `update-data`) start Python through `scripts/py.mjs`, which runs `python3` or `python`, whichever exists, so they work on Windows, macOS and Linux.
 - **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 12 s; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
 - **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
 - **`npm run check`** and **`npm run check:all`** run the steps in the diagram above; `check` is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at 960 px.
@@ -201,7 +201,7 @@ Running a subset:
 - unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/*.test.js"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 
-**Setup.** Node 22 or later, `npm install`, then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3.9 or later and `python -m pip install -r requirements-dev.txt`.
+**Setup.** Node 22 or later, `npm install`, then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3 and `python -m pip install -r requirements-dev.txt`: CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9.
 
 ## 4. Conventions
 
