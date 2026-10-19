@@ -29,6 +29,7 @@ import { pieceView } from '../../src/ui/views/piece.js';
 import { browseFiltered, gearView, markWords } from '../../src/ui/views/gear.js';
 import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { MAX_REAL } from '../../src/core/tables.js';
 import { DEFAULT_EXCLUDE, shownSync, syncSettings } from '../../src/ui/state.js';
 
 /* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
@@ -857,7 +858,7 @@ test('a cap far above the synced level: gear made for a higher level is held to 
   assert.equal(pieceView(high).cap, 130);
   // a cap at or under the ceiling, and level 100, keep the cap as typed
   assert.deepEqual(shownSync(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });
-  assert.deepEqual(shownSync(makeApp('SGE', { cap: 795, sync: true, level: 100 })), { cap: 795, level: 100, byLevel: false });
+  assert.deepEqual(shownSync(makeApp('SGE', { cap: MAX_REAL, sync: true, level: 100 })), { cap: MAX_REAL, level: 100, byLevel: false });
 });
 
 /* Relics whose substats the player allocates in game (Zodiac Zeta, Anima, Eureka, Resistance, Manderville, Phantom

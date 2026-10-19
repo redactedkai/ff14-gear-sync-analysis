@@ -4,19 +4,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, mkItem, poolItemFromRow } from '../../src/core/items.js';
+import { mkItem } from '../../src/core/items.js';
 import { itemSyncIlvl, optimize } from '../../src/core/optimizer/index.js';
 import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../src/core/damage-defense.js';
 import { resultOf } from '../../src/core/same-result.js';
 import { IL } from '../../src/core/tables.js';
 import { gamePool } from './helpers/exhaustive.js';
+import { piece } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
-const piece = (job, name) =>
-  poolItemFromRow(
-    job,
-    browseItems(job, { q: name }).find(r => r.name === name),
-  );
 const NO_SYNC = { cap: null, sync: false, level: 100 };
 
 test('weapon damage: physical for Strength and Dexterity jobs, magic for Intelligence and Mind, none for Blue Mage', () => {

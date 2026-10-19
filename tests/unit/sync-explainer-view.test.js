@@ -82,7 +82,7 @@ test('the range: 30 below the cap to 20 past the last change, at most the highes
   const pick = explainerItemLevel(a);
   assert.deepEqual(pick.range, [660, MAX_REAL]);
   assert.equal(pick.il, 690); // no saved item level: the cap
-  assert.match(pick.note, /highest real item level, 795/);
+  assert.match(pick.note, new RegExp(`highest real item level, ${MAX_REAL}`));
   // a saved item level outside the range is held to it
   assert.equal(explainerItemLevel({ ...a, piece: { ...a.piece, ilvl: 300 } }).il, 660);
   // no sync: every real item level, the highest by default

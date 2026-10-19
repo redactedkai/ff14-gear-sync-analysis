@@ -327,11 +327,11 @@ test('limitCapToLevel: lowers a cap above what the level allows, and leaves ever
   }
   // with no level sync (level 100), only the highest real item level limits it
   const top = app({ cap: 999, level: 100 });
-  assert.deepEqual(limitCapToLevel(top), { from: 999, to: 795, level: null });
+  assert.deepEqual(limitCapToLevel(top), { from: 999, to: MAX_REAL, level: null });
   for (const s of [
     { cap: 123, level: 50 }, // T13: never raised
     { cap: 135, level: 50 },
-    { cap: 795, level: 100 }, // no gear above level 100
+    { cap: MAX_REAL, level: 100 }, // no gear above level 100
     { cap: 500, level: 50, sync: false },
     { cap: null, level: 50 },
   ]) {

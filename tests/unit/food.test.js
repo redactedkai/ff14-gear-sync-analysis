@@ -20,7 +20,14 @@ const JOB_IDS = ['PLD', 'WHM', 'SGE', 'DRG', 'NIN', 'BLM', 'BLU', 'BST'];
 test('allMeals: every meal the job can use, oldest first; the best of foodChoices is the best of them all', () => {
   const AST = makeJobContext('AST');
   const meals = allMeals(AST);
-  assert.equal(meals.length, 182); // Astrologian: every meal whose stats it has (Spell Speed and Piety, not Skill Speed or Tenacity)
+  // Astrologian: every meal whose stats it has (Spell Speed and Piety, not Skill Speed or Tenacity), in FOODS order;
+  // 182 when written, and a patch only adds meals
+  const withoutSksOrTen = FOODS.filter(([, , stats]) => stats.every(([raw]) => raw !== 'sks' && raw !== 'ten'));
+  assert.deepEqual(
+    meals.map(m => m.name),
+    withoutSksOrTen.map(([name]) => name),
+  );
+  assert.ok(meals.length >= 182, `${meals.length} meals`);
   assert.equal(new Set(meals.map(m => m.key)).size, meals.length);
   meals.slice(1).forEach((m, i) => {
     assert.ok(m.ilvl >= meals[i].ilvl, m.name);

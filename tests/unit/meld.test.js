@@ -8,16 +8,11 @@ import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../src/core/i
 import { MATERIA } from '../../src/core/tables.js';
 import { bestMeld, meldCaps, meldSlots, meldText, meldVersions, stoneValues } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
+import { piece } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const war = makeJobContext('WAR');
 const pld = makeJobContext('PLD');
-
-function piece(job, name) {
-  const r = browseItems(job, { q: name, type: 'any', ilvlMin: 1, ilvlMax: 999, lvlMax: 100 }).find(x => x.name === name);
-  assert.ok(r, name);
-  return poolItemFromRow(job, r);
-}
 
 /* Combat materia: values I-XII 1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54; gates 15, 30, 45, 70, 160, 290, 420, 420, 560,
    560, 690, 690; VI, VIII, X and XII cannot go past the first overmeld slot. */

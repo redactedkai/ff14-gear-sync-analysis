@@ -28,7 +28,7 @@ SMOKE_WORKERS (groups at once, default half the cores up to 6), SMOKE_TRACE=1 (t
 
 import assert from 'node:assert';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -1584,6 +1584,8 @@ async function main() {
     return 1;
   }
   mkdirSync(OUT, { recursive: true });
+  // screenshots of failures from earlier runs would make a passing run look failed
+  for (const file of readdirSync(OUT)) if (/^fail-.*\.png$/.test(file)) rmSync(resolve(OUT, file));
   writeFileSync(resolve(OUT, 'blank.html'), '<!doctype html><title>blank</title>', 'utf-8'); // for checkCorruptedStorage
 
   const t0 = Date.now();

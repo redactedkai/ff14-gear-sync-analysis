@@ -3,6 +3,7 @@
    code under test. The brute-force reference and real-gear pools are in exhaustive.js. */
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.js';
+import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.js';
 import { restoreState } from '../../../src/ui/state.js';
@@ -27,6 +28,14 @@ export function itemRow(name) {
   const r = ITEMS.find(x => x[ROW.name] === name);
   assert.ok(r, name);
   return r;
+}
+
+/* The real item named `name` as `job`'s pool item (poolItemFromRow), searched over every item level and type; fails
+   the test, naming the item, if there is none. */
+export function piece(job, name) {
+  const r = browseItems(job, { q: name, type: 'any', ilvlMin: 1, ilvlMax: 999, lvlMax: 100 }).find(x => x.name === name);
+  assert.ok(r, name);
+  return poolItemFromRow(job, r);
 }
 
 /* Round half up, independent of the code under test (real items at an exact .5 round up). */
