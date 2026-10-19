@@ -20,12 +20,17 @@ export const LICENSE_BANNER = `/*! Bundles third-party code under the MIT licenc
   Alpine.js, (c) 2019-present Caleb Porzio and contributors
   @vue/reactivity and @vue/shared, (c) 2018-present Yuxi (Evan) You and Vue contributors */`;
 
+/* The oldest browsers the page runs in. The floor is set by the JS APIs the page calls, which esbuild does not
+   polyfill: Array.prototype.findLast (Chrome 97, Firefox 104, Safari 15.4) and .at(). Naming the browsers instead of
+   an ES version also lets esbuild add the CSS prefixes they need (mask: -webkit-mask before Chrome 120). */
+export const BROWSER_TARGETS = ['chrome97', 'firefox104', 'safari15.4'];
+
 export function esbuildOptions({ minify = true } = {}) {
   return {
     entryPoints: [join(SRC, 'main.js')],
     bundle: true,
     format: 'iife',
-    target: 'es2020',
+    target: BROWSER_TARGETS,
     minify,
     banner: { js: LICENSE_BANNER },
     legalComments: 'none',
