@@ -1,11 +1,17 @@
-/* How the math works' charts, as SVG markup built only from numbers (safe for x-html):
+/* How the math works' charts, as SVG markup for x-html:
    - overgearChartSvg (Piece stats): one piece's substat points in the duty by its item level, with the piece at the
      cap (melded);
    - speedStepChartSvg (GCD): the speed one 0.01 s GCD step takes at each level, with a haste's levels.
-   Each is drawn at its container's width (`width`, px), so its text stays at the page's size. */
+   Each is drawn at its container's width (`width`, px), so its text stays at the page's size. Every text passed in (a
+   slot or stat name) goes through escapeXml, so a name can never add markup; the rest is numbers. */
 
 const DEFAULT_WIDTH = 760;
 const MIN_WIDTH = 420;
+
+/* `text` with the characters that mean markup in SVG and HTML written as entities. */
+export function escapeXml(text) {
+  return String(text).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+}
 
 /* A round step for about five grid lines between 0 and `span`. */
 function niceStep(span) {
@@ -20,7 +26,7 @@ function xAxis(x0, x1, X, H, B, caption) {
   let g = '';
   for (let v = Math.ceil(x0 / every) * every; v <= x1; v += every)
     g += `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`;
-  return g + `<text x="${(X(x0) + X(x1)) / 2}" y="${H - 4}" text-anchor="middle">${caption}</text>`;
+  return g + `<text x="${(X(x0) + X(x1)) / 2}" y="${H - 4}" text-anchor="middle">${escapeXml(caption)}</text>`;
 }
 
 /* The cap line (unlabelled: the legend names it), the item level marker of the chosen piece or set, and the shaded range `more` (item levels, in order). */
@@ -94,7 +100,7 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], c
   labels.forEach((name, i) => {
     const mid = p => Y(below(p, i) + p.parts[i] / 2) + 4;
     if (Y(below(first, i)) - Y(below(first, i) + first.parts[i]) >= 16)
-      g += `<text class="lbl" x="${X(first.il) + 4}" y="${mid(first)}">${name}</text>`;
+      g += `<text class="lbl" x="${X(first.il) + 4}" y="${mid(first)}">${escapeXml(name)}</text>`;
     const capped = curve.find(p => p.il > cap && p.parts[i] >= ceilings[i]);
     if (capped && Y(below(last, i)) - Y(below(last, i) + last.parts[i]) >= 16)
       g += `<text class="lbl" x="${X(x1) - 4}" text-anchor="end" y="${mid(last)}">${ceilings[i]}: at the cap from ${capped.il}</text>`;
