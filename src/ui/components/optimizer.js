@@ -3,17 +3,7 @@
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
 import Alpine from 'alpinejs';
-import {
-  emptyGearFrom,
-  gcdLabel,
-  mealEmptyReason,
-  mealPillOff,
-  mealsPassing,
-  optimizerKey,
-  optimizerView,
-  samePassing,
-  searchCount,
-} from '../views/optimizer.js';
+import { emptyGearFrom, gcdLabel, optimizerKey, optimizerView, samePassing, searchCount } from '../views/optimizer.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
 import { rankChoices, withRank } from '../views/ranks.js';
 
@@ -44,15 +34,11 @@ export function optimizer() {
     /* the meal picked from the Food row's menu (an allMeals key), or null for the best for the goal. Not saved; cleared
        with the picks */
     mealPick: null,
-    /* the Food menu: open or not, its search text (meal names), the stats picked on its pills (a meal must have each;
-       two at most, since a meal has at most two) and its "Best for goal" switch (on: only meals with the best's result) */
-    mealOpen: false,
-    mealQuery: '',
-    mealStats: [],
-    /* the result (viewId, one per search, a meal pick included) the pills were last preset for: the menu presets them
-       on its first opening for each result, then keeps the player's changes */
-    mealPresetFor: null,
+    /* one per search, a meal pick included: the Food menu (mealMenu) presets its pills once per result, and closes when
+       a new one comes */
     viewId: 0,
+    /* the Food menu's "Best for goal" switch (on: only meals with the best's result). Kept here, not in mealMenu, so the
+       player's choice stays when the Food row is drawn again (Food off and on) */
     mealBestOnly: true,
     /* the ? note of the "Spare points to tiebreaks" switch (tier ranking): open or not */
     rankHelp: false,
@@ -98,7 +84,6 @@ export function optimizer() {
       this.picks = {};
       this.menuOpen = null;
       this.mealPick = null;
-      this.mealOpen = false;
       this.lastDeps = optimizerKey(Alpine.raw(this.$store.app));
       this.solve();
     },
@@ -155,67 +140,11 @@ export function optimizer() {
     sameGroups(groups) {
       return samePassing(groups, this.sameQuery);
     },
-    /* A meal picked from the Food row's menu: the search runs again with it in place of the best (with tier ranking or
-       a Target GCD the meal can change which gear wins). */
+    /* A meal picked from the Food row's menu (mealMenu): the search runs again with it in place of the best (with tier
+       ranking or a Target GCD the meal can change which gear wins). */
     pickMeal(key) {
       this.mealPick = key;
-      this.mealOpen = false;
       this.solve();
-    },
-    /* Open or close the Food menu; opened, the search box takes the keys and the list starts at the shown meal. */
-    toggleMealMenu() {
-      this.mealOpen = !this.mealOpen;
-      if (!this.mealOpen) return;
-      // the first opening for a result starts from the goal's stats (view.food.menu.preset): a meal pick reruns the
-      // search, which can change the meals tagged best for goal
-      if (this.mealPresetFor !== this.viewId) {
-        this.mealStats = [...(this.view?.food?.menu?.preset ?? [])];
-        this.mealPresetFor = this.viewId;
-      }
-      // after x-show has shown the menu (a hidden box takes no focus and has no layout)
-      this.$nextTick(() =>
-        requestAnimationFrame(() => {
-          this.$refs.mealQuery?.focus();
-          const list = this.$refs.mealList,
-            on = list?.querySelector('.on');
-          if (on) list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - 40;
-        }),
-      );
-    },
-    /* A stat pill: on or off; a greyed-out one stays off (mealPillOff: a third, or one that would leave no meal). */
-    toggleMealStat(stat) {
-      if (this.mealStats.includes(stat)) this.mealStats = this.mealStats.filter(s => s !== stat);
-      else if (!this.mealPillOff(stat)) this.mealStats = [...this.mealStats, stat];
-    },
-    /* the Food menu's filters now: its pills, search text and "Best for goal" switch (views mealsPassing) */
-    get mealFilters() {
-      return { stats: this.mealStats, query: this.mealQuery, bestOnly: this.mealBestOnly };
-    },
-    /* every meal of the Food menu, in its order */
-    get mealItems() {
-      return (this.view?.food?.menu?.groups ?? []).flatMap(g => g.items);
-    },
-    mealPillOff(stat) {
-      return mealPillOff(this.mealItems, stat, this.mealFilters);
-    },
-    /* The Food menu's groups after its switch, pills and search: [{label, items}] (view.food.menu.groups, empty groups
-       dropped). */
-    get mealGroups() {
-      // by key: Alpine's proxies make the same meal two different objects on two reads
-      const passing = new Set(mealsPassing(this.mealItems, this.mealFilters).map(x => x.key));
-      return (this.view?.food?.menu?.groups ?? [])
-        .map(g => ({ label: g.label, items: g.items.filter(x => passing.has(x.key)) }))
-        .filter(g => g.items.length);
-    },
-    /* why the list is empty ({text, action}), or null (views mealEmptyReason) */
-    get mealEmpty() {
-      return mealEmptyReason(this.mealItems, this.mealFilters);
-    },
-    /* "Best for goal" on or off; on, the pills go back to the goal's (view.food.menu.preset), which a tagged meal has,
-       so the switch never empties the list */
-    setMealBest(on) {
-      this.mealBestOnly = on;
-      if (on) this.mealStats = [...(this.view?.food?.menu?.preset ?? [])];
     },
     /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude, opt.market), not the
        browser's */

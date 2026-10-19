@@ -378,7 +378,7 @@
             <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="jobCtx.stats[k]" class="n" x-text="v"></td></template></tr>
             <template x-if="view.food">
               <tr class="food" id="o-food-row"><td>Food</td><td class="item">
-                <div class="same" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
+                <div class="same" x-data="mealMenu" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
                   <button type="button" class="same-btn" id="o-meal-btn" :aria-expanded="mealOpen" @click="toggleMealMenu()"><span x-text="view.food.name"></span><template x-if="view.food.best && view.food.menu.count > 1"><span class="same-count" x-text="`1 of ${view.food.menu.count}`"></span></template></button>
                   <div class="same-menu search-menu meal-menu" id="o-meal-menu" x-show="mealOpen" x-cloak>
                     <div class="menu-tools">
@@ -388,7 +388,7 @@
                     </div>
                     <div class="menu-list" x-ref="mealList">
                       <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
-                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`" @click="pickMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl" x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
+                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`" @click="chooseMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl" x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
                       </div></template>
                       <template x-if="mealEmpty"><div class="menu-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <template x-if="mealEmpty.action === 'query'"><button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></template></div></template>
                     </div>

@@ -8,6 +8,7 @@ import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';
 import { optimizer } from './ui/components/optimizer.js';
+import { mealMenu } from './ui/components/meal-menu.js';
 import { tierControls, tierTable } from './ui/components/tiers.js';
 import { gcdControls, gcdTab } from './ui/components/gcd.js';
 
@@ -22,7 +23,7 @@ const app = Alpine.store('app');
    filter an emptied box clears (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-Object.entries({ page, settings, syncExplainer, gear, optimizer, tierTable, gcdTab, gcdControls, tierControls }).forEach(
+Object.entries({ page, settings, syncExplainer, gear, optimizer, mealMenu, tierTable, gcdTab, gcdControls, tierControls }).forEach(
   ([name, factory]) => {
     Alpine.data(name, factory);
   },
