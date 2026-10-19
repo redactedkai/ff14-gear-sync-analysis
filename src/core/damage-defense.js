@@ -9,7 +9,7 @@
 import { DB_SLOT_TYPE } from './constants.js';
 import { capFromBudget, clampIlvl } from './formulas.js';
 import { damageDefenseFacts } from './items.js';
-import { speedParams } from './speed.js';
+import { levelParams } from './level-params.js';
 import { IL, MP, SHARES } from './tables.js';
 
 /* The weapon damage key on candidates and totals (optimizer): one of the job's weapon damage, on the weapon only. */
@@ -62,5 +62,5 @@ export function setDefense(pieces) {
 /* The share of damage taken that `defense` removes at character `level`, in whole percent (before cooldowns, which
    multiply with it). */
 export function mitigationPct(defense, level) {
-  return Math.floor((MITIGATION_PER_DIV * defense) / speedParams(level).div);
+  return Math.floor((MITIGATION_PER_DIV * defense) / levelParams(level).div);
 }

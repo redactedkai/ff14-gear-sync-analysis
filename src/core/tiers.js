@@ -5,7 +5,8 @@
      tick, not per mille); Skill/Spell Speed by its GCD (speed.js).
    The character's base value of each stat cancels out of these formulas, so the tier depends on the gear points alone.
    Food is not counted: it would move every total. Main stats and Vitality have no tiers here. */
-import { BASE_GCD_MS, gcdFor, gcdTierAt, speedParams } from './speed.js';
+import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.js';
+import { levelParams } from './level-params.js';
 import { statBase } from './food.js';
 
 /* Tenacity's other effect, damage taken, steps every 200 (xivmath `tenacityIncomingDmg`). Tier ranking uses it: players
@@ -77,7 +78,7 @@ export function statTier(job, stat, points, level) {
   const effects = effectsOf(job, stat);
   if (effects == null) return null;
   const [kind, step] = effects[0];
-  const { div } = speedParams(level);
+  const { div } = levelParams(level);
   // the effect in per mille (MP for Piety), and the fewest points that give it and the next one: the smallest g with
   // floor(step x g / div) >= tier, and >= tier + 1
   const tier = Math.floor((step * gear) / div);
@@ -94,7 +95,7 @@ function tierAt(effects, g, level, haste) {
     const t = gcdTierAt(g, level, BASE_GCD_MS, haste);
     return { start: t.start, next: t.next };
   }
-  const { div } = speedParams(level);
+  const { div } = levelParams(level);
   let start = 0,
     next = Infinity;
   for (const [, step] of effects) {
@@ -122,7 +123,7 @@ export function tierLadder(job, stat, level, total, near, haste = 0) {
   const effects = effectsOf(job, stat);
   if (effects == null) return null;
   const base = statBase(job, stat, level);
-  const { div } = speedParams(level);
+  const { div } = levelParams(level);
   const valuesAt = g =>
     effects.map(([kind, step]) =>
       effectText(kind, stat, kind === 'gcd' ? gcdFor(g, level, BASE_GCD_MS, haste) : Math.floor((step * g) / div)),
@@ -190,7 +191,7 @@ export function rankTierOf(job, stat, level, haste = 0) {
   if (stat === 'spd') return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
   const step = stat === 'spec' && job.specKind === 'mitigation' ? TEN_MITIGATION_STEP : stepOf(job, stat);
   if (step == null) return null;
-  const { div } = speedParams(level);
+  const { div } = levelParams(level);
   return total => Math.floor((step * Math.max(0, total)) / div);
 }
 

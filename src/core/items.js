@@ -13,7 +13,7 @@ import {
   GEAR_CATEGORIES,
   DAMAGE_DEFENSE_KEYS,
 } from './constants.js';
-import { expansionBounds } from './speed.js';
+import { levelParams } from './level-params.js';
 import { ITEMS, MP } from './tables.js';
 import { blankStats, buildPiece } from './formulas.js';
 
@@ -113,6 +113,17 @@ export function parseRow(r) {
     gameId: r[ROW.gameId], // the game's item id (Item.csv row), for links to and checks against other tools
     scales: !!r[ROW.scales], // item level follows the wearer's level (Item.SubStatCategory 2; syncTarget)
   };
+}
+
+/* Item level span of each expansion: from the previous expansion's level-cap sync item level to its own (the last
+   one is open-ended). [{short, name, from, to}], `from` of the first and `to` of the last are null. */
+export function expansionBounds() {
+  return EXPANSIONS.map(([short, name, cap], i) => ({
+    short,
+    name,
+    from: i ? levelParams(EXPANSIONS[i - 1][2]).sync : null,
+    to: i < EXPANSIONS.length - 1 ? levelParams(cap).sync : null,
+  }));
 }
 
 /* The expansion a database piece belongs to (an EXPANSIONS short name), from its equip level: each expansion raised the

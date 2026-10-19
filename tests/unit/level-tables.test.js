@@ -5,7 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EXPANSIONS, HASTE, JOB_LEVEL_CAPS, LEVEL_MAIN } from '../../src/core/constants.js';
-import { hasteFor, speedParams } from '../../src/core/speed.js';
+import { levelParams } from '../../src/core/level-params.js';
+import { hasteFor } from '../../src/core/speed.js';
 import { MAX_LEVEL, MAX_SPEED, PG } from '../../src/core/tables.js';
 
 test('the level cap is read from the items', () => {
@@ -43,15 +44,15 @@ test('the generated level data (PG) and most-speed table (MAX_SPEED) reach MAX_L
   assert.ok(PG.length >= MAX_LEVEL, `PG ends at level ${PG.length}: regenerate (python scripts/data/regen.py)`);
   assert.ok(MAX_SPEED.length >= MAX_LEVEL, `MAX_SPEED ends at level ${MAX_SPEED.length}: regenerate (python scripts/data/regen.py)`);
   for (let level = 1; level <= MAX_LEVEL; level++) {
-    const { sub, div, sync } = speedParams(level);
+    const { sub, div, sync } = levelParams(level);
     assert.ok(
       [sub, div, sync].every(v => Number.isInteger(v) && v > 0),
       `level ${level}: ${sub}, ${div}, ${sync}`,
     );
   }
-  // the top level reads its own row, not a lower level's (speedParams and statBase clamp to MAX_LEVEL)
-  assert.deepEqual(Object.values(speedParams(MAX_LEVEL)), PG[MAX_LEVEL - 1]);
-  assert.deepEqual(Object.values(speedParams(MAX_LEVEL + 5)), PG[MAX_LEVEL - 1]);
+  // the top level reads its own row, not a lower level's (levelParams and statBase clamp to MAX_LEVEL)
+  assert.deepEqual(Object.values(levelParams(MAX_LEVEL)), PG[MAX_LEVEL - 1]);
+  assert.deepEqual(Object.values(levelParams(MAX_LEVEL + 5)), PG[MAX_LEVEL - 1]);
 });
 
 test('limited jobs cap at or below MAX_LEVEL', () => {

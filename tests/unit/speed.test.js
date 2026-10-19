@@ -2,7 +2,8 @@
    and the speed band for a target GCD. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dotMult, expansionBounds, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../src/core/speed.js';
+import { expansionBounds } from '../../src/core/items.js';
+import { dotMult, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../src/core/speed.js';
 import { rngInt } from './helpers/common.js';
 
 /* Expected values in this file are read from AkhMorning's published tier tables:

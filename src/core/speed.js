@@ -1,30 +1,17 @@
 /* Speed stat -> GCD and DoT/HoT tick scaling (AkhMorning's formulas), using ParamGrow level data. */
-import { MAX_LEVEL, PG } from './tables.js';
-import { EXPANSIONS, HASTE, GCD_FLOOR_MS } from './constants.js';
+import { HASTE, GCD_FLOOR_MS } from './constants.js';
+import { levelParams } from './level-params.js';
+
+/* levelParams under its old name, for src/ui until it imports level-params.js. */
+export { levelParams as speedParams } from './level-params.js';
 
 /* The recast of a weaponskill or spell before speed: 2.5 s, in ms (the GCD every speed formula here starts from). */
 export const BASE_GCD_MS = 2500;
 /* Search ceiling for the speed that reaches a GCD: far above any real gear speed (a few thousand). */
 const SPEED_SEARCH_LIMIT = 100000;
-
-/* sub = BaseSpeed (the character's own speed at this level), div = LevelModifier,
-   sync = the item level gear is synced to at this level (ParamGrow.ItemLevelSync; level sync, sync-target.js) */
-export function speedParams(level) {
-  // PG has one row per level from 1 to the level cap (tests/unit/level-tables.test.js holds it to MAX_LEVEL)
-  const row = PG[Math.max(1, Math.min(MAX_LEVEL, level | 0)) - 1];
-  return { sub: row[0], div: row[1], sync: row[2] };
-}
-
-/* Item level span of each expansion: from the previous expansion's level-cap sync item level to its own (the last
-   one is open-ended). [{short, name, from, to}], `from` of the first and `to` of the last are null. */
-export function expansionBounds() {
-  return EXPANSIONS.map(([short, name, cap], i) => ({
-    short,
-    name,
-    from: i ? speedParams(EXPANSIONS[i - 1][2]).sync : null,
-    to: i < EXPANSIONS.length - 1 ? speedParams(cap).sync : null,
-  }));
-}
+/* Speed's step c in floor(c x points / div) (AkhMorning): per mille of recast cut, and of DoT/HoT tick gain, per
+   LevelModifier (div) points of speed above the base. */
+const SPEED_STEP = 130;
 
 /* The haste a job counts in its Target GCD at `level` (HASTE in constants.js): {name, pct}, or null for none. */
 export function hasteFor(jobId, level) {
@@ -36,11 +23,11 @@ export function hasteFor(jobId, level) {
   return step ? { name: haste.name, pct: step[1], level: step[0], source: step[2] } : null;
 }
 
-/* The recast multiplier in per mille for `gearSpd` speed above the level's base: 1000 minus 130 per `div` points (the
+/* The recast multiplier in per mille for `gearSpd` speed above the level's base: 1000 minus SPEED_STEP per `div` points (the
    part step rounds toward 1000, so it gives nothing), never below 0. Every cast and recast time is multiplied by it. */
 function speedModifier(gearSpd, level) {
-  const { div } = speedParams(level);
-  return Math.max(0, 1000 - Math.floor((130 * gearSpd) / div));
+  const { div } = levelParams(level);
+  return Math.max(0, 1000 - Math.floor((SPEED_STEP * gearSpd) / div));
 }
 
 /* What `gearSpd` speed above the base and `haste` (percent) multiply every cast and recast time by, before the result
@@ -63,8 +50,8 @@ export function gcdFor(gearSpd, level, baseMs, haste = 0) {
 
 /* DoT/HoT tick multiplier from gear speed, e.g. 1.012 */
 export function dotMult(gearSpd, level) {
-  const { div } = speedParams(level);
-  return (1000 + Math.floor((130 * gearSpd) / div)) / 1000;
+  const { div } = levelParams(level);
+  return (1000 + Math.floor((SPEED_STEP * gearSpd) / div)) / 1000;
 }
 
 /* The GCD step that `gearSpd` falls in: {gcd, start, next, nextGcd}. `start` is the lowest gear speed with the same

@@ -6,7 +6,8 @@ import { allMeals, bestFood, foodChoices } from '../../src/core/food.js';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
-import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
+import { levelParams } from '../../src/core/level-params.js';
+import { gcdFor, hasteFor } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
@@ -575,7 +576,7 @@ test('panel base: AkhMorning level table (Determination and Piety from MAIN, the
   ]) {
     const job = makeJobContext(id);
     for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
-      assert.equal(speedParams(+lv).div, div, `level ${lv} DIV`);
+      assert.equal(levelParams(+lv).div, div, `level ${lv} DIV`);
       for (const s of stats) {
         const fromMain = s === 'det' || (s === 'spec' && job.profile.spec === 'piety');
         assert.equal(panelBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);

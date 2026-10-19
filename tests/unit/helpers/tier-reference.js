@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 import { foodChoices } from '../../../src/core/food.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
-import { gcdFor, hasteFor, speedParams } from '../../../src/core/speed.js';
+import { levelParams } from '../../../src/core/level-params.js';
+import { gcdFor, hasteFor } from '../../../src/core/speed.js';
 import { rankByTier } from '../../../src/core/tier-rank.js';
 import { rng } from './common.js';
 import { foodAdd, forEachLoadout, smallPool } from './exhaustive.js';
@@ -21,7 +22,7 @@ export function refTier(job, stat, total, level, haste) {
   if (stat === 'spd') return -Math.round(gcdFor(total, level, 2500, haste) * 100);
   const step = stat === 'spec' ? STEP[job.profile.spec] : STEP[stat];
   if (!step) return null;
-  return Math.floor((step * total) / speedParams(level).div);
+  return Math.floor((step * total) / levelParams(level).div);
 }
 
 /* The best [tier per key, total per key] (totals with food) by the spec's stages, over every loadout and meal:

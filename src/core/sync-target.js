@@ -1,7 +1,7 @@
 /* Which item level a piece is synced to: the duty's item level cap, the item level its level allows, or none.
    See docs/mechanics/math.md, section 5 ("Which pieces are synced"). How a stat is capped at that item level is formulas.js. */
 import { ROW } from './constants.js';
-import { speedParams } from './speed.js';
+import { levelParams } from './level-params.js';
 import { ITEMS } from './tables.js';
 
 /* The item level a piece is synced to by level sync at character level `level`: ParamGrow.ItemLevelSync (levels 1 to
@@ -9,7 +9,7 @@ import { ITEMS } from './tables.js';
    column for every slot. That weapons use it too is inferred; a player's report supports it at level 90 (level 100
    weapons synced to item level 660 in P12S, xivgear issue #317). */
 export function levelSyncIlvl(level) {
-  return speedParams(level).sync;
+  return levelParams(level).sync;
 }
 
 /* The highest item level an item level cap syncs gear made for a higher level to, at synced level `level`: the highest

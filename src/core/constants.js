@@ -189,7 +189,7 @@ export const HASTE = Object.freeze({
    cap above every real duty's at a low level does (docs/mechanics/math.md section 6). */
 export const GCD_FLOOR_MS = 1500;
 /* Expansions in order: [short name, full name, level cap]. The item level boundary after each one is the game's own
-   sync item level at its level cap (ParamGrow), see expansionBounds in speed.js. */
+   sync item level at its level cap (ParamGrow), see expansionBounds in items.js. */
 export const EXPANSIONS = Object.freeze([
   Object.freeze(['ARR', 'A Realm Reborn', 50]),
   Object.freeze(['HW', 'Heavensward', 60]),
