@@ -8,11 +8,14 @@ import { SLOT_LABEL } from '../../core/constants.js';
 
 export function syncExplainer() {
   return {
-    view: null,
-    calc: null,
-    range: [1, 1],
+    /* Piece stats' two panels (explainerView), or null while no sync applies; and its step-by-step section (pieceView).
+       Named apart from the GCD and tiers sub-tabs' `view`, which sit inside this component's scope. */
+    explainer: null,
+    steps: null,
+    /* the Gear item level slider: its [lowest, highest] item level, the item level shown, and the slider's hover text */
+    ilvlRange: [1, 1],
     il: 1,
-    rangeNote: '',
+    ilvlNote: '',
     helpOpen: false,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
     get jobCtx() {
@@ -42,11 +45,11 @@ export function syncExplainer() {
       Alpine.effect(() => {
         const app = this.$store.app;
         const pick = explainerItemLevel(app);
-        this.range = pick.range;
+        this.ilvlRange = pick.range;
         this.il = pick.il;
-        this.rangeNote = pick.note;
-        this.view = explainerView(app, { piece: this.widths.piece });
-        this.calc = pieceView(app, pick.il);
+        this.ilvlNote = pick.note;
+        this.explainer = explainerView(app, { piece: this.widths.piece });
+        this.steps = pieceView(app, pick.il);
         // the chart boxes exist only while a view is shown: watch whichever are there after this render
         this.$nextTick(() =>
           this.$root.querySelectorAll('#tab-piece .chartbox').forEach(el => {
@@ -61,11 +64,11 @@ export function syncExplainer() {
     },
     setIlvl(value) {
       const v = Math.round(Number(value));
-      if (Number.isFinite(v)) this.$store.app.piece.ilvl = Math.max(this.range[0], Math.min(this.range[1], v));
+      if (Number.isFinite(v)) this.$store.app.piece.ilvl = Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v));
     },
     /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
-    get rangeFill() {
-      const [lo, hi] = this.range;
+    get ilvlFill() {
+      const [lo, hi] = this.ilvlRange;
       return hi > lo ? ((this.il - lo) / (hi - lo)) * 100 : 0;
     },
     resetIlvl() {

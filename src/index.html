@@ -105,10 +105,10 @@
   </div>
   <div class="ilctl small" x-show="$store.app.mathTab === 'piece'">
     <label for="p-range">Gear item level</label>
-    <span class="bound" x-text="range[0]" :title="rangeNote"></span>
-    <input type="range" id="p-range" :min="range[0]" :max="range[1]" step="1" :value="il" :style="`--fill: ${rangeFill}%`" :title="rangeNote" @input="setIlvl($event.target.value)">
-    <span class="bound" x-text="range[1]" :title="rangeNote"></span>
-    <input type="number" id="p-ilvl" :min="range[0]" :max="range[1]" step="1" inputmode="numeric" :value="il" aria-label="Gear item level" @change="setIlvl($event.target.value)">
+    <span class="bound" x-text="ilvlRange[0]" :title="ilvlNote"></span>
+    <input type="range" id="p-range" :min="ilvlRange[0]" :max="ilvlRange[1]" step="1" :value="il" :style="`--fill: ${ilvlFill}%`" :title="ilvlNote" @input="setIlvl($event.target.value)">
+    <span class="bound" x-text="ilvlRange[1]" :title="ilvlNote"></span>
+    <input type="number" id="p-ilvl" :min="ilvlRange[0]" :max="ilvlRange[1]" step="1" inputmode="numeric" :value="il" aria-label="Gear item level" @change="setIlvl($event.target.value)">
     <button type="button" class="chip" id="p-ilvl-reset" @click="resetIlvl()">Reset</button>
   </div>
   <!-- GCD: its own level, haste and speed ($store.app.gcd), whatever the job and sync -->
@@ -124,10 +124,10 @@
   </label>
   <div class="ilctl small">
     <label for="g-range">Speed (base + gear + food)</label>
-    <span class="bound" x-text="range.base"></span>
-    <input type="range" id="g-range" :min="range.base" :max="range.most" step="1" :value="speed" :style="`--fill: ${fill}%`" :title="`From the base at level ${level} to the most any job and sync can have there: the best gear with melds, and the best HQ meal`" @input="slide($event.target.value)">
-    <span class="bound" id="g-most" x-text="`${range.most}, any job and sync`"></span>
-    <input type="number" id="g-speed" :min="range.base" :max="range.most" step="1" inputmode="numeric" :value="speed" aria-label="Speed (base + gear + food)" @input="typeSpeed($el)" @change="typeSpeed($el, true)">
+    <span class="bound" x-text="speedRange.base"></span>
+    <input type="range" id="g-range" :min="speedRange.base" :max="speedRange.most" step="1" :value="speed" :style="`--fill: ${speedFill}%`" :title="`From the base at level ${level} to the most any job and sync can have there: the best gear with melds, and the best HQ meal`" @input="slide($event.target.value)">
+    <span class="bound" id="g-most" x-text="`${speedRange.most}, any job and sync`"></span>
+    <input type="number" id="g-speed" :min="speedRange.base" :max="speedRange.most" step="1" inputmode="numeric" :value="speed" aria-label="Speed (base + gear + food)" @input="typeSpeed($el)" @change="typeSpeed($el, true)">
     <button type="button" class="chip" id="g-reset" @click="resetSpeed()">Reset</button>
   </div>
   </div></template>
@@ -140,16 +140,16 @@
   </div></template>
 </div>
 
-<p class="panel empty" id="m-off" x-show="!view && $store.app.mathTab === 'piece'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
+<p class="panel empty" id="m-off" x-show="!explainer && $store.app.mathTab === 'piece'" x-text="$store.app.sync ? 'Enter a sync cap (item level) at the top to see what sync does.' : 'No sync applies: item level sync is off and the synced level is the job’s level cap. Turn item level sync on and enter a cap, or lower the synced level, to see what sync does.'"></p>
 
 <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
 <section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
-<template x-if="view"><div class="twopanel">
+<template x-if="explainer"><div class="twopanel">
   <div class="panel" id="p-piece">
     <h2>One piece, before and after sync</h2>
-    <p class="small" id="p-lead" x-text="view.lead"></p>
+    <p class="small" id="p-lead" x-text="explainer.lead"></p>
     <div class="bars" id="p-bars">
-      <template x-for="b in view.bars" :key="b.label">
+      <template x-for="b in explainer.bars" :key="b.label">
         <div style="display:contents">
           <div class="small" x-text="b.label"></div>
           <div class="bar"><div class="keep" :style="`width:${b.keep}`"></div><div class="rise" :style="`left:${b.riseLeft};width:${b.rise}`"></div><div class="cut" :style="`left:${b.cutLeft};width:${b.cut}`"></div><div class="meld" x-show="b.melds" :style="`left:${b.meldLeft};width:${b.meldWidth}`"></div><div class="capmark" :style="`left:${b.capAt}`"></div></div>
@@ -158,69 +158,69 @@
       </template>
       <div class="small">Materia</div>
       <div class="chips" id="p-materia">
-        <template x-for="(c, i) in view.stoneChips" :key="i"><span class="meldchip on" x-text="c"></span></template>
-        <span class="meldchip" style="visibility: hidden" aria-hidden="true" x-show="!view.stoneChips.length">+0</span>
-        <span class="small dim meldnote" x-text="view.meldNote"></span>
+        <template x-for="(c, i) in explainer.stoneChips" :key="i"><span class="meldchip on" x-text="c"></span></template>
+        <span class="meldchip" style="visibility: hidden" aria-hidden="true" x-show="!explainer.stoneChips.length">+0</span>
+        <span class="small dim meldnote" x-text="explainer.meldNote"></span>
       </div>
     </div>
-    <p class="small dim" x-show="view.goalNote" x-text="view.goalNote"></p>
+    <p class="small dim" x-show="explainer.goalNote" x-text="explainer.goalNote"></p>
     <div class="legend">
       <span><i class="box" style="background:var(--accent)"></i>Kept</span>
-      <span x-show="view.bars.some(b => b.melds)"><i class="box meldbox"></i>Materia</span>
+      <span x-show="explainer.bars.some(b => b.melds)"><i class="box meldbox"></i>Materia</span>
       <span><i class="hatch"></i>Cut by sync</span>
-      <span><i class="box" style="background:var(--gold)"></i><span x-text="`More than an item level ${view.cap} piece has`"></span></span>
-      <span><i style="background:var(--fg);width:2px"></i><span x-text="`Cap at item level ${view.cap}`"></span></span>
+      <span><i class="box" style="background:var(--gold)"></i><span x-text="`More than an item level ${explainer.cap} piece has`"></span></span>
+      <span><i style="background:var(--fg);width:2px"></i><span x-text="`Cap at item level ${explainer.cap}`"></span></span>
     </div>
     <div class="versus flat" id="p-vs">
       <div class="tablewrap"><table class="compact">
         <colgroup><col class="c-il"><col><col class="c-pts"></colgroup>
         <thead><tr><th>Item level</th><th>Materia</th><th class="n">In the duty</th></tr></thead>
         <tbody>
-          <template x-for="r in view.vsRows" :key="r.il"><tr :class="{ solo: view.vsRows.length < 2 }"><td><span x-text="r.il"></span><div class="dim small" x-text="r.tag || ' '"></div></td><td><span x-text="r.materia"></span><div class="dim small" x-text="r.materiaNote || ' '"></div></td><td class="n" x-text="r.points"></td></tr></template>
-          <tr class="spacer" aria-hidden="true" x-show="view.vsRows.length < 2"><td>&nbsp;<div class="small">&nbsp;</div></td><td><span x-text="view.vsRows[0].materia"></span><div class="small" x-text="view.vsRows[0].materiaNote || ' '"></div></td><td></td></tr>
+          <template x-for="r in explainer.vsRows" :key="r.il"><tr :class="{ solo: explainer.vsRows.length < 2 }"><td><span x-text="r.il"></span><div class="dim small" x-text="r.tag || ' '"></div></td><td><span x-text="r.materia"></span><div class="dim small" x-text="r.materiaNote || ' '"></div></td><td class="n" x-text="r.points"></td></tr></template>
+          <tr class="spacer" aria-hidden="true" x-show="explainer.vsRows.length < 2"><td>&nbsp;<div class="small">&nbsp;</div></td><td><span x-text="explainer.vsRows[0].materia"></span><div class="small" x-text="explainer.vsRows[0].materiaNote || ' '"></div></td><td></td></tr>
         </tbody>
       </table></div>
-      <p class="small"><b x-text="view.verdict || ' '"></b></p>
+      <p class="small"><b x-text="explainer.verdict || ' '"></b></p>
     </div>
   </div>
   <div class="panel" id="p-curve">
     <h2>Overgeared or melded: which has more?</h2>
     <div class="legend" id="p-curve-legend">
-      <template x-for="b in view.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
-      <span><i class="dash"></i><span x-text="`Synced item level ${view.cap}`"></span></span>
+      <template x-for="b in explainer.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
+      <span><i class="dash"></i><span x-text="`Synced item level ${explainer.cap}`"></span></span>
       <span><i style="background:var(--fg);opacity:.12"></i>Overgeared ≥ melded</span>
     </div>
-    <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-html="view.curveChartSvg"></div>
-    <p class="callout small" id="p-curve-note" x-show="view.curveNote" x-text="view.curveNote"></p>
+    <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-html="explainer.curveChartSvg"></div>
+    <p class="callout small" id="p-curve-note" x-show="explainer.curveNote" x-text="explainer.curveNote"></p>
   </div>
 </div></template>
 
 <details class="panel" id="p-steps">
   <summary>Each stat, step by step</summary>
   <div id="p-out" class="steps">
-    <p class="steps-sum" x-text="calc.summary"></p>
-    <p class="small" x-show="calc.byLevel" x-text="`Level sync: at level ${calc.level}, gear with a higher equip level is synced to item level ${calc.cap}, used as the cap here.`"></p>
+    <p class="steps-sum" x-text="steps.summary"></p>
+    <p class="small" x-show="steps.byLevel" x-text="`Level sync: at level ${steps.level}, gear with a higher equip level is synced to item level ${steps.cap}, used as the cap here.`"></p>
     <div>
-      <p class="small"><b>Where the numbers come from.</b> Every item level has a budget for each stat, and each slot takes a fixed share of it; with both rings the shares add up to the whole budget. <span x-text="calc.slotShare ? `The ${calc.slotName} takes ${calc.slotShare}` : 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'"></span>; its best substat gets all of that (<b>100%</b>), the second <b>70%</b> of it.<span x-show="calc.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at 20%, outside these two.</span></p>
+      <p class="small"><b>Where the numbers come from.</b> Every item level has a budget for each stat, and each slot takes a fixed share of it; with both rings the shares add up to the whole budget. <span x-text="steps.slotShare ? `The ${steps.slotName} takes ${steps.slotShare}` : 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'"></span>; its best substat gets all of that (<b>100%</b>), the second <b>70%</b> of it.<span x-show="steps.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at 20%, outside these two.</span></p>
       <div class="slices" id="p-slices" role="img" aria-label="Each slot's share of the budget">
-        <template x-for="(s, i) in calc.slices" :key="i"><span :class="{ on: s.on }" :style="`flex:${s.width}`"><b x-text="s.label"></b><i x-text="s.share"></i></span></template>
+        <template x-for="(s, i) in steps.slices" :key="i"><span :class="{ on: s.on }" :style="`flex:${s.width}`"><b x-text="s.label"></b><i x-text="s.share"></i></span></template>
       </div>
     </div>
-    <p class="steps-rule" x-show="calc.status !== 'off'"><b>In the duty, each stat is the lower of two numbers:</b> <span x-text="`what this ${calc.slotName} has, and what a ${calc.slotName} at the synced item level has (its ceiling).`"></span></p>
+    <p class="steps-rule" x-show="steps.status !== 'off'"><b>In the duty, each stat is the lower of two numbers:</b> <span x-text="`what this ${steps.slotName} has, and what a ${steps.slotName} at the synced item level has (its ceiling).`"></span></p>
     <div class="tablewrap"><table class="compact steps-table">
       <thead><tr>
         <th>Stat</th>
-        <th x-text="`This ${calc.slotName} (item level ${calc.il})`"></th>
-        <th x-show="calc.status !== 'off'" x-text="`A ${calc.slotName} at item level ${calc.cap} (the ceiling)`"></th>
-        <th class="n" x-show="calc.status !== 'off'">In the duty</th>
+        <th x-text="`This ${steps.slotName} (item level ${steps.il})`"></th>
+        <th x-show="steps.status !== 'off'" x-text="`A ${steps.slotName} at item level ${steps.cap} (the ceiling)`"></th>
+        <th class="n" x-show="steps.status !== 'off'">In the duty</th>
       </tr></thead>
       <tbody>
-        <template x-for="r in calc.rows" :key="r.stat">
+        <template x-for="r in steps.rows" :key="r.stat">
           <tr>
             <td><b x-text="r.label"></b><div class="dim small" x-text="r.w + '%'"></div></td>
             <td><span class="num big" :class="{ dim: !r.ownKept }" x-text="r.raw"></span> <span class="small why" x-text="r.ownText"></span><div class="formula" x-text="r.ownFormula"></div></td>
-            <td x-show="calc.status !== 'off'"><span class="num big" :class="{ dim: r.ownKept }" x-text="r.cap"></span> <span class="small why" x-text="r.capText"></span><div class="formula" x-text="r.capFormula"></div></td>
-            <td class="n" x-show="calc.status !== 'off'"><span class="big" :class="{ clamp: r.lost }" x-text="r.syn"></span><template x-if="r.lost"><div class="small clamp" x-text="`−${r.lost}`"></div></template></td>
+            <td x-show="steps.status !== 'off'"><span class="num big" :class="{ dim: r.ownKept }" x-text="r.cap"></span> <span class="small why" x-text="r.capText"></span><div class="formula" x-text="r.capFormula"></div></td>
+            <td class="n" x-show="steps.status !== 'off'"><span class="big" :class="{ clamp: r.lost }" x-text="r.syn"></span><template x-if="r.lost"><div class="small clamp" x-text="`−${r.lost}`"></div></template></td>
           </tr>
         </template>
       </tbody>

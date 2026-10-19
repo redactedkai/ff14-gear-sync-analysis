@@ -1,7 +1,7 @@
 /* How the math works, GCD (views/gcd.js): the sub-tab (gcdTab) and its controls in the math bar (gcdControls), which
    share their settings through $store.app.gcd (not saved). The level follows the synced level until one is typed. */
 import { TYPING_DEBOUNCE_MS } from '../helpers.js';
-import { GCD_LEVELS, HASTE_OPTIONS, gcdLevelInput, gcdView, speedRange } from '../views/gcd.js';
+import { GCD_LEVELS, HASTE_OPTIONS, gcdLevelInput, gcdView, speedRange as speedRangeAt } from '../views/gcd.js';
 
 /* The tab's level: the one typed into its box, else the synced level, held to the levels the tab covers. */
 function tabLevel(app) {
@@ -51,17 +51,19 @@ export function gcdControls() {
     get level() {
       return tabLevel(this.$store.app);
     },
-    get range() {
-      return speedRange(this.level);
+    /* the speed slider's range at the level: {base, most} (views/gcd.js speedRange) */
+    get speedRange() {
+      return speedRangeAt(this.level);
     },
     /* the speed used: the one asked for, held to the level's range */
     get speed() {
-      const { base, most } = this.range,
+      const { base, most } = this.speedRange,
         asked = this.$store.app.gcd.speed;
       return Math.max(base, Math.min(most, asked ?? base));
     },
-    get fill() {
-      const { base, most } = this.range;
+    /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
+    get speedFill() {
+      const { base, most } = this.speedRange;
       return most > base ? ((this.speed - base) / (most - base)) * 100 : 0;
     },
     typeLevel(el, now = false) {
