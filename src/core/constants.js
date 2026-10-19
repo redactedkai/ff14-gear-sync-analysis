@@ -254,6 +254,8 @@ export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
 /* slot code -> the slot types a piece in it leaves empty: the off-hand for a two-handed weapon, the head for a cloak */
 export const DB_SLOT_BLOCKS = Object.freeze(ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])));
+/* The slot code of a two-handed weapon (`twoHanded` in item-format.json). */
+export const TWO_HANDED_SLOT_CODE = ITEM_FORMAT.slots.findIndex(s => s.type === 'weapon' && s.twoHanded);
 /* The boxes of the "Gear from" filter, by what a player does to get a piece (scripts/data/gear_activities.py):
    {key, label, section, on (ticked by default), hint, bit}, in the menu's order. Bit i of a route mask = ACTIVITIES[i]. */
 export const ACTIVITIES = Object.freeze(

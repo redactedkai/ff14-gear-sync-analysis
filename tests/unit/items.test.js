@@ -14,8 +14,9 @@ import {
   expansionOf,
   meldInfo,
   rowStats,
+  poolKey,
 } from '../../src/core/items.js';
-import { ACTIVITIES, ACTIVITY_MARKET_BIT, EXPANSIONS, ROW } from '../../src/core/constants.js';
+import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, EXPANSIONS, ROW } from '../../src/core/constants.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
 import { ITEMS, MATERIA } from '../../src/core/tables.js';
 import { itemRow } from './helpers/common.js';
@@ -363,4 +364,28 @@ test('materia table: values, item level gates and the grades limited to the firs
   assert.deepEqual(MATERIA.values, [1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54]);
   assert.deepEqual(MATERIA.gate, [15, 30, 45, 70, 160, 290, 420, 420, 560, 560, 690, 690]);
   assert.deepEqual(MATERIA.high, [6, 8, 10, 12]); // VI, VIII, X, XII
+});
+
+/* Audit 01, finding 25: a pool item's database facts come from the first row with its pool key (rowFacts in items.js),
+   only the routes are joined, so rows sharing a key must agree on everything else. */
+test('database rows that share a pool key agree on every fact but their routes', () => {
+  const FACTS = [
+    'slotCode',
+    'kind',
+    'equipLevel',
+    'scales',
+    'meldSlots',
+    'overmeld',
+    'category',
+    'damagePhys',
+    'damageMag',
+    'defensePhys',
+    'defenseMag',
+  ];
+  const first = new Map();
+  for (const row of ITEMS) {
+    const key = poolKey({ name: row[ROW.name], type: DB_SLOT_TYPE[row[ROW.slotCode]], ilvl: row[ROW.ilvl] });
+    if (!first.has(key)) first.set(key, row);
+    else for (const fact of FACTS) assert.equal(row[ROW[fact]], first.get(key)[ROW[fact]], `${key}: ${fact}`);
+  }
 });

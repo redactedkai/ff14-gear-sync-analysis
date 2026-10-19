@@ -6,6 +6,7 @@ import {
   DB_SLOT_TYPE,
   DB_SLOT_PCT,
   DB_SLOT_BLOCKS,
+  TWO_HANDED_SLOT_CODE,
   ACTIVITIES,
   ACTIVITY_MARKET_BIT,
   EXPANSIONS,
@@ -190,8 +191,9 @@ let rowIndex = null;
 function rowFacts(item) {
   if (item.src !== 'game') return null;
   if (!rowIndex) {
-    // built once: several rows can share a pool key (the same piece from two sources); their routes are joined (any
-    // one gets it), every other fact comes from the first such row
+    // built once: several rows could share a pool key (the same piece from two sources); their routes are joined (any
+    // one gets it) and every other fact comes from the first such row, so rows sharing a key must agree on those facts
+    // (items.test.js checks it; today no two rows share a key)
     rowIndex = new Map();
     for (const r of ITEMS) {
       const k = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });
@@ -275,8 +277,8 @@ export function slotInfo(job, item) {
   if (f) return { pct: DB_SLOT_PCT[f.slotCode], blocks: DB_SLOT_BLOCKS[f.slotCode], factors: kindFactors(job, f.kind) };
   return {
     pct: job.slotPct[item.type],
-    // slot code 0 is the two-handed weapon, which blocks the off-hand
-    blocks: item.type === 'weapon' && job.weaponMode === '2h' ? DB_SLOT_BLOCKS[0] : [],
+    // a weapon on a two-handed job is a two-handed weapon, which blocks the off-hand
+    blocks: item.type === 'weapon' && job.weaponMode === '2h' ? DB_SLOT_BLOCKS[TWO_HANDED_SLOT_CODE] : [],
     factors: null,
   };
 }
