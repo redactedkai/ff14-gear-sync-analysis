@@ -317,11 +317,6 @@
           <label class="f">Tiebreak 2<select id="o-tb2" @change="$store.app.opt.tb2 = $event.target.value">
             <template x-for="o in tiebreakOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.tb2"></option></template>
           </select></label>
-          <template x-if="$store.app.opt.food">
-            <label class="f">Meal (HQ)<select id="o-food-pair" @change="$store.app.opt.foodPair = $event.target.value">
-              <template x-for="o in foodOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.opt.foodPair"></option></template>
-            </select></label>
-          </template>
         </div>
         <div class="gcd-row" id="o-gcd-row">
           <label class="f" for="o-gcd" x-text="view?.gcdUi?.label || 'Target GCD'"></label>
@@ -386,7 +381,24 @@
             </template>
             <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td class="n" x-text="v"></td></template></tr>
             <template x-if="view.food">
-              <tr class="food" id="o-food-row"><td>Food</td><td><span x-text="view.food.name"></span><div class="small dim" x-text="`HQ${view.food.best ? ', best for the goal' : ''}`"></div></td><td class="n" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
+              <tr class="food" id="o-food-row"><td>Food</td><td class="item">
+                <div class="same" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
+                  <button type="button" class="same-btn" id="o-meal-btn" :aria-expanded="mealOpen" @click="toggleMealMenu()"><span x-text="view.food.name"></span><template x-if="view.food.best && view.food.menu.count > 1"><span class="same-count" x-text="`1 of ${view.food.menu.count}`"></span></template></button>
+                  <div class="same-menu meal-menu" id="o-meal-menu" x-show="mealOpen" x-cloak>
+                    <div class="meal-tools">
+                      <div class="meal-line"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"><label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" x-model="mealBestOnly"><span>Best for goal</span></label></div>
+                      <div class="meal-pills" role="group" aria-label="Meal stats"><template x-for="p in view.food.menu.pills" :key="p.stat"><button type="button" class="meal-pill" :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))" :disabled="mealStats.length >= 2 && !mealStats.includes(p.stat)" :title="p.label" :data-stat="p.stat" @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
+                    </div>
+                    <div class="meal-list" x-ref="mealList">
+                      <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
+                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" :data-meal="x.key" @click="pickMeal(x.key)"><span><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template><span class="meal-sub" x-text="`${x.label} · ilvl ${x.ilvl}`"></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
+                      </div></template>
+                      <template x-if="!mealGroups.length"><div class="meal-empty">No meals match.</div></template>
+                    </div>
+                  </div>
+                </div>
+                <div class="small dim" id="o-meal-note" x-text="view.food.best ? 'HQ, best for goal' : 'HQ, picked'"></div>
+              </td><td class="n" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
             </template>
             <template x-if="view.food">
               <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td class="n" x-text="v"></td></template></tr>

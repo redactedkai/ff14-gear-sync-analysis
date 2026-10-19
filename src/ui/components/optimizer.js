@@ -3,7 +3,6 @@
 import Alpine from 'alpinejs';
 import { emptyGearFrom, optimizerKey, optimizerView, resultPanel, searchCount } from '../views/optimizer.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
-import { foodChoices, foodLabel } from '../../core/food.js';
 
 const DEBOUNCE_MS = 120;
 
@@ -21,6 +20,15 @@ export function optimizer() {
     picks: {},
     /* the row whose menu is open, or null */
     menuOpen: null,
+    /* the meal picked from the Food row's menu (an allMeals key), or null for the best for the goal. Not saved; cleared
+       with the picks */
+    mealPick: null,
+    /* the Food menu: open or not, its search text (meal names), the stats picked on its pills (a meal must have each;
+       two at most, since a meal has at most two) and its "Best for goal" switch (on: only meals with the best's result) */
+    mealOpen: false,
+    mealQuery: '',
+    mealStats: [],
+    mealBestOnly: true,
     /* the settings the result was last solved for, to tell a new result from a pick */
     lastDeps: '',
     /* a solve is pending or running: shows the progress bar */
@@ -40,6 +48,8 @@ export function optimizer() {
             if (key !== this.lastDeps) {
               this.picks = {};
               this.menuOpen = null;
+              this.mealPick = null;
+              this.mealOpen = false;
               this.lastDeps = key;
             }
             this.solve();
@@ -70,7 +80,7 @@ export function optimizer() {
       // the plain store: read through Alpine's reactive proxies, the pool's thousands of stat reads cost about
       // twice the run itself (this runs outside the effect, so nothing here needs tracking)
       const raw = Alpine.raw(this.$store.app);
-      const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks)));
+      const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks), this.mealPick));
       this.solveMs = Math.max(1, Math.round(performance.now() - t0));
       this.view = view;
       // the result's panel values with the settings they were solved for, for How the math works (Substat tiers)
@@ -87,6 +97,44 @@ export function optimizer() {
       this.menuOpen = null;
       this.solve();
     },
+    /* A meal picked from the Food row's menu: the search runs again with it in place of the best (with tier ranking or
+       a Target GCD the meal can change which gear wins). */
+    pickMeal(key) {
+      this.mealPick = key;
+      this.mealOpen = false;
+      this.solve();
+    },
+    /* Open or close the Food menu; opened, the search box takes the keys and the list starts at the shown meal. */
+    toggleMealMenu() {
+      this.mealOpen = !this.mealOpen;
+      if (!this.mealOpen) return;
+      // after x-show has shown the menu (a hidden box takes no focus and has no layout)
+      this.$nextTick(() =>
+        requestAnimationFrame(() => {
+          this.$refs.mealQuery?.focus();
+          const list = this.$refs.mealList,
+            on = list?.querySelector('.on');
+          if (on) list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - 40;
+        }),
+      );
+    },
+    /* A stat pill: on or off; a third stays off (no meal has three stats; the template greys it out). */
+    toggleMealStat(stat) {
+      if (this.mealStats.includes(stat)) this.mealStats = this.mealStats.filter(s => s !== stat);
+      else if (this.mealStats.length < 2) this.mealStats = [...this.mealStats, stat];
+    },
+    /* The Food menu's groups after its switch, pills and search: [{label, items}] (view.food.menu.groups, empty groups
+       dropped). */
+    get mealGroups() {
+      const menu = this.view?.food?.menu;
+      if (!menu) return [];
+      const words = this.mealQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      const fits = x =>
+        (!this.mealBestOnly || x.best) &&
+        this.mealStats.every(s => x.stats.includes(s)) &&
+        words.every(w => x.name.toLowerCase().includes(w));
+      return menu.groups.map(g => ({ label: g.label, items: g.items.filter(fits) })).filter(g => g.items.length);
+    },
     /* the filters under Gear to search: the optimizer's own values (opt.expOff, opt.exclude, opt.market), not the
        browser's */
     ...expansionToggles('opt'),
@@ -96,10 +144,6 @@ export function optimizer() {
     },
     get tiebreakOptions() {
       return [['', 'none']].concat(this.statOptions);
-    },
-    /* the Food select: best for the goal, then the job's meals by stat pair, primary stat first */
-    get foodOptions() {
-      return [['', 'Best for the goal']].concat(foodChoices(this.job).map(c => [c.key, `${foodLabel(this.job, c)} (${c.ilvl})`]));
     },
   };
 }

@@ -19,13 +19,13 @@ import {
 } from '../../core/items.js';
 import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
 import { buildCandidates } from '../../core/optimizer/candidates.js';
-import { sameResult } from '../../core/same-result.js';
+import { sameMeals, sameResult } from '../../core/same-result.js';
 import { WD_KEY, mitigationPct, setDefense } from '../../core/damage-defense.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
 import { rankByTier } from '../../core/tier-rank.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
-import { bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
+import { allMeals, bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
 import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
 import { gearFilter, syncSettings } from '../state.js';
 
@@ -61,7 +61,6 @@ export function optimizerKey(app) {
     o.lvl,
     o.melds,
     o.food,
-    o.foodPair,
     o.gcd,
     o.gcdMode,
     o.byTier,
@@ -82,15 +81,13 @@ export function panelBase(job, stat, level) {
   return statBase(job, stat, level);
 }
 
-/* The meal the result shows, or null with Food off: the chosen pair (opt.foodPair), or with '' the one that raises the
-   target, then the tiebreaks, the most (bestFood; the gear set is the same with any meal, core/food.js). */
-export function chosenFood(app, totals) {
-  const job = app.jobCtx,
-    o = app.opt;
+/* The meal the plain search's result uses, or null with Food off: the player's pick from the Food menu (`meal`, an
+   allMeals entry, or null), else the one that raises the target, then the tiebreaks, the most (bestFood; the gear set is
+   the same with any meal, core/food.js). */
+export function chosenFood(app, totals, meal = null) {
+  const o = app.opt;
   if (!o.food) return null;
-  const choices = foodChoices(job);
-  if (o.foodPair) return choices.find(c => c.key === o.foodPair) ?? null;
-  return bestFood(job, choices, totals, app.level, [o.target, o.tb, o.tb2]);
+  return meal ?? bestFood(app.jobCtx, foodChoices(app.jobCtx), totals, app.level, [o.target, o.tb, o.tb2]);
 }
 
 /* Every database piece the job can wear (browseItems leaves out gear above its level cap), as pool items. Built once per
@@ -145,11 +142,11 @@ export function askedGcd(app) {
   return Number.isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : null;
 }
 
-/* The meal Target GCD and tier ranking search with: none with Food off, the chosen pair, or every choice ('best'). */
-function gcdFood(app) {
-  const o = app.opt;
-  if (!o.food) return null;
-  return o.foodPair ? (foodChoices(app.jobCtx).find(c => c.key === o.foodPair) ?? null) : 'best';
+/* The meal Target GCD and tier ranking search with: none with Food off, the player's pick from the Food menu (`meal`),
+   or every choice ('best'). */
+function gcdFood(app, meal) {
+  if (!app.opt.food) return null;
+  return meal ?? 'best';
 }
 
 /* One-entry caches, so typing a new GCD only reruns the search: the candidate lists Target GCD builds (they depend on
@@ -174,17 +171,22 @@ function poolSettingsKey(app, gear) {
 }
 
 /* What the Target GCD line shows before any search: the box label, its range hint, whether it is off. */
-function gcdControls(app, pool, gear) {
+function gcdControls(app, pool, gear, meal) {
   const job = app.jobCtx,
     o = app.opt;
   const haste = hasteFor(job.jobId, app.level);
   const top = gcdFor(0, app.level, BASE_GCD_MS, haste?.pct ?? 0);
   const settingsKey = poolSettingsKey(app, gear);
-  const key = settingsKey == null ? null : `${settingsKey}|${JSON.stringify(gcdFood(app))}`;
+  const key = settingsKey == null ? null : `${settingsKey}|${JSON.stringify(gcdFood(app, meal))}`;
   let fastest;
   if (key != null && fastCache.key === key) fastest = fastCache.gcd;
   else {
-    fastest = fastestGcd(job, pool, syncSettings(app), { melds: !!o.melds, food: gcdFood(app), nodeLimit: NODE_LIMIT, level: app.level });
+    fastest = fastestGcd(job, pool, syncSettings(app), {
+      melds: !!o.melds,
+      food: gcdFood(app, meal),
+      nodeLimit: NODE_LIMIT,
+      level: app.level,
+    });
     if (key != null) fastCache = { key, gcd: fastest };
   }
   return {
@@ -270,25 +272,72 @@ function sameMenu(options, shown) {
   return { count: options.length, groups };
 }
 
+/* The Food row of a result with food: the meal it shows and its menu (owner's design, 2026-10-18). `food`: the meal the
+   search used; `picked`: the meal the player picked from the menu, or null; `haste`: the job's always-on haste in
+   percent. Returns {meal, best, menu}:
+   - meal: the allMeals entry the row shows, the pick or else the oldest meal with the best's result (sameMeals), as the
+     rows show the easiest piece; best: it has the best's result
+   - menu: {count, groups, pills}. count: how many meals have the best's result. groups: every meal the job can use, by
+     expansion, newest first: {label, items: [{key, name, ilvl, label, stats, adds, best, on}]}, label "Spell Speed +
+     Direct Hit", stats its neutral stats (for the pills), adds what it gives on this gear ("SpS +44 DHT +41 VIT +54"),
+     best its result is the best's, on the row shows it. pills: the job's substats some meal has, {stat, short, label}. */
+function foodRow(app, gearTotals, food, picked, haste) {
+  const job = app.jobCtx,
+    o = app.opt,
+    level = app.level;
+  const keys = [o.target, o.tb, o.tb2].filter(Boolean);
+  const meals = allMeals(job);
+  // the best meal for the goal on this gear: the search's own, or with a pick the one the search would have taken
+  const best = picked ? bestFood(job, foodChoices(job), gearTotals, level, keys) : food;
+  const tagged = new Set(sameMeals(job, gearTotals, best, meals, { level, haste, goal: o.target }, keys));
+  const meal = picked ?? meals.find(m => tagged.has(m));
+  const item = m => {
+    const bonus = foodBonus(job, m, gearTotals, level);
+    const lines = [...m.stats.map(x => x.stat), ...(m.vit ? ['vit'] : [])];
+    return {
+      key: m.key,
+      name: m.name,
+      ilvl: m.ilvl,
+      label: foodLabel(job, m),
+      stats: m.stats.map(x => x.stat),
+      adds: lines.map(s => `${job.short[s]} +${bonus[s].bonus}`).join(' '),
+      best: tagged.has(m),
+      on: m === meal,
+    };
+  };
+  // allMeals is oldest first: reversed, each expansion lists its newest meal first
+  const items = meals.map(item).reverse();
+  const groups = [...EXPANSIONS]
+    .reverse()
+    .map(([short, name]) => ({ label: name, items: items.filter(x => expansionOf(1, x.ilvl) === short) }))
+    .filter(g => g.items.length);
+  const pills = job.substats
+    .filter(s => meals.some(m => m.stats.some(x => x.stat === s)))
+    .map(s => ({ stat: s, short: job.short[s], label: job.label[s] }));
+  return { meal, best: tagged.has(meal), menu: { count: tagged.size, groups, pills } };
+}
+
 /* The optimizer can throw (e.g. stat totals too large to rank exactly); the page shows the message
    instead of keeping a stale result. `gear`: as for searchPool. `chosen`: {row index: pool key}, the pieces the player
-   picked from the rows' menus of pieces with the same result (sameResult; not saved). */
-export function optimizerView(app, gear, chosen = {}) {
+   picked from the rows' menus of pieces with the same result (sameResult; not saved). `mealKey`: the meal the player
+   picked from the Food row's menu (an allMeals key), or null for the best for the goal (not saved either). */
+export function optimizerView(app, gear, chosen = {}, mealKey = null) {
   try {
-    return buildOptimizerView(app, gear, chosen);
+    return buildOptimizerView(app, gear, chosen, mealKey);
   } catch (e) {
     return { kind: 'error', message: e?.message || String(e) };
   }
 }
 
-function buildOptimizerView(app, gear, chosen) {
+function buildOptimizerView(app, gear, chosen, mealKey) {
   const job = app.jobCtx,
     o = app.opt;
-  // 1. the gear to search and the Target GCD box's state
+  // 1. the gear to search, the meal the player picked (searched with in place of the best) and the Target GCD box's state
   const pool = searchPool(app, gear);
   if (!pool.length) return { kind: 'excluded' };
   const sync = syncSettings(app);
-  const ui = gcdControls(app, pool, gear);
+  const picked = (o.food && mealKey && allMeals(job).find(m => m.key === mealKey)) || null;
+  const ui = gcdControls(app, pool, gear, picked);
   const pct = ui.haste?.pct ?? 0;
   const asked = askedGcd(app);
   // 2. the search. By tier: the tiers of the goal and tiebreaks first, counted with food, so meal and gear are chosen
@@ -305,7 +354,7 @@ function buildOptimizerView(app, gear, chosen) {
         target: o.target,
         tiebreak: [o.tb, o.tb2],
         melds: !!o.melds,
-        food: gcdFood(app),
+        food: gcdFood(app, picked),
         nodeLimit: NODE_LIMIT,
         level: app.level,
         gcd: asked ?? undefined,
@@ -327,7 +376,13 @@ function buildOptimizerView(app, gear, chosen) {
     const settingsKey = poolSettingsKey(app, gear);
     const key = settingsKey == null ? null : `${settingsKey}|${goal.target},${goal.tiebreak.join()},${goal.mode}`;
     const prep = key != null && prepCache.key === key ? prepCache.prep : null;
-    const r = optimizeGcd(job, pool, sync, { ...goal, gcd: asked, food: gcdFood(app), nodeLimit: NODE_LIMIT, level: app.level }, prep);
+    const r = optimizeGcd(
+      job,
+      pool,
+      sync,
+      { ...goal, gcd: asked, food: gcdFood(app, picked), nodeLimit: NODE_LIMIT, level: app.level },
+      prep,
+    );
     if (key != null && r.prep) prepCache = { key, prep: r.prep };
     line = gcdLine(job, r, ui, app.level);
     if (!r.ok) return { kind: r.truncated ? 'infeasible' : 'nogcd', gcdUi: ui, gcdLine: line, truncated: r.truncated };
@@ -342,7 +397,7 @@ function buildOptimizerView(app, gear, chosen) {
       melds: !!o.melds,
     });
     if (!res.ok) return { kind: res.truncated ? 'infeasible' : 'noset', gcdUi: ui, truncated: res.truncated };
-    food = chosenFood(app, res.totals);
+    food = chosenFood(app, res.totals, picked);
     bonus = food ? foodBonus(job, food, res.totals, app.level) : {};
   }
 
@@ -358,16 +413,19 @@ function buildOptimizerView(app, gear, chosen) {
   );
   const picks = same.map(r => r.pick);
   const gearTotals = Object.fromEntries(job.stats.map(s => [s, picks.reduce((sum, p) => sum + (p.item ? p.eff[s] || 0 : 0), 0)]));
-  if (food) bonus = foodBonus(job, food, gearTotals, app.level);
 
-  // 4. totals: gear only, with food, and as the character panel shows them
+  // 4. the meal the Food row shows (the pick, else the oldest with the best's result) and its menu
+  const meal = food ? foodRow(app, gearTotals, food, picked, pct) : null;
+  if (meal) bonus = foodBonus(job, meal.meal, gearTotals, app.level);
+
+  // 5. totals: gear only, with food, and as the character panel shows them
   // totals with food (the gear totals when Food is off): what the effects, tiers and GCD are counted from
   const t = withFood(gearTotals, bonus),
     spd = t.spd;
   // the character panel's numbers: every stat with the character's base added (clan bonus aside)
   const panel = s => t[s] + panelBase(job, s, app.level),
     base = s => panelBase(job, s, app.level);
-  // 5. one row per slot, in the character panel's order; rings are numbered
+  // 6. one row per slot, in the character panel's order; rings are numbered
   const scored = [o.target, o.tb, o.tb2].filter(Boolean);
   let ringN = 0;
   const rows = picks.map((p, i) => {
@@ -398,7 +456,7 @@ function buildOptimizerView(app, gear, chosen) {
       }),
     };
   });
-  // 6. each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier;
+  // 7. each stat's effect (from gear, plus food when on), the points above its tier start (spare) and to the next tier;
   // held: a key tier ranking holds (it keeps its tier whatever the later keys do)
   const heldStats = new Set(byTier ? res.held.map(h => h.stat) : []);
   const tiers = job.stats.map(s => {
@@ -432,7 +490,7 @@ function buildOptimizerView(app, gear, chosen) {
   const def = setDefense(picks.filter(p => p.item).map(p => ({ item: p.item, target: itemSyncIlvl(p.item, sync) })));
   const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, app.level), magPct: mitigationPct(def.mag, app.level) };
 
-  // 7. everything the template shows
+  // 8. everything the template shows
   return {
     kind: 'ok',
     gcdUi: ui,
@@ -444,12 +502,15 @@ function buildOptimizerView(app, gear, chosen) {
     total: panel(o.target),
     totalLabel: `${job.label[o.target]} (${[base(o.target) && 'base', 'gear', bonus[o.target] && 'food'].filter(Boolean).join(' + ')}${poolSynced(pool, sync) ? ', synced' : ''})`,
     totals: job.stats.map(s => gearTotals[s] + base(s)),
-    // the Food row and the totals with it; null with Food off
-    food: food && {
-      name: food.name,
-      ilvl: food.ilvl,
-      label: foodLabel(job, food),
-      best: !o.foodPair,
+    // the Food row and the totals with it; null with Food off. best: the meal has the best's result; picked: the player
+    // picked it from the menu ({count, groups, pills}: foodRow)
+    food: meal && {
+      name: meal.meal.name,
+      ilvl: meal.meal.ilvl,
+      label: foodLabel(job, meal.meal),
+      best: meal.best,
+      picked: !!picked,
+      menu: meal.menu,
       cells: job.stats.map(s => (bonus[s] ? { value: bonus[s].bonus, capped: bonus[s].capped } : null)),
       totals: job.stats.map(panel),
     },

@@ -90,6 +90,22 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
   return shown.map((pick, i) => ({ pick, options: fitting(i) }));
 }
 
+/* The meals of `meals` (allMeals entries) that give the same result as `meal` on gear totals `gearTotals`: the same
+   resultOf, and the same total with food on each of `keys` (the goal's target and tiebreaks) that has no tiers. Every
+   meal adds Vitality, so with Vitality as a key a meal with less of it is not the same, though resultOf leaves it out.
+   ctx as for resultOf (its food is ignored). Returns them in `meals` order. For the result's Food menu: the meals it
+   tags "best for goal", the oldest of which the Food row shows. The gear stays as the search found it with `meal`;
+   under tier ranking or a Target GCD another meal could make the search choose other gear, which this does not check. */
+export function sameMeals(job, gearTotals, meal, meals, ctx, keys) {
+  const exact = keys.filter(k => k && !rankTierOf(job, k, ctx.level, ctx.haste ?? 0));
+  const resultWith = m => {
+    const t = withFood(gearTotals, foodBonus(job, m, gearTotals, ctx.level));
+    return resultOf(job, gearTotals, { ...ctx, food: m }) + '|' + exact.map(k => t[k] || 0).join();
+  };
+  const target = resultWith(meal);
+  return meals.filter(m => resultWith(m) === target);
+}
+
 /* The main stat of a resultOf string. */
 const mainOf = result => Number(result.slice(0, result.indexOf('|')));
 

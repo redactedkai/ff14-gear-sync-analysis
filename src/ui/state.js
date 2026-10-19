@@ -4,7 +4,6 @@ import { JOBS, DEFAULT_JOB, ACTIVITIES, EXPANSIONS } from '../core/constants.js'
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
-import { foodChoices } from '../core/food.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
@@ -87,10 +86,11 @@ export function defaultState() {
     // market: tradeable pieces listed whatever their source (the market board switch, on by default)
     browse: { q: '', type: 'any', expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: 100, sort: 'ilvl' },
     // melds: give pieces their best materia melds. expOff, exclude, market, min, max, lvl: Gear to search, the browser's
-    // filters with their own values. food: add a meal to the result; foodPair: its key in foodChoices (core/food.js),
-    // '' = best for the goal. gcd: the Target GCD in seconds, '' for any; gcdMode: 'exact' (exactly that GCD) or 'min'
-    // (that GCD or faster); exact by default, like xivgear (owner's decision 2026-10-16). byTier: rank the goal and
-    // tiebreaks by their tiers before their points (core/tier-rank.js); on by default (owner's decision 2026-10-16)
+    // filters with their own values. food: add the best meal for the goal to the result (a meal picked from the Food
+    // row's menu is not saved, like the rows' picks; a save's old foodPair is dropped). gcd: the Target GCD in seconds,
+    // '' for any; gcdMode: 'exact' (exactly that GCD) or 'min' (that GCD or faster); exact by default, like xivgear
+    // (owner's decision 2026-10-16). byTier: rank the goal and tiebreaks by their tiers before their points
+    // (core/tier-rank.js); on by default (owner's decision 2026-10-16)
     opt: {
       target: 'main',
       tb: '',
@@ -103,7 +103,6 @@ export function defaultState() {
       max: '',
       lvl: 100,
       food: false,
-      foodPair: '',
       gcd: '',
       gcdMode: 'exact',
       byTier: true,
@@ -131,7 +130,6 @@ export function resetForJob(s, job) {
   s.opt.target = 'main';
   s.opt.tb = '';
   s.opt.tb2 = '';
-  s.opt.foodPair = '';
   s.opt.gcd = ''; // the GCDs a job can reach depend on its haste
   s.browse.type = 'any';
   s.browse.sort = 'ilvl';
@@ -234,7 +232,6 @@ export function restoreState(raw) {
   s.opt.melds = bool(o.melds, s.opt.melds);
   s.opt.food = bool(o.food, s.opt.food);
   s.opt.byTier = bool(o.byTier, s.opt.byTier);
-  s.opt.foodPair = oneOf(o.foodPair, ['', ...foodChoices(job).map(c => c.key)], s.opt.foodPair);
   s.opt.gcd = gcdIn(o.gcd, s.opt.gcd);
   s.opt.gcdMode = oneOf(o.gcdMode, ['exact', 'min'], s.opt.gcdMode);
   // a save from before the optimizer had its own list (the gear pool days, when the browser's list served both)

@@ -428,6 +428,86 @@ td.defense {
   font-size: 0.82rem;
   color: var(--muted);
 }
+/* The Food row's menu: a search box, the "Best for goal" switch and stat pills above the meals; only the list scrolls,
+   and each expansion's heading stays in view while its meals pass */
+.meal-menu {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 80vw);
+  overflow: hidden;
+  padding: 0;
+}
+.meal-tools {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.meal-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.meal-line input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+.meal-line .toggle {
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+.meal-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.meal-pill {
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.78rem var(--sans);
+  cursor: pointer;
+}
+.meal-pill:hover:not(:disabled) {
+  color: var(--fg);
+}
+.meal-pill.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.meal-pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.meal-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 4px 6px;
+}
+.meal-list .same-head {
+  position: sticky;
+  top: -2px;
+  z-index: 1;
+  background: var(--surface);
+}
+.meal-sub {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.meal-empty {
+  padding: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
 .pill {
   display: inline-block;
   margin-left: 6px;

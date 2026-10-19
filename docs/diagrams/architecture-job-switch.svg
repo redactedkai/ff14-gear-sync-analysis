@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-labelledby="t d">
   <title id="t">What a job switch resets and what it keeps</title>
-  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal choice (best for the goal), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the Gear from boxes and market board switch of both tabs, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
+  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal (best for goal: a meal picked from the Food menu is cleared), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the Gear from boxes and market board switch of both tabs, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -43,7 +43,7 @@
   <text class="fg l" x="36" y="256">Tiebreaks 1 and 2</text>
   <text class="muted s" x="36" y="272">none</text>
   <text class="fg l" x="36" y="298">Meal</text>
-  <text class="muted s" x="36" y="314">best for the goal</text>
+  <text class="muted s" x="36" y="314">best for goal (a pick is cleared)</text>
   <text class="fg l" x="36" y="340">Target GCD</text>
   <text class="muted s" x="36" y="356">any</text>
   <text class="fg l" x="36" y="382">Gear browser slot</text>

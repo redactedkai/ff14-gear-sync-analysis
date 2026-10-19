@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 500" role="img" aria-labelledby="t d">
   <title id="t">Target GCD: from a GCD to the searches</title>
-  <desc id="d">A level 100 Sage asks for a GCD of exactly 2.45 s with food set to Best for the goal. Step 1: that GCD needs a total speed, gear plus food, of 364 to 449 ("or faster" needs only 364). Step 2: each meal turns the band into a band of gear speed. No meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370. Equal bands share a search, so the 10 meals run 2 searches. Step 3: the best meal has the highest target with food, then tiebreak 1 and tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by every search and every new GCD.</desc>
+  <desc id="d">A level 100 Sage asks for a GCD of exactly 2.45 s with food on (the best meal for the goal). Step 1: that GCD needs a total speed, gear plus food, of 364 to 449 ("or faster" needs only 364). Step 2: each meal turns the band into a band of gear speed. No meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370. Equal bands share a search, so the 10 meals run 2 searches. Step 3: the best meal has the highest target with food, then tiebreak 1 and tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by every search and every new GCD.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -39,7 +39,7 @@
   <rect class="bg" x="0" y="0" width="720" height="500"/>
 
   <text class="fg title" x="40" y="36">Target GCD: a GCD becomes one search per distinct gear band</text>
-  <text class="muted small" x="40" y="58">Sage, level 100, GCD exactly 2.45 s, food “Best for the goal” (10 meals).</text>
+  <text class="muted small" x="40" y="58">Sage, level 100, GCD exactly 2.45 s, food on, the best of 10 meals.</text>
 
   <!-- step 1 -->
   <rect class="box" x="40" y="78" width="640" height="66" rx="8"/>

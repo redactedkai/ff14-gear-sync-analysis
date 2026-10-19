@@ -100,7 +100,7 @@ A player thinks in GCDs, not speed points, so the Target GCD layer takes a GCD $
 - **"Exactly"** (xivgear's meld solver): the GCD must be $G$. Some jobs want this because their cooldowns drift at a faster GCD (The Balance's Dragoon, Dark Knight and Gunbreaker guides).
 - **"Or faster":** the GCD must be $G$ or shorter. The result can come out faster than asked, but only when that set ties or wins on the target and tiebreaks.
 
-![Target GCD in three steps, for a level 100 Sage at exactly 2.45 s with food "Best for the goal" (10 meals). Step 1: the GCD needs 364 to 449 total speed, gear plus food ("or faster" keeps only the minimum, 364). Step 2: no meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370; equal bands share a search, so 2 searches run. Step 3: the best meal has the highest target with food, then tiebreak 1, then tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by both searches and every new GCD.](../diagrams/optimizer-target-gcd.svg)
+![Target GCD in three steps, for a level 100 Sage at exactly 2.45 s with food on (the best of 10 meals for the goal). Step 1: the GCD needs 364 to 449 total speed, gear plus food ("or faster" keeps only the minimum, 364). Step 2: no meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370; equal bands share a search, so 2 searches run. Step 3: the best meal has the highest target with food, then tiebreak 1, then tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by both searches and every new GCD.](../diagrams/optimizer-target-gcd.svg)
 
 The GCD falls in steps of 0.01 s as speed rises, so each GCD value is reached by an interval of speed. The steps, as in the diagram:
 
@@ -442,6 +442,13 @@ What does the page hand to the engine, and what does it show back?
 - **The candidates** are the search's own, unpruned: every piece with its synced stats and the melds the search would give it (each meld version under a Target GCD). Most pieces are ruled out by the main stat alone. Picks are not saved (A3 will) and any setting change clears them.
 - **Cost:** in Node, 0 to 19 ms per run, plus 14 to 19 ms to build the unpruned lists, which are kept while the pool settings, goal and GCD mode stay (Sage at level 50 / 100 and Warrior at level 70 / item level 400).
 
+**The Food row's menu** (owner's design, 2026-10-18; it replaced the Meal (HQ) box). With Food on, the search uses the best meal for the goal, and the Food row's meal is a menu like the rows' above, made to serve sets built by hand later (A4) as well:
+
+- **Which meal the row shows:** the oldest meal with the same result as the best (`sameMeals`: the same as for pieces, plus the same total on every goal key without tiers, since every meal adds Vitality), tagged "best for goal" and counted ("1 of 11"). Under sync many meals tie: for Astrologian at level 50, item level 123, Mind > Vitality > Direct Hit, 11 meals from Dawntrail, Endwalker and Shadowbringers give the same bonus, and the row shows the Shadowbringers one.
+- **The menu** lists every meal the job can use (`allMeals`; 182 for Astrologian), by expansion, newest first, each with its stats, item level and what it adds on this gear ("SpS +44 DHT +41 VIT +54"). No deltas and no "same result" labels. Above the list: a search box (meal names), stat pills (CRT, DET, DHT, SpS, PIE; a meal must have each pill picked, and after two the rest are greyed out, since a meal has at most two stats) and a "Best for goal" switch, on by default, that keeps only the tagged meals.
+- **A picked meal** reruns the search with it in place of the best, since with tier ranking or a Target GCD the meal can change which gear wins; the row then says "HQ, picked". Like the rows' picks it is not saved and any setting change clears it.
+- **Limit:** the tags compare meals on the gear the search found with the best meal. Under tier ranking or a Target GCD another meal could lead the search to other gear; checking that would take a search per meal, so it is left to a pick.
+
 **Removed: the ceiling table.** The page used to show a per-stat ceiling table below the result (each stat's best total from the pool, synced and unsynced). It was removed on 2026-10-12 (owner's decision): it repeated the main result per target and the Sync limits tab, and cost 12 or 14 extra searches on every change.
 
 ## 8. Correctness and performance
@@ -635,6 +642,7 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 | Sync clamp | `src/core/formulas.js` (`syncStats`) |
 | Copies (Unique rings), pool items from the database | `src/core/items.js` (`poolItemFromRow`, `browseItems`) |
 | Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameResult`); the menus in `src/ui/views/optimizer.js` (`sameCandidates`, `sameMenu`); the unpruned candidates are `buildCandidates` with pruning off |
+| The Food row's menu | `allMeals` in `src/core/food.js`, `sameMeals` in `src/core/same-result.js`; `foodRow` in `src/ui/views/optimizer.js`; its search, pills and switch in `src/ui/components/optimizer.js` (`mealGroups`) |
 | Page use: the job's gear, Gear from, node limit, result | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`, `relicsLeftOut`, `emptyGearFrom`, `NODE_LIMIT`, `optimizerView`); the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.js`; the menu `gearFromToggles` in `src/ui/helpers.js` |
 | Page timing marks (`optimizer`, `save`) | `src/ui/components/optimizer.js`, `src/main.js` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |

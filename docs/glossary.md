@@ -32,7 +32,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Field operations (Field Op).** Large open zones with their own gear and relic grind: Eureka (Stormblood), Bozja (Shadowbringers) and the Occult Crescent (Dawntrail). See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md#field-op-gear).
 
-**Food.** A meal that raises one or two substats (and Vitality) for 30 minutes, by a percentage of the stat up to a maximum. The tool counts HQ meals only, offers one choice per stat pair, and can pick the one that best serves the goal. Without a target GCD, food never changes which gear the optimizer picks; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together. See [math.md, section 6](mechanics/math.md#food).
+**Food.** A meal that raises one or two substats (and Vitality) for 30 minutes, by a percentage of the stat up to a maximum. The tool counts HQ meals only and picks the one that best serves the goal; the result's Food menu lists every meal the job can use, to pick another. Without a target GCD, food never changes which gear the optimizer picks; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together. See [math.md, section 6](mechanics/math.md#food).
 
 **GCD (global cooldown).** The shared recast timer of most combat actions, 2.5 seconds by default. Every point of speed shortens it slightly. See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LEVEL_MAIN } from '../../src/core/constants.js';
-import { bestFood, foodBonus, foodChoices, gearNeeded, statBase, withFood } from '../../src/core/food.js';
+import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, statBase, withFood } from '../../src/core/food.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
@@ -14,6 +14,42 @@ const SGE = makeJobContext('SGE');
 const WAR = makeJobContext('WAR');
 const DRG = makeJobContext('DRG');
 const JOB_IDS = ['PLD', 'WHM', 'SGE', 'DRG', 'NIN', 'BLM', 'BLU', 'BST'];
+
+/* The Food menu lists every meal (allMeals); the searches try only foodChoices. Dropping the meals another one covers
+   must never lose the best: the best of the choices ranks as high as the best of every meal. */
+test('allMeals: every meal the job can use, oldest first; the best of foodChoices is the best of them all', () => {
+  const AST = makeJobContext('AST');
+  const meals = allMeals(AST);
+  assert.equal(meals.length, 182); // Astrologian: every meal whose stats it has (Spell Speed and Piety, not Skill Speed or Tenacity)
+  assert.equal(new Set(meals.map(m => m.key)).size, meals.length);
+  meals.slice(1).forEach((m, i) => {
+    assert.ok(m.ilvl >= meals[i].ilvl, m.name);
+  });
+  for (const c of foodChoices(AST))
+    assert.ok(
+      meals.some(m => m.name === c.name),
+      c.name,
+    );
+  const keySets = [['main'], ['crit'], ['main', 'vit', 'dh'], ['spd', 'det'], ['spec', 'crit', 'vit']];
+  for (const level of [50, 70, 100]) {
+    const int = rngInt(level);
+    for (let t = 0; t < 40; t++) {
+      // gear points from none to well past the meals' maximums
+      const totals = Object.fromEntries(AST.stats.map(s => [s, int(level * 30)]));
+      for (const keys of keySets) {
+        const rankOf = m => {
+          const b = foodBonus(AST, m, totals, level);
+          return mealRank(keys, withFood(totals, b), b).join();
+        };
+        assert.equal(
+          rankOf(bestFood(AST, foodChoices(AST), totals, level, keys)),
+          rankOf(bestFood(AST, meals, totals, level, keys)),
+          `${level} ${keys}`,
+        );
+      }
+    }
+  }
+});
 
 test('LEVEL_MAIN: 100 levels, equal to xivgear at 50, 60, ..., 100, never falling', () => {
   assert.equal(LEVEL_MAIN.length, 100);

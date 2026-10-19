@@ -650,7 +650,7 @@ async function checkFood(pg) {
   const gearItems = await gearCells();
   await food.check();
   await expect(pg.locator('#o-food-row')).toBeVisible();
-  await expect(pg.locator('#o-food-row')).toContainText('best for the goal');
+  await expect(pg.locator('#o-meal-note')).toHaveText('HQ, best for goal');
   check(same((await gearCells()).slice(0, gearItems.length), gearItems), 'Food changed the gear');
   const gearSpd = await columnValues(pg, '#o-result tr.total:not(#o-food-total)', 'SpS');
   const bonus = await columnValues(pg, '#o-food-row', 'SpS');
@@ -663,16 +663,40 @@ async function checkFood(pg) {
   );
   await expect(pg.locator('#o-total-note')).toHaveText('Clan bonuses can affect MND and VIT.');
   await expect(pg.locator('#o-effect')).toContainText('gear and food');
-  await waitSaved(pg, "s => s.opt.food === true && s.opt.foodPair === ''");
-  await pg.selectOption('#o-food-pair', 'det+crit');
-  await expect(pg.locator('#o-food-row')).not.toContainText('best for the goal');
+  await waitSaved(pg, 's => s.opt.food === true');
+  // the Food row's menu: the search box takes the keys; "Best for goal" lists the meals with the best's result, off
+  // every meal; two stat pills narrow it to a pair and grey out the rest; the search matches meal names
+  await pg.click('#o-meal-btn');
+  // the box takes focus a frame after the menu shows
+  const focused = await pg
+    .waitForFunction(() => document.activeElement?.id === 'o-meal-q', null, { timeout: 2000 })
+    .then(() => true)
+    .catch(() => false);
+  check(focused, 'the Food menu opened without focus in its search box');
+  const meals = pg.locator('#o-meal-menu [data-meal]');
+  const bestCount = await meals.count();
+  await pg.locator('#o-meal-best').uncheck();
+  const allCount = await meals.count();
+  check(bestCount >= 1 && allCount > bestCount, `Best for goal lists ${bestCount} of ${allCount} meals`);
+  await pg.click('#o-meal-menu [data-stat="det"]');
+  await pg.click('#o-meal-menu [data-stat="crit"]');
+  check(await pg.locator('#o-meal-menu [data-stat="dh"]').isDisabled(), 'a third stat pill is not greyed out');
+  const pairCount = await meals.count();
+  check(pairCount >= 1 && pairCount < allCount, `the DET and CRT pills list ${pairCount} of ${allCount} meals`);
+  const name = await meals.first().getAttribute('data-meal');
+  await pg.fill('#o-meal-q', name.split(' ')[0].toLowerCase());
+  check((await meals.count()) >= 1, `searching "${name.split(' ')[0]}" finds no meal`);
+  // a meal picked from the menu: shown and marked picked, no speed from a Determination + Critical Hit meal
+  await meals.first().click();
+  await expect(pg.locator('#o-meal-btn')).toContainText(name);
+  await expect(pg.locator('#o-meal-note')).toHaveText('HQ, picked');
   check((await columnValues(pg, '#o-food-total', 'SpS')) === gearSpd, 'a meal without speed changed Spell Speed');
   check((await columnValues(pg, '#o-food-row', 'DET')) > 0, 'the Determination meal adds no Determination');
-  await waitSaved(pg, "s => s.opt.foodPair === 'det+crit'");
   await checkNoBadText(pg, 'food');
-  await pg.selectOption('#o-food-pair', '');
+  // a new setting clears the pick, as it clears the rows' picks
   await pg.selectOption('#o-target', 'main');
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+  await expect(pg.locator('#o-meal-note')).toHaveText('HQ, best for goal');
 }
 
 /** Rank by tier: on by default; the readout names the goal and tiebreaks in order and the Tier row marks them; off, both

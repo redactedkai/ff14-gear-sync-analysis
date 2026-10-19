@@ -49,7 +49,6 @@ function validSave() {
       max: 300,
       lvl: 60,
       food: true,
-      foodPair: 'det+crit',
       gcd: 2.4,
       gcdMode: 'min',
       byTier: false,
@@ -299,14 +298,13 @@ test("a saved level above the job's level cap is clamped to it", () => {
   assert.equal(restoreState({ level: 100 }).level, 100);
 });
 
-test('Food fields: off by default; a meal the job cannot use, a wrong type or an unknown meal falls back', () => {
-  assert.deepEqual([restoreState(null).opt.food, restoreState(null).opt.foodPair], [false, '']);
+test("Food: off by default, a wrong type falls back; a save's old meal choice (foodPair) is dropped", () => {
+  assert.equal(restoreState(null).opt.food, false);
   const s = restoreState({ job: 'SGE', opt: { food: true, foodPair: 'spd+spec' } });
-  assert.deepEqual([s.opt.food, s.opt.foodPair], [true, 'spd+spec']);
-  // a Piety meal saved for a job without Piety, a bad type, an unknown key
-  assert.equal(restoreState({ job: 'DRG', opt: { food: true, foodPair: 'spd+spec' } }).opt.foodPair, '');
-  assert.equal(restoreState({ job: 'SGE', opt: { food: 'yes', foodPair: 7 } }).opt.food, false);
-  assert.equal(restoreState({ job: 'SGE', opt: { foodPair: 'nope' } }).opt.foodPair, '');
+  assert.equal(s.opt.food, true);
+  // the Meal box is gone (2026-10-18): a meal is picked from the Food row's menu and not saved
+  assert.equal('foodPair' in s.opt, false);
+  assert.equal(restoreState({ job: 'SGE', opt: { food: 'yes' } }).opt.food, false);
 });
 
 /* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level

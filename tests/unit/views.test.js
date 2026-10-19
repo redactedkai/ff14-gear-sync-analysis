@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { bestFood, foodChoices, statBase } from '../../src/core/food.js';
+import { allMeals, bestFood, foodChoices, statBase } from '../../src/core/food.js';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../src/core/items.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { AKH_LEVEL, appState } from './helpers/common.js';
@@ -10,6 +10,7 @@ import { gcdFor, hasteFor, speedParams } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
+import { sameMeals } from '../../src/core/same-result.js';
 import { jobGear, optimizerView, panelBase, relicsLeftOut, searchCount, searchPool, tierText } from '../../src/ui/views/optimizer.js';
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
@@ -49,6 +50,49 @@ test("optimizer view: Vitality as a tiebreak with the best meal finds a set (own
   app.opt.exclude = ['relic', 'savage', 'ultimate', 'pvp'];
   const view = optimizerView(app);
   assert.equal(view.kind, 'ok');
+});
+
+/* The Food row's menu (owner's design, 2026-10-18), on the owner's Astrologian case: level 50, cap 123, A Realm Reborn
+   gear, Mind > Vitality > Direct Hit, best meal, rank by tier. Under sync meals from three expansions give the same
+   bonus; the row shows the oldest of them, and the menu lists every meal the job can use. */
+test('optimizer view: the Food menu shows the oldest meal with the best result, every meal by expansion, and a pick', () => {
+  const app = makeApp('AST', { level: 50 });
+  Object.assign(app.opt, { target: 'main', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
+  app.opt.expOff = ['HW', 'SB', 'ShB', 'EW', 'DT'];
+  const v = optimizerView(app);
+  assert.equal(v.kind, 'ok');
+  const { menu } = v.food;
+  const items = menu.groups.flatMap(g => g.items);
+  assert.equal(items.length, 182);
+  assert.deepEqual(
+    menu.groups.map(g => g.label),
+    ['Dawntrail', 'Endwalker', 'Shadowbringers', 'Stormblood', 'Heavensward', 'A Realm Reborn'],
+  );
+  assert.deepEqual(
+    menu.pills.map(p => p.short),
+    ['CRT', 'DET', 'DHT', 'SpS', 'PIE'],
+  );
+  // the meals with the best's result: the row shows the oldest, tagged and counted
+  const best = items.filter(x => x.best);
+  assert.equal(menu.count, best.length);
+  assert.ok(best.length > 1, `${best.length} meals with the best result`);
+  const oldest = best.reduce((a, b) => (b.ilvl < a.ilvl ? b : a));
+  assert.equal(v.food.name, oldest.name);
+  assert.deepEqual([v.food.best, v.food.picked], [true, false]);
+  assert.equal(items.find(x => x.on).name, oldest.name);
+  // Vitality is a tiebreak (every point counts): every tagged meal adds the same Vitality
+  assert.equal(new Set(best.map(x => x.adds.match(/VIT \+(\d+)/)[1])).size, 1);
+  // what a meal adds, on this gear: its stats, then Vitality
+  assert.match(oldest.adds, /^\S+ \+\d+ (\S+ \+\d+ )?VIT \+\d+$/);
+  // a meal picked from the menu: shown, marked picked, its bonus in the Food row; the menu still tags the best
+  const other = items.find(x => !x.best && x.stats.includes('crit'));
+  const p = optimizerView(app, undefined, {}, other.key);
+  assert.equal(p.food.name, other.name);
+  assert.deepEqual([p.food.best, p.food.picked], [false, true]);
+  assert.ok(p.food.cells[p.headers.indexOf('CRT')].value > 0);
+  assert.equal(p.food.menu.groups.flatMap(g => g.items).filter(x => x.best).length, menu.count);
+  // an unknown key or Food off: no pick
+  assert.equal(optimizerView(app, undefined, {}, 'No Such Meal').food.picked, false);
 });
 
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
@@ -560,7 +604,9 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   );
   assert.deepEqual(on.totals, off.totals, 'the gear totals row is unchanged');
   const gearTotals = Object.fromEntries(job.stats.map((s, k) => [s, off.totals[k] - panelBase(job, s, 50)]));
-  const meal = bestFood(job, foodChoices(job), gearTotals, 50, ['spd', 'crit', '']);
+  // the row shows the oldest meal with the best meal's result (sameMeals), so its points may differ within the tiers
+  const best = bestFood(job, foodChoices(job), gearTotals, 50, ['spd', 'crit', '']);
+  const meal = sameMeals(job, gearTotals, best, allMeals(job), { level: 50, haste: 0, goal: 'spd' }, ['spd', 'crit'])[0];
   assert.equal(on.food.name, meal.name);
   assert.equal(on.food.best, true);
   const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'spd').max, Math.floor((341 + gearSpd) / 10));
@@ -576,8 +622,11 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   const vitWant = Math.min(meal.vit.max, Math.floor((meal.vit.pct * (202 + gearTotals.vit)) / 100));
   assert.deepEqual(on.food.cells[1], { value: vitWant, capped: vitWant === meal.vit.max });
 
-  app.opt.foodPair = 'det+crit'; // a chosen meal
-  const det = optimizerView(app, pool);
+  // a meal picked from the Food menu: the newest Determination + Critical Hit meal
+  const pickedMeal = foodChoices(job).find(c => c.key === 'det+crit');
+  const det = optimizerView(app, pool, {}, pickedMeal.name);
+  assert.equal(det.food.name, pickedMeal.name);
+  assert.equal(det.food.picked, true);
   assert.equal(det.food.best, false);
   assert.equal(det.food.totals[i], 341 + gearSpd, 'no speed on this meal');
   assert.ok(det.food.cells[job.stats.indexOf('det')].value > 0);
@@ -627,7 +676,7 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
 test('Rank by tier: the view shows the core result, each key held at its tier and marked, food chosen with the gear', () => {
   // Sage, unsynced level 100 gear from the item level 125-135 window, Critical Hit then Determination then Direct Hit
   const app = makeApp('SGE', { sync: false });
-  Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: 'dh', food: true, foodPair: '', byTier: true });
+  Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: 'dh', food: true, byTier: true });
   const pool = windowPool(app.jobCtx);
   const r = rankByTier(app.jobCtx, pool, syncSettings(app), {
     target: 'crit',
@@ -640,8 +689,14 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
   const v = optimizerView(app, pool);
   assert.equal(v.kind, 'ok');
   assert.equal(v.byTier, true);
-  // the meal is the one tier ranking chose with the gear
-  assert.equal(v.food.name, r.food.name);
+  // the meal: the oldest with the result of the one tier ranking chose with the gear; the Food menu tags them all
+  const tagged = v.food.menu.groups.flatMap(g => g.items).filter(x => x.best);
+  assert.ok(
+    tagged.some(x => x.name === r.food.name),
+    r.food.name,
+  );
+  assert.equal(v.food.name, tagged.reduce((a, b) => (b.ilvl < a.ilvl ? b : a)).name);
+  assert.equal(v.food.best, true);
   // every key keeps the tier the core held it at (the rows may show other pieces with the same tiers, same-result.js)
   const stats = app.jobCtx.stats;
   // weapon damage is held first (no tiers) and has no column: the readout leaves it out

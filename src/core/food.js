@@ -43,24 +43,38 @@ function covers(a, b) {
   return foodLines(b).every(s => foodLines(a).some(x => x.stat === s.stat && x.pct >= s.pct && x.max >= s.max));
 }
 
+/* Every HQ meal the job can use, oldest first (FOODS order, by item level): {key, name, ilvl, pair, stats: [{stat, pct,
+   max}], vit: {stat: 'vit', pct, max} or null}; key = the meal's name (unique in FOODS), pair = its neutral stats
+   joined by '+', primary first ('det+crit'). Only meals whose every stat the job has: 182 for Astrologian. The result's
+   Food menu lists them all; foodChoices keeps the few the searches need. Cached per job. */
+const mealCache = new Map();
+export function allMeals(job) {
+  if (mealCache.has(job.jobId)) return mealCache.get(job.jobId);
+  const out = [];
+  for (const [name, ilvl, stats, vitality] of FOODS) {
+    const mapped = stats.map(([raw, pct, max]) => Object.freeze({ stat: neutralOf(job, raw), pct, max }));
+    if (mapped.some(s => s.stat == null)) continue;
+    const vit = vitality ? Object.freeze({ stat: 'vit', pct: vitality[0], max: vitality[1] }) : null;
+    out.push(Object.freeze({ key: name, name, ilvl, pair: mapped.map(s => s.stat).join('+'), stats: Object.freeze(mapped), vit }));
+  }
+  const frozen = Object.freeze(out);
+  mealCache.set(job.jobId, frozen);
+  return frozen;
+}
+
 /* The job's food choices, in the job's substat order: {key, name, ilvl, stats: [{stat, pct, max}], vit: {stat: 'vit',
    pct, max} or null}, key = the neutral
    stats joined by '+', primary first ('det+crit'). Only meals whose every stat the job has. Each stat pair (or single
    stat) is its newest meal: FOODS is sorted by item level, and within a pair a newer meal never has a lower maximum
    (tests/unit/food.test.js). A choice that another one covers (every stat at least as high) is left out, since it can
    never give more: an old Critical Hit + Determination meal next to a new Determination + Critical Hit one, a one-stat
-   meal next to a newer pair with that stat. Cached per job. */
+   meal next to a newer pair with that stat. So the best of these is the best of every meal (allMeals). Cached per job. */
 const choiceCache = new Map();
 export function foodChoices(job) {
   if (choiceCache.has(job.jobId)) return choiceCache.get(job.jobId);
-  // FOODS is sorted by item level, so a later meal with the same stats replaces an older one
+  // allMeals is oldest first, so a later meal with the same stats replaces an older one
   const byKey = new Map();
-  for (const [name, ilvl, stats, vitality] of FOODS) {
-    const mapped = stats.map(([raw, pct, max]) => ({ stat: neutralOf(job, raw), pct, max }));
-    if (mapped.some(s => s.stat == null)) continue;
-    const vit = vitality ? Object.freeze({ stat: 'vit', pct: vitality[0], max: vitality[1] }) : null;
-    byKey.set(mapped.map(s => s.stat).join('+'), { name, ilvl, stats: mapped, vit });
-  }
+  for (const { name, ilvl, pair, stats, vit } of allMeals(job)) byKey.set(pair, { name, ilvl, stats, vit });
   const all = [...byKey].map(([key, f]) => ({ key, ...f }));
   // drop a choice another one covers; of two that cover each other, the later one goes
   const kept = all.filter((c, i) => !all.some((d, j) => j !== i && covers(d, c) && !(covers(c, d) && j > i)));
