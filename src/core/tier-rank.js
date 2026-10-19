@@ -11,15 +11,14 @@
    - A last search maximizes the keys' raw totals under every minimum.
    - Meals: each meal runs the stages on its own; after each stage only the meals reaching the best tier go on (the
      others lose on that tier whatever follows), and meals asking for the same search share it. Among the meals left,
-     the totals with food decide, then the most food points, then the first in the job's food choices (as bestFood).
+     the totals with food decide, then the most food points, then the first in the job's food choices (pickMeal, as bestFood).
    - With a Target GCD the meal's speed band holds in every search (gearBand, as optimizeGcd).
    - Each stage that finishes proves the most of its key under its limits; every later search of the meal gets that
      proof (solve's `proven`) and cuts by it (optimizer/regain.js). */
-import { betterRank, foodBonus, gearNeeded, mealRank, mealsFor, withFood } from './food.js';
+import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.js';
 import { prepare, solve } from './optimizer/index.js';
-import { rankedKeys } from './optimizer/candidates.js';
-import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
-import { fastestGcd, gearBand } from './target-gcd.js';
+import { speedForGcd } from './speed.js';
+import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.js';
 import { rankTierOf, tierStart } from './tiers.js';
 
 /* Points a held key keeps above its tier start, when the loadouts reach that many. */
@@ -48,12 +47,9 @@ function provenMost(state, stat, result) {
  *          max} on total speed with a Target GCD (speedForGcd), else null
  */
 export function rankByTier(job, pool, sync, opts, cache = new Map()) {
-  const level = opts.level ?? sync.level ?? job.maxLevel;
-  const haste = hasteFor(job.jobId, level);
-  const pct = haste ? haste.pct : 0;
-  // weapon damage first when the job ranks it (rankedKeys): a stage of its own, with no tiers, held at the most reached
-  // like main stat, so every later stage's proven maximum holds under it (regain cuts stay exact)
-  const keys = rankedKeys(job, opts.target || 'main', opts.tiebreak || []);
+  // keys: weapon damage first when the job ranks it (rankedKeys): a stage of its own, with no tiers, held at the most
+  // reached like main stat, so every later stage's proven maximum holds under it (regain cuts stay exact)
+  const { level, haste, hastePct: pct, keys } = goalSettings(job, sync, opts);
   const gcdMode = opts.gcd != null ? (opts.mode === 'min' ? 'min' : 'exact') : null;
   const base = { haste, level, asked: opts.gcd ?? null, mode: gcdMode };
 
@@ -102,11 +98,6 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     }
     return runs.get(runKey);
   };
-  // a search result's totals with the meal's food
-  const withMeal = (state, r) => {
-    const bonus = state.meal ? foodBonus(job, state.meal, r.totals, level) : {};
-    return { bonus, totals: withFood(r.totals, bonus) };
-  };
   const none = () => ({
     ok: false,
     reason: 'none',
@@ -127,7 +118,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
       // order said nothing about the minimums: White Mage at level 100 ran 700,000 nodes and found none)
       const r = search(state, stat, keys.slice(0, keys.indexOf(stat)));
       if (!r.ok) continue;
-      const most = withMeal(state, r).totals[stat] || 0;
+      const most = mealTotals(job, state.meal, r.totals, level).withFood[stat] || 0;
       // a search that finished proves the most gear points of `stat` under its limits (its score ranks `stat` first):
       // a regain cut for every later search, whose limits include these (the same band, minimums that only rise). One
       // that stopped at its node limit proves nothing, and a wrong maximum would cut good loadouts
@@ -151,33 +142,24 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   }
 
   // 4. the raw totals under every minimum, per meal; the best meal by its totals with food, then its food points
-  let best = null,
-    bestRank = null;
+  const entries = []; // {meal, totals, r, state} per meal with a loadout, for pickMeal
   for (const state of meals) {
     const r = search(state, keys[0], keys.slice(1));
-    if (!r.ok) continue;
-    const { bonus, totals } = withMeal(state, r);
-    const rank = mealRank(keys, totals, bonus);
-    if (betterRank(rank, bestRank)) {
-      best = { r, state, bonus, totals };
-      bestRank = rank;
-    }
+    if (r.ok) entries.push({ meal: state.meal, totals: r.totals, r, state });
   }
+  const best = pickMeal(job, entries, keys, level);
   if (!best) return none();
-  const gcd = gcdFor(best.totals.spd || 0, level, BASE_GCD_MS, pct);
+  const food = foodFields(best, level, pct);
   return {
-    ...best.r,
+    ...best.entry.r,
     ok: true,
     ...base,
     truncated,
     nodes,
     searches: runs.size,
-    food: best.state.meal,
-    bonus: best.bonus,
-    withFood: best.totals,
-    held: best.state.held,
-    gcd,
-    faster: gcdMode != null && gcd < opts.gcd,
+    ...food,
+    held: best.entry.state.held,
+    faster: gcdMode != null && food.gcd < opts.gcd,
     band,
   };
 }

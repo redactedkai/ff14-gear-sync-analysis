@@ -123,7 +123,7 @@ export function mealRank(keys, totalsWithFood, bonus) {
 
 /* True when rank vector `a` beats `b`: higher at the first position where they differ (equal vectors: false, so the
    earlier choice keeps a tie). `b` null: always true. */
-export function betterRank(a, b) {
+function betterRank(a, b) {
   if (!b) return true;
   const i = a.findIndex((v, j) => v !== b[j]);
   return i >= 0 && a[i] > b[i];
@@ -134,21 +134,37 @@ export function mealsFor(job, food) {
   return food == null ? [null] : food === 'best' ? foodChoices(job) : [food];
 }
 
-/* The choice that gives the highest totals with food for `keys` (target, tiebreak 1, tiebreak 2; empty ones ignored),
-   compared in that order; then the most food points in all; then the first in `choices`. Null when there are none. */
-export function bestFood(job, choices, totals, level, keys) {
-  const ks = keys.filter(Boolean);
+/* What `meal` (a foodChoices entry, or null for none) adds to gear totals `totals` at `level`: {bonus, withFood}, the
+   foodBonus result ({} for none) and the totals with it. */
+export function mealTotals(job, meal, totals, level) {
+  const bonus = meal ? foodBonus(job, meal, totals, level) : {};
+  return { bonus, withFood: withFood(totals, bonus) };
+}
+
+/* The rule every meal choice follows (bestFood, Target GCD, tier ranking): of `entries` ([{meal, totals, ...}], a meal
+   or null with the gear totals it goes with), the one with the highest totals with food on `keys` (non-empty), compared
+   in that order; then the most food points in all (mealRank); then the first in `entries`. Returns {entry, bonus,
+   withFood} (mealTotals of the winner), or null when there are no entries. */
+export function pickMeal(job, entries, keys, level) {
   let best = null,
     bestRank = null;
-  for (const c of choices) {
-    const bonus = foodBonus(job, c, totals, level);
-    const rank = mealRank(ks, withFood(totals, bonus), bonus);
+  for (const entry of entries) {
+    const { bonus, withFood: totalsWithFood } = mealTotals(job, entry.meal, entry.totals, level);
+    const rank = mealRank(keys, totalsWithFood, bonus);
     if (betterRank(rank, bestRank)) {
-      best = c;
+      best = { entry, bonus, withFood: totalsWithFood };
       bestRank = rank;
     }
   }
   return best;
+}
+
+/* The choice that gives the highest totals with food for `keys` (target, tiebreak 1, tiebreak 2; empty ones ignored),
+   compared in that order; then the most food points in all; then the first in `choices` (pickMeal). Null when there
+   are none. */
+export function bestFood(job, choices, totals, level, keys) {
+  const entries = choices.map(meal => ({ meal, totals }));
+  return pickMeal(job, entries, keys.filter(Boolean), level)?.entry.meal ?? null;
 }
 
 /* The fewest gear points of `stat` whose total with `food` (null for none) reaches `total` at `level`. Gear plus food
