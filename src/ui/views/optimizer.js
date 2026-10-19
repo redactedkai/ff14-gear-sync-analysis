@@ -296,7 +296,7 @@ function buildOptimizerView(app, gear, chosen) {
     if (asked != null) line = gcdLine(job, r, ui, app.level);
     if (!r.ok) {
       if (asked != null) return { kind: r.truncated ? 'infeasible' : 'nogcd', gcdUi: ui, gcdLine: line, truncated: r.truncated };
-      return { kind: 'infeasible', gcdUi: ui, truncated: r.truncated };
+      return { kind: r.truncated ? 'infeasible' : 'noset', gcdUi: ui, truncated: r.truncated };
     }
     res = r;
     food = r.food;
@@ -321,7 +321,7 @@ function buildOptimizerView(app, gear, chosen) {
       nodeLimit: NODE_LIMIT,
       melds: !!o.melds,
     });
-    if (!res.ok) return { kind: 'infeasible', gcdUi: ui, truncated: res.truncated };
+    if (!res.ok) return { kind: res.truncated ? 'infeasible' : 'noset', gcdUi: ui, truncated: res.truncated };
     food = chosenFood(app, res.totals);
     bonus = food ? foodBonus(job, food, res.totals, app.level) : {};
   }

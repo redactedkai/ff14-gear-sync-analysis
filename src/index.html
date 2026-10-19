@@ -334,6 +334,7 @@
       <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>
       <template x-if="view && view.kind === 'nogcd'"><div class="panel"><div class="empty" id="o-nogcd">No set fits this GCD.</div></div></template>
+      <template x-if="view && view.kind === 'noset'"><div class="panel"><div class="empty" id="o-noset">No set found.</div></div></template>
       <template x-if="view && view.kind === 'infeasible'"><div class="panel"><div class="empty"><b class="bad">The search stopped at its step limit before finding a loadout.</b><br>Leave out more gear groups and try again.</div></div></template>
       <template x-if="view && view.kind === 'ok'"><div class="panel" id="o-result" :data-target="view.target">
         <div class="readout">
