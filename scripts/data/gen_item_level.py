@@ -22,7 +22,6 @@ the page uses. Missing columns or a mismatch stop the generator with exit status
 """
 
 import argparse
-import json
 from pathlib import Path
 
 import provenance
@@ -62,10 +61,10 @@ def main(csv_dir, out, source='detect'):
     pg_rows = {int(r['#']): r for r in read_csv(d / 'ParamGrow.csv', ['#', 'BaseSpeed', 'LevelModifier', 'ItemLevelSync'])}
     PG = [[int(pg_rows[lvl]['BaseSpeed']), int(pg_rows[lvl]['LevelModifier']), int(pg_rows[lvl]['ItemLevelSync'])] for lvl in range(1, 101)]
     JOBS = job_modifiers(d / 'ClassJob.csv', fmt)
-    # one line, compact: {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
-    # "SHARES": {key: [share per slot code]}, "JOBS": {job: {attribute: %}}}
+    # {"_generated": notice, "source": provenance, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
+    # "SHARES": {key: [share per slot code]}, "JOBS": {job: {attribute: %}}}: one stat, level or job per line
     doc = {'_generated': provenance.note(source), 'source': source, 'IL': IL, 'PG': PG, 'MP': MP, 'SHARES': SHARES, 'JOBS': JOBS}
-    provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')
+    provenance.write_generated(out, provenance.json_lines(doc, expand=('IL', 'PG', 'MP', 'SHARES', 'JOBS')))
 
 
 if __name__ == '__main__':

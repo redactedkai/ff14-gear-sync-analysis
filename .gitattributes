@@ -1,4 +1,8 @@
-# the generated data files are huge single lines; keep them out of diffs and language stats
-src/data/items.json    -diff linguist-generated=true
-src/data/item-level.json -diff linguist-generated=true
+# the generated data files hold one row per line, so a game patch's diff shows the rows that changed; marked generated
+# to keep them out of language stats and collapsed in pull request diffs
+src/data/items.json      linguist-generated=true
+src/data/item-level.json linguist-generated=true
+src/data/food.json       linguist-generated=true
+src/data/max-speed.json  linguist-generated=true
+src/data/job-icons.js    linguist-generated=true
 * text=auto eol=lf

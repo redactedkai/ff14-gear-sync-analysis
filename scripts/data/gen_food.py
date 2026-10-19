@@ -13,7 +13,6 @@ whose HQ percent is not 1 to 100 or whose HQ maximum is not positive.
 """
 
 import argparse
-import json
 from pathlib import Path
 
 import provenance
@@ -79,7 +78,7 @@ def main(csv_dir, out, source='detect'):
             foods.append([it['Name'], int(it['LevelItem']), *kept])
     foods.sort(key=lambda f: (f[1], f[0]))
     doc = {'_generated': provenance.note(source), 'source': source, 'foods': foods}
-    provenance.write_generated(out, json.dumps(doc, separators=(',', ':')) + '\n')
+    provenance.write_generated(out, provenance.json_lines(doc, expand=('foods',)))  # one meal per line
 
 
 if __name__ == '__main__':

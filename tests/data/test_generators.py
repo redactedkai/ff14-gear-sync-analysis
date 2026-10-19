@@ -10,7 +10,7 @@ position) so a wrong column shows up as a wrong number. ClassJob holds the real 
 class (Gladiator). ParamGrow (levels 0..100) is written in setUp. SchemaDriftTest
 edits copies of the fixtures to check that renamed columns and changed slot shares stop the generators.
 
-Run: npm test (runs these after the unit tests)
+Run: npm run test:data
 """
 
 import contextlib
@@ -69,7 +69,8 @@ class GenItemsTest(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         out = Path(cls.tmp.name) / 'items.json'
         run_quiet(gen_items.main, str(FIXTURES), str(out))
-        cls.doc = json.loads(out.read_text(encoding='utf-8'))
+        cls.text = out.read_text(encoding='utf-8')
+        cls.doc = json.loads(cls.text)
         cls.rows = cls.doc['items']
         cls.by_name = {r[0]: r for r in cls.rows}
 
@@ -102,6 +103,15 @@ class GenItemsTest(unittest.TestCase):
             self.assertTrue(all(isinstance(v, int) and v >= 0 for v in dd), r)
         ids = [r[13] for r in self.rows]
         self.assertEqual(len(set(ids)), len(ids))
+
+    def test_one_row_per_line(self):
+        """Each item row is a line of its own (so a patch's diff lists the rows that changed), and the text parses to the
+        same value as compact JSON."""
+        lines = self.text.splitlines()
+        start = lines.index('"items":[')
+        self.assertEqual([json.loads(line.rstrip(',')) for line in lines[start + 1 : start + 1 + len(self.rows)]], self.rows)
+        self.assertEqual(lines[start + 1 + len(self.rows) :], [']', '}'])
+        self.assertTrue(self.text.endswith('\n'))
 
     def test_damage_defense_fields(self):
         """Fields 16-19 are DamagePhys, DamageMag, DefensePhys, DefenseMag, plus the HQ bonus (BaseParamSpecial pairs 12, 13,
@@ -431,6 +441,20 @@ class GenItemLevelTest(unittest.TestCase):
         doc = json.loads(out.read_text(encoding='utf-8'))
         self.assertEqual(doc['source'], src)
         self.assertIn('a' * 40, doc['_generated'])
+
+    def test_one_entry_per_line(self):
+        """IL, MP, SHARES and JOBS hold one key per line and PG one level per line, so a patch's diff names them."""
+        out = self.dir / 'item-level.json'
+        run_quiet(gen_item_level.main, str(self.dir), str(out))
+        text = out.read_text(encoding='utf-8')
+        doc = json.loads(text)
+        lines = text.splitlines()
+        for key in ('IL', 'MP', 'SHARES', 'JOBS'):
+            start = lines.index(f'"{key}":{{')
+            self.assertEqual(lines[start + 1].split(':', 1)[0], json.dumps(next(iter(doc[key]))), key)
+        start = lines.index('"PG":[')
+        self.assertEqual(json.loads(lines[start + 1].rstrip(',')), doc['PG'][0])
+        self.assertEqual(lines[start + 1 + len(doc['PG'])], '],')
 
     def test_stat_factor_table(self):
         """MP: each stat's BaseParam MeldParam[0..12] row (the fixture holds the real rows), keyed by stat."""

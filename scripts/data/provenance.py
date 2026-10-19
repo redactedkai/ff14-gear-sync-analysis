@@ -5,6 +5,7 @@ inside a git clone of ffxiv-datamining (for example test fixtures), so a fixture
 not mistaken for game data.
 """
 
+import json
 import subprocess
 
 REPO = 'xivapi/ffxiv-datamining'
@@ -51,6 +52,28 @@ def from_args(args):
     if args.source_commit:
         return make(args.source_commit, args.source_date)
     return detect(args.csv_dir)
+
+
+def json_lines(doc, expand=(), ensure_ascii=True):
+    """`doc` (a dict) as JSON text with one top-level key per line, and, for each key in `expand`, one entry of its list
+    or dict per line; everything else is compact. So a patch's diff of a generated file shows the rows that changed
+    (an item, a stat's budget column, a level) instead of one changed line holding the whole file. Parses to the same
+    value as json.dumps(doc); the page bundle (esbuild) minifies it, so the built page does not grow."""
+
+    def compact(value):
+        return json.dumps(value, ensure_ascii=ensure_ascii, separators=(',', ':'))
+
+    lines = []
+    for key, value in doc.items():
+        head = compact(key) + ':'
+        if key in expand and isinstance(value, dict) and value:
+            entries = [compact(k) + ':' + compact(v) for k, v in value.items()]
+            lines.append(head + '{\n' + ',\n'.join(entries) + '\n}')
+        elif key in expand and isinstance(value, list) and value:
+            lines.append(head + '[\n' + ',\n'.join(compact(v) for v in value) + '\n]')
+        else:
+            lines.append(head + compact(value))
+    return '{\n' + ',\n'.join(lines) + '\n}\n'
 
 
 def write_generated(out, js):

@@ -30,7 +30,6 @@ currentTomes, the short names of the two current tomestones (for the "Tomestones
 """
 
 import argparse
-import json
 from pathlib import Path
 
 import gear_activities
@@ -344,7 +343,8 @@ def main(csv_dir, out, source='detect'):
     if absent:
         raise SchemaError(f'ClassJobCategory.csv: no item is wearable by {", ".join(absent)}. Did the job columns change?')
     rows.sort(key=lambda x: (-x[2], x[1], x[0]))
-    # one line, compact: {"_generated": notice, "source": provenance, "materia": table, "currentTomes": names, "items": [rows]}
+    # {"_generated": notice, "source": provenance, "materia": table, "currentTomes": names, "items": [rows]}, one item
+    # row per line so a patch's diff lists the rows that changed
     doc = {
         '_generated': provenance.note(source),
         'source': source,
@@ -352,7 +352,7 @@ def main(csv_dir, out, source='detect'):
         'currentTomes': gear_activities.current_tome_names(csv_dir),
         'items': rows,
     }
-    provenance.write_generated(out, json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n')
+    provenance.write_generated(out, provenance.json_lines(doc, expand=('items',), ensure_ascii=False))
     # the one message: gear of a new kind a patch added that the format cannot place yet (none today)
     if multi_slot:
         print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
