@@ -39,6 +39,18 @@ test('A3: tier text is right above 1,200 gear speed (level 100, 1,839 gear speed
   assert.equal(tierText(1839, 100), 'tier starts at 2238, next at 2324 (+65)');
 });
 
+/* The owner's screenshot (2026-10-18): Astrologian at level 50, cap 123, A Realm Reborn only, Relic left out, Mind >
+   Vitality > Direct Hit, materia, best meal, rank by tier. The page said the search stopped at its step limit; it had
+   found no set because Vitality was held with the meal's Vitality but asked of the gear alone. */
+test("optimizer view: Vitality as a tiebreak with the best meal finds a set (owner's screenshot)", () => {
+  const app = makeApp('AST', { level: 50 });
+  Object.assign(app.opt, { target: 'main', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
+  app.opt.expOff = ['HW', 'SB', 'ShB', 'EW', 'DT'];
+  app.opt.exclude = ['relic', 'savage', 'ultimate', 'pvp'];
+  const view = optimizerView(app);
+  assert.equal(view.kind, 'ok');
+});
+
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
   // a cap of 123 sits below the 125-135 window, so sync bites
   const app = makeApp('BLM', { cap: 123 });

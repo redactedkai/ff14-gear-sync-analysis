@@ -225,7 +225,7 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
 /* Food, written out: min(max, floor(pct x (base + gear) / 100)) (math.md section 6); base = BaseSpeed for speed, the
    level's main stat base for Determination and Piety (statBase, checked in food.test.js). */
 export function foodAdd(job, meal, stat, gear, level) {
-  const s = meal?.stats.find(x => x.stat === stat);
+  const s = stat === 'vit' ? meal?.vit : meal?.stats.find(x => x.stat === stat);
   if (!s) return 0;
   return Math.min(s.max, Math.floor((s.pct * (statBase(job, stat, level) + gear)) / 100));
 }

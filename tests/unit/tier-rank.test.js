@@ -197,6 +197,34 @@ test('rank by tier, more cases: with and without a Target GCD, three keys, again
   assert.ok(infeasible < runs / 2, `${infeasible} infeasible`);
 });
 
+/* Vitality as a key, with food: meals add Vitality too (since 2026-10-18), so holding it must count theirs (owner's
+   screenshot: Astrologian at level 50, Mind > Vitality > Direct Hit, best meal, found no set). */
+test('rank by tier with Vitality as a key and food matches the reference', () => {
+  const rand = rng(5150);
+  let runs = 0;
+  for (const [t, keys] of [
+    ['main', 'vit', 'dh'],
+    ['main', 'vit'],
+    ['crit', 'vit'],
+    ['vit', 'det'],
+  ].entries())
+    for (const jobId of ['AST', 'WAR']) {
+      const job = makeJobContext(jobId);
+      const level = t % 2 ? 100 : 50;
+      const sync = { cap: null, sync: false, level };
+      const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
+      if (!pool.length) continue;
+      const meals = foodChoices(job);
+      const want = tierLex(job, pool, sync, { keys, melds: true, meals, level });
+      const r = rankByTier(job, pool, sync, { target: keys[0], tiebreak: keys.slice(1), melds: true, food: 'best', level });
+      const label = `${jobId} L${level} ${keys.join('>')}`;
+      runs++;
+      assert.ok(r.ok && !r.truncated, label);
+      assert.deepEqual(asVector(job, r, keys, level), want, label);
+    }
+  assert.ok(runs >= 6, `${runs} runs`);
+});
+
 test('rank by tier: only raw keys give the raw optimizer; a key is held one point above its tier start', () => {
   const job = makeJobContext('SGE');
   const sync = { cap: null, sync: false, level: 100 };

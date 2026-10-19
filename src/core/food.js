@@ -32,10 +32,15 @@ export function statBase(job, stat, level) {
   return speedParams(lv).sub;
 }
 
-/* `a` is never worse than `b`: it has every stat of `b` with at least its percent and maximum (a bonus never falls
-   with a higher percent or maximum, and an extra stat only adds). */
+/* Every stat line of a foodChoices entry, Vitality included: [{stat, pct, max}]. */
+function foodLines(food) {
+  return food.vit ? [...food.stats, food.vit] : food.stats;
+}
+
+/* `a` is never worse than `b`: it has every stat of `b`, Vitality included, with at least its percent and maximum (a
+   bonus never falls with a higher percent or maximum, and an extra stat only adds). */
 function covers(a, b) {
-  return b.stats.every(s => a.stats.some(x => x.stat === s.stat && x.pct >= s.pct && x.max >= s.max));
+  return foodLines(b).every(s => foodLines(a).some(x => x.stat === s.stat && x.pct >= s.pct && x.max >= s.max));
 }
 
 /* The job's food choices, in the job's substat order: {key, name, ilvl, stats: [{stat, pct, max}], vit: {stat: 'vit',
@@ -81,7 +86,7 @@ export function foodLabel(job, food) {
    the percentage reaches the meal's maximum; its substats, and Vitality when the meal has some (food.vit). */
 export function foodBonus(job, food, totals, level) {
   const out = {};
-  for (const s of food.vit ? [...food.stats, food.vit] : food.stats) {
+  for (const s of foodLines(food)) {
     const uncapped = Math.floor((s.pct * (statBase(job, s.stat, level) + (totals[s.stat] || 0))) / 100);
     out[s.stat] = { bonus: Math.min(s.max, uncapped), capped: uncapped >= s.max };
   }
@@ -136,7 +141,7 @@ export function bestFood(job, choices, totals, level, keys) {
    rises with every gear point, so a binary search finds it; for Target GCD and tier ranking, which set minimums on
    totals with food while the optimizer works on gear points. */
 export function gearNeeded(job, food, stat, total, level) {
-  const line = food?.stats.find(x => x.stat === stat);
+  const line = food && foodLines(food).find(x => x.stat === stat);
   // no food for this stat: the gear has to bring the whole total
   if (!line || total <= 0) return Math.max(0, total);
   const reachesTotal = g => g + foodBonus(job, { stats: [line] }, { [stat]: g }, level)[stat].bonus >= total;

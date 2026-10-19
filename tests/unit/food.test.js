@@ -239,6 +239,18 @@ test('optimizer gear plus best food equals the best (gear set, meal) pair over e
   }
 });
 
+/* Regression (owner's screenshot, 2026-10-18): Astrologian at level 50, Mind > Vitality > Direct Hit, best meal: rank by
+   tier held Vitality at its total with the meal's Vitality but asked the gear for all of it, so no set met it. */
+test("gearNeeded: Vitality counts the meal's Vitality", () => {
+  const food = foodChoices(SGE).find(c => c.vit);
+  for (const level of [50, 100])
+    for (let total = 0; total <= 3000; total += 37) {
+      const g = gearNeeded(SGE, food, 'vit', total, level);
+      const reach = x => x + foodBonus(SGE, food, { vit: x }, level).vit.bonus >= total;
+      assert.ok(reach(g) && (g === 0 || !reach(g - 1)), `level ${level}, total ${total}`);
+    }
+});
+
 test('gearNeeded: the fewest gear points that reach a total with food', () => {
   const [food] = foodChoices(SGE).filter(c => c.key === 'spd+dh');
   assert.equal(gearNeeded(SGE, food, 'spd', 412, 50), 344); // 344 + 68
