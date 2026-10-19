@@ -295,7 +295,7 @@ Notes:
 | Minimums on any stat are exact in the search | **Verified** | Tests against the brute-force reference, with and without melds, with blocked slots and a speed band |
 | The tests catch errors in these parts | **Verified** | Broken on purpose: pruning twice as aggressive, fronts comparing the score only, tier holds at the start instead of one above, Tenacity's damage step, no haste: each made a test fail. Since 2026-10-17 also: a Unique ring allowed to swap for any ring, the regain ignoring the held keys, the fronts comparing a maximum-only total the wrong way, the staircase ignoring its second total |
 | A seed that breaks a limit is ignored | **Verified** | A test |
-| The tier formulas; food under sync | **Community reference** / **inferred** (the food formula itself is verified in game) | As in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers) |
+| The tier formulas; the food formula | **Community reference** (tiers) / **verified** in a synced duty (food) | As in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers) |
 
 ## 8. Performance
 

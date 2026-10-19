@@ -548,7 +548,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 | --- | --- |
 | Percentages and maximums | Verified (game files): every combat stat from item level 51 up is 8% NQ, 10% HQ |
 | Of the whole stat (base plus gear), floored, then capped | Verified: the owner, in game (2026-10-18); also xivgear's and Ariyala's code |
-| Applied unchanged under item level and level sync | Inferred: player reports, xivgear; meals have equip level 1 and no sync field |
+| Applied unchanged under item level and level sync | Verified: the owner, in a synced duty (2026-10-18); also player reports, xivgear |
 | Determination and Piety start from the main stat base, at every level | Inferred: AkhMorning, the FF Wiki, xivgear; no capture below level 50 |
 | The main stat base per level | Inferred: not in any game sheet; AkhMorning's table, whose other two columns equal `ParamGrow` at all 100 levels and whose values equal xivgear's at 50, 60, ..., 100 |
 
@@ -600,8 +600,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 | Haste percentages and levels | Verified (official job guides) | [Haste](#haste) |
 | Haste applied after the speed step, rounded down again | Inferred (xivgear's formula) | Its best-in-slot GCD tiers |
 | Food percentages and maximums | Verified (game files) | `ItemFood`, HQ columns |
-| Food: of base plus gear, floored, capped | Verified (owner, in game) | [Food](#food) |
-| Food unchanged under sync | Inferred (community tools, player reports) | [Food](#food) |
+| Food: of base plus gear, floored, capped; unchanged under sync | Verified (owner, in a synced duty) | [Food](#food) |
 | Main stat base per level (Determination and Piety food) | Inferred (AkhMorning table) | Its `ParamGrow` columns match, 100 of 100 |
 | Rows 796–920 carry no gear | Verified (data) | Highest real item level 795 |
 

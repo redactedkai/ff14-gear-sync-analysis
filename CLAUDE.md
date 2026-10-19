@@ -63,7 +63,7 @@ Details: `docs/mechanics/math.md`, evidence in `docs/mechanics/validation.md`, m
 - Food: HQ only. Without a Target GCD it never changes which gear wins; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together.
 - Weapon damage (physical for Str/Dex jobs, magic for Int/Mind; none for BLU) and Defense/Magic Defense are synced like a stat: the same cap formula with their own budget, factor and slot share. Weapon damage is ranked but not shown; Defense is shown only, never ranked.
 
-**These are guesses, not facts:** the 100%/70% substat shares, the main stat and Vitality clamp under sync, the exact weapon damage under sync (that sync lowers it rests on player reports), the off-hand rule, food under sync, and every meld succeeding. (Substats never scaling up and the 70% line reaching the full cap are verified by the Wiki's item level 475 example.) Always say so in answers. In the UI, mark a guess only where it changes a number the user acts on (the main stat and Vitality clamp), in a few words next to it; the evidence and the full verified/guessed lists live in `docs/`.
+**These are guesses, not facts:** the 100%/70% substat shares, the main stat and Vitality clamp under sync, the exact weapon damage under sync (that sync lowers it rests on player reports), the off-hand rule, and every meld succeeding. (Substats never scaling up and the 70% line reaching the full cap are verified by the Wiki's item level 475 example.) Always say so in answers. In the UI, mark a guess only where it changes a number the user acts on (the main stat and Vitality clamp), in a few words next to it; the evidence and the full verified/guessed lists live in `docs/`.
 
 ## Data
 

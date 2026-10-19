@@ -1,8 +1,8 @@
 /* Food: HQ meals raise one or two combat substats, and Vitality, by a percentage of the whole stat (the character's
    base at the level plus gear), up to the meal's maximum: bonus = min(max, floor(percent x (base + gear) / 100)).
-   Verified by the owner in game (2026-10-18; xivgear and Ariyala use it too); applied unchanged under item level and
-   level sync (player reports, xivgear; inferred; docs/mechanics/math.md, section 6, Food). Vitality's base leaves out the clan's bonus (-2 to +3), which
-   the page does not ask for, so its food can be a point lower than in game.
+   Verified by the owner in a synced duty (2026-10-18; xivgear and Ariyala use it too), so it applies unchanged under
+   item level and level sync (docs/mechanics/math.md, section 6, Food). Vitality's base leaves out the clan's bonus
+   (-2 to +3), which the page does not ask for, so its food can be a point lower than in game.
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
