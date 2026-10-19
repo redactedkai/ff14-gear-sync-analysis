@@ -60,7 +60,7 @@ Details: `docs/mechanics/math.md`, evidence in `docs/mechanics/validation.md`, m
 
 - Item stat: `round(round(round(budget × slotPercent / 1000) × factor) × share)`, rounded after each step; the factor is the item's own stat factor. Off-hand = 2H value − 1H value.
 - Sync cap: `round(floor(floor(budget × factor% / 100) × slotPercent / 100) / 10)`, using the piece's own slot share. It matches the Wiki's item level 475 caps.
-- Synced item level: the item level cap first; otherwise, if the equip level is above the synced level, that level's `ParamGrow.ItemLevelSync`. Gear that scales with the wearer (`Item.SubStatCategory` 2) always follows the level, whatever its equip level (math.md section 5).
+- Synced item level: the item level cap first (for gear made for a higher level, no higher than the best gear made for the synced level, `capCeiling`); otherwise, if the equip level is above the synced level, that level's `ParamGrow.ItemLevelSync`. Gear that scales with the wearer (`Item.SubStatCategory` 2) always follows the level, whatever its equip level (math.md section 5).
 - Food: HQ only. Without a Target GCD it never changes which gear wins; with one, the meal's speed counts toward the GCD, so meal and gear are chosen together.
 - Weapon damage (physical for Str/Dex jobs, magic for Int/Mind; none for BLU) and Defense/Magic Defense are synced like a stat: the same cap formula with their own budget, factor and slot share. Weapon damage is ranked but not shown; Defense is shown only, never ranked.
 
