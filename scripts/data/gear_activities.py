@@ -354,13 +354,16 @@ class RouteFinder:
     """Works out an item's routes (activities_of): frozensets of activities, any one of which gets it.
     ways, rebuys: from ways_in; category: {kept piece id: category}; slot_of: {kept piece id: slot code}; untradable:
     the ids whose IsUntradable is True; tome_slot: {tomestone item id: its TomestonesItem slot}; accessory_slots: slot
-    codes of accessories. The routes are memoised per (item, depth), since trade-in chains share their pieces."""
+    codes of accessories. The routes are memoised per (item, depth), since trade-in chains share their pieces.
+    inferred_pieces, inferred_currencies: {item id: activity} of the kept pieces and currencies whose routes come from
+    a fallback rule rather than the game files (no_way_in), for the report printed on every run."""
 
     def __init__(self, ways, rebuys, category, slot_of, untradable, tome_slot, accessory_slots):
         self.ways, self.rebuys, self.category, self.slot_of = ways, rebuys, category, slot_of
         self.untradable, self.tome_slot, self.accessory_slots = untradable, tome_slot, accessory_slots
         self.currency_routes = {i: frozenset(frozenset(r) for r in rs) for i, (_, rs) in CURRENCIES.items()}
         self.memo = {}
+        self.inferred_pieces, self.inferred_currencies = {}, {}
 
     def activities_of(self, item, depth=0):
         """The item's routes: a frozenset of frozensets of activities (empty: no way in at all)."""
@@ -403,29 +406,42 @@ class RouteFinder:
                 if gate and need <= {'Vendor'}:  # a gil (or free) listing behind a quest or an achievement
                     need = frozenset({'Quest' if gate == 'quest' else 'Achievement'})
                 found.add(need or frozenset({'Vendor'}))
-        return frozenset(found) if found else self.no_way_in(item, needs_retired)
+        return frozenset(found) if found else self.no_way_in(item, needs_retired, depth)
 
-    def no_way_in(self, item, needs_retired):
+    def no_way_in(self, item, needs_retired, depth=0):
         """The routes of an item with no live way in (inferred, docs/engineering/data-pipeline.md, Sources): a kept
         piece takes KNOWN_SOURCE, Dungeon for an artifact accessory, or its category's DROP_ACTIVITY (retired, or Quest
         for a rebuy, in a MUST_HAVE_SOURCE category); a currency whose ways in all cost something retired is retired;
-        another currency takes the activity of the gear it buys most."""
+        another currency takes the activity of the gear it buys most. Records which (inferred_pieces for a kept piece
+        looked up for itself, at depth 0; inferred_currencies when the depth limit did not cut its ways short)."""
         if item in self.category:
-            cat = self.category[item]
-            if item in KNOWN_SOURCE:
-                return single(KNOWN_SOURCE[item][1])
-            if cat == 'artifact' and self.slot_of[item] in self.accessory_slots:
-                return single('Dungeon')
-            if cat in MUST_HAVE_SOURCE:
-                if item in self.rebuys:  # earned through a quest or coffer these sheets do not hold
-                    return single('Quest')
-                if item in self.untradable:
-                    return single(RETIRED)
-            return single(DROP_ACTIVITY[cat])
+            activity = self.kept_piece_fallback(item)
+            if depth == 0:
+                self.inferred_pieces[item] = activity
+            return single(activity)
         if needs_retired:
             return single(RETIRED)
         cat = self.buys_most(item)
-        return single(CURRENCY_FROM_CATEGORY.get(cat, DROP_ACTIVITY[cat])) if cat else frozenset()
+        if not cat:
+            return frozenset()
+        activity = CURRENCY_FROM_CATEGORY.get(cat, DROP_ACTIVITY[cat])
+        if depth < MAX_DEPTH:
+            self.inferred_currencies[item] = activity
+        return single(activity)
+
+    def kept_piece_fallback(self, item):
+        """The one activity of a kept piece with no live way in (see no_way_in)."""
+        cat = self.category[item]
+        if item in KNOWN_SOURCE:
+            return KNOWN_SOURCE[item][1]
+        if cat == 'artifact' and self.slot_of[item] in self.accessory_slots:
+            return 'Dungeon'
+        if cat in MUST_HAVE_SOURCE:
+            if item in self.rebuys:  # earned through a quest or coffer these sheets do not hold
+                return 'Quest'
+            if item in self.untradable:
+                return RETIRED
+        return DROP_ACTIVITY[cat]
 
     def buys_most(self, currency):
         """The category of the kept gear a currency buys most, or None (a tie goes to the first category counted)."""
@@ -481,10 +497,12 @@ class Boxes:
 
 
 def routes(csv_dir, kept, cats, items=None):
-    """{Item.csv id (str): sorted list of route masks} for the kept gear (gen_items.select, LEFT_OUT categories
-    removed). cats: {Item.csv id (str): category} (gear_categories.categorize). items: the Item.csv rows
-    (read_item_sheet), read here when None. Raises SchemaError on an activity with no box, an override id that names
-    another item, or a kept piece whose category has no drop activity."""
+    """(masks, inferred): masks is {Item.csv id (str): sorted list of route masks} for the kept gear (gen_items.select,
+    LEFT_OUT categories removed); inferred is {'pieces': Counter, 'currencies': Counter} of the activities the
+    fallback rules gave (RouteFinder.no_way_in), for inferred_report. cats: {Item.csv id (str): category}
+    (gear_categories.categorize). items: the Item.csv rows (read_item_sheet), read here when None. Raises SchemaError
+    on an activity with no box, an override id that names another item, or a kept piece whose category has no drop
+    activity."""
     csv_path = Path(csv_dir)
 
     # the sheets, and the hand-kept tables checked against them
@@ -516,7 +534,25 @@ def routes(csv_dir, kept, cats, items=None):
     # the routes as box masks
     tradeable = {i for i, r in items.items() if r['IsUntradable'] == 'False'}
     boxes = Boxes({int(r['#']): piece['equipLevel'] for r, piece in kept}, tradeable, names)
-    return {str(item): boxes.masks(item, finder.activities_of(item)) for item in category}
+    masks = {str(item): boxes.masks(item, finder.activities_of(item)) for item in category}
+    inferred = {'pieces': Counter(finder.inferred_pieces.values()), 'currencies': Counter(finder.inferred_currencies.values())}
+    return masks, inferred
+
+
+def inferred_report(inferred):
+    """One line: how many kept pieces and currencies took their routes from a fallback rule (routes(), inferred), by
+    activity, most first, so a patch that places many new pieces or currencies this way is noticed. For example
+    'Routes inferred: 9,876 pieces with no way in the game files (Dungeon 3,210, ...); 201 currencies by the gear they
+    buy most (Savage 52, ...)'."""
+
+    def by_activity(counts):
+        return ', '.join(f'{activity} {n:,}' for activity, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+
+    pieces, currencies = inferred['pieces'], inferred['currencies']
+    return (
+        f'Routes inferred: {sum(pieces.values()):,} pieces with no way in the game files ({by_activity(pieces)}); '
+        f'{sum(currencies.values()):,} currencies by the gear they buy most ({by_activity(currencies)})'
+    )
 
 
 TOME_NAME_PREFIX = 'Allagan Tomestone of '

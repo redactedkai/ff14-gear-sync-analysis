@@ -128,7 +128,7 @@ class GenItemsTest(unittest.TestCase):
     def test_drop_report(self):
         """select() counts the rows each rule left out; with the kept rows they add up to the whole Item.csv. The report
         line names each rule that left something out, the LEFT_OUT categories, and the rows kept."""
-        kept, _, dropped = gen_items.select(FIXTURES)
+        kept, _, dropped, dangling = gen_items.select(FIXTURES)
         with open(FIXTURES / 'Item.csv', encoding='utf-8', newline='') as f:
             n_items = sum(1 for _ in csv.DictReader(f))
         self.assertEqual(list(dropped), list(gen_items.DROP_RULES))
@@ -136,6 +136,8 @@ class GenItemsTest(unittest.TestCase):
         # the fixture's empty names, belt, soul crystal and non-gear rows, item level 14 piece, base-class-only pieces,
         # no-stat pieces, crafter and gatherer pieces and unsupported multi-slot piece
         self.assertEqual(dropped, {'name': 2, 'slot': 147, 'ilvl': 1, 'job': 4, 'stats': 3, 'crafter_gatherer': 2, 'multi_slot': 1})
+        # one piece names an EquipSlotCategory id with no row, one a ClassJobCategory id with no row
+        self.assertEqual(dangling, {'EquipSlotCategory': 1, 'ClassJobCategory': 1})
         report = gen_items.drop_report(n_items, dropped, {'diadem': 2}, 22)
         self.assertEqual(
             report,
@@ -143,6 +145,9 @@ class GenItemsTest(unittest.TestCase):
             'no combat job -4, no stats -3, crafter or gatherer stat -2, multi-slot with no slot code -1, '
             'category diadem (LEFT_OUT) -2; kept 22',
         )
+        report = gen_items.drop_report(n_items, dropped, {}, 22, dangling)
+        self.assertIn('-147 (1 with an id that has no EquipSlotCategory row)', report)
+        self.assertIn('no combat job -4 (1 with an id that has no ClassJobCategory row)', report)
 
     def test_damage_defense_fields(self):
         """Fields 16-19 are DamagePhys, DamageMag, DefensePhys, DefenseMag, plus the HQ bonus (BaseParamSpecial pairs 12, 13,
@@ -266,7 +271,7 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.row('Test Flanchard')[1], 13)
         # Category 20: Body 1, Gloves -1, Legs -1 has no slot code: left out and listed
         self.assertNotIn('Test Overall', self.by_name)
-        _, multi_slot, _ = gen_items.select(FIXTURES)
+        multi_slot = gen_items.select(FIXTURES).multi_slot
         self.assertEqual(multi_slot, ['Test Overall (item level 130)'])
 
     def test_stat_mapping(self):
@@ -676,7 +681,7 @@ class GearCategoriesTest(unittest.TestCase):
         self.tmp.cleanup()
 
     def categories(self):
-        kept, *_ = gen_items.select(self.dir)
+        kept = gen_items.select(self.dir).kept
         cats = gear_categories.categorize(self.dir, kept, self.WEAPON_SLOTS)
         names = {r['#']: r['Name'] for r, _ in kept}
         return {names[i]: c for i, c in cats.items()}, kept, cats
@@ -704,8 +709,19 @@ class GearCategoriesTest(unittest.TestCase):
         cats, kept, ids = self.categories()
         kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]
         keys = [a['key'] for a in load_format()['activities']]
-        out = gear_activities.routes(self.dir, kept, ids)
+        out, _ = gear_activities.routes(self.dir, kept, ids)
         return {r['Name']: sorted('+'.join(k for i, k in enumerate(keys) if m >> i & 1) for m in out[r['#']]) for r, _ in kept}
+
+    def test_inferred_routes_are_counted(self):
+        """Pieces and currencies placed by a fallback rule are counted by activity for the report printed on every
+        run: the Savage book has no way in and buys Savage gear, so it counts as a Savage currency."""
+        _, kept, ids = self.categories()
+        kept = [(r, row) for r, row in kept if ids[r['#']] not in gear_categories.LEFT_OUT]
+        _, inferred = gear_activities.routes(self.dir, kept, ids)
+        self.assertEqual(inferred['currencies']['Savage'], 1)
+        self.assertEqual(inferred['pieces'], {'Dungeon': 2})
+        report = gear_activities.inferred_report(inferred)
+        self.assertTrue(report.startswith('Routes inferred: 2 pieces with no way in the game files (Dungeon 2); 4 currencies'), report)
 
     def test_savage_splits_at_the_level_cap(self):
         # Savage at the highest equip level of the kept gear (the level cap) is Savage (Current), below it Savage (Legacy)

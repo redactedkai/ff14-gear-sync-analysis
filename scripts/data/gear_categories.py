@@ -184,7 +184,7 @@ def check(kept, cats):
 def main(csv_dir):
     import gen_items  # here, so importing this module stays cheap
 
-    kept, *_ = gen_items.select(csv_dir)
+    kept = gen_items.select(csv_dir).kept
     cats = categorize(csv_dir, kept, slot_codes(load_format(), WEAPON_TYPES))
     problems = check(kept, cats)
     counts = Counter(cats.values())

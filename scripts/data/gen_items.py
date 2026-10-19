@@ -34,6 +34,7 @@ currentTomes, the short names of the two current tomestones (for the "Tomestones
 import argparse
 from collections import Counter
 from pathlib import Path
+from typing import NamedTuple
 
 import gear_activities
 import gear_categories
@@ -319,13 +320,26 @@ def check_pieces(kept, bad_kind, bad_meld, n_kinds, fmt):
         raise SchemaError(f'Item.csv meld fields outside {expect}: ' + ', '.join(bad_meld[:10]))
 
 
+class Selection(NamedTuple):
+    """What select() keeps and leaves out.
+    kept: (Item.csv row, piece) pairs in Item.csv order. A piece is a dict of the row's fields by `itemRow.fields` name
+      (item-format.json) except routes and category, which main() adds, plus `flags` (gear_sources.FLAGS: crafted,
+      ultimate) for the categories.
+    multi_slot: the pieces left out because they block a combination of slots with no slot code in item-format.json.
+    dropped: {DROP_RULES key: rows that rule left out} (a crafter or gatherer stat marks gear a combat job can wear but
+      made for crafting or gathering).
+    dangling: {sheet: named rows whose EquipSlotCategory or ClassJobCategory id has no row there} (none today); they
+      count as no slot or no job, and the drop report names them."""
+
+    kept: list
+    multi_slot: list
+    dropped: dict
+    dangling: Counter
+
+
 def select(csv_dir, items=None):
-    """The gear the database keeps: (kept, multi_slot, dropped), where kept is a list of (Item.csv row, piece) pairs in
-    Item.csv order. A piece is a dict of the row's fields by `itemRow.fields` name (item-format.json) except routes and
-    category, which main() adds, plus `flags` (gear_sources.FLAGS: crafted, ultimate) for the categories. multi_slot
-    names the pieces left out because they block a combination of slots with no slot code in item-format.json, and
-    dropped is {DROP_RULES key: rows that rule left out} (a crafter or gatherer stat marks gear a combat job can wear
-    but made for crafting or gathering). items: the Item.csv rows (read_item_sheet), read here when None."""
+    """The gear the database keeps, and what each rule left out: a Selection. items: the Item.csv rows
+    (read_item_sheet), read here when None."""
     csv_path = Path(csv_dir)
     fmt = load_format()
 
@@ -343,11 +357,14 @@ def select(csv_dir, items=None):
     # the rules, in DROP_RULES order: the first one a row fails leaves it out
     kept, multi_slot, bad_kind, bad_meld = [], [], [], []
     dropped = dict.fromkeys(DROP_RULES, 0)
+    dangling = Counter()
     for row in items:
         if not row['Name']:
             dropped['name'] += 1
             continue
         slot_row = slot_categories.get(row['EquipSlotCategory'])
+        if slot_row is None:
+            dangling['EquipSlotCategory'] += 1
         slot = slot_code(slot_row, fmt)
         unsupported = slot is None and blocks_other_slots(slot_row)  # multi-slot gear with no slot code: listed, not kept
         if slot is None and not unsupported:
@@ -357,6 +374,8 @@ def select(csv_dir, items=None):
         if ilvl < MIN_ILVL:
             dropped['ilvl'] += 1
             continue
+        if row['ClassJobCategory'] not in mask_of_category:
+            dangling['ClassJobCategory'] += 1
         mask = mask_of_category.get(row['ClassJobCategory'], 0)
         if not mask:
             dropped['job'] += 1
@@ -388,7 +407,7 @@ def select(csv_dir, items=None):
         kept.append((row, make_piece(row, {**worked_out, 'flags': flags.get(int(row['#']), 0)}, fmt)))
 
     check_pieces(kept, bad_kind, bad_meld, n_kinds, fmt)
-    return kept, multi_slot, dropped
+    return Selection(kept, multi_slot, dropped, dangling)
 
 
 def category_index(fmt):
@@ -412,7 +431,8 @@ def main(csv_dir, out, source='detect'):
         source = provenance.detect(csv_dir)
     fmt = load_format()
     items = read_item_sheet(csv_dir)  # the largest sheet, read once and passed on
-    kept, multi_slot, dropped = select(csv_dir, items)
+    selection = select(csv_dir, items)
+    kept, dropped = selection.kept, selection.dropped
     n_items = len(kept) + sum(dropped.values())
     cats = gear_categories.categorize(csv_dir, kept, slot_codes(fmt, WEAPON_TYPES), items)
     problems = gear_categories.check(kept, cats)
@@ -420,7 +440,7 @@ def main(csv_dir, out, source='detect'):
         raise SchemaError(f'{len(problems)} gear category cross-check problem(s): ' + '; '.join(problems[:10]))
     left_out = Counter(cats[r['#']] for r, _ in kept if cats[r['#']] in gear_categories.LEFT_OUT)
     kept = [(r, row) for r, row in kept if cats[r['#']] not in gear_categories.LEFT_OUT]
-    routes = gear_activities.routes(csv_dir, kept, cats, items)
+    routes, inferred = gear_activities.routes(csv_dir, kept, cats, items)
     cat_index = category_index(fmt)
     # each kept piece's fields plus its routes and category, in the order of `itemRow.fields` (row_fields raises if the
     # format file's rowField entries disagree with that list)
@@ -446,18 +466,28 @@ def main(csv_dir, out, source='detect'):
         'items': rows,
     }
     provenance.write_generated(out, provenance.json_lines(doc, expand=('items',), ensure_ascii=False))
-    print(drop_report(n_items, dropped, left_out, len(rows)))
+    print(drop_report(n_items, dropped, left_out, len(rows), selection.dangling))
+    print(gear_activities.inferred_report(inferred))
     # gear of a new kind a patch added that the format cannot place yet (none today)
-    if multi_slot:
+    if selection.multi_slot:
+        multi_slot = selection.multi_slot
         print(f'Warning: left out {len(multi_slot)} multi-slot pieces with no slot code: ' + ', '.join(multi_slot))
 
 
-def drop_report(n_items, dropped, left_out, n_kept):
+def drop_report(n_items, dropped, left_out, n_kept, dangling=None):
     """One line: how many Item.csv rows each selection rule left out, in rule order, then the LEFT_OUT categories
     (gear_categories.py) by name, and the rows kept, for example 'Item.csv 52,801 rows: no name -1,921, ...; kept
     20,031'. A rule that left nothing out is skipped. The counts follow the selection figure of
-    docs/engineering/data-pipeline.md, section 4."""
-    parts = [f'{DROP_RULES[k]} -{n:,}' for k, n in dropped.items() if n]
+    docs/engineering/data-pipeline.md, section 4. dangling (Selection.dangling): rows whose slot or job category id
+    has no row, named after the rule they fall under when there are any."""
+    dangling = dangling or {}
+    under = {'slot': 'EquipSlotCategory', 'job': 'ClassJobCategory'}
+    parts = []
+    for rule, n in dropped.items():
+        if n:
+            sheet = under.get(rule)
+            note = f' ({dangling[sheet]:,} with an id that has no {sheet} row)' if dangling.get(sheet) else ''
+            parts.append(f'{DROP_RULES[rule]} -{n:,}{note}')
     parts += [f'category {cat} (LEFT_OUT) -{n:,}' for cat, n in sorted(left_out.items())]
     return f'Item.csv {n_items:,} rows: ' + ', '.join(parts) + f'; kept {n_kept:,}'
 
