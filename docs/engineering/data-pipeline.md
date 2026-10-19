@@ -616,7 +616,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | `core/constants.js` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); `ONE_HANDED_JOBS` if it uses a shield; `JOB_LEVEL_CAPS` if it is a limited job (the cap from the patch notes); `HASTE` if it has always-on haste; `NO_WEAPON_DAMAGE_JOBS` if it has no weapon damage |
 | `core/job-context.js` | nothing for a job like the others; Beastmaster added `maxLevel` for limited jobs, which now covers any |
 | `ui/` (state, store, views, `index.html`) | nothing for a job like the others; Beastmaster made the level inputs, restore and the optimizer pool follow `maxLevel` |
-| `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | the job list (typed out in both) |
+| `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
 | `tests/data/fixtures/ClassJob.csv`, `ClassJobCategory.csv` | the job's real rows and column |
 | `tests/data/test_generators.py` | `ALL_JOBS_MASK` (all jobs' bits); the job count in the job modifier test |
 | `tests/unit/stat-factor.test.js` and others | the all-jobs mask ($2^{n} - 1$); tests for a new rule (Beastmaster: level cap, shield, its own gear) |
