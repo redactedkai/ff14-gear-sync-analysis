@@ -41,6 +41,23 @@ def read_csv(path, required=()):
         return list(reader)
 
 
+def check_bools(rows, columns, sheet):
+    """Raises SchemaError when any of `columns` holds a value other than 'True' or 'False' in `rows` (dicts from
+    read_csv), naming the sheet, the column and a few of the values found. The generators compare these columns with
+    the string 'True', so an exporter that wrote booleans another way (1/0, true/false) would otherwise turn every
+    value into false without notice (every HQ bonus gone, every piece tradeable)."""
+    bad = []
+    for column in columns:
+        found = sorted({r[column] for r in rows} - {'True', 'False'})
+        if found:
+            bad.append(f'{column} has {", ".join(repr(v) for v in found[:5])}')
+    if bad:
+        raise SchemaError(
+            f'{sheet}: expected True or False: {"; ".join(bad)}. Did the exporter change how it writes booleans? '
+            'Update the generators that read these columns.'
+        )
+
+
 def item_columns():
     """The Item.csv columns gen_items.py reads (read_csv raises SchemaError on any that is missing)."""
     fmt = load_format()

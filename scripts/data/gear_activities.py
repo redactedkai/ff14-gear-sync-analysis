@@ -36,7 +36,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from gear_sources import CODE_LIMIT, listing_count
-from item_format import SchemaError, load_format, read_csv
+from item_format import SchemaError, check_bools, load_format, read_csv
 
 GIL, WOLF_MARK, MGP = 1, 25, 29
 FIXED_ITEMS = {GIL: 'Gil', WOLF_MARK: 'Wolf Mark', MGP: 'MGP'}  # item id -> expected name; their activities in activities_of
@@ -326,6 +326,7 @@ def routes(csv_dir, kept, cats):
     no box, an override id that names another item, or a kept piece whose category has no drop activity."""
     d = Path(csv_dir)
     items = {int(r['#']): r for r in read_csv(d / 'Item.csv', ['#', 'Name', 'IsUntradable', 'LevelItem'])}
+    check_bools(items.values(), ['IsUntradable'], 'Item.csv')
     names = {i: r['Name'] for i, r in items.items()}
     check_names(names, CURRENCIES, 'currency')
     check_names(names, KNOWN_SOURCE, 'known source')

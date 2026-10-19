@@ -16,7 +16,7 @@ import argparse
 from pathlib import Path
 
 import provenance
-from item_format import SchemaError, load_format, read_csv, run_main
+from item_format import SchemaError, check_bools, load_format, read_csv, run_main
 
 N_FOOD_PARAMS = 3  # stats per ItemFood row
 
@@ -63,6 +63,8 @@ def main(csv_dir, out, source='detect'):
     items = read_csv(d / 'Item.csv', ['#', 'Name', 'LevelItem', 'CanBeHq', fd['uiCategoryColumn'], fd['actionColumn']])
     actions = {r['#']: r for r in read_csv(d / 'ItemAction.csv', ['#', 'Action', 'Data[0]', fd['foodRowColumn']])}
     food_rows = {r['#']: r for r in read_csv(d / 'ItemFood.csv', ['#', *food_columns()])}
+    check_bools(items, ['CanBeHq'], 'Item.csv')
+    check_bools(food_rows.values(), [f'IsRelative[{i}]' for i in range(N_FOOD_PARAMS)], 'ItemFood.csv')
     foods = []
     for it in items:
         if it[fd['uiCategoryColumn']] != str(fd['uiCategory']) or it['CanBeHq'] != 'True':

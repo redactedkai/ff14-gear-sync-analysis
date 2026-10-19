@@ -36,7 +36,7 @@ import gear_activities
 import gear_categories
 import provenance
 from gear_sources import flags as gear_flags
-from item_format import N_ITEM_PARAMS, SchemaError, item_columns, load_format, meld_fields, read_csv, run_main, stat_factors
+from item_format import N_ITEM_PARAMS, SchemaError, check_bools, item_columns, load_format, meld_fields, read_csv, run_main, stat_factors
 
 MIN_ILVL = 15
 
@@ -200,6 +200,7 @@ def select(csv_dir):
         return e is not None and any(v == '-1' for c, v in e.items() if c != '#')
 
     items = read_csv(d / 'Item.csv', ['#', *item_columns()])
+    check_bools(items, ['CanBeHq', 'IsUnique'], 'Item.csv')
     src = gear_flags(d, items)
     kept, multi_slot, crafter_gatherer, bad_kind, bad_meld, bad_rarity = [], [], [], [], [], []
     rarity_col = fmt['rarity']['itemColumn']

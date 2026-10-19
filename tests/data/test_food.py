@@ -89,6 +89,23 @@ class FoodSchemaTest(unittest.TestCase):
         with self.assertRaisesRegex(SchemaError, r'Rroneek au Gratin.*ItemFood row 705'):
             generate(self.dir)
 
+    def test_boolean_columns_other_than_true_false(self):
+        # the exporter writing 1/0 for CanBeHq or IsRelative must stop the generator, not leave out every meal
+        def to_digits(column):
+            def fn(rows):
+                cols = [i for i, c in enumerate(rows[0]) if c.startswith(column)]
+                return [rows[0], *[[{'True': '1', 'False': '0'}.get(v, v) if i in cols else v for i, v in enumerate(r)] for r in rows[1:]]]
+
+            return fn
+
+        for sheet, column in (('Item', 'CanBeHq'), ('ItemFood', 'IsRelative')):
+            with self.subTest(column=column):
+                for f in FIXTURES.iterdir():
+                    shutil.copy(f, self.dir / f.name)
+                self.edit(sheet, to_digits(column))
+                with self.assertRaisesRegex(SchemaError, rf"{sheet}.csv: expected True or False: {column}.*'1'"):
+                    generate(self.dir)
+
     def test_bad_percent(self):
         def zero(rows):
             i = rows[0].index('ValueHQ[0]')

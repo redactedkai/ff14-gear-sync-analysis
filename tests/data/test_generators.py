@@ -769,6 +769,21 @@ class SchemaDriftTest(unittest.TestCase):
         edit_csv(self.dir / 'ClassJobCategory.csv', fn)
         self.assert_fails(gen_items, 'ClassJobCategory.csv', 'PLD', 'BLU')
 
+    def test_boolean_columns_other_than_true_false(self):
+        """CanBeHq, IsUnique and IsUntradable are read as the string 'True'; an exporter that wrote 1/0 instead must stop
+        the generator rather than make every piece non-HQ, non-Unique or tradeable."""
+        for col in ('CanBeHq', 'IsUnique', 'IsUntradable'):
+            with self.subTest(col=col):
+                shutil.copy(FIXTURES / 'Item.csv', self.dir / 'Item.csv')
+
+                def fn(rows, col=col):
+                    i = rows[0].index(col)
+                    for r in rows[1:]:
+                        r[i] = {'True': '1', 'False': '0'}[r[i]]
+
+                edit_csv(self.dir / 'Item.csv', fn)
+                self.assert_fails(gen_items, 'Item.csv', col, "'0', '1'", 'True or False')
+
     def test_missing_equip_slot_column(self):
         for col in ('Gloves', 'OffHand', 'MainHand', 'FingerL'):
             with self.subTest(col=col):
