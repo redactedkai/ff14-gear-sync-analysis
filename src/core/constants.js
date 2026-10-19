@@ -209,7 +209,8 @@ export const JOB_ROWS = Object.freeze([
   Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])]),
 ]);
 
-/* Field positions in an item database row (src/data/items.json; written by scripts/data/gen_items.py). Read a row as
+/* Field positions in an item database row (src/data/items.json; written by scripts/data/gen_items.py), all from
+   item-format.json: the first fields from `row.fields`, the rest from each section's `rowField`. Read a row as
    row[ROW.ilvl], never row[2]; parseRow in items.js turns a whole row into an object.
    - slotCode: index into `slots` of item-format.json (DB_SLOT_TYPE, DB_SLOT_PCT, DB_SLOT_BLOCKS)
    - equipLevel: the character level needed to wear it
@@ -223,16 +224,7 @@ export const JOB_ROWS = Object.freeze([
    - rarity: Item.Rarity (1 white, 2 green, 3 blue, 4 purple, 7 pink); gameId: the game's item id (Item.csv row)
    - scales: 1 when its item level follows the wearer's level (Item.SubStatCategory 2; syncTarget) */
 export const ROW = Object.freeze({
-  name: 0,
-  slotCode: 1,
-  ilvl: 2,
-  equipLevel: 3,
-  jobMask: 4,
-  stats: 5,
-  unique: 6,
-  hq: 7,
-  routes: 8,
-  kind: 9,
+  ...ITEM_FORMAT.row.fields,
   meldSlots: ITEM_FORMAT.materia.rowFields.meldSlots,
   overmeld: ITEM_FORMAT.materia.rowFields.overmeld,
   rarity: ITEM_FORMAT.rarity.rowField,
