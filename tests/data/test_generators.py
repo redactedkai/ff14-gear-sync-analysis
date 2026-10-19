@@ -941,6 +941,17 @@ class SchemaDriftTest(unittest.TestCase):
         edit_csv(self.dir / 'Item.csv', fn)
         self.assert_fails(gen_items, 'Rarity', 'not a whole number', 'Test Robe')
 
+    def test_damage_defense_not_a_number(self):
+        """An empty weapon damage or defense cell is 0; a negative or malformed one stops the generator instead of
+        silently becoming 0."""
+
+        def fn(rows):
+            col = rows[0].index('DefensePhys')
+            next(r for r in rows if r[0] == '1005')[col] = '-5'  # Test Robe
+
+        edit_csv(self.dir / 'Item.csv', fn)
+        self.assert_fails(gen_items, 'DefensePhys', 'Test Robe', "'-5'")
+
     def test_unknown_level_scaled_value(self):
         """A SubStatCategory value the format does not know stops gen_items: it might be a new kind of scaling."""
 

@@ -184,11 +184,16 @@ def materia_table(csv_dir, fmt, items=None):
 def damage_defense(row, fmt):
     """{damagePhys, damageMag, defensePhys, defenseMag} of an Item.csv row (`damageDefense` in item-format.json): each
     entry's item column, plus its HQ bonus (the BaseParamSpecial pair naming the entry's BaseParam row) when the item
-    can be HQ, as for stats. A value that is not a whole number counts as 0 (rows without it leave it empty)."""
+    can be HQ, as for stats. An empty value counts as 0 (rows without it leave it empty); any other value that is not
+    a whole number (negative, malformed) raises SchemaError instead of becoming 0."""
     out = {}
     for entry in fmt['damageDefense']['entries']:
         value = row[entry['itemColumn']]
-        total = int(value) if value.isdigit() else 0
+        if value and not value.isdigit():
+            raise SchemaError(
+                f'Item.csv {entry["itemColumn"]} of {row["Name"]} ({row["#"]}) is {value!r}, expected a whole number or nothing'
+            )
+        total = int(value) if value else 0
         if row['CanBeHq'] == 'True':
             for i in range(N_ITEM_PARAMS):
                 if row[f'BaseParamSpecial[{i}]'] == str(entry['baseParam']):

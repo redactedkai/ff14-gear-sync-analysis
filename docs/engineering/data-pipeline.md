@@ -78,7 +78,7 @@ A game patch can rename a column, change a number the page relies on, or change 
 - the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns;
 - the `Item`, `ItemAction` and `ItemFood` columns of the food table (section 5).
 
-**Value checks.** A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`).
+**Value checks.** A stat factor that is not a whole percent from 1 to 100, or an item kind with no `MeldParam` column, also stops the generators. The item database generator also stops if any job ends up with no item at all, which catches a change in how the job columns are written (for example `1` instead of `True`). An empty weapon damage or defense cell counts as 0; any other value that is not a whole number (negative or malformed) stops it too, rather than becoming 0.
 
 **Yes/no columns.** The generators read `CanBeHq`, `IsUnique` and `IsUntradable` in `Item`, and `IsRelative` in `ItemFood`, as the word `True`. A value other than `True` or `False` in any row stops them with an error naming the sheet, the column and the values found. Without the check, an exporter that wrote `1`/`0` would make every one of these false without notice: no HQ bonus, no Unique ring, every piece tradeable, no meal kept. Today every value is `True` or `False` (**verified** by count over all 52,801 `Item` rows).
 
@@ -641,7 +641,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
   - `CanBeHq`, `IsUnique` or `IsUntradable` in `Item`, or `IsRelative` in `ItemFood`, written as `1`/`0`;
   - missing `EquipSlotCategory` columns, missing `Item` columns, a missing `ItemLevel` stat column, a missing `ParamGrow` column;
   - a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0, an item kind with no `MeldParam` column;
-  - a missing meld column in `Item`, `Materia` or `MateriaGrade`, a slot count of 6, an overmeld value other than `True`/`False`, a rarity that is not a whole number;
+  - a missing meld column in `Item`, `Materia` or `MateriaGrade`, a slot count of 6, an overmeld value other than `True`/`False`, a rarity that is not a whole number, a negative or malformed weapon damage or defense value;
   - combat materia rows that disagree on a value or a gate, a decoy row that gains an item, a missing combat materia row, a thirteenth grade, high grades that no longer match the values;
   - a changed ultimate totem id, missing shop columns, and a renamed crafter or gatherer stat.
 
