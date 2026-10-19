@@ -24,6 +24,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).resolve().parent / 'fixtures'
@@ -35,6 +36,7 @@ import gear_categories  # noqa: E402
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
 import gen_job_icons  # noqa: E402
+import item_format  # noqa: E402
 import provenance  # noqa: E402
 import summary  # noqa: E402
 from item_format import SchemaError, load_format, row_fields  # noqa: E402
@@ -1106,6 +1108,83 @@ class SchemaDriftTest(unittest.TestCase):
 
         edit_csv(self.dir / 'MateriaGrade.csv', fn)
         self.assert_fails(gen_items, 'MateriaGrade.csv', 'grades [8, 10, 12]', '[6, 8, 10, 12]')
+
+    # one test per remaining stop: each edits a copy of the fixtures the way a patch might and expects the error to
+    # name what changed
+
+    def set_cell(self, sheet, row_id, column, value):
+        def fn(rows):
+            col = rows[0].index(column)
+            next(r for r in rows if r[0] == row_id)[col] = value
+
+        edit_csv(self.dir / sheet, fn)
+
+    def drop_row(self, sheet, row_id):
+        edit_csv(self.dir / sheet, lambda rows: rows.remove(next(r for r in rows if r[0] == row_id)))
+
+    def test_changed_known_source_and_fixed_item_ids(self):
+        # Neophyte's Ring is in ITEM_OVERRIDES too, which is checked first: KNOWN_SOURCE gets an entry whose name
+        # the fixture's row 26533 (Sack of Nuts) does not have
+        with mock.patch.dict(gear_activities.KNOWN_SOURCE, {26533: ('Something Else', 'Quest')}):
+            self.assert_fails(gen_items, 'KNOWN_SOURCE', 'Something Else')
+        self.set_cell('Item.csv', '25', 'Name', 'Something Else')  # Wolf Mark
+        self.assert_fails(gen_items, 'FIXED_ITEMS', 'Wolf Mark')
+
+    def test_category_with_no_drop_activity(self):
+        with mock.patch.dict(gear_activities.DROP_ACTIVITY):
+            del gear_activities.DROP_ACTIVITY['dungeon']
+            self.assert_fails(gen_items, 'no drop activity', "'dungeon'", 'DROP_ACTIVITY')
+
+    def test_no_current_tomestone(self):
+        self.set_cell('TomestonesItem.csv', '3', 'Item', '0')
+        self.assert_fails(gen_items, 'TomestonesItem.csv', 'no tomestone in slot(s) [3]')
+
+    def test_special_shop_listing_columns_renamed(self):
+        def fn(rows):
+            rows[0] = [c.replace('].Item[', '].Thing[') for c in rows[0]]
+
+        edit_csv(self.dir / 'SpecialShop.csv', fn)
+        self.assert_fails(gen_items, 'SpecialShop.csv has no Item[k].Item[0] columns')
+
+    def test_duplicate_item_id(self):
+        edit_csv(self.dir / 'Item.csv', lambda rows: rows.append(list(next(r for r in rows if r[0] == '1005'))))
+        self.assert_fails(gen_items, 'row ids are not unique')
+
+    def test_gear_category_cross_check(self):
+        # a recipe result filed as dungeon gear: the categories and the crafted flag disagree
+        self.set_cell('Item.csv', '1020', 'SubcategorySort', '8270')
+        self.assert_fails(gen_items, 'gear category cross-check', 'Test Sallet HQ', 'recipe result')
+
+    def test_missing_materia_grade_row(self):
+        self.drop_row('MateriaGrade.csv', '3')
+        self.assert_fails(gen_items, 'MateriaGrade.csv', 'grade row(s) 3')
+
+    def test_class_job_row_missing(self):
+        self.drop_row('ClassJob.csv', '40')  # Sage
+        self.assert_fails(gen_item_level, 'ClassJob.csv has no row for SGE')
+
+    def test_class_job_modifier_not_positive(self):
+        self.set_cell('ClassJob.csv', '40', 'ModifierMind', '0')
+        self.assert_fails(gen_item_level, 'ClassJob.csv SGE', 'expected positive whole numbers')
+
+    def test_param_grow_without_item_level_sync(self):
+        def fn(rows):
+            col = rows[0].index('ItemLevelSync')
+            for r in rows[1:]:
+                r[col] = '0'
+
+        edit_csv(self.dir / 'ParamGrow.csv', fn)
+        self.assert_fails(gen_item_level, 'ParamGrow.csv: no level has an ItemLevelSync')
+
+    def test_damage_defense_slot_share_not_a_number(self):
+        self.set_cell('BaseParam.csv', '12', 'TwoHandWeaponPercent', 'x')
+        self.assert_fails(gen_item_level, 'BaseParam.csv slot shares', 'damagePhys', 'expected whole numbers')
+
+    def test_slot_codes_not_contiguous(self):
+        fmt = load_format()
+        fmt['slots'][0]['code'] = 99
+        with self.assertRaisesRegex(SchemaError, r'slot codes are not 0\.\.14'):
+            item_format.slot_shares(self.dir / 'BaseParam.csv', fmt, fmt['damageDefense']['entries'])
 
     def test_command_line_exits_nonzero(self):
         rename_column(self.dir / 'ClassJobCategory.csv', 'SGE', 'SAGE')

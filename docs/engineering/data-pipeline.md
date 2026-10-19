@@ -652,7 +652,8 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
   - a `BaseParam` slot share that differs from the page, a missing `BaseParam` column, a missing stat row, a missing `MeldParam` or `BaseParamModifier` column, a stat factor of 0, an item kind with no `MeldParam` column;
   - a missing meld column in `Item`, `Materia` or `MateriaGrade`, a slot count of 6, an overmeld value other than `True`/`False`, a rarity that is not a whole number, a negative or malformed weapon damage or defense value;
   - combat materia rows that disagree on a value or a gate, a decoy row that gains an item, a missing combat materia row, a thirteenth grade, high grades that no longer match the values;
-  - a changed ultimate totem id, missing shop columns, and a renamed crafter or gatherer stat.
+  - a changed ultimate totem id, missing shop columns, and a renamed crafter or gatherer stat;
+  - a hand-kept id that names another item (`CURRENCIES`, `KNOWN_SOURCE`, `FIXED_ITEMS`, the retired shops), a category with no drop activity, an empty current tomestone slot, renamed `SpecialShop` listing columns, a repeated item id, a gear category that disagrees with the crafted flag, a missing `MateriaGrade` row, a job with no `ClassJob` row or a modifier of 0, a `ParamGrow` with no `ItemLevelSync`, a weapon damage slot share that is not a whole number, a malformed weapon damage or defense value, and slot codes that are not 0 to 14. Every stop in the generators has at least one such test.
 
   Run from the command line, the generator exits with status 1 and a one-line message.
 
