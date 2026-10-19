@@ -103,7 +103,7 @@ export function jobGear(job) {
 }
 
 /* The pool the optimizer searches: the gear (every piece the job can wear, unless a test passes its own) that passes the
-   filters under Gear to search (expansions, item level range, equip level, Gear from and the market board: the opt fields), minus
+   filters under Gear to search (expansions, equip level, item level range, Gear from and the market board: the opt fields), minus
    any piece above the job's level cap (jobGear has none; this guards gear passed in) and the relics whose substats the
    player allocates (allocatedRelic in items.js; relicsLeftOut counts them). */
 export function searchPool(app, gear = jobGear(app.jobCtx)) {

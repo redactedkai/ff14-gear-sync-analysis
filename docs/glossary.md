@@ -140,7 +140,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Pareto front.** In tier ranking's searches: the partial gear sets, built from the last slot back, that no other partial set beats on score and every held stat. The best full set meeting every limit is always in the last front, so no search tree is needed. See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
 
-**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, item level range, equip level, Gear from); the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, equip level, item level range, Gear from); the user no longer picks it (a Gear pool tab did that until 2026-10-15). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
