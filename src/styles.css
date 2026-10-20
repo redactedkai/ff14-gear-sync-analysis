@@ -697,6 +697,16 @@ details.panel:not([open]) {
 .from .pill {
   margin: 0 6px 0 0;
 }
+/* the optimizer's item level cell of a synced piece: the synced item level in bold, the piece's own on a muted line
+   under it, as in the gear browser */
+#o-table td.cut > span:first-child {
+  font-weight: 600;
+}
+#o-table .was {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
 .pill.cat-crafted {
   border-color: transparent;
   background: var(--accent-soft);
