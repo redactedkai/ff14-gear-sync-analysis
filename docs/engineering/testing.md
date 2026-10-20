@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 368 tests in 39 files, about 40 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 371 tests in 39 files, about 40 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
