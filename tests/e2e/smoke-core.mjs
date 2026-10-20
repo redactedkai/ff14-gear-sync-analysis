@@ -15,7 +15,7 @@ export { DEFAULT_EXCLUDE };
 // The optimizer searches every piece the job can wear that "Gear from" lets through (the default boxes, market board on)
 // minus the relics whose substats the player allocates (allocatedRelic). Totals are character panel numbers as the page
 // shows them: the level's base added for a substat (statBase; its values are checked against AkhMorning in
-// tests/unit/views.test.js).
+// tests/unit/core-food.test.js).
 
 /** The core's best `target` over every piece `jobId` can wear that the boxes left out (`def`) and the market board
  * switch (`market`) let through, with materia on (on) and off (off), and with the `extra` boxes left out too (without);

@@ -1,6 +1,6 @@
 /* The rounding order of sync caps (docs/mechanics/math.md, section 5). A cap takes the stat factor first and floors each step:
    round(floor(floor(B x f / 100) x pct / 100) / 10). An item's own stats keep the other order (slot share rounded
-   first, then the factor), which fits real items far better (validation.test.js).
+   first, then the factor), which fits real items far better (core-validation.test.js).
 
    Expected values are in-game sync values, quoted second-hand from xivgear's tests (commit 6c3c878):
    - sync_stats_tests.ts 'BLU 270 head VIT': 56, "Verified in-game by Xi";

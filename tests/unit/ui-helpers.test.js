@@ -1,5 +1,6 @@
-/* The page's number boxes (src/ui/helpers.js numberField, the $num magic): what a box commits on Enter or leaving it
-   (change), for each of its options. Typing commits the same values after a short wait. */
+/* The page's presentation helpers (src/ui/helpers.js): the number boxes (numberField, the $num magic: what a box commits
+   on Enter or leaving it, for each of its options; typing commits the same values after a short wait) and counts in
+   en-US numbers (fmtInt). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fmtInt, numberField } from '../../src/ui/helpers.js';

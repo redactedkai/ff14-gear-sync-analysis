@@ -10,10 +10,10 @@ Expected values come from outside the code under test where possible:
     unsynced, equals what src/core computes for the same gear in Node (the core is checked against a brute force over
     every loadout in tests/unit), and so do the totals with crafted gear left out and with materia off;
   - a 130 head piece (Spell Speed / Piety) reproducing the ranked stats of a real item level 130 healer head piece
-    (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/views.test.js finds it in
+    (Mind 33, Vitality 32, substats 31/22; its fixed Direct Hit 6 is not a rank; tests/unit/ui-views-piece.test.js finds it in
     the item database);
   - level sync (synced level 90, item level sync off): level 100 healer head pieces capped at the item level 660
-    head values (Mind 248; tests/unit/level-sync.test.js derives them from the ItemLevel row), in the gear browser and
+    head values (Mind 248; tests/unit/core-sync-target.test.js derives them from the ItemLevel row), in the gear browser and
     in Piece stats (item level 660: ParamGrow.ItemLevelSync for level 90).
 
 The steps run in groups, in parallel: each group gets a fresh browser context (so its own saved state) and page, set to
@@ -1192,7 +1192,7 @@ async function checkPldOffhand(pg) {
 
 // Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
 // capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per
-// mille (level-sync.test.js).
+// mille (core-sync-target.test.js).
 const HEAD_MAIN_CAP_660 = 248;
 const HEAD_SUB_CAP_660 = '184';
 

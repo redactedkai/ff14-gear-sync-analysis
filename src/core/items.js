@@ -193,7 +193,7 @@ function rowFacts(item) {
   if (!rowIndex) {
     // built once: several rows could share a pool key (the same piece from two sources); their routes are joined (any
     // one gets it) and every other fact comes from the first such row, so rows sharing a key must agree on those facts
-    // (items.test.js checks it; today no two rows share a key)
+    // (core-items.test.js checks it; today no two rows share a key)
     rowIndex = new Map();
     for (const r of ITEMS) {
       const k = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });

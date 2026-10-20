@@ -48,7 +48,7 @@ test('the only pieces whose factors differ from the job rule are kind 0: the fou
   assert.equal(fourMain.length, 13);
   // pre-order earrings and Neophyte's Ring carry Main Attribute and are kind 0 (all jobs): main stat and Vitality caps
   // x 0.9 for every job; the 10 Occult accessories have their own kinds and match the job rule. The list of these
-  // pieces is the factor table's (validation.test.js checks it against the data)
+  // pieces is the factor table's (core-validation.test.js checks it against the data)
   assert.deepEqual(attr.sort(), Object.keys(ALL_JOBS_ACCESSORY_FACTORS).sort());
   assert.equal(odd.size, fourMain.length + attr.length);
   for (const name of odd) assert.equal(itemRow(name)[ROW.kind], 0, name);

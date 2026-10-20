@@ -1,5 +1,5 @@
 /* How the math works, Tiers (src/ui/views/tiers.js): the view object (a card per substat), where its values come from,
-   and typed values. Tier numbers are checked in tiers.test.js; here, the cards' shape and wording. */
+   and typed values. Tier numbers are checked in core-tiers.test.js; here, the cards' shape and wording. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AKH_LEVEL, appState } from './helpers/common.js';

@@ -1,5 +1,5 @@
 /* Level sync: which item level a piece is synced to (src/core/sync-target.js) and how the optimizer applies it (the
-   views under level sync are in views.test.js). Expected values come from the game's ParamGrow sheet, the ItemLevel
+   views under level sync are in ui-views.level-sync.test.js). Expected values come from the game's ParamGrow sheet, the ItemLevel
    rows and real items. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

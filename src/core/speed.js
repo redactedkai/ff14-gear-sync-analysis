@@ -80,7 +80,7 @@ function lowest(lo, hi, pred) {
    Null when no speed gives it: (exact) slower than the GCD with no speed
    (2.40 for a Ninja, whose no-speed GCD is 2.12), or (either mode) below the 1.50 s floor. At the floor itself no
    speed is too much: 'exact' 1.50 has no maximum (max 100,000). The GCD falls 0.01 s at a time, with or without haste, so every value
-   in between is some speed's (speed.test.js). A target at or above the no-speed GCD is met by any speed: {min: 0} in
+   in between is some speed's (core-speed.test.js). A target at or above the no-speed GCD is met by any speed: {min: 0} in
    'min' mode. Speeds are totals the GCD formula sees (gear, plus food when the caller adds it). */
 export function speedForGcd(gcd, level, mode, haste = 0) {
   const gcdAt = s => gcdFor(s, level, BASE_GCD_MS, haste);

@@ -207,7 +207,7 @@ Notes on the measurements and checks run by hand (none is part of `npm run check
 
 Running a subset:
 
-- one unit test file: `node --test tests/unit/sync.test.js`
+- one unit test file: `node --test tests/unit/core-formulas.sync-clamp.test.js`
 - unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/*.test.js"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 

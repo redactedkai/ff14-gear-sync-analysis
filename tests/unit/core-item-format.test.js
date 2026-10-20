@@ -53,7 +53,7 @@ test('ItemLevel table has one column per stat and per weapon damage and defense 
   assert.deepEqual(Object.keys(IL).sort(), [...ITEM_STAT_ORDER, ...DAMAGE_DEFENSE_KEYS].sort());
   const lengths = new Set(Object.values(IL).map(c => c.length));
   assert.equal(lengths.size, 1);
-  // PG's length follows the level cap: level-tables.test.js holds it to MAX_LEVEL
+  // PG's length follows the level cap: core-constants.level-tables.test.js holds it to MAX_LEVEL
   assert.ok(PG.every(row => row.length === 3));
 });
 

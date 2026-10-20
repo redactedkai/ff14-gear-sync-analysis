@@ -40,7 +40,7 @@ export function blankStats() {
 
 /* The stat factor of `stat` when no real item is involved: the one the job's own gear carries. In the game files every
    piece with a single main stat has 100 for that stat, and Vitality 90 on Intelligence/Mind gear, 100 otherwise
-   (BaseParam MeldParam; checked against every database piece in tests/unit/stat-factor.test.js). */
+   (BaseParam MeldParam; checked against every database piece in tests/unit/core-formulas.stat-factor.test.js). */
 export function jobFactor(job, stat) {
   return stat === 'vit' ? job.vitFactor : 1;
 }

@@ -8,7 +8,7 @@
       (SLOT_PERMILLE in helpers/common.js, not read from item-format.json) equal what the page uses (capsFor), for a
       healer, a Strength job and Paladin;
    3. the ten armor and accessory substat caps sum to 296, a 2.22 s GCD at level 50 (AkhMorning's table, see
-      speed.test.js), and the generic-piece optimizer reaches exactly that sum.
+      core-speed.test.js), and the generic-piece optimizer reaches exactly that sum.
    Expected values come from the game data (ItemLevel rows, real items) and BaseParam, never from capsFor. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

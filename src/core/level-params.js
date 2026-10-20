@@ -7,7 +7,7 @@ import { MAX_LEVEL, PG } from './tables.js';
 const PG_COLUMN = Object.freeze({ baseSpeed: 0, levelModifier: 1, itemLevelSync: 2 });
 
 /* A character level as a whole number from 1 to MAX_LEVEL, the levels PG has a row for. Any input: a level past the
-   cap reads the cap's row (tests/unit/level-tables.test.js holds PG to MAX_LEVEL rows). */
+   cap reads the cap's row (tests/unit/core-constants.level-tables.test.js holds PG to MAX_LEVEL rows). */
 export function clampLevel(level) {
   return Math.max(1, Math.min(MAX_LEVEL, level | 0));
 }

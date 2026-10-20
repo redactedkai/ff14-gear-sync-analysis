@@ -66,7 +66,7 @@ export function allMeals(job) {
    pct, max} or null}, key = the neutral
    stats joined by '+', primary first ('det+crit'). Only meals whose every stat the job has. Each stat pair (or single
    stat) is its newest meal: FOODS is sorted by item level, and within a pair a newer meal never has a lower maximum
-   (tests/unit/food.test.js). A choice that another one covers (every stat at least as high) is left out, since it can
+   (tests/unit/core-food.test.js). A choice that another one covers (every stat at least as high) is left out, since it can
    never give more: an old Critical Hit + Determination meal next to a new Determination + Critical Hit one, a one-stat
    meal next to a newer pair with that stat. So the best of these is the best of every meal (allMeals). Cached per job. */
 const choiceCache = new Map();

@@ -25,7 +25,7 @@ test("the effect of a substat value at level 100 and 50, worked by hand from Akh
   assert.equal(statTier(sge, 'spec', 500, 100).effect, '+26 MP');
   // level 50 (item level 123 sync): 200 x 344 / 341 = 201.8 -> 25.1%
   assert.equal(statTier(sge, 'crit', 344, 50).effect, '25.1%');
-  // speed: AkhMorning's level 100 tiers, 22 -> 2.49 s, next 107 (tests/unit/speed.test.js)
+  // speed: AkhMorning's level 100 tiers, 22 -> 2.49 s, next 107 (tests/unit/core-speed.test.js)
   assert.deepEqual(statTier(sge, 'spd', 86, 100), { effect: '2.49s', start: 22, next: 107 });
 });
 

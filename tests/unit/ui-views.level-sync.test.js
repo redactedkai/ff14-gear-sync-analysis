@@ -15,7 +15,7 @@ import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import { makeApp } from './helpers/views.js';
 
 /* Level sync (synced level 90, item level sync off) in the views. Real gear at item level 663 to 666: the equip level
-   94 and 95 pieces are synced to 660 at level 90, the level 90 ones are not (level-sync.test.js). */
+   94 and 95 pieces are synced to 660 at level 90, the level 90 ones are not (core-sync-target.test.js). */
 const sge = makeJobContext('SGE');
 const sgeApp = patch => appState({ job: 'SGE' }, patch);
 const LEVEL_SYNC_WINDOW = { ilvlMin: 663, ilvlMax: 666, lvlMax: 100 };
