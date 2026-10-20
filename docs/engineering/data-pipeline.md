@@ -320,6 +320,11 @@ The boxes in the current data (2026-10-18):
 
 **Checks.** The generator stops on an activity with no box (combat gear sold for scrips, for example), a hand-kept id with another name, or a category with no drop activity. Each error names the table to edit (section 9).
 
+**Sheets used only to check these rules (2026-10-18), not fetched.** The rules above were checked once against more of the game files than the generator reads, all at datamining d9582a6. To check a rule again after a patch, fetch these for the new commit from `https://raw.githubusercontent.com/xivapi/ffxiv-datamining/<commit>/csv/en/<Sheet>.csv`:
+- which shops a player can reach: `ENpcBase`, `ENpcResident`, `CustomTalk`, `CustomTalkNestHandlers`, `CustomTalkSimpleNest`, `TopicSelect`, `PreHandler`, `ArrayEventHandler`, `EObj`, `EObjName`;
+- the other shop kinds, which add no gear beyond the codes above: `FateShop`, `InclusionShop`, `InclusionShopCategory`, `InclusionShopSeries`, `LotteryExchangeShop`;
+- labels, used to read results and never to classify: `Festival`, `JournalCategory`, `JournalGenre`, `ItemSeries`, `AchievementCategory`, `AchievementKind`, `BNpcBase`, `QuestRedoValidCustomTalk`, `HousingFurniture`, `HousingYardObject`.
+
 **Two flags for the categories.** `gear_sources.py` marks a piece **crafted** when it is the `ItemResult` of a recipe, and **ultimate** when an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). The category rules use them (the ultimate weapons share code 60 with trial gear) and cross-check them: the generator stops on a recipe result outside crafted, a totem purchase outside ultimate, or a Savage armor piece or weapon without a dye slot. The totem flag covers 136 weapons: the 16, 16, 18, 20, 22, 22 and 22 of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
 ### Stat factor kind
