@@ -46,6 +46,8 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
 | `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
+| `npm run shots -- --out <dir>` | Screenshots of every view at 1440 and 960 px, light and dark (about 80 s); build with `GITHUB_REF_NAME=main` first ([testing.md](docs/engineering/testing.md)) |
+| `npm run shots:compare -- <dirA> <dirB>` | Pixel compare two screenshot folders; lists what differs, exits 1 on a difference |
 | `node scripts/perf/db-parse.mjs` | Time how long Chromium takes to read and run the inlined item database and the page's script, at normal speed and 4× and 6× slower (build first; about 1 min) |
 | `node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
 

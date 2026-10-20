@@ -24,7 +24,9 @@
     "perf": "node scripts/perf/bench.mjs --quick --repeats 1",
     "perf:full": "node scripts/perf/bench.mjs --repeats 3",
     "perf:adversarial": "node scripts/perf/adversarial.mjs",
-    "perf:browser": "npm run build && node scripts/perf/browser.mjs"
+    "perf:browser": "npm run build && node scripts/perf/browser.mjs",
+    "shots": "node scripts/shots/shots.mjs",
+    "shots:compare": "node scripts/shots/compare.mjs"
   },
   "license": "MIT",
   "dependencies": {

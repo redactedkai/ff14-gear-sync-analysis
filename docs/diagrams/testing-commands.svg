@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" role="img" aria-labelledby="t d">
   <title id="t">What npm run check and npm run check:all run</title>
-  <desc id="d">npm run check runs four steps in order: lint (Biome, with a format check), build (the one HTML page), test (the unit tests in Node) and test:smoke (the built page in headless Chromium). It needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:py (the generator tests in Python); run it when touching scripts/data/ or after data:update. Both stop at the first failure. The perf commands, the Target GCD sweep and the ffxiv-gearing and xivgear checks are run by hand and are not part of either.</desc>
+  <desc id="d">npm run check runs four steps in order: lint (Biome, with a format check), build (the one HTML page), test (the unit tests in Node) and test:smoke (the built page in headless Chromium). It needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:py (the generator tests in Python); run it when touching scripts/data/ or after data:update. Both stop at the first failure. The perf commands, the Target GCD sweep, the ffxiv-gearing and xivgear checks and the screenshot scripts are run by hand and are not part of either.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -93,5 +93,5 @@
   <rect class="hand" x="20" y="230" width="680" height="76" rx="8"/>
   <text class="fg t" x="40" y="256">Run by hand, never part of check</text>
   <text class="muted s" x="40" y="278">perf, perf:full, perf:adversarial, perf:browser (measurements, not pass/fail)</text>
-  <text class="muted s" x="40" y="295">Target GCD sweep; the checks against ffxiv-gearing and xivgear</text>
+  <text class="muted s" x="40" y="295">Target GCD sweep; the checks against ffxiv-gearing and xivgear; shots, shots:compare</text>
 </svg>
