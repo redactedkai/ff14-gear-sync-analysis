@@ -15,20 +15,31 @@ import { createAppStore } from '../../src/ui/store.js';
 import { gearToSearchView, optimizerView } from '../../src/ui/views/optimizer.js';
 
 /* Alpine's effect and raw, as the component uses them: an effect runs at once and again on settle() (a change to the
-   store, as Alpine would rerun it); raw is the object itself (the store here is plain). */
+   store, as Alpine would rerun it); raw is the object itself (the store here is plain). inEffect() says whether an
+   effect is running: work done then would be tracked by the real effect (the solver stand-in in bound() checks it). */
 function standIn() {
   const effects = [];
+  let running = 0;
+  const run = fn => {
+    running++;
+    try {
+      fn();
+    } finally {
+      running--;
+    }
+  };
   return {
     alpine: {
       effect: fn => {
         effects.push(fn);
-        fn();
+        run(fn);
       },
       raw: x => x,
     },
     rerun: () => {
-      for (const fn of effects) fn();
+      for (const fn of effects) run(fn);
     },
+    inEffect: () => running > 0,
   };
 }
 
@@ -36,8 +47,18 @@ function standIn() {
    init run; settle() reruns its effect after a change and waits out its throttle (FOLLOW_MS, and a little more). */
 function bound(saved, session = makeSession(), solver = inProcessSolver(session)) {
   const app = createAppStore(restoreState(saved));
-  const { alpine, rerun } = standIn();
-  const c = Object.assign(optimizer(alpine, solver), { $store: { app }, $nextTick: () => {} });
+  const { alpine, rerun, inEffect } = standIn();
+  // the solver as given, but a request asked from inside an effect fails the test (the Gear to search line must ask
+  // from its timer, not from the effect: audit 2, 01 #1)
+  const checked = Object.create(solver, {
+    request: {
+      value: request => {
+        assert.equal(inEffect(), false, `a ${request.kind} request was asked inside an effect`);
+        return solver.request(request);
+      },
+    },
+  });
+  const c = Object.assign(optimizer(alpine, checked), { $store: { app }, $nextTick: () => {} });
   c.init();
   const settle = async () => {
     rerun();

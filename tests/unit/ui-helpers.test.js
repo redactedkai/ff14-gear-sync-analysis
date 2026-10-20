@@ -264,12 +264,21 @@ test('viewCache: a view is built once per key; last() is the last one built, nul
 
 test('throttledEffect: inputs read at once; the expensive part runs at most once per ms, during a burst and after it', t => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
-  // a stand-in for Alpine.effect: runs the function now, and again whenever the test says an input changed
+  // a stand-in for Alpine.effect: runs the function now, and again whenever the test says an input changed; while it
+  // runs, inEffect is set, so the expensive part can say it ran inside the effect (which would track what it reads)
   let rerun = null;
+  let inEffect = false;
   const Alpine = {
     effect: fn => {
-      rerun = fn;
-      fn();
+      rerun = () => {
+        inEffect = true;
+        try {
+          fn();
+        } finally {
+          inEffect = false;
+        }
+      };
+      rerun();
     },
   };
   let reads = 0;
@@ -278,7 +287,10 @@ test('throttledEffect: inputs read at once; the expensive part runs at most once
     Alpine,
     () => {
       const seen = ++reads;
-      return () => runs.push(seen);
+      return () => {
+        assert.equal(inEffect, false, 'the expensive part ran inside the effect');
+        runs.push(seen);
+      };
     },
     120,
   );
