@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@vue/reactivity": "3.5.43",
     "esbuild": "0.28.2",
     "playwright": "1.64.1"
   }
