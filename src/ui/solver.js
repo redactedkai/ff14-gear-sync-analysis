@@ -85,8 +85,9 @@ export function inProcessSolver(session = makeSession()) {
 /* A solver that posts its requests to a worker. `createWorker()` makes the worker, its data already handed over (the
    page's: main.js), and is called on the first request, so the worker starts only once the optimizer needs it.
    `fallback()` makes the solver used instead when the worker cannot be made (createWorker throws, e.g. a browser or
-   policy that refuses workers) or fails (an 'error' event: it could not load, or it crashed): the requests not yet
-   answered are asked of it again, so the page always gets an answer. Returns {blocksPage (true once fallen back),
+   policy that refuses workers) or fails (an 'error' event: it could not load, or it crashed; or a 'messageerror': a
+   reply the page could not deserialize): the requests not yet answered are asked of it again, so the page always gets
+   an answer. Returns {blocksPage (true once fallen back),
    request(request) → reply, cancel(kind) → whether the worker was stopped}.
 
    One request per kind is in the worker at a time; a newer request of that kind waits, and replaces the one already
@@ -134,7 +135,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   const stopWorker = () => {
     if (!worker) return;
     for (const lane of Object.values(lanes)) clearTimeout(lane.flight?.timer);
-    worker.onmessage = worker.onerror = null;
+    worker.onmessage = worker.onerror = worker.onmessageerror = null;
     worker.terminate();
     worker = null;
   };
@@ -188,7 +189,9 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
       return;
     }
     worker.onmessage = onReply;
-    worker.onerror = event => {
+    // it could not load or it crashed ('error'), or a reply could not be read on the page ('messageerror', which
+    // carries no id, so that request would never be answered): the page's thread answers instead
+    worker.onerror = worker.onmessageerror = event => {
       event?.preventDefault?.(); // handled: not reported as an uncaught error of the page
       fallBack();
     };

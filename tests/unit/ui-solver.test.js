@@ -59,6 +59,7 @@ function fakeWorker() {
     terminated: false,
     onmessage: null,
     onerror: null,
+    onmessageerror: null,
     postMessage(message) {
       worker.posted.push(structuredClone(message));
     },
@@ -179,6 +180,20 @@ test('worker solver: the worker fails: the requests not yet answered are asked a
   );
   await solver.request(request('solve', 4));
   assert.deepEqual(handled, [2, 3, 4], 'later requests go to the page thread too');
+});
+
+test('worker solver: a reply the page cannot read (messageerror) falls back like a failed worker', async () => {
+  const worker = fakeWorker();
+  const solver = workerSolver(
+    () => worker,
+    () => ({ blocksPage: true, request: r => Promise.resolve({ result: `local ${r.mark}`, ms: 1 }) }),
+  );
+  const a = solver.request(request('solve', 1));
+  worker.onmessageerror({ preventDefault() {} });
+  assert.equal(worker.terminated, true);
+  assert.equal(worker.onmessageerror, null, 'the stopped worker has its handlers off');
+  assert.deepEqual(await a, { result: 'local 1', ms: 1 });
+  assert.equal(solver.blocksPage, true);
 });
 
 test('worker solver: a request that cannot be posted rejects, and the next one still goes', async () => {
