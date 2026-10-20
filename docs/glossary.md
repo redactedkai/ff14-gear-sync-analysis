@@ -178,6 +178,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Smoke test.** The browser test of the built page (`npm run test:smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 960 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
 
+**Solver, worker.** What runs the optimizer's searches for the page (`src/ui/solver.js`): on the page a Web Worker, a second thread started from a script inside the page, so a long search does not freeze the page; on the page's own thread when the browser will not start the worker, and in the unit tests. See [architecture.md, section 9](engineering/architecture.md#9-the-optimizers-worker).
+
 **Speed range.** An optional minimum and maximum for the speed stat in the optimizer engine, set from a target GCD. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
 **Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded. It is 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats (**verified**, game files). Sync caps apply the factor in the other order, before the slot share (**verified** by three second-hand in-game values; **inferred** in general), and use the piece's own factor (**inferred**). Where no item is involved, the page uses the job's factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule).

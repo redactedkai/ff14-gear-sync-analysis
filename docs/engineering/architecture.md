@@ -113,7 +113,7 @@ Each component reads the job through its own `jobCtx` getter (the store's `jobCt
 
 - The item database is a plain module-level constant that the core reads directly. It is never placed in the store.
 - The views with long lists (the gear browser's rows, the optimizer result, the accuracy panel) are frozen before they are stored on the component.
-- The job's gear the optimizer searches is built once per job, frozen, and kept in the solver session, which the optimizer component holds in its closure, outside reactive state. The optimizer reads the store through `Alpine.raw`, without the proxies.
+- The job's gear the optimizer searches is built once per job, frozen, and kept in the solver session, which lives in the optimizer's Web Worker ([section 9](#9-the-optimizers-worker)), never in reactive state. The optimizer reads the store through `Alpine.raw`, without the proxies: a worker cannot be sent a proxy.
 
 ### Heavy work: debounced, only when visible, or on request
 
@@ -131,7 +131,7 @@ Notes:
 - **Settings, How the math works** are cheap: a few formulas per piece; the explainer's curves (a few thousand generic pieces per setting) are remembered per setting, so a slider move costs a few milliseconds.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
 - **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches. Its layout is in [ui.md, section 3](ui.md#3-the-gear-browser-tab).
-- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the optimizer's own values). Searched only when the user presses Optimize (owner, 2026-10-18; it used to rerun on every change of those filters, job, cap, sync, level or optimizer settings). A setting changed after a search leaves the result shown but dimmed, with a note and its menus off, until Optimize runs again; a job switch clears it. The count in the heading and the greyed-out Gear from boxes still follow the settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
+- **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the optimizer's own values). Searched only when the user presses Optimize (owner, 2026-10-18; it used to rerun on every change of those filters, job, cap, sync, level or optimizer settings). A setting changed after a search leaves the result shown but dimmed, with a note and its menus off, until Optimize runs again; a job switch clears it. The count in the heading and the greyed-out Gear from boxes still follow the settings. The search runs in a Web Worker, so the page stays responsive while it runs (tier ranking can take a few seconds); a progress bar shows until the result comes ([section 9](#9-the-optimizers-worker)). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
 **How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart update the optimizer's piece count once, not $k$ times. Pressing Optimize right after typing still searches with the value typed: the click first moves the focus out of the box, which commits it. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
@@ -172,6 +172,7 @@ The build turns the source modules into one self-contained file in three steps:
 
 1. **Bundle.** esbuild starts from the entry module and follows every import: Alpine, the UI, the core, the generated data (each `src/data/*.json` as a `JSON.parse` call on its compacted text, the `jsonParseData` plugin: browsers read JSON faster than the same object as code; data-pipeline.md section 8), and the stylesheet. It writes one minified script (as a self-running function, for Chrome 97, Firefox 104 and Safari 15.4 and later: `BROWSER_TARGETS`, set by the newest JS API the page calls, `findLast`; esbuild adds the CSS prefixes those need) and one stylesheet, in memory.
 2. **Inline.** The HTML template has markers for the styles, the script and the build marks. The build replaces them with the stylesheet, the script and, on any branch but `main`, a "DEV" test-build badge next to the title plus the branch and commit in the footer. A `main` build, which is what deploys, has no marks. The branch comes from GitHub Actions' `GITHUB_REF_NAME` when set, else from git; with neither (or a detached checkout) there are no marks.
+   The optimizer's Web Worker is a second bundle, built inside the first by the `solverWorker` plugin from `src/ui/solver-worker.js` and inlined into the page's script as a string ([section 9](#9-the-optimizers-worker)).
 3. **Checks.** The build stops with an error if a marker is missing, if there is no script output, or if the script contains the text `</script` (which would end the inline script early).
 
 The page loads nothing at run time except the web fonts, which come from Google Fonts when online; without a connection the page falls back to system fonts and still works. Because the data is part of the script rather than fetched, the page works from a `file://` address, where browsers refuse to fetch local files. The size of the page and its parts is in [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page).
@@ -231,7 +232,7 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 
 `choices` are the player's picks on the last result (`{pieces: {row: gameId}, meal}`), not saved. The optimizer view calls `runRecipe`, evaluates its set (`evaluateSet`) and formats it; nothing in the view searches.
 
-**The solver session** (`makeSession` in `src/core/session.js`) holds what a solve keeps for the next one. The page has one (the optimizer component's); a sheet of sets will have one per sheet. It keeps, per kind, its last four entries (least recently used dropped first):
+**The solver session** (`makeSession` in `src/core/session.js`) holds what a solve keeps for the next one. The page has one, in the optimizer's worker ([section 9](#9-the-optimizers-worker)); a sheet of sets will have one per sheet. It keeps, per kind, its last four entries (least recently used dropped first):
 
 | Kind | Holds | Its key depends on |
 | --- | --- | --- |
@@ -242,6 +243,28 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 | same | every piece as a candidate for the goal, unpruned (the rows' menus) | the pool and the goal, and the GCD mode while a GCD is asked |
 
 Every key is made by one function, `recipeKey`, from one table of the recipe fields each kind depends on, so a new recipe field cannot be forgotten in one key and remembered in another (audit 02, findings 5 and 6). A unit test changes every field and checks which keys change. So typing a new Target GCD reruns only the search, a pick from a menu reruns the search on kept lists, and going back to a recent setting reuses its lists. These used to be five one-entry caches at the top of the optimizer view, each with a key written by hand.
+
+## 9. The optimizer's worker
+
+**The question:** how does a search of several seconds leave the page responsive? Under a Target GCD with tier ranking a search can hold a thread for seconds (audit 16 R8, owner 2026-10-19). The optimizer's searches and its Gear to search line run in a Web Worker; the page thread only sends the request and shows the reply.
+
+| Part | Where | What it does |
+| --- | --- | --- |
+| Request | `solverRequest` in `src/ui/solver.js` | Plain data: the kind (`solve` or `gearToSearch`), the job's id, the sync settings, the level, the recipe, the menu picks |
+| Handler | `makeSolverHandler` | Runs `optimizerView` or `gearToSearchView` with its own solver session; replies `{result, ms}`, or `{error}` |
+| Worker | `src/ui/solver-worker.js` | Answers each message with the handler's reply, tagged with the request's id |
+| Worker solver | `workerSolver` | Page side: starts the worker on the first request, posts requests, routes replies by id, falls back |
+| Page-thread solver | `inProcessSolver` | The handler on the page thread: the unit tests, and the fallback |
+
+Notes:
+
+- **One file, from `file://`.** The worker's code is a string in the page's script; `main.js` starts it from a Blob URL. Chromium runs a Blob-URL worker from a `file://` page (checked with Playwright, 2026-10-19).
+- **The data, held once.** The worker needs the item database and the other data files, but the page does not carry a second copy. Each data module of the page also exports its text (`jsonParseData`), and the page posts those strings to the worker as its first message; the worker parses them on its own thread. The worker's bundle is wrapped to run on that message, since its data modules read the texts while it loads. The page grows by the worker's code only, about 83 KB ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)).
+- **Started when needed.** The worker starts on the optimizer's first request: the Gear to search line, 120 ms after the page has a job. The page's first paint does not wait for it.
+- **One copy of the job's gear.** The solver session lives in the worker, so the page thread never builds the job's gear.
+- **Newer requests.** One request per kind is in the worker at a time. A newer one waits and replaces any request already waiting, whose caller gets the newer one's reply, so settings changed during a long search are not all solved in turn. The component drops a reply it no longer wants (`solveId`, `sideId`, or a job switch since). The worker is never stopped mid-search: that would throw away its session.
+- **Fallback.** If the worker cannot be made or fails to load, every request not yet answered is asked again on the page thread, as before the worker. The page thread's solver blocks the page, so the component then waits two frames before asking, and the progress bar is painted first.
+- **Times.** The worker times each request itself. "Solved in N ms" and the `optimizer` performance measure are that time, the search's own, not the wait for the reply.
 
 ## Where this lives
 
@@ -271,9 +294,10 @@ Every key is made by one function, `recipeKey`, from one table of the recipe fie
 | A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.js` (`runRecipe`, `recipePool`, `relicsLeftOut`, `emptyGearFrom`, `askedGcd`, `gcdRange`, `recipeKey`, `NODE_LIMIT`) |
 | The solver session; the job's gear it keeps | `src/core/session.js` (`makeSession`, `SESSION_SIZE`); `src/core/items.js` (`jobGear`) |
 | The optimizer tab's view: Gear to search, the result | `src/ui/views/optimizer.js` (`gearToSearchView`, `searchCount`, `optimizerView`) |
+| The optimizer's solver: requests, the handler, the worker and page-thread solvers; the worker's entry; starting it | `src/ui/solver.js` (`solverRequest`, `makeSolverHandler`, `workerSolver`, `inProcessSolver`); `src/ui/solver-worker.js`; `src/main.js` (`startSolverWorker`) |
 | Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `meal-menu.js`, `tiers.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`, and `<!-- INCLUDE name.html key=value -->` for a partial), `src/partials/` (the Expansion and "Gear from" menus, one copy for both tabs, filled in by `expandIncludes` in the build), `src/styles.css` (grouped by area: tokens, base, controls, layout, shared pieces, tables, popovers, menus, then each tab) |
-| Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
+| Build and dev server; the worker bundle | `scripts/build/build.mjs` (`solverWorker`, `jsonParseData`), `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |
 | Lint and format configuration | `biome.jsonc`, `pyproject.toml` |
 | Diagrams | `docs/diagrams/architecture-layers.svg`, `docs/diagrams/architecture-ui-flow.svg`, `docs/diagrams/architecture-job-switch.svg`, `docs/diagrams/architecture-timing.svg`, `docs/diagrams/architecture-restore.svg` |

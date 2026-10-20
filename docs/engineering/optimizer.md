@@ -16,7 +16,7 @@ What happens when the user presses Optimize, step by step (each step's section h
 4. **Search the rest.** Fill one slot at a time, shortest list first, best pieces first. At each partly filled set, a quick upper bound says how much the empty slots could still add; when even that cannot beat the best full set found so far, the whole branch is skipped (branch and bound, section 5). When the search ends, the best set found is the best there is, unless the search stopped at its node limit, which the page reports.
 5. **Options on top.** A Target GCD turns into a range the speed stat must stay in (sections 2 and 5); "Spare points to tiebreaks" runs one such search per ranked stat ([tier-ranking.md](tier-ranking.md)).
 
-The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound). A piece's stats under sync come from `src/core/piece.js`, shared with the rest of the page. The page builds the pool itself (section 7). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
+The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound). A piece's stats under sync come from `src/core/piece.js`, shared with the rest of the page. The page builds the pool itself (section 7), and runs the search in a Web Worker, so the page stays responsive during a long one ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
 
 How to read the rest: section 1 is the game background and the problem in plain words, section 2 the formulation. Sections 3 to 5 are the algorithm, in the order it runs. Section 6 adds melds, section 7 is how the page uses the engine (its controls and menus are in [ui.md](ui.md)), and sections 8 and 9 are the evidence, timings and limits.
 
@@ -453,6 +453,7 @@ How do we know the answers are right, and how fast are they? The short version f
 | Quick benchmark after the item level floor dropped to 15, median, melds off / on | 22.4 / 34.6 ms (2026-10-15) | [Item level floor 15](#item-level-floor-15-2026-10-15) |
 | Target GCD, a new GCD for the same goal, median / slowest | 5 ms / 1,075 ms (2026-10-16) | [Target GCD sweep](#target-gcd-sweep-2026-10-16) |
 | The page, later runs, Paladin | 21 ms (2026-10-15) | [Stress test](#stress-test-2026-10-14) |
+| The page's main thread blocked from the first Optimize on, Paladin, before → after the worker | 164 → 0 ms (no task over 50 ms; 2026-10-19) | [The page with a Web Worker](#the-page-with-a-web-worker-2026-10-19) |
 
 Most of a run is building the candidate lists (syncing, melds, vectors, pruning: about 90%), not the search.
 
@@ -545,7 +546,7 @@ Measured on the same PC before Beastmaster was added (22 jobs), with the scripts
 | Second identical sweep (`memory.mjs`) | 0 new meld memo entries, 1 MB of heap |
 
 - **Known misses on this PC:** the first call and the node count (83.9 ms and 1,209 nodes in the table below), and everything after the item level floor drop (section above). Per the owner's rule, timing matters only above about 0.5 s.
-- **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo; last, a Web Worker, which changes the single-file design, so ask the owner first.
+- **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo. (The last item, a Web Worker, is done: [The page with a Web Worker](#the-page-with-a-web-worker-2026-10-19); it keeps the page responsive, it does not make a search faster.)
 - **`compare.mjs`** checks that a faster version gives the same answers. Copy `src/` of the old commit to `<dir>/src` (outside the repo, or under the gitignored `scripts/perf/out/baseline/<label>`; it aborts if `items.json` differs), then run `node scripts/perf/compare.mjs --baseline <dir> [--quick] [--nodes-may-differ]`. Both copies get the same item objects. Picks, totals and truncation must be byte-equal, and so must node counts unless the search was meant to change; `--quick` runs four jobs.
 
 **Every job's full pool.** Each of the 22 jobs with every piece it can equip (1,899 to 2,641 items), 18 sync settings (none; item level caps 123 to 795; level sync at 50 to 90; five level and cap pairs) and about 40 objectives (every single target, every target and tiebreak pair of substats, and random three-key orders), with melds off and on: 27,936 runs, each timed as the median of 3 calls.
@@ -581,6 +582,23 @@ Measured on the same PC before Beastmaster was added (22 jobs), with the scripts
 - **Later runs and changes:** within the noise of the previous build (23, 129, 208 ms; 56, 251, 413 ms).
 - **Pick the job to result:** before, a job switch plus "Add all" took 1.1, 3.9 and 6.3 s to reach a result. Saving now takes at most 1 ms (before, up to 16 ms at 6× with a full pool).
 - **Memory** stays flat over 100 changes (14.5 MB). What remains slow is outside the optimizer: opening the page (2 MB of page and item data).
+
+### The page with a Web Worker (2026-10-19)
+
+Since 2026-10-19 the page's searches run in a Web Worker (audit 16 R8; [architecture.md, section 9](architecture.md#9-the-optimizers-worker)). Every result is the same: `npm run perf` gives the same node counts, truncations and answers in all 7,884 runs, and screenshots of every view at 1,440 and 960 px, light and dark, match the build before. `npm run perf:browser -- --runs 2 --rates 1,4 --jobs PLD,SGE`, the build before and after run back to back on the same PC:
+
+| | Paladin, before → after | Sage, before → after |
+| --- | ---: | ---: |
+| Main thread blocked, longest, from the first Optimize on (normal speed) | 164 → 0 ms | 273 → 0 ms |
+| The same, 4× slower | 692 → 175 ms | 605 → 178 ms |
+| Main thread blocked, longest, the page's opening included (normal speed) | 254 → 221 ms | 406 → 187 ms |
+| Optimize to result shown, median (normal speed) | 163 → 116 ms | 139 → 101 ms |
+| Page open to result, median (normal speed) | 885 → 693 ms | 1,103 → 620 ms |
+
+- **What blocks the page now** is opening it (parsing the script and its data) and drawing a result, not the search. 0 ms means no task over 50 ms.
+- **A long search.** Warrior at level 90, cap 123, Target GCD 2.47 or slower, Critical Hit then Determination, food, tier ranking, 4× slower: before, a 10 ms page timer stopped for 3.2 to 4.3 s; after, for 1.4 to 2.7 s, all of it after the reply came, while the result is drawn.
+- **4× and 6× slower** are not a slow device's for the search itself: Chrome's CPU throttle slows the page's main thread, and the worker much less. So "Solved in" at those rates is lower than a slow device would show.
+- **Sizes.** The page grows by the worker's code, about 83 kB; the data is not copied ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)). The page's heap drops by 5 to 7 MB (Paladin 31.6 → 24.8 MB, Sage 29.8 → 24.8 MB), since the job's gear now lives in the worker's own heap, which `browser.mjs` does not count.
 
 ### Target GCD sweep (2026-10-16)
 

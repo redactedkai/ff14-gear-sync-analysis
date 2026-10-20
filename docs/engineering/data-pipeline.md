@@ -566,6 +566,7 @@ The page bundle takes the page code, the stylesheet and the generated data files
 | food (generated file) | 18,309 bytes |
 | most speed per level (generated file) | 676 bytes |
 | finished page, minified | 2,975,005 bytes (about 3.0 MB) |
+| the optimizer's Web Worker, from 2026-10-19 | about 83 kB more: 2,976,430 → 3,059,130 bytes on a `main` build (about 3.1 MB) |
 
 Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 81% of the page; the icons are about 7%.
 
@@ -581,6 +582,7 @@ Notes:
 
 - **Load:** the first two columns come from one run while another agent ran the optimizer bench, so they are higher and wider than on an idle machine (an idle run gave 76 and 49 ms at normal speed); the last column compares idle runs before and after the change.
 - **Size:** the page grew by about 3.6 kB (the string's escaped quotes), 2,975,005 bytes on a `dev` build.
+- **The worker** (2026-10-19, [architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. The page's whole script, run back to back with the build before it, median of 7: 152 → 158 ms on this machine and 634 → 648 ms 4× slower (the 83 kB of worker code). The database as `JSON.parse` with its text exported: 54 to 57 ms, as before.
 - **The rest of the script** (Alpine, the page code and what runs when the script loads) still takes more than the database itself.
 - **Run it** with `npm run build && node scripts/perf/db-parse.mjs` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
 
