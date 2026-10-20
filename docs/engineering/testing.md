@@ -21,16 +21,16 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 371 tests in 39 files, about 40 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 390 tests in 44 files, about 40 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
-| Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
+| Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of steps |
 
 Notes:
 
-- **Unit tests** import the core logic, the page's view builders and the saved-state repair directly, with the real generated game data. They check formulas, sync, speed, item queries, optimizer correctness on real gear, what each tab shows, data format, provenance and saved state. A shared brute-force helper serves the optimizer tests (section 2.1).
+- **Unit tests** import the core logic, the page's view builders and the saved-state repair directly, with the real generated game data. They check formulas, sync, speed, item queries, optimizer correctness on real gear, what each tab shows, the components' logic that runs without a page, data format, provenance and saved state. A shared brute-force helper serves the optimizer tests (section 2.1).
 - **Generator tests** run the item level, item database and job icon generators and the gear category rules on small test CSV and icon files. They check row selection, slot detection, multi-slot gear (a cloak kept on its own slot code, an unsupported combination left out), stat placement, the HQ rule, job mask, sort order, budget table and level data, stat factor kind and table, gear categories and source flags, schema drift, and job icon embedding and numbering.
-- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 18 groups, each on a fresh page (section 2, *Smoke test*).
+- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 18 groups, each on a fresh page, from a shared setup it checks between steps (section 2, *Smoke test*).
 
 **Why most tests need no browser.** The core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects, so both run in plain Node. The unit tests load the full item database, so they check the model against all 20,031 real pieces, not just hand-made examples. The smoke test is left with only what needs a real page: wiring, layout and interaction.
 
@@ -40,50 +40,62 @@ Which file tests what? One line per file; the file itself says the rest.
 
 ### Unit tests
 
+**Naming rule.** A test file is named for the module it tests: the module's path under `src/` (or the repository root, for `scripts/`), folders joined with `-`, no extension, then `.test.js`. A folder counts as a module (`src/core/optimizer/` is `core-optimizer`). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.js` is `ui-views-gcd.test.js`, and the sync clamp of `src/core/formulas.js` is in `core-formulas.sync-clamp.test.js`. A test that crosses modules goes in the file of the module whose rule it checks. Sorted by name, a module's files sit together.
+
 | File | Covers |
 | --- | --- |
-| formulas | a piece built from the formula, level caps |
-| sync | the clamp rule at its edges |
-| sync-cap-order | rounding order of sync caps |
-| caps-real-items | caps at 123 from real pieces, the 296 maximum |
-| level-sync | level sync, its triggers, the optimizer under it |
-| speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
-| same-result | other pieces with the same result (A9): shared spare points, Unique rings, cloaks, the owner's level 50 case |
-| tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
-| food | food bonus, meal choices, best meal |
-| validation | Wiki caps, accuracy per band, special lines |
-| items | gear filtering, row conversion, item fields; rows sharing a pool key agree |
-| multi-slot | cloaks, tank multi-slot gear, White Mage shields |
-| stat-factor | per-item stat factors |
-| meld | materia melds on real items |
-| damage-defense | weapon damage and defense on real items; weapon damage ranked first |
+| core-constants.level-tables | every table keyed by level reaches the level cap |
+| core-damage-defense | weapon damage and defense on real items; weapon damage ranked first |
+| core-food | food bonus, meal choices, best meal; the character panel base against AkhMorning |
+| core-formulas | a piece built from the formula, level caps |
+| core-formulas.caps-at-123 | caps at 123 from real pieces, the 296 maximum |
+| core-formulas.stat-factor | per-item stat factors |
+| core-formulas.sync-cap-order | rounding order of sync caps |
+| core-formulas.sync-clamp | the clamp rule at its edges |
+| core-item-format | generated data shape; `ROW` against the format's row fields |
+| core-items | gear filtering, row conversion, item fields; rows sharing a pool key agree |
+| core-items.multi-slot | cloaks, tank multi-slot gear, White Mage shields |
+| core-meld | materia melds on real items |
+| core-same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
+| core-speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
+| core-sync-target | level sync, its triggers, the optimizer under it |
+| core-tables.provenance | source record and footer |
+| core-tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
+| core-validation | Wiki caps, accuracy per band, special lines |
 | optimizer | real-gear pools, ring-pair bound |
-| slot-index | slot positions and blocked-slot masks |
-| search | the search's parts on their own against brute force: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key |
 | optimizer-constraints | speed minimum, maximum and range |
 | optimizer-exhaustive | random pools, regressions, policies |
+| regain | regain cuts from a proven maximum against the brute force |
+| scripts-build | the DEV badge outside `main`, the page template and its partials, the licence notices |
+| search | the search's parts on their own against brute force: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key |
+| slot-index | slot positions and blocked-slot masks |
+| stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
 | target-gcd | Target GCD: GCD reached, modes, meals |
 | target-gcd-exhaustive | Target GCD against the brute force |
-| stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
-| regain | regain cuts from a proven maximum against the brute force |
 | tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; a stage stopped at its node limit; an infeasible Target GCD; 360 more random cases in `tests/full/` |
-| views | what each tab shows |
-| sync-explainer-view | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
-| gcd-view | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
-| tiers-view | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
-| piece-subs | Piece stats substat ranks |
-| ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
-| data-format | generated data shape; `ROW` against the format's row fields |
-| level-tables | every table keyed by level reaches the level cap |
-| provenance | source record and footer |
-| state | restoring saved state |
-| store | job switch and reset |
-| build | the DEV badge outside `main` |
+| ui-components-gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
+| ui-components-meal-menu | the Food menu: pills preset once per result, the switch, the list, a pick |
+| ui-components-page | the job picker, the cap field's error and lowered note, Reset asking first |
+| ui-components-tiers | Substat tiers: typed and clicked values and when they drop, the Level box |
+| ui-helpers | number boxes, the debounced effect, en-US counts, the "Gear from" and Expansion menus |
+| ui-state | restoring saved state |
+| ui-store | job switch and reset |
+| ui-sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
+| ui-views-gcd | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
+| ui-views-gear | Gear browser: rows and synced stats, slot pills, sorting, search, Reset filters |
+| ui-views-optimizer | Gear optimizer: totals against the core and the brute force, rows, Food row and menu, Target GCD, Rank by tier, the gear searched, the key that marks a result out of date |
+| ui-views-piece | Piece stats' step by step: each stat against its ceiling, the off-hand rule, the substat ranks |
+| ui-views-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
+| ui-views-sync-explainer | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
+| ui-views-tiers | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
+| ui-views.level-sync | level sync across the views, and a cap far above the synced level |
 
 Notes:
 
+- **Not yet renamed.** The optimizer files (`optimizer`, `optimizer-constraints`, `optimizer-exhaustive`, `regain`, `slot-index`, `stat-minimums`, `target-gcd`, `target-gcd-exhaustive`, `tier-rank`) keep their older names until the search rewrite lands.
+- **The components** that import Alpine (`gear`, `optimizer`, `sync-explainer` in `src/ui/components/`) need a page to load, so only the smoke test reaches them.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
-- **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), and the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`.
+- **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`, and the view tests' store-shaped state with sync at 123 and their small real-gear pools (`views.js`).
 - **The kind of evidence** each test uses (published numbers, game data, a derivation, the brute force) is in [validation.md, section 7](../mechanics/validation.md#7-which-tests-assert-what).
 
 ### 2.1 The brute-force reference and the real-gear pools
@@ -131,21 +143,18 @@ Two Python files: `test_generators.py` (the item database, the item level data, 
 
 **The question.** The unit tests prove the core and the view builders right; does the built page actually show what they compute? The smoke test opens the built page from a `file://` address in headless Chromium at 1000 × 900. Its numbers come from `src/core` in Node at test time (`smoke-core.mjs`), so it checks how the page is wired to the core, not the math again.
 
-| Step | Checks |
+The checks sit in one section of the file per tab, in this order:
+
+| Section | Checks |
 | --- | --- |
-| Defaults | title, no job, level 100, sync off, cap field rules |
-| Piece stats | the item level 130 healer head piece |
-| Gear to search, optimizer filters | totals and counts equal the core's |
-| Materia, Food, Target GCD | on by default or not, totals equal the core's, saved |
-| Real-gear check panel | Wiki 475 rows read "match" |
-| Gear optimizer | Sage and Warrior totals equal the core's |
-| Typing | one optimizer run per typed cap |
-| Job switch, level cap, weapon mode | applied at once, clamped, Off-hand only for Paladin |
-| Ring copies, expansion filter | ×2 marks, the equip level band |
-| Reload, corrupted storage, reset | state kept, repaired, reset after a question |
-| Level sync | level 90 values on each tab, at 960 px |
-| Same result | a row's menu at 960 px, a pick shown with the result unchanged, cleared by a setting change |
-| Every tab for eight jobs | caps at 123, no bad text, no sideways scroll at 960 px |
+| Settings panel | defaults (title, no job, level 100, sync off), the cap field's rules and "Lowered to" note, job switch, level caps of limited jobs |
+| Gear optimizer | Sage and Warrior totals equal the core's; typing a cap runs no search; Gear from, the optimizer's filters, materia, Food, Rank by tier, Target GCD; the same-result menus at 960 px |
+| Gear browser | ×2 ring marks, search and Reset filters, a filter's range, the expansion filter's equip level band, Off-hand only for one-handed jobs |
+| How the math works | Piece stats (the item level 130 healer head piece, caps at 123 per slot), Substat tiers, GCD |
+| Saved state | reload keeps the settings, damaged storage is repaired, Reset to defaults asks first |
+| Across the tabs | level 90 values on each tab at 960 px; every tab for eight jobs: caps at 123, no bad text, no sideways scroll at 960 px |
+
+**Groups and the shared setup.** `GROUPS`, at the end of the file, lists the steps. Each group runs on a fresh page (its own saved state), in parallel with the others; its steps run one after the other. Every group but the defaults starts from the shared setup (`SHARED_SETUP`: Sage, sync to 123, level 50). Before each step that uses it (all but the job walks), the runner checks the setup; a step that left it changed fails by name, and the setup is made again, so the next step does not fail for it.
 
 Notes:
 
@@ -244,19 +253,20 @@ Where does a new test go?
 
 | What changed | Where the test goes |
 | --- | --- |
-| Formula, sync, speed, item query, optimizer | The matching unit test file |
-| What a tab shows | The views unit tests |
-| Saved state shape or restore rules | The state unit tests |
+| Formula, sync, speed, item query, optimizer | The module's unit test file (`core-<module>`) |
+| What a tab shows | Its view's unit test file (`ui-views-<view>`) |
+| A component's own logic (no page needed) | `ui-components-<component>` |
+| Saved state shape or restore rules | `ui-state` |
 | A generator rule | The generator tests |
 | Something only visible on the page | A new smoke test step |
 
 Notes:
 
-- **Unit test file.** Named after the core module. Use `node:test` and strict assertions, and import from the core directly. For the optimizer, compare with the shared brute force.
-- **Views.** Labels, totals, colouring, empty and error states, on a plain state object.
+- **Unit test file.** Named for the module under the naming rule (section 2): add to the module's file, or start one under that name, with a header comment on line 1 saying what it covers. A test name says the behaviour checked, not a roadmap code (keep the code in the comment). Use `node:test` and strict assertions, and import from the core directly. For the optimizer, compare with the shared brute force.
+- **Views.** Labels, totals, colouring, empty and error states, on a plain state object (`makeApp` in `tests/unit/helpers/views.js`).
 - **State.** Add both a valid round-trip and a damaged value that must be repaired.
 - **Generator.** Add a row to the fixture CSVs if needed, using the real header, and assert on the generated output.
-- **Smoke test.** For a layout, a binding or an interaction: a new check function, called from the smoke test's list of steps. Wait on a concrete condition, never a fixed delay, and record failures with the shared check helper so the run continues.
+- **Smoke test.** For a layout, a binding or an interaction: a new check function in its tab's section of `smoke.mjs`, added to a group in `GROUPS`. A step that changes the job, cap, sync or level sets the shared setup back at its end (`setUpShared`). Wait on a concrete condition, never a fixed delay, and record failures with the shared check helper so the run continues.
 
 Run the whole check afterwards. A new test is only useful if it passes on the fixed code and fails on the broken one, so when possible, also confirm it fails before the fix.
 
@@ -290,14 +300,15 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 
 | Concept | File |
 | --- | --- |
-| Unit tests | `tests/unit/<name>.test.js`, one file per name in section 2 |
+| Unit tests | `tests/unit/<module>.test.js`, named by the rule in section 2 |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`, `loadoutCount`) |
 | Shared test helpers and typed-in outside values | `tests/unit/helpers/common.js` (`rng`, `itemRow`, `appState`, `SLOT_PERMILLE`, `AKH_LEVEL`) |
 | Tier ranking reference and its random cases | `tests/unit/helpers/tier-reference.js` (`tierLex`, `checkNoGcd`, `checkGcd`); the long sweep in `tests/full/` |
 | View builders tested without the browser | `src/ui/views/` |
 | Accuracy check against real items and the Wiki | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Generator tests and fixtures | `tests/data/test_generators.py`, `tests/data/fixtures/` |
-| Smoke test, its steps and its screenshots | `tests/e2e/smoke.mjs` (`main` and its `steps` list, `checkRealGearOptimizer`, `checkPieceLab`), `tests/e2e/out/` (gitignored) |
+| View test setup | `tests/unit/helpers/views.js` (`makeApp`, `WINDOW`, `windowPool`, `uniqueRingPool`) |
+| Smoke test, its steps and its screenshots | `tests/e2e/smoke.mjs` (a section per tab, `GROUPS`, `SHARED_SETUP`, `runGroup`, `main`), `tests/e2e/out/` (gitignored) |
 | Commands | `package.json` (`test`, `test:data`, `smoke`, `lint`, `lint:py`, `format`, `check`, `check:all`) |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |
 | Pinned Python tools | `requirements-dev.txt` |

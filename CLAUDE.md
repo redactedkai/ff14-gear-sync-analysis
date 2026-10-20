@@ -112,5 +112,5 @@ How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-
 
 ## Tests and docs
 
-- Details: `docs/engineering/testing.md`. Formula and optimizer tests go in `tests/unit/<module>.test.js`, generator tests in `tests/data/test_generators.py`, UI regressions in `tests/e2e/smoke.mjs`. Use real items and published numbers as expected values.
+- Details: `docs/engineering/testing.md`. Unit tests go in `tests/unit/<module>.test.js`, named for the module's path under `src/` with dashes (`src/ui/views/gcd.js` → `ui-views-gcd.test.js`; a concern after a dot: `core-formulas.sync-clamp.test.js`), generator tests in `tests/data/test_generators.py`, UI regressions in `tests/e2e/smoke.mjs`. Use real items and published numbers as expected values.
 - Docs follow `docs/diagrams/STYLE.md`. If a change alters a documented number or rule, update the doc.
