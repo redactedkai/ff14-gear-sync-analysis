@@ -1492,8 +1492,8 @@ td.held {
 
 /* ==== Gear browser ==== */
 /* A gear browser row that sync lowers (owner, 2026-10-19): the top line is what the player gets, bold (the lowered
-   stats with the cap bar); a muted line under it holds the piece's own numbers, "before sync" under the name; a grey
-   bar on the row's left edge */
+   stats with the cap bar); a muted line under it holds the piece's own numbers (the key above the table says so); a
+   grey bar on the row's left edge */
 #gear-table tr.synced td:first-child {
   box-shadow: inset 3px 0 0 var(--muted);
 }
@@ -1505,9 +1505,6 @@ td.held {
   font-size: 0.72rem;
   font-weight: 400;
   color: var(--muted);
-}
-#gear-table td:first-child .was {
-  font-family: var(--sans);
 }
 .browse-filters {
   grid-template-columns: repeat(5, minmax(0, 1fr));

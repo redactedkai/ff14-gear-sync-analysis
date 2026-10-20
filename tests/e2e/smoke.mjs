@@ -1501,6 +1501,8 @@ async function checkLevelSync(pg) {
   // the synced main stat on top with the cap bar, the head's own value on the muted line under it
   check(/\bsynced\b/.test((await browserRows(pg).first().getAttribute('class')) || ''), 'a synced browser row is not marked synced');
   await expect(pg.locator('#b-key')).toBeVisible();
+  // the key says what the muted line is; the row names only the piece (audit 11 #7)
+  check(!(await browserRows(pg).first().locator('td').first().innerText()).includes('before sync'), 'a synced row repeats "before sync"');
   await expect(browserRows(pg).first().locator('td.cut .atcap').first()).toHaveText(String(HEAD_MAIN_CAP_660));
   await checkNoBadText(pg, 'level sync/browse');
   await waitOptimizer(pg);
