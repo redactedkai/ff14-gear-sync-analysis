@@ -22,7 +22,7 @@ Pushing to `main` deploys to GitHub Pages (the only workflow).
 
 ## Branches
 
-Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check` and the `tests/full/` sweep on `dev`, `main` and PRs, and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner.
+Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check` and the `tests/full/` sweep on `dev`, `main` and PRs, and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner. The merge steps are in the `merge-wave` skill (`.claude/skills/merge-wave/SKILL.md`).
 
 ## Commands
 

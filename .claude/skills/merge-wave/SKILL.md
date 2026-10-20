@@ -10,7 +10,7 @@ The repo's flow is feature branch → `dev` → `main`, fast-forward only (CLAUD
 ## Steps
 
 1. **Who holds what.** Run `git worktree list` and `git status` in each checkout you will touch.
-   - Note which checkout has `dev` checked out (usually the main checkout). If it has uncommitted changes, or another session is working in it, stop and ask the owner.
+   - Note which checkout has `dev` checked out (usually the main checkout). If it has uncommitted changes, or another session holds `dev` or the main checkout, leave the merge to the owner.
    - Never kill processes by name, and never use bare `git stash`.
 2. **Rebase.** In the wave's worktree: `git rebase dev`. Resolve conflicts by keeping both sides' intent; if a conflict is in a file another wave rewrote, ask rather than guess.
 3. **No attribution.** `git log dev..HEAD --format=%B` must show no `Co-Authored-By` or "Generated with" line. Reword the commit if one slipped in (`git commit --amend` for the last one).
