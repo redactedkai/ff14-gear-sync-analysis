@@ -352,7 +352,7 @@
           <div><b x-text="view.gcdText"></b><span x-text="view.gcdNote"></span></div>
           <div><b x-text="view.dotText"></b><span>DoT/HoT tick scaling</span></div>
         </div>
-        <div class="tablekey"><p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
+        <div class="tablekey"><p class="small dim" id="o-time" x-text="solvedText"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
         <div class="tablewrap menus" id="o-table"><table @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
           <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="view.cols[k]" class="n" x-text="h"></th></template></tr></thead>
           <tbody>
@@ -362,17 +362,17 @@
                 <template x-if="!r.item"><td class="dim" :colspan="view.headers.length + 2" x-text="r.emptyText"></td></template>
                 <template x-if="r.item"><td class="item">
                   <template x-if="!r.same"><span x-text="r.item.name"></span></template>
-                  <template x-if="r.same"><div class="same" @click.outside="if (menuOpen === i) menuOpen = null" @keydown.escape="menuOpen = null">
-                    <button type="button" class="same-btn" :aria-expanded="menuOpen === i" :title="`${r.same.count} pieces give the same result here`" @click="toggleSameMenu(i, $el.parentElement)"><span x-text="r.item.name"></span><span class="same-count" x-text="`1 of ${r.same.count}`"></span></button>
+                  <template x-if="r.same"><div class="same" @click.outside="closeSameMenu(i)" @keydown.escape="menuOpen = null">
+                    <button type="button" class="same-btn" :aria-expanded="menuOpen === i" :title="r.same.title" @click="toggleSameMenu(i, $el.parentElement)"><span x-text="r.item.name"></span><span class="same-count" x-text="r.same.countText"></span></button>
                     <template x-if="menuOpen === i"><div class="same-menu search-menu">
                       <div class="menu-tools"><span class="menu-search"><input type="text" placeholder="Search pieces" autocomplete="off" aria-label="Search pieces" x-model="sameQuery"></span></div>
                       <div class="menu-list">
                         <template x-for="g in sameGroups(r.same.groups)" :key="g.label">
                           <div><div class="same-head" x-text="g.label"></div>
-                            <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill" :class="'cat-' + x.category.key" x-text="x.category.label"></span></template></span><span class="same-lvl" x-text="`${x.ilvl}, lvl ${x.lvl}`"></span></button></template>
+                            <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill" :class="'cat-' + x.category.key" x-text="x.category.label"></span></template></span><span class="same-lvl" x-text="x.levels"></span></button></template>
                           </div>
                         </template>
-                        <template x-if="!sameGroups(r.same.groups).length"><div class="menu-empty"><span x-text="`No piece matches &quot;${sameQuery.trim()}&quot;.`"></span> <button type="button" class="linkbtn" @click="sameQuery = ''">Clear search</button></div></template>
+                        <template x-if="!sameGroups(r.same.groups).length"><div class="menu-empty"><span x-text="sameEmptyText()"></span> <button type="button" class="linkbtn" @click="sameQuery = ''">Clear search</button></div></template>
                       </div>
                     </div></template>
                   </div></template>

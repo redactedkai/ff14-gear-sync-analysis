@@ -3,7 +3,7 @@
    leaves its result shown but dimmed, its menus off, and so does a failed search (with its reason); a job switch
    clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
-import { samePassing } from '../views/optimizer.js';
+import { sameEmptyText, samePassing } from '../views/optimizer.js';
 import { inProcessSolver, isCancelled, solverRequest } from '../solver.js';
 import { TARGET_GCD_RANGE, optimizerInputs, optimizerKey } from '../settings.js';
 import { deepFreeze, expansionToggles, gearFromToggles, throttledEffect } from '../helpers.js';
@@ -35,6 +35,9 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     gcdLabel: 'Target GCD',
     /* how long the last solve took (building the job's gear included, the first time), shown under the result */
     solveMs: 0,
+    get solvedText() {
+      return `Solved in ${this.solveMs} ms.`;
+    },
     /* pieces picked from the rows' menus of pieces with the same result: {row index: gameId}. Not saved; cleared when
        any setting changes, since the result and its rows change with them */
     picks: {},
@@ -203,6 +206,14 @@ export function optimizer(alpine, solver = inProcessSolver()) {
       this.sameQuery = '';
       // after x-if has drawn the menu (it is built only while open)
       this.$nextTick(() => requestAnimationFrame(() => box.querySelector('input')?.focus()));
+    },
+    /* Close row i's menu if it is the one open (a click outside it). */
+    closeSameMenu(i) {
+      if (this.menuOpen === i) this.menuOpen = null;
+    },
+    /* the open menu's line when its search leaves no piece (views sameEmptyText) */
+    sameEmptyText() {
+      return sameEmptyText(this.sameQuery);
     },
     /* row i's menu groups after its search (views samePassing) */
     sameGroups(groups) {

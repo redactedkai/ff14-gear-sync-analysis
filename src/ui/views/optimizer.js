@@ -77,26 +77,33 @@ function gcdLine(job, r, ui) {
   return null;
 }
 
-/* A row's menu of pieces with the same result, or null when the shown piece is the only one: {count, groups}, groups by
-   expansion, oldest first, each [{key, name, ilvl, lvl, category, on}] by equip level (key: the piece's gameId, what a
-   pick sends back; category: its gear category, {key, label}, or null for a piece not from the database; on: the piece
-   the row shows). */
+/* A row's menu of pieces with the same result, or null when the shown piece is the only one: {count, countText,
+   title, groups}. countText "1 of 3" is the row's button badge and title its hover text; groups by expansion, oldest
+   first, each {label, items: [{key, name, ilvl, lvl, levels, category, on, exp}]} by equip level (key: the piece's
+   gameId, what a pick sends back; levels: "640, lvl 90", item level and equip level; category: its gear category,
+   {key, label}, or null for a piece not from the database; on: the piece the row shows; exp: its expansion's short
+   name, which groups it). */
 function sameMenu(options, shown) {
   if (options.length < 2) return null;
-  const facts = c => ({
-    key: c.item.gameId,
-    name: c.item.name,
-    ilvl: c.item.ilvl,
-    lvl: equipLevel(c.item) ?? 0,
-    category: categoryOf(c.item),
-    on: c.item === shown,
-    exp: expansionOf(equipLevel(c.item) ?? 0, c.item.ilvl),
-  });
+  const facts = c => {
+    const lvl = equipLevel(c.item) ?? 0;
+    return {
+      key: c.item.gameId,
+      name: c.item.name,
+      ilvl: c.item.ilvl,
+      lvl,
+      levels: `${c.item.ilvl}, lvl ${lvl}`,
+      category: categoryOf(c.item),
+      on: c.item === shown,
+      exp: expansionOf(lvl, c.item.ilvl),
+    };
+  };
   const items = options.map(facts).sort((a, b) => a.lvl - b.lvl || a.ilvl - b.ilvl);
   const groups = EXPANSIONS.map(({ short, name }) => ({ label: name, items: items.filter(x => x.exp === short) })).filter(
     g => g.items.length,
   );
-  return { count: options.length, groups };
+  const count = options.length;
+  return { count, countText: `1 of ${count}`, title: `${count} pieces give the same result here`, groups };
 }
 
 /* The Food row's menu (owner's design, 2026-10-18), from runRecipe's found.food (`meals`: {best, tagged, shown}) on the
@@ -333,6 +340,11 @@ export function samePassing(groups, query) {
   return groups
     .map(g => ({ label: g.label, items: g.items.filter(x => searchMatches(`${x.name} ${x.category?.label ?? ''}`, query)) }))
     .filter(g => g.items.length);
+}
+
+/* The line a same-result menu shows when its search (`query`) leaves no piece. */
+export function sameEmptyText(query) {
+  return `No piece matches "${query.trim()}".`;
 }
 
 /* Whether a stat pill is greyed out (owner, 2026-10-18): one already picked never is; otherwise when two are picked

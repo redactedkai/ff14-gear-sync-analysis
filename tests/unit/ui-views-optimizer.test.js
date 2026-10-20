@@ -16,7 +16,7 @@ import { statTier } from '../../src/core/tiers.js';
 import { fmtInt } from '../../src/ui/helpers.js';
 import { defaultState } from '../../src/ui/state.js';
 import { DEFAULT_EXCLUDE, optimizerKey, syncSettings } from '../../src/ui/settings.js';
-import { mealEmptyReason, mealPillOff, mealsPassing, samePassing, tierText } from '../../src/ui/views/optimizer.js';
+import { mealEmptyReason, mealPillOff, mealsPassing, sameEmptyText, samePassing, tierText } from '../../src/ui/views/optimizer.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
 import {
   countOf,
@@ -299,6 +299,13 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
     [synced.cells[k].value, synced.cells[k].atCap, synced.cells[det].value, synced.cells[det].atCap],
     [210, true, 210, true],
   );
+  // its menu's texts come from the view: the badge, the hover text and each piece's levels
+  if (synced.same) {
+    const n = synced.same.count;
+    assert.equal(synced.same.countText, `1 of ${n}`);
+    assert.equal(synced.same.title, `${n} pieces give the same result here`);
+    for (const x of synced.same.groups.flatMap(g => g.items)) assert.equal(x.levels, `${x.ilvl}, lvl ${x.lvl}`);
+  }
 });
 
 /* The page's Total and With food rows equal gear (and food) plus the character's base; at level 50 Sage that is base 341
@@ -603,6 +610,7 @@ test('Same-result menu search: every word in the name or the gear category, empt
     ['Heavensward'],
   );
   assert.deepEqual(names('zzzz'), []);
+  assert.equal(sameEmptyText('  zzzz '), 'No piece matches "zzzz".');
 });
 
 test('Food menu pills: one that would leave no meal is greyed out, a picked one never is, a third always is', () => {
