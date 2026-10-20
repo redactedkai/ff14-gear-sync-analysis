@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-labelledby="t d">
   <title id="t">What a job switch resets and what it keeps</title>
-  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal (best for goal: a meal picked from the Food menu is cleared), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the Gear from boxes and market board switch of both tabs, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
+  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Kept when the new job can use it (a stat the new job has under the same name; the Target GCD when both jobs have the same speed stat and haste; a slot the job wears), else reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal (best for goal: a meal picked from the Food menu is cleared), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the Gear from boxes and market board switch of both tabs, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -28,11 +28,11 @@
   <rect class="bg" x="0" y="0" width="720" height="470"/>
 
   <text class="fg t" x="20" y="30">Switching to any other job, even one in the same role</text>
-  <text class="muted s" x="20" y="50">Happens at once, without asking: only the selections in the first column go back to defaults.</text>
+  <text class="muted s" x="20" y="50">Happens at once, without asking. First column: a stat stays if the new job has it under the same name.</text>
 
   <!-- Column 1: reset -->
   <rect class="box" x="20" y="70" width="250" height="380" rx="8"/>
-  <text class="accent t" x="36" y="96">Reset to the new job's defaults</text>
+  <text class="accent t" x="36" y="96">Kept if the new job can use it, else</text>
   <line class="rule" x1="36" y1="108" x2="254" y2="108"/>
   <text class="fg l" x="36" y="130">Piece stats substats</text>
   <text class="muted s" x="36" y="146">Critical Hit, then speed</text>

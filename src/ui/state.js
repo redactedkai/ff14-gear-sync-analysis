@@ -1,6 +1,6 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
-import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.js';
+import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, HASTE, jobById } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL } from '../core/tables.js';
 import { capCeiling } from '../core/sync-target.js';
@@ -111,19 +111,29 @@ export function clampLevels(s, job) {
   for (const f of [s.browse, s.opt]) if (f.lvl !== '' && f.lvl > job.maxLevel) f.lvl = job.maxLevel;
 }
 
-/* On a job change: job-specific selections go back to defaults and the levels are held to the job's cap. */
-export function resetForJob(s, job) {
+/* On a job change from `from` (a JobContext, or null with no job chosen before) to `job`: the levels are held to the
+   job's cap, and the job-specific selections the new job can use stay (audit 11 #2). A stat choice stays when the new
+   job has the same stat under the same name (a neutral key can name another stat: `spec` is Piety on a healer and
+   Tenacity on a tank), else it goes back to its default; the Target GCD stays when both jobs have the same speed stat
+   and the same haste (the GCDs a job can reach depend on its haste). With no `from`, everything goes back. */
+export function resetForJob(s, job, from = null) {
+  const keeps = k => !!k && !!from && job.stats.includes(k) && from.label[k] === job.label[k];
   clampLevels(s, job);
-  s.piece.subs = defaultSubs();
+  // Piece stats' two substats stay as a pair (the second may be none), else both go back
+  const [sub1, sub2] = s.piece.subs;
+  if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) s.piece.subs = defaultSubs();
   if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
-  s.opt.target = 'main';
-  s.opt.tb = '';
-  s.opt.tb2 = '';
-  s.opt.gcd = ''; // the GCDs a job can reach depend on its haste
+  const goal = [s.opt.target, s.opt.tb, s.opt.tb2].map((k, i) => (keeps(k) ? k : i === 0 ? 'main' : ''));
+  [s.opt.target, s.opt.tb, s.opt.tb2] = uniqueRanks(goal).map(r => r ?? '');
+  const sameSpeed = keeps('spd') && (HASTE[from.jobId] ?? null) === (HASTE[job.jobId] ?? null);
+  if (!sameSpeed) s.opt.gcd = '';
+  // the browser's slot and sort: a slot the job wears and a sort by name, level, item level or a kept stat stay
   const browse = defaultBrowse(job);
-  s.browse.type = browse.type;
-  s.browse.sort = browse.sort;
-  s.browse.dir = browse.dir;
+  if (!from || !['any', ...job.activeSlotTypes].includes(s.browse.type)) s.browse.type = browse.type;
+  if (!from || !(['name', 'lvl', 'ilvl'].includes(s.browse.sort) || keeps(s.browse.sort))) {
+    s.browse.sort = browse.sort;
+    s.browse.dir = browse.dir;
+  }
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */

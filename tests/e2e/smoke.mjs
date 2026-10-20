@@ -295,12 +295,17 @@ async function checkJobSwitch(pg) {
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
   await pg.click('[data-job-id="GNB"]'); // same role as WAR
   await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'GNB');
+  // Gunbreaker has Critical Hit under the same name: the goal stays (audit 11 #2)
   const t = await pg.inputValue('#o-target');
-  check(t === 'main', `after a job switch the target is '${t}'`);
+  check(t === 'crit', `after a job switch the target is '${t}', expected crit kept`);
   // the other job's result goes: Optimize finds this one's
   await expect(pg.locator('#o-none')).toBeVisible();
   await waitOptimizer(pg);
-  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
+  // a goal the new job has under another name goes back to the main stat: Tenacity is not Piety
+  await pg.selectOption('#o-target', 'spec');
+  await setJob(pg, 'SGE');
+  check((await pg.inputValue('#o-target')) === 'main', 'after a switch from Tenacity to a healer the target is not main');
   await setUpShared(pg); // back to Sage for the next step
 }
 

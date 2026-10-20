@@ -313,6 +313,39 @@ test("a saved level above the job's level cap is clamped to it", () => {
   assert.equal(restoreState({ level: 100 }).level, 100);
 });
 
+test('resetForJob: a job switch keeps the goal, tiebreaks, Target GCD and substats the new job can use (audit 11 #2)', () => {
+  const switched = (fromId, toId, opt, subs = ['crit', 'spd']) => {
+    const s = fresh(fromId);
+    Object.assign(s.opt, opt);
+    s.piece.subs = subs;
+    resetForJob(s, makeJobContext(toId), makeJobContext(fromId));
+    return s;
+  };
+  // Sage to Scholar: the same stats under the same names, the same speed and no haste: everything stays
+  let s = switched('SGE', 'SCH', { target: 'spec', tb: 'spd', tb2: 'crit', gcd: 2.4 }, ['det', 'spd']);
+  assert.deepEqual([s.opt.target, s.opt.tb, s.opt.tb2, s.opt.gcd], ['spec', 'spd', 'crit', 2.4]);
+  assert.deepEqual(s.piece.subs, ['det', 'spd']);
+  // Sage to Warrior: Piety is not Tenacity and Spell Speed is not Skill Speed; Critical Hit stays
+  s = switched('SGE', 'WAR', { target: 'spec', tb: 'crit', tb2: 'spd', gcd: 2.4 }, ['spd', 'crit']);
+  assert.deepEqual([s.opt.target, s.opt.tb, s.opt.tb2, s.opt.gcd], ['main', 'crit', '', '']);
+  assert.deepEqual(s.piece.subs, defaultSubs());
+  // Sage to Black Mage: Spell Speed both, no haste either: the GCD stays; Mind is not Intelligence
+  s = switched('SGE', 'BLM', { target: 'main', tb: 'spd', gcd: 2.4 });
+  assert.deepEqual([s.opt.target, s.opt.tb, s.opt.gcd], ['main', 'spd', 2.4]);
+  // Warrior (goal Tenacity, tiebreak Strength) to Dragoon: the goal goes back to the main stat, which the tiebreak
+  // held, so the tiebreak clears (a stat holds one rank)
+  s = switched('WAR', 'DRG', { target: 'spec', tb: 'main' });
+  assert.deepEqual([s.opt.target, s.opt.tb], ['main', '']);
+  // Samurai to Monk: Skill Speed both, but another haste: the GCD goes
+  s = switched('SAM', 'MNK', { tb: 'spd', gcd: 2.1 });
+  assert.deepEqual([s.opt.tb, s.opt.gcd], ['spd', '']);
+  // no job before: the defaults
+  s = fresh('SGE');
+  Object.assign(s.opt, { target: 'crit', gcd: 2.4 });
+  resetForJob(s, makeJobContext('SCH'));
+  assert.deepEqual([s.opt.target, s.opt.gcd], ['main', '']);
+});
+
 test("Food: off by default, a wrong type falls back; a save's old meal choice (foodPair) is dropped", () => {
   assert.equal(restoreState(null).opt.food, false);
   const s = restoreState({ job: 'SGE', opt: { food: true, foodPair: 'spd+spec' } });

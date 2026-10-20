@@ -7,7 +7,7 @@ import { createAppStore } from '../../src/ui/store.js';
 const storeFor = job => createAppStore(restoreState({ job }));
 
 /* Roadmap A1: a job switch keeps every setting that is not tied to the job. */
-test('switching to another job in the same role resets the job-specific settings and keeps the rest', () => {
+test('switching to another job keeps the settings the new job can use and resets the rest (audit 11 #2)', () => {
   const store = storeFor('SGE');
   store.opt.target = 'crit';
   store.opt.exclude = ['crafted'];
@@ -18,11 +18,16 @@ test('switching to another job in the same role resets the job-specific settings
   store.setJob('WHM');
   assert.equal(store.job, 'WHM');
   assert.equal(store.jobCtx.jobId, 'WHM');
-  assert.equal(store.opt.target, 'main');
-  assert.equal(store.browse.sort, 'ilvl');
+  // the same stats, speed and haste: the goal, the sort and the GCD stay
+  assert.equal(store.opt.target, 'crit');
+  assert.equal(store.browse.sort, 'det');
+  assert.equal(store.opt.gcd, 2.45);
   assert.equal(store.cap, 200); // not job-specific: kept
-  assert.equal(store.opt.gcd, ''); // the GCDs a job can reach depend on its haste: cleared
   assert.equal(store.opt.gcdMode, 'min'); // the mode is a preference: kept
+  // to a tank: Skill Speed, not Spell Speed: the GCD goes; Critical Hit and Determination stay
+  store.setJob('WAR');
+  assert.equal(store.opt.target, 'crit');
+  assert.equal(store.opt.gcd, '');
   assert.deepEqual(store.opt.exclude, ['crafted']); // "Gear from" boxes are not job-specific: kept
 });
 

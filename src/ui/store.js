@@ -23,13 +23,14 @@ export function createAppStore(initial) {
     // into its box, or null to follow the synced level
     tiers: { level: null },
 
-    /* Switching to a different job resets the job-specific selections (resetForJob). */
+    /* Switching to a different job resets the job-specific selections the new job cannot use (resetForJob). */
     setJob(id) {
       const job = makeJobContext(id);
       if (job.jobId === this.job) return;
+      const from = this.job ? this.jobCtx : null;
       this.jobCtx = job;
       this.job = job.jobId;
-      resetForJob(this, job);
+      resetForJob(this, job, from);
     },
 
     /* Every saved setting back to its default (no job); the open tab stays. */
