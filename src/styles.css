@@ -126,9 +126,6 @@ h3 {
 p {
   margin: 0;
 }
-.lede {
-  color: var(--muted);
-}
 header {
   display: flex;
   flex-direction: column;
