@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize, prepare, seedStart, solve } from '../../src/core/optimizer/index.js';
-import { dropShortfalls, improveStart } from '../../src/core/optimizer/search.js';
+import { branchAndBound, dropShortfalls, improveStart } from '../../src/core/optimizer/search.js';
 import { frontSearch } from '../../src/core/optimizer/front.js';
 import { slotInfo } from '../../src/core/items.js';
 import { pruneForLimits } from '../../src/core/optimizer/candidates.js';
@@ -362,4 +362,66 @@ test('frontSearch alone gives the plain search best: staircase, pairwise, and a 
     settled[kind]++;
   }
   for (const [kind, n] of Object.entries(settled)) assert.ok(n >= 6, `${kind}: ${n} settled by fronts`);
+});
+
+/* The fronts' slot rules on synthetic lists the real pools rarely give: a slot with no candidates (it stays empty), a
+   blockable slot (a two-handed weapon leaves the off-hand empty; a one-handed one must not), no ring slots, a ring
+   list that is empty, and a lone Unique ring (one ring, the other slot empty). Against the plain search on the same
+   lists, under a speed band and a minimum, a speed minimum and a minimum, and a minimum alone. */
+test('frontSearch alone gives the plain search best: empty, blockable and ringless slots', () => {
+  const rand = rng(23),
+    int = n => Math.floor(rand() * n);
+  let id = 0;
+  const cand = (blocks = []) => ({ item: { id: `i${id++}` }, eff: { spd: int(40), det: int(40) }, score: int(100), blocks, copies: 1 });
+  const list = (n, make = () => cand()) => Array.from({ length: n }, make).sort((x, y) => y.score - x.score);
+  const shapes = {
+    empty: () => [
+      ['head', 'body', 'neck'],
+      [list(3), [], list(3)],
+    ],
+    blockable: () => [
+      ['weapon', 'body', 'offhand'],
+      [list(4, () => cand(rand() < 0.5 ? ['offhand'] : [])), list(3), list(3)],
+    ],
+    ringless: () => [
+      ['head', 'body', 'legs'],
+      [list(3), list(3), list(3)],
+    ],
+    noRings: () => [
+      ['head', 'ring', 'ring'],
+      [list(3), [], []],
+    ],
+    loneUnique: () => {
+      const rings = list(1);
+      return [
+        ['head', 'ring', 'ring'],
+        [list(3), rings, rings],
+      ];
+    },
+  };
+  let withSet = 0;
+  for (let t = 0; t < 60; t++) {
+    const kind = Object.keys(shapes)[t % 5];
+    const [slotList, posList] = shapes[kind]();
+    const spdMin = int(40);
+    const limits = [
+      [
+        { stat: 'spd', min: spdMin, max: spdMin + 30 },
+        { stat: 'det', min: int(50), max: null },
+      ],
+      [
+        { stat: 'spd', min: spdMin, max: null },
+        { stat: 'det', min: int(50), max: null },
+      ],
+      [{ stat: 'det', min: int(60), max: null }],
+    ][t % 3];
+    const label = `${kind} #${t} ${JSON.stringify(limits)}`;
+    const fronts = frontSearch(slotList, posList, limits);
+    assert.ok(fronts, `${label}: gave up`);
+    const plain = branchAndBound({ slotList, posList, dims: ['spd', 'det'], limits, nodeLimit: 1e6, plain: true });
+    const plainScore = plain.best ? plain.best.reduce((sum, slot) => sum + (slot?.cand?.score || 0), 0) : null;
+    assert.equal(fronts.best ? fronts.best.score : null, plainScore, label);
+    if (fronts.best) withSet++;
+  }
+  assert.ok(withSet >= 30, `${withSet} with a set`);
 });
