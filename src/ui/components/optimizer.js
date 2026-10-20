@@ -77,7 +77,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
        saved when a search is asked for while none is pending (remember) */
     shown: null,
     /* the same for the Gear to search line: the latest asked for */
-    sideId: 0,
+    gearToSearchId: 0,
     init() {
       // the settings as they change: whether the result is out of date (a job switch drops it), and the piece count and
       // empty boxes under Gear to search
@@ -96,11 +96,11 @@ export function optimizer(alpine, solver = inProcessSolver()) {
             }
             if (!job) return;
             // the line comes back from the solver; one asked for since replaces it. A failed request keeps the old line
-            const id = ++this.sideId;
+            const id = ++this.gearToSearchId;
             const request = solverRequest('gearToSearch', optimizerInputs(alpine.raw(this.$store.app)));
             solver.request(request).then(
               ({ result }) => {
-                if (id !== this.sideId) return;
+                if (id !== this.gearToSearchId) return;
                 this.countText = result.countText;
                 this.emptyBoxes = result.emptyBoxes;
                 this.gcdLabel = result.gcdLabel;

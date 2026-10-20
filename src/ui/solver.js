@@ -110,7 +110,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   let nextId = 0;
   // per kind: the request in the worker and the one waiting, each {id, request, callers: [{resolve, reject}]}
   const lanes = { solve: { flight: null, waiting: null }, gearToSearch: { flight: null, waiting: null } };
-  let lastSide = null; // the last Gear to search request asked for: asked again of a restarted worker
+  let lastGearToSearch = null; // the last Gear to search request asked for: asked again of a restarted worker
 
   // a reply (a Promise) handed to every caller of a request
   const answer = (callers, reply) =>
@@ -211,7 +211,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
       post(other, pending);
       resent = true;
     }
-    if (!resent && lastSide) post(lanes.gearToSearch, { id: ++nextId, request: lastSide, callers: [] });
+    if (!resent && lastGearToSearch) post(lanes.gearToSearch, { id: ++nextId, request: lastGearToSearch, callers: [] });
     return true;
   };
 
@@ -223,7 +223,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
     request(request) {
       if (!worker && !backup) start();
       if (backup) return backup.request(request);
-      if (request.kind === 'gearToSearch') lastSide = request;
+      if (request.kind === 'gearToSearch') lastGearToSearch = request;
       return new Promise((resolve, reject) => {
         const lane = lanes[request.kind];
         if (!lane) throw new Error(`unknown solver request kind: ${request.kind}`);
