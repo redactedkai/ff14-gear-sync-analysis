@@ -11,7 +11,12 @@ The optimizer searches only when Optimize is pressed (src/ui/components/optimize
      gear not built).
   3. warm: in that page, cycles the target stat, pressing Optimize each time, and times each run and the time from
      the press to the result shown.
-  4. memory: 100 target changes and searches, JS heap before and after (with garbage collection).
+  4. memory: 100 target changes and searches, JS heap before and after (with garbage collection). The page's heap
+     only: the optimizer's Web Worker (src/ui/solver.js) has its own, not counted.
+Long tasks (the main thread blocked over 50 ms) are reported over the whole page, opening it included, and from the
+first Optimize to the memory step (the searches and drawing their results; the search itself runs in the worker).
+Chrome's CPU throttle slows the page's main thread; the worker's search is slowed much less, so its times at 4x and 6x
+are not a slow device's.
 Each at CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
 
 Run: npm run build && node scripts/perf/browser.mjs [--runs 5] [--jobs PLD,SGE] [--rates 1,4,6]
@@ -113,12 +118,14 @@ async function coldAndWarm(browser, state, rate, targets, warm) {
   pg.setDefaultTimeout(TIMEOUT);
   const cdp = await throttle(pg, rate); // before navigation, so page start-up is throttled too
   await pg.goto(PAGE);
+  const openTasks = await pg.evaluate('window.__long.length'); // long tasks before the first Optimize
   await pg.click('#o-run');
   await waitMeasure(pg, 'optimizer', 1);
   await pg.locator('#o-out .panel').waitFor({ state: 'visible' });
   const shown = await pg.evaluate('performance.now()'); // since navigation start
   const cold = (await measures(pg, 'optimizer'))[0];
   const out = { cold_ms: cold, load_to_result_ms: shown };
+  let searchTasks = Infinity; // long tasks up to the memory step (its forced garbage collections block the thread too)
   if (warm) {
     const runs = [];
     const settles = [];
@@ -135,6 +142,7 @@ async function coldAndWarm(browser, state, rate, targets, warm) {
     out.warm_ms = runs;
     out.settle_ms = settles;
     // memory: 100 more target changes, heap before and after garbage collection
+    searchTasks = await pg.evaluate('window.__long.length');
     await cdp.send('HeapProfiler.enable');
     await cdp.send('HeapProfiler.collectGarbage');
     const h0 = await pg.evaluate('performance.memory.usedJSHeapSize');
@@ -148,7 +156,9 @@ async function coldAndWarm(browser, state, rate, targets, warm) {
     const h1 = await pg.evaluate('performance.memory.usedJSHeapSize');
     out.heap_mb = [h0 / 2 ** 20, h1 / 2 ** 20];
   }
-  out.longtask_max_ms = max(await pg.evaluate('window.__long'));
+  const long = await pg.evaluate('window.__long');
+  out.longtask_max_ms = max(long);
+  out.longtask_search_max_ms = max(long.slice(openTasks, searchTasks));
   await ctx.close();
   return out;
 }
@@ -185,7 +195,8 @@ async function main() {
         console.log(
           `  ${job}: warm runs ${fmt(w.warm_ms)} ms; Optimize to result ${fmt(w.settle_ms)} ms; ` +
             `heap ${w.heap_mb[0].toFixed(1)} -> ${w.heap_mb[1].toFixed(1)} MB after 100 changes; ` +
-            `longest blocked main thread ${max(runs.map(r => r.longtask_max_ms)).toFixed(0)} ms`,
+            `longest blocked main thread ${max(runs.map(r => r.longtask_max_ms)).toFixed(0)} ms, ` +
+            `${max(runs.map(r => r.longtask_search_max_ms)).toFixed(0)} ms from the first Optimize on`,
         );
         results.push({ rate, job, runs, switch: rows, save_ms: save });
       }
