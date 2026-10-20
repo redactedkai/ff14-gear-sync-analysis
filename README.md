@@ -33,13 +33,13 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run build` | Bundle everything into `dist/index.html` (opens straight from disk) |
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
 | `npm test` | Unit tests (core logic, page views, data format, saved state) |
-| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`, about 90 s); run it before changing scoring, pruning or the search. CI runs it |
+| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`, about 35 s); run it before changing scoring, pruning or the search. CI runs it |
 | `npm run test:data` | The Python data generator tests |
 | `npm run smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
 | `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check, no file changes; a warning fails it |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
-| `npm run check` | Lint (with format check), build, unit tests and the smoke test, in that order; no Python needed (about 2 min: unit tests about 85 s, smoke about 30 s). Run this before calling a change done |
+| `npm run check` | Lint (with format check), build, unit tests and the smoke test, in that order; no Python needed (about 45 s to 1 min: unit tests about 17 s, smoke 20 to 40 s). Run this before calling a change done |
 | `npm run check:all` | `check`, then `lint:py` and `test:data`. Run it when touching `scripts/data/` or after `update-data` |
 | `npm run update-data` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
 | `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min); run it after changing the search |
