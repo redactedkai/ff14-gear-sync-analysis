@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 390 tests in 44 files, about 40 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 398 tests in 45 files, about 83 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of steps |
@@ -56,23 +56,23 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-items | gear filtering, row conversion, item fields; rows sharing a pool key agree |
 | core-items.multi-slot | cloaks, tank multi-slot gear, White Mage shields |
 | core-meld | materia melds on real items |
+| core-optimizer | real-gear pools, ring-pair bound |
+| core-optimizer-regain | regain cuts from a proven maximum against the brute force |
+| core-optimizer-search | the search's parts on their own against brute force: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key |
+| core-optimizer-slot-index | slot positions and blocked-slot masks |
+| core-optimizer.exhaustive | random pools, regressions, policies |
+| core-optimizer.speed-limits | speed minimum, maximum and range |
+| core-optimizer.stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
 | core-same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
 | core-speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
 | core-sync-target | level sync, its triggers, the optimizer under it |
 | core-tables.provenance | source record and footer |
+| core-target-gcd | Target GCD: GCD reached, modes, meals |
+| core-target-gcd.exhaustive | Target GCD against the brute force |
+| core-tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; a stage stopped at its node limit; an infeasible Target GCD; 360 more random cases in `tests/full/` |
 | core-tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
 | core-validation | Wiki caps, accuracy per band, special lines |
-| optimizer | real-gear pools, ring-pair bound |
-| optimizer-constraints | speed minimum, maximum and range |
-| optimizer-exhaustive | random pools, regressions, policies |
-| regain | regain cuts from a proven maximum against the brute force |
 | scripts-build | the DEV badge outside `main`, the page template and its partials, the licence notices |
-| search | the search's parts on their own against brute force: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key |
-| slot-index | slot positions and blocked-slot masks |
-| stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
-| target-gcd | Target GCD: GCD reached, modes, meals |
-| target-gcd-exhaustive | Target GCD against the brute force |
-| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; a stage stopped at its node limit; an infeasible Target GCD; 360 more random cases in `tests/full/` |
 | ui-components-gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
 | ui-components-meal-menu | the Food menu: pills preset once per result, the switch, the list, a pick |
 | ui-components-page | the job picker, the cap field's error and lowered note, Reset asking first |
@@ -92,7 +92,7 @@ Which file tests what? One line per file; the file itself says the rest.
 
 Notes:
 
-- **Not yet renamed.** The optimizer files (`optimizer`, `optimizer-constraints`, `optimizer-exhaustive`, `regain`, `slot-index`, `stat-minimums`, `target-gcd`, `target-gcd-exhaustive`, `tier-rank`) keep their older names until the search rewrite lands.
+- **The long sweep** in `tests/full/` follows the same rule: `core-tier-rank.gcd-1` to `.gcd-4` and `core-tier-rank.no-gcd`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
 - **The components** that import Alpine (`gear`, `optimizer`, `sync-explainer` in `src/ui/components/`) need a page to load, so only the smoke test reaches them.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`, and the view tests' store-shaped state with sync at 123 and their small real-gear pools (`views.js`).
@@ -174,28 +174,13 @@ Which command runs which check? Run from the repository root.
 
 ![npm run check runs lint (Biome, with a format check), build (the one HTML page), test (unit tests in Node) and smoke (the built page in Chromium), in that order; it needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:data (generator tests in Python); run it when touching scripts/data/ or after update-data. Both stop at the first failure. The perf commands, the Target GCD sweep and the checks against ffxiv-gearing and xivgear are run by hand and are never part of check.](../diagrams/testing-commands.svg)
 
-| Command | What it runs |
-| --- | --- |
-| `npm run check` | Lint, build, unit tests, smoke (diagram above) |
-| `npm run check:all` | `check`, then `lint:py` and `test:data` |
-| `npm test` | Unit tests |
-| `npm run test:full` | Unit tests and the long sweep in `tests/full/` (about 90 s); run it before changing scoring, pruning or the search. CI runs it |
-| `npm run test:data` | Generator tests (Python) |
-| `npm run smoke` | Browser smoke test |
-| `npm run lint` | Biome, no file changes |
-| `npm run lint:py` | Ruff, no file changes |
-| `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
-| `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min) |
-| `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
-| `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
-| `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
-| `node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
+Every command, with what it runs and how long it takes, is listed once, in [README, Develop](../../README.md#develop). `npm run check` took about 2 min on 2026-10-19: lint 4 s, build 2 s, unit tests 83 s, smoke 31 s. The notes below say what the test commands check.
 
 Notes on the pass/fail commands:
 
 - **`npm test`** runs the unit tests with Node's built-in test runner, which runs files in parallel, so the slowest file sets the time. **`npm run test:full`** adds `tests/full/`: 360 random cases of tier ranking against its reference, which take about 80 s on their own and are split in five files so they run at the same time. `npm test` keeps the first 20 of the Target GCD cases. **`npm run test:data`** runs the generator tests with Python `unittest`. The Python npm scripts (`test:data`, `lint:py`, `format:py`, `update-data`) start Python through `scripts/py.mjs`, which runs `python3` or `python`, whichever exists, so they work on Windows, macOS and Linux.
-- **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (25 to 55 s on a 12-thread machine, depending on its load, measured 2026-10-19; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
-- **`npm run lint`** lints, then reports formatting differences without changing files; `lint:py` does the same with Ruff.
+- **`npm run smoke`** needs the page built first; it is a Node script (Playwright) that takes its expected values from `src/core` directly (computed in a worker thread, `tests/e2e/smoke-core.mjs`). Its steps run in groups, in parallel, each group on a fresh page with its own saved state (about 31 s on a 12-thread machine on 2026-10-19, up to about 55 s when the machine is busy; `SMOKE_TRACE=1` prints each step's time, `SMOKE_PAGE` tests another page file).
+- **`npm run lint`** lints, then reports formatting differences without changing files; a lint warning fails it, as an error does. `scripts/validate/xivgear/xg_sync_test.ts` is left out of the lint (it runs inside xivgear's own test runner against their types; the reason is in `biome.jsonc`) but is still format-checked. `lint:py` does the same with Ruff.
 - **`npm run check`** and **`npm run check:all`** run the steps in the diagram above; `check` is the bar for calling a change done. For UI changes, also open the built page and look at it at desktop width and at 960 px.
 
 Notes on the measurements and checks run by hand (none is part of `npm run check`):
@@ -220,7 +205,7 @@ Running a subset:
 - unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/*.test.js"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 
-**Setup.** Node 22 or later, `npm install`, then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3 and `python -m pip install -r requirements-dev.txt`: CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9.
+**Setup.** Node 22 or later, `npm install` (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3 and `python -m pip install -r requirements-dev.txt`: CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9.
 
 ## 4. Conventions
 
@@ -310,5 +295,5 @@ The rule behind the table: a value that depends on what gear exists may move; a 
 | View test setup | `tests/unit/helpers/views.js` (`makeApp`, `WINDOW`, `windowPool`, `uniqueRingPool`) |
 | Smoke test, its steps and its screenshots | `tests/e2e/smoke.mjs` (a section per tab, `GROUPS`, `SHARED_SETUP`, `runGroup`, `main`), `tests/e2e/out/` (gitignored) |
 | Commands | `package.json` (`test`, `test:data`, `smoke`, `lint`, `lint:py`, `format`, `check`, `check:all`) |
-| Lint and format configuration | `biome.json`, `pyproject.toml` |
+| Lint and format configuration | `biome.jsonc`, `pyproject.toml` |
 | Pinned Python tools | `requirements-dev.txt` |
