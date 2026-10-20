@@ -186,9 +186,9 @@ export function expandIncludes(template, readPartial = name => readFileSync(join
   });
 }
 
-/* Inline the bundle outputs into the HTML template and write dist/index.html. Returns the byte size. `info`: the
-   branch and commit (buildInfo), which decide the test-build marks. */
-export function writePage(outputFiles, info = buildInfo()) {
+/* Inline the bundle outputs into the HTML template and write the page to `outFile` (dist/index.html by default).
+   Returns the byte size. `info`: the branch and commit (buildInfo), which decide the test-build marks. */
+export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 'index.html')) {
   const pick = ext =>
     outputFiles
       .filter(f => f.path.endsWith(ext))
@@ -210,9 +210,16 @@ export function writePage(outputFiles, info = buildInfo()) {
     .replace('<!-- BUILD_INFO -->', () => marks.footer)
     .replace('<!-- STYLES -->', () => `<style>\n${css}</style>`)
     .replace('<!-- SCRIPT -->', () => `<script>\n${js}</script>`);
-  mkdirSync(DIST, { recursive: true });
-  writeFileSync(join(DIST, 'index.html'), html, 'utf8');
+  mkdirSync(dirname(outFile), { recursive: true });
+  writeFileSync(outFile, html, 'utf8');
   return Buffer.byteLength(html);
+}
+
+/* Build the page as the live one looks (no DEV badge or branch line, as on main) into `outFile`, leaving dist/ alone:
+   for the screenshot script, whose shots must not differ between branches. Returns the byte size. */
+export async function buildReleasePage(outFile) {
+  const result = await esbuild.build(esbuildOptions());
+  return writePage(result.outputFiles, { branch: null, commit: buildInfo().commit }, outFile);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

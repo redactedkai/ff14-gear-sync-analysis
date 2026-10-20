@@ -12,13 +12,12 @@ and the optimizer's solve time is replaced by a fixed text. Two runs of the same
 104 shots (2026-10-19); in the other 10, a few dozen antialiased edge pixels (round buttons, a menu's edge) were 1/255
 apart, which compare.mjs's default threshold allows.
 
-Build the page without the DEV badge and the footer's branch line first, or they differ between branches: the build
-leaves them out on `main` (scripts/build/build.mjs, buildMarks), so set GITHUB_REF_NAME=main for one build:
-  bash:        GITHUB_REF_NAME=main npm run build
-  PowerShell:  $env:GITHUB_REF_NAME = 'main'; npm run build; Remove-Item Env:GITHUB_REF_NAME
-Copy dist/index.html elsewhere to keep a "before" page. A page with the badge still works; the script warns.
+Without --page, it builds the page from src/ itself into <dir>/page.html, as the live page looks (no DEV badge or
+footer branch line, which would differ between branches: scripts/build/build.mjs, buildReleasePage), and leaves
+dist/index.html alone. Run it on the base commit and on the change, into two folders, to compare them; page.html stays
+in each folder. --page shoots a page built elsewhere instead; one with the DEV badge still works, and the script warns.
 
-Run: npm run shots -- --out <dir> [--page dist/index.html] [--only <regex on view names>] [--workers 4] [--web-fonts]
+Run: npm run shots -- --out <dir> [--page <file.html>] [--only <regex on view names>] [--workers 4] [--web-fonts]
 Then compare two folders: npm run shots:compare -- <dirA> <dirB> (scripts/shots/compare.mjs).
 Exits 1 on a JavaScript error in the page or a sideways scroll at either width.
 */
@@ -27,6 +26,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import { buildReleasePage } from '../build/build.mjs';
 import { STORE_KEY } from '../../src/ui/state.js';
 import { flag, numberOption, option } from '../perf/args.mjs';
 
@@ -37,11 +37,19 @@ const VIEWPORT_HEIGHT = 900;
 const SETTLE_MS = 450;
 const OPTIMIZE_TIMEOUT_MS = 60_000;
 
-const pagePath = resolve(option('page', 'dist/index.html'));
 const outDir = option('out');
 if (!outDir) {
   console.error('error: --out <dir> is required (see the header of scripts/shots/shots.mjs)');
   process.exit(1);
+}
+// the page shot: --page, or one built here as the live page looks (dist/ is left as it is)
+let pagePath;
+if (option('page')) {
+  pagePath = resolve(option('page'));
+} else {
+  pagePath = resolve(outDir, 'page.html');
+  await buildReleasePage(pagePath);
+  console.log(`built ${pagePath}`);
 }
 const onlyPattern = option('only') ? new RegExp(option('only')) : null;
 const workerCount = numberOption('workers', 4);
