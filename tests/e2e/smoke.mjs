@@ -16,9 +16,14 @@ Expected values come from outside the code under test where possible:
     head values (Mind 248; tests/unit/core-sync-target.test.js derives them from the ItemLevel row), in the gear browser and
     in Piece stats (item level 660: ParamGrow.ItemLevelSync for level 90).
 
+Layout: helpers, then the checks in one section per tab (settings panel, Gear optimizer, Gear browser, How the math
+works, saved state, and the checks across tabs), then GROUPS and the runner at the end.
+
 The steps run in groups, in parallel: each group gets a fresh browser context (so its own saved state) and page, set to
-Sage, sync to 123, level 50, and runs its steps one after the other (see GROUPS). The numbers from src/core are
-computed in a worker thread (smoke-core.mjs), so the pages are never kept waiting. Failures are printed in step order.
+the shared setup (SHARED_SETUP: Sage, sync to 123, level 50), and runs its steps one after the other (see GROUPS).
+Before each step that uses the shared setup, the runner checks it and names the step before if that one left it
+changed. The numbers from src/core are computed in a worker thread (smoke-core.mjs), so the pages are never kept
+waiting. Failures are printed in step order.
 
 Setup once: npm install && npx playwright install chromium
 Run: npm run build && npm run smoke
@@ -249,82 +254,163 @@ async function waitSaved(pg, jsCondition) {
   );
 }
 
+/* The settings every group but the fresh one starts from, and its steps find (the checks use the item level 123
+   caps). */
+const SHARED_SETUP = { job: 'SGE', sync: true, cap: '123', level: '50' };
+
+/** Set the page to SHARED_SETUP. */
+async function setUpShared(pg) {
+  await setJob(pg, SHARED_SETUP.job);
+  await setCap(pg, SHARED_SETUP.cap);
+  await setNumber(pg, '#level', SHARED_SETUP.level);
+}
+
+/** The settings that differ from SHARED_SETUP, as "field now (setup)" texts; empty when none does. */
+async function sharedSetupChanges(pg) {
+  const now = {
+    job: await currentJob(pg),
+    sync: await pg.locator('#sync').isChecked(),
+    cap: await pg.inputValue('#cap'),
+    level: await pg.inputValue('#level'),
+  };
+  return Object.keys(SHARED_SETUP)
+    .filter(k => now[k] !== SHARED_SETUP[k])
+    .map(k => `${k} ${now[k]} (${SHARED_SETUP[k]})`);
+}
+
 async function checkNoBadText(pg, where) {
   const txt = await pg.innerText('body');
   for (const bad of BAD_WORDS) check(!txt.includes(bad), `"${bad}" visible in ${where}`);
 }
 
-// ---------- checks ----------
+// ---------- checks: Settings panel: defaults, the cap field, job switch, level caps ----------
 
-/** Piece stats at cap 123: for every slot, a piece above the cap is cut to the slot's caps, so its main stat and 1st
- * substat bars end at the known values. A shield job has an Off-hand slot, a two-handed job does not. */
-async function checkSyncCaps(pg, job) {
-  await showMath(pg, 'piece');
-  const slots = await pg.locator('#p-slot option').allInnerTexts();
-  check(ONE_HANDED.has(job) === slots.includes('Off-hand'), `${job}: Piece stats slots ${JSON.stringify(slots)}`);
-  const caps = ONE_HANDED.has(job) ? CAPS_123 : { ...CAPS_123, Weapon: CAPS_123_2H_WEAPON };
-  for (const [slot, [sub, main]] of Object.entries(caps)) {
-    await pg.selectOption('#p-slot', { label: slot });
-    await setNumber(pg, '#p-ilvl', '160'); // above the cap, inside the slider's range
-    await expect(pg.locator('#p-lead')).toContainText('Synced to 123');
-    const kept = await pg.locator('#p-bars .num b').allInnerTexts(); // main stat, Vitality, 1st and 2nd substat
-    check(kept[0] === String(main), `${job}: ${slot} main stat cap '${kept[0]}', expected ${main}`);
-    check(kept[2] === String(sub), `${job}: ${slot} substat cap '${kept[2]}', expected ${sub}`);
-  }
-  await pg.selectOption('#p-slot', { label: 'Head' });
-  await pg.click('#p-ilvl-reset');
+/** Switching job takes effect at once (nothing is lost but the job-specific choices, so the page does not ask) and
+ * puts the optimizer target back to the main stat. */
+async function checkJobSwitch(pg) {
+  await setJob(pg, 'WAR');
+  await waitOptimizer(pg);
+  await pg.selectOption('#o-target', 'crit');
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
+  await pg.click('[data-job-id="GNB"]'); // same role as WAR
+  await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'GNB');
+  const t = await pg.inputValue('#o-target');
+  check(t === 'main', `after a job switch the target is '${t}'`);
+  // the other job's result goes: Optimize finds this one's
+  await expect(pg.locator('#o-none')).toBeVisible();
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+  await setUpShared(pg); // back to Sage for the next step
 }
 
-/** Opens Piece stats' "Each stat, step by step" if it is closed. */
-async function openSteps(pg) {
-  if (!(await pg.locator('#p-steps').evaluate(d => d.open))) await pg.click('#p-steps > summary');
-}
-
-/** A closed details panel ("Each stat, step by step") is only its summary plus padding: the flex gap of the panel must
-    not add space for the hidden content (it added 14 px, 2026-10-17). */
-async function checkClosedPanel(pg) {
-  await showMath(pg, 'piece');
-  if (await pg.locator('#p-steps').evaluate(d => d.open)) await pg.click('#p-steps > summary');
-  const extra = await pg.locator('#p-steps').evaluate(d => {
-    const cs = getComputedStyle(d);
-    const frame = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + parseFloat(cs[k]), 0);
-    return d.getBoundingClientRect().height - frame - d.querySelector('summary').getBoundingClientRect().height;
+/** With sync on, the cap field asks for a cap while empty and for a whole item level in range. The message sits
+ * under the field, so the label stays on one line and the cap input lines up with the synced level input. */
+async function checkCapValidation(pg) {
+  await pg.locator('#sync').check();
+  await expect(pg.locator('#cap-error')).toHaveText('Enter a sync cap');
+  check((await pg.getAttribute('#cap', 'aria-invalid')) === 'true', 'an empty cap with sync on is not marked invalid');
+  const lay = await pg.evaluate(() => {
+    const lab = document.querySelector('label[for=cap]');
+    const top = s => document.querySelector(s).getBoundingClientRect().top;
+    return { em: lab.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(lab).fontSize), dy: top('#cap') - top('#level') };
   });
-  check(Math.abs(extra) < 1, `closed #p-steps has ${extra.toFixed(1)} px beyond its summary and padding`);
+  check(lay.em < 2, `the sync cap label wraps (${lay.em.toFixed(1)} em high) while it asks for a cap`);
+  check(Math.abs(lay.dy) < 1, `the cap input is ${lay.dy.toFixed(0)} px off the synced level input`);
+  // the ranges next to the labels
+  await expect(pg.locator('#level-range')).toHaveText('1–100');
+  await expect(pg.locator('#cap-range')).toHaveText('1–795');
+  // not a whole item level: an error, and the page keeps its last cap
+  await pg.fill('#cap', '0');
+  await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
+  await pg.fill('#cap', '123');
+  await expect(pg.locator('#cap-error')).toBeHidden();
+  // the cap follows the level: at level 40 cap 123 is lowered to 43, the best gear made for level 40 (capCeiling),
+  // once the level settles; back at level 50 it stays 43 (never raised), with no error either way
+  await setNumber(pg, '#level', '40');
+  await expect(pg.locator('#cap')).toHaveValue('43');
+  await expect(pg.locator('#cap-error')).toBeHidden();
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 43, the highest for level 40.');
+  check(await pg.locator('#cap').evaluate(e => e.classList.contains('lowered')), 'the lowered cap field does not flash');
+  await setNumber(pg, '#level', '50');
+  await expect(pg.locator('#cap')).toHaveValue('43');
+  await expect(pg.locator('#cap-lowered')).toBeHidden(); // the note goes with the next change
+  // a cap entered above what the level allows is lowered once it commits
+  await pg.fill('#cap', '500');
+  await expect(pg.locator('#cap')).toHaveValue('135');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
+  // above the highest real item level too: lowered the same way, not an error
+  await pg.fill('#cap', '999');
+  await expect(pg.locator('#cap')).toHaveValue('135');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
+  await expect(pg.locator('#cap-error')).toBeHidden();
+  // the up arrow at the limit (owner's report, 2026-10-18): each press is lowered again, and the note stays put rather
+  // than hiding and showing (the panel jumped); the field flashes again instead
+  await pg.evaluate(() => {
+    window.__noteHidden = 0;
+    const note = document.querySelector('#cap-lowered');
+    new MutationObserver(() => {
+      if (note.style.display === 'none') window.__noteHidden++;
+    }).observe(note, { attributes: true, attributeFilter: ['style'] });
+  });
+  await pg.locator('#cap').focus();
+  for (let i = 0; i < 5; i++) {
+    await pg.keyboard.press('ArrowUp');
+    await pg.waitForTimeout(60);
+  }
+  await pg.waitForTimeout(400);
+  await expect(pg.locator('#cap')).toHaveValue('135');
+  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
+  check((await pg.evaluate(() => window.__noteHidden)) === 0, 'the lowered note hides and shows again on the up arrow');
+  await pg.fill('#cap', '123');
+  await setNumber(pg, '#level', '100');
+  await pg.locator('#sync').uncheck();
 }
 
-/** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
-async function checkPieceLab(pg) {
-  await showMath(pg, 'piece');
-  await pg.selectOption('#p-slot', 'head');
-  await pg.selectOption('#p-s1', 'spd');
-  await pg.selectOption('#p-s2', 'spec');
-  await setNumber(pg, '#p-ilvl', '130');
-  await openSteps(pg);
-  await expect(pg.locator('#p-out thead')).toContainText('This head (item level 130)');
-  await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
-  await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
-  // columns: stat (name, then its share), this head (its value first), the head at the cap (the ceiling), in the duty
-  const rows = await tableRows(pg, '#p-out');
-  const byStat = Object.fromEntries(
-    rows.map(r => [r[0].split('\n')[0], { raw: parseInt(r[1], 10), ceiling: parseInt(r[2], 10), duty: parseInt(r[3], 10) }]),
-  );
-  const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };
-  for (const [stat, v] of Object.entries(expected)) {
-    check(byStat[stat]?.raw === v, `Piece stats ilvl 130 head ${stat} raw ${byStat[stat]?.raw}, expected ${v}`);
+/** Limited jobs: picking Blue Mage (level cap 80) or Beastmaster (50) clamps the synced level and the equip level
+ * filter to the cap, both inputs' maximum follows it, and a typed level above the cap is not taken. */
+async function checkJobLevelCap(pg) {
+  await setJob(pg, 'SGE');
+  await showTab(pg, 'browse');
+  await setNumber(pg, '#level', '100');
+  await setNumber(pg, '#b-lvl', '100');
+  for (const [job, cap] of [
+    ['BLU', '80'],
+    ['BST', '50'],
+  ]) {
+    await setJob(pg, job);
+    for (const sel of ['#level', '#b-lvl']) {
+      await expect(pg.locator(sel)).toHaveValue(cap);
+      const max = await pg.getAttribute(sel, 'max');
+      check(max === cap, `${job}: ${sel} max is '${max}', expected ${cap}`);
+    }
   }
-  // 130 is above the 123 cap: the head caps (29 substat, 30 main) are the ceiling, and the duty keeps the lower number
-  check(
-    byStat.Mind?.ceiling === 30 && byStat['Spell Speed']?.ceiling === 29 && byStat.Mind?.duty === 30 && byStat['Spell Speed']?.duty === 29,
-    `Piece stats ceiling / duty Mind ${byStat.Mind?.ceiling}/${byStat.Mind?.duty}, Spell Speed ${byStat['Spell Speed']?.ceiling}/${byStat['Spell Speed']?.duty}, expected 30/30 and 29/29`,
-  );
-  await expect(pg.locator('#p-slices span.on')).toHaveText(/Head\s*8\.5%/);
-  // the explainer: the item level 130 head against the melded item level 123 head, and the curve
-  await expect(pg.locator('#p-vs')).toContainText('melded');
-  await expect(pg.locator('#p-vs b')).toContainText(' more.');
-  await expect(pg.locator('#p-curve-chart svg')).toBeVisible();
-  await pg.click('#p-ilvl-reset');
+  await waitSaved(pg, "s => s.job === 'BST' && s.level === 50");
+  await setNumber(pg, '#level', '70');
+  await pg.waitForTimeout(400); // longer than the save debounce
+  const level = await pg.evaluate(`JSON.parse(localStorage.getItem("${STORE_KEY}")).level`);
+  check(level === 50, `BST: a typed level 70 was taken (saved level ${JSON.stringify(level)})`);
+  await setNumber(pg, '#level', '40');
+  await waitSaved(pg, 's => s.level === 40');
+  await setNumber(pg, '#level', '50'); // the shared setup
+  await setJob(pg, 'SGE');
 }
+
+/** The checks that need a fresh page with nothing set: the title, the defaults and the cap field's validation. */
+async function checkDefaults(pg) {
+  const title = await pg.title();
+  check(title === 'Gear Sync Analysis', `title is '${title}'`);
+  for (const [sel, v] of Object.entries({ '#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL })) {
+    const got = await fieldValue(pg, sel);
+    check(got === v, `default ${sel} is '${got}', expected '${v}'`);
+  }
+  check(!(await pg.locator('#sync').isChecked()), 'sync is on by default');
+  check(await pg.locator('#cap').isDisabled(), 'the cap field is enabled while sync is off');
+  await expect(pg.locator('#no-job')).toBeVisible(); // no job yet: no gear table
+  await checkCapValidation(pg);
+}
+
+// ---------- checks: Gear optimizer ----------
 
 // The numbers the page must show come from src/core (smoke-core.mjs), computed in a worker thread.
 let coreWorker;
@@ -434,94 +520,6 @@ async function checkTypingDebounce(pg) {
   check((await runs()) - before === 1, 'Optimize did not run the optimizer once');
   await expect(pg.locator('#o-stale')).toBeHidden();
   await expect(pg.locator('#o-time')).toHaveText(/^Solved in \d+ ms\.$/);
-}
-
-/** Switching job takes effect at once (nothing is lost but the job-specific choices, so the page does not ask) and
- * puts the optimizer target back to the main stat. */
-async function checkJobSwitch(pg) {
-  await setJob(pg, 'WAR');
-  await waitOptimizer(pg);
-  await pg.selectOption('#o-target', 'crit');
-  await waitOptimizer(pg);
-  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'crit');
-  await pg.click('[data-job-id="GNB"]'); // same role as WAR
-  await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'GNB');
-  const t = await pg.inputValue('#o-target');
-  check(t === 'main', `after a job switch the target is '${t}'`);
-  // the other job's result goes: Optimize finds this one's
-  await expect(pg.locator('#o-none')).toBeVisible();
-  await waitOptimizer(pg);
-  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
-}
-
-// Gear browser rings window: [job, item level from, item level to, equip level up to].
-const RINGS_WINDOW = ['SGE', 140, 150, 60];
-
-/** Set the gear browser's filters to an item level window (name filter cleared). */
-async function fillBrowser(pg, lo, hi, lvl, slot = 'any') {
-  await showTab(pg, 'browse');
-  await pg.fill('#b-q', '');
-  await allExpansions(pg);
-  await pg.fill('#b-min', String(lo));
-  await pg.fill('#b-max', String(hi));
-  await pg.fill('#b-lvl', String(lvl));
-  await pg.click(`#b-slots [data-slot="${slot}"]`); // after the filters, so its pill has matches
-}
-
-const browserRows = pg => pg.locator('#gear-table tbody tr[data-key]');
-
-/** The gear browser marks every non-Unique ring x2 (it can be worn on both hands) and no Unique one. */
-async function checkRingCopies(pg) {
-  const [job, lo, hi, lvl] = RINGS_WINDOW;
-  const want = await coreRings(job, lo, hi, lvl);
-  if (!check(want.x2 > 0 && want.x2 < want.count, `${job} rings ${lo}-${hi}: no mix of Unique and non-Unique rings; pick another window`))
-    return;
-  await setJob(pg, job);
-  await fillBrowser(pg, lo, hi, lvl, 'ring');
-  await expect(pg.locator('#b-count')).toHaveText(`${want.count} matches`);
-  // the ring pill counts them; Reset filters shows while filters are set
-  await expect(pg.locator('#b-slots [data-slot="ring"] .n')).toHaveText(String(want.count));
-  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(pg.locator('#b-reset')).toBeVisible();
-  await expect(browserRows(pg)).toHaveCount(want.count);
-  await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
-  // a heading sorts by its column, and again the other way
-  // the sort goes by the piece's own item level: the muted line's on a synced row, else the cell's
-  const ilvls = () =>
-    pg
-      .locator('#gear-table tbody tr[data-key] td[data-col="ilvl"]')
-      .evaluateAll(cells => cells.map(c => Number((c.querySelector('.was') ?? c).textContent)));
-  const ilvlHead = pg.locator('#gear-table th:has([data-sort="ilvl"])');
-  await pg.click('#gear-table [data-sort="ilvl"]');
-  await expect(ilvlHead).toHaveAttribute('aria-sort', 'ascending');
-  const up = await ilvls();
-  check(
-    up.every((v, i) => !i || up[i - 1] <= v),
-    `ilvl ascending is not sorted: ${up}`,
-  );
-  await pg.click('#gear-table [data-sort="ilvl"]');
-  await expect(ilvlHead).toHaveAttribute('aria-sort', 'descending');
-  // the column under the pointer is tinted, its cells and its heading alike
-  await pg.hover('#gear-table tbody tr[data-key] td[data-col="crit"] >> nth=0');
-  await expect(pg.locator('#gear-table')).toHaveAttribute('data-col', 'crit');
-  const tint = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="crit"]', e => getComputedStyle(e).backgroundColor);
-  const plain = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="det"]', e => getComputedStyle(e).backgroundColor);
-  check(tint !== plain, `the hovered column is not tinted (${tint} vs ${plain})`);
-  // "/" jumps to the search, and the word is marked in the names; Reset filters clears every filter and hides
-  await pg.locator('#b-count').click();
-  await pg.keyboard.press('/');
-  await pg.waitForFunction(() => document.activeElement?.id === 'b-q');
-  await pg.keyboard.type('ring');
-  await expect(pg.locator('#gear-table tbody tr[data-key] .mark').first()).toHaveText(/ring/i);
-  // a value below a filter's range moves to its lowest value on leaving the box, shown there (not "no limit")
-  await setNumber(pg, '#b-min', '-5');
-  await expect(pg.locator('#b-min')).toHaveValue('1');
-  await pg.click('#b-reset');
-  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(pg.locator('#b-q')).toHaveValue('');
-  await expect(pg.locator('#b-min')).toHaveValue('');
-  await expect(pg.locator('#b-reset')).toBeHidden();
-  await expect(pg.locator('#gear-table th:has([data-sort="ilvl"])')).toHaveAttribute('aria-sort', 'descending'); // the sort stays
 }
 
 /** The ticked "Gear from" boxes of the optimizer (pre 'o') or the browser ('b'), in ACTIVITIES order, read from the DOM
@@ -883,6 +881,399 @@ async function checkTargetGcd(pg) {
   await pg.screenshot({ path: shot('target-gcd.png'), fullPage: true });
 }
 
+/** Other pieces with the same result (roadmap A9), at the shared setup (Sage, level 50, item level 123), where every
+ * row has others: at NARROW width, the weapon row's menu opens without a sideways scroll; a piece picked from it is what
+ * the row shows, the result stays the same, the menu closes; any setting change clears the pick. */
+async function checkSameResult(pg) {
+  await pg.setViewportSize(NARROW);
+  await waitOptimizer(pg);
+  const button = pg.locator('#o-table .same-btn').first();
+  await expect(button).toBeVisible();
+  // every row here reaches the caps: the key above the table says what the bar means
+  await expect(pg.locator('#o-key')).toContainText('at this piece');
+  await pg.hover('#o-table tbody td[data-col="crit"] >> nth=0');
+  await expect(pg.locator('#o-table table')).toHaveAttribute('data-col', 'crit');
+  const total = await optTotal(pg).innerText();
+  const first = await button.locator('span').first().innerText();
+  await button.click();
+  const menu = pg.locator('#o-table .same-menu').first();
+  await expect(menu).toBeVisible();
+  check(!(await hasHScroll(pg)), 'the same-result menu scrolls the page sideways at 960 px');
+  // scrolled under the sticky headings, a row's menu button stays below them (it drew over them)
+  await pg.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  const covered = await pg.evaluate(() => {
+    const head = document.querySelector('#o-table thead th');
+    const row = document.querySelectorAll('#o-table .same-btn')[1];
+    window.scrollBy(0, row.getBoundingClientRect().top - 4); // the row to the window's top, where the headings stick
+    const h = head.getBoundingClientRect();
+    const b = row.getBoundingClientRect();
+    const hit = document.elementFromPoint(b.left + 10, h.top + h.height / 2);
+    return hit?.closest('th') ? '' : hit?.outerHTML.slice(0, 80);
+  });
+  check(!covered, `a row's menu button draws over the table's sticky headings: ${covered}`);
+  await button.click();
+  await expect(menu).toBeVisible();
+  // its search box takes the keys; a search that matches nothing says so, and Clear search brings the pieces back
+  const search = menu.locator('input[type="text"]');
+  await pg.waitForFunction(() => document.activeElement?.matches('#o-table .same-menu input'));
+  const count = await menu.locator('.same-item').count();
+  await search.fill('zzzz');
+  await expect(menu.locator('.same-item')).toHaveCount(0);
+  await expect(menu.locator('.menu-empty')).toContainText('No piece matches "zzzz".');
+  await menu.locator('.menu-empty button').click();
+  await expect(menu.locator('.same-item')).toHaveCount(count);
+  const other = menu.locator('.same-item:not(.on)').first();
+  const name = await other.locator('span span').first().innerText();
+  await other.click();
+  await expect(menu).toBeHidden();
+  await expect(button.locator('span').first()).toHaveText(name);
+  await expect(optTotal(pg)).toHaveText(total);
+  await checkNoBadText(pg, 'same result/picked');
+  // a setting change leaves the result out of date, its menus off; Optimize gives a new result, and the rows start
+  // again from the easiest pieces
+  await pg.selectOption('#o-tb1', 'crit');
+  await expect(pg.locator('#o-stale')).toBeVisible();
+  // a stat holds one rank of the goal: a tiebreak hides Maximize's stat, and Maximize set to Tiebreak 1's swaps them
+  await expect(pg.locator('#o-tb1 option[value="main"]')).toHaveCount(0);
+  await expect(pg.locator('#o-tb2 option[value="crit"]')).toHaveCount(0);
+  await pg.selectOption('#o-target', 'crit');
+  check((await pg.inputValue('#o-tb1')) === 'main', 'Maximize set to the stat of Tiebreak 1 did not swap them');
+  await pg.selectOption('#o-target', 'main');
+  await pg.selectOption('#o-tb1', '');
+  await waitOptimizer(pg);
+  await expect(button.locator('span').first()).toHaveText(first);
+}
+
+// ---------- checks: Gear browser ----------
+
+// Gear browser rings window: [job, item level from, item level to, equip level up to].
+const RINGS_WINDOW = ['SGE', 140, 150, 60];
+
+/** Set the gear browser's filters to an item level window (name filter cleared). */
+async function fillBrowser(pg, lo, hi, lvl, slot = 'any') {
+  await showTab(pg, 'browse');
+  await pg.fill('#b-q', '');
+  await allExpansions(pg);
+  await pg.fill('#b-min', String(lo));
+  await pg.fill('#b-max', String(hi));
+  await pg.fill('#b-lvl', String(lvl));
+  await pg.click(`#b-slots [data-slot="${slot}"]`); // after the filters, so its pill has matches
+}
+
+const browserRows = pg => pg.locator('#gear-table tbody tr[data-key]');
+
+/** The gear browser marks every non-Unique ring x2 (it can be worn on both hands) and no Unique one. */
+async function checkRingCopies(pg) {
+  const [job, lo, hi, lvl] = RINGS_WINDOW;
+  const want = await coreRings(job, lo, hi, lvl);
+  if (!check(want.x2 > 0 && want.x2 < want.count, `${job} rings ${lo}-${hi}: no mix of Unique and non-Unique rings; pick another window`))
+    return;
+  await setJob(pg, job);
+  await fillBrowser(pg, lo, hi, lvl, 'ring');
+  await expect(pg.locator('#b-count')).toHaveText(`${want.count} matches`);
+  // the ring pill counts them; Reset filters shows while filters are set
+  await expect(pg.locator('#b-slots [data-slot="ring"] .n')).toHaveText(String(want.count));
+  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#b-reset')).toBeVisible();
+  await expect(browserRows(pg)).toHaveCount(want.count);
+  await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
+  // a heading sorts by its column, and again the other way
+  // the sort goes by the piece's own item level: the muted line's on a synced row, else the cell's
+  const ilvls = () =>
+    pg
+      .locator('#gear-table tbody tr[data-key] td[data-col="ilvl"]')
+      .evaluateAll(cells => cells.map(c => Number((c.querySelector('.was') ?? c).textContent)));
+  const ilvlHead = pg.locator('#gear-table th:has([data-sort="ilvl"])');
+  await pg.click('#gear-table [data-sort="ilvl"]');
+  await expect(ilvlHead).toHaveAttribute('aria-sort', 'ascending');
+  const up = await ilvls();
+  check(
+    up.every((v, i) => !i || up[i - 1] <= v),
+    `ilvl ascending is not sorted: ${up}`,
+  );
+  await pg.click('#gear-table [data-sort="ilvl"]');
+  await expect(ilvlHead).toHaveAttribute('aria-sort', 'descending');
+  // the column under the pointer is tinted, its cells and its heading alike
+  await pg.hover('#gear-table tbody tr[data-key] td[data-col="crit"] >> nth=0');
+  await expect(pg.locator('#gear-table')).toHaveAttribute('data-col', 'crit');
+  const tint = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="crit"]', e => getComputedStyle(e).backgroundColor);
+  const plain = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="det"]', e => getComputedStyle(e).backgroundColor);
+  check(tint !== plain, `the hovered column is not tinted (${tint} vs ${plain})`);
+  // "/" jumps to the search, and the word is marked in the names; Reset filters clears every filter and hides
+  await pg.locator('#b-count').click();
+  await pg.keyboard.press('/');
+  await pg.waitForFunction(() => document.activeElement?.id === 'b-q');
+  await pg.keyboard.type('ring');
+  await expect(pg.locator('#gear-table tbody tr[data-key] .mark').first()).toHaveText(/ring/i);
+  // a value below a filter's range moves to its lowest value on leaving the box, shown there (not "no limit")
+  await setNumber(pg, '#b-min', '-5');
+  await expect(pg.locator('#b-min')).toHaveValue('1');
+  await pg.click('#b-reset');
+  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#b-q')).toHaveValue('');
+  await expect(pg.locator('#b-min')).toHaveValue('');
+  await expect(pg.locator('#b-reset')).toBeHidden();
+  await expect(pg.locator('#gear-table th:has([data-sort="ilvl"])')).toHaveAttribute('aria-sort', 'descending'); // the sort stays
+}
+
+/** The Expansion dropdown's checkboxes, with the dropdown opened. */
+async function expBoxes(pg) {
+  if ((await pg.locator('#b-exp').getAttribute('aria-expanded')) !== 'true') await pg.click('#b-exp');
+  return pg.locator('#b-exp-menu input');
+}
+
+/** Tick every expansion in the gear browser again, then close the dropdown. */
+async function allExpansions(pg) {
+  for (const box of await (await expBoxes(pg)).all()) if (!(await box.isChecked())) await box.check();
+  await pg.keyboard.press('Escape');
+}
+
+/** Every expansion is ticked by default; with only Endwalker ticked, the browser keeps gear of its equip level band
+ * (81 to 90) and the button names it; the choice is saved. */
+async function checkExpansionFilter(pg) {
+  await setJob(pg, 'WHM');
+  await showTab(pg, 'browse');
+  await expect(pg.locator('#b-exp')).toHaveText('All expansions'); // the default, before any filter is filled in
+  await fillBrowser(pg, '', '', 100);
+  await expect(pg.locator('#b-exp')).toHaveText('All expansions');
+  const boxes = await expBoxes(pg);
+  const all = await boxes.all();
+  let allTicked = true;
+  for (const b of all) allTicked = allTicked && (await b.isChecked());
+  check(all.length === 6 && allTicked, 'every expansion is ticked by default');
+  for (const b of all) if ((await b.getAttribute('data-exp')) !== 'EW') await b.uncheck();
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#b-exp-menu')).toBeHidden();
+  await expect(pg.locator('#b-exp')).toHaveText('Endwalker');
+  await waitSaved(pg, "s => s.browse.expOff.join() === 'ARR,HW,SB,ShB,DT'");
+  const lv = await pg.locator('#gear-table tbody tr td:nth-child(3)').allInnerTexts();
+  check(
+    lv.length > 0 && lv.every(x => Number.parseInt(x, 10) >= 81 && Number.parseInt(x, 10) <= 90),
+    `Endwalker rows outside equip level 81-90: ${[...new Set(lv)].sort()}`,
+  );
+  await allExpansions(pg);
+  await setUpShared(pg); // back to Sage for the next step
+}
+
+/** PLD (1H weapon + shield) offers an Off-hand slot in the browser; two-handed jobs do not. */
+async function checkPldOffhand(pg) {
+  await setJob(pg, 'PLD');
+  await showTab(pg, 'browse');
+  // the slot pills (data-slot keys); waited for, since the list is worked out after the job switch
+  await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(1);
+  await pg.screenshot({ path: shot('browser.png'), fullPage: true });
+  await setJob(pg, 'WAR');
+  await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(0);
+}
+
+// ---------- checks: How the math works: Piece stats, Substat tiers, GCD ----------
+
+/** Piece stats at cap 123: for every slot, a piece above the cap is cut to the slot's caps, so its main stat and 1st
+ * substat bars end at the known values. A shield job has an Off-hand slot, a two-handed job does not. */
+async function checkSyncCaps(pg, job) {
+  await showMath(pg, 'piece');
+  const slots = await pg.locator('#p-slot option').allInnerTexts();
+  check(ONE_HANDED.has(job) === slots.includes('Off-hand'), `${job}: Piece stats slots ${JSON.stringify(slots)}`);
+  const caps = ONE_HANDED.has(job) ? CAPS_123 : { ...CAPS_123, Weapon: CAPS_123_2H_WEAPON };
+  for (const [slot, [sub, main]] of Object.entries(caps)) {
+    await pg.selectOption('#p-slot', { label: slot });
+    await setNumber(pg, '#p-ilvl', '160'); // above the cap, inside the slider's range
+    await expect(pg.locator('#p-lead')).toContainText('Synced to 123');
+    const kept = await pg.locator('#p-bars .num b').allInnerTexts(); // main stat, Vitality, 1st and 2nd substat
+    check(kept[0] === String(main), `${job}: ${slot} main stat cap '${kept[0]}', expected ${main}`);
+    check(kept[2] === String(sub), `${job}: ${slot} substat cap '${kept[2]}', expected ${sub}`);
+  }
+  await pg.selectOption('#p-slot', { label: 'Head' });
+  await pg.click('#p-ilvl-reset');
+}
+
+/** Opens Piece stats' "Each stat, step by step" if it is closed. */
+async function openSteps(pg) {
+  if (!(await pg.locator('#p-steps').evaluate(d => d.open))) await pg.click('#p-steps > summary');
+}
+
+/** A closed details panel ("Each stat, step by step") is only its summary plus padding: the flex gap of the panel must
+    not add space for the hidden content (it added 14 px, 2026-10-17). */
+async function checkClosedPanel(pg) {
+  await showMath(pg, 'piece');
+  if (await pg.locator('#p-steps').evaluate(d => d.open)) await pg.click('#p-steps > summary');
+  const extra = await pg.locator('#p-steps').evaluate(d => {
+    const cs = getComputedStyle(d);
+    const frame = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + parseFloat(cs[k]), 0);
+    return d.getBoundingClientRect().height - frame - d.querySelector('summary').getBoundingClientRect().height;
+  });
+  check(Math.abs(extra) < 1, `closed #p-steps has ${extra.toFixed(1)} px beyond its summary and padding`);
+}
+
+/** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
+async function checkPieceLab(pg) {
+  await showMath(pg, 'piece');
+  await pg.selectOption('#p-slot', 'head');
+  await pg.selectOption('#p-s1', 'spd');
+  await pg.selectOption('#p-s2', 'spec');
+  await setNumber(pg, '#p-ilvl', '130');
+  await openSteps(pg);
+  await expect(pg.locator('#p-out thead')).toContainText('This head (item level 130)');
+  await expect(pg.locator('#p-out tbody tr')).toHaveCount(4);
+  await expect(pg.locator('#p-s3')).toHaveCount(0); // no third rank: a third line exists only as healer Direct Hit
+  // columns: stat (name, then its share), this head (its value first), the head at the cap (the ceiling), in the duty
+  const rows = await tableRows(pg, '#p-out');
+  const byStat = Object.fromEntries(
+    rows.map(r => [r[0].split('\n')[0], { raw: parseInt(r[1], 10), ceiling: parseInt(r[2], 10), duty: parseInt(r[3], 10) }]),
+  );
+  const expected = { Mind: 33, Vitality: 32, 'Spell Speed': 31, Piety: 22 };
+  for (const [stat, v] of Object.entries(expected)) {
+    check(byStat[stat]?.raw === v, `Piece stats ilvl 130 head ${stat} raw ${byStat[stat]?.raw}, expected ${v}`);
+  }
+  // 130 is above the 123 cap: the head caps (29 substat, 30 main) are the ceiling, and the duty keeps the lower number
+  check(
+    byStat.Mind?.ceiling === 30 && byStat['Spell Speed']?.ceiling === 29 && byStat.Mind?.duty === 30 && byStat['Spell Speed']?.duty === 29,
+    `Piece stats ceiling / duty Mind ${byStat.Mind?.ceiling}/${byStat.Mind?.duty}, Spell Speed ${byStat['Spell Speed']?.ceiling}/${byStat['Spell Speed']?.duty}, expected 30/30 and 29/29`,
+  );
+  await expect(pg.locator('#p-slices span.on')).toHaveText(/Head\s*8\.5%/);
+  // the explainer: the item level 130 head against the melded item level 123 head, and the curve
+  await expect(pg.locator('#p-vs')).toContainText('melded');
+  await expect(pg.locator('#p-vs b')).toContainText(' more.');
+  await expect(pg.locator('#p-curve-chart svg')).toBeVisible();
+  await pg.click('#p-ilvl-reset');
+}
+
+// How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
+// starts at 613 on the panel (gear speed 193; validation.md section 5).
+
+/** Tiers (Sage, level 100, item level sync off): each value starts at its base; a typed Spell Speed lands in
+ * AkhMorning's tier; a value out of range is held to it, with no note; a level typed into the settings shows its tiers while the field still has focus (no change
+ * event, no typing wait); a level typed into the sub-tab's own box holds when the settings' level changes, and an
+ * empty box goes back to the settings' level; with sync on and no cap there is no "enter a sync cap" message on Tiers; Paladin's Tenacity
+ * has two effect columns; no sideways scroll at NARROW. */
+async function checkTiers(pg) {
+  await pg.setViewportSize(NARROW);
+  await setJob(pg, 'SGE');
+  await showMath(pg, 'tiers');
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', '100');
+  await expect(pg.locator('#t-level')).toHaveValue('100');
+  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
+  await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
+  await setNumber(pg, '#t-table [data-n="spd"]', '624');
+  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').first()).toHaveText('613');
+  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
+
+  // a value under the base is shown at the base, a speed above the most any job can have at the most; no note
+  await setNumber(pg, '#t-table [data-n="crit"]', '5');
+  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
+  await setNumber(pg, '#t-table [data-n="spd"]', '99999');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('3679');
+  await setNumber(pg, '#t-table [data-n="spd"]', '624');
+
+  // the level follows each valid keystroke, while the field keeps focus
+  await pg.focus('#level');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('90');
+  await expect(pg.locator('#t-level')).toHaveValue('90');
+  check((await pg.evaluate(() => document.activeElement?.id)) === 'level', 'the level field lost focus while typing');
+  await pg.keyboard.press('Tab');
+
+  // the sub-tab's own level: Spell Speed's base at level 80 while the settings say 50, kept when they say 60; an empty
+  // box goes back to the settings' level
+  await setNumber(pg, '#level', '50');
+  await setNumber(pg, '#t-level', '80');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
+  await setNumber(pg, '#level', '60');
+  await expect(pg.locator('#t-level')).toHaveValue('80');
+  await setNumber(pg, '#t-level', '');
+  await expect(pg.locator('#t-level')).toHaveValue('60');
+  await setNumber(pg, '#level', '90');
+  await expect(pg.locator('#t-level')).toHaveValue('90');
+
+  // the sub-tab's level follows each valid keystroke too (no Enter needed), and keeps focus
+  await pg.focus('#t-level');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('80');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
+  check((await pg.evaluate(() => document.activeElement?.id)) === 't-level', 'the tiers level box lost focus while typing');
+  await setNumber(pg, '#t-level', '');
+  await expect(pg.locator('#t-level')).toHaveValue('90');
+
+  // a ? note says what the substat does and how big its tiers are here (level 90 DIV 1900: 1900/200 = 9.5)
+  await pg.click('#t-table [data-help="crit"]');
+  await expect(pg.locator('#t-pop')).toContainText('At level 90, each tier is 9 or 10 points.');
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#t-pop')).toBeHidden();
+
+  // sync settings do not matter here
+  await pg.locator('#sync').check();
+  await setNumber(pg, '#cap', '');
+  await expect(pg.locator('#t-table')).toBeVisible();
+  check(!(await pg.isVisible('#m-off')), 'the "enter a sync cap" message shows on Tiers');
+
+  await setJob(pg, 'PLD');
+  const names = (await pg.locator('#t-table tr.lcols th').allInnerTexts()).map(t => t.trim().toLowerCase());
+  check(same(names.slice(-3), ['from', 'dmg & heal', 'dmg taken']), `Paladin's Tenacity columns: ${JSON.stringify(names)}`);
+  await checkNoBadText(pg, 'math:tiers');
+  check(!(await hasHScroll(pg)), `Tiers: horizontal page scroll at ${NARROW.width} px`);
+  await pg.screenshot({ path: shot('tiers.png'), fullPage: true });
+  await setUpShared(pg); // the job, cap and level the next step starts from
+}
+
+/** How the math works, GCD: its own level (the synced level until one is typed), haste and speed. The level box waits
+ * for typing to stop and corrects a level out of range (its note as hover text); the speed box holds a typed speed to the level's
+ * range once typing stops; a row or a bar clicked sets the speed or the level; a haste marks its levels; Piece stats'
+ * controls stay off the tab, and the step table never has empty rows. */
+async function checkGcdTab(pg) {
+  await showMath(pg, 'gcd');
+  await expect(pg.locator('#p-slot')).toBeHidden();
+  await expect(pg.locator('#p-range')).toBeHidden();
+  await expect(pg.locator('#g-level')).toHaveValue('50');
+  // the base: 341 at level 50, its step first in the table, no empty rows
+  await expect(pg.locator('#g-speed')).toHaveValue('341');
+  await expect(pg.locator('#g-table tbody tr')).toHaveCount(13);
+  check((await pg.locator('#g-table tbody tr').first().getAttribute('class'))?.includes('cur'), 'at the base the base step is not first');
+  // the speed box waits for typing to stop, then holds the speed to the range ("1" is the base only afterwards)
+  await pg.focus('#g-speed');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('753');
+  await expect(pg.locator('#g-facts')).toContainText('2.10s');
+  await expect(pg.locator('#g-facts')).toContainText('more to reach 2.09s');
+  await expect(pg.locator('#g-table tbody tr.cur')).toHaveText(/753\s*2\.10s\s*−15\.7%/);
+  check(
+    (await pg.locator('#g-table tbody tr').nth(6).getAttribute('class'))?.includes('cur'),
+    'the step of the speed is not in the middle row',
+  );
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('1');
+  check((await pg.inputValue('#g-speed')) === '1', 'the speed box changed while typing');
+  await expect(pg.locator('#g-speed')).toHaveValue('341');
+  await setNumber(pg, '#g-speed', '5000');
+  await expect(pg.locator('#g-speed')).toHaveValue('800');
+  await expect(pg.locator('#g-most')).toHaveText('800, any job and sync');
+  // a row sets the speed; the steps past the most are greyed out and do nothing
+  await pg.locator('#g-table tbody tr:not(.out)').nth(2).click();
+  check((await pg.inputValue('#g-speed')) !== '800', 'a row click did not set the speed');
+  await pg.click('#g-reset');
+  await expect(pg.locator('#g-speed')).toHaveValue('341');
+  // the level box: a level out of range is corrected once typing stops, the note as hover text; a bar sets the level
+  await pg.focus('#g-level');
+  await pg.keyboard.press('Control+A');
+  await pg.keyboard.type('150');
+  await expect(pg.locator('#g-level')).toHaveValue('100');
+  await expect(pg.locator('#g-level')).toHaveAttribute('title', 'Lowered to 100, the highest level.');
+  await expect(pg.locator('#g-speed')).toHaveValue('420');
+  await pg.locator('#g-chart [data-level="78"]').click();
+  await expect(pg.locator('#g-level')).toHaveValue('78');
+  // a haste: its levels marked on the chart, its percent among the facts
+  await pg.selectOption('#g-haste', 'SAM');
+  await expect(pg.locator('#g-chart .hasteline')).toHaveCount(2);
+  await expect(pg.locator('#g-facts')).toContainText('haste (Fuka)');
+  await checkNoBadText(pg, 'math:gcd');
+  await pg.selectOption('#g-haste', '');
+  await setNumber(pg, '#g-level', '');
+  await expect(pg.locator('#g-level')).toHaveValue('50');
+}
+
+// ---------- checks: Saved state: reload, damaged storage, Reset to defaults ----------
+
 /** Build a non-default state (job, cap, sync off, level, optimizer target, tiebreaks and Gear from boxes, browser
  * filters, Gear from boxes and market board switch, Piece stats slot and item level, Gear optimizer tab open), reload, and every part comes
  * back: the inputs, the open tab and the same optimizer total. Nothing like a gear pool is saved. */
@@ -1078,117 +1469,7 @@ async function checkReset(pg) {
   await setNumber(pg, '#level', '50');
 }
 
-/** With sync on, the cap field asks for a cap while empty and for a whole item level in range. The message sits
- * under the field, so the label stays on one line and the cap input lines up with the synced level input. */
-async function checkCapValidation(pg) {
-  await pg.locator('#sync').check();
-  await expect(pg.locator('#cap-error')).toHaveText('Enter a sync cap');
-  check((await pg.getAttribute('#cap', 'aria-invalid')) === 'true', 'an empty cap with sync on is not marked invalid');
-  const lay = await pg.evaluate(() => {
-    const lab = document.querySelector('label[for=cap]');
-    const top = s => document.querySelector(s).getBoundingClientRect().top;
-    return { em: lab.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(lab).fontSize), dy: top('#cap') - top('#level') };
-  });
-  check(lay.em < 2, `the sync cap label wraps (${lay.em.toFixed(1)} em high) while it asks for a cap`);
-  check(Math.abs(lay.dy) < 1, `the cap input is ${lay.dy.toFixed(0)} px off the synced level input`);
-  // the ranges next to the labels
-  await expect(pg.locator('#level-range')).toHaveText('1–100');
-  await expect(pg.locator('#cap-range')).toHaveText('1–795');
-  // not a whole item level: an error, and the page keeps its last cap
-  await pg.fill('#cap', '0');
-  await expect(pg.locator('#cap-error')).toContainText('Enter a whole item level from 1 to');
-  await pg.fill('#cap', '123');
-  await expect(pg.locator('#cap-error')).toBeHidden();
-  // the cap follows the level: at level 40 cap 123 is lowered to 43, the best gear made for level 40 (capCeiling),
-  // once the level settles; back at level 50 it stays 43 (never raised), with no error either way
-  await setNumber(pg, '#level', '40');
-  await expect(pg.locator('#cap')).toHaveValue('43');
-  await expect(pg.locator('#cap-error')).toBeHidden();
-  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 43, the highest for level 40.');
-  check(await pg.locator('#cap').evaluate(e => e.classList.contains('lowered')), 'the lowered cap field does not flash');
-  await setNumber(pg, '#level', '50');
-  await expect(pg.locator('#cap')).toHaveValue('43');
-  await expect(pg.locator('#cap-lowered')).toBeHidden(); // the note goes with the next change
-  // a cap entered above what the level allows is lowered once it commits
-  await pg.fill('#cap', '500');
-  await expect(pg.locator('#cap')).toHaveValue('135');
-  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
-  // above the highest real item level too: lowered the same way, not an error
-  await pg.fill('#cap', '999');
-  await expect(pg.locator('#cap')).toHaveValue('135');
-  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
-  await expect(pg.locator('#cap-error')).toBeHidden();
-  // the up arrow at the limit (owner's report, 2026-10-18): each press is lowered again, and the note stays put rather
-  // than hiding and showing (the panel jumped); the field flashes again instead
-  await pg.evaluate(() => {
-    window.__noteHidden = 0;
-    const note = document.querySelector('#cap-lowered');
-    new MutationObserver(() => {
-      if (note.style.display === 'none') window.__noteHidden++;
-    }).observe(note, { attributes: true, attributeFilter: ['style'] });
-  });
-  await pg.locator('#cap').focus();
-  for (let i = 0; i < 5; i++) {
-    await pg.keyboard.press('ArrowUp');
-    await pg.waitForTimeout(60);
-  }
-  await pg.waitForTimeout(400);
-  await expect(pg.locator('#cap')).toHaveValue('135');
-  await expect(pg.locator('#cap-lowered')).toHaveText('Lowered to 135, the highest for level 50.');
-  check((await pg.evaluate(() => window.__noteHidden)) === 0, 'the lowered note hides and shows again on the up arrow');
-  await pg.fill('#cap', '123');
-  await setNumber(pg, '#level', '100');
-  await pg.locator('#sync').uncheck();
-}
-
-/** The Expansion dropdown's checkboxes, with the dropdown opened. */
-async function expBoxes(pg) {
-  if ((await pg.locator('#b-exp').getAttribute('aria-expanded')) !== 'true') await pg.click('#b-exp');
-  return pg.locator('#b-exp-menu input');
-}
-
-/** Tick every expansion in the gear browser again, then close the dropdown. */
-async function allExpansions(pg) {
-  for (const box of await (await expBoxes(pg)).all()) if (!(await box.isChecked())) await box.check();
-  await pg.keyboard.press('Escape');
-}
-
-/** Every expansion is ticked by default; with only Endwalker ticked, the browser keeps gear of its equip level band
- * (81 to 90) and the button names it; the choice is saved. */
-async function checkExpansionFilter(pg) {
-  await setJob(pg, 'WHM');
-  await showTab(pg, 'browse');
-  await expect(pg.locator('#b-exp')).toHaveText('All expansions'); // the default, before any filter is filled in
-  await fillBrowser(pg, '', '', 100);
-  await expect(pg.locator('#b-exp')).toHaveText('All expansions');
-  const boxes = await expBoxes(pg);
-  const all = await boxes.all();
-  let allTicked = true;
-  for (const b of all) allTicked = allTicked && (await b.isChecked());
-  check(all.length === 6 && allTicked, 'every expansion is ticked by default');
-  for (const b of all) if ((await b.getAttribute('data-exp')) !== 'EW') await b.uncheck();
-  await pg.keyboard.press('Escape');
-  await expect(pg.locator('#b-exp-menu')).toBeHidden();
-  await expect(pg.locator('#b-exp')).toHaveText('Endwalker');
-  await waitSaved(pg, "s => s.browse.expOff.join() === 'ARR,HW,SB,ShB,DT'");
-  const lv = await pg.locator('#gear-table tbody tr td:nth-child(3)').allInnerTexts();
-  check(
-    lv.length > 0 && lv.every(x => Number.parseInt(x, 10) >= 81 && Number.parseInt(x, 10) <= 90),
-    `Endwalker rows outside equip level 81-90: ${[...new Set(lv)].sort()}`,
-  );
-  await allExpansions(pg);
-}
-
-/** PLD (1H weapon + shield) offers an Off-hand slot in the browser; two-handed jobs do not. */
-async function checkPldOffhand(pg) {
-  await setJob(pg, 'PLD');
-  await showTab(pg, 'browse');
-  // the slot pills (data-slot keys); waited for, since the list is worked out after the job switch
-  await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(1);
-  await pg.screenshot({ path: shot('browser.png'), fullPage: true });
-  await setJob(pg, 'WAR');
-  await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(0);
-}
+// ---------- checks: Across the tabs: level sync, and every tab for each job at 960 px ----------
 
 // Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
 // capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per
@@ -1197,70 +1478,6 @@ const HEAD_MAIN_CAP_660 = 248;
 const HEAD_SUB_CAP_660 = '184';
 
 const hasHScroll = pg => pg.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-
-/** Other pieces with the same result (roadmap A9), at the shared setup (Sage, level 50, item level 123), where every
- * row has others: at NARROW width, the weapon row's menu opens without a sideways scroll; a piece picked from it is what
- * the row shows, the result stays the same, the menu closes; any setting change clears the pick. */
-async function checkSameResult(pg) {
-  await pg.setViewportSize(NARROW);
-  await waitOptimizer(pg);
-  const button = pg.locator('#o-table .same-btn').first();
-  await expect(button).toBeVisible();
-  // every row here reaches the caps: the key above the table says what the bar means
-  await expect(pg.locator('#o-key')).toContainText('at this piece');
-  await pg.hover('#o-table tbody td[data-col="crit"] >> nth=0');
-  await expect(pg.locator('#o-table table')).toHaveAttribute('data-col', 'crit');
-  const total = await optTotal(pg).innerText();
-  const first = await button.locator('span').first().innerText();
-  await button.click();
-  const menu = pg.locator('#o-table .same-menu').first();
-  await expect(menu).toBeVisible();
-  check(!(await hasHScroll(pg)), 'the same-result menu scrolls the page sideways at 960 px');
-  // scrolled under the sticky headings, a row's menu button stays below them (it drew over them)
-  await pg.keyboard.press('Escape');
-  await expect(menu).toBeHidden();
-  const covered = await pg.evaluate(() => {
-    const head = document.querySelector('#o-table thead th');
-    const row = document.querySelectorAll('#o-table .same-btn')[1];
-    window.scrollBy(0, row.getBoundingClientRect().top - 4); // the row to the window's top, where the headings stick
-    const h = head.getBoundingClientRect();
-    const b = row.getBoundingClientRect();
-    const hit = document.elementFromPoint(b.left + 10, h.top + h.height / 2);
-    return hit?.closest('th') ? '' : hit?.outerHTML.slice(0, 80);
-  });
-  check(!covered, `a row's menu button draws over the table's sticky headings: ${covered}`);
-  await button.click();
-  await expect(menu).toBeVisible();
-  // its search box takes the keys; a search that matches nothing says so, and Clear search brings the pieces back
-  const search = menu.locator('input[type="text"]');
-  await pg.waitForFunction(() => document.activeElement?.matches('#o-table .same-menu input'));
-  const count = await menu.locator('.same-item').count();
-  await search.fill('zzzz');
-  await expect(menu.locator('.same-item')).toHaveCount(0);
-  await expect(menu.locator('.menu-empty')).toContainText('No piece matches "zzzz".');
-  await menu.locator('.menu-empty button').click();
-  await expect(menu.locator('.same-item')).toHaveCount(count);
-  const other = menu.locator('.same-item:not(.on)').first();
-  const name = await other.locator('span span').first().innerText();
-  await other.click();
-  await expect(menu).toBeHidden();
-  await expect(button.locator('span').first()).toHaveText(name);
-  await expect(optTotal(pg)).toHaveText(total);
-  await checkNoBadText(pg, 'same result/picked');
-  // a setting change leaves the result out of date, its menus off; Optimize gives a new result, and the rows start
-  // again from the easiest pieces
-  await pg.selectOption('#o-tb1', 'crit');
-  await expect(pg.locator('#o-stale')).toBeVisible();
-  // a stat holds one rank of the goal: a tiebreak hides Maximize's stat, and Maximize set to Tiebreak 1's swaps them
-  await expect(pg.locator('#o-tb1 option[value="main"]')).toHaveCount(0);
-  await expect(pg.locator('#o-tb2 option[value="crit"]')).toHaveCount(0);
-  await pg.selectOption('#o-target', 'crit');
-  check((await pg.inputValue('#o-tb1')) === 'main', 'Maximize set to the stat of Tiebreak 1 did not swap them');
-  await pg.selectOption('#o-target', 'main');
-  await pg.selectOption('#o-tb1', '');
-  await waitOptimizer(pg);
-  await expect(button.locator('span').first()).toHaveText(first);
-}
 
 /** Synced level 90 with item level sync off, at NARROW width: the gear browser shows the level-synced value, the
  * optimizer total is marked synced, Piece stats cuts a head to the item level 660 caps; no bad text, no horizontal
@@ -1302,112 +1519,6 @@ async function checkLevelSync(pg) {
   await pg.setViewportSize({ width: 1000, height: 900 });
 }
 
-/** Limited jobs: picking Blue Mage (level cap 80) or Beastmaster (50) clamps the synced level and the equip level
- * filter to the cap, both inputs' maximum follows it, and a typed level above the cap is not taken. */
-async function checkJobLevelCap(pg) {
-  await setJob(pg, 'SGE');
-  await showTab(pg, 'browse');
-  await setNumber(pg, '#level', '100');
-  await setNumber(pg, '#b-lvl', '100');
-  for (const [job, cap] of [
-    ['BLU', '80'],
-    ['BST', '50'],
-  ]) {
-    await setJob(pg, job);
-    for (const sel of ['#level', '#b-lvl']) {
-      await expect(pg.locator(sel)).toHaveValue(cap);
-      const max = await pg.getAttribute(sel, 'max');
-      check(max === cap, `${job}: ${sel} max is '${max}', expected ${cap}`);
-    }
-  }
-  await waitSaved(pg, "s => s.job === 'BST' && s.level === 50");
-  await setNumber(pg, '#level', '70');
-  await pg.waitForTimeout(400); // longer than the save debounce
-  const level = await pg.evaluate(`JSON.parse(localStorage.getItem("${STORE_KEY}")).level`);
-  check(level === 50, `BST: a typed level 70 was taken (saved level ${JSON.stringify(level)})`);
-  await setNumber(pg, '#level', '40');
-  await waitSaved(pg, 's => s.level === 40');
-  await setNumber(pg, '#level', '50'); // the shared setup
-  await setJob(pg, 'SGE');
-}
-
-// How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
-// starts at 613 on the panel (gear speed 193; validation.md section 5).
-
-/** Tiers (Sage, level 100, item level sync off): each value starts at its base; a typed Spell Speed lands in
- * AkhMorning's tier; a value out of range is held to it, with no note; a level typed into the settings shows its tiers while the field still has focus (no change
- * event, no typing wait); a level typed into the sub-tab's own box holds when the settings' level changes, and an
- * empty box goes back to the settings' level; with sync on and no cap there is no "enter a sync cap" message on Tiers; Paladin's Tenacity
- * has two effect columns; no sideways scroll at NARROW. */
-async function checkTiers(pg) {
-  await pg.setViewportSize(NARROW);
-  await setJob(pg, 'SGE');
-  await showMath(pg, 'tiers');
-  await pg.locator('#sync').uncheck();
-  await setNumber(pg, '#level', '100');
-  await expect(pg.locator('#t-level')).toHaveValue('100');
-  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
-  await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
-  await setNumber(pg, '#t-table [data-n="spd"]', '624');
-  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').first()).toHaveText('613');
-  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
-
-  // a value under the base is shown at the base, a speed above the most any job can have at the most; no note
-  await setNumber(pg, '#t-table [data-n="crit"]', '5');
-  await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
-  await setNumber(pg, '#t-table [data-n="spd"]', '99999');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('3679');
-  await setNumber(pg, '#t-table [data-n="spd"]', '624');
-
-  // the level follows each valid keystroke, while the field keeps focus
-  await pg.focus('#level');
-  await pg.keyboard.press('Control+A');
-  await pg.keyboard.type('90');
-  await expect(pg.locator('#t-level')).toHaveValue('90');
-  check((await pg.evaluate(() => document.activeElement?.id)) === 'level', 'the level field lost focus while typing');
-  await pg.keyboard.press('Tab');
-
-  // the sub-tab's own level: Spell Speed's base at level 80 while the settings say 50, kept when they say 60; an empty
-  // box goes back to the settings' level
-  await setNumber(pg, '#level', '50');
-  await setNumber(pg, '#t-level', '80');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
-  await setNumber(pg, '#level', '60');
-  await expect(pg.locator('#t-level')).toHaveValue('80');
-  await setNumber(pg, '#t-level', '');
-  await expect(pg.locator('#t-level')).toHaveValue('60');
-  await setNumber(pg, '#level', '90');
-  await expect(pg.locator('#t-level')).toHaveValue('90');
-
-  // the sub-tab's level follows each valid keystroke too (no Enter needed), and keeps focus
-  await pg.focus('#t-level');
-  await pg.keyboard.press('Control+A');
-  await pg.keyboard.type('80');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
-  check((await pg.evaluate(() => document.activeElement?.id)) === 't-level', 'the tiers level box lost focus while typing');
-  await setNumber(pg, '#t-level', '');
-  await expect(pg.locator('#t-level')).toHaveValue('90');
-
-  // a ? note says what the substat does and how big its tiers are here (level 90 DIV 1900: 1900/200 = 9.5)
-  await pg.click('#t-table [data-help="crit"]');
-  await expect(pg.locator('#t-pop')).toContainText('At level 90, each tier is 9 or 10 points.');
-  await pg.keyboard.press('Escape');
-  await expect(pg.locator('#t-pop')).toBeHidden();
-
-  // sync settings do not matter here
-  await pg.locator('#sync').check();
-  await setNumber(pg, '#cap', '');
-  await expect(pg.locator('#t-table')).toBeVisible();
-  check(!(await pg.isVisible('#m-off')), 'the "enter a sync cap" message shows on Tiers');
-
-  await setJob(pg, 'PLD');
-  const names = (await pg.locator('#t-table tr.lcols th').allInnerTexts()).map(t => t.trim().toLowerCase());
-  check(same(names.slice(-3), ['from', 'dmg & heal', 'dmg taken']), `Paladin's Tenacity columns: ${JSON.stringify(names)}`);
-  await checkNoBadText(pg, 'math:tiers');
-  check(!(await hasHScroll(pg)), `Tiers: horizontal page scroll at ${NARROW.width} px`);
-  await pg.screenshot({ path: shot('tiers.png'), fullPage: true });
-}
-
 /** Every tab for one job: no undefined/NaN/null text, correct sync caps, page fits NARROW width. Food is on, as it is
  * for the later jobs of a sequential walk. One step per job; the last job takes the screenshot. */
 const walkJob = job => async pg => {
@@ -1442,83 +1553,18 @@ const walkJob = job => async pg => {
   if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
 };
 
-/** The checks that need a fresh page with nothing set: the title, the defaults and the cap field's validation. */
-async function checkDefaults(pg) {
-  const title = await pg.title();
-  check(title === 'Gear Sync Analysis', `title is '${title}'`);
-  for (const [sel, v] of Object.entries({ '#job': DEFAULT_JOB, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL })) {
-    const got = await fieldValue(pg, sel);
-    check(got === v, `default ${sel} is '${got}', expected '${v}'`);
-  }
-  check(!(await pg.locator('#sync').isChecked()), 'sync is on by default');
-  check(await pg.locator('#cap').isDisabled(), 'the cap field is enabled while sync is off');
-  await expect(pg.locator('#no-job')).toBeVisible(); // no job yet: no gear table
-  await checkCapValidation(pg);
-}
+// ---------- the steps, in groups, and the runner ----------
 
-/** How the math works, GCD: its own level (the synced level until one is typed), haste and speed. The level box waits
- * for typing to stop and corrects a level out of range (its note as hover text); the speed box holds a typed speed to the level's
- * range once typing stops; a row or a bar clicked sets the speed or the level; a haste marks its levels; Piece stats'
- * controls stay off the tab, and the step table never has empty rows. */
-async function checkGcdTab(pg) {
-  await setNumber(pg, '#level', '50'); // the step before leaves another level
-  await showMath(pg, 'gcd');
-  await expect(pg.locator('#p-slot')).toBeHidden();
-  await expect(pg.locator('#p-range')).toBeHidden();
-  await expect(pg.locator('#g-level')).toHaveValue('50');
-  // the base: 341 at level 50, its step first in the table, no empty rows
-  await expect(pg.locator('#g-speed')).toHaveValue('341');
-  await expect(pg.locator('#g-table tbody tr')).toHaveCount(13);
-  check((await pg.locator('#g-table tbody tr').first().getAttribute('class'))?.includes('cur'), 'at the base the base step is not first');
-  // the speed box waits for typing to stop, then holds the speed to the range ("1" is the base only afterwards)
-  await pg.focus('#g-speed');
-  await pg.keyboard.press('Control+A');
-  await pg.keyboard.type('753');
-  await expect(pg.locator('#g-facts')).toContainText('2.10s');
-  await expect(pg.locator('#g-facts')).toContainText('more to reach 2.09s');
-  await expect(pg.locator('#g-table tbody tr.cur')).toHaveText(/753\s*2\.10s\s*−15\.7%/);
-  check(
-    (await pg.locator('#g-table tbody tr').nth(6).getAttribute('class'))?.includes('cur'),
-    'the step of the speed is not in the middle row',
-  );
-  await pg.keyboard.press('Control+A');
-  await pg.keyboard.type('1');
-  check((await pg.inputValue('#g-speed')) === '1', 'the speed box changed while typing');
-  await expect(pg.locator('#g-speed')).toHaveValue('341');
-  await setNumber(pg, '#g-speed', '5000');
-  await expect(pg.locator('#g-speed')).toHaveValue('800');
-  await expect(pg.locator('#g-most')).toHaveText('800, any job and sync');
-  // a row sets the speed; the steps past the most are greyed out and do nothing
-  await pg.locator('#g-table tbody tr:not(.out)').nth(2).click();
-  check((await pg.inputValue('#g-speed')) !== '800', 'a row click did not set the speed');
-  await pg.click('#g-reset');
-  await expect(pg.locator('#g-speed')).toHaveValue('341');
-  // the level box: a level out of range is corrected once typing stops, the note as hover text; a bar sets the level
-  await pg.focus('#g-level');
-  await pg.keyboard.press('Control+A');
-  await pg.keyboard.type('150');
-  await expect(pg.locator('#g-level')).toHaveValue('100');
-  await expect(pg.locator('#g-level')).toHaveAttribute('title', 'Lowered to 100, the highest level.');
-  await expect(pg.locator('#g-speed')).toHaveValue('420');
-  await pg.locator('#g-chart [data-level="78"]').click();
-  await expect(pg.locator('#g-level')).toHaveValue('78');
-  // a haste: its levels marked on the chart, its percent among the facts
-  await pg.selectOption('#g-haste', 'SAM');
-  await expect(pg.locator('#g-chart .hasteline')).toHaveCount(2);
-  await expect(pg.locator('#g-facts')).toContainText('haste (Fuka)');
-  await checkNoBadText(pg, 'math:gcd');
-  await pg.selectOption('#g-haste', '');
-  await setNumber(pg, '#g-level', '');
-  await expect(pg.locator('#g-level')).toHaveValue('50');
-}
-
-// The steps, in groups. A group runs its steps one after the other on a fresh page (own browser context, so own saved
-// state) from the same start: Sage, sync to 123, level 50, which the steps use, and each step leaves that setup
-// behind. The groups run in parallel. `fresh` groups get the page as it loads, with nothing set. `slow` groups start
-// first. A page boot is half a second of CPU, so steps that take little are put together.
-const realGear = c => ({ name: `checkRealGearOptimizer ${c[0]}`, run: checkRealGearOptimizer(c) });
-const walk = job => ({ name: `walkJobs ${job}`, run: walkJob(job) });
-const step = fn => ({ name: fn.name, run: fn });
+// A group runs its steps one after the other on a fresh page (own browser context, so own saved state) from the shared
+// setup (SHARED_SETUP: Sage, sync to 123, level 50). The groups run in parallel. `fresh` groups get the page as it
+// loads, with nothing set. `slow` groups start first. A page boot is half a second of CPU, so steps that take little
+// are put together. A step that uses the shared setup (`shared`, every step but the job walks, which set their own
+// job) must find it: runGroup checks it before each such step after the first, names the step before when it is
+// changed, and sets it up again. To add a step: write a check function in its tab's section above, and add it to a
+// group here.
+const realGear = c => ({ name: `checkRealGearOptimizer ${c[0]}`, run: checkRealGearOptimizer(c), shared: true });
+const walk = job => ({ name: `walkJobs ${job}`, run: walkJob(job), shared: false });
+const step = fn => ({ name: fn.name, run: fn, shared: true });
 const GROUPS = [
   { fresh: true, steps: [step(checkDefaults)] },
   { steps: [step(checkPieceLab), step(checkClosedPanel), step(checkJobSwitch), step(checkPldOffhand)] },
@@ -1559,16 +1605,27 @@ async function runGroup(browser, group) {
       try {
         await pg.goto(PAGE);
         await waitReady(pg);
-        if (!group.fresh) {
-          await setJob(pg, 'SGE');
-          await setCap(pg, '123'); // the checks use the item level 123 caps
-          await setNumber(pg, '#level', '50');
-        }
+        if (!group.fresh) await setUpShared(pg);
       } catch (e) {
         await fail(`${rec.name} (setup)`, e);
         return;
       }
-      for (const step of group.steps) {
+      for (const [i, step] of group.steps.entries()) {
+        // a step that starts from the shared setup gets it: one that left it changed is named here, not in the step
+        // it would make fail, and the setup is made again
+        if (i > 0 && !group.fresh && step.shared) {
+          const changed = await sharedSetupChanges(pg);
+          if (changed.length) {
+            const before = group.steps[i - 1].name;
+            await fail(before, `left the shared setup changed (${changed.join(', ')})`);
+            try {
+              await setUpShared(pg);
+            } catch (e) {
+              await fail(`${before} (setup again)`, e);
+              return;
+            }
+          }
+        }
         const t0 = Date.now();
         try {
           await step.run(pg);
