@@ -10,6 +10,9 @@ import {
   defaultSubs,
   SEARCH_MAX_LENGTH,
   limitCapToLevel,
+  loadSaved,
+  save,
+  STORE_KEY,
 } from '../../src/ui/state.js';
 import { DEFAULT_EXCLUDE, TARGET_GCD_RANGE } from '../../src/ui/settings.js';
 import { browseFiltered } from '../../src/ui/views/gear.js';
@@ -429,4 +432,39 @@ test('restore: a saved name search is cut to SEARCH_MAX_LENGTH', () => {
   assert.equal(SEARCH_MAX_LENGTH, 100);
   assert.equal(restoreState({ job: 'SGE', browse: { q: 'x'.repeat(5000) } }).browse.q, 'x'.repeat(SEARCH_MAX_LENGTH));
   assert.equal(restoreState({ job: 'SGE', browse: { q: 'ring of healing' } }).browse.q, 'ring of healing');
+});
+
+/* localStorage is a convenience only (CLAUDE.md, Page rules): a storage that throws on every access (private mode,
+   blocked site data) gives no saved state and a save that does nothing, and the page starts from its defaults. A
+   working one round-trips the state under STORE_KEY. */
+test('loadSaved and save: a throwing localStorage is ignored; a working one round-trips', t => {
+  // Node may have a localStorage of its own: put back exactly what was there
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  t.after(() => {
+    delete globalThis.localStorage;
+    if (original) Object.defineProperty(globalThis, 'localStorage', original);
+  });
+  delete globalThis.localStorage;
+  const blocked = () => {
+    throw new Error('SecurityError: storage is blocked');
+  };
+  globalThis.localStorage = { getItem: blocked, setItem: blocked };
+  assert.equal(loadSaved(), null);
+  assert.doesNotThrow(() => save('{"job":"SGE"}'));
+  assert.deepEqual(restoreState(loadSaved()), restoreState(null));
+
+  // the accessor itself throws (a sandboxed page)
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get: blocked });
+  assert.equal(loadSaved(), null);
+  assert.doesNotThrow(() => save('{}'));
+
+  const kept = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    writable: true,
+    value: { getItem: key => kept.get(key) ?? null, setItem: (key, value) => kept.set(key, value) },
+  });
+  save(JSON.stringify({ job: 'WAR' }));
+  assert.deepEqual([...kept.keys()], [STORE_KEY]);
+  assert.equal(restoreState(loadSaved()).job, 'WAR');
 });

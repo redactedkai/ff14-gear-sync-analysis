@@ -87,7 +87,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui-components-tiers | Substat tiers: typed and clicked values and when they drop, the Level box |
 | ui-helpers | number boxes (their min and max, the Target GCD's range), the view cache, the throttled effect (with Alpine's own reactivity, `@vue/reactivity`: what it tracks), en-US counts, the "Gear from" and Expansion menus |
 | ui-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
-| ui-state | restoring saved state |
+| ui-state | restoring saved state; loading and saving with a storage that throws |
 | ui-store | job switch and reset |
 | ui-solver | the optimizer's solver: the request handler as a plain function (the worker's), requests and replies through a structured clone, the worker solver's ids, one request per kind in the worker with the newest waiting, the fallback to the page thread when the worker cannot start or fails |
 | ui-sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
