@@ -373,7 +373,7 @@ $$
 
 The best plan maximizes $(\text{gain}_1, \text{gain}_2, \text{gain}_3)$ in lexicographic order: first the target's gain, then the first tiebreak's, then the second's.
 
-- **Ties** go to the plan that leaves the most slots empty, then to the one whose stones are worth the least. A stone that adds nothing to a key is not melded: no stones go into substats the objective doesn't score (the owner's decision, 2026-10-15; until then they went into the job's other substats in order). The page lists the empty slots after the stones ("3 slots empty").
+- **Ties** go to the plan that leaves the most slots empty, then to the one whose stones are worth the least. A stone that adds nothing to a key is not melded: no stones go into substats the objective doesn't score (the owner's decision, 2026-10-15; until then they went into the job's other substats in order). The page names only the stones, not the slots left empty (2026-10-19: "3 slots empty" under a piece read like a bug when the goal takes no materia).
 - **Full enumeration.** The search tries every split of the $B$ big and $S$ small stones among the keys and the spare bucket. That is at most 200 splits per piece, and the result is cached for each combination of stones, values and rooms.
 - **Always the best grade:** for a fixed split, a bigger stone never lowers a gain, so using the most valuable allowed grade loses nothing.
 

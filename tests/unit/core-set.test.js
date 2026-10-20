@@ -156,7 +156,7 @@ test('a set is frozen plain data: pieces by game id with the name beside it, a c
   });
   const ev = evaluateSet(sge, set, { cap: null, sync: false, level: 100 }, 100);
   assert.equal(ev.rows[0].item.name, 'Augmented Bygone Brass Calot of Healing');
-  assert.equal(ev.rows[0].meldText, 'DET XII, 1 slot empty');
+  assert.equal(ev.rows[0].meldText, 'DET XII'); // the empty slot is not named (audit 11 #8)
   // a custom piece counts its own stats; it has no database facts (no melds, no equip level, no gear category)
   assert.deepEqual([ev.rows[1].stats.crit, ev.rows[1].from, ev.rows[1].category, ev.rows[1].meld], [300, null, null, null]);
   assert.deepEqual([ev.rows[2].label, ev.rows[2].item, ev.rows[2].blockedBy], ['Ring 1', null, '']);

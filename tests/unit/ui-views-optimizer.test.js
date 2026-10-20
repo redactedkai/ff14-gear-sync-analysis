@@ -278,7 +278,7 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
   assert.equal(v.kind, 'ok');
   const row = (view, name) => view.rows.find(r => r.item?.name === name);
   const wpn = row(v, 'Phantom Pendulums Eclipticum');
-  assert.deepEqual([wpn.cells[k].value, wpn.cells[k].atCap, wpn.meld], [443, true, '2 slots empty']);
+  assert.deepEqual([wpn.cells[k].value, wpn.cells[k].atCap, wpn.meld], [443, true, '']); // its two slots stay empty, and are not named (audit 11 #8)
   assert.equal(row(v, 'Augmented Bygone Brass Gloves of Healing').meld, 'CRT XII ×2');
   for (const r of v.rows.filter(r => r.item)) {
     assert.ok(r.cells[k].atCap, `${r.item.name}: Critical Hit below its cap`);

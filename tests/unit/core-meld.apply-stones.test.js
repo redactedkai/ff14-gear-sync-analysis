@@ -26,7 +26,7 @@ test("Kirin's Osode of Fending: two VI and one V in Determination fill it to the
   assert.deepEqual(r.gain, { det: 33 });
   assert.deepEqual(r.lost, { det: 5 });
   assert.deepEqual(r.removed, []);
-  assert.equal(meldText(war, r.meld), 'DET VI ×2, DET V, 2 slots empty');
+  assert.equal(meldText(war, r.meld), 'DET VI ×2, DET V');
   // the other stats as the piece has them
   assert.deepEqual([r.stats.main, r.stats.vit, r.stats.crit], [108, 107, 110]);
   // Critical Hit is already at its cap: a stone in it adds nothing and loses its whole value
@@ -96,7 +96,7 @@ test('stats, slots and order: only substats, only the slots the piece has, fille
   assert.equal(applyStones(war, osode, [stone('det', 6), null, stone('det', 6)], NO_SYNC).removed[0].reason, 'order');
   // no stones: no melds, nothing shown; empty slots: shown as empty
   assert.equal(applyStones(war, osode, [], NO_SYNC).meld, null);
-  assert.equal(meldText(war, applyStones(war, osode, [null, null, null, null, null], NO_SYNC).meld), '5 slots empty');
+  assert.equal(meldText(war, applyStones(war, osode, [null, null, null, null, null], NO_SYNC).meld), '');
 });
 
 test('sync removes every stone: item level sync below the piece, or level sync below its equip level', () => {

@@ -305,10 +305,10 @@ export function applyStones(job, item, stones, sync) {
   return { stats, gain, lost, removed, meld };
 }
 
-/* "CRT XII, DET XII, CRT XI, DET XI ×2" in slot order (+ ", 3 slots empty" when stones would add nothing). */
+/* "CRT XII, DET XII, CRT XI, DET XI ×2" in slot order; '' with no stones. Slots left empty (stones would add nothing
+   to the goal, `meld.free`) are not named: "2 slots empty" under a piece read like a bug when the goal takes no
+   materia (audit 11 #8). */
 export function meldText(job, meld) {
   if (!meld) return '';
-  const parts = meld.stones.map(x => `${job.short[x.stat]} ${ROMAN[x.grade - 1]}${x.n > 1 ? ` ×${x.n}` : ''}`);
-  if (meld.free) parts.push(`${meld.free} slot${meld.free > 1 ? 's' : ''} empty`);
-  return parts.join(', ');
+  return meld.stones.map(x => `${job.short[x.stat]} ${ROMAN[x.grade - 1]}${x.n > 1 ? ` ×${x.n}` : ''}`).join(', ');
 }

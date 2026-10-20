@@ -56,7 +56,7 @@ test("Kirin's Osode of Fending: Determination 77 -> 110 with VI, VI, V, the othe
   assert.deepEqual(m.gain, { det: 33 });
   assert.equal(m.free, 2);
   // three stones either way (VI x 3 = 48, VI x 2 + V = 38, both past the 33 of room): the odd grade on the tie
-  assert.equal(meldText(war, m), 'DET VI ×2, DET V, 2 slots empty');
+  assert.equal(meldText(war, m), 'DET VI ×2, DET V');
   // with a tiebreak the two spare VI go to it
   assert.deepEqual(bestMeld(war, it, ['det', 'dh']).gain, { det: 33, dh: 32 });
   // a substat the piece lacks can be melded: five VI, 80 below the 110 cap
@@ -78,7 +78,7 @@ test("Courtly Lover's Earrings of Healing: Crit > Det beats greedy (+61 / +90, n
   // (owner 2026-10-16). The other three slots stay empty (no stones in substats the objective doesn't score)
   const crit = bestMeld(sge, it, ['crit']);
   assert.deepEqual(crit.gain, { crit: 61 });
-  assert.equal(meldText(sge, crit), 'CRT XII, CRT XI, 3 slots empty');
+  assert.equal(meldText(sge, crit), 'CRT XII, CRT XI');
 });
 
 test("Courtly Lover's Pendulums: Crit > Det > DH gets Direct Hit +54 (greedy +36)", () => {
@@ -249,7 +249,7 @@ test('odd grades on ties: XI where it gives the same gains, from both paths', ()
   assert.equal(meldCaps(sge, coat).crit - (coat.stats.crit || 0), 123);
   const m = bestMeld(sge, coat, ['crit']);
   assert.deepEqual(m.gain, { crit: 123 });
-  assert.equal(meldText(sge, m), 'CRT XII ×2, CRT XI, 2 slots empty');
+  assert.equal(meldText(sge, m), 'CRT XII ×2, CRT XI');
   // with a speed maximum a version without speed is kept, and it shows the same stones
   const v = meldVersions(sge, coat, ['crit', 'spd'], { exactSpd: true }).find(x => x.gain.crit === 123 && !x.gain.spd);
   assert.ok(v, 'a version with Critical Hit only');
