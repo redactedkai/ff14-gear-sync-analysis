@@ -33,7 +33,7 @@ Owner, 2026-10-18. The search runs only when the user presses Optimize, at the r
 
 Roadmap A7; owner's decisions, 2026-10-16.
 
-- A "Spare points to tiebreaks" switch at the right of the Materia and Food line, before Optimize, **on by default** (kept after comparing tier and raw results, owner's decision, 2026-10-17); it is saved, and a save from before it existed restores it on.
+- A "Spare points to tiebreaks" switch at the right of the Materia and Food line, before Optimize, **on by default** (kept after comparing tier and raw results, owner's decision, 2026-10-17); it is saved, and a save from before it existed restores it on. It is dimmed and disabled until Tiebreak 1 is set (2026-10-19): with no tiebreak there is nothing to send spare points to.
 - Its label and ? note ("Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.") were chosen on 2026-10-18 after an independent review of the words players use: "tier" is the community's word (AkhMorning, The Balance, xivgear), and "wasted" was avoided, since melding guides use it for materia past an item's cap. It was "Rank by tier" before.
 - On, the search is tier ranking ([tier-ranking.md](tier-ranking.md)): meal and gear are chosen together, with or without a Target GCD, since every tier counts food.
 - In the Tier row the held stats are highlighted. (A line under the readout named them in order with the effect each held, "Ranked by tier: Piety +165 MP, then ..."; dropped on 2026-10-18 by the owner, since the Goal selects give the order and the Effect row the effects.)

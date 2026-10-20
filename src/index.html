@@ -322,7 +322,7 @@
           <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-food" :checked="$store.app.opt.food" @change="$store.app.opt.food = $event.target.checked"><span>Food</span></label>
           <span class="grow"></span>
           <span class="rankwrap" @click.outside="rankHelp = false" @keydown.escape.window="rankHelp = false">
-            <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-by-tier" :checked="$store.app.opt.byTier" @change="$store.app.opt.byTier = $event.target.checked"><span>Spare points to tiebreaks</span></label>
+            <label class="toggle" :class="{ off: !$store.app.opt.tb }" :title="$store.app.opt.tb ? null : 'Set Tiebreak 1 to use spare points'"><input type="checkbox" role="switch" class="switch" id="o-by-tier" :disabled="!$store.app.opt.tb" :checked="$store.app.opt.byTier" @change="$store.app.opt.byTier = $event.target.checked"><span>Spare points to tiebreaks</span></label>
             <button type="button" class="help shelp" id="o-rank-help" aria-controls="o-rank-pop" :aria-expanded="String(rankHelp)" title="About this switch" @click="rankHelp = !rankHelp">?</button>
             <div class="popover statpop" id="o-rank-pop" role="dialog" aria-label="About Spare points to tiebreaks" x-show="rankHelp" x-cloak><p>Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.</p></div>
           </span>

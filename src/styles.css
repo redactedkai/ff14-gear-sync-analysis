@@ -1340,6 +1340,11 @@ table[data-col="spec"] th[data-col="spec"] {
   align-items: center;
   gap: 6px;
 }
+/* Spare points to tiebreaks with no tiebreak set: shown, but dimmed and disabled (nothing to send spare points to) */
+.rankwrap .toggle.off {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .rankwrap .popover.statpop {
   right: 0;
 }

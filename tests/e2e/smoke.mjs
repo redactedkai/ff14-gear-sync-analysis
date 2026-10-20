@@ -795,6 +795,10 @@ async function checkRankByTier(pg) {
   await waitOptimizer(pg);
   const byTier = pg.locator('#o-by-tier');
   check(await byTier.isChecked(), 'Spare points to tiebreaks is off by default');
+  // usable only once a tiebreak is set: with none there is nothing to send spare points to (audit 11 #9)
+  await expect(byTier).toBeDisabled();
+  await pg.selectOption('#o-tb1', 'det');
+  await expect(byTier).toBeEnabled();
   await pg.click('#o-rank-help');
   await expect(pg.locator('#o-rank-pop')).toHaveText(
     'Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.',
