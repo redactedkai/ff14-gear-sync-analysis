@@ -1,6 +1,8 @@
 /* Times optimize() over the workloads in workloads.mjs and checks the budgets (docs/engineering/optimizer.md, section 8).
    node scripts/perf/bench.mjs [--workload W1|X|OFULL] [--jobs SGE,WAR] [--quick] [--repeats N] [--strict]
    Writes one JSON row per run to scripts/perf/out/<workload>.jsonl and prints a summary.
+   Exits 1 when a run was truncated or took more than 1,000 nodes; timing budget misses are printed as information,
+   and exit 1 only with --strict.
    first: the first call of a run in this process (new pool objects per job, so caches keyed by item start cold);
    warm: the median of N more calls. */
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -14,6 +16,8 @@ import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectives
 
 const workload = option('workload', 'W1');
 const repeats = numberOption('repeats', 2);
+// more nodes than this in one run fails the bench; real pools stay far below it (optimizer.md, section 8)
+const MAX_NODES = 1000;
 const QUICK = ['SGE', 'WAR', 'PLD', 'BLM', 'DNC', 'SAM'];
 const jobIds = listOption('jobs', flag('quick') ? QUICK : JOB_IDS);
 
@@ -153,10 +157,19 @@ worst.forEach(r => {
   );
 });
 
-// budgets (optimizer.md, section 8, "What the perf scripts measure"); "first" stands in for the cold budget
-const fails = [];
+// Correctness gates, which always exit 1: a truncated run stopped at the node limit, so its set may not be the best,
+// and a run over MAX_NODES means the pruning got weaker. Both are counts, the same on every PC.
+const gateFails = [];
+const nodesMax = Math.max(...rows.map(r => r.nodes));
+if (nodesMax > MAX_NODES) gateFails.push(`a run took more than ${MAX_NODES.toLocaleString()} nodes (${nodesMax})`);
+const truncatedRuns = rows.filter(r => r.truncated).length;
+if (truncatedRuns) gateFails.push(`${truncatedRuns} run(s) truncated at the node limit`);
+
+// Timing budgets (optimizer.md, section 8, "What the perf scripts measure"), information only: they depend on the PC,
+// and timing matters only above about 0.5 s. --strict makes a miss exit 1. "first" stands in for the cold budget.
+const timingMisses = [];
 const check = (ok, msg) => {
-  if (!ok) fails.push(msg);
+  if (!ok) timingMisses.push(msg);
 };
 if (on) {
   check(on.p50 <= 35, `melds on p50 ${fmt(on.p50)} > 35 ms`);
@@ -165,7 +178,18 @@ if (on) {
   check(on.firstMax <= 60, `melds on first-call max ${fmt(on.firstMax)} > 60 ms`);
 }
 if (off) check(off.p95 <= 30, `melds off p95 ${fmt(off.p95)} > 30 ms`);
-check(Math.max(...rows.map(r => r.nodes)) <= 1000, 'a run took more than 1,000 nodes');
-check(!rows.some(r => r.truncated), 'a run was truncated');
-console.log(fails.length ? `\nBUDGET MISSES:\n  ${fails.join('\n  ')}` : '\nall budgets met');
-if (flag('strict') && fails.length) process.exit(1);
+console.log(
+  timingMisses.length
+    ? `\ntiming budget misses (information only; timing matters above about 0.5 s):\n  ${timingMisses.join('\n  ')}`
+    : '\nall timing budgets met',
+);
+
+if (gateFails.length) {
+  console.error(`\nFAILED (counts, not timing):\n  ${gateFails.join('\n  ')}`);
+  process.exit(1);
+}
+console.log(`no truncated run; every run within ${MAX_NODES.toLocaleString()} nodes (largest ${nodesMax})`);
+if (flag('strict') && timingMisses.length) {
+  console.error('--strict: a timing budget was missed');
+  process.exit(1);
+}

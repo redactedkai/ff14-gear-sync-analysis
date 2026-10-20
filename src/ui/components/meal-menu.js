@@ -60,10 +60,10 @@ export function mealMenu() {
     /* The Food menu's groups after its switch, pills and search: [{label, items}] (view.food.menu.groups, empty groups
        dropped). */
     get mealGroups() {
-      // by key: Alpine's proxies make the same meal two different objects on two reads
-      const passing = new Set(mealsPassing(this.mealItems, this.mealFilters).map(x => x.key));
+      // the view is frozen (optimizer solveNow), so Alpine wraps none of it and each read gives the same meal object
+      const passing = new Set(mealsPassing(this.mealItems, this.mealFilters));
       return (this.view?.food?.menu?.groups ?? [])
-        .map(g => ({ label: g.label, items: g.items.filter(x => passing.has(x.key)) }))
+        .map(g => ({ label: g.label, items: g.items.filter(x => passing.has(x)) }))
         .filter(g => g.items.length);
     },
     /* why the list is empty ({text, action}), or null (views mealEmptyReason) */

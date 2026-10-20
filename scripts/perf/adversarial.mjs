@@ -5,6 +5,7 @@
    (so their slot code, blocks and materia slots are real) with random stats.
    Part 2, forced stall: a speed minimum (engine only; the page has no control for it) on a synthetic pool built so the
    search runs into the page's 700k node limit; timed cold (first in the process) and warm.
+   Exits 1 when a part 1 run is truncated; part 2 is meant to truncate.
    node scripts/perf/adversarial.mjs [--pools 2000] [--climb 400] [--seed 1] */
 import { performance } from 'node:perf_hooks';
 import { mkItem } from '../../src/core/items.js';
@@ -91,6 +92,7 @@ function run(J, pool, o, melds) {
 
 let worst = null;
 const all = [];
+let huntTruncated = 0; // hunt and climb runs that stopped at the node limit: none expected (optimizer.md, section 8)
 for (let i = 0; i < nPools; i++) {
   const J = pick(JOBS);
   const pool = randomPool(J);
@@ -98,6 +100,7 @@ for (let i = 0; i < nPools; i++) {
   const melds = r() < 0.5;
   const res = run(J, pool, o, melds);
   all.push(res.nodes);
+  if (res.truncated) huntTruncated++;
   if (!worst || res.nodes > worst.res.nodes) worst = { J, pool, o, melds, res };
 }
 
@@ -114,6 +117,7 @@ for (let i = 0; i < nClimb; i++) {
     else if (pool.length > 20) pool.splice(at, 1);
   }
   const res = run(J, pool, o, melds);
+  if (res.truncated) huntTruncated++;
   if (res.nodes > worst.res.nodes) worst = { J, pool, o, melds, res };
 }
 
@@ -133,3 +137,14 @@ for (const { first, second } of stall) {
       `cold ${first.ms.toFixed(0)} ms, warm ${second.ms.toFixed(0)} ms, result ${first.ok ? 'found' : 'none'}`,
   );
 }
+
+// The forced stall is built to truncate; if it no longer does, it no longer times a search that hits the limit,
+// which is worth a note but is not a wrong result. A truncated hunt or climb run is: exit 1.
+if (stall.some(({ first }) => !first.truncated)) {
+  console.log('\nnote: a forced stall finished under the node limit, so it no longer measures a truncated search');
+}
+if (huntTruncated) {
+  console.error(`\nFAILED: ${huntTruncated} hostile pool run(s) truncated at the node limit (none expected)`);
+  process.exit(1);
+}
+console.log('\nno hostile pool run truncated');
