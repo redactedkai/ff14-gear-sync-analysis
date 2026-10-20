@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 360 tests in 38 files, about 40 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 368 tests in 39 files, about 40 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 90 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of checks |
@@ -59,13 +59,14 @@ Which file tests what? One line per file; the file itself says the rest.
 | damage-defense | weapon damage and defense on real items; weapon damage ranked first |
 | optimizer | real-gear pools, ring-pair bound |
 | slot-index | slot positions and blocked-slot masks |
+| search | the search's parts on their own against brute force: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key |
 | optimizer-constraints | speed minimum, maximum and range |
 | optimizer-exhaustive | random pools, regressions, policies |
 | target-gcd | Target GCD: GCD reached, modes, meals |
 | target-gcd-exhaustive | Target GCD against the brute force |
-| stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone |
+| stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
 | regain | regain cuts from a proven maximum against the brute force |
-| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; 360 more random cases in `tests/full/` |
+| tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; a stage stopped at its node limit; an infeasible Target GCD; 360 more random cases in `tests/full/` |
 | views | what each tab shows |
 | sync-explainer-view | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
 | gcd-view | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
