@@ -55,8 +55,9 @@ a link to `docs/glossary.md`). Both want the problem first, then the precise sta
 4. **No invented numbers.** A new number in an example must come from running the code: `node` with imports from
    `src/core/` (import what you need the way `src/core/tier-rank.js` does). Put any script you write under
    `docs/scratchpad/docs-rewrite/` (gitignored; create the folder, it may not exist) and say which numbers it produced, with the date.
-5. **Prose explains with math, not code.** Code names (functions, files) appear only in the closing "Where this lives"
-   table, as STYLE.md says.
+5. **Prose explains with math, not code.** Say it in plain words first; a code name (function, file) may follow
+   where a reader needs it to find the code, and every concept gets a row in the closing "Where this lives" table, as
+   STYLE.md says.
 6. **Diagrams are optional.** Add one only where it clearly helps (a process, a data flow, a worked example). Follow
    STYLE.md's diagram rules, embed it with a relative link, and render it in light and dark with headless Edge
    before keeping it (the command is in STYLE.md; `--blink-settings=preferredColorScheme=1` gives light, `=0` dark;

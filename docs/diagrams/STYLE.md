@@ -7,7 +7,7 @@ Shared by every page in `docs/`. Keep pages consistent with it. A checklist is a
 | Folder | Holds | Pages today |
 | --- | --- | --- |
 | `docs/mechanics/` | How the game works, as this project models it, and the evidence for it | math, validation, materia |
-| `docs/engineering/` | How the code works: structure, data generation, the optimizer, tests, reference tables for game-file columns the generators read | architecture, data-pipeline, optimizer, tier-ranking, testing, subcategory-sort-codes |
+| `docs/engineering/` | How the code works: structure, data generation, the optimizer, tests, reference tables for game-file columns the generators read | architecture, data-pipeline, optimizer, tier-ranking, ui, testing, subcategory-sort-codes |
 | `docs/` (top level) | Pages for the whole set | README (the index), glossary, roadmap, history, data-changelog |
 | `docs/diagrams/` | Every SVG diagram, and this guide | |
 
@@ -46,7 +46,7 @@ Relative links only, so they work on GitHub and in a local checkout:
 
 - Audience: developers new to the project and players curious about the math. Assume no FFXIV knowledge beyond what `docs/glossary.md` defines; explain a game term the first time it appears on a page.
 - Explain with mathematical notation, not code. GitHub renders LaTeX: inline `$...$`, display blocks in `$$ ... $$` on their own lines. Use plain words for names in formulas, e.g. $\text{budget}(i)$ not `IL.crit[i]`.
-- Code names appear only in the closing "Where this lives" table (concept → file).
+- Explain a concept in plain words first. A code name (a function, constant or file, in code font) may follow in the text where a reader needs it to find the code or a test; every concept still gets a row in the closing "Where this lives" table (concept → file). Formulas use plain words, never code names (above).
 - Plain, concise sentences. Headings in sentence case. No marketing tone.
 
 ## Status words

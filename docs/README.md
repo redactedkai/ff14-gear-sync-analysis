@@ -1,6 +1,6 @@
 # Documentation
 
-Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Given a job and an item level sync cap, it shows what the stats on a piece of gear become under sync, and it searches real gear from the game files for the combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity and so on). It covers all 23 combat jobs and ships as one HTML file that opens from disk.
+Gear Sync Analysis is a single-page calculator for Final Fantasy XIV. Some FFXIV content syncs a character down: it caps the stats on gear above an item level (item level sync) or lowers the character's level (level sync; both in the [glossary](glossary.md#game-terms)). Given a job and an item level sync cap, it shows what the stats on a piece of gear become under sync, and it searches real gear from the game files for the combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity and so on). It covers all 23 combat jobs and ships as one HTML file that opens from disk.
 
 These pages explain the model behind it, the evidence for that model, and how the code is built and tested. Every claim is marked verified (game files, the FFXIV Wiki, real items, tests) or inferred. How to build and run the page is in the [root README](../README.md); the rules for working in the repo are in [CLAUDE.md](../CLAUDE.md).
 
@@ -15,7 +15,7 @@ These pages explain the model behind it, the evidence for that model, and how th
 New to FFXIV: read the [glossary](glossary.md) first, or keep it open.
 
 1. **Mechanics**: [math.md](mechanics/math.md), then [validation.md](mechanics/validation.md), then [materia.md](mechanics/materia.md).
-2. **Engineering**: [architecture.md](engineering/architecture.md), [data-pipeline.md](engineering/data-pipeline.md), [optimizer.md](engineering/optimizer.md), [tier-ranking.md](engineering/tier-ranking.md), [testing.md](engineering/testing.md). [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) is a reference table; open it when you need a code.
+2. **Engineering**: [architecture.md](engineering/architecture.md), [data-pipeline.md](engineering/data-pipeline.md), [optimizer.md](engineering/optimizer.md), [tier-ranking.md](engineering/tier-ranking.md), [ui.md](engineering/ui.md), [testing.md](engineering/testing.md). [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) is a reference table; open it when you need a code.
 3. **Before changing anything**: [history.md](history.md) (mistakes not to repeat) and [roadmap.md](roadmap.md) (feature ideas: to build, built, out of scope).
 
 Shorter paths:
@@ -41,8 +41,9 @@ Shorter paths:
 | --- | --- |
 | [architecture.md](engineering/architecture.md) | Layers, the job context, the shared store and views, what is saved in the browser, the single-file build, the dev loop |
 | [data-pipeline.md](engineering/data-pipeline.md) | The game sheets used, fetching, the shared format file, item database rules and fields, the item level table, the food table, "Gear from" sources and gear categories, provenance, facts about the current data, the steps after a game patch |
-| [optimizer.md](engineering/optimizer.md) | How the best gear set is found: lexicographic score (weapon damage first), Target GCD, dominance pruning, branch and bound, melds in the search, the page's pool and filters (Gear from, same-result pieces), correctness and timing |
+| [optimizer.md](engineering/optimizer.md) | How the best gear set is found: an overview in plain words, then the lexicographic score (weapon damage first), Target GCD, dominance pruning, branch and bound, melds in the search, the page's pool and filters (Gear from), correctness and timing |
 | [tier-ranking.md](engineering/tier-ranking.md) | Ranking gear sets by stat tiers: the stages, and the shortfall filter, reduced-cost fixing, regain cuts, trial search and Pareto fronts that make those searches fast |
+| [ui.md](engineering/ui.md) | The page's tabs and controls: what each tab shows, the Gear optimizer's controls around the search (Target GCD, Optimize, the tier switch, character panel totals, the same-result and Food menus), the Gear browser's layout, the How the math works sub-tabs |
 | [testing.md](engineering/testing.md) | Test layers, what each test file covers, the brute-force reference, commands, conventions, which expected numbers may move after a patch |
 | [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) | Working notes: what each `Item.SubcategorySort` code means for gear, piece counts, and how each was checked |
 

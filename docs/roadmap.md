@@ -23,7 +23,7 @@ On `dev` at least; live once on `main`.
 | A5 | Check sync caps against ffxiv-gearing | [validation.md, section 9](mechanics/validation.md#9-against-another-tool-ffxiv-gearing) |
 | A7 | Rank by tier | [tier-ranking.md](engineering/tier-ranking.md) |
 | A8 | Substat tiers (breakpoints) | [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints) |
-| A9 | Other pieces with the same result | [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters) |
+| A9 | Other pieces with the same result | [ui.md, section 2](engineering/ui.md#other-pieces-with-the-same-result) |
 | A10 | Gear from filter | [data-pipeline.md, section 4](engineering/data-pipeline.md#sources) |
 
 ## Out of scope

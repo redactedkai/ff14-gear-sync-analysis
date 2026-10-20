@@ -1,12 +1,24 @@
 # The gear optimizer
 
-Given a pool of items and a job, the optimizer picks one item per gear slot so that a chosen stat is as high as possible, with up to two tiebreak stats. In optimization terms it is a multiple-choice knapsack problem with conflict constraints, side constraints on the speed stat (and, for tier ranking, minimums on others) and a preemptive (lexicographic) objective, solved exactly by depth-first branch and bound after dominance reduction. This page states the formulation, then the four steps that solve it (an exact weighted-sum scalarization of the objective, dominance reduction, branch and bound with the relaxations behind its bounds, and the per-piece meld subproblem), and argues why the answer is optimal unless the search hits its node limit. It is written for a reader versed in integer programming and knapsack methods but new to this code base and the game.
+Given a pool of items and a job, the optimizer picks one item per gear slot so that a chosen stat is as high as possible, with up to two tiebreak stats. In optimization terms it is a multiple-choice knapsack problem with conflict constraints, side constraints on the speed stat (and, for tier ranking, minimums on others) and a preemptive (lexicographic) objective, solved exactly by depth-first branch and bound after dominance reduction. This page states the formulation, then the four steps that solve it (an exact weighted-sum scalarization of the objective, dominance reduction, branch and bound with the relaxations behind its bounds, and the per-piece meld subproblem), and argues why the answer is optimal unless the search hits its node limit. The overview below is in plain words; from section 2 on, the page is written for a reader versed in integer programming and knapsack methods but new to this code base and the game.
 
 Related pages: [math.md](../mechanics/math.md) (how a piece's stats are computed and what level sync does to them), [data-pipeline.md](data-pipeline.md) (where the item data comes from), [materia.md](../mechanics/materia.md) (the meld rules), [tier-ranking.md](tier-ranking.md) (ranking by stat tiers, built on this search), [glossary.md](../glossary.md).
 
 ![The optimizer as six stages: pool, effective stats, per-slot candidate lists, dominance pruning, branch and bound, loadout. A real run with 1,999 Sage items synced to item level 123 keeps 119 candidates, visits 137 search nodes and returns 344 Spell Speed.](../diagrams/optimizer-pipeline.svg)
 
-How to read it: section 1 is the game background and the problem in plain words, section 2 the formulation. Sections 3 to 5 are the algorithm, in the order it runs. Section 6 adds melds, section 7 is how the page uses the engine, and sections 8 and 9 are the evidence, timings and limits.
+## Overview in plain words
+
+What happens when the user presses Optimize, step by step (each step's section has the details and the proof):
+
+1. **The pool.** Every piece the job can wear that the Gear to search filters let through (section 7), with its synced stats when sync applies to it, and its best melds when it is not synced and Materia is on (section 6).
+2. **One number per piece.** Each piece's stats become one integer that ranks weapon damage first, then the goal stat, then tiebreak 1 and tiebreak 2, so comparing two sets is comparing two sums (section 3).
+3. **Drop pieces that cannot matter.** Within a slot, a piece that enough others beat on every stat that counts is never in a best set, so it is removed (dominance, section 4). For the Sage example below, 1,999 pieces become 119.
+4. **Search the rest.** Fill one slot at a time, shortest list first, best pieces first. At each partly filled set, a quick upper bound says how much the empty slots could still add; when even that cannot beat the best full set found so far, the whole branch is skipped (branch and bound, section 5). When the search ends, the best set found is the best there is, unless the search stopped at its node limit, which the page reports.
+5. **Options on top.** A Target GCD turns into a range the speed stat must stay in (sections 2 and 5); "Spare points to tiebreaks" runs one such search per ranked stat ([tier-ranking.md](tier-ranking.md)).
+
+The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound); the page builds the pool itself (section 7). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
+
+How to read the rest: section 1 is the game background and the problem in plain words, section 2 the formulation. Sections 3 to 5 are the algorithm, in the order it runs. Section 6 adds melds, section 7 is how the page uses the engine (its controls and menus are in [ui.md](ui.md)), and sections 8 and 9 are the evidence, timings and limits.
 
 ## 1. The problem
 
@@ -32,7 +44,7 @@ This is a lexicographic order: a tiebreak only matters between loadouts that are
 **Constraints.**
 
 - **Copies.** Each pool item has a number of copies. A Unique ring can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway). The copies come from the game data when an item is added and are not edited on the page; the gear table marks a 2-copy ring ×2.
-- **A speed range** (optional): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed). Other stats have no limits, except the minimums tier ranking adds (section 5). The Target GCD layer (section 2) sets the range from a [GCD](../glossary.md#game-terms), the time between most actions; the page's control is in section 7.
+- **A speed range** (optional): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed). Other stats have no limits, except the minimums tier ranking adds (section 5). The Target GCD layer (section 2) sets the range from a [GCD](../glossary.md#game-terms), the time between most actions; the page's control is in [ui.md, section 2](ui.md#target-gcd).
 
 **The pool** on the page is every piece the job can wear that the "Gear from" filter lets through; the rest is removed before the optimizer runs, so the search itself is unchanged (section 7).
 
@@ -401,7 +413,7 @@ A stat with a minimum (tier ranking) joins the keys the same way as speed with a
 
 ## 7. The page's pool and its filters
 
-What does the page hand to the engine, and what does it show back?
+What does the page hand to the engine? (What it shows back is in [ui.md](ui.md).)
 
 **No pool to build.** The optimizer searches every database piece the job can wear (built once per job, about 5 to 10 ms) that passes the filters under **Gear to search**.
 
@@ -417,42 +429,9 @@ What does the page hand to the engine, and what does it show back?
 - **Relics whose substats the player allocates** are always left out, with a note under the result when the filters would have searched one (owner's decision, 2026-10-18). Such a relic has no substats in the game files (category relic, no meld slots, no substats; `allocatedRelic`), but the highest weapon damage of its time, so with weapon damage first it would win with none of the goal's stats. Modeling the allocation is a roadmap item.
 - The Gear browser has its own filters, so looking gear up never changes the search; when no piece passes, the page says so instead of a result.
 
-**Target GCD on the page** (owner's decisions, 2026-10-16).
-
-- The Goal row's last two columns (owner, 2026-10-18: the Goal and Gear to search rows share five columns) hold the box (empty means any GCD) and "exactly" / "or faster" ("exactly" by default, as in xivgear); the label gives the range of GCDs the gear reaches in parentheses ("Target GCD (2.50 to 2.10)"). The range follows the settings as they change, before the next Optimize: it is one search for the most speed (20 to 100 ms), run with the piece count 120 ms after a change.
-- For Monk, Ninja, Samurai and Viper the label also names the haste ("Target GCD (2.12 to 1.80 with Fuka 13%)") and the box takes the hasted GCD; the result shows both ("2.14s · GCD (Fuka 13%; 2.47 without)").
-- A set that meets the GCD gets no line under the box (owner, 2026-10-19). One short line in plain text says when the set came out faster in "or faster" mode ("2.17, faster than asked"); when no set fits it says why in a warning box ("Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)", "The GCD can't go below 1.50", "No set at exactly 2.10").
-- The range comes from a search, so the label shows it only while the result is for the current settings. The box is disabled while the goal is speed (the label then reads "Target GCD (off: the goal is speed)") and cleared on a job switch.
 - The page keeps the candidate lists and the fastest GCD between runs, so a new GCD reruns only the search.
 
-**Optimize** (owner, 2026-10-18). The search runs only when the user presses Optimize, at the right of the switches' line, after tier ranking's switch; before the first press the page says "Press Optimize to find the best set for the goal." A setting changed after a search dims the result, with "The settings changed since this result. Press Optimize to update it." above it, and turns its menus off (a pick would search with the new settings); a job switch clears it. A piece or meal picked from the menus of a current result still updates it at once.
-
-**Rank by tier on the page** (roadmap A7; owner's decisions, 2026-10-16).
-
-- A "Spare points to tiebreaks" switch at the right of the Materia and Food line, before Optimize, **on by default** (kept after comparing tier and raw results, owner's decision, 2026-10-17); it is saved, and a save from before it existed restores it on.
-- Its label and ? note ("Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.") were chosen on 2026-10-18 after an independent review of the words players use: "tier" is the community's word (AkhMorning, The Balance, xivgear), and "wasted" was avoided, since melding guides use it for materia past an item's cap. It was "Rank by tier" before.
-- On, the search is tier ranking ([tier-ranking.md](tier-ranking.md)): meal and gear are chosen together, with or without a Target GCD, since every tier counts food.
-- In the Tier row the held stats are highlighted. (A line under the readout named them in order with the effect each held, "Ranked by tier: Piety +165 MP, then ..."; dropped on 2026-10-18 by the owner, since the Goal selects give the order and the Effect row the effects.)
-- A thin progress bar shows from the first frame of a solve until the result: the solve holds the page's thread, and the bar's animation runs on the compositor meanwhile.
-
-**Character panel totals.** The Total and With food rows show each substat as the in-game character panel does: the level's base plus gear (plus food); docs/mechanics/math.md, "Totals as on the character panel". Main stat and Vitality stay gear points: their base depends on the job and clan, which the page does not ask for (owner's decision). The party bonus is not counted. The Target GCD line's speed band uses the same numbers.
-
-**Other pieces with the same result** (roadmap A9; owner's decisions, 2026-10-16). The search returns one set, but under sync many pieces reach the same caps: for Sage at level 50, item level 123, with crafted and tomestone gear, every slot has 11 to 20 others, 171 in all. So each result row shows a piece with the same result, and its item cell is a menu ("1 of 14") of all of them, by expansion, each with its gear category ([data-pipeline.md, section 4](data-pipeline.md#gear-category)). A search box at the top takes the keys when the menu opens (owner, 2026-10-18); a piece passes when every word is in its name or gear category ("ring heal", "raid"), and a search that matches nothing says so with Clear search (`samePassing`, sharing `searchMatches` with the Food menu).
-
-- **The same result:** the same main stat, and every substat at the same tier, counted with the result's meal. The tiers are tier ranking's (`rankTierOf`, [tier-ranking.md](tier-ranking.md)), so speed holds its GCD (with haste) but its DoT/HoT tick scaling may drop a step (the GCD matters far more; owner's decision, 2026-10-16, as for tier ranking), and Tenacity holds its mitigation step (200) but its damage bonus may drop a step (tanks take Tenacity for mitigation; Critical Hit, Determination or Direct Hit do more for damage; owner's decision, 2026-10-16). The plain optimizer maximizes the goal stat's raw points, so they stay as well (a Spell Speed goal that kept its GCD at 3 points less would show less than the search found); so do they under tier ranking, where the points left over go to the goal (order A; [tier-ranking.md](tier-ranking.md)).
-- **Which piece a row shows:** the lowest equip level, then the lowest item level; the search's own pick on a tie. No setting: the pieces are equivalent, so none is marked as the optimizer's.
-- **Rows share their spare points.** Two swaps can each keep a tier alone and lose it together, so every check is made against the pieces the other rows show at that moment: rows are filled in panel order, each menu is computed against the rows as shown, and a pick from a menu checks the others again. A Unique piece is never in two rows (rings), and a piece must leave the same slots empty as the search's pick (a cloak never replaces a plain body).
-- **The candidates** are the search's own, unpruned: every piece with its synced stats and the melds the search would give it (each meld version under a Target GCD). Most pieces are ruled out by the main stat alone. Picks are not saved (A3 will) and any setting change clears them.
-- **Cost:** in Node, 0 to 19 ms per run, plus 14 to 19 ms to build the unpruned lists, which are kept while the pool settings, goal and GCD mode stay (Sage at level 50 / 100 and Warrior at level 70 / item level 400).
-
-**The Food row's menu** (owner's design, 2026-10-18; it replaced the Meal (HQ) box). With Food on, the search uses the best meal for the goal, and the Food row's meal is a menu like the rows' above, made to serve sets built by hand later (A4) as well:
-
-- **Which meal the row shows:** the highest item level meal with the same result as the best (owner, 2026-10-18) (`sameMeals`: the same as for pieces, plus the same total on every goal key without tiers, since every meal adds Vitality), tagged "best for goal" and counted ("1 of 11"). Under sync many meals tie: for Astrologian at level 50, item level 123, Mind > Vitality > Direct Hit, 11 meals from Dawntrail, Endwalker and Shadowbringers give the same bonus, and the row shows the newest Dawntrail one.
-- **The menu** lists every meal the job can use (`allMeals`; 182 for Astrologian), by expansion, newest first, one line each (owner, 2026-10-18): its item level first ("i580", as players write it), its name, and what it adds on this gear ("SpS +44 DHT +41 VIT +54"); its stat pair ("Spell Speed + Direct Hit") is the row's hover text. No deltas and no "same result" labels. Above the list, on one line: a search box (meal names), stat pills (CRT, DET, DHT, SpS, PIE; a meal must have each pill picked, and after two the rest are greyed out, since a meal has at most two stats) and a "Best for goal" switch, on by default, that keeps only the tagged meals. The pills start from the goal (owner, 2026-10-18): the first time the menu opens for a result (after Optimize or a meal pick), the goal's substats are picked in order (target, tiebreak 1, tiebreak 2), only those the newest meal tagged best for goal has, and two at most; the player's changes then stay. Turning "Best for goal" on puts the pills back to those, so the switch never empties the list. A pill that would leave no meal under the other filters is greyed out, like a third one. So only a search can empty the list, which then says so: "No meal matches "xyz". Clear search" (`mealsPassing`, `mealPillOff`, `mealEmptyReason`; a unit test walks every state the menu can reach and checks it).
-- **A picked meal** reruns the search with it in place of the best, since with tier ranking or a Target GCD the meal can change which gear wins; the row then says "HQ, picked". Like the rows' picks it is not saved and any setting change clears it.
-- **Limit:** the tags compare meals on the gear the search found with the best meal. Under tier ranking or a Target GCD another meal could lead the search to other gear; checking that would take a search per meal, so it is left to a pick.
-
-**Removed: the ceiling table.** The page used to show a per-stat ceiling table below the result (each stat's best total from the pool, synced and unsynced). It was removed on 2026-10-12 (owner's decision): it repeated the main result per target and the Sync limits tab, and cost 12 or 14 extra searches on every change.
+What the page shows back, and its controls around the search (the Target GCD box, Optimize, the "Spare points to tiebreaks" switch, the character panel totals, the menus of pieces and meals with the same result), is in [ui.md, section 2](ui.md#2-the-gear-optimizer-tab).
 
 ## 8. Correctness and performance
 
