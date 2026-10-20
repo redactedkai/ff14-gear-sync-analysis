@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
 import { LEVEL_MAIN } from '../../src/core/constants.js';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, statBase, withFood } from '../../src/core/food.js';
 import { makeJobContext } from '../../src/core/job-context.js';
+import { levelParams } from '../../src/core/level-params.js';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { PG, FOODS } from '../../src/core/tables.js';
-import { rngInt } from './helpers/common.js';
+import { AKH_LEVEL, rngInt } from './helpers/common.js';
 
 const SGE = makeJobContext('SGE');
 const WAR = makeJobContext('WAR');
@@ -306,4 +307,27 @@ test('gearNeeded: the fewest gear points that reach a total with food', () => {
       const reach = x => x + foodBonus(SGE, food, { spd: x }, level).spd.bonus >= total;
       assert.ok(reach(g) && (g === 0 || !reach(g - 1)), `level ${level}, total ${total}`);
     }
+});
+
+/* Character panel numbers against AkhMorning's Level Modifiers table (AKH_LEVEL, helpers/common.js). */
+/* The main stat and Vitality: MAIN x the job's modifier (ClassJob.csv: Sage Mind 115, Vitality 100; Warrior Strength
+   105, Vitality 110; Black Mage Intelligence 115, Vitality 100), floored, as AkhMorning and xivgear count it, without
+   the clan's bonus. */
+test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB, the main stat and Vitality from MAIN x the job modifier)', () => {
+  for (const [id, stats, mainMod, vitMod] of [
+    ['SGE', ['crit', 'det', 'dh', 'spd', 'spec'], 115, 100],
+    ['WAR', ['crit', 'det', 'dh', 'spd', 'spec'], 105, 110],
+    ['BLM', ['crit', 'det', 'dh', 'spd'], 115, 100],
+  ]) {
+    const job = makeJobContext(id);
+    for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
+      assert.equal(levelParams(+lv).div, div, `level ${lv} DIV`);
+      for (const s of stats) {
+        const fromMain = s === 'det' || (s === 'spec' && job.profile.spec === 'piety');
+        assert.equal(statBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);
+      }
+      assert.equal(statBase(job, 'main', +lv), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
+      assert.equal(statBase(job, 'vit', +lv), Math.floor((main * vitMod) / 100), `${id} Vitality level ${lv}`);
+    }
+  }
 });

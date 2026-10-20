@@ -7,7 +7,7 @@ import { capsFor } from '../../src/core/formulas.js';
 import { meldInfo, mkItem } from '../../src/core/items.js';
 import { gcdFor } from '../../src/core/speed.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { explainerItemLevel, explainerView, meldKeys } from '../../src/ui/views/sync-explainer.js';
+import { explainerItemLevel, explainerOffText, explainerView, meldKeys } from '../../src/ui/views/sync-explainer.js';
 import { SLOT_PERMILLE, appState, roundHalfUp } from './helpers/common.js';
 
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
@@ -219,4 +219,9 @@ test('one piece: the materia row shows no stones above the cap, the kept stones 
   const kept = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 169, subs: ['dh', 'crit'] }));
   assert.deepEqual(kept.stoneChips, ['+6', '+6']);
   assert.equal(kept.meldNote, '2 × Grade V Critical Hit, kept');
+});
+
+test('Piece stats: what it says while no sync applies', () => {
+  assert.equal(explainerOffText({ sync: true }), 'Enter a sync cap (item level) at the top to see what sync does.');
+  assert.match(explainerOffText({ sync: false }), /^No sync applies: item level sync is off/);
 });

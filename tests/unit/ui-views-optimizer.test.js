@@ -1,17 +1,21 @@
-/* The page's view builders (src/ui/views/): what each tab shows, computed from store-shaped state without Alpine. */
+/* Gear optimizer tab (src/ui/views/optimizer.js): the result card, rows, totals in character panel numbers, Food row
+   and its menu, Target GCD, Rank by tier, the gear searched and its filters, and the key that marks a result out of
+   date; computed from store-shaped state without Alpine, against the core and the brute force. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../src/core/job-context.js';
+import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
 import { allMeals, bestFood, foodChoices, statBase } from '../../src/core/food.js';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../src/core/items.js';
-import { exhaustive, gamePool } from './helpers/exhaustive.js';
-import { AKH_LEVEL, appState } from './helpers/common.js';
-import { levelParams } from '../../src/core/level-params.js';
+import { makeJobContext } from '../../src/core/job-context.js';
+import { optimize } from '../../src/core/optimizer/index.js';
+import { sameMeals } from '../../src/core/same-result.js';
 import { gcdFor, hasteFor } from '../../src/core/speed.js';
 import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
-import { sameMeals } from '../../src/core/same-result.js';
+import { fmtInt } from '../../src/ui/helpers.js';
+import { DEFAULT_EXCLUDE, defaultState, syncSettings } from '../../src/ui/state.js';
+import { gearView } from '../../src/ui/views/gear.js';
 import {
   jobGear,
   mealEmptyReason,
@@ -25,29 +29,10 @@ import {
   searchPool,
   tierText,
 } from '../../src/ui/views/optimizer.js';
-import { explainerOffText, explainerView } from '../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
-import { browseFiltered, gearView, markWords } from '../../src/ui/views/gear.js';
-import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
-import { optimize } from '../../src/core/optimizer/index.js';
-import { MAX_REAL } from '../../src/core/tables.js';
-import { DEFAULT_EXCLUDE, defaultState, shownSync, syncSettings } from '../../src/ui/state.js';
-import { fmtInt } from '../../src/ui/helpers.js';
-
-/* A store-shaped state object, as the Alpine store holds it; sync on at cap 123 unless `patch` says otherwise. Rank by
-   tier off: these tests check the plain ranking against brute force and the core; tier ranking has its own tests. */
-const makeApp = (job = 'SGE', patch = {}) => {
-  const app = appState({ job, sync: true, cap: 123 }, patch);
-  if (!('opt' in patch)) app.opt.byTier = false;
-  return app;
-};
-
-/* Real gear, chosen by properties, passed to the optimizer view in place of every piece the job can wear. A small item
-   level window (with weapons) whose best loadouts exhaustive() can check; and item level 130 Sage gear (no weapon: Sage gear starts at level 70) keeping only Unique rings, which
-   leaves exactly one ring, so the second ring slot stays empty. */
-const WINDOW = { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 };
-const windowPool = job => gamePool(job, WINDOW);
-const uniqueRingPool = job => gamePool(job, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }, r => r.type !== 'ring' || r.unique);
+import { explainerView } from '../../src/ui/views/sync-explainer.js';
+import { exhaustive, gamePool } from './helpers/exhaustive.js';
+import { makeApp, uniqueRingPool, windowPool } from './helpers/views.js';
 
 /* 2,238 (2.28 s) and 2,324 (2.27 s) are tier starts in AkhMorning's level 100 2.5s tier table, which lists full speed
    (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, speed.test.js). Roadmap A3. */
@@ -164,71 +149,6 @@ test('optimizer errors become an error view instead of throwing', () => {
   assert.match(v.message, /too large/);
 });
 
-test('piece lab view: the default two substats both reach the cap; the healer note only for Mind jobs; shares in percent', () => {
-  const rpr = pieceView(makeApp('RPR', { cap: 123, sync: true, level: 50 }));
-  assert.deepEqual(
-    rpr.rows.map(r => [r.stat, r.w, r.syn]),
-    [
-      ['main', 100, 30],
-      ['vit', 100, 32],
-      ['crit', 100, 29],
-      ['spd', 70, 29], // the 70% line is cut to the full-share head cap, not to 70% of it
-    ],
-  );
-  assert.equal(rpr.evenSubs, true);
-  assert.equal(rpr.healerNote, false);
-  assert.match(rpr.rows[0].ownFormula, /^6050 × 8\.5% = 514\.3 → 514/);
-  assert.equal(pieceView(makeApp('SGE', { cap: 123, sync: true, level: 50 })).healerNote, true);
-  // no sync, or a piece at the cap: nothing is cut
-  assert.equal(pieceView(makeApp('RPR', { sync: false, cap: null, level: 100 })).evenSubs, false);
-  const atCap = makeApp('RPR', { level: 50 });
-  atCap.piece = { ...atCap.piece, ilvl: 123 };
-  assert.equal(pieceView(atCap).evenSubs, false);
-});
-
-test('piece lab view: every real item level 130 Sage head piece with three substats, its two ranked ones from the formula, synced to 123', () => {
-  const app = makeApp('SGE', { cap: 123, sync: true });
-  const job = app.jobCtx;
-  const heads = gamePool(job, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).filter(
-    i => job.substats.filter(s => i.stats[s] > 0).length === 3,
-  );
-  assert.ok(heads.length >= 2);
-  const CAP = { main: 30, vit: 29, sub: 29 }; // head caps at item level 123: main stat 30, everything else 29
-  for (const head of heads) {
-    // the third line is the fixed Direct Hit of Mind-only gear, which Piece stats does not model
-    const subs = job.substats
-      .filter(s => head.stats[s] > 0)
-      .sort((a, b) => head.stats[b] - head.stats[a])
-      .slice(0, 2);
-    assert.ok(!subs.includes('dh'), head.name);
-    app.piece = { ilvl: 130, slot: 'head', subs };
-    const v = pieceView(app);
-    const want = ['main', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
-    assert.deepEqual(
-      v.rows.map(r => [r.stat, r.raw, r.syn]),
-      want,
-      head.name,
-    );
-    assert.equal(v.status, 'above');
-    assert.equal(
-      v.lost,
-      want.reduce((a, [, raw, syn]) => a + raw - syn, 0),
-    );
-  }
-  // the numbers themselves, for the reader: 33 main / 32 Vitality / 31, 22, 6 substats
-  assert.deepEqual(
-    heads.map(h => [
-      h.stats.main,
-      h.stats.vit,
-      ...job.substats
-        .map(s => h.stats[s])
-        .filter(Boolean)
-        .sort((a, b) => b - a),
-    ]),
-    heads.map(() => [33, 32, 31, 22, 6]),
-  );
-});
-
 /* With no gear passed in, the optimizer searches every database piece the job can wear that its own "Gear from" filter
    lets through (the default boxes, market board on), and finds the same loadout as optimize() on that pool. */
 test('optimizer view: every job searches all the gear it can wear, minus what Gear from leaves out and allocated relics', () => {
@@ -247,111 +167,6 @@ test('optimizer view: every job searches all the gear it can wear, minus what Ge
     // the card shows the character panel's number: gear plus the character's base
     assert.equal(v.total, want.totals[app.opt.target] + statBase(job, app.opt.target, app.level), id);
   }
-});
-
-/* The browser's list: database rows matching its filters that its own "Gear from" filter lets through; no pool. With
-   every box ticked, only pieces that can no longer be obtained (no route) are left out. */
-test('gear view: every match of the filters, with its synced stats', () => {
-  const app = makeApp('SGE');
-  app.browse = { ...app.browse, q: '', min: 130, max: 130, lvl: 50, exclude: [] };
-  const rows = browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).filter(r => r.routes.length);
-  assert.ok(rows.length >= 9);
-  const v = gearView(app);
-  assert.equal(v.shown.length, rows.length);
-  assert.equal(v.countText, `${rows.length} matches`);
-  // item level 130 is above the cap of 123: the row shows the synced item level and stats, the own ones under them
-  assert.ok(v.shown.every(x => x.synced && x.syncedIlvl === 123));
-  const cut = v.shown.flatMap(x => x.cells).filter(c => c.was != null);
-  assert.ok(cut.length > 0 && cut.every(c => Number(c.text) < Number(c.was) && c.cls === 'n cut'));
-});
-
-/* The gear browser's layout (owner, 2026-10-18): slot pills with counts, sorting from the headings, Reset filters. */
-test('gear view: slot pills count the matches of each slot under the other filters; the list keeps the chosen one', () => {
-  const app = makeApp('SGE');
-  Object.assign(app.browse, { min: 130, max: 130, lvl: 50, exclude: [] });
-  const all = gearView(app);
-  const [any, ...slots] = all.slots;
-  assert.deepEqual([any.key, any.count], ['any', all.shown.length]);
-  assert.equal(
-    slots.reduce((n, p) => n + p.count, 0),
-    any.count,
-  );
-  // Sage has no off-hand; the groups run weapon, armor, accessories
-  assert.ok(!slots.some(p => p.key === 'offhand'));
-  assert.deepEqual([...new Set(slots.map(p => p.group))], [1, 2, 3]);
-  app.browse.type = 'ring';
-  const rings = gearView(app);
-  assert.equal(rings.shown.length, slots.find(p => p.key === 'ring').count);
-  assert.ok(rings.shown.every(x => x.type === 'ring'));
-  // the counts stay those of every slot, so another pill can be picked
-  assert.deepEqual(
-    rings.slots.map(p => p.count),
-    all.slots.map(p => p.count),
-  );
-});
-
-test('gear view: a heading sorts high first, again low first; names A to Z', () => {
-  const app = makeApp('SGE');
-  Object.assign(app.browse, { min: 100, max: 140, lvl: 50, exclude: [] });
-  const order = (sort, dir) => {
-    app.browse.sort = sort;
-    app.browse.dir = dir;
-    return gearView(app).shown;
-  };
-  const crit = order('crit', 'desc').map(x => x.eff.crit || 0);
-  assert.deepEqual(
-    crit,
-    [...crit].sort((a, b) => b - a),
-  );
-  const lvl = order('lvl', 'asc').map(x => x.lvl);
-  assert.deepEqual(
-    lvl,
-    [...lvl].sort((a, b) => a - b),
-  );
-  const names = order('name', 'asc').map(x => x.name);
-  assert.deepEqual(
-    names,
-    [...names].sort((a, b) => a.localeCompare(b)),
-  );
-});
-
-test('gear browser search: every word, in any order; the words found are marked in the name', () => {
-  const app = makeApp('SGE');
-  Object.assign(app.browse, { exclude: [], q: 'ring healing' });
-  const v = gearView(app);
-  assert.ok(v.shown.length > 0);
-  assert.ok(v.shown.every(x => /ring/i.test(x.name) && /healing/i.test(x.name)));
-  assert.deepEqual(markWords('Genta Ring of Healing', 'heal ring'), [
-    { text: 'Genta ', hit: false },
-    { text: 'Ring', hit: true },
-    { text: ' of ', hit: false },
-    { text: 'Heal', hit: true },
-    { text: 'ing', hit: false },
-  ]);
-  assert.deepEqual(markWords('Ring', ''), [{ text: 'Ring', hit: false }]);
-});
-
-test('gear browser Reset filters: shown once any filter is off its default, not for the sort', () => {
-  const app = makeApp('BLU');
-  const b = app.browse;
-  assert.equal(browseFiltered(app.jobCtx, b), false);
-  // Blue Mage's level cap is 80: the default 100 is held there, and 80 or empty is no filter
-  assert.equal(browseFiltered(app.jobCtx, { ...b, lvl: 80 }), false);
-  assert.equal(browseFiltered(app.jobCtx, { ...b, lvl: '' }), false);
-  assert.equal(browseFiltered(app.jobCtx, { ...b, sort: 'crit', dir: 'asc' }), false);
-  for (const change of [
-    { q: ' ring ' },
-    { type: 'ring' },
-    { min: 300 },
-    { max: 400 },
-    { lvl: 70 },
-    { expOff: ['ARR'] },
-    { market: false },
-    { exclude: [] },
-  ])
-    assert.equal(browseFiltered(app.jobCtx, { ...b, ...change }), true, JSON.stringify(change));
-  // the default boxes in another order are still the default
-  assert.equal(browseFiltered(app.jobCtx, { ...b, exclude: [...b.exclude].reverse() }), false);
 });
 
 /* The optimizer and the browser each have their own "Gear from" filter. */
@@ -451,84 +266,6 @@ test('level cap: the optimizer searches no piece above the job cap, and level sy
   assert.equal(explainerView({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
 });
 
-test('sync off: piece lab leaves stats as they are and shows no ceiling', () => {
-  const app = makeApp('SGE', { cap: 123, sync: false });
-  app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec'] };
-  const v = pieceView(app);
-  assert.equal(v.status, 'off');
-  assert.ok(v.rows.every(r => r.syn === r.raw && r.cap == null && r.ownKept));
-  assert.match(v.summary, /^No sync applies/);
-  assert.deepEqual(
-    pieceView({ ...app, sync: true }).rows.map(r => r.cap),
-    [30, 29, 29, 29],
-  );
-});
-
-/* Piece stats' step by step, the example the layout was designed on: a Sage head at item level 170 with Critical Hit
-   and Spell Speed, synced to 130. Each line is the lower of the head's own value and the item level 130 head's (its
-   ceiling); the ceiling's arithmetic is capValue's own order (the factor first, the slot share floored in tenths). */
-test('piece lab: each stat against its ceiling, with the sentences and the arithmetic', () => {
-  const app = makeApp('SGE', { cap: 130, sync: true, level: 100 });
-  app.piece = { ilvl: 170, slot: 'head', subs: ['crit', 'spd'] };
-  const v = pieceView(app);
-  assert.equal(v.status, 'above');
-  assert.deepEqual(
-    v.rows.map(r => [r.stat, r.raw, r.cap, r.syn, r.ownKept]),
-    [
-      ['main', 40, 33, 33, false],
-      ['vit', 35, 32, 32, false],
-      ['crit', 47, 31, 31, false],
-      ['spd', 33, 31, 31, false],
-    ],
-  );
-  assert.equal(
-    v.summary,
-    'Synced to 130, this item level 170 head keeps 62 of its 80 substat points. Critical Hit, its 100% stat, loses the most (−16).',
-  );
-  const vit = v.rows[1],
-    spd = v.rows[3];
-  assert.equal(vit.ownFormula, '460 × 8.5% = 39.1 → 39; × 0.9 = 35.1 → 35');
-  assert.equal(vit.capFormula, '414 × 90% = 372; × 8.5% = 31.6 → 32');
-  assert.match(vit.ownText, /then 90% on Mind gear\.$/);
-  assert.match(spd.ownText, /then 70% for the 2nd substat\.$/);
-  assert.match(spd.capText, /\(363\), with no 70% for the 2nd substat\.$/);
-  assert.match(vit.capText, /\(414\), with 90% on Mind gear\.$/);
-  assert.equal(spd.capFormula, '363 × 8.5% = 30.8 → 31');
-  // the slices: the job's slots with both rings make up the whole budget, the head marked
-  assert.equal(
-    v.slices.reduce((a, s) => a + s.width, 0),
-    1000,
-  );
-  assert.deepEqual(
-    v.slices.filter(s => s.on).map(s => [s.label, s.share]),
-    [['Head', '8.5%']],
-  );
-  assert.equal(v.slotShare, '8.5%');
-  // at the cap: nothing is cut, the head's own numbers are kept
-  app.piece = { ...app.piece, ilvl: 130 };
-  const at = pieceView(app);
-  assert.equal(at.status, 'below');
-  assert.ok(at.rows.every(r => r.ownKept && r.lost === 0));
-});
-
-test('piece lab: an off-hand is the two-handed value minus the one-handed one, its ceiling too', () => {
-  const app = makeApp('PLD', { cap: 130, sync: true, level: 100 });
-  app.piece = { ilvl: 170, slot: 'offhand', subs: ['crit', 'det'] };
-  const v = pieceView(app);
-  const crit = v.rows.find(r => r.stat === 'crit');
-  assert.match(crit.ownText, /^The two-handed weapon's \d+ minus the one-handed weapon's \d+\.$/);
-  assert.match(crit.capText, /^The two-handed cap \d+ minus the one-handed cap \d+\.$/);
-  assert.equal(v.slotShare, null);
-  assert.deepEqual(
-    v.slices.filter(s => s.on).map(s => s.label),
-    ['Off-hand'],
-  );
-  assert.equal(
-    v.slices.reduce((a, s) => a + s.width, 0),
-    1000,
-  );
-});
-
 /* "At cap" marks: a target or tiebreak number at the most its piece can have. Sage, Critical Hit. Level 100, no sync:
    every piece is melded up to its own cap, and a piece already at it takes no stone (Phantom Pendulums Eclipticum, 443:
    its 2 slots stay empty instead of going to another substat). Level 90, cap 535: the synced Augmented Bygone Brass
@@ -562,29 +299,6 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
     [synced.cells[k].value, synced.cells[k].atCap, synced.cells[det].value, synced.cells[det].atCap],
     [210, true, 210, true],
   );
-});
-
-/* Character panel numbers against AkhMorning's Level Modifiers table (AKH_LEVEL, helpers/common.js). */
-/* The main stat and Vitality: MAIN x the job's modifier (ClassJob.csv: Sage Mind 115, Vitality 100; Warrior Strength
-   105, Vitality 110; Black Mage Intelligence 115, Vitality 100), floored, as AkhMorning and xivgear count it, without
-   the clan's bonus. */
-test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB, the main stat and Vitality from MAIN x the job modifier)', () => {
-  for (const [id, stats, mainMod, vitMod] of [
-    ['SGE', ['crit', 'det', 'dh', 'spd', 'spec'], 115, 100],
-    ['WAR', ['crit', 'det', 'dh', 'spd', 'spec'], 105, 110],
-    ['BLM', ['crit', 'det', 'dh', 'spd'], 115, 100],
-  ]) {
-    const job = makeJobContext(id);
-    for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
-      assert.equal(levelParams(+lv).div, div, `level ${lv} DIV`);
-      for (const s of stats) {
-        const fromMain = s === 'det' || (s === 'spec' && job.profile.spec === 'piety');
-        assert.equal(statBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);
-      }
-      assert.equal(statBase(job, 'main', +lv), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
-      assert.equal(statBase(job, 'vit', +lv), Math.floor((main * vitMod) / 100), `${id} Vitality level ${lv}`);
-    }
-  }
 });
 
 /* The page's Total and With food rows equal gear (and food) plus the character's base; at level 50 Sage that is base 341
@@ -742,47 +456,6 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   assert.ok(det.food.cells[job.stats.indexOf('det')].value > 0);
 });
 
-/* Level sync (synced level 90, item level sync off) in the views. Real gear at item level 663 to 666: the equip level
-   94 and 95 pieces are synced to 660 at level 90, the level 90 ones are not (level-sync.test.js). */
-const sge = makeJobContext('SGE');
-const sgeApp = patch => appState({ job: 'SGE' }, patch);
-const LEVEL_SYNC_WINDOW = { ilvlMin: 663, ilvlMax: 666, lvlMax: 100 };
-
-test('views: level sync with item level sync off shows the level item level as the cap', () => {
-  const app = sgeApp({ sync: false, cap: null, level: 90 });
-  const v = explainerView(app);
-  assert.equal(v.cap, 660);
-  assert.equal(v.byLevel, true);
-  const p = pieceView(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
-  assert.equal(p.cap, 660);
-  assert.equal(p.status, 'above');
-  // at the level cap with item level sync off nothing applies
-  assert.equal(explainerView(sgeApp({ sync: false, cap: null, level: 100 })), null);
-  assert.equal(pieceView(sgeApp({ sync: false, cap: null, level: 100 })).status, 'off');
-  // item level sync on: its cap is shown, whatever the level
-  assert.equal(explainerView(sgeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
-});
-
-test('views: the gear browser and the optimizer apply level sync per piece', () => {
-  const app = sgeApp({ sync: false, cap: null, level: 90 });
-  Object.assign(app.browse, { q: '', type: 'head', min: 780, max: '', lvl: 100 });
-  const g = gearView(app);
-  const lv100 = g.shown.filter(x => x.lvl === 100);
-  assert.ok(lv100.length >= 2);
-  for (const x of lv100) assert.ok(x.eff.main === 248 && x.raw.main > 248, x.name);
-  const pool = gamePool(sge, LEVEL_SYNC_WINDOW);
-  Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' });
-  const sync = { cap: null, sync: false, level: 90 };
-  const o = optimizerView(app, pool);
-  assert.equal(o.kind, 'ok');
-  assert.equal(o.synced, true);
-  // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear. With melds, as the page: the
-  // most weapon damage is the item level 665 weapon (132) the level does not sync, which keeps its melds
-  assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'], melds: true })[0]);
-  // gear no piece of which is synced at this level is not marked synced
-  assert.equal(optimizerView(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
-});
-
 test('Rank by tier: the view shows the core result, each key held at its tier and marked, food chosen with the gear', () => {
   // Sage, unsynced level 100 gear from the item level 125-135 window, Critical Hit then Determination then Direct Hit
   const app = makeApp('SGE', { sync: false });
@@ -845,22 +518,6 @@ test('Rank by tier with a Target GCD: the GCD and the GCD line come from the tie
   const none = optimizerView(app, pool);
   assert.equal(none.kind, 'nogcd');
   assert.equal(none.gcdLine.bad, true);
-});
-
-/* A cap far above the synced level's item level (owner's screenshot, 2026-10-18: level 50 with cap 500 showed a 1.50 s
-   GCD for item level 470 to 540 sets). Gear made for a higher level goes no higher than the best gear made for the
-   level (capCeiling, 135), so every view computes what a level 50 duty can. */
-test('a cap far above the synced level: gear made for a higher level is held to the level, and every view computes', () => {
-  const high = makeApp('SGE', { cap: 500, sync: true, level: 50 });
-  assert.deepEqual(shownSync(high), { cap: 130, level: 50, byLevel: true }); // as with sync off at level 50
-  const v = optimizerView(high, gamePool(high.jobCtx, { ilvlMin: 120, ilvlMax: 540 }));
-  assert.equal(v.kind, 'ok');
-  assert.ok(Number(v.gcd) >= 2.1, `GCD ${v.gcd}`); // 1.50 s before the fix
-  assert.notEqual(explainerView(high), null);
-  assert.equal(pieceView(high).cap, 130);
-  // a cap at or under the ceiling, and level 100, keep the cap as typed
-  assert.deepEqual(shownSync(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });
-  assert.deepEqual(shownSync(makeApp('SGE', { cap: MAX_REAL, sync: true, level: 100 })), { cap: MAX_REAL, level: 100, byLevel: false });
 });
 
 /* Relics whose substats the player allocates in game (Zodiac Zeta, Anima, Eureka, Resistance, Manderville, Phantom
@@ -1024,23 +681,6 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
   assert.ok(states > 10000, `${states} states walked`);
 });
 
-/* Audit 13, finding 6: counts followed the browser's locale ("1.234" in German reads like a decimal next to "2.48s").
-   The default locale of this process cannot be changed, so the test watches which locale fmtInt asks for. */
-test('fmtInt: thousands separators in en-US whatever the browser locale', () => {
-  const plain = Number.prototype.toLocaleString;
-  const asked = [];
-  Number.prototype.toLocaleString = function (locale, options) {
-    asked.push(locale);
-    return plain.call(this, locale, options);
-  };
-  try {
-    assert.equal(fmtInt(1234567), '1,234,567');
-  } finally {
-    Number.prototype.toLocaleString = plain;
-  }
-  assert.deepEqual(asked, ['en-US']);
-});
-
 /* Audit 02, finding 6: a new optimizer setting had to be added to optimizerKey by hand, or a result never showed as
    out of date after it changed. Every field of opt, and the job and sync settings, must change the key. */
 test('optimizerKey: every optimizer, job and sync setting changes it', () => {
@@ -1085,39 +725,4 @@ test('optimizer view: the readout, rows, Defense and notes carry their own text'
   assert.equal(optimizerView(app, uniqueRingPool(app.jobCtx)).effectNote, 'gear only, no food');
   // a tank's main stat
   assert.equal(optimizerView(makeApp('WAR'), windowPool(makeJobContext('WAR'))).clanNote, 'Clan bonuses can affect STR and VIT.');
-});
-
-test('gear browser view: a gap before each new group of slot pills, and the line for rows not shown', () => {
-  const v = gearView(makeApp('PLD'));
-  assert.deepEqual(
-    v.slots.filter(p => p.sep).map(p => p.key),
-    ['weapon', 'head', 'ear'],
-  );
-  assert.equal(v.slots[0].sep, false);
-  assert.match(v.hiddenText, /^[\d,]+ more matches not shown\. Narrow the filters to view them\.$/);
-  assert.equal(v.hiddenText.split(' ')[0], v.hidden);
-});
-
-test('Piece stats steps: the sentences and headings of the section', () => {
-  const body = makeApp('SGE', { level: 100 });
-  body.piece = { ...body.piece, slot: 'body' };
-  const sync = pieceView(body, 300);
-  assert.equal(sync.shareText, `The body takes ${sync.slotShare}`);
-  assert.equal(sync.ruleText, 'what this body has, and what a body at the synced item level has (its ceiling).');
-  assert.equal(sync.ownHead, 'This body (item level 300)');
-  assert.equal(sync.capHead, 'A body at item level 123 (the ceiling)');
-  assert.equal(sync.byLevelText, '');
-  const app = makeApp('PLD', { sync: false, cap: null, level: 90 });
-  app.piece = { ...app.piece, slot: 'offhand' };
-  const byLevel = pieceView(app);
-  assert.equal(byLevel.shareText, 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s');
-  assert.equal(
-    byLevel.byLevelText,
-    `Level sync: at level 90, gear with a higher equip level is synced to item level ${byLevel.cap}, used as the cap here.`,
-  );
-});
-
-test('Piece stats: what it says while no sync applies', () => {
-  assert.equal(explainerOffText({ sync: true }), 'Enter a sync cap (item level) at the top to see what sync does.');
-  assert.match(explainerOffText({ sync: false }), /^No sync applies: item level sync is off/);
 });

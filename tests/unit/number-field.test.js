@@ -2,7 +2,7 @@
    (change), for each of its options. Typing commits the same values after a short wait. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { numberField } from '../../src/ui/helpers.js';
+import { fmtInt, numberField } from '../../src/ui/helpers.js';
 
 /* A box bound to one value: {field, value(), leave(text)}; leave types `text` and leaves the box. */
 function box(start, lo, hi, options) {
@@ -97,4 +97,21 @@ test('number box options: onEmpty runs when an empty box is left, with the box',
   b.leave('');
   assert.equal(b.value(), 60);
   assert.deepEqual(seen, ['']);
+});
+
+/* Audit 13, finding 6: counts followed the browser's locale ("1.234" in German reads like a decimal next to "2.48s").
+   The default locale of this process cannot be changed, so the test watches which locale fmtInt asks for. */
+test('fmtInt: thousands separators in en-US whatever the browser locale', () => {
+  const plain = Number.prototype.toLocaleString;
+  const asked = [];
+  Number.prototype.toLocaleString = function (locale, options) {
+    asked.push(locale);
+    return plain.call(this, locale, options);
+  };
+  try {
+    assert.equal(fmtInt(1234567), '1,234,567');
+  } finally {
+    Number.prototype.toLocaleString = plain;
+  }
+  assert.deepEqual(asked, ['en-US']);
 });
