@@ -73,8 +73,8 @@ export function isCancelled(error) {
   return error?.cancelled === true;
 }
 
-/* A solver that runs on the page's thread, as the page did before the worker; the tests use it, and the page falls back
-   to it when the worker cannot start. Returns {blocksPage: true, request(request) → reply, cancel(kind) → false}: the
+/* A solver that runs on the page's thread; the tests use it, and the page falls back to it when the worker cannot
+   start. Returns {blocksPage: true, request(request) → reply, cancel(kind) → false}: the
    handler runs at once, inside request(), so there is never a request to stop; blocksPage tells the component to paint
    its progress bar before asking. */
 export function inProcessSolver(session = makeSession()) {

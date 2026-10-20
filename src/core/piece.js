@@ -2,8 +2,8 @@
    it keeps its melds. The optimizer (optimizer/candidates.js), the meld rules (meld.js applyStones), a set's evaluation
    (set.js) and the views all read a piece through these, so a piece is synced the same way everywhere.
    Its own module, not items.js: items.js is the database and pool items as they are, with no sync; this module adds
-   sync (sync-target.js) and the caps (formulas.js) on top. They used to live in the optimizer, which made every other
-   reader import the optimizer's internals.
+   sync (sync-target.js) and the caps (formulas.js) on top, and not the optimizer, so a reader of a piece needs none of
+   the optimizer's internals.
    Rules and sources: docs/mechanics/math.md section 5 (which pieces are synced), docs/mechanics/materia.md (melds). */
 import { capsFor, syncStats } from './formulas.js';
 import { equipLevel, scalesWithLevel, slotInfo } from './items.js';

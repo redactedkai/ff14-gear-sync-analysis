@@ -25,10 +25,11 @@ const app = Alpine.store('app');
    filter an emptied box clears (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-/* The optimizer's Web Worker (ui/solver.js workerSolver), made when the optimizer first needs it: started from a Blob URL
-   of its bundle (the page is one file, also opened from file://), then handed the data files' texts, which it parses
-   on its own thread. Cancel starts a new one (workerSolver cancel), from the same URL; it is never revoked, since a
-   worker may still be fetching it. */
+/* The optimizer's Web Worker (ui/solver.js workerSolver), made on the solver's first request: the optimizer's Gear to
+   search line asks FOLLOW_MS after the page has a job, on any tab (the optimizer's panel is only hidden), so the
+   worker starts at load once a job is chosen. Started from a Blob URL of its bundle (the page is one file, also opened
+   from file://), then handed the data files' texts, which it parses on its own thread. Cancel starts a new one
+   (workerSolver cancel), from the same URL; it is never revoked, since a worker may still be fetching it. */
 let solverWorkerUrl = null;
 function startSolverWorker() {
   solverWorkerUrl ??= URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' }));
@@ -36,7 +37,7 @@ function startSolverWorker() {
   worker.postMessage({ data: WORKER_DATA });
   return worker;
 }
-// searches off the page's thread; on the page's thread as before when the browser will not run the worker
+// searches in the worker, off the page's thread; on the page's thread when the browser will not run the worker
 const solver = workerSolver(startSolverWorker, inProcessSolver);
 
 // the optimizer takes Alpine's effect and raw from here, so its module loads without a page (its unit test)
@@ -55,8 +56,8 @@ Object.entries({
   Alpine.data(name, factory);
 });
 
-/* Save whenever any persisted field changes: the effect tracks every field by serializing them (small; the gear pool
-   that once made this costly is gone), and the save runs once the changes settle. */
+/* Save whenever any persisted field changes: the effect tracks every field by serializing them (settings only, so it
+   is cheap; scripts/perf/browser.mjs times it as 'save'), and the save runs SAVE_DEBOUNCE_MS after the last change. */
 let saveTimer = null;
 Alpine.effect(() => {
   const t0 = performance.now();
