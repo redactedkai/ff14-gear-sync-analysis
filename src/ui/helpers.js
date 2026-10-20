@@ -14,11 +14,14 @@ export const TYPING_DEBOUNCE_MS = 300;
 /* A bound of numberField: a number, or a function read at each input. */
 const bound = b => (typeof b === 'function' ? b() : b);
 
-/* x-bind object for a number input that only commits in-range values (out-of-range typing is ignored, not corrected):
-   the page's one pattern for number boxes bound to a setting (as $num, storeNumberField). Typing commits
-   TYPING_DEBOUNCE_MS after the last keystroke; Enter or leaving the field (change) commits at once. While the field has
-   focus and already shows the stored value, the typed text is left alone ("2.40" stays as typed). A bound may be a
-   function, read at each input, for a limit that changes while the field is bound (the job's level cap). Options:
+/* x-bind object for a number input bound to a setting: the page's one pattern for number boxes (as $num,
+   storeNumberField). Typing commits TYPING_DEBOUNCE_MS after the last keystroke, and only an in-range value, so a
+   value on the way ("9" of "90") is held back. Enter or leaving the field (change) commits at once, and an out-of-range
+   value is moved to the nearest bound and shown in the box, so the box and the setting always agree (owner,
+   2026-10-19: "-5" in a filter becomes its lowest value, not "no limit"). While the field has focus and already shows
+   the stored value, the typed text is left alone ("2.40" stays as typed). A bound may be a function, read at each
+   input, for a limit that changes while the field is bound (the job's level cap). Options:
+   - snap: false keeps an out-of-range value out on change too, for a box that explains it (the sync cap's error).
    - live: commit each valid value as it is typed, with no wait (the synced level: owner, 2026-10-17); typing "90" then
      shows level 9 for a moment, which is cheap, and the optimizer has its own wait.
    - decimals: the digits kept after the point (0, whole numbers, by default; the Target GCD keeps 2).
@@ -29,18 +32,27 @@ const bound = b => (typeof b === 'function' ? b() : b);
    Boxes with another rule keep their own handlers: the GCD tab's level and speed correct what is typed and say so,
    and Piece stats' item level and the tiers' substat boxes commit only on change, since a value on the way would be
    held to its range while typing. */
-export function numberField(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty } = {}) {
+export function numberField(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty, snap = true } = {}) {
   let timer = null;
   const scale = 10 ** decimals;
   const round = v => Math.round(v * scale) / scale;
-  const commit = raw => {
+  /* commits `raw`; on the final commit (change) an out-of-range value moves to the nearest bound, and `input` shows it */
+  const commit = (raw, input = null) => {
     clearTimeout(timer);
     if (raw === '') {
       if (empty !== undefined && get() !== empty) set(empty);
       return;
     }
-    const v = +raw;
-    if (v >= bound(lo) && v <= bound(hi) && round(v) !== get()) set(round(v));
+    let v = +raw;
+    if (Number.isNaN(v)) return;
+    const low = bound(lo),
+      high = bound(hi);
+    if (v < low || v > high) {
+      if (!input || !snap) return;
+      v = Math.min(Math.max(v, low), high);
+      input.value = round(v);
+    }
+    if (round(v) !== get()) set(round(v));
   };
   return {
     ':value'() {
@@ -55,7 +67,7 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
       else timer = setTimeout(() => commit(raw), TYPING_DEBOUNCE_MS);
     },
     '@change'(e) {
-      commit(e.target.value);
+      commit(e.target.value, e.target);
       if (e.target.value === '' && onEmpty) onEmpty(e.target);
     },
   };

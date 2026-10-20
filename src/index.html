@@ -46,7 +46,7 @@
     </label>
     <div class="f field"><label for="cap">Synced item level <span class="f-range" id="cap-range" x-text="`1–${$store.app.maxReal}`"></span></label>
       <input type="number" id="cap" x-ref="cap" :disabled="!$store.app.sync" min="1" :max="$store.app.maxReal" step="1" inputmode="numeric"
-        x-bind="$num('cap', 1, Infinity)" @input="onCapInput($event.target.value)" :class="{ invalid: !!capError, lowered: !!capLoweredNote }" :aria-invalid="String(!!capError)" aria-describedby="cap-error cap-lowered">
+        x-bind="$num('cap', 1, Infinity, { snap: false })" @input="onCapInput($event.target.value)" :class="{ invalid: !!capError, lowered: !!capLoweredNote }" :aria-invalid="String(!!capError)" aria-describedby="cap-error cap-lowered">
       <span class="field-error" id="cap-error" x-show="capError" x-text="capError"></span>
       <span class="field-note lowered" id="cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span>
     </div>
@@ -287,8 +287,8 @@
         <h3 id="o-gear-h">Gear to search <span class="count" id="o-count" x-text="countText ? '· ' + countText : ''"></span></h3>
         <div class="grid">
           <!-- INCLUDE expansion-menu.html id=o -->
-          <label class="f"><span>Equip level <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-bind="$num('opt.lvl', 0, Infinity, { empty: '' })"></label>
-          <div class="f field ilvl-field"><span id="o-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="o-ilvl-label"><input type="number" id="o-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-bind="$num('opt.min', 0, Infinity, { empty: '' })"><span aria-hidden="true">–</span><input type="number" id="o-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-bind="$num('opt.max', 0, Infinity, { empty: '' })"></div></div>
+          <label class="f"><span>Equip level <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="o-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-bind="$num('opt.lvl', 1, Infinity, { empty: '' })"></label>
+          <div class="f field ilvl-field"><span id="o-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="o-ilvl-label"><input type="number" id="o-min" min="1" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-bind="$num('opt.min', 1, Infinity, { empty: '' })"><span aria-hidden="true">–</span><input type="number" id="o-max" min="1" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-bind="$num('opt.max', 1, Infinity, { empty: '' })"></div></div>
           <!-- INCLUDE gear-from-menu.html id=o part=opt -->
         </div>
       </div>
@@ -307,7 +307,7 @@
           <div class="f field gcd-field" id="o-gcd-row">
           <label for="o-gcd" x-text="gcdFieldLabel"></label>
           <div class="row">
-            <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-bind="$num('opt.gcd', 0, Infinity, { decimals: 2, empty: '' })">
+            <input type="number" id="o-gcd" min="0.5" max="2.5" step="0.01" inputmode="decimal" placeholder="Any" :disabled="$store.app.opt.target === 'spd'" x-bind="$num('opt.gcd', 0.5, Infinity, { decimals: 2, empty: '' })">
             <div class="seg" id="o-gcd-mode" role="radiogroup" aria-label="Target GCD mode" :class="{ off: $store.app.opt.target === 'spd' }">
               <label :class="{ on: $store.app.opt.gcdMode === 'exact' }"><input type="radio" name="o-gcd-mode" value="exact" :disabled="$store.app.opt.target === 'spd'" :checked="$store.app.opt.gcdMode === 'exact'" @change="$store.app.opt.gcdMode = 'exact'">exactly</label>
               <label :class="{ on: $store.app.opt.gcdMode === 'min' }"><input type="radio" name="o-gcd-mode" value="min" :disabled="$store.app.opt.target === 'spd'" :checked="$store.app.opt.gcdMode === 'min'" @change="$store.app.opt.gcdMode = 'min'">or faster</label>
@@ -432,8 +432,8 @@
     </div>
     <div class="grid browse-filters">
       <!-- INCLUDE expansion-menu.html id=b -->
-      <label class="f"><span>Equip level <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-bind="$num('browse.lvl', 0, Infinity, { empty: '' })"></label>
-      <div class="f field ilvl-field"><span id="b-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="b-ilvl-label"><input type="number" id="b-min" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-bind="$num('browse.min', 0, Infinity, { empty: '' })"><span aria-hidden="true">–</span><input type="number" id="b-max" min="0" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-bind="$num('browse.max', 0, Infinity, { empty: '' })"></div></div>
+      <label class="f"><span>Equip level <span class="f-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span><input type="number" id="b-lvl" min="1" :max="$store.app.jobCtx.maxLevel" inputmode="numeric" x-bind="$num('browse.lvl', 1, Infinity, { empty: '' })"></label>
+      <div class="f field ilvl-field"><span id="b-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="b-ilvl-label"><input type="number" id="b-min" min="1" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-bind="$num('browse.min', 1, Infinity, { empty: '' })"><span aria-hidden="true">–</span><input type="number" id="b-max" min="1" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-bind="$num('browse.max', 1, Infinity, { empty: '' })"></div></div>
       <!-- INCLUDE gear-from-menu.html id=b part=browse -->
     </div>
     <template x-if="view && view.anySynced"><div class="tablekey"><span></span><p class="small dim" id="b-key"><b class="atcap">48</b> synced to this piece’s cap · <span class="keywas">795</span> the piece’s own, before sync</p></div></template>

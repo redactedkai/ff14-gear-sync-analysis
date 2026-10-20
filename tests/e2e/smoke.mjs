@@ -513,6 +513,9 @@ async function checkRingCopies(pg) {
   await pg.waitForFunction(() => document.activeElement?.id === 'b-q');
   await pg.keyboard.type('ring');
   await expect(pg.locator('#gear-table tbody tr[data-key] .mark').first()).toHaveText(/ring/i);
+  // a value below a filter's range moves to its lowest value on leaving the box, shown there (not "no limit")
+  await setNumber(pg, '#b-min', '-5');
+  await expect(pg.locator('#b-min')).toHaveValue('1');
   await pg.click('#b-reset');
   await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(pg.locator('#b-q')).toHaveValue('');

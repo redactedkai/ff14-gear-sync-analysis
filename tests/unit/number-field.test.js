@@ -16,27 +16,60 @@ function box(start, lo, hi, options) {
     hi,
     options,
   );
-  const leave = text => field['@change']({ target: { value: text } });
-  return { value: () => value, leave };
+  /* types `text` and leaves the box; returns what the box shows afterwards */
+  const leave = text => {
+    const input = { value: text };
+    field['@change']({ target: input });
+    return input.value;
+  };
+  /* types `text` into a live box (commits as typed, no wait) */
+  const type = text => field['@input']({ target: { value: text } });
+  return { value: () => value, leave, type };
 }
 
-test('number box: whole values in range only; out of range and empty commit nothing', () => {
+test('number box: whole values; empty commits nothing', () => {
   const b = box(50, 1, 100);
   b.leave('80.4');
   assert.equal(b.value(), 80);
-  b.leave('101');
-  assert.equal(b.value(), 80);
-  b.leave('0');
-  assert.equal(b.value(), 80);
   b.leave('');
   assert.equal(b.value(), 80);
+});
+
+/* Owner, 2026-10-19: a negative filter value was ignored while the box kept showing it, so the box and the search
+   disagreed. Leaving the box now moves the value to the nearest bound and shows it. */
+test('number box: leaving it with a value out of range moves it to the nearest bound, shown in the box', () => {
+  const b = box(50, 1, 100);
+  assert.equal(b.leave('101'), 100);
+  assert.equal(b.value(), 100);
+  assert.equal(b.leave('-5'), 1);
+  assert.equal(b.value(), 1);
+  const filter = box('', 1, Infinity, { empty: '' });
+  assert.equal(filter.leave('-5'), 1);
+  assert.equal(filter.value(), 1);
+  const gcd = box('', 0.5, Infinity, { decimals: 2, empty: '' });
+  assert.equal(gcd.leave('0.1'), 0.5);
+  assert.equal(gcd.value(), 0.5);
+});
+
+test('number box: while typing, a value out of range commits nothing ("9" on the way to "90")', () => {
+  const b = box(50, 10, 100, { live: true });
+  b.type('9');
+  assert.equal(b.value(), 50);
+  b.type('90');
+  assert.equal(b.value(), 90);
+});
+
+test('number box: snap false keeps an out-of-range value out on leaving too (the sync cap explains it)', () => {
+  const cap = box(123, 1, Infinity, { snap: false });
+  assert.equal(cap.leave('0'), '0');
+  assert.equal(cap.value(), 123);
 });
 
 test('number box: a bound may be read at each input (the job level cap)', () => {
   let cap = 80;
   const b = box(50, 1, () => cap);
   b.leave('90');
-  assert.equal(b.value(), 50);
+  assert.equal(b.value(), 80);
   cap = 100;
   b.leave('90');
   assert.equal(b.value(), 90);
@@ -45,12 +78,12 @@ test('number box: a bound may be read at each input (the job level cap)', () => 
 /* Audit 02, finding 10: the gear filters and the Target GCD were plain x-model boxes. Through $num they keep what they
    took: an emptied filter is no limit (''), and the GCD keeps hundredths. */
 test("number box options: empty commits a filter's '' and decimals keeps the GCD's hundredths", () => {
-  const filter = box(150, 0, Infinity, { empty: '' });
+  const filter = box(150, 1, Infinity, { empty: '' });
   filter.leave('9999');
   assert.equal(filter.value(), 9999);
   filter.leave('');
   assert.equal(filter.value(), '');
-  const gcd = box('', 0, Infinity, { decimals: 2, empty: '' });
+  const gcd = box('', 0.5, Infinity, { decimals: 2, empty: '' });
   gcd.leave('2.40');
   assert.equal(gcd.value(), 2.4);
   gcd.leave('2.475');
