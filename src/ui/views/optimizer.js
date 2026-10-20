@@ -144,9 +144,8 @@ function mealMenu(job, level, gearTotals, meals, goal) {
 
 /* The table's rows, one per slot in the character panel's order (evaluateSet's rows), with the goal's marks and each
    row's menu of pieces with the same result: an empty slot {label, item: null, blockedBy, emptyText}; a worn one
-   {label, item (the search's pool item), ilvl (the item level it is synced to, else its own), ilvlWas (its own item
-   level when synced, else null), meld, category, from, same (sameMenu), cells: [{value, gold, atCap}] in job.stats
-   order}. */
+   {label, item (the search's pool item), meld, category, from, same (sameMenu), cells: [{value, gold, atCap}] in
+   job.stats order}. */
 function resultRows(job, recipe, set, found) {
   const scored = [recipe.target, recipe.tb, recipe.tb2].filter(Boolean);
   return set.rows.map((r, i) => {
@@ -160,14 +159,9 @@ function resultRows(job, recipe, set, found) {
         emptyText: r.blockedBy ? `covered by ${r.blockedBy}` : 'empty (no copy left)',
       };
     }
-    // the item level column: the item level the piece is synced to, with its own under it, as the browser shows it
-    // (audit 11 #5); its own alone when sync leaves it
-    const synced = r.target != null && r.target < pick.item.ilvl;
     return {
       label: r.label,
       item: pick.item,
-      ilvl: synced ? r.target : pick.item.ilvl,
-      ilvlWas: synced ? pick.item.ilvl : null,
       meld: r.meldText,
       // where the piece comes from: its gear category ({key, label}), and "HW · lvl 60" (both null for a piece not
       // from the database)

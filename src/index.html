@@ -379,7 +379,7 @@
                   <template x-if="r.from"><div class="from"><template x-if="r.category"><span class="pill" :class="'cat-' + r.category.key" x-text="r.category.label"></span></template><span x-text="r.from"></span></div></template>
                   <template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template>
                 </td></template>
-                <template x-if="r.item"><td class="n" data-col="ilvl" :class="{ cut: r.ilvlWas }"><span x-text="r.ilvl"></span><template x-if="r.ilvlWas"><span class="was" x-text="r.ilvlWas"></span></template></td></template>
+                <template x-if="r.item"><td class="n" data-col="ilvl" x-text="r.item.ilvl"></td></template>
                 <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="view.cols[k]" class="n" :class="{ gold: c.gold }"><span :class="{ atcap: c.atCap, dim: !c.value }" :title="c.atCap ? 'At this piece’s cap' : null" x-text="c.value"></span></td></template>
               </tr>
             </template>

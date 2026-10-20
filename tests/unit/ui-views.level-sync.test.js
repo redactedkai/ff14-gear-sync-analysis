@@ -47,16 +47,6 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
   // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear. With melds, as the page: the
   // most weapon damage is the item level 665 weapon (132) the level does not sync, which keeps its melds
   assert.equal(o.total, 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'], melds: true })[0]);
-  // the item level column: a synced piece shows 660 with its own under it, an unsynced one its own alone (audit 11 #5)
-  const worn = o.rows.filter(r => r.item);
-  for (const r of worn) {
-    if (r.ilvlWas != null) assert.deepEqual([r.ilvl, r.ilvlWas], [660, r.item.ilvl], r.item.name);
-    else assert.equal(r.ilvl, r.item.ilvl, r.item.name);
-  }
-  assert.ok(
-    worn.some(r => r.ilvlWas != null),
-    'some piece is synced',
-  );
   // gear no piece of which is synced at this level is not marked synced
   assert.equal(viewOf(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).synced, false);
 });
