@@ -29,6 +29,8 @@
       "trailingCommas": "all"
     }
   },
+  // src/index.html (the Alpine templates) is neither linted nor formatted: Biome's HTML support is new and reads
+  // Alpine's attributes (x-for, :selected, @click) as errors. The smoke test (tests/e2e/smoke.mjs) covers the templates.
   "html": {
     "formatter": { "enabled": false },
     "linter": { "enabled": false }
@@ -45,6 +47,14 @@
       }
     }
   },
+  // xg_sync_test.ts runs inside xivgear's own test runner against their types (scripts/validate/xivgear/run.py copies
+  // it there), so its loose `any` types and import style stay as they are; it is still format-checked.
+  "overrides": [
+    {
+      "includes": ["scripts/validate/xivgear/xg_sync_test.ts"],
+      "linter": { "enabled": false }
+    }
+  ],
   "assist": {
     "actions": { "source": { "organizeImports": "off" } }
   }

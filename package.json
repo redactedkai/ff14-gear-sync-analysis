@@ -14,7 +14,7 @@
     "test:full": "node --test \"tests/unit/*.test.js\" \"tests/full/*.test.js\"",
     "test:data": "node scripts/py.mjs -m unittest discover -s tests/data -p \"test_*.py\"",
     "smoke": "node tests/e2e/smoke.mjs",
-    "lint": "biome lint . && biome format .",
+    "lint": "biome lint --error-on-warnings . &&biome format .",
     "lint:py": "node scripts/py.mjs -m ruff check . && node scripts/py.mjs -m ruff format --check .",
     "format": "biome format --write .",
     "format:py": "node scripts/py.mjs -m ruff format .",

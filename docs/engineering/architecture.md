@@ -216,5 +216,5 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`, and `<!-- INCLUDE name.html key=value -->` for a partial), `src/partials/` (the Expansion and "Gear from" menus, one copy for both tabs, filled in by `expandIncludes` in the build), `src/styles.css` (grouped by area: tokens, base, controls, layout, shared pieces, tables, popovers, menus, then each tab) |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |
-| Lint and format configuration | `biome.json`, `pyproject.toml` |
+| Lint and format configuration | `biome.jsonc`, `pyproject.toml` |
 | Diagrams | `docs/diagrams/architecture-layers.svg`, `docs/diagrams/architecture-ui-flow.svg`, `docs/diagrams/architecture-job-switch.svg`, `docs/diagrams/architecture-timing.svg`, `docs/diagrams/architecture-restore.svg` |
