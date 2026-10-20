@@ -32,7 +32,8 @@ Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx p
 - `npm run check:all` (adds `lint:py`, `test:py`) when touching `scripts/data/` or after `data:update`.
 - For UI changes, also look at the page at full width and at 960 px.
 - `npm run data:update` after a game patch (see `docs/engineering/data-pipeline.md` section 9).
-- Git hooks (no AI attribution in commits; `check` before a push to `main`): `git config core.hooksPath .githooks` once per clone.
+- Commit subjects: 72 characters at most, details in the body.
+- Git hooks (no AI attribution in commits, a warning on long subjects; `check` before a push to `main`): `git config core.hooksPath .githooks` once per clone.
 
 ## Code rules
 

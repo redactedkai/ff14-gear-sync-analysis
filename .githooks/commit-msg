@@ -6,3 +6,11 @@ if grep -qiE '^[[:space:]]*Co-Authored-By:|Generated with \[?Claude' "$1"; then
   echo 'commit-msg: remove the Co-Authored-By / "Generated with" line; this repo has no AI attribution.' >&2
   exit 1
 fi
+
+# Warns (does not block) when the subject is over 72 characters (audit 15 #5): `git log --oneline` and GitHub cut it
+# there. Put the detail in the body, after a blank line.
+subject=$(grep -v '^#' "$1" | head -n 1)
+if [ "${#subject}" -gt 72 ]; then
+  echo "commit-msg: the subject is ${#subject} characters; keep it to 72 and put the rest in the body." >&2
+fi
+exit 0
