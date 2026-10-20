@@ -69,6 +69,7 @@ Which test numbers may change after a patch and which must not is in [data-pipel
 
 The full rules are in [CLAUDE.md](CLAUDE.md); start the docs at [docs/README.md](docs/README.md). The ones that matter most:
 
+- **Git hooks.** Once per clone, run `git config core.hooksPath .githooks`. The `commit-msg` hook rejects a `Co-Authored-By` or "Generated with" line (no AI attribution in this repo), and `pre-push` runs `npm run check` before a push to `main`.
 - **Branches.** Work on a feature branch off `dev`, merge it into `dev`, and move `dev` to `main` (fast-forward when possible). Never commit on `main`: a push to `main` deploys the live page. Builds from any other branch show a DEV badge.
 - **Done means `npm run check` passes.** For UI changes, also look at the page at full width and at 960 px. Run `npm run check:all` when touching `scripts/data/`, and `npm run test:full` and `npm run perf` when changing the optimizer's scoring, pruning or search.
 - **Code rules** (details in [architecture.md](docs/engineering/architecture.md)):

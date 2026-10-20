@@ -1,0 +1,11 @@
+#!/bin/sh
+# Runs `npm run check` before a push that updates main, since a push to main deploys the page (CLAUDE.md, "Branches").
+# Pushes to other branches are not checked here (CI checks them). Enable once per clone: git config core.hooksPath .githooks
+# git passes one line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>
+to_main=no
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$remote_ref" = refs/heads/main ] && to_main=yes
+done
+[ "$to_main" = yes ] || exit 0
+echo 'pre-push: pushing to main, running npm run check first'
+npm run check || { echo 'pre-push: npm run check failed; nothing pushed.' >&2; exit 1; }
