@@ -418,7 +418,7 @@ Raw and tier ranking, each run, on `dev` at `ef9575a`, data `cce7f34`: all 23 jo
 | A speed band per meal | `src/core/target-gcd.js` (`gearBand`) |
 | Minimums on any stat, seeds | `src/core/optimizer/index.js` (`prepare`, `solve`) |
 | Pruning with limits; meld versions built once per ranking | `src/core/optimizer/candidates.js` (`pruneForLimits`, `itemVersions` with `versionCache`) |
-| Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, `TRIAL_NODES`, `branchAndBound`) |
+| Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, all run by `prepareSearch`; `TRIAL_NODES`, `branchAndBound`) |
 | Regain cuts | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts, the staircase dominance | `src/core/optimizer/front.js` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
 | The page: switch, held marks, progress bar | `src/ui/views/optimizer.js` (`optimizerView`, `tierLists`), `src/ui/components/optimizer.js` (`solve`), `src/index.html` (`#o-by-tier`, `#o-busy`) |

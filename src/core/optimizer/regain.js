@@ -15,10 +15,8 @@
      sum of regain(a) <= most - held.
    That sum becomes a limit on a synthetic stat (a maximum only, marked `cut`). Every loadout the later search can
    return meets it, so it removes none of them (a valid inequality). What it removes are partial loadouts whose pieces
-   put stones, or a whole piece, against the held keys: the room (most - held) is usually less than one stone.
-   Dark Knight at level 90, item level 660, exactly 2.30, Critical Hit > Determination > Direct Hit, the Direct Hit
-   stage: rooms of 5 Critical Hit and 11 Determination keep 68 of 117 candidates, and the search needs 2,648 nodes
-   instead of 4,800 (2026-10-17). From Perplexity's solver review (2026-10-17). */
+   put stones, or a whole piece, against the held keys: the room (most - held) is usually less than one stone. Its
+   origin and measured gain: tier-ranking.md, section 4.4. */
 
 /* The most `proof.stat` piece `piece` gains by a swap for one of `swaps` that keeps every stat in proof.minStats and,
    under a speed minimum only, its speed (swapsFor already keeps the same speed under a band). 0 when no swap gains. */
