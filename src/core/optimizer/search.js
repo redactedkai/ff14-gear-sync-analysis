@@ -21,6 +21,19 @@ function bestPair(list, f) {
   return f(top) + other;
 }
 
+/* A piece's bound in its own slot: `value` (its score or one stat) less the per-slot bounds `bounds` (by position) of
+   the later slots it blocks, so a bound summed over the slots never counts both the piece and the slots it leaves
+   empty. `pos`: the piece's position; `positions`: slotPositions of the slot list. Used by suffixBounds and, to count a
+   piece as suffixBounds does, by dropShortfalls. */
+function lessBlockedBounds(cand, value, pos, bounds, positions) {
+  let own = value;
+  for (const type of cand.blocks || []) {
+    const blockedPos = positions.get(type);
+    if (blockedPos > pos) own -= bounds[blockedPos];
+  }
+  return own;
+}
+
 /* remMax[d][i]: most of dimension d slots i.. can still add; remSc[i]: best score they can still add. Each is a sum of
    per-slot bounds, slotMax[d][i] and slotSc[i], which a branch subtracts for a slot a chosen piece leaves empty.
    A piece that leaves later slots empty (legs that cover the feet) is bounded together with them: its slot's bound is
@@ -53,12 +66,11 @@ export function suffixBounds(slotList, posList, dims) {
     }
 
     // the bound of one piece here, less the bounds of the later slots it blocks
-    const own = (a, value, bounds) => (a.blocks || []).reduce((x, b) => (posOf.get(b) > i ? x - bounds[posOf.get(b)] : x), value);
     dims.forEach(d => {
-      slotMax[d][i] = Math.max(0, ...list.map(a => own(a, a.eff[d], slotMax[d])));
+      slotMax[d][i] = Math.max(0, ...list.map(a => lessBlockedBounds(a, a.eff[d], i, slotMax[d], posOf)));
       remMax[d][i] = remMax[d][i + 1] + slotMax[d][i];
     });
-    slotSc[i] = Math.max(0, ...list.map(a => own(a, a.score, slotSc)));
+    slotSc[i] = Math.max(0, ...list.map(a => lessBlockedBounds(a, a.score, i, slotSc, posOf)));
     remSc[i] = remSc[i + 1] + slotSc[i];
   }
   return { remMax, remSc, slotMax, slotSc };
@@ -311,9 +323,7 @@ export function dropShortfalls(slotList, posList, dims, limits) {
             most = total - pair + (a.eff[d] || 0) + top;
           } else {
             // own value less the bounds of the later slots it blocks, as suffixBounds counts it
-            let own = a.eff[d] || 0;
-            for (const b of a.blocks) if (posOf.get(b) > i) own -= slotMax[d][posOf.get(b)];
-            most = total - slotMax[d][i] + own;
+            most = total - slotMax[d][i] + lessBlockedBounds(a, a.eff[d] || 0, i, slotMax[d], posOf);
           }
           return most >= l.min;
         }),
@@ -390,6 +400,14 @@ export function improveStart(slotList, posList, limits, start) {
    stay below 2^53, a relative error near 1e-16 per step) keeps every cut on the safe side. */
 const lagrSlack = bound => 1 + Math.abs(bound) * 1e-9;
 
+/* A candidate's priced value under the Lagrangian bound `lagr` (lagrangeBound): its score plus each term's coefficient
+   times its value of the term's stat. */
+function pricedValue(cand, lagr) {
+  let priced = cand.score;
+  for (const term of lagr.terms) priced += term.coef * (cand.eff[term.stat] || 0);
+  return priced;
+}
+
 /* Reduced-cost fixing: the candidates of slot `i` worth searching against a known set scoring `known`. Forcing a
    candidate into its slot lowers the Lagrangian bound (lagrangeBound) by the slot's most minus the candidate's own
    priced value; when that leaves the bound at or below `known`, no set holding the candidate beats the known set, and
@@ -397,11 +415,7 @@ const lagrSlack = bound => 1 + Math.abs(bound) * 1e-9;
 export function fixByReducedCost(list, lagr, i, known) {
   const root = lagr.slotAug.reduce((a, b) => a + b, 0) - lagr.terms.reduce((a, t) => a + t.coef * t.rhs, 0);
   const gap = root - known + lagrSlack(root);
-  return list.filter(a => {
-    let aug = a.score;
-    for (const t of lagr.terms) aug += t.coef * (a.eff[t.stat] || 0);
-    return lagr.slotAug[i] - aug < gap;
-  });
+  return list.filter(a => lagr.slotAug[i] - pricedValue(a, lagr) < gap);
 }
 
 /* The order branchAndBound searches the slots in, after its filters: the slots no piece can block, shortest list first
@@ -592,13 +606,7 @@ export function branchAndBound({
   const augOf = new Map();
   if (lagr) {
     for (let i = nSlots - 1; i >= 0; i--) sufAug[i] = sufAug[i + 1] + lagr.slotAug[i];
-    for (const list of posList) {
-      for (const a of list) {
-        let aug = a.score;
-        for (const t of lagr.terms) aug += t.coef * (a.eff[t.stat] || 0);
-        augOf.set(a, aug);
-      }
-    }
+    for (const list of posList) for (const a of list) augOf.set(a, pricedValue(a, lagr));
   }
   let blockedAug = 0; // slotAug of the later slots currently blocked
   const lagrRest = pos => {
@@ -893,31 +901,28 @@ export function branchAndBound({
         }
       }
 
-      // empty only when no candidate has a copy left (the cuts above say nothing about copies)
-      if (!list.some(a => (used.get(a.item.id) || 0) < a.copies)) {
-        chosen[pos] = { cand: null, rank: -1 };
-        dfs(pos + 1, scoreSoFar);
-        chosen[pos] = null;
-      }
+      leaveEmptyIfNoCopies(pos, scoreSoFar);
       return;
     }
 
     // without them: every candidate in score order
-    let avail = 0;
     for (let rank = 0; rank < list.length; rank++) {
       const a = list[rank];
-      if ((used.get(a.item.id) || 0) >= a.copies) continue;
-      avail++;
+      if (!hasCopyLeft(a)) continue;
       if (lagrCuts(a)) continue;
       tryChild(pos, rank, a, isRing2, scoreSoFar);
       if (truncated) return;
     }
-    // empty only when no candidate has a copy left
-    if (avail === 0) {
-      chosen[pos] = { cand: null, rank: -1 };
-      dfs(pos + 1, scoreSoFar);
-      chosen[pos] = null;
-    }
+    leaveEmptyIfNoCopies(pos, scoreSoFar);
+  }
+
+  // a slot is left empty only when no candidate has a copy left (the cuts in dfs say nothing about copies)
+  const hasCopyLeft = a => (used.get(a.item.id) || 0) < a.copies;
+  function leaveEmptyIfNoCopies(pos, scoreSoFar) {
+    if (posList[pos].some(hasCopyLeft)) return;
+    chosen[pos] = { cand: null, rank: -1 };
+    dfs(pos + 1, scoreSoFar);
+    chosen[pos] = null;
   }
 
   // 5. with a known set, a short trial search first (TRIAL_NODES); only when it does not finish, Pareto fronts
