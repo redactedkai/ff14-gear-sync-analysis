@@ -84,10 +84,12 @@ There is no gear pool to keep: the optimizer searches every piece the job can we
 
 Changes go through store actions: set job, reset everything, switch tab or math sub-tab.
 
-**Number inputs.** They are bound to store fields through a helper with two rules:
+**Number inputs.** A number box bound to a setting uses one helper (`$num` in the template, `numberField` in `src/ui/helpers.js`) with two rules:
 
-- A value is committed only when it is inside the allowed range, rounded to a whole number. An out-of-range value is ignored rather than corrected under the user's cursor.
-- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-only-when-visible-or-on-request)). The gear browser's typed filters wait the same way. The exception is the synced level: it commits each valid value as it is typed (owner, 2026-10-17), and the optimizer still waits its own 120 ms.
+- A value is committed only when it is inside the allowed range, rounded to a whole number (the Target GCD keeps hundredths). An out-of-range value is ignored rather than corrected under the user's cursor. The gear filters (equip level, item level min and max, in both tabs) and the Target GCD take any number from 0 up, and an emptied box commits `''` (no limit).
+- A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12 (timeline in [Heavy work](#heavy-work-debounced-only-when-visible-or-on-request)). The exceptions commit each valid value as it is typed: the synced level (owner, 2026-10-17) and the Substat tiers level; the optimizer still waits its own 120 ms.
+
+Two kinds of box keep their own handlers, on purpose: the GCD tab's level and speed correct what is typed and say so, and the boxes that commit only on Enter or leaving (Piece stats' item level, the tiers' substat values), since a value on the way would be held to its range while typing.
 
 **Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
 
@@ -99,7 +101,9 @@ Changes go through store actions: set job, reset everything, switch tab or math 
 
 Every page area is a component that recomputes one **view** object from the store inside a reactive effect. An effect is a function that the framework re-runs when its inputs change: it reads the store fields it needs, which registers them as dependencies, and runs again when any of them changes. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it.
 
-The functions that build views are pure and live apart from the components, with no dependency on the UI framework. So the unit tests check what each tab shows directly; the components only wire them to the store.
+The functions that build views are pure and live apart from the components, with no dependency on the UI framework. So the unit tests check what each tab shows directly; the components only wire them to the store. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
+
+Each component reads the job through its own `jobCtx` getter (the store's `jobCtx`), never through a parent component's scope; nested components that share a page area are named apart (Piece stats' `explainer` and `steps` around the GCD and tiers sub-tabs' `view`). The Food row's menu is its own component (`mealMenu`) inside the optimizer's. The GCD and Substat tiers sub-tabs build their view in a getter and keep the last one until its inputs change, since the template reads it several times a render.
 
 **Large data never enters reactive state.** Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps nested objects as they are read. A frozen object is left as it is. Keeping big lists frozen or outside the store avoids wrapping thousands of rows on every recompute:
 
@@ -125,7 +129,7 @@ Notes:
 - **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches. Layout (owner, 2026-10-18): the name search on the title line (every word must be in the name, the words found are marked), slot pills with each slot's count under the other filters, one row of filters (item level as one "min – max" field, as under Gear to search), a Reset button (funnel and ×) at the end of the pills' line while any filter is off its default (`browseFiltered`; its place is kept while hidden, so the pills do not move), and sorting from the column headings (`browse.sort` and `browse.dir`, saved). A row that sync lowers (owner, 2026-10-19) shows what the player gets on top, bold: the synced item level and stats, the lowered stats with the optimizer's cap bar; a muted line under it holds the piece's own numbers, "before sync" under the name, and a grey bar marks the row's left edge (`browseCell`).
 - **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the optimizer's own values). Searched only when the user presses Optimize (owner, 2026-10-18; it used to rerun on every change of those filters, job, cap, sync, level or optimizer settings). A setting changed after a search leaves the result shown but dimmed, with a note and its menus off, until Optimize runs again; a job switch clears it. The count in the heading and the greyed-out Gear from boxes still follow the settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
-**How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart update the optimizer's piece count once, not $k$ times. The optimizer's own number fields commit at once (no typing wait), so pressing Optimize right after typing searches with the value typed. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+**How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart update the optimizer's piece count once, not $k$ times. Pressing Optimize right after typing still searches with the value typed: the click first moves the focus out of the box, which commits it. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
 ![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open gear browser recompute at once; the optimizer's piece count and Target GCD range update once 120 ms later (the search itself waits for Optimize); the saved state is written 150 ms later. Each wait restarts on every change.](../diagrams/architecture-timing.svg)
 
@@ -202,14 +206,14 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
 | Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
-| Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`) |
-| Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`); the optimizer's settings key in `src/ui/views/optimizer.js` (`optimizerKey`) |
+| Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
+| Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`); the optimizer's settings key in `src/ui/views/optimizer.js` (`optimizerKey`: the job and sync settings and every field of `defaultState().opt`) |
 | Debounced effect, number-field binding, "Gear from" boxes | `src/ui/helpers.js` (`debouncedEffect`, `numberField`, `storeNumberField`, `gearFromToggles`, `expansionToggles`) |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` (SVG for `x-html`; every name passed in goes through `escapeXml`) |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
 | The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
-| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`) |
-| Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`), `src/styles.css` |
+| Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `meal-menu.js`, `tiers.js`) |
+| Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`, and `<!-- INCLUDE name.html key=value -->` for a partial), `src/partials/` (the Expansion and "Gear from" menus, one copy for both tabs, filled in by `expandIncludes` in the build), `src/styles.css` (grouped by area: tokens, base, controls, layout, shared pieces, tables, popovers, menus, then each tab) |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |
 | Lint and format configuration | `biome.json`, `pyproject.toml` |
