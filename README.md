@@ -46,6 +46,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
 | `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
+| `node scripts/perf/db-parse.mjs` | Time how long Chromium takes to read and run the inlined item database and the page's script, at normal speed and 4× and 6× slower (build first; about 1 min) |
 | `node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
 
 For a UI change, also open `dist/index.html` and look at it at desktop width and at 960 px. What each command checks, how to run a subset, and the checks against ffxiv-gearing and xivgear are in [testing.md, section 3](docs/engineering/testing.md#3-commands); test layers and conventions are in the rest of [testing.md](docs/engineering/testing.md).

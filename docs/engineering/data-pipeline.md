@@ -560,14 +560,28 @@ The page bundle takes the page code, the stylesheet and the generated data files
 
 | Part | Size |
 | --- | --- |
-| item database (generated file) | 2,422,348 bytes |
-| item level table, level data and stat factor table (generated file) | 78,584 bytes |
-| job icons (generated file) | 216,622 bytes |
-| food (generated file) | 18,290 bytes |
-| most speed per level (generated file) | 575 bytes |
-| finished page, minified | 2,964,555 bytes (about 3.0 MB) |
+| item database (generated file) | 2,422,367 bytes |
+| item level table, level data and stat factor table (generated file) | 78,603 bytes |
+| job icons (generated file) | 218,387 bytes |
+| food (generated file) | 18,309 bytes |
+| most speed per level (generated file) | 676 bytes |
+| finished page, minified | 2,971,352 bytes (about 3.0 MB) |
 
-Measured 2026-10-19 on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,310 bytes, about 81% of the page; the icons are about 7%.
+Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 81% of the page; the icons are about 7%.
+
+**What the inlined database costs at page open.** esbuild writes the JSON import as a JavaScript object literal in the page's one script, so the browser parses and runs it with the rest of the code. `scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own; median of 7 runs, 2026-10-19, a 12-thread desktop:
+
+| CPU | Item database as a literal | The same as `JSON.parse` of a string | The page's whole script |
+| --- | ---: | ---: | ---: |
+| this machine | 76 ms | 49 ms | 200 ms |
+| 4× slower | 381 ms | 204 ms | 775 ms |
+| 6× slower | 608 ms | 364 ms | 1,439 ms |
+
+Notes:
+
+- **No change made.** At normal speed the literal takes well under 150 ms, the line set for switching the build to `JSON.parse('<string>')` (audit 16, R9), so the page keeps the literal. `JSON.parse` would save about 30 ms here and 200 to 250 ms on a 4× to 6× slower CPU.
+- **The rest of the script** (Alpine, the page code, the other data files and what runs when the script loads) takes more than the database itself.
+- **Run it** with `npm run build && node scripts/perf/db-parse.mjs` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
 
 ## 9. Updating after a game patch
 
