@@ -1051,11 +1051,11 @@ async function checkRingCopies(pg) {
   await expect(browserRows(pg)).toHaveCount(want.count);
   await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
   // a heading sorts by its column, and again the other way
-  // the sort goes by the piece's own item level: the muted line's on a synced row, else the cell's
+  // the sort goes by the piece's own item level, which the column shows (owner, 2026-10-19)
   const ilvls = () =>
     pg
       .locator('#gear-table tbody tr[data-key] td[data-col="ilvl"]')
-      .evaluateAll(cells => cells.map(c => Number((c.querySelector('.was') ?? c).textContent)));
+      .evaluateAll(cells => cells.map(c => Number(c.textContent)));
   const ilvlHead = pg.locator('#gear-table th:has([data-sort="ilvl"])');
   await pg.click('#gear-table [data-sort="ilvl"]');
   await expect(ilvlHead).toHaveAttribute('aria-sort', 'ascending');
@@ -1066,12 +1066,20 @@ async function checkRingCopies(pg) {
   );
   await pg.click('#gear-table [data-sort="ilvl"]');
   await expect(ilvlHead).toHaveAttribute('aria-sort', 'descending');
-  // the column under the pointer is tinted, its cells and its heading alike
+  // the column and the row under the pointer are tinted (owner, 2026-10-19); a cell in neither is not
   await pg.hover('#gear-table tbody tr[data-key] td[data-col="crit"] >> nth=0');
   await expect(pg.locator('#gear-table')).toHaveAttribute('data-col', 'crit');
-  const tint = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="crit"]', e => getComputedStyle(e).backgroundColor);
-  const plain = await pg.$eval('#gear-table tbody tr[data-key] td[data-col="det"]', e => getComputedStyle(e).backgroundColor);
-  check(tint !== plain, `the hovered column is not tinted (${tint} vs ${plain})`);
+  const background = (row, col) =>
+    pg
+      .locator('#gear-table tbody tr[data-key]')
+      .nth(row)
+      .locator(`td[data-col="${col}"]`)
+      .evaluate(e => getComputedStyle(e).backgroundColor);
+  const inColumn = await background(1, 'crit');
+  const inRow = await background(0, 'det');
+  const plain = await background(1, 'det');
+  check(inColumn !== plain, `the hovered column is not tinted (${inColumn} vs ${plain})`);
+  check(inRow !== plain, `the hovered row is not tinted (${inRow} vs ${plain})`);
   // "/" jumps to the search, and the word is marked in the names; Reset filters clears every filter and hides
   await pg.locator('#b-count').click();
   await pg.keyboard.press('/');

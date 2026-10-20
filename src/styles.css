@@ -828,6 +828,12 @@ table[data-col="spd"] th[data-col="spd"],
 table[data-col="spec"] th[data-col="spec"] {
   color: var(--fg);
 }
+/* The row under the pointer, in the same two tables, tinted like the column (owner, 2026-10-19), so the pointer marks
+   one cell's row and column at once */
+/* (:where keeps it at a class's weight, so the tables' later, plainer rules still read in order) */
+:where(#gear-table, #o-table) tr:hover > td {
+  background: var(--surface2);
+}
 
 /* ==== Popovers and ? buttons ==== */
 /* the "?" button and its popup, which stands apart from the panels: raised background, accent border, dimmed page */
