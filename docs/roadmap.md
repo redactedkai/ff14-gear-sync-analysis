@@ -26,7 +26,3 @@ On `dev` at least; live once on `main`.
 | A8 | Substat tiers (breakpoints) | [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints) |
 | A9 | Other pieces with the same result | [ui.md, section 2](engineering/ui.md#other-pieces-with-the-same-result) |
 | A10 | Gear from filter | [data-pipeline.md, section 4](engineering/data-pipeline.md#sources) |
-
-## Out of scope
-
-- **A6, export to xivgear and other tools** (owner, 2026-10-18; import from xivgear reopened as A12, 2026-10-20). xivgear has no gear below item level 290 outside Blue Mage and Beastmaster, so an export would not work below level 70. It would also tie the page to another project's format. xivgear stays a reference for checking our math.
