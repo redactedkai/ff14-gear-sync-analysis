@@ -15,16 +15,16 @@ The code is split into four layers. Each layer depends only on the layers above 
 | Layer | What it holds | Depends on |
 | --- | --- | --- |
 | 1. Generated game data | Budget tables, level data, item database, food table, job icons | nothing |
-| 2. Core logic | Formulas, sync, speed, item queries, pieces and sets, optimizer, accuracy checks | data |
-| 3. UI state | Saved state and the shared store | core |
+| 2. Core logic | Formulas, sync, speed, item queries, pieces and sets, recipes and the solver session, optimizer, accuracy checks | data |
+| 3. UI state | Saved state, the shared store, and the settings as plain inputs | core |
 | 4. Components and template | One component per page area | UI state, core |
 
 Notes:
 
 - **Data.** The item level budget table, per-level speed data, stat factor table, materia table, item database, food table and job icons. Produced by the data pipeline and never edited by hand. Row counts are in [data-pipeline.md, section 7](data-pipeline.md#7-facts-about-the-current-data).
-- **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches. Because nothing in it touches the browser, the core runs unchanged in Node, which is how the unit tests use it.
-- **UI state.** The saved state (defaults, repair on load, browser storage) and one shared store that holds the current settings, the current job context, and the actions that change them.
-- **Components.** Each turns the store into a ready-to-display "view". The HTML template binds to those views and to store actions.
+- **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches keyed by their pure inputs. The work kept between optimizer solves is not module state: it lives in a solver session object that the caller creates and passes in ([section 8](#8-recipes-and-the-solver-session)). Because nothing in it touches the browser, the core runs unchanged in Node, which is how the unit tests use it.
+- **UI state.** The saved state (defaults, repair on load, browser storage), one shared store that holds the current settings, the current job context, and the actions that change them, and two small pure modules the rest of the UI builds on: `settings.js` turns the store's fields into the plain inputs the core and the views take (the sync settings, the optimizer's recipe, the key that tells when they change), and `ranks.js` holds the rule of the ranked stat menus. Neither imports another UI module, so no import goes back up the layers: `state.js` and `helpers.js` use them, and nothing below the views imports a view.
+- **Components.** Each assembles the plain inputs of its area from the store, hands them to a pure view builder (`src/ui/views/`) and keeps the ready-to-display "view" it returns. The HTML template binds to those views and to store actions.
 
 The page uses one runtime library, Alpine.js, for reactivity and templating. The build uses one tool, esbuild. Adding any other dependency is a decision for the owner (see `CLAUDE.md`).
 
@@ -78,7 +78,7 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 
 ### One shared store
 
-All state that matters lives in one shared store: the saved settings, plus a few values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in, so they follow the synced level until the user sets one. The optimizer's result is not in the store: its component keeps it, together with the settings it was solved for (`optimizerKey`), so the page can tell when a setting has changed since the last **Optimize**.
+All state that matters lives in one shared store: the saved settings, plus a few values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in, so they follow the synced level until the user sets one. The optimizer's result is not in the store: its component keeps it, together with the settings it was solved for (`optimizerKey` in `settings.js`), so the page can tell when a setting has changed since the last **Optimize**.
 
 There is no gear pool to keep: the optimizer searches every piece the job can wear ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters)), so the store holds only settings. Until 2026-10-15 the user built a pool on a Gear pool tab first; dropping that step costs nothing in speed (building a job's gear takes about 5 to 10 ms, measured once on 2026-10-15; a whole optimizer run takes about 20 ms, see [optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
 
@@ -99,17 +99,21 @@ Two kinds of box keep their own handlers, on purpose: the GCD tab's level and sp
 
 ### Each area derives a view
 
-Every page area is a component that recomputes one **view** object from the store inside a reactive effect. An effect is a function that the framework re-runs when its inputs change: it reads the store fields it needs, which registers them as dependencies, and runs again when any of them changes. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it.
+Every page area is a component that shows one **view** object. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it.
 
-The functions that build views are pure and live apart from the components, with no dependency on the UI framework. So the unit tests check what each tab shows directly; the components only wire them to the store. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
+The functions that build views are pure and live apart from the components, with no dependency on the UI framework, and they take **plain inputs**, never the store: the job context, the sync settings (`syncSettings`), the area's own settings (the browser's filters, Piece stats' piece, the optimizer's recipe), and for the optimizer a solver session. A component assembles those inputs from the store (`settings.js` has the helpers, such as `optimizerInputs`). So the unit tests check what each tab shows directly, and a set of the planned sheet can hand in its own recipe the same way. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
 
-Each component reads the job through its own `jobCtx` getter (the store's `jobCtx`), never through a parent component's scope; nested components that share a page area are named apart (Piece stats' `explainer` and `steps` around the GCD and tiers sub-tabs' `view`). The Food row's menu is its own component (`mealMenu`) inside the optimizer's. The GCD and Substat tiers sub-tabs build their view in a getter and keep the last one until its inputs change, since the template reads it several times a render.
+**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The component has a getter, `view` (Piece stats: `pieceViews`, read through `explainer`, `steps` and the slider's getters), that reads the inputs from the store, makes a key of them, and asks a `viewCache` (`helpers.js`) for the view of that key. A new key builds the view; the same key returns the last one. Reading the inputs inside the getter makes every binding that shows the view track them, so the page updates in the same render as the setting, and the template, which reads the view many times a render, builds it once. The cache lives in the component's closure, not in its reactive state. The Gear browser's getter returns its last view while its tab is hidden, so the list is built only while it can be seen.
+
+**Results on request** (the optimizer). Its result is not derived from the store on each change: **Optimize** builds it, and the component keeps it with the settings it was solved for. What follows the settings before the next Optimize (the piece count, the greyed-out "Gear from" boxes, the Target GCD range) is one view, `gearToSearchView`, built by a debounced effect (`debouncedEffect`), since its fastest-GCD search takes 20 to 100 ms.
+
+Each component reads the job through its own `jobCtx` getter (the store's `jobCtx`), never through a parent component's scope; nested components that share a page area are named apart (Piece stats' `explainer` and `steps` around the GCD and tiers sub-tabs' `view`). The Food row's menu is its own component (`mealMenu`) inside the optimizer's. No component imports Alpine: `main.js` imports it and hands the optimizer its `effect` and `raw`, so every component module loads in Node and its unit test binds it to a plain store.
 
 **Large data never enters reactive state.** Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps nested objects as they are read. A frozen object is left as it is. Keeping big lists frozen or outside the store avoids wrapping thousands of rows on every recompute:
 
 - The item database is a plain module-level constant that the core reads directly. It is never placed in the store.
 - The views with long lists (the gear browser's rows, the optimizer result, the accuracy panel) are frozen before they are stored on the component.
-- The job's gear the optimizer searches is built once per job, frozen, and kept in a module-level cache outside the store. The optimizer reads the store through `Alpine.raw`, without the proxies.
+- The job's gear the optimizer searches is built once per job, frozen, and kept in the solver session, which the optimizer component holds in its closure, outside reactive state. The optimizer reads the store through `Alpine.raw`, without the proxies.
 
 ### Heavy work: debounced, only when visible, or on request
 
@@ -156,7 +160,7 @@ A saved job id that is not a known job means no job is chosen; the job-dependent
 
 An invalid field falls back to its default and the valid ones are kept. The state unit tests cover this field by field ([testing.md, section 2](testing.md#2-what-each-file-covers)).
 
-**Piece identity.** Anything kept that names a piece of gear refers to it by its **gameId**, the game's item id (the `Item.csv` row), with the piece's name stored beside it so a reader can tell what it is. `itemById` finds the database row of an id; the index is built once, on first use. Two other keys exist and are not identities: a pool item's `id` is made fresh on every page load, and the pool key (name, slot, item level) only groups the same piece from several sources, as the menus do. Several rows could share a pool key, and a name can change in a patch; a gameId does neither. No saved setting names a piece today: the picks from a result's menus and the picked meal live only until the next Optimize. The first to be kept will be a set's pieces ([section 7](#7-pieces-and-sets-in-the-core)), so `restoreState` has nothing to repair yet.
+**Piece identity.** Anything kept that names a piece of gear refers to it by its **gameId**, the game's item id (the `Item.csv` row), with the piece's name stored beside it so a reader can tell what it is. `itemById` finds the database row of an id; the index is built once, on first use. Two other keys exist and are not identities: a pool item's `id` is made fresh on every page load, and the pool key (name, slot, item level) only groups the same piece from several sources, as the menus do. Several rows could share a pool key, and a name can change in a patch; a gameId does neither. No saved setting names a piece today: the picks from a result's menus (each row's piece by its gameId) and the picked meal (by its key; meals have no gameId in the data) live only until the next Optimize. The first to be kept will be a set's pieces ([section 7](#7-pieces-and-sets-in-the-core)), so `restoreState` has nothing to repair yet.
 
 **Storage key versioning.** The key carries a version suffix (currently `-v4`). While the site has no users, a new field needs no bump: the restore step defaults and repairs it. Once it has users, bump the suffix only when old data cannot be repaired field by field.
 
@@ -202,11 +206,11 @@ Every command, with how long it takes, is in the [root README](../../README.md#d
 | --- | --- | --- |
 | `piece.js` | A piece under sync: the item level it is synced to (`itemSyncIlvl`), its stats there (`effStats`), the most each stat can be (`itemCaps`, `meldCaps`), whether it keeps its melds (`keepsMelds`) | the optimizer, `meld.js`, `set.js`, the views |
 | `meld.js` | The meld rules (gates, high grades only in the big slots, caps), used both to find the best stones (`bestMeld`, `meldVersions`) and to apply a given list (`applyStones`) | the optimizer, `set.js` |
-| `set.js` | A set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | the optimizer view |
+| `set.js` | A set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | `recipe.js`, the optimizer view |
 
 **A set** is `{pieces, meal}`. Each piece is `{slot, gameId, name, stones}` for a database piece, `{slot, custom, stones}` for a piece not from the database, or `{slot}` for an empty slot. `stones` holds one entry per meld slot, `{stat, grade}` or null. `meal` is a meal's key, or null. Job, level and sync are not part of a set. They are passed to `evaluateSet`, as one sheet will hold them for all its sets. A set refers to database pieces by game id ([section 4](#4-persistence), "Piece identity").
 
-**`evaluateSet(job, set, sync, level)`** returns everything the optimizer's result table shows: per row the piece's stats after sync and stones, its caps, melds, stones lost to a cap or removed (sync, gate, slot), its category and where it comes from; the gear totals, the meal's bonus and the totals with it, the character's base; each stat's tier; defense; the GCD and DoT/HoT bonus. The optimizer view builds the set from the result's rows (`setFromPicks`), calls `evaluateSet`, and adds only what belongs to the page: the goal's marks, each row's menu of pieces with the same result, the Food row's menu, and the text.
+**`evaluateSet(job, set, sync, level)`** returns everything the optimizer's result table shows: per row the piece's stats after sync and stones, its caps, melds, stones lost to a cap or removed (sync, gate, slot), its category and where it comes from; the gear totals, the meal's bonus and the totals with it, the character's base; each stat's tier; defense; the GCD and DoT/HoT bonus. The solve (`runRecipe`, [section 8](#8-recipes-and-the-solver-session)) builds the set from the result's rows (`setFromPicks`); the optimizer view calls `evaluateSet` on it and adds only what belongs to the page: the goal's marks, each row's menu of pieces with the same result, the Food row's menu, and the text.
 
 **Custom pieces** have a place in the model, but no editor yet. A custom piece is a pool item the set carries itself. The database facts the core reads through `rowFacts` in `items.js` (equip level, meld slots, slot code, item kind, gear category, its own weapon damage and defense) are null for it today. So it is never level-synced, takes stones only if it carries its own `meld` field (`{slots, overmeld}`, as the math tab's generic pieces do), uses the job's slot share and stat factors, and gets the item level table's weapon damage and defense. A custom piece the player can edit will need those fields on the item itself, or chosen defaults:
 
@@ -215,6 +219,29 @@ Every command, with how long it takes, is in the [root README](../../README.md#d
 - a slot code and item kind, for its slot share, stat factors, weapon damage and defense.
 
 A relic whose substats the player allocates (roadmap A11) is the same case: a custom piece with a budget.
+
+## 8. Recipes and the solver session
+
+**The question:** how is a search asked for, and what is kept between searches? A **recipe** says what to look for: the optimizer's settings as the page holds them (goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices)` in `src/core/recipe.js` solves it and returns `{status, set, record, found}`:
+
+- **status:** `ok`, or why there is no set (`excluded`, `noset`, `nogcd`, `infeasible`).
+- **set:** the set the result shows, as plain data ([section 7](#7-pieces-and-sets-in-the-core)): each row the player's pick where it still gives the same result, else the easiest piece that does; the meal the Food row shows.
+- **record:** how the set was made: job, sync, level and a frozen copy of the recipe, so a set keeps the goal it was solved for whatever changes later.
+- **found:** what the display needs beyond the set: the rows' menus of pieces with the same result, the meals with the best's result, the stats tier ranking holds, the Target GCD facts, the node limit note.
+
+`choices` are the player's picks on the last result (`{pieces: {row: gameId}, meal}`), not saved. The optimizer view calls `runRecipe`, evaluates its set (`evaluateSet`) and formats it; nothing in the view searches.
+
+**The solver session** (`makeSession` in `src/core/session.js`) holds what a solve keeps for the next one. The page has one (the optimizer component's); a sheet of sets will have one per sheet. It keeps, per kind, its last four entries (least recently used dropped first):
+
+| Kind | Holds | Its key depends on |
+| --- | --- | --- |
+| gear | every piece the job can wear, as frozen pool items (5 to 10 ms to build; the meld caps are cached per pool item, so the same objects keep them warm) | the job |
+| tier | tier ranking's candidate lists (it keys them inside by objective, limits and GCD mode) | the pool: job, sync, level, Gear to search, materia |
+| fast | the fastest GCD the pool reaches | the pool, and the meal |
+| prep | Target GCD's candidate lists | the pool, the goal and the GCD mode (not the GCD) |
+| same | every piece as a candidate for the goal, unpruned (the rows' menus) | the pool and the goal, and the GCD mode while a GCD is asked |
+
+Every key is made by one function, `recipeKey`, from one table of the recipe fields each kind depends on, so a new recipe field cannot be forgotten in one key and remembered in another (audit 02, findings 5 and 6). A unit test changes every field and checks which keys change. So typing a new Target GCD reruns only the search, a pick from a menu reruns the search on kept lists, and going back to a recent setting reuses its lists. These used to be five one-entry caches at the top of the optimizer view, each with a key written by hand.
 
 ## Where this lives
 
@@ -225,21 +252,25 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 | Tables and limits derived from the data | `src/core/tables.js` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `specKind`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
-| Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
+| Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
 | Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
 | A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | A set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
+| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
-| Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`); the optimizer's settings key in `src/ui/views/optimizer.js` (`optimizerKey`: the job and sync settings and every field of `defaultState().opt`) |
-| Debounced effect, number-field binding, "Gear from" boxes | `src/ui/helpers.js` (`debouncedEffect`, `numberField`, `storeNumberField`, `gearFromToggles`, `expansionToggles`) |
+| Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`) |
+| The store's settings as plain inputs: sync settings, the cap Piece stats shows, the recipe, the optimizer's settings key, the default Gear from boxes | `src/ui/settings.js` (`syncSettings`, `levelSyncOn`, `shownSync`, `recipeOf`, `optimizerInputs`, `optimizerKey`: the job and sync settings and every field of `opt`, `DEFAULT_EXCLUDE`) |
+| The ranked stat menus (one rank per stat, swaps) | `src/ui/ranks.js` (`rankChoices`, `withRank`, `uniqueRanks`) |
+| The view pattern, debounced effect, number-field binding, "Gear from" boxes | `src/ui/helpers.js` (`viewCache`, `debouncedEffect`, `numberField`, `storeNumberField`, `gearFromToggles`, `expansionToggles`) |
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `tiers.js`); charts in `src/ui/sync-charts.js` (SVG for `x-html`; every name passed in goes through `escapeXml`) |
 | Gear browser row limit | `src/ui/views/gear.js` (`SHOW_LIMIT`) |
-| The optimizer's gear: every piece the job can wear, built once per job | `src/ui/views/optimizer.js` (`jobGear`, `searchPool`, `searchCount`) |
+| A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.js` (`runRecipe`, `recipePool`, `relicsLeftOut`, `emptyGearFrom`, `askedGcd`, `gcdRange`, `recipeKey`, `NODE_LIMIT`) |
+| The solver session; the job's gear it keeps | `src/core/session.js` (`makeSession`, `SESSION_SIZE`); `src/core/items.js` (`jobGear`) |
+| The optimizer tab's view: Gear to search, the result | `src/ui/views/optimizer.js` (`gearToSearchView`, `searchCount`, `optimizerView`) |
 | Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `optimizer.js`, `meal-menu.js`, `tiers.js`) |
 | Template and styles | `src/index.html` (markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`, and `<!-- INCLUDE name.html key=value -->` for a partial), `src/partials/` (the Expansion and "Gear from" menus, one copy for both tabs, filled in by `expandIncludes` in the build), `src/styles.css` (grouped by area: tokens, base, controls, layout, shared pieces, tables, popovers, menus, then each tab) |
 | Build and dev server | `scripts/build/build.mjs`, `scripts/build/dev.mjs` |

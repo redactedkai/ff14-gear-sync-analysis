@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 415 tests in 49 files, about 17 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 437 tests in 54 files, about 18 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 33 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
 | Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of steps |
@@ -65,8 +65,10 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-optimizer.exhaustive | random pools, regressions, policies |
 | core-optimizer.speed-limits | speed minimum, maximum and range |
 | core-optimizer.stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
+| core-recipe | a recipe's solve: the session keys each recipe field belongs to, the set by gameId and its record, a piece picked by gameId, a warm session against a fresh one and what it keeps between solves |
 | core-same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
 | core-set | a set and what it adds up to: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has |
+| core-session | the solver session: the last four entries per kind, least recently used dropped first; a job's gear built once |
 | core-speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
 | core-sync-target | level sync, its triggers, the optimizer under it |
 | core-tables.provenance | source record and footer |
@@ -76,11 +78,15 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
 | core-validation | Wiki caps, accuracy per band, special lines |
 | scripts-build | the DEV badge outside `main`, the page template and its partials, the licence notices |
+| ui-components-gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |
 | ui-components-gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
 | ui-components-meal-menu | the Food menu: pills preset once per result, the switch, the list, a pick |
+| ui-components-optimizer | the optimizer: Gear to search following the settings, Optimize after the progress bar, out of date after a change, picks by gameId and the meal pick, one session for every solve; no component imports Alpine |
 | ui-components-page | the job picker, the cap field's error and lowered note, Reset asking first |
+| ui-components-sync-explainer | Piece stats: its views built once per change, the item level box, the substat menus, the chart's width |
 | ui-components-tiers | Substat tiers: typed and clicked values and when they drop, the Level box |
-| ui-helpers | number boxes, the debounced effect, en-US counts, the "Gear from" and Expansion menus |
+| ui-helpers | number boxes, the view cache, the debounced effect, en-US counts, the "Gear from" and Expansion menus |
+| ui-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | ui-state | restoring saved state |
 | ui-store | job switch and reset |
 | ui-sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
@@ -89,7 +95,6 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui-views-optimizer | Gear optimizer: totals against the core and the brute force, rows, Food row and menu, Target GCD, Rank by tier, the gear searched, the key that marks a result out of date |
 | ui-views-optimizer.covered-by | an empty row names the piece the table shows as covering it |
 | ui-views-piece | Piece stats' step by step: each stat against its ceiling, the off-hand rule, the substat ranks |
-| ui-views-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | ui-views-sync-explainer | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
 | ui-views-tiers | Substat tiers: the ladder's columns, rows (no empty ones at the base) and wording; typed values; the sub-tab's own level |
 | ui-views.level-sync | level sync across the views, and a cap far above the synced level |

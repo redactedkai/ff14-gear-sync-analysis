@@ -635,8 +635,8 @@ Notes:
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/piece.js` |
-| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/state.js` (`limitCapToLevel`, called by the settings component in `src/ui/components/page.js`; `shownSync` for How the math works) |
-| The cap shown on How the math works; level sync off at the job's cap | `src/ui/state.js` (`shownSync`, `levelSyncOn`) |
+| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/state.js` (`limitCapToLevel`, called by the settings component in `src/ui/components/page.js`); `src/ui/settings.js` (`shownSync` for How the math works) |
+| The cap shown on How the math works; level sync off at the job's cap | `src/ui/settings.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
 | The 1.50 s GCD floor | `src/core/constants.js` (`GCD_FLOOR_MS`) |
 | Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |

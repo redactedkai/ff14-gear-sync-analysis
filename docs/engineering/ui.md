@@ -51,7 +51,7 @@ Roadmap A9; owner's decisions, 2026-10-16. The search returns one set, but under
 - **Which piece a row shows:** the lowest equip level, then the lowest item level; the search's own pick on a tie. No setting: the pieces are equivalent, so none is marked as the optimizer's.
 - **Rows share their spare points.** Two swaps can each keep a tier alone and lose it together, so every check is made against the pieces the other rows show at that moment: rows are filled in panel order, each menu is computed against the rows as shown, and a pick from a menu checks the others again. A Unique piece is never in two rows (rings), and a piece must leave the same slots empty as the search's pick (a cloak never replaces a plain body).
 - **The candidates** are the search's own, unpruned: every piece with its synced stats and the melds the search would give it (each meld version under a Target GCD). Most pieces are ruled out by the main stat alone. Picks are not saved (A3 will) and any setting change clears them.
-- **Cost:** in Node, 0 to 19 ms per run, plus 14 to 19 ms to build the unpruned lists, which are kept while the pool settings, goal and GCD mode stay (Sage at level 50 / 100 and Warrior at level 70 / item level 400).
+- **Cost:** in Node, 0 to 19 ms per run, plus 14 to 19 ms to build the unpruned lists, which the solver session keeps for the last four pool settings, goals and GCD modes ([architecture.md, section 8](architecture.md#8-recipes-and-the-solver-session)) (Sage at level 50 / 100 and Warrior at level 70 / item level 400).
 
 ### The Food row's menu
 
