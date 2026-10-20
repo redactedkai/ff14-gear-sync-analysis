@@ -80,7 +80,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | scripts-build | the DEV badge outside `main`, the page template and its partials, the licence notices, the data as `JSON.parse`; the optimizer's worker bundle run in Node: loads from the posted data texts (the item database in the script once) and answers like the page thread |
 | ui-components-gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |
 | ui-components-gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
-| ui-components-meal-menu | the Food menu: pills preset once per result, the switch, the list, a pick |
+| ui-components-meal-menu | the Food menu: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to Newest, a pick |
 | ui-components-optimizer | the optimizer: Gear to search following the settings, Optimize after the progress bar, out of date after a change, picks by gameId and the meal pick, one session for every solve; with a worker-like solver, no wait for frames and a reply for a replaced solve, after a job switch, or for an older Gear to search line dropped; Cancel back to the result shown; a failed search kept dimmed with its reason, a failed Gear to search request kept quiet; no component imports Alpine |
 | ui-components-page | the job picker, the cap field's error and lowered note, Reset asking first |
 | ui-components-sync-explainer | Piece stats: its views built once per change, the item level box, the substat menus, the chart's width |
