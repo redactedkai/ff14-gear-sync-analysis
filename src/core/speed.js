@@ -2,9 +2,6 @@
 import { HASTE, GCD_FLOOR_MS } from './constants.js';
 import { levelParams } from './level-params.js';
 
-/* levelParams under its old name, for src/ui until it imports level-params.js. */
-export { levelParams as speedParams } from './level-params.js';
-
 /* The recast of a weaponskill or spell before speed: 2.5 s, in ms (the GCD every speed formula here starts from). */
 export const BASE_GCD_MS = 2500;
 /* Search ceiling for the speed that reaches a GCD: far above any real gear speed (a few thousand). */

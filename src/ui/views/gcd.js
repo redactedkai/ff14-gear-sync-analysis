@@ -2,7 +2,8 @@
    not the job, sync or optimizer). The facts for one speed, the speed one 0.01 s step takes at every level, and the GCD
    steps around the speed. Pure: no Alpine, so Node can test it. */
 import { HASTE, JOBS } from '../../core/constants.js';
-import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult, speedParams } from '../../core/speed.js';
+import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';
+import { levelParams } from '../../core/level-params.js';
 import { MAX_SPEED } from '../../core/tables.js';
 import { speedStepChartSvg } from '../sync-charts.js';
 
@@ -38,7 +39,7 @@ export function gcdLevelInput(text) {
 /* The speed range at `level`: {base, most}, total speed (base + gear + food) from the level's base to the most any job
    can have there (MAX_SPEED). */
 export function speedRange(level) {
-  return { base: speedParams(level).sub, most: MAX_SPEED[level - 1] };
+  return { base: levelParams(level).sub, most: MAX_SPEED[level - 1] };
 }
 
 /* About how much speed a 0.01 s step takes at `level` with `haste` (percent): the first STEPS_AVERAGED steps' average. */

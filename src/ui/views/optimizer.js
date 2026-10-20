@@ -27,7 +27,8 @@ import { rankByTier } from '../../core/tier-rank.js';
 import { meldText } from '../../core/meld.js';
 import { statTier } from '../../core/tiers.js';
 import { allMeals, bestFood, foodBonus, foodChoices, foodLabel, statBase, withFood } from '../../core/food.js';
-import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor, speedParams } from '../../core/speed.js';
+import { BASE_GCD_MS, gcdFor, dotMult, gcdTierAt, hasteFor } from '../../core/speed.js';
+import { levelParams } from '../../core/level-params.js';
 import { defaultState, gearFilter, syncSettings } from '../state.js';
 import { fmtInt } from '../helpers.js';
 
@@ -42,7 +43,7 @@ export const NODE_LIMIT = 700000;
    (hasteFor), for the hasted steps. */
 export function tierText(spd, level, haste = 0) {
   const t = gcdTierAt(spd, level, BASE_GCD_MS, haste),
-    sub = speedParams(level).sub;
+    sub = levelParams(level).sub;
   return `tier starts at ${t.start + sub}${t.next != null ? `, next at ${t.next + sub} (+${t.next - spd})` : ''}`;
 }
 
