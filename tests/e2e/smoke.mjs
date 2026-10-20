@@ -919,8 +919,9 @@ async function checkGearToSearchRequests(pg) {
 }
 
 /** Cancel stops a running search (ui/solver.js workerSolver cancel): a long one (Warrior, level 100, Target GCD 2.30
- * with food and two tiebreaks, about 1.3 s) cancelled at 300 ms ends its worker, and the next search does not wait
- * for it. The time from Cancel to the next result goes to stderr with SMOKE_TRACE. */
+ * with food and two tiebreaks, about 1.3 s on the owner's PC) cancelled as soon as Cancel shows ends its worker, and
+ * the next search does not wait for it. The case must take well over the click's latency; the step checks that the
+ * cancelled search never finished. The time from Cancel to the next result goes to stderr with SMOKE_TRACE. */
 async function checkCancel(pg) {
   await setJob(pg, 'WAR');
   await pg.locator('#sync').uncheck();
@@ -936,12 +937,14 @@ async function checkCancel(pg) {
   await pg.selectOption('#o-tb1', 'crit');
   await pg.selectOption('#o-tb2', 'dh');
   await setNumber(pg, '#o-gcd', '2.30');
+  const runs = await pg.evaluate("performance.getEntriesByName('optimizer').length");
   await pg.click('#o-run');
-  await pg.waitForTimeout(300);
-  await expect(pg.locator('#o-cancel')).toBeVisible();
+  await expect(pg.locator('#o-cancel')).toBeVisible(); // the search is running
   const t0 = Date.now();
   await pg.click('#o-cancel');
   await expect(pg.locator('#o-run')).toBeEnabled();
+  const finished = (await pg.evaluate("performance.getEntriesByName('optimizer').length")) - runs;
+  check(finished === 0, 'the search ended before Cancel was clicked: the Cancel case is too short');
   await setNumber(pg, '#o-gcd', '');
   await waitOptimizer(pg);
   if (process.env.SMOKE_TRACE) console.error(`cancel: next result ${Date.now() - t0} ms after Cancel`);

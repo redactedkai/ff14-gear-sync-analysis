@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { allMeals } from '../../src/core/food.js';
 import { makeSession } from '../../src/core/session.js';
-import { optimizer } from '../../src/ui/components/optimizer.js';
+import { FOLLOW_MS, optimizer } from '../../src/ui/components/optimizer.js';
 import { inProcessSolver } from '../../src/ui/solver.js';
 import { optimizerInputs } from '../../src/ui/settings.js';
 import { restoreState } from '../../src/ui/state.js';
@@ -33,7 +33,7 @@ function standIn() {
 }
 
 /* The component bound to the store of `saved` with `session` (or with `solver`, the page thread's by default), its
-   init run; settle() reruns its effect after a change and waits out its debounce. */
+   init run; settle() reruns its effect after a change and waits out its throttle (FOLLOW_MS, and a little more). */
 function bound(saved, session = makeSession(), solver = inProcessSolver(session)) {
   const app = createAppStore(restoreState(saved));
   const { alpine, rerun } = standIn();
@@ -41,7 +41,7 @@ function bound(saved, session = makeSession(), solver = inProcessSolver(session)
   c.init();
   const settle = async () => {
     rerun();
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, FOLLOW_MS + 30));
   };
   return { app, c, settle };
 }
