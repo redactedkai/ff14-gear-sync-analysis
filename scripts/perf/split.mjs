@@ -4,9 +4,18 @@
    node scripts/perf/split.mjs [--job SGE] [--sync "cap 660"] [--target spd --tb crit,det] [--melds] [--repeats 20] */
 import { performance } from 'node:perf_hooks';
 import { SLOT_TYPES } from '../../src/core/constants.js';
+import { WD_KEY, weaponDamage } from '../../src/core/damage-defense.js';
 import { slotInfo } from '../../src/core/items.js';
 import { bestMeld } from '../../src/core/meld.js';
-import { buildCandidates, effStats, itemSyncIlvl, makeScorer, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
+import {
+  buildCandidates,
+  effStats,
+  itemSyncIlvl,
+  makeScorer,
+  pruneDominated,
+  rankedKeys,
+  vectorDims,
+} from '../../src/core/optimizer/candidates.js';
 import { branchAndBound } from '../../src/core/optimizer/search.js';
 import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
 import { flag, listOption, numberOption, option } from './args.mjs';
@@ -54,7 +63,8 @@ function replica() {
         job.stats.forEach(s => {
           v[s] = (e[s] || 0) + (m?.gain[s] || 0);
         });
-        return { it, v, copies: it.copies || 1, blocks: slotInfo(job, it).blocks, meld: m };
+        if (job.damageKey) v[WD_KEY] = weaponDamage(job, it, itemSyncIlvl(it, sync));
+        return { item: it, eff: v, copies: it.copies || 1, blocks: slotInfo(job, it).blocks, meld: m };
       });
   });
   t0 = lap('vectors', t0);
@@ -67,7 +77,7 @@ function replica() {
     if (ty === 'ring') slotList.push('ring');
   });
   const score = makeScorer(
-    [target, ...tiebreak],
+    rankedKeys(job, target, tiebreak),
     slotList.map(ty => all[ty].map(a => a.eff)),
   );
   t0 = lap('scorer', t0);
