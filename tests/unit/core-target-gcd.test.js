@@ -1,6 +1,6 @@
 /* Target GCD (src/core/target-gcd.js): the GCD the result reports is checked with the GCD formula and food bonus
    directly, food choices against running each meal on its own, and the edge cases on hand-made pools. Whether the
-   loadout is the best one is the exhaustive tests' job (optimizer-exhaustive.test.js). */
+   loadout is the best one is the exhaustive tests' job (core-optimizer.exhaustive.test.js). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { foodBonus, foodChoices } from '../../src/core/food.js';

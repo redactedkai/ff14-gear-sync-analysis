@@ -84,7 +84,7 @@ export function meldVectors(job, item, sync, keys, { exactSpd = false } = {}) {
 }
 
 /* A piece's effective stats (effStats) plus its weapon damage after sync under 'wd' when the job ranks it
-   (weaponDamage, checked against real weapons in damage-defense.test.js). */
+   (weaponDamage, checked against real weapons in core-damage-defense.test.js). */
 function effWithWd(job, item, sync) {
   const v = { ...effStats(job, item, sync) };
   if (job.damageKey) v.wd = weaponDamage(job, item, itemSyncIlvl(item, sync));
@@ -144,7 +144,7 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
    One item per slot that has items; two rings (the same item twice only if it has 2 copies).
 
    Two engine policies are copied here on purpose, not derived independently (docs/engineering/optimizer.md, section 5,
-   "Empty slot"; each has a direct test in optimizer-exhaustive.test.js, "policy:"):
+   "Empty slot"; each has a direct test in core-optimizer.exhaustive.test.js, "policy:"):
    - a single ring only when no pair exists: if any legal pair exists, a loadout with one ring is not considered,
      even when a pair breaks a maximum and one ring alone would not;
    - a slot is never left empty to satisfy a maximum (or any other constraint): every slot that has items gets one.
@@ -154,7 +154,7 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
    when a chosen piece blocks it (a two-handed weapon blocks the off-hand, a cloak the head).
 
    Effective (synced) stats come from the optimizer's own effStats and weaponDamage, so this reference does not check
-   the sync clamp; that is covered by sync.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
+   the sync clamp; that is covered by core-formulas.sync-clamp.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
    `mins` = {stat: total}: minimums on any stat's total, checked like spdMin. */
 export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, mins = {}, melds = false }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
@@ -223,7 +223,7 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
 }
 
 /* Food, written out: min(max, floor(pct x (base + gear) / 100)) (math.md section 6); base = BaseSpeed for speed, the
-   level's main stat base for Determination and Piety (statBase, checked in food.test.js). */
+   level's main stat base for Determination and Piety (statBase, checked in core-food.test.js). */
 export function foodAdd(job, meal, stat, gear, level) {
   const s = stat === 'vit' ? meal?.vit : meal?.stats.find(x => x.stat === stat);
   if (!s) return 0;

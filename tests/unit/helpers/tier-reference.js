@@ -1,4 +1,4 @@
-/* The reference for rank by tier (core/tier-rank.js), shared by tests/unit/tier-rank.test.js and the longer sweep in
+/* The reference for rank by tier (core/tier-rank.js), shared by tests/unit/core-tier-rank.test.js and the longer sweep in
    tests/full/: every legal loadout (forEachLoadout, with its own stone enumeration), every meal, food and tiers
    computed from the formulas (not gearNeeded or rankTierOf), and the stage rule of the spec applied to the whole list,
    with weapon damage first when the job ranks it (a key without tiers, held at its most; owner's decision 2026-10-18).

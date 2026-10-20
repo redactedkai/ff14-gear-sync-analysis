@@ -495,7 +495,7 @@ The status of each claim this page checks, in one place. Details are in the sect
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js` (`syncTarget`, `levelSyncIlvl`) |
 | GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
-| Unit tests named above | `tests/unit/core-validation.test.js`, `core-formulas.test.js`, `core-formulas.caps-at-123.test.js`, `core-formulas.sync-clamp.test.js`, `core-formulas.sync-cap-order.test.js`, `core-sync-target.test.js`, `core-speed.test.js`, `optimizer.test.js`, `optimizer-exhaustive.test.js`, `optimizer-constraints.test.js`, `core-formulas.stat-factor.test.js`, `ui-views-*.test.js`, `core-items.test.js`, `core-item-format.test.js`, `core-tables.provenance.test.js`, `ui-state.test.js` |
+| Unit tests named above | `tests/unit/core-validation.test.js`, `core-formulas.test.js`, `core-formulas.caps-at-123.test.js`, `core-formulas.sync-clamp.test.js`, `core-formulas.sync-cap-order.test.js`, `core-sync-target.test.js`, `core-speed.test.js`, `core-optimizer.test.js`, `core-optimizer.exhaustive.test.js`, `core-optimizer.speed-limits.test.js`, `core-formulas.stat-factor.test.js`, `ui-views-*.test.js`, `core-items.test.js`, `core-item-format.test.js`, `core-tables.provenance.test.js`, `ui-state.test.js` |
 | Generator tests | `tests/data/test_generators.py` |
 | Smoke test | `tests/e2e/smoke.mjs` |
 | Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.mjs --site local\|live` compares, `ours.js` is this project's side) |

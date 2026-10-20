@@ -158,4 +158,4 @@ Notes: HQ (high quality) and NQ (normal quality) are the two versions of a craft
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.js` (`meldInfo`), `src/core/tables.js` (`MATERIA`) |
 | Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |
 | The Materia switch, meld line and note | `src/ui/views/optimizer.js`, `src/index.html` |
-| Tests | `tests/unit/core-meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/optimizer-exhaustive.test.js` |
+| Tests | `tests/unit/core-meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/core-optimizer.exhaustive.test.js` |
