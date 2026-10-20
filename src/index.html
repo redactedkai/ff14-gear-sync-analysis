@@ -335,8 +335,9 @@
         <div class="progress" id="o-busy" x-show="busy" role="progressbar" aria-label="Solving"><span></span></div>
         <button type="button" id="o-cancel" @click="cancel()">Cancel</button>
       </div>
-      <template x-if="!view && !busy"><div class="panel"><div class="empty" id="o-none">Press Optimize to find the best set for the goal.</div></div></template>
-      <p class="small stale-note" id="o-stale" x-show="stale" x-cloak>The settings changed since this result. Press Optimize to update it.</p>
+      <template x-if="!view && !busy && !failure"><div class="panel"><div class="empty" id="o-none">Press Optimize to find the best set for the goal.</div></div></template>
+      <p class="small stale-note" id="o-stale" x-show="stale && !failure" x-cloak>The settings changed since this result. Press Optimize to update it.</p>
+      <p class="small stale-note" id="o-failed" role="alert" x-show="failure && !busy" x-text="failure" x-cloak></p>
       <div :class="{ 'is-stale': stale || busy }">
       <template x-if="view && view.kind === 'excluded'"><div class="panel"><div class="empty" id="o-excluded">No gear to search: no piece passes the filters under Gear to search.</div></div></template>
       <template x-if="view && view.kind === 'error'"><div class="panel"><div class="empty"><b class="bad">The optimizer could not rank this gear.</b><br><span x-text="view.message"></span></div></div></template>

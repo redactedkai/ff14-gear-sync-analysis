@@ -182,10 +182,16 @@ function heldSolver() {
             entry.done = true;
             reject(Object.assign(new Error('search cancelled'), { cancelled: true }));
           },
+          fail: message => {
+            entry.done = true;
+            reject(new Error(message));
+          },
         };
         asked.push(entry);
       }),
     answer: i => asked[i].answer(),
+    /* request i fails with an error that is not a cancel (a reply the worker could not send, say) */
+    fail: (i, message) => asked[i].fail(message),
   };
 }
 
@@ -261,6 +267,76 @@ test('optimizer: Cancel goes back to idle at once and keeps the result shown, it
   await tick();
   assert.deepEqual([c.busy, c.stale, c.mealPick], [false, false, null]);
   assert.notEqual(c.view, withMeal);
+});
+
+/* Audit 2, finding 01-2: a failed search (not a cancel) was an unhandled rejection, and the old result stayed undimmed
+   as if it matched the settings. */
+test('optimizer: a failed search keeps the result shown, out of date, with the reason; the next Optimize clears it', async t => {
+  const solver = heldSolver();
+  const { app, c, settle } = bound(SGE, undefined, solver);
+  const lastSolve = () => solver.asked.findLastIndex(a => a.request.kind === 'solve');
+  const unhandled = [];
+  const onUnhandled = reason => unhandled.push(reason);
+  process.on('unhandledRejection', onUnhandled);
+  t.after(() => process.off('unhandledRejection', onUnhandled));
+  c.run();
+  await tick();
+  await solver.answer(lastSolve());
+  await tick();
+  const shown = c.view;
+  const meal = allMeals(c.jobCtx)[3].key;
+  c.pickMeal(meal);
+  await tick();
+  await solver.answer(lastSolve());
+  await tick();
+  const withMeal = c.view;
+
+  // a setting changes, and the search Optimize asks for fails
+  app.opt.tb = 'det';
+  await settle();
+  c.run();
+  await tick();
+  solver.fail(lastSolve(), 'out of memory.');
+  await tick();
+  assert.equal(c.busy, false);
+  assert.equal(c.view, withMeal, 'the result from before stays');
+  assert.equal(c.mealPick, meal, 'with its meal pick');
+  assert.equal(c.stale, true, 'marked out of date');
+  assert.equal(c.failure, 'The search failed: out of memory. Press Optimize to try again.');
+
+  // a failed search with the settings unchanged (a meal pick): still out of date, the meal pick of the result shown back
+  app.opt.tb = '';
+  await settle();
+  c.run();
+  await tick();
+  assert.equal(c.failure, '', 'Optimize clears the line');
+  await solver.answer(lastSolve());
+  await tick();
+  assert.deepEqual([c.stale, c.failure], [false, '']);
+  const current = c.view;
+  c.pickMeal(meal);
+  await tick();
+  solver.fail(lastSolve(), 'worker gone');
+  await tick();
+  assert.equal(c.view, current);
+  assert.deepEqual([c.mealPick, c.stale, c.busy], [null, true, false]);
+  assert.equal(c.failure, 'The search failed: worker gone. Press Optimize to try again.');
+  assert.notEqual(shown, current);
+
+  // the Gear to search request fails: the line keeps its text, and nothing is left unhandled
+  const before = [c.countText, c.gcdLabel];
+  app.opt.min = 600;
+  await settle();
+  const warn = t.mock.method(console, 'warn', () => {});
+  solver.fail(
+    solver.asked.findLastIndex(a => a.request.kind === 'gearToSearch'),
+    'cannot clone',
+  );
+  await tick();
+  assert.deepEqual([c.countText, c.gcdLabel], before);
+  assert.equal(warn.mock.callCount(), 1);
+  await tick();
+  assert.deepEqual(unhandled, []);
 });
 
 test('optimizer: Cancel before a page-thread solve starts drops it', async () => {

@@ -1,6 +1,7 @@
 /* Gear optimizer tab: the best loadout for the chosen stat from every piece the job can wear, searched when the user
    presses Optimize (owner, 2026-10-18: no search on every setting change). A setting changed since the last search
-   leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
+   leaves its result shown but dimmed, its menus off, and so does a failed search (with its reason); a job switch
+   clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
 import { samePassing } from '../views/optimizer.js';
 import { inProcessSolver, isCancelled, solverRequest } from '../solver.js';
@@ -55,8 +56,12 @@ export function optimizer(alpine, solver = inProcessSolver()) {
        changes after a search, and the result is then out of date */
     lastDeps: '',
     nowDeps: '',
+    /* the line shown after a search failed (not cancelled): "The search failed: <reason>. Press Optimize to try
+       again.", or ''. The result from before it stays, out of date; the next Optimize clears the line */
+    failure: '',
+    /* the result shown is out of date: the settings changed since it was solved, or the search after it failed */
     get stale() {
-      return !!this.view && this.nowDeps !== this.lastDeps;
+      return !!this.view && (!!this.failure || this.nowDeps !== this.lastDeps);
     },
     /* the Target GCD box's label: the result's own while it is up to date, else the one for the settings now */
     get gcdFieldLabel() {
@@ -83,17 +88,23 @@ export function optimizer(alpine, solver = inProcessSolver()) {
             job = app.job;
           return () => {
             this.nowDeps = key;
-            if (this.view && job !== this.viewJob) this.view = null;
+            if (this.view && job !== this.viewJob) {
+              this.view = null;
+              this.failure = '';
+            }
             if (!job) return;
-            // the line comes back from the solver; one asked for since replaces it
+            // the line comes back from the solver; one asked for since replaces it. A failed request keeps the old line
             const id = ++this.sideId;
             const request = solverRequest('gearToSearch', optimizerInputs(alpine.raw(this.$store.app)));
-            solver.request(request).then(({ result }) => {
-              if (id !== this.sideId) return;
-              this.countText = result.countText;
-              this.emptyBoxes = result.emptyBoxes;
-              this.gcdLabel = result.gcdLabel;
-            });
+            solver.request(request).then(
+              ({ result }) => {
+                if (id !== this.sideId) return;
+                this.countText = result.countText;
+                this.emptyBoxes = result.emptyBoxes;
+                this.gcdLabel = result.gcdLabel;
+              },
+              error => console.warn('Gear to search line not updated:', error),
+            );
           };
         },
         FOLLOW_MS,
@@ -104,6 +115,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     /* Optimize: search with the settings as they are now; the menu picks of the last result are dropped. */
     run() {
       this.remember();
+      this.failure = '';
       this.picks = {};
       this.menuOpen = null;
       this.mealPick = null;
@@ -140,10 +152,17 @@ export function optimizer(alpine, solver = inProcessSolver()) {
       try {
         await this.solveNow(id);
       } catch (error) {
-        if (!isCancelled(error)) throw error;
+        if (!isCancelled(error) && id === this.solveId) this.fail(error);
       } finally {
         if (id === this.solveId) this.busy = false;
       }
+    },
+    /* A search that failed (not cancelled): as Cancel, the result shown stays with its picks and settings key, and it
+       is marked out of date with the reason (owner, 2026-10-19). */
+    fail(error) {
+      if (this.shown) Object.assign(this, this.shown);
+      const reason = String(error?.message || error || 'unknown error').replace(/\.$/, '');
+      this.failure = `The search failed: ${reason}. Press Optimize to try again.`;
     },
     /* Ask the solver for the result and show it, unless solve `id` has been replaced by a newer one meanwhile, or the
        job switched (a job switch drops the result). */
