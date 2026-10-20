@@ -11,6 +11,7 @@ In build order (owner, 2026-10-15).
 | A4 | Gear sets and comparison | A sheet of sets for one job, level and cap: optimizer results and the player's own sets, compared by their stats and tiers. The player's own sets come first. |
 | A3 | Save and share | A JSON file or a URL, holding the settings, the sets and the pieces picked from the same-result menus. After A4. |
 | A11 | Relics with allocated substats | The optimizer leaves these relics out today, since the game files hold no substats for them ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). Model the allocation so it can pick one. After A4. |
+| A12 | Import from xivgear | Bring a set or sheet in from an xivgear link or its exported JSON, as sets in the sheet: pieces, materia and meal by game id, with the job, level and cap; relic substats and custom items are listed as not mapped. After A4. |
 
 ## Built
 
@@ -28,4 +29,4 @@ On `dev` at least; live once on `main`.
 
 ## Out of scope
 
-- **A6, export to and import from xivgear** (owner, 2026-10-18). xivgear has no gear below item level 290 outside Blue Mage and Beastmaster, so it would not work below level 70. It would also tie the page to another project's format. xivgear stays a reference for checking our math.
+- **A6, export to xivgear and other tools** (owner, 2026-10-18; import from xivgear reopened as A12, 2026-10-20). xivgear has no gear below item level 290 outside Blue Mage and Beastmaster, so an export would not work below level 70. It would also tie the page to another project's format. xivgear stays a reference for checking our math.

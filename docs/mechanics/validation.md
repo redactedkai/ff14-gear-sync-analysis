@@ -458,7 +458,7 @@ Notes:
 
 Re-run after a patch or a new xivgear version with the scripts in the table below; they write `scripts/validate/out/xivgear.json` (not part of `npm run check`; they need the clone, and the first run fetches its data service).
 
-**Why xivgear is a check, not an import target.** It loads only items of item level 290 or higher (the floor for the job's minimum level 70; Blue Mage's is 50), so it dropped item level 130 pieces from a level 50, item level 123 set in a live test (2026-10-14) (**verified** in its source, `LEVEL_ITEMS[job.minLevel].minILvl`, and by that test). See [roadmap.md](../roadmap.md), out of scope.
+**Why xivgear is a check, not an export target.** It loads only items of item level 290 or higher (the floor for the job's minimum level 70; Blue Mage's is 50), so it dropped item level 130 pieces from a level 50, item level 123 set in a live test (2026-10-14) (**verified** in its source, `LEVEL_ITEMS[job.minLevel].minILvl`, and by that test). See [roadmap.md](../roadmap.md), out of scope. Importing from xivgear is roadmap A12; an imported set below level 70 can only hold item level 290+ pieces synced down, for the same reason.
 
 ## 11. Verified and assumed
 
