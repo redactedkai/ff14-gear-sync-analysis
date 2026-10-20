@@ -18,6 +18,7 @@ import {
   numberField,
   storeNumberField,
   viewCache,
+  deepFreeze,
 } from '../../src/ui/helpers.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 
@@ -369,4 +370,15 @@ test("Expansion filter: the button's text, and a box on or off keeping the oldes
     EXPANSIONS.map(e => e.short).filter(k => k !== 'HW'),
   );
   assert.deepEqual(store.browse.expOff, ['ARR']);
+});
+
+test('deepFreeze: freezes every object and array inside, returns the same value, leaves others as they are', () => {
+  const view = { rows: [{ cells: [{ value: 48 }] }], label: 'x', none: null };
+  assert.equal(deepFreeze(view), view);
+  assert.ok(Object.isFrozen(view) && Object.isFrozen(view.rows) && Object.isFrozen(view.rows[0].cells[0]));
+  assert.throws(() => {
+    view.rows[0].cells[0].value = 1;
+  }, TypeError);
+  assert.equal(deepFreeze(null), null);
+  assert.equal(deepFreeze(7), 7);
 });

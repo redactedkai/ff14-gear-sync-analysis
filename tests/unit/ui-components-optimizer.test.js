@@ -97,6 +97,8 @@ test('optimizer: Optimize shows the result for the settings; a change marks it o
   const { job, sync, level, recipe } = optimizerInputs(app);
   assert.deepEqual(c.view, optimizerView(job, sync, level, recipe, session));
   assert.ok(Object.isFrozen(c.view));
+  // frozen all through, so the template's x-for wraps no row or cell in a reactive proxy
+  assert.ok(Object.isFrozen(c.view.rows[0]) && Object.isFrozen(c.view.rows[0].cells[0]));
   assert.equal(c.stale, false);
   assert.equal(c.gcdFieldLabel, c.view.gcdUi.label);
   app.opt.tb = 'det';

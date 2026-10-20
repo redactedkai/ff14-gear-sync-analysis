@@ -5,7 +5,7 @@
 import { samePassing } from '../views/optimizer.js';
 import { inProcessSolver, isCancelled, solverRequest } from '../solver.js';
 import { optimizerInputs, optimizerKey } from '../settings.js';
-import { expansionToggles, gearFromToggles, throttledEffect } from '../helpers.js';
+import { deepFreeze, expansionToggles, gearFromToggles, throttledEffect } from '../helpers.js';
 import { rankChoices, withRank } from '../ranks.js';
 
 /* The piece count, the empty boxes and the Target GCD label follow the settings at most once per FOLLOW_MS, while they
@@ -159,7 +159,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
       if (id !== this.solveId || raw.job !== job) return;
       // the search's own time (building the job's gear included, the first time), not the wait for the worker's reply
       this.solveMs = Math.max(1, Math.round(ms));
-      this.view = Object.freeze(result);
+      this.view = deepFreeze(result); // frozen all through: x-for wraps no row in a proxy
       this.viewId++;
       this.viewJob = job;
       // the settings now: changed while the worker searched, the result shows as out of date
