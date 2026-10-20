@@ -88,6 +88,9 @@ export function browseCell(raw, synced) {
   return { text: String(raw), cls: raw ? 'n' : 'n dim', was: null };
 }
 
+/* "1 match", "1,939 matches"; `more` goes between the number and the word ("12 more matches"). */
+const matchCount = (n, more = '') => `${fmtInt(n)} ${more}${n === 1 ? 'match' : 'matches'}`;
+
 /* The gear browser's list: {shown, countText, hidden, hiddenText (the last row's line), emptyBoxes, slots}. shown: the first SHOW_LIMIT matches, in the
    heading's order, each with its cells (browseCell), its name cut for the search's highlight (nameParts), and, when sync
    lowers its item level, `synced` true and `syncedIlvl` the item level it is synced to (owner, 2026-10-19: what the
@@ -152,9 +155,9 @@ export function gearView(job, sync, browse) {
     shown: Object.freeze(shown),
     // some shown row is synced: the key above the table shows
     anySynced: shown.some(x => x.synced),
-    countText: n ? `${fmtInt(n)} matches${n > SHOW_LIMIT ? `, showing the first ${SHOW_LIMIT}` : ''}` : 'No matches',
+    countText: n ? `${matchCount(n)}${n > SHOW_LIMIT ? `, showing the first ${SHOW_LIMIT}` : ''}` : 'No matches',
     hidden: n > SHOW_LIMIT ? fmtInt(n - SHOW_LIMIT) : '',
-    hiddenText: n > SHOW_LIMIT ? `${fmtInt(n - SHOW_LIMIT)} more matches not shown. Narrow the filters to view them.` : '',
+    hiddenText: n > SHOW_LIMIT ? `${matchCount(n - SHOW_LIMIT, 'more ')} not shown. Narrow the filters to view them.` : '',
     // "Gear from" boxes with nothing for the job and the other filters: greyed out in the menu
     emptyBoxes: Object.freeze(emptyActivities(rows.filter(inSlot).map(r => r.routes))),
     slots: Object.freeze(slots),

@@ -22,6 +22,15 @@ test('gear view: every match of the filters, with its synced stats', () => {
   assert.ok(cut.length > 0 && cut.every(c => Number(c.text) < Number(c.was) && c.cls === 'n cut'));
 });
 
+/* One match reads "1 match", not "1 matches" (audit 11 #12). */
+test('gear view: the count says "match" for one piece', () => {
+  const app = makeApp('SGE');
+  app.browse = { ...app.browse, q: 'Augmented Bozjan Coat of Healing', exclude: [] };
+  const v = gearViewOf(app);
+  assert.equal(v.shown.length, 1);
+  assert.equal(v.countText, '1 match');
+});
+
 /* The gear browser's layout (owner, 2026-10-18): slot pills with counts, sorting from the headings, Reset filters. */
 test('gear view: slot pills count the matches of each slot under the other filters; the list keeps the chosen one', () => {
   const app = makeApp('SGE');
