@@ -6,7 +6,8 @@ import { createAppStore } from '../../src/ui/store.js';
 
 const storeFor = job => createAppStore(restoreState({ job }));
 
-test('A1: switching to another job in the same role resets the job-specific settings and keeps the rest', () => {
+/* Roadmap A1: a job switch keeps every setting that is not tied to the job. */
+test('switching to another job in the same role resets the job-specific settings and keeps the rest', () => {
   const store = storeFor('SGE');
   store.opt.target = 'crit';
   store.opt.exclude = ['crafted'];

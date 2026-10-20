@@ -13,7 +13,7 @@ const sge = makeJobContext('SGE');
 const war = makeJobContext('WAR');
 const blm = makeJobContext('BLM');
 
-test('effects at level 100 and 50', () => {
+test("the effect of a substat value at level 100 and 50, worked by hand from AkhMorning's formulas", () => {
   // 200 x 2000 / 2780 = 143.9 -> 143 + 50 = 193 per mille
   assert.deepEqual(statTier(sge, 'crit', 2000, 100), { effect: '19.3%', start: 1988, next: 2002 });
   // 550 x 1000 / 2780 = 197.8 -> 19.7%

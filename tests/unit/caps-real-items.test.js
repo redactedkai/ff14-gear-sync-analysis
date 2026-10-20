@@ -1,14 +1,3 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { makeJobContext } from '../../src/core/job-context.js';
-import { capsFor } from '../../src/core/formulas.js';
-import { genericItems, rowStats } from '../../src/core/items.js';
-import { ROW } from '../../src/core/constants.js';
-import { optimize } from '../../src/core/optimizer/index.js';
-import { gcdFor } from '../../src/core/speed.js';
-import { IL, ITEMS } from '../../src/core/tables.js';
-import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
-
 /* The sync caps at item level 123, checked against game data without calling capsFor.
 
    The game has no gear at item level 123 (Item.csv jumps from 120 to 125), so no real piece carries the 123 caps
@@ -21,6 +10,16 @@ import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
    3. the ten armor and accessory substat caps sum to 296, a 2.22 s GCD at level 50 (AkhMorning's table, see
       speed.test.js), and the generic-piece optimizer reaches exactly that sum.
    Expected values come from the game data (ItemLevel rows, real items) and BaseParam, never from capsFor. */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { makeJobContext } from '../../src/core/job-context.js';
+import { capsFor } from '../../src/core/formulas.js';
+import { genericItems, rowStats } from '../../src/core/items.js';
+import { ROW } from '../../src/core/constants.js';
+import { optimize } from '../../src/core/optimizer/index.js';
+import { gcdFor } from '../../src/core/speed.js';
+import { IL, ITEMS } from '../../src/core/tables.js';
+import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
 
 // Raw row layout (src/core/item-format.json): [name, slot code, item level, equip level, job mask, "12 stats", unique];
 // stats are str, dex, int, mind, vit, then seven substats.

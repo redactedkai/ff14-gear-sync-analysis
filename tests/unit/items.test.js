@@ -177,7 +177,7 @@ test('name query is case-insensitive and trimmed', () => {
   assert.deepEqual(names(browseItems(war, { q: mixed })), a);
 });
 
-test('slot type filter', () => {
+test("slot filter: only the chosen slot's rows; any is every slot; a slot the job has none of gives nothing", () => {
   const win = browseItems(war, lvl50);
   const rings = browseItems(war, { ...lvl50, type: 'ring' });
   assert.ok(rings.length >= 2);

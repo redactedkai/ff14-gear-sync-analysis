@@ -50,8 +50,8 @@ const windowPool = job => gamePool(job, WINDOW);
 const uniqueRingPool = job => gamePool(job, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }, r => r.type !== 'ring' || r.unique);
 
 /* 2,238 (2.28 s) and 2,324 (2.27 s) are tier starts in AkhMorning's level 100 2.5s tier table, which lists full speed
-   (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, speed.test.js). */
-test('A3: tier text is right above 1,200 gear speed (level 100, 1,839 gear speed), in panel numbers', () => {
+   (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, speed.test.js). Roadmap A3. */
+test('tier text above 1,200 gear speed: where the tier starts and the next one, in panel numbers (level 100, 1,839 gear speed)', () => {
   assert.equal(tierText(1839, 100), 'tier starts at 2238, next at 2324 (+65)');
 });
 

@@ -130,7 +130,7 @@ test('older saves: the removed Sync limits sub-tab opens Piece stats, and its co
   assert.equal('syncIlvl' in s, false);
 });
 
-test('tab and mathTab', () => {
+test('tab and math sub-tab: an unknown one opens the default; old tab names open their new place', () => {
   assert.equal(D.tab, 'opt'); // the optimizer opens first
   expectFieldDefault('tab', 42, 'opt');
   expectFieldDefault('tab', 'nope', 'opt');
@@ -154,7 +154,7 @@ test('nested objects that are not objects fall back to their defaults', () => {
   }
 });
 
-test('piece fields', () => {
+test('Piece stats fields: a bad item level, slot or substat list falls back; repeats and an old third rank drop', () => {
   assert.equal(D.piece.ilvl, null); // null: the cap (explainerItemLevel in views/sync-explainer.js)
   expectFieldDefault('piece.ilvl', 'abc', null);
   expectFieldDefault('piece.ilvl', null, null);
@@ -171,7 +171,7 @@ test('piece fields', () => {
   expectFieldDefault('piece.subs', ['crit', 'det', 'dh'], ['crit', 'det']);
 });
 
-test('browse fields', () => {
+test('gear browser fields: a bad search, slot, sort or order falls back to its default', () => {
   expectFieldDefault('browse.q', 5, '');
   expectFieldDefault('browse.type', 'belt', 'any');
   expectFieldDefault('browse.sort', 'nope', 'ilvl');
@@ -201,7 +201,7 @@ test('the gear filters, the same rules in the browser and the optimizer (each it
   assert.deepEqual([s.opt.expOff, s.opt.min, s.opt.max, s.opt.lvl], [[], '', '', 100]);
 });
 
-test('opt fields', () => {
+test('optimizer fields: goal, Gear from boxes, market board, melds, Target GCD and Rank by tier each fall back on their own', () => {
   assert.deepEqual([D.opt.target, D.opt.tb, D.opt.tb2], ['main', '', '']); // main stat first, no tiebreaks
   expectFieldDefault('opt.target', 'nope', D.opt.target);
   expectFieldDefault('opt.target', '', D.opt.target);

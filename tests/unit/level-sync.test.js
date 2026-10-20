@@ -69,7 +69,7 @@ test('at level 100 (the level cap) no real piece is level-synced', () => {
 
 /* T13 with Minimum Item Level: level 50 and item level 123 at once. The level only adds pieces at equip level 51 and
    above with item level 123 or less: synced to 130, which is above their item level, so no stat drops. */
-test('T13 (level 50, cap 123): 71 pieces are synced by level alone, to item level 130, and keep every stat', () => {
+test('level 50 with cap 123: 71 pieces are synced by level alone, to item level 130, and keep every stat', () => {
   const sync = { cap: 123, sync: true, level: 50 };
   const levelOnly = ROWS.filter(r => r.lvl > 50 && r.ilvl <= 123);
   assert.equal(levelOnly.length, 71);

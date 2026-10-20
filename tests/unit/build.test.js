@@ -1,3 +1,5 @@
+/* The build script (scripts/build/build.mjs): the DEV marks outside main, the page template and its partials, and the
+   licence notices kept in the bundle. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildMarks, esbuildOptions, expandIncludes } from '../../scripts/build/build.mjs';
