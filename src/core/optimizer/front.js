@@ -152,7 +152,7 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   // back to slots: follow the entries, each stage's choice filling its positions
   const slots = new Array(n).fill(null);
   const chosen = [];
-  for (let e = best, s = stages.length - 1; e && e.choice; e = e.next, s--) {
+  for (let e = best, s = stages.length - 1; e?.choice; e = e.next, s--) {
     const st = stages[s];
     e.choice.cands.forEach((a, j) => {
       slots[st.from + j] = a ? { cand: a, rank: -1 } : { cand: null, rank: -1 };
