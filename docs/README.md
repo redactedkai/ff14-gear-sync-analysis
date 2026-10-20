@@ -39,7 +39,7 @@ Shorter paths:
 
 | Page | What it covers |
 | --- | --- |
-| [architecture.md](engineering/architecture.md) | Layers, the job context, the shared store and views, what is saved in the browser, the single-file build, the dev loop |
+| [architecture.md](engineering/architecture.md) | Layers, the job context, the shared store and views, what is saved in the browser, the single-file build, the dev loop, pieces and sets, recipes and the solver session, the optimizer's worker |
 | [data-pipeline.md](engineering/data-pipeline.md) | The game sheets used, fetching, the shared format file, item database rules and fields, the item level table, the food table, "Gear from" sources and gear categories, provenance, facts about the current data, the steps after a game patch |
 | [optimizer.md](engineering/optimizer.md) | How the best gear set is found: an overview in plain words, then the lexicographic score (weapon damage first), Target GCD, dominance pruning, branch and bound, melds in the search, the page's pool and filters (Gear from), correctness and timing |
 | [tier-ranking.md](engineering/tier-ranking.md) | Ranking gear sets by stat tiers: the stages, and the shortfall filter, reduced-cost fixing, regain cuts, trial search and Pareto fronts that make those searches fast |
