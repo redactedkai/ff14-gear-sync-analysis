@@ -22,13 +22,13 @@ Pushing to `main` deploys to GitHub Pages (the only workflow).
 
 ## Branches
 
-Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check` and the `tests/full/` sweep on `dev`, `main` and PRs, and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner. The merge steps are in the `merge-wave` skill (`.claude/skills/merge-wave/SKILL.md`).
+Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check`, the `tests/full/` sweep and the Python lint and tests on `dev`, `main` and PRs, and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner. The merge steps are in the `merge-wave` skill (`.claude/skills/merge-wave/SKILL.md`).
 
 ## Commands
 
 Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
 
-- `npm run check` (lint, build, `npm test`, `test:smoke`; no Python; about 2 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
+- `npm run check` (lint, build, `npm test`, `test:smoke`; no Python; about 1 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
 - `npm run check:all` (adds `lint:py`, `test:py`) when touching `scripts/data/` or after `data:update`.
 - For UI changes, also look at the page at full width and at 960 px.
 - `npm run data:update` after a game patch (see `docs/engineering/data-pipeline.md` section 9).
@@ -40,7 +40,7 @@ Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx p
 Details: `docs/engineering/architecture.md`.
 
 - Core code never reads global job state. Pass a **JobContext** (`makeJobContext(jobId)`) and use its neutral keys (`main`, `vit`, `crit`, `det`, `dh`, `spd`, `spec`). Never use job keys like `sps`, `piety` or `mind` in shared code or UI.
-- Components build a `view` object; templates only display it. Keep big data (the item database, browse results) out of reactive state. The optimizer reads `Alpine.raw` data because reactive proxies were too slow.
+- Components build a `view` object; templates only display it. Keep big data (the item database, browse results) out of reactive state. The optimizer reads `Alpine.raw` data: reactive proxies were too slow, and a worker cannot be sent a proxy.
 - Dynamic `<select>`s use `x-for` with `:selected`. Reset to defaults asks first; switching job does not.
 - Use each piece's own slot code, not the job's weapon type (White Mage has one wand and shield).
 

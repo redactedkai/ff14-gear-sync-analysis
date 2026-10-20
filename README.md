@@ -20,7 +20,7 @@ npm run build     # builds dist/index.html
 
 Open `dist/index.html` in a browser. For development, `npm run dev` rebuilds on every change and serves the page locally.
 
-Pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs resets the job-specific settings (the optimizer's target and tiebreaks, the browser's slot and sort).
+Pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs keeps the job-specific settings the new job can use (the optimizer's goal, tiebreaks and Target GCD, the browser's slot and sort) and resets the rest.
 
 Once a job is chosen, the page has two working tabs, **Gear optimizer** (opens first: the best gear for a stat when you press **Optimize**) and **Gear browser** (looking gear up), and a reference tab, **How the math works**. What each one shows: [docs/engineering/ui.md, section 1](docs/engineering/ui.md#1-the-tabs).
 

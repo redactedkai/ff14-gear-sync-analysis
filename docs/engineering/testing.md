@@ -21,16 +21,16 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 448 tests in 55 files, about 20 s (2026-10-19) |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | about 460 tests in 56 files, about 20 to 25 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 33 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
-| Smoke test (browser) | the built page in headless Chromium | one script, 18 groups of steps |
+| Smoke test (browser) | the built page in headless Chromium | one script, 19 groups of steps |
 
 Notes:
 
 - **Unit tests** import the core logic, the page's view builders and the saved-state repair directly, with the real generated game data. They check formulas, sync, speed, item queries, optimizer correctness on real gear, what each tab shows, the components' logic that runs without a page, data format, provenance and saved state. A shared brute-force helper serves the optimizer tests (section 2.1).
 - **Generator tests** run the item level, item database and job icon generators and the gear category rules on small test CSV and icon files. They check row selection, slot detection, multi-slot gear (a cloak kept on its own slot code, an unsupported combination left out), stat placement, the HQ rule, job mask, sort order, budget table and level data, stat factor kind and table, gear categories and source flags, schema drift, and job icon embedding and numbering.
-- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 18 groups, each on a fresh page, from a shared setup it checks between steps (section 2, *Smoke test*).
+- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 19 groups, each on a fresh page, from a shared setup it checks between steps (section 2, *Smoke test*).
 
 **Why most tests need no browser.** The core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects, so both run in plain Node. The unit tests load the full item database, so they check the model against all 20,031 real pieces, not just hand-made examples. The smoke test is left with only what needs a real page: wiring, layout and interaction.
 
@@ -81,11 +81,11 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui-components-gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |
 | ui-components-gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
 | ui-components-meal-menu | the Food menu: pills preset once per result, the switch, the list, a pick |
-| ui-components-optimizer | the optimizer: Gear to search following the settings, Optimize after the progress bar, out of date after a change, picks by gameId and the meal pick, one session for every solve; with a worker-like solver, no wait for frames and a reply for a replaced solve, after a job switch, or for an older Gear to search line dropped; no component imports Alpine |
+| ui-components-optimizer | the optimizer: Gear to search following the settings, Optimize after the progress bar, out of date after a change, picks by gameId and the meal pick, one session for every solve; with a worker-like solver, no wait for frames and a reply for a replaced solve, after a job switch, or for an older Gear to search line dropped; Cancel back to the result shown; a failed search kept dimmed with its reason, a failed Gear to search request kept quiet; no component imports Alpine |
 | ui-components-page | the job picker, the cap field's error and lowered note, Reset asking first |
 | ui-components-sync-explainer | Piece stats: its views built once per change, the item level box, the substat menus, the chart's width |
 | ui-components-tiers | Substat tiers: typed and clicked values and when they drop, the Level box |
-| ui-helpers | number boxes, the view cache, the debounced effect, en-US counts, the "Gear from" and Expansion menus |
+| ui-helpers | number boxes (their min and max, the Target GCD's range), the view cache, the throttled effect (with Alpine's own reactivity, `@vue/reactivity`: what it tracks), en-US counts, the "Gear from" and Expansion menus |
 | ui-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | ui-state | restoring saved state |
 | ui-store | job switch and reset |
@@ -103,7 +103,7 @@ Which file tests what? One line per file; the file itself says the rest.
 Notes:
 
 - **The long sweep** in `tests/full/` follows the same rule: `core-tier-rank.gcd-1` to `.gcd-4` and `core-tier-rank.no-gcd`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
-- **The components** that import Alpine (`gear`, `optimizer`, `sync-explainer` in `src/ui/components/`) need a page to load, so only the smoke test reaches them.
+- **The components** are unit tested (the `ui-components-*` files): no component imports Alpine (`main.js` hands the optimizer Alpine's `effect` and `raw`), so each test binds one to a plain store. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`, the view tests' store-shaped state with sync at 123 and their small real-gear pools (`views.js`), and 14 optimizer results as the page showed them before `evaluateSet` (`optimizer-view-sets.json`, for `core-set`).
 - **The kind of evidence** each test uses (published numbers, game data, a derivation, the brute force) is in [validation.md, section 7](../mechanics/validation.md#7-which-tests-assert-what).
@@ -158,7 +158,7 @@ The checks sit in one section of the file per tab, in this order:
 | Section | Checks |
 | --- | --- |
 | Settings panel | defaults (title, no job, level 100, sync off), the cap field's rules and "Lowered to" note, job switch, level caps of limited jobs |
-| Gear optimizer | Sage and Warrior totals equal the core's; typing a cap runs no search; Gear from, the optimizer's filters, materia, Food, Rank by tier, Target GCD; the same-result menus at 960 px |
+| Gear optimizer | Sage and Warrior totals equal the core's; typing a cap runs no search; Gear from, the optimizer's filters, materia, Food, Rank by tier, Target GCD (3.00 becomes 2.50); one Gear to search request per change, none per result; Cancel ends the searching worker; the same-result menus at 960 px |
 | Gear browser | ×2 ring marks, search and Reset filters, a filter's range, the expansion filter's equip level band, Off-hand only for one-handed jobs |
 | How the math works | Piece stats (the item level 130 healer head piece, caps at 123 per slot), Substat tiers, GCD |
 | Saved state | reload keeps the settings, damaged storage is repaired, Reset to defaults asks first |
@@ -169,10 +169,13 @@ The checks sit in one section of the file per tab, in this order:
 Notes:
 
 - **What fails it.** Any uncaught page error or console error. Network errors are ignored, since the web fonts cannot load offline.
-- **Waits.** Almost every wait is on a concrete condition (an element appears, a text matches). Five are fixed, and each checks that something does *not* happen, so a busy machine can make them pass wrongly but not fail:
+- **Waits.** Almost every wait is on a concrete condition (an element appears, a text matches). Six are fixed, and each checks that something does *not* happen, so a busy machine can make them pass wrongly but not fail:
   - the typing step (`checkTypingDebounce`): two waits of 600 ms, before and after typing a cap, to show typing runs no search;
   - the cap check (`checkCapValidation`): 60 ms between up-arrow presses, then 400 ms, to show the "Lowered to" note stays put;
-  - the level cap check (`checkJobLevelCap`): 400 ms, longer than the save debounce, to show a level above the job's cap is not saved.
+  - the level cap check (`checkJobLevelCap`): 400 ms, longer than the save debounce, to show a level above the job's cap is not saved;
+  - the Gear to search count (`checkGearToSearchRequests`): 500 ms after a result, longer than the line's throttle, to show the result asks for no new line.
+
+  Cancel (`checkCancel`) clicks as soon as the button shows, and checks that the cancelled search never finished, so a case that became too fast fails by name.
 
   The optimizer runs only on Optimize: the smoke test presses it (`waitOptimizer`) and waits for that search's timing mark.
 - **Screenshots.** Of the optimizer (one per job), the gear browser, the level sync check and the 960 px walk, plus one per failed step, written to the smoke test's output folder (gitignored).

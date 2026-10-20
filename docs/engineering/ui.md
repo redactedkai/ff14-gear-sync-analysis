@@ -20,14 +20,17 @@ The controls around the search and the menus on its result. The pool it searches
 
 Owner's decisions, 2026-10-16. The control for the Target GCD layer of [optimizer.md, section 2](optimizer.md#target-gcd-from-a-gcd-to-a-speed-range).
 
-- The Goal row's last two columns (owner, 2026-10-18: the Goal and Gear to search rows share five columns) hold the box (empty means any GCD) and "exactly" / "or faster" ("exactly" by default, as in xivgear); the label gives the range of GCDs the gear reaches in parentheses ("Target GCD (2.50 to 2.10)"). The range follows the settings as they change, before the next Optimize: it is one search for the most speed (20 to 100 ms), run with the piece count 120 ms after a change.
+- The Goal row's last two columns (owner, 2026-10-18: the Goal and Gear to search rows share five columns) hold the box (empty means any GCD) and "exactly" / "or faster" ("exactly" by default, as in xivgear); the label gives the range of GCDs the gear reaches in parentheses ("Target GCD (2.50 to 2.10)"). The range follows the settings as they change, before the next Optimize: it is one search for the most speed (20 to 100 ms), run with the piece count at once after a change and at most once per 120 ms while changes go on (throttled, [architecture.md, section 3](architecture.md#heavy-work-debounced-only-when-visible-or-on-request)). The box takes 0.50 to 2.50; a higher value moves to 2.50 when the box is left (owner, 2026-10-19: 2.50 is the slowest base GCD).
 - For Monk, Ninja, Samurai and Viper the label also names the haste ("Target GCD (2.12 to 1.80 with Fuka 13%)") and the box takes the hasted GCD; the result shows both ("2.14s · GCD (Fuka 13%; 2.47 without)").
 - A set that meets the GCD gets no line under the box (owner, 2026-10-19). One short line in plain text says when the set came out faster in "or faster" mode ("2.17, faster than asked"); when no set fits it says why in a warning box ("Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)", "The GCD can't go below 1.50", "No set at exactly 2.10").
-- The range comes from a search, so the label shows it only while the result is for the current settings. The box is disabled while the goal is speed (the label then reads "Target GCD (off: the goal is speed)") and cleared on a switch to a job with another speed stat or haste. A job switch keeps the goal and tiebreaks the new job has under the same name, and resets the rest (state.js resetForJob).
+- The box is disabled while the goal is speed (the label then reads "Target GCD (off: the goal is speed)") and cleared on a switch to a job with another speed stat or haste. A job switch keeps the goal and tiebreaks the new job has under the same name, and resets the rest (state.js resetForJob).
 
 ### Optimize
 
 Owner, 2026-10-18. The search runs only when the user presses Optimize, at the right of the switches' line, after tier ranking's switch; before the first press the page says "Press Optimize to find the best set for the goal." A setting changed after a search dims the result, with "The settings changed since this result. Press Optimize to update it." above it, and turns its menus off (a pick would search with the new settings); a job switch clears it. A piece or meal picked from the menus of a current result still updates it at once.
+
+- While a search runs, a "Searching…" line with a progress bar and a **Cancel** button shows above the result, which is dimmed. Cancel goes back at once to the result shown before, with its picks and its out-of-date mark; the search in the worker is stopped ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)).
+- A search that fails (not a cancel) does the same, but keeps the result dimmed as out of date, with "The search failed: <reason>. Press Optimize to try again." above it (owner, 2026-10-19). The next Optimize clears the line.
 
 ### Spare points to tiebreaks (rank by tier)
 
@@ -37,7 +40,7 @@ Roadmap A7; owner's decisions, 2026-10-16.
 - Its label and ? note ("Substats only improve at tiers, so points short of the next tier do nothing in game. This sends those spare points to your tiebreaks instead.") were chosen on 2026-10-18 after an independent review of the words players use: "tier" is the community's word (AkhMorning, The Balance, xivgear), and "wasted" was avoided, since melding guides use it for materia past an item's cap. It was "Rank by tier" before.
 - On, the search is tier ranking ([tier-ranking.md](tier-ranking.md)): meal and gear are chosen together, with or without a Target GCD, since every tier counts food.
 - In the Tier row the held stats are highlighted. (A line under the readout named them in order with the effect each held, "Ranked by tier: Piety +165 MP, then ..."; dropped on 2026-10-18 by the owner, since the Goal selects give the order and the Effect row the effects.)
-- A thin progress bar shows from the first frame of a solve until the result: the solve holds the page's thread, and the bar's animation runs on the compositor meanwhile.
+- A thin progress bar shows from the first frame of a solve until the result. The solve runs in the optimizer's Web Worker, so the page stays free ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)); only when the worker cannot start does it hold the page's thread, and the bar's animation then runs on the compositor.
 
 ### Character panel totals
 
