@@ -90,14 +90,14 @@ test('Food menu: opens with no pill; the pinned meal always shows, the pills nar
   assert.deepEqual(m.mealView.empty, { text: 'No other meal matches "potage".', action: 'query' });
 });
 
-test('Food menu: sorted by a stat while its pill is on; turning that pill off goes back to Newest', () => {
+test('Food menu: sorted by a stat while its pill is on; turning that pill off goes back to ILVL', () => {
   const { m } = menu();
   m.toggleMealMenu();
   m.toggleMealStat('det');
   m.toggleMealStat('crit');
   assert.deepEqual(
     m.mealView.sorts.map(o => o.label),
-    ['Newest', 'CRIT', 'DET'],
+    ['ILVL', 'CRIT', 'DET'],
   );
   m.mealSortBy = 'crit';
   assert.deepEqual(shown(m), [
@@ -108,11 +108,11 @@ test('Food menu: sorted by a stat while its pill is on; turning that pill off go
   m.toggleMealStat('det');
   assert.equal(m.mealSortBy, 'crit');
   m.toggleMealStat('det');
-  // turning off the sorted stat's pill: Newest, and turning it back on does not bring the sort back
+  // turning off the sorted stat's pill: ILVL, and turning it back on does not bring the sort back
   m.toggleMealStat('crit');
-  assert.equal(m.mealSortBy, 'new');
+  assert.equal(m.mealSortBy, 'ilvl');
   m.toggleMealStat('crit');
-  assert.equal(m.mealSortBy, 'new');
+  assert.equal(m.mealSortBy, 'ilvl');
   assert.deepEqual(
     shown(m).map(([key]) => key),
     ['best', 'Dawntrail', 'Endwalker'],
@@ -138,7 +138,7 @@ test('Food menu: the pills stay across results while they list a meal below, els
   m.viewId = 3;
   m.toggleMealMenu();
   assert.deepEqual(m.mealStats, []);
-  assert.equal(m.mealSortBy, 'new');
+  assert.equal(m.mealSortBy, 'ilvl');
 });
 
 test('Food menu: a meal picked closes the menu and searches again with it', () => {

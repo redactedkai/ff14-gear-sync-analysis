@@ -1270,7 +1270,7 @@ table[data-col="spec"] th[data-col="spec"] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* the Food menu's Sort row (owner's pick F2 b, 2026-10-20): "Sort: Newest / CRT / DET" under the search box, shown
+/* the Food menu's Sort row (owner's pick F2 b, 2026-10-20): "Sort: ILVL / CRT / DET" under the search box, shown
    while a pill is on; a smaller version of the Target GCD's segmented control (sized after the .seg rules) */
 .meal-sort {
   flex: none;

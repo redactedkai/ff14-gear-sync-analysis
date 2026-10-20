@@ -339,12 +339,12 @@ export function mealLine(adds, stats) {
   return adds.map(a => ({ ...a, hit: stats.includes(a.stat) }));
 }
 
-/* The Food menu's list below the pinned meals in the order `by` asks (owner's pick F2 b, 2026-10-20): 'new' keeps the
+/* The Food menu's list below the pinned meals in the order `by` asks (owner's pick F2 b, 2026-10-20): 'ilvl' keeps the
    items as given (newest first); a stat key sorts by the points the meal adds of it on this gear (`adds` value, after
    the meal's percent and cap), highest first, then by the other picked stat (`stats`), then newest first. A stat that is
-   not picked sorts as 'new' (its pill was turned off). Returns a new array. */
+   not picked sorts as 'ilvl' (its pill was turned off). Returns a new array. */
 export function sortMeals(items, by, stats) {
-  if (by === 'new' || !stats.includes(by)) return [...items];
+  if (by === 'ilvl' || !stats.includes(by)) return [...items];
   const points = (x, stat) => x.adds.find(a => a.stat === stat)?.value ?? 0;
   const keys = [by, ...stats.filter(s => s !== by)];
   // Array.prototype.sort is stable: ties keep the newest first
@@ -352,8 +352,8 @@ export function sortMeals(items, by, stats) {
 }
 
 /* What the open Food menu shows under its tools, from mealMenu's `menu` and the menu's state {stats (pills picked),
-   query (search text), sortBy ('new' or a stat key)}: {sorts, groups, empty}.
-   - sorts: the Sort row's options while a pill is on, [{key, label}]: "Newest", then each picked stat in the pills'
+   query (search text), sortBy ('ilvl' or a stat key)}: {sorts, groups, empty}.
+   - sorts: the Sort row's options while a pill is on, [{key, label}]: "ILVL", then each picked stat in the pills'
      order; [] with no pill (the row is hidden).
    - groups: [{key, label, pinned, items}]. First the pinned group, {key 'best', label "Best for goal · 2", pinned
      true}: the meals with the best's result, always shown, unfiltered. Then the other meals after the pills and
@@ -365,14 +365,14 @@ export function mealList(menu, { stats, query, sortBy }) {
   const rest = menu.groups.flatMap(g => g.items);
   const filters = { stats, query };
   const passing = new Set(mealsPassing(rest, filters));
-  const sorted = sortBy !== 'new' && stats.includes(sortBy);
+  const sorted = sortBy !== 'ilvl' && stats.includes(sortBy);
   const below = sorted
     ? [{ key: 'sorted', label: null, pinned: false, items: sortMeals([...passing], sortBy, stats).map(withLine) }]
     : menu.groups.map(g => ({ key: g.label, label: g.label, pinned: false, items: g.items.filter(x => passing.has(x)).map(withLine) }));
   const pinned = { key: 'best', label: `Best for goal · ${menu.count}`, pinned: true, items: menu.pinned.map(withLine) };
   const pickedPills = menu.pills.filter(p => stats.includes(p.stat));
   return {
-    sorts: pickedPills.length ? [{ key: 'new', label: 'Newest' }, ...pickedPills.map(p => ({ key: p.stat, label: p.short }))] : [],
+    sorts: pickedPills.length ? [{ key: 'ilvl', label: 'ILVL' }, ...pickedPills.map(p => ({ key: p.stat, label: p.short }))] : [],
     groups: [pinned, ...below].filter(g => g.items.length),
     empty: mealEmptyReason(rest, filters),
   };

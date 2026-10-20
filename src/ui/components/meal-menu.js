@@ -11,11 +11,11 @@ const SHOWN_MEAL_OFFSET_PX = 40;
 export function mealMenu() {
   return {
     /* open or not, its search text (meal names), the stats picked on its pills (a meal must have each; two at most,
-       since a meal has at most two; none at first) and the list's order ('new', or a picked stat's key) */
+       since a meal has at most two; none at first) and the list's order ('ilvl', or a picked stat's key) */
     mealOpen: false,
     mealQuery: '',
     mealStats: [],
-    mealSortBy: 'new',
+    mealSortBy: 'ilvl',
     init() {
       // a new result (Optimize, or a pick from any menu) closes the menu
       this.$watch('viewId', () => {
@@ -30,7 +30,7 @@ export function mealMenu() {
       // result (a meal pick can change which meals are pinned): then they start over, empty
       if (this.mealStats.length && !mealsPassing(this.mealItems, { stats: this.mealStats, query: '' }).length) {
         this.mealStats = [];
-        this.mealSortBy = 'new';
+        this.mealSortBy = 'ilvl';
       }
       // after x-if has drawn the menu (it is built only while open)
       this.$nextTick(() =>
@@ -43,11 +43,11 @@ export function mealMenu() {
       );
     },
     /* A stat pill: on or off; a greyed-out one stays off (mealPillOff: a third, or one that would leave the list below
-       empty). Turning off the stat the list is sorted by goes back to Newest. */
+       empty). Turning off the stat the list is sorted by goes back to ILVL. */
     toggleMealStat(stat) {
       if (this.mealStats.includes(stat)) {
         this.mealStats = this.mealStats.filter(s => s !== stat);
-        if (this.mealSortBy === stat) this.mealSortBy = 'new';
+        if (this.mealSortBy === stat) this.mealSortBy = 'ilvl';
       } else if (!this.mealPillOff(stat)) this.mealStats = [...this.mealStats, stat];
     },
     /* the Food menu's filters now: its pills and search text (views mealsPassing) */

@@ -766,9 +766,9 @@ async function checkFood(pg) {
   check(pairCount >= 1 && pairCount < allCount, `the DET and CRT pills list ${pairCount} of ${allCount} meals`);
   await expect(pg.locator('#o-meal-menu [data-group]:not([data-group="best"]) .meal-stat.hit')).toHaveCount(2 * pairCount);
   // the Sort row: by Critical Hit, one list with no expansion headings, most Critical Hit first; turning the CRT pill
-  // off goes back to Newest
+  // off goes back to ILVL
   const sortLabels = (await pg.locator('#o-meal-sort label').allInnerTexts()).map(t => t.trim());
-  check(same(sortLabels, ['Newest', 'CRT', 'DET']), `the Sort row reads ${sortLabels.join(' / ')}`);
+  check(same(sortLabels, ['ILVL', 'CRT', 'DET']), `the Sort row reads ${sortLabels.join(' / ')}`);
   await pg.click('#o-meal-sort [data-sort="crit"]');
   await expect(pg.locator('#o-meal-menu [data-group="sorted"]')).toHaveCount(1);
   await expect(pg.locator('#o-meal-menu [data-group="sorted"] .same-head')).toHaveCount(0);
@@ -783,7 +783,7 @@ async function checkFood(pg) {
   await pg.click('#o-meal-menu [data-stat="crit"]');
   await pg.click('#o-meal-menu [data-stat="crit"]');
   await expect(pg.locator('#o-meal-menu [data-group="sorted"]')).toHaveCount(0);
-  check(await pg.locator('#o-meal-sort [data-sort="new"] input').isChecked(), 'turning the CRT pill off left the sort on CRT');
+  check(await pg.locator('#o-meal-sort [data-sort="ilvl"] input').isChecked(), 'turning the CRT pill off left the sort on CRT');
   // a search that matches nothing below says so and offers to clear itself; the pinned meals stay
   await pg.fill('#o-meal-q', 'zzzz');
   await expect(pg.locator('#o-meal-empty')).toContainText('No other meal matches "zzzz".');

@@ -603,7 +603,7 @@ test("Food menu on the owner's Sage case: two meals pinned, the list below, chip
   assert.ok([125, 126].includes(popcorn.adds[0].value), popcorn.adds[0].text);
 
   // no pill: every meal below, by expansion, no chip, no Sort row
-  const none = mealList(menu, { stats: [], query: '', sortBy: 'new' });
+  const none = mealList(menu, { stats: [], query: '', sortBy: 'ilvl' });
   assert.deepEqual(none.sorts, []);
   assert.deepEqual(
     none.groups.map(g => g.key),
@@ -616,7 +616,7 @@ test("Food menu on the owner's Sage case: two meals pinned, the list below, chip
   const both = mealList(menu, { stats: ['crit', 'det'], query: '', sortBy: 'crit' });
   assert.deepEqual(
     both.sorts.map(o => o.label),
-    ['Newest', 'CRT', 'DET'],
+    ['ILVL', 'CRT', 'DET'],
   );
   assert.deepEqual(
     both.groups.map(g => g.key),
@@ -698,7 +698,7 @@ test("Food menu stat line: a meal's stats in its own order, a picked pill's stat
   assert.equal(mealLine(adds, ['crit'])[1].text, 'crit +91');
 });
 
-test('Food menu sort: by the points a meal adds, then the other picked stat, ties newest first; Newest keeps the order', () => {
+test('Food menu sort: by the points a meal adds, then the other picked stat, ties newest first; ILVL keeps the order', () => {
   const items = [
     meal('A', 770, { det: 100, crit: 50, vit: 1 }),
     meal('B', 740, { det: 90, crit: 60, vit: 1 }),
@@ -706,15 +706,15 @@ test('Food menu sort: by the points a meal adds, then the other picked stat, tie
     meal('D', 680, { det: 110, crit: 60, vit: 1 }),
   ];
   const names = list => list.map(x => x.name);
-  assert.deepEqual(names(sortMeals(items, 'new', ['crit'])), ['A', 'B', 'C', 'D']);
+  assert.deepEqual(names(sortMeals(items, 'ilvl', ['crit'])), ['A', 'B', 'C', 'D']);
   // one pill: Critical Hit, ties newest first
   assert.deepEqual(names(sortMeals(items, 'crit', ['crit'])), ['B', 'C', 'D', 'A']);
   // two pills: Critical Hit, then Determination, then newest first
   assert.deepEqual(names(sortMeals(items, 'crit', ['crit', 'det'])), ['C', 'D', 'B', 'A']);
   assert.deepEqual(names(sortMeals(items, 'det', ['crit', 'det'])), ['C', 'D', 'A', 'B']);
-  // a stat whose pill is off sorts as Newest
+  // a stat whose pill is off sorts as ILVL
   assert.deepEqual(names(sortMeals(items, 'det', ['crit'])), ['A', 'B', 'C', 'D']);
-  assert.notEqual(sortMeals(items, 'new', []), items, 'a new array');
+  assert.notEqual(sortMeals(items, 'ilvl', []), items, 'a new array');
 });
 
 test('Food menu list: the pinned group always shows, the pills and search narrow only the list below', () => {
@@ -728,7 +728,7 @@ test('Food menu list: the pinned group always shows, the pills and search narrow
     ],
     pills: ['crit', 'det', 'dh', 'spd'].map(stat => ({ stat, short: stat.toUpperCase(), label: stat })),
   };
-  const view = (stats, query = '', sortBy = 'new') => mealList(menu, { stats, query, sortBy });
+  const view = (stats, query = '', sortBy = 'ilvl') => mealList(menu, { stats, query, sortBy });
   const shown = v => v.groups.map(g => [g.key, g.items.map(x => x.name)]);
   assert.deepEqual(shown(view(['dh'])), [
     ['best', ['Popoto Potage']],
@@ -739,12 +739,12 @@ test('Food menu list: the pinned group always shows, the pills and search narrow
   assert.deepEqual(shown(searched), [['best', ['Popoto Potage']]]);
   assert.deepEqual(searched.empty, { text: 'No other meal matches "popoto".', action: 'query' });
   assert.equal(view([]).empty, null);
-  // the Sort row: Newest, then the picked stats in the pills' order, whatever order they were picked in
+  // the Sort row: ILVL, then the picked stats in the pills' order, whatever order they were picked in
   assert.deepEqual(
     view(['det', 'crit']).sorts.map(o => o.key),
-    ['new', 'crit', 'det'],
+    ['ilvl', 'crit', 'det'],
   );
-  // sorted by a stat whose pill is off: Newest, by expansion
+  // sorted by a stat whose pill is off: ILVL, by expansion
   assert.deepEqual(
     view(['crit'], '', 'det').groups.map(g => g.key),
     ['best', 'Dawntrail'],
