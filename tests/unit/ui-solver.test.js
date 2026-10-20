@@ -228,6 +228,25 @@ test('worker solver: cancel stops a running search: the worker is terminated, it
   assert.equal(old.onmessage, null, 'a late reply of the old worker is not taken');
 });
 
+test('worker solver: a request with no answer after the timeout fails, and a fresh worker takes the next', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const workers = fakeWorkers();
+  const solver = workerSolver(workers.create, undefined, { timeoutMs: 1000 });
+  const hung = solver.request(request('solve', 1));
+  t.mock.timers.tick(999);
+  assert.equal(workers.made[0].terminated, false);
+  t.mock.timers.tick(1);
+  await assert.rejects(hung, error => !isCancelled(error) && error.message === 'no answer after 1 s');
+  assert.equal(workers.made[0].terminated, true);
+  assert.equal(workers.made.length, 2, 'a fresh worker is started at once');
+  // an answered request's timer is cleared: no stop later
+  const next = solver.request(request('solve', 2));
+  workers.made[1].reply(0, { result: 'for 2', ms: 1 });
+  assert.deepEqual(await next, { result: 'for 2', ms: 1 });
+  t.mock.timers.tick(5000);
+  assert.equal(workers.made.length, 2);
+});
+
 test("worker solver: cancel re-sends the other kind's unanswered requests to the new worker", async () => {
   const workers = fakeWorkers();
   const solver = workerSolver(workers.create);

@@ -57,6 +57,17 @@ function cancelledError() {
   return Object.assign(new Error('search cancelled'), { cancelled: true });
 }
 
+/* How long a request may stay in the worker before it is stopped as hung (ms). The slowest search measured is 18 s
+   (tier ranking with a Target GCD, eight sweeps sharing the machine; optimizer.md and tier-ranking.md, 2026-10-17), and
+   a Gear to search request takes 20 to 100 ms, so 60 s leaves a slow device three times that and still ends a worker
+   that will never answer. */
+export const SOLVER_TIMEOUT_MS = 60_000;
+
+/* The error of a request stopped by SOLVER_TIMEOUT_MS; its message ends the page's "The search failed: ..." line. */
+function timedOutError(ms) {
+  return new Error(`no answer after ${ms / 1000} s`);
+}
+
 /* Whether a solver reply was rejected because its request was cancelled (true), not because it failed. */
 export function isCancelled(error) {
   return error?.cancelled === true;
@@ -89,8 +100,11 @@ export function inProcessSolver(session = makeSession()) {
    (isCancelled). The other kind's requests not yet answered are posted to the new worker, so none is lost; with none,
    the last Gear to search request is asked again, so the new worker builds the job's gear before the next search.
    With nothing of that kind in the worker (it was answered, or the solver has fallen back to the page's thread)
-   cancel does nothing and returns false: the caller just drops the reply. */
-export function workerSolver(createWorker, fallback = inProcessSolver) {
+   cancel does nothing and returns false: the caller just drops the reply.
+
+   A request still in the worker after `timeoutMs` (SOLVER_TIMEOUT_MS) is stopped the same way, its callers rejected
+   with an error saying so (not a cancelled one: the page shows it as a failed search). */
+export function workerSolver(createWorker, fallback = inProcessSolver, { timeoutMs = SOLVER_TIMEOUT_MS } = {}) {
   let worker = null;
   let backup = null; // the fallback solver, once the worker failed
   let nextId = 0;
@@ -116,9 +130,10 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
     return pending.length ? { ...pending.at(-1), callers: pending.flatMap(p => p.callers) } : null;
   };
 
-  // the worker stopped, its handlers off first (a reply already on its way is not taken)
+  // the worker stopped, its handlers off first (a reply already on its way is not taken), its requests' timers cleared
   const stopWorker = () => {
     if (!worker) return;
+    for (const lane of Object.values(lanes)) clearTimeout(lane.flight?.timer);
     worker.onmessage = worker.onerror = null;
     worker.terminate();
     worker = null;
@@ -138,9 +153,12 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
   // 2. a request to the worker: post it, or answer its callers with the error if it cannot be posted (not plain data)
   const post = (lane, entry) => {
     lane.flight = entry;
+    entry.timer = setTimeout(() => restart(entry.request.kind, timedOutError(timeoutMs)), timeoutMs);
+    entry.timer?.unref?.(); // in Node (the tests), a pending timer does not keep the process running
     try {
       worker.postMessage({ id: entry.id, ...entry.request });
     } catch (error) {
+      clearTimeout(entry.timer);
       lane.flight = null;
       answer(entry.callers, Promise.reject(error));
     }
@@ -150,7 +168,8 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
   const onReply = ({ data }) => {
     const lane = Object.values(lanes).find(l => l.flight?.id === data.id);
     if (!lane) return;
-    const { callers } = lane.flight;
+    const { callers, timer } = lane.flight;
+    clearTimeout(timer);
     lane.flight = null;
     answer(callers, settle(data));
     if (lane.waiting) {
@@ -175,13 +194,14 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
     };
   };
 
-  // 5. cancel: the worker terminated and a fresh one started, the other kind's requests posted to it (section above)
-  const cancel = kind => {
+  // 5. cancel or a timeout: the worker terminated and a fresh one started, the other kind's requests posted to it
+  // (section above); the callers of `kind` are rejected with `error`
+  const restart = (kind, error) => {
     const lane = lanes[kind];
     if (!worker || !lane?.flight) return false;
-    const cancelled = takePending(lane);
+    const stopped = takePending(lane);
     stopWorker();
-    for (const caller of cancelled.callers) caller.reject(cancelledError());
+    for (const caller of stopped.callers) caller.reject(error);
     start();
     if (backup) return true; // the new worker could not be made: fallBack has asked the page's thread instead
     let resent = false;
@@ -199,7 +219,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
     get blocksPage() {
       return !!backup;
     },
-    cancel,
+    cancel: kind => restart(kind, cancelledError()),
     request(request) {
       if (!worker && !backup) start();
       if (backup) return backup.request(request);
