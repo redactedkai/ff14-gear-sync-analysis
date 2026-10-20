@@ -15,7 +15,7 @@ export const TYPING_DEBOUNCE_MS = 300;
 const bound = b => (typeof b === 'function' ? b() : b);
 
 /* x-bind object for a number input bound to a setting: the page's one pattern for number boxes (as $num,
-   storeNumberField). Typing commits TYPING_DEBOUNCE_MS after the last keystroke, and only an in-range value, so a
+   storeNumberField). A step (mouse wheel, arrow keys) commits at once; typing commits TYPING_DEBOUNCE_MS after the last keystroke, and only an in-range value, so a
    value on the way ("9" of "90") is held back. Enter or leaving the field (change) commits at once, and an out-of-range
    value is moved to the nearest bound and shown in the box, so the box and the setting always agree (owner,
    2026-10-19: "-5" in a filter becomes its lowest value, not "no limit"). While the field has focus and already shows
@@ -63,7 +63,9 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
     '@input'(e) {
       const raw = e.target.value;
       clearTimeout(timer);
-      if (live) commit(raw);
+      // a step (mouse wheel, arrow keys, the spinner) is no InputEvent with an inputType: commit it at once, so the
+      // page follows the value as it scrolls; typed digits wait, so "9" on the way to "90" is held back
+      if (live || !e.inputType) commit(raw);
       else timer = setTimeout(() => commit(raw), TYPING_DEBOUNCE_MS);
     },
     '@change'(e) {
@@ -93,15 +95,27 @@ export function viewCache() {
   };
 }
 
-/* Run `compute` now and whenever the reactive values it reads change, at most once per `ms`: the pattern for work too
-   slow to redo on every change (the optimizer's Gear to search line). `alpine`: Alpine, or what a test passes for its
-   effect. */
-export function debouncedEffect(alpine, compute, ms) {
+/* Run `compute` now and whenever the reactive values it reads change; the expensive part it returns runs at most once
+   per `ms`, during a burst of changes as well as after it: scrolling through a number box moves the Target GCD range
+   with it instead of only when the scrolling stops (owner, 2026-10-19). The first run waits `ms` too, so first paint
+   does not. Used by the optimizer's Gear to search line. `alpine`: Alpine, or what a test passes for its effect. */
+export function throttledEffect(alpine, compute, ms) {
   let timer = null;
+  let pending = null;
+  let lastRun = Date.now();
+  const fire = () => {
+    timer = null;
+    lastRun = Date.now();
+    const run = pending;
+    pending = null;
+    run();
+  };
   alpine.effect(() => {
-    const run = compute(); // reads (and so tracks) dependencies synchronously
-    clearTimeout(timer);
-    timer = setTimeout(run, ms); // the expensive part runs later, untracked
+    pending = compute(); // reads (and so tracks) dependencies synchronously
+    if (timer) return; // a run is already due; it takes the latest inputs
+    const wait = lastRun + ms - Date.now();
+    if (wait <= 0) fire();
+    else timer = setTimeout(fire, wait);
   });
 }
 

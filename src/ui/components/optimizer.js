@@ -5,11 +5,12 @@
 import { samePassing } from '../views/optimizer.js';
 import { inProcessSolver, solverRequest } from '../solver.js';
 import { optimizerInputs, optimizerKey } from '../settings.js';
-import { debouncedEffect, expansionToggles, gearFromToggles } from '../helpers.js';
+import { expansionToggles, gearFromToggles, throttledEffect } from '../helpers.js';
 import { rankChoices, withRank } from '../ranks.js';
 
-/* How long the settings must rest before the piece count, the empty boxes and the Target GCD label follow them (ms). */
-const DEBOUNCE_MS = 120;
+/* The piece count, the empty boxes and the Target GCD label follow the settings at most once per FOLLOW_MS, while they
+   change as well as after (throttledEffect). */
+const FOLLOW_MS = 120;
 
 /* The optimizer tab's component: the result (`view`), whether it is out of date, the solve, the rows' menus of pieces
    with the same result, and the filters under Gear to search. `alpine`: what it needs of Alpine, {effect, raw} (main.js
@@ -70,7 +71,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     init() {
       // the settings as they change: whether the result is out of date (a job switch drops it), and the piece count and
       // empty boxes under Gear to search
-      debouncedEffect(
+      throttledEffect(
         alpine,
         () => {
           const app = this.$store.app;
@@ -92,7 +93,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
             });
           };
         },
-        DEBOUNCE_MS,
+        FOLLOW_MS,
       );
     },
     /* the job the shown result is for */

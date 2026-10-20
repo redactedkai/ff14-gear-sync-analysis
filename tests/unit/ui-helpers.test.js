@@ -9,7 +9,7 @@ import { CURRENT_TOMES, MAX_LEVEL } from '../../src/core/tables.js';
 import {
   GEAR_FROM_COLUMNS,
   TYPING_DEBOUNCE_MS,
-  debouncedEffect,
+  throttledEffect,
   expansionToggles,
   fmtInt,
   gearFromHint,
@@ -39,10 +39,24 @@ function box(start, lo, hi, options) {
     field['@change']({ target: input });
     return input.value;
   };
-  /* types `text` into a live box (commits as typed, no wait) */
-  const type = text => field['@input']({ target: { value: text } });
-  return { value: () => value, leave, type };
+  /* types `text` (a typed edit: an InputEvent with an inputType) */
+  const type = text => field['@input']({ target: { value: text }, inputType: 'insertText' });
+  /* steps the box to `text` with the mouse wheel or an arrow key (an input event with no inputType) */
+  const step = text => field['@input']({ target: { value: text } });
+  return { value: () => value, leave, type, step };
 }
+
+/* Owner, 2026-10-19: scrolling through the Synced item level did not move the Target GCD range until it stopped. */
+test('number box: a step (wheel, arrow keys) commits at once; typed digits wait for typing to stop', t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const b = box(300, 1, 795);
+  b.step('301');
+  assert.equal(b.value(), 301);
+  b.type('3');
+  assert.equal(b.value(), 301);
+  t.mock.timers.tick(300);
+  assert.equal(b.value(), 3);
+});
 
 test('number box: whole values; empty commits nothing', () => {
   const b = box(50, 1, 100);
@@ -144,7 +158,7 @@ test('number box typing: one commit after the keys stop, of the last value; a li
     1,
     999,
   );
-  const type = text => field['@input']({ target: { value: text } });
+  const type = text => field['@input']({ target: { value: text }, inputType: 'insertText' });
   type('1');
   type('12');
   t.mock.timers.tick(TYPING_DEBOUNCE_MS - 1);
@@ -211,8 +225,8 @@ test('viewCache: a view is built once per key; last() is the last one built, nul
   assert.equal(builds, 4);
 });
 
-test('debouncedEffect: the inputs are read at once, the expensive part runs once the effect rests', t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+test('throttledEffect: inputs read at once; the expensive part runs at most once per ms, during a burst and after it', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
   // a stand-in for Alpine.effect: runs the function now, and again whenever the test says an input changed
   let rerun = null;
   const Alpine = {
@@ -223,7 +237,7 @@ test('debouncedEffect: the inputs are read at once, the expensive part runs once
   };
   let reads = 0;
   const runs = [];
-  debouncedEffect(
+  throttledEffect(
     Alpine,
     () => {
       const seen = ++reads;
@@ -231,15 +245,25 @@ test('debouncedEffect: the inputs are read at once, the expensive part runs once
     },
     120,
   );
+  // the first run waits, so first paint does not
   assert.equal(reads, 1);
-  t.mock.timers.tick(100);
-  rerun();
-  rerun();
-  assert.equal(reads, 3);
-  t.mock.timers.tick(119);
   assert.deepEqual(runs, []);
-  t.mock.timers.tick(1);
-  assert.deepEqual(runs, [3]);
+  t.mock.timers.tick(120);
+  assert.deepEqual(runs, [1]);
+  // a burst (scrolling a number box every 50 ms): one run per 120 ms with the latest inputs, not one at the end
+  for (let step = 0; step < 6; step++) {
+    t.mock.timers.tick(50);
+    rerun();
+  }
+  assert.equal(reads, 7);
+  assert.ok(runs.length >= 3, `runs during the burst: ${runs}`);
+  assert.ok(runs.length <= 4, `at most one run per 120 ms: ${runs}`);
+  t.mock.timers.tick(120);
+  assert.equal(runs.at(-1), 7); // the last change always runs
+  // after a rest, a change runs at once
+  t.mock.timers.tick(500);
+  rerun();
+  assert.equal(runs.at(-1), 8);
 });
 
 test('Gear from button text: All, None, All but N up to five left out, then N of M; the market board only when off', () => {
