@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeSession } from '../../src/core/session.js';
-import { inProcessSolver, makeSolverHandler, solverRequest, workerSolver } from '../../src/ui/solver.js';
+import { inProcessSolver, isCancelled, makeSolverHandler, solverRequest, workerSolver } from '../../src/ui/solver.js';
 import { optimizerInputs } from '../../src/ui/settings.js';
 import { restoreState } from '../../src/ui/state.js';
 import { createAppStore } from '../../src/ui/store.js';
@@ -189,4 +189,119 @@ test('worker solver: a request that cannot be posted rejects, and the next one s
   const next = solver.request(request('solve', 2));
   worker.reply(0, { result: 'ok', ms: 1 });
   assert.deepEqual(await next, { result: 'ok', ms: 1 });
+});
+
+/* Workers made by a worker solver, one fake per createWorker call (cancel starts a new one). */
+function fakeWorkers() {
+  const made = [];
+  return {
+    made,
+    create: () => {
+      made.push(fakeWorker());
+      return made.at(-1);
+    },
+  };
+}
+
+const wasCancelled = error => isCancelled(error);
+
+test('worker solver: cancel stops a running search: the worker is terminated, its callers get a cancelled error', async () => {
+  const workers = fakeWorkers();
+  const solver = workerSolver(workers.create);
+  const running = solver.request(request('solve', 1));
+  const waiting = solver.request(request('solve', 2)); // behind 1
+  const old = workers.made[0];
+  assert.equal(solver.cancel('solve'), true);
+  assert.equal(old.terminated, true);
+  assert.equal(workers.made.length, 2, 'a fresh worker is started at once');
+  for (const reply of [running, waiting]) await assert.rejects(reply, wasCancelled);
+  assert.equal(solver.blocksPage, false);
+  // the next search goes to the new worker at once, not behind the cancelled one
+  const next = solver.request(request('solve', 3));
+  const fresh = workers.made[1];
+  assert.deepEqual(
+    fresh.posted.map(m => m.mark),
+    [3],
+  );
+  fresh.reply(0, { result: 'for 3', ms: 1 });
+  assert.deepEqual(await next, { result: 'for 3', ms: 1 });
+  assert.equal(old.onmessage, null, 'a late reply of the old worker is not taken');
+});
+
+test("worker solver: cancel re-sends the other kind's unanswered requests to the new worker", async () => {
+  const workers = fakeWorkers();
+  const solver = workerSolver(workers.create);
+  const search = solver.request(request('solve', 1));
+  const sideA = solver.request(request('gearToSearch', 2));
+  const sideB = solver.request(request('gearToSearch', 3)); // waiting behind 2
+  solver.cancel('solve');
+  await assert.rejects(search, wasCancelled);
+  const fresh = workers.made[1];
+  // the newest of that kind is posted again, and answers both callers
+  assert.deepEqual(
+    fresh.posted.map(m => [m.kind, m.mark]),
+    [['gearToSearch', 3]],
+  );
+  fresh.reply(0, { result: 'side 3', ms: 1 });
+  assert.deepEqual(
+    (await Promise.all([sideA, sideB])).map(r => r.result),
+    ['side 3', 'side 3'],
+  );
+});
+
+test('worker solver: with nothing else pending, cancel asks the new worker the last Gear to search request again', async () => {
+  const workers = fakeWorkers();
+  const solver = workerSolver(workers.create);
+  const side = solver.request(request('gearToSearch', 1));
+  workers.made[0].reply(0, { result: 'side 1', ms: 1 });
+  await side;
+  const search = solver.request(request('solve', 2));
+  solver.cancel('solve');
+  await assert.rejects(search, wasCancelled);
+  const fresh = workers.made[1];
+  assert.deepEqual(
+    fresh.posted.map(m => [m.kind, m.mark]),
+    [['gearToSearch', 1]],
+    "the new worker builds the job's gear before the next search",
+  );
+  // a Gear to search request asked meanwhile waits for it, then goes
+  const next = solver.request(request('gearToSearch', 3));
+  fresh.reply(0, { result: 'side 1', ms: 1 });
+  fresh.reply(1, { result: 'side 3', ms: 1 });
+  assert.deepEqual(await next, { result: 'side 3', ms: 1 });
+});
+
+test('worker solver: cancel with no search in the worker, or after the fallback, only returns false', async () => {
+  const workers = fakeWorkers();
+  const solver = workerSolver(workers.create, () => ({ blocksPage: true, request: () => Promise.resolve({ result: 'local', ms: 1 }) }));
+  assert.equal(solver.cancel('solve'), false, 'no worker yet');
+  const search = solver.request(request('solve', 1));
+  workers.made[0].reply(0, { result: 'done', ms: 1 });
+  await search;
+  assert.equal(solver.cancel('solve'), false, 'the search was answered: nothing to stop');
+  assert.deepEqual([workers.made.length, workers.made[0].terminated], [1, false]);
+  workers.made[0].fail();
+  assert.equal(solver.blocksPage, true);
+  const local = solver.request(request('solve', 2));
+  assert.equal(solver.cancel('solve'), false, 'on the page thread there is nothing to stop');
+  assert.deepEqual(await local, { result: 'local', ms: 1 });
+  assert.equal(inProcessSolver().cancel('solve'), false);
+});
+
+test('worker solver: cancel when the new worker cannot be made: the other requests go to the page thread', async () => {
+  let calls = 0;
+  const first = fakeWorker();
+  const solver = workerSolver(
+    () => {
+      if (calls++) throw new Error('workers are blocked');
+      return first;
+    },
+    () => ({ blocksPage: true, request: r => Promise.resolve({ result: `local ${r.mark}`, ms: 1 }) }),
+  );
+  const search = solver.request(request('solve', 1));
+  const side = solver.request(request('gearToSearch', 2));
+  assert.equal(solver.cancel('solve'), true);
+  await assert.rejects(search, wasCancelled);
+  assert.deepEqual(await side, { result: 'local 2', ms: 1 });
+  assert.equal(solver.blocksPage, true);
 });

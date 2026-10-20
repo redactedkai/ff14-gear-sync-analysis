@@ -890,6 +890,38 @@ async function checkTargetGcd(pg) {
   await pg.screenshot({ path: shot('target-gcd.png'), fullPage: true });
 }
 
+/** Cancel stops a running search (ui/solver.js workerSolver cancel): a long one (Warrior, level 100, Target GCD 2.30
+ * with food and two tiebreaks, about 1.3 s) cancelled at 300 ms ends its worker, and the next search does not wait
+ * for it. The time from Cancel to the next result goes to stderr with SMOKE_TRACE. */
+async function checkCancel(pg) {
+  await setJob(pg, 'WAR');
+  await pg.locator('#sync').uncheck();
+  await setNumber(pg, '#level', '100');
+  await showTab(pg, 'opt');
+  await waitOptimizer(pg); // the worker has the job's gear
+  let closed = 0;
+  const watch = w => w.on('close', () => closed++);
+  pg.workers().forEach(watch);
+  pg.on('worker', watch);
+  await pg.locator('#o-food').check();
+  await pg.selectOption('#o-target', 'det');
+  await pg.selectOption('#o-tb1', 'crit');
+  await pg.selectOption('#o-tb2', 'dh');
+  await setNumber(pg, '#o-gcd', '2.30');
+  await pg.click('#o-run');
+  await pg.waitForTimeout(300);
+  await expect(pg.locator('#o-cancel')).toBeVisible();
+  const t0 = Date.now();
+  await pg.click('#o-cancel');
+  await expect(pg.locator('#o-run')).toBeEnabled();
+  await setNumber(pg, '#o-gcd', '');
+  await waitOptimizer(pg);
+  if (process.env.SMOKE_TRACE) console.error(`cancel: next result ${Date.now() - t0} ms after Cancel`);
+  await poll('Cancel to end the searching worker', () => ({ ok: closed === 1, got: `${closed} workers ended` }));
+  check(pg.workers().length === 1, `${pg.workers().length} solver workers after Cancel, not 1`);
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'det');
+}
+
 /** Other pieces with the same result (roadmap A9), at the shared setup (Sage, level 50, item level 123), where every
  * row has others: at NARROW width, the weapon row's menu opens without a sideways scroll; a piece picked from it is what
  * the row shows, the result stays the same, the menu closes; any setting change clears the pick. */
@@ -1590,6 +1622,7 @@ const GROUPS = [
   { slow: true, steps: [step(checkOptFilters)] },
   { slow: true, steps: [step(checkMelds), step(checkFood), step(checkRankByTier)] },
   { slow: true, steps: [step(checkTargetGcd)] },
+  { slow: true, steps: [step(checkCancel)] },
   { slow: true, steps: [step(checkExpansionFilter), step(checkReset)] },
   { slow: true, steps: [step(checkReloadPersists)] },
   { slow: true, steps: [step(checkCorruptedStorage)] },

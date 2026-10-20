@@ -27,9 +27,12 @@ Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo
 
 /* The optimizer's Web Worker (ui/solver.js workerSolver), made when the optimizer first needs it: started from a Blob URL
    of its bundle (the page is one file, also opened from file://), then handed the data files' texts, which it parses
-   on its own thread. The URL is not revoked: the worker may still be fetching it. */
+   on its own thread. Cancel starts a new one (workerSolver cancel), from the same URL; it is never revoked, since a
+   worker may still be fetching it. */
+let solverWorkerUrl = null;
 function startSolverWorker() {
-  const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' })));
+  solverWorkerUrl ??= URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' }));
+  const worker = new Worker(solverWorkerUrl);
   worker.postMessage({ data: WORKER_DATA });
   return worker;
 }

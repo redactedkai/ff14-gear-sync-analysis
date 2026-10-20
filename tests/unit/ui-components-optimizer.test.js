@@ -151,16 +151,37 @@ test('optimizer: every solve and the Gear to search line share one session', asy
 });
 
 /* A solver like the page's worker: it does not block the page, and answers each request only when the test says
-   (answer(i): request i, with the page thread's own reply), in any order. */
+   (answer(i): request i, with the page thread's own reply), in any order. cancel(kind) rejects the requests of that
+   kind not yet answered with a cancelled error, as the worker solver does, and logs the kind in `cancelled`. */
 function heldSolver() {
   const local = inProcessSolver();
   const asked = [];
+  const cancelled = [];
   return {
     asked,
+    cancelled,
     blocksPage: false,
+    cancel(kind) {
+      cancelled.push(kind);
+      const open = asked.filter(a => a.request.kind === kind && !a.done);
+      for (const a of open) a.cancel();
+      return open.length > 0;
+    },
     request: request =>
-      new Promise(resolve => {
-        asked.push({ request, answer: () => local.request(request).then(resolve) });
+      new Promise((resolve, reject) => {
+        const entry = {
+          request,
+          done: false,
+          answer: () => {
+            entry.done = true;
+            return local.request(request).then(resolve);
+          },
+          cancel: () => {
+            entry.done = true;
+            reject(Object.assign(new Error('search cancelled'), { cancelled: true }));
+          },
+        };
+        asked.push(entry);
       }),
     answer: i => asked[i].answer(),
   };
@@ -221,8 +242,8 @@ test('optimizer: Cancel goes back to idle at once and keeps the result shown, it
   assert.equal(c.mealPick, meal, 'the meal pick of the result shown is back');
   assert.equal(c.stale, true, 'the result is still older than the settings');
 
-  // the cancelled search's reply comes later and is dropped
-  await answerSolve();
+  // the solver is told to stop the search; its reply, a cancelled error, is ignored (no unhandled rejection)
+  assert.deepEqual(solver.cancelled, ['solve']);
   await tick();
   assert.equal(c.view, withMeal);
   assert.equal(c.busy, false);
@@ -231,7 +252,7 @@ test('optimizer: Cancel goes back to idle at once and keeps the result shown, it
   // Cancel with nothing pending does nothing; Optimize after a cancel shows its own result
   const id = c.solveId;
   c.cancel();
-  assert.equal(c.solveId, id);
+  assert.deepEqual([c.solveId, solver.cancelled.length], [id, 1]);
   c.run();
   await tick();
   await answerSolve();

@@ -3,7 +3,7 @@
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
 import { samePassing } from '../views/optimizer.js';
-import { inProcessSolver, solverRequest } from '../solver.js';
+import { inProcessSolver, isCancelled, solverRequest } from '../solver.js';
 import { optimizerInputs, optimizerKey } from '../settings.js';
 import { expansionToggles, gearFromToggles, throttledEffect } from '../helpers.js';
 import { rankChoices, withRank } from '../ranks.js';
@@ -116,14 +116,16 @@ export function optimizer(alpine, solver = inProcessSolver()) {
       if (!this.busy) this.shown = { picks: this.picks, mealPick: this.mealPick, lastDeps: this.lastDeps };
     },
     /* Cancel: drop the pending search and go back to idle at once. The result shown stays, with its menu picks and its
-       settings key, so a result older than the settings shows as out of date again. In the worker the search is not
-       stopped: it runs to its end and its reply is dropped (solveId), and a search asked for meanwhile waits for it
-       (ui/solver.js workerSolver). */
+       settings key, so a result older than the settings shows as out of date again. A search running in the worker is
+       stopped (the worker is replaced: ui/solver.js workerSolver cancel), so a search asked for next does not wait for
+       it; its reply is a cancelled error, ignored in solve(). On the page's thread there is nothing to stop: a solve
+       still waiting for its frames is dropped (solveId). */
     cancel() {
       if (!this.busy) return;
       this.solveId++;
       this.busy = false;
       if (this.shown) Object.assign(this, this.shown);
+      solver.cancel('solve');
     },
     /* Solve and show the result, with the menu picks made so far; the progress bar shows until it comes. In the worker
        the page stays free meanwhile. A solver on the page's thread holds it (tier ranking up to a few seconds under a
@@ -134,9 +136,11 @@ export function optimizer(alpine, solver = inProcessSolver()) {
       this.busy = true;
       if (solver.blocksPage) await new Promise(painted => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(painted))));
       if (id !== this.solveId) return;
-      // finally: a failed solve must not leave the Optimize button disabled
+      // finally: a failed solve must not leave the Optimize button disabled; a cancelled one (cancel()) is no error
       try {
         await this.solveNow(id);
+      } catch (error) {
+        if (!isCancelled(error)) throw error;
       } finally {
         if (id === this.solveId) this.busy = false;
       }

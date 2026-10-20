@@ -7,7 +7,8 @@
      request  {kind: 'solve' | 'gearToSearch', jobId, sync, level, recipe, choices}: plain data (solverRequest), so it
               can be posted to a worker
      reply    a Promise of {result (optimizerView's or gearToSearchView's), ms (how long the handler took)}; rejected
-              with the handler's error message if it threw
+              with the handler's error message if it threw, or with a cancelled error (isCancelled) if cancel(kind)
+              stopped it (the worker solver only)
    The solver session (core/session.js: the job's gear and the search caches) lives with the handler: in the worker
    when there is one, so the page's thread never builds the job's gear and only one copy of it is held.
 
@@ -50,12 +51,24 @@ function settle(answer) {
   return 'error' in answer ? Promise.reject(new Error(answer.error)) : Promise.resolve({ result: answer.result, ms: answer.ms });
 }
 
+/* The error a cancelled request's reply is rejected with (workerSolver cancel): `cancelled` marks it, so the caller can
+   tell it from a failed request and ignore it. */
+function cancelledError() {
+  return Object.assign(new Error('search cancelled'), { cancelled: true });
+}
+
+/* Whether a solver reply was rejected because its request was cancelled (true), not because it failed. */
+export function isCancelled(error) {
+  return error?.cancelled === true;
+}
+
 /* A solver that runs on the page's thread, as the page did before the worker; the tests use it, and the page falls back
-   to it when the worker cannot start. Returns {blocksPage: true, request(request) → reply}: the handler runs at once,
-   inside request(); blocksPage tells the component to paint its progress bar before asking. */
+   to it when the worker cannot start. Returns {blocksPage: true, request(request) → reply, cancel(kind) → false}: the
+   handler runs at once, inside request(), so there is never a request to stop; blocksPage tells the component to paint
+   its progress bar before asking. */
 export function inProcessSolver(session = makeSession()) {
   const handle = makeSolverHandler(session);
-  return { blocksPage: true, request: request => settle(handle(request)) };
+  return { blocksPage: true, request: request => settle(handle(request)), cancel: () => false };
 }
 
 /* A solver that posts its requests to a worker. `createWorker()` makes the worker, its data already handed over (the
@@ -63,19 +76,27 @@ export function inProcessSolver(session = makeSession()) {
    `fallback()` makes the solver used instead when the worker cannot be made (createWorker throws, e.g. a browser or
    policy that refuses workers) or fails (an 'error' event: it could not load, or it crashed): the requests not yet
    answered are asked of it again, so the page always gets an answer. Returns {blocksPage (true once fallen back),
-   request(request) → reply}.
+   request(request) → reply, cancel(kind) → whether the worker was stopped}.
 
    One request per kind is in the worker at a time; a newer request of that kind waits, and replaces the one already
    waiting, whose caller then gets the newer one's reply (settings typed during a long search are not all solved one
    after the other). Each request is tagged with an id, and a reply goes to the request with its id. Callers still
    drop replies they no longer want (the component's solveId): a reply can come for settings that have changed since.
-   No reply is cut short: terminating the worker would also throw away its session (the job's gear and the caches). */
+
+   cancel(kind) stops the request of that kind in the worker (the optimizer's Cancel): a worker cannot be interrupted
+   mid-search, so it is terminated, and a fresh one is started at once (it parses the data again; its session builds
+   the job's gear again). The cancelled request and the one waiting behind it are rejected with a cancelled error
+   (isCancelled). The other kind's requests not yet answered are posted to the new worker, so none is lost; with none,
+   the last Gear to search request is asked again, so the new worker builds the job's gear before the next search.
+   With nothing of that kind in the worker (it was answered, or the solver has fallen back to the page's thread)
+   cancel does nothing and returns false: the caller just drops the reply. */
 export function workerSolver(createWorker, fallback = inProcessSolver) {
   let worker = null;
   let backup = null; // the fallback solver, once the worker failed
   let nextId = 0;
   // per kind: the request in the worker and the one waiting, each {id, request, callers: [{resolve, reject}]}
   const lanes = { solve: { flight: null, waiting: null }, gearToSearch: { flight: null, waiting: null } };
+  let lastSide = null; // the last Gear to search request asked for: asked again of a restarted worker
 
   // a reply (a Promise) handed to every caller of a request
   const answer = (callers, reply) =>
@@ -88,20 +109,29 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
       },
     );
 
+  // a lane's requests not yet answered, emptied from it: the newest request, with the callers of all of them; or null
+  const takePending = lane => {
+    const pending = [lane.flight, lane.waiting].filter(Boolean);
+    lane.flight = lane.waiting = null;
+    return pending.length ? { ...pending.at(-1), callers: pending.flatMap(p => p.callers) } : null;
+  };
+
+  // the worker stopped, its handlers off first (a reply already on its way is not taken)
+  const stopWorker = () => {
+    if (!worker) return;
+    worker.onmessage = worker.onerror = null;
+    worker.terminate();
+    worker = null;
+  };
+
   // 1. the fallback: every caller still waiting is answered by it, with the newest request of its kind
   const fallBack = () => {
     if (backup) return;
     backup = fallback();
-    worker?.terminate();
-    worker = null;
+    stopWorker();
     for (const lane of Object.values(lanes)) {
-      const pending = [lane.flight, lane.waiting].filter(Boolean);
-      lane.flight = lane.waiting = null;
-      if (!pending.length) continue;
-      answer(
-        pending.flatMap(p => p.callers),
-        backup.request(pending.at(-1).request),
-      );
+      const pending = takePending(lane);
+      if (pending) answer(pending.callers, backup.request(pending.request));
     }
   };
 
@@ -145,13 +175,35 @@ export function workerSolver(createWorker, fallback = inProcessSolver) {
     };
   };
 
+  // 5. cancel: the worker terminated and a fresh one started, the other kind's requests posted to it (section above)
+  const cancel = kind => {
+    const lane = lanes[kind];
+    if (!worker || !lane?.flight) return false;
+    const cancelled = takePending(lane);
+    stopWorker();
+    for (const caller of cancelled.callers) caller.reject(cancelledError());
+    start();
+    if (backup) return true; // the new worker could not be made: fallBack has asked the page's thread instead
+    let resent = false;
+    for (const other of Object.values(lanes)) {
+      const pending = takePending(other);
+      if (!pending) continue;
+      post(other, pending);
+      resent = true;
+    }
+    if (!resent && lastSide) post(lanes.gearToSearch, { id: ++nextId, request: lastSide, callers: [] });
+    return true;
+  };
+
   return {
     get blocksPage() {
       return !!backup;
     },
+    cancel,
     request(request) {
       if (!worker && !backup) start();
       if (backup) return backup.request(request);
+      if (request.kind === 'gearToSearch') lastSide = request;
       return new Promise((resolve, reject) => {
         const lane = lanes[request.kind];
         if (!lane) throw new Error(`unknown solver request kind: ${request.kind}`);
