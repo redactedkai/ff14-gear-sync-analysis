@@ -85,7 +85,7 @@ How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-
 
 - Weapon damage is the implicit first key of every search (none for BLU); it is not offered as a goal.
 - Relics whose substats the player allocates are left out, with a note.
-- **If you change scoring, pruning or the search, run `npm run test:full` (the exhaustive-search tests and the long sweep) and `npm run perf`.** Check its node counts and truncations; timing matters only above about 0.5 s, so ignore the bench's budget misses below that and don't rerun or investigate them.
+- **If you change scoring, pruning or the search, run `npm run test:full` (the exhaustive-search tests and the long sweep) and `npm run perf`.** It exits 1 on a truncated run or one over 1,000 nodes; it prints timing budget misses as information only: timing matters only above about 0.5 s, so don't rerun or investigate them below that.
 
 ## Page rules
 

@@ -534,7 +534,7 @@ Measured on the same PC before Beastmaster was added (22 jobs), with the scripts
 **What the perf scripts measure.** The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` and `memory.mjs`.
 
 - **Workloads:** W1, every job with its full pool, sync settings, levels, melds on and off and about 40 objectives; X, all exclude masks; OFULL, every target with every first and second tiebreak; and adversarial pools (`adversarial.mjs`: near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation).
-- **Budgets** (`bench.mjs --strict` exits 1 on a miss):
+- **Budgets.** `bench.mjs` exits 1 when a run is truncated or takes more than 1,000 nodes: those are counts, the same on every PC. It prints the timing budgets' misses as information only (timing matters only above about 0.5 s); `--strict` makes a timing miss exit 1 too. `adversarial.mjs` exits 1 when a hostile pool run is truncated; its forced stall is meant to reach the limit and only prints a note when it no longer does (since the speed tables it stops after a few dozen nodes).
 
 | Metric | Budget |
 | --- | --- |
@@ -545,7 +545,7 @@ Measured on the same PC before Beastmaster was added (22 jobs), with the scripts
 | Truncated runs | 0 |
 | Second identical sweep (`memory.mjs`) | 0 new meld memo entries, 1 MB of heap |
 
-- **Known misses on this PC:** the first call and the node count (83.9 ms and 1,209 nodes in the table below), and everything after the item level floor drop (section above). Per the owner's rule, timing matters only above about 0.5 s.
+- **Known misses on this PC:** the first call and the node count (83.9 ms and 1,209 nodes in the full sweep below; `npm run perf` stayed within 1,000 nodes on 2026-10-19, 458 at most, and a sweep over 1,000 now exits 1), and the timing budgets after the item level floor drop (section above). Per the owner's rule, timing matters only above about 0.5 s.
 - **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo. (The last item, a Web Worker, is done: [The page with a Web Worker](#the-page-with-a-web-worker-2026-10-19); it keeps the page responsive, it does not make a search faster.)
 - **`compare.mjs`** checks that a faster version gives the same answers. Copy `src/` of the old commit to `<dir>/src` (outside the repo, or under the gitignored `scripts/perf/out/baseline/<label>`; it aborts if `items.json` differs), then run `node scripts/perf/compare.mjs --baseline <dir> [--quick] [--nodes-may-differ]`. Both copies get the same item objects. Picks, totals and truncation must be byte-equal, and so must node counts unless the search was meant to change; `--quick` runs four jobs.
 
