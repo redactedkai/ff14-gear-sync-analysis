@@ -961,7 +961,8 @@ const NO_WORKER = () => {
 const FAILING_WORKER = () => {
   const RealWorker = window.Worker;
   window.Worker = class extends RealWorker {
-    constructor(url, options) {
+    constructor(_pageWorkerUrl, options) {
+      // the page's worker script is replaced by one that throws
       const failing = new Blob(['throw new Error("worker failed to load (smoke test)")'], { type: 'text/javascript' });
       super(URL.createObjectURL(failing), options);
     }
