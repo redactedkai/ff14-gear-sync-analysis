@@ -25,6 +25,7 @@ The game, Final Fantasy XIV (FFXIV), has its own vocabulary. These are the terms
 
 | Neutral name | Meaning | Tank | Healer | Melee (Str) | Dexterity | Caster |
 | --- | --- | --- | --- | --- | --- | --- |
+| jobs | the jobs in the profile | PLD WAR DRK GNB | WHM SCH AST SGE | MNK DRG SAM RPR BST | NIN VPR BRD MCH DNC | BLM SMN RDM PCT BLU |
 | main stat | primary damage/healing stat | Strength | Mind | Strength | Dexterity | Intelligence |
 | Vitality | hit points | Vitality | Vitality | Vitality | Vitality | Vitality |
 | substats | Critical Hit, Determination, Direct Hit | same | same | same | same | same |
@@ -33,7 +34,8 @@ The game, Final Fantasy XIV (FFXIV), has its own vocabulary. These are the terms
 
 Notes on the table:
 
-- The "Melee (Str)" column covers Monk, Dragoon, Samurai, Reaper and Beastmaster; the "Dexterity" column Ninja, Viper, Bard, Machinist and Dancer.
+- This table is the project's one home for the job-to-profile map; other pages link here.
+- The jobs by name: tanks Paladin (PLD), Warrior (WAR), Dark Knight (DRK), Gunbreaker (GNB); healers White Mage (WHM), Scholar (SCH), Astrologian (AST), Sage (SGE); the "Melee (Str)" column Monk (MNK), Dragoon (DRG), Samurai (SAM), Reaper (RPR) and Beastmaster (BST); the "Dexterity" column Ninja (NIN), Viper (VPR), Bard (BRD), Machinist (MCH) and Dancer (DNC); casters Black Mage (BLM), Summoner (SMN), Red Mage (RDM), Pictomancer (PCT) and Blue Mage (BLU).
 - Speed and the special substat also count as substats.
 - Paladin and Beastmaster wear a one-handed weapon and a shield (section 3); every other job a two-handed weapon.
 - Beastmaster's speed stat and missing special substat are *inferred* from its melee role (no game column names a job's substats; xivgear uses the same), and its own gear carries neither.
@@ -564,7 +566,7 @@ with $g_k$ the points from gear (synced, melds included) and $b_k$ the character
 - A meal is left out when another one has each of its stats at an equal or higher maximum (an old Critical Hit + Determination meal next to a new Determination + Critical Hit one), so a job has 7 to 13 choices.
 - Vitality from food is counted like a substat's, from the Vitality base above (since 2026-10-18). Without the clan's bonus it can be a point lower than in game. It never decides the meal unless Vitality is the goal or a tiebreak: the "most food points" step after the goal and tiebreaks counts substats only.
 
-**Food does not change the gear** (with no target GCD). For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged. With a target GCD the meal does change which gear fits, since its speed counts toward the GCD; meal and gear are then chosen together ([Target GCD](#target-gcd)). The best meal for the goal keeps the optimizer's gear and takes the meal that gives the highest target, then tiebreak 1, then tiebreak 2, with food added (the result's Food menu shows the highest item level meal with the same result, and any other meal can be picked: [optimizer.md, section 7](../engineering/optimizer.md#7-the-pages-pool-and-its-filters)). A test checks this against every (gear set, meal) pair of a small pool.
+**Food does not change the gear** (with no target GCD). For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged. With a target GCD the meal does change which gear fits, since its speed counts toward the GCD; meal and gear are then chosen together ([Target GCD](#target-gcd)). The best meal for the goal keeps the optimizer's gear and takes the meal that gives the highest target, then tiebreak 1, then tiebreak 2, with food added (the result's Food menu shows the highest item level meal with the same result, and any other meal can be picked: [ui.md, section 2](../engineering/ui.md#the-food-rows-menu)). A test checks this against every (gear set, meal) pair of a small pool.
 
 ## 7. Verified and assumed
 

@@ -26,14 +26,13 @@ Feature branch → `dev` → `main`, one way, fast-forward when possible. Never 
 
 ## Commands
 
-Needs Node 22+ (`npm install`, then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests.
+Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
 
-- `npm run build`, `npm run dev`
-- `npm test`: Node unit tests, all must pass (`npm run test:full` adds the long optimizer sweep; `npm run test:data`: Python generator tests)
-- `npm run smoke`: must print `no errors`
-- `npm run lint`, `npm run format` (Biome; `lint:py` and `format:py` for Ruff)
-- `npm run check`: lint, build, test, smoke; no Python needed. **Run it before saying something works.** Run `npm run check:all` (adds `lint:py`, `test:data`) when touching `scripts/data/` or after `update-data`. For UI changes, also look at the page at full width and at 960 px.
-- `npm run update-data`: after a game patch (see `docs/engineering/data-pipeline.md` section 9)
+- `npm run check` (lint, build, `npm test`, smoke; no Python; about 2 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
+- `npm run check:all` (adds `lint:py`, `test:data`) when touching `scripts/data/` or after `update-data`.
+- For UI changes, also look at the page at full width and at 960 px.
+- `npm run update-data` after a game patch (see `docs/engineering/data-pipeline.md` section 9).
+- Git hooks (no AI attribution in commits; `check` before a push to `main`): `git config core.hooksPath .githooks` once per clone.
 
 ## Code rules
 
@@ -77,21 +76,15 @@ Details: `docs/engineering/data-pipeline.md`.
 
 ## Jobs
 
-| Role | Jobs | Main stat | Speed | Special |
-|---|---|---|---|---|
-| Tank | PLD WAR DRK GNB | Str | Skill Speed | Tenacity |
-| Healer | WHM SCH AST SGE | Mind | Spell Speed | Piety |
-| Melee | MNK DRG SAM RPR BST | Str | Skill Speed | none |
-| Ranged | NIN VPR BRD MCH DNC | Dex | Skill Speed | none |
-| Caster | BLM SMN RDM PCT BLU | Int | Spell Speed | none |
-
-PLD and BST use a 1H weapon and a shield; the rest use 2H. Level caps: BLU 80, BST 50; always go through `job.maxLevel`.
+Roles, main stat, speed and special substat of each job: `docs/mechanics/math.md` section 1 (tanks and healers have a special substat; the melee, Dexterity and caster jobs don't). PLD and BST use a 1H weapon and a shield; the rest use 2H. Level caps: BLU 80, BST 50; always go through `job.maxLevel`.
 
 ## Optimizer
 
-Details: `docs/engineering/optimizer.md`.
+How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-ranking.md`. Rules:
 
-Branch and bound over slots, after removing dominated items. Each item gets one integer score for (weapon damage, goal, tiebreak 1, tiebreak 2): weapon damage is an implicit first key in every search (none for BLU). Relics whose substats the player allocates are left out, with a note. It handles two rings, Unique items, and pieces that cover more than one slot. Melds are picked per unsynced piece by exact search. A Target GCD (`src/core/target-gcd.js`) becomes a speed band, counting food and the always-on haste of MNK, NIN, SAM and VPR. Rank by tier (`src/core/tier-rank.js`, on by default) ranks the goal and tiebreaks by tier first: one search per key, each holding the keys before it through stat minimums (docs: `tier-ranking.md`). Later stages cut by what earlier ones proved (`src/core/optimizer/regain.js`), and a seeded search tries 20,000 nodes before building Pareto fronts. **If you change scoring, pruning or the search, run `npm run test:full` (the exhaustive-search tests and the long sweep) and `npm run perf`.** Check its node counts and truncations; timing matters only above about 0.5 s, so ignore the bench's budget misses below that and don't rerun or investigate them.
+- Weapon damage is the implicit first key of every search (none for BLU); it is not offered as a goal.
+- Relics whose substats the player allocates are left out, with a note.
+- **If you change scoring, pruning or the search, run `npm run test:full` (the exhaustive-search tests and the long sweep) and `npm run perf`.** Check its node counts and truncations; timing matters only above about 0.5 s, so ignore the bench's budget misses below that and don't rerun or investigate them.
 
 ## Page rules
 

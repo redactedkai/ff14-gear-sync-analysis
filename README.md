@@ -1,12 +1,12 @@
 # Gear Sync Analysis
 
-An FFXIV calculator for understanding how item level sync and level sync work, with an optimizer that picks the gear combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity, and so on) under a sync cap. It works for all 23 combat jobs and uses real item data from the game files.
+In FFXIV, some content **syncs** a character down: item level sync caps each stat on gear above a set item level, and level sync lowers the character's level and the gear above it to match (both in the [glossary](docs/glossary.md#game-terms)). Gear Sync Analysis is a calculator for understanding how both work, with an optimizer that picks the gear combination that maximizes a chosen stat (Spell Speed, Skill Speed, Piety, Tenacity, and so on) under a sync cap. It works for all 23 combat jobs and uses real item data from the game files.
 
 It builds to a single self-contained HTML page, `dist/index.html`, that opens from disk with no server. The only outside request is the Google Fonts stylesheet; offline, the page falls back to system fonts. The npm package is named `ff14-gear-sync-analysis`.
 
 ## Requirements
 
-- Node 22 or later. Run `npm install` once, and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
+- Node 22 or later. Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
 - Python 3, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`. CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9. The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
 
 Run all commands from the repo root.
@@ -22,30 +22,33 @@ Open `dist/index.html` in a browser. For development, `npm run dev` rebuilds on 
 
 Pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs resets the job-specific settings (the optimizer's target and tiebreaks, the browser's slot and sort).
 
-Once a job is chosen, the page has two working tabs and one reference tab:
-
-1. **Gear optimizer** (opens first): picks one item per slot (two rings) from every piece the job can wear to maximize one stat, with two optional tiebreakers and an optional Target GCD, when you press **Optimize**. A Materia switch (on by default) gives each piece its best melds. Under **Gear to search**, the **Gear from** boxes leave out gear by how it is obtained (quests, crafting, Savage, PvP, ...); nine of them are off by default.
-2. **Gear browser**: one table of real gear for the selected job, with filters and its synced stats, for looking gear up. A name search sits on its title line ("/" jumps to it), slot pills show how many pieces each slot has, a Reset button appears at their end while a filter is set, and a click on a column heading sorts by it (again to flip). A piece that sync lowers shows its synced numbers in bold, with its own numbers in small type under them. It has its own gear group boxes. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2.
-3. **How the math works** (reference): Piece stats (what sync does to one piece, and when an overgeared piece has more than a melded one at the cap, with how each stat is built, checked against real gear and the Wiki); GCD (how speed becomes the GCD at a level, with a haste and a speed of your own: the GCD, GCDs per minute, the cut to cast and recast times, the speed one step takes at every level, and the steps around the speed); and Substat tiers (where each substat's tiers start around your value, as on the character panel).
+Once a job is chosen, the page has two working tabs, **Gear optimizer** (opens first: the best gear for a stat when you press **Optimize**) and **Gear browser** (looking gear up), and a reference tab, **How the math works**. What each one shows: [docs/engineering/ui.md, section 1](docs/engineering/ui.md#1-the-tabs).
 
 ## Develop
+
+Every npm command, in one place (other pages link here). Times are from the owner's 12-thread PC (2026-10-19 for `check`; the others as measured in [testing.md](docs/engineering/testing.md)).
 
 | Command | What it does |
 | --- | --- |
 | `npm run build` | Bundle everything into `dist/index.html` (opens straight from disk) |
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
 | `npm test` | Unit tests (core logic, page views, data format, saved state) |
-| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`); run it before changing the search |
+| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`, about 90 s); run it before changing scoring, pruning or the search. CI runs it |
 | `npm run test:data` | The Python data generator tests |
 | `npm run smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
-| `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check |
-| `npm run lint:py` | Ruff (Python): lint and format check |
+| `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check, no file changes; a warning fails it |
+| `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
-| `npm run check` | Lint (with format check), build, unit tests and the smoke test, in that order; no Python needed. Run this before calling a change done |
+| `npm run check` | Lint (with format check), build, unit tests and the smoke test, in that order; no Python needed (about 2 min: unit tests about 85 s, smoke about 30 s). Run this before calling a change done |
 | `npm run check:all` | `check`, then `lint:py` and `test:data`. Run it when touching `scripts/data/` or after `update-data` |
 | `npm run update-data` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
+| `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min); run it after changing the search |
+| `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
+| `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
+| `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
+| `node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
 
-For a UI change, also open `dist/index.html` and look at it at desktop width and at 960 px. Test layers and conventions are in [docs/engineering/testing.md](docs/engineering/testing.md).
+For a UI change, also open `dist/index.html` and look at it at desktop width and at 960 px. What each command checks, how to run a subset, and the checks against ffxiv-gearing and xivgear are in [testing.md, section 3](docs/engineering/testing.md#3-commands); test layers and conventions are in the rest of [testing.md](docs/engineering/testing.md).
 
 ## After a game patch
 
@@ -83,7 +86,7 @@ Item stats, the item level budget table and level parameters come from the [xiva
 ## License and credits
 
 - **Code and docs:** MIT, see [LICENSE](LICENSE).
-- **Game data and icons:** the FINAL FANTASY XIV game data in `src/data/` (item names and stats, level tables, food) and the 23 job icons in `src/data/job-icons.js` are © SQUARE ENIX CO., LTD. and are not covered by the MIT licence. This is an unofficial, non-commercial fan tool.
+- **Game data and icons:** the FINAL FANTASY XIV game data in `src/data/` (item names and stats, level tables, food) and the 23 job icons in `src/data/job-icons.js` are © SQUARE ENIX CO., LTD. and are not covered by the MIT licence. This is an unofficial, non-commercial fan tool, under Square Enix's [FINAL FANTASY XIV Materials Usage License](https://support.na.square-enix.com/rule.php?id=5382&tag=authc).
 - **Data source:** [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining); each generated file records the commit it came from.
 - **Formulas:** the speed, GCD, tier, defense and food formulas follow [AkhMorning](https://www.akhmorning.com/); sync rules and caps were checked against [xivgear](https://xivgear.app/) and the [Console Games Wiki](https://ffxiv.consolegameswiki.com/). Each is credited where it is used (`docs/mechanics/`); they are re-implemented from the published maths, and no code is copied from them.
 - **Bundled:** Alpine.js and @vue/reactivity, both MIT; the build keeps their notices at the top of the page's script.

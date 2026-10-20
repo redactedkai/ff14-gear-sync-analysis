@@ -126,7 +126,7 @@ Notes:
 
 - **Settings, How the math works** are cheap: a few formulas per piece; the explainer's curves (a few thousand generic pieces per setting) are remembered per setting, so a slider move costs a few milliseconds.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
-- **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches. Layout (owner, 2026-10-18): the name search on the title line (every word must be in the name, the words found are marked), slot pills with each slot's count under the other filters, one row of filters (item level as one "min – max" field, as under Gear to search), a Reset button (funnel and ×) at the end of the pills' line while any filter is off its default (`browseFiltered`; its place is kept while hidden, so the pills do not move), and sorting from the column headings (`browse.sort` and `browse.dir`, saved). A row that sync lowers (owner, 2026-10-19) shows what the player gets on top, bold: the synced item level and stats, the lowered stats with the optimizer's cap bar; a muted line under it holds the piece's own numbers, "before sync" under the name, and a grey bar marks the row's left edge (`browseCell`).
+- **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, job, cap, sync or level, and shows the first 100 matches. Its layout is in [ui.md, section 3](ui.md#3-the-gear-browser-tab).
 - **Optimizer result**: every piece the job can wear that passes the filters under Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the optimizer's own values). Searched only when the user presses Optimize (owner, 2026-10-18; it used to rerun on every change of those filters, job, cap, sync, level or optimizer settings). A setting changed after a search leaves the result shown but dimmed, with a note and its menus off, until Optimize runs again; a job switch clears it. The count in the heading and the greyed-out Gear from boxes still follow the settings. The solve starts two frames later, so a progress bar is painted first (tier ranking can take a few seconds). [Node limit](../glossary.md) 700,000. A line under the result says how long the solve took ("Solved in 21 ms."; the first solve for a job includes building its gear).
 
 **How the debounce works.** The effect reads all inputs synchronously (so they are tracked) and schedules the expensive part on a timer that is reset on every change, so $k$ changes less than 120 ms apart update the optimizer's piece count once, not $k$ times. Pressing Optimize right after typing still searches with the value typed: the click first moves the focus out of the box, which commits it. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
@@ -178,7 +178,7 @@ The page loads nothing at run time except the web fonts, which come from Google 
 
 | Step | Command | What happens |
 | --- | --- | --- |
-| Install once | `npm install` | Installs esbuild, Biome, Playwright and Alpine |
+| Install once | `npm install` (or `npm ci`) | Installs esbuild, Biome, Playwright and Alpine |
 | Work | `npm run dev` | Rebuilds on change and serves the page |
 | Check | `npm run check` | Lint, build, all tests |
 | Look | open the built page | Desktop width and 960 px |
@@ -190,7 +190,7 @@ Notes:
 - **Check.** Lint, format check, build, unit tests, browser smoke test. It must pass before a change is called done. The generator tests (Python) and the Python lint run in `npm run check:all`, needed when the data pipeline changes.
 - **Look.** The page must never scroll sideways; wide tables scroll inside their own box.
 
-Tests are described in [testing.md](testing.md). After a game patch, the data is refreshed with the steps in [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).
+Every command, with how long it takes, is in the [root README](../../README.md#develop). Tests are described in [testing.md](testing.md). After a game patch, the data is refreshed with the steps in [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).
 
 ## Where this lives
 
