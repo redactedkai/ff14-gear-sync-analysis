@@ -27,9 +27,17 @@ function newId() {
   return 'i' + nextId++;
 }
 
-/* A pool item with defaults (one copy, hand-made); `stats` may leave stats out (0), `extra` overrides any field. */
+/* A pool item with defaults (one copy, hand-made); `stats` may leave stats out (0), `extra` overrides any field.
+   Frozen, with its stats and any other object field (a hand-made `meld`): pool items are shared by every search, the
+   result rows and the caches keyed by them (WeakMaps in this file and piece.js), on the page's thread and in
+   the worker alike, so nothing may change one after it is made. A piece that changes is a new item. */
 export function mkItem(name, type, ilvl, stats, extra) {
-  return Object.assign({ id: newId(), name, type, ilvl, stats: Object.assign(blankStats(), stats), copies: 1, src: 'custom' }, extra || {});
+  const item = Object.assign(
+    { id: newId(), name, type, ilvl, stats: Object.assign(blankStats(), stats), copies: 1, src: 'custom' },
+    extra || {},
+  );
+  for (const value of Object.values(item)) if (value && typeof value === 'object') Object.freeze(value);
+  return Object.freeze(item);
 }
 
 /* Generic pieces: every ordered pair (A, B) of allowed substats per slot type. */
