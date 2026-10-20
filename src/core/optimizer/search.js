@@ -5,6 +5,7 @@
    already seen (the memo). */
 import { frontSearch } from './front.js';
 import { addRegainCuts } from './regain.js';
+import { blockableTypes, positionMask, slotPositions } from './slot-index.js';
 
 /* Most two rings can add together on f(a) >= 0: the best ring twice only if that item has 2 copies, otherwise the best
    plus the best other item (the best alone when there is no other: the second ring slot stays empty). Any legal pair
@@ -30,7 +31,7 @@ function bestPair(list, f) {
    best ring twice, as a sum of single-slot bounds does, overstates the bound whenever that ring is Unique. */
 export function suffixBounds(slotList, posList, dims) {
   const n = posList.length;
-  const posOf = new Map(slotList.map((t, i) => [t, i]));
+  const posOf = slotPositions(slotList);
   const remMax = {},
     slotMax = {};
   dims.forEach(d => {
@@ -81,7 +82,7 @@ export function suffixBounds(slotList, posList, dims) {
 export function limitTables(slotList, posList, valueFn, min, max, empty = null, scoreFn = a => a.score) {
   const n = slotList.length;
   const lo = min > 0 ? min : 0;
-  const blockable = new Set(posList.flatMap(list => list.flatMap(a => a.blocks)));
+  const blockable = blockableTypes(posList);
   const statOf = a => Math.max(0, valueFn(a) || 0);
 
   // slots a legal loadout can leave empty: a blockable slot, a slot with no candidates, and a ring slot when the ring
@@ -291,7 +292,7 @@ export function lagrangeBound(posList, limits, floor = 0, iterations = 300) {
    minimum keeps all its pieces. The two ring slots share one list and keep sharing it. */
 export function dropShortfalls(slotList, posList, dims, limits) {
   const mins = limits.filter(l => l.min > 0);
-  const posOf = new Map(slotList.map((t, i) => [t, i]));
+  const posOf = slotPositions(slotList);
   for (let round = 0; round < 10; round++) {
     const { remMax, slotMax } = suffixBounds(slotList, posList, dims);
     let dropped = false;
@@ -338,8 +339,7 @@ export function dropShortfalls(slotList, posList, dims, limits) {
    which stays empty), and a slot a piece blocks is left alone. */
 export function improveStart(slotList, posList, limits, start) {
   const n = slotList.length;
-  const posOf = new Map(slotList.map((t, i) => [t, i]));
-  const maskOf = blocks => blocks.reduce((m, b) => (posOf.has(b) ? m | (1 << posOf.get(b)) : m), 0);
+  const positions = slotPositions(slotList);
   const best = start.best.slice();
   let score = start.score;
   const totals = limits.map(l => best.reduce((x, s) => x + (s?.cand?.eff[l.stat] || 0), 0));
@@ -363,7 +363,7 @@ export function improveStart(slotList, posList, limits, start) {
       const oldMask = blockMask(i);
       for (const a of posList[i]) {
         if (a.score <= old.score + (move ? move.gain : 0)) continue;
-        if (maskOf(a.blocks) !== oldMask) continue;
+        if (positionMask(a.blocks, positions) !== oldMask) continue;
         let worn = 0;
         for (let j = 0; j < n; j++) if (j !== i && best[j]?.cand?.item.id === a.item.id) worn++;
         if (worn >= a.copies) continue;
@@ -413,7 +413,7 @@ export function fixByReducedCost(list, lagr, i, known) {
    lists: ordering by the lists before the filters (in buildCandidates) was slower than the order there (Perplexity's
    measurement, 2026-10-17). */
 export function shortListsFirst(slotList, posList) {
-  const blockable = new Set(posList.flatMap(list => list.flatMap(a => a.blocks)));
+  const blockable = blockableTypes(posList);
   const types = [...new Set(slotList)];
   const size = type => posList[slotList.indexOf(type)].length * (type === 'ring' ? 2 : 1);
   const free = types.filter(t => !blockable.has(t)).sort((x, y) => size(x) - size(y));
@@ -554,10 +554,9 @@ export function branchAndBound({
   const nLimits = limits.length;
   const limitStats = limits.map(l => l.stat);
 
-  const posOf = new Map(slotList.map((slotType, i) => [slotType, i])); // blockable slots appear once (rings are never blocked)
+  const posOf = slotPositions(slotList); // blockable slots appear once (rings are never blocked)
   // the slots a candidate blocks, as a bit mask of positions
-  const maskOf = blocks => blocks.reduce((mask, b) => (posOf.has(b) ? mask | (1 << posOf.get(b)) : mask), 0);
-  const blockMaskOf = new Map(posList.flatMap(list => list.map(a => [a, maskOf(a.blocks)])));
+  const blockMaskOf = new Map(posList.flatMap(list => list.map(a => [a, positionMask(a.blocks, posOf)])));
 
   // the limited totals so far, in `limits` order (the stats are also kept in `totals`; this copy is what the tables
   // read)
