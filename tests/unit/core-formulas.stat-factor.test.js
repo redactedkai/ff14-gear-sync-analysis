@@ -18,7 +18,7 @@ const at = (r, key) => rowStats(r)[ITEM_STAT_ORDER.indexOf(key)];
 test("the job's own factor equals the game files' factor on every piece of its own kind", () => {
   // every database piece a job can equip that carries its main stat and only that main stat: the item's factor for the
   // main stat is 100 and its Vitality factor is the job's (90 for Int/Mind, 100 otherwise)
-  for (const [id] of JOBS) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     let n = 0;
     for (const r of ITEMS) {
@@ -36,7 +36,7 @@ test("the job's own factor equals the game files' factor on every piece of its o
 
 test('the only pieces whose factors differ from the job rule are kind 0: the four-main-stat pieces and the Main Attribute pieces', () => {
   const odd = new Set();
-  for (const [id] of JOBS) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     for (const p of browseItems(job, { ilvlMin: MODEL_MIN_ILVL })) {
       const f = kindFactors(job, p.kind);

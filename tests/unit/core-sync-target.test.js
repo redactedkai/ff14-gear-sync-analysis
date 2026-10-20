@@ -16,7 +16,7 @@ import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const ROWS = ITEMS.map(parseRow);
-const jobsOf = r => JOBS.filter((_, i) => r.mask & (1 << i)).map(j => makeJobContext(j[0]));
+const jobsOf = r => JOBS.filter((_, i) => r.mask & (1 << i)).map(j => makeJobContext(j.id));
 
 /* ParamGrow.ItemLevelSync, read from the game file: the level caps of each expansion. xivgear's tests sync level 94
    to 100 gear to item level 660 in a level 90 duty (issue #317, in-game reports), the same value. */

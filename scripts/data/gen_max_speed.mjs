@@ -61,7 +61,7 @@ export function inputsHash(files = inputFiles()) {
 /* Jobs grouped by what decides their answer: [{jobs: [id], job (the first one's JobContext), pool, meals}]. */
 export function jobGroups() {
   const groups = new Map();
-  for (const [id] of JOBS) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const pool = browseItems(job, {}).map(r => poolItemFromRow(job, r));
     const meals = allMeals(job).filter(m => m.stats.some(s => s.stat === 'spd'));

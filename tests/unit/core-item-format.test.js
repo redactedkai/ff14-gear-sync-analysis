@@ -22,7 +22,7 @@ import { makeJobContext } from '../../src/core/job-context.js';
 
 test('job bit order, stat order and slot codes come from item-format.json', () => {
   assert.deepEqual(
-    JOBS.map(j => j[0]),
+    JOBS.map(j => j.id),
     ITEM_FORMAT.jobs,
   );
   assert.deepEqual(
@@ -144,7 +144,7 @@ test('slot shares used by the page are the item-format.json percents (checked ag
     wrist: 67,
     ring: 67,
   });
-  for (const [id] of JOBS) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     for (const t of SLOT_TYPES) {
       const code = t === 'weapon' ? (job.weaponMode === '2h' ? 0 : 1) : DB_SLOT_TYPE.indexOf(t);
@@ -158,7 +158,7 @@ test('slot shares used by the page are the item-format.json percents (checked ag
 const NO_ITEMS_EXPECTED = { BLU: ['weapon'] };
 
 test('every job has at least one item for each of its active slots (a renamed job column would leave none)', () => {
-  JOBS.forEach(([id], bit) => {
+  JOBS.forEach(({ id }, bit) => {
     const job = makeJobContext(id);
     const codes = new Set(ITEMS.filter(r => r[ROW.jobMask] & (1 << bit)).map(r => r[ROW.slotCode]));
     for (const t of job.activeSlotTypes) {
@@ -177,7 +177,7 @@ test('every job has at least one item for each of its active slots (a renamed jo
 
 test('job picker: every job appears exactly once, each with an embedded 64 x 64 PNG icon', () => {
   const picked = JOB_ROWS.flatMap(([, ids]) => ids);
-  assert.deepEqual([...picked].sort(), JOBS.map(j => j[0]).sort());
+  assert.deepEqual([...picked].sort(), JOBS.map(j => j.id).sort());
   for (const id of picked) {
     const png = Buffer.from(JOB_ICONS[id].replace(/^data:image\/png;base64,/, ''), 'base64');
     assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG', id);

@@ -377,7 +377,7 @@ test('restoreState: a job at its own level cap keeps its saved cap, as the live 
 /* Audit 02, finding 7: the browser's defaults were written in defaultState, Reset filters and browseFiltered, with
    the equip level as 100 in one and the job's level cap in the others. defaultBrowse is the one copy. */
 test('defaultBrowse: what a job starts with, and no filter by its own check', () => {
-  for (const [id] of JOBS) {
+  for (const { id } of JOBS) {
     const job = makeJobContext(id);
     assert.deepEqual(restoreState({ job: id }).browse, defaultBrowse(job), id);
     assert.equal(defaultBrowse(job).lvl, job.maxLevel, id);

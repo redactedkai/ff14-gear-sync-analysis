@@ -14,9 +14,10 @@ const SPEED_STEP = 130;
 export function hasteFor(jobId, level) {
   const haste = HASTE[jobId];
   if (!haste) return null;
-  // steps are [from level, percent, source] in level order: the last one the level has reached applies
+  // steps are in level order: the last one the level has reached applies
   let reached = null;
-  for (const [fromLevel, pct, source] of haste.steps) if (level >= fromLevel) reached = { name: haste.name, pct, level: fromLevel, source };
+  for (const step of haste.steps)
+    if (level >= step.level) reached = { name: haste.name, pct: step.pct, level: step.level, source: step.source };
   return reached;
 }
 

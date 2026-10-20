@@ -328,12 +328,12 @@ test('expansion of real pieces, and the browse filter by expansion', () => {
   assert.equal(lvl("Menphina's Earring"), 'ShB'); // level 1, item level 430
   const whm = makeJobContext('WHM');
   const all = browseItems(whm, { type: 'any' });
-  const only = short => browseItems(whm, { type: 'any', expOff: EXPANSIONS.map(e => e[0]).filter(k => k !== short) });
+  const only = short => browseItems(whm, { type: 'any', expOff: EXPANSIONS.map(e => e.short).filter(k => k !== short) });
   const ew = only('EW');
   // level-1 pieces (pre-order earrings) go by item level, like Halone's and Menphina's above
   assert.ok(ew.length > 0 && ew.every(r => (r.lvl > 80 && r.lvl <= 90) || (r.lvl === 1 && expansionOf(1, r.ilvl) === 'EW')));
   assert.equal(browseItems(whm, { type: 'any', expOff: [] }).length, all.length);
-  const sum = EXPANSIONS.reduce((n, [s]) => n + only(s).length, 0);
+  const sum = EXPANSIONS.reduce((n, e) => n + only(e.short).length, 0);
   assert.equal(sum, all.length); // every piece lands in exactly one expansion
   const noEw = browseItems(whm, { type: 'any', expOff: ['EW'] });
   assert.equal(noEw.length, all.length - ew.length);

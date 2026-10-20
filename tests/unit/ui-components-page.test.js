@@ -25,13 +25,13 @@ test('page: the footer names the data source', () => {
 test('job picker: every job once, in its role row, with its name and icon; a pick switches the job', () => {
   const { app, c } = panel({});
   const shown = c.jobRows.flatMap(r => r.jobs);
-  assert.deepEqual(shown.map(j => j.id).sort(), JOBS.map(j => j[0]).sort());
+  assert.deepEqual(shown.map(j => j.id).sort(), JOBS.map(j => j.id).sort());
   assert.deepEqual(
     c.jobRows.map(r => r.label),
     JOB_ROWS.map(r => r[0]),
   );
   for (const j of shown) {
-    assert.equal(j.name, JOBS.find(x => x[0] === j.id)[1]);
+    assert.equal(j.name, JOBS.find(x => x.id === j.id).name);
     assert.ok(j.icon, j.id);
   }
   c.requestJob('DRG');

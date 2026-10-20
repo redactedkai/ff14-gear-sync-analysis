@@ -189,7 +189,7 @@ test('no ladder for main stat, Vitality or a missing special substat', () => {
    Piety for every healer, Tenacity for every tank, none for the other roles. */
 test('specKind: MP for healers, mitigation for tanks, none for the rest', () => {
   const kinds = {};
-  for (const [id, , profileId] of JOBS) kinds[profileId] = [...(kinds[profileId] ?? []), makeJobContext(id).specKind];
+  for (const { id, profile } of JOBS) kinds[profile] = [...(kinds[profile] ?? []), makeJobContext(id).specKind];
   assert.deepEqual(new Set(kinds.healer), new Set(['mp']));
   assert.deepEqual(new Set(kinds.tank), new Set(['mitigation']));
   for (const role of Object.keys(kinds).filter(r => r !== 'healer' && r !== 'tank')) {

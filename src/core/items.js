@@ -124,8 +124,8 @@ export function parseRow(r) {
    one is open-ended). [{short, name, from, to}], `from` of the first and `to` of the last are null. */
 export function expansionBounds() {
   // the item level gear is synced to at each expansion's level cap
-  const capSync = EXPANSIONS.map(([, , levelCap]) => levelParams(levelCap).sync);
-  return EXPANSIONS.map(([short, name], i) => ({
+  const capSync = EXPANSIONS.map(e => levelParams(e.levelCap).sync);
+  return EXPANSIONS.map(({ short, name }, i) => ({
     short,
     name,
     from: i ? capSync[i - 1] : null,
@@ -140,8 +140,7 @@ export function expansionBounds() {
    later) use the item level band of expansionBounds instead. */
 export function expansionOf(lvl, ilvl) {
   if (lvl > 1) {
-    const [short] = EXPANSIONS.find(([, , levelCap]) => lvl <= levelCap) ?? EXPANSIONS.at(-1);
-    return short;
+    return (EXPANSIONS.find(e => lvl <= e.levelCap) ?? EXPANSIONS.at(-1)).short;
   }
   const b = expansionBounds().find(x => (x.from == null || ilvl > x.from) && (x.to == null || ilvl <= x.to));
   return b.short;

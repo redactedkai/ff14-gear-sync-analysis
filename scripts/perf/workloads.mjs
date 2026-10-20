@@ -5,7 +5,7 @@ import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { browseItems, poolItemFromRow } from '../../src/core/items.js';
 
-export const JOB_IDS = JOBS.map(j => j[0]);
+export const JOB_IDS = JOBS.map(j => j.id);
 
 /* The job's full pool: every database piece it can equip (what "add all" gives with no filter). */
 export function fullPool(job) {

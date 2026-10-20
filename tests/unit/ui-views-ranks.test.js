@@ -36,7 +36,7 @@ test('a goal saved with a repeat keeps the first and clears the rest', () => {
 
 test('from every goal, every option offered leaves a goal with no repeat, Maximize set and the pick in place', () => {
   let walked = 0;
-  for (const [jobId] of JOBS) {
+  for (const { id: jobId } of JOBS) {
     const stats = makeJobContext(jobId).stats;
     const none = ['', ...stats];
     for (const target of stats)

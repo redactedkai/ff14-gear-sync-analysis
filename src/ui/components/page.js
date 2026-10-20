@@ -1,6 +1,6 @@
 /* Page root and the job / sync settings panel. Each component reads the job through its own `jobCtx` getter, not
    through a parent's scope. */
-import { JOBS, JOB_ROWS } from '../../core/constants.js';
+import { JOB_ROWS, jobById } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
 import { limitCapToLevel } from '../state.js';
@@ -83,7 +83,7 @@ export function settings() {
     },
     jobRows: JOB_ROWS.map(([label, ids]) => ({
       label,
-      jobs: ids.map(id => ({ id, name: JOBS.find(j => j[0] === id)[1], icon: JOB_ICONS[id] })),
+      jobs: ids.map(id => ({ id, name: jobById(id).name, icon: JOB_ICONS[id] })),
     })),
   };
 }

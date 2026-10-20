@@ -132,16 +132,20 @@ const JOB_INFO = {
   BLU: ['Blue Mage', 'caster'],
   BST: ['Beastmaster', 'melee'],
 };
-/* [id, name, profile], in item-format.json order, which is the job bitmask in the item database: bit i = JOBS[i]. */
+/* Every job, {id, name, profile} (profile: a PROFILES key), in item-format.json order, which is the job bitmask in the
+   item database: bit i = JOBS[i]. */
 export const JOBS = Object.freeze(
   ITEM_FORMAT.jobs.map(id => {
     if (!JOB_INFO[id]) throw new Error(`item-format.json lists job ${id}, which has no entry in JOB_INFO`);
-    return Object.freeze([id, ...JOB_INFO[id]]);
+    const [name, profile] = JOB_INFO[id];
+    return Object.freeze({ id, name, profile });
   }),
 );
+/* The job of id `id` (a JOBS entry), or undefined for an unknown id. */
+export const jobById = id => JOBS.find(j => j.id === id);
 /* The job context used to render (hidden) job-dependent parts before a job is chosen, and the fallback for an unknown
    id in makeJobContext. The page itself starts with no job. */
-export const DEFAULT_JOB = JOBS[0][0];
+export const DEFAULT_JOB = JOBS[0].id;
 export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']); /* 1H weapon + shield; everyone else uses a 2H weapon */
 /* Jobs whose weapons carry no real weapon damage, so the optimizer does not rank it (damage-defense.js): Blue Mage's
    weapons all hold 6 physical and 1 magic damage (Item.csv); its weapon damage comes from Intelligence instead
@@ -156,8 +160,8 @@ export const NO_WEAPON_DAMAGE_JOBS = Object.freeze(['BLU']);
    at the highest equip level in the item database (MAX_LEVEL in tables.js, 100). */
 export const JOB_LEVEL_CAPS = Object.freeze({ BLU: 80, BST: 50 });
 /* Haste that is up all fight in practice, counted in the Target GCD (owner's decision 2026-10-15; short buffs such as
-   Presence of Mind, Ley Lines, Army's Paeon and Inspiration are not): job -> {name, steps: [[from level, percent,
-   the trait or action that gives it]]}, steps in level order. Percents, levels and names from the official job guides
+   Presence of Mind, Ley Lines, Army's Paeon and Inspiration are not): job -> {name, steps: [{level (the level it starts
+   at), pct (percent), source (the trait or action that gives it)}]}, steps in level order. Percents, levels and names from the official job guides
    (https://na.finalfantasyxiv.com/jobguide/, read 2026-10-15, rechecked 2026-10-16). A level synced below the job's
    starting level is real (a Samurai, from 50, synced to Sastasha's 18): the step's own level decides. Samurai's 10%
    below 78 is second-hand (Game8, xivgear): the guide gives only today's 13% and the trait that raises it. xivgear
@@ -166,21 +170,21 @@ export const HASTE = Object.freeze({
   MNK: Object.freeze({
     name: 'Greased Lightning',
     steps: Object.freeze([
-      [1, 5, 'Greased Lightning'],
-      [20, 10, 'Enhanced Greased Lightning'],
-      [40, 15, 'Enhanced Greased Lightning II'],
-      [76, 20, 'Enhanced Greased Lightning III'],
+      { level: 1, pct: 5, source: 'Greased Lightning' },
+      { level: 20, pct: 10, source: 'Enhanced Greased Lightning' },
+      { level: 40, pct: 15, source: 'Enhanced Greased Lightning II' },
+      { level: 76, pct: 20, source: 'Enhanced Greased Lightning III' },
     ]),
   }),
-  NIN: Object.freeze({ name: 'Increase Attack Speed', steps: Object.freeze([[45, 15, 'Increase Attack Speed']]) }),
+  NIN: Object.freeze({ name: 'Increase Attack Speed', steps: Object.freeze([{ level: 45, pct: 15, source: 'Increase Attack Speed' }]) }),
   SAM: Object.freeze({
     name: 'Fuka',
     steps: Object.freeze([
-      [18, 10, 'Shifu'],
-      [78, 13, 'Enhanced Fugetsu and Fuka'],
+      { level: 18, pct: 10, source: 'Shifu' },
+      { level: 78, pct: 13, source: 'Enhanced Fugetsu and Fuka' },
     ]),
   }),
-  VPR: Object.freeze({ name: 'Swiftscaled', steps: Object.freeze([[20, 15, "Swiftskin's Sting"]]) }),
+  VPR: Object.freeze({ name: 'Swiftscaled', steps: Object.freeze([{ level: 20, pct: 15, source: "Swiftskin's Sting" }]) }),
 });
 /* The shortest recast speed and haste can give a weaponskill or spell, in ms. Second-hand: the game client's recast
    adjustment, as reverse-engineered by ffxiv_bossmod (its TODO notes on GetAdjustedRecastTime, 7.0: speed multiplier
@@ -188,15 +192,15 @@ export const HASTE = Object.freeze({
    AkhMorning gives none. No real setting comes near it (the fastest found: 1.83 s, Samurai at level 90 with Fuka); a
    cap above every real duty's at a low level does (docs/mechanics/math.md section 6). */
 export const GCD_FLOOR_MS = 1500;
-/* Expansions in order: [short name, full name, level cap]. The item level boundary after each one is the game's own
-   sync item level at its level cap (ParamGrow), see expansionBounds in items.js. */
+/* Expansions in order: {short (name), name (in full), levelCap}. The item level boundary after each one is the game's
+   own sync item level at its level cap (ParamGrow), see expansionBounds in items.js. */
 export const EXPANSIONS = Object.freeze([
-  Object.freeze(['ARR', 'A Realm Reborn', 50]),
-  Object.freeze(['HW', 'Heavensward', 60]),
-  Object.freeze(['SB', 'Stormblood', 70]),
-  Object.freeze(['ShB', 'Shadowbringers', 80]),
-  Object.freeze(['EW', 'Endwalker', 90]),
-  Object.freeze(['DT', 'Dawntrail', 100]),
+  Object.freeze({ short: 'ARR', name: 'A Realm Reborn', levelCap: 50 }),
+  Object.freeze({ short: 'HW', name: 'Heavensward', levelCap: 60 }),
+  Object.freeze({ short: 'SB', name: 'Stormblood', levelCap: 70 }),
+  Object.freeze({ short: 'ShB', name: 'Shadowbringers', levelCap: 80 }),
+  Object.freeze({ short: 'EW', name: 'Endwalker', levelCap: 90 }),
+  Object.freeze({ short: 'DT', name: 'Dawntrail', levelCap: 100 }),
 ]);
 
 /* The job picker's rows, in the game's own role grouping and order. This is not the stat profile: Ninja and Viper are

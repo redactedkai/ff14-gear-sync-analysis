@@ -152,7 +152,7 @@ test('optimizer errors become an error view instead of throwing', () => {
 /* With no gear passed in, the optimizer searches every database piece the job can wear that its own "Gear from" filter
    lets through (the default boxes, market board on), and finds the same loadout as optimize() on that pool. */
 test('optimizer view: every job searches all the gear it can wear, minus what Gear from leaves out and allocated relics', () => {
-  for (const [id] of JOBS) {
+  for (const { id } of JOBS) {
     const app = makeApp(id, { level: Math.min(50, makeJobContext(id).maxLevel) });
     const job = app.jobCtx;
     const all = browseItems(job, {});
@@ -632,7 +632,7 @@ test('Food menu empty list: only a search empties it, and Clear search brings me
 test('Food menu: in every reachable state only a search empties the list, and Clear search brings meals back', () => {
   let states = 0;
   const walked = new Set();
-  for (const [jobId] of JOBS) {
+  for (const { id: jobId } of JOBS) {
     const job = makeJobContext(jobId);
     walked.add(job.jobId);
     const items = allMeals(job).map(m => ({ key: m.key, name: m.name, stats: m.stats.map(x => x.stat), best: false }));

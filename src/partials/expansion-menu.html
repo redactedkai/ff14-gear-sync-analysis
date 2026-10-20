@@ -4,8 +4,8 @@
   <span id="{{id}}-exp-label">Expansion</span>
   <button type="button" class="multi-btn" id="{{id}}-exp" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-exp-label {{id}}-exp" @click="open = !open" x-text="expSummary()"></button>
   <div class="multi-menu" id="{{id}}-exp-menu" role="group" aria-labelledby="{{id}}-exp-label" x-show="open" x-cloak>
-    <template x-for="e in expansions" :key="e[0]">
-      <label class="multi-opt"><input type="checkbox" :data-exp="e[0]" :checked="expShown(e[0])" @change="setExpShown(e[0], $event.target.checked)"><span x-text="e[1]"></span></label>
+    <template x-for="e in expansions" :key="e.short">
+      <label class="multi-opt"><input type="checkbox" :data-exp="e.short" :checked="expShown(e.short)" @change="setExpShown(e.short, $event.target.checked)"><span x-text="e.name"></span></label>
     </template>
   </div>
 </div>

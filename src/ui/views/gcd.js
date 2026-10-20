@@ -1,7 +1,7 @@
 /* How the math works, GCD: how speed becomes the GCD at a level, on its own settings (a level, a haste and a speed;
    not the job, sync or optimizer). The facts for one speed, the speed one 0.01 s step takes at every level, and the GCD
    steps around the speed. Pure: no Alpine, so Node can test it. */
-import { HASTE, JOBS } from '../../core/constants.js';
+import { HASTE, jobById } from '../../core/constants.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';
 import { levelParams } from '../../core/level-params.js';
 import { MAX_SPEED } from '../../core/tables.js';
@@ -21,7 +21,7 @@ export const HASTE_OPTIONS = Object.freeze([
   ...Object.entries(HASTE).map(([id, h]) =>
     Object.freeze({
       value: id,
-      label: `${JOBS.find(j => j[0] === id)[1]}, ${h.name}: ${h.steps.map(st => st[1]).join('/')}%`,
+      label: `${jobById(id).name}, ${h.name}: ${h.steps.map(st => st.pct).join('/')}%`,
     }),
   ),
 ]);
@@ -101,7 +101,7 @@ export function gcdView(level, hasteJob, speed, width) {
     { value: `${tick > 1 ? '+' : ''}${((tick - 1) * 100).toFixed(1)}%`, label: 'DoT, HoT and auto-attacks' },
   ];
   if (haste) facts.push({ value: `${pct}%`, label: `haste (${haste.name})` });
-  else if (hasteJob) facts.push({ value: '0%', label: `${HASTE[hasteJob].name} starts at level ${HASTE[hasteJob].steps[0][0]}` });
+  else if (hasteJob) facts.push({ value: '0%', label: `${HASTE[hasteJob].name} starts at level ${HASTE[hasteJob].steps[0].level}` });
 
   // 2. the steps around the speed
   const steps = stepWindow(level, pct, gear).map(st => ({
@@ -116,7 +116,7 @@ export function gcdView(level, hasteJob, speed, width) {
   const bars = [];
   for (let lv = 1; lv <= GCD_LEVELS; lv++)
     bars.push({ level: lv, speed: speedPerStep(lv, hasteJob ? (hasteFor(hasteJob, lv)?.pct ?? 0) : 0) });
-  const marks = hasteJob ? HASTE[hasteJob].steps.map(([from, p]) => ({ level: from, pct: p })) : [];
+  const marks = hasteJob ? HASTE[hasteJob].steps.map(st => ({ level: st.level, pct: st.pct })) : [];
 
   return {
     level,

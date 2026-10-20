@@ -248,7 +248,7 @@ function sameMenu(options, shown) {
     exp: expansionOf(equipLevel(c.item) ?? 0, c.item.ilvl),
   });
   const items = options.map(facts).sort((a, b) => a.lvl - b.lvl || a.ilvl - b.ilvl);
-  const groups = EXPANSIONS.map(([short, name]) => ({ label: name, items: items.filter(x => x.exp === short) })).filter(
+  const groups = EXPANSIONS.map(({ short, name }) => ({ label: name, items: items.filter(x => x.exp === short) })).filter(
     g => g.items.length,
   );
   return { count: options.length, groups };
@@ -296,7 +296,7 @@ function foodRow(app, gearTotals, food, picked, haste) {
   const items = meals.map(item).reverse();
   const groups = [...EXPANSIONS]
     .reverse()
-    .map(([short, name]) => ({ label: name, items: items.filter(x => expansionOf(1, x.ilvl) === short) }))
+    .map(({ short, name }) => ({ label: name, items: items.filter(x => expansionOf(1, x.ilvl) === short) }))
     .filter(g => g.items.length);
   const pills = job.substats
     .filter(s => meals.some(m => m.stats.some(x => x.stat === s)))

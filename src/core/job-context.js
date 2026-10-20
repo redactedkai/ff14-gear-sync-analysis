@@ -28,9 +28,9 @@ const SPEC_KIND = Object.freeze({ piety: 'mp', ten: 'mitigation' });
 
 /** @param {string} jobId e.g. 'SGE'. Unknown ids fall back to DEFAULT_JOB. Results are cached and frozen. */
 export function makeJobContext(jobId) {
-  let jobIndex = JOBS.findIndex(([id]) => id === jobId);
-  if (jobIndex < 0) jobIndex = JOBS.findIndex(([id]) => id === DEFAULT_JOB);
-  const [id, jobName, profileId] = JOBS[jobIndex];
+  let jobIndex = JOBS.findIndex(j => j.id === jobId);
+  if (jobIndex < 0) jobIndex = JOBS.findIndex(j => j.id === DEFAULT_JOB);
+  const { id, name: jobName, profile: profileId } = JOBS[jobIndex];
   if (cache.has(id)) return cache.get(id);
 
   const profile = PROFILES[profileId];

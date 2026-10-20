@@ -19,14 +19,15 @@ test('LEVEL_MAIN has a main stat base for every level up to MAX_LEVEL', () => {
 });
 
 test('the last of EXPANSIONS reaches MAX_LEVEL', () => {
-  const [short, , cap] = EXPANSIONS.at(-1);
-  assert.ok(cap >= MAX_LEVEL, `${short} caps at ${cap}: add the new expansion to EXPANSIONS in constants.js`);
-  for (const [a, b] of EXPANSIONS.slice(1).map((e, i) => [EXPANSIONS[i], e])) assert.ok(a[2] < b[2], `${a[0]} before ${b[0]}`);
+  const { short, levelCap } = EXPANSIONS.at(-1);
+  assert.ok(levelCap >= MAX_LEVEL, `${short} caps at ${levelCap}: add the new expansion to EXPANSIONS in constants.js`);
+  for (const [a, b] of EXPANSIONS.slice(1).map((e, i) => [EXPANSIONS[i], e]))
+    assert.ok(a.levelCap < b.levelCap, `${a.short} before ${b.short}`);
 });
 
 test('HASTE steps are in level order, within 1 to MAX_LEVEL, and give a percent at every level from the first step', () => {
   for (const [jobId, { steps }] of Object.entries(HASTE)) {
-    const levels = steps.map(s => s[0]);
+    const levels = steps.map(s => s.level);
     assert.deepEqual(
       levels,
       [...levels].sort((a, b) => a - b),

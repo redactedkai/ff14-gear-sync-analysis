@@ -116,7 +116,7 @@ export const GEAR_FROM_COLUMNS = Object.freeze(
   ),
 );
 /* The patch series of the level cap ("7.x" at level 100): A Realm Reborn is 2.x, each expansion one more. */
-const CAP_PATCH = `${EXPANSIONS.findIndex(e => e[2] === MAX_LEVEL) + 2}.x`;
+const CAP_PATCH = `${EXPANSIONS.findIndex(e => e.levelCap === MAX_LEVEL) + 2}.x`;
 
 /* What a "Gear from" box covers, for the line under the menu: its hint with the current tomestones and the level cap's
    patch series filled in. */
@@ -183,19 +183,19 @@ export function gearFromToggles(part) {
    Methods, not getters: the components spread this object, which would run a getter before Alpine binds it. */
 export function expansionToggles(part) {
   return {
-    expansions: EXPANSIONS.map(([short, name]) => [short, name]),
+    expansions: EXPANSIONS,
     expSummary() {
-      const on = EXPANSIONS.filter(e => this.expShown(e[0]));
+      const on = EXPANSIONS.filter(e => this.expShown(e.short));
       if (on.length === EXPANSIONS.length) return 'All expansions';
       if (!on.length) return 'None';
-      return on.length === 1 ? on[0][1] : `${on.length} expansions`;
+      return on.length === 1 ? on[0].name : `${on.length} expansions`;
     },
     expShown(short) {
       return !this.$store.app[part].expOff.includes(short);
     },
     setExpShown(short, on) {
       const off = this.$store.app[part].expOff.filter(k => k !== short);
-      this.$store.app[part].expOff = on ? off : EXPANSIONS.map(e => e[0]).filter(k => k === short || off.includes(k));
+      this.$store.app[part].expOff = on ? off : EXPANSIONS.map(e => e.short).filter(k => k === short || off.includes(k));
     },
   };
 }

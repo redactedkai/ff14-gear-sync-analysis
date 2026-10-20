@@ -1,6 +1,6 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
-import { JOBS, DEFAULT_JOB, ACTIVITIES, EXPANSIONS } from '../core/constants.js';
+import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
@@ -192,7 +192,7 @@ const ilvlIn = (v, fallback) => intIn(v, 1, MAX_REAL, fallback);
 
 /* The gear filter fields both tabs have (expOff, min, max, lvl) from saved `raw` into `f`. */
 function restoreGearFilter(f, raw, job) {
-  f.expOff = Array.isArray(raw.expOff) ? EXPANSIONS.map(e => e[0]).filter(k => raw.expOff.includes(k)) : [];
+  f.expOff = Array.isArray(raw.expOff) ? EXPANSIONS.map(e => e.short).filter(k => raw.expOff.includes(k)) : [];
   f.min = optIntIn(raw.min, 0, MAX_REAL, f.min);
   f.max = optIntIn(raw.max, 0, MAX_REAL, f.max);
   f.lvl = optIntIn(raw.lvl, 1, job.maxLevel, f.lvl);
@@ -233,7 +233,7 @@ function restoreExclude(raw, fallback) {
 export function restoreState(raw) {
   const s = defaultState();
   const r = isObj(raw) ? raw : null;
-  s.job = r && JOBS.some(j => j[0] === r.job) ? r.job : null;
+  s.job = r && jobById(r.job) ? r.job : null;
   const job = makeJobContext(s.job ?? DEFAULT_JOB); // with no job: placeholder defaults, replaced when one is chosen
   resetForJob(s, job); // job-dependent defaults; saved values below replace them
   if (!r) return s;

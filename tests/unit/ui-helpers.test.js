@@ -247,7 +247,7 @@ test('Gear from menu: every box once, in its section, the sections in two column
   for (const a of ACTIVITIES) assert.doesNotMatch(gearFromHint(a), /[{}]/, a.key);
   const byKey = key => gearFromHint(ACTIVITIES.find(a => a.key === key));
   assert.equal(byKey('tomes_current'), `Bought with ${CURRENT_TOMES.join(' or ')}`);
-  assert.equal(byKey('savage_current'), `${EXPANSIONS.findIndex(e => e[2] === MAX_LEVEL) + 2}.x Savage`);
+  assert.equal(byKey('savage_current'), `${EXPANSIONS.findIndex(e => e.levelCap === MAX_LEVEL) + 2}.x Savage`);
 });
 
 /* A component built from gearFromToggles or expansionToggles, bound to a store with both parts, as Alpine binds it. */
@@ -303,24 +303,21 @@ test('Gear from line under the menu: the box pointed at, the market board, a box
 test("Expansion filter: the button's text, and a box on or off keeping the oldest-first order, on its own part only", () => {
   const store = twoParts();
   const opt = component(expansionToggles('opt'), store);
-  assert.deepEqual(
-    opt.expansions,
-    EXPANSIONS.map(([short, name]) => [short, name]),
-  );
+  assert.equal(opt.expansions, EXPANSIONS);
   assert.equal(opt.expSummary(), 'All expansions');
   opt.setExpShown('SB', false);
   opt.setExpShown('ARR', false);
   assert.deepEqual(store.opt.expOff, ['ARR', 'SB']);
   assert.equal(opt.expShown('SB'), false);
   assert.equal(opt.expSummary(), `${EXPANSIONS.length - 2} expansions`);
-  for (const [short] of EXPANSIONS) if (short !== 'DT') opt.setExpShown(short, false);
+  for (const { short } of EXPANSIONS) if (short !== 'DT') opt.setExpShown(short, false);
   assert.equal(opt.expSummary(), 'Dawntrail');
   opt.setExpShown('DT', false);
   assert.equal(opt.expSummary(), 'None');
   opt.setExpShown('HW', true);
   assert.deepEqual(
     store.opt.expOff,
-    EXPANSIONS.map(e => e[0]).filter(k => k !== 'HW'),
+    EXPANSIONS.map(e => e.short).filter(k => k !== 'HW'),
   );
   assert.deepEqual(store.browse.expOff, ['ARR']);
 });
