@@ -54,8 +54,10 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-formulas.sync-clamp | the clamp rule at its edges |
 | core-item-format | generated data shape; `ROW` against the format's row fields |
 | core-items | gear filtering, row conversion, item fields; rows sharing a pool key agree |
+| core-items.identity | a piece by its game id: one row per id, the pool item of an id |
 | core-items.multi-slot | cloaks, tank multi-slot gear, White Mage shields |
 | core-meld | materia melds on real items |
+| core-meld.apply-stones | a given list of stones on real items: gates, high grades past the big slots, caps, sync removing them; the optimizer's melds give their gains back |
 | core-optimizer | real-gear pools, ring-pair bound |
 | core-optimizer-regain | regain cuts from a proven maximum against the brute force |
 | core-optimizer-search | the search's parts on their own against brute force: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key |
@@ -64,6 +66,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-optimizer.speed-limits | speed minimum, maximum and range |
 | core-optimizer.stat-minimums | minimums on any stat against the brute force; seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots |
 | core-same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
+| core-set | a set and what it adds up to: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has |
 | core-speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
 | core-sync-target | level sync, its triggers, the optimizer under it |
 | core-tables.provenance | source record and footer |
@@ -84,6 +87,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui-views-gcd | How the math works, GCD: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches |
 | ui-views-gear | Gear browser: rows and synced stats, slot pills, sorting, search, Reset filters |
 | ui-views-optimizer | Gear optimizer: totals against the core and the brute force, rows, Food row and menu, Target GCD, Rank by tier, the gear searched, the key that marks a result out of date |
+| ui-views-optimizer.covered-by | an empty row names the piece the table shows as covering it |
 | ui-views-piece | Piece stats' step by step: each stat against its ceiling, the off-hand rule, the substat ranks |
 | ui-views-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | ui-views-sync-explainer | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps |
@@ -95,7 +99,7 @@ Notes:
 - **The long sweep** in `tests/full/` follows the same rule: `core-tier-rank.gcd-1` to `.gcd-4` and `core-tier-rank.no-gcd`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
 - **The components** that import Alpine (`gear`, `optimizer`, `sync-explainer` in `src/ui/components/`) need a page to load, so only the smoke test reaches them.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
-- **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`, and the view tests' store-shaped state with sync at 123 and their small real-gear pools (`views.js`).
+- **Shared helpers** are in `tests/unit/helpers/`: the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1), seeded random numbers, item lookup by name, store-shaped state, and values typed in from outside sources such as the `BaseParam` slot shares and AkhMorning's level table (`common.js`), the tier ranking reference with its random cases (`tier-reference.js`), shared with the long sweep in `tests/full/`, the view tests' store-shaped state with sync at 123 and their small real-gear pools (`views.js`), and 14 optimizer results as the page showed them before `evaluateSet` (`optimizer-view-sets.json`, for `core-set`).
 - **The kind of evidence** each test uses (published numbers, game data, a derivation, the brute force) is in [validation.md, section 7](../mechanics/validation.md#7-which-tests-assert-what).
 
 ### 2.1 The brute-force reference and the real-gear pools

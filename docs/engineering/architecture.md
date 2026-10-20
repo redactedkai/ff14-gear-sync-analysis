@@ -15,7 +15,7 @@ The code is split into four layers. Each layer depends only on the layers above 
 | Layer | What it holds | Depends on |
 | --- | --- | --- |
 | 1. Generated game data | Budget tables, level data, item database, food table, job icons | nothing |
-| 2. Core logic | Formulas, sync, speed, item queries, optimizer, accuracy checks | data |
+| 2. Core logic | Formulas, sync, speed, item queries, pieces and sets, optimizer, accuracy checks | data |
 | 3. UI state | Saved state and the shared store | core |
 | 4. Components and template | One component per page area | UI state, core |
 
@@ -156,7 +156,7 @@ A saved job id that is not a known job means no job is chosen; the job-dependent
 
 An invalid field falls back to its default and the valid ones are kept. The state unit tests cover this field by field ([testing.md, section 2](testing.md#2-what-each-file-covers)).
 
-**Piece identity.** Anything kept that names a piece of gear refers to it by its **gameId**, the game's item id (the `Item.csv` row), with the piece's name stored beside it so a reader can tell what it is. `itemById` finds the database row of an id; the index is built once, on first use. Two other keys exist and are not identities: a pool item's `id` is made fresh on every page load, and the pool key (name, slot, item level) only groups the same piece from several sources, as the menus do. Several rows could share a pool key, and a name can change in a patch; a gameId does neither. No saved setting names a piece today: the picks from a result's menus and the picked meal live only until the next Optimize. The first to be kept will be a set's pieces (section 7), so `restoreState` has nothing to repair yet.
+**Piece identity.** Anything kept that names a piece of gear refers to it by its **gameId**, the game's item id (the `Item.csv` row), with the piece's name stored beside it so a reader can tell what it is. `itemById` finds the database row of an id; the index is built once, on first use. Two other keys exist and are not identities: a pool item's `id` is made fresh on every page load, and the pool key (name, slot, item level) only groups the same piece from several sources, as the menus do. Several rows could share a pool key, and a name can change in a patch; a gameId does neither. No saved setting names a piece today: the picks from a result's menus and the picked meal live only until the next Optimize. The first to be kept will be a set's pieces ([section 7](#7-pieces-and-sets-in-the-core)), so `restoreState` has nothing to repair yet.
 
 **Storage key versioning.** The key carries a version suffix (currently `-v4`). While the site has no users, a new field needs no bump: the restore step defaults and repairs it. Once it has users, bump the suffix only when old data cannot be repaired field by field.
 
@@ -194,6 +194,28 @@ Notes:
 
 Every command, with how long it takes, is in the [root README](../../README.md#develop). Tests are described in [testing.md](testing.md). After a game patch, the data is refreshed with the steps in [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).
 
+## 7. Pieces and sets in the core
+
+**The question:** where do the rules live that turn chosen gear into what the page shows? In three core modules, so the optimizer's result and the planned sheet of sets (gear and materia chosen by hand; [roadmap.md](../roadmap.md)) go through the same code.
+
+| Module | Holds | Used by |
+| --- | --- | --- |
+| `piece.js` | A piece under sync: the item level it is synced to (`itemSyncIlvl`), its stats there (`effStats`), the most each stat can be (`itemCaps`, `meldCaps`), whether it keeps its melds (`keepsMelds`) | the optimizer, `meld.js`, `set.js`, the views |
+| `meld.js` | The meld rules (gates, high grades only in the big slots, caps), used both to find the best stones (`bestMeld`, `meldVersions`) and to apply a given list (`applyStones`) | the optimizer, `set.js` |
+| `set.js` | A set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | the optimizer view |
+
+**A set** is `{pieces, meal}`. Each piece is `{slot, gameId, name, stones}` for a database piece, `{slot, custom, stones}` for a piece not from the database, or `{slot}` for an empty slot. `stones` holds one entry per meld slot, `{stat, grade}` or null. `meal` is a meal's key, or null. Job, level and sync are not part of a set. They are passed to `evaluateSet`, as one sheet will hold them for all its sets. A set refers to database pieces by game id ([section 4](#4-persistence), "Piece identity").
+
+**`evaluateSet(job, set, sync, level)`** returns everything the optimizer's result table shows: per row the piece's stats after sync and stones, its caps, melds, stones lost to a cap or removed (sync, gate, slot), its category and where it comes from; the gear totals, the meal's bonus and the totals with it, the character's base; each stat's tier; defense; the GCD and DoT/HoT bonus. The optimizer view builds the set from the result's rows (`setFromPicks`), calls `evaluateSet`, and adds only what belongs to the page: the goal's marks, each row's menu of pieces with the same result, the Food row's menu, and the text.
+
+**Custom pieces** have a place in the model, but no editor yet. A custom piece is a pool item the set carries itself. The database facts the core reads through `rowFacts` in `items.js` (equip level, meld slots, slot code, item kind, gear category, its own weapon damage and defense) are null for it today. So it is never level-synced, takes stones only if it carries its own `meld` field (`{slots, overmeld}`, as the math tab's generic pieces do), uses the job's slot share and stat factors, and gets the item level table's weapon damage and defense. A custom piece the player can edit will need those fields on the item itself, or chosen defaults:
+
+- an equip level, for level sync;
+- meld slots and overmelding, for its stones;
+- a slot code and item kind, for its slot share, stat factors, weapon damage and defense.
+
+A relic whose substats the player allocates (roadmap A11) is the same case: a custom piece with a budget.
+
 ## Where this lives
 
 | Concept | File |
@@ -205,10 +227,12 @@ Every command, with how long it takes, is in the [root README](../../README.md#d
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `specKind`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
 | Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
 | Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
+| A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
+| A set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
+| Other core modules | `src/core/formulas.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
 | Entry point: restore, register, save effect | `src/main.js` |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `restoreState`, `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`, `PERSISTED_KEYS`); the optimizer's settings key in `src/ui/views/optimizer.js` (`optimizerKey`: the job and sync settings and every field of `defaultState().opt`) |
