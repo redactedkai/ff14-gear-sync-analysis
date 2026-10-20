@@ -24,13 +24,13 @@ What runs, on what, and how much of it?
 | Unit tests (Node) | core logic, view builders, saved state, real game data | about 460 tests in 56 files, about 20 to 25 s (2026-10-19) |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/full/`) | 6 tests in 5 files, about 33 s with the unit tests (2026-10-19) |
 | Generator tests (Python) | the data generators, on small test files | 110 tests in 2 files (2026-10-19) |
-| Smoke test (browser) | the built page in headless Chromium | one script, 19 groups of steps |
+| Smoke test (browser) | the built page in headless Chromium | one script, about 20 groups of steps |
 
 Notes:
 
 - **Unit tests** import the core logic, the page's view builders and the saved-state repair directly, with the real generated game data. They check formulas, sync, speed, item queries, optimizer correctness on real gear, what each tab shows, the components' logic that runs without a page, data format, provenance and saved state. A shared brute-force helper serves the optimizer tests (section 2.1).
 - **Generator tests** run the item level, item database and job icon generators and the gear category rules on small test CSV and icon files. They check row selection, slot detection, multi-slot gear (a cloak kept on its own slot code, an unsupported combination left out), stat placement, the HQ rule, job mask, sort order, budget table and level data, stat factor kind and table, gear categories and source flags, schema drift, and job icon embedding and numbering.
-- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in 19 groups, each on a fresh page, from a shared setup it checks between steps (section 2, *Smoke test*).
+- **Smoke test** opens the built page from disk. It checks known numbers on screen, optimizer totals equal to the core's on real gear, no JavaScript errors, no stray "undefined" / "NaN" / "null" text, and no sideways scroll at 960 px (half of a 1920 screen; there is no phone layout). Its steps run in about 20 groups, each on a fresh page, from a shared setup it checks between steps (section 2, *Smoke test*).
 
 **Why most tests need no browser.** The core never touches the page (see [architecture.md, section 1](architecture.md#1-the-system-at-a-glance)), and the page's view builders take plain state objects, so both run in plain Node. The unit tests load the full item database, so they check the model against all 20,031 real pieces, not just hand-made examples. The smoke test is left with only what needs a real page: wiring, layout and interaction.
 
@@ -158,7 +158,7 @@ The checks sit in one section of the file per tab, in this order:
 | Section | Checks |
 | --- | --- |
 | Settings panel | defaults (title, no job, level 100, sync off), the cap field's rules and "Lowered to" note, job switch, level caps of limited jobs |
-| Gear optimizer | Sage and Warrior totals equal the core's; typing a cap runs no search; Gear from, the optimizer's filters, materia, Food, Rank by tier, Target GCD (3.00 becomes 2.50); one Gear to search request per change, none per result; Cancel ends the searching worker; the same-result menus at 960 px |
+| Gear optimizer | Sage and Warrior totals equal the core's; typing a cap runs no search; Gear from, the optimizer's filters, materia, Food, Rank by tier, Target GCD (3.00 becomes 2.50); one Gear to search request per change, none per result; Cancel ends the searching worker; with no `Worker`, or a worker that fails to load (two groups of their own), searches run on the page's thread: a result, a menu pick, Cancel before the search starts; the same-result menus at 960 px |
 | Gear browser | ×2 ring marks, search and Reset filters, a filter's range, the expansion filter's equip level band, Off-hand only for one-handed jobs |
 | How the math works | Piece stats (the item level 130 healer head piece, caps at 123 per slot), Substat tiers, GCD |
 | Saved state | reload keeps the settings, damaged storage is repaired, Reset to defaults asks first |

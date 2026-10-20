@@ -953,6 +953,56 @@ async function checkCancel(pg) {
   await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'det');
 }
 
+/** Scripts that keep the solver worker from running, for the fallback groups (addInitScript, before the page's own
+ * script): a browser with no Worker, and a worker whose script fails as it loads (an 'error' event). */
+const NO_WORKER = () => {
+  delete window.Worker;
+};
+const FAILING_WORKER = () => {
+  const RealWorker = window.Worker;
+  window.Worker = class extends RealWorker {
+    constructor(url, options) {
+      const failing = new Blob(['throw new Error("worker failed to load (smoke test)")'], { type: 'text/javascript' });
+      super(URL.createObjectURL(failing), options);
+    }
+  };
+};
+
+/** The optimizer when its worker cannot run (ui/solver.js workerSolver's fallback, main.js): searches run on the
+ * page's thread and give a result, a pick from a row's menu searches again, Cancel right after Optimize drops the
+ * search and leaves the result as it was, and the next Optimize works. The group's page errors are the runner's. */
+async function checkWorkerFallback(pg) {
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-result')).toHaveAttribute('data-target', 'main');
+  await expect(pg.locator('#o-failed')).toBeHidden();
+  const total = await optTotal(pg).innerText();
+  check(/^\d[\d,]*$/.test(total), `the fallback result's total is "${total}"`);
+  // a pick from the weapon row's menu searches again on the page's thread
+  const button = pg.locator('#o-table .same-btn').first();
+  await button.click();
+  const other = pg.locator('#o-table .same-menu .same-item:not(.on)').first();
+  const name = await other.locator('span span').first().innerText();
+  await other.click();
+  await expect(button.locator('span').first()).toHaveText(name);
+  await expect(optTotal(pg)).toHaveText(total);
+  // Cancel at once (both clicks in one task, before the search's frames): the search is dropped, the result stays
+  const runs = await pg.evaluate("performance.getEntriesByName('optimizer').length");
+  await pg.selectOption('#o-tb1', 'crit');
+  await pg.evaluate(() => {
+    document.querySelector('#o-run').click();
+    document.querySelector('#o-cancel').click();
+  });
+  await expect(pg.locator('#o-run')).toBeEnabled();
+  await expect(pg.locator('#o-stale')).toBeVisible();
+  await pg.waitForTimeout(300); // a few frames: a search Cancel failed to drop would have finished
+  const finished = (await pg.evaluate("performance.getEntriesByName('optimizer').length")) - runs;
+  check(finished === 0, `a search cancelled before it started still ran (${finished})`);
+  await waitOptimizer(pg);
+  await expect(pg.locator('#o-stale')).toBeHidden();
+  await pg.selectOption('#o-tb1', '');
+  check(pg.workers().length === 0, `${pg.workers().length} workers running after the fallback, not 0`);
+}
+
 /** Other pieces with the same result (roadmap A9), at the shared setup (Sage, level 50, item level 123), where every
  * row has others: at NARROW width, the weapon row's menu opens without a sideways scroll; a piece picked from it is what
  * the row shows, the result stays the same, the menu closes; any setting change clears the pick. */
@@ -1053,9 +1103,7 @@ async function checkRingCopies(pg) {
   // a heading sorts by its column, and again the other way
   // the sort goes by the piece's own item level, which the column shows (owner, 2026-10-19)
   const ilvls = () =>
-    pg
-      .locator('#gear-table tbody tr[data-key] td[data-col="ilvl"]')
-      .evaluateAll(cells => cells.map(c => Number(c.textContent)));
+    pg.locator('#gear-table tbody tr[data-key] td[data-col="ilvl"]').evaluateAll(cells => cells.map(c => Number(c.textContent)));
   const ilvlHead = pg.locator('#gear-table th:has([data-sort="ilvl"])');
   await pg.click('#gear-table [data-sort="ilvl"]');
   await expect(ilvlHead).toHaveAttribute('aria-sort', 'ascending');
@@ -1644,7 +1692,7 @@ const walkJob = job => async pg => {
 
 // A group runs its steps one after the other on a fresh page (own browser context, so own saved state) from the shared
 // setup (SHARED_SETUP: Sage, sync to 123, level 50). The groups run in parallel. `fresh` groups get the page as it
-// loads, with nothing set. `slow` groups start first. A page boot is half a second of CPU, so steps that take little
+// loads, with nothing set. `slow` groups start first. `initScript` runs in the page before its own script. A page boot is half a second of CPU, so steps that take little
 // are put together. A step that uses the shared setup (`shared`, every step but the job walks, which set their own
 // job) must find it: runGroup checks it before each such step after the first, names the step before when it is
 // changed, and sets it up again. To add a step: write a check function in its tab's section above, and add it to a
@@ -1668,6 +1716,8 @@ const GROUPS = [
   { slow: true, steps: [step(checkLevelSync), step(checkJobLevelCap)] },
   { slow: true, steps: [step(checkSameResult)] },
   { slow: true, steps: [step(checkTiers), step(checkGcdTab)] },
+  { slow: true, initScript: NO_WORKER, steps: [{ ...step(checkWorkerFallback), name: 'checkWorkerFallback (no Worker)' }] },
+  { slow: true, initScript: FAILING_WORKER, steps: [{ ...step(checkWorkerFallback), name: 'checkWorkerFallback (worker fails)' }] },
   { steps: ['SGE', 'WAR', 'PLD'].map(walk) },
   { steps: ['BLM', 'NIN', 'DRG'].map(walk) },
   { steps: ['BST', 'BLU'].map(walk) },
@@ -1677,6 +1727,7 @@ const GROUPS = [
 async function runGroup(browser, group) {
   const rec = { name: group.steps.map(s => s.name).join(', '), errors: [], failures: [], steps: [] };
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
+  if (group.initScript) await ctx.addInitScript(group.initScript);
   try {
     await stepRecord.run(rec, async () => {
       const pg = await ctx.newPage();
