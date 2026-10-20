@@ -73,10 +73,32 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
   };
 }
 
-/* Run `compute` now and whenever the reactive values it reads change, at most once per `ms`. */
-export function debouncedEffect(Alpine, compute, ms) {
+/* The page's one way for a component to build a view (architecture.md, section 3): a getter reads the view's inputs
+   from the store, which makes every binding that shows the view track them, and asks this cache for the view of their
+   key. A new key builds the view (a pure view builder in src/ui/views); the same key returns the last one, so a
+   template that reads the view many times a render builds it once. Kept in the component's closure, not its reactive
+   state. Returns {get(key, build): the view for `key` (a string), last(): the last view built, or null}. */
+export function viewCache() {
+  let key = null,
+    view = null;
+  return {
+    get(newKey, build) {
+      if (newKey !== key) {
+        view = build();
+        key = newKey;
+      }
+      return view;
+    },
+    last: () => view,
+  };
+}
+
+/* Run `compute` now and whenever the reactive values it reads change, at most once per `ms`: the pattern for work too
+   slow to redo on every change (the optimizer's Gear to search line). `alpine`: Alpine, or what a test passes for its
+   effect. */
+export function debouncedEffect(alpine, compute, ms) {
   let timer = null;
-  Alpine.effect(() => {
+  alpine.effect(() => {
     const run = compute(); // reads (and so tracks) dependencies synchronously
     clearTimeout(timer);
     timer = setTimeout(run, ms); // the expensive part runs later, untracked

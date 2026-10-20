@@ -3,7 +3,7 @@
    $store.app.tiers (not saved), shared by the bar (tierControls) and the table (tierTable), as the GCD tab's
    are (owner, 2026-10-19: every sub-tab's controls in the bar). The values are worked out on every read (no effect
    that refills them later), so a level typed in the settings shows its own tiers and values in one render. */
-import { numberField } from '../helpers.js';
+import { numberField, viewCache } from '../helpers.js';
 import { tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 
 /* Space kept between a ? note and the panel's edge, and between it and its button (px); the note starts HELP_SHIFT px
@@ -15,14 +15,15 @@ const HELP_WIDTH = 340;
 
 /* The Substat tiers sub-tab: the cards, the values typed or clicked, and each substat's ? note. */
 export function tierTable() {
-  // the last view and what it was built from: the template and `help` read `view` many times a render
-  let cached = { key: null, view: null };
+  // the last view and what it was built from (helpers.js viewCache): the template and `help` read `view` many times a
+  // render
+  const views = viewCache();
   return {
     /* values typed or clicked, {stat: value}, and the settings they were made under (editsKey) */
     edits: {},
     editsFor: '',
     get level() {
-      return tierLevel(this.$store.app, this.$store.app.tiers.level);
+      return tierLevel(this.$store.app.jobCtx, this.$store.app.level, this.$store.app.tiers.level);
     },
     /* the tier under the mouse ('stat:start'): all its cells are highlighted, since a click on any of them sets it */
     hover: '',
@@ -51,9 +52,10 @@ export function tierTable() {
     get view() {
       const app = this.$store.app;
       if (!app.job) return null;
-      const key = JSON.stringify([app.job, this.level, this.liveEdits]);
-      if (cached.key !== key) cached = { key, view: tiersView(app, { ...tierValues(app, this.level), ...this.liveEdits }, this.level) };
-      return cached.view;
+      const job = app.jobCtx,
+        level = this.level,
+        edits = this.liveEdits;
+      return views.get(JSON.stringify([app.job, level, edits]), () => tiersView(job, { ...tierValues(job, level), ...edits }, level));
     },
     get help() {
       return this.view?.cards.find(g => g.stat === this.helpFor)?.help ?? null;
@@ -65,7 +67,7 @@ export function tierTable() {
     },
     /* a value typed into a substat's box (Enter or leaving the box); the box shows the value kept */
     type(stat, el) {
-      const value = tierInput(this.$store.app, stat, el.value, this.level);
+      const value = tierInput(this.$store.app.jobCtx, stat, el.value, this.level);
       if (value == null) return;
       this.setEdit(stat, value);
       el.value = value;
@@ -97,7 +99,7 @@ export function tierTable() {
 export function tierControls() {
   return {
     get level() {
-      return tierLevel(this.$store.app, this.$store.app.tiers.level);
+      return tierLevel(this.$store.app.jobCtx, this.$store.app.level, this.$store.app.tiers.level);
     },
     /* the level box: each valid level counts as it is typed, as in the settings' level box (owner, 2026-10-19); the
        synced level itself, or an empty box left or entered, follows the synced level again */

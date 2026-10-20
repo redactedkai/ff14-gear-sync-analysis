@@ -1,22 +1,52 @@
 /* How the math works: what sync does to one piece (views/sync-explainer.js), the step-by-step
    table for the same piece (views/piece.js), and the "How sync works" popup. */
-import Alpine from 'alpinejs';
 import { explainerItemLevel, explainerOffText, explainerView } from '../views/sync-explainer.js';
 import { pieceView, withSub } from '../views/piece.js';
 import { rankChoices } from '../ranks.js';
+import { syncSettings } from '../settings.js';
+import { viewCache } from '../helpers.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
 /* The math tab's component (x-data on the whole tab): Piece stats' views and its controls in the math bar. */
 export function syncExplainer() {
+  // Piece stats' views and the settings they were built for (helpers.js viewCache), and the observer of the chart's
+  // width, made when the chart first shows
+  const views = viewCache();
+  let observer = null;
   return {
+    /* Piece stats' views for the settings now, built again only when they change: {pick (the slider's range and item
+       level, explainerItemLevel), explainer, steps}. Read through the getters below. */
+    get pieceViews() {
+      const app = this.$store.app;
+      const job = app.jobCtx,
+        sync = syncSettings(app),
+        piece = app.piece,
+        goal = [app.opt.target, app.opt.tb, app.opt.tb2],
+        width = this.widths.piece;
+      const key = JSON.stringify([job.jobId, sync, piece.ilvl, piece.slot, piece.subs, goal, width]);
+      return views.get(key, () => {
+        const pick = explainerItemLevel(job, sync, piece);
+        return { pick, explainer: explainerView(job, sync, piece, goal, { piece: width }), steps: pieceView(job, sync, piece, pick.il) };
+      });
+    },
     /* Piece stats' two panels (explainerView), or null while no sync applies; and its step-by-step section (pieceView).
        Named apart from the GCD and tiers sub-tabs' `view`, which sit inside this component's scope. */
-    explainer: null,
-    steps: null,
+    get explainer() {
+      return this.pieceViews.explainer;
+    },
+    get steps() {
+      return this.pieceViews.steps;
+    },
     /* the Gear item level slider: its [lowest, highest] item level, the item level shown, and the slider's hover text */
-    ilvlRange: [1, 1],
-    il: 1,
-    ilvlNote: '',
+    get ilvlRange() {
+      return this.pieceViews.pick.range;
+    },
+    get il() {
+      return this.pieceViews.pick.il;
+    },
+    get ilvlNote() {
+      return this.pieceViews.pick.note;
+    },
     helpOpen: false,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
     get jobCtx() {
@@ -24,7 +54,7 @@ export function syncExplainer() {
     },
     /* what Piece stats says while no sync applies (views explainerOffText) */
     get offText() {
-      return explainerOffText(this.$store.app);
+      return explainerOffText(this.$store.app.sync);
     },
     /* the math bar's Slot, 1st substat and 2nd substat menus: [value, label] */
     get slotOptions() {
@@ -40,28 +70,15 @@ export function syncExplainer() {
     },
     // the chart's container width (px): the chart is drawn at its own width, so its text keeps the page's size
     widths: { piece: 0 },
-    init() {
-      const observer = new ResizeObserver(entries => {
+    /* The chart's box, each time it is drawn (x-init: it exists only while a view is shown): its width is followed. */
+    observeChart(el) {
+      observer ??= new ResizeObserver(entries => {
         for (const e of entries) {
           const w = Math.round(e.contentRect.width);
           if (w && w !== this.widths.piece) this.widths.piece = w;
         }
       });
-      Alpine.effect(() => {
-        const app = this.$store.app;
-        const pick = explainerItemLevel(app);
-        this.ilvlRange = pick.range;
-        this.il = pick.il;
-        this.ilvlNote = pick.note;
-        this.explainer = explainerView(app, { piece: this.widths.piece });
-        this.steps = pieceView(app, pick.il);
-        // the chart boxes exist only while a view is shown: watch whichever are there after this render
-        this.$nextTick(() =>
-          this.$root.querySelectorAll('#tab-piece .chartbox').forEach(el => {
-            observer.observe(el);
-          }),
-        );
-      });
+      observer.observe(el);
     },
     setSub(i, value) {
       const p = this.$store.app.piece;

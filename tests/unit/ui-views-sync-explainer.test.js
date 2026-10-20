@@ -7,8 +7,9 @@ import { capsFor } from '../../src/core/formulas.js';
 import { meldInfo, mkItem } from '../../src/core/items.js';
 import { gcdFor } from '../../src/core/speed.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { explainerItemLevel, explainerOffText, explainerView, meldKeys } from '../../src/ui/views/sync-explainer.js';
+import { explainerOffText } from '../../src/ui/views/sync-explainer.js';
 import { SLOT_PERMILLE, appState, roundHalfUp } from './helpers/common.js';
+import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from './helpers/views.js';
 
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
 function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', 'spd'], target = 'main' }) {
@@ -19,7 +20,7 @@ function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit
 }
 
 test('level 80 (level sync, item level 530): a body at 590 against the melded 530 body', () => {
-  const v = explainerView(app('RPR', { level: 80, ilvl: 590 }));
+  const v = explainerViewOf(app('RPR', { level: 80, ilvl: 590 }));
   assert.equal(v.cap, 530);
   assert.equal(v.byLevel, true);
   assert.deepEqual(
@@ -35,8 +36,8 @@ test('level 80 (level sync, item level 530): a body at 590 against the melded 53
 });
 
 test('level 50, cap 130: overgeared gear has more almost at once, materia adds little', () => {
-  assert.equal(explainerView(app('RPR', { level: 50, cap: 130 })).il, 130); // no saved item level: the cap, as Reset sets
-  const v = explainerView(app('RPR', { level: 50, cap: 130, ilvl: 170 }));
+  assert.equal(explainerViewOf(app('RPR', { level: 50, cap: 130 })).il, 130); // no saved item level: the cap, as Reset sets
+  const v = explainerViewOf(app('RPR', { level: 50, cap: 130, ilvl: 170 }));
   assert.deepEqual(v.range, [100, 170]); // the full set stops changing at 150
   assert.equal(v.il, 170);
   assert.deepEqual(
@@ -48,7 +49,7 @@ test('level 50, cap 130: overgeared gear has more almost at once, materia adds l
 });
 
 test("the Wiki's item level 475 example: rings at 500 and 600 synced to 475", () => {
-  const ring = il => explainerView(app('RPR', { level: 80, cap: 475, slot: 'ring', ilvl: il })).bars.slice(2);
+  const ring = il => explainerViewOf(app('RPR', { level: 80, cap: 475, slot: 'ring', ilvl: il })).bars.slice(2);
   // 93 / 65 -> 88 / 65; 127 / 89 -> 88 / 88: the 70% line is cut to the full cap, and never raised
   assert.deepEqual(
     ring(500).map(b => [b.raw, b.kept]),
@@ -68,27 +69,27 @@ test("the Wiki's item level 475 example: rings at 500 and 600 synced to 475", ()
 
 test("melds follow the optimizer's Goal; a main stat Goal falls back to the two substats, 2nd first", () => {
   const goalMain = app('RPR', { level: 80, ilvl: 530, target: 'main' });
-  assert.deepEqual(meldKeys(goalMain), { keys: ['spd', 'crit'], fromGoal: false });
-  assert.match(explainerView(goalMain).goalNote, /Strength/);
+  assert.deepEqual(meldKeysOf(goalMain), { keys: ['spd', 'crit'], fromGoal: false });
+  assert.match(explainerViewOf(goalMain).goalNote, /Strength/);
   const goalDet = app('RPR', { level: 80, ilvl: 530, target: 'det' });
-  assert.deepEqual(meldKeys(goalDet), { keys: ['det'], fromGoal: true });
-  const v = explainerView(goalDet);
+  assert.deepEqual(meldKeysOf(goalDet), { keys: ['det'], fromGoal: true });
+  const v = explainerViewOf(goalDet);
   assert.equal(v.goalNote, '');
   assert.match(v.vsRows[0].materia, /^2 × Grade VIII Determination \(\+24 each\)$/);
 });
 
 test('the range: 30 below the cap to 20 past the last change, at most the highest real item level', () => {
   const a = app('SGE', { level: 100, cap: 690 });
-  const pick = explainerItemLevel(a);
+  const pick = explainerItemLevelOf(a);
   assert.deepEqual(pick.range, [660, MAX_REAL]);
   assert.equal(pick.il, 690); // no saved item level: the cap
   assert.match(pick.note, new RegExp(`highest real item level, ${MAX_REAL}`));
   // a saved item level outside the range is held to it
-  assert.equal(explainerItemLevel({ ...a, piece: { ...a.piece, ilvl: 300 } }).il, 660);
+  assert.equal(explainerItemLevelOf({ ...a, piece: { ...a.piece, ilvl: 300 } }).il, 660);
   // no sync: every real item level, the highest by default
   const off = app('SGE', { level: 100 });
-  assert.deepEqual(explainerItemLevel(off).range, [1, MAX_REAL]);
-  assert.equal(explainerItemLevel(off).il, MAX_REAL);
+  assert.deepEqual(explainerItemLevelOf(off).range, [1, MAX_REAL]);
+  assert.equal(explainerItemLevelOf(off).il, MAX_REAL);
 });
 
 test('a hand-made piece can declare its meld slots (the explainer gives its pieces 2)', () => {
@@ -131,7 +132,7 @@ test('cap 123: one substat over all eleven slots is at most 344, a 2.17 s GCD at
    substat reaches its cap. Sage head, Critical Hit / Spell Speed, synced to 130: the melds go into Spell Speed (the 2nd
    substat, Goal: main stat). */
 test('the overgeared chart: the substats named, a band each and the melds, and where each reaches the cap', () => {
-  const v = explainerView(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170 }));
+  const v = explainerViewOf(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170 }));
   assert.deepEqual(
     v.curveBands.map(b => b.label),
     ['Critical Hit (100%)', 'Spell Speed (70%)', 'Melds: 2 × Grade IV Spell Speed (+4 each)'],
@@ -150,21 +151,21 @@ test('the overgeared chart: the substats named, a band each and the melds, and w
    level 169 head synced to 169 with two Grade V Critical Hit stones showed Critical Hit 25 → 25). Above the cap the
    melds are lost and no bar has any. */
 test('one piece: a piece that keeps its melds shows them on its bars; a synced piece has none', () => {
-  const kept = explainerView(app('SGE', { level: 100, cap: 169, slot: 'head', ilvl: 169, subs: ['dh', 'crit'] }));
+  const kept = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'head', ilvl: 169, subs: ['dh', 'crit'] }));
   const crit = kept.bars.find(b => b.label.startsWith('Critical Hit'));
   const gain = kept.vsRows[0].points - kept.bars.filter(b => b.label.includes('·')).reduce((a, b) => a + b.kept, 0);
   assert.ok(gain > 0, 'the piece keeps some melds');
   assert.equal(crit.melds, gain); // both stones are Critical Hit
   assert.equal(crit.total, crit.kept + crit.melds);
   assert.ok(kept.bars.filter(b => b !== crit).every(b => b.melds === 0 && b.total === b.kept));
-  const synced = explainerView(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170, subs: ['dh', 'crit'] }));
+  const synced = explainerViewOf(app('SGE', { level: 100, cap: 130, slot: 'head', ilvl: 170, subs: ['dh', 'crit'] }));
   assert.ok(synced.bars.every(b => b.melds === 0 && b.total === b.kept));
 });
 
 /* The table under the bars names the stones and, on a second line, what the cap leaves of them, so a longer meld does
    not wrap the row (owner's screenshots, 2026-10-18: the earring synced to 169 jumped in height along the slider). */
 test('one piece: the table splits the materia into the stones and what is left after the cap', () => {
-  const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
+  const v = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
   assert.deepEqual(
     v.vsRows.map(r => [r.il, r.tag, r.materia, r.materiaNote, r.points]),
     [
@@ -179,7 +180,7 @@ test('one piece: the table splits the materia into the stones and what is left a
    line under each item level was blank). */
 test('one piece: at or below the cap the table rows say below the cap and at the cap', () => {
   const tags = ilvl =>
-    explainerView(app('SGE', { level: 100, cap: 169, slot: 'neck', ilvl, subs: ['dh', 'crit'] })).vsRows.map(r => [r.il, r.tag]);
+    explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'neck', ilvl, subs: ['dh', 'crit'] })).vsRows.map(r => [r.il, r.tag]);
   assert.deepEqual(tags(168), [
     [168, 'below the cap'],
     [169, 'at the cap'],
@@ -194,18 +195,18 @@ test('one piece: at or below the cap the table rows say below the cap and at the
 /* An overgeared piece that only matches the melded one counts too (owner's screenshot, 2026-10-18: the earring synced to
    169 reaches the melded 74 from item level 289, but the chart shaded nothing and the note said no earring has more). */
 test('overgeared chart: an overgeared piece with as much as the melded one is shaded and named', () => {
-  const v = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
+  const v = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
   assert.equal(v.curveNote, 'Overgeared matches the melded earring (74) at item level 289 (+120), never more.');
   assert.match(v.curveChartSvg, /data-shade="289-309"/);
   // the synced item level's line is named in the page's legend, not inside the chart (owner, 2026-10-18)
   assert.doesNotMatch(v.curveChartSvg, /Synced item level/);
   // as much, then more; and never as much
   assert.equal(
-    explainerView(app('RPR', { level: 80, ilvl: 590 })).curveNote,
+    explainerViewOf(app('RPR', { level: 80, ilvl: 590 })).curveNote,
     'Overgeared matches the melded body (388) at item level 620 (+90) and passes it at item level 624 (+94), up to 400.',
   );
   assert.equal(
-    explainerView(app('SGE', { level: 100, cap: 790, slot: 'head', ilvl: 795 })).curveNote,
+    explainerViewOf(app('SGE', { level: 100, cap: 790, slot: 'head', ilvl: 795 })).curveNote,
     'Overgeared never reaches the melded head (538): at most 459.',
   );
 });
@@ -213,15 +214,15 @@ test('overgeared chart: an overgeared piece with as much as the melded one is sh
 /* The materia row shows only what the piece has in the duty (owner's screenshots, 2026-10-18: above the cap it showed
    the stones the piece would take at its own item level, Grade VI at 415 and Grade VIII at 429, struck through). */
 test('one piece: the materia row shows no stones above the cap, the kept stones at or below it', () => {
-  const synced = explainerView(app('SGE', { level: 70, cap: 405, slot: 'body', ilvl: 429, subs: ['det', 'spd'] }));
+  const synced = explainerViewOf(app('SGE', { level: 70, cap: 405, slot: 'body', ilvl: 429, subs: ['det', 'spd'] }));
   assert.deepEqual(synced.stoneChips, []);
   assert.equal(synced.meldNote, 'None: a synced piece loses its melds.');
-  const kept = explainerView(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 169, subs: ['dh', 'crit'] }));
+  const kept = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 169, subs: ['dh', 'crit'] }));
   assert.deepEqual(kept.stoneChips, ['+6', '+6']);
   assert.equal(kept.meldNote, '2 × Grade V Critical Hit, kept');
 });
 
 test('Piece stats: what it says while no sync applies', () => {
-  assert.equal(explainerOffText({ sync: true }), 'Enter a sync cap (item level) at the top to see what sync does.');
-  assert.match(explainerOffText({ sync: false }), /^No sync applies: item level sync is off/);
+  assert.equal(explainerOffText(true), 'Enter a sync cap (item level) at the top to see what sync does.');
+  assert.match(explainerOffText(false), /^No sync applies: item level sync is off/);
 });

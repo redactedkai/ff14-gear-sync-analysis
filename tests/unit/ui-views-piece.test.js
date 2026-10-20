@@ -4,12 +4,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { pieceView, withSub } from '../../src/ui/views/piece.js';
+import { withSub } from '../../src/ui/views/piece.js';
 import { gamePool } from './helpers/exhaustive.js';
-import { makeApp } from './helpers/views.js';
+import { makeApp, pieceViewOf } from './helpers/views.js';
 
 test('Piece stats view: the default two substats both reach the cap; the healer note only for Mind jobs; shares in percent', () => {
-  const rpr = pieceView(makeApp('RPR', { cap: 123, sync: true, level: 50 }));
+  const rpr = pieceViewOf(makeApp('RPR', { cap: 123, sync: true, level: 50 }));
   assert.deepEqual(
     rpr.rows.map(r => [r.stat, r.w, r.syn]),
     [
@@ -22,12 +22,12 @@ test('Piece stats view: the default two substats both reach the cap; the healer 
   assert.equal(rpr.evenSubs, true);
   assert.equal(rpr.healerNote, false);
   assert.match(rpr.rows[0].ownFormula, /^6050 × 8\.5% = 514\.3 → 514/);
-  assert.equal(pieceView(makeApp('SGE', { cap: 123, sync: true, level: 50 })).healerNote, true);
+  assert.equal(pieceViewOf(makeApp('SGE', { cap: 123, sync: true, level: 50 })).healerNote, true);
   // no sync, or a piece at the cap: nothing is cut
-  assert.equal(pieceView(makeApp('RPR', { sync: false, cap: null, level: 100 })).evenSubs, false);
+  assert.equal(pieceViewOf(makeApp('RPR', { sync: false, cap: null, level: 100 })).evenSubs, false);
   const atCap = makeApp('RPR', { level: 50 });
   atCap.piece = { ...atCap.piece, ilvl: 123 };
-  assert.equal(pieceView(atCap).evenSubs, false);
+  assert.equal(pieceViewOf(atCap).evenSubs, false);
 });
 
 test('Piece stats view: every real item level 130 Sage head piece with three substats, its two ranked ones from the formula, synced to 123', () => {
@@ -46,7 +46,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
       .slice(0, 2);
     assert.ok(!subs.includes('dh'), head.name);
     app.piece = { ilvl: 130, slot: 'head', subs };
-    const v = pieceView(app);
+    const v = pieceViewOf(app);
     const want = ['main', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
     assert.deepEqual(
       v.rows.map(r => [r.stat, r.raw, r.syn]),
@@ -76,12 +76,12 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
 test('sync off: Piece stats leaves stats as they are and shows no ceiling', () => {
   const app = makeApp('SGE', { cap: 123, sync: false });
   app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec'] };
-  const v = pieceView(app);
+  const v = pieceViewOf(app);
   assert.equal(v.status, 'off');
   assert.ok(v.rows.every(r => r.syn === r.raw && r.cap == null && r.ownKept));
   assert.match(v.summary, /^No sync applies/);
   assert.deepEqual(
-    pieceView({ ...app, sync: true }).rows.map(r => r.cap),
+    pieceViewOf({ ...app, sync: true }).rows.map(r => r.cap),
     [30, 29, 29, 29],
   );
 });
@@ -92,7 +92,7 @@ test('sync off: Piece stats leaves stats as they are and shows no ceiling', () =
 test('Piece stats: each stat against its ceiling, with the sentences and the arithmetic', () => {
   const app = makeApp('SGE', { cap: 130, sync: true, level: 100 });
   app.piece = { ilvl: 170, slot: 'head', subs: ['crit', 'spd'] };
-  const v = pieceView(app);
+  const v = pieceViewOf(app);
   assert.equal(v.status, 'above');
   assert.deepEqual(
     v.rows.map(r => [r.stat, r.raw, r.cap, r.syn, r.ownKept]),
@@ -128,7 +128,7 @@ test('Piece stats: each stat against its ceiling, with the sentences and the ari
   assert.equal(v.slotShare, '8.5%');
   // at the cap: nothing is cut, the head's own numbers are kept
   app.piece = { ...app.piece, ilvl: 130 };
-  const at = pieceView(app);
+  const at = pieceViewOf(app);
   assert.equal(at.status, 'below');
   assert.ok(at.rows.every(r => r.ownKept && r.lost === 0));
 });
@@ -136,7 +136,7 @@ test('Piece stats: each stat against its ceiling, with the sentences and the ari
 test('Piece stats: an off-hand is the two-handed value minus the one-handed one, its ceiling too', () => {
   const app = makeApp('PLD', { cap: 130, sync: true, level: 100 });
   app.piece = { ilvl: 170, slot: 'offhand', subs: ['crit', 'det'] };
-  const v = pieceView(app);
+  const v = pieceViewOf(app);
   const crit = v.rows.find(r => r.stat === 'crit');
   assert.match(crit.ownText, /^The two-handed weapon's \d+ minus the one-handed weapon's \d+\.$/);
   assert.match(crit.capText, /^The two-handed cap \d+ minus the one-handed cap \d+\.$/);
@@ -154,7 +154,7 @@ test('Piece stats: an off-hand is the two-handed value minus the one-handed one,
 test('Piece stats steps: the sentences and headings of the section', () => {
   const body = makeApp('SGE', { level: 100 });
   body.piece = { ...body.piece, slot: 'body' };
-  const sync = pieceView(body, 300);
+  const sync = pieceViewOf(body, 300);
   assert.equal(sync.shareText, `The body takes ${sync.slotShare}`);
   assert.equal(sync.ruleText, 'what this body has, and what a body at the synced item level has (its ceiling).');
   assert.equal(sync.ownHead, 'This body (item level 300)');
@@ -162,7 +162,7 @@ test('Piece stats steps: the sentences and headings of the section', () => {
   assert.equal(sync.byLevelText, '');
   const app = makeApp('PLD', { sync: false, cap: null, level: 90 });
   app.piece = { ...app.piece, slot: 'offhand' };
-  const byLevel = pieceView(app);
+  const byLevel = pieceViewOf(app);
   assert.equal(byLevel.shareText, 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s');
   assert.equal(
     byLevel.byLevelText,

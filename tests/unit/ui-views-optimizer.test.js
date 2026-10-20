@@ -16,12 +16,21 @@ import { statTier } from '../../src/core/tiers.js';
 import { fmtInt } from '../../src/ui/helpers.js';
 import { defaultState } from '../../src/ui/state.js';
 import { DEFAULT_EXCLUDE, optimizerKey, syncSettings } from '../../src/ui/settings.js';
-import { gearView } from '../../src/ui/views/gear.js';
 import { mealEmptyReason, mealPillOff, mealsPassing, samePassing, tierText } from '../../src/ui/views/optimizer.js';
-import { pieceView } from '../../src/ui/views/piece.js';
-import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
-import { countOf, gearOf, makeApp, poolOf, relicsOf, uniqueRingPool, viewOf, windowPool } from './helpers/views.js';
+import {
+  countOf,
+  explainerViewOf,
+  gearOf,
+  gearViewOf,
+  makeApp,
+  pieceViewOf,
+  poolOf,
+  relicsOf,
+  uniqueRingPool,
+  viewOf,
+  windowPool,
+} from './helpers/views.js';
 
 /* 2,238 (2.28 s) and 2,324 (2.27 s) are tier starts in AkhMorning's level 100 2.5s tier table, which lists full speed
    (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, core-speed.test.js). Roadmap A3. */
@@ -168,15 +177,15 @@ test('Gear from: the optimizer and the browser each go by their own boxes', () =
   assert.ok(nTome > 0 && nTome < pool.length);
   Object.assign(app.browse, { min: 125, max: 135, lvl: 50, exclude: [] });
   app.opt.exclude = [];
-  const listed = gearView(app).shown.length;
+  const listed = gearViewOf(app).shown.length;
   const all = poolOf(app, pool).length;
   // leaving Poetics gear out of the browser changes nothing in the optimizer, and the other way round
   app.browse.exclude = ['tomes_legacy'];
-  assert.ok(gearView(app).shown.length < listed);
+  assert.ok(gearViewOf(app).shown.length < listed);
   assert.equal(poolOf(app, pool).length, all);
   app.browse.exclude = [];
   app.opt.exclude = ['tomes_legacy'];
-  assert.equal(gearView(app).shown.length, listed);
+  assert.equal(gearViewOf(app).shown.length, listed);
   assert.equal(poolOf(app, pool).length, all - nTome);
   assert.deepEqual(countOf(app, pool), { searched: all - nTome, left: pool.length - all + nTome });
   const o = viewOf(app, pool);
@@ -222,9 +231,9 @@ test("Gear to search: the browser's filters, on the optimizer's own values", () 
     const searched = poolOf(app).length;
     Object.assign(app.browse, { expOff: ['ARR'], min: 600, max: 700, lvl: 1, exclude: [] });
     assert.equal(poolOf(app).length, searched, id);
-    const listed = gearView(app).shown.length;
+    const listed = gearViewOf(app).shown.length;
     Object.assign(app.opt, { min: 9999, max: 1 });
-    assert.equal(gearView(app).shown.length, listed, id);
+    assert.equal(gearViewOf(app).shown.length, listed, id);
     assert.equal(viewOf(app).kind, 'excluded', `${id}: nothing passes the filters`);
   }
 });
@@ -247,12 +256,12 @@ test('level cap: the optimizer searches no piece above the job cap, and level sy
   const best = exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0];
   assert.equal(o.total, best + statBase(app.jobCtx, app.opt.target, 80));
   // at the job's own cap no gear it can wear is level-synced: How the math works shows no sync
-  assert.equal(pieceView(app).status, 'off');
-  assert.equal(explainerView(app), null);
+  assert.equal(pieceViewOf(app).status, 'off');
+  assert.equal(explainerViewOf(app), null);
   const bst = makeApp('BST', { sync: false, cap: null, level: 50 });
-  assert.equal(explainerView(bst), null);
+  assert.equal(explainerViewOf(bst), null);
   // below the cap, level sync applies as for any job
-  assert.equal(explainerView({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
+  assert.equal(explainerViewOf({ ...bst, level: 40 }).cap, 40); // ParamGrow: levels 1 to 49 sync to their own number
 });
 
 /* "At cap" marks: a target or tiebreak number at the most its piece can have. Sage, Critical Hit. Level 100, no sync:

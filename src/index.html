@@ -194,7 +194,7 @@
       <span><i class="dash"></i><span x-text="`Synced item level ${explainer.cap}`"></span></span>
       <span><i style="background:var(--fg);opacity:.12"></i>Overgeared ≥ melded</span>
     </div>
-    <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-html="explainer.curveChartSvg"></div>
+    <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-init="observeChart($el)" x-html="explainer.curveChartSvg"></div>
     <p class="callout small" id="p-curve-note" x-show="explainer.curveNote" x-text="explainer.curveNote"></p>
   </div>
 </div></template>

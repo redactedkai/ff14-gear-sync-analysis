@@ -2,28 +2,33 @@
    Layout (owner, 2026-10-18; mockups B1 with C2's pills): the name search on the title's line, slot pills with their
    counts and, while a filter is changed, Reset at their end (its place kept while hidden); one row of filters; sorting from the table's
    headings. */
-import Alpine from 'alpinejs';
 import { SEARCH_MAX_LENGTH, defaultBrowse } from '../state.js';
+import { syncSettings } from '../settings.js';
 import { browseFiltered, gearView } from '../views/gear.js';
-import { expansionToggles, gearFromToggles } from '../helpers.js';
+import { expansionToggles, gearFromToggles, viewCache } from '../helpers.js';
 
 /* The browser's component: its view (gearView, rebuilt while the tab is open), its two filter menus, the sort and Reset
    filters. */
 export function gear() {
+  // the list and the settings it was built for (helpers.js viewCache)
+  const views = viewCache();
   return {
-    view: null,
+    /* the list for the settings now (views/gear.js gearView), built again only when the job, the sync settings or the
+       browser's filters or sort change, and only while the tab is open: hidden, it keeps the last one (null until the
+       tab is first opened) */
+    get view() {
+      const app = this.$store.app;
+      if (app.tab !== 'browse') return views.last();
+      const job = app.jobCtx,
+        sync = syncSettings(app),
+        browse = app.browse;
+      return views.get(JSON.stringify([job.jobId, sync, browse]), () => gearView(job, sync, browse));
+    },
     /* the name search box's maxlength (state.js SEARCH_MAX_LENGTH) */
     searchMaxLength: SEARCH_MAX_LENGTH,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
     get jobCtx() {
       return this.$store.app.jobCtx;
-    },
-    init() {
-      Alpine.effect(() => {
-        const app = this.$store.app;
-        if (app.tab !== 'browse') return;
-        this.view = gearView(app);
-      });
     },
     /* the Expansion filter, browse.expOff (the optimizer has its own, opt.expOff) */
     ...expansionToggles('browse'),

@@ -3,8 +3,11 @@
    as its component calls them: the plain inputs assembled from store-shaped state (ui/settings.js optimizerInputs). */
 import { relicsLeftOut, recipePool } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
-import { optimizerInputs, recipeOf } from '../../../src/ui/settings.js';
+import { optimizerInputs, recipeOf, syncSettings } from '../../../src/ui/settings.js';
+import { gearView } from '../../../src/ui/views/gear.js';
 import { optimizerView, searchCount } from '../../../src/ui/views/optimizer.js';
+import { pieceView } from '../../../src/ui/views/piece.js';
+import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.js';
 import { appState } from './common.js';
 import { gamePool } from './exhaustive.js';
 
@@ -44,3 +47,11 @@ export const makeApp = (job = 'SGE', patch = {}) => {
 export const WINDOW = { ilvlMin: 125, ilvlMax: 135, lvlMax: 50 };
 export const windowPool = job => gamePool(job, WINDOW);
 export const uniqueRingPool = job => gamePool(job, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }, r => r.type !== 'ring' || r.unique);
+
+/* The other tabs' views for store-shaped `app`, with the inputs their components assemble from the store. */
+const goalOf = app => [app.opt.target, app.opt.tb, app.opt.tb2];
+export const gearViewOf = app => gearView(app.jobCtx, syncSettings(app), app.browse);
+export const pieceViewOf = (app, ilvl) => pieceView(app.jobCtx, syncSettings(app), app.piece, ilvl);
+export const explainerViewOf = (app, widths) => explainerView(app.jobCtx, syncSettings(app), app.piece, goalOf(app), widths);
+export const explainerItemLevelOf = app => explainerItemLevel(app.jobCtx, syncSettings(app), app.piece);
+export const meldKeysOf = app => meldKeys(app.jobCtx, goalOf(app), app.piece.subs);

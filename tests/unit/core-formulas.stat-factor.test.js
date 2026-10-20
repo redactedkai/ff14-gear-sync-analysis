@@ -9,9 +9,9 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../src/core/formulas.js';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../src/core/items.js';
 import { effStats } from '../../src/core/piece.js';
-import { gearView } from '../../src/ui/views/gear.js';
 import { MODEL_MIN_ILVL } from '../../src/core/validation.js';
 import { appState, itemRow, roundHalfUp } from './helpers/common.js';
+import { gearViewOf } from './helpers/views.js';
 
 const at = (r, key) => rowStats(r)[ITEM_STAT_ORDER.indexOf(key)];
 
@@ -108,7 +108,7 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   // the gear browser shows the same synced values as the optimizer uses
   const app = appState({ job: 'WAR', sync: true, cap: 123 });
   app.browse = { ...app.browse, q: "Field Commander's Coat" };
-  const v = gearView(app);
+  const v = gearViewOf(app);
   assert.equal(v.shown.length, 1);
   assert.deepEqual([v.shown[0].eff.main, v.shown[0].eff.vit], [43, 45]);
   // a piece of the job's own kind is unchanged by the switch: same caps as before

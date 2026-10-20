@@ -18,7 +18,6 @@ import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { fmtInt } from '../helpers.js';
 import { defaultBrowse } from '../state.js';
-import { syncSettings } from '../settings.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
 /* The most rows the table renders; the rest are counted in its last row. */
@@ -94,11 +93,10 @@ export function browseCell(raw, synced) {
    lowers its item level, `synced` true and `syncedIlvl` the item level it is synced to (owner, 2026-10-19: what the
    player gets on the top line, the piece's own numbers on a muted line under it). slots: the slot pills,
    [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by group (1 to 3), count the matches in
-   that slot under the other filters. */
-export function gearView(app) {
-  const job = app.jobCtx,
-    b = app.browse,
-    sync = syncSettings(app);
+   that slot under the other filters. For `job` (a JobContext) under `sync` ({cap, sync, level}: ui/settings.js
+   syncSettings), with the browser's settings `browse` (the store's: state.js defaultBrowse). */
+export function gearView(job, sync, browse) {
+  const b = browse;
   // every slot first, for the pills' counts; the slot filter is applied after
   const rows = browseItems(job, { ...gearFilter(b), q: b.q });
   const allowed = allowedActivities(b.exclude || [], b.market !== false);

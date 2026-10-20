@@ -6,12 +6,9 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { MAX_REAL } from '../../src/core/tables.js';
 import { shownSync, syncSettings } from '../../src/ui/settings.js';
-import { gearView } from '../../src/ui/views/gear.js';
-import { pieceView } from '../../src/ui/views/piece.js';
-import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { appState } from './helpers/common.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
-import { makeApp, viewOf } from './helpers/views.js';
+import { explainerViewOf, gearViewOf, makeApp, pieceViewOf, viewOf } from './helpers/views.js';
 
 /* Level sync (synced level 90, item level sync off) in the views. Real gear at item level 663 to 666: the equip level
    94 and 95 pieces are synced to 660 at level 90, the level 90 ones are not (core-sync-target.test.js). */
@@ -21,23 +18,23 @@ const LEVEL_SYNC_WINDOW = { ilvlMin: 663, ilvlMax: 666, lvlMax: 100 };
 
 test('views: level sync with item level sync off shows the level item level as the cap', () => {
   const app = sgeApp({ sync: false, cap: null, level: 90 });
-  const v = explainerView(app);
+  const v = explainerViewOf(app);
   assert.equal(v.cap, 660);
   assert.equal(v.byLevel, true);
-  const p = pieceView(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
+  const p = pieceViewOf(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
   assert.equal(p.cap, 660);
   assert.equal(p.status, 'above');
   // at the level cap with item level sync off nothing applies
-  assert.equal(explainerView(sgeApp({ sync: false, cap: null, level: 100 })), null);
-  assert.equal(pieceView(sgeApp({ sync: false, cap: null, level: 100 })).status, 'off');
+  assert.equal(explainerViewOf(sgeApp({ sync: false, cap: null, level: 100 })), null);
+  assert.equal(pieceViewOf(sgeApp({ sync: false, cap: null, level: 100 })).status, 'off');
   // item level sync on: its cap is shown, whatever the level
-  assert.equal(explainerView(sgeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
+  assert.equal(explainerViewOf(sgeApp({ sync: true, cap: 123, level: 50 })).cap, 123);
 });
 
 test('views: the gear browser and the optimizer apply level sync per piece', () => {
   const app = sgeApp({ sync: false, cap: null, level: 90 });
   Object.assign(app.browse, { q: '', type: 'head', min: 780, max: '', lvl: 100 });
-  const g = gearView(app);
+  const g = gearViewOf(app);
   const lv100 = g.shown.filter(x => x.lvl === 100);
   assert.ok(lv100.length >= 2);
   for (const x of lv100) assert.ok(x.eff.main === 248 && x.raw.main > 248, x.name);
@@ -63,8 +60,8 @@ test('a cap far above the synced level: gear made for a higher level is held to 
   const v = viewOf(high, gamePool(high.jobCtx, { ilvlMin: 120, ilvlMax: 540 }));
   assert.equal(v.kind, 'ok');
   assert.ok(Number(v.gcd) >= 2.1, `GCD ${v.gcd}`); // 1.50 s before the fix
-  assert.notEqual(explainerView(high), null);
-  assert.equal(pieceView(high).cap, 130);
+  assert.notEqual(explainerViewOf(high), null);
+  assert.equal(pieceViewOf(high).cap, 130);
   // a cap at or under the ceiling, and level 100, keep the cap as typed
   const shownSyncOf = app => shownSync(app.jobCtx, syncSettings(app));
   assert.deepEqual(shownSyncOf(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });

@@ -3,7 +3,7 @@
 import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';
 import { MAX_REAL } from '../../core/tables.js';
-import { shownSync, syncSettings } from '../settings.js';
+import { shownSync } from '../settings.js';
 import { withRank } from '../ranks.js';
 
 /* A slot share in per mille as a percent: one decimal shows it exactly (85 ‰ = 8.5%). */
@@ -64,18 +64,19 @@ function budgetSlices(job, slot) {
   });
 }
 
-/* The step-by-step section of Piece stats for its piece at item level `ilvl` (the explainer's chosen one,
-   explainerItemLevel): a summary, the slot slices of the budget, and per stat the piece's value and, under sync, the
-   ceiling (the same slot at the synced item level), each with a sentence and its arithmetic. */
-export function pieceView(app, ilvl) {
-  const job = app.jobCtx,
-    p = app.piece,
+/* The step-by-step section of Piece stats for `job` (a JobContext) under `sync` ({cap, sync, level}: ui/settings.js
+   syncSettings), for Piece stats' piece (`piece`: {ilvl, slot, subs}, the store's `piece`) at item level `ilvl` (the
+   explainer's chosen one, explainerItemLevel; null: the piece's own, else the highest): a summary, the slot slices of
+   the budget, and per stat the piece's value and, under sync, the ceiling (the same slot at the synced item level),
+   each with a sentence and its arithmetic. */
+export function pieceView(job, sync, piece, ilvl) {
+  const p = piece,
     il = clampIlvl(ilvl ?? p.ilvl ?? MAX_REAL),
     t = p.slot,
     slotName = SLOT_LABEL[t].toLowerCase();
-  const sync = shownSync(app.jobCtx, syncSettings(app)),
-    cap = sync?.cap ?? null;
-  const status = !sync ? 'off' : il <= cap ? 'below' : 'above';
+  const shown = shownSync(job, sync),
+    cap = shown?.cap ?? null;
+  const status = !shown ? 'off' : il <= cap ? 'below' : 'above';
 
   // each line: the piece's value, and under sync its ceiling; a piece above the cap keeps the lower of the two
   const lines = [
@@ -87,7 +88,7 @@ export function pieceView(app, ilvl) {
   });
   const rows = lines.map(({ stat, w, sub }) => {
     const d = statDerivation(job, stat, il, t, w);
-    const c = sync ? capDerivation(job, stat, cap, t) : null;
+    const c = shown ? capDerivation(job, stat, cap, t) : null;
     const raw = d.value,
       syn = status === 'above' ? Math.min(raw, c.value) : raw;
     return {
@@ -126,16 +127,16 @@ export function pieceView(app, ilvl) {
     rows,
     lost: rows.reduce((a, r) => a + r.lost, 0),
     cap,
-    byLevel: !!sync?.byLevel,
-    level: sync?.level ?? null,
+    byLevel: !!shown?.byLevel,
+    level: shown?.level ?? null,
     status,
     summary,
     slotName,
     slotShare: isOffhand(t) ? null : sharePct(job.slotPct[t]),
     // the sentences and headings of the section: the level sync line, where the slot's share comes from, the rule under
     // sync, and the two value columns' headings
-    byLevelText: sync?.byLevel
-      ? `Level sync: at level ${sync.level}, gear with a higher equip level is synced to item level ${cap}, used as the cap here.`
+    byLevelText: shown?.byLevel
+      ? `Level sync: at level ${shown.level}, gear with a higher equip level is synced to item level ${cap}, used as the cap here.`
       : '',
     shareText: isOffhand(t)
       ? 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'

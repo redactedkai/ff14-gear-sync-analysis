@@ -1,6 +1,6 @@
 /* How the math works, GCD (views/gcd.js): the sub-tab (gcdTab) and its controls in the math bar (gcdControls), which
    share their settings through $store.app.gcd (not saved). The level follows the synced level until one is typed. */
-import { TYPING_DEBOUNCE_MS } from '../helpers.js';
+import { TYPING_DEBOUNCE_MS, viewCache } from '../helpers.js';
 import { GCD_LEVELS, HASTE_OPTIONS, gcdLevelInput, gcdView, speedRange as speedRangeAt } from '../views/gcd.js';
 
 /* The tab's level: the one typed into its box, else the synced level, held to the levels the tab covers. */
@@ -10,9 +10,9 @@ function tabLevel(app) {
 
 /* The sub-tab: the facts, the chart and the step table. A bar or a row clicked sets the level or the speed. */
 export function gcdTab() {
-  // the last view and the settings it was built for: the template reads `view` several times a render, and a build
-  // walks every level for the chart
-  let cached = { key: null, view: null };
+  // the last view and the settings it was built for (helpers.js viewCache): the template reads `view` several times a
+  // render, and a build walks every level for the chart
+  const views = viewCache();
   return {
     // the chart's container width (px): the chart is drawn at its width, so its text keeps the page's size
     width: 0,
@@ -27,9 +27,7 @@ export function gcdTab() {
     get view() {
       const app = this.$store.app;
       const args = [tabLevel(app), app.gcd.haste, app.gcd.speed, this.width];
-      const key = args.join('|');
-      if (cached.key !== key) cached = { key, view: gcdView(...args) };
-      return cached.view;
+      return views.get(args.join('|'), () => gcdView(...args));
     },
     /* a bar of the chart: its level */
     pickLevel(e) {

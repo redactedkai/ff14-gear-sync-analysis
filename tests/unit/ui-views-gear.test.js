@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { browseItems } from '../../src/core/items.js';
-import { browseFiltered, gearView, markWords } from '../../src/ui/views/gear.js';
-import { makeApp } from './helpers/views.js';
+import { browseFiltered, markWords } from '../../src/ui/views/gear.js';
+import { gearViewOf, makeApp } from './helpers/views.js';
 
 /* The browser's list: database rows matching its filters that its own "Gear from" filter lets through; no pool. With
    every box ticked, only pieces that can no longer be obtained (no route) are left out. */
@@ -13,7 +13,7 @@ test('gear view: every match of the filters, with its synced stats', () => {
   app.browse = { ...app.browse, q: '', min: 130, max: 130, lvl: 50, exclude: [] };
   const rows = browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).filter(r => r.routes.length);
   assert.ok(rows.length >= 9);
-  const v = gearView(app);
+  const v = gearViewOf(app);
   assert.equal(v.shown.length, rows.length);
   assert.equal(v.countText, `${rows.length} matches`);
   // item level 130 is above the cap of 123: the row shows the synced item level and stats, the own ones under them
@@ -26,7 +26,7 @@ test('gear view: every match of the filters, with its synced stats', () => {
 test('gear view: slot pills count the matches of each slot under the other filters; the list keeps the chosen one', () => {
   const app = makeApp('SGE');
   Object.assign(app.browse, { min: 130, max: 130, lvl: 50, exclude: [] });
-  const all = gearView(app);
+  const all = gearViewOf(app);
   const [any, ...slots] = all.slots;
   assert.deepEqual([any.key, any.count], ['any', all.shown.length]);
   assert.equal(
@@ -37,7 +37,7 @@ test('gear view: slot pills count the matches of each slot under the other filte
   assert.ok(!slots.some(p => p.key === 'offhand'));
   assert.deepEqual([...new Set(slots.map(p => p.group))], [1, 2, 3]);
   app.browse.type = 'ring';
-  const rings = gearView(app);
+  const rings = gearViewOf(app);
   assert.equal(rings.shown.length, slots.find(p => p.key === 'ring').count);
   assert.ok(rings.shown.every(x => x.type === 'ring'));
   // the counts stay those of every slot, so another pill can be picked
@@ -53,7 +53,7 @@ test('gear view: a heading sorts high first, again low first; names A to Z', () 
   const order = (sort, dir) => {
     app.browse.sort = sort;
     app.browse.dir = dir;
-    return gearView(app).shown;
+    return gearViewOf(app).shown;
   };
   const crit = order('crit', 'desc').map(x => x.eff.crit || 0);
   assert.deepEqual(
@@ -75,7 +75,7 @@ test('gear view: a heading sorts high first, again low first; names A to Z', () 
 test('gear browser search: every word, in any order; the words found are marked in the name', () => {
   const app = makeApp('SGE');
   Object.assign(app.browse, { exclude: [], q: 'ring healing' });
-  const v = gearView(app);
+  const v = gearViewOf(app);
   assert.ok(v.shown.length > 0);
   assert.ok(v.shown.every(x => /ring/i.test(x.name) && /healing/i.test(x.name)));
   assert.deepEqual(markWords('Genta Ring of Healing', 'heal ring'), [
@@ -112,7 +112,7 @@ test('gear browser Reset filters: shown once any filter is off its default, not 
 });
 
 test('gear browser view: a gap before each new group of slot pills, and the line for rows not shown', () => {
-  const v = gearView(makeApp('PLD'));
+  const v = gearViewOf(makeApp('PLD'));
   assert.deepEqual(
     v.slots.filter(p => p.sep).map(p => p.key),
     ['weapon', 'head', 'ear'],

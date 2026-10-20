@@ -34,27 +34,26 @@ const AFFECTS = {
 /* "13 or 14", "85, 86, 128 or 129" */
 const sizeList = sizes => (sizes.length === 1 ? String(sizes[0]) : `${sizes.slice(0, -1).join(', ')} or ${sizes.at(-1)}`);
 
-/* The sub-tab's level: `typed` (a level typed into its box, or null) held to 1 and the job's level cap, else the synced
-   level. */
-export function tierLevel(app, typed) {
-  if (typed == null) return app.level;
-  return Math.max(1, Math.min(app.jobCtx.maxLevel, typed));
+/* The sub-tab's level for `job` (a JobContext): `typed` (a level typed into its box, or null) held to 1 and the job's
+   level cap, else `syncedLevel` (the settings' synced level). */
+export function tierLevel(job, syncedLevel, typed) {
+  if (typed == null) return syncedLevel;
+  return Math.max(1, Math.min(job.maxLevel, typed));
 }
 
-/* Each substat's starting value at `level`: its base there, {stat: value}. */
-export function tierValues(app, level = app.level) {
-  const job = app.jobCtx;
+/* Each of `job`'s substats' starting value at `level`: its base there, {stat: value}. */
+export function tierValues(job, level) {
   return Object.fromEntries(job.substats.map(s => [s, statBase(job, s, level)]));
 }
 
 /* A value typed into a substat's box, held to the base at `level` and the most it can be there, with no note (the box
    shows the value kept: owner, 2026-10-19); null for text that is not a number. The most: for speed, the most total
    speed any job can have at the level (MAX_SPEED, as the GCD tab's slider); for the others, TIER_VALUE_MAX. */
-export function tierInput(app, stat, text, level = app.level) {
+export function tierInput(job, stat, text, level) {
   const v = Math.round(Number(text));
   if (text === '' || !Number.isFinite(v)) return null;
   const most = stat === 'spd' ? MAX_SPEED[level - 1] : TIER_VALUE_MAX;
-  return Math.max(statBase(app.jobCtx, stat, level), Math.min(most, v));
+  return Math.max(statBase(job, stat, level), Math.min(most, v));
 }
 
 /* The ? note of a substat: {title, affects, size}. */
@@ -68,16 +67,16 @@ function helpOf(job, stat, level, haste) {
   return { title: job.label[stat], affects, size };
 }
 
-/* The Tiers view at `level` for `values` ({stat: panel value}), or null with no job: {level, cards}, one card per
+/* The Tiers view of `job` (a JobContext, or null with no job chosen) at `level` for `values` ({stat: panel value}), or
+   null with no job: {level, cards}, one card per
    substat, each its own small table (owner, 2026-10-19: a table across all substats read as one row of stats, with
    empty space between a From column and its effects). A card: {stat, label, value, lines (the effect lines under its
    box), haste (speed's: the job's haste at the level, "with Fuka 10%", else ''), help, names (its column names),
    rows, foot: {spare, toNext}}. rows: [[{text, eff, mark, cur, to, title}]], From first; cur: the value's tier (the
    middle row unless the value is near the base or the last tier: tierLadder); mark: with two effects, the one that
    changes at the tier; to: 'stat:start' to set the value by a click. */
-export function tiersView(app, values, level = app.level) {
-  if (!app.job) return null;
-  const job = app.jobCtx;
+export function tiersView(job, values, level) {
+  if (!job) return null;
   const haste = hasteFor(job.jobId, level);
   const cards = job.substats.map(stat => {
     // 1. the substat's tiers around its value
