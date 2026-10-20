@@ -156,6 +156,8 @@ A saved job id that is not a known job means no job is chosen; the job-dependent
 
 An invalid field falls back to its default and the valid ones are kept. The state unit tests cover this field by field ([testing.md, section 2](testing.md#2-what-each-file-covers)).
 
+**Piece identity.** Anything kept that names a piece of gear refers to it by its **gameId**, the game's item id (the `Item.csv` row), with the piece's name stored beside it so a reader can tell what it is. `itemById` finds the database row of an id; the index is built once, on first use. Two other keys exist and are not identities: a pool item's `id` is made fresh on every page load, and the pool key (name, slot, item level) only groups the same piece from several sources, as the menus do. Several rows could share a pool key, and a name can change in a patch; a gameId does neither. No saved setting names a piece today: the picks from a result's menus and the picked meal live only until the next Optimize. The first to be kept will be a set's pieces (section 7), so `restoreState` has nothing to repair yet.
+
 **Storage key versioning.** The key carries a version suffix (currently `-v4`). While the site has no users, a new field needs no bump: the restore step defaults and repairs it. Once it has users, bump the suffix only when old data cannot be repaired field by field.
 
 ## 5. Build
@@ -202,6 +204,7 @@ Every command, with how long it takes, is in the [root README](../../README.md#d
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `activeSlotTypes`, `specKind`, `vitFactor` and `maxLevel`; `statColumn`); level caps in `src/core/constants.js` (`JOB_LEVEL_CAPS`) |
 | Raw row to neutral stats, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `poolItemFromRow`) |
+| Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |

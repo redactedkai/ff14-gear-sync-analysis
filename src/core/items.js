@@ -1,5 +1,9 @@
 /* Pool items and the real-item database (src/data/items.json).
-   A pool item: {id, name, type, ilvl, stats (neutral keys), copies, src: 'game' | 'generated' | 'custom'}. */
+   A pool item: {id, name, type, ilvl, stats (neutral keys), copies, src: 'game' | 'generated' | 'custom'}; a database
+   piece also has its gameId. `id` is made fresh for each object and means nothing outside this page load.
+   Identity: anything that is kept (a set's pieces, saved picks) refers to a database piece by its gameId (the game's
+   item id, itemById), with its name stored beside it for a reader; poolKey (name, slot, item level) only groups the same
+   piece from several sources, as the menus do. A gameId never changes; a name can, in a patch. */
 import {
   SLOT_LABEL,
   ITEM_STAT_ORDER,
@@ -182,7 +186,8 @@ export function browseItems(job, f) {
   return out;
 }
 
-/* Identity of a piece in the pool: the same name, slot and item level is the same piece. */
+/* The same piece in the pool: the same name, slot and item level, from whichever source (menus group by it). Not an
+   identity to keep: several rows could share it, and a name can change in a patch; keep the gameId (itemById). */
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 let rowIndex = null;
@@ -212,6 +217,35 @@ function rowFacts(item) {
     }
   }
   return rowIndex.get(poolKey(item)) || null;
+}
+
+let idIndex = null;
+/* The database row (an ITEMS entry, read through ROW) of the game's item id `gameId`, or null when no row has it (a piece
+   the data no longer keeps, or not a number). The index is built once, on first use, like rowIndex; every row has its
+   own gameId (core-items.test.js checks it). */
+export function itemById(gameId) {
+  if (!idIndex) {
+    idIndex = new Map();
+    for (const r of ITEMS) idIndex.set(r[ROW.gameId], r);
+  }
+  return idIndex.get(gameId) ?? null;
+}
+
+const poolItemCache = new WeakMap();
+/* The pool item of the game's item id `gameId` for `job` (a JobContext): poolItemFromRow of its row, or null when no row
+   has it (itemById). The same object for the same job and id, so caches keyed by pool items (meldCaps) stay warm. It
+   does not check that the job can wear it. */
+export function poolItemById(job, gameId) {
+  let byId = poolItemCache.get(job);
+  if (!byId) {
+    byId = new Map();
+    poolItemCache.set(job, byId);
+  }
+  if (!byId.has(gameId)) {
+    const row = itemById(gameId);
+    byId.set(gameId, row ? poolItemFromRow(job, parseRow(row)) : null);
+  }
+  return byId.get(gameId);
 }
 
 /* A pool item's weapon damage and defense facts: {slotCode, kind, values: {damagePhys, damageMag, defensePhys,
@@ -337,7 +371,12 @@ export function copiesOf(type, unique) {
   return type === 'ring' && !unique ? 2 : 1;
 }
 
-/* A parsed database row (parseRow) as a pool item, with its stats as this job's neutral keys. */
+/* A parsed database row (parseRow) as a pool item, with its stats as this job's neutral keys and its gameId. */
 export function poolItemFromRow(job, row) {
-  return mkItem(row.name, row.type, row.ilvl, dbStats(job, row.st), { src: 'game', hq: !!row.hq, copies: copiesOf(row.type, row.unique) });
+  return mkItem(row.name, row.type, row.ilvl, dbStats(job, row.st), {
+    src: 'game',
+    hq: !!row.hq,
+    copies: copiesOf(row.type, row.unique),
+    gameId: row.gameId,
+  });
 }
