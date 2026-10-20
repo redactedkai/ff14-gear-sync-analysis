@@ -7,7 +7,7 @@ import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.js';
 import { mkItem } from '../../core/items.js';
 import { bestMeld } from '../../core/meld.js';
-import { shownSync } from '../state.js';
+import { shownSync, syncSettings } from '../settings.js';
 import { OVERGEAR_BANDS, overgearChartSvg } from '../sync-charts.js';
 
 /* The item level range the slider and both charts cover, relative to the cap (item levels). */
@@ -96,7 +96,7 @@ function computeRange(job, cap, subs) {
    item level (null: the cap, where Reset puts it; owner's decision, 2026-10-18); without one, every real item level (null: the highest). `note`
    says where the range comes from (the slider's tooltip). */
 export function explainerItemLevel(app) {
-  const sync = shownSync(app);
+  const sync = shownSync(app.jobCtx, syncSettings(app));
   const clampTo = ([lo, hi], v) => Math.max(lo, Math.min(hi, clampIlvl(v)));
   if (!sync) {
     const range = [1, MAX_REAL];
@@ -132,7 +132,7 @@ export function explainerOffText(app) {
 /* Everything Piece stats shows, or null while no sync applies. `widths`: the chart container's width in px ({piece}),
    so the chart is drawn at its own size and its text stays at the page's size. */
 export function explainerView(app, widths = {}) {
-  const sync = shownSync(app);
+  const sync = shownSync(app.jobCtx, syncSettings(app));
   if (!sync) return null;
   const job = app.jobCtx,
     cap = sync.cap,

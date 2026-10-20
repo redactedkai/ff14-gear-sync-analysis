@@ -1,11 +1,11 @@
 /* Level sync on the page's views (src/ui/views/): the Piece stats panels, the gear browser and the optimizer under a
-   synced level, and a cap far above it held to the level (shownSync, src/ui/state.js). Which pieces level sync
+   synced level, and a cap far above it held to the level (shownSync, src/ui/settings.js). Which pieces level sync
    reaches is checked in core-sync-target.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { MAX_REAL } from '../../src/core/tables.js';
-import { shownSync } from '../../src/ui/state.js';
+import { shownSync, syncSettings } from '../../src/ui/settings.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { optimizerView } from '../../src/ui/views/optimizer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
@@ -60,13 +60,14 @@ test('views: the gear browser and the optimizer apply level sync per piece', () 
    level (capCeiling, 135), so every view computes what a level 50 duty can. */
 test('a cap far above the synced level: gear made for a higher level is held to the level, and every view computes', () => {
   const high = makeApp('SGE', { cap: 500, sync: true, level: 50 });
-  assert.deepEqual(shownSync(high), { cap: 130, level: 50, byLevel: true }); // as with sync off at level 50
+  assert.deepEqual(shownSync(high.jobCtx, syncSettings(high)), { cap: 130, level: 50, byLevel: true }); // as with sync off at level 50
   const v = optimizerView(high, gamePool(high.jobCtx, { ilvlMin: 120, ilvlMax: 540 }));
   assert.equal(v.kind, 'ok');
   assert.ok(Number(v.gcd) >= 2.1, `GCD ${v.gcd}`); // 1.50 s before the fix
   assert.notEqual(explainerView(high), null);
   assert.equal(pieceView(high).cap, 130);
   // a cap at or under the ceiling, and level 100, keep the cap as typed
-  assert.deepEqual(shownSync(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });
-  assert.deepEqual(shownSync(makeApp('SGE', { cap: MAX_REAL, sync: true, level: 100 })), { cap: MAX_REAL, level: 100, byLevel: false });
+  const shownSyncOf = app => shownSync(app.jobCtx, syncSettings(app));
+  assert.deepEqual(shownSyncOf(makeApp('SGE', { cap: 135, sync: true, level: 50 })), { cap: 135, level: 50, byLevel: false });
+  assert.deepEqual(shownSyncOf(makeApp('SGE', { cap: MAX_REAL, sync: true, level: 100 })), { cap: MAX_REAL, level: 100, byLevel: false });
 });

@@ -3,9 +3,10 @@
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
 import Alpine from 'alpinejs';
-import { emptyGearFrom, gcdLabel, optimizerKey, optimizerView, samePassing, searchCount } from '../views/optimizer.js';
+import { emptyGearFrom, gcdLabel, optimizerView, samePassing, searchCount } from '../views/optimizer.js';
+import { optimizerKey } from '../settings.js';
 import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
-import { rankChoices, withRank } from '../views/ranks.js';
+import { rankChoices, withRank } from '../ranks.js';
 
 /* How long the settings must rest before the piece count, the empty boxes and the Target GCD label follow them (ms). */
 const DEBOUNCE_MS = 120;
@@ -160,13 +161,13 @@ export function optimizer() {
     get statOptions() {
       return this.jobCtx.stats.map(s => [s, this.jobCtx.label[s]]);
     },
-    /* Tiebreak i's options (1 or 2): none, then every stat not picked above it (views/ranks.js) */
+    /* Tiebreak i's options (1 or 2): none, then every stat not picked above it (ui/ranks.js) */
     tiebreakOptions(i) {
       const o = this.$store.app.opt;
       return [['', 'none']].concat(rankChoices([o.target, o.tb, o.tb2], i, this.jobCtx.stats).map(s => [s, this.jobCtx.label[s]]));
     },
     /* Maximize (0), Tiebreak 1 or Tiebreak 2 set to `value`: a stat another of them holds swaps with this one's old
-       one (views/ranks.js withRank) */
+       one (ui/ranks.js withRank) */
     setGoal(i, value) {
       const o = this.$store.app.opt;
       [o.target, o.tb, o.tb2] = withRank([o.target, o.tb, o.tb2], i, value, this.jobCtx.stats).map(r => r ?? '');

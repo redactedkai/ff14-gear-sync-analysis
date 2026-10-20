@@ -3,8 +3,8 @@
 import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';
 import { MAX_REAL } from '../../core/tables.js';
-import { shownSync } from '../state.js';
-import { withRank } from './ranks.js';
+import { shownSync, syncSettings } from '../settings.js';
+import { withRank } from '../ranks.js';
 
 /* A slot share in per mille as a percent: one decimal shows it exactly (85 ‰ = 8.5%). */
 const sharePct = perMille => `${perMille / 10}%`;
@@ -73,7 +73,7 @@ export function pieceView(app, ilvl) {
     il = clampIlvl(ilvl ?? p.ilvl ?? MAX_REAL),
     t = p.slot,
     slotName = SLOT_LABEL[t].toLowerCase();
-  const sync = shownSync(app),
+  const sync = shownSync(app.jobCtx, syncSettings(app)),
     cap = sync?.cap ?? null;
   const status = !sync ? 'off' : il <= cap ? 'below' : 'above';
 
@@ -152,7 +152,7 @@ export function pieceView(app, ilvl) {
 }
 
 /* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`: the shared rule of ranked dropdowns
-   (views/ranks.js withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
+   (ui/ranks.js withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
 export function withSub(subs, i, value, substats) {
   const two = subs.slice(0, 2);
   while (two.length < 2) two.push(null);

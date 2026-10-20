@@ -1,7 +1,7 @@
 /* Small presentation helpers shared by the components. */
 import { ACTIVITIES, EXPANSIONS } from '../core/constants.js';
 import { CURRENT_TOMES, MAX_LEVEL } from '../core/tables.js';
-import { DEFAULT_EXCLUDE } from './state.js';
+import { DEFAULT_EXCLUDE } from './settings.js';
 
 /* A whole number with en-US thousands separators ("1,234"), whatever the browser's locale: in a German browser
    "1.234" would read like a decimal next to GCDs such as "2.48s". The Defense row formats the same way. */

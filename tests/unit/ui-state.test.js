@@ -8,10 +8,10 @@ import {
   defaultBrowse,
   resetForJob,
   defaultSubs,
-  DEFAULT_EXCLUDE,
   SEARCH_MAX_LENGTH,
   limitCapToLevel,
 } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { browseFiltered } from '../../src/ui/views/gear.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { DEFAULT_JOB, JOBS } from '../../src/core/constants.js';

@@ -1,10 +1,10 @@
-/* Ranked stat dropdowns (views/ranks.js): a stat holds at most one rank; a dropdown hides the stats above it, and
+/* Ranked stat dropdowns (ui/ranks.js): a stat holds at most one rank; a dropdown hides the stats above it, and
    picking a stat a later rank holds swaps the two. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../src/core/constants.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { rankChoices, uniqueRanks, withRank } from '../../src/ui/views/ranks.js';
+import { rankChoices, uniqueRanks, withRank } from '../../src/ui/ranks.js';
 
 const healer = makeJobContext('WHM').stats; // main, crit, det, dh, spd, spec (and vit)
 

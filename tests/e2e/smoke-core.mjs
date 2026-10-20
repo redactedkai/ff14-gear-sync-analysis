@@ -6,7 +6,7 @@ import { isMainThread, parentPort } from 'node:worker_threads';
 import { allocatedRelic, allowedActivities, browseItems, poolItemFromRow, routesAllow, withActivities } from '../../src/core/items.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { statBase } from '../../src/core/food.js';
 
 // "Gear from" boxes left out by default, in the optimizer and the browser (owner's decision); smoke.mjs uses them too.

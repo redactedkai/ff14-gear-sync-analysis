@@ -8,6 +8,7 @@ import {
   copiesOf,
   dbStats,
   emptyActivities,
+  gearFilter,
   kindFactors,
   poolKey,
   routesAllow,
@@ -16,7 +17,8 @@ import {
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { fmtInt } from '../helpers.js';
-import { defaultBrowse, gearFilter, syncSettings } from '../state.js';
+import { defaultBrowse } from '../state.js';
+import { syncSettings } from '../settings.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
 /* The most rows the table renders; the rest are counted in its last row. */

@@ -18,7 +18,7 @@ import {
   numberField,
   storeNumberField,
 } from '../../src/ui/helpers.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 
 /* A box bound to one value: {field, value(), leave(text)}; leave types `text` and leaves the box. */
 function box(start, lo, hi, options) {

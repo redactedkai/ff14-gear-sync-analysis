@@ -341,6 +341,12 @@ export function emptyActivities(routeLists) {
   return ACTIVITIES.filter(a => !(seen & a.bit)).map(a => a.key);
 }
 
+/* The gear filters as the page's settings hold them, {expOff, min, max, lvl} (the browser's or a recipe's; '' for no
+   limit), as browseItems and filterGear take them: {expOff, ilvlMin, ilvlMax, lvlMax}, 0 for no limit. */
+export function gearFilter(f) {
+  return { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 };
+}
+
 /* Pool items matching the gear filters {expOff, ilvlMin, ilvlMax, lvlMax}: browseItems' filters, for pool items (the
    optimizer's Gear to search). An item with no equip level (not from the database) passes the equip level filter and
    takes its expansion from its item level. */

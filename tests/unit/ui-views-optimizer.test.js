@@ -14,14 +14,14 @@ import { optimizeGcd } from '../../src/core/target-gcd.js';
 import { rankByTier } from '../../src/core/tier-rank.js';
 import { statTier } from '../../src/core/tiers.js';
 import { fmtInt } from '../../src/ui/helpers.js';
-import { DEFAULT_EXCLUDE, defaultState, syncSettings } from '../../src/ui/state.js';
+import { defaultState } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE, optimizerKey, syncSettings } from '../../src/ui/settings.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import {
   jobGear,
   mealEmptyReason,
   mealPillOff,
   mealsPassing,
-  optimizerKey,
   optimizerView,
   relicsLeftOut,
   samePassing,

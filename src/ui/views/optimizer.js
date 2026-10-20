@@ -8,6 +8,7 @@ import {
   equipLevel,
   expansionOf,
   filterGear,
+  gearFilter,
   poolItemFromRow,
   itemRoutes,
   poolKey,
@@ -25,7 +26,7 @@ import { rankByTier } from '../../core/tier-rank.js';
 import { allMeals, bestFood, foodBonus, foodChoices, foodLabel } from '../../core/food.js';
 import { BASE_GCD_MS, gcdFor, gcdTierAt, hasteFor } from '../../core/speed.js';
 import { levelParams } from '../../core/level-params.js';
-import { defaultState, gearFilter, syncSettings } from '../state.js';
+import { syncSettings } from '../settings.js';
 import { fmtInt } from '../helpers.js';
 
 /* The page's search node budget: a search that visits more nodes stops, keeps the best set found so far and is marked
@@ -41,17 +42,6 @@ export function tierText(spd, level, haste = 0) {
   const t = gcdTierAt(spd, level, BASE_GCD_MS, haste),
     sub = levelParams(level).sub;
   return `tier starts at ${t.start + sub}${t.next != null ? `, next at ${t.next + sub} (+${t.next - spd})` : ''}`;
-}
-
-/* The optimizer's settings: every field of the store's `opt` (state.js defaultState), so a field added there is part of
-   optimizerKey without another edit. */
-const OPT_KEYS = Object.freeze(Object.keys(defaultState().opt));
-
-/* The settings an optimizer result depends on, as one string: the job and sync settings and every optimizer setting
-   (OPT_KEYS). A result is for the current settings exactly when it was solved with the same key. Read synchronously,
-   it also makes an effect track every one of them (the optimizer component). */
-export function optimizerKey(app) {
-  return JSON.stringify([app.job, app.cap, app.sync, app.level, ...OPT_KEYS.map(k => app.opt[k])]);
 }
 
 /* The meal the plain search's result uses, or null with Food off: the player's pick from the Food menu (`meal`, an

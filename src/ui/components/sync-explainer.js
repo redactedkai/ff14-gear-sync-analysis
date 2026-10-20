@@ -3,7 +3,7 @@
 import Alpine from 'alpinejs';
 import { explainerItemLevel, explainerOffText, explainerView } from '../views/sync-explainer.js';
 import { pieceView, withSub } from '../views/piece.js';
-import { rankChoices } from '../views/ranks.js';
+import { rankChoices } from '../ranks.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
 /* The math tab's component (x-data on the whole tab): Piece stats' views and its controls in the math bar. */
@@ -33,7 +33,7 @@ export function syncExplainer() {
     get substatOptions() {
       return this.jobCtx.substats.map(s => [s, this.jobCtx.label[s]]);
     },
-    /* the 2nd substat's options: none, then every substat but the 1st (views/ranks.js) */
+    /* the 2nd substat's options: none, then every substat but the 1st (ui/ranks.js) */
     get substat2Options() {
       const subs = this.$store.app.piece.subs;
       return [['', 'none']].concat(rankChoices(subs, 1, this.jobCtx.substats).map(s => [s, this.jobCtx.label[s]]));

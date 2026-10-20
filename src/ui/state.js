@@ -2,54 +2,13 @@
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
 import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
-import { MAX_REAL, MAX_LEVEL } from '../core/tables.js';
-import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
-import { uniqueRanks } from './views/ranks.js';
+import { MAX_REAL } from '../core/tables.js';
+import { capCeiling } from '../core/sync-target.js';
+import { uniqueRanks } from './ranks.js';
+import { DEFAULT_EXCLUDE, levelSyncOn, syncSettings } from './settings.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
-
-/* "Gear from" boxes left out until the user ticks them back in, in the optimizer and the gear browser alike: those with
-   `on: false` in item-format.json (owner's decision, 2026-10-18: Miscellaneous, Deep dungeons, Wondrous Tails,
-   Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions). In ACTIVITIES order. */
-export const DEFAULT_EXCLUDE = Object.freeze(ACTIVITIES.filter(a => !a.on).map(a => a.key));
-
-/* Sync applies only when it is switched on and a cap is set. */
-export function syncActive(app) {
-  return !!app.sync && app.cap != null;
-}
-
-/* Level sync can apply: the synced level is below the job's level cap (MAX_LEVEL before a job context exists), so gear
-   the job can wear with a higher equip level is synced to the level's item level (core/sync-target.js). Independent of
-   the item level sync switch. */
-export function levelSyncOn(app) {
-  return app.level != null && app.level < (app.jobCtx?.maxLevel ?? MAX_LEVEL);
-}
-
-/* The gear filters of the browser (app.browse) or the optimizer (app.opt) as browseItems and filterGear take them
-   (core/items.js); an empty field is no limit. */
-export function gearFilter(f) {
-  return { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 };
-}
-
-/* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/piece.js). */
-export function syncSettings(app) {
-  return { cap: app.cap, sync: syncActive(app), level: app.level ?? null };
-}
-
-/* The cap for a piece whose equip level is not known (Piece stats, Sync limits): the item level cap while item level
-   sync is on (a piece above it is synced to it whatever its equip level); otherwise the synced level's item level
-   while level sync can apply, for gear with a higher equip level (byLevel). A cap above what the level allows
-   (capCeiling) shows the level's item level too: gear made for a higher level is synced to it under the cap, and at most
-   to capCeiling above it (syncTarget). Null when neither.
-   {cap, level, byLevel} */
-export function shownSync(app) {
-  if (syncActive(app)) {
-    if (!levelSyncOn(app) || app.cap <= capCeiling(app.level)) return { cap: app.cap, level: app.level, byLevel: false };
-  }
-  if (levelSyncOn(app)) return { cap: levelSyncIlvl(app.level), level: app.level, byLevel: true };
-  return null;
-}
 
 /* The cap follows the synced level: a cap above what the level allows (capCeiling, the best gear made for it) is
    lowered to it, while item level sync is on and level sync can apply; without level sync (the job's level cap), a cap
@@ -59,8 +18,8 @@ export function shownSync(app) {
    Returns {from, to, level} when it lowered the cap (the note under the field; level null when the highest real item
    level was the limit), else null. */
 export function limitCapToLevel(app) {
-  if (!syncActive(app)) return null;
-  const byLevel = levelSyncOn(app),
+  if (!syncSettings(app).sync) return null;
+  const byLevel = levelSyncOn(app.jobCtx, app.level),
     top = byLevel ? capCeiling(app.level) : MAX_REAL;
   if (app.cap <= top) return null;
   const lowered = { from: app.cap, to: top, level: byLevel ? app.level : null };
@@ -265,7 +224,7 @@ export function restoreState(raw) {
   s.opt.target = oneOf(o.target, job.stats, s.opt.target);
   s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
   s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
-  // a goal saved before a stat could hold only one rank: a repeat of a rank above is cleared (views/ranks.js)
+  // a goal saved before a stat could hold only one rank: a repeat of a rank above is cleared (ui/ranks.js)
   [s.opt.target, s.opt.tb, s.opt.tb2] = uniqueRanks([s.opt.target, s.opt.tb, s.opt.tb2]).map(r => r ?? '');
   s.opt.melds = bool(o.melds, s.opt.melds);
   s.opt.food = bool(o.food, s.opt.food);

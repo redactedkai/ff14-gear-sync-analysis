@@ -17,7 +17,7 @@ import {
   poolKey,
 } from '../../src/core/items.js';
 import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, EXPANSIONS, ROW } from '../../src/core/constants.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { ITEMS, MATERIA } from '../../src/core/tables.js';
 import { itemRow } from './helpers/common.js';
 
