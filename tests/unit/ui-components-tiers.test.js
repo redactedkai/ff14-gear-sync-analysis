@@ -7,6 +7,7 @@ import { statBase } from '../../src/core/food.js';
 import { tierControls, tierTable } from '../../src/ui/components/tiers.js';
 import { restoreState } from '../../src/ui/state.js';
 import { createAppStore } from '../../src/ui/store.js';
+import { watched } from './helpers/common.js';
 
 /* A component bound to the store of `saved`, as Alpine binds it ($store.app). */
 function bound(members, saved) {
@@ -46,26 +47,6 @@ test('tiers table: each value starts at its base; a typed or clicked value is ke
   app.setJob('WHM');
   assert.equal(card(c.view, 'crit').value, statBase(app.jobCtx, 'crit', 50));
 });
-
-/* Runs the component's init() with a $watch that, like Alpine's, calls back when a watched property's value changes;
-   returns settle(), which delivers the changes made since the last call (Alpine does this after each change). */
-function watched(c) {
-  const checks = [];
-  c.$watch = (prop, callback) => {
-    let last = c[prop];
-    checks.push(() => {
-      const now = c[prop];
-      if (now === last) return;
-      const before = last;
-      last = now;
-      callback(now, before);
-    });
-  };
-  c.init?.();
-  return () => {
-    for (const check of checks) check();
-  };
-}
 
 /* Found by wave C (2026-10-19): values typed at one level were only hidden while the level differed, so going back to
    it brought them back (if nothing was typed in between). The comment above tierTable says they are dropped. */
