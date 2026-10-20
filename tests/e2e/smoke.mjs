@@ -890,6 +890,28 @@ async function checkTargetGcd(pg) {
   await pg.screenshot({ path: shot('target-gcd.png'), fullPage: true });
 }
 
+/** One Gear to search request per settings change, none per result (audit 2, finding 01-1: the line's throttled effect
+ * tracked the component's own result, so each Optimize result asked the worker once more). Counts the requests the page
+ * posts to the solver worker. */
+async function checkGearToSearchRequests(pg) {
+  await waitOptimizer(pg); // the worker has the job's gear
+  await pg.evaluate(() => {
+    window.gearToSearchPosts = 0;
+    const post = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (message, ...rest) {
+      if (message?.kind === 'gearToSearch') window.gearToSearchPosts++;
+      return post.call(this, message, ...rest);
+    };
+  });
+  await pg.selectOption('#o-target', 'det');
+  await pg.waitForFunction(() => window.gearToSearchPosts === 1);
+  await waitOptimizer(pg);
+  await pg.waitForTimeout(500); // longer than the line's throttle: a request the result caused would be posted by now
+  const posts = await pg.evaluate(() => window.gearToSearchPosts);
+  check(posts === 1, `${posts} Gear to search requests for one settings change and one Optimize, not 1`);
+  await pg.selectOption('#o-target', 'main');
+}
+
 /** Cancel stops a running search (ui/solver.js workerSolver cancel): a long one (Warrior, level 100, Target GCD 2.30
  * with food and two tiebreaks, about 1.3 s) cancelled at 300 ms ends its worker, and the next search does not wait
  * for it. The time from Cancel to the next result goes to stderr with SMOKE_TRACE. */
@@ -1622,7 +1644,7 @@ const GROUPS = [
   { slow: true, steps: [step(checkOptFilters)] },
   { slow: true, steps: [step(checkMelds), step(checkFood), step(checkRankByTier)] },
   { slow: true, steps: [step(checkTargetGcd)] },
-  { slow: true, steps: [step(checkCancel)] },
+  { slow: true, steps: [step(checkGearToSearchRequests), step(checkCancel)] },
   { slow: true, steps: [step(checkExpansionFilter), step(checkReset)] },
   { slow: true, steps: [step(checkReloadPersists)] },
   { slow: true, steps: [step(checkCorruptedStorage)] },

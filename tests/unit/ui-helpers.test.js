@@ -1,9 +1,10 @@
 /* The page's presentation helpers (src/ui/helpers.js): the number boxes (numberField, the $num magic: what a box commits
-   on Enter or leaving it, for each of its options, and after typing stops), the debounced effect, counts in en-US
+   on Enter or leaving it, for each of its options, and after typing stops), the throttled effect, counts in en-US
    numbers (fmtInt), and the members the components share for the "Gear from" and Expansion filters, bound to a plain
    store as Alpine binds them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { effect, reactive } from '@vue/reactivity';
 import { ACTIVITIES, EXPANSIONS } from '../../src/core/constants.js';
 import { CURRENT_TOMES, MAX_LEVEL } from '../../src/core/tables.js';
 import {
@@ -261,10 +262,46 @@ test('throttledEffect: inputs read at once; the expensive part runs at most once
   assert.ok(runs.length <= 4, `at most one run per 120 ms: ${runs}`);
   t.mock.timers.tick(120);
   assert.equal(runs.at(-1), 7); // the last change always runs
-  // after a rest, a change runs at once
+  // after a rest, a change runs next, from a timer of 0 ms (never inside the effect)
   t.mock.timers.tick(500);
   rerun();
+  assert.equal(runs.at(-1), 7);
+  t.mock.timers.tick(0);
   assert.equal(runs.at(-1), 8);
+});
+
+/* Audit 2, finding 01-1: after a rest, the expensive part ran inside the effect, so the effect tracked what it read
+   (the optimizer's own view), and each search result sent one more Gear to search request. Alpine's own reactivity
+   (@vue/reactivity, installed with alpinejs) shows what an effect tracks; the hand-made stand-ins above cannot. */
+test('throttledEffect: what the expensive part reads is not tracked; only the inputs compute reads rerun it', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const settings = reactive({ level: 100 });
+  const component = reactive({ view: null });
+  let computes = 0;
+  let runs = 0;
+  throttledEffect(
+    { effect },
+    () => {
+      computes++;
+      settings.level;
+      return () => {
+        runs++;
+        component.view; // read, as the optimizer's run reads its view
+      };
+    },
+    20,
+  );
+  t.mock.timers.tick(20);
+  assert.deepEqual([computes, runs], [1, 1]);
+  // a setting changed after a rest: one run
+  t.mock.timers.tick(100);
+  settings.level = 90;
+  t.mock.timers.tick(0);
+  assert.deepEqual([computes, runs], [2, 2]);
+  // the component's own state changes (a search result arrives): no rerun
+  component.view = { kind: 'ok' };
+  t.mock.timers.tick(100);
+  assert.deepEqual([computes, runs], [2, 2]);
 });
 
 test('Gear from button text: All, None, All but N up to five left out, then N of M; the market board only when off', () => {

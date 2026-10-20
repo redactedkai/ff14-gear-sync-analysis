@@ -109,7 +109,9 @@ export function deepFreeze(value) {
 /* Run `compute` now and whenever the reactive values it reads change; the expensive part it returns runs at most once
    per `ms`, during a burst of changes as well as after it: scrolling through a number box moves the Target GCD range
    with it instead of only when the scrolling stops (owner, 2026-10-19). The first run waits `ms` too, so first paint
-   does not. Used by the optimizer's Gear to search line. `alpine`: Alpine, or what a test passes for its effect. */
+   does not. The expensive part always runs from a timer, never inside the effect, so nothing it reads is tracked: a
+   value it sets (the component's own state) does not rerun the effect. Used by the optimizer's Gear to search line.
+   `alpine`: Alpine, or what a test passes for its effect. */
 export function throttledEffect(alpine, compute, ms) {
   let timer = null;
   let pending = null;
@@ -124,9 +126,8 @@ export function throttledEffect(alpine, compute, ms) {
   alpine.effect(() => {
     pending = compute(); // reads (and so tracks) dependencies synchronously
     if (timer) return; // a run is already due; it takes the latest inputs
-    const wait = lastRun + ms - Date.now();
-    if (wait <= 0) fire();
-    else timer = setTimeout(fire, wait);
+    // after a rest the wait is 0: the run comes next, still outside the effect
+    timer = setTimeout(fire, Math.max(0, lastRun + ms - Date.now()));
   });
 }
 
