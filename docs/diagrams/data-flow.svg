@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 620" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 692" role="img" aria-labelledby="t d">
   <title id="t">Data pipeline: from the game client to the page</title>
-  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the twenty CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,031 rows, item level 15 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
+  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the twenty CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,031 rows, item level 15 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). A fifth generator, in Node, runs the optimizer on the item, item level and food files and writes a fifth file: the most speed any job can have at each level from 1 to 100. Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -38,7 +38,7 @@
       <path d="M0,0 L10,5 L0,10 z" class="headg"/>
     </marker>
   </defs>
-  <rect class="bg" x="0" y="0" width="720" height="620"/>
+  <rect class="bg" x="0" y="0" width="720" height="692"/>
 
   <!-- Row 1: source and fetch -->
   <rect class="box" x="20" y="30" width="200" height="72" rx="8"/>
@@ -60,7 +60,7 @@
   <line class="flow" x1="460" y1="66" x2="498" y2="66" marker-end="url(#arrow)"/>
   <line class="flow" x1="600" y1="102" x2="600" y2="140" marker-end="url(#arrow)"/>
 
-  <!-- Row 2: shared format and the four generators -->
+  <!-- Row 2: shared format and the five generators -->
   <rect class="fmt" x="20" y="150" width="200" height="124" rx="8"/>
   <text class="gold t" x="120" y="177" text-anchor="middle">Shared format</text>
   <text class="muted s" x="120" y="198" text-anchor="middle">job, stat and slot orders,</text>
@@ -70,8 +70,8 @@
 
   <line class="read" x1="220" y1="212" x2="258" y2="212" marker-end="url(#arrowg)"/>
 
-  <rect class="frame" x="260" y="142" width="440" height="140" rx="8"/>
-  <text class="fg t" x="276" y="165">Generators (Python)</text>
+  <rect class="frame" x="260" y="142" width="440" height="190" rx="8"/>
+  <text class="fg t" x="276" y="165">Generators (four Python, one Node)</text>
   <rect class="box" x="276" y="176" width="196" height="44" rx="8"/>
   <text class="fg t" x="374" y="195" text-anchor="middle">Item database</text>
   <text class="muted s" x="374" y="211" text-anchor="middle">Item, slots, jobs, shops, materia</text>
@@ -84,48 +84,58 @@
   <rect class="box" x="488" y="226" width="196" height="44" rx="8"/>
   <text class="fg t" x="586" y="245" text-anchor="middle">Job icons</text>
   <text class="muted s" x="586" y="261" text-anchor="middle">checks 23 PNGs, 64 × 64</text>
+  <rect class="box" x="276" y="276" width="408" height="44" rx="8"/>
+  <text class="fg t" x="480" y="295" text-anchor="middle">Most speed per level (Node, runs last)</text>
+  <text class="muted s" x="480" y="311" text-anchor="middle">runs the optimizer on the item, item level and food files</text>
 
-  <line class="flow" x1="480" y1="282" x2="480" y2="318" marker-end="url(#arrow)"/>
+  <line class="flow" x1="480" y1="332" x2="480" y2="368" marker-end="url(#arrow)"/>
 
-  <!-- Row 3: the four generated files -->
-  <rect class="frame" x="20" y="320" width="680" height="128" rx="8"/>
-  <text class="fg t" x="36" y="343">Generated files (never edited by hand)</text>
-  <rect class="box" x="36" y="356" width="150" height="76" rx="8"/>
-  <text class="fg t" x="111" y="379" text-anchor="middle">Item database</text>
-  <text class="muted s" x="111" y="399" text-anchor="middle">20,031 rows</text>
-  <text class="muted s" x="111" y="415" text-anchor="middle">item level 15 to 795</text>
-  <rect class="box" x="202" y="356" width="150" height="76" rx="8"/>
-  <text class="fg t" x="277" y="379" text-anchor="middle">Item level table</text>
-  <text class="muted s" x="277" y="399" text-anchor="middle">budgets, 0 to 920</text>
-  <text class="muted s" x="277" y="415" text-anchor="middle">levels 1 to 100, factors</text>
-  <rect class="box" x="368" y="356" width="150" height="76" rx="8"/>
-  <text class="fg t" x="443" y="379" text-anchor="middle">Food table</text>
-  <text class="muted s" x="443" y="399" text-anchor="middle">296 meals</text>
-  <rect class="box" x="534" y="356" width="150" height="76" rx="8"/>
-  <text class="fg t" x="609" y="379" text-anchor="middle">Job icons</text>
-  <text class="muted s" x="609" y="399" text-anchor="middle">23 PNGs</text>
-  <text class="muted s" x="609" y="415" text-anchor="middle">as data URLs</text>
+  <!-- Row 3: the five generated files -->
+  <rect class="frame" x="20" y="370" width="680" height="150" rx="8"/>
+  <text class="fg t" x="36" y="393">Generated files (never edited by hand)</text>
+  <rect class="box" x="36" y="406" width="120" height="98" rx="8"/>
+  <text class="fg t" x="96" y="429" text-anchor="middle">Item database</text>
+  <text class="muted s" x="96" y="449" text-anchor="middle">20,031 rows</text>
+  <text class="muted s" x="96" y="465" text-anchor="middle">item level</text>
+  <text class="muted s" x="96" y="481" text-anchor="middle">15 to 795</text>
+  <rect class="box" x="168" y="406" width="120" height="98" rx="8"/>
+  <text class="fg t" x="228" y="429" text-anchor="middle">Item levels</text>
+  <text class="muted s" x="228" y="449" text-anchor="middle">budgets, 0 to 920</text>
+  <text class="muted s" x="228" y="465" text-anchor="middle">levels 1 to 100</text>
+  <text class="muted s" x="228" y="481" text-anchor="middle">stat factors</text>
+  <rect class="box" x="300" y="406" width="120" height="98" rx="8"/>
+  <text class="fg t" x="360" y="429" text-anchor="middle">Food table</text>
+  <text class="muted s" x="360" y="449" text-anchor="middle">296 meals</text>
+  <rect class="box" x="432" y="406" width="120" height="98" rx="8"/>
+  <text class="fg t" x="492" y="429" text-anchor="middle">Job icons</text>
+  <text class="muted s" x="492" y="449" text-anchor="middle">23 PNGs</text>
+  <text class="muted s" x="492" y="465" text-anchor="middle">as data URLs</text>
+  <rect class="box" x="564" y="406" width="120" height="98" rx="8"/>
+  <text class="fg t" x="624" y="429" text-anchor="middle">Most speed</text>
+  <text class="muted s" x="624" y="449" text-anchor="middle">one number</text>
+  <text class="muted s" x="624" y="465" text-anchor="middle">per level,</text>
+  <text class="muted s" x="624" y="481" text-anchor="middle">1 to 100</text>
 
   <!-- Row 4: bundle and browser -->
-  <line class="flow" x1="360" y1="448" x2="360" y2="494" marker-end="url(#arrow)"/>
-  <path class="read" d="M20,262 H8 V532 H258" marker-end="url(#arrowg)"/>
-  <text class="muted s" x="20" y="524">page code reads the format</text>
+  <line class="flow" x1="360" y1="520" x2="360" y2="566" marker-end="url(#arrow)"/>
+  <path class="read" d="M20,262 H8 V604 H258" marker-end="url(#arrowg)"/>
+  <text class="muted s" x="20" y="596">page code reads the format</text>
 
-  <rect class="box" x="260" y="496" width="200" height="72" rx="8"/>
-  <text class="fg t" x="360" y="523" text-anchor="middle">Page bundle (esbuild)</text>
-  <text class="muted s" x="360" y="542" text-anchor="middle">code, styles, data inlined</text>
-  <text class="muted s" x="360" y="558" text-anchor="middle">one HTML file</text>
+  <rect class="box" x="260" y="568" width="200" height="72" rx="8"/>
+  <text class="fg t" x="360" y="595" text-anchor="middle">Page bundle (esbuild)</text>
+  <text class="muted s" x="360" y="614" text-anchor="middle">code, styles, data inlined</text>
+  <text class="muted s" x="360" y="630" text-anchor="middle">one HTML file</text>
 
-  <line class="flow" x1="460" y1="532" x2="498" y2="532" marker-end="url(#arrow)"/>
+  <line class="flow" x1="460" y1="604" x2="498" y2="604" marker-end="url(#arrow)"/>
 
-  <rect class="box" x="500" y="496" width="200" height="72" rx="8"/>
-  <text class="fg t" x="600" y="523" text-anchor="middle">Browser</text>
-  <text class="muted s" x="600" y="542" text-anchor="middle">opens from disk, no server</text>
-  <text class="muted s" x="600" y="558" text-anchor="middle">footer names the source commit</text>
+  <rect class="box" x="500" y="568" width="200" height="72" rx="8"/>
+  <text class="fg t" x="600" y="595" text-anchor="middle">Browser</text>
+  <text class="muted s" x="600" y="614" text-anchor="middle">opens from disk, no server</text>
+  <text class="muted s" x="600" y="630" text-anchor="middle">footer names the source commit</text>
 
   <!-- legend -->
-  <line class="flow" x1="20" y1="598" x2="52" y2="598"/>
-  <text class="muted s" x="60" y="602">data flow</text>
-  <line class="read" x1="150" y1="598" x2="182" y2="598"/>
-  <text class="muted s" x="190" y="602">reads the shared format</text>
+  <line class="flow" x1="20" y1="670" x2="52" y2="670"/>
+  <text class="muted s" x="60" y="674">data flow</text>
+  <line class="read" x1="150" y1="670" x2="182" y2="670"/>
+  <text class="muted s" x="190" y="674">reads the shared format</text>
 </svg>
