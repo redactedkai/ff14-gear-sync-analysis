@@ -17,6 +17,7 @@ import {
   gearFromToggles,
   numberField,
   storeNumberField,
+  viewCache,
 } from '../../src/ui/helpers.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 
@@ -184,6 +185,30 @@ test('store number box: reads and writes the setting at its dotted path, an out-
   store.piece = { ilvl: 1 };
   ilvl['@change']({ target: { value: '300' } });
   assert.equal(store.piece.ilvl, 300);
+});
+
+test('viewCache: a view is built once per key; last() is the last one built, null before any', () => {
+  const views = viewCache();
+  let builds = 0;
+  const build = value => () => {
+    builds++;
+    return { value };
+  };
+  assert.equal(views.last(), null);
+  const a = views.get('a', build(1));
+  assert.equal(views.get('a', build(2)), a);
+  assert.equal(builds, 1);
+  const b = views.get('b', build(3));
+  assert.deepEqual([b.value, views.last()], [3, b]);
+  assert.notEqual(views.get('a', build(4)), a, 'only the last key is kept');
+  // a view of null counts as built
+  const none = () => {
+    builds++;
+    return null;
+  };
+  views.get('none', none);
+  views.get('none', none);
+  assert.equal(builds, 4);
 });
 
 test('debouncedEffect: the inputs are read at once, the expensive part runs once the effect rests', t => {
