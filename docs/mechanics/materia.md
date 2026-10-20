@@ -155,6 +155,7 @@ Notes: HQ (high quality) and NQ (normal quality) are the two versions of a craft
 | Concept | File |
 | --- | --- |
 | Stones by item level, slots, best melds, meld text | `src/core/meld.js` (`stoneValues`, `meldSlots`, `bestMeld`, `meldText`) |
+| A given list of stones on a piece, by the same rules (a set built by hand) | `src/core/meld.js` (`applyStones`; `meldStones` turns a best meld into that list) |
 | A piece's own caps; sync removing melds | `src/core/piece.js` (`meldCaps`, `keepsMelds`) |
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.js` (`meldInfo`), `src/core/tables.js` (`MATERIA`) |
 | Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |

@@ -1,5 +1,7 @@
-/* Materia melds: the best stones a piece can take for an objective. Pure; never reads sync state (whether a piece keeps
-   its melds is the optimizer's call, itemSyncIlvl). Rules, sources and the exactness argument: docs/mechanics/materia.md.
+/* Materia melds: the best stones a piece can take for an objective (bestMeld, meldVersions, for the optimizer), and what
+   a given list of stones does to a piece (applyStones, for a set built by hand). Both go by the same rules, written once
+   below (gradeFits, highGrade, meldableStat, roomUnderCap, meldSlots). Whether a piece keeps its melds under sync is
+   keepsMelds in piece.js. Rules, sources and the exactness argument: docs/mechanics/materia.md.
    - A grade fits gear whose item level is at least its gate (MATERIA.gate). The best "big" stone is the most valuable
      grade the gate allows; the best "small" stone the most valuable grade that is not high (MATERIA.high: VI, VIII, X,
      XII cannot go past the first overmeld slot). Values are not in grade order (VI 16, VII 8).
@@ -16,12 +18,32 @@
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
 import { MATERIA } from './tables.js';
 import { meldInfo } from './items.js';
-import { meldCaps } from './piece.js';
-
-/* The cap of each stat on a piece at its own item level: piece.js, exported here too, beside the rules it bounds. */
-export { meldCaps };
+import { effStats, keepsMelds, meldCaps } from './piece.js';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+/* True when a stone of grade `grade` (1-based) fits gear of item level `ilvl`: the item level is at least the grade's
+   gate (MATERIA.gate). False for a grade that does not exist. */
+function gradeFits(grade, ilvl) {
+  return Number.isInteger(grade) && grade >= 1 && grade <= MATERIA.gate.length && MATERIA.gate[grade - 1] <= ilvl;
+}
+
+/* True for a high grade (MATERIA.high: VI, VIII, X, XII): only a big slot takes it, never an overmeld slot after the
+   first. */
+function highGrade(grade) {
+  return MATERIA.high.includes(grade);
+}
+
+/* True when `stat` (a neutral key) can be melded for the job: a combat substat, never the main stat or Vitality. */
+function meldableStat(job, stat) {
+  return job.substats.includes(stat);
+}
+
+/* How far melds can raise `stat` on `item`: its room under the piece's own cap (`caps`, meldCaps), 0 when the stat is
+   already at or above it (a meld never lowers a stat). */
+function roomUnderCap(caps, item, stat) {
+  return Math.max(0, caps[stat] - (item.stats[stat] || 0));
+}
 
 /* The best big and small stone for gear of item level `ilvl`: {big, small}, each {grade, value} (grade 1-based) or null
    when no grade fits (below item level 15). */
@@ -30,9 +52,9 @@ export function stoneValues(ilvl) {
     small = null;
   MATERIA.values.forEach((value, i) => {
     const grade = i + 1;
-    if (MATERIA.gate[i] > ilvl) return;
+    if (!gradeFits(grade, ilvl)) return;
     if (!big || value > big.value) big = { grade, value };
-    if (!MATERIA.high.includes(grade) && (!small || value > small.value)) small = { grade, value };
+    if (!highGrade(grade) && (!small || value > small.value)) small = { grade, value };
   });
   return { big, small };
 }
@@ -78,7 +100,7 @@ export function meldCacheStats() {
 function meldSetup(job, item, keys) {
   const { big: nBig, small: nSmall } = meldSlots(item);
   if (!nBig) return null;
-  const meldable = [...new Set(keys)].filter(k => job.substats.includes(k));
+  const meldable = [...new Set(keys)].filter(k => meldableStat(job, k));
   if (!meldable.length) return null;
   const { big: hi, small: lo } = stoneValues(item.ilvl);
   if (!hi) return null;
@@ -90,7 +112,7 @@ function meldSetup(job, item, keys) {
 
   const most = nHi * hi.value + (oneGrade ? 0 : nSmall * lo.value);
   const caps = meldCaps(job, item);
-  const headroom = meldable.map(s => Math.min(most, Math.max(0, caps[s] - (item.stats[s] || 0))));
+  const headroom = meldable.map(s => Math.min(most, roomUnderCap(caps, item, s)));
   return { nBig, nSmall, nHi, nLo, hi, lo: oneGrade ? hi : lo, oneGrade, meldable, headroom };
 }
 
@@ -203,6 +225,84 @@ function meldFromPlacement(m, p) {
   });
   // hi stones first: they fit only the first slots
   return { gain, stones: [...hiStones, ...loStones], free: m.nBig + m.nSmall - p.stones };
+}
+
+/* A bestMeld result as one entry per meld slot of `item`, in slot order: {stat, grade} for a stone, null for an empty
+   slot; [] for no melds (meld null), as a set's pieces keep them (set.js). applyStones of the list gives the meld back. */
+export function meldStones(item, meld) {
+  if (!meld) return [];
+  const { big, small } = meldSlots(item);
+  const out = meld.stones.flatMap(x => Array.from({ length: x.n }, () => ({ stat: x.stat, grade: x.grade })));
+  while (out.length < big + small) out.push(null);
+  return out;
+}
+
+/* What a list of stones does to a pool item under sync, by the rules the optimizer melds by.
+   `stones`: one entry per meld slot, in slot order: {stat (neutral key), grade (1-12)} or null for an empty slot; [] for
+   a piece without melds. sync: {cap, sync, level}, as for itemSyncIlvl.
+   Returns {stats, gain, lost, removed, meld}:
+   - stats: {stat: points} for each of the job's stats, after sync and the stones that stay;
+   - gain: {stat: points} the stones add; lost: {stat: points} of their value past the piece's cap (only stats that
+     lose some);
+   - removed: [{slot, stone, reason}] for each stone that does not stay. reason: 'sync' (a synced piece keeps no melds),
+     'slot' (the piece has no such slot), 'stat' (not a meldable substat), 'gate' (no such grade, or the item level is
+     below its gate), 'high' (a high grade past the big slots), 'order' (after an empty slot: slots fill in order);
+   - meld: the stones that stay in bestMeld's shape ({gain, stones: [{stat, grade, n}], free}; meldText shows it), or
+     null with no melds: an empty list, a piece that takes no stones, or a synced piece.
+   Every stone that stays adds its full value, cut once per stat at the room under the cap (roomUnderCap): the cap
+   applies to the sum, so the order of the stones changes nothing. */
+export function applyStones(job, item, stones, sync) {
+  const synced = effStats(job, item, sync);
+  const keeps = keepsMelds(item, sync);
+  const { big, small } = meldSlots(item);
+
+  // 1. each stone stays or is removed, slot by slot
+  const kept = [];
+  const removed = [];
+  let gap = false;
+  stones.forEach((stone, slot) => {
+    if (!stone) {
+      gap = true;
+      return;
+    }
+    let reason = null;
+    if (!keeps) reason = 'sync';
+    else if (slot >= big + small) reason = 'slot';
+    else if (!meldableStat(job, stone.stat)) reason = 'stat';
+    else if (!gradeFits(stone.grade, item.ilvl)) reason = 'gate';
+    else if (highGrade(stone.grade) && slot >= big) reason = 'high';
+    else if (gap) reason = 'order';
+    if (reason) {
+      removed.push({ slot, stone, reason });
+      gap = true;
+    } else kept.push(stone);
+  });
+
+  // 2. each stat gains its stones' value, cut at its room under the piece's cap
+  const added = {};
+  for (const x of kept) added[x.stat] = (added[x.stat] || 0) + MATERIA.values[x.grade - 1];
+  const caps = meldCaps(job, item);
+  const gain = {},
+    lost = {};
+  for (const [stat, value] of Object.entries(added)) {
+    const room = roomUnderCap(caps, item, stat);
+    if (Math.min(room, value)) gain[stat] = Math.min(room, value);
+    if (value > room) lost[stat] = value - room;
+  }
+  const stats = Object.fromEntries(job.stats.map(s => [s, (synced[s] || 0) + (gain[s] || 0)]));
+
+  // 3. the stones that stay, grouped as bestMeld groups them (a run of one stat and grade), for meldText
+  let meld = null;
+  if (keeps && big + small && stones.length) {
+    const groups = [];
+    for (const x of kept) {
+      const last = groups.at(-1);
+      if (last && last.stat === x.stat && last.grade === x.grade) last.n++;
+      else groups.push({ stat: x.stat, grade: x.grade, n: 1 });
+    }
+    meld = { gain, stones: groups, free: big + small - kept.length };
+  }
+  return { stats, gain, lost, removed, meld };
 }
 
 /* "CRT XII, DET XII, CRT XI, DET XI ×2" in slot order (+ ", 3 slots empty" when stones would add nothing). */

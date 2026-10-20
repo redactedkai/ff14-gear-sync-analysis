@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../src/core/items.js';
 import { MATERIA } from '../../src/core/tables.js';
-import { bestMeld, meldCaps, meldSlots, meldText, meldVersions, stoneValues } from '../../src/core/meld.js';
+import { bestMeld, meldSlots, meldText, meldVersions, stoneValues } from '../../src/core/meld.js';
+import { meldCaps } from '../../src/core/piece.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { piece } from './helpers/common.js';
 
