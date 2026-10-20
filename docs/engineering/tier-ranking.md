@@ -4,6 +4,8 @@ How the optimizer ranks gear sets by the **tiers** of the target and tiebreak st
 
 Related pages: [optimizer.md](optimizer.md) (the model and the search this builds on), [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers) (tiers, speed and food), [materia.md](../mechanics/materia.md) (melds), [glossary.md](../glossary.md).
 
+**Other tools (2026-10-16).** None of the tools checked ranks gear by tiers across stats: xivgear and Etro show a stat's tier (points spare, points to the next), xivgear and ffxivcalc rank by a damage simulation, Ariyala's solver and the KaneTW solver by linear stat weights (KaneTW adds speed tiers only, behind a flag it warns is slow), and ffxiv-gearing by a Determination and Direct Hit expectation.
+
 ## 1. The problem
 
 What does "rank by tiers" mean, and why is it a different objective from the plain optimizer's?
@@ -297,6 +299,8 @@ Notes:
 | A seed that breaks a limit is ignored | **Verified** | A test |
 | The tier formulas; the food formula | **Community reference** (tiers) / **verified** in a synced duty (food) | As in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers) |
 
+**What tier ranking changes (2026-10-18 sweep, 1,560 cases where both rankings found a set: 13 sync settings, each with no Target GCD, exactly and or faster).** The two rankings return different sets in 709 cases (45%). In every one of them tier ranking reaches the same or more tiers of the goal (685 more, 24 the same), and raw ranking the same or more raw points (692 more), as the definitions require. On a simple damage estimate outside the tool (the tool has no damage model), neither ranking is better: tier ranking's set was ahead in 335 cases and behind in 289 (medians +0.21% and -0.29%), and behind in 57 of the 69 cases at level 100, item level 123. Tier ranking answers "the most tiers of the goal, in order", not "the most damage".
+
 ## 8. Performance
 
 How long does a full tier ranking take, and how much did sections 4 and 5 save?
@@ -399,6 +403,7 @@ Raw and tier ranking, each run, on `dev` at `ef9575a`, with the item data as of 
 ## 9. Known limits
 
 - **Searches that stop early.** A few cases still reach the node limit; they return the seed or better, marked as possibly not the best, like any truncated result.
+  - A stopped search can return a lower tier than the finished one: Black Mage at level 100, item level 400, 2.44 or faster, Critical Hit > Determination > Direct Hit, food off, stopped at Direct Hit 12 (tier 2); with no node limit it finishes at 16 (tier 3) after 2,630,216 nodes (14 s), measured 2026-10-18.
   - In the 2026-10-17 sweeps (section 8), 4 of 5,028 (merged code) and 4 of 17,648 (prototype; 138 before the 2026-10-17 changes): White Mage and Sage at level 100, item level 690, Piety > Critical Hit > Determination, GCD 2.29.
   - In the 2026-10-18 sweep of every job (section 8), 66 of 71,264, all at level 100: 46 at item level 400, mostly damage dealers with Determination or Critical Hit first, all food off; 8 at item level 123, White Mage and Sage with Piety > Determination > Direct Hit (the slowest runs, up to 38 s); 8 at 530; and the 4 cases at 690. Why item levels 400 and 123 are this hard is **open** (under investigation).
   - Before the regain cuts (2026-10-16): of 264 runs near the White Mage case (Scholar, Astrologian and Sage with food, White Mage without; GCDs 2.30 to 2.40; six goals), 14 stopped early. In each one checked (five), the seed already was the best; the search could not prove it. Finished with no node limit they took 1.1 to 11.8 million nodes (White Mage, exactly 2.31, Piety > Determination > Direct Hit, food off: 11.8 million, 78 s, to show Direct Hit cannot leave 0).
