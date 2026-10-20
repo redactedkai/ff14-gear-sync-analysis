@@ -9,7 +9,8 @@ import { JOBS } from '../../src/core/constants.js';
 import { capCeiling, levelSyncIlvl, syncTarget } from '../../src/core/sync-target.js';
 import { capsFor } from '../../src/core/formulas.js';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../src/core/items.js';
-import { effStats, itemSyncIlvl, optimize } from '../../src/core/optimizer/index.js';
+import { optimize } from '../../src/core/optimizer/index.js';
+import { effStats, itemSyncIlvl } from '../../src/core/piece.js';
 import { exhaustive, gamePool, loadoutCount } from './helpers/exhaustive.js';
 import { SLOT_PERMILLE, roundHalfUp } from './helpers/common.js';
 

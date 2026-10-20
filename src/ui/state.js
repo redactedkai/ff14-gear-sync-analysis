@@ -32,7 +32,7 @@ export function gearFilter(f) {
   return { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 };
 }
 
-/* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/optimizer/candidates.js). */
+/* The sync settings the core takes: {cap, sync, level} (itemSyncIlvl in core/piece.js). */
 export function syncSettings(app) {
   return { cap: app.cap, sync: syncActive(app), level: app.level ?? null };
 }

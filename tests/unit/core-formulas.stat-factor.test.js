@@ -8,7 +8,7 @@ import { ALL_JOBS_ACCESSORY_FACTORS, JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } 
 import { makeJobContext } from '../../src/core/job-context.js';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../src/core/formulas.js';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../src/core/items.js';
-import { effStats } from '../../src/core/optimizer/index.js';
+import { effStats } from '../../src/core/piece.js';
 import { gearView } from '../../src/ui/views/gear.js';
 import { MODEL_MIN_ILVL } from '../../src/core/validation.js';
 import { appState, itemRow, roundHalfUp } from './helpers/common.js';

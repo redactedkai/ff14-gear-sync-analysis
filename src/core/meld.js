@@ -15,8 +15,11 @@
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
 import { MATERIA } from './tables.js';
-import { capsFor } from './formulas.js';
-import { meldInfo, slotInfo } from './items.js';
+import { meldInfo } from './items.js';
+import { meldCaps } from './piece.js';
+
+/* The cap of each stat on a piece at its own item level: piece.js, exported here too, beside the rules it bounds. */
+export { meldCaps };
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
@@ -42,24 +45,6 @@ export function meldSlots(item) {
   // with overmelding: the guaranteed slots and the first overmeld slot take big stones, the rest of the 5 small ones
   const big = Math.min(5, m.slots + 1);
   return { big, small: 5 - big };
-}
-
-/* The cap of each stat on this piece, at its own item level, slot share and stat factors. Cached per item and job: the
-   optimizer asks for every piece on every run. */
-const capCache = new WeakMap();
-export function meldCaps(job, item) {
-  let byJob = capCache.get(item);
-  if (!byJob) {
-    byJob = new Map();
-    capCache.set(item, byJob);
-  }
-  let c = byJob.get(job);
-  if (!c) {
-    const s = slotInfo(job, item);
-    c = capsFor(job, item.type, item.ilvl, s.pct, s.factors);
-    byJob.set(job, c);
-  }
-  return c;
 }
 
 /* Every way to share `n` identical stones among `k` buckets, as count arrays (cached: n <= 5, k <= 4). */

@@ -3,7 +3,7 @@
 import { SLOT_TYPES } from '../../../src/core/constants.js';
 import { capsFor } from '../../../src/core/formulas.js';
 import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
-import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/index.js';
+import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { weaponDamage } from '../../../src/core/damage-defense.js';
 import { statBase } from '../../../src/core/food.js';
 import { MATERIA } from '../../../src/core/tables.js';

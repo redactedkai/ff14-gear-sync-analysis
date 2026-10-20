@@ -9,8 +9,7 @@
    - Among meals the winner has the highest totals with food on weapon damage (ranked first, rankedKeys), the target and
      tiebreaks, then the most food points, then the first in the job's food choices (pickMeal in food.js, as bestFood). */
 import { gearNeeded, mealsFor, mealTotals, pickMeal } from './food.js';
-import { prepare, solve } from './optimizer/index.js';
-import { rankedKeys } from './optimizer/candidates.js';
+import { prepare, rankedKeys, solve } from './optimizer/index.js';
 import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
 
 /**

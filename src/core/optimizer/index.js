@@ -5,7 +5,10 @@ import { buildCandidates } from './candidates.js';
 import { branchAndBound } from './search.js';
 import { SLOT_TYPES } from '../constants.js';
 
-export { effStats, itemCaps, itemSyncIlvl } from './candidates.js';
+/* The optimizer's other entry points for the modules built on it (same-result.js, target-gcd.js, tier-rank.js, the
+   optimizer view): every candidate unpruned (buildCandidates), the dimensions a candidate tracks (vectorDims) and the
+   keys a score ranks (rankedKeys). A piece under sync (itemSyncIlvl, effStats, itemCaps) is core/piece.js. */
+export { buildCandidates, rankedKeys, vectorDims } from './candidates.js';
 
 /* The speed rule of search options {spdMin, spdMax}: the bounds (null for none; a minimum of 0 or less is none) and its
    kind, 'exact' with a maximum (a band), 'min' with a minimum only, null with neither. */
@@ -162,7 +165,7 @@ export function solve(prep, opts) {
 /**
  * @param job   JobContext
  * @param pool  pool items
- * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl)
+ * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl in piece.js)
  * @param opts  {target='main', tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false}: mins = {stat: gear
  *              points}, minimums on any stat's total; melds gives every piece that is not synced its best materia melds
  *              for the objective; with a speed range or minimums, every meld split worth keeping (meldVersions in

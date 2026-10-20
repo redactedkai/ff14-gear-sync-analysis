@@ -7,15 +7,8 @@ import { SLOT_TYPES } from '../../src/core/constants.js';
 import { WD_KEY, weaponDamage } from '../../src/core/damage-defense.js';
 import { slotInfo } from '../../src/core/items.js';
 import { bestMeld } from '../../src/core/meld.js';
-import {
-  buildCandidates,
-  effStats,
-  itemSyncIlvl,
-  makeScorer,
-  pruneDominated,
-  rankedKeys,
-  vectorDims,
-} from '../../src/core/optimizer/candidates.js';
+import { buildCandidates, makeScorer, pruneDominated, rankedKeys, vectorDims } from '../../src/core/optimizer/candidates.js';
+import { effStats, itemSyncIlvl } from '../../src/core/piece.js';
 import { branchAndBound } from '../../src/core/optimizer/search.js';
 import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
 import { flag, listOption, numberOption, option } from './args.mjs';

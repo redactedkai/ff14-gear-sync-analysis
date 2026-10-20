@@ -16,7 +16,7 @@
      unexplained: none of the above */
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.js';
-import { effStats, itemSyncIlvl } from '../../../src/core/optimizer/candidates.js';
+import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { DB_SLOT_PCT, DB_SLOT_TYPE, ROW } from '../../../src/core/constants.js';
 import { capValue } from '../../../src/core/formulas.js';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.js';

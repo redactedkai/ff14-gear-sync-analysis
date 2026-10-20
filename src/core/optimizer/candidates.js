@@ -15,42 +15,10 @@
              swap a ring for any of them, including those pruning dropped */
 import { SLOT_TYPES } from '../constants.js';
 import { WD_KEY, weaponDamage } from '../damage-defense.js';
-import { capsFor, syncStats } from '../formulas.js';
-import { equipLevel, meldInfo, scalesWithLevel, slotInfo } from '../items.js';
-import { bestMeld, meldCaps, meldVersions } from '../meld.js';
-import { syncTarget } from '../sync-target.js';
+import { meldInfo, slotInfo } from '../items.js';
+import { bestMeld, meldVersions } from '../meld.js';
+import { effStats, itemSyncIlvl, keepsMelds } from '../piece.js';
 import { blockableTypes, typeMask } from './slot-index.js';
-
-/* The item level a pool item is synced to, or null when it is untouched (syncTarget). sync = {cap, sync, level}: the
-   item level cap, whether item level sync is on (with a cap set), and the synced character level (null or missing: no
-   level sync). Only database pieces have an equip level (or scale with the level), so only they can be level-synced. */
-export function itemSyncIlvl(item, sync) {
-  return syncTarget({
-    itemLevel: item.ilvl,
-    equipLevel: equipLevel(item),
-    scales: scalesWithLevel(item),
-    syncOn: sync.sync,
-    cap: sync.cap,
-    syncedLevel: sync.level ?? null,
-  });
-}
-
-/* A pool item's stats after sync. A piece is capped by its own slot share and stat factors. */
-export function effStats(job, item, sync) {
-  const target = itemSyncIlvl(item, sync);
-  if (target == null) return item.stats;
-  const s = slotInfo(job, item);
-  return syncStats(job, item.stats, item.type, target, item.ilvl, s.pct, s.factors);
-}
-
-/* The most each stat on a pool item can be after sync and melds: the cap at the item level it is synced to, or, when it
-   is untouched, its own cap (the meld cap). For the page's "at cap" marks. */
-export function itemCaps(job, item, sync) {
-  const target = itemSyncIlvl(item, sync);
-  if (target == null) return meldCaps(job, item);
-  const s = slotInfo(job, item);
-  return capsFor(job, item.type, target, s.pct, s.factors);
-}
 
 /* The most keys of a goal: the target and two tiebreaks. Melds are chosen for these (weapon damage is no meld's). */
 const MAX_GOAL_KEYS = 3;
@@ -122,11 +90,11 @@ export function rankedKeys(job, target, tiebreak, weaponFirst = true) {
    its best melds for the objective (bestMeld), already added to the vector. One melded version per piece is exact:
    the loadout score is a sum of per-piece terms, and copies and blocked slots depend on the item, not on its melds, so
    giving every worn piece its own best melds never lowers a loadout (docs/engineering/optimizer.md, section 6). A synced piece
-   keeps no melds (verified in game by the owner). */
+   keeps no melds (keepsMelds in piece.js). */
 function itemCandidate(job, item, sync, keys) {
   const target = itemSyncIlvl(item, sync);
   const synced = effStats(job, item, sync);
-  const meld = keys && target == null ? bestMeld(job, item, keys) : null;
+  const meld = keys && keepsMelds(item, sync) ? bestMeld(job, item, keys) : null;
   return withMeld(job, item, synced, meld, target);
 }
 
@@ -152,7 +120,7 @@ function itemVersions(job, item, sync, keys, exactSpd, versionCache) {
   const build = () => {
     const target = itemSyncIlvl(item, sync);
     const synced = effStats(job, item, sync);
-    if (target != null) return [withMeld(job, item, synced, null, target)];
+    if (!keepsMelds(item, sync)) return [withMeld(job, item, synced, null, target)];
     const versions = meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld, null));
     for (const v of versions) v.versions = versions;
     return versions;

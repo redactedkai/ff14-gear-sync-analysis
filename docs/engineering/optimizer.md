@@ -16,7 +16,7 @@ What happens when the user presses Optimize, step by step (each step's section h
 4. **Search the rest.** Fill one slot at a time, shortest list first, best pieces first. At each partly filled set, a quick upper bound says how much the empty slots could still add; when even that cannot beat the best full set found so far, the whole branch is skipped (branch and bound, section 5). When the search ends, the best set found is the best there is, unless the search stopped at its node limit, which the page reports.
 5. **Options on top.** A Target GCD turns into a range the speed stat must stay in (sections 2 and 5); "Spare points to tiebreaks" runs one such search per ranked stat ([tier-ranking.md](tier-ranking.md)).
 
-The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound); the page builds the pool itself (section 7). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
+The code is in `src/core/optimizer/`: `index.js` (`optimize`, the entry point), `candidates.js` (the stats, melds, scores and dominance of steps 1 to 3) and `search.js` (the branch and bound). A piece's stats under sync come from `src/core/piece.js`, shared with the rest of the page. The page builds the pool itself (section 7). [glossary.md](../glossary.md#project-terms) defines the search words (candidate, dominance, incumbent, fathom, node limit).
 
 How to read the rest: section 1 is the game background and the problem in plain words, section 2 the formulation. Sections 3 to 5 are the algorithm, in the order it runs. Section 6 adds melds, section 7 is how the page uses the engine (its controls and menus are in [ui.md](ui.md)), and sections 8 and 9 are the evidence, timings and limits.
 
@@ -630,7 +630,8 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 
 | Concept | File |
 | --- | --- |
-| Effective stats, item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`effStats`, `makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
+| A piece under sync: its synced item level, effective stats, caps, whether it keeps its melds | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
+| Item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
 | A weapon's weapon damage after sync | `src/core/damage-defense.js` (`weaponDamage`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
 | Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (before the search: `suffixBounds`, `limitTables`, `dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`; built for the search: `combinedLimitBound` (the smallest of the limit tables), `childGroups` (speed groups), `bandReachTables`, `makeMemo` (state dominance); the search: `prepareSearch` (the filters and slot order), `newSearch` (its one state object), `dfs`, `tryGroups`, `tryInOrder`, `tryChild`; `branchAndBound` runs them. `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts; `MEMO_FRONT`, the 32 states per memo key) |

@@ -18,8 +18,8 @@ import {
   slotLabel,
   wearable,
 } from '../../core/items.js';
-import { optimize, itemCaps, itemSyncIlvl } from '../../core/optimizer/index.js';
-import { buildCandidates } from '../../core/optimizer/candidates.js';
+import { buildCandidates, optimize } from '../../core/optimizer/index.js';
+import { itemCaps, itemSyncIlvl } from '../../core/piece.js';
 import { sameMeals, sameResult } from '../../core/same-result.js';
 import { mitigationPct, setDefense } from '../../core/damage-defense.js';
 import { fastestGcd, optimizeGcd } from '../../core/target-gcd.js';
