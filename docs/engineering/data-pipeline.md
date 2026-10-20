@@ -586,7 +586,7 @@ Notes:
 
 ## 9. Updating after a game patch
 
-One command, `npm run update-data`, does steps 1 and 2.
+One command, `npm run data:update`, does steps 1 and 2.
 
 1. **Fetch**: pull the newest CSVs into the local clone.
 2. **Regenerate**: run the generators (the data files record the new commit) and rebuild the page. It refuses to start while a CSV in the clone has local edits (section 6). Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The item database step also prints its funnel line (section 4): compare it with the last run's, and look into any rule whose count jumped. It then prints the inferred routes line (section 4, *Sources*): a jump there means many new pieces or currencies were placed by a fallback rule rather than the game files. The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
@@ -739,14 +739,14 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Job icon generator | `scripts/data/gen_job_icons.py` |
 | Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
 | Source commit detection, the edited-clone check, the generated-file notice and the one-row-per-line writer | `scripts/data/provenance.py` (`detect`, `local_edits`, `note`, `json_lines`) |
-| Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run update-data` runs fetch, then this) |
+| Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run data:update` runs fetch, then this) |
 | Counts, CSV blob ids, drift since the last run, the changelog line | `scripts/data/summary.py` (`summarize`, `drift`, `csv_blobs`), `src/data/summary.json`, `docs/data-changelog.md` |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
 | Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/max-speed.json`, `src/data/summary.json` (not part of the page) |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
-| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:data`) |
+| Generator tests and test CSVs | `tests/data/test_generators.py`, `tests/data/test_food.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:py`) |
 | Format, level table and provenance tests | `tests/unit/core-item-format.test.js`, `tests/unit/core-constants.level-tables.test.js`, `tests/unit/core-tables.provenance.test.js` |
 | Local CSV clone (gitignored) | `data/ffxiv-datamining/csv/en/` |
 | Diagrams | `docs/diagrams/data-flow.svg`, `docs/diagrams/data-item-row.svg`, `docs/diagrams/data-selection.svg` |

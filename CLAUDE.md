@@ -28,10 +28,10 @@ Feature branch → `dev` → `main`, one way, fast-forward when possible. Never 
 
 Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
 
-- `npm run check` (lint, build, `npm test`, smoke; no Python; about 2 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
-- `npm run check:all` (adds `lint:py`, `test:data`) when touching `scripts/data/` or after `update-data`.
+- `npm run check` (lint, build, `npm test`, `test:smoke`; no Python; about 2 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
+- `npm run check:all` (adds `lint:py`, `test:py`) when touching `scripts/data/` or after `data:update`.
 - For UI changes, also look at the page at full width and at 960 px.
-- `npm run update-data` after a game patch (see `docs/engineering/data-pipeline.md` section 9).
+- `npm run data:update` after a game patch (see `docs/engineering/data-pipeline.md` section 9).
 - Git hooks (no AI attribution in commits; `check` before a push to `main`): `git config core.hooksPath .githooks` once per clone.
 
 ## Code rules

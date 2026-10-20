@@ -27,7 +27,7 @@ Read these before answering; do not re-derive what they already settle:
 ## Sources, in order of trust
 
 1. **Game files** (xivapi/ffxiv-datamining CSVs). The project's local copy is `data/ffxiv-datamining/csv/en/` at
-   commit `d9582a624eaec69d45649366dee801c2f3a6e9b3`, made by `npm run update-data`; it holds the sheets the generators
+   commit `d9582a624eaec69d45649366dee801c2f3a6e9b3`, made by `npm run data:update`; it holds the sheets the generators
    read (the list is `FILES` in `scripts/data/fetch.py`, ParamGrow among them). Download any other sheet
    (ContentFinderCondition, ContentType, ContentMemberType, InstanceContent and so on) for that same commit from
    `https://raw.githubusercontent.com/xivapi/ffxiv-datamining/<commit>/csv/en/<Sheet>.csv` into

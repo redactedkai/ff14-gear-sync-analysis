@@ -16,7 +16,7 @@ Read these before answering; do not re-derive what they already settle:
 
 ## Sources, in order of trust
 
-1. **Game files** (xivapi/ffxiv-datamining CSVs). The project's local copy is `data/ffxiv-datamining/csv/en/` at commit `d9582a624eaec69d45649366dee801c2f3a6e9b3`, made by `npm run update-data`; it holds the sheets the generators read (`FILES` in `scripts/data/fetch.py`: Item, ItemLevel, BaseParam, Materia, MateriaGrade and others). Download any other sheet for that same commit from `https://raw.githubusercontent.com/xivapi/ffxiv-datamining/<commit>/csv/en/<Sheet>.csv` into `docs/scratchpad/materia/csv/`. Do not modify `data/` or `src/`. Read CSVs with Python run as `python -I`. Each CSV has one header row of column names (the row id is the `#` column); the data starts on row 2.
+1. **Game files** (xivapi/ffxiv-datamining CSVs). The project's local copy is `data/ffxiv-datamining/csv/en/` at commit `d9582a624eaec69d45649366dee801c2f3a6e9b3`, made by `npm run data:update`; it holds the sheets the generators read (`FILES` in `scripts/data/fetch.py`: Item, ItemLevel, BaseParam, Materia, MateriaGrade and others). Download any other sheet for that same commit from `https://raw.githubusercontent.com/xivapi/ffxiv-datamining/<commit>/csv/en/<Sheet>.csv` into `docs/scratchpad/materia/csv/`. Do not modify `data/` or `src/`. Read CSVs with Python run as `python -I`. Each CSV has one header row of column names (the row id is the `#` column); the data starts on row 2.
 2. **In-game evidence** recorded by others (xivgear tests marked "verified in-game", The Balance, Akh Morning, the Console Games Wiki, patch notes).
 3. **Community tools' code** (xivgear, Etro): useful but may encode guesses.
 

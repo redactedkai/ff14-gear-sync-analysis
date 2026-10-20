@@ -34,14 +34,14 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
 | `npm test` | Unit tests (core logic, page views, data format, saved state) |
 | `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`, about 35 s); run it before changing scoring, pruning or the search. CI runs it |
-| `npm run test:data` | The Python data generator tests |
-| `npm run smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
+| `npm run test:py` | The Python data generator tests |
+| `npm run test:smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
 | `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check, no file changes; a warning fails it |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
 | `npm run check` | Lint (with format check), build, unit tests and the smoke test, in that order; no Python needed (about 45 s to 1 min: unit tests about 17 s, smoke 20 to 40 s). Run this before calling a change done |
-| `npm run check:all` | `check`, then `lint:py` and `test:data`. Run it when touching `scripts/data/` or after `update-data` |
-| `npm run update-data` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
+| `npm run check:all` | `check`, then `lint:py` and `test:py`. Run it when touching `scripts/data/` or after `data:update` |
+| `npm run data:update` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
 | `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min); run it after changing the search |
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
 | `npm run perf:adversarial` | Hostile pools and a forced 700,000-node search (about 15 s) |
@@ -53,7 +53,7 @@ For a UI change, also open `dist/index.html` and look at it at desktop width and
 
 ## After a game patch
 
-1. `npm run update-data` fetches the newest CSVs, regenerates `src/data/` (recording the source commit) and rebuilds.
+1. `npm run data:update` fetches the newest CSVs, regenerates `src/data/` (recording the source commit) and rebuilds.
 2. `npm run check`, then review the diff of the generated files.
 
 Which test numbers may change after a patch and which must not is in [data-pipeline.md, section 9](docs/engineering/data-pipeline.md#9-updating-after-a-game-patch) and [testing.md, section 6](docs/engineering/testing.md#6-after-a-game-patch). To regenerate from the CSVs you already have (for example after changing a generator), run `python scripts/data/regen.py`. Never edit `src/data/*` by hand.

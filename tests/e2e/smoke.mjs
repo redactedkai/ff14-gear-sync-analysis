@@ -26,7 +26,7 @@ changed. The numbers from src/core are computed in a worker thread (smoke-core.m
 waiting. Failures are printed in step order.
 
 Setup once: npm install && npx playwright install chromium
-Run: npm run build && npm run smoke
+Run: npm run build && npm run test:smoke
 Environment: SMOKE_PAGE (page to test, default dist/index.html), SMOKE_OUT (screenshots, default tests/e2e/out),
 SMOKE_WORKERS (groups at once, default half the cores up to 6), SMOKE_TRACE=1 (time of each step on stderr).
 */

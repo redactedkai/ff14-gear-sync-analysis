@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" role="img" aria-labelledby="t d">
   <title id="t">What npm run check and npm run check:all run</title>
-  <desc id="d">npm run check runs four steps in order: lint (Biome, with a format check), build (the one HTML page), test (the unit tests in Node) and smoke (the built page in headless Chromium). It needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:data (the generator tests in Python); run it when touching scripts/data/ or after update-data. Both stop at the first failure. The perf commands, the Target GCD sweep and the ffxiv-gearing and xivgear checks are run by hand and are not part of either.</desc>
+  <desc id="d">npm run check runs four steps in order: lint (Biome, with a format check), build (the one HTML page), test (the unit tests in Node) and test:smoke (the built page in headless Chromium). It needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:py (the generator tests in Python); run it when touching scripts/data/ or after data:update. Both stop at the first failure. The perf commands, the Target GCD sweep and the ffxiv-gearing and xivgear checks are run by hand and are not part of either.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -43,7 +43,7 @@
 
   <!-- check:all bracket (outer, top) -->
   <text class="gold t" x="20" y="30">npm run check:all</text>
-  <text class="muted s" x="160" y="30">when touching scripts/data/ or after update-data</text>
+  <text class="muted s" x="160" y="30">when touching scripts/data/ or after data:update</text>
   <path class="gbrace" d="M20,52 V42 H700 V52"/>
 
   <!-- check bracket (inner) -->
@@ -68,7 +68,7 @@
   <text class="muted s" x="292" y="170" text-anchor="middle">Node</text>
 
   <rect class="box" x="356" y="108" width="96" height="72" rx="8"/>
-  <text class="fg t" x="404" y="135" text-anchor="middle">smoke</text>
+  <text class="fg t" x="404" y="135" text-anchor="middle">test:smoke</text>
   <text class="muted s" x="404" y="154" text-anchor="middle">the built page</text>
   <text class="muted s" x="404" y="170" text-anchor="middle">in Chromium</text>
 
@@ -77,7 +77,7 @@
   <text class="muted s" x="540" y="154" text-anchor="middle">Ruff</text>
 
   <rect class="py" x="604" y="108" width="96" height="72" rx="8"/>
-  <text class="fg t" x="652" y="135" text-anchor="middle">test:data</text>
+  <text class="fg t" x="652" y="135" text-anchor="middle">test:py</text>
   <text class="muted s" x="652" y="154" text-anchor="middle">generator</text>
   <text class="muted s" x="652" y="170" text-anchor="middle">tests, Python</text>
 

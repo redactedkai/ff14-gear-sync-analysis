@@ -6,7 +6,7 @@ two substats; Royal Toast, 656, one), a tincture (Medicine, also an ItemFood row
 with flat bonuses (Battered Fish, Honey Bun; neither HQ-able), a Vitality-only meal (Princess Pudding) and a crafter meal
 (Salt Cod, Control).
 
-Run: npm run test:data (npm run check:all runs them too)
+Run: npm run test:py (npm run check:all runs them too)
 """
 
 import csv
