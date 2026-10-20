@@ -252,7 +252,8 @@ export function explainerView(job, sync, settings, goal, widths = {}) {
     synced,
     slotName,
     subLabels: subs.map(s => (s ? job.label[s] : '')),
-    // Piece stats
+    // Piece stats. example: the line that says the piece is not a real one (audit 11 #3)
+    example: `A made-up ${slotName} at item level ${il}, with the substats chosen in the bar.`,
     lead: synced
       ? `Synced to ${cap}: each stat is cut to its cap, ${lost} points in all.`
       : `At or below ${cap}: sync leaves every stat as it is.`,

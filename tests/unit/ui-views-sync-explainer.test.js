@@ -31,6 +31,8 @@ test('level 80 (level sync, item level 530): a body at 590 against the melded 53
     ],
   );
   assert.equal(v.verdict, 'The melded body (item level 530) has 13 more.');
+  // the piece is said to be made up (audit 11 #3)
+  assert.equal(v.example, 'A made-up body at item level 590, with the substats chosen in the bar.');
   // the same slot at every item level: the overgeared body has more from 624 (+94)
   assert.match(v.curveNote, /item level 624 \(\+94\)/);
 });

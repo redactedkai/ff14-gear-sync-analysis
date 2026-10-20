@@ -150,7 +150,8 @@
 <section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
 <template x-if="explainer"><div class="twopanel">
   <div class="panel" id="p-piece">
-    <h2>One piece, before and after sync</h2>
+    <h2>An example piece, before and after sync</h2>
+    <p class="small dim" id="p-example" x-text="explainer.example"></p>
     <p class="small" id="p-lead" x-text="explainer.lead"></p>
     <div class="bars" id="p-bars">
       <template x-for="b in explainer.bars" :key="b.label">
