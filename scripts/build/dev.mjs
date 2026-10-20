@@ -17,7 +17,8 @@ const writeOnEnd = {
   },
 };
 
-const ctx = await esbuild.context({ ...esbuildOptions({ minify: false }), plugins: [writeOnEnd] });
+const options = esbuildOptions({ minify: false });
+const ctx = await esbuild.context({ ...options, plugins: [...options.plugins, writeOnEnd] });
 await ctx.watch();
 // esbuild only watches files it imports; the HTML template and its partials are read separately
 watch(join(SRC, 'index.html'), () => ctx.rebuild().catch(() => {}));
