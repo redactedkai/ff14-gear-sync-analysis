@@ -1,5 +1,5 @@
 /* The Food row's menu of the optimizer's result (owner's design, 2026-10-18): a search box, stat pills and a "Best for
-   goal" switch over every meal the job can use (views/optimizer.js foodRow, mealsPassing). A nested x-data inside the
+   goal" switch over every meal the job can use (views/optimizer.js mealMenu, mealsPassing). A nested x-data inside the
    optimizer component: it reads the result (`view`, `viewId`) and the "Best for goal" switch (`mealBestOnly`) from it,
    and a meal picked here goes to its pickMeal. */
 import { mealEmptyReason, mealPillOff, mealsPassing } from '../views/optimizer.js';

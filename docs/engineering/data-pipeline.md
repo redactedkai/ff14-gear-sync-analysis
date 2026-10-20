@@ -731,7 +731,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Format loading, CSV reading, the column, yes/no and slot share checks, the stat factor table, the row field names | `scripts/data/item_format.py` (`read_csv`, `check_bools`, `check_slot_percents`, `stat_factors`, `row_fields`) |
 | Item database generator; materia table and decoy rows; selection rules and their funnel line | `scripts/data/gen_items.py` (`materia_table`, `select`, `DROP_RULES`, `drop_report`) |
 | Gear categories (subcategory codes, Savage currencies; the list of categories) | `scripts/data/gear_categories.py` (`CATEGORIES`) |
-| Category list and labels; current-only Savage group | `category.list` and `currentOnly` in `src/core/item-format.json` |
+| Category list and labels; the current Savage box | `category.list` and the `savage_current` entry of `activities` in `src/core/item-format.json` |
 | "Gear from" routes | `scripts/data/gear_activities.py` |
 | Crafted and ultimate flags | `scripts/data/gear_sources.py` |
 | Meld fields of an Item row | `scripts/data/item_format.py` (`meld_fields`), `materia` in `src/core/item-format.json` |
