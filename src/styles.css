@@ -774,9 +774,8 @@ tr.total td {
   font-family: var(--mono);
   color: var(--fg);
 }
-/* The Gear browser's key keeps its own line, packed tight (owner's pick K1 d, 2026-10-20,
-   docs/scratchpad/browser-key-space): the title and pill lines lose their bottom margin, and the key line pulls into
-   the panel's gaps above and below it (.titleline and .pillline have no bottom margin for the same pick) */
+/* The Gear browser's key keeps its own line, packed tight (owner's pick K1 d, 2026-10-20): the title
+   and pill lines lose their bottom margin, and the key line pulls into the panel's gaps above and below it (.titleline and .pillline have no bottom margin for the same pick) */
 #tab-browse .tablekey {
   margin: -8px 0 -6px;
 }
