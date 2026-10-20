@@ -180,7 +180,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
       this.menuOpen = this.menuOpen === i ? null : i;
       if (this.menuOpen === null) return;
       this.sameQuery = '';
-      // after x-show has shown the menu (a hidden box takes no focus)
+      // after x-if has drawn the menu (it is built only while open)
       this.$nextTick(() => requestAnimationFrame(() => box.querySelector('input')?.focus()));
     },
     /* row i's menu groups after its search (views samePassing) */

@@ -31,7 +31,7 @@ export function mealMenu() {
         this.mealStats = [...(this.view?.food?.menu?.preset ?? [])];
         this.mealPresetFor = this.viewId;
       }
-      // after x-show has shown the menu (a hidden box takes no focus and has no layout)
+      // after x-if has drawn the menu (it is built only while open)
       this.$nextTick(() =>
         requestAnimationFrame(() => {
           this.$refs.mealQuery?.focus();
