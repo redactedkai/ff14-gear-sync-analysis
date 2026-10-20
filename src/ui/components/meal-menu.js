@@ -4,6 +4,9 @@
    and a meal picked here goes to its pickMeal. */
 import { mealEmptyReason, mealPillOff, mealsPassing } from '../views/optimizer.js';
 
+/* How far below the list's top the shown meal lands when the Food menu opens (px): the meal above it stays in sight. */
+const SHOWN_MEAL_OFFSET_PX = 40;
+
 /* The Food menu's component (x-data="mealMenu" on the Food row): its open state, search and pills. */
 export function mealMenu() {
   return {
@@ -37,7 +40,7 @@ export function mealMenu() {
           this.$refs.mealQuery?.focus();
           const list = this.$refs.mealList,
             on = list?.querySelector('.on');
-          if (on) list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - 40;
+          if (on) list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - SHOWN_MEAL_OFFSET_PX;
         }),
       );
     },

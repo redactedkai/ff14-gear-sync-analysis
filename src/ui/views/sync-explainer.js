@@ -20,6 +20,10 @@ export const GENERIC_MELD_SLOTS = 2;
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
+/* Piece stats' bars: the longest bar (a stat or its cap) fills 1 / BAR_HEADROOM of the chart, so its end stays clear
+   of the chart's right edge. */
+const BAR_HEADROOM = 1.05;
+
 /* The two substats the explainer shows: Piece stats' ranks (`subs`, the store's piece.subs), rank 2 possibly null. */
 function chosenSubs(subs) {
   return subs.slice(0, 2).map(s => s || null);
@@ -160,7 +164,7 @@ export function explainerView(job, sync, settings, goal, widths = {}) {
   ];
   // the melds a piece keeps (at or below the cap) add to its stats
   const meldOf = stat => (piece.kept && piece.meld ? piece.meld.gain[stat] || 0 : 0);
-  const scale = Math.max(...lines.map(l => Math.max(piece.raw[l.stat] + meldOf(l.stat), caps[l.stat]))) * 1.05;
+  const scale = Math.max(...lines.map(l => Math.max(piece.raw[l.stat] + meldOf(l.stat), caps[l.stat]))) * BAR_HEADROOM;
   const pct = v => `${((100 * v) / scale).toFixed(2)}%`;
   const bars = lines.map(l => {
     const raw = piece.raw[l.stat],

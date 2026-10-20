@@ -22,6 +22,8 @@ export const FOLLOW_MS = 120;
 export function optimizer(alpine, solver = inProcessSolver()) {
   return {
     view: null,
+    /* the job the shown result is for */
+    viewJob: null,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
     get jobCtx() {
       return this.$store.app.jobCtx;
@@ -115,8 +117,6 @@ export function optimizer(alpine, solver = inProcessSolver()) {
         FOLLOW_MS,
       );
     },
-    /* the job the shown result is for */
-    viewJob: null,
     /* Optimize: search with the settings as they are now; the menu picks of the last result are dropped. */
     run() {
       this.remember();
@@ -147,7 +147,8 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     /* Solve and show the result, with the menu picks made so far; the progress bar shows until it comes. In the worker
        the page stays free meanwhile. A solver on the page's thread holds it (tier ranking up to a few seconds under a
        Target GCD), so the bar is painted first: two frames, the first lays the bar out, the second paints it and
-       starts its animation, which then runs on the compositor while the solve holds the thread. */
+       starts its animation, which then runs on the compositor while the solve holds the thread. The solve starts in a
+       task after the second frame (setTimeout), not in its callback, which runs before that frame is painted. */
     async solve() {
       const id = ++this.solveId;
       this.busy = true;
