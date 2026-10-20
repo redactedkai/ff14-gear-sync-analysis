@@ -214,7 +214,7 @@ Running a subset:
 - unit tests by name: `node --test --test-name-pattern="brute force" "tests/unit/*.test.js"`
 - generator tests by name: `python -m unittest discover -s tests/data -p "test_*.py" -k hq`
 
-**Setup.** Node 22 or later, `npm install` (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3 and `python -m pip install -r requirements-dev.txt`: CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9.
+**Setup.** Node 22 or later, `npm install` (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3 and `python -m pip install -r requirements-dev.txt`: CI runs Ruff and the generator tests on 3.9 (the oldest supported) and 3.13 (`.python-version`).
 
 ## 4. Conventions
 

@@ -7,7 +7,7 @@ It builds to a single self-contained HTML page, `dist/index.html`, that opens fr
 ## Requirements
 
 - Node 22 or later. Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
-- Python 3, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`. CI uses 3.13 (`.python-version`); the code keeps to 3.9 syntax, but nothing tests 3.9. The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
+- Python 3, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`. CI runs Ruff and the generator tests on 3.9 (the oldest supported) and 3.13 (`.python-version`). The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
 
 Run all commands from the repo root.
 
@@ -60,7 +60,7 @@ Which test numbers may change after a patch and which must not is in [data-pipel
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` runs `npm run check` and the long `tests/full/` sweep on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
+`.github/workflows/pages.yml` runs `npm run check`, the long `tests/full/` sweep, and `lint:py` and `test:py` on Python 3.9 and 3.13, on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
 
 ## Documentation
 
