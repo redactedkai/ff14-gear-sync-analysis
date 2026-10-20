@@ -7,8 +7,8 @@ Shared by every page in `docs/`. Keep pages consistent with it. A checklist is a
 | Folder | Holds | Pages today |
 | --- | --- | --- |
 | `docs/mechanics/` | How the game works, as this project models it, and the evidence for it | math, validation, materia |
-| `docs/engineering/` | How the code works: structure, data generation, the optimizer, tests, reference tables for game-file columns the generators read | architecture, data-pipeline, optimizer, testing, subcategory-sort-codes |
-| `docs/` (top level) | Pages for the whole set | README (the index), glossary, roadmap, history |
+| `docs/engineering/` | How the code works: structure, data generation, the optimizer, tests, reference tables for game-file columns the generators read | architecture, data-pipeline, optimizer, tier-ranking, testing, subcategory-sort-codes |
+| `docs/` (top level) | Pages for the whole set | README (the index), glossary, roadmap, history, data-changelog |
 | `docs/diagrams/` | Every SVG diagram, and this guide | |
 
 To choose: if the text would still be true with a different implementation, it is mechanics; if it describes this code, it is engineering.
