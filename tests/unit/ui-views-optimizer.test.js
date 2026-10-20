@@ -117,6 +117,8 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
   assert.ok(v.total < unsynced);
   // tier row: one entry per stat column, none for the main stat and Vitality; speed by its GCD, as in the readout
   assert.equal(v.tiers.length, v.headers.length);
+  // each column's stat key, for the cells' data-col
+  assert.deepEqual(v.cols, [...app.jobCtx.stats]);
   assert.deepEqual([v.tiers[0], v.tiers[1]], [null, null]);
   const spd = v.tiers[app.jobCtx.stats.indexOf('spd')];
   assert.equal(spd.effect, `${v.gcd}s`);

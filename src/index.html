@@ -351,7 +351,7 @@
         </div>
         <div class="tablekey"><p class="small dim" id="o-time" x-text="`Solved in ${solveMs} ms.`"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
         <div class="tablewrap menus" id="o-table"><table @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
-          <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="jobCtx.stats[k]" class="n" x-text="h"></th></template></tr></thead>
+          <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="view.cols[k]" class="n" x-text="h"></th></template></tr></thead>
           <tbody>
             <template x-for="(r, i) in view.rows" :key="i">
               <tr>
@@ -377,10 +377,10 @@
                   <template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template>
                 </td></template>
                 <template x-if="r.item"><td class="n" data-col="ilvl" :class="{ cut: r.ilvlWas }"><span x-text="r.ilvl"></span><template x-if="r.ilvlWas"><span class="was" x-text="r.ilvlWas"></span></template></td></template>
-                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="jobCtx.stats[k]" class="n" :class="{ gold: c.gold }"><span x-show="c.value" x-text="c.value" :class="{ atcap: c.atCap }" :title="c.atCap ? 'At this piece’s cap' : null"></span><span class="dim" x-show="!c.value">0</span></td></template>
+                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="view.cols[k]" class="n" :class="{ gold: c.gold }"><span :class="{ atcap: c.atCap, dim: !c.value }" :title="c.atCap ? 'At this piece’s cap' : null" x-text="c.value"></span></td></template>
               </tr>
             </template>
-            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="jobCtx.stats[k]" class="n" x-text="v"></td></template></tr>
+            <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="view.cols[k]" class="n" x-text="v"></td></template></tr>
             <template x-if="view.food">
               <tr class="food" id="o-food-row"><td>Food</td><td class="item">
                 <div class="same" x-data="mealMenu" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
@@ -400,13 +400,13 @@
                   </div></template>
                 </div>
                 <div class="small dim" id="o-meal-note" x-text="view.food.note"></div>
-              </td><td class="n" data-col="ilvl" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td :data-col="jobCtx.stats[k]" class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
+              </td><td class="n" data-col="ilvl" x-text="view.food.ilvl"></td><template x-for="(c, k) in view.food.cells" :key="k"><td :data-col="view.cols[k]" class="n"><template x-if="c"><span x-text="`+${c.value}`"></span></template><template x-if="c && c.capped"><div class="small dim">max</div></template></td></template></tr>
             </template>
             <template x-if="view.food">
-              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td :data-col="jobCtx.stats[k]" class="n" x-text="v"></td></template></tr>
+              <tr class="total" id="o-food-total"><td>With food</td><td class="small dim">base + gear + food</td><td class="n"></td><template x-for="(v, k) in view.food.totals" :key="k"><td :data-col="view.cols[k]" class="n" x-text="v"></td></template></tr>
             </template>
-            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.effectNote"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
-            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="jobCtx.stats[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c ? c.title : null" x-text="c ? c.text : ''"></td></template></tr>
+            <tr class="tier" id="o-effect"><td>Effect</td><td class="small dim" x-text="view.effectNote"></td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="view.cols[k]" class="n" :class="{ dim: c && c.zero }" x-text="c ? c.effect : ''"></td></template></tr>
+            <tr class="tier" id="o-tier"><td>Tier</td><td class="small dim">spare · to next</td><td class="n"></td><template x-for="(c, k) in view.tiers" :key="k"><td :data-col="view.cols[k]" class="n small" :class="{ dim: c && c.zero, held: c && c.held }" :title="c ? c.title : null" x-text="c ? c.text : ''"></td></template></tr>
             <tr class="tier" id="o-defense"><td>Defense</td><td class="defense" :colspan="view.headers.length + 2">Physical <b x-text="view.defense.physText"></b> · Magic <b x-text="view.defense.magText"></b> · <span class="dim" x-text="view.defense.takenText"></span></td></tr>
           </tbody>
         </table></div>

@@ -271,6 +271,8 @@ function buildOkView(job, level, recipe, run, set, ui, line) {
     gcdUi: ui,
     gcdLine: line ?? null,
     headers: job.stats.map(s => job.short[s]),
+    // each column's stat key (job.stats order): the cells' data-col, which the column highlight reads
+    cols: [...job.stats],
     target: recipe.target,
     targetLabel: job.label[recipe.target],
     spdLabel: job.label.spd,
