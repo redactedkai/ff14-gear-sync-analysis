@@ -26,8 +26,24 @@ export const LICENSE_BANNER = `/*! Bundles third-party code under the MIT licenc
    an ES version also lets esbuild add the CSS prefixes they need (mask: -webkit-mask before Chrome 120). */
 export const BROWSER_TARGETS = ['chrome97', 'firefox104', 'safari15.4'];
 
+/* esbuild plugin: each generated data file (src/data/*.json) goes into the bundle as `JSON.parse("...")`, not as the
+   object literal esbuild writes for a JSON import, so the page loads data as data, as Node (and so the tests) does.
+   Browsers parse JSON faster than the same object as JavaScript: 49 ms against 76 ms for the item database here, 204
+   against 381 ms on a 4x slower CPU (docs/engineering/data-pipeline.md section 8, audit 16 R9). The text is compacted
+   first (the files keep one row per line for readable diffs). */
+export const jsonParseData = {
+  name: 'json-parse-data',
+  setup(build) {
+    build.onLoad({ filter: /[\\/]src[\\/]data[\\/][^\\/]+\.json$/ }, ({ path }) => {
+      const compact = JSON.stringify(JSON.parse(readFileSync(path, 'utf8')));
+      return { contents: `export default JSON.parse(${JSON.stringify(compact)});`, loader: 'js' };
+    });
+  },
+};
+
 export function esbuildOptions({ minify = true } = {}) {
   return {
+    plugins: [jsonParseData],
     entryPoints: [join(SRC, 'main.js')],
     bundle: true,
     format: 'iife',

@@ -1,10 +1,11 @@
 /* Browser timing of the inlined item database: how long Chromium takes to read and run it (audit 16, R9).
 
-The page carries src/data/items.json as a JavaScript object literal inside its one script (esbuild turns a JSON import
-into code). This script times, on small pages of its own, the time from a performance mark just before the script to
-one just after it, which covers the HTML parser reading the script's text and V8 parsing, compiling and running it:
-  - literal: the item database bundled exactly as the page bundles it (esbuild, the build's options), and nothing else;
-  - JSON.parse: the same data as one string passed to JSON.parse, the form V8 reads fastest for large data;
+The page carries src/data/items.json inside its one script, as a JSON.parse call on one string (the build's
+jsonParseData plugin; until 2026-10-19 it was the object literal esbuild writes for a JSON import). This script times,
+on small pages of its own, the time from a performance mark just before the script to one just after it, which covers
+the HTML parser reading the script's text and V8 parsing, compiling and running it:
+  - literal: the item database as esbuild bundles a JSON import by itself, as JavaScript code (the page before);
+  - JSON.parse: the item database bundled as the page bundles it (the build's plugin), the form V8 reads fastest;
   - page script: the whole script of dist/index.html (Alpine, the page code and every data file), run up to its end.
 Each run is a fresh browser context with a comment that makes the script text unique, so V8's compilation cache never
 serves an earlier run. CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
@@ -18,7 +19,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as esbuild from 'esbuild';
 import { chromium } from 'playwright';
-import { BROWSER_TARGETS } from '../build/build.mjs';
+import { BROWSER_TARGETS, jsonParseData } from '../build/build.mjs';
 import { listOption, numberOption } from './args.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -42,24 +43,20 @@ function timedPage(script) {
   return `<!doctype html><meta charset="utf-8"><title>db parse</title>\n${BEFORE}<script>${RUN_MARK}${script}</script>${AFTER}`;
 }
 
-/* The item database as the page bundles it: a JSON import in an iife, minified for the build's browsers. */
-async function literalScript() {
+/* The item database alone, as a JSON import in an iife, minified for the build's browsers; with `plugins` the build's
+   jsonParseData (the page), without them esbuild's own object literal. */
+async function dbScript(plugins = []) {
   const result = await esbuild.build({
     stdin: { contents: `import items from ${JSON.stringify(ITEMS)}; window.__db = items;`, resolveDir: ROOT, loader: 'js' },
     bundle: true,
     format: 'iife',
     target: BROWSER_TARGETS,
     minify: true,
+    plugins,
     write: false,
     logLevel: 'warning',
   });
   return result.outputFiles[0].text;
-}
-
-/* The same data as a JSON.parse call on one string literal. */
-function jsonParseScript() {
-  const minified = JSON.stringify(JSON.parse(readFileSync(ITEMS, 'utf8')));
-  return `window.__db=JSON.parse(${JSON.stringify(minified)});`;
 }
 
 /* dist/index.html with marks around its script (the inline script that holds the bundle; the build writes it as
@@ -91,8 +88,8 @@ async function main() {
   const rates = listOption('rates', ['1', '4', '6']).map(Number);
   mkdirSync(OUT, { recursive: true });
   const variants = [
-    ['literal (as the page has it)', timedPage(await literalScript())],
-    ['JSON.parse of one string', timedPage(jsonParseScript())],
+    ['object literal (the page before)', timedPage(await dbScript())],
+    ['JSON.parse (as the page has it)', timedPage(await dbScript([jsonParseData]))],
     ['page script, all of it', pageWithMarks()],
   ];
   console.log(`item database ${readFileSync(ITEMS).length.toLocaleString('en-US')} bytes; median and range of ${runs} runs`);

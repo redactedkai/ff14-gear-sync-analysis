@@ -2,7 +2,7 @@
    licence notices kept in the bundle. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMarks, esbuildOptions, expandIncludes } from '../../scripts/build/build.mjs';
+import { buildMarks, esbuildOptions, expandIncludes, SRC } from '../../scripts/build/build.mjs';
 
 /* A build marks itself as a test build everywhere but main (CLAUDE.md, Branches). */
 test('build marks: none on main or an unknown branch; DEV elsewhere, with branch and commit', () => {
@@ -38,6 +38,36 @@ test('build keeps the MIT notices of Alpine.js and @vue/reactivity', () => {
   assert.match(banner, /MIT/);
   assert.match(banner, /Alpine\.js, \(c\) 2019-present Caleb Porzio/);
   assert.match(banner, /@vue\/reactivity.*Evan\) You/);
+});
+
+/* Audit 16, R9 (owner, 2026-10-19): the data files reach the page as JSON.parse of one string each, not as an object
+   literal, and parse to exactly what the files hold. */
+test('build loads each data file as JSON.parse of its compacted text, equal to the file', async () => {
+  const { build } = await import('esbuild');
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const dataDir = join(SRC, 'data');
+  const files = readdirSync(dataDir).filter(name => name.endsWith('.json'));
+  const imports = files.map((name, i) => `import d${i} from './${name}' with { type: 'json' };`);
+  const result = await build({
+    stdin: {
+      contents: `${imports.join('\n')}\nglobalThis.__data = [${files.map((_, i) => `d${i}`).join(',')}];`,
+      resolveDir: dataDir,
+      loader: 'js',
+    },
+    bundle: true,
+    format: 'iife',
+    plugins: esbuildOptions().plugins,
+    write: false,
+    logLevel: 'error',
+  });
+  const script = result.outputFiles[0].text;
+  assert.equal(script.match(/JSON\.parse\(/g)?.length, files.length);
+  const sandbox = {};
+  new Function('globalThis', script)(sandbox);
+  files.forEach((name, i) => {
+    assert.deepEqual(sandbox.__data[i], JSON.parse(readFileSync(join(dataDir, name), 'utf8')), name);
+  });
 });
 
 /* Audit 02, finding 3: the Expansion and "Gear from" menus were copied in index.html for the optimizer and the
