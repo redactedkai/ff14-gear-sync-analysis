@@ -130,7 +130,7 @@
     <label for="g-range">Speed (base + gear + food)</label>
     <span class="bound" x-text="speedRange.base"></span>
     <input type="range" id="g-range" :min="speedRange.base" :max="speedRange.most" step="1" :value="speed" :style="`--fill: ${speedFill}%`" :title="`From the base at level ${level} to the most any job and sync can have there: the best gear with melds, and the best HQ meal`" @input="slide($event.target.value)">
-    <span class="bound" id="g-most" x-text="`${speedRange.most}, any job and sync`"></span>
+    <span class="bound" id="g-most" x-text="speedRange.most" :title="`The most speed any job and sync can have at level ${level}`"></span>
     <input type="number" id="g-speed" :min="speedRange.base" :max="speedRange.most" step="1" inputmode="numeric" :value="speed" aria-label="Speed (base + gear + food)" @input="typeSpeed($el)" @change="typeSpeed($el, true)">
     <button type="button" class="chip" id="g-reset" @click="resetSpeed()">Reset</button>
   </div>

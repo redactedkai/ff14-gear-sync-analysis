@@ -1261,7 +1261,7 @@ async function checkGcdTab(pg) {
   await expect(pg.locator('#g-speed')).toHaveValue('341');
   await setNumber(pg, '#g-speed', '5000');
   await expect(pg.locator('#g-speed')).toHaveValue('800');
-  await expect(pg.locator('#g-most')).toHaveText('800, any job and sync');
+  await expect(pg.locator('#g-most')).toHaveText('800');
   // a row sets the speed; the steps past the most are greyed out and do nothing
   await pg.locator('#g-table tbody tr:not(.out)').nth(2).click();
   check((await pg.inputValue('#g-speed')) !== '800', 'a row click did not set the speed');
