@@ -774,10 +774,6 @@ tr.total td {
   font-family: var(--mono);
   color: var(--fg);
 }
-.tablekey .keywas {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-}
 /* Sortable headings: a click sorts by the column, a second flips it; the sorted one in the accent, with ▾ (high
    first) or ▴ */
 .sortbtn {

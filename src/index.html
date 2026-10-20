@@ -352,7 +352,7 @@
           <div><b x-text="view.gcdText"></b><span x-text="view.gcdNote"></span></div>
           <div><b x-text="view.dotText"></b><span>DoT/HoT tick scaling</span></div>
         </div>
-        <div class="tablekey"><p class="small dim" id="o-time" x-text="solvedText"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> a goal stat at this piece’s cap</p></template></div>
+        <div class="tablekey"><p class="small dim" id="o-time" x-text="solvedText"></p><template x-if="view.anyAtCap"><p class="small dim" id="o-key"><span class="atcap">48</span> maxed on this piece</p></template></div>
         <div class="tablewrap menus" id="o-table"><table @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
           <thead><tr><th>Slot</th><th>Item</th><th class="n" data-col="ilvl">ilvl</th><template x-for="(h, k) in view.headers" :key="k"><th :data-col="view.cols[k]" class="n" x-text="h"></th></template></tr></thead>
           <tbody>
@@ -385,7 +385,7 @@
                   <template x-if="r.meld"><div class="small dim meld" x-text="r.meld"></div></template>
                 </td></template>
                 <template x-if="r.item"><td class="n" data-col="ilvl" x-text="r.item.ilvl"></td></template>
-                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="view.cols[k]" class="n" :class="{ gold: c.gold }"><span :class="{ atcap: c.atCap, dim: !c.value }" :title="c.atCap ? 'At this piece’s cap' : null" x-text="c.value"></span></td></template>
+                <template x-for="(c, k) in (r.cells || [])" :key="k"><td :data-col="view.cols[k]" class="n" :class="{ gold: c.gold }"><span :class="{ atcap: c.atCap, dim: !c.value }" :title="c.atCap ? 'Maxed on this piece' : null" x-text="c.value"></span></td></template>
               </tr>
             </template>
             <tr class="total"><td>Total</td><td class="small dim">base + gear</td><td class="n"></td><template x-for="(v, k) in view.totals" :key="k"><td :data-col="view.cols[k]" class="n" x-text="v"></td></template></tr>
@@ -459,7 +459,7 @@
       <div class="f field ilvl-field"><span id="b-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="b-ilvl-label"><input type="number" id="b-min" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-bind="$num('browse.min', 1, Infinity, { empty: '' })"><span aria-hidden="true">–</span><input type="number" id="b-max" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-bind="$num('browse.max', 1, Infinity, { empty: '' })"></div></div>
       <!-- INCLUDE gear-from-menu.html id=b part=browse -->
     </div>
-    <template x-if="view && view.anySynced"><div class="tablekey"><span></span><p class="small dim" id="b-key"><b class="atcap">48</b> synced to this piece’s cap · <span class="keywas">795</span> the piece’s own, before sync</p></div></template>
+    <template x-if="view && view.anySynced"><div class="tablekey"><span></span><p class="small dim" id="b-key"><b class="atcap">48</b> maxed on this piece</p></div></template>
     <div class="tablewrap tall"><table id="gear-table" @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
       <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters. <template x-if="filtered"><button type="button" class="linkbtn" @click="resetBrowseFilters()">Reset filters</button></template></td></tr></tbody></template>
       <template x-if="view && view.shown.length"><thead><tr><th :aria-sort="sortState('name')"><button type="button" class="sortbtn" data-sort="name" @click="sortBy('name')">Item</button></th><th>Slot</th><th class="n" data-col="lvl" :aria-sort="sortState('lvl')"><button type="button" class="sortbtn" data-sort="lvl" @click="sortBy('lvl')">Lv</button></th><th class="n" data-col="ilvl" :aria-sort="sortState('ilvl')"><button type="button" class="sortbtn" data-sort="ilvl" @click="sortBy('ilvl')">ilvl</button></th><template x-for="s in jobCtx.stats" :key="s"><th class="n" :data-col="s" :aria-sort="sortState(s)"><button type="button" class="sortbtn" :data-sort="s" :title="`Sort by synced ${jobCtx.label[s]}`" @click="sortBy(s)" x-text="jobCtx.short[s]"></button></th></template></tr></thead></template>
@@ -467,7 +467,7 @@
         <template x-for="x in view.shown" :key="x.key">
           <tr :data-key="x.key" :class="{ synced: x.synced }">
             <td><template x-for="(part, j) in x.nameParts" :key="j"><span :class="{ mark: part.hit }" x-text="part.text"></span></template><span class="hq" x-show="x.hq" title="High quality (crafted): stats include the HQ bonus">HQ</span></td><td><span x-text="x.slot"></span><span class="x2" x-show="x.copies === 2" title="Not Unique: can be worn on both ring fingers"> ×2</span></td><td class="n dim" data-col="lvl" x-text="x.lvl"></td><td class="n" data-col="ilvl" x-text="x.ilvl"></td>
-            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="jobCtx.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'At this piece’s cap' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
+            <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="jobCtx.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'Maxed on this piece' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
           </tr>
         </template>
         <template x-if="view.hidden"><tr><td :colspan="jobCtx.stats.length + 4" class="dim small" x-text="view.hiddenText"></td></tr></template>

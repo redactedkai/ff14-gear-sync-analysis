@@ -1013,7 +1013,7 @@ async function checkSameResult(pg) {
   const button = pg.locator('#o-table .same-btn').first();
   await expect(button).toBeVisible();
   // every row here reaches the caps: the key above the table says what the bar means
-  await expect(pg.locator('#o-key')).toContainText('at this piece');
+  await expect(pg.locator('#o-key')).toContainText('maxed on this piece');
   await pg.hover('#o-table tbody td[data-col="crit"] >> nth=0');
   await expect(pg.locator('#o-table table')).toHaveAttribute('data-col', 'crit');
   const total = await optTotal(pg).innerText();
