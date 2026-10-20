@@ -34,6 +34,14 @@ export function tierTable() {
       const app = this.$store.app;
       return JSON.stringify([app.job, this.level, app.level]);
     },
+    init() {
+      // the settings changed: drop the edits for good (liveEdits already hides them for the render in between), so
+      // going back to the old level or job starts from the bases again
+      this.$watch('editsKey', () => {
+        this.edits = {};
+        this.editsFor = '';
+      });
+    },
     /* the edits that still apply: none once the settings they were made under have changed */
     get liveEdits() {
       return this.editsFor === this.editsKey ? this.edits : {};

@@ -47,6 +47,53 @@ test('tiers table: each value starts at its base; a typed or clicked value is ke
   assert.equal(card(c.view, 'crit').value, statBase(app.jobCtx, 'crit', 50));
 });
 
+/* Runs the component's init() with a $watch that, like Alpine's, calls back when a watched property's value changes;
+   returns settle(), which delivers the changes made since the last call (Alpine does this after each change). */
+function watched(c) {
+  const checks = [];
+  c.$watch = (prop, callback) => {
+    let last = c[prop];
+    checks.push(() => {
+      const now = c[prop];
+      if (now === last) return;
+      const before = last;
+      last = now;
+      callback(now, before);
+    });
+  };
+  c.init?.();
+  return () => {
+    for (const check of checks) check();
+  };
+}
+
+/* Found by wave C (2026-10-19): values typed at one level were only hidden while the level differed, so going back to
+   it brought them back (if nothing was typed in between). The comment above tierTable says they are dropped. */
+test('tiers table: values dropped by a level change stay dropped when the level comes back', () => {
+  const { app, c } = bound(tierTable(), { job: 'SGE', level: 50 });
+  const settle = watched(c);
+  c.pick('det:420');
+  assert.equal(card(c.view, 'det').value, 420);
+  app.tiers.level = 60;
+  settle();
+  app.tiers.level = null;
+  settle();
+  assert.equal(card(c.view, 'det').value, statBase(app.jobCtx, 'det', 50));
+  // the same through the synced level, and the job
+  c.pick('det:420');
+  app.level = 60;
+  settle();
+  app.level = 50;
+  settle();
+  assert.equal(card(c.view, 'det').value, statBase(app.jobCtx, 'det', 50));
+  c.pick('det:420');
+  app.setJob('WHM');
+  settle();
+  app.setJob('SGE');
+  settle();
+  assert.equal(card(c.view, 'det').value, statBase(app.jobCtx, 'det', 50));
+});
+
 test("tiers table: the sub-tab's level is held to the job's cap; no job, no view; the ? note is the open substat's", () => {
   const { app, c } = bound(tierTable(), { job: 'BLU', level: 70 });
   app.tiers.level = 95;

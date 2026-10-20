@@ -1166,6 +1166,11 @@ async function checkTiers(pg) {
   await setNumber(pg, '#t-table [data-n="spd"]', '99999');
   await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('3679');
   await setNumber(pg, '#t-table [data-n="spd"]', '624');
+  // a level change drops the typed value for good: back at level 100, the base again (it used to come back)
+  await setNumber(pg, '#t-level', '90');
+  await setNumber(pg, '#t-level', '');
+  await expect(pg.locator('#t-level')).toHaveValue('100');
+  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('420');
 
   // the level follows each valid keystroke, while the field keeps focus
   await pg.focus('#level');
