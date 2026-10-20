@@ -1,8 +1,9 @@
-/* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts at
-   the substat's base, and what the user types or clicks is kept on top until the job or the level changes. The level is the synced level until the user types another into the math bar's box; it is in
-   $store.app.tiers (not saved), shared by the bar (tierControls) and the table (tierTable), as the GCD tab's
-   are (owner, 2026-10-19: every sub-tab's controls in the bar). The values are worked out on every read (no effect
-   that refills them later), so a level typed in the settings shows its own tiers and values in one render. */
+/* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts
+   at the substat's base, and what the user types or clicks is kept on top until the job or the level changes. The level
+   is the synced level until the user types another into the math bar's box; it is in $store.app.tiers (not saved),
+   shared by the bar (tierControls) and the table (tierTable), as the GCD tab's are (owner, 2026-10-19: every sub-tab's
+   controls in the bar). The values are worked out on every read (no effect that refills them later), so a level typed
+   in the settings shows its own tiers and values in one render. */
 import { numberField, viewCache } from '../helpers.js';
 import { tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 

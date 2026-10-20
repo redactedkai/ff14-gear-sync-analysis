@@ -91,13 +91,14 @@ export function browseCell(raw, synced) {
 /* "1 match", "1,939 matches"; `more` goes between the number and the word ("12 more matches"). */
 const matchCount = (n, more = '') => `${fmtInt(n)} ${more}${n === 1 ? 'match' : 'matches'}`;
 
-/* The gear browser's list: {shown, countText, hidden, hiddenText (the last row's line), emptyBoxes, slots}. shown: the first SHOW_LIMIT matches, in the
-   heading's order, each with its cells (browseCell: the synced stat on the top line, the piece's own under it), its name
-   cut for the search's highlight (nameParts), and `synced` true when sync lowers its item level. The item level column
-   shows the piece's own item level (owner, 2026-10-19: the synced one there was confusing). slots: the slot pills,
-   [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by group (1 to 3), count the matches in
-   that slot under the other filters. For `job` (a JobContext) under `sync` ({cap, sync, level}: ui/settings.js
-   syncSettings), with the browser's settings `browse` (the store's: state.js defaultBrowse). */
+/* The gear browser's list: {shown, countText, hidden, hiddenText (the last row's line), emptyBoxes, slots}. shown: the
+   first SHOW_LIMIT matches, in the heading's order, each with its cells (browseCell: the synced stat on the top line,
+   the piece's own under it), its name cut for the search's highlight (nameParts), and `synced` true when sync lowers
+   its item level. The item level column shows the piece's own item level (owner, 2026-10-19: the synced one there was
+   confusing). slots: the slot pills, [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by
+   group (1 to 3), count the matches in that slot under the other filters. For `job` (a JobContext) under `sync` ({cap,
+   sync, level}: ui/settings.js syncSettings), with the browser's settings `browse` (the store's: state.js
+   defaultBrowse). */
 export function gearView(job, sync, browse) {
   const b = browse;
   // every slot first, for the pills' counts; the slot filter is applied after

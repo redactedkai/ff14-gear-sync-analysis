@@ -15,12 +15,13 @@ export const TYPING_DEBOUNCE_MS = 300;
 const bound = b => (typeof b === 'function' ? b() : b);
 
 /* x-bind object for a number input bound to a setting: the page's one pattern for number boxes (as $num,
-   storeNumberField). A step (mouse wheel, arrow keys) commits at once; typing commits TYPING_DEBOUNCE_MS after the last keystroke, and only an in-range value, so a
-   value on the way ("9" of "90") is held back. Enter or leaving the field (change) commits at once, and an out-of-range
-   value is moved to the nearest bound and shown in the box, so the box and the setting always agree (owner,
-   2026-10-19: "-5" in a filter becomes its lowest value, not "no limit"). While the field has focus and already shows
-   the stored value, the typed text is left alone ("2.40" stays as typed). A bound may be a function, read at each
-   input, for a limit that changes while the field is bound (the job's level cap). Options:
+   storeNumberField). A step (mouse wheel, arrow keys) commits at once; typing commits TYPING_DEBOUNCE_MS after the last
+   keystroke, and only an in-range value, so a value on the way ("9" of "90") is held back. Enter or leaving the field
+   (change) commits at once, and an out-of-range value is moved to the nearest bound and shown in the box, so the box
+   and the setting always agree (owner, 2026-10-19: "-5" in a filter becomes its lowest value, not "no limit"). While
+   the field has focus and already shows the stored value, the typed text is left alone ("2.40" stays as typed). A bound
+   may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap).
+   Options:
    - snap: false keeps an out-of-range value out on change too, for a box that explains it (the sync cap's error).
    - live: commit each valid value as it is typed, with no wait (the synced level: owner, 2026-10-17); typing "90" then
      shows level 9 for a moment, which is cheap, and the optimizer has its own wait.

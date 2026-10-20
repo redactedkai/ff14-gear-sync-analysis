@@ -369,7 +369,12 @@
                       <div class="menu-list">
                         <template x-for="g in sameGroups(r.same.groups)" :key="g.label">
                           <div><div class="same-head" x-text="g.label"></div>
-                            <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="{ on: x.on }" @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill" :class="'cat-' + x.category.key" x-text="x.category.label"></span></template></span><span class="same-lvl" x-text="x.levels"></span></button></template>
+                            <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item"
+                                :class="{ on: x.on }"
+                                @click="pick(i, x.key)"><span><span x-text="x.name"></span><template x-if="x.category"><span class="pill"
+                                :class="'cat-' + x.category.key"
+                                x-text="x.category.label"></span></template></span><span class="same-lvl"
+                                x-text="x.levels"></span></button></template>
                           </div>
                         </template>
                         <template x-if="!sameGroups(r.same.groups).length"><div class="menu-empty"><span x-text="sameEmptyText()"></span> <button type="button" class="linkbtn" @click="sameQuery = ''">Clear search</button></div></template>
@@ -387,16 +392,27 @@
             <template x-if="view.food">
               <tr class="food" id="o-food-row"><td>Food</td><td class="item">
                 <div class="same" x-data="mealMenu" @click.outside="mealOpen = false" @keydown.escape="mealOpen = false">
-                  <button type="button" class="same-btn" id="o-meal-btn" :aria-expanded="mealOpen" @click="toggleMealMenu()"><span x-text="view.food.name"></span><template x-if="view.food.best && view.food.menu.count > 1"><span class="same-count" x-text="`1 of ${view.food.menu.count}`"></span></template></button>
+                  <button type="button" class="same-btn" id="o-meal-btn" :aria-expanded="mealOpen"
+                      @click="toggleMealMenu()"><span x-text="view.food.name"></span><template x-if="view.food.best && view.food.menu.count > 1"><span class="same-count"
+                      x-text="`1 of ${view.food.menu.count}`"></span></template></button>
                   <template x-if="mealOpen"><div class="same-menu search-menu meal-menu" id="o-meal-menu">
                     <div class="menu-tools">
                       <span class="menu-search"><input type="text" id="o-meal-q" x-ref="mealQuery" placeholder="Search meals" autocomplete="off" aria-label="Search meals" x-model="mealQuery"></span>
-                      <div class="meal-pills" role="group" aria-label="Meal stats"><template x-for="p in view.food.menu.pills" :key="p.stat"><button type="button" class="meal-pill" :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))" :disabled="mealPillOff(p.stat)" :title="p.label" :data-stat="p.stat" @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
+                      <div class="meal-pills" role="group"
+                          aria-label="Meal stats"><template x-for="p in view.food.menu.pills"
+                          :key="p.stat"><button type="button" class="meal-pill"
+                          :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))"
+                          :disabled="mealPillOff(p.stat)" :title="p.label" :data-stat="p.stat"
+                          @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
                       <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" :checked="mealBestOnly" @change="setMealBest($event.target.checked)"><span>Best for goal</span></label>
                     </div>
                     <div class="menu-list" x-ref="mealList">
                       <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
-                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`" @click="chooseMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl" x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl" x-text="x.adds"></span></button></template>
+                        <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item"
+                            :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`"
+                            @click="chooseMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl"
+                            x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl"
+                            x-text="x.adds"></span></button></template>
                       </div></template>
                       <template x-if="mealEmpty"><div class="menu-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <template x-if="mealEmpty.action === 'query'"><button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></template></div></template>
                     </div>

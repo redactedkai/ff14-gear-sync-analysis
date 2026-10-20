@@ -1,7 +1,7 @@
 /* Gear browser: look up the item database with filters (see views/gear.js). Recomputed only while its tab is open.
    Layout (owner, 2026-10-18; mockups B1 with C2's pills): the name search on the title's line, slot pills with their
-   counts and, while a filter is changed, Reset at their end (its place kept while hidden); one row of filters; sorting from the table's
-   headings. */
+   counts and, while a filter is changed, Reset at their end (its place kept while hidden); one row of filters; sorting
+   from the table's headings. */
 import { SEARCH_MAX_LENGTH, defaultBrowse } from '../state.js';
 import { syncSettings } from '../settings.js';
 import { browseFiltered, gearView } from '../views/gear.js';

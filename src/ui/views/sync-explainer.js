@@ -1,4 +1,5 @@
-/* How the math works, Piece stats: what sync does to one piece, against the same piece at the cap with its melds. Pure view builder: no Alpine import, so Node can load and test it.
+/* How the math works, Piece stats: what sync does to one piece, against the same piece at the cap with its melds. Pure
+   view builder: no Alpine import, so Node can load and test it.
    A "generic piece" here is a piece built from the budget table (buildPiece): the main stat, Vitality and the two
    chosen substats at their 100% / 70% shares, with 2 meld slots (meldInfo). Its melds are the optimizer's for the
    current Goal (bestMeld), so the explainer and the optimizer meld alike (owner, 2026-10-16). */
@@ -95,9 +96,9 @@ function computeRange(job, cap, subs) {
 }
 
 /* The slider's range and the chosen item level: {range: [lo, hi], il, note}. With a sync, explainerRange and the saved
-   item level (null: the cap, where Reset puts it; owner's decision, 2026-10-18); without one, every real item level (null: the highest). `note`
-   says where the range comes from (the slider's tooltip). For `job` under `sync` (syncSettings), and Piece stats'
-   `piece` ({ilvl, slot, subs}). */
+   item level (null: the cap, where Reset puts it; owner's decision, 2026-10-18); without one, every real item level
+   (null: the highest). `note` says where the range comes from (the slider's tooltip). For `job` under `sync`
+   (syncSettings), and Piece stats' `piece` ({ilvl, slot, subs}). */
 export function explainerItemLevel(job, sync, piece) {
   const shown = shownSync(job, sync);
   const clampTo = ([lo, hi], v) => Math.max(lo, Math.min(hi, clampIlvl(v)));
