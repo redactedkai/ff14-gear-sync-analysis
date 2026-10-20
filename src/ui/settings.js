@@ -59,3 +59,9 @@ export function optimizerKey(app) {
       .map(k => [k, opt[k]]),
   ]);
 }
+
+/* What the optimizer's view builders take, from the store: {job (the JobContext), sync (syncSettings), level (the
+   synced level), recipe (recipeOf)}. */
+export function optimizerInputs(app) {
+  return { job: app.jobCtx, sync: syncSettings(app), level: app.level, recipe: recipeOf(app) };
+}

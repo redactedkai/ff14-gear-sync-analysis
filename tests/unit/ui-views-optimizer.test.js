@@ -17,22 +17,11 @@ import { fmtInt } from '../../src/ui/helpers.js';
 import { defaultState } from '../../src/ui/state.js';
 import { DEFAULT_EXCLUDE, optimizerKey, syncSettings } from '../../src/ui/settings.js';
 import { gearView } from '../../src/ui/views/gear.js';
-import {
-  jobGear,
-  mealEmptyReason,
-  mealPillOff,
-  mealsPassing,
-  optimizerView,
-  relicsLeftOut,
-  samePassing,
-  searchCount,
-  searchPool,
-  tierText,
-} from '../../src/ui/views/optimizer.js';
+import { mealEmptyReason, mealPillOff, mealsPassing, samePassing, tierText } from '../../src/ui/views/optimizer.js';
 import { pieceView } from '../../src/ui/views/piece.js';
 import { explainerView } from '../../src/ui/views/sync-explainer.js';
 import { exhaustive, gamePool } from './helpers/exhaustive.js';
-import { makeApp, uniqueRingPool, windowPool } from './helpers/views.js';
+import { countOf, gearOf, makeApp, poolOf, relicsOf, uniqueRingPool, viewOf, windowPool } from './helpers/views.js';
 
 /* 2,238 (2.28 s) and 2,324 (2.27 s) are tier starts in AkhMorning's level 100 2.5s tier table, which lists full speed
    (base 420 + gear 1,818 and 1,904; https://www.akhmorning.com/allagan-studies/stats/speed/, core-speed.test.js). Roadmap A3. */
@@ -48,7 +37,7 @@ test("optimizer view: Vitality as a tiebreak with the best meal finds a set (own
   Object.assign(app.opt, { target: 'main', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
   app.opt.expOff = ['HW', 'SB', 'ShB', 'EW', 'DT'];
   app.opt.exclude = ['relic', 'savage', 'ultimate', 'pvp'];
-  const view = optimizerView(app);
+  const view = viewOf(app);
   assert.equal(view.kind, 'ok');
 });
 
@@ -59,7 +48,7 @@ test('optimizer view: the Food menu shows the highest item level meal with the b
   const app = makeApp('AST', { level: 50 });
   Object.assign(app.opt, { target: 'main', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
   app.opt.expOff = ['HW', 'SB', 'ShB', 'EW', 'DT'];
-  const v = optimizerView(app);
+  const v = viewOf(app);
   assert.equal(v.kind, 'ok');
   const { menu } = v.food;
   const items = menu.groups.flatMap(g => g.items);
@@ -90,13 +79,13 @@ test('optimizer view: the Food menu shows the highest item level meal with the b
   assert.match(newest.adds, /^\S+ \+\d+ (\S+ \+\d+ )?VIT \+\d+$/);
   // a meal picked from the menu: shown, marked picked, its bonus in the Food row; the menu still tags the best
   const other = items.find(x => !x.best && x.stats.includes('crit'));
-  const p = optimizerView(app, undefined, {}, other.key);
+  const p = viewOf(app, undefined, {}, other.key);
   assert.equal(p.food.name, other.name);
   assert.deepEqual([p.food.best, p.food.picked], [false, true]);
   assert.ok(p.food.cells[p.headers.indexOf('CRT')].value > 0);
   assert.equal(p.food.menu.groups.flatMap(g => g.items).filter(x => x.best).length, menu.count);
   // an unknown key or Food off: no pick
-  assert.equal(optimizerView(app, undefined, {}, 'No Such Meal').food.picked, false);
+  assert.equal(viewOf(app, undefined, {}, 'No Such Meal').food.picked, false);
 });
 
 test('optimizer view: real Black Mage gear, synced and unsynced, equals brute force', () => {
@@ -106,7 +95,7 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
   const o = app.opt;
   Object.assign(o, { target: 'spd', tb: 'main', tb2: 'vit' });
   const want = sync => exhaustive(app.jobCtx, pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'] })[0];
-  const v = optimizerView(app, pool);
+  const v = viewOf(app, pool);
   assert.equal(v.kind, 'ok');
   const base = statBase(app.jobCtx, 'spd', app.level);
   assert.equal(base, 420);
@@ -114,7 +103,7 @@ test('optimizer view: real Black Mage gear, synced and unsynced, equals brute fo
   assert.equal(v.targetLabel, 'Spell Speed');
   assert.equal(v.rows.filter(r => r.label.startsWith('Ring')).length, 2);
   assert.ok(v.rows.every(r => r.item));
-  const unsynced = optimizerView({ ...app, sync: false }, pool).total;
+  const unsynced = viewOf({ ...app, sync: false }, pool).total;
   assert.equal(unsynced, want(false) + base);
   assert.ok(v.total < unsynced);
   // tier row: one entry per stat column, none for the main stat and Vitality; speed by its GCD, as in the readout
@@ -129,7 +118,7 @@ test('optimizer view: one Unique ring fills the first ring slot and leaves the s
   const app = makeApp('SGE');
   const pool = uniqueRingPool(app.jobCtx);
   assert.equal(pool.filter(i => i.type === 'ring').length, 1);
-  const v = optimizerView(app, pool);
+  const v = viewOf(app, pool);
   assert.equal(v.kind, 'ok');
   assert.deepEqual(
     v.rows.filter(r => r.label.startsWith('Ring')).map(r => !!r.item),
@@ -144,7 +133,7 @@ test('optimizer errors become an error view instead of throwing', () => {
   );
   Object.assign(app.opt, { target: 'spd', tb: 'main', tb2: 'vit' }); // tiebreaks make the scores large
   app.sync = false; // with sync on these stats would be clamped to normal values
-  const v = optimizerView(app, pool);
+  const v = viewOf(app, pool);
   assert.equal(v.kind, 'error');
   assert.match(v.message, /too large/);
 });
@@ -156,12 +145,12 @@ test('optimizer view: every job searches all the gear it can wear, minus what Ge
     const app = makeApp(id, { level: Math.min(50, makeJobContext(id).maxLevel) });
     const job = app.jobCtx;
     const all = browseItems(job, {});
-    assert.equal(jobGear(job).length, all.length, id);
-    assert.equal(jobGear(job), jobGear(job), `${id}: built once per job`);
-    const searched = withActivities(jobGear(job), [...DEFAULT_EXCLUDE], true).filter(i => !allocatedRelic(job, i));
-    assert.deepEqual(searchCount(app), { searched: searched.length, left: all.length - searched.length }, id);
+    assert.equal(gearOf(job).length, all.length, id);
+    assert.equal(gearOf(job), gearOf(job), `${id}: built once per job`);
+    const searched = withActivities(gearOf(job), [...DEFAULT_EXCLUDE], true).filter(i => !allocatedRelic(job, i));
+    assert.deepEqual(countOf(app), { searched: searched.length, left: all.length - searched.length }, id);
     assert.ok(searched.length > 100, id);
-    const v = optimizerView(app);
+    const v = viewOf(app);
     assert.equal(v.kind, 'ok', id);
     const want = optimize(job, searched, syncSettings(app), { target: app.opt.target, melds: app.opt.melds });
     // the card shows the character panel's number: gear plus the character's base
@@ -180,28 +169,28 @@ test('Gear from: the optimizer and the browser each go by their own boxes', () =
   Object.assign(app.browse, { min: 125, max: 135, lvl: 50, exclude: [] });
   app.opt.exclude = [];
   const listed = gearView(app).shown.length;
-  const all = searchPool(app, pool).length;
+  const all = poolOf(app, pool).length;
   // leaving Poetics gear out of the browser changes nothing in the optimizer, and the other way round
   app.browse.exclude = ['tomes_legacy'];
   assert.ok(gearView(app).shown.length < listed);
-  assert.equal(searchPool(app, pool).length, all);
+  assert.equal(poolOf(app, pool).length, all);
   app.browse.exclude = [];
   app.opt.exclude = ['tomes_legacy'];
   assert.equal(gearView(app).shown.length, listed);
-  assert.equal(searchPool(app, pool).length, all - nTome);
-  assert.deepEqual(searchCount(app, pool), { searched: all - nTome, left: pool.length - all + nTome });
-  const o = optimizerView(app, pool);
+  assert.equal(poolOf(app, pool).length, all - nTome);
+  assert.deepEqual(countOf(app, pool), { searched: all - nTome, left: pool.length - all + nTome });
+  const o = viewOf(app, pool);
   assert.equal(o.kind, 'ok');
-  const best = exhaustive(app.jobCtx, searchPool(app, pool), { cap: 123, sync: true }, { target: app.opt.target })[0];
+  const best = exhaustive(app.jobCtx, poolOf(app, pool), { cap: 123, sync: true }, { target: app.opt.target })[0];
   assert.equal(o.total, best + statBase(app.jobCtx, app.opt.target, app.level));
   // the market board switch is the browser's own too
   app.opt.exclude = [];
   app.browse.market = false;
-  assert.equal(searchPool(app, pool).length, all);
+  assert.equal(poolOf(app, pool).length, all);
   // every box off and no market board: nothing from the database is left
   app.opt.exclude = ACTIVITIES.map(a => a.key);
   app.opt.market = false;
-  assert.equal(optimizerView(app, pool).kind, 'excluded');
+  assert.equal(viewOf(app, pool).kind, 'excluded');
 });
 
 /* Gear to search has the browser's filters with its own values: the optimizer searches exactly the pieces the browser
@@ -224,19 +213,19 @@ test("Gear to search: the browser's filters, on the optimizer's own values", () 
         DEFAULT_EXCLUDE,
         true,
       ).filter(i => !allocatedRelic(job, i));
-      assert.deepEqual(keys(searchPool(app)), keys(want), `${id} ${JSON.stringify(f)}`);
-      assert.deepEqual(searchCount(app), { searched: want.length, left: jobGear(job).length - want.length });
-      assert.equal(relicsLeftOut(app), rows.filter(r => allocatedRelic(job, poolItemFromRow(job, r))).length, `${id} relics`);
+      assert.deepEqual(keys(poolOf(app)), keys(want), `${id} ${JSON.stringify(f)}`);
+      assert.deepEqual(countOf(app), { searched: want.length, left: gearOf(job).length - want.length });
+      assert.equal(relicsOf(app), rows.filter(r => allocatedRelic(job, poolItemFromRow(job, r))).length, `${id} relics`);
     }
     // the browser's filters leave the optimizer alone, and the other way round
     Object.assign(app.opt, { expOff: [], min: '', max: '', lvl: 100 });
-    const searched = searchPool(app).length;
+    const searched = poolOf(app).length;
     Object.assign(app.browse, { expOff: ['ARR'], min: 600, max: 700, lvl: 1, exclude: [] });
-    assert.equal(searchPool(app).length, searched, id);
+    assert.equal(poolOf(app).length, searched, id);
     const listed = gearView(app).shown.length;
     Object.assign(app.opt, { min: 9999, max: 1 });
     assert.equal(gearView(app).shown.length, listed, id);
-    assert.equal(optimizerView(app).kind, 'excluded', `${id}: nothing passes the filters`);
+    assert.equal(viewOf(app).kind, 'excluded', `${id}: nothing passes the filters`);
   }
 });
 
@@ -252,8 +241,8 @@ test('level cap: the optimizer searches no piece above the job cap, and level sy
     .map(r => poolItemFromRow(app.jobCtx, r));
   assert.ok(wearableRows.length > 0 && above.length > 0);
   const pool = [...wearableRows, ...above];
-  assert.equal(searchPool(app, pool).length, wearableRows.length);
-  const o = optimizerView(app, pool);
+  assert.equal(poolOf(app, pool).length, wearableRows.length);
+  const o = viewOf(app, pool);
   assert.equal(o.kind, 'ok');
   const best = exhaustive(app.jobCtx, wearableRows, { cap: null, sync: false, level: 80 }, { target: app.opt.target })[0];
   assert.equal(o.total, best + statBase(app.jobCtx, app.opt.target, 80));
@@ -276,7 +265,7 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
   const stats = app.jobCtx.stats,
     k = stats.indexOf('crit'),
     det = stats.indexOf('det');
-  const v = optimizerView(app);
+  const v = viewOf(app);
   assert.equal(v.kind, 'ok');
   const row = (view, name) => view.rows.find(r => r.item?.name === name);
   const wpn = row(v, 'Phantom Pendulums Eclipticum');
@@ -294,7 +283,7 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
   app.opt.tb = 'det';
   // the weapon row: whichever piece with the same result it shows (the easiest), its synced Critical Hit and
   // Determination are at the item level 535 cap
-  const synced = optimizerView(app).rows.find(r => r.label === 'Weapon');
+  const synced = viewOf(app).rows.find(r => r.label === 'Weapon');
   assert.deepEqual(
     [synced.cells[k].value, synced.cells[k].atCap, synced.cells[det].value, synced.cells[det].atCap],
     [210, true, 210, true],
@@ -307,7 +296,7 @@ test('optimizer view: target and tiebreak cells at their cap are marked, other s
 test('optimizer totals are character panel numbers', () => {
   const app = makeApp('SGE', { level: 50 });
   Object.assign(app.opt, { target: 'spd', food: true });
-  const v = optimizerView(app, windowPool(app.jobCtx));
+  const v = viewOf(app, windowPool(app.jobCtx));
   assert.equal(v.kind, 'ok');
   const job = app.jobCtx;
   const gear = job.stats.map((_stat, k) => v.rows.reduce((a, r) => a + (r.cells?.[k].value ?? 0), 0));
@@ -333,7 +322,7 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
     const app = makeApp(jobId, { sync: false, cap: null, level: 100 });
     Object.assign(app.opt, { target: 'crit', tb: 'det', food, melds: true, exclude: [], expOff: [], min: '', max: '', lvl: 100 });
     const pct = hasteFor(jobId, 100)?.pct ?? 0;
-    const free = optimizerView(app, pool);
+    const free = viewOf(app, pool);
     assert.equal(free.gcdLine, null, 'an empty box: no line');
     // the label carries the range, slowest to fastest, and the job's haste after it
     const range = `${free.gcdUi.top.toFixed(2)} to ${free.gcdUi.fastest.toFixed(2)}`;
@@ -350,7 +339,7 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
     let met = 0;
     for (const mode of ['exact', 'min']) {
       Object.assign(app.opt, { gcd: asked, gcdMode: mode });
-      const v = optimizerView(app, pool);
+      const v = viewOf(app, pool);
       const r = optimizeGcd(
         job,
         pool,
@@ -386,18 +375,18 @@ test('optimizer view with a Target GCD equals the core, with haste, food and the
   // impossible for the job: a Ninja's GCD is 2.12 at most at level 100 (15% haste)
   const nin = makeApp('NIN', { sync: false, cap: null, level: 100 });
   Object.assign(nin.opt, { target: 'crit', gcd: 2.4, gcdMode: 'exact', exclude: [], lvl: 100 });
-  const no = optimizerView(nin, gamePool(makeJobContext('NIN'), window));
+  const no = viewOf(nin, gamePool(makeJobContext('NIN'), window));
   assert.equal(no.kind, 'nogcd');
   assert.ok(no.gcdLine.bad);
   assert.equal(no.gcdLine.text, "Ninja's GCD is 2.12 at most (Increase Attack Speed 15%)");
   // below the game's 1.50 s floor nothing can be had, whatever the gear
   nin.opt.gcd = 1.4;
-  const floor = optimizerView(nin, gamePool(makeJobContext('NIN'), window));
+  const floor = viewOf(nin, gamePool(makeJobContext('NIN'), window));
   assert.equal(floor.kind, 'nogcd');
   assert.equal(floor.gcdLine.text, "The GCD can't go below 1.50");
   // the goal is speed: the box is off, the GCD typed is ignored
   Object.assign(nin.opt, { target: 'spd' });
-  const spd = optimizerView(nin, gamePool(makeJobContext('NIN'), window));
+  const spd = viewOf(nin, gamePool(makeJobContext('NIN'), window));
   assert.equal(spd.kind, 'ok');
   assert.equal(spd.gcdLine, null);
   assert.equal(spd.gcdUi.off, true);
@@ -409,7 +398,7 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   const job = app.jobCtx;
   Object.assign(app.opt, { target: 'spd', tb: 'crit' });
   const pool = windowPool(job);
-  const off = optimizerView(app, pool);
+  const off = viewOf(app, pool);
   assert.equal(off.food, null);
   // character panel numbers: level 50 base speed 341 (AkhMorning) plus gear
   const i = job.stats.indexOf('spd');
@@ -419,7 +408,7 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
   assert.equal(off.spdText, `${off.totals[i]} Spell Speed (341 base, ${gearSpd} gear)`);
 
   app.opt.food = true; // best for the goal
-  const on = optimizerView(app, pool);
+  const on = viewOf(app, pool);
   assert.deepEqual(
     on.rows.map(r => r.item?.name),
     off.rows.map(r => r.item?.name),
@@ -448,7 +437,7 @@ test('optimizer view: Food adds a meal row and the totals with it, counts tiers 
 
   // a meal picked from the Food menu: the newest Determination + Critical Hit meal
   const pickedMeal = foodChoices(job).find(c => c.key === 'det+crit');
-  const det = optimizerView(app, pool, {}, pickedMeal.name);
+  const det = viewOf(app, pool, {}, pickedMeal.name);
   assert.equal(det.food.name, pickedMeal.name);
   assert.equal(det.food.picked, true);
   assert.equal(det.food.best, false);
@@ -469,7 +458,7 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
     level: app.level,
   });
   assert.ok(r.ok);
-  const v = optimizerView(app, pool);
+  const v = viewOf(app, pool);
   assert.equal(v.kind, 'ok');
   assert.equal(v.byTier, true);
   // the meal: the highest item level one with the result of the one tier ranking chose with the gear; the Food menu tags them all
@@ -497,7 +486,7 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
 
   // switched off: the plain ranking (the same view as before tier ranking existed)
   app.opt.byTier = false;
-  const plain = optimizerView(app, pool);
+  const plain = viewOf(app, pool);
   assert.equal(plain.byTier, false);
   assert.ok(plain.tiers.every(c => !c?.held));
 });
@@ -505,17 +494,17 @@ test('Rank by tier: the view shows the core result, each key held at its tier an
 test('Rank by tier with a Target GCD: the GCD and the GCD line come from the tier search', () => {
   const app = makeApp('SGE', { sync: false });
   const pool = windowPool(app.jobCtx);
-  const fastest = optimizerView({ ...app, opt: { ...app.opt, target: 'spd', byTier: false } }, pool);
+  const fastest = viewOf({ ...app, opt: { ...app.opt, target: 'spd', byTier: false } }, pool);
   // halfway between the GCD with no speed and the fastest the window reaches: reachable, and not trivially
   const gcd = Math.round(((2.5 + Number(fastest.gcd)) / 2) * 100) / 100;
   Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: '', byTier: true, gcd, gcdMode: 'exact' });
-  const v = optimizerView(app, pool);
+  const v = viewOf(app, pool);
   assert.equal(v.kind, 'ok');
   assert.equal(v.gcd, gcd.toFixed(2));
   assert.equal(v.gcdLine, null);
   // a GCD faster than any set reaches: no set, said on the GCD line
   app.opt.gcd = 1.6;
-  const none = optimizerView(app, pool);
+  const none = viewOf(app, pool);
   assert.equal(none.kind, 'nogcd');
   assert.equal(none.gcdLine.bad, true);
 });
@@ -525,7 +514,7 @@ test('Rank by tier with a Target GCD: the GCD and the GCD line come from the tie
    decision 2026-10-18). Other weapons with no substat (Gold Saucer gear) and relics with substats stay. */
 test('allocated relics: left out of the search and counted in the note; other relics and stat-less gear stay', () => {
   const sge = makeJobContext('SGE');
-  const pieces = name => jobGear(sge).filter(i => i.name === name);
+  const pieces = name => gearOf(sge).filter(i => i.name === name);
   const [occultum] = pieces('Phantom Pendulums Occultum');
   const [eclipticum] = pieces('Phantom Pendulums Eclipticum');
   const [mandervillous] = pieces('Mandervillous Wings');
@@ -533,15 +522,15 @@ test('allocated relics: left out of the search and counted in the note; other re
   assert.equal(allocatedRelic(sge, occultum), true);
   assert.equal(allocatedRelic(sge, mandervillous), true);
   assert.equal(allocatedRelic(sge, eclipticum), false, 'a relic with substats');
-  const ai = jobGear(makeJobContext('WAR')).find(i => i.name.startsWith('Ai Apaec'));
+  const ai = gearOf(makeJobContext('WAR')).find(i => i.name.startsWith('Ai Apaec'));
   if (ai) assert.equal(allocatedRelic(makeJobContext('WAR'), ai), false, 'Gold Saucer gear with no substat');
   const app = makeApp('SGE', { sync: false, cap: null, level: 100 });
   app.opt.target = 'crit';
   // by name: jobGear keeps one job's gear at a time, so the Warrior lookup above rebuilt Sage's
-  const searched = new Set(searchPool(app).map(i => i.name));
+  const searched = new Set(poolOf(app).map(i => i.name));
   assert.ok(!searched.has(occultum.name));
   assert.ok(searched.has(eclipticum.name));
-  const v = optimizerView(app);
+  const v = viewOf(app);
   assert.ok(v.relicsLeftOut > 0);
   // the weapon is the Eclipticum (weapon damage 157), not the Occultum (158, no substat)
   assert.equal(v.rows[0].item.name, 'Phantom Pendulums Eclipticum');
@@ -550,7 +539,7 @@ test('allocated relics: left out of the search and counted in the note; other re
 test('optimizer view: the Food menu presets its pills from the goal, in order, only those the shown meal has, two at most', () => {
   const app = makeApp('SGE', { level: 50 });
   Object.assign(app.opt, { target: 'crit', tb: 'det', tb2: 'dh', melds: true, food: true });
-  const v = optimizerView(app);
+  const v = viewOf(app);
   assert.equal(v.kind, 'ok');
   const { preset, groups } = v.food.menu;
   const shownStats = groups.flatMap(g => g.items).find(x => x.on).stats;
@@ -701,7 +690,7 @@ test('optimizerKey: every optimizer, job and sync setting changes it', () => {
 test('optimizer view: the readout, rows, Defense and notes carry their own text', () => {
   const app = makeApp('SGE');
   Object.assign(app.opt, { target: 'main', tb: 'crit', food: true, byTier: true });
-  const v = optimizerView(app, uniqueRingPool(app.jobCtx));
+  const v = viewOf(app, uniqueRingPool(app.jobCtx));
   assert.equal(v.kind, 'ok');
   assert.equal(v.gcdText, `${v.gcd}s`);
   assert.equal(v.dotText, `+${v.dot}%`);
@@ -722,7 +711,7 @@ test('optimizer view: the readout, rows, Defense and notes carry their own text'
   assert.ok(v.tiers.some(c => c?.held));
   // Food off: no Food row, and the Effect row says so
   app.opt.food = false;
-  assert.equal(optimizerView(app, uniqueRingPool(app.jobCtx)).effectNote, 'gear only, no food');
+  assert.equal(viewOf(app, uniqueRingPool(app.jobCtx)).effectNote, 'gear only, no food');
   // a tank's main stat
-  assert.equal(optimizerView(makeApp('WAR'), windowPool(makeJobContext('WAR'))).clanNote, 'Clan bonuses can affect STR and VIT.');
+  assert.equal(viewOf(makeApp('WAR'), windowPool(makeJobContext('WAR'))).clanNote, 'Clan bonuses can affect STR and VIT.');
 });

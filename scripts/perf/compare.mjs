@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { NODE_LIMIT } from '../../src/core/recipe.js';
 import { buildCandidates, pruneDominated, vectorDims } from '../../src/core/optimizer/candidates.js';
 import { flag, option } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesLite, SYNCS } from './workloads.mjs';

@@ -5,13 +5,12 @@
    "covered by Phantom Cane Eclipticum". */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { optimizerView } from '../../src/ui/views/optimizer.js';
-import { makeApp } from './helpers/views.js';
+import { makeApp, viewOf } from './helpers/views.js';
 
 test('optimizer view: the Off-hand row is covered by the weapon the Weapon row shows', () => {
   const app = makeApp('WHM', { sync: true, cap: 123, level: 100 });
   Object.assign(app.opt, { target: 'main', tb: 'crit', tb2: 'det', melds: true, byTier: true, food: false });
-  const v = optimizerView(app);
+  const v = viewOf(app);
   assert.equal(v.kind, 'ok');
   const weapon = v.rows.find(r => r.label === 'Weapon');
   const offhand = v.rows.find(r => r.label === 'Off-hand');

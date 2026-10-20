@@ -8,7 +8,7 @@ import { performance } from 'node:perf_hooks';
 import { withActivities } from '../../src/core/items.js';
 import { meldCacheStats } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { NODE_LIMIT } from '../../src/core/recipe.js';
 import { flag, listOption, numberOption, option } from './args.mjs';
 import { excludeMasks, fullPool, JOB_IDS, job as ctx, objectivesFull, objectivesLite, SYNCS } from './workloads.mjs';
 

@@ -15,7 +15,7 @@
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
 import { WD_KEY } from './damage-defense.js';
 import { foodBonus, withFood } from './food.js';
-import { equipLevel, poolKey, slotInfo } from './items.js';
+import { equipLevel, slotInfo } from './items.js';
 import { vectorDims } from './optimizer/index.js';
 import { rankTierOf } from './tiers.js';
 
@@ -45,7 +45,8 @@ export function sameOutcome(a, b) {
    cands: {slot type: candidates} of the whole pool for the same goal, unpruned (buildCandidates with prune off): every
      piece with its synced stats and the melds the optimizer would give it, best score first; a piece can have several
      candidates (meld versions under a Target GCD).
-   ctx: as for resultOf. chosen: {row index: pool key} of pieces the player picked from a row's menu.
+   ctx: as for resultOf. chosen: {row index: gameId} of pieces the player picked from a row's menu (database pieces:
+     the game's item id, architecture.md "Piece identity"; a piece not from the database cannot be picked).
    Returns one entry per row: {pick, options}. pick is what the row shows ({type, item, eff, meld}); options lists every
    piece that fits there, one candidate per piece (its best-scoring version that fits), the shown one included, or is
    empty for an empty slot.
@@ -85,8 +86,8 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
   const easiest = (a, b) => (equipLevel(a.item) ?? 0) - (equipLevel(b.item) ?? 0) || a.item.ilvl - b.item.ilvl;
 
   // 1. the player's picks, where they still fit
-  for (const [i, key] of Object.entries(chosen)) {
-    const c = picks[i]?.item && fitting(+i).find(x => poolKey(x.item) === key);
+  for (const [i, gameId] of Object.entries(chosen)) {
+    const c = picks[i]?.item && gameId != null && fitting(+i).find(x => x.item.gameId === gameId);
     if (c) shown[i] = asPick(picks[i].type, c);
   }
   // 2. every other row: the easiest piece that fits; the optimizer's pick stays on a tie (the sort is stable and the

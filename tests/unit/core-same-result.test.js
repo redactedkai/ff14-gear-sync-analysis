@@ -3,19 +3,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { equipLevel, mkItem, poolKey } from '../../src/core/items.js';
+import { equipLevel, mkItem } from '../../src/core/items.js';
 import { resultOf, sameOutcome, sameResult } from '../../src/core/same-result.js';
 import { dotMult, gcdFor } from '../../src/core/speed.js';
 import { rankTierOf, statTier } from '../../src/core/tiers.js';
-import { optimizerView } from '../../src/ui/views/optimizer.js';
 import { appState } from './helpers/common.js';
+import { viewOf } from './helpers/views.js';
 
 const sge = makeJobContext('SGE');
 const CTX = { level: 100, food: null, haste: 0 };
 
-/* A hand-made candidate (the shape buildCandidates gives): every job stat, 0 unless given. */
+/* A hand-made candidate (the shape buildCandidates gives): every job stat, 0 unless given. Each has a made-up gameId,
+   as a database piece has, so a row's menu can pick it. */
+let nextGameId = 1;
 function cand(name, type, stats, blocks = []) {
-  const item = mkItem(name, type, 700, {});
+  const item = mkItem(name, type, 700, {}, { gameId: nextGameId++ });
   const eff = Object.fromEntries(sge.stats.map(s => [s, stats[s] || 0]));
   return { item, eff, copies: 1, blocks, meld: null };
 }
@@ -100,7 +102,7 @@ test('each swap alone fits, so both rows list their other piece; the shown set k
 
 test('rows share their spare points: after one swap, the other row no longer offers its swap', () => {
   const { picks, cands, head2 } = sharedSpare();
-  const rows = sameResult(sge, picks, cands, CTX, { 0: poolKey(head2.item) });
+  const rows = sameResult(sge, picks, cands, CTX, { 0: head2.item.gameId });
   assert.equal(rows[0].pick.item.name, 'Head B');
   assert.deepEqual(
     rows[1].options.map(c => c.item.name),
@@ -144,7 +146,7 @@ function ownerCase() {
 
 test("the owner's case: every row has others, shows the lowest equip level, and the result is unchanged", () => {
   const app = ownerCase();
-  const v = optimizerView(app);
+  const v = viewOf(app);
   assert.equal(v.kind, 'ok');
   assert.ok(v.rows.every(r => r.same && r.same.count > 1));
   // the result the readout and the Effect row show (gear only, gear and food) is the optimizer's: Mind 356 from gear
@@ -164,7 +166,7 @@ test("the owner's case: every row has others, shows the lowest equip level, and 
 });
 
 test("the owner's case: a Unique ring is never in both ring rows, nor in the other row's menu", () => {
-  const v = optimizerView(ownerCase());
+  const v = viewOf(ownerCase());
   const [r1, r2] = v.rows.filter(r => r.label.startsWith('Ring'));
   assert.equal(r1.item.copies, 1, 'the easiest ring is Unique, so the rule matters here');
   assert.notEqual(r1.item, r2.item);
@@ -175,9 +177,9 @@ test("the owner's case: a Unique ring is never in both ring rows, nor in the oth
 
 test("the owner's case: a piece picked from a menu is shown, and the result stays the same", () => {
   const app = ownerCase();
-  const before = optimizerView(app);
+  const before = viewOf(app);
   const other = before.rows[0].same.groups.flatMap(g => g.items).find(x => !x.on);
-  const after = optimizerView(app, undefined, { 0: other.key });
+  const after = viewOf(app, undefined, { 0: other.key });
   assert.equal(after.rows[0].item.name, other.name);
   const effects = v => v.tiers.map(t => t?.effect ?? null);
   assert.deepEqual(effects(after), effects(before));

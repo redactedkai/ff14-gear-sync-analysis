@@ -376,6 +376,12 @@ export function copiesOf(type, unique) {
   return type === 'ring' && !unique ? 2 : 1;
 }
 
+/* Every database piece `job` (a JobContext) can wear, as frozen pool items (browseItems leaves out gear above the job's
+   level cap): what the optimizer searches before its filters (~5-10 ms to build; a solver session keeps it, session.js). */
+export function jobGear(job) {
+  return Object.freeze(browseItems(job, {}).map(r => poolItemFromRow(job, r)));
+}
+
 /* A parsed database row (parseRow) as a pool item, with its stats as this job's neutral keys and its gameId. */
 export function poolItemFromRow(job, row) {
   return mkItem(row.name, row.type, row.ilvl, dbStats(job, row.st), {

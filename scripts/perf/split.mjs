@@ -10,7 +10,7 @@ import { bestMeld } from '../../src/core/meld.js';
 import { buildCandidates, makeScorer, pruneDominated, rankedKeys, vectorDims } from '../../src/core/optimizer/candidates.js';
 import { effStats, itemSyncIlvl } from '../../src/core/piece.js';
 import { branchAndBound } from '../../src/core/optimizer/search.js';
-import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { NODE_LIMIT } from '../../src/core/recipe.js';
 import { flag, listOption, numberOption, option } from './args.mjs';
 import { fullPool, job as ctx, SYNCS } from './workloads.mjs';
 

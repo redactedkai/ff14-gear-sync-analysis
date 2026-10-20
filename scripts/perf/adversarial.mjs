@@ -9,7 +9,7 @@
 import { performance } from 'node:perf_hooks';
 import { mkItem } from '../../src/core/items.js';
 import { optimize } from '../../src/core/optimizer/index.js';
-import { NODE_LIMIT } from '../../src/ui/views/optimizer.js';
+import { NODE_LIMIT } from '../../src/core/recipe.js';
 import { numberOption } from './args.mjs';
 import { fullPool, job as ctx, rng } from './workloads.mjs';
 

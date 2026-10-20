@@ -23,11 +23,21 @@ const app = Alpine.store('app');
    filter an emptied box clears (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-Object.entries({ page, settings, syncExplainer, gear, optimizer, mealMenu, tierTable, gcdTab, gcdControls, tierControls }).forEach(
-  ([name, factory]) => {
-    Alpine.data(name, factory);
-  },
-);
+// the optimizer takes Alpine's effect and raw from here, so its module loads without a page (its unit test)
+Object.entries({
+  page,
+  settings,
+  syncExplainer,
+  gear,
+  optimizer: () => optimizer(Alpine),
+  mealMenu,
+  tierTable,
+  gcdTab,
+  gcdControls,
+  tierControls,
+}).forEach(([name, factory]) => {
+  Alpine.data(name, factory);
+});
 
 /* Save whenever any persisted field changes: the effect tracks every field by serializing them (small; the gear pool
    that once made this costly is gone), and the save runs once the changes settle. */

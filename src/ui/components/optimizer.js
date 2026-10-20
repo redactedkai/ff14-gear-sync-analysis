@@ -2,18 +2,21 @@
    presses Optimize (owner, 2026-10-18: no search on every setting change). A setting changed since the last search
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
-import Alpine from 'alpinejs';
-import { emptyGearFrom, gcdLabel, optimizerView, samePassing, searchCount } from '../views/optimizer.js';
-import { optimizerKey } from '../settings.js';
-import { debouncedEffect, expansionToggles, fmtInt, gearFromToggles } from '../helpers.js';
+import { makeSession } from '../../core/session.js';
+import { gearToSearchView, optimizerView, samePassing } from '../views/optimizer.js';
+import { optimizerInputs, optimizerKey } from '../settings.js';
+import { debouncedEffect, expansionToggles, gearFromToggles } from '../helpers.js';
 import { rankChoices, withRank } from '../ranks.js';
 
 /* How long the settings must rest before the piece count, the empty boxes and the Target GCD label follow them (ms). */
 const DEBOUNCE_MS = 120;
 
 /* The optimizer tab's component: the result (`view`), whether it is out of date, the solve, the rows' menus of pieces
-   with the same result, and the filters under Gear to search. */
-export function optimizer() {
+   with the same result, and the filters under Gear to search. `alpine`: what it needs of Alpine, {effect, raw} (main.js
+   passes Alpine itself; a test passes stand-ins, so the component runs without a page). `session`: the solver session
+   (core/session.js) its solves share, one per page; kept in this closure, outside reactive state, like the gear it
+   holds. */
+export function optimizer(alpine, session = makeSession()) {
   return {
     view: null,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
@@ -29,7 +32,7 @@ export function optimizer() {
     gcdLabel: 'Target GCD',
     /* how long the last solve took (building the job's gear included, the first time), shown under the result */
     solveMs: 0,
-    /* pieces picked from the rows' menus of pieces with the same result: {row index: pool key}. Not saved; cleared when
+    /* pieces picked from the rows' menus of pieces with the same result: {row index: gameId}. Not saved; cleared when
        any setting changes, since the result and its rows change with them */
     picks: {},
     /* the row whose menu is open, or null, and the search text of that menu (cleared when a menu opens) */
@@ -65,7 +68,7 @@ export function optimizer() {
       // the settings as they change: whether the result is out of date (a job switch drops it), and the piece count and
       // empty boxes under Gear to search
       debouncedEffect(
-        Alpine,
+        alpine,
         () => {
           const app = this.$store.app;
           // read every input synchronously so the effect tracks it (optimizerKey reads them all)
@@ -75,11 +78,11 @@ export function optimizer() {
             this.nowDeps = key;
             if (this.view && job !== this.viewJob) this.view = null;
             if (!job) return;
-            const raw = Alpine.raw(this.$store.app);
-            const c = searchCount(raw);
-            this.countText = `searching ${fmtInt(c.searched)} of ${fmtInt(c.searched + c.left)} pieces`;
-            this.emptyBoxes = emptyGearFrom(raw);
-            this.gcdLabel = gcdLabel(raw);
+            const { job: jobCtx, sync, level, recipe } = optimizerInputs(alpine.raw(this.$store.app));
+            const side = gearToSearchView(jobCtx, sync, level, recipe, session);
+            this.countText = side.countText;
+            this.emptyBoxes = side.emptyBoxes;
+            this.gcdLabel = side.gcdLabel;
           };
         },
         DEBOUNCE_MS,
@@ -92,7 +95,7 @@ export function optimizer() {
       this.picks = {};
       this.menuOpen = null;
       this.mealPick = null;
-      this.lastDeps = optimizerKey(Alpine.raw(this.$store.app));
+      this.lastDeps = optimizerKey(alpine.raw(this.$store.app));
       this.solve();
     },
     /* Solve and show the result, with the menu picks made so far. The solve holds the page's thread (tier ranking up to
@@ -120,8 +123,10 @@ export function optimizer() {
       const t0 = performance.now();
       // the plain store: read through Alpine's reactive proxies, the pool's thousands of stat reads cost about
       // twice the run itself (this runs outside the effect, so nothing here needs tracking)
-      const raw = Alpine.raw(this.$store.app);
-      const view = Object.freeze(optimizerView(raw, undefined, Alpine.raw(this.picks), this.mealPick));
+      const raw = alpine.raw(this.$store.app);
+      const { job, sync, level, recipe } = optimizerInputs(raw);
+      const choices = { pieces: alpine.raw(this.picks), meal: this.mealPick };
+      const view = Object.freeze(optimizerView(job, sync, level, recipe, session, choices));
       this.solveMs = Math.max(1, Math.round(performance.now() - t0));
       this.view = view;
       this.viewId++;
@@ -129,9 +134,10 @@ export function optimizer() {
       this.nowDeps = optimizerKey(raw);
       performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
     },
-    /* A piece picked from row i's menu: the row shows it, and the other rows are checked again against it. */
-    pick(i, key) {
-      this.picks = { ...this.picks, [i]: key };
+    /* A piece picked from row i's menu (its gameId): the row shows it, and the other rows are checked again against
+       it. */
+    pick(i, gameId) {
+      this.picks = { ...this.picks, [i]: gameId };
       this.menuOpen = null;
       this.solve();
     },
