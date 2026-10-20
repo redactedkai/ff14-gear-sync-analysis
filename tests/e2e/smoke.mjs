@@ -1215,6 +1215,58 @@ async function checkPldOffhand(pg) {
   await expect(pg.locator('#b-slots [data-slot="offhand"]')).toHaveCount(0);
 }
 
+/** The browser's page line (owner's pick P1 a, 2026-10-20): Next and a page number show other rows and scroll the
+ * table's box to its first row; a slot pill or a sort goes back to page 1; the line keeps its place (and the table its
+ * top) whether the key at its right shows or not. Leaves the shared setup as it found it. */
+async function checkBrowserPages(pg) {
+  // every Sage piece: many pages
+  await fillBrowser(pg, '', '', '');
+  const pages = pg.locator('#b-pages');
+  const current = pages.locator('[aria-current="page"]');
+  const firstKey = () => browserRows(pg).first().getAttribute('data-key');
+  const tableBox = pg.locator('#tab-browse .tablewrap');
+  const scrollTop = () => tableBox.evaluate(box => box.scrollTop);
+  await expect(current).toHaveText('1');
+  await expect(pages.locator('[aria-label="Previous page"]')).toBeDisabled();
+  await expect(browserRows(pg)).toHaveCount(100);
+
+  // Next: other rows, the table back at its top
+  await tableBox.evaluate(box => (box.scrollTop = 900));
+  const page1 = await firstKey();
+  await pages.locator('[aria-label="Next page"]').click();
+  await expect(current).toHaveText('2');
+  check((await firstKey()) !== page1, 'Next did not change the rows');
+  check((await scrollTop()) === 0, 'Next did not scroll the table to its top');
+  // a page number, the same
+  await tableBox.evaluate(box => (box.scrollTop = 900));
+  const page2 = await firstKey();
+  await pages.locator('[aria-label="Page 3"]').click();
+  await expect(current).toHaveText('3');
+  check((await firstKey()) !== page2, 'a page number did not change the rows');
+  check((await scrollTop()) === 0, 'a page number did not scroll the table to its top');
+
+  // a slot pill and a sort go back to page 1
+  await pg.click('#b-slots [data-slot="body"]');
+  await expect(current).toHaveText('1');
+  await pages.locator('[aria-label="Next page"]').click();
+  await expect(current).toHaveText('2');
+  await pg.click('#gear-table [data-sort="name"]');
+  await expect(current).toHaveText('1');
+
+  // the key shows with sync on (item level 130 is above the cap of 123) and not with it off (no piece above level
+  // 50): the line and the table stay where they are
+  await fillBrowser(pg, 100, 140, 50);
+  await expect(pg.locator('#b-key')).toBeVisible();
+  const lineTop = () => pg.locator('#tab-browse .pageline').evaluate(line => line.getBoundingClientRect().top);
+  const tableTop = () => tableBox.evaluate(box => box.getBoundingClientRect().top);
+  const withKey = [await lineTop(), await tableTop()];
+  await pg.locator('#sync').uncheck();
+  await expect(pg.locator('#b-key')).toBeHidden();
+  const withoutKey = [await lineTop(), await tableTop()];
+  check(same(withKey, withoutKey), `the page line or the table moved when the key went: ${withKey} vs ${withoutKey}`);
+  await setCap(pg, SHARED_SETUP.cap);
+}
+
 // ---------- checks: How the math works: Piece stats, Substat tiers, GCD ----------
 
 /** Piece stats at cap 123: for every slot, a piece above the cap is cut to the slot's caps, so its main stat and 1st
@@ -1723,6 +1775,7 @@ const step = fn => ({ name: fn.name, run: fn, shared: true });
 const GROUPS = [
   { fresh: true, steps: [step(checkDefaults)] },
   { steps: [step(checkPieceLab), step(checkClosedPanel), step(checkJobSwitch), step(checkPldOffhand)] },
+  { steps: [step(checkBrowserPages)] },
   ...OPT_CASES.map(c => ({ slow: true, steps: [realGear(c)] })),
   { slow: true, steps: [step(checkTypingDebounce)] },
   { slow: true, steps: [step(checkRingCopies), step(checkGearFrom)] },

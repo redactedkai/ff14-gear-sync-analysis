@@ -780,6 +780,57 @@ tr.total td {
 #tab-browse .tablekey {
   margin: -8px 0 -6px;
 }
+/* The Gear browser's page line (owner's pick P1 a, 2026-10-20): page numbers at the left of the key's line, which
+   always shows (empty with one page and nothing synced) and keeps one button's height, so the table doesn't move as
+   the key or the numbers come and go */
+#tab-browse .pageline {
+  align-items: center;
+  min-height: 24px;
+  margin: -4px 0 -2px;
+}
+#tab-browse .pageline #b-key {
+  margin-left: auto;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -6px;
+}
+.pager button {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.78rem var(--mono);
+  cursor: pointer;
+}
+.pager button:hover:not(:disabled) {
+  border-color: var(--line);
+  color: var(--fg);
+}
+.pager button[aria-current="page"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.pager button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pager .step {
+  font-size: 0.95rem;
+}
+.pager .gap {
+  min-width: 18px;
+  text-align: center;
+  color: var(--muted);
+  font: 0.78rem var(--mono);
+}
 /* Sortable headings: a click sorts by the column, a second flips it; the sorted one in the accent, with ▾ (high
    first) or ▴ */
 .sortbtn {

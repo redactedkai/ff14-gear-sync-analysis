@@ -8,6 +8,7 @@ import { syncSettings } from '../../src/ui/settings.js';
 import { defaultBrowse, restoreState } from '../../src/ui/state.js';
 import { createAppStore } from '../../src/ui/store.js';
 import { gearView } from '../../src/ui/views/gear.js';
+import { watched } from './helpers/common.js';
 
 /* The component bound to the store of `saved`, as Alpine binds it ($store.app). */
 function bound(saved = { job: 'SGE', tab: 'browse', sync: true, cap: 123 }) {
@@ -73,4 +74,39 @@ test('gear browser: "/" jumps to the search box, but not from inside another box
   app.showTab('opt');
   c.slashToSearch(key('/'));
   assert.deepEqual([focused, prevented], [1, 1]);
+});
+
+/* The page line (owner's pick P1 a, 2026-10-20): a page button shows its page and scrolls the table's box to its
+   top; any change to the list (filter, search, slot, sort, job, level, sync) goes back to page 1, also when the old
+   setting comes back; the page is not saved. */
+test('gear browser: a page button scrolls the table to its top; any change to the list goes back to page 1', () => {
+  const { app, c } = bound({ job: 'SGE', tab: 'browse', level: 100 });
+  const settle = watched(c);
+  c.$refs = { rows: { scrollTop: 900 } };
+  c.goPage(9);
+  assert.deepEqual([c.view.page, c.$refs.rows.scrollTop], [9, 0]);
+  const changes = [
+    () => (app.browse.type = 'head'),
+    () => (app.browse.q = 'healing'),
+    () => (app.browse.min = 300),
+    () => c.sortBy('crit'),
+    () => (app.level = 90),
+    () => Object.assign(app, { sync: true, cap: 375 }),
+    () => app.setJob('WHM'),
+  ];
+  for (const change of changes) {
+    c.goPage(2);
+    assert.equal(c.view.page, 2);
+    change();
+    assert.equal(c.view.page, 1, String(change));
+    settle();
+  }
+  // back to the sort the page was picked under: still page 1
+  c.goPage(2);
+  c.sortBy('det');
+  settle();
+  c.sortBy('crit');
+  settle();
+  assert.equal(c.view.page, 1);
+  assert.ok(!('page' in app) && !JSON.stringify(app.browse).includes('page'), 'the page is not in the saved state');
 });

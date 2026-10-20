@@ -462,8 +462,11 @@
       <div class="f field ilvl-field"><span id="b-ilvl-label">Item level <span class="f-range" x-text="`1–${$store.app.maxReal}`"></span></span><div class="pair" role="group" aria-labelledby="b-ilvl-label"><input type="number" id="b-min" :max="$store.app.maxReal" inputmode="numeric" placeholder="min" aria-label="Item level min" x-bind="$num('browse.min', 1, Infinity, { empty: '' })"><span aria-hidden="true">–</span><input type="number" id="b-max" :max="$store.app.maxReal" inputmode="numeric" placeholder="max" aria-label="Item level max" x-bind="$num('browse.max', 1, Infinity, { empty: '' })"></div></div>
       <!-- INCLUDE gear-from-menu.html id=b part=browse -->
     </div>
-    <template x-if="view && view.anySynced"><div class="tablekey"><span></span><p class="small dim" id="b-key"><b class="atcap">48</b> maxed on this piece</p></div></template>
-    <div class="tablewrap tall"><table id="gear-table" @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
+    <template x-if="view"><div class="tablekey pageline">
+      <nav class="pager" id="b-pages" aria-label="Pages" x-show="view.pageButtons.length"><button type="button" class="step" aria-label="Previous page" :disabled="!view.prevPage" @click="goPage(view.prevPage)">‹</button><template x-for="b in view.pageButtons" :key="b.key"><span style="display:contents"><template x-if="!b.page"><span class="gap" aria-hidden="true">…</span></template><template x-if="b.page"><button type="button" :aria-current="b.current ? 'page' : null" :aria-label="'Page ' + b.page" @click="goPage(b.page)" x-text="b.page"></button></template></span></template><button type="button" class="step" aria-label="Next page" :disabled="!view.nextPage" @click="goPage(view.nextPage)">›</button></nav>
+      <p class="small dim" id="b-key" x-show="view.anySynced"><b class="atcap">48</b> maxed on this piece</p>
+    </div></template>
+    <div class="tablewrap tall" x-ref="rows"><table id="gear-table" @mouseover="$el.dataset.col = $event.target.closest('[data-col]')?.dataset.col ?? ''" @mouseleave="$el.dataset.col = ''">
       <template x-if="view && !view.shown.length"><tbody><tr><td class="empty">No gear matches these filters. <template x-if="filtered"><button type="button" class="linkbtn" @click="resetBrowseFilters()">Reset filters</button></template></td></tr></tbody></template>
       <template x-if="view && view.shown.length"><thead><tr><th :aria-sort="sortState('name')"><button type="button" class="sortbtn" data-sort="name" @click="sortBy('name')">Item</button></th><th>Slot</th><th class="n" data-col="lvl" :aria-sort="sortState('lvl')"><button type="button" class="sortbtn" data-sort="lvl" @click="sortBy('lvl')">Lv</button></th><th class="n" data-col="ilvl" :aria-sort="sortState('ilvl')"><button type="button" class="sortbtn" data-sort="ilvl" @click="sortBy('ilvl')">ilvl</button></th><template x-for="s in jobCtx.stats" :key="s"><th class="n" :data-col="s" :aria-sort="sortState(s)"><button type="button" class="sortbtn" :data-sort="s" :title="`Sort by synced ${jobCtx.label[s]}`" @click="sortBy(s)" x-text="jobCtx.short[s]"></button></th></template></tr></thead></template>
       <template x-if="view && view.shown.length"><tbody>
@@ -473,7 +476,6 @@
             <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="jobCtx.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'Maxed on this piece' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
           </tr>
         </template>
-        <template x-if="view.hidden"><tr><td :colspan="jobCtx.stats.length + 4" class="dim small" x-text="view.hiddenText"></td></tr></template>
       </tbody></template>
     </table></div>
   </div>

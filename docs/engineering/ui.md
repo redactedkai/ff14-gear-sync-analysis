@@ -9,7 +9,7 @@ Related pages: [architecture.md](architecture.md) (the store, views and when eac
 Pick a job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one (how to start is in the [root README](../../README.md#use-it)). Once a job is chosen, the page has two working tabs and one reference tab:
 
 1. **Gear optimizer** (opens first): picks one item per slot (two rings) from every piece the job can wear to maximize one stat, with two optional tiebreakers and an optional Target GCD, when you press **Optimize**. A Materia switch (on by default) gives each piece its best melds. Under **Gear to search**, the **Gear from** boxes leave out gear by how it is obtained (quests, crafting, Savage, PvP, ...); nine of them are off by default. Section 2.
-2. **Gear browser**: one table of real gear for the selected job, with filters and its synced stats, for looking gear up. A name search sits on its title line ("/" jumps to it), slot pills show how many pieces each slot has, a Reset button appears at their end while a filter is set, and a click on a column heading sorts by it (again to flip). A piece that sync lowers shows its synced numbers in bold, with its own numbers in small type under them. It has its own gear group boxes. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2. Section 3.
+2. **Gear browser**: one table of real gear for the selected job, with filters and its synced stats, for looking gear up. A name search sits on its title line ("/" jumps to it), slot pills show how many pieces each slot has, a Reset button appears at their end while a filter is set, and a click on a column heading sorts by it (again to flip). The table shows 100 matches a page, with page numbers above it. A piece that sync lowers shows its synced numbers in bold, with its own numbers in small type under them. It has its own gear group boxes. HQ-capable crafted gear is marked HQ, and rings that can be worn on both hands ×2. Section 3.
 3. **How the math works** (reference), with three sub-tabs. Section 4.
 
 ## 2. The Gear optimizer tab
@@ -79,6 +79,14 @@ The database matches of the tab's own filters, with synced stats; when it recomp
 
 Layout (owner, 2026-10-18): the name search on the title line (every word must be in the name, the words found are marked), slot pills with each slot's count under the other filters, one row of filters (item level as one "min – max" field, as under Gear to search), a Reset button (funnel and ×) at the end of the pills' line while any filter is off its default (`browseFiltered`; its place is kept while hidden, so the pills do not move), and sorting from the column headings (`browse.sort` and `browse.dir`, saved). A row that sync lowers (owner, 2026-10-19) shows what the player gets on top, bold: the synced stats, the lowered ones with the optimizer's cap bar; a muted line under each holds the piece's own value, and a grey bar marks the row's left edge (`browseCell`). The key above each table reads "maxed on this piece" beside a barred sample (owner, 2026-10-20). The item level column shows the piece's own item level, in the browser and the optimizer alike (owner, 2026-10-19: the synced one there was confusing).
 
+Pages (owner's pick P1 a, 2026-10-20):
+
+- The table shows 100 matches a page (`PAGE_SIZE`). The title line gives the number of matches ("2,156 matches").
+- The page numbers sit at the left of the key's line above the table, and the key at its right. The line always shows, even with one page and no key, so the table does not move as they come and go.
+- With more than 7 pages, the line keeps 7 number places between the ‹ and › arrows: the first page, the last, the current one with one page each side, and "…" for the pages skipped (‹ 1 … 8 9 10 … 22 ›); near an end the numbers run on from that end (‹ 1 2 3 4 5 … 22 ›). With one page there are no numbers (`pageList`).
+- Each number and arrow is a button; the current page has `aria-current="page"`, and the arrows are disabled at the ends. A page change scrolls the table's box to its first row.
+- Any change to the list (a filter, the search, a slot pill, the sort, the job, the level or sync) goes back to page 1, also when the old setting comes back. The page is not saved: a reload starts at page 1.
+
 ## 4. The How the math works tab
 
 A reference tab with three sub-tabs, each on its own settings where noted:
@@ -98,5 +106,5 @@ The Sync limits sub-tab was removed on 2026-10-16.
 | The Food row's menu | `src/ui/components/meal-menu.js`; `src/core/food.js` (`allMeals`) |
 | Pieces and meals with the same result | `src/core/same-result.js` (`sameMeals`), `src/core/tiers.js` (`rankTierOf`), `src/core/items.js` (`searchMatches`) |
 | Relics left out | `src/core/items.js` (`allocatedRelic`) |
-| Gear browser: component and view (Reset, cells of lowered pieces) | `src/ui/components/gear.js`, `src/ui/views/gear.js` (`browseFiltered`, `browseCell`) |
+| Gear browser: component and view (Reset, cells of lowered pieces, pages) | `src/ui/components/gear.js`, `src/ui/views/gear.js` (`browseFiltered`, `browseCell`, `pageList`) |
 | How the math works sub-tabs | `src/ui/components/sync-explainer.js`, `gcd.js`, `tiers.js`; `src/ui/views/piece.js`, `sync-explainer.js`, `gcd.js`, `tiers.js` |

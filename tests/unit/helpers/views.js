@@ -50,7 +50,7 @@ export const uniqueRingPool = job => gamePool(job, { ilvlMin: 130, ilvlMax: 130,
 
 /* The other tabs' views for store-shaped `app`, with the inputs their components assemble from the store. */
 const goalOf = app => [app.opt.target, app.opt.tb, app.opt.tb2];
-export const gearViewOf = app => gearView(app.jobCtx, syncSettings(app), app.browse);
+export const gearViewOf = (app, page = 1) => gearView(app.jobCtx, syncSettings(app), app.browse, page);
 export const pieceViewOf = (app, ilvl) => pieceView(app.jobCtx, syncSettings(app), app.piece, ilvl);
 export const explainerViewOf = (app, widths) => explainerView(app.jobCtx, syncSettings(app), app.piece, goalOf(app), widths);
 export const explainerItemLevelOf = app => explainerItemLevel(app.jobCtx, syncSettings(app), app.piece);
