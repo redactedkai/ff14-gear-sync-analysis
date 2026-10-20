@@ -92,9 +92,9 @@ export function browseCell(raw, synced) {
 const matchCount = (n, more = '') => `${fmtInt(n)} ${more}${n === 1 ? 'match' : 'matches'}`;
 
 /* The gear browser's list: {shown, countText, hidden, hiddenText (the last row's line), emptyBoxes, slots}. shown: the first SHOW_LIMIT matches, in the
-   heading's order, each with its cells (browseCell), its name cut for the search's highlight (nameParts), and, when sync
-   lowers its item level, `synced` true and `syncedIlvl` the item level it is synced to (owner, 2026-10-19: what the
-   player gets on the top line, the piece's own numbers on a muted line under it). slots: the slot pills,
+   heading's order, each with its cells (browseCell: the synced stat on the top line, the piece's own under it), its name
+   cut for the search's highlight (nameParts), and `synced` true when sync lowers its item level. The item level column
+   shows the piece's own item level (owner, 2026-10-19: the synced one there was confusing). slots: the slot pills,
    [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by group (1 to 3), count the matches in
    that slot under the other filters. For `job` (a JobContext) under `sync` ({cap, sync, level}: ui/settings.js
    syncSettings), with the browser's settings `browse` (the store's: state.js defaultBrowse). */
@@ -135,7 +135,6 @@ export function gearView(job, sync, browse) {
     slot: slotLabel(x.type, x.blocks),
     nameParts: markWords(x.name, b.q),
     synced: x.target != null && x.target < x.ilvl,
-    syncedIlvl: x.target != null && x.target < x.ilvl ? x.target : null,
     cells: job.stats.map(s => browseCell(x.raw[s], x.eff[s])),
   }));
 

@@ -16,8 +16,9 @@ test('gear view: every match of the filters, with its synced stats', () => {
   const v = gearViewOf(app);
   assert.equal(v.shown.length, rows.length);
   assert.equal(v.countText, `${rows.length} matches`);
-  // item level 130 is above the cap of 123: the row shows the synced item level and stats, the own ones under them
-  assert.ok(v.shown.every(x => x.synced && x.syncedIlvl === 123));
+  // item level 130 is above the cap of 123: the rows are synced and show the synced stats, the own ones under them; the
+  // item level column keeps the piece's own 130
+  assert.ok(v.shown.every(x => x.synced && x.ilvl === 130));
   const cut = v.shown.flatMap(x => x.cells).filter(c => c.was != null);
   assert.ok(cut.length > 0 && cut.every(c => Number(c.text) < Number(c.was) && c.cls === 'n cut'));
 });

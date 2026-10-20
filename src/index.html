@@ -450,7 +450,7 @@
       <template x-if="view && view.shown.length"><tbody>
         <template x-for="x in view.shown" :key="x.key">
           <tr :data-key="x.key" :class="{ synced: x.synced }">
-            <td><template x-for="(part, j) in x.nameParts" :key="j"><span :class="{ mark: part.hit }" x-text="part.text"></span></template><span class="hq" x-show="x.hq" title="High quality (crafted): stats include the HQ bonus">HQ</span></td><td><span x-text="x.slot"></span><span class="x2" x-show="x.copies === 2" title="Not Unique: can be worn on both ring fingers"> ×2</span></td><td class="n dim" data-col="lvl" x-text="x.lvl"></td><td class="n" data-col="ilvl" :class="{ cut: x.synced }"><span x-text="x.synced ? x.syncedIlvl : x.ilvl"></span><template x-if="x.synced"><span class="was" x-text="x.ilvl"></span></template></td>
+            <td><template x-for="(part, j) in x.nameParts" :key="j"><span :class="{ mark: part.hit }" x-text="part.text"></span></template><span class="hq" x-show="x.hq" title="High quality (crafted): stats include the HQ bonus">HQ</span></td><td><span x-text="x.slot"></span><span class="x2" x-show="x.copies === 2" title="Not Unique: can be worn on both ring fingers"> ×2</span></td><td class="n dim" data-col="lvl" x-text="x.lvl"></td><td class="n" data-col="ilvl" x-text="x.ilvl"></td>
             <template x-for="(c, k) in x.cells" :key="k"><td :class="c.cls" :data-col="jobCtx.stats[k]"><span :class="{ atcap: c.was != null }" :title="c.was != null ? 'At this piece’s cap' : null" x-text="c.text"></span><template x-if="c.was != null"><span class="was" x-text="c.was"></span></template></td></template>
           </tr>
         </template>
