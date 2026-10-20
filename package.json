@@ -18,7 +18,7 @@
     "lint:py": "node scripts/py.mjs -m ruff check . && node scripts/py.mjs -m ruff format --check .",
     "format": "biome format --write .",
     "format:py": "node scripts/py.mjs -m ruff format .",
-    "check": "npm run lint && npm run build && npm test && npm run test:smoke",
+    "check": "node scripts/check-deps.mjs && npm run lint && npm run build && npm test && npm run test:smoke",
     "check:all": "npm run check && npm run lint:py && npm run test:py",
     "data:update": "node scripts/py.mjs scripts/data/fetch.py && node scripts/py.mjs scripts/data/regen.py",
     "perf": "node scripts/perf/bench.mjs --quick --repeats 1",
