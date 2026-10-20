@@ -11,7 +11,7 @@ import {
   SEARCH_MAX_LENGTH,
   limitCapToLevel,
 } from '../../src/ui/state.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
+import { DEFAULT_EXCLUDE, TARGET_GCD_RANGE } from '../../src/ui/settings.js';
 import { browseFiltered } from '../../src/ui/views/gear.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { DEFAULT_JOB, JOBS } from '../../src/core/constants.js';
@@ -255,6 +255,8 @@ test('optimizer fields: goal, Gear from boxes, market board, melds, Target GCD a
   expectFieldDefault('opt.gcd', '2.456', 2.46);
   expectFieldDefault('opt.gcd', 'fast', D.opt.gcd);
   expectFieldDefault('opt.gcd', 3, D.opt.gcd);
+  // every value the box can hold survives a reload: its own range (audit 2: a typed 3.00 used to become "Any")
+  for (const seconds of TARGET_GCD_RANGE) expectFieldDefault('opt.gcd', seconds, seconds);
   expectFieldDefault('opt.gcd', 0, D.opt.gcd);
   expectFieldDefault('opt.gcd', null, D.opt.gcd);
   expectFieldDefault('opt.gcdMode', 'faster', D.opt.gcdMode);

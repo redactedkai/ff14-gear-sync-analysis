@@ -5,7 +5,7 @@
    from" boxes and the Target GCD range still follow the settings as they change. */
 import { samePassing } from '../views/optimizer.js';
 import { inProcessSolver, isCancelled, solverRequest } from '../solver.js';
-import { optimizerInputs, optimizerKey } from '../settings.js';
+import { TARGET_GCD_RANGE, optimizerInputs, optimizerKey } from '../settings.js';
 import { deepFreeze, expansionToggles, gearFromToggles, throttledEffect } from '../helpers.js';
 import { rankChoices, withRank } from '../ranks.js';
 
@@ -63,6 +63,8 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     get stale() {
       return !!this.view && (!!this.failure || this.nowDeps !== this.lastDeps);
     },
+    /* the Target GCD box's range in seconds, [lowest, highest] (settings.js) */
+    targetGcdRange: TARGET_GCD_RANGE,
     /* the Target GCD box's label: the result's own while it is up to date, else the one for the settings now */
     get gcdFieldLabel() {
       return (!this.stale && this.view?.gcdUi?.label) || this.gcdLabel;

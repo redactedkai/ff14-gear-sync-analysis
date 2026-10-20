@@ -10,6 +10,11 @@ import { MAX_LEVEL } from '../core/tables.js';
    Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions). In ACTIVITIES order. */
 export const DEFAULT_EXCLUDE = Object.freeze(ACTIVITIES.filter(a => !a.on).map(a => a.key));
 
+/* The Target GCD a player can set, in seconds: [lowest, highest]. The highest is 2.50, the slowest base GCD
+   (BASE_GCD_MS): no gear is slower (owner, 2026-10-19: the box moves a higher value to 2.50). The optimizer's box and
+   restoreState both take it from here. */
+export const TARGET_GCD_RANGE = Object.freeze([0.5, 2.5]);
+
 /* The sync settings the core takes, from the store's fields {cap, sync, level} (sync: the item level sync switch):
    {cap, sync, level}, sync true only while the switch is on and a cap is set (itemSyncIlvl in core/piece.js). */
 export function syncSettings({ cap, sync, level }) {

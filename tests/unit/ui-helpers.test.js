@@ -21,7 +21,7 @@ import {
   viewCache,
   deepFreeze,
 } from '../../src/ui/helpers.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
+import { DEFAULT_EXCLUDE, TARGET_GCD_RANGE } from '../../src/ui/settings.js';
 
 /* A box bound to one value: {field, value(), leave(text)}; leave types `text` and leaves the box. */
 function box(start, lo, hi, options) {
@@ -185,6 +185,41 @@ test('number box typing: one commit after the keys stop, of the last value; a li
   );
   for (const text of ['9', '90', '900']) level['@input']({ target: { value: text } });
   assert.deepEqual(live, [9, 90]); // 900 is out of range
+});
+
+/* Audit 2, finding 01-4: the markup's min and max and $num's bounds were written twice and disagreed: a typed Target GCD
+   of 3.00 was kept while the browser marked the box invalid, and a reload made it "Any". */
+test('number box: its min and max attributes come from its own bounds; Infinity sets none', () => {
+  let cap = 100;
+  const field = numberField(
+    () => 1,
+    () => {},
+    1,
+    () => cap,
+  );
+  assert.deepEqual([field[':min'](), field[':max']()], [1, 100]);
+  cap = 80; // a bound given as a function is read again (the job's level cap)
+  assert.equal(field[':max'](), 80);
+  const filter = numberField(
+    () => '',
+    () => {},
+    1,
+    Infinity,
+    { empty: '' },
+  );
+  assert.equal(filter[':min'](), 1);
+  assert.ok(!(':max' in filter), 'a filter keeps the max its markup gives it, for the arrow keys only');
+});
+
+test('Target GCD box: 0.50 to 2.50 seconds; a higher value moves to 2.50 when the box is left', () => {
+  const store = { opt: { gcd: '' } };
+  const gcd = storeNumberField(store, 'opt.gcd', ...TARGET_GCD_RANGE, { decimals: 2, empty: '' });
+  assert.deepEqual([gcd[':min'](), gcd[':max']()], [0.5, 2.5]);
+  const input = { value: '3.00' };
+  gcd['@change']({ target: input });
+  assert.deepEqual([store.opt.gcd, input.value], [2.5, 2.5]);
+  gcd['@change']({ target: { value: '0.2' } });
+  assert.equal(store.opt.gcd, 0.5);
 });
 
 test('store number box: reads and writes the setting at its dotted path, an out-of-range value moved to the nearest bound', () => {

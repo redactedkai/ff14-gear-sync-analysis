@@ -841,6 +841,12 @@ async function checkTargetGcd(pg) {
   await expect(pg.locator('#o-relic-note')).toHaveText('Relic weapons with customizable substats are left out.');
   const box = pg.locator('#o-gcd');
   check((await box.inputValue()) === '' && (await box.isEnabled()), 'the Target GCD box is not empty and enabled by default');
+  // a GCD above the slowest base GCD moves to 2.50 when the box is left, and stays 2.50 when saved (owner, 2026-10-19)
+  await setNumber(pg, '#o-gcd', '3.00');
+  await expect(box).toHaveValue('2.5');
+  check((await box.getAttribute('max')) === '2.5', `the Target GCD box's max is ${await box.getAttribute('max')}, not 2.5`);
+  await waitSaved(pg, 's => s.opt.gcd === 2.5');
+  await setNumber(pg, '#o-gcd', '');
   // the range beside the box follows the settings before the next Optimize (it showed none once a setting changed)
   const gcdLabel = pg.locator('#o-gcd-row > label');
   await expect(gcdLabel).toHaveText(/^Target GCD \(2\.50 to 2\.\d\d\)$/);

@@ -5,7 +5,7 @@ import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL } from '../core/tables.js';
 import { capCeiling } from '../core/sync-target.js';
 import { uniqueRanks } from './ranks.js';
-import { DEFAULT_EXCLUDE, levelSyncOn, syncSettings } from './settings.js';
+import { DEFAULT_EXCLUDE, TARGET_GCD_RANGE, levelSyncOn, syncSettings } from './settings.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
@@ -137,11 +137,13 @@ export function resetForJob(s, job, from = null) {
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */
-/** a Target GCD: '' or a number of seconds from 0.5 to 2.5 (a numeric string too: x-model on a number input), to 0.01 */
+/** a Target GCD: '' or a number of seconds in TARGET_GCD_RANGE, the box's own range (a numeric string too: x-model on
+    a number input), to 0.01 */
 const gcdIn = (v, fallback) => {
   if (v === '') return '';
   const n = typeof v === 'string' && v.trim() !== '' ? Number(v) : v;
-  return typeof n === 'number' && Number.isFinite(n) && n >= 0.5 && n <= 2.5 ? Math.round(n * 100) / 100 : fallback;
+  const [lowest, highest] = TARGET_GCD_RANGE;
+  return typeof n === 'number' && Number.isFinite(n) && n >= lowest && n <= highest ? Math.round(n * 100) / 100 : fallback;
 };
 const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);

@@ -29,6 +29,9 @@ const bound = b => (typeof b === 'function' ? b() : b);
      commits nothing.
    - onEmpty(input): called when an empty box is left or entered (change), for a field that then goes back to a value
      it follows (the tiers' level).
+   The box's `min` and `max` attributes (where the arrow keys stop) come from `lo` and `hi`, so the markup does not
+   write them again. A bound of Infinity sets no attribute: a filter that takes any number as typed keeps the `max`
+   its markup gives it, the end of the real range, for the arrow keys only.
    Boxes with another rule keep their own handlers: the GCD tab's level and speed correct what is typed and say so,
    and Piece stats' item level and the tiers' substat boxes commit only on change, since a value on the way would be
    held to its range while typing. */
@@ -54,7 +57,11 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
     }
     if (round(v) !== get()) set(round(v));
   };
+  // the min and max attributes from the bounds: a function is read at each render, Infinity sets none
+  const attribute = (name, b) => (typeof b === 'function' || Number.isFinite(b) ? { [name]: () => bound(b) } : {});
   return {
+    ...attribute(':min', lo),
+    ...attribute(':max', hi),
     ':value'() {
       const v = get(),
         el = this.$el;
