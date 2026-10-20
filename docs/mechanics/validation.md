@@ -159,14 +159,15 @@ For a substat (stat factor 100) the model's cap for a slot with share $p$ is $\o
 | Head, hands, feet | 85 | 111.69 | 112 | 112 |
 | Body, legs | 135 | 177.39 | 177 | 177 |
 | One-handed weapon | 100 | 131.4 | 131 | 131 |
+| Two-handed weapon | 140 | 183.96 | 184 | 184 |
 | Shield | 140 − 100 | 183.96 − 131.4 | 184 − 131 = 53 | 53 |
 
-**Verified** (external truth): 5 of 5 match.
+**Verified** (external truth): 6 of 6 match. The Wiki table cites no source. A second-hand in-game substat cap agrees at another item level: xivgear's test notes give the Blue Mage earring's Critical Hit cap at 270 as 46, "Verified in-game by Wynn" ($\operatorname{round}(685 \times 67 / 1000) = 46$; [`sync_stats_tests.ts`](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/test/stats/sync_stats_tests.ts)).
 
 - **What this confirms:** the clamp rule (each stat on a piece above the cap is limited to the full-share value of a same-slot piece at the cap) for **substats**.
 - **What it does not cover:** the main stat and Vitality. The Wiki lists one cap per slot and only for substats; whether lower-ranked substats clamp against the full-share value is settled by the Wiki's Item Level page instead ([math.md, section 5](math.md#what-is-assumed)).
 
-**Tests.** The validation unit test checks all five rows. The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too. The smoke test checks that the page's Wiki table says "match" on every row.
+**Tests.** The validation unit test checks the five rows other than the two-handed weapon (the page's table has no two-handed row; its 184 is the first term of the shield row). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too. The smoke test checks that the page's Wiki table says "match" on every row.
 
 ### The caps at item level 123
 
@@ -278,7 +279,7 @@ Which parts of the sync model rest on no capture of the game by this project, an
 2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$); **verified** (published) by the Wiki's Item Level page (accessories synced to 475: 127 / 89 becomes 88 / 88), and supported by a player's in-game report and The Balance's thresholds (below);
 3. sync never raises a stat: **verified** for substats (published): the Wiki's 93 / 65 becomes 88 / 65, and its page says "Substats will not be scaled up".
 
-**Level sync.** Melds on synced gear and the level sync trigger are settled (verified by the owner in game). What each part of level sync rests on is in [math.md, section 5](math.md#which-pieces-are-synced); the order when both triggers apply is second-hand, and weapons using the same level item level is inferred. Two captures would check them:
+**Level sync.** Melds on synced gear and the level sync trigger are settled (verified by the owner in game). What each part of level sync rests on is in [math.md, section 5](math.md#which-pieces-are-synced); the order when both triggers apply is second-hand, and weapons using the same level item level is second-hand at level 90 (xivgear issue #317) and inferred elsewhere. Two captures would check them:
 
 - one in a level-synced duty with item level sync off (a roulette), with one piece above the level's item level, would check the level item level directly;
 - one in a duty whose item level cap is above that level's item level, with a piece above both, would check the order.
@@ -470,7 +471,7 @@ The status of each claim this page checks, in one place. Details are in the sect
 | 25% Direct Hit on the eight green HQ healer pieces | **Inferred** | Fitted to the eight; patch 4.0 notes (section 2) |
 | Reduced stats on 18 item level 46 pieces | **Inferred**; listed by name (owner's decision) | Fitted to the 18 (section 2) |
 | Hand-edited stats of the six all-jobs pieces | **Verified**; factors by name (owner's decision) | Datamining history (section 2) |
-| Sync clamp for substats | **Verified** | Wiki, 5 of 5 at 475 (section 3) |
+| Sync clamp for substats | **Verified** | Wiki, 6 of 6 at 475 (section 3) |
 | Caps at item level 123 | **Inferred** (independent derivation) | No gear at 123; real pieces at 120 and 125 (section 3) |
 | Factor-first cap order | **Verified** by three **second-hand** in-game values; **inferred** for other caps with a factor below 100 | xivgear's tests (section 8; [math.md, section 5](math.md#the-clamp-rule)) |
 | Main stat and Vitality clamped like substats | **Inferred**, supported second-hand | xivgear's in-game values (section 8) |
