@@ -129,13 +129,15 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
   const ks = out.map(key);
   const si = keys.indexOf('spd');
   const beaten = (a, b) => (!exactSpd || si < 0 || a[si] === b[si]) && b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
-  const seen = new Set();
-  return out.filter((_v, i) => {
-    const id = ks[i].join();
-    if (seen.has(id) || ks.some(b => beaten(ks[i], b))) return false;
-    seen.add(id);
-    return true;
+  // the first vector of each distinct `keys` total, then those no other total beats (the stones' order in the slots
+  // makes most totals repeat, so this compares far fewer pairs than all of them)
+  const firstOf = new Map();
+  ks.forEach((k, i) => {
+    const id = k.join();
+    if (!firstOf.has(id)) firstOf.set(id, i);
   });
+  const firsts = [...firstOf.values()];
+  return firsts.filter(i => !firsts.some(j => beaten(ks[i], ks[j]))).map(i => out[i]);
 }
 
 /* Best [target, tiebreak1, tiebreak2] totals over every legal loadout, or null if none meets the constraints, ranked
@@ -176,9 +178,10 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
   return best === null ? null : best.slice(ranked.length - keys.length);
 }
 
-/* Call visit(get) once for every legal loadout (see exhaustive for the rules), where get(stat) is the loadout's total
-   of a neutral stat, or of weapon damage (wd) when the job ranks it. With melds every piece brings each of its meld
-   vectors on `meldKeys` (meldVectors; exactSpd as there). */
+/* Call visit(get) for every legal loadout (see exhaustive for the rules), where get(stat) is the loadout's total of a
+   neutral stat, or of weapon damage (wd) when the job ranks it. With melds every piece brings each of its meld vectors
+   on `meldKeys` (meldVectors; exactSpd as there). Loadouts whose every slot choice has the same totals and blocks as
+   another's are visited once: visit sees only totals, so they could not differ. */
 export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], exactSpd = false }, visit) {
   const stats = job.damageKey ? [...job.stats, 'wd'] : job.stats;
   const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
@@ -195,7 +198,15 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
       return sums.map(v => ({ v, blocks, empty: false }));
     });
     if (blockable.has(t)) list.push({ v: stats.map(() => 0), blocks: [], empty: true });
-    return list;
+    // one of each identical choice: two rings' meld vectors often add up to the same totals in several ways (about 7
+    // in 8 ring pair choices on a pool with overmelded rings), and every copy multiplies the loadouts to visit
+    const seen = new Set();
+    return list.filter(c => {
+      const id = `${c.empty}|${c.blocks.join()}|${c.v.join()}`;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
   });
   const tot = stats.map(() => 0);
   const get = s => tot[stats.indexOf(s)] || 0;
