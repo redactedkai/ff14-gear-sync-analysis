@@ -190,6 +190,65 @@ test('optimizer: with a worker, the search starts at once; a reply for a replace
   assert.equal(c.viewId, 1);
 });
 
+test('optimizer: Cancel goes back to idle at once and keeps the result shown, its picks and its out-of-date mark', async () => {
+  const solver = heldSolver();
+  const { app, c, settle } = bound(SGE, undefined, solver);
+  // the newest solve asked for (the Gear to search line asks too, once the settings rest)
+  const answerSolve = () => solver.answer(solver.asked.findLastIndex(a => a.request.kind === 'solve'));
+  c.run();
+  await tick();
+  await answerSolve();
+  await tick();
+  const shown = c.view;
+  const meal = allMeals(c.jobCtx)[3].key;
+  c.pickMeal(meal);
+  await tick();
+  await answerSolve();
+  await tick();
+  const withMeal = c.view;
+  assert.equal(withMeal.food.picked, true);
+
+  // a setting changes, Optimize runs, and Cancel is pressed while the worker searches
+  app.opt.tb = 'det';
+  await settle();
+  assert.equal(c.stale, true);
+  c.run();
+  await tick();
+  assert.deepEqual([c.busy, c.mealPick, c.stale], [true, null, false]);
+  c.cancel();
+  assert.equal(c.busy, false, 'idle at once');
+  assert.equal(c.view, withMeal);
+  assert.equal(c.mealPick, meal, 'the meal pick of the result shown is back');
+  assert.equal(c.stale, true, 'the result is still older than the settings');
+
+  // the cancelled search's reply comes later and is dropped
+  await answerSolve();
+  await tick();
+  assert.equal(c.view, withMeal);
+  assert.equal(c.busy, false);
+  assert.notEqual(shown, withMeal);
+
+  // Cancel with nothing pending does nothing; Optimize after a cancel shows its own result
+  const id = c.solveId;
+  c.cancel();
+  assert.equal(c.solveId, id);
+  c.run();
+  await tick();
+  await answerSolve();
+  await tick();
+  assert.deepEqual([c.busy, c.stale, c.mealPick], [false, false, null]);
+  assert.notEqual(c.view, withMeal);
+});
+
+test('optimizer: Cancel before a page-thread solve starts drops it', async () => {
+  const { c } = bound(SGE);
+  c.run();
+  c.cancel();
+  await frames();
+  assert.deepEqual([c.busy, c.view], [false, null]);
+  pending = [];
+});
+
 test('optimizer: a reply that comes after a job switch is dropped; Gear to search shows the newest line', async () => {
   const solver = heldSolver();
   const { app, c, settle } = bound(SGE, undefined, solver);

@@ -66,6 +66,9 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     busy: false,
     /* the latest solve asked for; an older one still waiting is dropped, and so is its reply */
     solveId: 0,
+    /* what Cancel puts back: the menu picks and the settings key of the result shown, {picks, mealPick, lastDeps},
+       saved when a search is asked for while none is pending (remember) */
+    shown: null,
     /* the same for the Gear to search line: the latest asked for */
     sideId: 0,
     init() {
@@ -100,11 +103,27 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     viewJob: null,
     /* Optimize: search with the settings as they are now; the menu picks of the last result are dropped. */
     run() {
+      this.remember();
       this.picks = {};
       this.menuOpen = null;
       this.mealPick = null;
       this.lastDeps = optimizerKey(alpine.raw(this.$store.app));
       this.solve();
+    },
+    /* Save what Cancel puts back (`shown`), before a search changes the picks or the settings key. While a search is
+       pending, the result shown is still the one from before it, so the first save stands. */
+    remember() {
+      if (!this.busy) this.shown = { picks: this.picks, mealPick: this.mealPick, lastDeps: this.lastDeps };
+    },
+    /* Cancel: drop the pending search and go back to idle at once. The result shown stays, with its menu picks and its
+       settings key, so a result older than the settings shows as out of date again. In the worker the search is not
+       stopped: it runs to its end and its reply is dropped (solveId), and a search asked for meanwhile waits for it
+       (ui/solver.js workerSolver). */
+    cancel() {
+      if (!this.busy) return;
+      this.solveId++;
+      this.busy = false;
+      if (this.shown) Object.assign(this, this.shown);
     },
     /* Solve and show the result, with the menu picks made so far; the progress bar shows until it comes. In the worker
        the page stays free meanwhile. A solver on the page's thread holds it (tier ranking up to a few seconds under a
@@ -146,6 +165,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     /* A piece picked from row i's menu (its gameId): the row shows it, and the other rows are checked again against
        it. */
     pick(i, gameId) {
+      this.remember();
       this.picks = { ...this.picks, [i]: gameId };
       this.menuOpen = null;
       this.solve();
@@ -166,6 +186,7 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     /* A meal picked from the Food row's menu (mealMenu): the search runs again with it in place of the best (with tier
        ranking or a Target GCD the meal can change which gear wins). */
     pickMeal(key) {
+      this.remember();
       this.mealPick = key;
       this.solve();
     },

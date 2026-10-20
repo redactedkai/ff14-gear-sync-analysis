@@ -1353,7 +1353,7 @@ button.run {
   padding: 8px 18px;
   font-weight: 600;
 }
-/* a result older than the settings: shown dimmed, its menus off, until Optimize runs again */
+/* a result older than the settings, or shown while a new search runs: dimmed, its menus off */
 .is-stale {
   opacity: 0.45;
   pointer-events: none;
@@ -1481,6 +1481,25 @@ td.held {
   to {
     transform: translateX(340%);
   }
+}
+/* while a search is pending: "Searching", the bar and Cancel on one line above the result */
+.busyline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 10px;
+  padding: 10px 12px 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  font-weight: 600;
+}
+.busyline .progress {
+  flex: 1;
+  margin: 0;
+}
+.busyline button {
+  font-weight: 600;
 }
 @media (prefers-reduced-motion: reduce) {
   input.lowered.flash {

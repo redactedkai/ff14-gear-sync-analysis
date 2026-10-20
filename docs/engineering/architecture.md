@@ -263,6 +263,7 @@ Notes:
 - **Started when needed.** The worker starts on the optimizer's first request: the Gear to search line, 120 ms after the page has a job. The page's first paint does not wait for it.
 - **One copy of the job's gear.** The solver session lives in the worker, so the page thread never builds the job's gear.
 - **Newer requests.** One request per kind is in the worker at a time. A newer one waits and replaces any request already waiting, whose caller gets the newer one's reply, so settings changed during a long search are not all solved in turn. The component drops a reply it no longer wants (`solveId`, `sideId`, or a job switch since). The worker is never stopped mid-search: that would throw away its session.
+- **Cancel.** The optimizer's Cancel (`cancel()` in its component) drops the pending search and returns the page to idle at once, with the result it showed and that result's menu picks. The worker still runs the search to its end and its reply is dropped; a search asked for meanwhile waits for it (up to about 2 s for the slowest first searches).
 - **Fallback.** If the worker cannot be made or fails to load, every request not yet answered is asked again on the page thread, as before the worker. The page thread's solver blocks the page, so the component then waits two frames before asking, and the progress bar is painted first.
 - **Times.** The worker times each request itself. "Solved in N ms" and the `optimizer` performance measure are that time, the search's own, not the wait for the reply.
 
