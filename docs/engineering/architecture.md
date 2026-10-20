@@ -112,7 +112,8 @@ Each component reads the job through its own `jobCtx` getter (the store's `jobCt
 **Large data never enters reactive state.** Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps nested objects as they are read. A frozen object is left as it is. Keeping big lists frozen or outside the store avoids wrapping thousands of rows on every recompute:
 
 - The item database is a plain module-level constant that the core reads directly. It is never placed in the store.
-- The views with long lists (the gear browser's rows, the optimizer result, the accuracy panel) are frozen before they are stored on the component.
+- The views with long lists (the gear browser's rows, the optimizer result, the accuracy panel) are frozen before they are stored on the component. The optimizer result is frozen all through (`deepFreeze` in `helpers.js`): with only its top frozen, `x-for` still wrapped each row it hands the template, and each cell read from a row, in a proxy.
+- A menu inside a result (the optimizer rows' menus of pieces with the same result, the Food menu) is built with `x-if` only while it is open, not hidden with `x-show`: built hidden on every row, they were about four fifths of the result's elements and most of the time to draw it (2026-10-19: the longest blocked main thread after a slow result went from about 90 to 25 ms, and from about 550 to 140 ms at 4× CPU throttle).
 - The job's gear the optimizer searches is built once per job, frozen, and kept in the solver session, which lives in the optimizer's Web Worker ([section 9](#9-the-optimizers-worker)), never in reactive state. The optimizer reads the store through `Alpine.raw`, without the proxies: a worker cannot be sent a proxy.
 
 ### Heavy work: debounced, only when visible, or on request
