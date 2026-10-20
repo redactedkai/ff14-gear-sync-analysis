@@ -5,7 +5,7 @@ or horizontal page scroll at 960 px (NARROW). Prints 'no errors' on success.
 
 Expected values come from outside the code under test where possible:
   - sync caps at item level 123 (head/hands/feet 29, body/legs 47, accessories 23, 2H weapon 48;
-    main stat 30/48/24/50) and the FFXIV Wiki's item level 475 caps;
+    main stat 30/48/24/50) (the Wiki's item level 475 caps are checked in tests/unit/core-validation.test.js);
   - the optimizer over every piece a healer and a tank can wear: the page's best Spell/Skill Speed, synced to 123 and
     unsynced, equals what src/core computes for the same gear in Node (the core is checked against a brute force over
     every loadout in tests/unit), and so do the totals with crafted gear left out and with materia off;

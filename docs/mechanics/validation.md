@@ -167,7 +167,7 @@ For a substat (stat factor 100) the model's cap for a slot with share $p$ is $\o
 - **What this confirms:** the clamp rule (each stat on a piece above the cap is limited to the full-share value of a same-slot piece at the cap) for **substats**.
 - **What it does not cover:** the main stat and Vitality. The Wiki lists one cap per slot and only for substats; whether lower-ranked substats clamp against the full-share value is settled by the Wiki's Item Level page instead ([math.md, section 5](math.md#what-is-assumed)).
 
-**Tests.** The validation unit test checks the five rows other than the two-handed weapon (the page's table has no two-handed row; its 184 is the first term of the shield row). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too. The smoke test checks that the page's Wiki table says "match" on every row.
+**Tests.** The validation unit test checks all six rows (`wikiChecks` in `src/core/validation.js`; the page no longer shows this table). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
 
 ### The caps at item level 123
 

@@ -55,6 +55,7 @@ const WIKI475 = Object.freeze(
     { label: 'Head / hands / feet', type: 'head', published: 112, share: 85 },
     { label: 'Body / legs', type: 'body', published: 177, share: 135 },
     { label: 'One-handed weapon', type: 'weapon', published: 131, share: 100 },
+    { label: 'Two-handed weapon', type: 'weapon', published: 184, share: 140 },
     { label: 'Off-hand (shield)', type: 'offhand', published: 53, share: 40 },
   ].map(row => Object.freeze(row)),
 );
