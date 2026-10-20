@@ -1,7 +1,8 @@
 #!/bin/sh
-# Rejects a commit message with an AI attribution line (CLAUDE.md, "Working with the owner").
+# Rejects a commit message with an AI attribution line (CLAUDE.md, "Working with the owner"): a Co-Authored-By trailer
+# or a "Generated with [Claude ...]" line. Other uses of "generated with" ("files generated with regen.py") pass.
 # Enable once per clone: git config core.hooksPath .githooks
-if grep -qiE '^[[:space:]]*Co-Authored-By:|Generated with' "$1"; then
+if grep -qiE '^[[:space:]]*Co-Authored-By:|Generated with \[?Claude' "$1"; then
   echo 'commit-msg: remove the Co-Authored-By / "Generated with" line; this repo has no AI attribution.' >&2
   exit 1
 fi
