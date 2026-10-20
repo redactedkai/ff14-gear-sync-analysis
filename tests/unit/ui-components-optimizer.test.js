@@ -8,6 +8,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { allMeals } from '../../src/core/food.js';
 import { makeSession } from '../../src/core/session.js';
 import { optimizer } from '../../src/ui/components/optimizer.js';
+import { inProcessSolver } from '../../src/ui/solver.js';
 import { optimizerInputs } from '../../src/ui/settings.js';
 import { restoreState } from '../../src/ui/state.js';
 import { createAppStore } from '../../src/ui/store.js';
@@ -31,12 +32,12 @@ function standIn() {
   };
 }
 
-/* The component bound to the store of `saved` with `session`, its init run; settle() reruns its effect after a change
-   and waits out its debounce. */
-function bound(saved, session = makeSession()) {
+/* The component bound to the store of `saved` with `session` (or with `solver`, the page thread's by default), its
+   init run; settle() reruns its effect after a change and waits out its debounce. */
+function bound(saved, session = makeSession(), solver = inProcessSolver(session)) {
   const app = createAppStore(restoreState(saved));
   const { alpine, rerun } = standIn();
-  const c = Object.assign(optimizer(alpine, session), { $store: { app }, $nextTick: () => {} });
+  const c = Object.assign(optimizer(alpine, solver), { $store: { app }, $nextTick: () => {} });
   c.init();
   const settle = async () => {
     rerun();
@@ -92,7 +93,7 @@ test('optimizer: Optimize shows the result for the settings; a change marks it o
   assert.equal(c.view, null);
   c.run();
   // the solve waits for the progress bar to be painted (two frames); here it runs at once
-  c.solveNow();
+  await c.solveNow();
   const { job, sync, level, recipe } = optimizerInputs(app);
   assert.deepEqual(c.view, optimizerView(job, sync, level, recipe, session));
   assert.ok(Object.isFrozen(c.view));
@@ -110,24 +111,24 @@ test('optimizer: Optimize shows the result for the settings; a change marks it o
   assert.equal(c.view, null);
 });
 
-test('optimizer: a piece picked from a row by gameId and a picked meal are shown; Optimize drops both', () => {
+test('optimizer: a piece picked from a row by gameId and a picked meal are shown; Optimize drops both', async () => {
   const { app, c } = bound(SGE);
   c.run();
-  c.solveNow();
+  await c.solveNow();
   const row = c.view.rows.findIndex(r => r.same);
   const other = c.view.rows[row].same.groups.flatMap(g => g.items).find(x => !x.on);
   assert.equal(typeof other.key, 'number', 'a menu item is keyed by its gameId');
   c.pick(row, other.key);
   assert.deepEqual(c.picks, { [row]: other.key });
-  c.solveNow();
+  await c.solveNow();
   assert.equal(c.view.rows[row].item.gameId, other.key);
   const meal = allMeals(app.jobCtx)[3];
   c.pickMeal(meal.key);
-  c.solveNow();
+  await c.solveNow();
   assert.deepEqual([c.view.food.name, c.view.food.picked], [meal.name, true]);
   assert.equal(c.view.rows[row].item.gameId, other.key, 'the piece stays picked');
   c.run();
-  c.solveNow();
+  await c.solveNow();
   assert.deepEqual([c.picks, c.mealPick, c.view.food.picked], [{}, null, false]);
 });
 
@@ -143,10 +144,76 @@ test('optimizer: every solve and the Gear to search line share one session', asy
   const { c, settle } = bound(SGE, session);
   await settle();
   c.run();
-  c.solveNow();
+  await c.solveNow();
   c.pick(0, -1);
-  c.solveNow();
+  await c.solveNow();
   assert.equal(gearBuilt, 1);
+});
+
+/* A solver like the page's worker: it does not block the page, and answers each request only when the test says
+   (answer(i): request i, with the page thread's own reply), in any order. */
+function heldSolver() {
+  const local = inProcessSolver();
+  const asked = [];
+  return {
+    asked,
+    blocksPage: false,
+    request: request =>
+      new Promise(resolve => {
+        asked.push({ request, answer: () => local.request(request).then(resolve) });
+      }),
+    answer: i => asked[i].answer(),
+  };
+}
+
+const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+test('optimizer: with a worker, the search starts at once; a reply for a replaced solve is dropped', async () => {
+  const solver = heldSolver();
+  const { c } = bound(SGE, undefined, solver);
+  c.run();
+  await tick();
+  assert.equal(solver.asked.length, 1, 'no frames waited for: the page is not blocked');
+  assert.equal(c.busy, true);
+  // a meal picked while the first search runs: a second solve, answered first
+  c.pickMeal(allMeals(c.jobCtx)[3].key);
+  await tick();
+  assert.equal(solver.asked.length, 2);
+  await solver.answer(1);
+  await tick();
+  assert.equal(c.view.food.picked, true);
+  assert.equal(c.busy, false);
+  const shown = c.view;
+  await solver.answer(0);
+  await tick();
+  assert.equal(c.view, shown, 'the older reply is not shown');
+  assert.equal(c.viewId, 1);
+});
+
+test('optimizer: a reply that comes after a job switch is dropped; Gear to search shows the newest line', async () => {
+  const solver = heldSolver();
+  const { app, c, settle } = bound(SGE, undefined, solver);
+  await settle();
+  c.run();
+  await tick();
+  app.setJob('WAR');
+  await solver.answer(solver.asked.findIndex(a => a.request.kind === 'solve'));
+  await tick();
+  assert.equal(c.view, null);
+  assert.equal(c.busy, false);
+  // two Gear to search lines asked for (SGE's, then WAR's after the switch), answered newest first
+  await settle();
+  const sides = solver.asked.filter(a => a.request.kind === 'gearToSearch');
+  assert.deepEqual(
+    sides.map(a => a.request.jobId),
+    ['SGE', 'WAR'],
+  );
+  await sides[1].answer();
+  await tick();
+  const war = c.countText;
+  await sides[0].answer();
+  await tick();
+  assert.equal(c.countText, war, "the older (SGE's) line is not shown");
 });
 
 test('optimizer: the goal menus hold a stat once; picking one another rank holds swaps them', () => {

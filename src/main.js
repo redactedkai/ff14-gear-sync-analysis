@@ -11,6 +11,8 @@ import { optimizer } from './ui/components/optimizer.js';
 import { mealMenu } from './ui/components/meal-menu.js';
 import { tierControls, tierTable } from './ui/components/tiers.js';
 import { gcdControls, gcdTab } from './ui/components/gcd.js';
+import { inProcessSolver, workerSolver } from './ui/solver.js';
+import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
 const SAVE_DEBOUNCE_MS = 150;
 
@@ -23,13 +25,24 @@ const app = Alpine.store('app');
    filter an emptied box clears (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
+/* The optimizer's Web Worker (ui/solver.js workerSolver), made when the optimizer first needs it: started from a Blob URL
+   of its bundle (the page is one file, also opened from file://), then handed the data files' texts, which it parses
+   on its own thread. The URL is not revoked: the worker may still be fetching it. */
+function startSolverWorker() {
+  const worker = new Worker(URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' })));
+  worker.postMessage({ data: WORKER_DATA });
+  return worker;
+}
+// searches off the page's thread; on the page's thread as before when the browser will not run the worker
+const solver = workerSolver(startSolverWorker, inProcessSolver);
+
 // the optimizer takes Alpine's effect and raw from here, so its module loads without a page (its unit test)
 Object.entries({
   page,
   settings,
   syncExplainer,
   gear,
-  optimizer: () => optimizer(Alpine),
+  optimizer: () => optimizer(Alpine, solver),
   mealMenu,
   tierTable,
   gcdTab,

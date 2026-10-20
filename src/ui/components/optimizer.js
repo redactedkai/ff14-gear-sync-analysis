@@ -2,8 +2,8 @@
    presses Optimize (owner, 2026-10-18: no search on every setting change). A setting changed since the last search
    leaves its result shown but dimmed, its menus off; a job switch clears it. The piece count and the greyed-out "Gear
    from" boxes and the Target GCD range still follow the settings as they change. */
-import { makeSession } from '../../core/session.js';
-import { gearToSearchView, optimizerView, samePassing } from '../views/optimizer.js';
+import { samePassing } from '../views/optimizer.js';
+import { inProcessSolver, solverRequest } from '../solver.js';
 import { optimizerInputs, optimizerKey } from '../settings.js';
 import { debouncedEffect, expansionToggles, gearFromToggles } from '../helpers.js';
 import { rankChoices, withRank } from '../ranks.js';
@@ -13,10 +13,11 @@ const DEBOUNCE_MS = 120;
 
 /* The optimizer tab's component: the result (`view`), whether it is out of date, the solve, the rows' menus of pieces
    with the same result, and the filters under Gear to search. `alpine`: what it needs of Alpine, {effect, raw} (main.js
-   passes Alpine itself; a test passes stand-ins, so the component runs without a page). `session`: the solver session
-   (core/session.js) its solves share, one per page; kept in this closure, outside reactive state, like the gear it
-   holds. */
-export function optimizer(alpine, session = makeSession()) {
+   passes Alpine itself; a test passes stand-ins, so the component runs without a page). `solver`: what runs its
+   searches and the Gear to search line (ui/solver.js): the page's worker solver (main.js), or by default one on the
+   page's thread, as the tests use. Its solver session (the job's gear, the caches) is one per solver, kept outside
+   reactive state. */
+export function optimizer(alpine, solver = inProcessSolver()) {
   return {
     view: null,
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
@@ -62,8 +63,10 @@ export function optimizer(alpine, session = makeSession()) {
     },
     /* a solve is pending or running: shows the progress bar */
     busy: false,
-    /* the latest solve asked for; an older one still waiting is dropped */
+    /* the latest solve asked for; an older one still waiting is dropped, and so is its reply */
     solveId: 0,
+    /* the same for the Gear to search line: the latest asked for */
+    sideId: 0,
     init() {
       // the settings as they change: whether the result is out of date (a job switch drops it), and the piece count and
       // empty boxes under Gear to search
@@ -78,11 +81,15 @@ export function optimizer(alpine, session = makeSession()) {
             this.nowDeps = key;
             if (this.view && job !== this.viewJob) this.view = null;
             if (!job) return;
-            const { job: jobCtx, sync, level, recipe } = optimizerInputs(alpine.raw(this.$store.app));
-            const side = gearToSearchView(jobCtx, sync, level, recipe, session);
-            this.countText = side.countText;
-            this.emptyBoxes = side.emptyBoxes;
-            this.gcdLabel = side.gcdLabel;
+            // the line comes back from the solver; one asked for since replaces it
+            const id = ++this.sideId;
+            const request = solverRequest('gearToSearch', optimizerInputs(alpine.raw(this.$store.app)));
+            solver.request(request).then(({ result }) => {
+              if (id !== this.sideId) return;
+              this.countText = result.countText;
+              this.emptyBoxes = result.emptyBoxes;
+              this.gcdLabel = result.gcdLabel;
+            });
           };
         },
         DEBOUNCE_MS,
@@ -98,41 +105,42 @@ export function optimizer(alpine, session = makeSession()) {
       this.lastDeps = optimizerKey(alpine.raw(this.$store.app));
       this.solve();
     },
-    /* Solve and show the result, with the menu picks made so far. The solve holds the page's thread (tier ranking up to
-       a few seconds under a Target GCD), so the progress bar is shown first: after the next frame is painted. */
-    solve() {
+    /* Solve and show the result, with the menu picks made so far; the progress bar shows until it comes. In the worker
+       the page stays free meanwhile. A solver on the page's thread holds it (tier ranking up to a few seconds under a
+       Target GCD), so the bar is painted first: two frames, the first lays the bar out, the second paints it and
+       starts its animation, which then runs on the compositor while the solve holds the thread. */
+    async solve() {
       const id = ++this.solveId;
       this.busy = true;
-      // two frames: the first lays the bar out, the second paints it and starts its animation, which then runs on the
-      // compositor while the solve holds the thread
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
-          setTimeout(() => {
-            if (id !== this.solveId) return;
-            // finally: a throw past optimizerView's own catch must not leave the Optimize button disabled
-            try {
-              this.solveNow();
-            } finally {
-              this.busy = false;
-            }
-          }),
-        ),
-      );
+      if (solver.blocksPage) await new Promise(painted => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(painted))));
+      if (id !== this.solveId) return;
+      // finally: a failed solve must not leave the Optimize button disabled
+      try {
+        await this.solveNow(id);
+      } finally {
+        if (id === this.solveId) this.busy = false;
+      }
     },
-    solveNow() {
+    /* Ask the solver for the result and show it, unless solve `id` has been replaced by a newer one meanwhile, or the
+       job switched (a job switch drops the result). */
+    async solveNow(id = this.solveId) {
       const t0 = performance.now();
       // the plain store: read through Alpine's reactive proxies, the pool's thousands of stat reads cost about
-      // twice the run itself (this runs outside the effect, so nothing here needs tracking)
+      // twice the run itself, and a worker cannot be sent a proxy (this runs outside the effect, so nothing here needs
+      // tracking)
       const raw = alpine.raw(this.$store.app);
-      const { job, sync, level, recipe } = optimizerInputs(raw);
       const choices = { pieces: alpine.raw(this.picks), meal: this.mealPick };
-      const view = Object.freeze(optimizerView(job, sync, level, recipe, session, choices));
-      this.solveMs = Math.max(1, Math.round(performance.now() - t0));
-      this.view = view;
+      const job = raw.job;
+      const { result, ms } = await solver.request(solverRequest('solve', optimizerInputs(raw), choices));
+      if (id !== this.solveId || raw.job !== job) return;
+      // the search's own time (building the job's gear included, the first time), not the wait for the worker's reply
+      this.solveMs = Math.max(1, Math.round(ms));
+      this.view = Object.freeze(result);
       this.viewId++;
-      this.viewJob = raw.job;
+      this.viewJob = job;
+      // the settings now: changed while the worker searched, the result shows as out of date
       this.nowDeps = optimizerKey(raw);
-      performance.measure('optimizer', { start: t0 }); // read by scripts/perf/browser.mjs
+      performance.measure('optimizer', { start: t0, duration: ms }); // read by scripts/perf/browser.mjs
     },
     /* A piece picked from row i's menu (its gameId): the row shows it, and the other rows are checked again against
        it. */

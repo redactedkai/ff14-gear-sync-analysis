@@ -90,3 +90,64 @@ test('page template: both tabs take their filter menus from the partials', async
   assert.match(page, /\$store\.app\.browse\.market = /);
   assert.doesNotMatch(page, /\{\{|INCLUDE/);
 });
+
+/* Audit 16 R8 (owner, 2026-10-19): the optimizer's worker. Its bundle, built as the page builds it, runs here with a
+   stand-in for the worker's `self`: the first message hands it the data texts (the page's own strings, bundled once),
+   then it answers each request as the page thread's solver does. */
+test('build: the solver worker loads from the posted data texts and answers like the page thread', async () => {
+  const { build } = await import('esbuild');
+  const { readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const result = await build({
+    stdin: {
+      // the page's data modules imported too, as core/tables.js does: the worker's texts must be the same strings
+      contents: [
+        "import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';",
+        "import { ITEMS } from './core/tables.js';",
+        'globalThis.__worker = { WORKER_DATA, WORKER_SOURCE, items: ITEMS.length };',
+      ].join('\n'),
+      resolveDir: SRC,
+      loader: 'js',
+    },
+    bundle: true,
+    format: 'iife',
+    plugins: esbuildOptions().plugins,
+    write: false,
+    logLevel: 'error',
+  });
+  const script = result.outputFiles[0].text;
+  const sandbox = {};
+  new Function('globalThis', script)(sandbox);
+  const { WORKER_DATA, WORKER_SOURCE } = sandbox.__worker;
+  assert.ok(sandbox.__worker.items > 0);
+  assert.ok('items.json' in WORKER_DATA && 'item-level.json' in WORKER_DATA);
+
+  // the item database is in the script once: the worker's copy is the page's string, not a second literal
+  const items = JSON.stringify(JSON.parse(readFileSync(join(SRC, 'data', 'items.json'), 'utf8')));
+  assert.equal(WORKER_DATA['items.json'], items);
+  // twice the database would make the script over twice its size (it was 5.6 MB when the attributes differed)
+  assert.ok(script.length < items.length * 1.5, `${script.length} bytes for ${items.length} of items`);
+
+  // the worker: loads on the first message, then answers requests tagged with their ids
+  const posted = [];
+  const self = { postMessage: message => posted.push(structuredClone(message)) };
+  new Function('self', WORKER_SOURCE)(self);
+  self.onmessage({ data: { data: structuredClone(WORKER_DATA) } });
+  assert.equal(self.__solverData, undefined, 'the texts are let go once loaded');
+  const { inProcessSolver, solverRequest } = await import('../../src/ui/solver.js');
+  const { optimizerInputs } = await import('../../src/ui/settings.js');
+  const { restoreState } = await import('../../src/ui/state.js');
+  const { createAppStore } = await import('../../src/ui/store.js');
+  const inputs = optimizerInputs(createAppStore(restoreState({ job: 'WHM', sync: true, cap: 200, level: 100, opt: { food: true } })));
+  // pool items' own ids ('i1552') count the items built in their thread, so they differ between the two
+  const withoutPoolIds = view =>
+    JSON.parse(JSON.stringify(view, (key, value) => (key === 'id' && /^i\d+$/.test(value) ? undefined : value)));
+  for (const kind of ['gearToSearch', 'solve']) {
+    const request = solverRequest(kind, inputs);
+    self.onmessage({ data: structuredClone({ id: 7, ...request }) });
+    const reply = posted.pop();
+    assert.equal(reply.id, 7);
+    const local = (await inProcessSolver().request(request)).result;
+    assert.deepEqual(withoutPoolIds(reply.result), withoutPoolIds(local), kind);
+  }
+});
