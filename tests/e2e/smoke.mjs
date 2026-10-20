@@ -736,39 +736,58 @@ async function checkFood(pg) {
   await expect(pg.locator('#o-total-note')).toHaveText('Clan bonuses can affect MND and VIT.');
   await expect(pg.locator('#o-effect')).toContainText('gear and food');
   await waitSaved(pg, 's => s.opt.food === true');
-  // the Food row's menu: it opens with the goal's stat picked (Spell Speed, which the shown meal has); the search box
-  // takes the keys; "Best for goal" lists the meals with the best's result, off every meal; two stat pills narrow it to
-  // a pair and grey out the rest; the search matches meal names, and one that matches nothing says so
+  // the Food row's menu: it opens with no pill and the search box takes the keys; the meals with the best's result are
+  // pinned on top under "Best for goal · N", N as on the row's button; two stat pills narrow only the list below, grey
+  // out the rest, mark their stats in every line, and bring a Sort row; the search matches meal names below the pinned
+  // meals, and one that matches nothing says so
   await pg.click('#o-meal-btn');
-  await expect(pg.locator('#o-meal-menu [data-stat="spd"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(1);
+  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(0);
   // the box takes focus a frame after the menu shows
   const focused = await pg
     .waitForFunction(() => document.activeElement?.id === 'o-meal-q', null, { timeout: 2000 })
     .then(() => true)
     .catch(() => false);
   check(focused, 'the Food menu opened without focus in its search box');
-  const meals = pg.locator('#o-meal-menu [data-meal]');
-  // with Best for goal off another pill can be picked; turning it back on puts the pills back to the goal's
-  await pg.locator('#o-meal-best').uncheck();
-  await pg.click('#o-meal-menu [data-stat="det"]');
-  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(2);
-  await pg.locator('#o-meal-best').check();
-  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(1);
-  await expect(pg.locator('#o-meal-menu [data-stat="spd"]')).toHaveAttribute('aria-pressed', 'true');
-  await pg.click('#o-meal-menu [data-stat="spd"]'); // the rest of the check starts with no pill
-  const bestCount = await meals.count();
-  await pg.locator('#o-meal-best').uncheck();
+  const pinned = pg.locator('#o-meal-menu [data-group="best"] [data-meal]');
+  const meals = pg.locator('#o-meal-menu [data-group]:not([data-group="best"]) [data-meal]');
+  const bestCount = await pinned.count();
+  check(bestCount >= 1, 'no meal pinned as best for goal');
+  await expect(pg.locator('#o-meal-menu [data-group="best"] .same-head')).toHaveText(`Best for goal · ${bestCount}`);
+  if (bestCount > 1) await expect(pg.locator('#o-meal-btn .same-count')).toHaveText(`1 of ${bestCount}`);
+  await expect(pg.locator('#o-meal-menu .meal-stat.hit')).toHaveCount(0);
+  await expect(pg.locator('#o-meal-sort')).toHaveCount(0);
   const allCount = await meals.count();
-  check(bestCount >= 1 && allCount > bestCount, `Best for goal lists ${bestCount} of ${allCount} meals`);
   await pg.click('#o-meal-menu [data-stat="det"]');
   await pg.click('#o-meal-menu [data-stat="crit"]');
+  await expect(pg.locator('#o-meal-menu .meal-pill[aria-pressed="true"]')).toHaveCount(2);
   check(await pg.locator('#o-meal-menu [data-stat="dh"]').isDisabled(), 'a third stat pill is not greyed out');
+  check((await pinned.count()) === bestCount, 'the pills changed the pinned meals');
   const pairCount = await meals.count();
   check(pairCount >= 1 && pairCount < allCount, `the DET and CRT pills list ${pairCount} of ${allCount} meals`);
-  // a search that matches nothing says so and offers to clear itself
+  await expect(pg.locator('#o-meal-menu [data-group]:not([data-group="best"]) .meal-stat.hit')).toHaveCount(2 * pairCount);
+  // the Sort row: by Critical Hit, one list with no expansion headings, most Critical Hit first; turning the CRT pill
+  // off goes back to Newest
+  const sortLabels = (await pg.locator('#o-meal-sort label').allInnerTexts()).map(t => t.trim());
+  check(same(sortLabels, ['Newest', 'CRT', 'DET']), `the Sort row reads ${sortLabels.join(' / ')}`);
+  await pg.click('#o-meal-sort [data-sort="crit"]');
+  await expect(pg.locator('#o-meal-menu [data-group="sorted"]')).toHaveCount(1);
+  await expect(pg.locator('#o-meal-menu [data-group="sorted"] .same-head')).toHaveCount(0);
+  const critPoints = (await pg.locator('#o-meal-menu [data-group="sorted"] .meal-stat.hit').allInnerTexts())
+    .filter(t => t.startsWith('CRT'))
+    .map(t => Number(t.split('+')[1]));
+  check(critPoints.length === pairCount, `${critPoints.length} CRT figures for ${pairCount} meals`);
+  check(
+    critPoints.every((v, i) => i === 0 || v <= critPoints[i - 1]),
+    `sorted by CRT, not highest first: ${critPoints.slice(0, 6).join(', ')}`,
+  );
+  await pg.click('#o-meal-menu [data-stat="crit"]');
+  await pg.click('#o-meal-menu [data-stat="crit"]');
+  await expect(pg.locator('#o-meal-menu [data-group="sorted"]')).toHaveCount(0);
+  check(await pg.locator('#o-meal-sort [data-sort="new"] input').isChecked(), 'turning the CRT pill off left the sort on CRT');
+  // a search that matches nothing below says so and offers to clear itself; the pinned meals stay
   await pg.fill('#o-meal-q', 'zzzz');
-  await expect(pg.locator('#o-meal-empty')).toContainText('No meal matches "zzzz".');
+  await expect(pg.locator('#o-meal-empty')).toContainText('No other meal matches "zzzz".');
+  check((await pinned.count()) === bestCount, 'the search changed the pinned meals');
   await pg.locator('#o-meal-empty button').click();
   check((await meals.count()) === pairCount, 'Clear search did not bring the meals back');
   const name = await meals.first().getAttribute('data-meal');

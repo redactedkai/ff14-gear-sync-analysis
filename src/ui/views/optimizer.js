@@ -106,19 +106,17 @@ function sameMenu(options, shown) {
   return { count, countText: `1 of ${count}`, title: `${count} pieces give the same result here`, groups };
 }
 
-/* The Food row's menu (owner's design, 2026-10-18), from runRecipe's found.food (`meals`: {best, tagged, shown}) on the
-   set's gear totals (`gearTotals`); `goal`: the recipe's target and tiebreaks, in order, empty ones dropped. Returns
-   {count, groups, pills, preset}:
-   - count: how many meals have the best's result. groups: every meal the job can use, by expansion, newest first:
-     {label, items: [{key, name, ilvl, label, stats, adds, best, on}]}, label "Spell Speed + Direct Hit" (the row's hover
-     text; the row shows what the meal adds instead), stats its neutral stats (for the pills), adds what it gives on
-     this gear ("SpS +44 DHT +41 VIT +54"), best its result is the best's, on the row shows it. pills: the job's
-     substats some meal has, {stat, short, label}.
-   - preset: the pills the menu starts with, and goes back to when "Best for goal" is turned on (owner, 2026-10-18): the
-     goal's substats in order (target, tiebreak 1, tiebreak 2), only those the newest meal tagged best for goal has, so
-     the switch on with them always lists a meal, and two at most (a meal has two stats). From a tagged meal, not the
-     one shown: a picked meal need not be tagged. */
-function mealMenu(job, level, gearTotals, meals, goal) {
+/* The Food row's menu (owner's design, 2026-10-18; best on top, owner's pick F3 c, 2026-10-20), from runRecipe's
+   found.food (`meals`: {best, tagged, shown}) on the set's gear totals (`gearTotals`). Returns {count, pinned, groups,
+   pills}:
+   - count: how many meals have the best's result (the row's "1 of N"). pinned: those meals, newest first, always on top
+     of the menu under "Best for goal · N". groups: every other meal the job can use, by expansion, newest first,
+     {label, items}. Each meal is {key, name, ilvl, label, stats, adds, best, on}: label "Spell Speed + Direct Hit" (the
+     row's hover text), stats its neutral stats (for the pills), adds what it gives on this gear in the meal's own order
+     (its main stat first, Vitality last), [{stat, text: "CRT +133", value: 133}], best its result is the best's, on
+     the row shows it.
+   - pills: the job's substats some meal has, {stat, short, label}. */
+function mealMenu(job, level, gearTotals, meals) {
   const all = allMeals(job);
   const tagged = new Set(meals.tagged);
   const item = m => {
@@ -130,23 +128,23 @@ function mealMenu(job, level, gearTotals, meals, goal) {
       ilvl: m.ilvl,
       label: foodLabel(job, m),
       stats: m.stats.map(x => x.stat),
-      adds: lines.map(s => `${job.short[s]} +${bonus[s].bonus}`).join(' '),
+      adds: lines.map(s => ({ stat: s, text: `${job.short[s]} +${bonus[s].bonus}`, value: bonus[s].bonus })),
       best: tagged.has(m),
       on: m === meals.shown,
     };
   };
+
   // allMeals is oldest first: reversed, each expansion lists its newest meal first
   const items = all.map(item).reverse();
+  const rest = items.filter(x => !x.best);
   const groups = [...EXPANSIONS]
     .reverse()
-    .map(({ short, name }) => ({ label: name, items: items.filter(x => expansionOf(1, x.ilvl) === short) }))
+    .map(({ short, name }) => ({ label: name, items: rest.filter(x => expansionOf(1, x.ilvl) === short) }))
     .filter(g => g.items.length);
   const pills = job.substats
     .filter(s => all.some(m => m.stats.some(x => x.stat === s)))
     .map(s => ({ stat: s, short: job.short[s], label: job.label[s] }));
-  const bestStats = meals.tagged.at(-1).stats.map(x => x.stat);
-  const preset = [...new Set(goal)].filter(k => pills.some(p => p.stat === k) && bestStats.includes(k)).slice(0, 2);
-  return { count: tagged.size, groups, pills, preset };
+  return { count: tagged.size, pinned: items.filter(x => x.best), groups, pills };
 }
 
 /* The table's rows, one per slot in the character panel's order (evaluateSet's rows), with the goal's marks and each
@@ -283,14 +281,14 @@ function buildOkView(job, level, recipe, run, set, ui, line) {
     // some cell has the cap bar: the key above the table shows
     anyAtCap: rows.some(r => (r.cells || []).some(c => c.atCap)),
     // the Food row and the totals with it; null with Food off. best: the meal has the best's result; picked: the player
-    // picked it from the menu ({count, groups, pills, preset}: mealMenu)
+    // picked it from the menu ({count, pinned, groups, pills}: mealMenu)
     food: meals && {
       name: meals.shown.name,
       ilvl: meals.shown.ilvl,
       label: foodLabel(job, meals.shown),
       best: meals.tagged.includes(meals.shown),
       picked: meals.picked,
-      menu: mealMenu(job, level, gearTotals, meals, [recipe.target, recipe.tb, recipe.tb2].filter(Boolean)),
+      menu: mealMenu(job, level, gearTotals, meals),
       // the line under the meal's name
       note: meals.tagged.includes(meals.shown) ? 'HQ, best for goal' : 'HQ, picked',
       cells: job.stats.map(s => (bonus[s] ? { value: bonus[s].bonus, capped: bonus[s].capped } : null)),
@@ -327,11 +325,57 @@ function buildOkView(job, level, recipe, run, set, ui, line) {
   };
 }
 
-/* The Food menu's meals ({stats, name, best} items of mealMenu's groups) that pass its filters: `filters` is {stats
-   (the pills picked, neutral keys; a meal must have each), query (its search text; every word must be in the name),
-   bestOnly (the "Best for goal" switch: tagged meals only)}. Returns the passing items, in order. */
-export function mealsPassing(items, { stats, query, bestOnly }) {
-  return items.filter(x => (!bestOnly || x.best) && stats.every(s => x.stats.includes(s)) && searchMatches(x.name, query));
+/* The Food menu's meals ({stats, name} items of mealMenu's groups, the list below the pinned meals) that pass its
+   filters: `filters` is {stats (the pills picked, neutral keys; a meal must have each), query (its search text; every
+   word must be in the name)}. Returns the passing items, in order. The pinned meals are never filtered. */
+export function mealsPassing(items, { stats, query }) {
+  return items.filter(x => stats.every(s => x.stats.includes(s)) && searchMatches(x.name, query));
+}
+
+/* A meal's stat line for the Food menu (owner's pick F1 c, 2026-10-20): its `adds` ([{stat, text, value}], mealMenu)
+   in the meal's own order, each with hit: the stat is on a picked pill (`stats`), drawn as a tinted chip. No pill
+   picked: no hit. */
+export function mealLine(adds, stats) {
+  return adds.map(a => ({ ...a, hit: stats.includes(a.stat) }));
+}
+
+/* The Food menu's list below the pinned meals in the order `by` asks (owner's pick F2 b, 2026-10-20): 'new' keeps the
+   items as given (newest first); a stat key sorts by the points the meal adds of it on this gear (`adds` value, after
+   the meal's percent and cap), highest first, then by the other picked stat (`stats`), then newest first. A stat that is
+   not picked sorts as 'new' (its pill was turned off). Returns a new array. */
+export function sortMeals(items, by, stats) {
+  if (by === 'new' || !stats.includes(by)) return [...items];
+  const points = (x, stat) => x.adds.find(a => a.stat === stat)?.value ?? 0;
+  const keys = [by, ...stats.filter(s => s !== by)];
+  // Array.prototype.sort is stable: ties keep the newest first
+  return [...items].sort((a, b) => keys.reduce((d, s) => d || points(b, s) - points(a, s), 0));
+}
+
+/* What the open Food menu shows under its tools, from mealMenu's `menu` and the menu's state {stats (pills picked),
+   query (search text), sortBy ('new' or a stat key)}: {sorts, groups, empty}.
+   - sorts: the Sort row's options while a pill is on, [{key, label}]: "Newest", then each picked stat in the pills'
+     order; [] with no pill (the row is hidden).
+   - groups: [{key, label, pinned, items}]. First the pinned group, {key 'best', label "Best for goal · 2", pinned
+     true}: the meals with the best's result, always shown, unfiltered. Then the other meals after the pills and
+     search: by expansion (empty groups dropped), or, sorted by a stat, one group {key 'sorted', label null}. Every meal
+     carries line (mealLine).
+   - empty: mealEmptyReason for the list below. */
+export function mealList(menu, { stats, query, sortBy }) {
+  const withLine = x => ({ ...x, line: mealLine(x.adds, stats) });
+  const rest = menu.groups.flatMap(g => g.items);
+  const filters = { stats, query };
+  const passing = new Set(mealsPassing(rest, filters));
+  const sorted = sortBy !== 'new' && stats.includes(sortBy);
+  const below = sorted
+    ? [{ key: 'sorted', label: null, pinned: false, items: sortMeals([...passing], sortBy, stats).map(withLine) }]
+    : menu.groups.map(g => ({ key: g.label, label: g.label, pinned: false, items: g.items.filter(x => passing.has(x)).map(withLine) }));
+  const pinned = { key: 'best', label: `Best for goal · ${menu.count}`, pinned: true, items: menu.pinned.map(withLine) };
+  const pickedPills = menu.pills.filter(p => stats.includes(p.stat));
+  return {
+    sorts: pickedPills.length ? [{ key: 'new', label: 'Newest' }, ...pickedPills.map(p => ({ key: p.stat, label: p.short }))] : [],
+    groups: [pinned, ...below].filter(g => g.items.length),
+    empty: mealEmptyReason(rest, filters),
+  };
 }
 
 /* A same-result menu's groups ({label, items}, sameMenu) after its search: a piece passes on its name or its gear
@@ -347,23 +391,23 @@ export function sameEmptyText(query) {
   return `No piece matches "${query.trim()}".`;
 }
 
-/* Whether a stat pill is greyed out (owner, 2026-10-18): one already picked never is; otherwise when two are picked
-   (a meal has two stats at most) or when picking it would leave no meal under the other filters. `filters` as for
-   mealsPassing. */
+/* Whether a stat pill is greyed out (owner, 2026-10-18 and 2026-10-20): one already picked never is; otherwise when
+   two are picked (a meal has two stats at most) or when picking it would leave the list below the pinned meals
+   (`items`) empty under the other filters. `filters` as for mealsPassing. */
 export function mealPillOff(items, stat, filters) {
   if (filters.stats.includes(stat)) return false;
   if (filters.stats.length >= 2) return true;
   return mealsPassing(items, { ...filters, stats: [...filters.stats, stat] }).length === 0;
 }
 
-/* Why the Food menu lists no meal, or null while some meal passes: {text, action}, action 'query' (clear the search)
-   or null (nothing to offer). Only a search can empty the menu: the pills and switch always leave a meal with no
-   search, since a pill is picked only while some meal passes with it (mealPillOff), turning the switch on resets the
-   pills to the preset, which a tagged meal has, and turning it off or removing a pill only adds meals (a test walks
-   every state the menu can reach). */
+/* Why the list below the pinned meals (`items`) is empty, or null: {text, action: 'query'}, with Clear search as the
+   way back. Only a search can empty it: the pills start empty and a pill is picked only while some meal passes with it
+   (mealPillOff), and removing a pill only adds meals (a test walks every state the menu can reach). "Other": the
+   pinned meals above stay, whatever the search. Null also when nothing would come back without the search (every
+   meal pinned): there is nothing to offer. */
 export function mealEmptyReason(items, filters) {
   if (mealsPassing(items, filters).length) return null;
   const query = filters.query.trim();
-  if (query && mealsPassing(items, { ...filters, query: '' }).length) return { text: `No meal matches "${query}".`, action: 'query' };
-  return { text: 'No meals match.', action: null };
+  if (query && mealsPassing(items, { ...filters, query: '' }).length) return { text: `No other meal matches "${query}".`, action: 'query' };
+  return null;
 }

@@ -1158,9 +1158,9 @@ table[data-col="spec"] th[data-col="spec"] {
   background: var(--accent-soft);
   font-weight: 600;
 }
-/* A menu with a search box (owner, 2026-10-18): the Food row's (one line of search box, stat pills and the "Best for
-   goal" switch) and the rows' pieces with the same result (the search box alone); only the list scrolls, and each
-   expansion's heading stays in view while its entries pass */
+/* A menu with a search box (owner, 2026-10-18): the Food row's (one line of search box and stat pills, then a Sort row
+   while a pill is on) and the rows' pieces with the same result (the search box alone); only the list scrolls, and
+   each expansion's heading stays in view while its entries pass */
 .search-menu {
   display: flex;
   flex-direction: column;
@@ -1209,12 +1209,6 @@ table[data-col="spec"] th[data-col="spec"] {
 .menu-search input[type="text"]:focus-visible {
   outline: none;
   border-color: var(--accent);
-}
-.menu-tools .toggle {
-  white-space: nowrap;
-  font-size: 0.82rem;
-  gap: 6px;
-  min-height: 0;
 }
 .meal-pills {
   display: flex;
@@ -1275,6 +1269,45 @@ table[data-col="spec"] th[data-col="spec"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* the Food menu's Sort row (owner's pick F2 b, 2026-10-20): "Sort: Newest / CRT / DET" under the search box, shown
+   while a pill is on; a smaller version of the Target GCD's segmented control (sized after the .seg rules) */
+.meal-sort {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+/* the meals with the best's result, pinned on top (owner's pick F3 c, 2026-10-20): a rule under them sets them apart
+   from the list below */
+.meal-pinned::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 4px 8px 2px;
+  background: var(--line);
+}
+/* a meal's stat line: a stat on a picked pill is a soft chip like an unfilled pill (owner's pick F1 c, 2026-10-20);
+   on the shown meal's row, already tinted, the chip takes the page background */
+.meal-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.meal-stat.hit {
+  margin: 0 -2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.same-item.on .meal-stat.hit {
+  background: var(--bg);
 }
 .menu-empty {
   padding: 10px;
@@ -1394,6 +1427,12 @@ button.run {
 }
 .seg.off label {
   cursor: not-allowed;
+}
+/* the Food menu's Sort row: a smaller segmented control */
+.meal-sort .seg label {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 0.8rem;
 }
 .gcd-line {
   font-size: 0.86rem;

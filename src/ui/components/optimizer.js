@@ -49,12 +49,8 @@ export function optimizer(alpine, solver = inProcessSolver()) {
     /* the meal picked from the Food row's menu (an allMeals key), or null for the best for the goal. Not saved; cleared
        with the picks */
     mealPick: null,
-    /* one per search, a meal pick included: the Food menu (mealMenu) presets its pills once per result, and closes when
-       a new one comes */
+    /* one per search, a meal pick included: the Food menu (mealMenu) closes when a new one comes */
     viewId: 0,
-    /* the Food menu's "Best for goal" switch (on: only meals with the best's result). Kept here, not in mealMenu, so the
-       player's choice stays when the Food row is drawn again (Food off and on) */
-    mealBestOnly: true,
     /* the ? note of the "Spare points to tiebreaks" switch (tier ranking): open or not */
     rankHelp: false,
     /* the settings the result was last solved for (optimizerKey), and the settings now: they differ once a setting

@@ -404,17 +404,20 @@
                           :class="{ on: mealStats.includes(p.stat) }" :aria-pressed="String(mealStats.includes(p.stat))"
                           :disabled="mealPillOff(p.stat)" :title="p.label" :data-stat="p.stat"
                           @click="toggleMealStat(p.stat)" x-text="p.short"></button></template></div>
-                      <label class="toggle"><input type="checkbox" role="switch" class="switch" id="o-meal-best" :checked="mealBestOnly" @change="setMealBest($event.target.checked)"><span>Best for goal</span></label>
                     </div>
+                    <template x-if="mealView.sorts.length"><div class="meal-sort"><span id="o-meal-sort-label">Sort</span><div class="seg" id="o-meal-sort"
+                        role="radiogroup" aria-labelledby="o-meal-sort-label"><template x-for="o in mealView.sorts" :key="o.key"><label
+                        :class="{ on: mealSortBy === o.key }" :data-sort="o.key"><input type="radio" name="o-meal-sort" :value="o.key"
+                        :checked="mealSortBy === o.key" @change="mealSortBy = o.key"><span x-text="o.label"></span></label></template></div></div></template>
                     <div class="menu-list" x-ref="mealList">
-                      <template x-for="g in mealGroups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
+                      <template x-for="g in mealView.groups" :key="g.key"><div :class="{ 'meal-pinned': g.pinned }" :data-group="g.key"><template x-if="g.label"><div class="same-head" x-text="g.label"></div></template>
                         <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item"
                             :class="{ on: x.on }" :data-meal="x.key" :title="`${x.label} · item level ${x.ilvl}`"
                             @click="chooseMeal(x.key)"><span class="meal-lead"><span class="meal-ilvl"
-                            x-text="`i${x.ilvl}`"></span><span class="meal-name"><span x-text="x.name"></span><template x-if="x.best && !mealBestOnly"><span class="pill">best for goal</span></template></span></span><span class="same-lvl"
-                            x-text="x.adds"></span></button></template>
+                            x-text="`i${x.ilvl}`"></span><span class="meal-name" x-text="x.name"></span></span><span class="same-lvl meal-line"><template
+                            x-for="a in x.line" :key="a.stat"><span class="meal-stat" :class="{ hit: a.hit }" x-text="a.text"></span></template></span></button></template>
                       </div></template>
-                      <template x-if="mealEmpty"><div class="menu-empty" id="o-meal-empty"><span x-text="mealEmpty.text"></span> <template x-if="mealEmpty.action === 'query'"><button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></template></div></template>
+                      <template x-if="mealView.empty"><div class="menu-empty" id="o-meal-empty"><span x-text="mealView.empty.text"></span> <button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></div></template>
                     </div>
                   </div></template>
                 </div>
