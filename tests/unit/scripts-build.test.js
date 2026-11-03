@@ -31,13 +31,16 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
   for (const link of links) assert.match(link, /referrerpolicy="no-referrer"/);
 });
 
-/* The bundled libraries' MIT notices reach the page (their own comments are stripped by legalComments: 'none'). */
-test('build keeps the MIT notices of Alpine.js and @vue/reactivity', () => {
-  const banner = esbuildOptions().banner.js;
-  assert.match(banner, /^\/\*!/);
-  assert.match(banner, /MIT/);
-  assert.match(banner, /Alpine\.js, \(c\) 2019-present Caleb Porzio/);
-  assert.match(banner, /@vue\/reactivity.*Evan\) You/);
+/* The bundled libraries' MIT notices reach the page through esbuild's legalComments: 'eof', which moves the legal
+   comments found in the bundled code to the end of the script. Alpine ships no notice of its own, so none is invented
+   for it; the page credits the project in its footer instead (src/index.html). */
+test('build keeps the MIT notices found in the bundled code', async () => {
+  const { build } = await import('esbuild');
+  const result = await build(esbuildOptions());
+  const script = result.outputFiles.find(f => f.path.endsWith('.js')).text;
+  assert.match(script, /Bundled license information/);
+  assert.match(script, /@vue\/reactivity.*Evan\) You/s);
+  assert.match(script, /@vue\/shared.*Evan\) You/s);
 });
 
 /* Audit 16, R9 (owner, 2026-10-19): the data files reach the page as JSON.parse of one string each, not as an object
@@ -89,6 +92,33 @@ test('page template: both tabs take their filter menus from the partials', async
   assert.match(page, /\$store\.app\.opt\.market = /);
   assert.match(page, /\$store\.app\.browse\.market = /);
   assert.doesNotMatch(page, /\{\{|INCLUDE/);
+});
+
+/* The page's bytes must not change between builds of the same source: the worker's data module lists its files in the
+   order esbuild's onLoad callbacks ran, which is not stable, so the list is sorted before use. Found 2026-11-03: five
+   builds of one tree gave four different hashes, differing only in WORKER_DATA's key order. */
+test('build: two builds of the same source give the same page', async () => {
+  const { build } = await import('esbuild');
+  const page = async () => {
+    const result = await build(esbuildOptions());
+    return result.outputFiles
+      .filter(f => f.path.endsWith('.js'))
+      .map(f => f.text)
+      .join('\n');
+  };
+  const first = await page();
+  assert.equal(await page(), first);
+  assert.match(first, /"food\.json":/); // the worker's data map is there, in a fixed order
+});
+
+/* The page's size is a feature: it is opened from disk and parsed on every load, and the item database is most of it.
+   A ceiling catches a careless import (a whole icon set, an unshaken library) that would otherwise ship unnoticed.
+   Raise it deliberately, with a reason. Current output is about 3.07 MB; the ceiling leaves room to grow. */
+test('build: the page stays under its size ceiling', async () => {
+  const { build } = await import('esbuild');
+  const result = await build(esbuildOptions());
+  const bytes = result.outputFiles.reduce((total, file) => total + file.text.length, 0);
+  assert.ok(bytes < 4_000_000, `page is ${bytes} bytes, over the 4 MB ceiling`);
 });
 
 /* Audit 16 R8 (owner, 2026-10-19): the optimizer's worker. Its bundle, built as the page builds it, runs here with a

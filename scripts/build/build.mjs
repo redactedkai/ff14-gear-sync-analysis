@@ -15,12 +15,6 @@ export const SRC = join(ROOT, 'src');
 export const DIST = join(ROOT, 'dist');
 export const PARTIALS = join(SRC, 'partials');
 
-/* The MIT notices of the bundled libraries, kept at the top of the page's script. esbuild's own legal comments are
-   off (legalComments: 'none'): its 'eof' mode keeps only the Vue notice, since Alpine.js ships none in its bundle. */
-export const LICENSE_BANNER = `/*! Bundles third-party code under the MIT licence (https://opensource.org/license/mit):
-  Alpine.js, (c) 2019-present Caleb Porzio and contributors
-  @vue/reactivity and @vue/shared, (c) 2018-present Yuxi (Evan) You and Vue contributors */`;
-
 /* The oldest browsers the page runs in. The floor is set by the JS APIs the page calls, which esbuild does not
    polyfill: Array.prototype.findLast (Chrome 97, Firefox 104, Safari 15.4) and .at(). Naming the browsers instead of
    an ES version also lets esbuild add the CSS prefixes they need (mask: -webkit-mask before Chrome 120). */
@@ -84,7 +78,7 @@ export const solverWorker = {
         format: 'iife',
         target: BROWSER_TARGETS,
         minify: build.initialOptions.minify,
-        legalComments: 'none',
+        legalComments: 'none', // the worker bundles no third-party code, so there is no notice to keep
         write: false,
         metafile: true,
         logLevel: 'warning',
@@ -97,7 +91,10 @@ export const solverWorker = {
         `self.onmessage = function (event) {\n'use strict';\nself.onmessage = null;\n` +
         `self.${WORKER_DATA_GLOBAL} = event.data.data;\n${bundle}\ndelete self.${WORKER_DATA_GLOBAL};\n};\n`;
 
-      // 3. the module: the texts from the page's data modules, and the source
+      // 3. the module: the texts from the page's data modules, and the source.
+      // Sorted, because `names` is filled in onLoad order, which esbuild does not keep stable between builds: the
+      // page's bytes would otherwise differ for the same source (checked 2026-11-03, four hashes in five builds).
+      names.sort();
       const imports = names.map(
         // with the same import attribute as core/tables.js, or esbuild bundles the file a second time
         (name, i) => `import { text as text${i} } from ${JSON.stringify(join(SRC, 'data', name))} with { type: 'json' };`,
@@ -121,8 +118,7 @@ export function esbuildOptions({ minify = true } = {}) {
     format: 'iife',
     target: BROWSER_TARGETS,
     minify,
-    banner: { js: LICENSE_BANNER },
-    legalComments: 'none',
+    legalComments: 'eof', // esbuild's default, named so a later edit does not drop the bundled notices
     write: false,
     outdir: join(DIST, 'assets'), // required for the separate CSS output; nothing is written there
     logLevel: 'warning',

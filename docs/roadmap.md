@@ -12,6 +12,7 @@ In build order (owner, 2026-10-15).
 | A3 | Save and share | A JSON file or a URL, holding the settings, the sets and the pieces picked from the same-result menus. After A4. |
 | A11 | Relics with allocated substats | The optimizer leaves these relics out today, since the game files hold no substats for them ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). Model the allocation so it can pick one. After A4. |
 | A12 | Import from xivgear | Bring a set or sheet in from an xivgear link or its exported JSON, as sets in the sheet: pieces, materia and meal by game id, with the job, level and cap; relic substats and custom items are listed as not mapped. After A4. |
+| A13 | Split the page template into partials | `src/index.html` is the last file several agents edit at once (about half of the commits that touch `src/`). Move its sections into `src/partials/` with the build's existing `<!-- INCLUDE -->` markers ([architecture.md, section 5](engineering/architecture.md#5-build)). The built page must stay byte for byte the same, as in `de94f60`. After A4. |
 
 ## Built
 

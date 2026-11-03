@@ -77,7 +77,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-tier-rank | tier ranking against its own reference (every set and meal, the stage rule written out), with 20 cases of three keys and a Target GCD; a stage stopped at its node limit; an infeasible Target GCD; 360 more random cases in `tests/full/` |
 | core-tiers | substat tiers; the Substat tiers sub-tab's ladder and tier sizes |
 | core-validation | Wiki caps, accuracy per band, special lines |
-| scripts-build | the DEV badge outside `main`, the page template and its partials, the licence notices, the data as `JSON.parse`; the optimizer's worker bundle run in Node: loads from the posted data texts (the item database in the script once) and answers like the page thread |
+| scripts-build | the DEV badge outside `main`, the page template and its partials, the licence notices found in the bundled code, two builds of one tree giving the same page, the page's 4 MB ceiling, the data as `JSON.parse`; the optimizer's worker bundle run in Node: loads from the posted data texts (the item database in the script once) and answers like the page thread |
 | ui-components-gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |
 | ui-components-gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
 | ui-components-meal-menu | the Food menu: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to ILVL, a pick |
