@@ -221,6 +221,24 @@ Running a subset:
 
 **Setup.** Node 22 or later, `npm install` (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), then once `npx playwright install chromium` (for the smoke test and `perf:browser`). For the Python parts (generator tests, Ruff, data pipeline), Python 3 and `python -m pip install -r requirements-dev.txt`: CI runs Ruff and the generator tests on 3.9 (the oldest supported) and 3.13 (`.python-version`).
 
+### 3.1 Viewports to look at for UI changes
+
+Name a test window by the **CSS screen** it stands for (the physical resolution divided by the operating system's display scaling), the numbers a display setting shows. The page gets less than the screen: about 15 px less width (the vertical scrollbar) and about 130 px less height (taskbar, browser tabs and address bar). Those two deductions are estimates, not measurements.
+
+| # | CSS screen | Test viewport (width x height) | What it covers |
+| --- | --- | --- | --- |
+| 1 | 960 floor | 960 x 700 | The minimum width. Not a real screen; the layout is tightest here (item names wrap to two lines) |
+| 2 | 1280 x 720 | about 1265 x 587 | The shortest realistic window. A 1080p laptop at 150%, a 1440p panel at 200%, a 4K panel at 300% |
+| 3 | 1536 x 864 | about 1521 x 731 | A 1080p laptop at 125% (Windows' recommended scale for 15.6 inch), a 4K laptop at 250% |
+| 4 | 1920 x 1080 | about 1905 x 947 | A 1080p monitor at 100% (about half of Steam users in October 2026), a 4K laptop at 200% |
+| 5 | 2560 x 1440 | about 2545 x 1307 | A 1440p monitor at 100%, a 4K monitor at 150%: the margins of a capped container |
+
+Why these: the layouts measured so far (sheet page prototypes B12 and B13, 14 views and the piece and food menus, 15 window widths from 960 to 2545 px, 2026-11-06) do not change between about 1100 px and 2545 px except for the margins. Item names wrap only below about 1100 px. So the widths above 1100 px differ mainly in height, and the short window (1265 x 587) is the stress case for a sticky header and tall menus.
+
+Not settled: the shares of Windows scales above 150% and of 4K laptops are unknown (no public data was found); the heights above rest on the estimate in the first paragraph; a window narrower than 960 px is not supported, and only needs a check that content stays reachable by scrolling. A rule that switches at a width, such as the `@media (min-width: 1300px)` rule on `.twopanel` in `src/styles.css`, needs its own pair of windows one pixel either side (1299 and 1301, with the scrollbar counted); a container that stops growing at a maximum width does not.
+
+The research behind the list (sources, dates, which claims are sourced, computed or inferred) is in the scratchpad, `docs/scratchpad/viewport-widths/reports/`, which is gitignored; the list above is the part to keep.
+
 ## 4. Conventions
 
 What makes a test here worth having? Five rules, each with the reason behind it.

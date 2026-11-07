@@ -30,7 +30,7 @@ Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx p
 
 - `npm run check` (a warning if installed packages differ from the lock, then lint, build, `npm test`, `test:smoke`; no Python; about 1 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
 - `npm run check:all` (adds `lint:py`, `test:py`) when touching `scripts/data/` or after `data:update`.
-- For UI changes, also look at the page at full width and at 960 px.
+- For UI changes, also look at the page at the viewports listed in `docs/engineering/testing.md` section 3.1 (named by CSS screen, from the 960 px floor up to 2560 x 1440).
 - `npm run data:update` after a game patch (see `docs/engineering/data-pipeline.md` section 9).
 - Commit subjects: 72 characters at most, details in the body.
 - Git hooks (no AI attribution in commits, a warning on long subjects; `check` before a push to `main`): `git config core.hooksPath .githooks` once per clone.
