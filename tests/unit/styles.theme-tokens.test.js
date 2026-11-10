@@ -32,15 +32,10 @@ test('the scan finds a literal color of every kind, and passes var() and the tok
   fine('@supports not (color: color-mix(in srgb, red 50%, blue)) { .a { background: var(--line); } }'); // a feature test
 });
 
-test('src/styles.css: every color outside the token blocks is a var(--token), apart from the listed exceptions', () => {
-  const found = findLiteralColors(read('styles.css'));
-  // Allowed exceptions, each justified:
-  // - `.backdrop` (the scrim behind the "?" popovers of the math tab): a 35% black dim, which darkens a light page and a
-  //   dark one alike; the dialogs' scrim is the --backdrop token. Moving it to a token is a style change for the owner.
+test('src/styles.css: every color outside the token blocks is a var(--token)', () => {
   // The `red` and `blue` in the @supports condition for color-mix() are a feature test, not a painted color, and the scan
   // does not read an at-rule's condition as a declaration.
-  const ALLOWED = [{ selector: '.backdrop', property: 'background', value: 'rgba(0, 0, 0, 0.35)' }];
-  assert.deepEqual(found, ALLOWED);
+  assert.deepEqual(findLiteralColors(read('styles.css')), []);
 });
 
 test('the page HTML paints no literal color: no style attribute or fill/stroke/color attribute with one', () => {

@@ -997,7 +997,7 @@ table[data-col="spec"] th[data-col="spec"] {
   position: fixed;
   inset: 0;
   z-index: 9;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--backdrop);
 }
 .popover.statpop {
   right: auto;
