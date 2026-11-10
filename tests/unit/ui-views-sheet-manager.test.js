@@ -22,7 +22,7 @@ test('the manager: one row per sheet in the given order, with job, settings, set
   });
   const uwu = sheetOf('WAR', [], { id: 's_b', name: 'UwU', level: 70, sync: { on: false, cap: 375 } });
   const v = sheetManagerView(loaded([bahamut, uwu]));
-  assert.deepEqual([v.empty, v.showNewButton, v.unavailableText, v.indexNote], [false, true, '', '']);
+  assert.deepEqual([v.empty, v.showNewButton, v.unavailableText], [false, true, '']);
   assert.deepEqual(v.columns, ['Sheet', 'Job', 'Level, sync', 'Sets', 'Created', 'Changed', 'Game data']);
   assert.deepEqual(v.rows[0], {
     id: 's_a',
@@ -53,11 +53,9 @@ test('the manager: the empty state, storage that cannot be used, an unreadable o
   assert.equal(blocked.unavailableText, UNAVAILABLE_MESSAGE);
   const damaged = sheetManagerView(
     loaded([], {
-      indexProblem: 'index not readable',
       unreadable: [{ id: 's_x', key: 'ilvl-stat-lab-v4:sheet:s_x', cause: 'written by a newer version of the page (v2)' }],
     }),
   );
-  assert.match(damaged.indexNote, /index not readable/);
   assert.deepEqual(damaged.unreadable, [
     {
       id: 's_x',

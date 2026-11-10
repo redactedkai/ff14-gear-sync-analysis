@@ -35,8 +35,7 @@ function setListRow(sheet, gearSet) {
    - job {id, name} (fixed once the sheet exists); level {value, max (the job's level cap), rangeText "1–100"};
      sync {on, cap, max (the highest real item level), rangeText "1–795"}; note: the line under the fields;
    - setCount; columns: the list's column headers (the figures' labels, first set's job), wideColumns (per column: true for a figure with a longer text, the GCD of a job with haste), set rows (setListRow);
-   - empty: no sets; emptyCard {title, text} is the "No gear sets yet" card with a New set button;
-   - reorderHint: how to reorder the list. */
+   - empty: no sets; emptyCard {title, text} is the "No gear sets yet" card with a New set button. */
 export function sheetPageView(sheet) {
   const job = makeJobContext(sheet.job);
   const fields = ranges(sheet.job);
@@ -63,7 +62,6 @@ export function sheetPageView(sheet) {
       title: 'No gear sets yet',
       text: 'A gear set is a set of pieces, their materia and a meal. Choose the pieces yourself, let Fill choose them for a goal, or both.',
     },
-    reorderHint: 'Drag a row by its handle to reorder, or focus the handle and press Up or Down arrow.',
   };
 }
 

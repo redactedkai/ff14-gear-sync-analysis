@@ -89,7 +89,7 @@ test('Name and description, and the Delete questions', () => {
   );
   assert.equal(deleteQuestionView('sheet', sheetOf('SGE', [], { name: 'UwU' })).question, 'Delete the sheet “UwU” (it has no gear sets)?');
   const set = deleteQuestionView('set', sageSet({ name: 'Mine' }));
-  assert.deepEqual(set, { question: 'Delete the gear set “Mine”?', note: 'It cannot be undone.', buttonText: 'Delete' });
+  assert.deepEqual(set, { question: 'Delete the gear set “Mine”?', buttonText: 'Delete' });
   assert.equal(
     deleteQuestionView('unreadable', { id: 's_x', cause: 'not valid JSON' }).question,
     'Delete the saved sheet that could not be read (not valid JSON)?',

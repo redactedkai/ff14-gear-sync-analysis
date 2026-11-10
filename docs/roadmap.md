@@ -9,7 +9,7 @@ In build order (the owner's order).
 | ID | Idea | In one line |
 | --- | --- | --- |
 | A3 | Save and share | Settings, gear sets and picks in a JSON file or a URL; after A4 |
-| A11 | Relics with allocated substats | Let the optimizer pick them; after A4 |
+| A11 | Relics with player-set substats | Hand-entered substats first, then optimizer-chosen ones; after A4 |
 | A12 | Import from xivgear | Bring in an xivgear link or JSON as gear sets; after A4 |
 | A14 | Final viewport and width review | Before the merge to `main` |
 | A17 | Harden the saved gear sheet format | Version 1 and migrations, before the first public release |
@@ -20,7 +20,7 @@ In build order (the owner's order).
 ### Notes on the rows
 
 - **A3.** A JSON file or a URL, holding the settings, the gear sets and the pieces picked from the same-result menus. After A4.
-- **A11.** The optimizer leaves these relics out today, since the game files hold no substats for them ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). The page shows no note about them. Model the allocation so it can pick one. A relic whose substats are set by hand counts as having none in a gear set's Total, Tier row and header today, with no word on the page; A11 fixes that too. After A4.
+- **A11.** Relics whose substats the player sets are left out of the optimizer today, since the game files hold no substats for them ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)); the page shows no note about them. Some such relics let the player choose the substats and some give them at random (how many of each is not yet counted). Part 1: the player enters a relic's substats by hand, so a relic in a gear set counts them in the Total, Tier row and header (a hand-set relic counts as having none today, with no word on the page). Part 2: for relics with chosen substats, the optimizer picks the allocation; random ones stay hand-entered. After A4.
 - **A12.** Bring a gear set or an xivgear sheet in from an xivgear link or its exported JSON, as gear sets in a gear sheet: pieces, materia and meal by game id, with the job, level and cap; relic substats and custom items are listed as not mapped. After A4.
 - **A14.** Before the merge to `main`:
   - the container cap is settled at 1280 px (every tab, the Sheets tab included);

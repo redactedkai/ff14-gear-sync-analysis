@@ -4,7 +4,7 @@
   <span id="{{id}}-from-label">Gear from</span>
   <button type="button" class="multi-btn" x-ref="fromBtn" id="{{id}}-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-from-label {{id}}-from" @click="open = !open; $nextTick(() => placeMenu($refs.fromMenu, $refs.fromBtn))" x-text="fromSummary()"></button>
   <div class="multi-menu from-menu" x-ref="fromMenu" id="{{id}}-from-menu" role="group" aria-labelledby="{{id}}-from-label" x-show="open" x-cloak @mouseleave="fromPointed = null">
-    <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear<small>Tradeable pieces show whatever their source.</small></span><input type="checkbox" role="switch" id="{{id}}-market" :checked="marketOn()" @change="setMarket($event.target.checked)"></label>
+    <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear</span><input type="checkbox" role="switch" id="{{id}}-market" :checked="marketOn()" @change="setMarket($event.target.checked)"></label>
     <div class="from-head"><button type="button" class="linkbtn" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" @click="setFromAll('default')">Default</button></div>
     <div class="from-cols">
       <template x-for="col in gearFromColumns" :key="col.key"><div>
@@ -16,6 +16,6 @@
         </div></template>
       </div></template>
     </div>
-    <p class="from-desc" id="{{id}}-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template><template x-if="!fromDescription()"><span>Point at a box to see what it covers.</span></template></p>
+    <p class="from-desc" id="{{id}}-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template></p>
   </div>
 </div>

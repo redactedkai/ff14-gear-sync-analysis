@@ -84,7 +84,7 @@ export function editFormView() {
 
 /* The question a Delete asks first (rule 8: always, no undo). `kind`: 'sheet' (`target` a Sheet: named with its number of
    gear sets), 'set' (a GearSet) or 'unreadable' (a record the manager could not read: {id, cause}). Returns {question,
-   note, buttonText}. */
+   buttonText}. */
 export function deleteQuestionView(kind, target) {
   let question;
   if (kind === 'sheet') {
@@ -92,5 +92,5 @@ export function deleteQuestionView(kind, target) {
     question = `Delete the sheet “${target.name}” ${count ? `and its ${plural(count, 'gear set')}` : '(it has no gear sets)'}?`;
   } else if (kind === 'set') question = `Delete the gear set “${target.name}”?`;
   else question = `Delete the saved sheet that could not be read (${target.cause})?`;
-  return { question, note: 'It cannot be undone.', buttonText: 'Delete' };
+  return { question, buttonText: 'Delete' };
 }

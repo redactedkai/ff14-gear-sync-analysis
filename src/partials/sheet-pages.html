@@ -6,7 +6,6 @@
     <template x-if="manager.showNewButton"><button type="button" class="primary" id="sh-new" :disabled="$store.sheets.busy" @click="openNewSheet()">New sheet</button></template>
   </div>
   <template x-if="$store.sheets.note"><p class="toast floating" role="status" x-text="$store.sheets.note"></p></template>
-  <p class="small dim" x-show="manager.indexNote" x-text="manager.indexNote"></p>
   <template x-if="manager.empty"><div class="startcard" id="sh-empty">
     <h3 x-text="manager.emptyCard.title"></h3><p x-text="manager.emptyCard.text"></p>
     <button type="button" class="primary" id="sh-new-first" :disabled="$store.sheets.busy" @click="openNewSheet()" x-text="manager.emptyCard.buttonText"></button>
@@ -37,7 +36,6 @@
       </template>
     </tbody>
   </table></div></template>
-  <p class="small dim" x-show="!manager.empty" x-text="manager.reorderHint"></p>
   <template x-if="manager.unreadable.length"><div class="panel" id="sh-unreadable">
     <h3 x-text="manager.unreadableTitle"></h3>
     <template x-for="u in manager.unreadable" :key="u.id"><div class="row"><span class="small" x-text="u.text"></span><span class="small dim" x-text="u.key"></span><span style="flex:1"></span><button type="button" class="chip" :disabled="$store.sheets.busy" @click="askDelete('unreadable', u.id)">Delete</button></div></template>
@@ -105,5 +103,4 @@
       </template>
     </tbody>
   </table></div></template>
-  <p class="small dim" x-show="!page.empty" x-text="page.reorderHint"></p>
 </div></template>

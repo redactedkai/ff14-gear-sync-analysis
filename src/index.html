@@ -88,7 +88,6 @@
     <div class="dlg" x-ref="dialog" id="sh-dialog" :class="{ wide: dialog.kind === 'new' || dialog.kind === 'copy' }" :role="dialog.kind === 'delete' ? 'alertdialog' : 'dialog'" aria-modal="true" aria-labelledby="sh-dlg-title" @keydown="dialogKey($event)">
       <template x-if="dialog.kind === 'delete'"><div style="display:contents">
         <p class="question" id="sh-dlg-title" x-text="dialogView.question"></p>
-        <p class="small dim" x-text="dialogView.note"></p>
         <div class="dlgbtns"><p class="dlgerr" role="alert" x-show="dialog.error" x-text="dialog.error"></p><button type="button" class="danger" id="sh-dlg-ok" @click="submitDialog()" x-text="dialogView.buttonText"></button><button type="button" id="sh-dlg-cancel" @click="closeDialog()">Cancel</button></div>
       </div></template>
       <template x-if="dialog.kind !== 'delete'"><div style="display:contents">

@@ -1118,11 +1118,6 @@ table[data-col="spec"] th[data-col="spec"] {
 .from-switch:focus-within {
   background: var(--surface2);
 }
-.from-switch small {
-  display: block;
-  color: var(--muted);
-  font-size: 0.78rem;
-}
 .from-switch input {
   appearance: none;
   flex: none;
@@ -1669,6 +1664,7 @@ td.defense {
 .menu-search.big-search input[type="text"] {
   padding: 9px 44px 9px 40px;
   font-size: 1rem;
+  border-radius: 999px;
 }
 .kbd {
   padding: 1px 6px;
@@ -1687,7 +1683,7 @@ td.defense {
   height: 22px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--surface2);
   color: var(--muted);
   font-size: 0.85rem;
@@ -1708,7 +1704,7 @@ td.defense {
 .slotpills button {
   padding: 4px 8px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 999px;
   background: none;
   color: var(--muted);
   font: 500 0.8rem var(--sans);
@@ -1755,7 +1751,7 @@ td.defense {
   gap: 6px;
   padding: 4px 12px 4px 10px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 999px;
   background: none;
   color: var(--fg);
   font: 500 0.8rem var(--sans);

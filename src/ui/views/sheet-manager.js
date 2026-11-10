@@ -10,7 +10,6 @@ export const MANAGER_COLUMNS = Object.freeze(['Sheet', 'Job', 'Level, sync', 'Se
 
 /* The text of the manager for `loaded` (loadSheets' result: {available, sheets, unreadable, indexProblem}). Returns:
    - unavailableText: UNAVAILABLE_MESSAGE when storage cannot be used, else '';
-   - indexNote: a line when the saved order could not be read (sheets then appear by id), else '';
    - empty: no readable sheet; emptyCard {title, text, buttonText} is the "No sheets yet" card (the header's New sheet
      button shows only with sheets: showNewButton);
    - columns: MANAGER_COLUMNS; rows: one per sheet in the user's order, {id, name (the full name, also the hover text),
@@ -38,9 +37,6 @@ export function sheetManagerView(loaded) {
   return {
     title: 'Sheets',
     unavailableText: loaded.available ? '' : UNAVAILABLE_MESSAGE,
-    indexNote: loaded.indexProblem
-      ? `The saved order of the sheets could not be read (${loaded.indexProblem}); they are listed by id.`
-      : '',
     empty: rows.length === 0,
     showNewButton: rows.length > 0,
     emptyCard: {
@@ -50,7 +46,6 @@ export function sheetManagerView(loaded) {
     },
     columns: MANAGER_COLUMNS,
     rows,
-    reorderHint: 'Drag a row by its handle to reorder, or focus the handle and press Up or Down arrow. New sheets go to the top.',
     unreadableTitle: 'Could not be read',
     unreadable: loaded.unreadable.map(record => ({ ...record, text: `Could not be read: ${record.cause}` })),
   };

@@ -3562,7 +3562,6 @@ const THEME_SCREENS = {
       { name: 'row note (muted)', selector: '#sh-list .sorigin' },
       { name: 'row action', selector: '#sh-list .rowacts .linkbtn' },
       { name: 'settings cell', selector: '#sh-list tbody td:nth-child(3)' },
-      { name: 'hint (muted)', selector: '#sh-manager p.small.dim' },
       { name: 'New sheet button', selector: '#sh-new' },
       { name: 'heading', selector: '#sh-manager h2' },
     ],
@@ -4556,20 +4555,15 @@ async function checkVisualParity(pg) {
     for (const id of ['#v-take', '#v-lock', '#v-rk']) document.querySelector(id)?.remove();
   });
 
-  // a question (delete a set): 520 px wide; 8 px from the question to its line, 16 px to the buttons
+  // a question (delete a set): 520 px wide; 16 px from the question to the buttons
   await pg.click('#sh-set-delete');
   await expect(pg.locator('#sh-dialog')).toBeVisible();
   const question = await lookAt(pg, {
     box: ['css', '#sh-dialog', 'width'],
-    underQuestion: ['gap', '#sh-dialog .question', '#sh-dialog .question + p'],
-    toButtons: ['gap', '#sh-dialog .question + p', '#sh-dialog .dlgbtns'],
-    note: ['css', '#sh-dialog .question + p', 'font-size', 'color'],
-    muted: ['token', '--muted'],
+    toButtons: ['gap', '#sh-dialog .question', '#sh-dialog .dlgbtns'],
   });
   is(question.box, '520px', 'a question dialog, width');
-  is(question.underQuestion, 8, 'a question dialog: px from the question to the line under it');
-  is(question.toButtons, 16, 'a question dialog: px from its last line to the buttons');
-  is(question.note, `14.4px ${question.muted}`, 'the line under a question (size, colour)');
+  is(question.toButtons, 16, 'a question dialog: px from the question to the buttons');
   await pg.click('#sh-dialog .dlgbtns button:not(.danger)');
   await expect(pg.locator('#sh-dialog')).toHaveCount(0);
 
