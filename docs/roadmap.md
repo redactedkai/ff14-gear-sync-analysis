@@ -14,7 +14,7 @@ In build order (the owner's order).
 | A14 | Final viewport and width review | Before the merge to `main` |
 | A17 | Harden the saved gear sheet format | Version 1 and migrations, before the first public release |
 | A18 | Shields for White Mage and Black Mage at level 50 and below | Offer the one-handed arm and shield; after A4 |
-| A19 | Labels and guess marks on the set page | The GCD haste label and the guess mark on the synced Total; after A4 |
+| A19 | Haste label on the Tier row | The header GCD says "with Haste"; the Tier row's speed cell counts the same haste and has no label; after A4 |
 | A20 | Saved sheets: edge cases and notes | Ids the database lost and Copy sheet resets that happen without a word; before A17 |
 | A21 | Many Fill recipes in one sheet | Measure the 4-entry session cache; after A4 |
 | A22 | Type checking | JSDoc types checked by `tsc`, file by file |
@@ -37,9 +37,9 @@ In build order (the owner's order).
   - turn the tolerant reader of old stat keys (`withCurrentStatKeys` in `src/ui/sheet-storage.js`, which reads the position keys `main`, `spd`, `spec` of a record saved before the keys were the game's own) into the first migration step;
   - replace the quiet repair on read (`repairSheet` in `src/ui/sheet-ops.js`: it holds a sheet's level and item level cap to what the job and level allow, and drops a damaged `bestMeals`) with migrations. It only exists to mend saved sheets from earlier builds and hand edits, so once the format is frozen a record that fails a check should be listed as unreadable, not changed.
 
-- **A19.** Two numbers on the set page need a label that says what they include.
-  - The header GCD and the Tier row for Monk, Ninja, Samurai and Viper include an always-on haste (haste values come from job guides, not the game files) and are labelled only "GCD"; label it, for example "GCD (with Fuka)".
-  - The Total uses the main stat and Vitality clamp under item level sync, which is a guess ([math.md](mechanics/math.md)), with no mark; only the math tab's help names it. Mark it in a few words next to the number, as the rules for guesses say.
+- **A19.** The speed tier of Monk, Ninja, Samurai and Viper counts an always-on haste (haste values come from job guides, not the game files).
+  - Done: the header GCD and the sets list read "GCD (with Haste)" with "2.49s (1.99s)".
+  - Left: the Tier row's speed cell counts the same haste and shows only spare and next-tier points; decide whether it needs a label.
 - **A20.** Cases the saved sheets handle without telling the user.
   - A saved game id the database lacks shows "missing item 12345" with no name; a data update or a filter change can cause it, and Copy sheet copies such an id as it is.
   - Copy sheet resets a Fill setting that does not fit the other job (a stat it lacks) and cuts an equip level without a note.
