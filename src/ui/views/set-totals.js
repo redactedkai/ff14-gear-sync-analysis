@@ -76,7 +76,8 @@ function totalCells(job, values) {
      panel's numbers: gear + meal + the character's base); withoutMeal the gear alone on the same base, for a reader who
      wants the meal's part. emptyCount: used rows with no piece and no covering piece, and emptyText ("2 slots empty",
      '' for none);
-   - tier: {caption: "spare · to next tier", cells} (tierCells), counting the meal;
+   - tier: {caption: "spare · to next tier", cells} (tierCells), counting the meal; a job with an always-on haste has
+     "spare · to next tier (hasted speed)", since its speed tier counts the hasted GCD's steps;
    - defense: defenseRow. */
 export function setTotalsView(context) {
   const { job, evaluated } = context;
@@ -93,7 +94,11 @@ export function setTotalsView(context) {
       emptyCount,
       emptyText: emptyCount ? `${plural(emptyCount, 'slot')} empty` : '',
     },
-    tier: { label: 'Tier', caption: 'spare · to next tier', cells: tierCells(evaluated) },
+    tier: {
+      label: 'Tier',
+      caption: `spare · to next tier${evaluated.gcd.haste ? ' (hasted speed)' : ''}`,
+      cells: tierCells(evaluated),
+    },
     defense: { label: 'Defense', ...defenseRow(evaluated) },
   };
 }

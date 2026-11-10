@@ -14,7 +14,6 @@ In build order (the owner's order).
 | A14 | Final viewport and width review | Before the merge to `main` |
 | A17 | Harden the saved gear sheet format | Version 1 and migrations, before the first public release |
 | A18 | Shields for White Mage and Black Mage at level 50 and below | Offer the one-handed arm and shield; after A4 |
-| A19 | Haste label on the Tier row | The header GCD says "with Haste"; the Tier row's speed cell counts the same haste and has no label; after A4 |
 | A20 | Saved sheets: edge cases and notes | Ids the database lost and Copy sheet resets that happen without a word; before A17 |
 | A21 | Many Fill recipes in one sheet | Measure the 4-entry session cache; after A4 |
 | A22 | Type checking | JSDoc types checked by `tsc`, file by file |
@@ -37,9 +36,6 @@ In build order (the owner's order).
   - turn the tolerant reader of old stat keys (`withCurrentStatKeys` in `src/ui/sheet-storage.js`, which reads the position keys `main`, `spd`, `spec` of a record saved before the keys were the game's own) into the first migration step;
   - replace the quiet repair on read (`repairSheet` in `src/ui/sheet-ops.js`: it holds a sheet's level and item level cap to what the job and level allow, and drops a damaged `bestMeals`) with migrations. It only exists to mend saved sheets from earlier builds and hand edits, so once the format is frozen a record that fails a check should be listed as unreadable, not changed.
 
-- **A19.** The speed tier of Monk, Ninja, Samurai and Viper counts an always-on haste (haste values come from job guides, not the game files).
-  - Done: the header GCD and the sets list read "GCD (with Haste)" with "2.49s (1.99s)".
-  - Left: the Tier row's speed cell counts the same haste and shows only spare and next-tier points; decide whether it needs a label.
 - **A20.** Cases the saved sheets handle without telling the user.
   - A saved game id the database lacks shows "missing item 12345" with no name; a data update or a filter change can cause it, and Copy sheet copies such an id as it is.
   - Copy sheet resets a Fill setting that does not fit the other job (a stat it lacks) and cuts an equip level without a note.
@@ -62,6 +58,7 @@ On `dev` at least; live once on `main`.
 | A2 | Food | [math.md, section 6](mechanics/math.md#food) |
 | A4 | Gear sets and comparison (the Sheets tab; follow-ups A18 to A21) | [sheets.md](engineering/sheets.md), [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page) |
 | A13 | The page template split into partials | [architecture.md, section 5](engineering/architecture.md#5-build) |
+| A19 | Haste labels on the set page | [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page) |
 | A16 | Stat keys that are the game's own stats | [architecture.md, section 2](engineering/architecture.md#2-the-job-context) |
 | A5 | Check sync caps against ffxiv-gearing | [validation.md, section 9](mechanics/validation.md#9-against-another-tool-ffxiv-gearing) |
 | A7 | Rank by tier | [tier-ranking.md](engineering/tier-ranking.md) |

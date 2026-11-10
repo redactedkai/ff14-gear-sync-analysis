@@ -66,6 +66,14 @@ test('Sage: the Total row counts empty rows ("1 slot empty") and a set with noth
   );
 });
 
+test('a job with an always-on haste says its Tier row counts the hasted speed; one without keeps the plain caption', () => {
+  const caption = jobId =>
+    setTotalsView(evaluateInSheet(sheetOf(jobId, [], { sync: { on: false, cap: 795 } }), { ...warSet(), pieces: [{ slot: 'weapon' }] }))
+      .tier.caption;
+  for (const jobId of ['MNK', 'NIN', 'SAM', 'VPR']) assert.equal(caption(jobId), 'spare · to next tier (hasted speed)', jobId);
+  for (const jobId of ['SGE', 'WAR', 'DRG']) assert.equal(caption(jobId), 'spare · to next tier', jobId);
+});
+
 test('Sage: the Tier row is the spare points and the points to the next tier of the gear total', () => {
   const gear = sageGear(sageSet());
   const view = setTotalsView(evaluateInSheet(sheetOf('SGE', []), sageSet()));
