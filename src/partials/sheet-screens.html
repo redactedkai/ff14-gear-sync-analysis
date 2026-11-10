@@ -1,0 +1,109 @@
+<!-- The Sheets tab's two list screens (`sheetsTab` scope, screen = 'sheets' and 'sheet'): the sheet manager and a sheet's
+     page with its set list. Included once, inside the Sheets tab's root in index.html. No keys. -->
+<!-- THE SHEET MANAGER: every sheet, in the user's order -->
+<template x-if="screen === 'sheets'"><div class="sheetsview" id="sh-manager">
+  <div class="listhead"><h2 x-text="manager.title"></h2><span class="sp"></span>
+    <template x-if="manager.showNewButton"><button type="button" class="primary" id="sh-new" :disabled="$store.sheets.busy" @click="openNewSheet()">New sheet</button></template>
+  </div>
+  <template x-if="$store.sheets.note"><p class="toast floating" role="status" x-text="$store.sheets.note"></p></template>
+  <p class="small dim" x-show="manager.indexNote" x-text="manager.indexNote"></p>
+  <template x-if="manager.empty"><div class="startcard" id="sh-empty">
+    <h3 x-text="manager.emptyCard.title"></h3><p x-text="manager.emptyCard.text"></p>
+    <button type="button" class="primary" id="sh-new-first" :disabled="$store.sheets.busy" @click="openNewSheet()" x-text="manager.emptyCard.buttonText"></button>
+  </div></template>
+  <template x-if="!manager.empty"><div class="tablewrap"><table class="sets sheetlist" id="sh-list">
+    <thead><tr><template x-for="(c, k) in manager.columns" :key="k"><th :class="{ n: k === 3 }" x-text="c"></th></template></tr></thead>
+    <tbody>
+      <template x-for="(r, i) in manager.rows" :key="r.id">
+        <tr :data-sheet="r.id" :class="{ dragging: dragging?.kind === 'sheet' && dragging.from === i, dropbefore: dropMark('sheet', i) === 'before', dropafter: dropMark('sheet', i) === 'after' }"
+            @dragover="dragOver('sheet', i, $event)" @drop="drop('sheet', i, $event)">
+          <td><div class="dragcell">
+            <span class="draghandle" role="button" tabindex="0" :class="{ off: $store.sheets.busy }" :draggable="String(!$store.sheets.busy)" :aria-label="`Reorder ${r.name}: drag it, or press Up or Down arrow`"
+                @dragstart="dragStart('sheet', i, $event)" @dragend="dragEnd()" @keydown="handleKey('sheet', i, $event)"></span>
+            <div class="dragbody">
+              <a href="#" class="sname clipname" :title="r.name" @click.prevent="$store.sheets.openSheet(r.id)" x-text="r.name"></a>
+              <span class="sorigin clipname" :title="r.hasDescription ? r.descriptionLine : null" x-text="r.descriptionLine"></span>
+              <div class="rowacts">
+                <button type="button" class="linkbtn" @click="$store.sheets.openSheet(r.id)">Open</button>
+                <button type="button" class="linkbtn" :disabled="$store.sheets.busy" @click="openEditSheet(r.id)">Edit</button>
+                <button type="button" class="linkbtn" :disabled="$store.sheets.busy" @click="openCopy(r.id)">Copy</button>
+                <button type="button" class="linkbtn" :disabled="$store.sheets.busy" @click="askDelete('sheet', r.id)">Delete</button>
+              </div>
+            </div>
+          </div></td>
+          <td><span class="jobcell"><img class="jobico" :src="jobIcons[r.jobId]" alt="" width="24" height="24"><span x-text="r.jobName"></span></span></td>
+          <td x-text="r.settingsText"></td><td class="n" x-text="r.setCount"></td><td x-text="r.created"></td><td x-text="r.changed"></td><td x-text="r.gameData"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table></div></template>
+  <p class="small dim" x-show="!manager.empty" x-text="manager.reorderHint"></p>
+  <template x-if="manager.unreadable.length"><div class="panel" id="sh-unreadable">
+    <h3 x-text="manager.unreadableTitle"></h3>
+    <template x-for="u in manager.unreadable" :key="u.id"><div class="row"><span class="small" x-text="u.text"></span><span class="small dim" x-text="u.key"></span><span style="flex:1"></span><button type="button" class="chip" :disabled="$store.sheets.busy" @click="askDelete('unreadable', u.id)">Delete</button></div></template>
+  </div></template>
+</div></template>
+
+<!-- A SHEET'S PAGE: its settings (level and item level sync applied as typed), then its gear sets -->
+<template x-if="screen === 'sheet' && page"><div class="sheetsview" id="sh-sheet">
+  <div class="setline"><nav class="setcrumb" aria-label="Breadcrumb"><a href="#" @click.prevent="goCrumb('sheets')">Sheets</a><span class="csep" aria-hidden="true">/</span><span class="crumbhere clipname" aria-current="page" :title="page.name" x-text="page.name"></span>
+    <span class="setsw" @click.outside="sheetMenu = false" @keydown.escape="sheetMenu = false">
+      <button type="button" class="crumbmenubtn" id="sh-sheet-switch" aria-haspopup="menu" :aria-expanded="String(sheetMenu)" aria-label="Switch sheet" :disabled="$store.sheets.busy" @click="toggleSheetMenu($el.parentElement)"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"/></svg></button>
+      <template x-if="sheetMenu"><div class="setmenu" role="menu" id="sh-sheet-menu">
+        <button type="button" role="menuitem" class="setitem setall" @click="sheetMenu = false; goCrumb('sheets')"><span x-text="`All sheets (${manager.rows.length})`"></span><svg class="setarrow" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z"/></svg></button>
+        <template x-for="r in manager.rows" :key="r.id"><button type="button" role="menuitem" class="setitem clipname" :class="{ cur: r.id === $store.sheets.sheetId }" :aria-current="r.id === $store.sheets.sheetId ? 'true' : null" :title="r.name" @click="sheetMenu = false; r.id === $store.sheets.sheetId || $store.sheets.openSheet(r.id)" x-text="r.name"></button></template>
+        <button type="button" role="menuitem" class="setitem setnew" @click="sheetMenu = false; goCrumb('sheets'); openNewSheet()">+ New sheet</button>
+      </div></template>
+    </span></nav></div>
+  <template x-if="$store.sheets.note"><p class="toast floating" role="status" x-text="$store.sheets.note"></p></template>
+  <section class="panel" aria-label="Sheet settings">
+    <div class="sheettop"><h2 class="clipname" :title="page.name" x-text="page.name"></h2><span class="sp"></span>
+      <button type="button" id="sh-edit" :disabled="$store.sheets.busy" @click="openEditSheet($store.sheets.sheetId)">Edit name and description</button>
+      <button type="button" id="sh-copy" :disabled="$store.sheets.busy" @click="openCopy($store.sheets.sheetId)">Copy sheet</button>
+      <button type="button" class="danger" id="sh-delete" :disabled="$store.sheets.busy" @click="askDelete('sheet', $store.sheets.sheetId)">Delete sheet</button>
+    </div>
+    <p class="sheetdesc" id="sh-description" :class="{ dim: page.description.empty }" x-text="page.description.text"></p>
+    <div class="sheetfields">
+      <div class="f field"><span>Job <span class="f-range">fixed</span></span><span class="jobcell jobfixed"><img class="jobico" :src="jobIcons[page.job.id]" alt="" width="28" height="28"><b x-text="page.job.name"></b></span></div>
+      <label class="f"><span>Level <span class="f-range" id="sh-level-range" x-text="page.level.rangeText"></span></span><input type="number" id="sh-level" step="1" inputmode="numeric" :disabled="$store.sheets.busy" x-bind="levelField"></label>
+      <label class="f">Item level sync <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sh-sync" :disabled="$store.sheets.busy" :checked="page.sync.on" @change="toggleSync($event.target.checked)"><span x-text="page.sync.on ? 'On' : 'Off'"></span></span></label>
+      <label class="f"><span>Item level cap <span class="f-range" id="sh-cap-range" x-text="page.sync.rangeText"></span></span><input type="number" id="sh-cap" x-ref="sheetCap" step="1" inputmode="numeric" :max="page.sync.max" :disabled="$store.sheets.busy || !page.sync.on" x-bind="capField" @input="onCapInput($event.target.value)" :class="{ invalid: !!capError, lowered: !!capLoweredNote }" :aria-invalid="String(!!capError)" aria-describedby="sh-cap-error sh-cap-lowered">
+        <span class="field-error" id="sh-cap-error" x-show="capError" x-text="capError"></span>
+        <span class="field-note lowered" id="sh-cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span></label>
+    </div>
+    <p class="small dim" x-text="page.note"></p>
+  </section>
+  <div class="listhead"><h2 x-text="page.title"></h2><span class="sp"></span>
+    <template x-if="!page.empty"><button type="button" class="primary" id="sh-new-set" :disabled="$store.sheets.busy" @click="$store.sheets.newSet()">New set</button></template>
+  </div>
+  <template x-if="page.empty"><div class="startcard" id="sh-no-sets">
+    <h3 x-text="page.emptyCard.title"></h3><p x-text="page.emptyCard.text"></p>
+    <button type="button" class="primary" id="sh-new-set-first" :disabled="$store.sheets.busy" @click="$store.sheets.newSet()">New set</button>
+  </div></template>
+  <template x-if="!page.empty"><div class="tablewrap"><table class="sets setlist" id="sh-sets">
+    <thead><tr><th>Set</th><template x-for="c in page.columns" :key="c"><th class="n" x-text="c"></th></template></tr></thead>
+    <tbody>
+      <template x-for="(r, i) in page.rows" :key="r.id">
+        <tr :data-set="r.id" :class="{ dragging: dragging?.kind === 'set' && dragging.from === i, dropbefore: dropMark('set', i) === 'before', dropafter: dropMark('set', i) === 'after' }"
+            @dragover="dragOver('set', i, $event)" @drop="drop('set', i, $event)">
+          <td><div class="dragcell">
+            <span class="draghandle" role="button" tabindex="0" :class="{ off: $store.sheets.busy }" :draggable="String(!$store.sheets.busy)" :aria-label="`Reorder ${r.name}: drag it, or press Up or Down arrow`"
+                @dragstart="dragStart('set', i, $event)" @dragend="dragEnd()" @keydown="handleKey('set', i, $event)"></span>
+            <div class="dragbody">
+              <a href="#" class="sname clipname" :title="r.name" @click.prevent="$store.sheets.openSet(r.id)" x-text="r.name"></a>
+              <template x-if="r.descriptionLine"><span class="sorigin clipname setnotes" :title="r.description" x-text="r.descriptionLine"></span></template>
+              <span class="sorigin" x-text="r.originText"></span>
+              <div class="rowacts">
+                <button type="button" class="linkbtn" :disabled="$store.sheets.busy" @click="openEditSet(r.id)">Edit</button>
+                <button type="button" class="linkbtn" :disabled="$store.sheets.busy" @click="$store.sheets.copySet(r.id)">Copy</button>
+                <button type="button" class="linkbtn" :disabled="$store.sheets.busy" @click="askDelete('set', r.id)">Delete</button>
+              </div>
+            </div>
+          </div></td>
+          <template x-for="f in r.figures" :key="f.key"><td class="n" x-text="f.text"></td></template>
+        </tr>
+      </template>
+    </tbody>
+  </table></div></template>
+  <p class="small dim" x-show="!page.empty" x-text="page.reorderHint"></p>
+</div></template>
