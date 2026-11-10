@@ -39,7 +39,9 @@ What does the optimizer choose, and from what?
 3. then, among gear sets with the same target total, **tiebreak 1**,
 4. then **tiebreak 2**.
 
-This is a lexicographic order: a tiebreak only matters between gear sets that are equal on every higher-ranked stat. Weapon damage comes first on every search (owner's decision): it multiplies nearly all of a job's damage, so no gear set should give it up for more of the target stat or the tiebreaks. It is an implicit key: the page does not offer it as a goal, names it only in a note under the result, and the rest of this page calls the target the first key the user picks. Its values, and its sync rule (**inferred**), are in [math.md, section 4](../mechanics/math.md#weapon-damage-and-defense). The Target GCD's fastest-GCD search leaves it out, since it only asks how fast the gear can go.
+This is a lexicographic order: a tiebreak only matters between gear sets that are equal on every higher-ranked stat. Weapon damage comes first on every search (owner's decision): it multiplies nearly all of a job's damage, so no gear set should give it up for more of the target stat or the tiebreaks.
+
+It is an implicit key: the page does not offer it as a goal, names it only in a note under the result, and the rest of this page calls the target the first key the user picks. Its values, and its sync rule (**inferred**), are in [math.md, section 4](../mechanics/math.md#weapon-damage-and-defense). The Target GCD's fastest-GCD search leaves it out, since it only asks how fast the gear can go.
 
 **Constraints.**
 
@@ -50,7 +52,9 @@ This is a lexicographic order: a tiebreak only matters between gear sets that ar
 
 **Effective stats.** Some content lowers gear to a fixed item level ([item level sync](../glossary.md#game-terms)): sync caps each stat on a piece above the cap item level; see [math.md, section 5](../mechanics/math.md#5-item-level-sync). The optimizer uses the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. With **melds** on (the page's default), every piece that is not synced first gets its best [materia](../glossary.md#game-terms) melds (stones that add a substat) for the objective, and its stats include them. Without a speed range one melded version per piece is enough, as section 6 shows, so the search itself does not change; with one, a piece brings each meld split worth keeping (section 6).
 
-**Why not try everything.** The running example on this page is Sage's pool of every piece it can equip at item level 100 and up: 1,999 items, the pool used for the measurements of 2026-10-12. The database's item level floor is now 15, so today's full Sage pool is larger (2,422 pieces on data `d9582a6`, [section 4](#pruning-with-a-speed-range)); the figures on this page that use the 1,999-item pool were not re-run. Its slots hold 108 to 237 items each, which allows about $10^{25}$ gear sets. Removing the items that cannot matter (section 4) leaves 119 candidates synced to item level 123, still about $10^{11.5}$ gear sets, and the branch and bound (section 5) then settles the best one, 344 Spell Speed, after visiting 137 nodes. (Gear set counts: the product of each slot's choices, rings as pairs, so a slight overcount; computed 2026-10-16 on data `d9582a6`.)
+**Why not try everything.** The running example on this page is Sage's pool of every piece it can equip at item level 100 and up: 1,999 items, the pool used for the measurements of 2026-10-12. The database's item level floor is now 15, so today's full Sage pool is larger (2,422 pieces on data `d9582a6`, [section 4](#pruning-with-a-speed-range)); the figures on this page that use the 1,999-item pool were not re-run.
+
+The 1,999-item pool's slots hold 108 to 237 items each, which allows about $10^{25}$ gear sets. Removing the items that cannot matter (section 4) leaves 119 candidates synced to item level 123, still about $10^{11.5}$ gear sets, and the branch and bound (section 5) then settles the best one, 344 Spell Speed, after visiting 137 nodes. (Gear set counts: the product of each slot's choices, rings as pairs, so a slight overcount; computed 2026-10-16 on data `d9582a6`.)
 
 ## 2. Formal statement
 
@@ -63,7 +67,14 @@ This is a lexicographic order: a tiebreak only matters between gear sets that ar
 - **Depth-first branch and bound:** build a gear set slot by slot, and abandon a partly filled gear set as soon as an optimistic bound shows it cannot beat the best full gear set found so far ([glossary](../glossary.md#project-terms)).
 - **Dominance reduction:** first remove the pieces that another piece of the same slot beats on every stat ([glossary](../glossary.md#project-terms)).
 
-This page states the formulation, then the four steps that solve it, one per section: an exact weighted-sum scalarization of the objective (section 3: the ranked stats are packed into one integer score, so comparing two gear sets is comparing two sums), dominance reduction (section 4), branch and bound with the relaxations behind its bounds (section 5; a relaxation is an easier problem with some rules dropped, whose best value bounds the real one from above), and the per-piece meld subproblem (section 6: the best materia stones for one piece). It argues why the answer is optimal unless the search hits its node limit.
+This page states the formulation, then the four steps that solve it, one per section:
+
+- an exact weighted-sum scalarization of the objective (section 3: the ranked stats are packed into one integer score, so comparing two gear sets is comparing two sums);
+- dominance reduction (section 4);
+- branch and bound with the relaxations behind its bounds (section 5; a relaxation is an easier problem with some rules dropped, whose best value bounds the real one from above);
+- the per-piece meld subproblem (section 6: the best materia stones for one piece).
+
+It argues why the answer is optimal unless the search hits its node limit.
 
 The problem as a 0-1 program, the game rules behind each row, and the Target GCD layer that sets the speed range.
 
@@ -72,7 +83,7 @@ The problem as a 0-1 program, the game rules behind each row, and the Target GCD
 **Data.**
 
 - **Positions** $s = 1, \dots, n$ with $n \le 12$, each of a slot type $t(s)$. The ring type has two positions, $r_1$ and $r_2$; write $k_t$ for the number of positions of type $t$ ($k_{\text{ring}} = 2$, otherwise $k_t = 1$). A slot type with no item in the pool is left out.
-- **Classes.** $P_t$ is the set of pool items of type $t$. Item $i$ has a number of copies $c(i) \in \{1, 2\}$, a set $B(i)$ of slot types it leaves empty, and an integer vector $v(i)$ with one entry per dimension $d$: the job's stats (main stat, Vitality, Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety). The entries are the effective stats of section 1.
+- **Classes.** $P_t$ is the set of pool items of type $t$. Item $i$ has a number of copies $c(i) \in \{1, 2\}$ and a set $B(i)$ of slot types it leaves empty. It also has an integer vector $v(i)$ with one entry per dimension $d$: the job's stats (main stat, Vitality, Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety). The entries are the effective stats of section 1.
 - **Objective keys:** the target $k_0$ and tiebreaks $k_1, k_2$ (either may be absent).
 - **Limits** (all optional): a speed minimum $m$ and maximum $M$; minimums $m_d$ on a set $D_{\min}$ of other stats (tier ranking, section 5).
 
@@ -107,7 +118,7 @@ Standard references for these problems are Kellerer, Pferschy and Pisinger (2004
 
 **Blocked slots.** $B(i)$ is the off-hand for a two-handed weapon, the head for a cloak, the feet for legs that cover them, the hands, legs and feet for Herklaedi, nothing otherwise. It comes from the item's slot code. A piece with no slot code (a hand-made or generated piece, which the page does not make but the engine accepts) blocks nothing, except that a weapon on a two-handed job blocks the off-hand. The conflict rows make a gear set legal only if every slot in $B(i)$ of a chosen $i$ is empty, and a blocked slot takes no item and adds 0. Dominance (section 4) and the bounds (section 5) both respect blocked slots.
 
-**Branching order.** The positions are taken in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring, except that a slot some pool item can leave empty (the off-hand; the head, hands, legs or feet when a piece covering them is in the pool) moves to the end, in the same order. So a blocked slot always comes after the piece that blocks it, and the search knows whether a slot is blocked when it reaches it. The search then reorders the slots that nothing can block by the length of their lists after its filters (section 5); the blockable ones stay last.
+**Branching order.** The positions are taken in a fixed order: weapon, off-hand, head, body, hands, legs, feet, ear, neck, wrist, ring, ring. A slot some pool item can leave empty (the off-hand; the head, hands, legs or feet when a piece covering them is in the pool) moves to the end, in the same order. So a blocked slot always comes after the piece that blocks it, and the search knows whether a slot is blocked when it reaches it. The search then reorders the slots that nothing can block by the length of their lists after its filters (section 5); the blockable ones stay last.
 
 **Gear sets.** A gear set $L$ is a feasible assignment; write $i \in L$ for its items, and $\varnothing$ for an empty slot, with $v(\varnothing) = 0$. Emptiness is never a free decision, and two policies follow from that, both deliberate:
 
@@ -116,16 +127,31 @@ Standard references for these problems are Kellerer, Pferschy and Pisinger (2004
 
 The brute-force reference in the tests copies both rules, so each also has a direct test on a two-item pool (the "policy: ..." tests in the exhaustive test file). Changing one means changing the engine, the reference and those tests together.
 
-**Pinned pieces.** A set can keep pieces and search the rest (`fixed` in `prepare`, `src/core/optimizer/candidates.js` and `index.js`). A pinned piece is one candidate with one meld, the stones it was pinned with (`fixedCandidate`, the same `applyStones` the set's own evaluation uses), and the search does not fill its slot: that slot has no list, a pool piece that would cover it is left out, and a slot the pinned piece covers is empty. With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-index.js`: the search knows only two ring slots as a pair) whose pieces have their copies less the pinned ring's, so a pinned Unique ring is no choice for it; with both pinned there is none. The same Unique ring pinned on both ring rows cannot be worn (`pinProblem`, the copy count the search keeps). `solve` adds the pinned pieces' points to the totals and takes them off every limit (a speed minimum or band, a stat minimum, a seed, a proven maximum), so a pinned speed stone counts toward a Target GCD and the searches are the ones of the remaining slots. With no pinned piece nothing changes: same lists, same node counts (checked on 540 searches, 106,307 nodes). Tests: `core-optimizer.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core-recipe.pins.test.js`.
+**Pinned pieces.** A set can keep pieces and search the rest (`fixed` in `prepare`, `src/core/optimizer/candidates.js` and `index.js`). A pinned piece is one candidate with one meld, the stones it was pinned with (`fixedCandidate`, the same `applyStones` the set's own evaluation uses). The search does not fill its slot: that slot has no list, a pool piece that would cover it is left out, and a slot the pinned piece covers is empty.
+
+With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-index.js`: the search knows only two ring slots as a pair). Its pieces have their copies less the pinned ring's, so a pinned Unique ring is no choice for it. With both pinned there is none. The same Unique ring pinned on both ring rows cannot be worn (`pinProblem`, the copy count the search keeps).
+
+`solve` adds the pinned pieces' points to the totals and takes them off every limit (a speed minimum or band, a stat minimum, a seed, a proven maximum). So a pinned speed stone counts toward a Target GCD, and the searches are the ones of the remaining slots.
+
+With no pinned piece nothing changes: same lists, same node counts (checked on 540 searches, 106,307 nodes).
+
+Tests: `core-optimizer.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core-recipe.pins.test.js`.
 
 ### Target GCD: from a GCD to a speed range
 
-A player thinks in GCDs, not speed points, so the Target GCD layer takes a GCD $G$ and one of two modes, sets $m$ and $M$ from them, and runs the optimizer as a small parametric family: one search per distinct speed interval, with the meal chosen outside the searches.
+A player thinks in GCDs, not speed points. So the Target GCD layer takes a GCD $G$ and one of two modes and sets $m$ and $M$ from them. It then runs the optimizer as a small parametric family: one search per distinct speed interval, with the meal chosen outside the searches.
 
 - **"Exactly"** (xivgear's meld solver): the GCD must be $G$. Some jobs want this because their cooldowns drift at a faster GCD (The Balance's Dragoon, Dark Knight and Gunbreaker guides).
 - **"Or faster":** the GCD must be $G$ or shorter. The result can come out faster than asked, but only when that gear set ties or wins on the target and tiebreaks.
 
-![Target GCD in three steps, for a level 100 Sage at exactly 2.45 s with food on (the best of 10 meals for the goal). Step 1: the GCD needs 364 to 449 total speed, gear plus food ("or faster" keeps only the minimum, 364). Step 2: no meal and the 6 meals without speed ask for 364 to 449 from gear; the 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370; equal bands share a search, so 2 searches run. Step 3: the best meal has the highest target with food, then tiebreak 1, then tiebreak 2 with food, then the most food points, then the job's food order. The candidate lists are built once and reused by both searches and every new GCD.](../diagrams/optimizer-target-gcd.svg)
+![Target GCD in three steps, for a level 100 Sage at exactly 2.45 s with food on (the best of 10 meals for the goal): the speed band, the gear speed band per meal, the best meal. The numbers are listed below.](../diagrams/optimizer-target-gcd.svg)
+
+The diagram's numbers, for that Sage:
+
+- **Step 1:** the GCD needs 364 to 449 total speed, gear plus food ("or faster" keeps only the minimum, 364).
+- **Step 2:** no meal and the 6 meals without speed ask for 364 to 449 from gear. The 4 meals with speed (10% of base 420 plus gear) ask for 293 to 370. Equal bands share a search, so 2 searches run.
+- **Step 3:** the best meal has the highest target with food, then tiebreak 1, then tiebreak 2 with food, then the most food points, then the job's food order.
+- The candidate lists are built once and reused by both searches and every new GCD.
 
 The GCD falls in steps of 0.01 s as speed rises, so each GCD value is reached by an interval of speed. The steps, as in the diagram:
 
@@ -205,7 +231,9 @@ $$
 
 For a single-slot type this means "something beats it". For rings it means "two copies beat it": one ring with 2 copies, or two different rings. Copies are counted once per item, so two candidate versions of one Unique ring are still one ring.
 
-**Computing it.** The candidates are sorted by score, then by the sum of their stats, with exact ties in pool order. A beater scores at least as much as what it beats (every weight is positive) and, unless it is an exact tie, has a larger stat sum, so every beater of $j$ comes before $j$. Each candidate is then compared only with the candidates already kept: by fact 1 below, the kept beaters always have enough copies, so this drops exactly the same candidates as comparing with all of them. On 23,652 real slot lists (22 jobs, before Beastmaster, six item level ranges, three sync settings, melds on and off, three objectives) both ways kept the same candidates, and the kept-only scan was 7 times faster. **Verified**.
+**Computing it.** The candidates are sorted by score, then by the sum of their stats, with exact ties in pool order. A beater scores at least as much as what it beats (every weight is positive) and, unless it is an exact tie, has a larger stat sum, so every beater of $j$ comes before $j$.
+
+Each candidate is then compared only with the candidates already kept: by fact 1 below, the kept beaters always have enough copies, so this drops exactly the same candidates as comparing with all of them. On 23,652 real slot lists (22 jobs, before Beastmaster, six item level ranges, three sync settings, melds on and off, three objectives) both ways kept the same candidates, and the kept-only scan was 7 times faster. **Verified**.
 
 ### Why one better ring is not enough
 
@@ -259,7 +287,11 @@ With a few dozen candidates per slot left, how is the optimum found and proved? 
 
 ![A three-slot example: heads H1 and H2, bodies B1 and B2, necks N1 and N2. The first descent H1, B1, N1 gives 43. N2 gives 41. Body B2 is pruned because 34 + 8 cannot beat 43, and head H2 because 12 + 23 cannot. Seven of fifteen nodes are visited.](../diagrams/optimizer-search-tree.svg)
 
-**Branching.** Positions come in the order of section 2, except that after the filters the slots nothing can block are searched shortest list first (the ring list counts twice); the blockable slots stay last, in their order. Any order fills every slot, so the answer's score is the same; short lists first keep the top of the tree narrow and leave the long lists for the depths where the bounds and the memo are tightest (2026-10-17, from a solver review credited in [tier-ranking.md, section 4.4](tier-ranking.md#44-regain-cuts-from-the-stages-before): on one Black Mage stage, 699,000 nodes and 4.6 s became 341,000 and 1.3 s in its measurements). At each position the candidates are branched on in decreasing score, then stat sum (exact ties keep pool order). The incumbent, with score $\sigma^*$, is replaced only by a strictly higher score, so among equal scores the first one found is kept.
+**Branching.** Positions come in the order of section 2, except that after the filters the slots nothing can block are searched shortest list first (the ring list counts twice); the blockable slots stay last, in their order.
+
+Any order fills every slot, so the answer's score is the same. Short lists first keep the top of the tree narrow and leave the long lists for the depths where the bounds and the memo are tightest. Measured (2026-10-17) in a solver review credited in [tier-ranking.md, section 4.4](tier-ranking.md#44-regain-cuts-from-the-stages-before): on one Black Mage stage, 699,000 nodes and 4.6 s became 341,000 and 1.3 s in its measurements.
+
+At each position the candidates are branched on in decreasing score, then stat sum (exact ties keep pool order). The incumbent, with score $\sigma^*$, is replaced only by a strictly higher score, so among equal scores the first one found is kept.
 
 **Fathoming.** At a node where positions $1, \dots, p-1$ are fixed, with partial score $\sigma$ and partial totals $T_d$, the node is fathomed when one of these bounds fails:
 
@@ -285,8 +317,8 @@ $$
 so if $\sigma + U_p \le \sigma^*$, nothing below this node can be strictly better.
 
 - For a piece that blocks no later slot, $u_s$ is just the best score in the slot.
-- A piece that blocks later slots (legs that cover the feet) is bounded together with them: its score is spread over its own slot and the ones it empties, so $\sigma(i) \le u_s + \sum_{s' :\, t(s') \in B(i)} u_{s'}$ and the sum never counts both the piece and the slots it blocks. The speed bound uses the same spread.
-- Why that matters: counting both, with the best feet piece on top of a legs piece already worth legs and feet, the search hit its node limit under level sync below 50, where every piece syncs to nearly the same item level and gear sets tie; with it those searches take a few hundred nodes.
+- A piece that blocks later slots (legs that cover the feet) is bounded together with them. Its score is spread over its own slot and the ones it empties, so $\sigma(i) \le u_s + \sum_{s' :\, t(s') \in B(i)} u_{s'}$, and the sum never counts both the piece and the slots it blocks. The speed bound uses the same spread.
+- Why that matters: counting both, with the best feet piece on top of a legs piece already worth legs and feet, the search hit its node limit under level sync below 50. There every piece syncs to nearly the same item level and gear sets tie. With the spread, those searches take a few hundred nodes.
 - **Blocked slots come off.** While a chosen piece blocks a later slot, that slot's bound $u_{s'}$ and speed come off the bounds, so a cloak's branch is pruned like any other. Without this, ceiling runs on the full Sage pool synced to 123 hit their 150,000-node limit; with it the largest takes 181 nodes.
 
 **Ring pair.** The separable bound treats each remaining position independently, except that the two ring positions are bounded together. At $r_1$ the two add at most the best **legal pair**: the best ring twice if it has 2 copies, otherwise the best ring plus the best ring of another item (the best alone if there is none). Every legal pair is at most this: a pair with the best ring adds the best other item at most, and a pair without it has both members at most the best other item.
@@ -316,7 +348,11 @@ The separable bound takes each position's best score and best speed from differe
 
 The relaxation keeps the speed row exactly and drops the copy rows: each position is counted on its own, so a Unique ring may count twice. It also lets a position stay empty where a legal gear set can leave it empty: a blockable slot, a slot with no candidates, or a ring slot whose list holds fewer than two copies. So the table never falls below what some legal completion adds, and it fathoms nothing it should keep. A maximum at or above the most speed the slots can add is treated as no maximum.
 
-**One table per set of blocked slots.** Once a chosen piece blocks a later slot (a two-handed weapon the off-hand, a cloak the head), that slot adds nothing to any completion. The table for no blocked slots still counts its best piece there, so the bound stays too high and branches under that piece are almost never fathomed. The search therefore keeps one table per set of blocked slots, built the first time it is needed, in which those slots can only stay empty. That is still a relaxation: a blocked slot is empty in every completion. A table costs 1 to 50 ms to build, more than a small search takes, so the extra tables are built only after 2,000 nodes; before that the table for no blocked slots stands in, which is a looser bound but still a bound. With one table for all, a White Mage search with a two-handed weapon still counted the best shield and ran 110,000 to 420,000 nodes at item level 400 instead of under 120.
+**One table per set of blocked slots.** Once a chosen piece blocks a later slot (a two-handed weapon the off-hand, a cloak the head), that slot adds nothing to any completion. The table for no blocked slots still counts its best piece there, so the bound stays too high and branches under that piece are almost never fathomed. The search therefore keeps one table per set of blocked slots, built the first time it is needed, in which those slots can only stay empty. That is still a relaxation: a blocked slot is empty in every completion.
+
+A table costs 1 to 50 ms to build, more than a small search takes, so the extra tables are built only after 2,000 nodes. Before that the table for no blocked slots stands in, which is a looser bound but still a bound.
+
+With one table for all, a White Mage search with a two-handed weapon still counted the best shield and ran 110,000 to 420,000 nodes at item level 400 instead of under 120.
 
 Measured (2026-10-16): White Mage and Black Mage were the slow cases, since 98 of White Mage's 116 weapon candidates and 107 of Black Mage's 124 are two-handed. White Mage at cap 400, Piety then Determination and Direct Hit, exactly 2.40 with food, searched 1,120,206 nodes over its four meal bands and took 5.3 s; with the tables it takes 92 ms. Black Mage at cap 660, exactly 2.34 with food: 10.2 s without the tables, 84 ms with them (warm runs, one process, nothing else running).
 
@@ -342,30 +378,51 @@ A search may also hold any stat to a minimum (tier ranking, roadmap A7), alone o
 - its own minimum check;
 - a place in the group key and the state key.
 
-**State dominance with several limits.** Equal states are not the only ones that can be cut. With two or more limits, a later state is also cut when an earlier one at the same position, blocked slots, first ring and exact totals of the limits with a maximum has at least its score and at least each minimum-only total (capped at its minimum): every completion of the later one completes the earlier one with no lower score and no broken limit. Each such key keeps at most 32 states no other one beats; dropping one only cuts less. On White Mage at level 100, exactly 2.30, food off, Direct Hit > Piety > Determination, the Determination search fell from 1,253,132 to 1,114,095 nodes. Equality alone missed the states that differ in a held total: on White Mage at level 100, exactly 2.31, Piety > Determination > Direct Hit, food off, it took 11.8 million nodes to prove Direct Hit 0.
+**State dominance with several limits.** Equal states are not the only ones that can be cut. With two or more limits, a later state is also cut when an earlier one:
+
+- is at the same position, with the same blocked slots and first ring and the same exact totals of the limits with a maximum;
+- has at least its score;
+- has at least each minimum-only total (capped at its minimum).
+
+Every completion of the later one then completes the earlier one with no lower score and no broken limit. Each such key keeps at most 32 states no other one beats; dropping one only cuts less.
+
+On White Mage at level 100, exactly 2.30, food off, Direct Hit > Piety > Determination, the Determination search fell from 1,253,132 to 1,114,095 nodes. Equality alone missed the states that differ in a held total: on White Mage at level 100, exactly 2.31, Piety > Determination > Direct Hit, food off, it took 11.8 million nodes to prove Direct Hit 0.
 
 The bound is the **smallest** of the tables. Each table is the exact value of a relaxation that keeps one limit row and drops the others, so each is an upper bound and so is the smallest. A joint table over every limited stat would be the exact DP but far too large ($10^{10}$ cells at level 100). Candidates must be prepared for the stats that may get a minimum, since pruning and meld versions depend on them.
 
-**Band reach.** The minimum check above takes each remaining slot's most of a held stat, ignoring speed. Under a speed band, each held stat also gets a table of the most of it the remaining slots can add while speed still lands in the band: the band table of the previous subsection with the held stat as the value instead of the score. A node is fathomed when even that cannot reach the minimum. It keeps the speed rows and one minimum row exactly and drops the copy rows, like every table, so it cuts no feasible gear set. On White Mage at level 100, cap 690, Piety > Critical Hit > Determination, the solver review measured 6.0 s against 4.1 s on its prototype.
+**Band reach.** The minimum check above takes each remaining slot's most of a held stat, ignoring speed. Under a speed band, each held stat also gets a table of the most of it the remaining slots can add while speed still lands in the band. It is the band table of the previous subsection with the held stat as the value instead of the score.
 
-**Groups with several limits.** A group's value for a limit other than the first must give a table bound at least every member's: the most any member adds for a minimum only (its table only rises with the total so far), the least for a maximum only (its table only falls: a regain cut), and a second band goes into the group key. Taking the most for every limit would be right only if speed, the first limit, were the only one with a maximum. The key holds only the first limit's value and the bands: grouping by every limited value made nearly every candidate its own group, and bounding each group at every node cost more than it saved (Sage at level 100, three limits: 9 s).
+A node is fathomed when even that cannot reach the minimum. It keeps the speed rows and one minimum row exactly and drops the copy rows, like every table, so it cuts no feasible gear set. On White Mage at level 100, cap 690, Piety > Critical Hit > Determination, the solver review measured 6.0 s against 4.1 s on its prototype.
+
+**Groups with several limits.** A group's value for a limit other than the first must give a table bound at least every member's:
+
+- the most any member adds, for a minimum only (its table only rises with the total so far);
+- the least, for a maximum only (its table only falls: a regain cut);
+- a second band goes into the group key.
+
+Taking the most for every limit would be right only if speed, the first limit, were the only one with a maximum. The key holds only the first limit's value and the bands: grouping by every limited value made nearly every candidate its own group, and bounding each group at every node cost more than it saved (Sage at level 100, three limits: 9 s).
 
 Tier ranking's searches hold two or three stats near their most, often with a speed band, where these tables alone are weak. More steps run before the search there, all explained in [tier-ranking.md](tier-ranking.md):
 
 - a shortfall filter, which fixes to 0 every candidate that cannot reach a minimum even with the best of every other slot ([section 4.1](tier-ranking.md#41-the-shortfall-filter));
-- pruning against a gear set already in hand (a seed): the Lagrangian relaxation of the limit rows (Geoffrion 1974; Fisher 1981, *Management Science*), with multipliers from subgradient steps, and reduced-cost fixing of candidates against the seed's score (as in Crowder, Johnson and Padberg 1983, *Operations Research*) ([section 4.2](tier-ranking.md#42-pruning-against-the-gear-set-in-hand)); its bound is also used at nodes, with the multipliers fixed at the root;
+- pruning against a gear set already in hand (a seed), in [section 4.2](tier-ranking.md#42-pruning-against-the-gear-set-in-hand):
+  - the Lagrangian relaxation of the limit rows (Geoffrion 1974; Fisher 1981, *Management Science*), with multipliers from subgradient steps; its bound is also used at nodes, with the multipliers fixed at the root;
+  - reduced-cost fixing of candidates against the seed's score (as in Crowder, Johnson and Padberg 1983, *Operations Research*);
 - regain cuts: each earlier stage's proven most of its key becomes a valid inequality on how much of it the pieces give up against a swap ([section 4.4](tier-ranking.md#44-regain-cuts-from-the-stages-before));
 - a trial search of at most 20,000 nodes, and only when it does not finish, Pareto fronts, the Nemhauser and Ullmann (1969, *Management Science*) dynamic program with Morin and Marsten's bounding, which often settle the search without a tree ([section 5](tier-ranking.md#5-pareto-fronts)).
 
 The shortfall filter also runs on Target GCD searches (their speed minimum).
 
-With no minimums the search is the one above. Against the search before this change (2026-10-16), the plain optimizer gave the same results with the same node counts in 5,580 runs (`scripts/perf/compare.mjs --quick`), and Target GCD gave the same results in 2,045 runs of each mode, with slightly fewer nodes (198,473 against 199,862 in "exactly" mode) from the shortfall filter.
+With no minimums the search is the one above. Against the search before this change (2026-10-16), the plain optimizer gave the same results with the same node counts in 5,580 runs (`scripts/perf/compare.mjs --quick`). Target GCD gave the same results in 2,045 runs of each mode, with slightly fewer nodes (198,473 against 199,862 in "exactly" mode) from the shortfall filter.
 
 ## 6. Melds in the search
 
 With melds on, every piece that is not synced enters the search with its best melds for the objective. Each piece carries a small integer subproblem: how to allocate its stones among the keys. How is it solved, and why is one melded version per piece enough? The meld rules themselves (stone values, item level gates, caps, sync) are in [materia.md, section 2](../mechanics/materia.md#2-the-rules).
 
-Notation from there: a piece has $B$ **big** stones (guaranteed slots and the first overmeld slot, any grade) and $S$ **small** ones (later overmeld slots, no grade VI, VIII, X or XII), worth $V$ and $v$ at the best grade its item level allows, and $h_k$ is its **room** on substat $k$, the points left below its cap.
+Notation from there:
+
+- a piece has $B$ **big** stones (guaranteed slots and the first overmeld slot, any grade) and $S$ **small** ones (later overmeld slots, no grade VI, VIII, X or XII), worth $V$ and $v$ at the best grade its item level allows;
+- $h_k$ is its **room** on substat $k$, the points left below its cap.
 
 ### The best melds of one piece
 
@@ -390,7 +447,7 @@ The best plan maximizes $(\text{gain}_1, \text{gain}_2, \text{gain}_3)$ in lexic
 - **Full enumeration.** The search tries every split of the $B$ big and $S$ small stones among the keys and the spare bucket. That is at most 200 splits per piece, and the result is cached for each combination of stones, values and rooms.
 - **Always the best grade:** for a fixed split, a bigger stone never lowers a gain, so using the most valuable allowed grade loses nothing.
 
-**A missing substat can be melded.** Kirin's Osode of Fending (5 guaranteed slots, grade VI) maximizing Skill Speed, which it doesn't carry, gets five VI: $5 \times 16 = 80$, below its cap of 110. Maximizing Determination instead, it gets two VI and one V ($77 \to 110$; three VI reach the same 110, and the fewest-big-stones rule of [materia.md, section 2](../mechanics/materia.md#which-stones-are-shown) prefers the V), and its other two slots stay empty; with Direct Hit as a tiebreak, those two take VI and give Direct Hit 32 (computed 2026-10-16).
+**A missing substat can be melded.** Kirin's Osode of Fending (5 guaranteed slots, grade VI) maximizing Skill Speed, which it doesn't carry, gets five VI: $5 \times 16 = 80$, below its cap of 110. Maximizing Determination instead, it gets two VI and one V ($77 \to 110$; three VI reach the same 110, and the fewest-big-stones rule of [materia.md, section 2](../mechanics/materia.md#which-stones-are-shown) prefers the V). Its other two slots stay empty; with Direct Hit as a tiebreak, those two take VI and give Direct Hit 32 (computed 2026-10-16).
 
 **Order.** The page lists the stones in slot order, the order they are melded in: the big stones (slots 1 to $B$), then the small ones. Read left to right, every list is a legal melding order. A test checks this for every meldable piece of three jobs under four objectives.
 
@@ -401,11 +458,11 @@ The optimizer scores a gear set as the sum of per-piece scores, $\sigma(L) = \su
 - **Melds belong to one piece.** A piece's melds change only that piece's vector (its column). Copies (a Unique ring is worn once) and blocked slots (a cloak empties the head) depend on the item, not on its melds.
 - **The best version wins every swap.** Take any legal gear set and replace one worn piece's melds with that piece's best plan. The gear set stays legal, and its score can only go up, because $\sigma$ restricted to one piece orders plans exactly as their lexicographic gain tuples. Repeat for every piece.
 - **So one version per piece is enough.** Some optimal gear set uses only best-melded pieces, so each meldable piece enters the search as one candidate and the search itself is unchanged. This holds even for two copies of one ring, since each copy takes the same best plan.
-- **It does not hold with a speed range.** Under a speed minimum or maximum, a piece's best melds depend on the rest of the gear set: a stone in speed can be worth more than a stone in the target if the rest of the gear set falls a few points short. Under a speed range each piece brings several versions (below).
+- **It does not hold with a speed range.** Under a speed minimum or maximum, a piece's best melds depend on the rest of the gear set. A stone in speed can be worth more than a stone in the target if the rest of the gear set falls a few points short. Under a speed range each piece brings several versions (below).
 
 ### Meld versions under a speed range
 
-With a speed range, speed joins the keys of the split search above, and every split is kept that no other split **beats**: each piece is expanded into the nondominated set of its meld plans (its Pareto set), and each kept plan becomes one item of the piece's class.
+With a speed range, speed joins the keys of the split search above, and every split is kept that no other split **beats**. Each piece is expanded into the nondominated set of its meld plans (its Pareto set), and each kept plan becomes one item of the piece's class.
 
 - **Minimum only:** another split beats it when it gains at least as much on every key, speed included.
 - **With a maximum:** the same, but only at the same speed gain. A split with less speed can be what keeps a gear set under $M$.
@@ -431,7 +488,10 @@ What does the page hand to the engine? (What it shows back is in [ui.md](ui.md).
 **No pool to build.** The optimizer searches every database piece the job can wear (built once per job, about 5 to 10 ms) that passes the filters under **Gear to search**.
 
 - The page has no pool step: it searches every piece the job can wear, since searching everything proved as fast as searching a pool the user picked (**owner's decision**).
-- A sweep compared that with era gear only (pieces the sync leaves untouched, which keep their materia): over 1,971 runs (every job, 17 sync settings, every target, materia on), searching every piece gave a better target total in 70% of runs (median +2%, at most +35%), never a worse one (era gear is a subset), and its best gear sets are about three quarters synced high-level pieces (a one-off sweep on 2026-10-15, measured once; the script is not kept).
+- A sweep compared that with era gear only (pieces the sync leaves untouched, which keep their materia): it ran 1,971 times (every job, 17 sync settings, every target, materia on). It was a one-off sweep on 2026-10-15, measured once; the script is not kept. Searching every piece:
+  - gave a better target total in 70% of runs (median +2%, at most +35%);
+  - never gave a worse one (era gear is a subset);
+  - has best gear sets that are about three quarters synced high-level pieces.
 
 **Gear to search** has the Gear browser's filters, in the same order, with the optimizer's own values:
 
@@ -523,7 +583,11 @@ The runs of these scripts, with their dates, are in the [performance log](perf-l
 
 The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` and `memory.mjs`.
 
-- **Workloads:** W1, every job with its full pool, sync settings, levels, melds on and off and about 40 objectives; X, all the Gear from box settings of `excludeMasks` (none left out, the default nine, each of those nine back on, and others); OFULL, every target with every first and second tiebreak; and adversarial pools (`adversarial.mjs`: near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation).
+- **Workloads:**
+  - W1: every job with its full pool, sync settings, levels, melds on and off and about 40 objectives;
+  - X: all the Gear from box settings of `excludeMasks` (none left out, the default nine, each of those nine back on, and others);
+  - OFULL: every target with every first and second tiebreak;
+  - adversarial pools (`adversarial.mjs`): near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation.
 - **Budgets.** `bench.mjs` exits 1 when a run is truncated or takes more than 1,000 nodes: those are counts, the same on every PC. It prints the timing budgets' misses as information only (timing matters only above about 0.5 s); `--strict` makes a timing miss exit 1 too. `adversarial.mjs` exits 1 when a hostile pool run is truncated; its forced stall is meant to reach the limit and only prints a note when it no longer does (with the speed tables it stops after a few dozen nodes).
 
 | Metric | Budget |
@@ -535,7 +599,9 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | Truncated runs | 0 |
 | Second identical sweep (`memory.mjs`) | 0 new meld memo entries, 1 MB of heap |
 
-- **Known misses on this PC:** the first call and the node count (83.9 ms and 1,209 nodes in the [full sweep](perf-log.md#81-every-jobs-full-pool); `npm run perf` stayed within 1,000 nodes on 2026-10-19, 458 at most, and a sweep over 1,000 now exits 1), and the timing budgets after the [item level floor drop](perf-log.md#71-item-level-floor-15). Per the owner's rule, timing matters only above about 0.5 s.
+- **Known misses on this PC** (per the owner's rule, timing matters only above about 0.5 s):
+  - the first call and the node count: 83.9 ms and 1,209 nodes in the [full sweep](perf-log.md#81-every-jobs-full-pool). `npm run perf` stayed within 1,000 nodes on 2026-10-19, 458 at most, and a sweep over 1,000 now exits 1;
+  - the timing budgets after the [item level floor drop](perf-log.md#71-item-level-floor-15).
 - **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo. (The last item, a Web Worker, is done: [the page with a Web Worker](perf-log.md#31-the-page-with-a-web-worker); it keeps the page responsive, it does not make a search faster.)
 - **`compare.mjs`** checks that a faster version gives the same answers. Copy `src/` of the old commit to `<dir>/src` (outside the repo, or under the gitignored `scripts/perf/out/baseline/<label>`; it aborts if `items.json` differs), then run `node scripts/perf/compare.mjs --baseline <dir> [--quick] [--nodes-may-differ]`. Both copies get the same item objects. Picks, totals and truncation must be byte-equal, and so must node counts unless the search was meant to change; `--quick` runs four jobs.
 
@@ -545,7 +611,7 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 - **Missing slot types** are left out of the gear set.
 - **Truncated results** may not be optimal, so the page puts a note under them. In a single search, no real or hostile pool comes near the page's limit of 700,000 (the largest is 1,209 nodes); without the speed tables, only a speed range could reach it (section 5). Tier ranking runs several searches with minimums, and a few of its cases still stop early: 4 of 5,028 in the 2026-10-17 sweep, healers at level 100, cap 690, GCD 2.29 ([performance log, section 5.1](perf-log.md#51-tier-ranking-after-the-regain-cuts-the-trial-search-the-slot-order-and-band-reach)).
 - **Ties:** among gear sets with exactly the same score, the first one found wins: higher-ranked items first, then pool order. The slot order depends on the lists left after the filters (section 5), so which of several tied gear sets comes back can change with the settings; the score, and so the target and tiebreak totals, cannot. Tied gear sets can differ in the stats that are not ranked, and there is no tie rule yet (owner's decision; [tier-ranking.md, section 9](tier-ranking.md#9-known-limits)).
-- **Meals of equal goal:** Target GCD picks the meal whose gear set scores most on the goal and tiebreaks, then the one that adds most in total. That last step uses whichever tied gear set each meal's search returned, so it is not the most any tied gear set could get with that meal (71 of 252,112 sweep runs changed meal when the search order changed; the goal and tiebreaks were the same).
+- **Meals of equal goal:** Target GCD picks the meal whose gear set scores most on the goal and tiebreaks, then the one that adds most in total. That last step uses whichever tied gear set each meal's search returned, so it is not the most any tied gear set could get with that meal. In 71 of 252,112 sweep runs the meal changed when the search order changed; the goal and tiebreaks were the same.
 - **A speed maximum never empties a slot.** If every candidate in a slot would break it, the result is "no feasible gear set", even though leaving that slot empty would satisfy it. For Target GCD this is the "none" answer.
 - **Scores too large to rank exactly** raise an error instead of returning a possibly wrong answer (section 3). Real gear stays far below that point.
 - **Relics with allocated substats** are left out of the search (section 7); a gear set that would use one, with the player's own allocation, is not found.
@@ -559,7 +625,7 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | Item vectors, score weights, dominance pruning, candidate lists; weapon damage as the first key | `src/core/optimizer/candidates.js` (`makeScorer`, `rankedKeys`, `pruneDominated`, `pruneForLimits`, `buildCandidates`) |
 | A weapon's weapon damage after sync | `src/core/damage-defense.js` (`weaponDamage`) |
 | Best melds of a piece; meld versions under a speed range | `src/core/meld.js` (`bestMeld`, `meldVersions`) |
-| Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (before the search: `suffixBounds`, `limitTables`, `dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`; built for the search: `combinedLimitBound` (the smallest of the limit tables), `childGroups` (speed groups), `bandReachTables`, `makeMemo` (state dominance); the search: `prepareSearch` (the filters and slot order), `newSearch` (its one state object), `dfs`, `tryGroups`, `tryInOrder`, `tryChild`; `branchAndBound` runs them. `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts; `MEMO_FRONT`, the 32 states per memo key) |
+| Bounds, limit tables, filters before the search, slot order and depth-first branch and bound | `src/core/optimizer/search.js` (`branchAndBound` runs them; functions and constants in note 1 below the table) |
 | Regain cuts (tier ranking) | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts (tier ranking's searches) | `src/core/optimizer/front.js` (`frontSearch`) |
 | Slot positions and blocked-slot masks | `src/core/optimizer/slot-index.js` (`slotPositions`, `positionMask`, `blockableTypes`, `typeMask`) |
@@ -571,8 +637,23 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | A result's rows, totals, tiers, defense and GCD (the gear set it shows) | `src/core/set.js` (`setFromPicks`, `evaluateSet`), called by `runRecipe` in `src/core/recipe.js` and by a set page's views (`src/ui/views/set-totals.js`, `meal-menu.js`) |
 | Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameOutcome`, `sameResult`), called by `runRecipe`; the unpruned candidates are `buildCandidates` with pruning off |
 | The Food row's menu | `allMeals` in `src/core/food.js`; `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `sortMeals`, `mealList`) and `setMealMenuView` in `src/ui/views/set-meal-menu.js`; its search, pills and sort in `src/ui/components/meal-menu.js` (`mealMenu`, `mealView`) |
-| Page use: the job's gear, Gear from, node limit, the solve and what it keeps, result | `src/core/recipe.js` (`runRecipe`, `recipePool`, `emptyGearFrom`, `NODE_LIMIT`, `recipeKey`), `src/core/session.js` (`makeSession`), `src/core/items.js` (`jobGear`); the views `solveView` (with a Fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/views/solve.js`; a saved set's pins, count and result mapping in `src/ui/views/fill.js`; the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.js`; the menu `gearFromToggles` in `src/ui/helpers.js` |
+| Page use: the job's gear, Gear from, node limit, the solve and what it keeps, result | `src/core/recipe.js`, `src/core/session.js`, `src/core/items.js`, `src/ui/views/solve.js`, `src/ui/views/fill.js`, `src/ui/helpers.js` (functions in note 2 below the table) |
 | Page timing marks (`fill`, `save`) | `src/ui/components/set-page/fill.js`, `settings.js`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
 | Tests | `tests/unit/core-optimizer.test.js`, `tests/unit/core-optimizer.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core-optimizer.speed-limits.test.js`, `tests/unit/core-target-gcd.test.js`, `tests/unit/core-target-gcd.exhaustive.test.js`, `tests/unit/core-optimizer.stat-minimums.test.js`, `tests/unit/core-optimizer-regain.test.js` |
+
+Notes on the table:
+
+1. **`search.js`:**
+   - before the search: `suffixBounds`, `limitTables`, `dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`;
+   - built for the search: `combinedLimitBound` (the smallest of the limit tables), `childGroups` (speed groups), `bandReachTables`, `makeMemo` (state dominance);
+   - the search: `prepareSearch` (the filters and slot order), `newSearch` (its one state object), `dfs`, `tryGroups`, `tryInOrder`, `tryChild`; `branchAndBound` runs them;
+   - constants: `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts; `MEMO_FRONT`, the 32 states per memo key.
+2. **Page use:**
+   - `src/core/recipe.js`: `runRecipe`, `recipePool`, `emptyGearFrom`, `NODE_LIMIT`, `recipeKey`;
+   - `src/core/session.js`: `makeSession`; `src/core/items.js`: `jobGear`;
+   - the views `solveView` (with a Fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/views/solve.js`;
+   - a saved set's pins, count and result mapping in `src/ui/views/fill.js`;
+   - the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.js`;
+   - the menu `gearFromToggles` in `src/ui/helpers.js`.
