@@ -1,4 +1,4 @@
-/* The solver session (src/core/session.js): each kind keeps its last SESSION_SIZE entries, least recently used dropped
+/* The solver session (src/core/session.js): the gear of the last SESSION_SIZE jobs, least recently used dropped
    first, and a job's gear is built once while it is kept. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,47 +6,27 @@ import { jobGear } from '../../src/core/items.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { makeSession, SESSION_SIZE } from '../../src/core/session.js';
 
-test('session: memo builds once per key, keeps the last SESSION_SIZE keys per kind, and a hit counts as a use', () => {
-  const session = makeSession({ gear: () => [] });
+test('session: gear is built once per job and kept for the last SESSION_SIZE jobs, a hit counts as a use', () => {
   let builds = 0;
-  const value = (kind, key) =>
-    session.memo(kind, key, () => {
+  const session = makeSession({
+    gear: job => {
       builds++;
-      return { kind, key };
-    });
-  const first = value('prep', 'a');
-  assert.equal(value('prep', 'a'), first);
-  assert.equal(builds, 1);
-  // another kind never shares or evicts an entry
-  value('tier', 'a');
-  assert.equal(builds, 2);
-  // fill prep: a, b, c, d; using a again makes b the oldest, so e drops b
-  for (const key of ['b', 'c', 'd']) value('prep', key);
+      return [{ job: job.jobId }];
+    },
+  });
   assert.equal(SESSION_SIZE, 4);
-  value('prep', 'a');
-  value('prep', 'e');
-  builds = 0;
-  for (const key of ['a', 'c', 'd', 'e']) value('prep', key);
-  assert.equal(builds, 0, 'a, c, d and e are kept');
-  value('prep', 'b');
-  assert.equal(builds, 1, 'b was dropped');
-  // a null key keeps nothing
-  value('prep', null);
-  value('prep', null);
-  assert.equal(builds, 3);
-});
-
-test('session: get and set, and undefined for a key never set', () => {
-  const session = makeSession({ size: 2, gear: () => [] });
-  assert.equal(session.get('prep', 'x'), undefined);
-  session.set('prep', 'x', 1);
-  session.set('prep', 'y', 2);
-  assert.equal(session.get('prep', 'x'), 1); // now y is the oldest
-  session.set('prep', 'z', 3);
-  assert.deepEqual(
-    ['x', 'y', 'z'].map(k => session.get('prep', k)),
-    [1, undefined, 3],
-  );
+  const jobs = ['SGE', 'WHM', 'PLD', 'WAR', 'BLM'].map(makeJobContext);
+  const [sge, whm, pld, war, blm] = jobs;
+  for (const job of [sge, whm, pld, war]) session.gear(job);
+  assert.equal(builds, 4);
+  // using SGE again makes WHM the oldest, so BLM drops WHM
+  assert.equal(session.gear(sge), session.gear(sge));
+  session.gear(blm);
+  assert.equal(builds, 5);
+  for (const job of [sge, pld, war, blm]) session.gear(job);
+  assert.equal(builds, 5, 'SGE, PLD, WAR and BLM are kept');
+  session.gear(whm);
+  assert.equal(builds, 6, 'WHM was dropped');
 });
 
 test("session: a job's gear is every piece it can wear, built once and kept", () => {

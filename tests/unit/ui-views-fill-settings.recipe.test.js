@@ -1,6 +1,5 @@
 /* The recipe a Fill (and the Gear to search line) sends, built from a set's Fill settings (src/ui/views/fill-settings.js
-   fillRecipe, fillSettingsOf): every Fill setting reaches the request, nothing else does, and the session keys
-   (core/recipe.js recipeKey) follow the same fields. Replaces the old optimizerKey test of the removed Gear tab ("every
+   fillRecipe, fillSettingsOf): every Fill setting reaches the request, nothing else does. Replaces the old optimizerKey test of the removed Gear tab ("every
    optimizer setting changes the key, the menu-only state does not"). Expected values are the field lists of the
    settings themselves, and the Food default the owner chose (off). */
 import { test } from 'node:test';

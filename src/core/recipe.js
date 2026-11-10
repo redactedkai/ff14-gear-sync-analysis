@@ -106,11 +106,6 @@ export function resolvePins(job, sync, pins, gear) {
   return { fixed, meal, problems };
 }
 
-/* The part of a session key that pinned pieces make, or null for none (the meal changes no candidate list). */
-function pinsKey(pins) {
-  return pins?.pieces?.length ? JSON.stringify(pins.pieces.map(p => [p.slot, p.gameId, p.stones ?? []])) : null;
-}
-
 /* Whether `pins` (runRecipe's) keep anything: a piece or a meal. */
 export function hasPins(pins) {
   return !!(pins?.pieces?.length || pins?.meal);
@@ -129,35 +124,10 @@ function searchMeal(foodOn, picked) {
   return picked ?? 'best';
 }
 
-/* The recipe fields each kind of session entry depends on (session.js). Every kind depends on the pool: the job, sync,
-   level and the filters under Gear to search, with materia on or off (the candidates' melds). */
-const POOL_FIELDS = Object.freeze(['exclude', 'market', 'expOff', 'min', 'max', 'lvl', 'melds']);
-const KEY_FIELDS = Object.freeze({
-  // tier ranking keys its own lists inside by objective, limits and GCD mode, so a new goal or GCD reuses them
-  tier: POOL_FIELDS,
-  // the fastest GCD: the pool, and the meal (recipeKey's `extra`)
-  fast: POOL_FIELDS,
-  // Target GCD's candidates: the pool, the goal and the mode, never the GCD itself
-  prep: [...POOL_FIELDS, 'target', 'tb', 'tb2', 'gcdMode'],
-  // the menus' candidates: the pool and the goal, and the speed mode while a GCD is asked (recipeKey's `extra`)
-  same: [...POOL_FIELDS, 'target', 'tb', 'tb2'],
-});
-
-/* The one key of a session entry of `kind` (KEY_FIELDS) for a recipe solved for `job` under `sync` at `level`, with
-   `extra` for what the recipe alone does not say (the meal, the speed mode in use), and `pins` (runRecipe's) when
-   pieces are pinned: every kind's lists are built with them. Two solves share an entry exactly when every field the
-   kind depends on is the same. A key with no pinned pieces is the one without `pins`. */
-export function recipeKey(kind, job, sync, level, recipe, extra = null, pins = null) {
-  const key = [kind, job.jobId, sync, level, KEY_FIELDS[kind].map(f => recipe[f] ?? null), extra];
-  const pinned = pinsKey(pins);
-  if (pinned) key.push(pinned);
-  return JSON.stringify(key);
-}
-
 /* The Target GCD box's range for a recipe: {top (the GCD with no speed from gear, with the job's haste), fastest (the
    shortest the pool reaches with its best melds, and the meal: `meal`, an allMeals entry picked, else the best when
    Food is on; null when no set exists), haste (hasteFor, or null)}. The fastest is one search for the most speed,
-   kept in the session (20 to 100 ms). `pins` (as for runRecipe): the pinned pieces count, with their speed, and a
+   run every time (20 to 100 ms). `pins` (as for runRecipe): the pinned pieces count, with their speed, and a
    pinned meal is the meal. */
 export function gcdRange(job, sync, level, recipe, session, meal = null, pins = null) {
   const haste = hasteFor(job.jobId, level);
@@ -165,15 +135,13 @@ export function gcdRange(job, sync, level, recipe, session, meal = null, pins = 
   const pinned = resolvePins(job, sync, pins, session.gear(job));
   const pinnedMeal = pinned.meal ?? meal;
   const food = searchMeal(usesFood(recipe, pinned.meal), pinnedMeal);
-  const fastest = session.memo('fast', recipeKey('fast', job, sync, level, recipe, food?.key ?? food, pins), () =>
-    fastestGcd(job, recipePool(job, recipe, session.gear(job)), sync, {
-      melds: !!recipe.melds,
-      food,
-      nodeLimit: NODE_LIMIT,
-      level,
-      fixed: pinned.fixed,
-    }),
-  );
+  const fastest = fastestGcd(job, recipePool(job, recipe, session.gear(job)), sync, {
+    melds: !!recipe.melds,
+    food,
+    nodeLimit: NODE_LIMIT,
+    level,
+    fixed: pinned.fixed,
+  });
   return { top, fastest, haste };
 }
 
@@ -186,7 +154,7 @@ const frozenRecipe = recipe =>
   Object.freeze(Object.fromEntries(Object.entries(recipe).map(([k, v]) => [k, Array.isArray(v) ? Object.freeze([...v]) : v])));
 
 /* Solve `recipe` for `job` (a JobContext) under `sync` ({cap, sync, level}, as for itemSyncIlvl) at character level
-   `level`, with `session`'s gear and caches. `choices`: what the player picked on the last result, set data, not saved:
+   `level`, with `session`'s gear. `choices`: what the player picked on the last result, set data, not saved:
    {pieces: {row index: gameId} from the rows' menus of pieces with the same result, meal: an allMeals key from the
    Food row's menu, or null for the best for the goal}. A picked meal is searched with in place of the best (with tier
    ranking or a Target GCD it can change which gear wins).
@@ -252,27 +220,25 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   let res, food;
   const byTier = recipe.byTier !== false;
   if (byTier) {
-    const lists = session.memo('tier', recipeKey('tier', job, sync, level, recipe, null, pins), () => new Map());
-    res = rankByTier(
-      job,
-      pool,
-      sync,
-      { ...goal, food: searchMeal(foodOn, picked), nodeLimit: NODE_LIMIT, level, gcd: asked ?? undefined, mode: recipe.gcdMode },
-      lists,
-    );
+    res = rankByTier(job, pool, sync, {
+      ...goal,
+      food: searchMeal(foodOn, picked),
+      nodeLimit: NODE_LIMIT,
+      level,
+      gcd: asked ?? undefined,
+      mode: recipe.gcdMode,
+    });
     if (!res.ok) return failed(res);
     food = res.food;
   } else if (asked != null) {
-    // the candidates depend on the pool, the goal and the mode, not on the GCD: reused while only it changes
-    const key = recipeKey('prep', job, sync, level, recipe, null, pins);
-    res = optimizeGcd(
-      job,
-      pool,
-      sync,
-      { ...goal, mode: recipe.gcdMode, gcd: asked, food: searchMeal(foodOn, picked), nodeLimit: NODE_LIMIT, level },
-      session.get('prep', key) ?? null,
-    );
-    if (res.prep) session.set('prep', key, res.prep);
+    res = optimizeGcd(job, pool, sync, {
+      ...goal,
+      mode: recipe.gcdMode,
+      gcd: asked,
+      food: searchMeal(foodOn, picked),
+      nodeLimit: NODE_LIMIT,
+      level,
+    });
     if (!res.ok) return failed(res);
     food = res.food;
   } else {
@@ -285,21 +251,19 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   // checked against every piece of the pool as a candidate for the goal, unpruned, with the melds the optimizer would
   // give it (meld versions under a Target GCD)
   const speedMode = asked != null ? recipe.gcdMode : '';
-  const cands = session.memo('same', recipeKey('same', job, sync, level, recipe, speedMode, pins), () => {
-    const { slotList, posList } = buildCandidates(
-      job,
-      pool,
-      sync,
-      { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2].filter(Boolean) },
-      {
-        prune: false,
-        melds: !!recipe.melds,
-        speed: speedMode || null,
-        fixed,
-      },
-    );
-    return Object.fromEntries(slotList.map((t, i) => [realSlotType(t), posList[i]]));
-  });
+  const { slotList, posList } = buildCandidates(
+    job,
+    pool,
+    sync,
+    { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2].filter(Boolean) },
+    {
+      prune: false,
+      melds: !!recipe.melds,
+      speed: speedMode || null,
+      fixed,
+    },
+  );
+  const cands = Object.fromEntries(slotList.map((t, i) => [realSlotType(t), posList[i]]));
   // the goal's points stay in both rankings: by tier, the points left over go to the goal (order A, owner's decision
   // 2026-10-16), so a swap that kept its tier with fewer points would show less than the search found
   const same = sameResult(job, res.picks, cands, { level, food, haste: hastePct, goal: recipe.target }, choices.pieces ?? {});

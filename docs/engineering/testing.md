@@ -72,7 +72,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-recipe.pins | a solve's pins: kept pieces and meal, the problems a pin cannot be kept for |
 | core-recipe.real-gear | a set's Fill on real gear against the core and the brute force (note 6) |
 | core-same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
-| core-session | the solver session: the last four entries per kind, least recently used dropped first; a job's gear built once |
+| core-session | the solver session: the gear of the last four jobs, least recently used dropped first; a job's gear built once |
 | core-set | a gear set and what it adds up to (note 7) |
 | core-stat-keys | old position keys read as a job's own, a key moved to another job, and a guard on hard-coded keys (note 8) |
 | core-speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
@@ -142,7 +142,7 @@ Notes on the longer rows:
 2. `core-meld.apply-stones`: the list is checked for gates, high grades past the big slots, caps, and sync removing them.
 3. `core-optimizer-search`: limit tables and their smallest over two or three bands, the Lagrangian bound and reduced-cost fixing, the slot order, the memo's dominance and its full key.
 4. `core-optimizer.stat-minimums`: seeds; the filters, trial search and fronts on tight cases against the plain search; the fronts alone, also on empty, blockable and ringless slots.
-5. `core-recipe`: the session keys each recipe field belongs to, the gear set by gameId and its record, a piece picked by gameId, a warm session against a fresh one and what it keeps between solves.
+5. `core-recipe`: the gear set by gameId and its record, a piece picked by gameId, a session that has solved before against a fresh one.
 6. `core-recipe.real-gear`: the pool and filters, totals, Target GCD, food, rank by tier and relics.
 7. `core-set`: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has.
 8. `core-stat-keys`: `currentStatKey` reads old position keys as a job's own, and `remapStatKey` moves a key to another job by position. The guard is that `src/core` and `src/ui/views` hard-code no job-specific stat key outside the allow-listed tables.

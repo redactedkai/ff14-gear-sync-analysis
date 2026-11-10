@@ -26,7 +26,7 @@ function gcdLabel(job, recipe, { top, fastest, haste }) {
 
 /* What Gear to search shows for the Fill settings as they are now: {countText ("searching 1,939 of 1,999 pieces"),
    emptyBoxes (the "Gear from" boxes with nothing for the job and the other filters, greyed out), gcdLabel (the Target
-   GCD field's label, with the best meal when Food is on: one search for the most speed, kept in the session; 20 to
+   GCD field's label, with the best meal when Food is on: one search for the most speed, run every time; 20 to
    100 ms), searched (how many pieces the recipe searches: the set page's "· 1,939 pieces")}. */
 export function gearToSearchView(job, sync, level, recipe, session) {
   const gear = session.gear(job);

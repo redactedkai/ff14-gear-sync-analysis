@@ -1,11 +1,11 @@
-/* Pins in a solve (src/core/recipe.js: runRecipe's `pins`, resolvePins, recipeKey): a pinned piece is kept with exactly
+/* Pins in a solve (src/core/recipe.js: runRecipe's `pins`, resolvePins): a pinned piece is kept with exactly
    its stones and counts in the totals, the tiers and a Target GCD; a pinned meal is the meal; a pin the solve cannot
    keep says so. Real Sage items; the optimizer's own pin coverage is core-optimizer.pinned.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../src/core/food.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { gcdRange, recipeKey, resolvePins, runRecipe } from '../../src/core/recipe.js';
+import { gcdRange, resolvePins, runRecipe } from '../../src/core/recipe.js';
 import { jobGear } from '../../src/core/items.js';
 import { makeSession } from '../../src/core/session.js';
 import { evaluateSet } from '../../src/core/set.js';
@@ -116,21 +116,6 @@ test('resolvePins: usable pieces become candidates, with their stones under sync
   const synced = resolvePins(sge, SYNCED, { pieces: [shirtPin], meal: null }, GEAR);
   assert.equal(synced.fixed[0].eff.sps, 0);
   assert.deepEqual(resolvePins(sge, SYNC, null, GEAR), { fixed: [], meal: null, problems: [] });
-});
-
-test('session keys: pins change every kind, and a key without pins is the one before pins existed', () => {
-  const base = recipe();
-  const pins = { pieces: [shirtPin], meal: null };
-  for (const kind of ['tier', 'fast', 'prep', 'same']) {
-    const plain = recipeKey(kind, sge, SYNC, 100, base);
-    assert.ok(!JSON.parse(plain).some(part => typeof part === 'string' && part.includes('"slot"')));
-    assert.equal(recipeKey(kind, sge, SYNC, 100, base, null, { pieces: [], meal: 'x' }), plain);
-    assert.notEqual(recipeKey(kind, sge, SYNC, 100, base, null, pins), plain);
-    assert.notEqual(
-      recipeKey(kind, sge, SYNC, 100, base, null, pins),
-      recipeKey(kind, sge, SYNC, 100, base, null, { pieces: [{ ...shirtPin, stones: [] }], meal: null }),
-    );
-  }
 });
 
 test('a warm session gives a pinned solve what a fresh one does, and pins do not leak into an unpinned solve', () => {

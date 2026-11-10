@@ -15,7 +15,6 @@ In build order (the owner's order).
 | A17 | Harden the saved gear sheet format | Version 1 and migrations, before the first public release |
 | A18 | Shields for White Mage and Black Mage at level 50 and below | Offer the one-handed arm and shield; after A4 |
 | A20 | Saved sheets: edge cases and notes | Ids the database lost and Copy sheet resets that happen without a word; before A17 |
-| A21 | Many Fill recipes in one sheet | Measure the 4-entry session cache; after A4 |
 | A22 | Type checking | JSDoc types checked by `tsc`, file by file |
 
 ### Notes on the rows
@@ -39,7 +38,6 @@ In build order (the owner's order).
 - **A20.** Cases the saved sheets handle without telling the user.
   - A saved game id the database lacks shows "missing item 12345" with no name; a data update or a filter change can cause it, and Copy sheet copies such an id as it is.
   - Copy sheet resets a Fill setting that does not fit the other job (a stat it lacks) and cuts an equip level without a note.
-- **A21.** The session keeps 4 recipes per kind (`SESSION_SIZE` in `src/core/session.js`). A sheet whose sets use more than 4 distinct Fill recipes evicts entries, and each eviction costs a full search (seconds under a Target GCD). Measure it with a sheet of several sets, then raise the size or store the results.
 - **A22.** Type checking, so the code is easier to maintain. Needs the owner's yes for two dev dependencies (`typescript`, `@types/alpinejs`); nothing ships in the page.
   - Start with JSDoc types checked by `tsc` (`checkJs`, `noEmit`, non-strict), files stay `.js`, `npm run check` gets a `typecheck` step.
   - Opt in per file with `// @ts-check`, from `src/core` and `src/ui/views` outward; turn the shape comments into `@typedef`s.
@@ -56,7 +54,7 @@ On `dev` at least; live once on `main`.
 | --- | --- | --- |
 | A1 | Target GCD | [optimizer.md, section 2](engineering/optimizer.md#target-gcd-from-a-gcd-to-a-speed-range) |
 | A2 | Food | [math.md, section 6](mechanics/math.md#food) |
-| A4 | Gear sets and comparison (the Sheets tab; follow-ups A18 to A21) | [sheets.md](engineering/sheets.md), [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page) |
+| A4 | Gear sets and comparison (the Sheets tab; follow-ups A18 to A20) | [sheets.md](engineering/sheets.md), [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page) |
 | A13 | The page template split into partials | [architecture.md, section 5](engineering/architecture.md#5-build) |
 | A19 | Haste labels on the set page | [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page) |
 | A16 | Stat keys that are the game's own stats | [architecture.md, section 2](engineering/architecture.md#2-the-job-context) |

@@ -637,7 +637,7 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | A result's rows, totals, tiers, defense and GCD (the gear set it shows) | `src/core/set.js` (`setFromPicks`, `evaluateSet`), called by `runRecipe` in `src/core/recipe.js` and by a set page's views (`src/ui/views/set-totals.js`, `meal-menu.js`) |
 | Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameOutcome`, `sameResult`), called by `runRecipe`; the unpruned candidates are `buildCandidates` with pruning off |
 | The Food row's menu | `allMeals` in `src/core/food.js`; `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `sortMeals`, `mealList`) and `setMealMenuView` in `src/ui/views/set-meal-menu.js`; its search, pills and sort in `src/ui/components/meal-menu.js` (`mealMenu`, `mealView`) |
-| Page use: the job's gear, Gear from, node limit, the solve and what it keeps, result | `src/core/recipe.js`, `src/core/session.js`, `src/core/items.js`, `src/ui/views/solve.js`, `src/ui/views/fill.js`, `src/ui/helpers.js` (functions in note 2 below the table) |
+| Page use: the job's gear, Gear from, node limit, the solve, result | `src/core/recipe.js`, `src/core/session.js`, `src/core/items.js`, `src/ui/views/solve.js`, `src/ui/views/fill.js`, `src/ui/helpers.js` (functions in note 2 below the table) |
 | Page timing marks (`fill`, `save`) | `src/ui/components/set-page/fill.js`, `settings.js`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |

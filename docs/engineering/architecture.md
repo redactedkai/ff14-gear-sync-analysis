@@ -22,7 +22,7 @@ The code is split into four layers. Each layer depends only on the layers above 
 Notes:
 
 - **Data.** The item level budget table, per-level speed data, stat factor table, materia table, item database, food table and job icons. Produced by the data pipeline and never edited by hand. Row counts are in [data-pipeline.md, section 7](data-pipeline.md#7-facts-about-the-current-data).
-- **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches keyed by their pure inputs. The work kept between solves is not module state: it lives in a solver session object that the caller creates and passes in ([section 8](#8-recipes-and-the-solver-session)). Because nothing in it touches the browser, the core runs unchanged in Node, which is how the unit tests use it.
+- **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches keyed by their pure inputs. The job gear kept between solves is not module state: it lives in a solver session object that the caller creates and passes in ([section 8](#8-recipes-and-the-solver-session)). Because nothing in it touches the browser, the core runs unchanged in Node, which is how the unit tests use it.
 - **UI state.** It holds:
   - the saved state (defaults, repair on load, browser storage);
   - one shared store, with the current settings, the current job context, and the actions that change them;
@@ -375,7 +375,7 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 
 ## 8. Recipes and the solver session
 
-**The question:** how is a search asked for, and what is kept between searches? A **recipe** says what to look for: a set's Fill settings (`fillRecipe` in `views/fill-settings.js`: goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices, pins)` in `src/core/recipe.js` solves it and returns `{status, set, record, found}`:
+**The question:** how is a search asked for, and what is kept between searches (only the job's gear)? A **recipe** says what to look for: a set's Fill settings (`fillRecipe` in `views/fill-settings.js`: goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices, pins)` in `src/core/recipe.js` solves it and returns `{status, set, record, found}`:
 
 - **status:** `ok`, or why there is no gear set (`excluded`, `noset`, `nogcd`, `infeasible`, `badpin`: a pin cannot be kept, listed in `found.badPins`).
 - **set:** the gear set the result shows, as plain data ([section 7](#7-pieces-and-sets-in-the-core)): each row the player's pick where it still gives the same result, else the easiest piece that does; the meal the Food row shows.
@@ -384,19 +384,9 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 
 `choices` are picks on a last result (`{pieces: {row: gameId}, meal}`), not saved; the page passes none. `pins` are what the solve must keep, `{pieces: [{slot, gameId, stones}], meal}`: a set's pinned rows and meal. A pinned piece is worn with exactly its stones, counts in the totals, tiers and a Target GCD, and need not pass the recipe's filters; a pinned meal is the meal even with Food off; the search fills the other slots (`resolvePins`; [optimizer.md, section 2](optimizer.md#the-game-rules-in-the-model)). A subset of the pins is a partial fill. The solver's handler calls `runRecipe` through `solveView` (`views/solve.js`), which returns the plain set; the set page evaluates it (`evaluateSet`) and formats it.
 
-**The solver session** (`makeSession` in `src/core/session.js`) holds what a solve keeps for the next one. The page has one, in the solver's worker ([section 9](#9-the-optimizers-worker)), shared by every set page. It keeps, per kind, its last four entries (least recently used dropped first):
+**The solver session** (`makeSession` in `src/core/session.js`) holds the one thing a solve keeps for the next: each job's gear, every piece the job can wear as frozen pool items (5 to 10 ms to build). It keeps the gear of the last four jobs, least recently used dropped first. The page has one session, in the solver's worker ([section 9](#9-the-optimizers-worker)), shared by every set page. The meld caps are cached per pool item, so the same gear objects keep them warm.
 
-| Kind | Holds | Its key depends on |
-| --- | --- | --- |
-| gear | every piece the job can wear, as frozen pool items (5 to 10 ms to build; note below) | the job |
-| tier | tier ranking's candidate lists (it keys them inside by objective, limits and GCD mode) | the pool: job, sync, level, Gear to search, materia |
-| fast | the fastest GCD the pool reaches | the pool, and the meal |
-| prep | Target GCD's candidate lists | the pool, the goal and the GCD mode (not the GCD) |
-| same | every piece as a candidate for the goal, unpruned (the rows' menus) | the pool and the goal, and the GCD mode while a GCD is asked |
-
-The meld caps are cached per pool item, so the same gear objects keep them warm.
-
-Every key is made by one function, `recipeKey`, from one table of the recipe fields each kind depends on, so a new recipe field cannot be forgotten in one key and remembered in another. A unit test changes every field and checks which keys change. So typing a new Target GCD reruns only the search, a pick from a menu reruns the search on kept lists, and going back to a recent setting reuses its lists.
+Nothing else is kept. Every solve builds its candidate lists, the fastest GCD and the rows' menus again: a new Target GCD, a pick from a menu or a return to an earlier set each cost a full search (about 0.1 to 3 s in the measured cases).
 
 ## 9. The optimizer's worker
 

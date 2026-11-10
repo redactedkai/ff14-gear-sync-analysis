@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../src/core/constants.js';
 import { allMeals } from '../../src/core/food.js';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { recipeKey, runRecipe } from '../../src/core/recipe.js';
+import { runRecipe } from '../../src/core/recipe.js';
 import { makeSession } from '../../src/core/session.js';
 import { syncSettings } from '../../src/ui/settings.js';
 import { appState } from './helpers/common.js';
@@ -14,30 +14,6 @@ const sge = makeJobContext('SGE');
 const SYNC = { cap: 123, sync: true, level: 100 };
 /* A set's recipe for Sage (its Fill settings at their defaults) with `patch` on top. */
 const recipe = (patch = {}) => ({ ...appState({ job: 'SGE' }).recipe, ...patch });
-
-test('recipeKey: each kind of session entry changes with exactly the fields it depends on', () => {
-  const pool = ['exclude', 'market', 'expOff', 'min', 'max', 'lvl', 'melds'];
-  const dependsOn = {
-    tier: pool,
-    fast: pool,
-    prep: [...pool, 'target', 'tb', 'tb2', 'gcdMode'],
-    same: [...pool, 'target', 'tb', 'tb2'],
-  };
-  const other = v => (typeof v === 'boolean' ? !v : Array.isArray(v) ? [...v, 'x'] : v === 'x' ? 'y' : 'x');
-  const base = recipe();
-  for (const [kind, fields] of Object.entries(dependsOn)) {
-    const key = recipeKey(kind, sge, SYNC, 100, base);
-    for (const field of Object.keys(base)) {
-      const changed = recipeKey(kind, sge, SYNC, 100, { ...base, [field]: other(base[field]) });
-      assert.equal(changed !== key, fields.includes(field), `${kind}: ${field}`);
-    }
-    // the job, sync, level and the extra part always count
-    assert.notEqual(recipeKey(kind, makeJobContext('WHM'), SYNC, 100, base), key);
-    assert.notEqual(recipeKey(kind, sge, { ...SYNC, cap: 124 }, 100, base), key);
-    assert.notEqual(recipeKey(kind, sge, SYNC, 90, base), key);
-    assert.notEqual(recipeKey(kind, sge, SYNC, 100, base, 'min'), key);
-  }
-});
 
 test('runRecipe: the set by gameId, the record with the goal as asked, and no set when nothing passes the filters', () => {
   const asked = recipe({ target: 'mind', tb: 'crit', food: true });
@@ -81,33 +57,8 @@ test('runRecipe: a piece picked by gameId is shown where it gives the same resul
   assert.equal(shown.picked.status, 'ok');
 });
 
-/* A session that counts what its memo builds and what its get finds, by kind. */
-function counting() {
-  const inner = makeSession();
-  const built = {},
-    found = {};
-  return {
-    built,
-    found,
-    session: {
-      gear: inner.gear,
-      memo: (kind, key, build) =>
-        inner.memo(kind, key, () => {
-          built[kind] = (built[kind] ?? 0) + 1;
-          return build();
-        }),
-      get: (kind, key) => {
-        const v = inner.get(kind, key);
-        if (v !== undefined) found[kind] = (found[kind] ?? 0) + 1;
-        return v;
-      },
-      set: inner.set,
-    },
-  };
-}
-
-test('runRecipe: a warm session gives what a fresh one does, and keeps its lists while only the GCD, meal or picks change', () => {
-  const { session, built, found } = counting();
+test('runRecipe: a session that has solved before gives what a fresh one does, whatever changes between solves', () => {
+  const session = makeSession();
   const steps = [
     recipe({ target: 'det', tb: 'crit', byTier: false, gcd: 2.4, gcdMode: 'min' }),
     recipe({ target: 'det', tb: 'crit', byTier: false, gcd: 2.45, gcdMode: 'min' }),
@@ -126,10 +77,4 @@ test('runRecipe: a warm session gives what a fresh one does, and keeps its lists
     assert.deepEqual(warm.set, fresh.set, `step ${i}`);
     assert.deepEqual([warm.found.gcd, warm.found.held, warm.found.truncated], [fresh.found.gcd, fresh.found.held, fresh.found.truncated]);
   }
-  // Target GCD's candidates: built by the first search, reused by the next two (another GCD, then food)
-  assert.equal(found.prep, 2);
-  // the menus' candidates: one list for det > crit with a GCD, one for crit > det, one for det > dh with none
-  assert.equal(built.same, 3);
-  // tier ranking's lists: one map for the pool, whatever the goal, meal or GCD
-  assert.equal(built.tier, 1);
 });
