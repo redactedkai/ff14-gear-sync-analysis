@@ -89,7 +89,7 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
+            "target": "mind",
             "tb": "crit",
             "tb2": "det",
             "gcd": "",
@@ -201,7 +201,7 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
+            "target": "mind",
             "tb": "det",
             "tb2": "crit",
             "gcd": "",
@@ -311,7 +311,7 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
+            "target": "mind",
             "tb": "crit",
             "tb2": "det",
             "gcd": "2.45",
@@ -420,7 +420,7 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
+            "target": "mind",
             "tb": "crit",
             "tb2": "det",
             "gcd": "",
@@ -557,7 +557,7 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
+            "target": "mind",
             "tb": "crit",
             "tb2": "det",
             "gcd": "",
@@ -678,7 +678,7 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
+            "target": "mind",
             "tb": "det",
             "tb2": "crit",
             "gcd": "",
@@ -805,8 +805,8 @@
         },
         "fillSettings": {
           "goal": {
-            "target": "main",
-            "tb": "spec",
+            "target": "mind",
+            "tb": "piety",
             "tb2": "crit",
             "gcd": "",
             "gcdMode": "exact",
