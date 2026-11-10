@@ -895,5 +895,1840 @@
     },
     "createdAt": 1793620800000,
     "updatedAt": 1793966400000
+  },
+  {
+    "v": 1,
+    "id": "s_uwu_pld",
+    "name": "UwU tank",
+    "description": "The Weapon’s Refrain (Ultimate)",
+    "job": "PLD",
+    "level": 70,
+    "sync": {
+      "on": true,
+      "cap": 375
+    },
+    "sets": [
+      {
+        "id": "g_1",
+        "name": "Crit build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 21493,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand",
+            "gameId": 24925,
+            "stones": []
+          },
+          {
+            "slot": "head",
+            "gameId": 24926,
+            "stones": []
+          },
+          {
+            "slot": "body",
+            "gameId": 24369,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "hands",
+            "gameId": 24432,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 25649,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24434,
+            "stones": []
+          },
+          {
+            "slot": "ear",
+            "gameId": 23686,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 25693,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23696,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24425,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23701,
+            "stones": []
+          }
+        ],
+        "meal": "Nachos",
+        "bestMeals": ["Churrasco", "Sweet Maple Mate", "Nachos"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "str",
+            "tb": "crit",
+            "tb2": "det",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_2",
+        "name": "Det build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 21493,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand",
+            "gameId": 21508,
+            "stones": []
+          },
+          {
+            "slot": "head",
+            "gameId": 24368,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "body",
+            "gameId": 25647,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 24725,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 24433,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 23586,
+            "stones": []
+          },
+          {
+            "slot": "ear",
+            "gameId": 23530,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 23691,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23540,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24425,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23545,
+            "stones": []
+          }
+        ],
+        "meal": "Caramel Popcorn",
+        "bestMeals": ["Moqueca", "Mate Cookie", "Caramel Popcorn"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "str",
+            "tb": "det",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_3",
+        "name": "Tenacity build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 24039,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand",
+            "gameId": 24054,
+            "stones": []
+          },
+          {
+            "slot": "head",
+            "gameId": 23488,
+            "stones": []
+          },
+          {
+            "slot": "body",
+            "gameId": 23645,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 23786,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 23585,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24727,
+            "stones": []
+          },
+          {
+            "slot": "ear",
+            "gameId": 25688,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 24415,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "wrist",
+            "gameId": 24420,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23545,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 23545,
+            "stones": []
+          }
+        ],
+        "meal": "Clam Cake",
+        "bestMeals": ["Lobster Bisque", "Ground Woolback Steak", "Clam Cake"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "str",
+            "tb": "ten",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_4",
+        "name": "Prog set",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon"
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head"
+          },
+          {
+            "slot": "body"
+          },
+          {
+            "slot": "hands"
+          },
+          {
+            "slot": "legs"
+          },
+          {
+            "slot": "feet"
+          },
+          {
+            "slot": "ear"
+          },
+          {
+            "slot": "neck"
+          },
+          {
+            "slot": "wrist"
+          },
+          {
+            "slot": "ring"
+          },
+          {
+            "slot": "ring"
+          }
+        ],
+        "meal": null,
+        "bestMeals": null,
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": null,
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      }
+    ],
+    "gameData": {
+      "commit": "d9582a6",
+      "date": "2026-09-30"
+    },
+    "createdAt": 1793620800000,
+    "updatedAt": 1793966400000
+  },
+  {
+    "v": 1,
+    "id": "s_uwu_mnk",
+    "name": "UwU melee",
+    "description": "The Weapon’s Refrain (Ultimate)",
+    "job": "MNK",
+    "level": 70,
+    "sync": {
+      "on": true,
+      "cap": 375
+    },
+    "sets": [
+      {
+        "id": "g_1",
+        "name": "Crit build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 25629,
+            "stones": []
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 24380,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "body",
+            "gameId": 23595,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 23798,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 24383,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "feet",
+            "gameId": 24384,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ear",
+            "gameId": 24969,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 24416,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23697,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24426,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23546,
+            "stones": []
+          }
+        ],
+        "meal": "Nachos",
+        "bestMeals": ["Churrasco", "Sweet Maple Mate", "Nachos"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "str",
+            "tb": "crit",
+            "tb2": "det",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_2",
+        "name": "Det build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 21494,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 24380,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "body",
+            "gameId": 24939,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 24735,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 23597,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24384,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ear",
+            "gameId": 24411,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "neck",
+            "gameId": 23832,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23697,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24426,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 24984,
+            "stones": []
+          }
+        ],
+        "meal": "Caramel Popcorn",
+        "bestMeals": ["Mate Cookie", "Caramel Popcorn"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "str",
+            "tb": "det",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_3",
+        "name": "Skill Speed build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 24040,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 23500,
+            "stones": []
+          },
+          {
+            "slot": "body",
+            "gameId": 23849,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 23596,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 23503,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24737,
+            "stones": []
+          },
+          {
+            "slot": "ear",
+            "gameId": 23531,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 23692,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 24421,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23640,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 23842,
+            "stones": []
+          }
+        ],
+        "meal": "Rock-fisted Popoto Salad",
+        "bestMeals": ["Chicken Pasta", "Bubble Tea", "Rock-fisted Popoto Salad"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "str",
+            "tb": "sks",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_4",
+        "name": "Prog set",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon"
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head"
+          },
+          {
+            "slot": "body"
+          },
+          {
+            "slot": "hands"
+          },
+          {
+            "slot": "legs"
+          },
+          {
+            "slot": "feet"
+          },
+          {
+            "slot": "ear"
+          },
+          {
+            "slot": "neck"
+          },
+          {
+            "slot": "wrist"
+          },
+          {
+            "slot": "ring"
+          },
+          {
+            "slot": "ring"
+          }
+        ],
+        "meal": null,
+        "bestMeals": null,
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": null,
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      }
+    ],
+    "gameData": {
+      "commit": "d9582a6",
+      "date": "2026-09-30"
+    },
+    "createdAt": 1793620800000,
+    "updatedAt": 1793966400000
+  },
+  {
+    "v": 1,
+    "id": "s_uwu_nin",
+    "name": "UwU dex",
+    "description": "The Weapon’s Refrain (Ultimate)",
+    "job": "NIN",
+    "level": 70,
+    "sync": {
+      "on": true,
+      "cap": 375
+    },
+    "sets": [
+      {
+        "id": "g_1",
+        "name": "Crit build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 23477,
+            "stones": []
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 23668,
+            "stones": []
+          },
+          {
+            "slot": "body",
+            "gameId": 24393,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "hands",
+            "gameId": 23514,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 24457,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24396,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ear",
+            "gameId": 25690,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 24417,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "wrist",
+            "gameId": 24980,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24427,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23547,
+            "stones": []
+          }
+        ],
+        "meal": "Nachos",
+        "bestMeals": ["Churrasco", "Sweet Maple Mate", "Nachos"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "dex",
+            "tb": "crit",
+            "tb2": "det",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_2",
+        "name": "Det build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 21498,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 23606,
+            "stones": []
+          },
+          {
+            "slot": "body",
+            "gameId": 24455,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 24394,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "legs",
+            "gameId": 23609,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 23516,
+            "stones": []
+          },
+          {
+            "slot": "ear",
+            "gameId": 23688,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 25695,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 24422,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23843,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24985,
+            "stones": []
+          }
+        ],
+        "meal": "Caramel Popcorn",
+        "bestMeals": ["Caramel Popcorn"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "dex",
+            "tb": "det",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_3",
+        "name": "Skill Speed build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 23555,
+            "stones": []
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 24392,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "body",
+            "gameId": 23851,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 23608,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 24110,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24396,
+            "stones": [
+              {
+                "stat": "sks",
+                "grade": 6
+              },
+              {
+                "stat": "sks",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ear",
+            "gameId": 23626,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 23537,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23542,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 23641,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24427,
+            "stones": [
+              {
+                "stat": "sks",
+                "grade": 6
+              }
+            ]
+          }
+        ],
+        "meal": "Rock-fisted Popoto Salad",
+        "bestMeals": ["Mesquite Soup", "Chicken Pasta", "Bubble Tea", "Rock-fisted Popoto Salad"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "dex",
+            "tb": "sks",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_4",
+        "name": "Prog set",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon"
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head"
+          },
+          {
+            "slot": "body"
+          },
+          {
+            "slot": "hands"
+          },
+          {
+            "slot": "legs"
+          },
+          {
+            "slot": "feet"
+          },
+          {
+            "slot": "ear"
+          },
+          {
+            "slot": "neck"
+          },
+          {
+            "slot": "wrist"
+          },
+          {
+            "slot": "ring"
+          },
+          {
+            "slot": "ring"
+          }
+        ],
+        "meal": null,
+        "bestMeals": null,
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": null,
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      }
+    ],
+    "gameData": {
+      "commit": "d9582a6",
+      "date": "2026-09-30"
+    },
+    "createdAt": 1793620800000,
+    "updatedAt": 1793966400000
+  },
+  {
+    "v": 1,
+    "id": "s_uwu_blm",
+    "name": "UwU caster",
+    "description": "The Weapon’s Refrain (Ultimate)",
+    "job": "BLM",
+    "level": 70,
+    "sync": {
+      "on": true,
+      "cap": 375
+    },
+    "sets": [
+      {
+        "id": "g_1",
+        "name": "Crit build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 23777,
+            "stones": []
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 24404,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "body",
+            "gameId": 24963,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 24406,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "legs",
+            "gameId": 25685,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 23528,
+            "stones": []
+          },
+          {
+            "slot": "ear",
+            "gameId": 23628,
+            "stones": []
+          },
+          {
+            "slot": "neck",
+            "gameId": 23539,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23700,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 25707,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 25707,
+            "stones": []
+          }
+        ],
+        "meal": "Popoto Potage",
+        "bestMeals": ["Pineapple Orange Jelly", "Mollete", "Popoto Potage"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "int",
+            "tb": "crit",
+            "tb2": "det",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_2",
+        "name": "Det build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 23481,
+            "stones": []
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 23820,
+            "stones": []
+          },
+          {
+            "slot": "body",
+            "gameId": 25683,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 23682,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 24407,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "feet",
+            "gameId": 24408,
+            "stones": [
+              {
+                "stat": "det",
+                "grade": 6
+              },
+              {
+                "stat": "det",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ear",
+            "gameId": 24414,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "neck",
+            "gameId": 25697,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 24982,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 23549,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 23549,
+            "stones": []
+          }
+        ],
+        "meal": "Caramel Popcorn",
+        "bestMeals": ["Moqueca", "Mate Cookie", "Caramel Popcorn"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "int",
+            "tb": "det",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_3",
+        "name": "Spell Speed build",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon",
+            "gameId": 21502,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head",
+            "gameId": 24404,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "body",
+            "gameId": 24467,
+            "stones": []
+          },
+          {
+            "slot": "hands",
+            "gameId": 23526,
+            "stones": []
+          },
+          {
+            "slot": "legs",
+            "gameId": 24965,
+            "stones": []
+          },
+          {
+            "slot": "feet",
+            "gameId": 24408,
+            "stones": [
+              {
+                "stat": "crit",
+                "grade": 6
+              },
+              {
+                "stat": "crit",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ear",
+            "gameId": 24414,
+            "stones": [
+              {
+                "stat": "sps",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "neck",
+            "gameId": 23695,
+            "stones": []
+          },
+          {
+            "slot": "wrist",
+            "gameId": 23544,
+            "stones": []
+          },
+          {
+            "slot": "ring",
+            "gameId": 24429,
+            "stones": [
+              {
+                "stat": "sps",
+                "grade": 6
+              }
+            ]
+          },
+          {
+            "slot": "ring",
+            "gameId": 23705,
+            "stones": []
+          }
+        ],
+        "meal": "Rroneek au Gratin",
+        "bestMeals": ["Creamy Alpaca Pasta", "Navel Orange Cookies", "Solterito", "Rroneek au Gratin"],
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": {
+          "goal": {
+            "target": "int",
+            "tb": "sps",
+            "tb2": "crit",
+            "gcd": "",
+            "gcdMode": "exact",
+            "byTier": true,
+            "melds": true,
+            "food": true
+          },
+          "searchCriteria": {
+            "expOff": [],
+            "exclude": [
+              "misc",
+              "deep_dungeons",
+              "wondrous_tails",
+              "variant",
+              "pvp",
+              "extreme_current",
+              "savage_current",
+              "ultimate",
+              "events"
+            ],
+            "market": true,
+            "min": "",
+            "max": "",
+            "lvl": 70
+          }
+        },
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      },
+      {
+        "id": "g_4",
+        "name": "Prog set",
+        "description": "",
+        "pieces": [
+          {
+            "slot": "weapon"
+          },
+          {
+            "slot": "offhand"
+          },
+          {
+            "slot": "head"
+          },
+          {
+            "slot": "body"
+          },
+          {
+            "slot": "hands"
+          },
+          {
+            "slot": "legs"
+          },
+          {
+            "slot": "feet"
+          },
+          {
+            "slot": "ear"
+          },
+          {
+            "slot": "neck"
+          },
+          {
+            "slot": "wrist"
+          },
+          {
+            "slot": "ring"
+          },
+          {
+            "slot": "ring"
+          }
+        ],
+        "meal": null,
+        "bestMeals": null,
+        "pinned": {
+          "pieces": [],
+          "meal": false
+        },
+        "fillSettings": null,
+        "createdAt": 1793620800000,
+        "updatedAt": 1793620800000
+      }
+    ],
+    "gameData": {
+      "commit": "d9582a6",
+      "date": "2026-09-30"
+    },
+    "createdAt": 1793620800000,
+    "updatedAt": 1793966400000
   }
 ]
