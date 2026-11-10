@@ -21,16 +21,16 @@ The game, Final Fantasy XIV (FFXIV), has its own vocabulary. These are the terms
 - **Slot**: where the piece is worn: weapon, off-hand (shield), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings.
 - **Item level sync**: some content lowers your gear to a cap. For example, a duty run with the Minimum Item Level option and no Echo uses a fixed cap ([glossary.md](../glossary.md)). Pieces above the cap lose stats; pieces at or below it are unchanged. The owner's main case is cap 123, but every formula here works for any cap.
 - **Level sync**: content for a lower character level lowers your level to match. Gear whose equip level (the character level needed to wear it) is above that level is synced to an item level the game assigns to the level (section 5). A duty can do both at once: T13, a level 50 raid, run with Minimum Item Level is level 50 and item level 123.
-- **Stats.** Each of the 23 combat jobs uses one of five role profiles. The tool names stats by stat keys (seven short names, listed in the first column, one per position in a job's stat list; see [glossary.md](../glossary.md)), which mean different game stats by job:
+- **Stats.** Each of the 23 combat jobs uses one of five role profiles. The tool names stats by stat keys, which are the game's own short names (listed in the first column; see [glossary.md](../glossary.md)); a job has the keys of its own row:
 
-| Stat (stat key) | Meaning | Tank | Healer | Melee (Str) | Dexterity | Caster |
+| Stat (stat keys) | Meaning | Tank | Healer | Melee (Str) | Dexterity | Caster |
 | --- | --- | --- | --- | --- | --- | --- |
 | jobs | the jobs in the profile | PLD WAR DRK GNB | WHM SCH AST SGE | MNK DRG SAM RPR BST | NIN VPR BRD MCH DNC | BLM SMN RDM PCT BLU |
-| main stat (`main`) | primary damage/healing stat | Strength | Mind | Strength | Dexterity | Intelligence |
+| main stat | primary damage/healing stat | Strength (`str`) | Mind (`mind`) | Strength (`str`) | Dexterity (`dex`) | Intelligence (`int`) |
 | Vitality (`vit`) | hit points | Vitality | Vitality | Vitality | Vitality | Vitality |
 | substats (`crit`, `det`, `dh`) | Critical Hit, Determination, Direct Hit | same | same | same | same | same |
-| speed (`spd`) | shortens the global cooldown (GCD) | Skill Speed | Spell Speed | Skill Speed | Skill Speed | Spell Speed |
-| special substat (`spec`) | role-only substat | Tenacity | Piety | none | none | none |
+| speed | shortens the global cooldown (GCD) | Skill Speed (`sks`) | Spell Speed (`sps`) | Skill Speed (`sks`) | Skill Speed (`sks`) | Spell Speed (`sps`) |
+| special substat | role-only substat | Tenacity (`ten`) | Piety (`piety`) | none | none | none |
 
 Notes on the table:
 

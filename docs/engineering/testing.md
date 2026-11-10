@@ -57,6 +57,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-items | gear filtering, row conversion, item fields; rows sharing a pool key agree |
 | core-items.identity | a piece by its game id: one row per id, the pool item of an id |
 | core-items.multi-slot | cloaks, tank multi-slot gear, White Mage shields |
+| core-job-context.keys | the stat keys of all 23 jobs (main, speed and special key, `stats` and `substats` in order, six keys without a special substat), the labels and short names by key |
 | core-meld | materia melds on real items |
 | core-meld.apply-stones | a given list of stones on real items: gates, high grades past the big slots, caps, sync removing them; the optimizer's melds give their gains back |
 | core-optimizer | real-gear pools, ring-pair bound |
@@ -73,6 +74,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | core-same-result | other pieces with the same result: shared spare points, Unique rings, cloaks, the owner's level 50 case |
 | core-session | the solver session: the last four entries per kind, least recently used dropped first; a job's gear built once |
 | core-set | a gear set and what it adds up to: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has |
+| core-stat-keys | old position keys read as a job's own (`currentStatKey`), a key moved to another job by position (`remapStatKey`), and the guard that `src/core` and `src/ui/views` hard-code no job-specific stat key outside the allow-listed tables |
 | core-speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
 | core-sync-target | level sync, its triggers, the optimizer under it |
 | core-tables.provenance | source record and footer |
@@ -98,10 +100,12 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui-hq-font | the HQ glyph font and its fallback |
 | ui-ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | ui-sheet-storage | the saved sheets (index and one record per sheet) through a storage stand-in: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage |
+| ui-sheet-storage.stat-keys | a v1 record with position keys (`main`, `spd`, `spec`) per stat profile read with the game's keys, a record with the game's keys read as it is |
 | ui-sheet-store | the sheets' store over a storage stand-in: making, editing, copying (the White Mage cane cleared after the question), deleting and reordering sheets and gear sets, the screen each action leaves open, the level and cap held to their ranges, the edit lock while a Fill runs, a full storage keeping the edit, no storage, unreadable records deleted, a second store reading back what was saved |
 | ui-sheet-ops | sheets and gear sets as plain data: names and descriptions as stored, default and copy names, a new sheet and set read back by the storage, Copy sheet clearing the pieces the new job cannot wear, moving a row |
+| ui-sheet-ops.stat-keys | Copy sheet moving the goal and the stones to the new job by position |
 | ui-solver | the optimizer's solver: the request handler as a plain function (the worker's), requests and replies through a structured clone (the solve reply carries the plain gear set and the recipe), the worker solver's ids, one request per kind in the worker with the newest waiting, the fallback to the page thread when the worker cannot start or fails |
-| ui-state | restoring saved state; loading and saving with a storage that throws |
+| ui-state | restoring saved state, including a save with position keys in `piece.subs` and `browse.sort`; loading and saving with a storage that throws |
 | ui-state.panels | each reference tab's own Job and sync panel on restore; an old save's optimizer settings dropped |
 | ui-state.split-panel | the saved settings with the Job and sync panel split between the Gear browser and the math tab and the old `opt` dropped |
 | ui-store | job switch and reset |
@@ -232,7 +236,7 @@ Notes on the pass/fail commands:
 
 Notes on the measurements and checks run by hand (none is part of `npm run check`):
 
-- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in the [performance log](perf-log.md), and the current timings in [optimizer.md, section 8](optimizer.md#current-timings). `db-parse.mjs` times how long Chromium takes to read and run the inlined item database at page open (results in [perf-log.md, section 2.2](perf-log.md#22-the-inlined-database-at-page-open)). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit that you make yourself, outside the repo or under the gitignored `scripts/perf/out/` (how to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#what-the-perf-scripts-measure)). Every perf script takes its options the same way, `--name value` or a bare `--flag` (`scripts/perf/args.mjs`).
+- **The `perf` commands** are performance measurements, not pass/fail tests. They write one JSON row per run to `scripts/perf/out/` (gitignored) and print a summary against the budgets; the results are in the [performance log](perf-log.md), and the current timings in [optimizer.md, section 8](optimizer.md#current-timings). `db-parse.mjs` times how long Chromium takes to read and run the inlined item database at page open (results in [perf-log.md, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)). Two more scripts there are run by hand: `split.mjs` times each step of one run, and `compare.mjs` checks that a faster version gives exactly the results of a fresh copy of `src/` from the old commit that you make yourself, outside the repo or under the gitignored `scripts/perf/out/` (how to run it, the budgets and what to do when one fails are in [optimizer.md, section 8](optimizer.md#what-the-perf-scripts-measure)). Every perf script takes its options the same way, `--name value` or a bare `--flag` (`scripts/perf/args.mjs`).
 - **`target-gcd-sweep.mjs`** runs Target GCD (a wanted global cooldown, which the optimizer turns into a speed range) over a large grid:
   - every job;
   - every sync setting of the other scripts but cap 795 (it syncs nothing, so it repeats no sync);

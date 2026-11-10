@@ -17,23 +17,23 @@ Which number answers "how long does it take?", and what do the words in the tabl
 - **Melds off / on:** whether the best materia stones are chosen for each piece ([materia.md](../mechanics/materia.md)).
 - **The quick benchmark** is `npm run perf` (Sage, Warrior, Paladin, Black Mage, Dancer and Samurai, 7,884 runs); a **sweep** is the engine run over a grid of jobs, sync settings and goals.
 - **Exactly, or faster:** the two Target GCD modes ([optimizer.md, section 2](optimizer.md#target-gcd-from-a-gcd-to-a-speed-range)).
-- **Prototype:** Perplexity's prototype of the 2026-10-17 tier ranking changes, swept beside the merged code (section 4).
+- **Prototype:** Perplexity's prototype of the 2026-10-17 tier ranking changes, swept beside the merged code (section 5).
 
 **Figures that look like they conflict.** Each is right for its date; the log does not explain the differences between the two quick-benchmark runs.
 
 | Question | Figures (date; section) | Which applies today |
 | --- | --- | --- |
-| Plain optimizer, quick benchmark, median, melds off / on | 22.4 / 34.6 ms (2026-10-15; 6.1); 12.7 / 19.0 ms (2026-10-17; 4.1) | The later run, 12.7 / 19.0 ms |
-| Plain optimizer, every job's full pool, median, melds off / on | 9.2 / 14.8 ms (2026-10-14; 7.1) | Measured before the item level floor dropped to 15 (2026-10-15, section 6.1), which made every job's pool 21 to 33% larger; not repeated |
-| Target GCD, a new GCD for the same goal, median / slowest | 3 ms / 3,869 ms before, 5 ms / 1,075 ms after the tables for blocked slots (2026-10-16; 5.1) | The after column |
-| The page, Paladin, later runs | 21 ms (2026-10-15; 6.2) | Measured before the worker; the worker moved the search off the main thread (2.1) |
-| Tier ranking with a Target GCD, "exactly", median | 774 ms (2026-10-16; 5.2); 0.47 s (2026-10-17, six jobs; 4.1); 445 ms (2026-10-18, all 23 jobs; 3.1) | The latest, 445 ms |
+| Plain optimizer, quick benchmark, median, melds off / on | 22.4 / 34.6 ms (2026-10-15; 7.1); 12.7 / 19.0 ms (2026-10-17; 5.1) | The later run, 12.7 / 19.0 ms |
+| Plain optimizer, every job's full pool, median, melds off / on | 9.2 / 14.8 ms (2026-10-14; 8.1) | Measured before the item level floor dropped to 15 (2026-10-15, section 7.1), which made every job's pool 21 to 33% larger; not repeated |
+| Target GCD, a new GCD for the same goal, median / slowest | 3 ms / 3,869 ms before, 5 ms / 1,075 ms after the tables for blocked slots (2026-10-16; 6.1) | The after column |
+| The page, Paladin, later runs | 21 ms (2026-10-15; 7.2) | Measured before the worker; the worker moved the search off the main thread (3.1) |
+| Tier ranking with a Target GCD, "exactly", median | 774 ms (2026-10-16; 6.2); 0.47 s (2026-10-17, six jobs; 5.1); 445 ms (2026-10-18, all 23 jobs; 4.1) | The latest, 445 ms |
 
 The sections run from the newest date to the oldest; each says which page it belongs to.
 
-## 1a. Runs of 2026-11-10
+## 2. Runs of 2026-11-10
 
-### 1a.1 The set page after a Fill
+### 2.1 The set page after a Fill
 
 The longest main-thread block after a Fill on the set page, in Chromium (`npm run perf:browser --runs 2 --rates 1,4 --jobs PLD,SGE`, three alternating pairs of before and after builds). The cause was the page redrawing after a Fill, not the search: the first piece shown built a lookup of all 20,031 item rows on the page's thread (about 25 ms at normal speed, 150 to 190 ms at 4x), and every Fill built the table's `x-if` blocks again (153 blocks and about 690 elements in one task, 35 ms of it the view itself). The fix kept each row's pin, source line and stat cells in the row and hid them while the row is empty (33 `x-if` blocks and about 316 elements), and built each piece's facts when first asked for.
 
@@ -48,11 +48,11 @@ The longest main-thread block after a Fill on the set page, in Chromium (`npm ru
 
 One "after" pass ran at 64% CPU load from other work and is left out. Opening an empty set at 4x got slower (160 to 283 ms before, 213 to 333 ms after), because empty rows now carry the hidden parts; opening a filled set is the same (about 310 to 390 ms). Discard at 4x went from about 145 to 170 ms. `npm run perf` counters did not change: 7,884 runs, the largest search 310 and 458 nodes, no truncated run.
 
-## 2. Runs of 2026-10-19
+## 3. Runs of 2026-10-19
 
 The page's searches moved into a Web Worker, and the inlined database was timed at page open.
 
-### 2.1 The page with a Web Worker
+### 3.1 The page with a Web Worker
 
 Page timing for [optimizer.md](optimizer.md#8-correctness-and-performance).
 
@@ -72,7 +72,7 @@ Since 2026-10-19 the page's searches run in a Web Worker (audit 16 R8; [architec
 - **4× and 6× slower** are not a slow device's for the search itself: Chrome's CPU throttle slows the page's main thread, and the worker much less. So "Solved in" at those rates is lower than a slow device would show.
 - **Sizes.** The page grows by the worker's code, about 83 kB; the data is not copied ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)). The page's heap drops by 5 to 7 MB (Paladin 31.6 → 24.8 MB, Sage 29.8 → 24.8 MB), since the job's gear now lives in the worker's own heap, which `browser.mjs` does not count.
 
-### 2.2 The inlined database at page open
+### 3.2 The inlined database at page open
 
 Build sizes and page-open timing for [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page), which also explains the `JSON.parse` loading. `scripts/perf/db-parse.mjs` times Chromium from a mark just before the page's script to one just after; median of 7 runs, 2026-10-19, a 12-thread desktop.
 
@@ -85,11 +85,11 @@ Build sizes and page-open timing for [data-pipeline.md, section 8](data-pipeline
 - **Load:** the first two columns come from one run while another agent ran the optimizer bench, so they are higher and wider than on an idle machine (an idle run gave 76 and 49 ms at normal speed); the last column compares idle runs before and after the change.
 - **The worker (2026-10-19).** The page's whole script, run back to back with the build before it, median of 7: 152 → 158 ms on this machine and 634 → 648 ms 4× slower (the 83 kB of worker code). The database as `JSON.parse` with its text exported: 54 to 57 ms, as before.
 
-## 3. Runs of 2026-10-18
+## 4. Runs of 2026-10-18
 
 Tier ranking on every job with the merged code.
 
-### 3.1 Tier ranking, the merged code on all 23 jobs
+### 4.1 Tier ranking, the merged code on all 23 jobs
 
 For [tier-ranking.md, section 8](tier-ranking.md#8-performance).
 
@@ -107,11 +107,11 @@ Raw and tier ranking, each run, on `dev` at `ef9575a`, with the item data as of 
 - **Slow spots:** level 100, cap 400 has a tier 95th percentile of 5.30 s and 297 runs over 5 s; its 46 stops are all food off and 43 of them damage dealers (Determination > Critical Hit > Direct Hit 20, Critical Hit > Determination > Direct Hit 15, Critical Hit > Direct Hit > Determination 7). Cap 123 at level 100 holds the slowest runs: healers, Piety > Determination > Direct Hit, GCD 2.46 to 2.48, 18 to 38 s (the 8 stops are White Mage and Sage; Scholar and Astrologian finish in 21 to 25 s). Cap 530 at level 100 has a 95th percentile of 2.90 s. The other ten settings stay at or under 2.15 s.
 - **Against `582568f`:** the 4,160 runs this sweep shares with a sweep of the code before (2026-10-16; six sync settings, GCD points 25%, 50% and 75%) give the same ranked totals in all. Tier ranking's 95th percentile fell from 1.77 s to 1.26 s and runs over 1.5 s from 265 to 92, but its median rose from 303 to 357 ms (215 to 274 ms without a Target GCD). Why the medians rose is **not checked**; machine load is a possible cause (**assumed**): that sweep ran 5 workers, this one 10 with a raw ranking beside each run.
 
-## 4. Runs of 2026-10-17
+## 5. Runs of 2026-10-17
 
 Tier ranking after the regain cuts, the trial search, the slot order and the band-reach tables; the prototype of those changes on every job.
 
-### 4.1 Tier ranking after the regain cuts, the trial search, the slot order and band reach
+### 5.1 Tier ranking after the regain cuts, the trial search, the slot order and band reach
 
 For [tier-ranking.md, sections 4.4 and 5](tier-ranking.md#44-regain-cuts-from-the-stages-before).
 
@@ -150,9 +150,9 @@ Slow cases, one at a time on an idle machine, before (the code at `b923b1d`) and
 
 The worked example of [tier-ranking.md, section 2](tier-ranking.md#2-the-stages) takes 1.0 s in all. The quick benchmark of the plain optimizer (`npm run perf`, no limits, so no proofs or trial search) is unchanged: median 19.0 ms with melds and 12.7 ms without, against 18.8 and 12.8; its largest searches fell from 555 to 458 nodes with melds and 380 to 310 without (the slot order).
 
-### 4.2 The prototype on all 23 jobs
+### 5.2 The prototype on all 23 jobs
 
-**The prototype on all 23 jobs (2026-10-17).** Before the merge, Perplexity's prototype was swept against the code before it on every job: six sync settings, 10 to 12 goals per role, food off and every meal, and no Target GCD or one at a quarter, half and three quarters of the way from the slowest GCD to the fastest, in both modes. That is 17,648 cases, eight workers. The times below are the prototype's, not the merged code's: the two give the same sets (above), but the merged code is slower (the table in [section 4.1](#41-tier-ranking-after-the-regain-cuts-the-trial-search-the-slot-order-and-band-reach)). The merged code's times on every job are in [section 3.1](#31-tier-ranking-the-merged-code-on-all-23-jobs).
+**The prototype on all 23 jobs (2026-10-17).** Before the merge, Perplexity's prototype was swept against the code before it on every job: six sync settings, 10 to 12 goals per role, food off and every meal, and no Target GCD or one at a quarter, half and three quarters of the way from the slowest GCD to the fastest, in both modes. That is 17,648 cases, eight workers. The times below are the prototype's, not the merged code's: the two give the same sets (above), but the merged code is slower (the table in [section 5.1](#51-tier-ranking-after-the-regain-cuts-the-trial-search-the-slot-order-and-band-reach)). The merged code's times on every job are in [section 4.1](#41-tier-ranking-the-merged-code-on-all-23-jobs).
 
 | Tier ranking with a Target GCD | Median | 95th percentile | Slowest | Over 1.5 s |
 | --- | --- | --- | --- | --- |
@@ -162,15 +162,15 @@ The worked example of [tier-ranking.md, section 2](tier-ranking.md#2-the-stages)
 | Or faster, prototype | 0.21 s | 0.61 s | 12.7 s | 34 |
 
 - **Speed:** with a Target GCD, the prototype's tier ranking ran 2 to 4 times faster than the code before (about twice at the median, about four times at the 95th percentile). Exactly mode over 5 s: 252 runs before, 8 in the prototype. The whole sweep took 930 s against 2,333 s.
-- **Same answers:** the prototype gives the same ranked totals as the code before in all 17,648 cases, in both rankings. That the merged code does too is **inferred** (strongly supported: it gives the prototype's sets in all 5,028 cases of [section 4.1](#41-tier-ranking-after-the-regain-cuts-the-trial-search-the-slot-order-and-band-reach), and the code before's ranked totals in the 4,160 cases of [section 3.1](#31-tier-ranking-the-merged-code-on-all-23-jobs)).
+- **Same answers:** the prototype gives the same ranked totals as the code before in all 17,648 cases, in both rankings. That the merged code does too is **inferred** (strongly supported: it gives the prototype's sets in all 5,028 cases of [section 5.1](#51-tier-ranking-after-the-regain-cuts-the-trial-search-the-slot-order-and-band-reach), and the code before's ranked totals in the 4,160 cases of [section 4.1](#41-tier-ranking-the-merged-code-on-all-23-jobs)).
 - **Stopped at the node limit:** 138 tier ranking runs before, 4 in the prototype. The 4 are the White Mage and Sage cases at 2.29 of [tier-ranking.md, section 9](tier-ranking.md#9-known-limits) (9.5 to 15.2 s); they stopped before too, with the same ranked totals.
 - **Tied sets:** 905 tier and 529 raw cases returned another set with the same ranked totals ([tier-ranking.md, section 9](tier-ranking.md#9-known-limits)).
 
-## 5. Runs of 2026-10-16
+## 6. Runs of 2026-10-16
 
 The Target GCD sweep of the plain optimizer, and the first tier ranking sweeps.
 
-### 5.1 Target GCD sweep
+### 6.1 Target GCD sweep
 
 For [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
@@ -204,7 +204,7 @@ Times, a new GCD for the same goal (the candidate lists reused, as on the page),
 - **First runs** (building the candidate lists): median 64 ms, 95th percentile 217 ms in the sweep. The slowest, 2,062 ms (Red Mage, level 90), takes 370 to 640 ms when rerun alone in a fresh process, the same with either search.
 - **Same answers:** 252,041 of the 252,112 runs give the same GCD and meal. The other 71 tie on the goal and both tiebreaks; they differ in the total the meal adds, which only decides between meals of equal goal ([optimizer.md, section 9](optimizer.md#9-known-behaviours-and-limits)).
 
-### 5.2 Tier ranking: the filters and the fronts
+### 6.2 Tier ranking: the filters and the fronts
 
 For [tier-ranking.md, sections 4 and 5](tier-ranking.md#4-before-the-search-filters).
 
@@ -234,11 +234,11 @@ Some slow cases from a wider comparison (one run at a time, page pool):
 
 The Black Mage and Sage times came from the fronts' dominance filter, not from nodes: 266,179 nodes took 108 s in one search.
 
-## 6. Runs of 2026-10-15
+## 7. Runs of 2026-10-15
 
 The database floor dropped from item level 100 to 15; the page was timed again.
 
-### 6.1 Item level floor 15
+### 7.1 Item level floor 15
 
 For [optimizer.md, section 8](optimizer.md#8-correctness-and-performance). Lowering the database floor from item level 100 to 15 made every job's pool 21 to 33% larger. The quick benchmark (`npm run perf`: SGE, WAR, PLD, BLM, DNC, SAM, 7,884 runs), run on the same PC on the last commit before the change and after it, one run each with nothing else running:
 
@@ -250,7 +250,7 @@ For [optimizer.md, section 8](optimizer.md#8-correctness-and-performance). Lower
 
 The time grows with the pool (each piece is scored and pruned before the search); the searches are no larger. Both runs miss the script's budgets on this PC, which were set on an earlier, smaller workload. The owner accepted the slowdown (accuracy first). Without the bound for blocking pieces in [optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound), level sync below 50 hit the node limit.
 
-### 6.2 The page
+### 7.2 The page
 
 For [optimizer.md, section 8](optimizer.md#8-correctness-and-performance). The first run was on 2026-10-14; the table is the rerun of 2026-10-15.
 
@@ -269,13 +269,13 @@ In Chromium, opened cold from a saved state on the Gear optimizer tab, at normal
 - **Pick the job to result:** before, a job switch plus "Add all" took 1.1, 3.9 and 6.3 s to reach a result. Saving now takes at most 1 ms (before, up to 16 ms at 6× with a full pool).
 - **Memory** stays flat over 100 changes (14.5 MB). What remains slow is outside the optimizer: opening the page (2 MB of page and item data).
 
-## 7. Runs of 2026-10-14
+## 8. Runs of 2026-10-14
 
 The stress test of the plain optimizer.
 
 Measured on the same PC before Beastmaster was added (22 jobs), with the scripts listed in [testing.md, section 3](testing.md#3-commands). The workloads, the budgets and the way to compare versions are described in [optimizer.md, "What the perf scripts measure"](optimizer.md#what-the-perf-scripts-measure).
 
-### 7.1 Every job's full pool
+### 8.1 Every job's full pool
 
 Each of the 22 jobs with every piece it can equip (1,899 to 2,641 items), 18 sync settings (none; item level caps 123 to 795; level sync at 50 to 90; five level and cap pairs) and about 40 objectives (every single target, every target and tiebreak pair of substats, and random three-key orders), with melds off and on: 27,936 runs, each timed as the median of 3 calls.
 
@@ -291,18 +291,18 @@ Each of the 22 jobs with every piece it can equip (1,899 to 2,641 items), 18 syn
 - **Where the time goes.** Building the candidate lists is most of a run: syncing, choosing melds, building the vectors and pruning take about 90%, the search under 10%.
 - **The first run.** The very first run in a fresh process is the slowest: 75 to 79 ms on the largest pool (Paladin, melds on), then about 29, 24 and 20 ms as the code is compiled and the per-item caches fill.
 
-### 7.2 Hostile pools
+### 8.2 Hostile pools
 
 3,000 random pools of real pieces with random stats (near-ties, cloaks, two-handed weapons, shields, up to 200 Unique rings), then 600 steps that mutate the worst pool to grow its search: median 186 nodes, largest 700 (4.5 ms).
 
 - Without a speed range the bound of [optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound) is exact (the slots left are independent, the ring pair and blocked slots are bounded exactly), so the search grows with the pool, not exponentially.
 - With the engine's speed range, real full pools stayed below about 11,000 nodes; reaching the page's 700,000-node limit took a synthetic pool where every piece trades Critical Hit for speed, and stopped there after about 0.5 s. The speed tables of [optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound) (2026-10-16) bring that pool down to a few dozen nodes.
 
-## 8. Runs of 2026-10-12
+## 9. Runs of 2026-10-12
 
 The first measurements, on the Sage pool.
 
-Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists (2026-10-12, with the kept-only pruning of [optimizer.md, section 4](optimizer.md#4-fewer-candidates-dominance-pruning)). The pool is every piece Sage can equip at item level 100 and up (1,999 items). The node counts before the ring-pair bound ([optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound)) are in brackets; every result is the same. Melds could not be combined with a speed range then, hence "–"; Target GCD timings are in the [Target GCD sweep](#51-target-gcd-sweep) of 2026-10-16.
+Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, including building the candidate lists (2026-10-12, with the kept-only pruning of [optimizer.md, section 4](optimizer.md#4-fewer-candidates-dominance-pruning)). The pool is every piece Sage can equip at item level 100 and up (1,999 items). The node counts before the ring-pair bound ([optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound)) are in brackets; every result is the same. Melds could not be combined with a speed range then, hence "–"; Target GCD timings are in the [Target GCD sweep](#61-target-gcd-sweep) of 2026-10-16.
 
 | Run | Nodes | Time | With melds |
 | --- | ---: | ---: | ---: |
@@ -327,5 +327,5 @@ Measured with Node 22.23.2 on the owner's Windows PC, median of 5 runs, includin
 | The Target GCD sweep | `scripts/perf/target-gcd-sweep.mjs` |
 | The page in Chromium (`npm run perf:browser`) | `scripts/perf/browser.mjs` |
 | The inlined database at page open | `scripts/perf/db-parse.mjs` |
-| The tier ranking sweeps | one-off scripts; no committed script (the settings are listed in sections 3.1, 4.1 and 5.2) |
+| The tier ranking sweeps | one-off scripts; no committed script (the settings are listed in sections 4.1, 5.1 and 6.2) |
 | The current timing tables | [optimizer.md, section 8](optimizer.md#8-correctness-and-performance), [tier-ranking.md, section 8](tier-ranking.md#8-performance), [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page) |

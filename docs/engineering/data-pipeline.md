@@ -594,7 +594,7 @@ The page bundle takes the page code, the stylesheet and the generated data files
 
 Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4.14); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 81% of the page; the icons are about 7%.
 
-**What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string: the build's `jsonParseData` plugin (`scripts/build/build.mjs`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision). `scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own. Current timings (median of 7 runs, 2026-10-19, a 12-thread desktop; `npm run build && node scripts/perf/db-parse.mjs`; the object-literal comparison and the earlier runs are in the [performance log, section 2.2](perf-log.md#22-the-inlined-database-at-page-open)):
+**What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string: the build's `jsonParseData` plugin (`scripts/build/build.mjs`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision). `scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own. Current timings (median of 7 runs, 2026-10-19, a 12-thread desktop; `npm run build && node scripts/perf/db-parse.mjs`; the object-literal comparison and the earlier runs are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open)):
 
 | CPU | Item database as `JSON.parse` (the page) | The page's whole script, with the worker |
 | --- | ---: | ---: |
@@ -605,7 +605,7 @@ Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` bu
 Notes:
 
 - **Size:** the page grew by about 3.6 kB (the string's escaped quotes), 2,975,005 bytes on a `dev` build.
-- **The worker** ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. Its timings are in the [performance log, section 2.2](perf-log.md#22-the-inlined-database-at-page-open).
+- **The worker** ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. Its timings are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open).
 - **The rest of the script** (Alpine, the page code and what runs when the script loads) still takes more than the database itself.
 - **Run it** with `npm run build && node scripts/perf/db-parse.mjs` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
 
@@ -669,7 +669,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | File | What changes |
 | --- | --- |
 | `core/item-format.json` | append to `stats` (key, `ItemLevel` column, `BaseParam` id), so existing positions keep their meaning; add it to `materia.statKeys` if materia raise it, and to `food` if meals do |
-| `core/constants.js` | the stat key and role profiles (`PROFILES`, `ALL_STATS`) if jobs use it; names and short names for the page |
+| `core/constants.js` | the role profiles (`PROFILES`: each role's `mainKey`, `speedKey`, `specKey`) if jobs use it; names and short names by stat key for the page (`STAT_LABEL`, `STAT_SHORT`) |
 | `tests/data/fixtures/BaseParam.csv`, `ItemLevel.csv` | the stat's real `BaseParam` row; its `ItemLevel` column |
 | `tests/data/test_generators.py` | `STAT_ORDER` and the item level column map |
 | data | `regen.py`: every row gains a value in its stats string, and the slot shares of the new row are checked against the format file |
