@@ -31,11 +31,19 @@ function forcedStall(jobId, seed) {
   for (const type of job.activeSlotTypes) {
     for (let k = 0; k < 30; k++) {
       const spd = 10 + Math.floor(g() * 90);
-      pool.push(mkItem(`${type} ${k}`, type, 100, { main: 100, vit: 100, spd, crit: 110 - spd + Math.floor(g() * 6) }, { copies: 1 }));
+      pool.push(
+        mkItem(
+          `${type} ${k}`,
+          type,
+          100,
+          { [job.mainKey]: 100, vit: 100, [job.speedKey]: spd, crit: 110 - spd + Math.floor(g() * 6) },
+          { copies: 1 },
+        ),
+      );
     }
   }
   const sync = { cap: null, sync: false, level: 100 };
-  const top = optimize(job, pool, sync, { target: 'spd', nodeLimit: NODE_LIMIT }).totals.spd;
+  const top = optimize(job, pool, sync, { target: job.speedKey, nodeLimit: NODE_LIMIT }).totals[job.speedKey];
   const t0 = performance.now();
   const res = optimize(job, pool, sync, { target: 'crit', tiebreak: ['det'], spdMin: Math.round(top * 0.6), nodeLimit: NODE_LIMIT });
   return { jobId, pool: pool.length, ms: performance.now() - t0, nodes: res.nodes, truncated: res.truncated, ok: res.ok };

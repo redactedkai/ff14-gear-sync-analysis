@@ -3,6 +3,7 @@
 import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';
 import { MAX_REAL } from '../../core/tables.js';
+import { statEffectKinds } from '../../core/tiers.js';
 import { shownSync } from '../settings.js';
 import { withRank } from '../ranks.js';
 
@@ -80,11 +81,11 @@ export function pieceView(job, sync, piece, ilvl) {
 
   // each line: the piece's value, and under sync its ceiling; a piece above the cap keeps the lower of the two
   const lines = [
-    { stat: 'main', w: 100 },
+    { stat: job.mainKey, w: 100 },
     { stat: 'vit', w: 100 },
   ];
   p.subs.forEach((s, i) => {
-    if (s && (s !== 'spec' || job.profile.spec)) lines.push({ stat: s, w: SUB_WEIGHTS[i], sub: true });
+    if (s && job.substats.includes(s)) lines.push({ stat: s, w: SUB_WEIGHTS[i], sub: true });
   });
   const rows = lines.map(({ stat, w, sub }) => {
     const d = statDerivation(job, stat, il, t, w);
@@ -99,10 +100,10 @@ export function pieceView(job, sync, piece, ilvl) {
       raw,
       syn,
       lost: raw - syn,
-      ownText: ownSentence(d.steps, il, job.label.main),
+      ownText: ownSentence(d.steps, il, job.label[job.mainKey]),
       ownFormula: formulaText(d.steps),
       cap: c?.value ?? null,
-      capText: c ? capSentence(c, cap, sub ? w : null, job.label.main) : '',
+      capText: c ? capSentence(c, cap, sub ? w : null, job.label[job.mainKey]) : '',
       capFormula: c ? capFormulaText(c) : '',
       // the number the duty keeps: the piece's own, unless it is above the cap and over its ceiling
       ownKept: status !== 'above' || raw <= c.value,
@@ -148,7 +149,7 @@ export function pieceView(job, sync, piece, ilvl) {
     // sync cuts the 70% line to the full-share cap, so it ends up level with the first (math.md section 5)
     evenSubs: status === 'above' && rows.some(r => r.w === SUB_WEIGHTS[1] && r.syn === r.cap),
     // the fixed Direct Hit line exists only on older healer gear: the jobs whose special substat (Piety) gives MP
-    healerNote: job.specKind === 'mp',
+    healerNote: statEffectKinds(job.specKey).includes('mp'),
   };
 }
 

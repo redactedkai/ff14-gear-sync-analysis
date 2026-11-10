@@ -46,7 +46,7 @@ function validSave() {
     level: 70,
     tab: 'math',
     mathTab: 'gcd',
-    piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'spec'] },
+    piece: { ilvl: 300, slot: 'ring', subs: ['crit', 'piety'] },
     browse: {
       q: 'Robe',
       type: 'body',
@@ -56,7 +56,7 @@ function validSave() {
       min: 110,
       max: 140,
       lvl: 50,
-      sort: 'spd',
+      sort: 'sps',
       dir: 'asc',
     },
   };
@@ -169,8 +169,9 @@ test('Piece stats fields: a bad item level, slot or substat list falls back; rep
   expectFieldDefault('piece.ilvl', 900, MAX_REAL); // an older save's number is kept, held to the real item levels
   expectFieldDefault('piece.slot', 'belt', 'head');
   expectFieldDefault('piece.slot', 'offhand', 'head');
-  const ds = defaultSubs();
-  assert.deepEqual(ds, ['crit', 'spd']); // Critical Hit, then speed, for every job (the GCD sub-tab needs speed)
+  const ds = defaultSubs(makeJobContext('WHM'));
+  assert.deepEqual(ds, ['crit', 'sps']); // Critical Hit, then speed, for every job (the GCD sub-tab needs speed)
+  assert.deepEqual(defaultSubs(makeJobContext('WAR')), ['crit', 'sks']);
   expectFieldDefault('piece.subs', 'crit', ds);
   expectFieldDefault('piece.subs', { 0: 'crit' }, ds);
   expectFieldDefault('piece.subs', ['crit', 'crit'], ['crit', null]); // the repeat drops
@@ -247,9 +248,13 @@ test('a save from another role is repaired as before', () => {
   // tank: no Piety; DH is not a tank's default third substat
   const raw = validSave();
   raw.job = 'WAR';
+  raw.piece.subs = ['crit', 'ten'];
   const s = restoreState(raw);
   assert.equal(s.job, 'WAR');
-  assert.deepEqual(s.piece.subs, ['crit', 'spec']); // WAR has Tenacity as its spec
+  assert.deepEqual(s.piece.subs, ['crit', 'ten']); // WAR has Tenacity as its special substat
+  // Piety is no stat of a Warrior: the second substat is dropped
+  raw.piece.subs = ['crit', 'piety'];
+  assert.deepEqual(restoreState(raw).piece.subs, ['crit', null]);
   // melee: no spec stat at all
   raw.job = 'MNK';
   const m = restoreState(raw);
@@ -262,7 +267,7 @@ test('a save from another role is repaired as before', () => {
   raw.job = 'WAR';
   const w = restoreState(raw);
   assert.equal(w.piece.slot, 'head');
-  assert.ok(!mnk.substats.includes('spec'));
+  assert.ok(!mnk.substats.includes('piety') && !mnk.substats.includes('ten'));
 });
 
 test("a saved level above the job's level cap is clamped to it", () => {
@@ -284,17 +289,19 @@ test('resetForJob: a job switch keeps the substats the new job can use (audit 11
     resetForJob(s, makeJobContext(toId), makeJobContext(fromId));
     return s;
   };
-  // Sage to Scholar: the same stats under the same names: the substats stay
-  assert.deepEqual(switched('SGE', 'SCH', ['det', 'spd']).piece.subs, ['det', 'spd']);
+  // Sage to Scholar: the same stats: the substats stay
+  assert.deepEqual(switched('SGE', 'SCH', ['det', 'sps']).piece.subs, ['det', 'sps']);
   // Sage to Warrior: Spell Speed is not Skill Speed: the pair goes back
-  assert.deepEqual(switched('SGE', 'WAR', ['spd', 'crit']).piece.subs, defaultSubs());
+  assert.deepEqual(switched('SGE', 'WAR', ['sps', 'crit']).piece.subs, defaultSubs(makeJobContext('WAR')));
   // Sage to Black Mage: Spell Speed both: kept
-  assert.deepEqual(switched('SGE', 'BLM', ['crit', 'spd']).piece.subs, ['crit', 'spd']);
+  assert.deepEqual(switched('SGE', 'BLM', ['crit', 'sps']).piece.subs, ['crit', 'sps']);
+  // Sage to Warrior with Piety chosen: Warrior has no Piety (it has Tenacity): back to the defaults
+  assert.deepEqual(switched('SGE', 'WAR', ['det', 'piety']).piece.subs, defaultSubs(makeJobContext('WAR')));
   // no job before: the defaults
   const s = fresh('SGE');
-  s.piece.subs = ['det', 'spd'];
+  s.piece.subs = ['det', 'sps'];
   resetForJob(s, makeJobContext('SCH'));
-  assert.deepEqual(s.piece.subs, defaultSubs());
+  assert.deepEqual(s.piece.subs, defaultSubs(makeJobContext('SCH')));
 });
 
 /* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level
@@ -411,4 +418,35 @@ test('loadSaved and save: a throwing localStorage is ignored; a working one roun
   save(JSON.stringify({ job: 'WAR' }));
   assert.deepEqual([...kept.keys()], [STORE_KEY]);
   assert.equal(restoreState(loadSaved()).job, 'WAR');
+});
+
+/* A save from before the stat keys were the game's own names the speed, special and main stats by position (`spd`, `spec`,
+   `main`) in piece.subs and browse.sort. restoreState reads them as the saved job's own stat at that position. */
+test("an older save with position keys: piece.subs and browse.sort are read as the job's own stats", () => {
+  // job: [the saved subs, the saved sort] -> [the restored subs, the restored sort]
+  const cases = [
+    ['WHM', ['spd', 'crit'], 'spd', ['sps', 'crit'], 'sps'],
+    ['WHM', ['crit', 'spec'], 'spec', ['crit', 'piety'], 'piety'],
+    ['SGE', ['det', 'spd'], 'main', ['det', 'sps'], 'mind'],
+    ['WAR', ['crit', 'spec'], 'spec', ['crit', 'ten'], 'ten'],
+    ['WAR', ['spd', 'det'], 'main', ['sks', 'det'], 'str'],
+    ['SAM', ['crit', 'spd'], 'spd', ['crit', 'sks'], 'sks'],
+    ['NIN', ['spd', 'dh'], 'main', ['sks', 'dh'], 'dex'],
+    ['BLM', ['crit', 'spd'], 'main', ['crit', 'sps'], 'int'],
+  ];
+  for (const [job, subs, sort, wantSubs, wantSort] of cases) {
+    const s = restoreState({ job, piece: { subs }, browse: { sort } });
+    assert.deepEqual(s.piece.subs, wantSubs, `${job} subs`);
+    assert.equal(s.browse.sort, wantSort, `${job} sort`);
+  }
+  // a special substat the job lacks was never valid: dropped as before; a sort by it falls back to the default
+  const caster = restoreState({ job: 'BLM', piece: { subs: ['crit', 'spec'] }, browse: { sort: 'spec' } });
+  assert.deepEqual(caster.piece.subs, ['crit', null]);
+  assert.equal(caster.browse.sort, defaultBrowse().sort);
+  // each tab is read for its own job
+  const two = restoreState({ piece: { job: 'WHM', subs: ['crit', 'spd'] }, browse: { job: 'WAR', sort: 'spd' } });
+  assert.deepEqual([two.piece.subs, two.browse.sort], [['crit', 'sps'], 'sks']);
+  // the restored state saves and restores to itself (no old key survives)
+  const again = restoreState(JSON.parse(JSON.stringify(two)));
+  assert.deepEqual(again, two);
 });

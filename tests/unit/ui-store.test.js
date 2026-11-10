@@ -22,7 +22,7 @@ test('switching to another job keeps the settings the new job can use and resets
   assert.equal(store.browse.type, 'ring');
   assert.equal(store.cap, 200); // not job-specific: kept
   // to a tank: Determination stays; Spell Speed would not
-  store.browse.sort = 'spd';
+  store.browse.sort = 'sps';
   store.setJob('WAR');
   assert.equal(store.browse.sort, 'ilvl');
   assert.deepEqual(store.browse.exclude, ['crafted']); // "Gear from" boxes are not job-specific: kept

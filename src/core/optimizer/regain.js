@@ -20,13 +20,13 @@
 
 /* The most `proof.stat` piece `piece` gains by a swap for one of `swaps` that keeps every stat in proof.minStats and,
    under a speed minimum only, its speed (swapsFor already keeps the same speed under a band). 0 when no swap gains. */
-function regainOf(piece, proof, swaps) {
+function regainOf(piece, proof, swaps, speedKey) {
   const speedMinimum = proof.speed === 'min';
   const own = piece.eff[proof.stat] || 0;
   let regain = 0;
   for (const other of swaps) {
     if (other === piece) continue;
-    if (speedMinimum && (other.eff.spd || 0) < (piece.eff.spd || 0)) continue;
+    if (speedMinimum && (other.eff[speedKey] || 0) < (piece.eff[speedKey] || 0)) continue;
     if (proof.minStats.some(s => (other.eff[s] || 0) < (piece.eff[s] || 0))) continue;
     const gain = (other.eff[proof.stat] || 0) - own;
     if (gain > regain) regain = gain;
@@ -40,18 +40,18 @@ function regainOf(piece, proof, swaps) {
    Rings: the two ring slots must not end up holding one Unique ring twice, so a ring may only become another meld
    version of itself (piece.versions, which also holds the versions pruning dropped) or a ring with 2 copies. Any two
    such swaps together stay legal. Other slots each hold a different item, so any piece of the list will do. */
-function swapsFor(piece, fullList, isRing, buckets, sameSpeed) {
-  const speed = piece.eff.spd || 0;
+function swapsFor(piece, fullList, isRing, buckets, sameSpeed, speedKey) {
+  const speed = piece.eff[speedKey] || 0;
   const blocks = piece.blocks.join();
   const key = `${blocks}|${sameSpeed ? speed : ''}`;
   let bucket = buckets.get(key);
   if (!bucket) {
-    bucket = fullList.filter(b => b.blocks.join() === blocks && (!sameSpeed || (b.eff.spd || 0) === speed));
+    bucket = fullList.filter(b => b.blocks.join() === blocks && (!sameSpeed || (b.eff[speedKey] || 0) === speed));
     if (isRing) bucket = bucket.filter(b => b.copies >= 2);
     buckets.set(key, bucket);
   }
   if (!isRing) return bucket;
-  const ownVersions = (piece.versions || [piece]).filter(b => !sameSpeed || (b.eff.spd || 0) === speed);
+  const ownVersions = (piece.versions || [piece]).filter(b => !sameSpeed || (b.eff[speedKey] || 0) === speed);
   return [...ownVersions, ...bucket.filter(b => b.item !== piece.item)];
 }
 
@@ -62,13 +62,14 @@ function swapsFor(piece, fullList, isRing, buckets, sameSpeed) {
  * @param fullLists the candidate list per position before them: the pieces a swap may bring in
  * @param dims      the stats the search tracks
  * @param limits    the search's limits ([{stat, min, max}], branchAndBound's); a proven stat's minimum here is `held`
+ * @param speedKey  the job's speed stat, whose value a swap keeps under a speed rule
  * @param proven    [{stat, most, minStats, speed: 'band' | 'min' | null}], as described above
  * @returns {posList, dims, limits}: every candidate copied with its regain per cut as a synthetic stat (`regain0`, ...)
  *          and `original` (the candidate it copies, which the search returns in its place); candidates whose own regain
  *          is past a cut's room dropped; dims and limits with the synthetic stats and their maxima ({stat, min: null,
  *          max: most - held, cut: true}) added. The inputs unchanged when no proof applies.
  */
-export function addRegainCuts({ slotList, posList, fullLists, dims, limits, proven }) {
+export function addRegainCuts({ slotList, posList, fullLists, dims, limits, proven, speedKey }) {
   // the room each proof leaves; a proof whose most is below this search's minimum on it (no loadout then) is not used
   const cuts = [];
   proven.forEach((proof, j) => {
@@ -86,11 +87,11 @@ export function addRegainCuts({ slotList, posList, fullLists, dims, limits, prov
     const buckets = new Map();
     const kept = [];
     for (const piece of list) {
-      const swaps = swapsFor(piece, fullLists[i], isRing, buckets, sameSpeed);
+      const swaps = swapsFor(piece, fullLists[i], isRing, buckets, sameSpeed, speedKey);
       const eff = { ...piece.eff };
       let fits = true;
       for (const cut of cuts) {
-        eff[cut.key] = regainOf(piece, cut, swaps);
+        eff[cut.key] = regainOf(piece, cut, swaps, speedKey);
         if (eff[cut.key] > cut.room) {
           fits = false;
           break;

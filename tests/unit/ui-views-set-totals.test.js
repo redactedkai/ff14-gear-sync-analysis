@@ -10,7 +10,7 @@ import { piece, rawGear, sageSet, sheetOf, warSet } from './helpers/sheet-fixtur
 
 /* Level 100: the character's own points before any gear (Sage: the main stat base 440 x the job's modifier (115%) and Vitality (100%),
    420 for the speed-based substats and 440 for Determination and Piety; the level's divisor. */
-const SAGE_BASE = { main: 506, vit: 440, crit: 420, det: 440, dh: 420, spd: 420, spec: 440 };
+const SAGE_BASE = { mind: 506, vit: 440, crit: 420, det: 440, dh: 420, sps: 420, piety: 440 };
 const DIV = 2780;
 
 /* Sage's gear points: the raw item stats, plus the head's three Critical Hit IV stones (+8 of 12, 4 lost past the cap of 28). */
@@ -72,7 +72,7 @@ test('Sage: the Tier row is the spare points and the points to the next tier of 
   const job = makeJobContext('SGE');
   const cells = Object.fromEntries(job.stats.map((s, i) => [s, view.tier.cells[i]]));
   assert.equal(view.tier.caption, 'spare · to next tier');
-  assert.equal(cells.main, null);
+  assert.equal(cells.mind, null);
   assert.equal(cells.vit, null);
   // tier = floor(step x points / div); a tier starts at ceil(tier x div / step)
   for (const [stat, step] of [
@@ -104,10 +104,10 @@ test('Tier row at 1,839 gear speed (level 100): 21 above the tier start (2,238 o
     piece('ring', 46397),
   ];
   const gearSet = { ...sageSet(), pieces };
-  assert.equal(rawGear('SGE', pieces).spd, 1839);
+  assert.equal(rawGear('SGE', pieces).sps, 1839);
   const view = setTotalsView(evaluateInSheet(sheetOf('SGE', [], { sync: { on: false, cap: 795 } }), gearSet));
   const job = makeJobContext('SGE');
-  const cell = view.tier.cells[job.stats.indexOf('spd')];
+  const cell = view.tier.cells[job.stats.indexOf('sps')];
   assert.deepEqual([cell.spare, cell.toNext, cell.text], [21, 65, '21 · +65']);
 });
 
@@ -126,7 +126,7 @@ test('Warrior (Tenacity, two-handed): the off-hand row holding a piece adds noth
   // the raw sums match, the weapon included; the job has a special substat (Tenacity, TNC)
   const gear = rawGear('WAR', warSet().pieces);
   assert.equal(view.total.cells.find(c => c.stat === 'det').value, gear.det + 440);
-  assert.equal(view.total.cells.find(c => c.stat === 'spec').header, 'TNC');
+  assert.equal(view.total.cells.find(c => c.stat === 'ten').header, 'TNC');
 });
 
 test('the header figures: main stat, GCD, Critical Hit, Crit dmg, Determination, Direct Hit, Piety, DoT (Sage)', () => {
@@ -142,16 +142,16 @@ test('the header figures: main stat, GCD, Critical Hit, Crit dmg, Determination,
   );
   const text = Object.fromEntries(figures.map(f => [f.key, f.text]));
   const pct = perMille => `${(perMille / 10).toFixed(1)}%`;
-  assert.equal(text.main, String(gear.main + SAGE_BASE.main));
+  assert.equal(text.main, String(gear.mind + SAGE_BASE.mind));
   // the GCD: recast 2500 x (1000 + ceil(130 x -gear / div)) / 1000, in hundredths of a second
-  const recast = Math.floor((2500 * (1000 + Math.ceil((-130 * gear.spd) / DIV))) / 1000);
+  const recast = Math.floor((2500 * (1000 + Math.ceil((-130 * gear.sps) / DIV))) / 1000);
   assert.equal(text.gcd, `${(Math.floor(recast / 10) / 100).toFixed(2)}s`);
   assert.equal(text.crit, pct(Math.floor((200 * gear.crit) / DIV) + 50));
   assert.equal(text.critDmg, `+${pct(Math.floor((200 * gear.crit) / DIV) + 400)}`);
   assert.equal(text.det, `+${pct(Math.floor((140 * gear.det) / DIV))}`);
   assert.equal(text.dh, pct(Math.floor((550 * gear.dh) / DIV)));
-  assert.equal(text.spec, `+${Math.floor((150 * gear.spec) / DIV)} MP`);
-  assert.equal(text.dot, `+${(Math.floor((130 * gear.spd) / DIV) / 10).toFixed(1)}%`);
+  assert.equal(text.spec, `+${Math.floor((150 * gear.piety) / DIV)} MP`);
+  assert.equal(text.dot, `+${(Math.floor((130 * gear.sps) / DIV) / 10).toFixed(1)}%`);
 });
 
 test('a job without a special substat has no such figure (Dragoon); the other figures stay', () => {

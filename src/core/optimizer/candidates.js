@@ -192,18 +192,18 @@ export function pruneDominated(arr, dims, slotsOfType, sorted = false) {
 /* Pruning with limits on stats (Target GCD: a speed minimum or band; tier ranking: minimums on other stats). The search
    needs only a candidate's score (target and tiebreaks, packed) and its limited stats (`stats`), so A (`rival`) beats
    B (`cand`) when A has at least B's score and at least B's value of every limited stat (a minimum: more never hurts),
-   exactly B's speed when `exactSpd` (a speed maximum too: more speed can break it), and leaves no slot empty that B
+   exactly B's speed when `exactSpeedKey` (the speed stat's key, given for a speed maximum too: more speed can break it), and leaves no slot empty that B
    does not. Any loadout using B can then swap in A without a lower score or a broken limit. The other stats play no
    part, so far more candidates go than with pruneDominated, which compares every stat (they are still shown in the
    result; between loadouts that tie on the score, which one is returned can differ). Copies as in pruneDominated,
    counted once per item. `arr` is sorted by score, then the sum of the limited stats, highest first (buildCandidates),
-   so every beater of a candidate comes before it and only the kept ones need comparing. With `exactSpd` only equal
+   so every beater of a candidate comes before it and only the kept ones need comparing. With `exactSpeedKey` only equal
    speeds compare, so it runs per speed. */
-export function pruneForLimits(arr, slotsOfType, stats, exactSpd = false) {
-  if (exactSpd) {
+export function pruneForLimits(arr, slotsOfType, stats, exactSpeedKey = null) {
+  if (exactSpeedKey) {
     const bySpd = new Map();
     for (const a of arr) {
-      const s = a.eff.spd || 0;
+      const s = a.eff[exactSpeedKey] || 0;
       if (!bySpd.has(s)) bySpd.set(s, []);
       bySpd.get(s).push(a);
     }
@@ -282,7 +282,7 @@ export function buildCandidates(
   const dims = vectorDims(job);
   const ranked = rankedKeys(job, target, tiebreak, weaponFirst);
   // the stats the search may hold to a minimum or band, speed first
-  const limitStats = [...new Set([...(speed ? ['spd'] : []), ...minStats])];
+  const limitStats = [...new Set([...(speed ? [job.speedKey] : []), ...minStats])];
   // melds are chosen per piece from the objective's keys (meld.js keeps the substats among them; weapon damage is no
   // meld's), before the score weights are derived from the vectors
   const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, MAX_GOAL_KEYS) : null;
@@ -339,7 +339,7 @@ export function buildCandidates(
       // a beater has at least the score and every limited value, so at least their sum
       const limitedSum = a => limitStats.reduce((x, s) => x + (a.eff[s] || 0), 0);
       arr.sort((a, b) => b.score - a.score || limitedSum(b) - limitedSum(a) || b.sum - a.sum);
-      if (prune) keep = pruneForLimits(arr, slotsOfType, limitStats, speed === 'exact');
+      if (prune) keep = pruneForLimits(arr, slotsOfType, limitStats, speed === 'exact' ? job.speedKey : null);
     } else {
       arr.sort((a, b) => b.score - a.score || b.sum - a.sum);
       if (prune) keep = pruneDominated(arr, dims, slotsOfType, true);

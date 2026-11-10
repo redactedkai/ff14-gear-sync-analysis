@@ -25,19 +25,19 @@ const headCap = (col, ilvl) => Math.round((IL[col][ilvl] * HEAD_PCT) / 1000);
 const headCapFactor = (col, ilvl, f) => Math.round(Math.floor((Math.floor((IL[col][ilvl] * f) / 100) * HEAD_PCT) / 100) / 10);
 function healerHeadCaps(ilvl) {
   return {
-    main: headCap('mind', ilvl),
+    mind: headCap('mind', ilvl),
     vit: headCapFactor('vit', ilvl, 90),
     crit: headCap('crit', ilvl),
     det: headCap('det', ilvl),
     dh: headCap('dh', ilvl),
-    spd: headCap('sps', ilvl),
-    spec: headCap('piety', ilvl),
+    sps: headCap('sps', ilvl),
+    piety: headCap('piety', ilvl),
   };
 }
 const hood = browseItems(sge, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 })
   .map(r => poolItemFromRow(sge, r).stats)
-  .find(st => st.spd > HEAD_CAP_123.sub && sge.substats.some(k => st[k] > 0 && st[k] < HEAD_CAP_123.sub));
-assert.ok(hood && hood.main > HEAD_CAP_123.main, 'a real item level 130 healer head piece with stats on both sides of the 123 cap');
+  .find(st => st.sps > HEAD_CAP_123.sub && sge.substats.some(k => st[k] > 0 && st[k] < HEAD_CAP_123.sub));
+assert.ok(hood && hood.mind > HEAD_CAP_123.main, 'a real item level 130 healer head piece with stats on both sides of the 123 cap');
 
 test('an item exactly at the cap is untouched (and returned as a copy)', () => {
   const out = syncStats(sge, hood, 'head', 130, 130);
@@ -46,14 +46,14 @@ test('an item exactly at the cap is untouched (and returned as a copy)', () => {
 });
 
 test('an item below the cap is untouched even if its stats exceed the cap values', () => {
-  const big = { main: 99, vit: 99, crit: 99, det: 99, dh: 99, spd: 99, spec: 99 };
+  const big = { mind: 99, vit: 99, crit: 99, det: 99, dh: 99, sps: 99, piety: 99 };
   assert.deepEqual(syncStats(sge, big, 'head', 123, 100), big);
 });
 
 test('one item level above the cap clamps every stat (head at cap 123: substats 29, main 30)', () => {
   const out = syncStats(sge, hood, 'head', 123, 124);
-  assert.equal(out.spd, 29);
-  assert.equal(out.main, 30);
+  assert.equal(out.sps, 29);
+  assert.equal(out.mind, 30);
   for (const k of sge.substats) assert.equal(out[k], Math.min(hood[k], HEAD_CAP_123.sub), k); // lower ones untouched
   const c = healerHeadCaps(123);
   for (const k of Object.keys(out)) assert.equal(out[k], Math.min(hood[k], c[k]), k);
@@ -63,30 +63,33 @@ test('the head piece one item level below its own: capped at the 129 values (fro
   // main 32, Vitality 31 (floor(409 x 0.9) = 368, floor(368 x 0.85) = 312, 31.2 -> 31; the item-stat order gives 32),
   // substats 31
   const c = healerHeadCaps(129);
-  assert.deepEqual([c.main, c.vit, c.spd], [32, 31, 31]);
+  assert.deepEqual([c.mind, c.vit, c.sps], [32, 31, 31]);
   const out = syncStats(sge, hood, 'head', 129, 130);
   for (const k of Object.keys(hood)) assert.equal(out[k], Math.min(hood[k], c[k]), k);
 });
 
 test('item level unknown (null) is treated as above the cap', () => {
-  assert.equal(syncStats(sge, hood, 'head', 123, null).spd, 29);
-  assert.equal(syncStats(sge, hood, 'head', 123).spd, 29);
+  assert.equal(syncStats(sge, hood, 'head', 123, null).sps, 29);
+  assert.equal(syncStats(sge, hood, 'head', 123).sps, 29);
 });
 
-test('a job without a spec stat has its spec capped to 0', () => {
-  assert.equal(capsFor(blm, 'head', 123).spec, 0);
-  assert.equal(syncStats(blm, { spec: 40, spd: 10 }, 'head', 123, 200).spec, 0);
-  assert.ok(capsFor(sge, 'head', 123).spec > 0);
+test('a job without a special substat has no cap and no stat for one', () => {
+  for (const key of ['piety', 'ten']) {
+    assert.ok(!(key in capsFor(blm, 'head', 123)), key);
+    assert.ok(!(key in syncStats(blm, { [key]: 40, sps: 10 }, 'head', 123, 200)), key);
+  }
+  assert.ok(capsFor(sge, 'head', 123).piety > 0);
+  assert.ok(capsFor(pld, 'head', 123).ten > 0);
 });
 
 test('missing stat keys are treated as 0', () => {
-  const out = syncStats(sge, { spd: 50 }, 'body', 123, 200);
-  assert.deepEqual(out, { main: 0, vit: 0, crit: 0, det: 0, dh: 0, spd: 47, spec: 0 });
+  const out = syncStats(sge, { sps: 50 }, 'body', 123, 200);
+  assert.deepEqual(out, { mind: 0, vit: 0, crit: 0, det: 0, dh: 0, sps: 47, piety: 0 });
 });
 
 // FFXIV Wiki, Item Level Sync page: substat caps at item level 475
 test('Paladin caps at item level 475 match the Wiki (1H weapon 131, shield 53)', () => {
   assert.equal(capsFor(pld, 'weapon', 475).crit, 131);
   assert.equal(capsFor(pld, 'offhand', 475).crit, 53);
-  assert.equal(capsFor(pld, 'offhand', 475).spd, 53);
+  assert.equal(capsFor(pld, 'offhand', 475).sks, 53);
 });

@@ -76,6 +76,10 @@ export function settingsPart(solver, page) {
       });
       this.rankNote = note;
     },
+    /* The goal is the job's speed stat: the Target GCD boxes are off (maximizing speed already gives the fastest GCD). */
+    get targetIsSpeed() {
+      return this.fillSettings.goal.target === this.job.speedKey;
+    },
     get statOptions() {
       return this.job.stats.map(s => [s, this.job.label[s]]);
     },

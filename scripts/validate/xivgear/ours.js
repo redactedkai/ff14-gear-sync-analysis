@@ -34,6 +34,10 @@ const THEIR_KEY = {
   sps: 'spellspeed',
   piety: 'piety',
   ten: 'tenacity',
+  vit: 'vitality',
+  crit: 'crit',
+  det: 'determination',
+  dh: 'dhit',
 };
 const EXAMPLES = 25; // differences kept per tag and setting
 const UNEXPLAINED = 200; // unexplained differences kept per setting
@@ -52,9 +56,7 @@ function job(jobId) {
   let j = jobs.get(jobId);
   if (!j) {
     const ctx = makeJobContext(jobId);
-    const p = ctx.profile;
-    const map = { main: THEIR_KEY[p.main], vit: 'vitality', crit: 'crit', det: 'determination', dh: 'dhit', spd: THEIR_KEY[p.spd] };
-    if (p.spec) map.spec = THEIR_KEY[p.spec];
+    const map = Object.fromEntries(ctx.stats.map(s => [s, THEIR_KEY[s]]));
     const bit = 1 << ctx.jobIndex;
     const pieces = new Map();
     for (const r of ITEMS) {

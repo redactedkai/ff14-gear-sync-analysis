@@ -141,7 +141,7 @@ export function viewPart(raw) {
         leaveText,
         draft: draftV && { count: draftV.changes.count },
         suggest: suggest && { total: suggest.total, taken: suggest.taken, appliedNote: suggest.appliedNote, emptyNote: suggest.emptyNote },
-        clanNote: `Clan bonuses can affect ${job.short.main} and ${job.short.vit}.`,
+        clanNote: `Clan bonuses can affect ${job.short[job.mainKey]} and ${job.short.vit}.`,
         helpText:
           'Choose a piece by its name and a stone by its materia chip. A piece or stone chosen by hand is pinned: Fill keeps pinned slots and fills the unpinned ones.',
       };

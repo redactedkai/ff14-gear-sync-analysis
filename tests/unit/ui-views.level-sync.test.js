@@ -21,7 +21,7 @@ test('views: level sync with item level sync off shows the level item level as t
   const v = explainerViewOf(app);
   assert.equal(v.cap, 660);
   assert.equal(v.byLevel, true);
-  const p = pieceViewOf(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['spd', null, null] } }));
+  const p = pieceViewOf(Object.assign(app, { piece: { ilvl: 790, slot: 'head', subs: ['sps', null, null] } }));
   assert.equal(p.cap, 660);
   assert.equal(p.status, 'above');
   // at the level cap with item level sync off nothing applies
@@ -37,16 +37,16 @@ test('views: the gear browser and a Fill apply level sync per piece', () => {
   const g = gearViewOf(app);
   const lv100 = g.shown.filter(x => x.lvl === 100);
   assert.ok(lv100.length >= 2);
-  for (const x of lv100) assert.ok(x.eff.main === 248 && x.raw.main > 248, x.name);
+  for (const x of lv100) assert.ok(x.eff.mind === 248 && x.raw.mind > 248, x.name);
   const pool = gamePool(sge, LEVEL_SYNC_WINDOW);
-  Object.assign(app.recipe, { target: 'spd', tb: 'main', tb2: 'vit', melds: true, byTier: false });
+  Object.assign(app.recipe, { target: 'sps', tb: 'mind', tb2: 'vit', melds: true, byTier: false });
   const sync = { cap: null, sync: false, level: 90 };
   const o = solveOf(app, pool);
   assert.equal(o.run.status, 'ok');
   assert.equal(o.run.found.synced, true);
   // the total is the character panel's: level 90 base speed 400 (AkhMorning) plus gear. With melds, as the page: the
   // most weapon damage is the item level 665 weapon (132) the level does not sync, which keeps its melds
-  assert.equal(o.gearPanel('spd'), 400 + exhaustive(sge, pool, sync, { target: 'spd', tiebreak: ['main', 'vit'], melds: true })[0]);
+  assert.equal(o.gearPanel('sps'), 400 + exhaustive(sge, pool, sync, { target: 'sps', tiebreak: ['mind', 'vit'], melds: true })[0]);
   // gear no piece of which is synced at this level is not marked synced
   assert.equal(solveOf(app, gamePool(sge, { ilvlMin: 660, ilvlMax: 665, lvlMax: 90 })).run.found.synced, false);
 });

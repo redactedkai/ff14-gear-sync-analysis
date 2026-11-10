@@ -15,10 +15,15 @@
      listed with its cause; it is never deleted or rewritten, except by deleteSheet (the Delete button next to it);
    - an id in the index with no record is skipped; a record not in the index is added at the end (sorted by id), so a
      lost index can be rebuilt;
-   - no migrations (roadmap A17): `v` is 1, and any other value is unreadable.
+   - no migrations (roadmap A17): `v` is 1, and any other value is unreadable;
+   - a tolerant reader (withCurrentStatKeys): a record written before stat keys were the game's own names its goal and
+     stones by position (`main`, `spd`, `spec`); the sheet read from it has the game's keys. `v` stays 1: the old names
+     never equal a game key, so one record can hold either kind. The record is rewritten only by the next save.
 
    Pure of the DOM: no import of Alpine, no document. */
 import { SLOT_TYPES, jobById } from '../core/constants.js';
+import { makeJobContext } from '../core/job-context.js';
+import { currentStatKey } from '../core/stat-keys.js';
 import { STORE_KEY } from './store-key.js';
 
 /* The index's key, and the prefix of a sheet record's key (the sheet's id follows it). */
@@ -173,8 +178,42 @@ function sheetProblem(value, id) {
   return null;
 }
 
+/* `sheet` (a record that passed sheetProblem) with every stat key it holds read as the game's own key of its job: the
+   goal's target and tiebreaks of each set, and each stone's stat (currentStatKey: an old position key becomes the job's
+   key at that position, any other value stays). A new object; `sheet` is not changed. */
+export function withCurrentStatKeys(sheet) {
+  const job = makeJobContext(sheet.job);
+  const key = stat => currentStatKey(job, stat);
+  const sets = sheet.sets.map(set => {
+    const goal = set.fillSettings?.goal;
+    return {
+      ...set,
+      pieces: set.pieces.map(row =>
+        row.stones ? { ...row, stones: row.stones.map(stone => stone && { ...stone, stat: key(stone.stat) }) } : row,
+      ),
+      ...(set.fillSettings
+        ? {
+            fillSettings: {
+              ...set.fillSettings,
+              ...(goal
+                ? {
+                    goal: {
+                      ...goal,
+                      ...Object.fromEntries(['target', 'tb', 'tb2'].filter(k => typeof goal[k] === 'string').map(k => [k, key(goal[k])])),
+                    },
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    };
+  });
+  return { ...sheet, sets };
+}
+
 /* The sheet in the record text `text` of the sheet with `id`: {sheet}, or {cause} (text for the "Could not be read"
-   list) when the text is not valid JSON or is not a sheet this build reads. */
+   list) when the text is not valid JSON or is not a sheet this build reads. The sheet has the game's stat keys
+   (withCurrentStatKeys), whichever kind the record held. */
 export function parseSheet(text, id) {
   let value;
   try {
@@ -183,7 +222,7 @@ export function parseSheet(text, id) {
     return { cause: 'not valid JSON' };
   }
   const cause = sheetProblem(value, id);
-  return cause ? { cause } : { sheet: value };
+  return cause ? { cause } : { sheet: withCurrentStatKeys(value) };
 }
 
 /* The ids in the index, in order and without repeats; [] when there is no index or it cannot be read. `problem` is why

@@ -21,7 +21,20 @@ import { DB_SLOT_PCT, DB_SLOT_TYPE, ROW } from '../../../src/core/constants.js';
 import { capValue } from '../../../src/core/formulas.js';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.js';
 
-const THEIR_KEY = { str: 'STR', dex: 'DEX', int: 'INT', mind: 'MND', sks: 'SKS', sps: 'SPS', piety: 'PIE', ten: 'TEN' };
+const THEIR_KEY = {
+  str: 'STR',
+  dex: 'DEX',
+  int: 'INT',
+  mind: 'MND',
+  sks: 'SKS',
+  sps: 'SPS',
+  piety: 'PIE',
+  ten: 'TEN',
+  vit: 'VIT',
+  crit: 'CRT',
+  det: 'DET',
+  dh: 'DHT',
+};
 const EXAMPLES = 25; // differences kept per tag and setting, except unexplained ones (all kept)
 // how far apart the two values are: the size buckets of `offBy`
 const OFF_BUCKETS = [
@@ -37,16 +50,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* Our stat key -> their stat key, for a job. */
 function keyMap(job) {
-  const p = job.profile;
-  return {
-    main: THEIR_KEY[p.main],
-    vit: 'VIT',
-    crit: 'CRT',
-    det: 'DET',
-    dh: 'DHT',
-    spd: THEIR_KEY[p.spd],
-    spec: p.spec ? THEIR_KEY[p.spec] : null,
-  };
+  return Object.fromEntries(job.stats.map(s => [s, THEIR_KEY[s]]));
 }
 
 /* Load all of their gear data, switch their page to `jobId` in view mode with every database piece this job can wear,
@@ -207,10 +211,10 @@ function compare(store, jobId, level, cap) {
 const THEIR_SLOT = [13, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 15];
 // one job per main stat, so every stat key of theirs is covered: [job, our stats to check]
 const CAP_JOBS = [
-  ['SGE', ['main', 'vit', 'crit', 'det', 'dh', 'spd', 'spec']],
-  ['PLD', ['main', 'spd', 'spec']],
-  ['NIN', ['main']],
-  ['BLM', ['main']],
+  ['SGE', ['mind', 'vit', 'crit', 'det', 'dh', 'sps', 'piety']],
+  ['PLD', ['str', 'sks', 'ten']],
+  ['NIN', ['dex']],
+  ['BLM', ['int']],
 ];
 
 /* Caps alone: their getCaps against our capValue at every item level 1 to MAX_REAL their data defines (theirs keeps

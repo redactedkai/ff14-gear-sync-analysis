@@ -31,78 +31,78 @@ test('the pool is what these tests need, and the unconstrained result matches br
   }
   assert.ok(of('ring').some(i => i.copies === 1) && of('ring').some(i => i.copies === 2));
   assert.ok(loadoutCount(war, pool) <= 200000);
-  const r = optimize(war, pool, NOSYNC, { target: 'spd' });
+  const r = optimize(war, pool, NOSYNC, { target: 'sks' });
   assert.ok(r.ok);
-  assert.deepEqual([r.totals.spd], brute('spd'));
+  assert.deepEqual([r.totals.sks], brute('sks'));
 });
 
 test('a speed minimum is honoured and changes the answer when binding', () => {
-  const free = optimize(war, pool, NOSYNC, { target: 'spec' });
-  const spdMin = free.totals.spd + 10;
-  const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMin });
+  const free = optimize(war, pool, NOSYNC, { target: 'ten' });
+  const spdMin = free.totals.sks + 10;
+  const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMin });
   assert.ok(r.ok);
-  assert.ok(r.totals.spd >= spdMin);
-  assert.deepEqual([r.totals.spec], brute('spec', { spdMin }));
-  assert.ok(r.totals.spec < free.totals.spec);
+  assert.ok(r.totals.sks >= spdMin);
+  assert.deepEqual([r.totals.ten], brute('ten', { spdMin }));
+  assert.ok(r.totals.ten < free.totals.ten);
 });
 
 test('an unreachable speed minimum -> ok:false', () => {
-  const most = optimize(war, pool, NOSYNC, { target: 'spd' }).totals.spd;
-  assert.equal(brute('spec', { spdMin: most + 1 }), null);
-  const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMin: most + 1 });
+  const most = optimize(war, pool, NOSYNC, { target: 'sks' }).totals.sks;
+  assert.equal(brute('ten', { spdMin: most + 1 }), null);
+  const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMin: most + 1 });
   assert.equal(r.ok, false);
   assert.equal(r.truncated, false);
 });
 
 test('a speed maximum is honoured', () => {
-  const free = optimize(war, pool, NOSYNC, { target: 'spec' });
-  const spdMax = free.totals.spd - 1;
-  const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMax });
+  const free = optimize(war, pool, NOSYNC, { target: 'ten' });
+  const spdMax = free.totals.sks - 1;
+  const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMax });
   assert.ok(r.ok);
-  assert.ok(r.totals.spd <= spdMax);
-  assert.deepEqual([r.totals.spec], brute('spec', { spdMax }));
-  assert.ok(r.totals.spec < free.totals.spec);
+  assert.ok(r.totals.sks <= spdMax);
+  assert.deepEqual([r.totals.ten], brute('ten', { spdMax }));
+  assert.ok(r.totals.ten < free.totals.ten);
 });
 
 test('a speed range agrees with brute force', () => {
-  const most = optimize(war, pool, NOSYNC, { target: 'spd' }).totals.spd;
+  const most = optimize(war, pool, NOSYNC, { target: 'sks' }).totals.sks;
   for (const [spdMin, spdMax] of [
     [most - 20, most - 10],
     [most - 40, most - 30],
     [most - 5, most],
   ]) {
-    const want = brute('spec', { spdMin, spdMax });
-    const r = optimize(war, pool, NOSYNC, { target: 'spec', spdMin, spdMax });
+    const want = brute('ten', { spdMin, spdMax });
+    const r = optimize(war, pool, NOSYNC, { target: 'ten', spdMin, spdMax });
     if (!want) {
       assert.equal(r.ok, false);
       continue;
     }
-    assert.ok(r.ok && r.totals.spd >= spdMin && r.totals.spd <= spdMax);
-    assert.deepEqual([r.totals.spec], want);
+    assert.ok(r.ok && r.totals.sks >= spdMin && r.totals.sks <= spdMax);
+    assert.deepEqual([r.totals.ten], want);
   }
 });
 
 test('an impossible speed maximum -> ok:false', () => {
   // the lowest speed any loadout can have is above 0 only if every slot forces speed; -1 is always impossible
-  assert.equal(brute('spec', { spdMax: -1 }), null);
-  assert.equal(optimize(war, pool, NOSYNC, { target: 'spec', spdMax: -1 }).ok, false);
+  assert.equal(brute('ten', { spdMax: -1 }), null);
+  assert.equal(optimize(war, pool, NOSYNC, { target: 'ten', spdMax: -1 }).ok, false);
 });
 
 test('nodeLimit: a large pool with a tiny limit reports truncation', () => {
   const big = browseItems(sge, {}).map(r => poolItemFromRow(sge, r));
   assert.ok(big.length > 1000);
-  const r = optimize(sge, big, NOSYNC, { target: 'spd', nodeLimit: 5 });
+  const r = optimize(sge, big, NOSYNC, { target: 'sps', nodeLimit: 5 });
   assert.equal(r.truncated, true);
   assert.ok(r.nodes <= 10);
-  const full = optimize(sge, big, NOSYNC, { target: 'spd' });
+  const full = optimize(sge, big, NOSYNC, { target: 'sps' });
   assert.equal(full.truncated, false);
   assert.ok(full.ok);
 });
 
 test('empty pool: no picks, zero totals, no error', () => {
-  const r = optimize(sge, [], { cap: 123, sync: true }, { target: 'spd' });
+  const r = optimize(sge, [], { cap: 123, sync: true }, { target: 'sps' });
   assert.equal(r.ok, true);
   assert.deepEqual(r.picks, []);
-  assert.equal(r.totals.spd, 0);
+  assert.equal(r.totals.sps, 0);
   assert.equal(r.truncated, false);
 });

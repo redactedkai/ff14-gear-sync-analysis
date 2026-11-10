@@ -11,7 +11,7 @@ const SAVE = {
   tab: 'browse',
   mathTab: 'gcd',
   browse: { job: 'WAR', cap: 705, sync: false, level: 90, sort: 'det', q: 'axe' },
-  piece: { job: 'BLM', cap: 300, sync: true, level: 70, slot: 'ring', subs: ['crit', 'spd'] },
+  piece: { job: 'BLM', cap: 300, sync: true, level: 70, slot: 'ring', subs: ['crit', 'sps'] },
 };
 
 test("each tab opens with its own panel; the open tab's is the store's job, cap, sync and level", () => {

@@ -87,14 +87,14 @@ if (isMainThread) {
     const pool = withActivities(fullPool(job), DEFAULT_EXCLUDE, true);
     const rows = [];
     const base = { id: task.id, level, cap: s.cap, sync: s.sync, haste };
-    const fastSpd = optimize(job, pool, sync, { target: 'spd', melds: true }).totals?.spd ?? 0;
+    const fastSpd = optimize(job, pool, sync, { target: job.speedKey, melds: true }).totals?.[job.speedKey] ?? 0;
     const top = gcdFor(0, level, 2500, haste),
       bottom = gcdFor(fastSpd, level, 2500, haste);
     // six GCDs spread from the no-speed GCD to the fastest reachable, both ends included
     const steps = Math.round((top - bottom) * 100);
     const gcds = [...new Set([0, 1, 2, 3, 4, 5].map(i => Math.round((top - Math.round((i * steps) / 5) / 100) * 100) / 100))];
-    const subs = job.substats.filter(x => x !== 'spd');
-    for (const target of [...subs, 'main']) {
+    const subs = job.substats.filter(x => x !== job.speedKey);
+    for (const target of [...subs, job.mainKey]) {
       const tbs = subs.filter(x => x !== target);
       const objectives = [[], ...tbs.map(t => [t]), ...tbs.map((t, i) => [t, tbs[(i + 1) % tbs.length]]).filter(x => x[0] !== x[1])];
       for (const tiebreak of objectives) {
@@ -111,7 +111,7 @@ if (isMainThread) {
                 ...base,
                 target,
                 tiebreak: tiebreak.join('+'),
-                stress: target === 'main',
+                stress: target === job.mainKey,
                 mode,
                 gcd,
                 food: !!food,
@@ -152,7 +152,7 @@ if (isMainThread) {
         for (let i = 0; i < (ty === 'ring' ? 2 : 1) && of.length; i++) small.push(of.splice(int(of.length), 1)[0]);
       }
       const target = subs[int(subs.length)];
-      const free = gcdFor(optimize(job, small, sync, { target, melds: true }).totals.spd, level, 2500, haste);
+      const free = gcdFor(optimize(job, small, sync, { target, melds: true }).totals[job.speedKey], level, 2500, haste);
       const gcd = Math.round((free + (int(5) - 2) / 100) * 100) / 100;
       const mode = rand() < 0.5 ? 'exact' : 'min';
       const band = speedForGcd(gcd, level, mode, haste);

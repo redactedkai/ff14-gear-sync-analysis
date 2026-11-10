@@ -27,22 +27,29 @@ const EFFECTS = {
   ],
   det: [{ kind: 'dmgHeal', step: 140 }],
   dh: [{ kind: 'rate', step: 550 }],
-  spd: [{ kind: 'gcd', step: null }],
-};
-/* The special substat's effects, by what it does (JobContext.specKind): Piety's MP, Tenacity's mitigation. */
-const SPEC_EFFECTS = {
-  mp: [{ kind: 'mp', step: 150 }],
-  mitigation: [
+  // speed: the GCD, whichever speed stat the job has
+  sks: [{ kind: 'gcd', step: null }],
+  sps: [{ kind: 'gcd', step: null }],
+  // Piety's MP per tick
+  piety: [{ kind: 'mp', step: 150 }],
+  // Tenacity's mitigation: damage and healing done, and a cut to damage taken
+  ten: [
     { kind: 'dmgHeal', step: 112 },
     { kind: 'dmgTaken', step: TEN_MITIGATION_STEP },
   ],
 };
+/* The step tier ranking uses for a stat when it is not its first effect's: Tenacity's mitigation (see rankTierOf). */
+const RANK_STEP = { ten: TEN_MITIGATION_STEP };
 
-/* The effects of a stat key for the job ({kind, step} objects), or null for stats without tiers (main, vit, a missing
-   spec). */
+/* The effects of a stat key of the job ({kind, step} objects), or null for stats without tiers (the main stat,
+   Vitality) and for a stat the job lacks (Piety on a job without it). */
 function effectsOf(job, stat) {
-  if (stat === 'spec') return job.specKind ? SPEC_EFFECTS[job.specKind] : null;
-  return EFFECTS[stat] ?? null;
+  return job.stats.includes(stat) ? (EFFECTS[stat] ?? null) : null;
+}
+
+/* The kinds of effect a stat key has, in the order the page shows them ([] for a stat without tiers). */
+export function statEffectKinds(stat) {
+  return (EFFECTS[stat] ?? []).map(effect => effect.kind);
 }
 
 /* The step size of a stat key's first effect, or null for speed and stats without tiers. */
@@ -71,7 +78,7 @@ function effectText(kind, stat, tier) {
 export function statTier(job, stat, points, level) {
   const gear = Math.max(0, Math.floor(points || 0));
   // speed's effect is its GCD, which has its own steps (speed.js)
-  if (stat === 'spd') {
+  if (stat === job.speedKey) {
     const t = gcdTierAt(gear, level);
     return { effect: effectText('gcd', stat, t.gcd), start: t.start, next: t.next };
   }
@@ -186,10 +193,10 @@ export function tierSizes(job, stat, level, haste = 0, kind = null, count = 60) 
 /* For tier ranking: a function from a stat's total (gear points, plus food) at `level` to its tier, a number that rises
    with every better tier and never falls with more points; null for stats without tiers (main stat, Vitality: every
    point counts). Speed's tier is its GCD with the job's `haste` (percent), in hundredths, negated so that faster is
-   higher; Tenacity's is its mitigation step (TEN_MITIGATION_STEP); the others as statTier. */
+   higher; Tenacity's is its mitigation step (RANK_STEP); the others as statTier. */
 export function rankTierOf(job, stat, level, haste = 0) {
-  if (stat === 'spd') return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
-  const step = stat === 'spec' && job.specKind === 'mitigation' ? TEN_MITIGATION_STEP : stepOf(job, stat);
+  if (stat === job.speedKey) return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
+  const step = effectsOf(job, stat) ? (RANK_STEP[stat] ?? stepOf(job, stat)) : null;
   if (step == null) return null;
   const { div } = levelParams(level);
   return total => Math.floor((step * Math.max(0, total)) / div);

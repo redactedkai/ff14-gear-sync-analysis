@@ -1,7 +1,7 @@
 /* Where one optimize() run spends its time: a replica of buildCandidates (src/core/optimizer/candidates.js) with a timer
    per phase, then the real search. A drift guard checks the replica's candidate lists equal the real ones on every run,
    so a change to candidates.js that the replica misses fails loudly instead of timing the wrong code.
-   node scripts/perf/split.mjs [--job SGE] [--sync "cap 660"] [--target spd --tb crit,det] [--melds] [--repeats 20] */
+   node scripts/perf/split.mjs [--job SGE] [--sync "cap 660"] [--target <the job's speed key> --tb crit,det] [--melds] [--repeats 20] */
 import { performance } from 'node:perf_hooks';
 import { SLOT_TYPES } from '../../src/core/constants.js';
 import { WD_KEY, weaponDamage } from '../../src/core/damage-defense.js';
@@ -16,7 +16,7 @@ import { fullPool, job as ctx, SYNCS } from './workloads.mjs';
 
 const job = ctx(option('job', 'SGE'));
 const sync = SYNCS.find(s => s.label === option('sync', 'off'));
-const target = option('target', 'spd');
+const target = option('target', job.speedKey);
 const tiebreak = listOption('tb', []);
 const melds = flag('melds');
 const repeats = numberOption('repeats', 20);

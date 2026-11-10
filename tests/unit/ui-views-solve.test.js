@@ -49,9 +49,9 @@ test('solveView: with Food on, bestMeals are the meals tied for the best result 
 test('solveView: an error of the search becomes an error answer instead of a throw', () => {
   const app = makeApp('SGE');
   const pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
-    mkItem(t, t, 130, { spd: 9e5, main: 9e5, vit: 9e5 }),
+    mkItem(t, t, 130, { sps: 9e5, mind: 9e5, vit: 9e5 }),
   );
-  Object.assign(app.recipe, { target: 'spd', tb: 'main', tb2: 'vit' }); // tiebreaks make the scores large
+  Object.assign(app.recipe, { target: 'sps', tb: 'mind', tb2: 'vit' }); // tiebreaks make the scores large
   app.sync = false; // with sync on these stats would be clamped to normal values
   const v = solveOfApp(app, makeSession({ gear: () => pool }));
   assert.equal(v.kind, 'error');
@@ -68,7 +68,7 @@ test('gearToSearchView: the count line, the empty boxes and the Target GCD label
   assert.equal(count.searched + count.left, gearOf(job).length);
   assert.ok(Array.isArray(v.emptyBoxes));
   assert.match(v.gcdLabel, /^Target GCD \(\d\.\d\d to \d\.\d\d\)$/);
-  const spd = gearToSearchView(job, sync, level, { ...recipe, target: 'spd' }, testSession);
+  const spd = gearToSearchView(job, sync, level, { ...recipe, target: 'sps' }, testSession);
   assert.equal(spd.gcdLabel, 'Target GCD (off: the target is speed)');
   // a job with haste names it
   const sam = inputsOf(makeApp('SAM', { sync: false, cap: null, level: 100 }));

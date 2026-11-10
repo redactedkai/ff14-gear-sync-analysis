@@ -38,7 +38,7 @@ test('allMeals: every meal the job can use, oldest first; the best of foodChoice
       meals.some(m => m.name === c.name),
       c.name,
     );
-  const keySets = [['main'], ['crit'], ['main', 'vit', 'dh'], ['spd', 'det'], ['spec', 'crit', 'vit']];
+  const keySets = [['mind'], ['crit'], ['mind', 'vit', 'dh'], ['sps', 'det'], ['piety', 'crit', 'vit']];
   for (const level of [50, 70, 100]) {
     const int = rngInt(level);
     for (let t = 0; t < 40; t++) {
@@ -69,9 +69,9 @@ test('LEVEL_MAIN: 100 levels, equal to xivgear at 50, 60, ..., 100, never fallin
 
 test('base: Determination and Piety from the main stat base, the other substats from ParamGrow BaseSpeed', () => {
   assert.equal(statBase(SGE, 'det', 50), 202);
-  assert.equal(statBase(SGE, 'spec', 50), 202); // Piety
-  assert.equal(statBase(WAR, 'spec', 50), PG[49][0]); // Tenacity
-  for (const s of ['crit', 'dh', 'spd']) assert.equal(statBase(SGE, s, 100), 420);
+  assert.equal(statBase(SGE, 'piety', 50), 202); // Piety
+  assert.equal(statBase(WAR, 'ten', 50), PG[49][0]); // Tenacity
+  for (const s of ['crit', 'dh', 'sps']) assert.equal(statBase(SGE, s, 100), 420);
   assert.equal(statBase(SGE, 'crit', 100), PG[99][0]);
 });
 
@@ -133,26 +133,26 @@ test('bonus: xivgear test values (custom food 12% up to 200 Critical Hit, 10% up
 test('bonus: a percentage of base plus gear, rounded down, up to the maximum', () => {
   const food = {
     stats: [
-      { stat: 'spd', pct: 10, max: 151 },
+      { stat: 'sps', pct: 10, max: 151 },
       { stat: 'det', pct: 10, max: 91 },
     ],
   };
   // level 50: speed 341 + 344 = 685 -> 68; Determination 202 + 344 = 546 -> 54
-  assert.deepEqual(foodBonus(SGE, food, { spd: 344, det: 344 }, 50), {
-    spd: { bonus: 68, capped: false },
+  assert.deepEqual(foodBonus(SGE, food, { sps: 344, det: 344 }, 50), {
+    sps: { bonus: 68, capped: false },
     det: { bonus: 54, capped: false },
   });
   // level 100 with full gear: both at the maximum
-  assert.deepEqual(foodBonus(SGE, food, { spd: 2500, det: 2500 }, 100), {
-    spd: { bonus: 151, capped: true },
+  assert.deepEqual(foodBonus(SGE, food, { sps: 2500, det: 2500 }, 100), {
+    sps: { bonus: 151, capped: true },
     det: { bonus: 91, capped: true },
   });
   // exactly at the maximum counts as capped: 10% of (420 + 1090) = 151
-  assert.deepEqual(foodBonus(SGE, food, { spd: 1090 }, 100).spd, { bonus: 151, capped: true });
-  assert.deepEqual(foodBonus(SGE, food, { spd: 1089 }, 100).spd, { bonus: 150, capped: false });
+  assert.deepEqual(foodBonus(SGE, food, { sps: 1090 }, 100).sps, { bonus: 151, capped: true });
+  assert.deepEqual(foodBonus(SGE, food, { sps: 1089 }, 100).sps, { bonus: 150, capped: false });
   // a stat with no gear points still gets the percentage of its base
   assert.equal(foodBonus(SGE, food, {}, 50).det.bonus, 20);
-  assert.deepEqual(withFood({ spd: 344, crit: 5 }, foodBonus(SGE, food, { spd: 344 }, 50)), { spd: 412, crit: 5, det: 20 });
+  assert.deepEqual(withFood({ sps: 344, crit: 5 }, foodBonus(SGE, food, { sps: 344 }, 50)), { sps: 412, crit: 5, det: 20 });
 });
 
 test('gear plus food rises with every gear point, for every choice, stat and level (the gear set never changes)', () => {
@@ -190,8 +190,8 @@ test('choices: only stats the job has, none covered by another, and every releva
       crit: 'crit',
       det: 'det',
       dh: 'dh',
-      [job.profile.spd]: 'spd',
-      ...(job.profile.spec ? { [job.profile.spec]: 'spec' } : {}),
+      [job.speedKey]: job.speedKey,
+      ...(job.specKey ? { [job.specKey]: job.specKey } : {}),
     };
     for (const [name, , stats] of FOODS) {
       if (!stats.every(([k]) => raw[k])) continue;
@@ -203,8 +203,8 @@ test('choices: only stats the job has, none covered by another, and every releva
     }
   }
   // Piety and Tenacity meals only for the jobs that have the stat
-  assert.ok(foodChoices(SGE).some(c => c.key.includes('spec')));
-  assert.ok(!foodChoices(DRG).some(c => c.key.includes('spec')));
+  assert.ok(foodChoices(SGE).some(c => c.key.includes('piety')));
+  assert.ok(!foodChoices(DRG).some(c => c.key.includes('piety') || c.key.includes('ten')));
 });
 
 /* every choice, compared on (keys..., food points in all), the highest first; the first in the list on a tie */
@@ -240,7 +240,7 @@ test('best food for the goal equals trying every choice', () => {
 
 test('optimizer gear plus best food equals the best (gear set, meal) pair over every loadout and meal', () => {
   // three pieces in each of four slots: 81 loadouts, each with every Sage choice
-  const stat = (a, b, c) => ({ spd: a, crit: b, det: c, main: 10, vit: 10 });
+  const stat = (a, b, c) => ({ sps: a, crit: b, det: c, mind: 10, vit: 10 });
   const pool = [];
   ['head', 'body', 'hands', 'legs'].forEach((t, i) => {
     pool.push(
@@ -251,10 +251,10 @@ test('optimizer gear plus best food equals the best (gear set, meal) pair over e
   });
   const choices = foodChoices(SGE);
   for (const [target, tb] of [
-    ['spd', 'crit'],
+    ['sps', 'crit'],
     ['crit', 'det'],
     ['det', ''],
-    ['main', 'spd'],
+    ['mind', 'sps'],
   ]) {
     const keys = [target, tb, ''];
     const opt = optimize(SGE, pool, { cap: null, sync: false, level: 50 }, { target, tiebreak: [tb, ''] });
@@ -296,15 +296,15 @@ test("gearNeeded: Vitality counts the meal's Vitality", () => {
 });
 
 test('gearNeeded: the fewest gear points that reach a total with food', () => {
-  const [food] = foodChoices(SGE).filter(c => c.key === 'spd+dh');
-  assert.equal(gearNeeded(SGE, food, 'spd', 412, 50), 344); // 344 + 68
-  assert.equal(gearNeeded(SGE, food, 'spd', 411, 50), 343); // 343 + floor(68.4)
-  assert.equal(gearNeeded(SGE, null, 'spd', 412, 50), 412);
+  const [food] = foodChoices(SGE).filter(c => c.key === 'sps+dh');
+  assert.equal(gearNeeded(SGE, food, 'sps', 412, 50), 344); // 344 + 68
+  assert.equal(gearNeeded(SGE, food, 'sps', 411, 50), 343); // 343 + floor(68.4)
+  assert.equal(gearNeeded(SGE, null, 'sps', 412, 50), 412);
   assert.equal(gearNeeded(SGE, food, 'crit', 412, 50), 412); // no Critical Hit on this meal
   for (const level of [50, 100])
     for (let total = 0; total <= 3000; total += 37) {
-      const g = gearNeeded(SGE, food, 'spd', total, level);
-      const reach = x => x + foodBonus(SGE, food, { spd: x }, level).spd.bonus >= total;
+      const g = gearNeeded(SGE, food, 'sps', total, level);
+      const reach = x => x + foodBonus(SGE, food, { sps: x }, level).sps.bonus >= total;
       assert.ok(reach(g) && (g === 0 || !reach(g - 1)), `level ${level}, total ${total}`);
     }
 });
@@ -315,18 +315,18 @@ test('gearNeeded: the fewest gear points that reach a total with food', () => {
    the clan's bonus. */
 test('panel base: AkhMorning level table (Determination and Piety from MAIN, the other substats from SUB, the main stat and Vitality from MAIN x the job modifier)', () => {
   for (const [id, stats, mainMod, vitMod] of [
-    ['SGE', ['crit', 'det', 'dh', 'spd', 'spec'], 115, 100],
-    ['WAR', ['crit', 'det', 'dh', 'spd', 'spec'], 105, 110],
-    ['BLM', ['crit', 'det', 'dh', 'spd'], 115, 100],
+    ['SGE', ['crit', 'det', 'dh', 'sps', 'piety'], 115, 100],
+    ['WAR', ['crit', 'det', 'dh', 'sks', 'ten'], 105, 110],
+    ['BLM', ['crit', 'det', 'dh', 'sps'], 115, 100],
   ]) {
     const job = makeJobContext(id);
     for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
       assert.equal(levelParams(+lv).div, div, `level ${lv} DIV`);
       for (const s of stats) {
-        const fromMain = s === 'det' || (s === 'spec' && job.profile.spec === 'piety');
+        const fromMain = s === 'det' || s === 'piety';
         assert.equal(statBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);
       }
-      assert.equal(statBase(job, 'main', +lv), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
+      assert.equal(statBase(job, job.mainKey, +lv), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
       assert.equal(statBase(job, 'vit', +lv), Math.floor((main * vitMod) / 100), `${id} Vitality level ${lv}`);
     }
   }

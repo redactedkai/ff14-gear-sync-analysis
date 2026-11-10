@@ -30,21 +30,21 @@ function speedRule(opts) {
    (`speed`: null for no speed rule, 'min' for a minimum only, 'exact' for a maximum too; `minStats`: other stats that
    may get a minimum), never on the limits' values. A list built for 'exact' also serves a speed minimum alone (its
    pruning keeps more), one for 'min' serves only minimums, one for null only searches with no speed rule; a search may
-   hold any of `minStats`, or none. 'spd' in minStats is a speed rule of 'min' (unless `speed` is set).
+   hold any of `minStats`, or none. The job's speedKey in minStats is a speed rule of 'min' (unless `speed` is set).
    `versionKeys`: stats the meld versions are also on, and `versionCache`: meld versions shared with other lists of
    the same job and sync (buildCandidates). `weaponFirst` (default true): rank weapon damage before the objective
    (rankedKeys in candidates.js); fastestGcd turns it off. `fixed`: pinned pieces (fixedCandidate), worn as they are:
    the search fills the other slots and solve counts the pinned ones in its totals and limits (buildCandidates).
-   opts = {target='main', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst,
+   opts = {target=job.mainKey, tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst,
    fixed=[]}.
-   Returns {slotList, posList, dims, noMeldData, speed, minStats, fixed, fixedBlocked}. */
+   Returns {slotList, posList, dims, noMeldData, speed, minStats, speedKey (the job's), fixed, fixedBlocked}. */
 export function prepare(job, pool, sync, opts) {
   opts = opts || {};
-  const target = opts.target || 'main';
+  const target = opts.target || job.mainKey;
   const tiebreak = (opts.tiebreak || []).filter(Boolean);
   const asked = [...new Set((opts.minStats || []).filter(Boolean))];
-  const speed = opts.speed || (asked.includes('spd') ? 'min' : null);
-  const minStats = asked.filter(s => s !== 'spd');
+  const speed = opts.speed || (asked.includes(job.speedKey) ? 'min' : null);
+  const minStats = asked.filter(s => s !== job.speedKey);
   const cands = buildCandidates(
     job,
     pool,
@@ -60,22 +60,22 @@ export function prepare(job, pool, sync, opts) {
       fixed: opts.fixed || [],
     },
   );
-  return { ...cands, speed, minStats };
+  return { ...cands, speed, minStats, speedKey: job.speedKey };
 }
 
-/* The search's limits for solve options: the speed rule (spdMin, spdMax, and mins.spd, the larger minimum counting)
+/* The search's limits for solve options: the speed rule (spdMin, spdMax, and a minimum on the speed stat in mins, the larger counting)
    first, then a minimum per stat in mins ({stat: gear points}; 0 or less is none). Each is {stat, min, max}; `kind` is
    the speed rule's (speedRule). Throws when `prep` was not built for one of them (prepare). */
 function limitsFor(prep, opts) {
   const mins = { ...(opts.mins || {}) };
-  const spdMin = Math.max(opts.spdMin || 0, mins.spd || 0);
-  delete mins.spd;
+  const spdMin = Math.max(opts.spdMin || 0, mins[prep.speedKey] || 0);
+  delete mins[prep.speedKey];
   const { spdMax, kind } = speedRule({ spdMin, spdMax: opts.spdMax });
   // candidates pruned for 'exact' keep more, so they serve a minimum-only search too; 'min' ones cannot serve 'exact'
   if (kind && !(prep.speed === 'exact' || prep.speed === kind)) {
     throw new Error(`Optimizer: candidates prepared for speed rule ${prep.speed} cannot be searched with ${kind}`);
   }
-  const limits = kind ? [{ stat: 'spd', min: spdMin > 0 ? spdMin : null, max: spdMax }] : [];
+  const limits = kind ? [{ stat: prep.speedKey, min: spdMin > 0 ? spdMin : null, max: spdMax }] : [];
   for (const [stat, min] of Object.entries(mins)) {
     if (!(min > 0)) continue;
     if (!prep.minStats?.includes(stat)) {
@@ -144,7 +144,7 @@ const DEFAULT_NODE_LIMIT = 1500000;
 
 /* Search prepared candidates under {spdMin, spdMax, mins, nodeLimit=DEFAULT_NODE_LIMIT, plain, lazyTables, seed,
    proven}; same result as optimize. mins = {stat: gear points}: minimums on stats prepared for them (prepare's
-   minStats; mins.spd joins spdMin). `plain` turns off every extra (the filters, the Lagrangian bound, regain cuts, slot
+   minStats; a minimum on the speed stat joins spdMin). `plain` turns off every extra (the filters, the Lagrangian bound, regain cuts, slot
    order, trial search, fronts, limit tables, groups, memo), for checking them;
    `lazyTables` (tests only) is the node count after which the tables for blocked slots are built (search.js
    LAZY_TABLES). `seed`: the picks of an earlier result that meets every limit of this search (tier ranking passes the
@@ -160,7 +160,7 @@ export function solve(prep, opts) {
   opts = opts || {};
   const wholeLimits = limitsFor(prep, opts);
   const nodeLimit = opts.nodeLimit || DEFAULT_NODE_LIMIT;
-  const { slotList, posList, dims, noMeldData, fixed = [], fixedBlocked = [] } = prep;
+  const { slotList, posList, dims, noMeldData, speedKey, fixed = [], fixedBlocked = [] } = prep;
 
   // 1. with pinned pieces, the limits and proven maxima as the search's own slots see them (without the pinned points),
   // and a seed without its pinned picks; with none, everything as given
@@ -174,7 +174,18 @@ export function solve(prep, opts) {
   // 2. the search; pinned pieces alone fill every slot when the search has none
   const { best, nodes, truncated, method, kept, frontSizes } =
     slotList.length || !fixed.length
-      ? branchAndBound({ slotList, posList, dims, limits, nodeLimit, plain: !!opts.plain, lazyTables: opts.lazyTables, start, proven })
+      ? branchAndBound({
+          slotList,
+          posList,
+          dims,
+          limits,
+          nodeLimit,
+          plain: !!opts.plain,
+          lazyTables: opts.lazyTables,
+          start,
+          proven,
+          speedKey,
+        })
       : { best: limits.some(l => l.min > 0) ? null : [], nodes: 0, truncated: false, method: 'search', kept: 0 };
   if (!best) return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
 
@@ -203,7 +214,7 @@ export function solve(prep, opts) {
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl in piece.js)
- * @param opts  {target='main', tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false, fixed=[]}: `fixed`
+ * @param opts  {target=job.mainKey, tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false, fixed=[]}: `fixed`
  *              pinned pieces (fixedCandidate), counted in the totals and every limit but not searched; mins = {stat: gear
  *              points}, minimums on any stat's total; melds gives every piece that is not synced its best materia melds
  *              for the objective; with a speed range or minimums, every meld split worth keeping (meldVersions in

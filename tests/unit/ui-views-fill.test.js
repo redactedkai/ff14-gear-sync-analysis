@@ -17,7 +17,7 @@ const sge = makeJobContext('SGE');
 const SYNC = { cap: 999, sync: false, level: 100 };
 const recipe = (patch = {}) => ({ ...appState({ job: 'SGE' }).recipe, target: 'crit', tb: 'det', melds: true, food: false, ...patch });
 
-const SPD_XII = { stat: 'spd', grade: 12 }; // Spell Speed materia XII
+const SPD_XII = { stat: 'sps', grade: 12 }; // Spell Speed materia XII
 const shirt = piece(sge, 'Augmented Bygone Brass Shirt of Healing'); // body, item level 790
 const ring = piece(sge, 'Augmented Bygone Brass Ring of Healing'); // item level 790, Unique
 

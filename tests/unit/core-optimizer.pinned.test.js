@@ -17,7 +17,7 @@ const sge = makeJobContext('SGE');
 const pld = makeJobContext('PLD');
 const NO_SYNC = { cap: 999, sync: false };
 
-const ring = (name, spd, copies = 1, extra = {}) => mkItem(name, 'ring', 100, { spd, ...extra }, { copies });
+const ring = (name, sps, copies = 1, extra = {}) => mkItem(name, 'ring', 100, { sps, ...extra }, { copies });
 
 test('pinned search equals the brute-force reference on 300 random hand-made pools', () => {
   const rand = rng(20261109),
@@ -31,7 +31,7 @@ test('pinned search equals the brute-force reference on 300 random hand-made poo
       const n = ty === 'ring' ? 1 + int(5) : int(4);
       for (let i = 0; i < n; i++) {
         const copies = ty === 'ring' && rand() < 0.4 ? 2 : 1;
-        pool.push(mkItem(`${ty}${i}`, ty, 90 + int(60), { spd: int(30), crit: int(30), det: int(30), main: int(5) }, { copies }));
+        pool.push(mkItem(`${ty}${i}`, ty, 90 + int(60), { sps: int(30), crit: int(30), det: int(30), mind: int(5) }, { copies }));
       }
     }
     if (!pool.length) continue;
@@ -40,8 +40,8 @@ test('pinned search equals the brute-force reference on 300 random hand-made poo
     pinnedRings += wear.filter(([w]) => w.type === 'ring').length;
     const { fixed, oracle } = pinsOf(sge, sync, wear);
     const opts = {
-      target: ['spd', 'crit', 'det'][int(3)],
-      tiebreak: [rand() < 0.6 ? 'main' : '', rand() < 0.5 ? 'crit' : ''],
+      target: ['sps', 'crit', 'det'][int(3)],
+      tiebreak: [rand() < 0.6 ? 'mind' : '', rand() < 0.5 ? 'crit' : ''],
       spdMin: rand() < 0.25 ? 20 + int(60) : null,
       spdMax: rand() < 0.25 ? 60 + int(120) : null,
       mins: rand() < 0.25 ? { det: 10 + int(60) } : {},
@@ -110,7 +110,7 @@ test('pinned search equals the reference on real Paladin pools with pieces that 
     if (!pinsCoexist(pld, wear)) continue;
     coveringPinned += wear.filter(([w]) => slotInfo(pld, w).blocks.length).length;
     const { fixed, oracle } = pinsOf(pld, sync, wear);
-    const goal = { target: ['main', 'crit', 'det'][int(3)], tiebreak: [rand() < 0.5 ? 'dh' : ''] };
+    const goal = { target: ['str', 'crit', 'det'][int(3)], tiebreak: [rand() < 0.5 ? 'dh' : ''] };
     const limits = rand() < 0.4 ? { spdMin: 10 + int(150), spdMax: rand() < 0.5 ? 200 + int(200) : null } : {};
     const want = exhaustive(pld, pool, sync, { ...goal, ...limits, melds, fixed: oracle });
     const got = optimize(pld, pool, sync, { ...goal, ...limits, melds, fixed });
@@ -142,7 +142,7 @@ test('pinned search equals the reference on real Sage pools under sync, with mel
     const wear = pickPins(sge, pool, sync, rand, 1 + int(3), true);
     if (!pinsCoexist(sge, wear)) continue;
     const { fixed, oracle } = pinsOf(sge, sync, wear);
-    const free = exhaustive(sge, pool, sync, { target: 'spd', melds, fixed: oracle });
+    const free = exhaustive(sge, pool, sync, { target: 'sps', melds, fixed: oracle });
     if (!free) continue;
     const spdMin = free[0] - int(40);
     const opts = { target: 'crit', tiebreak: ['det'], spdMin, spdMax: t % 4 === 0 ? spdMin + int(30) : null, melds };
@@ -156,7 +156,7 @@ test('pinned search equals the reference on real Sage pools under sync, with mel
     }
     assert.ok(got.ok && !got.truncated, label);
     assert.deepEqual([got.totals.crit, got.totals.det], want, label);
-    assert.ok(got.totals.spd >= spdMin && (opts.spdMax == null || got.totals.spd <= opts.spdMax), label);
+    assert.ok(got.totals.sps >= spdMin && (opts.spdMax == null || got.totals.sps <= opts.spdMax), label);
   }
   assert.ok(runs >= 25, `${runs} cases`);
 });
@@ -171,8 +171,8 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
     b = ring('B', 9),
     c = ring('C', 5, 2);
   // pinned Unique A: the free ring is the best of the others, never A again
-  let r = optimize(sge, [a, b, c], NO_SYNC, { target: 'spd', fixed: [fixedCandidate(sge, a, [], NO_SYNC)] });
-  assert.equal(r.totals.spd, 19);
+  let r = optimize(sge, [a, b, c], NO_SYNC, { target: 'sps', fixed: [fixedCandidate(sge, a, [], NO_SYNC)] });
+  assert.equal(r.totals.sps, 19);
   assert.deepEqual(
     r.picks.map(p => [p.item.name, !!p.pinned]),
     [
@@ -181,12 +181,12 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
     ],
   );
   // pinned C with 2 copies: the free ring may be C again if nothing is better; here B is better
-  r = optimize(sge, [b, c], NO_SYNC, { target: 'spd', fixed: [fixedCandidate(sge, c, [], NO_SYNC)] });
+  r = optimize(sge, [b, c], NO_SYNC, { target: 'sps', fixed: [fixedCandidate(sge, c, [], NO_SYNC)] });
   assert.deepEqual(
     r.picks.map(p => p.item.name),
     ['C', 'B'],
   );
-  r = optimize(sge, [c], NO_SYNC, { target: 'spd', fixed: [fixedCandidate(sge, c, [], NO_SYNC)] });
+  r = optimize(sge, [c], NO_SYNC, { target: 'sps', fixed: [fixedCandidate(sge, c, [], NO_SYNC)] });
   assert.deepEqual(
     r.picks.map(p => [p.item.name, !!p.pinned]),
     [
@@ -196,16 +196,16 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
   );
   // both rings pinned: no ring is searched
   r = optimize(sge, [a, b, c], NO_SYNC, {
-    target: 'spd',
+    target: 'sps',
     fixed: [fixedCandidate(sge, c, [], NO_SYNC), fixedCandidate(sge, c, [], NO_SYNC)],
   });
-  assert.equal(r.totals.spd, 10);
+  assert.equal(r.totals.sps, 10);
   assert.deepEqual(
     r.picks.map(p => !!p.pinned),
     [true, true],
   );
   // a pinned Unique ring and a pool with only it: the free ring slot is empty
-  r = optimize(sge, [a], NO_SYNC, { target: 'spd', fixed: [fixedCandidate(sge, a, [], NO_SYNC)] });
+  r = optimize(sge, [a], NO_SYNC, { target: 'sps', fixed: [fixedCandidate(sge, a, [], NO_SYNC)] });
   assert.deepEqual(
     r.picks.map(p => p.item?.name ?? null),
     ['A', null],
@@ -213,7 +213,7 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
 });
 
 test('every slot pinned: the pins alone are the loadout, and a limit they miss has no loadout', () => {
-  const head = mkItem('H', 'head', 100, { spd: 12, crit: 7 });
+  const head = mkItem('H', 'head', 100, { sps: 12, crit: 7 });
   const prep = prepare(sge, [head], NO_SYNC, { target: 'crit', speed: 'exact', fixed: [fixedCandidate(sge, head, [], NO_SYNC)] });
   assert.deepEqual(prep.slotList, []);
   const r = solve(prep, {});
@@ -236,12 +236,12 @@ test('a piece that covers a slot: a pinned cloak empties the head, a pinned head
   assert.ok(cloak && plain && head);
   const pool = [head, cloak, plain];
   // pinned cloak: the head slot has a pick with no piece, blocked by the cloak
-  let r = optimize(pld, pool, NO_SYNC, { target: 'main', fixed: [fixedCandidate(pld, cloak, [], NO_SYNC)] });
+  let r = optimize(pld, pool, NO_SYNC, { target: 'str', fixed: [fixedCandidate(pld, cloak, [], NO_SYNC)] });
   const headPick = r.picks.find(p => p.type === 'head');
   assert.equal(headPick.item, null);
   assert.equal(headPick.blockedBy, cloak);
   // pinned head: the cloak cannot be the free body, so the plain body is
-  r = optimize(pld, pool, NO_SYNC, { target: 'main', fixed: [fixedCandidate(pld, head, [], NO_SYNC)] });
+  r = optimize(pld, pool, NO_SYNC, { target: 'str', fixed: [fixedCandidate(pld, head, [], NO_SYNC)] });
   assert.equal(r.picks.find(p => p.type === 'body').item, plain);
 });
 

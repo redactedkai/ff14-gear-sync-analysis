@@ -20,8 +20,8 @@ const STEP = { crit: 200, det: 140, dh: 550, ten: 200, piety: 150 };
 /* The reference tier of `stat` for total `total` (gear plus food) at `level` with `haste`, or null for main stat and
    Vitality (their totals rank as they are). */
 export function refTier(job, stat, total, level, haste) {
-  if (stat === 'spd') return -Math.round(gcdFor(total, level, 2500, haste) * 100);
-  const step = stat === 'spec' ? STEP[job.profile.spec] : STEP[stat];
+  if (stat === job.speedKey) return -Math.round(gcdFor(total, level, 2500, haste) * 100);
+  const step = STEP[stat];
   if (!step) return null;
   return Math.floor((step * total) / levelParams(level).div);
 }
@@ -33,8 +33,8 @@ export function refTier(job, stat, total, level, haste) {
 export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd = null, mode = 'exact', fixed = [] }) {
   const keys = job.damageKey ? ['wd', ...goal] : goal;
   const haste = hasteFor(job.jobId, level)?.pct ?? 0;
-  const stats = [...new Set([...keys, 'spd'])];
-  const meldKeys = gcd != null ? [...new Set([...keys, 'spd'])] : keys;
+  const stats = [...new Set([...keys, job.speedKey])];
+  const meldKeys = gcd != null ? [...new Set([...keys, job.speedKey])] : keys;
   const seen = new Set(),
     loadouts = [];
   forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: gcd != null && mode === 'exact', fixed }, get => {
@@ -51,7 +51,7 @@ export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd 
     if (gcd != null) {
       const want = Math.round(gcd * 100);
       left = left.filter(x => {
-        const at = Math.round(gcdFor(total(x, 'spd'), level, 2500, haste) * 100);
+        const at = Math.round(gcdFor(total(x, job.speedKey), level, 2500, haste) * 100);
         return mode === 'exact' ? at === want : at <= want;
       });
     }
@@ -115,7 +115,7 @@ export function checkNoGcd(seed, count) {
     const melds = rand() < 0.7;
     const subs = [...job.substats].sort(() => rand() - 0.5);
     const three = rand() < 0.35;
-    const keys = rand() < 0.15 ? ['main', subs[0]] : subs.slice(0, three ? 3 : 2);
+    const keys = rand() < 0.15 ? [job.mainKey, subs[0]] : subs.slice(0, three ? 3 : 2);
     const choices = foodChoices(job);
     const food = [null, choices[int(choices.length)], 'best'][t % 3];
     const meals = food === 'best' ? choices : [food];
@@ -146,7 +146,7 @@ export function checkGcd(seed, count, threeKeys = false, from = 0) {
     const sync = { cap: null, sync: false, level };
     const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
     if (!pool.length) continue;
-    const subs = job.substats.filter(s => s !== 'spd').sort(() => rand() - 0.5);
+    const subs = job.substats.filter(s => s !== job.speedKey).sort(() => rand() - 0.5);
     const keys = subs.slice(0, threeKeys && t % 3 !== 0 ? 3 : 2);
     const choices = foodChoices(job);
     const food = [null, 'best'][t % 2];
@@ -156,7 +156,7 @@ export function checkGcd(seed, count, threeKeys = false, from = 0) {
     const step = [-1, 0, 1][int(3)];
     if (t < from) continue;
     const haste = hasteFor(job.jobId, level)?.pct ?? 0;
-    const free = optimize(job, pool, sync, { target: keys[0], melds: true }).totals.spd;
+    const free = optimize(job, pool, sync, { target: keys[0], melds: true }).totals[job.speedKey];
     const gcd = Math.round(gcdFor(free, level, 2500, haste) * 100 + step) / 100;
     const mode = t % 4 < 2 ? 'exact' : 'min';
     const want = tierLex(job, pool, sync, { keys, melds: true, meals, level, gcd, mode });
@@ -191,7 +191,7 @@ export function checkPinned(seed, count) {
     const wear = pickPins(job, pool, sync, rand, 1 + int(2), true);
     if (!pinsCoexist(job, wear)) continue;
     const { fixed, oracle } = pinsOf(job, sync, wear);
-    const subs = job.substats.filter(s => s !== 'spd').sort(() => rand() - 0.5);
+    const subs = job.substats.filter(s => s !== job.speedKey).sort(() => rand() - 0.5);
     const keys = subs.slice(0, 2);
     const choices = foodChoices(job);
     const food = t % 2 ? 'best' : null;

@@ -28,7 +28,7 @@ test("Kirin's Osode of Fending: two VI and one V in Determination fill it to the
   assert.deepEqual(r.removed, []);
   assert.equal(meldText(war, r.meld), 'DET VI ×2, DET V');
   // the other stats as the piece has them
-  assert.deepEqual([r.stats.main, r.stats.vit, r.stats.crit], [108, 107, 110]);
+  assert.deepEqual([r.stats.str, r.stats.vit, r.stats.crit], [108, 107, 110]);
   // Critical Hit is already at its cap: a stone in it adds nothing and loses its whole value
   const crit = applyStones(war, osode, [stone('crit', 6)], NO_SYNC);
   assert.equal(crit.stats.crit, 110);
@@ -76,7 +76,7 @@ test('overmeld slots: a high grade only in the big slots (the guaranteed ones an
 
 test('stats, slots and order: only substats, only the slots the piece has, filled in order', () => {
   // the main stat and Vitality take no materia; a Samurai has no Tenacity or Piety
-  const r = applyStones(war, osode, [stone('main', 6), stone('vit', 6), stone('det', 6)], NO_SYNC);
+  const r = applyStones(war, osode, [stone('str', 6), stone('vit', 6), stone('det', 6)], NO_SYNC);
   assert.deepEqual(
     r.removed.map(x => [x.slot, x.reason]),
     [
@@ -86,7 +86,7 @@ test('stats, slots and order: only substats, only the slots the piece has, fille
     ],
   );
   const samBody = piece(sam, "Kirin's Osode of Striking");
-  assert.equal(applyStones(sam, samBody, [stone('spec', 6)], NO_SYNC).removed[0].reason, 'stat');
+  assert.equal(applyStones(sam, samBody, [stone('ten', 6)], NO_SYNC).removed[0].reason, 'stat');
   // a sixth stone on a 5-slot piece; a piece with no slot data takes nothing
   assert.equal(applyStones(war, osode, [...Array(5).fill(stone('det', 5)), stone('det', 5)], NO_SYNC).removed[0].reason, 'slot');
   const handMade = mkItem('Hand-made', 'head', 300, { crit: 10 });
@@ -124,7 +124,7 @@ test("the optimizer's melds as stones give its gains back: bestMeld and every me
     for (let n = 0; n < 60; n++) {
       const item = poolItemFromRow(job, rows[pick(rows.length)]);
       const keys = [job.substats[pick(job.substats.length)], job.substats[pick(job.substats.length)]];
-      for (const meld of [bestMeld(job, item, keys), ...meldVersions(job, item, [...keys, 'spd'])]) {
+      for (const meld of [bestMeld(job, item, keys), ...meldVersions(job, item, [...keys, job.speedKey])]) {
         const r = applyStones(job, item, meldStones(item, meld), NO_SYNC);
         assert.deepEqual(r.removed, [], item.name);
         assert.deepEqual(r.meld, meld, `${item.name} ${keys}`);

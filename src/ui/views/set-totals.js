@@ -11,11 +11,18 @@ import { fmtInt, plural } from '../helpers.js';
 import { syncSettings } from '../settings.js';
 import { isUsed } from './saved-set.js';
 
-/* The header's figures in order: [key, label]; a stat's label is the job's short name for it (job.short), and the
-   special substat's figure only exists for a job that has one. `critDmg` and `dot` are derived (Critical Hit's second
-   effect, the DoT/HoT bonus of the speed). */
+/* The header's figures in order, by figure id. A stat figure's label is the job's short name for the stat (job.short);
+   `main` and `spec` are the figures of the job's main stat (job.mainKey) and special substat (job.specKey, a figure only
+   a job that has one shows); the other ids are stat keys. `gcd`, `critDmg` and `dot` are derived (the GCD, Critical
+   Hit's second effect, the DoT/HoT bonus of the speed). */
 const FIGURES = ['main', 'gcd', 'crit', 'critDmg', 'det', 'dh', 'spec', 'dot'];
 const FIGURE_LABEL = { gcd: 'GCD', critDmg: 'Crit dmg', dot: 'DoT' };
+/* The job's stat behind a figure id: the stat key for a stat figure, null for a derived one or a job without it. */
+function figureStat(job, id) {
+  if (id === 'main') return job.mainKey;
+  if (id === 'spec') return job.specKey;
+  return job.stats.includes(id) ? id : null;
+}
 
 /* A gear set evaluated under its sheet's job, level and item level sync: {job (JobContext), level, sync (core's sync
    settings), evaluated (core/set.js evaluateSet)}. The rows of `gearSet.pieces` a job does not use (the off-hand of a
@@ -96,17 +103,22 @@ export function setFigures(context) {
   const { job, level, evaluated } = context;
   const tierOf = stat => evaluated.tiers[job.stats.indexOf(stat)];
   const critPanel = evaluated.withFood.crit + evaluated.base.crit;
+  const { mainKey, speedKey, specKey } = job;
   const text = {
-    main: String(evaluated.withFood.main + evaluated.base.main),
-    gcd: tierOf('spd')?.effect ?? `${evaluated.gcd.gcd.toFixed(2)}s`,
+    main: String(evaluated.withFood[mainKey] + evaluated.base[mainKey]),
+    gcd: tierOf(speedKey)?.effect ?? `${evaluated.gcd.gcd.toFixed(2)}s`,
     crit: tierOf('crit').effect,
     critDmg: tierLadder(job, 'crit', level, critPanel, 0).rows[0].values[1],
     det: tierOf('det').effect,
     dh: tierOf('dh').effect,
-    spec: job.stats.includes('spec') ? tierOf('spec').effect : null,
+    spec: specKey ? tierOf(specKey).effect : null,
     dot: `+${evaluated.gcd.dot.toFixed(1)}%`,
   };
-  return FIGURES.filter(key => text[key] != null).map(key => ({ key, label: FIGURE_LABEL[key] ?? job.short[key], text: text[key] }));
+  return FIGURES.filter(key => text[key] != null).map(key => ({
+    key,
+    label: FIGURE_LABEL[key] ?? job.short[figureStat(job, key)],
+    text: text[key],
+  }));
 }
 
 /* How a figure changed from `before` to `after` (texts as setFigures gives them): {text ("+1.7%", "−0.01s"), up}, or null

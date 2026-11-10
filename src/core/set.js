@@ -131,7 +131,7 @@ export function evaluateSet(job, set, sync, level) {
   const hastePct = haste?.pct ?? 0;
   const tiers = job.stats.map(s => {
     const value = totals[s];
-    const g = s === 'spd' && hastePct ? gcdTierAt(value || 0, level, BASE_GCD_MS, hastePct) : null;
+    const g = s === job.speedKey && hastePct ? gcdTierAt(value || 0, level, BASE_GCD_MS, hastePct) : null;
     const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, value, level);
     if (!tier) return null;
     return {
@@ -149,7 +149,7 @@ export function evaluateSet(job, set, sync, level) {
   const defense = { phys: def.phys, mag: def.mag, physPct: mitigationPct(def.phys, level), magPct: mitigationPct(def.mag, level) };
 
   // 6. the GCD and DoT/HoT bonus of the speed with food
-  const spd = totals.spd;
+  const spd = totals[job.speedKey];
   const gcd = {
     spd,
     haste,

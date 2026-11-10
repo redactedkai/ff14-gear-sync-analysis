@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { JOBS } from '../../src/core/constants.js';
-import { statTier, tierLadder, tierSizes } from '../../src/core/tiers.js';
+import { statEffectKinds, statTier, tierLadder, tierSizes } from '../../src/core/tiers.js';
 import { AKH_LEVEL } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
@@ -21,18 +21,18 @@ test("the effect of a substat value at level 100 and 50, worked by hand from Akh
   // 140 x 1000 / 2780 = 50.4 -> +5.0%
   assert.equal(statTier(sge, 'det', 1000, 100).effect, '+5.0%');
   // Tenacity 112 x 500 / 2780 = 20.1 -> +2.0%; Piety 150 x 500 / 2780 = 26.9 -> +26 MP
-  assert.equal(statTier(war, 'spec', 500, 100).effect, '+2.0%');
-  assert.equal(statTier(sge, 'spec', 500, 100).effect, '+26 MP');
+  assert.equal(statTier(war, 'ten', 500, 100).effect, '+2.0%');
+  assert.equal(statTier(sge, 'piety', 500, 100).effect, '+26 MP');
   // level 50 (item level 123 sync): 200 x 344 / 341 = 201.8 -> 25.1%
   assert.equal(statTier(sge, 'crit', 344, 50).effect, '25.1%');
   // speed: AkhMorning's level 100 tiers, 22 -> 2.49 s, next 107 (tests/unit/core-speed.test.js)
-  assert.deepEqual(statTier(sge, 'spd', 86, 100), { effect: '2.49s', start: 22, next: 107 });
+  assert.deepEqual(statTier(sge, 'sps', 86, 100), { effect: '2.49s', start: 22, next: 107 });
 });
 
 test('no tiers for main stat, Vitality, or a job without a special substat', () => {
-  assert.equal(statTier(sge, 'main', 500, 100), null);
+  assert.equal(statTier(sge, 'mind', 500, 100), null);
   assert.equal(statTier(sge, 'vit', 500, 100), null);
-  assert.equal(statTier(blm, 'spec', 0, 100), null);
+  assert.equal(statTier(blm, 'piety', 0, 100), null);
 });
 
 test('start and next bound the step exactly, at every level', () => {
@@ -41,9 +41,9 @@ test('start and next bound the step exactly, at every level', () => {
       [sge, 'crit'],
       [sge, 'det'],
       [sge, 'dh'],
-      [sge, 'spec'],
-      [war, 'spec'],
-      [sge, 'spd'],
+      [sge, 'piety'],
+      [war, 'ten'],
+      [sge, 'sps'],
     ]) {
       for (let g = 0; g < 2500; g += 13) {
         const t = statTier(job, stat, g, level);
@@ -70,6 +70,8 @@ test('start and next bound the step exactly, at every level', () => {
    MP; the GCD as their speed table computes it. The effect from gear points must agree at every level in the table. */
 test('effects equal AkhMorning formulas at every level in their table', () => {
   const pctOf = n => `${(n / 10).toFixed(1)}%`;
+  const speed = (v, [, sub, div]) =>
+    `${Math.max(1.5, Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`;
   const akh = {
     crit: (v, [, sub, div]) => pctOf(Math.floor((200 * (v - sub)) / div) + 50),
     dh: (v, [, sub, div]) => pctOf(Math.floor((550 * (v - sub)) / div)),
@@ -77,16 +79,15 @@ test('effects equal AkhMorning formulas at every level in their table', () => {
     ten: (v, [, sub, div]) => `+${pctOf(Math.floor((112 * (v - sub)) / div))}`,
     piety: (v, [main, , div]) => `+${Math.floor((150 * (v - main)) / div)} MP`,
     // AkhMorning's table has no floor: the game's 1.50 s (GCD_FLOOR_MS) is applied on top
-    spd: (v, [, sub, div]) =>
-      `${Math.max(1.5, Math.trunc((2500 * (Math.trunc((130 * (sub - v)) / div) + 1000)) / 10000) / 100).toFixed(2)}s`,
+    sps: speed,
+    sks: speed,
   };
   for (const job of [sge, war]) {
     for (const [lv, row] of Object.entries(AKH_LEVEL)) {
       for (const s of job.substats) {
-        const key = s === 'spec' ? job.profile.spec : s;
-        const base = key === 'det' || key === 'piety' ? row[0] : row[1]; // Determination and Piety start from MAIN
+        const base = s === 'det' || s === 'piety' ? row[0] : row[1]; // Determination and Piety start from MAIN
         for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
-          assert.equal(statTier(job, s, gear, +lv).effect, akh[key](base + gear, row), `${job.jobId} ${s} level ${lv}, gear ${gear}`);
+          assert.equal(statTier(job, s, gear, +lv).effect, akh[s](base + gear, row), `${job.jobId} ${s} level ${lv}, gear ${gear}`);
         }
       }
     }
@@ -101,7 +102,7 @@ const startsOf = ladder => ladder.rows.map(r => r?.start);
 
 test('speed ladder: AkhMorning level 100 tiers on the panel scale (SUB 420)', () => {
   // AkhMorning: gear speed 22 -> 2.49 s, 107 -> 2.48 s, 193 -> 2.47 s; on the panel 442, 527, 613 (validation.md section 5)
-  const l = tierLadder(sge, 'spd', 100, 624, 3);
+  const l = tierLadder(sge, 'sps', 100, 624, 3);
   assert.deepEqual(l.kinds, ['gcd']);
   assert.equal(l.base, 420);
   assert.deepEqual(startsOf(l).slice(0, 4), [420, 442, 527, 613]);
@@ -141,7 +142,7 @@ test('Critical Hit has two values per tier, rate and what a critical hit adds (r
 test('Tenacity: a tier ends where either effect steps, and says which one did', () => {
   // 1617 on the panel = 1197 gear at level 100. Dmg & heal floor(112 g / 2780): 48 (+4.8%), steps at 1192 and 1217;
   // Dmg taken floor(200 g / 2780): 86 (-8.6%), steps at 1196 and 1210. The tier is 1196 to 1209: 1616 to 1629.
-  const l = tierLadder(pld, 'spec', 100, 1617, 1);
+  const l = tierLadder(pld, 'ten', 100, 1617, 1);
   assert.deepEqual(l.kinds, ['dmgHeal', 'dmgTaken']);
   assert.deepEqual(l.rows[1], { start: 1616, next: 1630, values: ['+4.8%', '−8.6%'], changed: [false, true] });
   assert.deepEqual([l.spare, l.toNext], [1, 13]);
@@ -150,7 +151,7 @@ test('Tenacity: a tier ends where either effect steps, and says which one did', 
 });
 
 test('the last GCD step has no next tier: the rows run on below it, the last one current', () => {
-  const l = tierLadder(sge, 'spd', 100, 99999, 2);
+  const l = tierLadder(sge, 'sps', 100, 99999, 2);
   assert.equal(l.rows.length, 5);
   assert.equal(l.cur, 4);
   assert.equal(l.rows[4].values[0], '1.50s');
@@ -162,37 +163,40 @@ test('tier sizes: div / step points (AkhMorning: Critical Hit every 13.9 at leve
   assert.deepEqual(tierSizes(sge, 'crit', 100), [13, 14]);
   assert.deepEqual(tierSizes(sge, 'det', 100), [19, 20]);
   assert.deepEqual(tierSizes(sge, 'dh', 100), [5, 6]);
-  assert.deepEqual(tierSizes(sge, 'spec', 100), [18, 19]);
-  assert.deepEqual(tierSizes(pld, 'spec', 100, 0, 'dmgHeal'), [24, 25]);
-  assert.deepEqual(tierSizes(pld, 'spec', 100, 0, 'dmgTaken'), [13, 14]);
-  assert.deepEqual(tierSizes(sge, 'spd', 100), [85, 86]);
+  assert.deepEqual(tierSizes(sge, 'piety', 100), [18, 19]);
+  assert.deepEqual(tierSizes(pld, 'ten', 100, 0, 'dmgHeal'), [24, 25]);
+  assert.deepEqual(tierSizes(pld, 'ten', 100, 0, 'dmgTaken'), [13, 14]);
+  assert.deepEqual(tierSizes(sge, 'sps', 100), [85, 86]);
   // level 50 (DIV 341): AkhMorning's 3 -> 2.49 s, 14 -> 2.48 s: 11 points; 4 x 341/130 = 10.5
-  assert.deepEqual(tierSizes(sge, 'spd', 50), [10, 11]);
-  assert.equal(tierSizes(blm, 'spec', 100), null);
+  assert.deepEqual(tierSizes(sge, 'sps', 50), [10, 11]);
+  assert.equal(tierSizes(blm, 'piety', 100), null);
 });
 
 test("Monk's haste skips some 0.01 s GCD steps, so a few speed tiers are longer", () => {
   // 20% haste is applied after the speed step is rounded down: some recasts map to the same hundredth, others skip one
-  const sizes = tierSizes(mnk, 'spd', 100, 20);
+  const sizes = tierSizes(mnk, 'sks', 100, 20);
   assert.ok(sizes.includes(85) && sizes.some(s => s > 100), JSON.stringify(sizes));
-  const l = tierLadder(mnk, 'spd', 100, 875, 3, 20);
+  const l = tierLadder(mnk, 'sks', 100, 875, 3, 20);
   const gcds = l.rows.map(r => Number(r.values[0].slice(0, -1)));
   for (let i = 1; i < gcds.length; i++) assert.ok([1, 2].includes(Math.round((gcds[i - 1] - gcds[i]) * 100)), JSON.stringify(gcds));
 });
 
 test('no ladder for main stat, Vitality or a missing special substat', () => {
-  assert.equal(tierLadder(sge, 'main', 100, 500, 3), null);
-  assert.equal(tierLadder(blm, 'spec', 100, 500, 3), null);
+  assert.equal(tierLadder(sge, 'mind', 100, 500, 3), null);
+  assert.equal(tierLadder(blm, 'piety', 100, 500, 3), null);
 });
 
-/* Shared code reads what the special substat does from JobContext.specKind, never the job keys (audit 01, finding 13):
-   Piety for every healer, Tenacity for every tank, none for the other roles. */
-test('specKind: MP for healers, mitigation for tanks, none for the rest', () => {
-  const kinds = {};
-  for (const { id, profile } of JOBS) kinds[profile] = [...(kinds[profile] ?? []), makeJobContext(id).specKind];
-  assert.deepEqual(new Set(kinds.healer), new Set(['mp']));
-  assert.deepEqual(new Set(kinds.tank), new Set(['mitigation']));
-  for (const role of Object.keys(kinds).filter(r => r !== 'healer' && r !== 'tank')) {
-    assert.deepEqual(new Set(kinds[role]), new Set([null]), role);
+/* The special substat is a key of its own: Piety for every healer, Tenacity for every tank, none for the other roles; each
+   key has its own effects (tiers.js). */
+test('specKey: Piety for healers (MP), Tenacity for tanks (damage done and taken), none for the rest', () => {
+  const keys = {};
+  for (const { id, profile } of JOBS) keys[profile] = [...(keys[profile] ?? []), makeJobContext(id).specKey];
+  assert.deepEqual(new Set(keys.healer), new Set(['piety']));
+  assert.deepEqual(new Set(keys.tank), new Set(['ten']));
+  for (const role of Object.keys(keys).filter(r => r !== 'healer' && r !== 'tank')) {
+    assert.deepEqual(new Set(keys[role]), new Set([null]), role);
   }
+  assert.deepEqual(statEffectKinds('piety'), ['mp']);
+  assert.deepEqual(statEffectKinds('ten'), ['dmgHeal', 'dmgTaken']);
+  assert.deepEqual(statEffectKinds(null), []);
 });

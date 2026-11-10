@@ -7,14 +7,14 @@ import { buildPiece } from '../../src/core/formulas.js';
 
 test('item level 130 healer hood from the formula (its fixed Direct Hit 6 is a real-item line, not a rank)', () => {
   // the stats of a real item level 130 healer head piece (ui-views-piece.test.js finds it in the item database)
-  assert.deepEqual(buildPiece(makeJobContext('SGE'), 130, 'head', ['spd', 'spec']), {
-    main: 33,
+  assert.deepEqual(buildPiece(makeJobContext('SGE'), 130, 'head', ['sps', 'piety']), {
+    mind: 33,
     vit: 32,
     crit: 0,
     det: 0,
     dh: 0,
-    spd: 31,
-    spec: 22,
+    sps: 31,
+    piety: 22,
   });
 });
 

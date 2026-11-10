@@ -148,7 +148,7 @@ test("Menphina's Earring at level 50: synced to item level 130, its stats capped
     const c = capsFor(job, row.type, 130, row.pct, kindFactors(job, row.kind));
     const eff = effStats(job, item, sync);
     for (const s of job.stats) assert.equal(eff[s] || 0, Math.min(item.stats[s] || 0, c[s]), `${job.jobId} ${s}`);
-    assert.ok(eff.main < item.stats.main, `${job.jobId}: main stat lowered`);
+    assert.ok(eff[job.mainKey] < item.stats[job.mainKey], `${job.jobId}: main stat lowered`);
     assert.deepEqual(effStats(job, item, { cap: null, sync: false, level: 100 }), item.stats);
   }
 });
@@ -162,19 +162,19 @@ test('level 90, item level sync off: level 100 head pieces are capped at the ite
   assert.ok(rows.length >= 2);
   const head = col => roundHalfUp((IL[col][660] * SLOT_PERMILLE.head) / 1000);
   const cap = {
-    main: head('mind'),
+    mind: head('mind'),
     vit: roundHalfUp(head('vit') * 0.9),
     crit: head('crit'),
     det: head('det'),
     dh: head('dh'),
-    spd: head('sps'),
-    spec: head('piety'),
+    sps: head('sps'),
+    piety: head('piety'),
   };
-  assert.deepEqual([cap.main, cap.vit, cap.crit], [248, 249, 184]);
+  assert.deepEqual([cap.mind, cap.vit, cap.crit], [248, 249, 184]);
   for (const row of rows) {
     const item = poolItemFromRow(sge, row);
     const eff = effStats(sge, item, { cap: null, sync: false, level: 90 });
-    assert.ok(item.stats.main > cap.main, row.name);
+    assert.ok(item.stats.mind > cap.mind, row.name);
     for (const s of sge.stats) assert.equal(eff[s] || 0, Math.min(item.stats[s] || 0, cap[s]), `${row.name} ${s}`);
     // at level 100 the same piece is untouched
     assert.deepEqual(effStats(sge, item, { cap: null, sync: false, level: 100 }), item.stats);
@@ -198,9 +198,9 @@ for (const id of ['SGE', 'WAR', 'PLD']) {
     let differs = false;
     for (const sync of [levelOnly, { cap: 662, sync: true, level: 90 }, { cap: 664, sync: true, level: 90 }]) {
       for (const [target, tiebreak] of [
-        ['spd', ['main', 'vit']],
+        [job.speedKey, [job.mainKey, 'vit']],
         ['crit', ['det']],
-        ['main', []],
+        [job.mainKey, []],
       ]) {
         const r = optimize(job, pool, sync, { target, tiebreak });
         const want = exhaustive(job, pool, sync, { target, tiebreak });

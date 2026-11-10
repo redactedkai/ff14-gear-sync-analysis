@@ -25,9 +25,9 @@ test("the job's own factor equals the game files' factor on every piece of its o
       if (!(r[ROW.jobMask] & (1 << job.jobIndex)) || r[ROW.ilvl] < MODEL_MIN_ILVL) continue;
       const st = rowStats(r);
       const mains = RAW_MAIN_IDX.filter(i => st[i]).map(i => ITEM_STAT_ORDER[i]);
-      if (mains.length !== 1 || mains[0] !== job.profile.main) continue;
+      if (mains.length !== 1 || mains[0] !== job.mainKey) continue;
       n++;
-      assert.equal(MP[job.profile.main][r[ROW.kind]], 100, `${id} ${r[ROW.name]}`);
+      assert.equal(MP[job.mainKey][r[ROW.kind]], 100, `${id} ${r[ROW.name]}`);
       assert.equal(MP.vit[r[ROW.kind]] / 100, jobFactor(job, 'vit'), `${id} ${r[ROW.name]}`);
     }
     assert.ok(n > 100, id);
@@ -40,7 +40,7 @@ test('the only pieces whose factors differ from the job rule are kind 0: the fou
     const job = makeJobContext(id);
     for (const p of browseItems(job, { ilvlMin: MODEL_MIN_ILVL })) {
       const f = kindFactors(job, p.kind);
-      if (f.main !== 1 || f.vit !== jobFactor(job, 'vit')) odd.add(p.name);
+      if (f[job.mainKey] !== 1 || f.vit !== jobFactor(job, 'vit')) odd.add(p.name);
     }
   }
   const fourMain = [...odd].filter(name => RAW_MAIN_IDX.every(i => rowStats(itemRow(name))[i]));
@@ -97,20 +97,20 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
     sge = makeJobContext('SGE');
   const sync = { cap: 123, sync: true };
   const [coatWar] = browseItems(war, { q: "Field Commander's Coat" }).map(p => poolItemFromRow(war, p));
-  assert.deepEqual([effStats(war, coatWar, sync).main, effStats(war, coatWar, sync).vit], [43, 45]);
+  assert.deepEqual([effStats(war, coatWar, sync).str, effStats(war, coatWar, sync).vit], [43, 45]);
   const [coatSge] = browseItems(sge, { q: "Field Commander's Coat" }).map(p => poolItemFromRow(sge, p));
-  assert.deepEqual([effStats(sge, coatSge, sync).main, effStats(sge, coatSge, sync).vit], [43, 45]);
+  assert.deepEqual([effStats(sge, coatSge, sync).mind, effStats(sge, coatSge, sync).vit], [43, 45]);
   // the same stats as a hand-made piece (no database row): the job's caps, main 48, Vitality 51 / 45
-  assert.deepEqual([capsFor(war, 'body', 123).main, capsFor(war, 'body', 123).vit], [48, 51]);
-  assert.deepEqual([capsFor(sge, 'body', 123).main, capsFor(sge, 'body', 123).vit], [48, 45]);
+  assert.deepEqual([capsFor(war, 'body', 123).str, capsFor(war, 'body', 123).vit], [48, 51]);
+  assert.deepEqual([capsFor(sge, 'body', 123).mind, capsFor(sge, 'body', 123).vit], [48, 45]);
   const handMade = { ...coatWar, src: 'custom' };
-  assert.equal(effStats(war, handMade, sync).main, 48);
+  assert.equal(effStats(war, handMade, sync).str, 48);
   // the gear browser shows the same synced values as the optimizer uses
   const app = appState({ job: 'WAR', sync: true, cap: 123 });
   app.browse = { ...app.browse, q: "Field Commander's Coat" };
   const v = gearViewOf(app);
   assert.equal(v.shown.length, 1);
-  assert.deepEqual([v.shown[0].eff.main, v.shown[0].eff.vit], [43, 45]);
+  assert.deepEqual([v.shown[0].eff.str, v.shown[0].eff.vit], [43, 45]);
   // a piece of the job's own kind is unchanged by the switch: same caps as before
   const helm = ITEMS.find(r => r[ROW.slotCode] === 3 && r[ROW.ilvl] === 130 && r[ROW.kind] === 6);
   const p = browseItems(sge, { q: helm[ROW.name], ilvlMin: 130, ilvlMax: 130 }).find(x => x.slotCode === 3);

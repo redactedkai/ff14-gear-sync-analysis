@@ -56,8 +56,8 @@ export function emptyGearFrom(job, recipe, gear) {
 
 /* The Target GCD asked for, in seconds, or null for none: the box is empty, or the goal is speed itself (the box is
    disabled then: maximizing speed already gives the fastest GCD). */
-export function askedGcd(recipe) {
-  if (recipe.target === 'spd' || recipe.gcd === '' || recipe.gcd == null) return null;
+export function askedGcd(job, recipe) {
+  if (recipe.target === job.speedKey || recipe.gcd === '' || recipe.gcd == null) return null;
   const g = Number(recipe.gcd);
   return Number.isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : null;
 }
@@ -242,7 +242,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   const foodOn = usesFood(recipe, pinned.meal);
   const fixed = pinned.fixed;
   const hastePct = hasteFor(job.jobId, level)?.pct ?? 0;
-  const asked = askedGcd(recipe);
+  const asked = askedGcd(job, recipe);
   const goal = { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2], melds: !!recipe.melds, fixed };
   const failed = r => fail(r.truncated ? 'infeasible' : asked != null ? 'nogcd' : 'noset', r, asked);
 

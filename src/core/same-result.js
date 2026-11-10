@@ -28,7 +28,7 @@ import { rankTierOf } from './tiers.js';
 export function resultOf(job, gearTotals, { level, food, haste = 0, goal = null }) {
   const totals = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
   return {
-    main: totals.main || 0,
+    main: totals[job.mainKey] || 0,
     wd: job.damageKey ? totals[WD_KEY] || 0 : null,
     goal: goal ? totals[goal] || 0 : null,
     tiers: job.substats.map(s => rankTierOf(job, s, level, haste)?.(totals[s] || 0) ?? null),
@@ -75,11 +75,11 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
     const rest = sumOf(job, others);
     // the main stat has no tiers and food never raises it: a piece must bring exactly what the set is missing (a
     // cheap first check that rules out most of the pool)
-    const mainNeeded = target.main - rest.main;
+    const mainNeeded = target.main - (rest[job.mainKey] || 0);
     const out = [];
     const seen = new Set();
     for (const c of cands[p.type] || []) {
-      if (seen.has(c.item) || (c.eff.main || 0) !== mainNeeded) continue;
+      if (seen.has(c.item) || (c.eff[job.mainKey] || 0) !== mainNeeded) continue;
       if (blocksKey(c.blocks) !== pickBlocks[i]) continue;
       if ((c.copies || 1) === 1 && others.some(o => o.item === c.item)) continue;
       const totals = { ...rest };

@@ -92,15 +92,17 @@ test('job mask: a Warrior does not see healer (Mind) gear, a Sage does', () => {
 test("main and secondary attribute: Azeyma's Earrings give each job its own main stat and secondary stat", () => {
   const nin = makeJobContext('NIN');
   const expect = [
-    ['SGE', sge, { main: 115, vit: 115, det: 111, spec: 111, dh: 0 }],
-    ['WAR', war, { main: 115, vit: 115, det: 111, spec: 111, dh: 0 }],
-    ['NIN', nin, { main: 115, vit: 115, det: 111, spec: 0, dh: 111 }],
+    ['SGE', sge, { mind: 115, vit: 115, det: 111, piety: 111, dh: 0 }],
+    ['WAR', war, { str: 115, vit: 115, det: 111, ten: 111, dh: 0 }],
+    ['NIN', nin, { dex: 115, vit: 115, det: 111, dh: 111 }],
   ];
   for (const [id, job, want] of expect) {
     const rows = browseItems(job, { q: "azeyma's earrings" });
     assert.equal(rows.length, 1, `${id} sees the earrings`);
     const st = poolItemFromRow(job, rows[0]).stats;
     for (const [k, v] of Object.entries(want)) assert.equal(st[k], v, `${id} ${k}`);
+    // a stat the job does not have is no key at all: Secondary Attribute went to its own secondary stat, nowhere else
+    assert.deepEqual(Object.keys(st).sort(), [...job.stats].sort(), id);
   }
 });
 
@@ -162,7 +164,7 @@ test("Beastmaster's own gear (job mask 1 << 22): Guttler and Kornago Hoplon, its
   assert.deepEqual([hoplon.type, hoplon.slotCode, hoplon.lvl], ['offhand', 2, 50]);
   // Item.csv: Strength 39, Vitality 42, Direct Hit 39, Determination 27; its Crucible bonus (+9 / +9, ItemSpecialBonus 11,
   // not HQ-able) is not carried
-  assert.deepEqual(poolItemFromRow(bst, guttler).stats, { main: 39, vit: 42, crit: 0, det: 27, dh: 39, spd: 0, spec: 0 });
+  assert.deepEqual(poolItemFromRow(bst, guttler).stats, { str: 39, vit: 42, crit: 0, det: 27, dh: 39, sks: 0 });
   // a Monk cannot equip it
   assert.ok(!browseItems(makeJobContext('MNK'), { ilvlMin: 135, ilvlMax: 135 }).some(r => r.name === 'Guttler'));
 });
@@ -197,19 +199,19 @@ test('poolItemFromRow maps raw stats to stat keys (healer and tank)', () => {
   assert.equal(it.copies, 1);
   const st = row.st;
   assert.deepEqual(it.stats, {
-    main: st[RAW.mind],
+    mind: st[RAW.mind],
     vit: st[RAW.vit],
     crit: st[RAW.crit],
     det: st[RAW.det],
     dh: st[RAW.dh],
-    spd: st[RAW.sps],
-    spec: st[RAW.piety],
+    sps: st[RAW.sps],
+    piety: st[RAW.piety],
   });
   assert.equal(Object.values(it.stats).filter(v => v > 0).length, 5); // main, vit and three substats
 
   const tank = browseItems(war, { type: 'weapon', ...lvl50 }).find(r => r.st[RAW.ten] > 0);
   const t = poolItemFromRow(war, tank).stats;
-  assert.deepEqual([t.main, t.spd, t.spec], [tank.st[RAW.str], tank.st[RAW.sks], tank.st[RAW.ten]]);
+  assert.deepEqual([t.str, t.sks, t.ten], [tank.st[RAW.str], tank.st[RAW.sks], tank.st[RAW.ten]]);
 });
 
 test('poolItemFromRow copies: a Unique ring once, a non-unique ring twice', () => {
@@ -281,7 +283,7 @@ test('"Gear from" routes of real items, and filtering a pool by them', () => {
     assert.deepEqual(routeKeys(itemRoutes(it)), want, name);
     pool.push(it);
   }
-  const hand = mkItem('Hand-made', 'head', 700, { spd: 10 });
+  const hand = mkItem('Hand-made', 'head', 700, { sks: 10 });
   pool.push(hand);
   assert.equal(itemRoutes(hand), null);
   const names = (off, market) => withActivities(pool, off, market).map(i => i.name);

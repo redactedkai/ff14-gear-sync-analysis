@@ -2,6 +2,7 @@
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
 import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
+import { currentStatKey } from '../core/stat-keys.js';
 import { MAX_REAL } from '../core/tables.js';
 import { capCeiling } from '../core/sync-target.js';
 import { DEFAULT_EXCLUDE, PANEL_GROUP, syncSettings } from './settings.js';
@@ -102,16 +103,16 @@ export function defaultState() {
     mathTab: 'piece',
     // How the math works: its own Job and sync panel (job, cap, sync, level), then the piece's item level (null: the
     // cap; explainerItemLevel in views/sync-explainer.js), slot and two ranked substats
-    piece: { ...defaultPanel(), ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
+    piece: { ...defaultPanel(), ilvl: null, slot: 'head', subs: defaultSubs(makeJobContext(DEFAULT_JOB)) },
     // the Gear browser's own Job and sync panel, then its filters and sort (defaultBrowse)
     browse: { ...defaultPanel(), ...defaultBrowse() },
   };
 }
 
 /* Critical Hit first and the job's speed second, for every job: a second substat shows sync raising the 70% line to
-   the full cap, and speed as that line gives the GCD sub-tab something to show. */
-export function defaultSubs() {
-  return ['crit', 'spd'];
+   the full cap, and speed as that line gives the GCD sub-tab something to show. `job`: a JobContext. */
+export function defaultSubs(job) {
+  return ['crit', job.speedKey];
 }
 
 /* The synced level (`s.level`, the open tab's panel) and, when `parts` has the Gear browser ('browse'), its "Equip
@@ -124,17 +125,17 @@ export function clampLevels(s, job, parts = ['browse']) {
 
 /* On a job change from `from` (a JobContext, or null with no job chosen before) to `job`: the levels are held to the
    job's cap, and the job-specific selections the new job can use stay. A stat choice stays when the new job has the
-   same stat under the same name (a stat key can name another stat: `spec` is Piety on a healer and Tenacity on a tank),
-   else it goes back to its default. With no `from`, everything goes back. `parts`: the tabs whose settings are reset,
+   same stat (a key is one game stat: Piety is a key only on a healer, Tenacity only on a tank), else it goes back to
+   its default. With no `from`, everything goes back. `parts`: the tabs whose settings are reset,
    any of 'math' (the piece) and 'browse'; both by default. A job change in one tab's panel passes that tab only, since
    the other tab keeps its own job (the store's setJob). */
 export function resetForJob(s, job, from = null, parts = ['math', 'browse']) {
-  const keeps = k => !!k && !!from && job.stats.includes(k) && from.label[k] === job.label[k];
+  const keeps = k => !!k && !!from && job.stats.includes(k) && from.stats.includes(k);
   clampLevels(s, job, parts);
   if (parts.includes('math')) {
     // Piece stats' two substats stay as a pair (the second may be none), else both go back
     const [sub1, sub2] = s.piece.subs;
-    if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) s.piece.subs = defaultSubs();
+    if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) s.piece.subs = defaultSubs(job);
     if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
   }
   if (parts.includes('browse')) {
@@ -175,11 +176,13 @@ function restoreGearFilter(f, raw, job) {
 
 /* piece.subs: two ranked substats for this job (100% and 70%); rank 2 may be null. Unknown or repeated ones fall
    back. Older saves had a third rank (20%); it is dropped, since real gear has a third line only as Direct Hit on
-   Mind-only gear (docs/mechanics/math.md section 4). */
+   Mind-only gear (docs/mechanics/math.md section 4). Older saves also named the speed and special substats by position
+   (`spd`, `spec`): currentStatKey reads them as the job's own. */
 function restorePieceSubs(raw, job) {
-  const ds = defaultSubs();
+  const ds = defaultSubs(job);
   if (!Array.isArray(raw)) return ds;
-  const subs = [0, 1].map(i => (job.substats.includes(raw[i]) ? raw[i] : i === 0 ? ds[0] : null));
+  const saved = raw.map(key => currentStatKey(job, key));
+  const subs = [0, 1].map(i => (job.substats.includes(saved[i]) ? saved[i] : i === 0 ? ds[0] : null));
   if (subs[1] === subs[0]) subs[1] = null;
   return subs;
 }
@@ -278,7 +281,8 @@ export function restoreState(raw) {
   restoreGearFilter(s.browse, b, browseJob);
   s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);
   s.browse.market = bool(b.market, s.browse.market);
-  s.browse.sort = oneOf(b.sort, ['name', 'lvl', 'ilvl', ...browseJob.stats], s.browse.sort);
+  // older saves named the main, speed and special stats by position (currentStatKey)
+  s.browse.sort = oneOf(currentStatKey(browseJob, b.sort), ['name', 'lvl', 'ilvl', ...browseJob.stats], s.browse.sort);
   s.browse.dir = oneOf(b.dir, ['desc', 'asc'], s.browse.dir);
 
   // the open tab's panel is the top-level copy (on the Sheets tab, which has none, the Gear browser's stands in)

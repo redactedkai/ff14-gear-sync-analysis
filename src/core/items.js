@@ -20,22 +20,19 @@ import {
 } from './constants.js';
 import { levelParams } from './level-params.js';
 import { ITEMS, MP } from './tables.js';
-import { blankStats, buildPiece } from './formulas.js';
+import { buildPiece } from './formulas.js';
 
 let nextId = 1;
 function newId() {
   return 'i' + nextId++;
 }
 
-/* A pool item with defaults (one copy, hand-made); `stats` may leave stats out (0), `extra` overrides any field.
+/* A pool item with defaults (one copy, hand-made); `stats` ({stat key: points}) may leave stats out (0), `extra` overrides any field.
    Frozen, with its stats and any other object field (a hand-made `meld`): pool items are shared by every search, the
    result rows and the caches keyed by them (WeakMaps in this file and piece.js), on the page's thread and in
    the worker alike, so nothing may change one after it is made. A piece that changes is a new item. */
 export function mkItem(name, type, ilvl, stats, extra) {
-  const item = Object.assign(
-    { id: newId(), name, type, ilvl, stats: Object.assign(blankStats(), stats), copies: 1, src: 'custom' },
-    extra || {},
-  );
+  const item = Object.assign({ id: newId(), name, type, ilvl, stats: { ...stats }, copies: 1, src: 'custom' }, extra || {});
   for (const value of Object.values(item)) if (value && typeof value === 'object') Object.freeze(value);
   return Object.freeze(item);
 }
@@ -66,27 +63,21 @@ export function rowStats(row) {
   return row[ROW.stats].split(',').map(Number);
 }
 
-/* A database row's raw stats as this job's stat keys. The game's generic Main Attribute adds to the job's main stat;
-   Secondary Attribute adds to its secondary stat: Piety or Tenacity where the job has one (spec), Direct Hit otherwise
-   (xivgear's mapping, with in-game values for a healer and a Ninja). A tank's main stat here is Strength (verified: patch
-   5.0 notes changed it from Vitality; ClassJob.PrimaryStat); its Tenacity from Secondary Attribute is inferred. */
+/* A database row's raw stats as this job's stat keys (job.stats; the keys are the game's own, so a stat the job has
+   is read as it is). The game's generic Main Attribute adds to the job's main stat; Secondary Attribute adds to its
+   secondary stat: Piety or Tenacity where the job has one (specKey), Direct Hit otherwise (xivgear's mapping, with
+   in-game values for a healer and a Ninja). A tank's main stat here is Strength (verified: patch 5.0 notes changed it
+   from Vitality; ClassJob.PrimaryStat); its Tenacity from Secondary Attribute is inferred. */
 export function dbStats(job, raw) {
   const rawOf = k => raw[statIdx(k)] || 0;
-  const profile = job.profile; // which raw stat each stat key means for this job
-  const secAttr = rawOf('secAttr');
-  return {
-    main: rawOf(profile.main) + rawOf('mainAttr'),
-    vit: rawOf('vit'),
-    crit: rawOf('crit'),
-    det: rawOf('det'),
-    dh: rawOf('dh') + (profile.spec ? 0 : secAttr),
-    spd: rawOf(profile.spd),
-    spec: profile.spec ? rawOf(profile.spec) + secAttr : 0,
-  };
+  const secondaryKey = job.specKey ?? 'dh'; // where Secondary Attribute goes
+  return Object.fromEntries(
+    job.stats.map(s => [s, rawOf(s) + (s === job.mainKey ? rawOf('mainAttr') : 0) + (s === secondaryKey ? rawOf('secAttr') : 0)]),
+  );
 }
 
 const kindCache = new Map();
-/* The stat factors of a database item kind (a row's statFactor) as this job's stat keys: MP[raw stat][kind] / 100
+/* The stat factors of a database item kind (a row's statFactor) by the job's stat keys: MP[stat][kind] / 100
    (Vitality 0.9 on Int/Mind gear; every main stat 0.9 on pieces that carry all four). Null for an unknown kind, which
    means the job's own factors (jobFactor in formulas.js). Frozen and cached per job and kind. A piece whose main stat is
    the generic Main Attribute still takes its kind's factor for the job's main stat under sync: Azeyma's Earrings
@@ -96,10 +87,8 @@ export function kindFactors(job, kind) {
   const key = job.jobId + '|' + kind;
   let factors = kindCache.get(key);
   if (!factors) {
-    const profile = job.profile;
-    // the raw stat each stat key reads for this job; MP holds percents, the factors here are fractions
-    const rawKeyOf = { main: profile.main, vit: 'vit', crit: 'crit', det: 'det', dh: 'dh', spd: profile.spd, spec: profile.spec };
-    factors = Object.freeze(Object.fromEntries(Object.entries(rawKeyOf).map(([s, k]) => [s, k ? MP[k][kind] / 100 : 1])));
+    // MP holds percents, the factors here are fractions
+    factors = Object.freeze(Object.fromEntries(job.stats.map(s => [s, MP[s][kind] / 100])));
     kindCache.set(key, factors);
   }
   return factors;
@@ -174,7 +163,7 @@ export function browseItems(job, f) {
   const bit = 1 << job.jobIndex,
     out = [];
   const q = (f.q || '').trim();
-  const mainIdx = statIdx(job.profile.main),
+  const mainIdx = statIdx(job.mainKey),
     attrIdx = statIdx('mainAttr');
   for (let k = 0; k < ITEMS.length; k++) {
     const r = ITEMS[k];

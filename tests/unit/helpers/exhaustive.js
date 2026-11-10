@@ -151,7 +151,7 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
   rec(0);
   const key = v => keys.map(k => v[k] || 0);
   const ks = out.map(key);
-  const si = keys.indexOf('spd');
+  const si = keys.indexOf(job.speedKey);
   const beaten = (a, b) => (!exactSpd || si < 0 || a[si] === b[si]) && b.every((x, j) => x >= a[j]) && b.some((x, j) => x > a[j]);
   // the first vector of each distinct `keys` total, then those no other total beats (the stones' order in the slots
   // makes most totals repeat, so this compares far fewer pairs than all of them)
@@ -192,11 +192,11 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
   // minimum is a meld key too
   const ranged = spdMin != null || spdMax != null;
   const minStats = Object.keys(mins).filter(s => mins[s] > 0);
-  const meldKeys = [...new Set([...keys, ...(ranged ? ['spd'] : []), ...minStats])];
+  const meldKeys = [...new Set([...keys, ...(ranged ? [job.speedKey] : []), ...minStats])];
   let best = null;
   forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: spdMax != null, fixed }, get => {
-    if (spdMin != null && get('spd') < spdMin) return;
-    if (spdMax != null && get('spd') > spdMax) return;
+    if (spdMin != null && get(job.speedKey) < spdMin) return;
+    if (spdMax != null && get(job.speedKey) > spdMax) return;
     if (minStats.some(s => get(s) < mins[s])) return;
     const v = ranked.map(get);
     if (!best || lexGreater(v, best)) best = v;

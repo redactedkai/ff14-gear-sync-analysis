@@ -34,7 +34,7 @@ import {
    because Vitality was held with the meal's Vitality but asked of the gear alone. */
 test("Vitality as a tiebreak with the best meal finds a set (owner's screenshot)", () => {
   const app = makeApp('AST', { level: 50 });
-  Object.assign(app.recipe, { target: 'main', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
+  Object.assign(app.recipe, { target: 'mind', tb: 'vit', tb2: 'dh', melds: true, food: true, byTier: true });
   app.recipe.expOff = ['HW', 'SB', 'ShB', 'EW', 'DT'];
   app.recipe.exclude = ['relic', 'savage', 'ultimate', 'pvp'];
   assert.equal(solveOf(app).run.status, 'ok');
@@ -44,22 +44,22 @@ test('real Black Mage gear, synced and unsynced, equals brute force', () => {
   // a cap of 123 sits below the 125-135 window, so sync bites
   const app = makeApp('BLM', { cap: 123 });
   const pool = windowPool(app.jobCtx);
-  Object.assign(app.recipe, { target: 'spd', tb: 'main', tb2: 'vit' });
-  const want = sync => exhaustive(app.jobCtx, pool, { cap: app.cap, sync }, { target: 'spd', tiebreak: ['main', 'vit'] })[0];
+  Object.assign(app.recipe, { target: 'sps', tb: 'int', tb2: 'vit' });
+  const want = sync => exhaustive(app.jobCtx, pool, { cap: app.cap, sync }, { target: 'sps', tiebreak: ['int', 'vit'] })[0];
   const synced = solveOf(app, pool);
   assert.equal(synced.run.status, 'ok');
-  const base = statBase(app.jobCtx, 'spd', app.level);
+  const base = statBase(app.jobCtx, 'sps', app.level);
   assert.equal(base, 420);
-  assert.equal(synced.panel('spd'), want(true) + base);
+  assert.equal(synced.panel('sps'), want(true) + base);
   assert.equal(synced.set.rows.filter(r => r.label.startsWith('Ring')).length, 2);
   assert.ok(synced.set.rows.every(r => r.item));
-  const unsynced = solveOf({ ...app, sync: false }, pool).panel('spd');
+  const unsynced = solveOf({ ...app, sync: false }, pool).panel('sps');
   assert.equal(unsynced, want(false) + base);
-  assert.ok(synced.panel('spd') < unsynced);
+  assert.ok(synced.panel('sps') < unsynced);
   // tiers: one entry per stat, none for the main stat and Vitality; speed by its GCD
   assert.equal(synced.set.tiers.length, app.jobCtx.stats.length);
   assert.deepEqual([synced.set.tiers[0], synced.set.tiers[1]], [null, null]);
-  const spd = synced.set.tiers[app.jobCtx.stats.indexOf('spd')];
+  const spd = synced.set.tiers[app.jobCtx.stats.indexOf('sps')];
   assert.equal(spd.effect, `${synced.set.gcd.gcd.toFixed(2)}s`);
   assert.ok(spd.spare >= 0 && spd.toNext > 0);
 });
@@ -211,7 +211,7 @@ test('a Target GCD equals the core, with haste and food, in character panel numb
     assert.equal(freeGcd, gcdFor(free.set.gcd.spd, 100, 2500, pct));
     if (pct) assert.equal(free.set.gcd.unhasted, gcdFor(free.set.gcd.spd, 100));
     // the Tier row's speed cell is the same GCD, haste included
-    assert.equal(free.set.tiers[job.stats.indexOf('spd')].effect, `${freeGcd.toFixed(2)}s`);
+    assert.equal(free.set.tiers[job.stats.indexOf(job.speedKey)].effect, `${freeGcd.toFixed(2)}s`);
     // one tier slower than the free result (the drift case, which "exactly" must meet with less speed), or faster when
     // the free result is already the slowest GCD
     const top = gcdFor(0, 100, 2500, pct);
@@ -251,7 +251,7 @@ test('a Target GCD equals the core, with haste and food, in character panel numb
   assert.equal(no.run.status, 'nogcd');
   assert.equal(no.run.found.gcd.reason, 'unreachable');
   // the target is speed: the GCD typed is ignored
-  Object.assign(nin.recipe, { target: 'spd' });
+  Object.assign(nin.recipe, { target: 'sks' });
   const spd = solveOf(nin, pool);
   assert.equal(spd.run.status, 'ok');
   assert.equal(spd.run.found.gcd, null);
@@ -260,14 +260,14 @@ test('a Target GCD equals the core, with haste and food, in character panel numb
 test('Food adds the meal to the totals, counts tiers and the GCD with it, and keeps the gear', () => {
   const app = makeApp('SGE', { level: 50 });
   const job = app.jobCtx;
-  Object.assign(app.recipe, { target: 'spd', tb: 'crit' });
+  Object.assign(app.recipe, { target: 'sps', tb: 'crit' });
   const pool = windowPool(job);
   const off = solveOf(app, pool);
   assert.equal(off.set.meal, null);
   assert.equal(off.run.found.synced, true);
   // character panel numbers: level 50 base speed 341 (AkhMorning) plus gear
-  const gearSpd = off.set.gear.spd;
-  assert.equal(off.gearPanel('spd'), 341 + gearSpd);
+  const gearSpd = off.set.gear.sps;
+  assert.equal(off.gearPanel('sps'), 341 + gearSpd);
 
   app.recipe.food = true; // best for the goal
   const on = solveOf(app, pool);
@@ -279,16 +279,16 @@ test('Food adds the meal to the totals, counts tiers and the GCD with it, and ke
   assert.deepEqual(on.set.gear, off.set.gear, 'the gear totals are unchanged');
   // the set holds the highest item level meal with the best meal's result (sameMeals), so its points may differ
   // within the tiers
-  const best = bestFood(job, foodChoices(job), off.set.gear, 50, ['spd', 'crit', '']);
-  const meal = sameMeals(job, off.set.gear, best, allMeals(job), { level: 50, haste: 0, goal: 'spd' }, ['spd', 'crit']).at(-1);
+  const best = bestFood(job, foodChoices(job), off.set.gear, 50, ['sps', 'crit', '']);
+  const meal = sameMeals(job, off.set.gear, best, allMeals(job), { level: 50, haste: 0, goal: 'sps' }, ['sps', 'crit']).at(-1);
   assert.equal(on.set.meal.name, meal.name);
-  const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'spd').max, Math.floor((341 + gearSpd) / 10));
-  assert.equal(on.panel('spd'), 341 + want);
+  const want = gearSpd + Math.min(meal.stats.find(s => s.stat === 'sps').max, Math.floor((341 + gearSpd) / 10));
+  assert.equal(on.panel('sps'), 341 + want);
   assert.equal(on.set.gcd.gcd.toFixed(2), gcdFor(want, 50).toFixed(2));
-  assert.equal(on.set.tiers[job.stats.indexOf('spd')].effect, statTier(job, 'spd', want, 50).effect);
+  assert.equal(on.set.tiers[job.stats.indexOf('sps')].effect, statTier(job, 'sps', want, 50).effect);
   // no food bonus on the main stat; Vitality's is the meal's percent of base 202 (level 50, Sage's modifier 100) plus
   // gear, up to its maximum
-  assert.equal(on.set.bonus.main, undefined);
+  assert.equal(on.set.bonus.mind, undefined);
   const vitWant = Math.min(meal.vit.max, Math.floor((meal.vit.pct * (202 + off.set.gear.vit)) / 100));
   assert.deepEqual([on.set.bonus.vit.bonus, on.set.bonus.vit.capped], [vitWant, vitWant === meal.vit.max]);
 
@@ -296,7 +296,7 @@ test('Food adds the meal to the totals, counts tiers and the GCD with it, and ke
   const chosen = foodChoices(job).find(c => c.key === 'det+crit');
   const det = solveOf(app, pool, {}, { pieces: [], meal: chosen.name });
   assert.equal(det.set.meal.name, chosen.name);
-  assert.equal(det.panel('spd'), 341 + gearSpd, 'no speed on this meal');
+  assert.equal(det.panel('sps'), 341 + gearSpd, 'no speed on this meal');
   assert.ok(det.set.bonus.det.bonus > 0);
 });
 
@@ -345,7 +345,7 @@ test('Rank by tier: the core result, each key held at its tier, food chosen with
 test('Rank by tier with a Target GCD: the GCD comes from the tier search', () => {
   const app = makeApp('SGE', { sync: false });
   const pool = windowPool(app.jobCtx);
-  const fastest = solveOf({ ...app, recipe: { ...app.recipe, target: 'spd', byTier: false } }, pool);
+  const fastest = solveOf({ ...app, recipe: { ...app.recipe, target: 'sps', byTier: false } }, pool);
   // halfway between the GCD with no speed and the fastest the window reaches: reachable, and not trivially
   const gcd = Math.round(((2.5 + fastest.set.gcd.gcd) / 2) * 100) / 100;
   Object.assign(app.recipe, { target: 'crit', tb: 'det', tb2: '', byTier: true, gcd, gcdMode: 'exact' });
@@ -389,7 +389,7 @@ test('allocated relics: left out of the search and counted; other relics and sta
    Off-hand row still said "covered by Phantom Cane Eclipticum". */
 test('the Off-hand row is covered by the weapon the Weapon row shows', () => {
   const app = makeApp('WHM', { sync: true, cap: 123, level: 100 });
-  Object.assign(app.recipe, { target: 'main', tb: 'crit', tb2: 'det', melds: true, byTier: true, food: false });
+  Object.assign(app.recipe, { target: 'mind', tb: 'crit', tb2: 'det', melds: true, byTier: true, food: false });
   const { run, set } = solveOf(app);
   assert.equal(run.status, 'ok');
   const weapon = set.rows.find(r => r.label === 'Weapon');
@@ -401,9 +401,9 @@ test('the Off-hand row is covered by the weapon the Weapon row shows', () => {
 test('stat totals too large to rank exactly: the solve throws (views/solve.js answers with the message)', () => {
   const app = makeApp('SGE');
   const pool = ['head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring'].map(t =>
-    mkItem(t, t, 130, { spd: 9e5, main: 9e5, vit: 9e5 }),
+    mkItem(t, t, 130, { sps: 9e5, mind: 9e5, vit: 9e5 }),
   );
-  Object.assign(app.recipe, { target: 'spd', tb: 'main', tb2: 'vit' }); // tiebreaks make the scores large
+  Object.assign(app.recipe, { target: 'sps', tb: 'mind', tb2: 'vit' }); // tiebreaks make the scores large
   app.sync = false; // with sync on these stats would be clamped to normal values
   assert.throws(() => solveOf(app, pool), /too large/);
 });

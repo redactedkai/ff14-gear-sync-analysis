@@ -64,7 +64,7 @@ export function jobGroups() {
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const pool = browseItems(job, {}).map(r => poolItemFromRow(job, r));
-    const meals = allMeals(job).filter(m => m.stats.some(s => s.stat === 'spd'));
+    const meals = allMeals(job).filter(m => m.stats.some(s => s.stat === job.speedKey));
     const key = createHash('sha1')
       .update(JSON.stringify([job.maxLevel, pool.map(i => [i.name, i.ilvl, i.type, i.stats]), meals.map(m => m.key)]))
       .digest('hex');
@@ -85,14 +85,17 @@ export function groupMaxSpeed({ jobs, job, pool, meals }, level, truncated = [])
     ...(level >= CAP_FROM_LEVEL ? [['cap', pool, { cap: capCeiling(level), sync: true, level }]] : []),
   ];
   const runs = cases.map(([name, items, sync]) => {
-    const run = optimize(job, items, sync, { target: 'spd', melds: true, weaponFirst: false, nodeLimit: NODE_LIMIT });
+    const run = optimize(job, items, sync, { target: job.speedKey, melds: true, weaponFirst: false, nodeLimit: NODE_LIMIT });
     if (run.truncated) truncated.push({ jobs: jobs ?? [job.jobId], level, case: name });
     return run;
   });
-  const best = runs.filter(r => r.ok).reduce((a, r) => (r.totals.spd > (a?.totals.spd ?? -1) ? r : a), null);
-  const gear = best?.totals.spd ?? 0;
-  const food = Math.max(0, ...meals.map(m => foodBonus(job, m, { ...(best?.totals ?? {}), spd: gear }, level).spd?.bonus ?? 0));
-  return statBase(job, 'spd', level) + gear + food;
+  const best = runs.filter(r => r.ok).reduce((a, r) => (r.totals[job.speedKey] > (a?.totals[job.speedKey] ?? -1) ? r : a), null);
+  const gear = best?.totals[job.speedKey] ?? 0;
+  const food = Math.max(
+    0,
+    ...meals.map(m => foodBonus(job, m, { ...(best?.totals ?? {}), [job.speedKey]: gear }, level)[job.speedKey]?.bonus ?? 0),
+  );
+  return statBase(job, job.speedKey, level) + gear + food;
 }
 
 /* Every level's most total speed over all groups: [level 1, ..., level `levels`]. Searches that stopped at NODE_LIMIT

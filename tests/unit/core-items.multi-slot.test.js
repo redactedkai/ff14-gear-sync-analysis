@@ -48,7 +48,7 @@ test('slot info: a piece is capped at its own slot share, and names what it cove
   const sync = { cap: 290, sync: true };
   const eff = effStats(blm, cloak, sync);
   assert.deepEqual(eff, syncStats(blm, cloak.stats, 'body', 290, 300, 220, slotInfo(blm, cloak).factors));
-  assert.ok(eff.main > syncStats(blm, cloak.stats, 'body', 290, 300).main);
+  assert.ok(eff.int > syncStats(blm, cloak.stats, 'body', 290, 300).int);
   const [wand] = gamePool(whm, { q: 'Tidal Wave Wand' });
   assert.deepEqual(slotInfo(whm, wand), { pct: 100, blocks: [], factors: kindFactors(whm, itemRow('Tidal Wave Wand')[ROW.kind]) });
   const [cane] = gamePool(whm, { q: 'Tidal Wave Cane' });
@@ -83,8 +83,8 @@ for (const [jobId, filter, keep, what] of POOLS) {
       { cap: 290, sync: true },
       { cap: 290, sync: false },
     ]) {
-      for (const target of ['main', 'vit', ...job.substats]) {
-        const opts = { target, tiebreak: ['main', 'vit'].filter(s => s !== target) };
+      for (const target of [job.mainKey, 'vit', ...job.substats]) {
+        const opts = { target, tiebreak: [job.mainKey, 'vit'].filter(s => s !== target) };
         const r = optimize(job, pool, sync, opts);
         const label = `${target} sync=${sync.sync} cap=${sync.cap}`;
         assert.ok(r.ok && !r.truncated, label);
@@ -108,10 +108,10 @@ test('the cloak and a separate head and body each win somewhere, so the brute fo
   // win. A cloak must not prune the body pieces it beats on stats alone (it also costs the head).
   const pool = gamePool(blm, { ilvlMin: 290, ilvlMax: 310 }, twoSetsOrCloak);
   const head = (sync, target) => optimize(blm, pool, sync, { target }).picks.find(p => p.type === 'head');
-  const low = head({ cap: 90, sync: true }, 'main');
+  const low = head({ cap: 90, sync: true }, 'int');
   assert.equal(low.item, null);
   assert.equal(low.blockedBy.name, 'Vermilion Cloak of Casting');
-  assert.equal(head({ cap: 290, sync: false }, 'main').item.ilvl, 310);
+  assert.equal(head({ cap: 290, sync: false }, 'int').item.ilvl, 310);
 });
 
 test('a cloak in a full pool keeps the search small: the bound drops the head it blocks', () => {
@@ -142,7 +142,7 @@ test('legs covering the feet and a body covering hands, legs and feet: slot shar
   assert.equal(slotInfo(war, herklaedi).pct, 440);
   assert.equal(slotLabel(herklaedi.type, slotInfo(war, herklaedi).blocks), 'Body + Hands + Legs + Feet');
   // ItemLevel row 50: Strength 95, Vitality 121, Tenacity 170; x 440 / 1000 = 41.8, 53.24, 74.8
-  assert.deepEqual([herklaedi.stats.main, herklaedi.stats.vit, herklaedi.stats.spec], [42, 53, 75]);
+  assert.deepEqual([herklaedi.stats.str, herklaedi.stats.vit, herklaedi.stats.ten], [42, 53, 75]);
 });
 
 /* Warrior gear from item level 44 to 70 (equip level 50 or below): Herklaedi, the Flanchards up to item level 70, and
@@ -162,8 +162,8 @@ test('WAR item level 44-70 (Herklaedi, Flanchards or a plain body, legs and feet
   assert.ok(n >= 100 && n <= 400000, `${n} loadouts`);
   const covered = new Set();
   for (const sync of [{ level: 18 }, { level: 30 }, { level: 45 }, { cap: 40, sync: true }, {}]) {
-    for (const target of ['main', 'vit', ...war.substats]) {
-      const opts = { target, tiebreak: ['main', 'vit'].filter(s => s !== target) };
+    for (const target of ['str', 'vit', ...war.substats]) {
+      const opts = { target, tiebreak: ['str', 'vit'].filter(s => s !== target) };
       const r = optimize(war, pool, sync, opts);
       const label = `${target} ${JSON.stringify(sync)}`;
       assert.ok(r.ok && !r.truncated, label);
@@ -190,7 +190,7 @@ test('below level 50 a full pool keeps the search small: a piece covering later 
     const job = makeJobContext(id);
     const pool = gamePool(job, {});
     for (const level of [18, 30, 49]) {
-      const r = optimize(job, pool, { level }, { target: 'main', tiebreak: ['vit'], nodeLimit: 150000 });
+      const r = optimize(job, pool, { level }, { target: job.mainKey, tiebreak: ['vit'], nodeLimit: 150000 });
       assert.ok(!r.truncated && r.nodes < 2000, `${id} level ${level}: ${r.nodes} nodes`);
     }
   }
@@ -200,7 +200,7 @@ test("picks come back in the character panel's slot order, though the search fil
   // With the healer cloak in the pool the head is blockable, so the search puts it after the rings; the result is
   // ordered by SLOT_TYPES instead (it showed Head below Ring 2).
   const sge = makeJobContext('SGE');
-  const r = optimize(sge, gamePool(sge, {}), { cap: 123, sync: true }, { target: 'main' });
+  const r = optimize(sge, gamePool(sge, {}), { cap: 123, sync: true }, { target: 'mind' });
   assert.deepEqual(
     r.picks.map(p => p.type),
     ['weapon', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'],

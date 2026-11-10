@@ -69,7 +69,7 @@ test('defense: real armor with the HQ bonus, synced as measured in game, and its
 test('the optimizer takes the most weapon damage, then the goal', () => {
   for (const [id, sync, target, tiebreak, ilvlMin, ilvlMax] of [
     ['GNB', { cap: 475, sync: true, level: 80 }, 'dh', ['crit', 'det'], 400, 520],
-    ['SAM', NO_SYNC, 'spd', ['crit', 'det'], 700, 790],
+    ['SAM', NO_SYNC, 'sks', ['crit', 'det'], 700, 790],
     ['SGE', NO_SYNC, 'crit', ['det', 'dh'], 760, 790],
   ]) {
     const job = makeJobContext(id);
@@ -84,9 +84,9 @@ test('the optimizer takes the most weapon damage, then the goal', () => {
 /* With a speed minimum only a weapon with less weapon damage reaches, the optimizer takes the most weapon damage that
    does: the key ranks, it never empties the result. */
 test('a speed limit only a lower weapon meets: the most weapon damage that meets it, not "no set"', () => {
-  const high = mkItem('fast-less', 'weapon', 700, { main: 500, crit: 300 });
-  const low = mkItem('slow-more', 'weapon', 690, { main: 490, spd: 300 });
-  const head = mkItem('head', 'head', 690, { main: 200, crit: 100 });
+  const high = mkItem('fast-less', 'weapon', 700, { mind: 500, crit: 300 });
+  const low = mkItem('slow-more', 'weapon', 690, { mind: 490, sps: 300 });
+  const head = mkItem('head', 'head', 690, { mind: 200, crit: 100 });
   const pool = [high, low, head];
   const free = optimize(sge, pool, NO_SYNC, { target: 'crit' });
   assert.equal(free.picks.find(p => p.type === 'weapon').item, high);
@@ -99,7 +99,7 @@ test('a speed limit only a lower weapon meets: the most weapon damage that meets
 /* Same-result rows (same-result.js) keep weapon damage: two sets that differ only in it are not the same result. */
 test('same result: a weapon with less weapon damage is not the same result', () => {
   const ctx = { level: 100, food: null, haste: 0, goal: null };
-  const t = { main: 800, vit: 800, crit: 400, det: 300, dh: 0, spd: 0, spec: 0 };
+  const t = { mind: 800, vit: 800, crit: 400, det: 300, dh: 0, sps: 0, piety: 0 };
   assert.notDeepEqual(resultOf(sge, { ...t, wd: 157 }, ctx), resultOf(sge, { ...t, wd: 156 }, ctx));
   assert.deepEqual(resultOf(sge, { ...t, wd: 157 }, ctx), resultOf(sge, { ...t, wd: 157 }, ctx));
 });

@@ -10,7 +10,7 @@ import { DEFAULT_EXCLUDE } from '../settings.js';
    level cap. {goal, searchCriteria}. */
 export function defaultFillSettings(job) {
   return {
-    goal: { target: 'main', tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: true, melds: true, food: false },
+    goal: { target: job.mainKey, tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: true, melds: true, food: false },
     searchCriteria: { expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: job.maxLevel },
   };
 }
@@ -23,7 +23,7 @@ export function fillSettingsOf(job, gearSet) {
   const own = gearSet.fillSettings;
   if (!own) return base;
   const goal = { ...base.goal, ...own.goal };
-  const ranks = [goal.target, goal.tb, goal.tb2].map((k, i) => (k && job.stats.includes(k) ? k : i === 0 ? 'main' : ''));
+  const ranks = [goal.target, goal.tb, goal.tb2].map((k, i) => (k && job.stats.includes(k) ? k : i === 0 ? job.mainKey : ''));
   [goal.target, goal.tb, goal.tb2] = uniqueRanks(ranks).map(r => r ?? '');
   const searchCriteria = { ...base.searchCriteria, ...own.searchCriteria };
   if (searchCriteria.lvl !== '' && searchCriteria.lvl > job.maxLevel) searchCriteria.lvl = job.maxLevel;

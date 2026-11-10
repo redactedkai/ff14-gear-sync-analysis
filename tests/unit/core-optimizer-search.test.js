@@ -24,17 +24,17 @@ function cand(score, eff, blocks = []) {
 function randomLists(rand, size = 4) {
   const int = n => Math.floor(rand() * n);
   return Array.from({ length: 3 }, () =>
-    Array.from({ length: size }, () => cand(int(100), { spd: int(30), det: int(30) })).sort((x, y) => y.score - x.score),
+    Array.from({ length: size }, () => cand(int(100), { sks: int(30), det: int(30) })).sort((x, y) => y.score - x.score),
   );
 }
 
-/* Every way to pick one candidate per list from position `pos` on: [{score, spd, det, picks}]. */
+/* Every way to pick one candidate per list from position `pos` on: [{score, sks, det, picks}]. */
 function completions(posList, pos = 0) {
-  if (pos === posList.length) return [{ score: 0, spd: 0, det: 0, picks: [] }];
+  if (pos === posList.length) return [{ score: 0, sks: 0, det: 0, picks: [] }];
   return posList[pos].flatMap(c =>
     completions(posList, pos + 1).map(rest => ({
       score: rest.score + c.score,
-      spd: rest.spd + c.eff.spd,
+      sks: rest.sks + c.eff.sks,
       det: rest.det + c.eff.det,
       picks: [c, ...rest.picks],
     })),
@@ -50,31 +50,31 @@ test('limitTables: a minimum, and a band, give the brute-force best of the slots
     const min = 20 + Math.floor(rand() * 40);
     const max = min + Math.floor(rand() * 20);
     for (const [label, table, fits] of [
-      ['minimum', limitTables(SLOTS, posList, c => c.eff.spd, min, null), total => total >= min],
-      ['band', limitTables(SLOTS, posList, c => c.eff.spd, min, max), total => total >= min && total <= max],
+      ['minimum', limitTables(SLOTS, posList, c => c.eff.sks, min, null), total => total >= min],
+      ['band', limitTables(SLOTS, posList, c => c.eff.sks, min, max), total => total >= min && total <= max],
     ]) {
       for (let pos = 0; pos <= SLOTS.length; pos++) {
         const rest = completions(posList, pos);
         // every total the slots before pos can have
-        const before = new Set(completions(posList.slice(0, pos)).map(c => c.spd));
+        const before = new Set(completions(posList.slice(0, pos)).map(c => c.sks));
         for (const soFar of before) {
-          const scores = rest.filter(c => fits(soFar + c.spd)).map(c => c.score);
+          const scores = rest.filter(c => fits(soFar + c.sks)).map(c => c.score);
           assert.equal(table(pos, soFar), scores.length ? Math.max(...scores) : -Infinity, `${label} #${t} pos ${pos} at ${soFar}`);
         }
-        assert.equal(table.top(pos), Math.max(...rest.filter(c => !(label === 'band' && c.spd > max)).map(c => c.score)), `${label} top`);
+        assert.equal(table.top(pos), Math.max(...rest.filter(c => !(label === 'band' && c.sks > max)).map(c => c.score)), `${label} top`);
       }
     }
   }
   // neither a minimum above 0 nor a maximum: no table
   assert.equal(
-    limitTables(SLOTS, randomLists(rand), c => c.eff.spd, 0, null),
+    limitTables(SLOTS, randomLists(rand), c => c.eff.sks, 0, null),
     null,
   );
 });
 
 test('combinedLimitBound: the smallest of each limit table, with two and three bands', () => {
   const rand = rng(9);
-  const stats = ['spd', 'det', 'crit'];
+  const stats = ['sks', 'det', 'crit'];
   for (let t = 0; t < 10; t++) {
     const int = n => Math.floor(rand() * n);
     const posList = randomLists(rand).map(list => list.map(c => ({ ...c, eff: { ...c.eff, crit: int(30) } })));
@@ -104,10 +104,10 @@ test('lagrangeBound and fixByReducedCost: the bound is at least the best set mee
     const posList = randomLists(rand, 6);
     const sets = completions(posList);
     const limits = [
-      { stat: 'spd', min: 20 + Math.floor(rand() * 20), max: 60 + Math.floor(rand() * 20) },
+      { stat: 'sks', min: 20 + Math.floor(rand() * 20), max: 60 + Math.floor(rand() * 20) },
       { stat: 'det', min: 20 + Math.floor(rand() * 30), max: null },
     ];
-    const meets = s => s.spd >= limits[0].min && s.spd <= limits[0].max && s.det >= limits[1].min;
+    const meets = s => s.sks >= limits[0].min && s.sks <= limits[0].max && s.det >= limits[1].min;
     const feasible = sets.filter(meets).sort((x, y) => y.score - x.score);
     if (feasible.length < 2) continue;
     const best = feasible[0];

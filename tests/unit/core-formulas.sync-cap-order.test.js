@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { capValue, capsFor, pieceValue, syncStats } from '../../src/core/formulas.js';
 import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../src/core/items.js';
-import { ALL_STATS, ITEM_STAT_ORDER, ROW } from '../../src/core/constants.js';
+import { ITEM_STAT_ORDER, ROW } from '../../src/core/constants.js';
 import { IL, ITEMS, MAX_REAL } from '../../src/core/tables.js';
 import { itemRow } from './helpers/common.js';
 
@@ -52,15 +52,15 @@ test("Azeyma's Earrings (all jobs, item kind 0) synced to 430: the in-game value
     sge = makeJobContext('SGE');
   assert.deepEqual([IL.dex[430], IL.vit[430], IL.dh[430], IL.det[430], IL.piety[430]], [1170, 1197, 1175, 1175, 1175]);
   const n = synced(nin, "Azeyma's Earrings", 430);
-  assert.deepEqual([n.main, n.dh, n.vit, n.det], [71, 79, 72, 79]); // main: the item-stat order gives 70
+  assert.deepEqual([n.dex, n.dh, n.vit, n.det], [71, 79, 72, 79]); // main: the item-stat order gives 70
   const s = synced(sge, "Azeyma's Earrings", 430);
-  assert.deepEqual([s.main, s.spec, s.vit, s.det], [71, 71, 72, 79]);
+  assert.deepEqual([s.mind, s.piety, s.vit, s.det], [71, 71, 72, 79]);
 });
 
 test("Menphina's Earring (430) synced to 425 for Sage: the in-game 72 Vitality, 69 Mind, 78 Determination, 70 Piety", () => {
   const sge = makeJobContext('SGE');
   const s = synced(sge, "Menphina's Earring", 425);
-  assert.deepEqual([s.vit, s.main, s.det, s.spec], [72, 69, 78, 70]);
+  assert.deepEqual([s.vit, s.mind, s.det, s.piety], [72, 69, 78, 70]);
 });
 
 test('with a factor of 1 the cap order equals the item-stat order at every item level and slot share', () => {
@@ -76,8 +76,7 @@ test('with a factor of 1 the cap order equals the item-stat order at every item 
   ];
   for (const id of ['PLD', 'WHM', 'MNK', 'NIN', 'BLM']) {
     const job = makeJobContext(id);
-    for (const s of ALL_STATS) {
-      if (s === 'spec' && !job.profile.spec) continue;
+    for (const s of job.stats) {
       const f = s === 'vit' ? job.vitFactor : 1;
       if (f !== 1) continue;
       for (const [type, pct] of shares) {

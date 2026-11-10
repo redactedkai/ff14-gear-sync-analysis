@@ -210,7 +210,7 @@ export function bestMeld(job, item, keys) {
    ranking), as bestMeld results. With a minimum or maximum, one best placement per piece is no longer exact: the best
    melds of a piece depend on how much of the limited stat the rest of the loadout has. So every gain vector that no
    other beats on the keys is kept (each a version of the piece), shown by its tieOrder-best placement. `keys`: the
-   objective's keys and the limited stats ('spd' with a speed rule). With `exactSpd` (a speed maximum: more
+   objective's keys and the limited stats (the job's speedKey with a speed rule). With `exactSpd` (a speed maximum: more
    speed can break it), a vector beats another only at the same speed, so versions with less speed survive too.
    Only gain vectors that the lo stones reach from the later overmeld slots alone are versions: a lo stone in a big slot
    only lowers a gain, so it adds a vector only under a maximum, and there it found no better set in 2,045 Target GCD
@@ -220,7 +220,7 @@ const versionMemo = new Map();
 export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
   const m = meldSetup(job, item, keys);
   if (!m) return [null];
-  const spdPos = m.meldable.indexOf('spd');
+  const spdPos = m.meldable.indexOf(job.speedKey);
   const key = `${m.nBig},${m.nSmall},${m.hi.grade},${m.lo.grade},${m.headroom.join(',')},${spdPos},${exactSpd ? 1 : 0}`;
   let kept = versionMemo.get(key);
   if (!kept) {

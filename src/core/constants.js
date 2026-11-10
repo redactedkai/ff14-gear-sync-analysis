@@ -1,12 +1,15 @@
 /* Static game and project constants. Nothing here changes at runtime.
-   Internal stat keys name a position in the job's stat list, not one game stat: main (Str/Dex/Int/Mind), vit, crit, det, dh,
-   spd (Skill/Spell Speed), spec (Piety/Tenacity/none). A JobContext (job-context.js) maps them per job.
+   Stat keys are the game's own stat names: str, dex, int, mind, vit, crit, det, dh, sks, sps, piety, ten (the keys of
+   item-format.json's `stats`). A JobContext (job-context.js) says which of them a job has: mainKey, speedKey, specKey.
    The generated-data format (job bit order, raw stat order, slot codes) comes from item-format.json, which the
    Python generators read too. */
 import ITEM_FORMAT from './item-format.json' with { type: 'json' };
 
-export const ALL_STATS = Object.freeze(['main', 'vit', 'crit', 'det', 'dh', 'spd', 'spec']);
-export const BASE_SUBSTATS = Object.freeze(['crit', 'det', 'dh', 'spd']);
+/* The substats every job has; the speed stat and the special substat follow in a job's own list. */
+export const SHARED_SUBSTATS = Object.freeze(['crit', 'det', 'dh']);
+/* The substats whose character base is the level's main stat base, not the speed base (food.js statBase): the ones the
+   game scales from the main stat. */
+export const MAIN_BASED_SUBSTATS = Object.freeze(['det', 'piety']);
 
 export const SLOT_TYPES = Object.freeze(['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
 export const SLOT_LABEL = Object.freeze({
@@ -89,21 +92,45 @@ export const REDUCED_STAT_PIECES = Object.freeze({
   rest: 80,
 });
 
-export const MAIN_NAME = Object.freeze({ str: 'Strength', dex: 'Dexterity', int: 'Intelligence', mind: 'Mind' });
-/* Short names as xivgear writes them */
-export const MAIN_SHORT = Object.freeze({ str: 'STR', dex: 'DEX', int: 'INT', mind: 'MND' });
-export const SPD_NAME = Object.freeze({ sks: 'Skill Speed', sps: 'Spell Speed' });
-export const SPD_SHORT = Object.freeze({ sks: 'SkS', sps: 'SpS' });
-export const SPEC_NAME = Object.freeze({ piety: 'Piety', ten: 'Tenacity' });
-export const SPEC_SHORT = Object.freeze({ piety: 'PIE', ten: 'TNC' });
+/* Names of every stat key, in full and short (the short names as xivgear writes them). One table by key: a job's
+   labels are the entries of its own keys (job-context.js). */
+export const STAT_LABEL = Object.freeze({
+  str: 'Strength',
+  dex: 'Dexterity',
+  int: 'Intelligence',
+  mind: 'Mind',
+  vit: 'Vitality',
+  crit: 'Critical Hit',
+  det: 'Determination',
+  dh: 'Direct Hit',
+  sks: 'Skill Speed',
+  sps: 'Spell Speed',
+  piety: 'Piety',
+  ten: 'Tenacity',
+});
+export const STAT_SHORT = Object.freeze({
+  str: 'STR',
+  dex: 'DEX',
+  int: 'INT',
+  mind: 'MND',
+  vit: 'VIT',
+  crit: 'CRT',
+  det: 'DET',
+  dh: 'DHT',
+  sks: 'SkS',
+  sps: 'SpS',
+  piety: 'PIE',
+  ten: 'TNC',
+});
 
-/* Role profiles: which raw stat each stat key means. */
+/* Role profiles: which game stat is each position of a job's stat list. mainKey: Strength, Dexterity, Intelligence or
+   Mind; speedKey: Skill Speed or Spell Speed; specKey: Piety or Tenacity, null for a job without a special substat. */
 export const PROFILES = Object.freeze({
-  healer: Object.freeze({ label: 'Healer', main: 'mind', spd: 'sps', spec: 'piety' }),
-  tank: Object.freeze({ label: 'Tank', main: 'str', spd: 'sks', spec: 'ten' }),
-  melee: Object.freeze({ label: 'Melee DPS (Strength)', main: 'str', spd: 'sks', spec: null }),
-  dex: Object.freeze({ label: 'Ranged, Ninja, Viper (Dexterity)', main: 'dex', spd: 'sks', spec: null }),
-  caster: Object.freeze({ label: 'Caster (Intelligence)', main: 'int', spd: 'sps', spec: null }),
+  healer: Object.freeze({ label: 'Healer', mainKey: 'mind', speedKey: 'sps', specKey: 'piety' }),
+  tank: Object.freeze({ label: 'Tank', mainKey: 'str', speedKey: 'sks', specKey: 'ten' }),
+  melee: Object.freeze({ label: 'Melee DPS (Strength)', mainKey: 'str', speedKey: 'sks', specKey: null }),
+  dex: Object.freeze({ label: 'Ranged, Ninja, Viper (Dexterity)', mainKey: 'dex', speedKey: 'sks', specKey: null }),
+  caster: Object.freeze({ label: 'Caster (Intelligence)', mainKey: 'int', speedKey: 'sps', specKey: null }),
 });
 
 /* Name and role profile per job id. */
@@ -237,6 +264,9 @@ export const GEAR_CATEGORIES = Object.freeze(ITEM_FORMAT.category.list.map(c => 
 export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
 export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
+/* Mind's position in a row's raw stats: the old healer gear whose only main stat is Mind carries a fixed Direct Hit line
+   (formulas.js fixedDirectHitShare). */
+export const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind');
 /* The game's generic "Main Attribute" (pre-order earrings): the wearer's main stat (see items.js dbStats, which also
    maps the generic "Secondary Attribute"). */
 export const RAW_MAIN_ATTR_IDX = ITEM_STAT_ORDER.indexOf('mainAttr');

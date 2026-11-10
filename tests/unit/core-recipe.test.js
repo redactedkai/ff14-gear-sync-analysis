@@ -40,7 +40,7 @@ test('recipeKey: each kind of session entry changes with exactly the fields it d
 });
 
 test('runRecipe: the set by gameId, the record with the goal as asked, and no set when nothing passes the filters', () => {
-  const asked = recipe({ target: 'main', tb: 'crit', food: true });
+  const asked = recipe({ target: 'mind', tb: 'crit', food: true });
   const run = runRecipe(sge, SYNC, 100, asked, makeSession());
   assert.equal(run.status, 'ok');
   assert.ok(Object.isFrozen(run.set) && Object.isFrozen(run.record));
@@ -55,7 +55,7 @@ test('runRecipe: the set by gameId, the record with the goal as asked, and no se
   assert.deepEqual(run.record, { job: 'SGE', sync: SYNC, level: 100, recipe: asked });
   asked.target = 'det';
   asked.exclude.push('crafted');
-  assert.equal(run.record.recipe.target, 'main');
+  assert.equal(run.record.recipe.target, 'mind');
   assert.ok(!run.record.recipe.exclude.includes('crafted'));
   // every box off and no market board
   const none = runRecipe(sge, SYNC, 100, recipe({ exclude: ACTIVITIES.map(a => a.key), market: false }), makeSession());
@@ -63,7 +63,7 @@ test('runRecipe: the set by gameId, the record with the goal as asked, and no se
 });
 
 test('runRecipe: a piece picked by gameId is shown where it gives the same result', () => {
-  const asked = recipe({ target: 'main', tb: 'crit' });
+  const asked = recipe({ target: 'mind', tb: 'crit' });
   const session = makeSession();
   const run = runRecipe(sge, SYNC, 100, asked, session);
   // the first other piece of some row's menu that the row takes (a menu lists the pieces that fit the rows as shown,

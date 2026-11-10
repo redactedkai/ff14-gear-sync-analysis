@@ -104,7 +104,7 @@ test('the caps the page uses at 123 equal the derived caps, for a healer and a S
     const job = makeJobContext(id);
     for (const slot of [...ARMOR, 'weapon2h']) {
       const c = capsFor(job, slot === 'weapon2h' ? 'weapon' : slot, 123);
-      assert.equal(c.main, CAPS_123[slot].main, `${id} ${slot} main`);
+      assert.equal(c[job.mainKey], CAPS_123[slot].main, `${id} ${slot} main`);
       for (const k of job.substats) assert.equal(c[k], CAPS_123[slot].sub, `${id} ${slot} ${k}`);
     }
   }
@@ -114,7 +114,7 @@ test('the caps the page uses at 123 equal the derived caps, for a healer and a S
     ['offhand', 'offhand'],
   ]) {
     const c = capsFor(pld, type, 123);
-    assert.deepEqual([c.main, c.spd, c.spec], [CAPS_123[slot].main, CAPS_123[slot].sub, CAPS_123[slot].sub], `PLD ${slot}`);
+    assert.deepEqual([c.str, c.sks, c.ten], [CAPS_123[slot].main, CAPS_123[slot].sub, CAPS_123[slot].sub], `PLD ${slot}`);
   }
 });
 
@@ -125,7 +125,7 @@ test('generic maximum at 123: ten armor and accessory caps sum to 296, a 2.22 s 
   for (const id of ['SGE', 'WAR']) {
     const job = makeJobContext(id);
     const gen = genericItems(job, 475, job.substats, ARMOR);
-    const r = optimize(job, gen, { cap: 123, sync: true }, { target: 'spd' });
-    assert.equal(r.totals.spd, sum, id);
+    const r = optimize(job, gen, { cap: 123, sync: true }, { target: job.speedKey });
+    assert.equal(r.totals[job.speedKey], sum, id);
   }
 });

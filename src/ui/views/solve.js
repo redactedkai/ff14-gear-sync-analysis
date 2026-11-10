@@ -15,10 +15,10 @@ export function searchCount(job, recipe, gear) {
   return { searched, left: gear.length - searched };
 }
 
-/* The Target GCD field's label for the range gcdRange gives ({top, fastest, haste}): the range in parentheses ("Target
+/* The Target GCD field's label for `job` and the range gcdRange gives ({top, fastest, haste}): the range in parentheses ("Target
    GCD (2.50 to 2.10)", the job's haste after it, or "off: the target is speed"). */
-function gcdLabel(recipe, { top, fastest, haste }) {
-  if (recipe.target === 'spd') return 'Target GCD (off: the target is speed)';
+function gcdLabel(job, recipe, { top, fastest, haste }) {
+  if (recipe.target === job.speedKey) return 'Target GCD (off: the target is speed)';
   const span = fastest == null ? '' : `${top.toFixed(2)} to ${fastest.toFixed(2)}`;
   const note = [span, haste ? `with ${haste.name} ${haste.pct}%` : ''].filter(Boolean).join(' ');
   return note ? `Target GCD (${note})` : 'Target GCD';
@@ -35,7 +35,7 @@ export function gearToSearchView(job, sync, level, recipe, session) {
     countText: `searching ${fmtInt(count.searched)} of ${fmtInt(count.searched + count.left)} pieces`,
     searched: count.searched,
     emptyBoxes: emptyGearFrom(job, recipe, gear),
-    gcdLabel: gcdLabel(recipe, gcdRange(job, sync, level, recipe, session)),
+    gcdLabel: gcdLabel(job, recipe, gcdRange(job, sync, level, recipe, session)),
   };
 }
 

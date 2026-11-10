@@ -6,17 +6,14 @@
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
-import { LEVEL_MAIN } from './constants.js';
+import { LEVEL_MAIN, MAIN_BASED_SUBSTATS } from './constants.js';
 import { clampLevel, levelParams } from './level-params.js';
 import { FOODS } from './tables.js';
 
-/* The stat key a raw food stat means for the job, or null when the job has no such stat (Spell Speed food for a
+/* The stat key of a raw food stat (the game's own) if the job has it, or null when the job has no such stat (Spell Speed food for a
    Skill Speed job, Tenacity food for a job without Tenacity). */
 function statKeyOf(job, raw) {
-  if (raw === 'crit' || raw === 'det' || raw === 'dh') return raw;
-  if (raw === job.profile.spd) return 'spd';
-  if (raw === job.profile.spec) return 'spec';
-  return null;
+  return job.substats.includes(raw) ? raw : null;
 }
 
 /* The base a stat key starts from at character level `level`, as the character panel counts it: for the main stat
@@ -26,9 +23,9 @@ function statKeyOf(job, raw) {
 export function statBase(job, stat, level) {
   const lv = clampLevel(level);
   // the main stat and Vitality: the job's share of the main stat base
-  if (stat === 'main' || stat === 'vit') return Math.floor((LEVEL_MAIN[lv - 1] * job.attributeMods[stat]) / 100);
+  if (stat === job.mainKey || stat === 'vit') return Math.floor((LEVEL_MAIN[lv - 1] * job.attributeMods[stat]) / 100);
   // Determination and Piety start from the main stat base, the other substats from the speed base
-  if (stat === 'det' || (stat === 'spec' && job.specKind === 'mp')) return LEVEL_MAIN[lv - 1];
+  if (MAIN_BASED_SUBSTATS.includes(stat)) return LEVEL_MAIN[lv - 1];
   return levelParams(lv).sub;
 }
 

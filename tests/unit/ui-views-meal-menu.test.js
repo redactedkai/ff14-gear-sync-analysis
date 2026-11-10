@@ -27,7 +27,7 @@ import { makeApp, solveOf } from './helpers/views.js';
    +126 Determination. */
 test("Food menu on a Sage set: what each meal adds on the set's gear, chips and the Critical Hit sort", () => {
   const app = makeApp('SGE', { level: 70, cap: 375 });
-  Object.assign(app.recipe, { target: 'crit', tb: 'det', tb2: 'main', melds: true, food: true, byTier: true });
+  Object.assign(app.recipe, { target: 'crit', tb: 'det', tb2: 'mind', melds: true, food: true, byTier: true });
   const { run, set } = solveOf(app);
   assert.equal(run.status, 'ok');
   const shown = allMeals(app.jobCtx).find(m => m.key === run.set.meal);
@@ -102,7 +102,7 @@ const meal = (name, ilvl, adds) => ({
 const MEALS = [
   meal('Caramel Popcorn', 770, { det: 125, crit: 91, vit: 121 }),
   meal('Rroneek au Gratin', 770, { crit: 91, dh: 36, vit: 121 }),
-  meal('Mate Cookie', 740, { spd: 36, det: 125, vit: 121 }),
+  meal('Mate Cookie', 740, { sps: 36, det: 125, vit: 121 }),
 ];
 const filters = (stats, query = '') => ({ stats, query });
 
@@ -167,10 +167,10 @@ test('Food menu pills: greyed out only as a third, or when the list would be emp
   assert.equal(mealPillOff(MEALS, 'dh', filters([])), false);
   assert.equal(mealPillOff(MEALS, 'crit', filters(['crit'])), false);
   // Spell Speed with Critical Hit: no meal has both
-  assert.equal(mealPillOff(MEALS, 'spd', filters(['crit'])), true);
+  assert.equal(mealPillOff(MEALS, 'sps', filters(['crit'])), true);
   assert.equal(mealPillOff(MEALS, 'det', filters(['crit'])), false);
   // a third pill, always
-  assert.equal(mealPillOff(MEALS, 'spd', filters(['crit', 'det'])), true);
+  assert.equal(mealPillOff(MEALS, 'sps', filters(['crit', 'det'])), true);
   // under a search: a pill that would leave nothing it matches
   assert.equal(mealPillOff(MEALS, 'dh', filters([], 'caramel')), true);
 });
@@ -179,7 +179,7 @@ test('Food menu empty list: only a search empties the list, and Clear search bri
   assert.equal(mealEmptyReason(MEALS, filters(['crit'])), null);
   assert.deepEqual(mealEmptyReason(MEALS, filters(['crit'], 'xyz ')), { text: 'No meal matches "xyz".', action: 'query' });
   // nothing to bring back (a state the menu cannot reach, or no meal at all): no line
-  assert.equal(mealEmptyReason(MEALS, filters(['crit', 'spd'])), null);
+  assert.equal(mealEmptyReason(MEALS, filters(['crit', 'sps'])), null);
   assert.equal(mealEmptyReason([], filters([], 'xyz')), null);
 });
 
@@ -189,7 +189,7 @@ test('Food menu list: the pills and search narrow the list; the Sort row follows
       { label: 'Dawntrail', items: MEALS.slice(0, 2) },
       { label: 'Endwalker', items: MEALS.slice(2) },
     ],
-    pills: ['crit', 'det', 'dh', 'spd'].map(stat => ({ stat, short: stat.toUpperCase(), label: stat })),
+    pills: ['crit', 'det', 'dh', 'sps'].map(stat => ({ stat, short: stat.toUpperCase(), label: stat })),
   };
   const view = (stats, query = '', sortBy = 'ilvl') => mealList(menu, { stats, query, sortBy });
   const shown = v => v.groups.map(g => [g.key, g.items.map(x => x.name)]);
@@ -253,7 +253,7 @@ test('what the Food menu template shows is in the view: hover text, item level t
   const job = makeJobContext('SGE');
   const meals = allMeals(job);
   const shown = meals.find(m => m.name === 'Popoto Potage');
-  const menu = mealMenu(job, 100, { main: 0, vit: 0, crit: 0, det: 0, dh: 0, spd: 0, spec: 0 }, shown);
+  const menu = mealMenu(job, 100, { mind: 0, vit: 0, crit: 0, det: 0, dh: 0, sps: 0, piety: 0 }, shown);
   const items = menu.groups.flatMap(g => g.items);
   const potage = items.find(x => x.name === 'Popoto Potage');
   assert.equal(potage.title, `${potage.label} · item level ${shown.ilvl}`);
@@ -273,7 +273,7 @@ test('what the Food menu template shows is in the view: hover text, item level t
 test('every meal of every job has two or three stat lines, the most the template has room for', () => {
   for (const id of Object.keys(JOBS)) {
     const job = makeJobContext(id);
-    const totals = { main: 0, vit: 0, crit: 0, det: 0, dh: 0, spd: 0, spec: 0 };
+    const totals = Object.fromEntries(job.stats.map(s => [s, 0]));
     const items = mealMenu(job, 100, totals, null).groups.flatMap(g => g.items);
     assert.ok(items.length > 0, id);
     for (const x of items) assert.ok(x.adds.length >= 2 && x.adds.length <= 3, `${id} ${x.name}: ${x.adds.length} lines`);

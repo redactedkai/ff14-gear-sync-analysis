@@ -6,6 +6,7 @@
 import { jobById } from '../core/constants.js';
 import { piecesJobCannotWear } from '../core/gear-groups.js';
 import { makeJobContext } from '../core/job-context.js';
+import { remapStatKey } from '../core/stat-keys.js';
 import { DATA_SOURCE, MAX_REAL } from '../core/tables.js';
 import { clone } from './helpers.js';
 import { limitCapToLevel } from './state.js';
@@ -183,10 +184,21 @@ export function piecesToClear(sheet, jobId) {
   );
 }
 
+/* The stat keys of gear set `set` (a copy, changed in place) from job `from` to job `to`: the goal's target and
+   tiebreaks, and each stone's stat (remapStatKey). */
+function remapStats(set, from, to) {
+  const move = stat => remapStatKey(from, to, stat);
+  const goal = set.fillSettings?.goal;
+  if (goal) for (const k of ['target', 'tb', 'tb2']) if (typeof goal[k] === 'string') goal[k] = move(goal[k]);
+  for (const row of set.pieces) if (row.stones) row.stones = row.stones.map(stone => stone && { ...stone, stat: move(stone.stat) });
+}
+
 /* The copy of `sheet` for `fields` ({name, job, level, sync}): a new sheet (its own id, the current game data, times
    `at`) with the description and every gear set copied (new ids from `setId()`), and the pieces the new job cannot wear
    emptied with their pins dropped, and the tagged best meals dropped when the job, level or sync differ (they were found
-   for the old ones; sheets.md, "Copy sheet"). */
+   for the old ones; sheets.md, "Copy sheet"). A goal and stones of the sheet's job move to the new job by position
+   (remapStatKey: the main stat to the main stat, speed to speed, the special substat to the special substat); a stat
+   the new job lacks stays as it is and the set's Fill settings put it back to their default (fillSettingsOf). */
 export function copySheet(sheet, fields, id, at, setId) {
   const copy = newSheet({ ...fields, description: sheet.description }, id, at);
   const cleared = piecesToClear(sheet, fields.job);
@@ -201,6 +213,7 @@ export function copySheet(sheet, fields, id, at, setId) {
     set.pieces = set.pieces.map((row, index) => (rows.has(index) ? { slot: row.slot } : row));
     set.pinned = { ...set.pinned, pieces: (set.pinned?.pieces ?? []).filter(index => !rows.has(index)) };
     if (!sameSettings) set.bestMeals = null;
+    if (fields.job !== sheet.job) remapStats(set, makeJobContext(sheet.job), makeJobContext(fields.job));
     return set;
   });
   return copy;

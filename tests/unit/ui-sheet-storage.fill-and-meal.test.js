@@ -36,5 +36,5 @@ test('the Fill settings switches (Food, Materia, Spare points) must be booleans 
     }
   }
   // a save with no Food field at all (older or leaner) is fine: the page then uses the default, off
-  assert.ok(read({ fillSettings: { goal: { target: 'main' } } }).sheet);
+  assert.ok(read({ fillSettings: { goal: { target: 'mind' } } }).sheet);
 });

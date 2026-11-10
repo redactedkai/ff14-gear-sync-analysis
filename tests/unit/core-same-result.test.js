@@ -26,10 +26,10 @@ const pickOf = (type, c) => ({ type, item: c.item, eff: c.eff, meld: null });
    keeps the tier, both together lose it. */
 function sharedSpare() {
   const start = statTier(sge, 'crit', 1000, 100).start;
-  const head = cand('Head A', 'head', { main: 100, crit: start + 1 - 50 });
-  const head2 = cand('Head B', 'head', { main: 100, crit: start - 50 });
-  const body = cand('Body A', 'body', { main: 200, crit: 50 });
-  const body2 = cand('Body B', 'body', { main: 200, crit: 49 });
+  const head = cand('Head A', 'head', { mind: 100, crit: start + 1 - 50 });
+  const head2 = cand('Head B', 'head', { mind: 100, crit: start - 50 });
+  const body = cand('Body A', 'body', { mind: 200, crit: 50 });
+  const body2 = cand('Body B', 'body', { mind: 200, crit: 49 });
   return {
     head,
     head2,
@@ -42,17 +42,17 @@ function sharedSpare() {
 
 test('resultOf: points within a tier give the same result, a tier lost or a main stat point does not', () => {
   const start = statTier(sge, 'crit', 1000, 100).start;
-  const at = crit => resultOf(sge, { main: 300, crit }, CTX);
+  const at = crit => resultOf(sge, { mind: 300, crit }, CTX);
   assert.deepEqual(at(start), at(start + 1));
   assert.notDeepEqual(at(start - 1), at(start));
-  assert.notDeepEqual(resultOf(sge, { main: 301, crit: start }, CTX), at(start));
+  assert.notDeepEqual(resultOf(sge, { mind: 301, crit: start }, CTX), at(start));
 });
 
 test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (owner, 2026-10-16)', () => {
   // the first speed above 400 whose DoT/HoT scaling is one step up while its GCD is the same as one point less
   let spd = 400;
   while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) spd++;
-  const at = points => resultOf(sge, { main: 300, spd: points }, CTX);
+  const at = points => resultOf(sge, { mind: 300, sps: points }, CTX);
   assert.deepEqual(at(spd - 1), at(spd));
   // a GCD step lost is a different result
   let step = 400;
@@ -62,11 +62,10 @@ test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (o
 
 test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) may drop (owner, 2026-10-16)', () => {
   const war = makeJobContext('WAR');
-  const at = (ten, mitigation) =>
-    sameOutcome(resultOf(war, { main: 300, spec: ten }, CTX), resultOf(war, { main: 300, spec: mitigation }, CTX));
+  const at = (ten, mitigation) => sameOutcome(resultOf(war, { str: 300, ten }, CTX), resultOf(war, { str: 300, ten: mitigation }, CTX));
   // the first Tenacity above 400 where one step moves and the other doesn't, each way
-  const mit = rankTierOf(war, 'spec', 100);
-  const dmg = p => statTier(war, 'spec', p, 100).effect;
+  const mit = rankTierOf(war, 'ten', 100);
+  const dmg = p => statTier(war, 'ten', p, 100).effect;
   let a = 400;
   while (mit(a) === mit(a - 1) || dmg(a) !== dmg(a - 1)) a++;
   let b = 400;
@@ -77,7 +76,7 @@ test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) 
 
 test('resultOf: the goal stat keeps its exact points when asked (the plain optimizer), only its tier without (tier ranking)', () => {
   const start = statTier(sge, 'crit', 1000, 100).start;
-  const at = (crit, goal) => resultOf(sge, { main: 300, crit }, { ...CTX, goal });
+  const at = (crit, goal) => resultOf(sge, { mind: 300, crit }, { ...CTX, goal });
   assert.notDeepEqual(at(start, 'crit'), at(start + 5, 'crit'));
   assert.deepEqual(at(start, null), at(start + 5, null));
 });
@@ -108,7 +107,7 @@ test('rows share their spare points: after one swap, the other row no longer off
     ['Body A'],
   );
   const totals = Object.fromEntries(sge.stats.map(s => [s, rows.reduce((n, r) => n + r.pick.eff[s], 0)]));
-  assert.deepEqual(resultOf(sge, totals, CTX), resultOf(sge, { main: 300, crit: statTier(sge, 'crit', 1000, 100).start }, CTX));
+  assert.deepEqual(resultOf(sge, totals, CTX), resultOf(sge, { mind: 300, crit: statTier(sge, 'crit', 1000, 100).start }, CTX));
 });
 
 test('a pick that no longer fits is ignored', () => {
@@ -133,7 +132,7 @@ test('a piece that leaves another slot empty never replaces one that does not (a
 function ownerCase() {
   const app = makeApp('SGE', { level: 50, cap: 123, sync: true });
   Object.assign(app.recipe, {
-    target: 'main',
+    target: 'mind',
     tb: 'crit',
     tb2: 'det',
     food: true,
@@ -150,7 +149,7 @@ test("the owner's case: every row has others, shows the lowest equip level, and 
   assert.ok(options.every(list => list.length > 1));
   // the result (gear and food) is the search's: Mind 356 from gear plus Sage's base 232 at level 50 (202 x 115%)
   assert.deepEqual(
-    [panel('main'), set.gcd.gcd.toFixed(2), ...set.tiers.map(t => t?.effect ?? null)],
+    [panel('mind'), set.gcd.gcd.toFixed(2), ...set.tiers.map(t => t?.effect ?? null)],
     [588, '2.50', null, null, '29.1%', '+16.3%', '0.0%', '2.50s', '+0 MP'],
   );
   for (const [row, list] of options.entries()) {
@@ -181,5 +180,5 @@ test("the owner's case: a piece picked from a row's options is shown, and the re
   assert.equal(after.run.found.picks[0].item.name, other.item.name);
   const effects = v => v.set.tiers.map(t => t?.effect ?? null);
   assert.deepEqual(effects(after), effects(before));
-  assert.equal(after.panel('main'), before.panel('main'));
+  assert.equal(after.panel('mind'), before.panel('mind'));
 });

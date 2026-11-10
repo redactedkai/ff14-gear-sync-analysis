@@ -25,6 +25,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import { makeJobContext } from '../../src/core/job-context.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { STORE_KEY } from '../../src/ui/state.js';
 import { listOption, numberOption, option } from './args.mjs';
@@ -34,8 +35,8 @@ const PAGE = pathToFileURL(resolve(option('page') ?? resolve(ROOT, 'dist', 'inde
 const OUT = resolve(ROOT, 'scripts', 'perf', 'out');
 const TIMEOUT = 120_000;
 
-// one gear set per goal, in this order
-const FILL_TARGETS = ['crit', 'det', 'dh', 'spd', 'main'];
+// one gear set per goal, in this order; 'speed' and 'main' stand for the job's own speed and main stat
+const FILL_TARGETS = ['crit', 'det', 'dh', 'speed', 'main'];
 const ROW_SLOTS = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];
 
 // long tasks (main thread blocked over 50 ms), recorded from the first moment of every page
@@ -67,7 +68,8 @@ const waitMeasure = (pg, name, count) =>
 
 /** `job`'s sheet as src/ui/sheet-storage.js saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
 function sheetFor(job) {
-  const sets = FILL_TARGETS.map((target, i) => ({
+  const ctx = makeJobContext(job);
+  const sets = FILL_TARGETS.map(goal => (goal === 'main' ? ctx.mainKey : goal === 'speed' ? ctx.speedKey : goal)).map((target, i) => ({
     id: `g_${target}`,
     name: `Goal ${target}`,
     description: '',

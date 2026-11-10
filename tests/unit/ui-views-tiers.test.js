@@ -25,8 +25,8 @@ test('Sage: a card per substat, From and one column per effect, in the column na
       ['crit', ['From', 'Rate', 'On crit']],
       ['det', ['From', 'Dmg & heal']],
       ['dh', ['From', 'Rate']],
-      ['spd', ['From', 'GCD']],
-      ['spec', ['From', 'MP']],
+      ['sps', ['From', 'GCD']],
+      ['piety', ['From', 'MP']],
     ],
   );
   assert.deepEqual(v.cards[0].lines, ['19.1% rate', '+54.1% on crit']);
@@ -59,7 +59,7 @@ test('rows: the same count in every card, its current tier in the middle unless 
 });
 
 test('Paladin: Tenacity has Dmg & heal and Dmg taken, the one that changes at a tier marked', () => {
-  const ten = tiersView(app('PLD'), { spec: 1617 }, 100).cards.find(c => c.stat === 'spec');
+  const ten = tiersView(app('PLD'), { ten: 1617 }, 100).cards.find(c => c.stat === 'ten');
   assert.equal(ten.label, 'Tenacity');
   assert.deepEqual(ten.lines, ['+4.8% dmg & heal', '−8.6% dmg taken']);
   assert.deepEqual(ten.names, ['From', 'Dmg & heal', 'Dmg taken']);
@@ -78,7 +78,7 @@ test('Monk and Samurai: the speed card names the haste the GCD counts at the lev
   const v = tiersView(app('MNK'), {}, 100);
   assert.deepEqual(
     v.cards.map(c => c.stat),
-    ['crit', 'det', 'dh', 'spd'],
+    ['crit', 'det', 'dh', 'sks'],
   );
   assert.equal(v.cards[3].haste, 'with Greased Lightning 20%');
   assert.deepEqual(
@@ -86,13 +86,13 @@ test('Monk and Samurai: the speed card names the haste the GCD counts at the lev
     ['', '', ''],
   );
   // Samurai: none before Fuka (level 18), 10% until 78, 13% from it
-  const sam = level => tiersView(app('SAM'), {}, level).cards.find(c => c.stat === 'spd').haste;
+  const sam = level => tiersView(app('SAM'), {}, level).cards.find(c => c.stat === 'sks').haste;
   assert.deepEqual([sam(10), sam(70), sam(78)], ['', 'with Fuka 10%', 'with Fuka 13%']);
   assert.match(v.cards[3].help.size, /each 0\.01 s step is 85, 86, .* points/);
 });
 
 test('values: each substat starts at its base', () => {
-  assert.deepEqual(tierValues(app('SGE'), 100), { crit: 420, det: 440, dh: 420, spd: 420, spec: 440 });
+  assert.deepEqual(tierValues(app('SGE'), 100), { crit: 420, det: 440, dh: 420, sps: 420, piety: 440 });
 });
 
 test('a typed value: held to the base and the most it can be, with no note; not a number is ignored', () => {
@@ -102,7 +102,7 @@ test('a typed value: held to the base and the most it can be, with no note; not 
   assert.equal(tierInput(a, 'det', '400', 100), 440);
   assert.equal(tierInput(a, 'crit', '1e9', 100), 99999);
   // speed: no more than any job can have at the level (the GCD tab's slider top)
-  assert.equal(tierInput(a, 'spd', '99999', 100), MAX_SPEED[99]);
+  assert.equal(tierInput(a, 'sps', '99999', 100), MAX_SPEED[99]);
   assert.equal(tierInput(a, 'crit', '', 100), null);
   assert.equal(tierInput(a, 'crit', 'abc', 100), null);
 });
@@ -114,7 +114,7 @@ test("the sub-tab's own level: the synced level until one is typed, held to the 
   assert.equal(tierLevel(a, 100, 0), 1);
   assert.equal(tierLevel(app('BLU'), 100, 100), 80);
   // AkhMorning's SUB at level 80 is 380 (AKH_LEVEL); the view says the level it shows
-  assert.equal(tierValues(a, 80).spd, AKH_LEVEL[80][1]);
+  assert.equal(tierValues(a, 80).sps, AKH_LEVEL[80][1]);
   assert.equal(tierInput(a, 'crit', '5', 80), 380);
   assert.equal(tiersView(a, {}, 80).level, 80);
 });

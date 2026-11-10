@@ -193,13 +193,13 @@ const VIEWS = {
   },
   '12-browse-exp-menu': { state: SAGE, steps: page => clickAndSettle(page, '#b-exp') },
   '13-math-piece': {
-    state: { ...SAGE, tab: 'math', mathTab: 'piece', piece: { ilvl: 300, slot: 'body', subs: ['crit', 'spd'] } },
+    state: { ...SAGE, tab: 'math', mathTab: 'piece', piece: { ilvl: 300, slot: 'body', subs: ['crit', 'sps'] } },
     steps: page => clickAndSettle(page, '#p-steps summary'),
   },
   '14-math-piece-help': { state: { ...SAGE, tab: 'math', mathTab: 'piece' }, steps: page => clickAndSettle(page, '#m-help') },
   '15-math-piece-off': { state: { ...SAGE, sync: false, tab: 'math', mathTab: 'piece' }, steps: noSteps },
   '16-math-piece-level': {
-    state: { ...WARRIOR, sync: false, tab: 'math', mathTab: 'piece', piece: { ilvl: null, slot: 'weapon', subs: ['spec', 'det'] } },
+    state: { ...WARRIOR, sync: false, tab: 'math', mathTab: 'piece', piece: { ilvl: null, slot: 'weapon', subs: ['ten', 'det'] } },
     steps: page => clickAndSettle(page, '#p-steps summary'),
   },
   '17-math-gcd': { state: { ...SAGE, tab: 'math', mathTab: 'gcd' }, steps: noSteps },

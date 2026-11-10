@@ -19,7 +19,7 @@ const SYNCED = { cap: 123, sync: true, level: 100 };
 const recipe = (patch = {}) => ({ ...appState({ job: 'SGE' }).recipe, target: 'crit', tb: 'det', melds: true, food: false, ...patch });
 
 const shirt = piece(sge, 'Augmented Bygone Brass Shirt of Healing'); // body, item level 790: Main 810, Vit 817, Crit 427, Det 299
-const SPD_XII = { stat: 'spd', grade: 12 }; // Spell Speed materia XII: +54 (docs/mechanics/materia.md)
+const SPD_XII = { stat: 'sps', grade: 12 }; // Spell Speed materia XII: +54 (docs/mechanics/materia.md)
 const shirtPin = { slot: 'body', gameId: shirt.gameId, stones: [SPD_XII, SPD_XII] };
 
 test('a pinned piece is kept with exactly its stones and counts in the totals', () => {
@@ -31,7 +31,7 @@ test('a pinned piece is kept with exactly its stones and counts in the totals', 
   // the body's row in the set's own evaluation: Spell Speed from its two stones, the rest its item's
   const rows = evaluateSet(sge, run.set, SYNC, 100).rows;
   const row = rows.find(r => r.slot === 'body');
-  assert.deepEqual([row.stats.main, row.stats.crit, row.stats.det, row.stats.spd], [810, 427, 299, 2 * 54]);
+  assert.deepEqual([row.stats.mind, row.stats.crit, row.stats.det, row.stats.sps], [810, 427, 299, 2 * 54]);
   // the picks mark it, its row's menu holds only it, and every other row was searched (not the body)
   const bodyPick = run.found.picks.find(p => p.type === 'body');
   assert.equal(bodyPick.pinned, true);
@@ -111,10 +111,10 @@ test('a pin the solve cannot keep gives status badpin and says which', () => {
 test('resolvePins: usable pieces become candidates, with their stones under sync', () => {
   const free = resolvePins(sge, SYNC, { pieces: [shirtPin], meal: null }, GEAR);
   assert.deepEqual(free.problems, []);
-  assert.equal(free.fixed[0].eff.spd, 108);
+  assert.equal(free.fixed[0].eff.sps, 108);
   // item level sync takes every stone off a synced piece (materia.md)
   const synced = resolvePins(sge, SYNCED, { pieces: [shirtPin], meal: null }, GEAR);
-  assert.equal(synced.fixed[0].eff.spd, 0);
+  assert.equal(synced.fixed[0].eff.sps, 0);
   assert.deepEqual(resolvePins(sge, SYNC, null, GEAR), { fixed: [], meal: null, problems: [] });
 });
 

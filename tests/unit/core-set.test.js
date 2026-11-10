@@ -137,7 +137,7 @@ test('a set is frozen plain data: pieces by game id with the name beside it, a c
   const set = makeSet(
     [
       { slot: 'head', gameId: 49628, name: 'Augmented Bygone Brass Calot of Healing', stones: [{ stat: 'det', grade: 12 }, null] },
-      { slot: 'body', custom: mkItem('Hand-made robe', 'body', 700, { main: 500, crit: 300 }), stones: [] },
+      { slot: 'body', custom: mkItem('Hand-made robe', 'body', 700, { mind: 500, crit: 300 }), stones: [] },
       { slot: 'ring' },
     ],
     'Popoto Potage',

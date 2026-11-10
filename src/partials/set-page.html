@@ -142,10 +142,10 @@
           <label class="f">Tiebreak 2<select id="s-tb2" @change="setGoal(2, $event.target.value)"><template x-for="o in tiebreakOptions(2)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === fillSettings.goal.tb2"></option></template></select></label>
           <div class="f field gcd-field"><label for="s-gcd" x-text="gcdLabel"></label>
             <div class="row">
-              <input type="number" id="s-gcd" step="0.01" inputmode="decimal" placeholder="Any" :disabled="fillSettings.goal.target === 'spd'" x-bind="fillField('gcd')">
-              <div class="seg" role="radiogroup" aria-label="Target GCD mode" :class="{ off: fillSettings.goal.target === 'spd' }">
-                <label :class="{ on: fillSettings.goal.gcdMode === 'exact' }"><input type="radio" name="s-gcd-mode" value="exact" :disabled="fillSettings.goal.target === 'spd'" :checked="fillSettings.goal.gcdMode === 'exact'" @change="setGoalField('gcdMode', 'exact')">exactly</label>
-                <label :class="{ on: fillSettings.goal.gcdMode === 'min' }"><input type="radio" name="s-gcd-mode" value="min" :disabled="fillSettings.goal.target === 'spd'" :checked="fillSettings.goal.gcdMode === 'min'" @change="setGoalField('gcdMode', 'min')">or faster</label>
+              <input type="number" id="s-gcd" step="0.01" inputmode="decimal" placeholder="Any" :disabled="targetIsSpeed" x-bind="fillField('gcd')">
+              <div class="seg" role="radiogroup" aria-label="Target GCD mode" :class="{ off: targetIsSpeed }">
+                <label :class="{ on: fillSettings.goal.gcdMode === 'exact' }"><input type="radio" name="s-gcd-mode" value="exact" :disabled="targetIsSpeed" :checked="fillSettings.goal.gcdMode === 'exact'" @change="setGoalField('gcdMode', 'exact')">exactly</label>
+                <label :class="{ on: fillSettings.goal.gcdMode === 'min' }"><input type="radio" name="s-gcd-mode" value="min" :disabled="targetIsSpeed" :checked="fillSettings.goal.gcdMode === 'min'" @change="setGoalField('gcdMode', 'min')">or faster</label>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
     "key": "SGE|off|0|true",
     "job": "SGE",
     "sync": { "cap": null, "sync": false, "level": 100 },
-    "scored": ["main", "crit", "det"],
+    "scored": ["mind", "crit", "det"],
     "meal": "Popoto Potage",
     "pieces": [
       ["weapon", 50996, "Phantom Pendulums Eclipticum", ""],
@@ -159,7 +159,7 @@
     "key": "WHM|off|0|true",
     "job": "WHM",
     "sync": { "cap": null, "sync": false, "level": 100 },
-    "scored": ["main", "crit", "det"],
+    "scored": ["mind", "crit", "det"],
     "meal": "Popoto Potage",
     "pieces": [
       ["weapon", 50983, "Phantom Cane Eclipticum", ""],
@@ -221,7 +221,7 @@
     "key": "BLM|lvl50cap123|2|true",
     "job": "BLM",
     "sync": { "cap": 123, "sync": true, "level": 50 },
-    "scored": ["main", "spd"],
+    "scored": ["int", "sps"],
     "meal": "Popoto Potage",
     "pieces": [
       ["weapon", 11317, "Old World Rod", ""],
@@ -410,7 +410,7 @@
     "key": "NIN|lvl90|0|true",
     "job": "NIN",
     "sync": { "cap": null, "sync": false, "level": 90 },
-    "scored": ["main", "crit", "det"],
+    "scored": ["dex", "crit", "det"],
     "meal": "Nachos",
     "pieces": [
       ["weapon", 40170, "Knives of Ascension", "DET X ×2"],
@@ -457,7 +457,7 @@
     "key": "AST|cap123|0|true|meal",
     "job": "AST",
     "sync": { "cap": 123, "sync": true, "level": 100 },
-    "scored": ["main", "crit", "det"],
+    "scored": ["mind", "crit", "det"],
     "meal": "Onigara-yaki",
     "pieces": [
       ["weapon", 25050, "Star of the Demon", ""],
@@ -551,7 +551,7 @@
     "key": "BRD|cap660|2|false",
     "job": "BRD",
     "sync": { "cap": 660, "sync": true, "level": 100 },
-    "scored": ["main", "spd"],
+    "scored": ["dex", "sks"],
     "meal": null,
     "pieces": [
       ["weapon", 42071, "Zormor Bow", ""],
@@ -598,7 +598,7 @@
     "key": "WAR|off|0|true",
     "job": "WAR",
     "sync": { "cap": null, "sync": false, "level": 100 },
-    "scored": ["main", "crit", "det"],
+    "scored": ["str", "crit", "det"],
     "meal": "Nachos",
     "pieces": [
       ["weapon", 50980, "Phantom War Hammer Eclipticum", ""],

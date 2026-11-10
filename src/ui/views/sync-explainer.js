@@ -156,7 +156,7 @@ export function explainerView(job, sync, settings, widths = {}) {
   const atCap = pieceAt(job, type, cap, cap, subs, keys);
   const caps = capsFor(job, type, cap);
   const lines = [
-    { stat: 'main', label: job.label.main, w: null },
+    { stat: job.mainKey, label: job.label[job.mainKey], w: null },
     { stat: 'vit', label: job.label.vit, w: null },
     ...subs.map((s, i) => (s ? { stat: s, label: job.label[s], w: SUB_WEIGHTS[i] } : null)).filter(Boolean),
   ];

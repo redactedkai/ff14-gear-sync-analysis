@@ -35,7 +35,7 @@ function provenMost(state, stat, result) {
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level} as for optimize
- * @param opts  {target='main', tiebreak=[], melds=false, nodeLimit, food: null | a foodChoices entry | 'best', level (default
+ * @param opts  {target=job.mainKey, tiebreak=[], melds=false, nodeLimit, food: null | a foodChoices entry | 'best', level (default
  *              sync.level, else the job's level cap), gcd (seconds, optional: a Target GCD), mode: 'exact' | 'min',
  *              fixed=[] (pinned pieces, fixedCandidate: counted in every total and minimum, not searched)}
  * @param cache optional Map for candidate lists (prepare) from earlier calls with the same pool, sync, pinned pieces, keys, melds and
@@ -72,7 +72,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
 
   // every stage's meld versions on all the keys (and speed with a Target GCD), in one order: the stages share the meld
   // memo (prepare's versionKeys) and build each piece's versions once (versionCache)
-  const versionKeys = gcdMode ? [...keys, 'spd'] : keys;
+  const versionKeys = gcdMode ? [...keys, job.speedKey] : keys;
   const versionCache = new Map();
 
   // searches shared by meals asking the same, and candidate lists per objective and limited stats. Each search after
@@ -150,7 +150,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   }
   const best = pickMeal(job, entries, keys, level);
   if (!best) return none();
-  const food = foodFields(best, level, pct);
+  const food = foodFields(job, best, level, pct);
   return {
     ...best.entry.r,
     ok: true,

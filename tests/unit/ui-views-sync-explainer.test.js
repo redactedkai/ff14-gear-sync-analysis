@@ -12,7 +12,7 @@ import { SLOT_PERMILLE, appState, roundHalfUp } from './helpers/common.js';
 import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from './helpers/views.js';
 
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
-function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', 'spd'] }) {
+function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', makeJobContext(job).speedKey] }) {
   const a = appState({ job, sync: cap != null, cap, level }, {});
   a.piece = { ilvl, slot, subs };
   return a;
@@ -70,7 +70,7 @@ test("the Wiki's item level 475 example: rings at 500 and 600 synced to 475", ()
 
 test('melds go into the two chosen substats, the 2nd (70%) line first', () => {
   const a = app('RPR', { level: 80, ilvl: 530 });
-  assert.deepEqual(meldKeysOf(a), ['spd', 'crit']);
+  assert.deepEqual(meldKeysOf(a), ['sks', 'crit']);
   const det = app('RPR', { level: 80, ilvl: 530, subs: ['crit', 'det'] });
   assert.deepEqual(meldKeysOf(det), ['det', 'crit']);
   assert.equal(explainerViewOf(det).vsRows[0].materia, '2 × Grade VIII Determination (+24 each)');
@@ -113,10 +113,10 @@ for (const [job, column, oneHanded] of [
     const ctx = makeJobContext(job);
     for (const t of ctx.activeSlotTypes.filter(x => x !== 'offhand')) {
       const c = capsFor(ctx, t, 540);
-      assert.equal(c.spec, expectedCap(column, 540, t, oneHanded), `${t} special substat cap`);
+      assert.equal(c[column], expectedCap(column, 540, t, oneHanded), `${t} special substat cap`);
       assert.equal(c.crit, expectedCap('crit', 540, t, oneHanded), `${t} substat cap`);
     }
-    assert.deepEqual([capsFor(ctx, 'ring', 540).spec, capsFor(ctx, 'ring', 540).crit], [102, 101]); // 1518 and 1514 x 67 / 1000
+    assert.deepEqual([capsFor(ctx, 'ring', 540)[column], capsFor(ctx, 'ring', 540).crit], [102, 101]); // 1518 and 1514 x 67 / 1000
   });
 }
 
@@ -213,7 +213,7 @@ test('overgeared chart: an overgeared piece with as much as the melded one is sh
 /* The materia row shows only what the piece has in the duty (owner's screenshots, 2026-10-18: above the cap it showed
    the stones the piece would take at its own item level, Grade VI at 415 and Grade VIII at 429, struck through). */
 test('one piece: the materia row shows no stones above the cap, the kept stones at or below it', () => {
-  const synced = explainerViewOf(app('SGE', { level: 70, cap: 405, slot: 'body', ilvl: 429, subs: ['det', 'spd'] }));
+  const synced = explainerViewOf(app('SGE', { level: 70, cap: 405, slot: 'body', ilvl: 429, subs: ['det', 'sps'] }));
   assert.deepEqual(synced.stoneChips, []);
   assert.equal(synced.meldNote, 'None: a synced piece loses its melds.');
   const kept = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 169, subs: ['dh', 'crit'] }));

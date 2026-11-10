@@ -62,7 +62,7 @@ function cancelledError() {
 }
 
 /* How long a request may stay in the worker before it is stopped as hung (ms). The slowest search measured is 18 s
-   (tier ranking with a Target GCD, eight sweeps sharing the machine; perf-log.md section 4.1), and
+   (tier ranking with a Target GCD, eight sweeps sharing the machine; perf-log.md section 5.1), and
    a Gear to search request takes 20 to 100 ms, so 60 s leaves a slow device three times that and still ends a worker
    that will never answer. */
 export const SOLVER_TIMEOUT_MS = 60_000;

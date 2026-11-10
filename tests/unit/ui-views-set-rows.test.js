@@ -52,7 +52,7 @@ test('a worn row: the name, the high-quality mark, item level, category, source 
     body.cells.map(c => c.value),
     sage.stats.map(s => item.stats[s]),
   );
-  assert.deepEqual(body.cells[0], { stat: 'main', value: 44, text: '44', zero: false, atCap: false, beforeCap: null });
+  assert.deepEqual(body.cells[0], { stat: 'mind', value: 44, text: '44', zero: false, atCap: false, beforeCap: null });
   // a stat the piece lacks is zero
   assert.equal(body.cells[2].zero, true);
 });
@@ -157,19 +157,19 @@ test('pin flags come from the saved set: a pinned row that holds a piece; a pin 
 test('rank badges: 1 for the goal stat, 2 and 3 for the tiebreaks; none without Fill settings; keys the job lacks are dropped', () => {
   assert.deepEqual(rankBadges(sage, { target: 'crit', tb: 'det', tb2: 'dh' }), { crit: 1, det: 2, dh: 3 });
   assert.deepEqual(rankBadges(sage, null), {});
-  assert.deepEqual(rankBadges(makeJobContext('BLM'), { target: 'crit', tb: 'spec', tb2: '' }), { crit: 1 });
-  const goal = { target: 'spd', tb: 'crit', tb2: '' };
+  assert.deepEqual(rankBadges(makeJobContext('BLM'), { target: 'crit', tb: 'piety', tb2: '' }), { crit: 1 });
+  const goal = { target: 'sps', tb: 'crit', tb2: '' };
   const v = view(sheetOf('SGE', []), sageSet(), { goal });
   assert.deepEqual(
     v.headers.map(h => [h.stat, h.rank, h.rankLabel]),
     [
-      ['main', null, ''],
+      ['mind', null, ''],
       ['vit', null, ''],
       ['crit', 2, 'goal rank 2'],
       ['det', null, ''],
       ['dh', null, ''],
-      ['spd', 1, 'goal rank 1'],
-      ['spec', null, ''],
+      ['sps', 1, 'goal rank 1'],
+      ['piety', null, ''],
     ],
   );
 });

@@ -3,7 +3,7 @@
    character panel numbers: each starts at the substat's base (tierValues), and the user types or clicks others. The
    tiers follow the job and the sub-tab's own level (the synced level until the user types another); item level sync
    does not change them. The view object is built here; the template only shows it. */
-import { tierLadder, tierSizes } from '../../core/tiers.js';
+import { tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
 import { statBase } from '../../core/food.js';
 import { MAX_SPEED } from '../../core/tables.js';
@@ -18,17 +18,19 @@ export const TIER_VALUE_MAX = 99999;
 const COLUMN = { rate: 'Rate', onCrit: 'On crit', dmgHeal: 'Dmg & heal', dmgTaken: 'Dmg taken', gcd: 'GCD', mp: 'MP' };
 const lineWord = kind => (kind === 'gcd' || kind === 'mp' ? COLUMN[kind] : COLUMN[kind].toLowerCase());
 
+const SPEED_AFFECTS =
+  'Shortens the GCD (the recast of weaponskills and spells) in 0.01 s steps. Points between two steps still add a little to damage and healing over time and to auto-attacks.';
+
 /* What each substat does, for its ? note (AkhMorning, checked 2026-10-17; a direct hit adds 25% damage). Keyed by the
-   stat key, with spec split by what the job's special substat does (JobContext.specKind). */
+   stat key. */
 const AFFECTS = {
   crit: 'Raises the chance of a critical hit (Rate) and how much a critical hit adds (On crit), for damage and healing. On crit is always the rate + 35%.',
   det: 'Raises all damage and healing done (Dmg & heal). Heals received are not affected.',
   dh: 'Raises the chance of a direct hit (Rate), which adds 25% damage. Damage only, not healing.',
-  spd: 'Shortens the GCD (the recast of weaponskills and spells) in 0.01 s steps. Points between two steps still add a little to damage and healing over time and to auto-attacks.',
-  spec: {
-    mp: 'Raises the MP regained every 3 seconds (MP).',
-    mitigation: 'Tanks only. Raises damage and healing done (Dmg & heal) and lowers damage taken (Dmg taken).',
-  },
+  sks: SPEED_AFFECTS,
+  sps: SPEED_AFFECTS,
+  piety: 'Raises the MP regained every 3 seconds (MP).',
+  ten: 'Tanks only. Raises damage and healing done (Dmg & heal) and lowers damage taken (Dmg taken).',
 };
 
 /* "13 or 14", "85, 86, 128 or 129" */
@@ -52,18 +54,19 @@ export function tierValues(job, level) {
 export function tierInput(job, stat, text, level) {
   const v = Math.round(Number(text));
   if (text === '' || !Number.isFinite(v)) return null;
-  const most = stat === 'spd' ? MAX_SPEED[level - 1] : TIER_VALUE_MAX;
+  const most = stat === job.speedKey ? MAX_SPEED[level - 1] : TIER_VALUE_MAX;
   return Math.max(statBase(job, stat, level), Math.min(most, v));
 }
 
 /* The ? note of a substat: {title, affects, size}. */
 function helpOf(job, stat, level, haste) {
-  const affects = stat === 'spec' ? AFFECTS.spec[job.specKind] : AFFECTS[stat];
+  const affects = AFFECTS[stat];
   let size;
-  if (stat === 'spec' && job.specKind === 'mitigation')
+  // a stat with two effects that step apart (Tenacity) gives each its own size
+  if (statEffectKinds(stat).includes('dmgTaken'))
     size = `At level ${level}, Dmg & heal steps every ${sizeList(tierSizes(job, stat, level, 0, 'dmgHeal'))} points and Dmg taken every ${sizeList(tierSizes(job, stat, level, 0, 'dmgTaken'))}.`;
   else
-    size = `At level ${level}, each ${stat === 'spd' ? '0.01 s step' : 'tier'} is ${sizeList(tierSizes(job, stat, level, haste))} points.`;
+    size = `At level ${level}, each ${stat === job.speedKey ? '0.01 s step' : 'tier'} is ${sizeList(tierSizes(job, stat, level, haste))} points.`;
   return { title: job.label[stat], affects, size };
 }
 
@@ -101,7 +104,7 @@ export function tiersView(job, values, level) {
       label: job.label[stat],
       value,
       lines: ladder.kinds.map((kind, k) => `${ladder.rows[ladder.cur].values[k]} ${lineWord(kind)}`),
-      haste: stat === 'spd' && haste ? `with ${haste.name} ${haste.pct}%` : '',
+      haste: stat === job.speedKey && haste ? `with ${haste.name} ${haste.pct}%` : '',
       help: helpOf(job, stat, level, haste?.pct ?? 0),
       names: ['From', ...ladder.kinds.map(kind => COLUMN[kind])],
       rows,

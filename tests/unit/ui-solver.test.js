@@ -30,7 +30,7 @@ test('solver handler: a solve and a Gear to search request give the view builder
   // the reply carries the plain set and the recipe, so a sheet can keep the result
   assert.deepEqual(solve.result.recipe, recipe);
   const kept = evaluateSet(job, solve.result.set, sync, level);
-  assert.ok(kept.gear.main > 0);
+  assert.ok(kept.gear.mind > 0);
   assert.notEqual(solve.result.set.meal, null, 'the food switch is on, so a meal is part of the set');
   const side = handle(structuredClone(solverRequest('gearToSearch', SGE)));
   assert.deepEqual(side.result, gearToSearchView(job, sync, level, recipe, session));
@@ -351,7 +351,7 @@ test('worker solver: cancel when the new worker cannot be made: the other reques
 
 /* Caller keys (a gear set's id): a Sage item level 123 request as solverRequest builds it, with a key. */
 const keyed = (kind, key, mark) => ({
-  ...solverRequest(kind, { job: { jobId: 'SGE' }, sync: 123, level: 100, recipe: { goal: 'spd' } }, { key }),
+  ...solverRequest(kind, { job: { jobId: 'SGE' }, sync: 123, level: 100, recipe: { goal: 'sps' } }, { key }),
   mark,
 });
 const marks = worker => worker.posted.map(m => m.mark);

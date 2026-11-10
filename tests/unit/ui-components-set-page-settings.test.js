@@ -83,22 +83,22 @@ test("the goal menus list the job's stats; picking a stat another rank holds swa
 
   c.setGoal(1, 'crit');
   c.setGoal(2, 'det');
-  assert.deepEqual(goal(), ['main', 'crit', 'det']);
+  assert.deepEqual(goal(), ['mind', 'crit', 'det']);
   // a tiebreak's menu holds a stat once: "none" first, then not the ones above it
   assert.deepEqual(c.tiebreakOptions(2)[0], ['', 'none']);
-  assert.ok(!c.tiebreakOptions(2).some(o => o[0] === 'crit' || o[0] === 'main'));
+  assert.ok(!c.tiebreakOptions(2).some(o => o[0] === 'crit' || o[0] === 'mind'));
   assert.ok(
     c.tiebreakOptions(2).some(o => o[0] === 'det'),
     'its own pick stays',
   );
-  assert.ok(!c.tiebreakOptions(1).some(o => o[0] === 'main'));
+  assert.ok(!c.tiebreakOptions(1).some(o => o[0] === 'mind'));
 
   // Critical Hit picked to Maximize: Mind (the old Maximize) takes the Tiebreak 1 place Critical Hit leaves
   c.setGoal(0, 'crit');
-  assert.deepEqual(goal(), ['crit', 'main', 'det']);
+  assert.deepEqual(goal(), ['crit', 'mind', 'det']);
   // a tiebreak cleared
   c.setGoal(2, '');
-  assert.deepEqual(goal(), ['crit', 'main', '']);
+  assert.deepEqual(goal(), ['crit', 'mind', '']);
 });
 
 test('a goal pick that moves another rank shows the swap note; any other edit clears it', () => {

@@ -74,10 +74,10 @@ test('Piece stats: the substat menus; a 2nd substat picked as the 1st swaps them
     c.substatOptions.map(o => o[0]),
     app.jobCtx.substats,
   );
-  assert.deepEqual(app.piece.subs, ['crit', 'spd']);
+  assert.deepEqual(app.piece.subs, ['crit', 'sps']);
   assert.ok(!c.substat2Options.some(o => o[0] === 'crit'));
-  c.setSub(0, 'spd');
-  assert.deepEqual(app.piece.subs, ['spd', 'crit']);
+  c.setSub(0, 'sps');
+  assert.deepEqual(app.piece.subs, ['sps', 'crit']);
 });
 
 test("Piece stats: the chart's box is watched once it is drawn, and its width redraws the chart", () => {

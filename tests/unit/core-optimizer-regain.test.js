@@ -21,12 +21,12 @@ test('regain cuts: the search with a proven maximum gives the exhaustive totals,
     const job = makeJobContext(['SGE', 'WHM', 'SAM', 'PLD', 'BLM'][t % 5]);
     const pool = smallPool(job, rand, ['head', 'body', 'neck', 'ring'], 2);
     if (!pool.length) continue;
-    const [held, target] = job.substats.filter(s => s !== 'spd').sort(() => rand() - 0.5);
-    const versionKeys = [held, target, 'spd'];
+    const [held, target] = job.substats.filter(s => s !== job.speedKey).sort(() => rand() - 0.5);
+    const versionKeys = [held, target, job.speedKey];
 
     // a speed band (or, one time in three, a minimum only) near the free result's speed
     const free = optimize(job, pool, NO_SYNC, { target: held, melds: true });
-    const spdMin = Math.max(0, free.totals.spd - int(60));
+    const spdMin = Math.max(0, free.totals[job.speedKey] - int(60));
     const spdMax = t % 3 === 0 ? null : spdMin + 10 + int(30);
     const speed = { spdMin, spdMax };
 
@@ -54,7 +54,7 @@ test('regain cuts: the search with a proven maximum gives the exhaustive totals,
     // at most most - hold
     const plain = solve(second, { ...limits, plain: true });
     const searchLimits = [
-      { stat: 'spd', min: spdMin > 0 ? spdMin : null, max: spdMax },
+      { stat: job.speedKey, min: spdMin > 0 ? spdMin : null, max: spdMax },
       { stat: held, min: hold, max: null },
     ];
     const cut = addRegainCuts({
@@ -64,6 +64,7 @@ test('regain cuts: the search with a proven maximum gives the exhaustive totals,
       dims: second.dims,
       limits: searchLimits,
       proven: [proof],
+      speedKey: job.speedKey,
     });
     const copies = cut.posList.flat();
     let regain = 0;
@@ -85,20 +86,21 @@ test('regain cuts: under a speed minimum only, a swap may not lower speed', () =
   // under a speed minimum, and this search holds it at 50, a room of 10. Swapping the fast piece for the slow one would
   // gain 50 Critical Hit but lose speed, which could break the minimum, so that swap does not count: the fast piece's
   // regain is 0 and it stays. (Counting it would drop the fast piece, which the minimum may need.)
-  const fast = { item: { id: 'fast' }, eff: { spd: 40, crit: 0 }, blocks: [], copies: 1 };
-  const slow = { item: { id: 'slow' }, eff: { spd: 0, crit: 50 }, blocks: [], copies: 1 };
+  const fast = { item: { id: 'fast' }, eff: { sks: 40, crit: 0 }, blocks: [], copies: 1 };
+  const slow = { item: { id: 'slow' }, eff: { sks: 0, crit: 50 }, blocks: [], copies: 1 };
   const proof = { stat: 'crit', most: 60, minStats: [], speed: 'min' };
   const limits = [
-    { stat: 'spd', min: 30, max: null },
+    { stat: 'sks', min: 30, max: null },
     { stat: 'crit', min: 50, max: null },
   ];
   const cut = addRegainCuts({
     slotList: ['head'],
     posList: [[fast, slow]],
     fullLists: [[fast, slow]],
-    dims: ['spd', 'crit'],
+    dims: ['sks', 'crit'],
     limits,
     proven: [proof],
+    speedKey: 'sks',
   });
   const kept = cut.posList[0].map(c => c.original.item.id);
   assert.deepEqual(kept, ['fast', 'slow']);

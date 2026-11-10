@@ -663,7 +663,7 @@ export function makeMemo(slotList, limits, memoFront = MEMO_FRONT) {
    position, or null for the caller's order). `limits` and `dims` include the regain cuts' synthetic stats; `known` is
    the score to beat (start's, or -Infinity); `lagr` the Lagrangian bound (lagrangeBound) when there is a known set and
    a limit, else null. */
-function prepareSearch({ slotList, posList, dims, limits, plain, start, proven }) {
+function prepareSearch({ slotList, posList, dims, limits, plain, start, proven, speedKey }) {
   limits = limits.filter(limit => dims.includes(limit.stat) && (limit.min > 0 || limit.max != null));
   const hasMinimum = limits.some(limit => limit.min > 0);
   const fullLists = posList; // before the filters: the pieces a regain cut's swaps may bring in
@@ -689,7 +689,7 @@ function prepareSearch({ slotList, posList, dims, limits, plain, start, proven }
   // 3. the regain cuts from earlier searches' proven maxima (regain.js), on the few candidates the filters left, then
   // the shortfalls that leaves. From here on `limits` and `dims` hold the cuts' synthetic stats too
   if (!plain && proven?.length) {
-    ({ posList, dims, limits } = addRegainCuts({ slotList, posList, fullLists, dims, limits, proven }));
+    ({ posList, dims, limits } = addRegainCuts({ slotList, posList, fullLists, dims, limits, proven, speedKey }));
     if (hasMinimum) posList = dropShortfalls(slotList, posList, dims, limits);
   }
 
@@ -1024,6 +1024,7 @@ function dfs(search, pos, scoreSoFar) {
    - lazyTables (tests only): the node count after which the tables for blocked slots are built (LAZY_TABLES).
    - start: {best, score}, a loadout known to meet every limit (in the shape of `best` below) and its score; the search
      then looks only for a strictly better one and returns `start` when there is none, or when it stops early.
+   - speedKey: the job's speed stat (regain cuts keep a swap's speed when the proof says so; null without proofs).
    - proven: maxima earlier searches proved under limits these include, [{stat, most, minStats, speed}] (regain.js;
      tier ranking passes its finished stages').
    Returns {best, nodes, truncated, method, kept, frontSizes}; method is 'trial' (the short trial search settled it),
@@ -1061,9 +1062,10 @@ export function branchAndBound({
   lazyTables = LAZY_TABLES,
   start = null,
   proven = null,
+  speedKey = null,
 }) {
   // 1 to 4: the filters and the slot order
-  const prep = prepareSearch({ slotList, posList, dims, limits, plain, start, proven });
+  const prep = prepareSearch({ slotList, posList, dims, limits, plain, start, proven, speedKey });
   const search = newSearch(prep, { plain, lazyTables, nodeLimit });
   const kept = [...new Set(prep.posList)].reduce((sum, list) => sum + list.length, 0);
   const result = (best, method) => ({

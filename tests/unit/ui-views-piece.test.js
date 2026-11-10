@@ -13,10 +13,10 @@ test('Piece stats view: the default two substats both reach the cap; the healer 
   assert.deepEqual(
     rpr.rows.map(r => [r.stat, r.w, r.syn]),
     [
-      ['main', 100, 30],
+      ['str', 100, 30],
       ['vit', 100, 32],
       ['crit', 100, 29],
-      ['spd', 70, 29], // the 70% line is cut to the full-share head cap, not to 70% of it
+      ['sks', 70, 29], // the 70% line is cut to the full-share head cap, not to 70% of it
     ],
   );
   assert.equal(rpr.evenSubs, true);
@@ -37,7 +37,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
     i => job.substats.filter(s => i.stats[s] > 0).length === 3,
   );
   assert.ok(heads.length >= 2);
-  const CAP = { main: 30, vit: 29, sub: 29 }; // head caps at item level 123: main stat 30, everything else 29
+  const CAP = { mind: 30, vit: 29, sub: 29 }; // head caps at item level 123: main stat 30, everything else 29
   for (const head of heads) {
     // the third line is the fixed Direct Hit of Mind-only gear, which Piece stats does not model
     const subs = job.substats
@@ -47,7 +47,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
     assert.ok(!subs.includes('dh'), head.name);
     app.piece = { ilvl: 130, slot: 'head', subs };
     const v = pieceViewOf(app);
-    const want = ['main', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
+    const want = ['mind', 'vit', ...subs].map(s => [s, head.stats[s], Math.min(head.stats[s], CAP[s] ?? CAP.sub)]);
     assert.deepEqual(
       v.rows.map(r => [r.stat, r.raw, r.syn]),
       want,
@@ -62,7 +62,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
   // the numbers themselves, for the reader: 33 main / 32 Vitality / 31, 22, 6 substats
   assert.deepEqual(
     heads.map(h => [
-      h.stats.main,
+      h.stats.mind,
       h.stats.vit,
       ...job.substats
         .map(s => h.stats[s])
@@ -75,7 +75,7 @@ test('Piece stats view: every real item level 130 Sage head piece with three sub
 
 test('sync off: Piece stats leaves stats as they are and shows no ceiling', () => {
   const app = makeApp('SGE', { cap: 123, sync: false });
-  app.piece = { ilvl: 130, slot: 'head', subs: ['spd', 'spec'] };
+  app.piece = { ilvl: 130, slot: 'head', subs: ['sps', 'piety'] };
   const v = pieceViewOf(app);
   assert.equal(v.status, 'off');
   assert.ok(v.rows.every(r => r.syn === r.raw && r.cap == null && r.ownKept));
@@ -91,16 +91,16 @@ test('sync off: Piece stats leaves stats as they are and shows no ceiling', () =
    ceiling); the ceiling's arithmetic is capValue's own order (the factor first, the slot share floored in tenths). */
 test('Piece stats: each stat against its ceiling, with the sentences and the arithmetic', () => {
   const app = makeApp('SGE', { cap: 130, sync: true, level: 100 });
-  app.piece = { ilvl: 170, slot: 'head', subs: ['crit', 'spd'] };
+  app.piece = { ilvl: 170, slot: 'head', subs: ['crit', 'sps'] };
   const v = pieceViewOf(app);
   assert.equal(v.status, 'above');
   assert.deepEqual(
     v.rows.map(r => [r.stat, r.raw, r.cap, r.syn, r.ownKept]),
     [
-      ['main', 40, 33, 33, false],
+      ['mind', 40, 33, 33, false],
       ['vit', 35, 32, 32, false],
       ['crit', 47, 31, 31, false],
-      ['spd', 33, 31, 31, false],
+      ['sps', 33, 31, 31, false],
     ],
   );
   assert.equal(
@@ -171,25 +171,25 @@ test('Piece stats steps: the sentences and headings of the section', () => {
 });
 
 /* The math bar's 1st and 2nd substat menus (withSub): a substat holds at most one rank. */
-const healer = makeJobContext('WHM').substats; // crit, det, dh, spd, spec
+const healer = makeJobContext('WHM').substats; // crit, det, dh, sps, piety
 
 test('substat ranks: choosing an unused substat just sets that rank', () => {
-  assert.deepEqual(withSub(['spd', 'spec'], 1, 'crit', healer), ['spd', 'crit']);
+  assert.deepEqual(withSub(['sps', 'piety'], 1, 'crit', healer), ['sps', 'crit']);
 });
 
 test('substat ranks: choosing a substat used in another rank swaps the two', () => {
-  assert.deepEqual(withSub(['spd', 'spec'], 1, 'spd', healer), ['spec', 'spd']);
-  assert.deepEqual(withSub(['spd', 'spec'], 0, 'spec', healer), ['spec', 'spd']);
+  assert.deepEqual(withSub(['sps', 'piety'], 1, 'sps', healer), ['piety', 'sps']);
+  assert.deepEqual(withSub(['sps', 'piety'], 0, 'piety', healer), ['piety', 'sps']);
 });
 
 test('substat ranks: rank 2 can be cleared, and a swap never empties rank 1', () => {
-  assert.deepEqual(withSub(['spd', 'spec'], 1, '', healer), ['spd', null]);
+  assert.deepEqual(withSub(['sps', 'piety'], 1, '', healer), ['sps', null]);
   // rank 2 is empty; moving rank 1's substat there would leave rank 1 empty, so rank 1 takes the first free one
-  assert.deepEqual(withSub(['spd', null], 1, 'spd', healer), ['crit', 'spd']);
+  assert.deepEqual(withSub(['sps', null], 1, 'sps', healer), ['crit', 'sps']);
 });
 
 test('substat ranks: an older three-rank list is cut to two', () => {
-  assert.deepEqual(withSub(['spd', 'spec', 'dh'], 1, 'crit', healer), ['spd', 'crit']);
+  assert.deepEqual(withSub(['sps', 'piety', 'dh'], 1, 'crit', healer), ['sps', 'crit']);
 });
 
 test('substat ranks: no substat ever appears twice', () => {

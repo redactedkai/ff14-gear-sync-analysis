@@ -10,7 +10,7 @@ import { rng } from './helpers/common.js';
 const sge = makeJobContext('SGE');
 const NO_SYNC = { cap: 999, sync: false };
 
-const ring = (name, spd, copies) => mkItem(name, 'ring', 100, { spd }, { copies });
+const ring = (name, sps, copies) => mkItem(name, 'ring', 100, { sps }, { copies });
 
 /* The two policies the brute-force reference copies from the engine (helpers/exhaustive.js). Stated directly on
    hand-made pools, so changing one is a deliberate decision, not a side effect of editing the reference. */
@@ -20,8 +20,8 @@ test('policy: a single ring is worn only when no pair exists, even if a pair bre
   assert.equal(optimize(sge, pool, NO_SYNC, { target: 'crit', spdMax: 12 }).ok, false);
   assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'crit', spdMax: 12 }), null);
   // with a single Unique ring there is no pair, so it is worn once and the second ring slot stays empty
-  const one = optimize(sge, [ring('A', 10, 1)], NO_SYNC, { target: 'spd' });
-  assert.equal(one.totals.spd, 10);
+  const one = optimize(sge, [ring('A', 10, 1)], NO_SYNC, { target: 'sps' });
+  assert.equal(one.totals.sps, 10);
   assert.deepEqual(
     one.picks.filter(p => p.type === 'ring').map(p => p.item?.name ?? null),
     ['A', null],
@@ -29,7 +29,7 @@ test('policy: a single ring is worn only when no pair exists, even if a pair bre
 });
 
 test('policy: a slot is never left empty to satisfy a maximum', () => {
-  const pool = [mkItem('H', 'head', 100, { spd: 50, crit: 10 }), mkItem('E', 'ear', 100, { spd: 3, crit: 3 })];
+  const pool = [mkItem('H', 'head', 100, { sps: 50, crit: 10 }), mkItem('E', 'ear', 100, { sps: 3, crit: 3 })];
   // leaving the head empty would give Spell Speed 3 <= 40, but that is not a legal loadout
   assert.equal(optimize(sge, pool, NO_SYNC, { target: 'crit', spdMax: 40 }).ok, false);
   assert.equal(exhaustive(sge, pool, NO_SYNC, { target: 'crit', spdMax: 40 }), null);
@@ -37,17 +37,17 @@ test('policy: a slot is never left empty to satisfy a maximum', () => {
 
 test('F1 regression: the second-best Unique ring is kept for the pair', () => {
   const pool = [ring('A', 10, 1), ring('B', 9, 1), ring('C', 5, 1)];
-  const r = optimize(sge, pool, NO_SYNC, { target: 'spd' });
-  assert.equal(r.totals.spd, 19);
+  const r = optimize(sge, pool, NO_SYNC, { target: 'sps' });
+  assert.equal(r.totals.sps, 19);
   assert.deepEqual(r.picks.map(p => p.item.name).sort(), ['A', 'B']);
 });
 
 test('F1 regression: two identical Unique rings are both worn', () => {
-  assert.equal(optimize(sge, [ring('A', 10, 1), ring('A2', 10, 1)], NO_SYNC, { target: 'spd' }).totals.spd, 20);
+  assert.equal(optimize(sge, [ring('A', 10, 1), ring('A2', 10, 1)], NO_SYNC, { target: 'sps' }).totals.sps, 20);
 });
 
 test('a ring with 2 copies still beats two worse Unique rings', () => {
-  assert.equal(optimize(sge, [ring('A', 10, 2), ring('B', 9, 1), ring('C', 8, 1)], NO_SYNC, { target: 'spd' }).totals.spd, 20);
+  assert.equal(optimize(sge, [ring('A', 10, 2), ring('B', 9, 1), ring('C', 8, 1)], NO_SYNC, { target: 'sps' }).totals.sps, 20);
 });
 
 test('optimizer matches exhaustive search on 400 random small pools', () => {
@@ -64,7 +64,7 @@ test('optimizer matches exhaustive search on 400 random small pools', () => {
             `${ty}${i}`,
             ty,
             90 + int(60),
-            { spd: int(30), crit: int(30), det: int(30), main: int(5) },
+            { sps: int(30), crit: int(30), det: int(30), mind: int(5) },
             { copies: ty === 'ring' && rand() < 0.4 ? 2 : 1 },
           ),
         );
@@ -72,8 +72,8 @@ test('optimizer matches exhaustive search on 400 random small pools', () => {
     }
     const sync = rand() < 0.5 ? NO_SYNC : { cap: 110, sync: true };
     const opts = {
-      target: ['spd', 'crit', 'det'][int(3)],
-      tiebreak: [rand() < 0.6 ? 'main' : '', rand() < 0.5 ? 'crit' : ''],
+      target: ['sps', 'crit', 'det'][int(3)],
+      tiebreak: [rand() < 0.6 ? 'mind' : '', rand() < 0.5 ? 'crit' : ''],
       spdMin: rand() < 0.2 ? 20 + int(40) : null,
       spdMax: rand() < 0.2 ? 60 + int(80) : null,
     };
@@ -96,21 +96,21 @@ test('optimizer matches exhaustive search on 400 random small pools', () => {
 
 test('maximum constraints are respected and still find the best loadout', () => {
   const pool = [ring('A', 10, 1), ring('B', 9, 1), ring('C', 5, 1)];
-  pool.push(mkItem('H1', 'head', 100, { spd: 20, crit: 30 }), mkItem('H2', 'head', 100, { spd: 15, crit: 25 }));
+  pool.push(mkItem('H1', 'head', 100, { sps: 20, crit: 30 }), mkItem('H2', 'head', 100, { sps: 15, crit: 25 }));
   const r = optimize(sge, pool, NO_SYNC, { target: 'crit', spdMax: 33 });
   // H1 dominates H2, but H1 with any ring pair has Spell Speed 34 or more; H2 with A + C or B + C stays under
   assert.equal(r.totals.crit, 25);
-  assert.ok(r.totals.spd <= 33);
+  assert.ok(r.totals.sps <= 33);
 });
 
 test('F3 regression: a tiebreak total of 10,000 or more never outranks a higher key', () => {
   const head = (name, stats) => mkItem(name, 'head', 100, stats);
   // the old fixed weights (1e8 / 1e4 / 1) scored B and D higher
-  let r = optimize(sge, [head('A', { spd: 2 }), head('B', { spd: 1, main: 20000 })], NO_SYNC, { target: 'spd', tiebreak: ['main'] });
+  let r = optimize(sge, [head('A', { sps: 2 }), head('B', { sps: 1, mind: 20000 })], NO_SYNC, { target: 'sps', tiebreak: ['mind'] });
   assert.equal(r.picks[0].item.name, 'A');
-  r = optimize(sge, [head('C', { spd: 1, main: 1 }), head('D', { spd: 1, vit: 20000 })], NO_SYNC, {
-    target: 'spd',
-    tiebreak: ['main', 'vit'],
+  r = optimize(sge, [head('C', { sps: 1, mind: 1 }), head('D', { sps: 1, vit: 20000 })], NO_SYNC, {
+    target: 'sps',
+    tiebreak: ['mind', 'vit'],
   });
   assert.equal(r.picks[0].item.name, 'C');
 });
@@ -129,17 +129,17 @@ test('optimizer matches exhaustive search on random pools with huge tiebreak sta
             `${ty}${i}`,
             ty,
             100,
-            { spd: int(4), main: int(3) * 40000, vit: int(50000) },
+            { sps: int(4), mind: int(3) * 40000, vit: int(50000) },
             { copies: ty === 'ring' && rand() < 0.4 ? 2 : 1 },
           ),
         );
       }
     }
-    const opts = { target: 'spd', tiebreak: ['main', 'vit'] };
+    const opts = { target: 'sps', tiebreak: ['mind', 'vit'] };
     const want = exhaustive(sge, pool, NO_SYNC, opts);
     const r = optimize(sge, pool, NO_SYNC, opts);
     assert.deepEqual(
-      ['spd', 'main', 'vit'].map(s => r.totals[s]),
+      ['sps', 'mind', 'vit'].map(s => r.totals[s]),
       want,
       `pool #${t}`,
     );
@@ -147,8 +147,8 @@ test('optimizer matches exhaustive search on random pools with huge tiebreak sta
 });
 
 test('a pool too large to score exactly throws instead of ranking wrongly', () => {
-  const pool = [mkItem('H', 'head', 100, { spd: 1e6, main: 1e6, vit: 1e6 })];
-  assert.throws(() => optimize(sge, pool, NO_SYNC, { target: 'spd', tiebreak: ['main', 'vit'] }), /too large/);
+  const pool = [mkItem('H', 'head', 100, { sps: 1e6, mind: 1e6, vit: 1e6 })];
+  assert.throws(() => optimize(sge, pool, NO_SYNC, { target: 'sps', tiebreak: ['mind', 'vit'] }), /too large/);
 });
 
 /* With melds: random small pools of real pieces (some meldable, some not, some synced), against the reference's own

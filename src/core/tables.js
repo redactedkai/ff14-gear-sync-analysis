@@ -53,7 +53,7 @@ export function dataSourceLabel(src = DATA_SOURCE) {
 }
 
 /* Last row of the ItemLevel sheet. */
-export const MAX_ILVL = IL.mind.length - 1;
+export const MAX_ILVL = IL.vit.length - 1;
 /* Highest item level of any real piece. Rows above it exist in the sheet but carry no gear. */
 export const MAX_REAL = ITEMS.reduce((m, r) => Math.max(m, r[ROW.ilvl]), 0);
 /* Highest equip level of any real piece (the level cap). A synced level below it can level-sync gear. */

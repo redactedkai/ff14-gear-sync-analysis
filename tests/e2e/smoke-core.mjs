@@ -58,7 +58,7 @@ export function coreFiltered(jobId, sync, target, f) {
 // tiebreak, materia on, food off, any GCD, spare points to tiebreaks on, every expansion, the default "Gear from" boxes
 // and the market board, no item level range, the equip level filter at the level cap.
 const DEFAULT_RECIPE = {
-  target: 'main',
+  target: '', // the job's main stat (coreRecipe)
   tb: '',
   tb2: '',
   melds: true,
@@ -80,7 +80,7 @@ const DEFAULT_RECIPE = {
 export function coreRecipe(jobId, sync, fields) {
   const job = makeJobContext(jobId);
   const level = sync.level ?? 100;
-  const run = runRecipe(job, sync, level, { ...DEFAULT_RECIPE, ...fields }, makeSession());
+  const run = runRecipe(job, sync, level, { ...DEFAULT_RECIPE, target: job.mainKey, ...fields }, makeSession());
   if (run.status !== 'ok') return { status: run.status };
   const evaluated = evaluateSet(job, run.set, sync, level);
   const totals = Object.fromEntries(job.stats.map(s => [s, evaluated.withFood[s] + evaluated.base[s]]));
@@ -88,9 +88,11 @@ export function coreRecipe(jobId, sync, fields) {
   return { status: 'ok', totals, bonus, gcd: `${evaluated.gcd.gcd.toFixed(2)}s`, meal: evaluated.meal?.key ?? null };
 }
 
-/** The stat keys `jobId` has (job.stats), for a step that needs to know whether a job has a special substat. */
-export function coreStats(jobId) {
-  return [...makeJobContext(jobId).stats];
+/** The job's main, speed and special stat keys ({main, speed, spec}, spec null for none), for a step that names a stat
+ * column or option of the page. */
+export function coreKeys(jobId) {
+  const { mainKey, speedKey, specKey } = makeJobContext(jobId);
+  return { main: mainKey, speed: speedKey, spec: specKey };
 }
 
 export function coreRings(jobId, ilvlMin, ilvlMax, lvlMax) {
@@ -100,7 +102,7 @@ export function coreRings(jobId, ilvlMin, ilvlMax, lvlMax) {
   return { count: rows.length, x2: rows.filter(r => !r.unique).length };
 }
 
-const FUNCTIONS = { coreGear, coreFiltered, coreRecipe, coreRings, coreStats };
+const FUNCTIONS = { coreGear, coreFiltered, coreRecipe, coreRings, coreKeys };
 
 if (!isMainThread) {
   parentPort.on('message', ({ id, fn, args }) => {

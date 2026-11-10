@@ -1,7 +1,6 @@
 /* Stat formulas: how item level becomes the stats on a piece, and what item level sync clamps.
    See docs/mechanics/math.md (sections 4 and 5) for each rule and docs/mechanics/validation.md for the evidence. */
 import {
-  ALL_STATS,
   SUB_WEIGHTS,
   MIND_DIRECT_HIT_SHARE,
   GREEN_CRAFTED_DIRECT_HIT_SHARE,
@@ -12,6 +11,7 @@ import {
   REDUCED_STAT_PIECES,
   ITEM_STAT_ORDER,
   RAW_MAIN_IDX,
+  RAW_MIND_IDX,
   RAW_MAIN_ATTR_IDX,
   RAW_VIT_IDX,
   RAW_SUBSTAT_IDX,
@@ -21,7 +21,6 @@ import {
   BASE_SLOT_PCT,
 } from './constants.js';
 import { IL, MP, MAX_ILVL } from './tables.js';
-import { statColumn } from './job-context.js';
 
 /* Round half up. The epsilon keeps values like 22.4999999 (float noise from x.5 products) from rounding down. */
 export function rnd(x) {
@@ -33,9 +32,9 @@ export function clampIlvl(i) {
   return Math.max(0, Math.min(MAX_ILVL, i));
 }
 
-/* A stat object with every stat key at 0. */
-export function blankStats() {
-  return { main: 0, vit: 0, crit: 0, det: 0, dh: 0, spd: 0, spec: 0 };
+/* A stat object with each of the job's stat keys (job.stats) at 0. */
+export function blankStats(job) {
+  return Object.fromEntries(job.stats.map(s => [s, 0]));
 }
 
 /* The stat factor of `stat` when no real item is involved: the one the job's own gear carries. In the game files every
@@ -98,14 +97,14 @@ export function offhandParts(valueAt) {
 export function pieceValue(job, stat, ilvl, type, weight, pct, factor = null) {
   // a shield: the two-handed weapon's value minus the one-handed weapon's (isOffhand)
   if (isOffhand(type, pct)) return offhandParts(share => pieceValue(job, stat, ilvl, 'weapon', weight, share, factor)).value;
-  const base = statColumn(job, stat)[clampIlvl(ilvl)]; // the ItemLevel table's budget for this stat
+  const base = IL[stat][clampIlvl(ilvl)]; // the ItemLevel table's budget for this stat
   return statLine(base, pct ?? job.slotPct[type], factor ?? jobFactor(job, stat), weight).value;
 }
 
 /* Generic piece: full main stat and Vitality, substats `subs` at the ranked shares (100/70). */
 export function buildPiece(job, ilvl, type, subs) {
-  const stats = blankStats();
-  stats.main = pieceValue(job, 'main', ilvl, type, 100);
+  const stats = blankStats(job);
+  stats[job.mainKey] = pieceValue(job, job.mainKey, ilvl, type, 100);
   stats.vit = pieceValue(job, 'vit', ilvl, type, 100);
   // subs[0] at the first share (100%), subs[1] at the second (70%); an empty rank adds nothing
   subs.forEach((stat, rank) => {
@@ -133,7 +132,7 @@ export function capDerivation(job, stat, ilvl, type, pct, factor = null) {
     const { two, one, value } = offhandParts(share => capValue(job, stat, ilvl, 'weapon', share, factor));
     return { offhand: { two, one }, value };
   }
-  const base = statColumn(job, stat)[clampIlvl(ilvl)];
+  const base = IL[stat][clampIlvl(ilvl)];
   const factorPct = Math.round((factor ?? jobFactor(job, stat)) * 100); // 0.9 -> 90, so the arithmetic stays integer
   const share = pct ?? job.slotPct[type]; // per mille
   // the factor first, floored; then the slot share, floored, in tenths of a point; then rounded to whole points
@@ -153,31 +152,22 @@ export function capFromBudget(base, factorPct, share) {
    piece's own slot share, if not the job's share for the type. `factors`: the piece's own stat factors
    ({stat key: factor}, kindFactors in items.js) for a real item; null for the job's (jobFactor). */
 export function capsFor(job, type, capIlvl, pct, factors = null) {
-  const caps = {};
-  ALL_STATS.forEach(s => {
-    // a job without Piety or Tenacity has no `spec` stat, so nothing to cap
-    caps[s] = s === 'spec' && !job.profile.spec ? 0 : capValue(job, s, capIlvl, type, pct, factors?.[s]);
-  });
-  return caps;
+  return Object.fromEntries(job.stats.map(s => [s, capValue(job, s, capIlvl, type, pct, factors?.[s])]));
 }
 
 /* Stats after sync. Pieces at or below the cap are untouched; above it every stat is clamped to capsFor. */
 export function syncStats(job, stats, type, capIlvl, itemIlvl, pct, factors = null) {
   if (itemIlvl != null && itemIlvl <= capIlvl) return Object.assign({}, stats);
-  const caps = capsFor(job, type, capIlvl, pct, factors),
-    out = {};
+  const caps = capsFor(job, type, capIlvl, pct, factors);
   // sync only lowers: a stat already under its cap keeps its value (substats never scale up)
-  ALL_STATS.forEach(s => {
-    out[s] = Math.min(stats[s] || 0, caps[s]);
-  });
-  return out;
+  return Object.fromEntries(job.stats.map(s => [s, Math.min(stats[s] || 0, caps[s])]));
 }
 
 /* Step-by-step derivation of one stat line of a generic piece (the job's stat factor), for display: statLine's {base,
    steps, value}. `pct`: the slot share in per mille, the job's for the type when missing. An off-hand line is one step,
    {kind: 'offhand', two, one, value}: the two-handed value minus the one-handed value (offhandParts). */
 export function statDerivation(job, stat, ilvl, type, weight, pct = job.slotPct[type]) {
-  const base = statColumn(job, stat)[clampIlvl(ilvl)];
+  const base = IL[stat][clampIlvl(ilvl)];
   if (isOffhand(type, pct)) {
     const { two, one, value } = offhandParts(share => statDerivation(job, stat, ilvl, 'weapon', weight, share).value);
     return { base, steps: [{ kind: 'offhand', two, one, value }], value };
@@ -185,8 +175,7 @@ export function statDerivation(job, stat, ilvl, type, weight, pct = job.slotPct[
   return statLine(base, pct, jobFactor(job, stat), weight);
 }
 
-const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind'),
-  RAW_DH_IDX = ITEM_STAT_ORDER.indexOf('dh');
+const RAW_DH_IDX = ITEM_STAT_ORDER.indexOf('dh');
 
 /* The share of a fixed Direct Hit line on this raw stat vector, or 0 when it has none: Direct Hit on gear whose only
    main stat is Mind sits at MIND_DIRECT_HIT_SHARE, outside the substat ranking (the old healer Accuracy, converted in

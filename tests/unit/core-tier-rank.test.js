@@ -39,7 +39,8 @@ test('rank by tier, three keys with a Target GCD: 20 cases against the reference
 test('rank by tier with Vitality as a key and food matches the reference', () => {
   const rand = rng(5150);
   let runs = 0;
-  for (const [t, keys] of [
+  // 'main' stands for the job's own main stat
+  for (const [t, names] of [
     ['main', 'vit', 'dh'],
     ['main', 'vit'],
     ['crit', 'vit'],
@@ -47,6 +48,7 @@ test('rank by tier with Vitality as a key and food matches the reference', () =>
   ].entries())
     for (const jobId of ['AST', 'WAR']) {
       const job = makeJobContext(jobId);
+      const keys = names.map(k => (k === 'main' ? job.mainKey : k));
       const level = t % 2 ? 100 : 50;
       const sync = { cap: null, sync: false, level };
       const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
@@ -67,11 +69,11 @@ test('rank by tier: only raw keys give the raw optimizer; a key is held one poin
   const sync = { cap: null, sync: false, level: 100 };
   const pool = smallPool(job, rng(12), ['head', 'body', 'neck', 'ring'], 2, 1, { ilvlMin: 690, ilvlMax: 730 });
   // main stat alone has no tiers: the same totals as optimize
-  const raw = optimize(job, pool, sync, { target: 'main', tiebreak: ['vit'], melds: true });
-  const r = rankByTier(job, pool, sync, { target: 'main', tiebreak: ['vit'], melds: true, level: 100 });
-  assert.deepEqual([r.totals.main, r.totals.vit], [raw.totals.main, raw.totals.vit]);
+  const raw = optimize(job, pool, sync, { target: 'mind', tiebreak: ['vit'], melds: true });
+  const r = rankByTier(job, pool, sync, { target: 'mind', tiebreak: ['vit'], melds: true, level: 100 });
+  assert.deepEqual([r.totals.mind, r.totals.vit], [raw.totals.mind, raw.totals.vit]);
   // every held key with a tier is held at its tier start + 1, or at the most reached
-  const t = rankByTier(job, pool, sync, { target: 'crit', tiebreak: ['det', 'spec'], melds: true, level: 100 });
+  const t = rankByTier(job, pool, sync, { target: 'crit', tiebreak: ['det', 'piety'], melds: true, level: 100 });
   for (const h of t.held) assert.ok(t.withFood[h.stat] >= h.hold, h.stat);
 });
 

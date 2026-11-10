@@ -29,13 +29,13 @@ test('exact mode: the result has exactly the asked GCD, counted with food and ha
       const label = `${job.jobId} ${gcd} ${food}`;
       assert.ok(r.ok, label);
       assert.equal(r.haste?.pct ?? 0, haste, label);
-      assert.equal(gcdFor(r.withFood.spd, 100, 2500, haste), gcd, label);
+      assert.equal(gcdFor(r.withFood[job.speedKey], 100, 2500, haste), gcd, label);
       assert.equal(r.gcd, gcd, label);
       assert.equal(r.faster, false, label);
       // gear speed inside the band the result reports, and the food on top of it is what the meal gives
-      assert.ok(r.totals.spd >= r.band.gearMin && r.totals.spd <= r.band.gearMax, label);
-      const add = r.food ? (foodBonus(job, r.food, r.totals, 100).spd?.bonus ?? 0) : 0;
-      assert.equal(r.withFood.spd, r.totals.spd + add, label);
+      assert.ok(r.totals[job.speedKey] >= r.band.gearMin && r.totals[job.speedKey] <= r.band.gearMax, label);
+      const add = r.food ? (foodBonus(job, r.food, r.totals, 100)[job.speedKey]?.bonus ?? 0) : 0;
+      assert.equal(r.withFood[job.speedKey], r.totals[job.speedKey] + add, label);
     }
   }
 });
@@ -46,7 +46,7 @@ test('or-faster mode: the GCD is the asked one or shorter, and `faster` says whi
     assert.ok(r.ok, `${gcd}`);
     assert.ok(r.gcd <= gcd, `${gcd}: ${r.gcd}`);
     assert.equal(r.faster, r.gcd < gcd, `${gcd}`);
-    assert.equal(gcdFor(r.withFood.spd, 100), r.gcd);
+    assert.equal(gcdFor(r.withFood.sps, 100), r.gcd);
   }
 });
 
@@ -89,7 +89,7 @@ test('a GCD slower than the no-speed GCD is unreachable in exact mode, any GCD i
 });
 
 test('no loadout meets the target: reason "none" and the fastest GCD the pool has', () => {
-  const pool = [mkItem('H', 'head', 100, { spd: 50, crit: 10 })];
+  const pool = [mkItem('H', 'head', 100, { sps: 50, crit: 10 })];
   const r = optimizeGcd(sge, pool, NO_SYNC, { target: 'crit', gcd: 2.5, mode: 'exact' });
   assert.equal(r.ok, false);
   assert.equal(r.reason, 'none');

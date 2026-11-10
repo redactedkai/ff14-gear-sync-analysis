@@ -401,7 +401,7 @@ async function checkJobSwitch(pg) {
   await expect(pg.locator('[data-job]')).toHaveAttribute('data-job', 'GNB');
   // Gunbreaker has Critical Hit under the same name: the sort stays (audit 11 #2)
   await expect(pg.locator('#gear-table th[data-col="crit"]')).toHaveAttribute('aria-sort', 'descending');
-  await pg.click('#gear-table [data-sort="spec"]');
+  await pg.click('#gear-table [data-sort="ten"]');
   await setJob(pg, 'SGE');
   await expect(pg.locator('#gear-table th[data-col="ilvl"]')).toHaveAttribute('aria-sort', 'descending');
   await setUpShared(pg); // back to Sage for the next step
@@ -634,7 +634,7 @@ const coreGear = (...a) => core('coreGear', ...a);
 const coreFiltered = (...a) => core('coreFiltered', ...a);
 const coreRecipe = (...a) => core('coreRecipe', ...a);
 const coreRings = (...a) => core('coreRings', ...a);
-const coreStats = (...a) => core('coreStats', ...a);
+const coreKeys = (...a) => core('coreKeys', ...a);
 
 /** The ticked "Gear from" boxes of the browser (pre 'b') or a set's Fill settings ('s'), in ACTIVITIES order, read from the DOM
  * (the menu may be closed). */
@@ -814,14 +814,14 @@ const SLOW_FILL_SHEET = {
  * defaults: the set it suggests, applied, has the Mind the core finds for the same gear in Node (Total row: gear plus
  * the character's base). */
 async function checkFillRealGear(pg) {
-  const want = await coreGear('SGE', { cap: 123, sync: true, level: 50 }, 'main');
+  const want = await coreGear('SGE', { cap: 123, sync: true, level: 50 }, 'mind');
   await seedSheet(pg, FILL_SHEET);
   await openSet(pg, FILL_SHEET.name, 'Empty');
   await expect(pg.locator('#sh-fill')).toContainText('unpinned slots');
   await runFill(pg);
   await pg.click('#sh-apply');
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
-  await expect(pg.locator('#sh-total td[data-col="main"]')).toHaveText(want.on.toLocaleString('en-US'));
+  await expect(pg.locator('#sh-total td[data-col="mind"]')).toHaveText(want.on.toLocaleString('en-US'));
   await checkNoBadText(pg, 'a filled set');
   await pg.click('[data-tab=browse]');
 }
@@ -900,7 +900,7 @@ async function checkFillGoal(pg) {
   const moves = [
     ['Materia', free.totals.crit, noMelds.totals.crit],
     ['Spare points to tiebreaks', tier.totals.det, plain.totals.det],
-    ['Target GCD', tier.totals.spd, gcd.totals.spd],
+    ['Target GCD', tier.totals.sps, gcd.totals.sps],
   ];
   let usable = gcd.status === 'ok' && gcdMin.status === 'ok';
   for (const [name, a, b] of moves)
@@ -915,7 +915,7 @@ async function checkFillGoal(pg) {
   // 1. the defaults: Mind first, Materia on, Food off, spare points on but disabled with no tiebreak, any GCD, every
   // expansion, the default boxes, the equip level at the cap, and the line saying how many pieces are searched
   await expect(pg.locator('#s-count')).toHaveText(searchLine(searched, all));
-  await expectDialog(pg, { 's-target': 'main', 's-tb1': '', 's-tb2': '', 's-gcd': '', 's-lvl': '100', 's-min': '', 's-max': '' });
+  await expectDialog(pg, { 's-target': 'mind', 's-tb1': '', 's-tb2': '', 's-gcd': '', 's-lvl': '100', 's-min': '', 's-max': '' });
   await expectDialog(pg, { 's-melds': true, 's-food': false, 's-by-tier': true });
   await expect(pg.locator('#s-by-tier')).toBeDisabled();
   await expect(pg.locator('#s-gcd')).toBeEnabled();
@@ -1001,7 +1001,7 @@ async function checkFillGoal(pg) {
   await expect(pg.locator('#s-gcd')).toHaveValue('2.5');
   await expectSavedFill(pg, DIALOG_SHEET, 'GCD held to 2.5', f => Number(f.goal.gcd) === 2.5);
   await setNumber(pg, '#s-gcd', '2.40');
-  await pg.selectOption('#s-target', 'spd');
+  await pg.selectOption('#s-target', 'sps');
   await expect(pg.locator('#s-gcd')).toBeDisabled();
   await expect(pg.locator('label[for="s-gcd"]')).toHaveText('Target GCD (off: the target is speed)');
   await pg.selectOption('#s-target', 'crit');
@@ -1054,7 +1054,7 @@ async function checkFillFood(pg) {
   const usable = [
     check(food.meal && food.bonus.crit > 0, 'Sage level 100: the best meal adds no Critical Hit; pick another case'),
     check(food.totals.crit > noFood.totals.crit, 'Food does not raise Critical Hit; pick another case'),
-    check(withGcd.meal && withGcd.bonus.spd > 0, 'Sage level 100: the meal for a GCD of 2.40 adds no speed; pick another case'),
+    check(withGcd.meal && withGcd.bonus.sps > 0, 'Sage level 100: the meal for a GCD of 2.40 adds no speed; pick another case'),
   ].every(Boolean);
   if (!usable) return;
   // the gear's totals alone, on the same base
@@ -2281,8 +2281,8 @@ async function checkClosedPanel(pg) {
 async function checkPieceLab(pg) {
   await showMath(pg, 'piece');
   await pg.selectOption('#p-slot', 'head');
-  await pg.selectOption('#p-s1', 'spd');
-  await pg.selectOption('#p-s2', 'spec');
+  await pg.selectOption('#p-s1', 'sps');
+  await pg.selectOption('#p-s2', 'piety');
   await setNumber(pg, '#p-ilvl', '130');
   await openSteps(pg);
   await expect(pg.locator('#p-out thead')).toContainText('This head (item level 130)');
@@ -2327,21 +2327,21 @@ async function checkTiers(pg) {
   await expect(pg.locator('#t-level')).toHaveValue('100');
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
   await expect(pg.locator('#t-table [data-n="det"]')).toHaveValue('440');
-  await setNumber(pg, '#t-table [data-n="spd"]', '624');
-  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').first()).toHaveText('613');
-  await expect(pg.locator('#t-table tbody td.cur[data-to^="spd:"]').nth(1)).toHaveText('2.47s');
+  await setNumber(pg, '#t-table [data-n="sps"]', '624');
+  await expect(pg.locator('#t-table tbody td.cur[data-to^="sps:"]').first()).toHaveText('613');
+  await expect(pg.locator('#t-table tbody td.cur[data-to^="sps:"]').nth(1)).toHaveText('2.47s');
 
   // a value under the base is shown at the base, a speed above the most any job can have at the most; no note
   await setNumber(pg, '#t-table [data-n="crit"]', '5');
   await expect(pg.locator('#t-table [data-n="crit"]')).toHaveValue('420');
-  await setNumber(pg, '#t-table [data-n="spd"]', '99999');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('3679');
-  await setNumber(pg, '#t-table [data-n="spd"]', '624');
+  await setNumber(pg, '#t-table [data-n="sps"]', '99999');
+  await expect(pg.locator('#t-table [data-n="sps"]')).toHaveValue('3679');
+  await setNumber(pg, '#t-table [data-n="sps"]', '624');
   // a level change drops the typed value for good: back at level 100, the base again (it used to come back)
   await setNumber(pg, '#t-level', '90');
   await setNumber(pg, '#t-level', '');
   await expect(pg.locator('#t-level')).toHaveValue('100');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('420');
+  await expect(pg.locator('#t-table [data-n="sps"]')).toHaveValue('420');
 
   // the level follows each valid keystroke, while the field keeps focus
   await pg.focus('#level');
@@ -2355,7 +2355,7 @@ async function checkTiers(pg) {
   // box goes back to the settings' level
   await setNumber(pg, '#level', '50');
   await setNumber(pg, '#t-level', '80');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
+  await expect(pg.locator('#t-table [data-n="sps"]')).toHaveValue('380');
   await setNumber(pg, '#level', '60');
   await expect(pg.locator('#t-level')).toHaveValue('80');
   await setNumber(pg, '#t-level', '');
@@ -2367,7 +2367,7 @@ async function checkTiers(pg) {
   await pg.focus('#t-level');
   await pg.keyboard.press('Control+A');
   await pg.keyboard.type('80');
-  await expect(pg.locator('#t-table [data-n="spd"]')).toHaveValue('380');
+  await expect(pg.locator('#t-table [data-n="sps"]')).toHaveValue('380');
   check((await pg.evaluate(() => document.activeElement?.id)) === 't-level', 'the tiers level box lost focus while typing');
   await setNumber(pg, '#t-level', '');
   await expect(pg.locator('#t-level')).toHaveValue('90');
@@ -2703,7 +2703,7 @@ const JOB_LEVEL_CAP = { BST: 50, BLU: 80 };
 /** A saved sheet for `job` at the shared setup (level 50, synced to 123) with one empty set whose Fill settings ask for
  * food: Maximize the main stat, spare points to tiebreaks off (the gear first, then the meal: the cheap search), every box
  * at its default, the equip level at the job's cap. */
-const walkSheet = job => ({
+const walkSheet = (job, mainKey) => ({
   ...FILL_SHEET,
   id: `s_walk_${job}`,
   name: `Walk ${job}`,
@@ -2712,7 +2712,7 @@ const walkSheet = job => ({
     {
       ...FILL_SHEET.sets[0],
       fillSettings: {
-        goal: { target: 'main', tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: false, melds: true, food: true },
+        goal: { target: mainKey, tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: false, melds: true, food: true },
         searchCriteria: { expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: JOB_LEVEL_CAP[job] ?? 100 },
       },
     },
@@ -2725,18 +2725,18 @@ const walkSheet = job => ({
  * row, the Defense row, no bad text and no sideways scroll at 960 px. The last job takes the screenshot. */
 async function checkWalkSet(pg, job) {
   const sync = { cap: 123, sync: true, level: 50 };
-  const { searched, on } = await coreGear(job, sync, 'main');
-  const stats = await coreStats(job);
-  await seedSheet(pg, walkSheet(job));
+  const keys = await coreKeys(job);
+  const { searched, on } = await coreGear(job, sync, keys.main);
+  await seedSheet(pg, walkSheet(job, keys.main));
   await openSet(pg, `Walk ${job}`, 'Empty');
   const rows = await pg.locator('#sh-gear tr[data-row]').count();
   check(rows === (ONE_HANDED.has(job) ? 12 : 11), `${job}: ${rows} rows in the set's table`);
-  await expect(pg.locator('#sh-gear thead th[data-col="spec"]')).toHaveCount(stats.includes('spec') ? 1 : 0);
+  await expect(pg.locator('#sh-gear thead th[data-col="piety"], #sh-gear thead th[data-col="ten"]')).toHaveCount(keys.spec ? 1 : 0);
   await expect(pg.locator('#sh-goal .gcnt')).toHaveText(`· ${searched.toLocaleString('en-US')} pieces`);
   await runFill(pg);
   await pg.click('#sh-apply');
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
-  await checkTotals(pg, `${job} Fill with food`, { main: on });
+  await checkTotals(pg, `${job} Fill with food`, { [keys.main]: on });
   await expect(pg.locator('#sh-meal-btn')).not.toHaveText('No food');
   await expect(pg.locator('#sh-defense td.defense')).toHaveText(
     /^Physical [\d,]+\s*·\s*−\d+% damage\s*\/\s*Magic [\d,]+\s*·\s*−\d+% damage$/,
