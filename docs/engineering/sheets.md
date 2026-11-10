@@ -34,10 +34,12 @@ One record per sheet: two browser tabs never overwrite each other's sheets, and 
 | `description` | optional, several lines |
 | `job` | one of the combat jobs; fixed once the sheet exists (Copy sheet makes one for another job) |
 | `level` | the synced level, 1 to the job's level cap |
-| `sync` | item level sync: `{ on, cap }`, the cap a number even while off, 1 to the highest real item level, and no higher than the level allows while on (below) |
+| `sync` | item level sync: `{ on, cap }` (note 1) |
 | `sets` | the gear sets, in the player's order |
 | `gameData` | `{ commit, date }` of the game data the sheet was made with; a hint, it changes no number |
 | `createdAt`, `updatedAt` | ms since 1970 (UTC); the manager shows them as dates in the browser's time zone |
+
+1. `sync`: the cap is a number even while sync is off, 1 to the highest real item level, and no higher than the level allows while sync is on (below).
 
 **Gear set**
 
@@ -46,10 +48,12 @@ One record per sheet: two browser tabs never overwrite each other's sheets, and 
 | `id`, `name`, `description` | as for a sheet; the description holds the set's notes |
 | `pieces` | always 12 rows, in `SET_ROW_SLOTS` order (`src/ui/sheet-storage.js`: weapon, off-hand, head to wrist, ring twice), for every job |
 | `meal` | an `allMeals` key (HQ), or null |
-| `bestMeals` | the meals tagged "best for goal": the keys of the meals tied for the best result of the Fill that was last applied whole, `allMeals` order, or null (see below) |
+| `bestMeals` | the meals tagged "best for goal", or null (note 1) |
 | `pinned` | `{ pieces: row numbers, meal: boolean }`: what Fill keeps |
 | `fillSettings` | the set's own Fill settings, or null until Fill runs or its settings are edited |
 | `createdAt`, `updatedAt` | ms |
+
+1. `bestMeals`: the keys of the meals tied for the best result of the Fill that was last applied whole, in `allMeals` order, or null (see below).
 
 A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The game id is the identity: no name is saved. `stones` has one entry per meld slot, `{ stat, grade }` or null; a missing list counts as an empty one (`src/ui/views/saved-set.js` `sameRow`). A row the job does not use (the off-hand of a two-handed job) keeps what it holds, stored but not counted.
 

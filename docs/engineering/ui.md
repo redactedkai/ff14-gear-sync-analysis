@@ -8,7 +8,10 @@ Related pages: [architecture.md](architecture.md) (the store, views and when eac
 
 Pick a job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one (how to start is in the [root README](../../README.md#use-it); the level and cap fields are in section 5). The page has two working tabs and one reference tab:
 
-1. **Sheets** (opens first): saved sheets, each for one job, level and item level sync, holding gear sets. It has no Job and sync panel (each sheet holds its own) and needs no job chosen. A set page's **Fill** picks one item per unpinned slot (two rings) from every piece the job can wear to maximize one stat, with two optional tiebreakers and an optional Target GCD; a Materia switch (on by default) gives each piece its best melds, and under **Gear to search** the **Gear from** boxes leave out gear by how it is obtained (quests, crafting, Savage, PvP, ...; nine of them are off by default). Sections 2 and 6.
+1. **Sheets** (opens first): saved sheets, each for one job, level and item level sync, holding gear sets. It has no Job and sync panel (each sheet holds its own) and needs no job chosen. Sections 2 and 6. A set page's **Fill** picks one item per unpinned slot (two rings) from every piece the job can wear, to maximize one stat. Its settings are:
+   - two optional tiebreakers and an optional Target GCD;
+   - a Materia switch (on by default) that gives each piece its best melds;
+   - under **Gear to search**, the **Gear from** boxes, which leave out gear by how it is obtained (quests, crafting, Savage, PvP, ...; nine of them are off by default).
 2. **Gear browser**: one table of real gear for the selected job, with filters and its synced stats, for looking gear up. A name search sits on its title line ("/" jumps to it). Slot pills show how many pieces each slot has, a Reset button appears at their end while a filter is set, and a click on a column heading sorts by it (again to flip).
 
    The table shows 100 matches a page, with page numbers above it. A piece that sync lowers shows its synced numbers in bold, with its own numbers in small type under them. It has its own Gear from boxes. HQ-capable crafted gear carries the HQ mark (the HQ mark, section 3), and rings that can be worn on both hands ×2. Section 3.
@@ -55,7 +58,9 @@ A set's Total row shows each substat as the in-game character panel does: the le
 
 Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, cap 123, with crafted and tomestone gear, every slot has 11 to 20 others. A Fill suggests, for each row, the piece with the same result that is easiest to get: the lowest equip level, then the lowest item level, the search's own pick on a tie (`core/same-result.js`).
 
-- **The same result:** the same main stat, and every substat at the same tier, counted with the set's meal. The tiers are tier ranking's (`rankTierOf`, [tier-ranking.md](tier-ranking.md)), so speed holds its GCD (with haste) but its DoT/HoT tick scaling may drop a step (**owner's decision**, as for tier ranking), and Tenacity holds its mitigation step (200) but its damage bonus may drop a step (**owner's decision**). The goal stat's raw points stay as well.
+- **The same result:** the same main stat, and every substat at the same tier, counted with the set's meal. The tiers are tier ranking's (`rankTierOf`, [tier-ranking.md](tier-ranking.md)). The goal stat's raw points stay as well. Two tiers may drop a step:
+  - speed holds its GCD (with haste) but its DoT/HoT tick scaling may drop a step (**owner's decision**, as for tier ranking);
+  - Tenacity holds its mitigation step (200) but its damage bonus may drop a step (**owner's decision**).
 - **Rows share their spare points.** Two swaps can each keep a tier alone and lose it together, so every check is made against the pieces the other rows show: rows are filled in panel order. A Unique piece is never in two rows (rings), and a piece must leave the same slots empty as the search's pick (a cloak never replaces a plain body).
 - **The meal** a Fill suggests is the highest item level meal with the best meal's result (`sameMeals`).
 
@@ -63,7 +68,12 @@ Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, ca
 
 The Food row's meal on a set page is a menu (`components/meal-menu.js`, `views/meal-menu.js`), with "No food" first while the set has a meal.
 
-- **The menu** lists every meal the job can use (`allMeals`; 182 for Astrologian), by expansion, newest first, one line each: its item level first ("i580", as players write it), its name, and what it adds on the set's gear in the meal's own order, its main stat first and Vitality last ("SpS +44 DHT +41 VIT +54"); its stat pair ("Spell Speed + Direct Hit") is the row's hover text. The set's meal is lit.
+- **The menu** lists every meal the job can use (`allMeals`; 182 for Astrologian), by expansion, newest first, one line each. The set's meal is lit. A line holds:
+  - its item level first ("i580", as players write it);
+  - its name;
+  - what it adds on the set's gear, in the meal's own order, its main stat first and Vitality last ("SpS +44 DHT +41 VIT +54").
+
+  Its stat pair ("Spell Speed + Direct Hit") is the row's hover text.
 - **Filters.** A search box (meal names) and stat pills (CRT, DET, DHT, SpS, PIE; a meal must have each pill picked) narrow the list.
   - *Start:* the pills start empty, then stay as the player leaves them unless they would leave the list empty for the menu opened; then they start over.
   - *Grey pills:* a pill greys out only for a real reason: a third one (a meal has at most two stats), or one that would leave the list empty under the other filters.
@@ -98,7 +108,7 @@ The database matches of the tab's own filters, with synced stats; when it recomp
 
 - The table shows 100 matches a page (`PAGE_SIZE`). The title line gives the number of matches ("2,156 matches").
 - The page numbers sit at the left of the key's line above the table, and the key at its right. The line always shows, even with one page and no key, so the table does not move as they come and go.
-- With more than 7 pages, the line keeps 7 number places between the ‹ and › arrows: the first page, the last, the current one with one page each side, and "…" for the pages skipped (‹ 1 … 8 9 10 … 22 ›); near an end the numbers run on from that end (‹ 1 2 3 4 5 … 22 ›). With one page there are no numbers (`pageList`).
+- With more than 7 pages, the line keeps 7 number places between the ‹ and › arrows. They hold the first page, the last, the current one with one page each side, and "…" for the pages skipped (‹ 1 … 8 9 10 … 22 ›). Near an end the numbers run on from that end (‹ 1 2 3 4 5 … 22 ›). With one page there are no numbers (`pageList`).
 - Each number and arrow is a button; the current page has `aria-current="page"`, and the arrows are disabled at the ends. A page change scrolls the table's box to its first row.
 - Any change to the list (a filter, the search, a slot pill, the sort, the job, the level or sync) goes back to page 1, also when the old setting comes back. The page is not saved: a reload starts at page 1.
 
@@ -108,10 +118,15 @@ The database matches of the tab's own filters, with synced stats; when it recomp
 
 A reference tab with three sub-tabs, each on its own settings where noted:
 
-- **Piece stats**: what sync does to one piece, before and after sync, and when an overgeared piece has more than a melded one at the cap: the same slot at every item level against a melded piece at the cap, with how each stat is built, checked against real gear and the Wiki. Under "Each stat, step by step", each stat is the lower of the piece's own value and its ceiling, the same slot at the synced item level, with the slot shares of the budget. A "?" button opens "How sync works". The example piece's melds go into the two chosen substats, the 2nd first, since the 1st is already at the piece's own cap.
+- **Piece stats**: what sync does to one piece, before and after sync, and when an overgeared piece has more than a melded one at the cap. It compares the same slot at every item level against a melded piece at the cap, with how each stat is built, checked against real gear and the Wiki.
+  - Under "Each stat, step by step", each stat is the lower of the piece's own value and its ceiling, the same slot at the synced item level, with the slot shares of the budget.
+  - A "?" button opens "How sync works".
+  - The example piece's melds go into the two chosen substats, the 2nd first, since the 1st is already at the piece's own cap.
 - **GCD**: how speed becomes the GCD at a level ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)), on its own settings, whatever the job, sync or optimizer result:
   - *Settings:* a level (the synced level until another is typed; one out of range is corrected, its note as the box's hover text), a haste (none, or a job's always-on haste from [math.md, Haste](../mechanics/math.md#haste), every percent listed) and a total speed.
-  - *Shows:* for the speed, the GCD, GCDs per minute, the speed to the next step, the cut to cast and recast times (`recastMult`), the tick multiplier and the haste; a chart of the speed one 0.01 s step takes at every level (the first ten steps' average, the haste's levels marked); and 13 steps around the speed, the speed's step in the middle unless it is near the base or the floor.
+  - *Shows, for the speed:* the GCD, GCDs per minute, the speed to the next step, the cut to cast and recast times (`recastMult`), the tick multiplier and the haste.
+  - *Chart:* the speed one 0.01 s step takes at every level (the first ten steps' average, the haste's levels marked).
+  - *Steps:* 13 steps around the speed, the speed's step in the middle unless it is near the base or the floor.
   - *Slider:* it runs from the level's base to the most total speed any job can have there (the numbers are in [math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)).
 - **Substat tiers**: where each substat's tiers start around your value, as on the character panel ([math.md, Substat tiers](../mechanics/math.md#substat-tiers-breakpoints)). A card per substat shows its tiers around a value: From, the effects, spare and to next. Values are typed or clicked, held to the base and the most the level allows. Each substat has its own "?".
   - *Level:* its own, in the math bar (as the other sub-tabs' controls are), and the synced level until another is typed. Each valid level counts as it is typed, so the tiers at level 80 can be read while the settings say 50. The optimizer result never comes in (the sub-tab has no Fill button).
@@ -119,7 +134,7 @@ A reference tab with three sub-tabs, each on its own settings where noted:
 
 ## 5. The level and cap fields
 
-The Job and sync panel at the top of the page (job, synced level, item level sync and its cap) is one panel that shows the open tab's own settings: the Gear browser and How the math works each keep their own job, level, sync switch and cap, saved apart, so changing them on one tab leaves the others as they were. The Sheets tab has no panel: each sheet holds its own job, level and sync (section 6).
+The Job and sync panel at the top of the page (job, synced level, item level sync and its cap) is one panel that shows the open tab's own settings. The Gear browser and How the math works each keep their own job, level, sync switch and cap, saved apart, so changing them on one tab leaves the others as they were. The Sheets tab has no panel: each sheet holds its own job, level and sync (section 6).
 
 The panel has two states, as in the prototype:
 
@@ -134,9 +149,15 @@ Its behaviour:
 - The tabs stay while the open tab has no job, since another tab may have one.
 - Reset to defaults resets the open tab's settings only.
 
-The rule the level and cap follow, that a cap above the highest gear made for the level is lowered to it, is in [math.md, section 5](../mechanics/math.md#5-item-level-sync) (without it, a cap alone gave a level 50 character item level 400 stats and a 1.50 s GCD; [history.md](../history.md#stat-model-and-data)). This section is when and how the page applies it. A sheet's page and its New sheet and Copy sheet forms apply it the same way, through the same function ([sheets.md, "A sheet's level and sync"](sheets.md#a-sheets-level-and-sync)).
+The rule the level and cap follow is that a cap above the highest gear made for the level is lowered to it. It is in [math.md, section 5](../mechanics/math.md#5-item-level-sync). Without it, a cap alone gave a level 50 character item level 400 stats and a 1.50 s GCD ([history.md](../history.md#stat-model-and-data)). This section is when and how the page applies it. A sheet's page and its New sheet and Copy sheet forms apply it the same way, through the same function ([sheets.md, "A sheet's level and sync"](sheets.md#a-sheets-level-and-sync)).
 
-- **When.** The page lowers the cap once the level field settles (typing 80 passes through 8), when a cap is entered, when item level sync is switched on, and on loading a saved state, and only while item level sync is on (`limitCapToLevel` in `src/ui/state.js`). The job does not matter: a job at its own level cap (Beastmaster at 50, Blue Mage at 80) is limited the same way.
+- **When.** The page lowers the cap only while item level sync is on (`limitCapToLevel` in `src/ui/state.js`). It does so:
+  - once the level field settles (typing 80 passes through 8);
+  - when a cap is entered;
+  - when item level sync is switched on;
+  - on loading a saved state.
+
+  The job does not matter: a job at its own level cap (Beastmaster at 50, Blue Mage at 80) is limited the same way.
 - **The field.** It takes any whole number of 1 or more, so 999 is lowered the same way, with a note under the field ("Lowered to 135, the highest for level 50.") and a gold flash of the field. The note stays until the next change, and stays put when the up arrow is pressed at the limit. Other text (0, 12.5) is an error under the field ("Enter a whole item level from 1 to 795"), in the note's place, and the cap stays as it was. The field shows the cap that applies.
 
 ## 6. The Sheets tab
@@ -169,15 +190,20 @@ With no set, a "No gear sets yet" card with New set takes the list's place.
 
 **A set page** has a header that stays at the top of the window while the table scrolls under it:
 
-- **The breadcrumb** "Sheets / <sheet> / <set>", with a caret after the set's name that opens the set switcher (the sheet's other sets, "All gear sets (N)" and "+ New set"), and the sheet's settings as one read-only line ("White Mage · Level 70 · Item level sync 300"). On a sheet page the caret after the sheet's name switches sheets the same way.
-- **The set bar:** the set's name with a pencil that opens "Name and description"; Fill ("Fill 4 unpinned slots": the unpinned rows the job uses, plus the meal while it is not pinned; off with nothing open), or Apply and Discard while a draft or a Fill result waits; the goal ("for MND › CRT · 2,153 pieces", once the set has Fill settings); a gear icon that opens the Fill settings; Copy and Delete.
-- **The stat block:** the figures of the sheet's settings (main stat, GCD, Critical Hit and its damage, Determination, Direct Hit, the special substat where the job has one, DoT/HoT) as "Total"; while a draft or a Fill result waits, "Now" and "After" with each change in green (better) or red (worse), a lower GCD counting as better.
+- **The breadcrumb** "Sheets / <sheet> / <set>", with a caret after the set's name that opens the set switcher (the sheet's other sets, "All gear sets (N)" and "+ New set"). Beside it is the sheet's settings as one read-only line ("White Mage · Level 70 · Item level sync 300"). On a sheet page the caret after the sheet's name switches sheets the same way.
+- **The set bar** holds, in order:
+  - the set's name with a pencil that opens "Name and description";
+  - Fill ("Fill 4 unpinned slots": the unpinned rows the job uses, plus the meal while it is not pinned; off with nothing open), or Apply and Discard while a draft or a Fill result waits;
+  - the goal ("for MND › CRT · 2,153 pieces", once the set has Fill settings);
+  - a gear icon that opens the Fill settings;
+  - Copy and Delete.
+- **The stat block:** the figures of the sheet's settings as "Total". They are the main stat, GCD, Critical Hit and its damage, Determination, Direct Hit, the special substat where the job has one, and DoT/HoT. While a draft or a Fill result waits, it shows "Now" and "After" with each change in green (better) or red (worse), a lower GCD counting as better.
   - A job with an always-on haste (Monk, Ninja, Samurai, Viper) has the label "GCD (with Haste)" and shows the GCD without the haste, then with it: "2.49s (1.99s)". The delta lines compare the hasted GCD, and the Tier row's caption reads "spare · to next tier (hasted speed)", since its speed tier counts the hasted GCD's steps. The GCD column is wider in the stat block and in the sheet page's list of gear sets.
 
 Under the header: the set's notes (all their lines; nothing when empty), then the gear table. Each row has:
 
 - a pin before the slot's name (filled: pinned, outlined: not);
-- the piece as a button that opens the **piece picker**: every piece of that slot the job can wear, grouped by expansion newest first, with a search box over names and gear categories, "Empty this slot" first; a Unique ring already in the other ring row is shown but cannot be picked;
+- the piece as a button that opens the **piece picker**: every piece of that slot the job can wear, grouped by expansion newest first, with a search box over names and gear categories, and "Empty this slot" first. A Unique ring already in the other ring row is shown but cannot be picked;
 - one chip per materia slot that opens the **materia menu**.
 
 The materia menu:
@@ -192,7 +218,7 @@ The Food row's menu is described in section 2.
 - **Pins** are saved as soon as they are clicked, draft or not. Fill keeps a pinned row as it is and fills the others.
 - **Fill** runs the search (section 2) with the set's Fill settings (saved with the set at the first Fill: the defaults until then) and its pins, in the set's own lane of the solver. While it runs, Fill becomes Cancel and every edit on the tab is off.
   - *Result:* it waits as a suggestion: the rows it changes are tinted, each with a "Take" box, and Apply saves only the rows taken; Discard (or Escape) drops it.
-  - *Empty slot:* a slot the result leaves empty because no piece of it has an equip level up to the one under Gear to search is named in a line under the header ("Weapon: no Sage piece up to equip level 50, the lowest needs level 60.", `suggestionView`'s `emptyNote`).
+  - *Empty slot:* a slot the result leaves empty is named in a line under the header. This happens when no piece of it has an equip level up to the one under Gear to search ("Weapon: no Sage piece up to equip level 50, the lowest needs level 60.", `suggestionView`'s `emptyNote`).
   - *While it waits:* pieces and stones cannot be changed (a click on the table says so).
   - *Nothing found:* a Fill that finds nothing, or a pin no set can keep, says why in a line under the header; a pin it cannot keep is dropped from the set.
 - **The Fill settings** (the gear icon): Maximize and two tiebreaks, Target GCD, melds, food, Spare points to tiebreaks, and Gear to search (equip level, item level range, Expansion and "Gear from"). They are saved at once; a change drops a waiting Fill result, with a note, and the set's tagged "best for goal" meals.
@@ -219,9 +245,9 @@ The Food row's menu is described in section 2.
 
 Notes:
 
-- **Names.** Names of sheets and sets need not be unique, are trimmed, may not be empty, and the name box takes at most 60 characters (the saved data has no limit); a long one is cut with an ellipsis in lists, with the full name on hover. A copy is named "<name> (1)", or the first number free ("X (1)" copies to "X (2)").
+- **Names.** Names of sheets and sets need not be unique, are trimmed, and may not be empty. The name box takes at most 60 characters (the saved data has no limit). A long name is cut with an ellipsis in lists, with the full name on hover. A copy is named "<name> (1)", or the first number free ("X (1)" copies to "X (2)").
 - **Name and description.** Edit opens the "Name and description" dialog, for a sheet (from its row or its page) or a gear set (from its row). Descriptions keep their lines, and the box takes at most 500 characters (`DESCRIPTION_MAX_LENGTH`; the saved data has no limit); a gear set's description is its notes.
-- **Copy sheet** asks for a name (the copy name at first), the job (the jobs of the sheet's gear group, its own included; a Blue Mage or Beastmaster sheet copies to no other job), the level and item level sync. When the chosen job cannot wear some of the sheet's pieces (by the item's job list, on every row, the off-hand of a two-handed job included), the dialog lists them by set, slot and name, and Copy sheet stays off until "Clear these pieces in the copy" is ticked; in the copy those rows are empty and their pins dropped. The gear groups come from the item data (`src/data/gear-groups.json`).
+- **Copy sheet** asks for a name (the copy name at first), the job (the jobs of the sheet's gear group, its own included; a Blue Mage or Beastmaster sheet copies to no other job), the level and item level sync. Some of the sheet's pieces may be ones the chosen job cannot wear (by the item's job list, on every row, the off-hand of a two-handed job included). The dialog then lists them by set, slot and name, and Copy sheet stays off until "Clear these pieces in the copy" is ticked. In the copy those rows are empty and their pins dropped. The gear groups come from the item data (`src/data/gear-groups.json`).
 - **Delete** always asks first, naming the sheet and its number of gear sets, or the set. There is no undo.
 - **Reordering.** Each row of both lists has a handle at its left: drag it above or below another row (a line marks where it drops), or focus it and press Up or Down arrow. The handle keeps the focus, and a live region reads where the row went ("Set 2 moved to position 1 of 2.", "Heal is already first."). New sheets go to the top.
 - **Dialogs.** One at a time, over a dimmed page. Escape or a click on the dimmed page cancels, Enter in a one-line box presses the main button, Tab stays inside, and the focus goes back where it was.

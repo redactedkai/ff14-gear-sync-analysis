@@ -181,7 +181,15 @@ Notes:
 
 **The question.** The optimizer is a branch and bound search with pruning and bounds ([optimizer.md, section 5](optimizer.md#5-the-search-depth-first-branch-and-bound)); a wrong bound silently returns a worse gear set (one item per gear slot). How do we know its answer is the true best? By comparing it with a search that is too simple to be wrong: try everything. This is differential testing against a reference implementation.
 
-![Differential testing. Real-gear pools (7 jobs, every role, 24 to 33 items, 3,072 to 147,456 gear sets) and random pools drawn from fixed seeds each go to both the optimizer (branch and bound with pruning and bounds, where a wrong bound silently returns a worse gear set) and the brute-force reference (every legal gear set, drop those outside the speed range, keep the best by goal, tiebreak 1, tiebreak 2; no pruning, no score weighting). The results are compared on every substat, not pinned totals: equal passes, any difference fails and names a reproducible pool. Shared by both sides and so not checked by the comparison: a piece's effective (synced) stats, covered by the sync tests and the caps at item level 475 and 123; and policies 1 and 2, covered by the "policy: ..." tests on two-item pools.](../diagrams/testing-differential.svg)
+![Differential testing: the same pools go to the optimizer and to the brute-force reference, and the two results are compared.](../diagrams/testing-differential.svg)
+
+The figure shows:
+
+- Inputs: real-gear pools (7 jobs, every role, 24 to 33 items, 3,072 to 147,456 gear sets) and random pools drawn from fixed seeds. Each pool goes to both sides.
+- The optimizer: branch and bound with pruning and bounds, where a wrong bound silently returns a worse gear set.
+- The brute-force reference: every legal gear set, drop those outside the speed range, keep the best by goal, tiebreak 1, tiebreak 2; no pruning, no score weighting.
+- The comparison is on every substat, not pinned totals: equal passes, any difference fails and names a reproducible pool.
+- Shared by both sides and so not checked by the comparison: a piece's effective (synced) stats, covered by the sync tests and the caps at item level 475 and 123; and policies 1 and 2, covered by the "policy: ..." tests on two-item pools.
 
 **What the reference does.** A legal gear set has:
 
@@ -294,7 +302,14 @@ Notes:
 
 Which command runs which check? Run from the repository root.
 
-![npm run check runs lint (Biome, with a format check), build (the one HTML page), test (unit tests in Node) and smoke (the built page in Chromium), in that order; it needs no Python and is the bar for calling a change done. npm run check:all runs check, then lint:py (Ruff) and test:py (generator tests in Python); run it when touching scripts/data/ or after data:update. Both stop at the first failure. The perf commands, the Target GCD sweep, the checks against ffxiv-gearing and xivgear and the screenshot scripts are run by hand and are never part of check.](../diagrams/testing-commands.svg)
+![The test commands and the steps each one runs, in order.](../diagrams/testing-commands.svg)
+
+The figure shows:
+
+- `npm run check` runs lint (Biome, with a format check), build (the one HTML page), test (unit tests in Node) and smoke (the built page in Chromium), in that order. It needs no Python and is the bar for calling a change done.
+- `npm run check:all` runs check, then lint:py (Ruff) and test:py (generator tests in Python). Run it when touching scripts/data/ or after data:update.
+- Both stop at the first failure.
+- The perf commands, the Target GCD sweep, the checks against ffxiv-gearing and xivgear and the screenshot scripts are run by hand and are never part of check.
 
 Every command, with what it runs and how long it takes, is listed once, in [README, Develop](../../README.md#develop). `npm run check` took about 45 s on a 12-thread machine on 2026-10-19 (about 1 min when the machine is busy): lint 4 s, build 2 s, unit tests 19 s, smoke 20 to 40 s. The notes below say what the test commands check.
 

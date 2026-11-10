@@ -534,7 +534,13 @@ Example at level 50 with $g = 296$: $\lfloor 130 \times 296 / 341 \rfloor = \lfl
 
 **GCD tiers at level 50.** Because of the floors, the GCD drops in steps. The tool finds them by scanning gear speed from 0 to 1,200; after 3, a new tier starts about every 10.5 points.
 
-![Step chart of the level 50 GCD against gear speed 0 to 360, no haste: 2.50 s at 0, 2.49 s from 3, 2.35 s from 150, 2.30 s from 202, 2.22 s from 286, 2.21 s from 297, 2.20 s from 307, 2.16 s from 349. Marked are 296, the generic maximum under cap 123 without the weapon, at 2.22 s, one point below the 2.21 s tier, and 344 with the weapon, at 2.17 s.](../diagrams/math-gcd-tiers.svg)
+![Step chart of the level 50 GCD against gear speed 0 to 360, no haste.](../diagrams/math-gcd-tiers.svg)
+
+The figure shows:
+
+- Steps: 2.50 s at 0, 2.49 s from 3, 2.35 s from 150, 2.30 s from 202, 2.22 s from 286, 2.21 s from 297, 2.20 s from 307, 2.16 s from 349.
+- Marked: 296, the generic maximum under cap 123 without the weapon, at 2.22 s, one point below the 2.21 s tier.
+- Marked: 344 with the weapon, at 2.17 s.
 
 **The most speed any job can have.** At a level, the most total speed any job can have is reached with the best gear at any sync and the best HQ meal (`src/data/max-speed.json`, [data-pipeline.md](../engineering/data-pipeline.md)). It is 800 at level 50 and 3,679 at level 100 (Black Mage, whose level 100 weapon carries Spell Speed).
 
