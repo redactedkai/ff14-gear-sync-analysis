@@ -55,16 +55,22 @@ A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The g
 
 **Fill settings** are `goal` (target stat, two tiebreaks, Target GCD and its mode, rank by tier, melds, food) and `searchCriteria` (expansions, "Gear from" boxes, the market board switch, item level and equip level limits). `views/fill-settings.js` `fillRecipe` turns them into the recipe `core/recipe.js` solves.
 
-**`bestMeals`** is a hint the page shows ("best for goal" on the Food row and the Food menu, [ui.md](ui.md#the-food-rows-menu)). Apply on a Fill result saves it (`views/set-suggestion.js` `appliedFields`: `found.food.tagged` of `core/recipe.js` `runRecipe`, null with Food off) only when nothing is declined: a declined Take box means the set is not as Fill made it. It stays whichever meal the set holds (`views/meal-menu.js` `mealBestKeys`). It is dropped (set to null) by Apply on a manual draft that changes a piece or a stone (a draft of the meal or the pins alone keeps it), by any change of the set's Fill settings, and by a change of the sheet's level or sync; Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. Pin changes keep it. A Fill with nothing to change saves it as soon as the Fill ends (Apply is off, so nothing else is saved; `components/set-page/fill.js` `endFill`). It is not checked when read: a damaged value is read as none and dropped (`sheet-ops.js` `repairSheet`); a record from before the field has none.
+**`bestMeals`** is a hint the page shows ("best for goal" on the Food row and the Food menu, [ui.md](ui.md#the-food-rows-menu)).
+
+- Saved: Apply on a Fill result saves it (`views/set-suggestion.js` `appliedFields`: `found.food.tagged` of `core/recipe.js` `runRecipe`, null with Food off) only when nothing is declined. A declined Take box means the set is not as Fill made it.
+- Kept: it stays whichever meal the set holds (`views/meal-menu.js` `mealBestKeys`). Pin changes keep it. Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. An Apply on a manual draft of the meal or the pins alone keeps it.
+- Dropped (set to null): by Apply on a manual draft that changes a piece or a stone, by any change of the set's Fill settings, and by a change of the sheet's level or sync.
+- A Fill with nothing to change saves it as soon as the Fill ends. Apply is off, so nothing else is saved (`components/set-page/fill.js` `endFill`).
+- Reading: it is not checked when read. A damaged value is read as none and dropped (`sheet-ops.js` `repairSheet`); a record from before the field has none.
 
 Never saved: totals, tiers, defense and the GCD (always `evaluateSet` with the sheet's job, level and sync), a Fill suggestion, a manual draft, open menus, and the solver's session.
 
 ## Reading and writing
 
-`src/ui/sheet-storage.js` reads and writes the records; `src/ui/sheet-store.js` is the Alpine store over them (`$store.sheets`), which keeps the sheets out of reactive state and bumps a `rev` counter when they change. `src/ui/sheet-dialogs.js` is what the main button of the open dialog does, as plain code: `submitDialog` sends the dialog's fields to the store call of its kind (new, copy, edit sheet, edit set, delete), a refused form gets its error text, and a blank name is put back (`shownName` is the name the box shows).
+`src/ui/sheet-storage.js` reads and writes the records; `src/ui/sheet-store.js` is the Alpine store over them (`$store.sheets`), which keeps the sheets out of reactive state and bumps a `rev` counter when they change. `src/ui/sheet-dialogs.js` is what the main button of the open dialog does, as plain code. `submitDialog` sends the dialog's fields to the store call of its kind (new, copy, edit sheet, edit set, delete). A refused form gets its error text, and a blank name is put back (`shownName` is the name the box shows).
 
-- Every record is checked field by field when it is read (`setProblem`, `rowProblem`). A record this build cannot read (not JSON, a newer `v`, an unknown job, a damaged row, pin, meal, time or Fill settings) is skipped and listed in the sheet manager under "Could not be read", with the cause and a Delete button that asks first. It is never deleted or rewritten on its own.
-- A record names its stats by the game's own keys (`mind`, `sps`, `ten`, ...): the Fill settings' `target`, `tb` and `tb2` and each stone's `stat`. A record written before that named them by position (`main`, `spd`, `spec`); the reader turns such a key into the sheet's job's key at that position (`withCurrentStatKeys`, `src/core/stat-keys.js` `currentStatKey`), so one record may hold either kind, and `v` stays 1. The record is rewritten with the game's keys at the sheet's next save.
+- Every record is checked field by field when it is read (`setProblem`, `rowProblem`). A record this build cannot read (not JSON, a newer `v`, an unknown job, a damaged row, pin, meal, time or Fill settings) is skipped and listed in the sheet manager under "Could not be read". The list gives the cause and a Delete button that asks first. It is never deleted or rewritten on its own.
+- A record names its stats by the game's own keys (`mind`, `sps`, `ten`, ...): the Fill settings' `target`, `tb` and `tb2` and each stone's `stat`. A record written before that named them by position (`main`, `spd`, `spec`). The reader turns such a key into the sheet's job's key at that position (`withCurrentStatKeys`, `src/core/stat-keys.js` `currentStatKey`), so one record may hold either kind, and `v` stays 1. The record is rewritten with the game's keys at the sheet's next save.
 - A sheet record not in the index is listed after the indexed ones.
 - A write that fails (a full storage) keeps the change on the page, marks it unsaved and says so; the order of the sheets is marked unsaved the same way.
 - A tab reads fresh records each time it opens the manager or a sheet. Two browser tabs: the last write of a sheet wins; there is no live sync.
@@ -73,7 +79,12 @@ Never saved: totals, tiers, defense and the GCD (always `evaluateSet` with the s
 
 Level and item level sync are edited on the sheet's page only, and change at once without a question: nothing is lost. A piece above the new level is synced down by the usual rules (`docs/mechanics/math.md` section 5); a synced piece's stones stay stored and count again if the cap or level goes back up. The set page shows the sheet's job, level and sync as a read-only line.
 
-A sheet's cap follows its level by the Job and sync panel's rule ([ui.md, section 5](ui.md#5-the-level-and-cap-fields); `limitCapToLevel`, shared through `sheetSettings` in `src/ui/sheet-ops.js`): while item level sync is on, a cap above what the level allows is lowered to it and never raised, with the panel's note under the field ("Lowered to 405, the highest for level 70."). It applies when the sheet page's level or cap is entered or its sync switched on, in the New sheet and Copy sheet forms as their job, level, cap or sync change (and again on Create and Copy), and to a saved sheet as it is read: a level above the job's level cap is held to it and the cap lowered, with no note, and the repair is written with the sheet's next edit.
+A sheet's cap follows its level by the Job and sync panel's rule ([ui.md, section 5](ui.md#5-the-level-and-cap-fields); `limitCapToLevel`, shared through `sheetSettings` in `src/ui/sheet-ops.js`). While item level sync is on, a cap above what the level allows is lowered to it and never raised. The panel's note appears under the field ("Lowered to 405, the highest for level 70.").
+It applies in three places:
+
+- On the sheet page, when the level or cap is entered or its sync switched on.
+- In the New sheet and Copy sheet forms, as their job, level, cap or sync change (and again on Create and Copy).
+- To a saved sheet as it is read: a level above the job's level cap is held to it and the cap lowered, with no note. The repair is written with the sheet's next edit.
 
 The Gear browser and How the math works each keep their own Job and sync panel and never follow a sheet.
 
@@ -83,7 +94,13 @@ Names may repeat (the id is the identity). A name is trimmed, and an empty one i
 
 ## Copy sheet
 
-Copy sheet is the only way to change a sheet's job. The form offers a new name, job, level and sync. A job is offered only from the same gear group (`src/core/gear-groups.js`, generated from the item data: jobs that share most of their armor); Blue Mage and Beastmaster, with their own level caps, copy to no other job. The note over the job boxes names the group by the job picker's row when the whole group sits in one row ("Healers: the jobs that share Sage’s gear"; `gearGroupName`). The goal and the stones move to the new job by position (`remapStatKey`: the main stat to the main stat, speed to speed, the special substat to the special substat); a stat the new job lacks stays in the copy and the set's Fill settings put it back to their default. Pieces the new job cannot wear are emptied in the copy and their pins dropped; the form lists them by set and slot first and waits for its box to be ticked.
+Copy sheet is the only way to change a sheet's job. The form offers a new name, job, level and sync. A job is offered only from the same gear group (`src/core/gear-groups.js`, generated from the item data: jobs that share most of their armor). Blue Mage and Beastmaster, with their own level caps, copy to no other job.
+
+The note over the job boxes names the group by the job picker's row. This applies when the whole group sits in one row ("Healers: the jobs that share Sage’s gear"; `gearGroupName`).
+
+The goal and the stones move to the new job by position (`remapStatKey`: the main stat to the main stat, speed to speed, the special substat to the special substat). A stat the new job lacks stays in the copy, and the set's Fill settings put it back to their default.
+
+Pieces the new job cannot wear are emptied in the copy and their pins dropped. The form lists them by set and slot first and waits for its box to be ticked.
 
 ## Pins and Fill
 

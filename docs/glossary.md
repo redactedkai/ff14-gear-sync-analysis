@@ -28,7 +28,10 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Equip level.** The character level a piece needs before it can be worn. Level sync compares it with the synced level. See [math.md, section 5](mechanics/math.md#which-pieces-are-synced).
 
-**Expansion, level cap.** The game's major releases. Each raised the **level cap**, the highest character level: A Realm Reborn (ARR, 50), Heavensward (60), Stormblood (SB, 70), Shadowbringers (ShB, 80), Endwalker (EW, 90), Dawntrail (100). The Gear browser's Expansion dropdown has a checkbox per expansion, all ticked by default; unticking one hides its gear. A piece belongs to the expansion whose level band its equip level falls in; the five level-1 gift accessories go by their item level instead. **Inferred**: the game files have no expansion or patch field for items; checked against item ids, which run roughly in release order (the late ids in an old band are new jobs' weapons added to old content).
+**Expansion, level cap.** The game's major releases. Each raised the **level cap**, the highest character level: A Realm Reborn (ARR, 50), Heavensward (60), Stormblood (SB, 70), Shadowbringers (ShB, 80), Endwalker (EW, 90), Dawntrail (100).
+- The Gear browser's Expansion dropdown has a checkbox per expansion, all ticked by default; unticking one hides its gear.
+- A piece belongs to the expansion whose level band its equip level falls in; the five level-1 gift accessories go by their item level instead.
+- **Inferred**: the game files have no expansion or patch field for items. The assignment was checked against item ids, which run roughly in release order (the late ids in an old band are new jobs' weapons added to old content).
 
 **Field operations (Field Op).** Large open zones with their own gear and relic grind: Eureka (Stormblood), Bozja (Shadowbringers) and the Occult Crescent (Dawntrail). See [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md#field-op-gear).
 
@@ -46,7 +49,13 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Item level.** A number on every piece of gear. It is not a strength rating in itself: it is a row number in the budget table, and the piece's stats follow from that row and its slot. Real gear goes from 1 to 795 (the project's data starts at 15). See [math.md, section 2](mechanics/math.md#2-the-budget-table).
 
-**Item level sync, sync cap.** Some content lowers gear to a fixed item level, the **sync cap**. Each stat on a piece above the cap is cut to that stat's cap; pieces at or below the cap are unchanged. For substats the cap is what a full-share piece of the same slot at the cap carries (the Wiki's caps at item level 475 are the check); for a stat with a factor below 100% it can differ by 1. That the main stat and Vitality are clamped the same way is a separate claim. The owner's main case is cap 123. See [math.md, section 5](mechanics/math.md#5-item-level-sync); the evidence is in [validation.md, section 8](mechanics/validation.md#8-in-game-captures-still-missing). Whether each claim is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
+**Item level sync, sync cap.** Some content lowers gear to a fixed item level, the **sync cap**. Each stat on a piece above the cap is cut to that stat's cap; pieces at or below the cap are unchanged.
+- For substats the cap is what a full-share piece of the same slot at the cap carries (the Wiki's caps at item level 475 are the check).
+- For a stat with a factor below 100% the cap can differ by 1.
+- That the main stat and Vitality are clamped the same way is a separate claim.
+- The owner's main case is cap 123.
+
+See [math.md, section 5](mechanics/math.md#5-item-level-sync); the evidence is in [validation.md, section 8](mechanics/validation.md#8-in-game-captures-still-missing). Whether each claim is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
 
 **Job.** A character's combat class, such as Sage, Warrior or Black Mage. The project supports all 23 combat jobs. A job decides the main stat, the speed stat, the special substat and the weapon type. See [math.md, section 1](mechanics/math.md#1-terms).
 
@@ -58,9 +67,15 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Main stat.** A job's primary damage or healing stat: Strength (tanks and Strength melee), Dexterity (Ninja, Viper, ranged physical), Intelligence (casters) or Mind (healers). Gear for one main stat is useless to jobs that use another. See [math.md, section 1](mechanics/math.md#1-terms).
 
-**Materia, melds.** Materia are stones that can be attached ("melded") to gear to add one combat substat each, in grades I to XII. A piece has up to 5 slots; crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot. Each substat on a piece is capped at the piece's own cap. On synced-down gear melds do not count (checked by the owner in game; status in [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed)). A set's Fill gives each piece that is not synced its best melds (the "Materia" switch, on by default). See [materia.md](mechanics/materia.md).
+**Materia, melds.** Materia are stones that can be attached ("melded") to gear to add one combat substat each, in grades I to XII.
+- A piece has up to 5 slots. Crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot.
+- Each substat on a piece is capped at the piece's own cap.
+- On synced-down gear melds do not count (checked by the owner in game; status in [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed)).
+- A set's Fill gives each piece that is not synced its best melds (the "Materia" switch, on by default).
 
-**Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level, and their level synced too, even in an unrestricted party (**verified**: patch 3.0 notes); the Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123. See [math.md, section 1](mechanics/math.md#1-terms).
+See [materia.md](mechanics/materia.md).
+
+**Minimum Item Level, Echo.** Party options for older content. "Minimum IL" runs a duty with everyone's gear synced to the duty's minimum item level, and their level synced too, even in an unrestricted party (**verified**: patch 3.0 notes). The Echo is a buff the game normally grants in older content, which the owner's group turns off. Together they are why the owner cares about the cap of 123. See [math.md, section 1](mechanics/math.md#1-terms).
 
 **Patch.** A game update, numbered like 4.0 or 7.56; the first digit is the expansion. The game data is tied to a patch through its datamining commit. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
 
@@ -104,7 +119,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Band reach.** Under a speed band with other minimums: a table of the most of a held stat the remaining slots can add while speed still lands in the band. A partial gear set that cannot reach the minimum even so is dropped. Exact. See [optimizer.md, section 5](engineering/optimizer.md#with-minimums-on-other-stats).
 
-**Branch and bound.** The search method the optimizer uses: fill one slot at a time (shortest candidate list first, slots a piece can leave empty last), trying the best candidates first, and abandon a partial gear set as soon as an upper bound shows it cannot beat the best complete set found so far. The answer is exact unless the search hits its node limit. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
+**Branch and bound.** The search method the optimizer uses. It fills one slot at a time (shortest candidate list first, slots a piece can leave empty last), trying the best candidates first. It abandons a partial gear set as soon as an upper bound shows it cannot beat the best complete set found so far. The answer is exact unless the search hits its node limit. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
 **Brute-force reference.** The tests' independent check of the optimizer: it tries every legal loadout of a small pool and keeps the best. It uses the optimizer's own synced stats, so it checks the search, not the sync clamp. See [testing.md, section 2.1](engineering/testing.md#21-the-brute-force-reference-and-the-real-gear-pools).
 
@@ -120,7 +135,12 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Evidence labels.** The words every page uses for the status of a claim: **verified**, **inferred**, **assumed**, **second-hand**, plus **owner's decision** for a modelling choice and **not checked** for a claim nobody has tried to test. Their meanings are in [STYLE.md](diagrams/STYLE.md#status-words).
 
-**External truth, independent derivation, regression value.** The kinds of expected value in the tests: a number from outside the code (game data, the Wiki, AkhMorning); a number the test computes itself from raw game data; a number the code once produced, pinned so it cannot change silently. See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
+**External truth, independent derivation, regression value.** The kinds of expected value in the tests:
+- **External truth**: a number from outside the code (game data, the Wiki, AkhMorning).
+- **Independent derivation**: a number the test computes itself from raw game data.
+- **Regression value**: a number the code once produced, pinned so it cannot change silently.
+
+See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Fathom.** To abandon a partial gear set (a node of the search tree) because a bound shows that no way of filling the remaining slots can beat the incumbent or meet a limit. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
@@ -186,11 +206,21 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Smoke test.** The browser test of the built page (`npm run test:smoke`): known numbers on screen, no JavaScript errors, no stray "undefined", "NaN" or "null" text, no sideways scroll at 960 px. See [testing.md, section 2](engineering/testing.md#smoke-test).
 
-**Solver, worker.** What runs the optimizer's searches for the page (`src/ui/solver.js`): on the page a Web Worker, a second thread started from a script inside the page, so a long search does not freeze the page; on the page's own thread when the browser will not start the worker, and in the unit tests. See [architecture.md, section 9](engineering/architecture.md#9-the-optimizers-worker).
+**Solver, worker.** What runs the optimizer's searches for the page (`src/ui/solver.js`). It runs in one of two places:
+- On the page, a Web Worker: a second thread started from a script inside the page, so a long search does not freeze the page.
+- On the page's own thread, when the browser will not start the worker, and in the unit tests.
+
+See [architecture.md, section 9](engineering/architecture.md#9-the-optimizers-worker).
 
 **Speed range.** An optional minimum and maximum for the speed stat in the optimizer engine, set from a target GCD. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
-**Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded. It is 100% for nearly everything; 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats. Sync caps apply the factor in the other order, before the slot share, and use the piece's own factor. Where no item is involved, the page uses the job's factor. See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule). Whether each claim is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
+**Stat factor.** A percentage the game files attach to each stat of an item, chosen by the item's **kind** (`Item.BaseParamModifier`, 0 to 12, a column of `BaseParam.MeldParam`). An item's own stat is its slot value times the factor, rounded.
+- It is 100% for nearly everything.
+- It is 90% for Vitality on Intelligence and Mind gear, and for every main stat and Vitality on pieces with all four main stats.
+- Sync caps apply the factor in the other order, before the slot share, and use the piece's own factor.
+- Where no item is involved, the page uses the job's factor.
+
+See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [section 5](mechanics/math.md#the-clamp-rule). Whether each claim is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
 
 **Stat key.** The game's own short name for a stat, used for a stat everywhere in the code: `str`, `dex`, `int`, `mind` (main stat), `vit`, `crit`, `det`, `dh`, `sks`, `sps` (speed), `piety`, `ten` (special substat). A job has some of them: its `job.stats` list, with `job.mainKey`, `job.speedKey` and `job.specKey` (none for most jobs) naming its main, speed and special stat; shared code asks the job instead of writing a job-specific key. See [math.md, section 1](mechanics/math.md#1-terms) and [architecture.md, section 2](engineering/architecture.md#2-the-job-context).
 
@@ -198,7 +228,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Store, view.** The page's UI pattern: one shared store holds the settings and the current job context; each page area derives a frozen view from it, and the template only displays the view. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
-**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files; it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it; the optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md). Status: whether it is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
+**Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files; it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it. The optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md). Status: whether it is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
 
 **Tabs.** The page has two working tabs, **Sheets** and **Gear browser**, and a reference tab, **How the math works**, with three sub-tabs: **Piece stats**, **GCD** and **Substat tiers**. What each one shows: [ui.md, section 1](engineering/ui.md#1-the-tabs).
 
@@ -208,7 +238,7 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints).
 
-**Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals, with each ranked stat held one point above the start of its best tier (roadmap A7, "Rank by tier"; the page's Spare points to tiebreaks switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md); the switch is in [ui.md, section 2](engineering/ui.md#spare-points-to-tiebreaks-rank-by-tier).
+**Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals. Each ranked stat is held one point above the start of its best tier (roadmap A7, "Rank by tier"; the page's Spare points to tiebreaks switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md); the switch is in [ui.md, section 2](engineering/ui.md#spare-points-to-tiebreaks-rank-by-tier).
 
 **Trial search.** In a search with a seed: the branch and bound run first for at most 20,000 nodes. Most tier ranking searches end there; only the others build Pareto fronts. Not the same as a probe (a measurement). See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
 
