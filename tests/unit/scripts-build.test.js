@@ -39,7 +39,7 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
    frames themselves. */
 test('page template: nothing paints before Alpine has built it', async () => {
   const { readFile } = await import('node:fs/promises');
-  const html = await readFile(new URL('../../src/index.html', import.meta.url), 'utf8');
+  const html = expandIncludes(await readFile(new URL('../../src/index.html', import.meta.url), 'utf8'));
   const css = await readFile(new URL('../../src/styles.css', import.meta.url), 'utf8');
   assert.match(css, /\[x-cloak\]\s*\{\s*display:\s*none\s*!important;?\s*\}/);
   const body = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('<!-- SCRIPT -->'));
@@ -107,6 +107,30 @@ test('build includes: a partial is filled in, indented like its marker, its lead
   const out = expandIncludes('<p>\n    <!-- INCLUDE m.html id=o part=opt -->\n</p>', name => partials[name]);
   assert.equal(out, '<p>\n    <div id="o-x">\n      <i x-text="$store.app.opt.q"></i>\n    </div>\n</p>');
   assert.throws(() => expandIncludes('<!-- INCLUDE m.html id=o -->', name => partials[name]), /no value for \{\{part\}\}/);
+});
+
+/* A13: a partial may include partials (the set page holds the two filter menus); a loop or a deep chain stops the build. */
+test('build includes: a partial can include another, keeping the indentation; a cycle or too deep a chain throws', () => {
+  const including = name => `<!-- a partial that includes ${name} -->\n<!-- INCLUDE ${name} -->\n`;
+  const partials = {
+    'outer.html': '<!-- outer -->\n<section>\n  <!-- INCLUDE inner.html id={{id}} -->\n</section>\n',
+    'inner.html': '<!-- inner -->\n<b id="{{id}}">\n  x\n</b>\n',
+    'a.html': including('b.html'),
+    'b.html': including('a.html'),
+    'd1.html': including('d2.html'),
+    'd2.html': including('d3.html'),
+    'd3.html': including('d4.html'),
+    'd4.html': including('leaf.html'),
+    'leaf.html': '<i></i>\n',
+  };
+  const read = name => partials[name];
+  assert.equal(
+    expandIncludes('<div>\n  <!-- INCLUDE outer.html id=q -->\n</div>', read),
+    '<div>\n  <section>\n    <b id="q">\n      x\n    </b>\n  </section>\n</div>',
+  );
+  assert.throws(() => expandIncludes('<!-- INCLUDE a.html -->', read), /includes itself/);
+  assert.throws(() => expandIncludes('<!-- INCLUDE d1.html -->', read), /nest deeper than 3/);
+  assert.equal(expandIncludes('<!-- INCLUDE d3.html -->', read), '<i></i>');
 });
 
 test('page template: the browser and a set page take their filter menus from the partials', async () => {
