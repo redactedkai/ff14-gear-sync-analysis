@@ -9,7 +9,7 @@ import { makeJobContext } from '../../../src/core/job-context.js';
 import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.js';
 import { fakeFrames, pageMagics } from './page-magics.js';
 
-/* the page's refs (x-ref names in src/index.html); the frame callback runs at once in Node */
+/* the page's refs (x-ref names in src/partials/set-page.html); the frame callback runs at once in Node */
 const SET_PAGE_REFS = ['head', 'table', 'cancel', 'apply', 'discard', 'fill', 'gear', 'settings', 'leave', 'leaveKeep', 'setsButton'];
 fakeFrames({ immediate: true });
 

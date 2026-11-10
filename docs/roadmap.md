@@ -8,11 +8,9 @@ In build order (the owner's order).
 
 | ID | Idea | In one line |
 | --- | --- | --- |
-| A4 | Gear sets and comparison | The Sheets tab: saved gear sets, filled by the search or by hand, compared by stats and tiers |
 | A3 | Save and share | Settings, gear sets and picks in a JSON file or a URL; after A4 |
 | A11 | Relics with allocated substats | Let the optimizer pick them; after A4 |
 | A12 | Import from xivgear | Bring in an xivgear link or JSON as gear sets; after A4 |
-| A13 | Split the page template into partials | Move `src/index.html` sections into `src/partials/`; after A4 |
 | A14 | Final viewport and width review | Before the merge to `main` |
 | A16 | Stat keys that are the game's own stats | Replace `spd`, `spec` and `main` by the game's keys |
 | A17 | Harden the saved gear sheet format | Version 1 and migrations, before the first public release; before A16 |
@@ -23,11 +21,9 @@ In build order (the owner's order).
 
 ### Notes on the rows
 
-- **A4.** The Sheets tab, the page's first: gear sheets (each a saved list of gear sets for one job, level and cap, [glossary](glossary.md#project-terms)), each gear set built by hand or filled by the search (a set page's Fill), compared by their stats and tiers. How it works: [sheets.md](engineering/sheets.md) and [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page). The feature is built and checked on its branch; the follow-ups it left are A18 to A21 and the viewport review in A14.
 - **A3.** A JSON file or a URL, holding the settings, the gear sets and the pieces picked from the same-result menus. After A4.
 - **A11.** The optimizer leaves these relics out today, since the game files hold no substats for them ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). The page shows no note about them. Model the allocation so it can pick one. A relic whose substats are set by hand counts as having none in a gear set's Total, Tier row and header today, with no word on the page; A11 fixes that too. After A4.
 - **A12.** Bring a gear set or an xivgear sheet in from an xivgear link or its exported JSON, as gear sets in a gear sheet: pieces, materia and meal by game id, with the job, level and cap; relic substats and custom items are listed as not mapped. After A4.
-- **A13.** `src/index.html` is the last file several agents edit at once (about half of the commits that touch `src/`). Move its sections into `src/partials/` with the build's existing `<!-- INCLUDE -->` markers ([architecture.md, section 5](engineering/architecture.md#5-build)). The built page must stay byte for byte the same, as in `de94f60`. After A4.
 - **A14.** Before the merge to `main`:
   - the container cap is settled at 1280 px (every tab, the Sheets tab included);
   - decide the `@media (min-width: 1300px)` rule on `.twopanel`;
@@ -64,6 +60,8 @@ On `dev` at least; live once on `main`.
 | --- | --- | --- |
 | A1 | Target GCD | [optimizer.md, section 2](engineering/optimizer.md#target-gcd-from-a-gcd-to-a-speed-range) |
 | A2 | Food | [math.md, section 6](mechanics/math.md#food) |
+| A4 | Gear sets and comparison (the Sheets tab; follow-ups A18 to A21) | [sheets.md](engineering/sheets.md), [ui.md, section 2](engineering/ui.md#2-fill-the-search-on-a-set-page) |
+| A13 | The page template split into partials | [architecture.md, section 5](engineering/architecture.md#5-build) |
 | A5 | Check sync caps against ffxiv-gearing | [validation.md, section 9](mechanics/validation.md#9-against-another-tool-ffxiv-gearing) |
 | A7 | Rank by tier | [tier-ranking.md](engineering/tier-ranking.md) |
 | A8 | Substat tiers (breakpoints) | [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints) |
