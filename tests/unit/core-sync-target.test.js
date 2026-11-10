@@ -72,15 +72,19 @@ test('at level 100 (the level cap) no real piece is level-synced', () => {
    above with item level 123 or less: synced to 130, which is above their item level, so no stat drops. */
 test('level 50 with cap 123: 71 pieces are synced by level alone, to item level 130, and keep every stat', () => {
   const sync = { cap: 123, sync: true, level: 50 };
-  const levelOnly = ROWS.filter(r => r.lvl > 50 && r.ilvl <= 123);
-  assert.equal(levelOnly.length, 71);
+  const levelOnly = ROWS.filter(r => r.lvl > 50 && r.ilvl > 1 && r.ilvl <= 123);
+  assert.equal(levelOnly.length, 71); // not the 12 item level 1 Replica shields, which have stats of their own that the item level model does not predict
   let changed = 0;
   for (const r of ROWS) {
     const now = syncTarget({ itemLevel: r.ilvl, equipLevel: r.lvl, scales: r.scales, syncOn: true, cap: 123, syncedLevel: 50 });
     const before = r.ilvl > 123 ? 123 : null; // item level sync alone
     if (now !== before) changed++;
   }
-  assert.equal(changed, 71, 'only the level-only pieces get a new target');
+  assert.equal(
+    changed,
+    83, // the 71 and the 12 Replica shields
+    'only the level-only pieces get a new target',
+  );
   for (const r of levelOnly) {
     for (const job of jobsOf(r)) {
       const item = poolItemFromRow(job, r);

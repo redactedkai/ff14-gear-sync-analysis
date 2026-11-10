@@ -6,12 +6,12 @@ import assert from 'node:assert/strict';
 import { JOBS, JOB_ROWS } from '../../src/core/constants.js';
 import { dataSourceLabel, MAX_REAL } from '../../src/core/tables.js';
 import { page, settings } from '../../src/ui/components/page.js';
-import { restoreState } from '../../src/ui/state.js';
+import { jobLineText, restoreState } from '../../src/ui/state.js';
 import { createAppStore } from '../../src/ui/store.js';
 
-/* The settings panel bound to a store of `saved`, with a stand-in for the cap field (its flash class). */
+/* The settings panel bound to a store of `saved` (on the Gear browser unless it says otherwise), with a stand-in for the cap field (its flash class). */
 function panel(saved) {
-  const app = createAppStore(restoreState(saved));
+  const app = createAppStore(restoreState({ tab: 'browse', ...saved }));
   const classes = new Set();
   const cap = { classList: { add: c => classes.add(c), remove: c => classes.delete(c) }, offsetWidth: 0 };
   const c = Object.assign(settings(), { $store: { app }, $refs: { cap } });
@@ -99,5 +99,83 @@ test('Reset to defaults: asks first, and resets only on yes', () => {
     if (had) Object.defineProperty(globalThis, 'window', had);
     else delete globalThis.window;
   }
-  assert.deepEqual(asked, ['Reset every setting to its default?', 'Reset every setting to its default?']);
+  assert.deepEqual(asked, ["Reset this tab's settings to their defaults?", "Reset this tab's settings to their defaults?"]);
+});
+
+/* A tab button (goTab): leaving the Sheets tab asks the set page first (sheet-store.js askLeave); the answer opens the
+   tab. Other tabs switch at once. */
+test('goTab: leaving the Sheets tab with something to settle asks first; the answer opens the tab', () => {
+  const app = createAppStore(restoreState({ tab: 'sheets' }));
+  let pending = null;
+  let settle = true;
+  const sheets = {
+    askLeave: move => {
+      if (!settle) return false;
+      pending = move;
+      return true;
+    },
+  };
+  const c = Object.assign(page(), { $store: { app, sheets } });
+  c.goTab('browse');
+  assert.equal(app.tab, 'sheets', 'the question is open: the tab stays');
+  pending();
+  assert.equal(app.tab, 'browse', 'the answer opens the tab');
+  // nothing to settle: at once
+  app.showTab('sheets');
+  settle = false;
+  c.goTab('math');
+  assert.equal(app.tab, 'math');
+  // from another tab nothing is asked
+  settle = true;
+  pending = null;
+  c.goTab('browse');
+  assert.deepEqual([app.tab, pending], ['browse', null]);
+});
+
+test('job strip: the text after the job name follows the level and the sync, as B17 words it', () => {
+  assert.equal(jobLineText(100, false, 795), 'Level 100 · Item level sync: off');
+  assert.equal(jobLineText(100, true, 275), 'Level 100 · Item level sync: 275');
+  assert.equal(jobLineText(50, true, null), 'Level 50 · Item level sync: on');
+});
+
+test('job strip: closed at the start, with a job or without one; Change and Close swap it with the panel', () => {
+  const none = panel({});
+  none.c.$watch = () => {};
+  none.c.init();
+  assert.equal(none.c.open, false, 'no job chosen: still the strip');
+  const sage = panel({ job: 'SGE' });
+  const watchers = {};
+  sage.c.$watch = (path, fn) => {
+    watchers[path] = fn;
+  };
+  sage.c.init();
+  assert.equal(sage.c.open, false);
+  assert.equal(sage.c.lineText, 'Level 100 · Item level sync: off');
+  sage.c.$nextTick = fn => fn();
+  sage.c.$refs.closeButton = {
+    focus() {
+      sage.focused = 'close';
+    },
+  };
+  sage.c.$refs.changeButton = {
+    focus() {
+      sage.focused = 'change';
+    },
+  };
+  sage.c.toggleOpen();
+  assert.deepEqual([sage.c.open, sage.focused], [true, 'close']);
+  sage.c.toggleOpen();
+  assert.deepEqual([sage.c.open, sage.focused], [false, 'change']);
+  // Escape in the open panel closes it, with the focus on Change; on the strip it does nothing
+  sage.c.toggleOpen();
+  sage.focused = null;
+  sage.c.closeOnEscape();
+  assert.deepEqual([sage.c.open, sage.focused], [false, 'change']);
+  sage.focused = null;
+  sage.c.closeOnEscape();
+  assert.deepEqual([sage.c.open, sage.focused], [false, null]);
+  // arriving on a tab with no job does not open the panel
+  sage.app.job = null;
+  assert.equal(watchers['$store.app.tab'], undefined);
+  assert.equal(sage.c.open, false);
 });

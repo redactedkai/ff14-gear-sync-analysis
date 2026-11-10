@@ -87,5 +87,5 @@
 <text class="fg b" x="367.0" y="372">5 · Neck N2</text>
 <text class="small muted" x="367.0" y="392">total 41: not better</text>
 <text class="small muted" x="20" y="430">H2, B2 and N2 each also carry 5 of another stat, so no item is beaten on every dimension and none is pruned beforehand.</text>
-<text class="small muted" x="20" y="450">The search visits 7 of the 15 possible nodes (8 complete loadouts). Result: H1 + B1 + N1 = 43.</text>
+<text class="small muted" x="20" y="450">The search visits 7 of the 15 possible nodes (8 complete gear sets). Result: H1 + B1 + N1 = 43.</text>
 </svg>

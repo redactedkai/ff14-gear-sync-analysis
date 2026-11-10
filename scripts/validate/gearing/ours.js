@@ -35,7 +35,7 @@ const OFF_BUCKETS = [
 const prepared = new Map();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/* Our neutral stat key -> their stat key, for a job. */
+/* Our stat key -> their stat key, for a job. */
 function keyMap(job) {
   const p = job.profile;
   return {

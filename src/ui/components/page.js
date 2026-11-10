@@ -3,18 +3,39 @@
 import { JOB_ROWS, jobById } from '../../core/constants.js';
 import { JOB_ICONS } from '../../data/job-icons.js';
 import { dataSourceLabel } from '../../core/tables.js';
-import { limitCapToLevel } from '../state.js';
-import { TYPING_DEBOUNCE_MS } from '../helpers.js';
+import { CAP_TYPED_BAD_TEXT, capLoweredText, jobLineText, capTextBad, limitCapToLevel } from '../state.js';
+import { TYPING_DEBOUNCE_MS, flashLowered } from '../helpers.js';
+import { loadExampleSheets } from '../test-data.js';
 
-/* The page root: the footer. */
+/* The page root: the footer, and the tabs. */
 export function page() {
   return {
     /* footer note naming the datamining commit; empty when unknown */
     dataSource: dataSourceLabel(),
+    /* TEMPORARY (the "test data" button of a DEV build, ui/test-data.js): load the example sheets and show the manager. */
+    loadTestData() {
+      const sheets = this.$store.sheets;
+      if (sheets.askLeave(() => this.loadTestData())) return;
+      loadExampleSheets(sheets);
+      this.$store.app.showTab('sheets');
+      sheets.openManager();
+    },
+    /* A tab button: open tab `tab`. Leaving the Sheets tab while its set page has something to settle (a manual draft,
+       a running Fill, a Fill result waiting) asks first, with the set page's own question (sheet-store.js askLeave);
+       the answer opens the tab. */
+    goTab(tab) {
+      const app = this.$store.app;
+      if (app.tab === 'sheets' && tab !== 'sheets' && this.$store.sheets.askLeave(() => app.showTab(tab))) return;
+      app.showTab(tab);
+    },
   };
 }
 
-/* The job and sync settings panel: the job picker, the synced level, the cap and the sync switch. */
+/* What the reset button asks before it resets the open tab's settings (the other tabs keep theirs). */
+const RESET_QUESTION = "Reset this tab's settings to their defaults?";
+
+/* The job and sync settings panel: the job picker, the synced level, the cap and the sync switch. One panel is on the
+   page and shows the open tab's own settings (store.showTab swaps them in), so each tab keeps its own values. */
 export function settings() {
   return {
     /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
@@ -23,6 +44,25 @@ export function settings() {
     },
     requestJob(id) {
       this.$store.app.setJob(id); // job-specific settings reset (resetForJob); nothing else is lost, so no confirmation
+    },
+    /* The full panel (true) or the one-line strip with a Change button (false), as in prototype B17. It always starts as the
+       strip, with or without a job ("none chosen"); Change opens the panel. */
+    open: false,
+    /* the strip's text after "Job: <name>": the synced level and the item level sync */
+    get lineText() {
+      const app = this.$store.app;
+      return jobLineText(app.level, app.sync, app.cap);
+    },
+    /* Change and Close: swap the strip and the panel, and keep the keyboard focus on the button that took the other's place */
+    toggleOpen() {
+      this.open = !this.open;
+      this.$nextTick(() => this.$refs[this.open ? 'closeButton' : 'changeButton']?.focus());
+    },
+    /* Escape in the open panel closes it, as it closes the page's menus, and the focus goes back to Change. */
+    closeOnEscape() {
+      if (!this.open) return;
+      this.open = false;
+      this.$nextTick(() => this.$refs.changeButton?.focus());
     },
     /* the cap field holds text that is not a whole item level in range (the store keeps its last valid cap) */
     capTypedBad: false,
@@ -50,36 +90,26 @@ export function settings() {
     lowerCap() {
       const lowered = limitCapToLevel(this.$store.app);
       this.capLowered = lowered;
-      if (!lowered) return;
-      const field = this.$refs.cap; // restart the flash: drop the class, let the browser see it gone, add it back
-      field.classList.remove('flash');
-      void field.offsetWidth;
-      field.classList.add('flash');
+      if (lowered) flashLowered(this.$refs.cap);
     },
-    /* under the cap field after the page lowered it: "Lowered to 135, the highest for level 50.", or at the job's
-       level cap "Lowered to 795, the highest item level." */
+    /* under the cap field after the page lowered it (capLoweredText): "Lowered to 135, the highest for level 50." */
     get capLoweredNote() {
-      const c = this.capLowered;
-      if (!c || this.capError) return '';
-      return `Lowered to ${c.to}, the highest ${c.level == null ? 'item level' : `for level ${c.level}`}.`;
+      return this.capError ? '' : capLoweredText(this.capLowered);
     },
     onCapInput(text) {
-      const app = this.$store.app,
-        v = Number(text);
-      if (text === '') app.cap = null; // an empty field means no cap
-      // a whole number above the highest real item level is a cap too: limitCapToLevel lowers it
-      this.capTypedBad = text !== '' && !(Number.isInteger(v) && v >= 1);
+      if (text === '') this.$store.app.cap = null; // an empty field means no cap
+      this.capTypedBad = capTextBad(text);
     },
     /* shown under the cap field while sync is on */
     get capError() {
       const app = this.$store.app;
       if (!app.sync) return '';
-      if (this.capTypedBad) return `Enter a whole item level from 1 to ${app.maxReal}`;
+      if (this.capTypedBad) return CAP_TYPED_BAD_TEXT;
       return app.cap == null ? 'Enter a sync cap' : '';
     },
-    /* every setting back to its default, after the browser's own confirmation dialog */
+    /* the open tab's settings back to their defaults, after the browser's own confirmation dialog */
     requestReset() {
-      if (window.confirm('Reset every setting to its default?')) this.$store.app.resetAll();
+      if (window.confirm(RESET_QUESTION)) this.$store.app.resetAll();
     },
     jobRows: JOB_ROWS.map(([label, ids]) => ({
       label,

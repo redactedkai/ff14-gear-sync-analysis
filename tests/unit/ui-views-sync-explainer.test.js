@@ -1,5 +1,5 @@
 /* How the math works, Piece stats (src/ui/views/sync-explainer.js): one piece against the same at the cap with its
-   melds, the item level range, melds from the optimizer's Goal, and the caps behind them. */
+   melds, the item level range, melds into the chosen substats, and the caps behind them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { IL, MAX_REAL } from '../../src/core/tables.js';
@@ -12,10 +12,9 @@ import { SLOT_PERMILLE, appState, roundHalfUp } from './helpers/common.js';
 import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from './helpers/views.js';
 
 /* A store-shaped state: a job, a sync (item level `cap`, or level sync when `cap` is null), and the explainer's piece. */
-function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', 'spd'], target = 'main' }) {
+function app(job, { level, cap = null, slot = 'body', ilvl = null, subs = ['crit', 'spd'] }) {
   const a = appState({ job, sync: cap != null, cap, level }, {});
   a.piece = { ilvl, slot, subs };
-  a.opt = { ...a.opt, target, tb: '', tb2: '' };
   return a;
 }
 
@@ -69,15 +68,13 @@ test("the Wiki's item level 475 example: rings at 500 and 600 synced to 475", ()
   );
 });
 
-test("melds follow the optimizer's Goal; a main stat Goal falls back to the two substats, 2nd first", () => {
-  const goalMain = app('RPR', { level: 80, ilvl: 530, target: 'main' });
-  assert.deepEqual(meldKeysOf(goalMain), { keys: ['spd', 'crit'], fromGoal: false });
-  assert.match(explainerViewOf(goalMain).goalNote, /Strength/);
-  const goalDet = app('RPR', { level: 80, ilvl: 530, target: 'det' });
-  assert.deepEqual(meldKeysOf(goalDet), { keys: ['det'], fromGoal: true });
-  const v = explainerViewOf(goalDet);
-  assert.equal(v.goalNote, '');
-  assert.match(v.vsRows[0].materia, /^2 × Grade VIII Determination \(\+24 each\)$/);
+test('melds go into the two chosen substats, the 2nd (70%) line first', () => {
+  const a = app('RPR', { level: 80, ilvl: 530 });
+  assert.deepEqual(meldKeysOf(a), ['spd', 'crit']);
+  const det = app('RPR', { level: 80, ilvl: 530, subs: ['crit', 'det'] });
+  assert.deepEqual(meldKeysOf(det), ['det', 'crit']);
+  assert.equal(explainerViewOf(det).vsRows[0].materia, '2 × Grade VIII Determination (+24 each)');
+  assert.deepEqual(meldKeysOf(app('RPR', { level: 80, ilvl: 530, subs: ['det', null] })), ['det']);
 });
 
 test('the range: 30 below the cap to 20 past the last change, at most the highest real item level', () => {

@@ -1,12 +1,12 @@
 /* Rank by tier (roadmap A7): the best loadout by the tiers of the target and tiebreaks, in that order, then by their
-   raw totals (order A, owner 2026-10-16: leftover points go to the target). Tiers and totals count food; speed's tier is
+   raw totals (order A, owner: leftover points go to the target). Tiers and totals count food; speed's tier is
    its GCD with the job's haste, Tenacity's its mitigation step, main stat and Vitality have none (every point counts;
    tiers.js rankTierOf). Spec: docs/engineering/tier-ranking.md.
-   - Weapon damage comes first when the job ranks it (rankedKeys in optimizer/candidates.js; owner 2026-10-18), as a key
-     without tiers; the "Ranked by tier" line leaves it out (views/optimizer.js).
+   - Weapon damage comes first when the job ranks it (rankedKeys in optimizer/candidates.js; owner), as a key
+     without tiers (a set page's Tier row has no weapon damage).
    - One search per key, in order: maximize the key under the minimums so far, note the tier it reaches, then hold the
      key there through a minimum on its gear points (gearNeeded) for every later search. A key is held one point above
-     its tier start (HOLD_MARGIN, owner 2026-10-16: a one-point model error should not drop the tier), or at the most
+     its tier start (HOLD_MARGIN, owner: a one-point model error should not drop the tier), or at the most
      reached when that is less. Every tier rises with points, so each search's best lands in the best tier left.
    - A last search maximizes the keys' raw totals under every minimum.
    - Meals: each meal runs the stages on its own; after each stage only the meals reaching the best tier go on (the
@@ -36,8 +36,9 @@ function provenMost(state, stat, result) {
  * @param pool  pool items
  * @param sync  {cap, sync, level} as for optimize
  * @param opts  {target='main', tiebreak=[], melds=false, nodeLimit, food: null | a foodChoices entry | 'best', level (default
- *              sync.level, else the job's level cap), gcd (seconds, optional: a Target GCD), mode: 'exact' | 'min'}
- * @param cache optional Map for candidate lists (prepare) from earlier calls with the same pool, sync, keys, melds and
+ *              sync.level, else the job's level cap), gcd (seconds, optional: a Target GCD), mode: 'exact' | 'min',
+ *              fixed=[] (pinned pieces, fixedCandidate: counted in every total and minimum, not searched)}
+ * @param cache optional Map for candidate lists (prepare) from earlier calls with the same pool, sync, pinned pieces, keys, melds and
  *              GCD mode; filled as it goes, so a new GCD or meal only reruns the searches
  * @returns {ok:false, reason: 'unreachable' (no speed gives the GCD) | 'none' (no loadout meets it), truncated, nodes,
  *          searches, fastest?} or {ok:true, ...solve result (picks, totals = gear points), food, bonus, withFood,
@@ -85,7 +86,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     const minStats = Object.keys(state.mins);
     const prepKey = `${target}|${tiebreak.join()}|${minStats.join()}|${gcdMode}|${!!opts.melds}`;
     if (!cache.has(prepKey)) {
-      const prepOpts = { target, tiebreak, melds: opts.melds, speed: gcdMode, minStats, versionKeys, versionCache };
+      const prepOpts = { target, tiebreak, melds: opts.melds, speed: gcdMode, minStats, versionKeys, versionCache, fixed: opts.fixed };
       cache.set(prepKey, prepare(job, pool, sync, prepOpts));
     }
     const limits = { spdMin: state.gear?.gearMin, spdMax: state.gear?.gearMax, mins: state.mins };

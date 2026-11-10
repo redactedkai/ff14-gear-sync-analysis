@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { browseItems } from '../../src/core/items.js';
-import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, markWords, pageList } from '../../src/ui/views/gear.js';
+import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, browseCell, markWords, pageList } from '../../src/ui/views/gear.js';
 import { gearViewOf, makeApp } from './helpers/views.js';
 
 /* The browser's list: database rows matching its filters that its own "Gear from" filter lets through; no pool. With
@@ -19,7 +19,7 @@ test('gear view: every match of the filters, with its synced stats', () => {
   // item level 130 is above the cap of 123: the rows are synced and show the synced stats, the own ones under them; the
   // item level column keeps the piece's own 130
   assert.ok(v.shown.every(x => x.synced && x.ilvl === 130));
-  const cut = v.shown.flatMap(x => x.cells).filter(c => c.was != null);
+  const cut = v.shown.flatMap(x => x.cells).filter(c => c.was !== null);
   assert.ok(cut.length > 0 && cut.every(c => Number(c.text) < Number(c.was) && c.cls === 'n cut'));
 });
 
@@ -157,13 +157,13 @@ test('gear browser pages: every page up to 7; above, the first, the last and one
     }
 });
 
-/* Sage at level 100 with sync off and the default filters: 2,156 matches in the data of 2026-10-20, so 22
+/* Sage at level 100 with sync off and the default filters: 2,193 matches, so 22
    pages of 100. */
 test('gear browser pages: 100 rows a page, the last page the rest; the count names every match', () => {
   const app = makeApp('SGE', { sync: false, cap: null, level: 100 });
   const first = gearViewOf(app);
   const n = first.pageCount;
-  assert.equal(first.countText, '2,156 matches');
+  assert.equal(first.countText, '2,193 matches');
   assert.equal(n, 22);
   assert.equal(first.shown.length, PAGE_SIZE);
   assert.deepEqual([first.page, first.prevPage, first.nextPage], [1, null, 2]);
@@ -176,12 +176,12 @@ test('gear browser pages: 100 rows a page, the last page the rest; the count nam
     [1],
   );
   const last = gearViewOf(app, 22);
-  assert.equal(last.shown.length, 56);
+  assert.equal(last.shown.length, 93);
   assert.deepEqual([last.page, last.prevPage, last.nextPage], [22, 21, null]);
   assert.equal(last.countText, first.countText);
   // the pages split the list in its order, with no row twice
   const keys = Array.from({ length: n }, (_, i) => gearViewOf(app, i + 1).shown.map(x => x.key)).flat();
-  assert.equal(keys.length, 2156);
+  assert.equal(keys.length, 2193);
   assert.equal(new Set(keys).size, keys.length);
   // a page past the end shows the last, one below 1 the first
   assert.equal(gearViewOf(app, 99).page, 22);
@@ -197,4 +197,74 @@ test('gear browser pages: one page has no buttons; no matches reads "No matches"
   app.browse.q = 'no such piece';
   const none = gearViewOf(app);
   assert.deepEqual([none.countText, none.shown.length, none.pageCount, none.pageButtons.length], ['No matches', 0, 1, 0]);
+});
+
+/* A row's plain fields (what the template shows, each read once by x-text or a binding): the cells in the table's column
+   order, the search's marks, the HQ mark and the ring's "x2". The row's data is checked against the real pieces of the
+   job (the item level 130 rows of a Sage, synced to 123, as in the first test). */
+test('gear view: a row has one cell per stat in column order, with plain fields for the template', () => {
+  const app = makeApp('SGE');
+  Object.assign(app.browse, { min: 130, max: 130, lvl: 50, exclude: [], q: '' });
+  const v = gearViewOf(app);
+  assert.ok(v.shown.length >= 9);
+  const raws = new Map(browseItems(app.jobCtx, { ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).map(r => [r.name, r]));
+  for (const x of v.shown) {
+    assert.deepEqual(
+      x.cells.map(c => c.col),
+      app.jobCtx.stats,
+    );
+    assert.equal(x.rowCls, 'synced');
+    for (const c of x.cells) {
+      // a stat sync lowers shows the cap bar and its tooltip on the value, and the piece's own number under it
+      const cut = c.was !== null;
+      assert.equal(c.cls.includes('cut'), cut);
+      assert.equal(c.title, cut ? 'Maxed on this piece' : null);
+      assert.equal(c.cls.includes('dim'), c.text === '0' && !cut);
+      if (cut) assert.ok(Number(c.text) < Number(c.was));
+      else assert.equal(c.text.includes('.'), false);
+    }
+    assert.ok(raws.has(x.name));
+  }
+  // synced to 123 from 130: at least one stat per row is lowered
+  assert.ok(v.shown.every(x => x.cells.some(c => c.was !== null)));
+});
+
+test('browse cell: a stat sync lowers shows both numbers; a stat it does not shows one, dimmed at zero', () => {
+  assert.deepEqual(browseCell(85, 79, 'crit'), {
+    text: '79',
+    cls: 'n cut',
+    col: 'crit',
+    title: 'Maxed on this piece',
+    was: '85',
+  });
+  assert.deepEqual(browseCell(85, 85, 'det'), { text: '85', cls: 'n', col: 'det', title: null, was: null });
+  assert.equal(browseCell(0, 0, 'dh').cls, 'n dim');
+  assert.equal(browseCell(undefined, undefined, 'dh').text, '0');
+});
+
+test("gear view: a row's fields mark the search words, the HQ mark and the second ring", () => {
+  const app = makeApp('SGE');
+  Object.assign(app.browse, { min: 130, max: 130, lvl: 50, exclude: [], q: 'ring', type: 'ring' });
+  const v = gearViewOf(app);
+  assert.ok(v.shown.length > 0);
+  for (const x of v.shown) {
+    // the name's parts join to the item's name, the matched parts have the mark class
+    assert.equal(x.nameParts.map(p => p.text).join(''), x.name);
+    assert.ok(x.nameParts.every(p => p.cls === (p.hit ? 'mark' : '')));
+    assert.equal(x.twice, x.copies === 2);
+    assert.equal(x.slot, 'Ring');
+  }
+  // both kinds exist among the Sage's rings, so the checks above are not empty
+  assert.ok(v.shown.some(x => x.twice) && v.shown.some(x => !x.twice));
+  // crafted pieces have the HQ mark
+  Object.assign(app.browse, { q: '', type: 'any', min: 1, max: 795, lvl: 100 });
+  assert.ok(gearViewOf(app).shown.some(x => x.hq));
+});
+
+/* The template shows the name and slot with x-text, which sets text, never markup: the fields keep a name as it is. */
+test('gear view: markup in a name stays text in the name parts', () => {
+  const name = '<img src=x onerror=alert(1)> & "Ring"';
+  const parts = markWords(name, 'ring');
+  assert.equal(parts.map(p => p.text).join(''), name);
+  assert.equal(parts.filter(p => p.hit).length, 1);
 });

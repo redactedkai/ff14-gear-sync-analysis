@@ -33,7 +33,7 @@ export function clampIlvl(i) {
   return Math.max(0, Math.min(MAX_ILVL, i));
 }
 
-/* A stat object with every neutral stat at 0. */
+/* A stat object with every stat key at 0. */
 export function blankStats() {
   return { main: 0, vit: 0, crit: 0, det: 0, dh: 0, spd: 0, spec: 0 };
 }
@@ -151,7 +151,7 @@ export function capFromBudget(base, factorPct, share) {
 
 /* Per-stat ceiling under sync: each stat's capValue for the piece's slot and kind at the cap item level. `pct`: the
    piece's own slot share, if not the job's share for the type. `factors`: the piece's own stat factors
-   ({neutral stat: factor}, kindFactors in items.js) for a real item; null for the job's (jobFactor). */
+   ({stat key: factor}, kindFactors in items.js) for a real item; null for the job's (jobFactor). */
 export function capsFor(job, type, capIlvl, pct, factors = null) {
   const caps = {};
   ALL_STATS.forEach(s => {

@@ -6,7 +6,7 @@ Related pages: [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [a
 
 **The whole pipeline in one picture.** A JSON file that both the Python generators and the JavaScript page read (the shared format) defines what each number in a generated row means. The browser never loads data at run time.
 
-![Flow from the game client through the datamining repository to the fetch step, which copies the 20 needed CSV files and the 23 job icons to this machine. Four Python generators, all reading the shared format, write four generated files: the item database (20,031 rows, item level 15 to 795), the item level table, the food table (296 meals) and the job icons. A fifth generator, in Node, runs the optimizer on the item, item level and food files and writes the most speed per level (levels 1 to 100). The esbuild page bundle, which also reads the shared format, packs code, styles and the generated files into one HTML file that the browser opens from disk; the footer names the source commit](../diagrams/data-flow.svg)
+![Flow from the game client through the datamining repository to the fetch step, which copies the 20 needed CSV files and the 23 job icons to this machine. Four Python generators, all reading the shared format, write four generated files: the item database (20,210 rows, item level 1 to 795), the item level table, the food table (296 meals) and the job icons. A fifth generator, in Node, runs the optimizer on the item, item level and food files and writes the most speed per level (levels 1 to 100). The esbuild page bundle, which also reads the shared format, packs code, styles and the generated files into one HTML file that the browser opens from disk; the footer names the source commit](../diagrams/data-flow.svg)
 
 **Which data.** Every count on this page was produced by running the generators' rules over the CSVs in the local clone, or by importing the generated tables in Node. They describe datamining commit `d9582a6` (30 September 2026).
 
@@ -45,9 +45,9 @@ The project fetches twenty sheets (English column names, `csv/en/`). The fetch s
 
 What each sheet holds, and which of its columns are read:
 
-- **`Item`**: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table), `MateriaSlotCount` and `IsAdvancedMeldingPermitted` (materia slots), `Rarity`, `SubStatCategory` (whether the item level scales with the wearer's level), and the row id (`#`, the game id). The gear categories also read `SubcategorySort` and `DyeCount` (section 4), and the materia table reads the `LevelItem` of the materia items.
+- **`Item`**: name, equip slot category, item level, equip level, job category, up to six stat id and value pairs, up to six HQ bonus pairs, `CanBeHq`, `IsUnique`, `BaseParamModifier` (the item's kind, a column of the stat factor table), `MateriaSlotCount` and `IsAdvancedMeldingPermitted` (materia slots), `Rarity`, `SubStatCategory` (whether the item level scales with the wearer's level), and the row id (`#`, the game id). The gear categories also read `SubcategorySort` and `DyeCount` (section 4.12), and the materia table reads the `LevelItem` of the materia items.
 - **`Materia`**: one row per stat: the materia item of each grade (`Item[0]` to `Item[15]`), what it adds (`Value[0]` to `Value[15]`) and the stat (`BaseParam`). Ids 0 to 1416.
-- **`MateriaGrade`**: one row per grade (I to XII) with the overmeld success rates, `OvermeldNQPercent[0]` to `[3]` for the four overmeld slots. Only `[1]` is read.
+- **`MateriaGrade`**: one row per grade (I to XII) with the overmeld success rates, `OvermeldNQPercent[0]` to `[3]` and `OvermeldHQPercent[0]` to `[3]` for the four overmeld slots. All are read: `[1]` of the NQ column marks the high grades, and both columns give the shown odds.
 - **`EquipSlotCategory`**: which gear slots an item occupies (1) or blocks (−1).
 - **`ClassJobCategory`**: which classes and jobs may equip an item (`True`/`False` per job).
 - **`Recipe`**: one row per recipe; `ItemResult` is the item it makes.
@@ -59,13 +59,13 @@ What each sheet holds, and which of its columns are read:
 - **`ItemAction`**: what using an item does. A meal's row has `Action` 844 or 845, `Data[0]` 48 (the Well Fed status) and `Data[1]` its `ItemFood` row.
 - **`ItemFood`**: up to three stats per meal or medicine: `BaseParam[0..2]`, `IsRelative[0..2]` (a percentage, or a flat bonus), `Value`/`Max` for normal quality and `ValueHQ`/`MaxHQ` for HQ, in one row.
 - **`ClassJob`**: one row per class and job with its abbreviation (`PLD`, `SGE`, ...); the row number picks the job's icon, and the `Modifier` columns of Strength, Dexterity, Intelligence, Mind and Vitality are the job modifiers (section 5).
-- **`Quest`, `QuestClassJobReward`, `Achievement`, `GCScripShopItem`, `GilShop`, `GilShopItem`**: the ways a player gets a piece other than crafting and `SpecialShop` shops (quest and achievement rewards, seal shops, gil shops and seasonal event shops). Which columns are read is in section 4, *Sources*.
+- **`Quest`, `QuestClassJobReward`, `Achievement`, `GCScripShopItem`, `GilShop`, `GilShopItem`**: the ways a player gets a piece other than crafting and `SpecialShop` shops (quest and achievement rewards, seal shops, gil shops and seasonal event shops). Which columns are read is in section 4.6.
 
 ### Guarding against a changed game file
 
 A game patch can rename a column, change a number the page relies on, or change how values are written. The generators check for all three before they write anything, so such a change stops the regeneration with an error instead of producing wrong data quietly.
 
-**Slot shares, verified on every regeneration.** For all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the share the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). The columns checked are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent`, `RingPercent`, and the three multi-slot columns that have a slot code (section 4): `ChestHeadPercent` (the body that covers the head), `LegsFeetPercent` and `ChestHeadLegsFeetPercent`. The sheet has more multi-slot columns (`HeadChestHandsLegsFeetPercent`, `ChestLegsGlovesPercent`, `ChestLegsFeetPercent`, plus `WaistPercent` and `UnderArmorPercent`); the project has no slot code for that gear, so those are not checked. See [math.md](../mechanics/math.md) for how the shares are used.
+**Slot shares, verified on every regeneration.** For all 14 stats the project uses, the item level generator reads the stat's `BaseParam` row and compares each slot column with the share the page uses. Any difference, a missing column or a missing stat row stops it with an error that lists every mismatch (for example `mind RingPercent = 70, page uses 67`). The columns checked are `TwoHandWeaponPercent`, `OneHandWeaponPercent`, `OffHandPercent`, `HeadPercent`, `ChestPercent`, `HandsPercent`, `LegsPercent`, `FeetPercent`, `EarringPercent`, `NecklacePercent`, `BraceletPercent`, `RingPercent`, and the three multi-slot columns that have a slot code (section 4.2): `ChestHeadPercent` (the body that covers the head), `LegsFeetPercent` and `ChestHeadLegsFeetPercent`. The sheet has more multi-slot columns (`HeadChestHandsLegsFeetPercent`, `ChestLegsGlovesPercent`, `ChestLegsFeetPercent`, plus `WaistPercent` and `UnderArmorPercent`); the project has no slot code for that gear, so those are not checked. See [math.md](../mechanics/math.md) for how the shares are used.
 
 **Column checks.** Before using a sheet, each generator checks that every column it reads is in the sheet's header, and stops with an error naming the sheet and each missing column. That covers:
 
@@ -73,7 +73,7 @@ A game patch can rename a column, change a number the page relies on, or change 
 - every stat column in `ItemLevel`;
 - every slot column (plus `MainHand` and `OffHand`) in `EquipSlotCategory`;
 - the `Item` columns listed above: the 24 stat pair columns, `CanBeHq`, `IsUnique`, `LevelItem`, `LevelEquip`, `ClassJobCategory`, `EquipSlotCategory`, `Name`, `BaseParamModifier`, `MateriaSlotCount`, `IsAdvancedMeldingPermitted`, `Rarity`, and for the gear categories `SubcategorySort` and `DyeCount`;
-- the `Materia` and `MateriaGrade` columns of the materia table (section 4);
+- the `Materia` and `MateriaGrade` columns of the materia table (section 4.13);
 - the `Recipe`, `SpecialShop` and `TomestonesItem` columns of the source flags;
 - the 13 `MeldParam` columns of `BaseParam` and the three `ParamGrow` columns;
 - the `Item`, `ItemAction` and `ItemFood` columns of the food table (section 5).
@@ -100,16 +100,6 @@ For the current data that is about 7 MB of git data and 20 MB of CSV files on di
 - **A given commit.** `fetch.py --commit <id>` fetches that one commit (the full 40-digit id, which every generated file names, section 6) and checks it out instead of the newest one, so the data of an older page can be rebuilt with one fetch and one regeneration. A later fetch without it goes back to the newest commit. The job icons are always fetched as they are today.
 - **Completeness.** The step fails if any of the twenty files is missing afterwards.
 - **Adding a sheet.** A clone made before a sheet was added picks it up on the next fetch, because the sparse path list is set on every run. To add a sheet without moving to a newer commit, set the same path list in the clone by hand instead of fetching.
-
-### The most speed per level
-
-The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.mjs` works it out with the optimizer (JavaScript, so `regen.py` runs it with Node after the item and food tables) and writes `src/data/max-speed.json`, one number per level from 1 to the level cap (the highest equip level in the item database, as the page computes it).
-
-For each job, at each level up to its cap, the most gear speed is the best of three searches with melds: gear made for the level without sync, every piece level synced, and every piece at the highest item level cap the level allows (`capCeiling`, from level 15: below that the cap case comes only from Ala Mhigan Earrings, equip level 1 and item level 50, and no duty syncs that low). The HQ meal that adds the most speed goes on top. Jobs that wear the same pieces give the same answer, so each group is searched once. It takes about two and a half minutes. Level 50, for example: 341 base + 387 gear (level 100 gear synced to the 135 cap) + 72 food = 800.
-
-A search that stops at its node limit (2,000,000 nodes) may miss the true most speed. The generator then writes nothing, names each such search (jobs, level and case) and exits with status 1; raise its node limit and run it again. No search stops there today (**verified**: full run on `d9582a6`, 2026-10-19).
-
-The table depends on code as well as data: a change to the optimizer, sync or food code can change it while the source commit stays the same. The file therefore records `inputs`, a sha256 over the item, food and item level files, the shared format, every module under `src/core` and the generator itself (line endings counted as LF). `node scripts/data/gen_max_speed.mjs --check src/data/max-speed.json` recomputes it in under a second, without searching, and exits with status 1 when the file is stale; then regenerate. No test runs it, since most code changes leave the table as it is; the GCD view test re-derives level 50.
 
 ### Job icons
 
@@ -150,7 +140,7 @@ Beastmaster (patch 7.56) was appended at the end, so no other job's bit moved. T
 | 12 | Main Attribute | Strength | 55 |
 | 13 | Secondary Attribute | DirectHitRate | 56 |
 
-- **Main Attribute and Secondary Attribute** are generic stats on 16 pieces (the pre-order earrings, the Occult accessories, Neophyte's Ring). The wearer gets Main Attribute as its own main stat, and Secondary Attribute as Piety (healers), Tenacity (tanks) or Direct Hit (everyone else). That mapping is xivgear's, with in-game values for a healer and a Ninja in its tests (**second-hand**); the tank case is **inferred**.
+- **Main Attribute and Secondary Attribute** are generic stats on 16 pieces (the pre-order earrings, the Occult accessories, Neophyte's Ring). The wearer gets Main Attribute as its own main stat, and Secondary Attribute as Piety (healers), Tenacity (tanks) or Direct Hit (everyone else). That mapping is xivgear's, with in-game values for a healer and a Ninja in its tests (**second-hand**). For tanks, Main Attribute → Strength is **verified** (the patch 5.0 notes changed it from Vitality, and `ClassJob.PrimaryStat` agrees; [validation.md, section 9](../mechanics/validation.md#9-against-another-tool-ffxiv-gearing)); Secondary Attribute → Tenacity is **inferred**.
 - They have no `ItemLevel` column, so they borrow the main-stat and Direct Hit columns. The four main-stat columns are equal at every item level (**verified**), and Direct Hit equals the common substat column.
 
 **Slot codes.** Each code names a slot type and the `EquipSlotCategory` column that identifies it. Each slot also carries its share of the budget (`percent`, in thousandths) and the `BaseParam` column that holds it; the page reads its slot shares from here, and the item level generator checks them against `BaseParam` (section 1).
@@ -164,6 +154,8 @@ Beastmaster (patch 7.56) was appended at the end, so no other job's bit moved. T
 | 4 | body | Body | 10 | bracelet | Wrists |
 | 5 | hands | Gloves | 11 | ring | FingerL |
 | | | | 12 | body covering the head | Body (head blocked) |
+| | | | 13 | legs covering the feet | Legs (feet blocked) |
+| | | | 14 | body covering the hands, legs and feet | Body (hands, legs and feet blocked) |
 
 Belts (`Waist`) and soul crystals have no slot code, so items in those slots are dropped.
 
@@ -173,11 +165,11 @@ Belts (`Waist`) and soul crystals have no slot code, so items in those slots are
 
 - the `Item` columns of the two meld fields (`MateriaSlotCount`, `IsAdvancedMeldingPermitted`) and their positions in a row (10 and 11);
 - the most guaranteed slots a piece may have (5);
-- where the materia table comes from: the `Materia` sheet and its columns, the number of grades (12), the seven combat substats whose rows are read (Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed), the `Item` column that gives each grade's item level gate (`LevelItem`) and the `MateriaGrade` column that marks the high grades (`OvermeldNQPercent[1]`).
+- where the materia table comes from: the `Materia` sheet and its columns, the number of grades (12), the seven combat substats whose rows are read (Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed), the `Item` column that gives each grade's item level gate (`LevelItem`) the `MateriaGrade` column that marks the high grades (`OvermeldNQPercent[1]`) and the `MateriaGrade` columns of the overmeld odds (`overmeldColumns`, `overmeldSlots`).
 
-**Row fields.** `itemRow.fields` names the twenty fields of a database row in order (`name`, `slotCode`, ..., `defenseMag`; section *Row format and order*). The Python generators build and read rows by these names, never by position, and the page's `ROW` names the same positions (a unit test checks). The `rowField` that other entries give (the meld fields, rarity, game id, scaling flag, category, weapon damage and defense) must be the position of its name in that list; the item database generator stops otherwise.
+**Row fields.** `itemRow.fields` names the twenty fields of a database row in order (`name`, `slotCode`, ..., `defenseMag`; section 4.14). The Python generators build and read rows by these names, never by position, and the page's `ROW` names the same positions (a unit test checks). The `rowField` that other entries give (the meld fields, rarity, game id, scaling flag, category, weapon damage and defense) must be the position of its name in that list; the item database generator stops otherwise.
 
-**Other entries.** The file also lists the six source groups and their categories (section 4), the crafter and gatherer stats that keep a piece out of the database, the `Item` column and row position of the rarity, and the gear categories with their labels (section 4, *Gear category*).
+**Other entries.** The file also lists the 20 "Gear from" boxes (`activities`, section 4.6), the crafter and gatherer stats that keep a piece out of the database, the `Item` column and row position of the rarity, and the gear categories with their labels (section 4.12).
 
 **Changing the file.** Changing any order in this file changes the meaning of the already generated item database, so the data must be regenerated afterwards. A unit test checks that the page's job list, stat order, slot table and slot shares are exactly the ones in the file.
 
@@ -191,32 +183,33 @@ The figure follows one real piece, Void Ark Helm of Fending (a tank head piece),
 
 ![Worked example with Void Ark Helm of Fending, a tank head piece: each Item sheet column maps to a database field. Equip slot category 3 becomes slot code 3 (head); item level 200 is kept; job category 59 becomes job mask 15 (bits 0 to 3, PLD WAR DRK GNB); four stat id and value pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) are placed into the stat positions by id; the HQ bonus is skipped because the item cannot be high quality; IsUnique becomes 1](../diagrams/data-item-row.svg)
 
-### Selection
+### 4.1 Selection
 
 An `Item` row becomes a database row when it passes all eight rules below, applied in order. The figure shows how many rows of the current data each rule leaves. The item database generator prints the same funnel on every run, as one line of rows each rule left out, so a patch that suddenly drops many more rows shows there:
 
 ```
-Item.csv 52,801 rows: no name -1,921, no slot code (belts, soul crystals, not gear) -21,854, item level under 15 -4,248,
-no combat job -2,623, no stats -1,338, crafter or gatherer stat -5, category aetherial (LEFT_OUT) -487,
-category diadem (LEFT_OUT) -293, category legacy (LEFT_OUT) -1; kept 20,031
+Item.csv 52,801 rows: no name -1,921, no slot code (belts, soul crystals, not gear) -21,854,
+no combat job -2,913, no stats -5,114, crafter or gatherer stat -6, category aetherial (LEFT_OUT) -488,
+category diadem (LEFT_OUT) -293, category legacy (LEFT_OUT) -2; kept 20,210
 ```
 
 (One line in the output; wrapped here. A rule that leaves nothing out, rule 7 today, is not listed.) A row whose `EquipSlotCategory` or `ClassJobCategory` id has no row in that sheet counts under rule 2 or 4, and the line then says how many, for example `no combat job -2,623 (3 with an id that has no ClassJobCategory row)`; today there are none (**verified** by count).
 
-![Funnel of the eight selection rules over the 52,801 Item rows, with the rows left after each: 1, has a name, 50,880; 2, its equip slot category resolves to a slot (section Slot), which rules out belts, soul crystals and non-gear, 29,026; 3, item level at least 15, 24,778; 4, at least one of the 23 combat jobs may equip it (job mask above 0), which rules out crafter and gatherer gear and gear only a base class such as Gladiator can wear, 22,155; 5, at least one of its 14 stats is non-zero after the HQ rule below, 20,817; 6, no crafter or gatherer stat, normal or HQ, 20,812; 7, its slots match a slot code, else the piece is left out and its name printed, 20,812; 8, not retired (Diadem, Aetherial and legacy gear left out), 20,031](../diagrams/data-selection.svg)
+![Funnel of the eight selection rules over the 52,801 Item rows, with the rows left after each: 1, has a name, 50,880; 2, its equip slot category resolves to a slot (section 4.2), which rules out belts, soul crystals and non-gear, 29,026; 3, item level at least 1, 29,026 (none removed); 4, at least one of the 23 combat jobs may equip it (job mask above 0), which rules out crafter and gatherer gear and gear only a base class such as Gladiator can wear, 26,113; 5, at least one of its 14 stats is non-zero after the HQ rule below, or a Blue Mage weapon, 20,999; 6, no crafter or gatherer stat, normal or HQ, 20,993; 7, its slots match a slot code, else the piece is left out and its name printed, 20,993; 8, not retired (Diadem, Aetherial and legacy gear left out), 20,210](../diagrams/data-selection.svg)
 
 Notes on the rules:
 
-- **Rule 6.** The crafter and gatherer stats are GP, CP, Craftsmanship, Control, Gathering and Perception. Such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in the shared format file, and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality. The formula could not predict them, because crafter and gatherer Vitality follows no share of the combat budget.
-- **Rule 7.** There is no such piece today: the two shapes below item level 100 have slot codes (section *Slot*).
+- **Rule 6.** The crafter and gatherer stats are GP, CP, Craftsmanship, Control, Gathering and Perception. Such a piece is crafter or gatherer gear even when "All Classes" can wear it. The stats are listed by `BaseParam` row id in the shared format file, and the generator stops if one of those rows carries another name. Today this leaves out five item level 150 "All Classes" gatherer pieces (Serpentskin, Chimerical Felt) with Gathering, Perception and a small Vitality, and one item level 11 piece (Asuran Armguards). The formula could not predict them, because crafter and gatherer Vitality follows no share of the combat budget.
+- **Rule 5.** A piece with no stat is left out, except a weapon of a job listed under `statlessWeaponJobs` in `item-format.json` that has weapon damage (Blue Mage: 10 weapons, no stat; their armor has stats and follows the normal rules).
+- **Rule 7.** There is no such piece today: the two shapes below item level 100 have slot codes (section 4.2).
 - **Rule 8.** Three categories are left out (checked on the Console Games Wiki, [subcategory-sort-codes.md](subcategory-sort-codes.md)):
-  - Code 250 gear has random secondary attributes, so the stats in the game files are not what a piece has (**second-hand**: the item text, which the export does not carry). That is the Heavensward Diadem gear (equip level 60, 293 pieces, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below, 487 pieces).
-  - Code 990 is gear that can no longer be obtained (1 piece reaches this rule, the Chocobo Mask; the version 1.0 "Dated" gear has no combat stats and stops earlier).
-  - 781 rows in all (293 + 487 + 1), printed per category in the generator's funnel line above.
+  - Code 250 gear has random secondary attributes, so the stats in the game files are not what a piece has (**second-hand**: the item text, which the export does not carry). That is the Heavensward Diadem gear (equip level 60, 293 pieces, also retired) and A Realm Reborn's Aetherial gear (equip level 50 or below, 488 pieces).
+  - Code 990 and the retired overrides are gear that can no longer be obtained (2 pieces reach this rule: the Chocobo Mask and the Onion Helm, a 1.0 Collector's Edition bonus; the version 1.0 "Dated" gear has no combat stats and stops earlier).
+  - 783 rows in all (293 + 488 + 2), printed per category in the generator's funnel line above.
 
-**Why item level 15.** The floor is a choice of this project (**owner's decision**, 2026-10-15), not a game rule. Sastasha, the lowest dungeon, opens at level 15 and syncs to level 18 with no item level requirement or item level sync (`ContentFinderCondition`, **verified**), so gear from item level 15 up can be worn there. Until then the floor was 100. Below 100 the database carries each piece's own stats, but the stat model's patterns (substat shares, factors) were measured at 100 and up only ([validation.md](../mechanics/validation.md)), and the item stat accuracy check starts at 110.
+**Why item level 1.** The floor is a choice of this project (**owner's decision**), not a game rule: every combat piece with a stat is kept, from the item level 1 starter gear up, so a low-level sheet or a low sync cap can pick any piece a player can wear. The item level 1 pieces include 20 Replica shields (glamour copies of crafted and relic shields) that have small stats of their own (Replica Ancile: Strength 17 and Vitality 17, where the originals have 22 to 29 at item level 210 to 275), so the item level model cannot predict them (it gives an item level 1 piece none; their stats probably follow the equip level, 50 or 60: **inferred**). Below 100 the database carries each piece's own stats, but the stat model's patterns (substat shares, factors) were measured at 100 and up only ([validation.md](../mechanics/validation.md)), and the item stat accuracy check starts at 110.
 
-### Slot
+### 4.2 Slot
 
 *Which slot does a piece go in?* The `EquipSlotCategory` row of an item has one column per gear slot: 1 where the piece is worn, −1 where it blocks a slot (a two-handed weapon blocks the off-hand), 0 elsewhere.
 
@@ -234,7 +227,7 @@ Notes on the rules:
 
 `BaseParam`'s share columns follow the `EquipSlotCategory` rows in order, and their names are the dataminers' own: code 14 reads the column named `ChestHeadLegsFeetPercent`, although Herklaedi leaves the head free; 440 gives its main stat, Vitality and first substat exactly (**verified**). Any other combination is left out and its name printed.
 
-### Job mask
+### 4.3 Job mask
 
 *Who can wear the piece?* The job mask packs "who can equip this" into one integer, one bit per job of the shared order. With $\text{job}_i$ the $i$-th job of the shared order and $[\cdot]$ equal to 1 when the condition is true and 0 otherwise:
 
@@ -246,9 +239,9 @@ $$
 
 **Example.** In the figure above, category 59 lists GLA MRD PLD WAR DRK GNB. Gladiator and Marauder are base classes, so only bits 0 to 3 are set and $\text{mask} = 2^0 + 2^1 + 2^2 + 2^3 = 15$. An item every job can wear has $\text{mask} = 2^{23} - 1 = 8{,}388{,}607$ (1,531 rows); Beastmaster's own gear has $\text{mask} = 2^{22}$ (50 rows).
 
-### Stats and the HQ bonus
+### 4.4 Stats and the HQ bonus
 
-*Which stats does the row hold?* An `Item` row lists up to six stats as pairs (stat id, value), plus up to six more pairs for the high-quality (HQ) bonus that a crafted HQ copy gets on top. Each id is looked up in the stat order and added to that position; other ids are ignored, apart from the HQ bonus to weapon damage and defense (ids 12, 13, 21 and 24), which is added to those fields (section *Row format and order*). In the figure, the helm's four pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) land in positions 0, 4, 10 and 9.
+*Which stats does the row hold?* An `Item` row lists up to six stats as pairs (stat id, value), plus up to six more pairs for the high-quality (HQ) bonus that a crafted HQ copy gets on top. Each id is looked up in the stat order and added to that position; other ids are ignored, apart from the HQ bonus to weapon damage and defense (ids 12, 13, 21 and 24), which is added to those fields (section 4.14). In the figure, the helm's four pairs (Strength 46, Vitality 45, Skill Speed 50, Determination 35) land in positions 0, 4, 10 and 9.
 
 For stat position $k$ with `BaseParam` id $\text{id}(k)$:
 
@@ -258,19 +251,19 @@ $$
 
 **The rule.** The HQ bonus is added **only when the item's `CanBeHq` flag is true**, so the database holds the HQ version of every craftable item and the only version of everything else. With the rule, the bonus is applied to 5,395 rows (2026-10-16).
 
-**Why the flag matters.** 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 named stats (the 14 stored stats without Main and Secondary Attribute) although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; an earlier version did, and its finding of "about 290" (before Beastmaster) matches ([history.md](../history.md)).
+**Why the flag matters.** 328 `Item` rows at item level 100 or above have non-zero HQ bonus values for one of the 12 named stats (the 14 stored stats without Main and Secondary Attribute) although they cannot be high quality, and 325 of them pass the other selection rules (**verified** by count). Adding the bonus to those would inflate their stats; the count agrees with the 290 rows found when the bonus was added everywhere (before Beastmaster was added; [history.md](../history.md)).
 
 - **Which pieces.** By name they are mostly upgradeable gear families (Phantom Vision, 140 rows, item level 780; Arcanaut's, 105 rows, item level 745) plus 45 item level 130 "Captain's" weapons (Serpent, Storm and Flame, 15 each) and Beastmaster's own 35 pieces.
 - **Beastmaster's.** They carry its Crucible bonus there (Strength and Vitality, `ItemSpecialBonus` 11; +9 / +9 on Guttler), which the game applies only inside the Crucible of the Unbroken (**second-hand**, Console Games Wiki). The tool leaves it out, as it does the Eureka and Bozja bonuses.
 - **Below item level 100**, 451 more pieces carry such values without being HQ-able, nearly all Grand Company gear (Storm, Flame and Serpent; Gridanian, Lominsan and Ul'dahn); the rule leaves them out too.
 
-Melds (materia) are not part of these stats: a database row holds the item as it drops or is crafted. What a piece can take is in its two meld fields (section *Materia slots*).
+Melds (materia) are not part of these stats: a database row holds the item as it drops or is crafted. What a piece can take is in its two meld fields (section 4.8).
 
-### Unique flag
+### 4.5 Unique flag
 
-`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 14,458 of the 20,031 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
+`IsUnique` becomes 1 or 0. A Unique item can be equipped only once, which matters for rings: two copies of the same Unique ring are not allowed in one set. 14,503 of the 20,210 rows are Unique. How the optimizer uses the flag is in [optimizer.md](optimizer.md).
 
-### Sources
+### 4.6 Sources
 
 *Where does a piece come from, so the page can leave out gear a player won't go and get?* Each row carries the piece's **routes** for the "Gear from" filter of the optimizer and the gear browser. The filter's 20 boxes name what a player does: quests, crafting, normal duties, tomestones, hunts, Savage and so on ([Savage](../glossary.md#game-terms), [Ultimate](../glossary.md#game-terms), [tomestones](../glossary.md#game-terms) and [relics](../glossary.md#game-terms) are game terms). The boxes are listed in `activities` of the shared format file, with their menu section, whether they are ticked by default and the hint the menu shows.
 
@@ -285,7 +278,12 @@ Melds (materia) are not part of these stats: a database row holds the item as it
 - **Retired tomestone shops.** A code means "the *n*-th current tomestone", so a shop left over from an earlier patch decodes to today's tomestone. For codes 2 and 3, only the gear at the highest item level sold for that code is live; older listings for the same code are retired. On every patch from 6.05 to 7.4 the live set was the highest one, but that SE keeps doing this is a judgment (**inferred**). Six retired Poetics shops (code 1), which nothing in the world opens, are listed by id.
 - **Rebuys.** A gil listing that needs a quest or an achievement is a Calamity Salvager rebuy: the piece was earned first. Its quest becomes the route (Events & promotions when the quest belongs to a seasonal event), or its achievement when that achievement gives the piece. This matched the salvager NPCs' own shops on all 433 listings of kept gear.
 - **Relics.** Relic weapons (category relic) are Relics & Field ops, whatever their quest or tomestone route (owner's ruling: the activity, not the currency).
-- **No way in.** The game files do not record drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). A kept piece with no way in takes the activity of its category (dungeon, raid, trial ...; artifact rings drop in dungeons). In the categories where every obtainable piece has a source (tomestone, artifact, crafted, gil vendor, Gold Saucer, Grand Company, PvP, quest, achievement, Savage, Ultimate, deep dungeon, seasonal event) an untradeable piece with none is retired. A currency with no way in takes the activity of the gear it buys most (**inferred**; 200 of 201 such currencies buy over 90% one category); trial totems mean Extreme trials. Both fallbacks are counted on every run, in one line by activity after the funnel line: `Routes inferred: 6,205 pieces with no way in the game files (Dungeon 3,896, Retired 1,110, ...); 201 currencies by the gear they buy most (Normal raid 89, Savage 48, ...)`.
+- **No way in.** The game files do not record drops: loot tables live on the game's servers, and no client sheet lists them (**verified**: `Treasure`, `InstanceContentRewardItem`, `ContentRewardCondition` and `LootModeType` hold no item ids). So a kept piece with no way in is handled in three steps:
+  - It takes the activity of its category (dungeon, raid, trial ...; artifact rings drop in dungeons).
+  - In the categories where every obtainable piece has a source (tomestone, artifact, crafted, gil vendor, Gold Saucer, Grand Company, PvP, quest, achievement, Savage, Ultimate, deep dungeon, seasonal event) an untradeable piece with none is retired.
+  - A currency with no way in takes the activity of the gear it buys most (**inferred**; 200 of 201 such currencies buy over 90% one category); trial totems mean Extreme trials.
+  
+  Both fallbacks are counted on every run, in one line by activity after the funnel line: `Routes inferred: 6,205 pieces with no way in the game files (Dungeon 3,896, Retired 1,110, ...); 201 currencies by the gear they buy most (Normal raid 89, Savage 48, ...)`.
 - **Hand-kept tables**, each keyed by id with the expected name, so a patch that reuses an id stops the run: 42 currencies the game files cannot place (Hunts seals, Savage and Extreme tokens, Elevated Ester, crafting certificates, retired event tomestones; checked on the Console Games Wiki), the six retired shops, and one piece given through a sheet not read (Neophyte's Ring, a quest reward).
 - **Boxes.** Each activity maps to a box. Savage and Extreme split at the level cap (the highest equip level in the data, 100 today): Current at the cap, Legacy below it, since content below the cap can be farmed unsynced. Ultimate is one box: ultimates cannot be run unsynced. Untradeable gil-vendor gear is Miscellaneous; tradeable gil-vendor gear has only the market board route.
 
@@ -293,29 +291,29 @@ The boxes in the current data (2026-10-18):
 
 | Box | Section | Default | From it | Needs it, board off | Needs it, board on |
 | --- | --- | --- | ---: | ---: | ---: |
-| Quests & story | Everyday | on | 2,198 | 1,199 | 1,196 |
-| Crafted | Everyday | on | 5,286 | 4,358 | 867 |
-| Normal duties | Everyday | on | 5,771 | 5,771 | 5,713 |
+| Quests & story | Everyday | on | 2,325 | 1,234 | 1,228 |
+| Crafted | Everyday | on | 5,393 | 4,376 | 867 |
+| Normal duties | Everyday | on | 5,772 | 5,772 | 5,714 |
 | Tomestones (Legacy) | Everyday | on | 1,291 | 1,079 | 1,079 |
 | Tomestones (Current) | Everyday | on | 539 | 539 | 539 |
 | Grand Company | Everyday | on | 407 | 407 | 407 |
-| Hunts | Everyday | on | 1,096 | 935 | 935 |
-| Miscellaneous | Everyday | off | 50 | 50 | 15 |
+| Hunts | Everyday | on | 1,100 | 939 | 939 |
+| Miscellaneous | Everyday | off | 60 | 58 | 23 |
 | Deep dungeons | Side content | off | 154 | 154 | 154 |
 | Gold Saucer | Side content | on | 27 | 27 | 27 |
 | Relics & Field ops | Side content | on | 1,526 | 1,526 | 1,516 |
 | Wondrous Tails | Side content | off | 91 | 91 | 0 |
-| Variant & Criterion | Side content | off | 22 | 22 | 22 |
+| Variant & Criterion | Side content | off | 23 | 23 | 23 |
 | PvP | Side content | off | 655 | 655 | 587 |
 | Extreme (Legacy) | Hard content | on | 661 | 661 | 654 |
 | Extreme (Current) | Hard content | off | 209 | 209 | 209 |
 | Savage (Legacy) | Hard content | on | 886 | 886 | 886 |
 | Savage (Current) | Hard content | off | 429 | 319 | 319 |
 | Ultimate | Hard content | off | 136 | 136 | 136 |
-| Events & promotions | Time-limited | off | 273 | 83 | 81 |
+| Events & promotions | Time-limited | off | 291 | 100 | 98 |
 
 - "From it": pieces with a route through the box. "Needs it": pieces every route of which needs the box, so unticking it hides them, with the market board switch off and on.
-- 4,718 of the 20,031 rows are tradeable; 1,110 have no route (970 base tomestone sets no longer sold, 75 base Radiant's, 65 Antiquated Heavensward).
+- 4,832 of the 20,210 rows are tradeable; 1,110 have no route (970 base tomestone sets no longer sold, 75 base Radiant's, 65 Antiquated Heavensward).
 - Relics & Field ops covers Eureka, Bozja and Occult Crescent gear and the relic weapons; Extreme (Legacy) also covers Baldesion Arsenal and Delubrum Reginae (Savage); Variant & Criterion is the Exquisite weapons, upgraded with Elevated Ester (the rest those dungeons sell is glamour).
 
 **Checks.** The generator stops on an activity with no box (combat gear sold for scrips, for example), a hand-kept id with another name, or a category with no drop activity. Each error names the table to edit (section 9).
@@ -327,7 +325,7 @@ The boxes in the current data (2026-10-18):
 
 **Two flags for the categories.** `gear_sources.py` marks a piece **crafted** when it is the `ItemResult` of a recipe, and **ultimate** when an exchange listing sells it for one of the seven ultimate totems (Dreadwyrm, Ultima, Colossus, Dragonsong, Omega, Oracle, Mad Harlequin's). The category rules use them (the ultimate weapons share code 60 with trial gear) and cross-check them: the generator stops on a recipe result outside crafted, a totem purchase outside ultimate, or a Savage armor piece or weapon without a dye slot. The totem flag covers 136 weapons: the 16, 16, 18, 20, 22, 22 and 22 of the seven ultimates. Item names are not used: the Weapon's Refrain weapons end in "Ultima" and the Dancing Mad weapons are named "Palazzo Diamond". Which duty a totem comes from is not in the game files: six pairs match Teamcraft's data, and the Console Games Wiki says Mad Harlequin's Totem drops in Dancing Mad (Ultimate) (**verified** there; the game files still do not link them). The generator stops if any totem id no longer has its expected name.
 
-### Stat factor kind
+### 4.7 Stat factor kind
 
 *Which percentage of its slot value does each stat on the piece get?* `BaseParamModifier` becomes the tenth field (position 9): the item's kind, a number from 0 to 12 that picks a column of the stat factor table (section 5). On that item each stat's full-share slot value is multiplied by its percentage in that column ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
 
@@ -346,7 +344,7 @@ In the current data:
 
 The generator stops if an item names a kind the table has no column for. **Verified** (game data): the kind is copied, not inferred.
 
-### Materia slots
+### 4.8 Materia slots
 
 *Which materia can a piece take?* Two more fields record what a piece can be melded with. Both are copied from `Item`, not inferred (**verified**, game data):
 
@@ -366,36 +364,37 @@ In the current data:
 
 Only 16 pieces have 4 slots, all with the overmeld flag. The 15 pieces with no slot but the overmeld flag are old crafted Paladin shields, item level 180 to 415 (for example Dwarven Mythril Shield). Whether they take any materia in game is not known (**inferred** that they take none: a piece overmelds only past its guaranteed slots, [materia.md, section 2](../mechanics/materia.md#slots-big-and-small-stones)).
 
-### Rarity
+### 4.9 Rarity
 
 Field 12 is `Item.Rarity`, the item's colour in game, copied as is (1 white, 2 green, 3 blue, 4 purple; **verified**, game data): 2,844, 7,333, 9,236 and 618 rows in the current data (2026-10-16). A value that is not a whole number stops the generator. Only the accuracy check reads it: on green, HQ-able healer pieces with three substats, Direct Hit is 25%, not 20% ([math.md, section 4](../mechanics/math.md#substat-shares-empirical)).
 
-### Game id
+### 4.10 Game id
 
 Field 13 is the item's row id in `Item`, the id the game, its data files and other tools use for the item (**verified**, game data). Ids are unique; a duplicate or a value that is not a whole number stops the generator. The page does not show it. It lets a piece be matched with other tools: the check against ffxiv-gearing's sync caps (roadmap A5) and checks against xivgear. It adds about 0.1 MB to the file.
 
-### Scales with level
+### 4.11 Scales with level
 
 Field 14 is 1 when `Item.SubStatCategory` is 2, else 0: gear whose item level follows the wearer's level, which level sync lowers whatever its equip level ([math.md, section 5](../mechanics/math.md#which-pieces-are-synced)). The game's description of each of these pieces says so (**verified**, game data).
 
 - 260 rows in the current data: 127 level 89 and 127 level 99 boost pieces (item level 560 and 690), Bozjan Earring (equip level 71) and five gift accessories at equip level 1.
 - The column takes only 0, 1 and 2 in the whole `Item` sheet (1 is never on a database row). Any other value stops the generator, since it might be a new kind of scaling.
 
-### Gear category
+### 4.12 Gear category
 
-*Where, in plain words, does a piece come from?* The category field (position 15, counting from 0; the damage and defense values follow) is the piece's gear category, which a piece with no way in takes its route from (section *Sources*; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)). It is stored as an index into the category list of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9).
+*Where, in plain words, does a piece come from?* The category field (position 15, counting from 0; the damage and defense values follow) is the piece's gear category, which a piece with no way in takes its route from (section 4.6; every code in [subcategory-sort-codes.md](subcategory-sort-codes.md)). It is stored as an index into the category list of the shared format file, which also gives each category its label. The page shows the label on each piece of an optimizer result, so a player can see where a piece comes from and pick an easier one with the same result (roadmap A9).
 
 **Checks.** The list must hold every category a kept piece can have (the generator's categories minus the three left out) exactly once and nothing else. A missing, unknown or repeated key stops the generator, so a category added after a patch can't reach the page without a label.
 
 **Counts.** The 24 categories in the current data, by rows: crafted 5,243, dungeon 3,942, tomestone 2,882, Savage 1,117, raid 1,029, artifact 904, trial 862, field op 856, relic 748, alliance raid 679, PvP 532, Grand Company 494, collaboration 181, deep dungeon 154, ultimate 136, Wondrous Tails 91, quest 52, venture 37, gil vendor 28, Gold Saucer 26, achievement 17, FATE 11, promotional 6, seasonal event 4. It adds about 40 KB to the file.
 
-### The materia table
+### 4.13 The materia table
 
-*What does each grade of materia add, and to which gear?* The item file also holds one small table, one entry per materia grade I to XII, with three fields per grade. The values, gates and high grades themselves, and their evidence, are in [materia.md, section 2](../mechanics/materia.md#2-the-rules).
+*What does each grade of materia add, and to which gear?* The item file also holds one small table, one entry per materia grade I to XII, with four fields per grade. The values, gates and high grades themselves, and their evidence, are in [materia.md, section 2](../mechanics/materia.md#2-the-rules).
 
 - **Value** $v_g$: what grade $g$ adds to a combat substat, read from `Materia`, `Value[g − 1]`.
 - **Gate** $L_g$: the lowest gear item level that takes grade $g$, read as the `LevelItem` of the grade's materia item.
 - **High**: whether the grade cannot go past the first overmeld slot, read as a 0% rate in the second overmeld slot of its `MateriaGrade` row (`OvermeldNQPercent[1]` = 0).
+- **Overmeld**: the success rate in percent of an overmeld per overmeld slot (four), for NQ and for HQ pieces, read from the `OvermeldNQPercent[0..3]` and `OvermeldHQPercent[0..3]` columns and stored as `overmeld: {nq, hq}`, a list of 12 grade rows of 4 percents each. Shown in the set page's stone menu only; the search does not read it. The generator stops on a missing column or row, a value that is not a whole percent up to 100, a rate that rises from one slot to the next, or an HQ rate below the NQ rate.
 
 How it is built:
 
@@ -415,7 +414,7 @@ Any violation stops the generator with an error naming the rows.
 
 Only 25 rows carry items: the seven combat substats; the main stat, Vitality and resistance rows (items, every value 0); six crafter and gatherer stats with their own values; and row 1, Cracked Materia (no stat).
 
-### Row format and order
+### 4.14 Row format and order
 
 Each database row is a fixed list of twenty fields, in the order of `itemRow.fields` in the shared format file (section 3):
 
@@ -423,20 +422,20 @@ Each database row is a fixed list of twenty fields, in the order of `itemRow.fie
 | --- | --- | --- |
 | name | text | Item name as in the English client. |
 | slot code | integer 0 to 14 | Slot, per the shared slot table. |
-| item level | integer | The item's own item level (`LevelItem`), 15 to 795 in the current data. |
+| item level | integer | The item's own item level (`LevelItem`), 1 to 795 in the current data. |
 | equip level | integer | Character level needed to wear it (`LevelEquip`). |
 | job mask | integer, $0 < \text{mask} < 2^{23}$ | Who can equip it, as defined above. |
 | stats | 14 comma-separated integers | Stat values in the shared stat order, HQ bonus included when the item can be HQ. |
 | unique | 0 or 1 | 1 when only one copy can be worn. |
 | hq | 0 or 1 | 1 when the item can be high quality (`CanBeHq`), so its stats are the HQ ones; the page marks it HQ. |
-| routes | list of integers | Ways to get it: bit masks over the 20 "Gear from" boxes, bit 20 the market board; empty when it can no longer be obtained (section *Sources*). |
-| stat factor kind | integer 0 to 12 | `BaseParamModifier`: the column of the stat factor table (section *Stat factor kind*). |
-| meld slots | integer 0 to 5 | `MateriaSlotCount`: guaranteed materia slots (section *Materia slots*). |
+| routes | list of integers | Ways to get it: bit masks over the 20 "Gear from" boxes, bit 20 the market board; empty when it can no longer be obtained (section 4.6). |
+| stat factor kind | integer 0 to 12 | `BaseParamModifier`: the column of the stat factor table (section 4.7). |
+| meld slots | integer 0 to 5 | `MateriaSlotCount`: guaranteed materia slots (section 4.8). |
 | overmeld | 0 or 1 | 1 when overmelding is allowed (`IsAdvancedMeldingPermitted`). |
-| rarity | integer | `Item.Rarity` (section *Rarity*). |
-| game id | integer | The item's row id in `Item` (section *Game id*). |
-| scales | 0 or 1 | 1 when its item level follows the wearer's level (section *Scales with level*). |
-| category | integer 0 to 23 | Its gear category, an index into the format file's category list (section *Gear category*). |
+| rarity | integer | `Item.Rarity` (section 4.9). |
+| game id | integer | The item's row id in `Item` (section 4.10). |
+| scales | 0 or 1 | 1 when its item level follows the wearer's level (section 4.11). |
+| category | integer 0 to 23 | Its gear category, an index into the format file's category list (section 4.12). |
 | physical, magic weapon damage | integers | `DamagePhys`, `DamageMag`, HQ bonus included when the item can be HQ; 0 on anything but a weapon. |
 | defense, magic defense | integers | `Defense`, `MagicDefense`, HQ bonus included when the item can be HQ. |
 
@@ -494,6 +493,26 @@ A third generator writes the meals that raise combat substats, one row per meal:
 
 A meal whose `ItemFood` row is missing, or a kept stat whose HQ percent is not 1 to 100 or whose maximum is not positive, stops the generator. In the current data: 296 meals, 255 with two substats and 41 with one; every kept stat is 10% HQ (**verified** by count). How the page uses them is in [math.md, section 6](../mechanics/math.md#food).
 
+### The most speed per level
+
+*How high can the GCD speed slider go?* A fourth generator, in JavaScript, answers it from the item and food tables and the optimizer.
+
+The GCD sub-tab's speed slider runs from the level's base to the most total speed (base + gear + food) any job can have at that level. `scripts/data/gen_max_speed.mjs` works it out with the optimizer (JavaScript, so `regen.py` runs it with Node after the item and food tables) and writes `src/data/max-speed.json`, one number per level from 1 to the level cap (the highest equip level in the item database, as the page computes it).
+
+For each job, at each level up to its cap, the most gear speed is the best of three searches with melds: gear made for the level without sync, every piece level synced, and every piece at the highest item level cap the level allows (`capCeiling`, from level 15: below that the cap case comes only from Ala Mhigan Earrings, equip level 1 and item level 50, and no duty syncs that low). The HQ meal that adds the most speed goes on top. Jobs that wear the same pieces give the same answer, so each group is searched once. It takes about two and a half minutes. Level 50, for example: 341 base + 387 gear (level 100 gear synced to the 135 cap) + 72 food = 800.
+
+A search that stops at its node limit (2,000,000 nodes) may miss the true most speed. The generator then writes nothing, names each such search (jobs, level and case) and exits with status 1; raise its node limit and run it again. No search stops there today (**verified**: full run on `d9582a6`, 2026-10-19).
+
+The table depends on code as well as data: a change to the optimizer, sync or food code can change it while the source commit stays the same. The file therefore records `inputs`, a sha256 over the item, food and item level files, the shared format, every module under `src/core` and the generator itself (line endings counted as LF). `node scripts/data/gen_max_speed.mjs --check src/data/max-speed.json` recomputes it in under a second, without searching, and exits with status 1 when the file is stale; then regenerate. No test runs it, since most code changes leave the table as it is; the GCD view test re-derives level 50.
+
+### Gear groups
+
+*Which jobs can a sheet be copied between?* `scripts/data/gen_gear_groups.py` answers it from the item database (`src/data/items.json`, not the CSVs, so `regen.py` runs it right after `gen_items.py`) and writes `src/data/gear-groups.json`: `groups`, a list of job lists, one group per line, every job in exactly one.
+
+The rule is in `gearGroups` in `src/core/item-format.json`. Over the head, body, hands, legs and feet pieces, two jobs are linked when 80% or more of the pieces either can wear are pieces both can (shared over either, by each row's job mask, section 4.3). A group is jobs linked to each other that also have the same level cap (`jobLevelCaps`, which `JOB_LEVEL_CAPS` in `src/core/constants.js` reads): Blue Mage (cap 80) and Beastmaster (cap 50) each stand alone, though their gear overlaps the casters' and Monk and Samurai's by 94% to 99%. In the current data: tanks, healers, Monk and Samurai, Dragoon and Reaper, Ninja and Viper, physical ranged, casters, Blue Mage, Beastmaster. Linked pairs share at least 89% and every other pair at most 19%.
+
+The generator stops (SchemaError) when the data is not that clean: a pair sharing 50% or more (`unlinkedPercentMax`) without being linked, a group that is not linked pairwise, or a job that can wear none of those pieces. `src/core/gear-groups.js` reads the file (`GEAR_GROUPS`, `copyTargets`) and lists the pieces of a set that a job cannot wear by the job mask (`piecesJobCannotWear`; `wearable` in `items.js` checks the equip level only).
+
 ## 6. Provenance
 
 *Which version of the game does the page's data describe?* When the data is regenerated, the commit id and commit date of the local datamining clone are recorded. They appear in three places:
@@ -523,11 +542,11 @@ The full regeneration refuses to run when it cannot read the clone's commit. A g
 
 | Fact | Value |
 | --- | --- |
-| Database rows | 20,031 |
-| Lowest / highest item level in the database | 15 / **795** (66 rows at 795) |
+| Database rows | 20,210 |
+| Lowest / highest item level in the database | 1 / **795** (66 rows at 795) |
 | `ItemLevel` rows | 921 (ids 0 to 920) |
 | Level data | levels 1 to 100 |
-| Unique rows | 14,458 |
+| Unique rows | 14,503 |
 | Rows wearable by every job | 1,531 |
 
 Rows per slot:
@@ -571,23 +590,22 @@ The page bundle takes the page code, the stylesheet and the generated data files
 | food (generated file) | 18,309 bytes |
 | most speed per level (generated file) | 676 bytes |
 | finished page, minified | 2,975,005 bytes (about 3.0 MB) |
-| the optimizer's Web Worker, from 2026-10-19 | about 83 kB more: 2,976,430 → 3,059,130 bytes on a `main` build (about 3.1 MB) |
+| the optimizer's Web Worker | about 83 kB more: 2,976,430 → 3,059,130 bytes on a `main` build (about 3.1 MB) |
 
-Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 81% of the page; the icons are about 7%.
+Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4.14); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 81% of the page; the icons are about 7%.
 
-**What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string: the build's `jsonParseData` plugin (`scripts/build/build.mjs`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (audit 16, R9; owner, 2026-10-19). `scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own; median of 7 runs, 2026-10-19, a 12-thread desktop:
+**What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string: the build's `jsonParseData` plugin (`scripts/build/build.mjs`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision). `scripts/perf/db-parse.mjs` times it in Chromium, from a mark just before the script to one just after (the HTML parser reading the text, then V8 parsing, compiling and running it), on pages of its own. Current timings (median of 7 runs, 2026-10-19, a 12-thread desktop; `npm run build && node scripts/perf/db-parse.mjs`; the object-literal comparison and the earlier runs are in the [performance log, section 2.2](perf-log.md#22-the-inlined-database-at-page-open)):
 
-| CPU | Item database as an object literal (before) | As `JSON.parse` (the page) | The page's whole script, before → after |
-| --- | ---: | ---: | ---: |
-| this machine | 75 ms | 58 ms | 200 → 157 ms |
-| 4× slower | 488 ms | 290 ms | 775 → 643 ms |
-| 6× slower | 647 ms | 469 ms | 1,439 → 1,011 ms |
+| CPU | Item database as `JSON.parse` (the page) | The page's whole script, with the worker |
+| --- | ---: | ---: |
+| this machine | 58 ms | 158 ms |
+| 4× slower | 290 ms | 648 ms |
+| 6× slower | 469 ms | – |
 
 Notes:
 
-- **Load:** the first two columns come from one run while another agent ran the optimizer bench, so they are higher and wider than on an idle machine (an idle run gave 76 and 49 ms at normal speed); the last column compares idle runs before and after the change.
 - **Size:** the page grew by about 3.6 kB (the string's escaped quotes), 2,975,005 bytes on a `dev` build.
-- **The worker** (2026-10-19, [architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. The page's whole script, run back to back with the build before it, median of 7: 152 → 158 ms on this machine and 634 → 648 ms 4× slower (the 83 kB of worker code). The database as `JSON.parse` with its text exported: 54 to 57 ms, as before.
+- **The worker** ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. Its timings are in the [performance log, section 2.2](perf-log.md#22-the-inlined-database-at-page-open).
 - **The rest of the script** (Alpine, the page code and what runs when the script loads) still takes more than the database itself.
 - **Run it** with `npm run build && node scripts/perf/db-parse.mjs` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
 
@@ -596,10 +614,10 @@ Notes:
 One command, `npm run data:update`, does steps 1 and 2.
 
 1. **Fetch**: pull the newest CSVs into the local clone.
-2. **Regenerate**: run the generators (the data files record the new commit) and rebuild the page. It refuses to start while a CSV in the clone has local edits (section 6). Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The item database step also prints its funnel line (section 4): compare it with the last run's, and look into any rule whose count jumped. It then prints the inferred routes line (section 4, *Sources*): a jump there means many new pieces or currencies were placed by a fallback rule rather than the game files. The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
+2. **Regenerate**: run the generators (the data files record the new commit) and rebuild the page. It refuses to start while a CSV in the clone has local edits (section 6). Each step prints one line naming it (a progress bar instead when the optional `tqdm` package is installed). The item database step also prints its funnel line (section 4.1): compare it with the last run's, and look into any rule whose count jumped. It then prints the inferred routes line (section 4.6): a jump there means many new pieces or currencies were placed by a fallback rule rather than the game files. The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Compare**: the last step before the build writes `src/data/summary.json` and compares its counts with the committed one (see below). Read every count it names.
 4. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
-5. **Review** the change in the generated files with `git diff`: each changed item, budget column, level or meal is its own line (section 4). Then update counts quoted in the docs, such as the 20,031 rows above, and add a few words to the new line in [data-changelog.md](../data-changelog.md).
+5. **Review** the change in the generated files with `git diff`: each changed item, budget column, level or meal is its own line (section 4). Then update counts quoted in the docs, such as the 20,210 rows above, and add a few words to the new line in [data-changelog.md](../data-changelog.md).
 
 **The summary and the drift check.** `scripts/data/summary.py` writes `src/data/summary.json`: the source record, `formatVersion`, the blob id of each CSV (section 6) and the counts a patch could change without any check failing: the selection funnel (rows each rule left out, the `LEFT_OUT` categories, dangling ids), the rows kept, the highest item level, the rows per slot code, per gear category and per "Gear from" box, the pieces with no route, the inferred routes by activity, and the meals. Before writing it, it reads the committed one, and prints every count that moved by more than 10% (and by more than 5), appeared or went away, for example `byCategory.savage 1,117 -> 0 (-100%)`; otherwise `No count moved by more than 10% since the last run`. It only warns: a patch that adds a tier of gear moves several counts on purpose. When the source commit has no line in [data-changelog.md](../data-changelog.md) yet, it adds one (date, short commit, its message, rows and meals with their change); `--allow-dirty` runs skip that.
 
@@ -636,7 +654,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | --- | --- |
 | `core/item-format.json` | append the job to `jobs` (append only, so no other job's bit moves; the job mask has room for 8 more jobs in a 32-bit integer) |
 | `core/constants.js` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); `ONE_HANDED_JOBS` if it uses a shield; `JOB_LEVEL_CAPS` if it is a limited job (the cap from the patch notes); `HASTE` if it has always-on haste; `NO_WEAPON_DAMAGE_JOBS` if it has no weapon damage |
-| `core/job-context.js` | nothing for a job like the others; Beastmaster added `maxLevel` for limited jobs, which now covers any |
+| `core/job-context.js` | nothing for a job like the others; `maxLevel` covers limited jobs (Beastmaster) and any other |
 | `ui/` (state, store, views, `index.html`) | nothing for a job like the others; Beastmaster made the level inputs, restore and the optimizer pool follow `maxLevel` |
 | `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
 | `tests/data/fixtures/ClassJob.csv`, `ClassJobCategory.csv` | the job's real rows and column |
@@ -644,14 +662,14 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | `tests/unit/core-formulas.stat-factor.test.js` and others | the all-jobs mask ($2^{n} - 1$); tests for a new rule (Beastmaster: level cap, shield, its own gear) |
 | `tests/e2e/smoke.mjs` | a check of what is new on the page (Beastmaster: the level cap in the inputs) |
 | data | `fetch.py` (the new job's icon), then `regen.py`; the job's `ClassJob` modifiers and icon number are read by job abbreviation |
-| docs | `CLAUDE.md` jobs table; this page, section 3 (job order); [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [testing.md](testing.md), [validation.md](../mechanics/validation.md) and the glossary where they count or list jobs |
+| docs | the "Jobs" paragraph of `CLAUDE.md`; this page, section 3 (job order); [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [testing.md](testing.md), [validation.md](../mechanics/validation.md) and the glossary where they count or list jobs |
 
 **A stat** (a new combat stat on gear):
 
 | File | What changes |
 | --- | --- |
 | `core/item-format.json` | append to `stats` (key, `ItemLevel` column, `BaseParam` id), so existing positions keep their meaning; add it to `materia.statKeys` if materia raise it, and to `food` if meals do |
-| `core/constants.js` | the neutral key and role profiles (`PROFILES`, `ALL_STATS`) if jobs use it; names and short names for the page |
+| `core/constants.js` | the stat key and role profiles (`PROFILES`, `ALL_STATS`) if jobs use it; names and short names for the page |
 | `tests/data/fixtures/BaseParam.csv`, `ItemLevel.csv` | the stat's real `BaseParam` row; its `ItemLevel` column |
 | `tests/data/test_generators.py` | `STAT_ORDER` and the item level column map |
 | data | `regen.py`: every row gains a value in its stats string, and the slot shares of the new row are checked against the format file |
@@ -666,7 +684,12 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 - **Test files.** They use the real sheet headers. The `EquipSlotCategory` and `ClassJobCategory` rows are copied from the real sheets; the `Item` rows are made-up test items built on the real header.
 - **Synthetic values that expose a wrong column.** `ItemLevel` values are synthetic: the value in row $r$, column position $c$ is $1000\,r + c$, so reading the wrong column shows up as a wrong number. `ParamGrow` is written by the test with distinct values per column ($1000 + \ell$, $2000 + \ell$, $3000 + \ell$ for level $\ell$).
 - **Real rows where the values matter.** The `BaseParam` test file holds the real rows of the 14 stats.
-- **What they check.** Slot detection (two-handed vs one-handed, every slot type, the cloak's own slot code and an unsupported multi-slot piece), exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99), stat placement including a stat in the sixth pair after empty ones, the HQ rule in both directions, job mask bits, the Unique flag, sort order, the 14 `ItemLevel` columns, the stat factor kind and the meld fields of a few items, the materia table (with two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats), the stat factor table (the `BaseParam` test file holds the real rows), the rarity field, the source flags and gear categories, the category field and its list's check (a missing, unknown or repeated key), the funnel counts (they add up to the whole `Item` test file), one item row per line and one level data entry per line, the top level read from `ParamGrow` (100, or 110 for a sheet that goes on, with the zero rows above the cap left out), and the errors for a missing level and for non-contiguous `ItemLevel` ids. Two smaller checks cover the pinning: the fetch step takes only a full 40-digit commit id, and an edited tracked file in a test git clone counts as a local edit while an untracked file does not.
+- **What they check**, by generator:
+  - *Item database, selection:* slot detection (two-handed vs one-handed, every slot type, the cloak's own slot code and an unsupported multi-slot piece); exclusions (belt, soul crystal, missing or non-gear category, base-class-only, crafter-only, unknown category, no stats, empty name, item level 99); the funnel counts (they add up to the whole `Item` test file).
+  - *Item database, row contents:* stat placement including a stat in the sixth pair after empty ones; the HQ rule in both directions; job mask bits; the Unique flag; sort order; the stat factor kind and the meld fields of a few items; the rarity field; the source flags and gear categories; the category field and its list's check (a missing, unknown or repeated key); one item row per line.
+  - *Level data:* the 14 `ItemLevel` columns; the stat factor table (the `BaseParam` test file holds the real rows); one level data entry per line; the top level read from `ParamGrow` (100, or 110 for a sheet that goes on, with the zero rows above the cap left out); the errors for a missing level and for non-contiguous `ItemLevel` ids.
+  - *Materia table:* two decoy rows in the `Materia` test file, which holds 12 real rows; `MateriaGrade` is the whole real sheet and `Item` also holds the 84 real materia items of the seven combat substats.
+  - *Pinning (two smaller checks):* the fetch step takes only a full 40-digit commit id, and an edited tracked file in a test git clone counts as a local edit while an untracked file does not.
 - **Schema drift**, on edited copies of the test files. Each of these stops the generator with an error naming the sheet and column, and no file is written:
   - a renamed job column (`SGE` to `SAGE`), job values written as `1` instead of `True`;
   - `CanBeHq`, `IsUnique` or `IsUntradable` in `Item`, or `IsRelative` in `ItemFood`, written as `1`/`0`;
@@ -685,7 +708,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 - the budget table has one column per stat, all the same length, and each level data row has three values;
 - every table keyed by level reaches the level cap (the highest equip level in the database): the level data, the most-speed table, and the hand-kept main stat base per level, expansion list and haste steps. A patch that raises the cap fails here, naming the table to extend, instead of showing NaN on the page;
 - every generated data file but the icons names the shared format's `formatVersion`, and the page's `ROW` names the positions of `itemRow.fields`;
-- every database row has twenty fields (an item level within the `ItemLevel` table, so the page never reads past its end, an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a list of routes, each below $2^{21}$; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates and high grades between 1 and 12; the stat factor table has one row of percents per stat and 13 columns;
+- every database row has twenty fields (an item level within the `ItemLevel` table, so the page never reads past its end, an item kind below 13, meld slots 0 to 5, a 0/1 overmeld flag, a whole-number rarity, a positive game id (ids unique), a 0/1 scaling flag, a category index, then the four weapon damage and defense values), a valid slot code, a job mask in $(0, 2^{23})$, 14 stats, 0/1 Unique and HQ flags and a list of routes, each below $2^{21}$; the meld fields sit where the shared format says; the materia table has 12 positive values, non-decreasing gates, high grades between 1 and 12 and 12 rows of 4 overmeld percents for each of NQ and HQ; the stat factor table has one row of percents per stat and 13 columns;
 - the slot shares the page uses (per slot, per weapon mode and per job) equal the `percent`s in the shared format definition;
 - every job has at least one item for each of its active slots, with the weapon matching its weapon mode. One exception is listed in the test: Blue Mage weapons exist in `Item` (10 rows) but carry no stats, so none are in the database. The test fails if that changes.
 
@@ -709,21 +732,21 @@ The claims on this page that rest on evidence outside the code, collected from t
 | The CSVs are the client's own rows; exporter changed in January 2026 | verified | repository history, commit `d3eb86d` (section 1) |
 | Slot shares in the format file equal `BaseParam` | verified | checked on every regeneration (section 1) |
 | The yes/no columns hold only `True` and `False` | verified | checked on every regeneration (section 1) |
-| No most-speed search stops at its node limit | verified | full run, 2026-10-19 (section 2) |
+| No most-speed search stops at its node limit | verified | full run, 2026-10-19 (section 5) |
 | Job icon number is $62100 + r$ | verified | all 23 icons looked at (section 2) |
 | Main Attribute and Secondary Attribute mapping | second-hand; tank case inferred | xivgear's tests (section 3) |
 | The four main-stat budget columns are equal | verified | game data (section 3) |
-| Item level floor of 15 | owner's decision | 2026-10-15; Sastasha has no item level sync, verified (section 4) |
-| Code 250 gear has random secondary attributes | second-hand | item text (section 4) |
-| HQ bonus only when `CanBeHq` | verified by count | 328 rows, 325 selected (section 4) |
-| Beastmaster's Crucible bonus applies only in the Crucible | second-hand | Console Games Wiki (section 4) |
-| PvP sets have normal stats outside PvP | verified | Lodestone, patch 7.56 (section 4) |
-| Client sheets hold no dungeon loot | verified | four loot sheets hold no item ids (section 4) |
-| Mad Harlequin's Totem comes from Dancing Mad | verified | Console Games Wiki (section 4) |
+| Item level floor of 15 | owner's decision | Sastasha has no item level sync, verified (section 4.1) |
+| Code 250 gear has random secondary attributes | second-hand | item text (section 4.1) |
+| HQ bonus only when `CanBeHq` | **verified** | by count: 328 rows, 325 selected (section 4.4) |
+| Beastmaster's Crucible bonus applies only in the Crucible | second-hand | Console Games Wiki (section 4.4) |
+| PvP sets have normal stats outside PvP | verified | Lodestone, patch 7.56 ([glossary.md](../glossary.md), PvP gear; section 4.6 lists the PvP source only) |
+| Client sheets hold no dungeon loot | verified | four loot sheets hold no item ids (section 4.6) |
+| Mad Harlequin's Totem comes from Dancing Mad | verified | Console Games Wiki (section 4.6) |
 | Crafted, tomestone and ultimate flags | verified | 167 of 175 agree with the Lodestone (section 10) |
-| Kind, meld fields, rarity, game id, scaling flag | verified | copied from game data (section 4) |
-| The 15 shields with no slot but the overmeld flag take no materia | inferred | [materia.md, section 2](../mechanics/materia.md#slots-big-and-small-stones) (section 4) |
-| Every kept meal stat is 10% HQ | verified by count | section 5 |
+| Kind, meld fields, rarity, game id, scaling flag | verified | copied from game data (sections 4.7 to 4.11) |
+| The 15 shields with no slot but the overmeld flag take no materia | inferred | [materia.md, section 2](../mechanics/materia.md#slots-big-and-small-stones) (section 4.8) |
+| Every kept meal stat is 10% HQ | **verified** | by count (section 5) |
 | `ItemLevel` rows 796 to 920 are budget room for future gear | inferred | smooth, near-linear values (section 7) |
 
 ## Where this lives
@@ -744,12 +767,13 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
 | Food table generator; which meals, `food` in the format file | `scripts/data/gen_food.py`, `src/core/item-format.json` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |
+| Gear groups generator (which jobs share gear, for Copy sheet) | `scripts/data/gen_gear_groups.py` |
 | Most speed per level generator (the GCD speed slider's top) | `scripts/data/gen_max_speed.mjs` |
 | Source commit detection, the edited-clone check, the generated-file notice and the one-row-per-line writer | `scripts/data/provenance.py` (`detect`, `local_edits`, `note`, `json_lines`) |
 | Regenerate everything; refuse an edited clone (`--allow-dirty`) | `scripts/data/regen.py` (`npm run data:update` runs fetch, then this) |
 | Counts, CSV blob ids, drift since the last run, the changelog line | `scripts/data/summary.py` (`summarize`, `drift`, `csv_blobs`), `src/data/summary.json`, `docs/data-changelog.md` |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
-| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/max-speed.json`, `src/data/summary.json` (not part of the page) |
+| Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/gear-groups.json`, `src/data/max-speed.json`, `src/data/summary.json` (not part of the page) |
 | Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
 | Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |

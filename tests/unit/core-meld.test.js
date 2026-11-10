@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../src/core/items.js';
 import { MATERIA } from '../../src/core/tables.js';
-import { bestMeld, meldSlots, meldText, meldVersions, stoneValues } from '../../src/core/meld.js';
+import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../src/core/meld.js';
 import { meldCaps } from '../../src/core/piece.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { piece } from './helpers/common.js';
@@ -43,6 +43,23 @@ test('slots: guaranteed ones big; with overmelding 5 in all, the first overmeld 
   // 0 slots but flagged for overmelding (15 Paladin shields): no melds (inferred)
   assert.deepEqual(meldSlots(piece(pld, 'Dwarven Mythril Shield')), { big: 0, small: 0 });
   assert.deepEqual(meldSlots(mkItem('Hand-made', 'head', 300, { crit: 10 })), { big: 0, small: 0 });
+});
+
+/* The set page's materia menu offers per slot the grades the game lets it take: the item level gate (grade V needs 160,
+   XII 690), and no high grade (VI, VIII, X, XII) in an overmeld slot past the first. */
+test('slot grades: the item level gate, no high grade in a small slot, nothing in a slot the piece lacks', () => {
+  const ok = (item, slot) =>
+    slotGrades(item, slot)
+      .filter(g => g.ok)
+      .map(g => g.grade);
+  const pendulums = piece(sge, "Courtly Lover's Pendulums"); // item level 770, 2 slots + overmeld
+  const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  assert.deepEqual(ok(pendulums, 0), all);
+  assert.deepEqual(ok(pendulums, 2), all, 'the first overmeld slot is big');
+  assert.deepEqual(ok(pendulums, 3), [1, 2, 3, 4, 5, 7, 9, 11]);
+  assert.deepEqual(ok(pendulums, 5), [], 'no sixth slot');
+  assert.deepEqual(ok(piece(sge, 'Rainbow Cap of Healing'), 0), [1, 2, 3, 4], 'item level 115: grades I to IV');
+  assert.equal(slotGrades(pendulums, 0)[11].value, 54, 'grade XII adds 54');
 });
 
 test("meld cap of a piece is its own sync cap: Kirin's Osode of Fending (item level 300 body) 110", () => {

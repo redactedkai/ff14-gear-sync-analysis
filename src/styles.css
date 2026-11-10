@@ -11,13 +11,30 @@
   /* a dropdown menu's edge: stronger than --line, with a shadow, so it stands off the page under it */
   --pop-line: #a9a28a;
   --pop-shadow: 0 8px 24px rgba(40, 35, 20, 0.18);
+  /* the shadow colour under a dialog */
+  --dialog-shadow: rgba(0, 0, 0, 0.45);
   --accent: #0d6e72;
   --accent-fg: #ffffff;
   --accent-soft: #d5ebe8;
   --gold: #8f5f0c;
+  --gold-ink: #6b4707;
   --good: #25773a;
   --bad: #b0402c;
   --warn-bg: #f6e8c8;
+  --danger: #b0402c;
+  --danger-hover: #c04a35;
+  --danger-fg: #ffffff;
+  --backdrop: rgba(0, 0, 0, 0.45);
+  /* a set page: a delta line that is better (green) or worse (red); an overmeld slot's border; a stone past its stat's
+     cap (counts for nothing, or in part) and the corner mark of such a cell in the materia menu; the neutral tint of a
+     changed figure and of a goal rank badge */
+  --delta-good: #1b6e3a;
+  --delta-bad: #b3261e;
+  --over: #c2457a;
+  --cap-none: #b3261e;
+  --cap-part: #8a6100;
+  --cap-none-mark: #d32f2f;
+  --tint: rgba(27, 42, 44, 0.22);
   --serif: "Spectral", Georgia, "Times New Roman", serif;
   --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -32,13 +49,26 @@
     --line: #2b3d40;
     --pop-line: #4f6d70;
     --pop-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --dialog-shadow: rgba(0, 0, 0, 0.45);
     --accent: #4cc2b6;
     --accent-fg: #06191a;
     --accent-soft: #17383a;
     --gold: #e2b659;
+    --gold-ink: #e2b659;
     --good: #6cc788;
     --bad: #f08a74;
     --warn-bg: #3a3220;
+    --danger: #b8412d;
+    --danger-hover: #c64b36;
+    --danger-fg: #ffffff;
+    --backdrop: rgba(0, 0, 0, 0.55);
+    --delta-good: #7ee0a0;
+    --delta-bad: #ff8f7a;
+    --over: #e27aa5;
+    --cap-none: #ff8f7a;
+    --cap-part: #e9b93a;
+    --cap-none-mark: #ef4a4a;
+    --tint: rgba(229, 238, 237, 0.2);
     color-scheme: dark;
   }
 }
@@ -51,13 +81,26 @@
   --line: #2b3d40;
   --pop-line: #4f6d70;
   --pop-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --dialog-shadow: rgba(0, 0, 0, 0.45);
   --accent: #4cc2b6;
   --accent-fg: #06191a;
   --accent-soft: #17383a;
   --gold: #e2b659;
+  --gold-ink: #e2b659;
   --good: #6cc788;
   --bad: #f08a74;
   --warn-bg: #3a3220;
+  --danger: #b8412d;
+  --danger-hover: #c64b36;
+  --danger-fg: #ffffff;
+  --backdrop: rgba(0, 0, 0, 0.55);
+  --delta-good: #7ee0a0;
+  --delta-bad: #ff8f7a;
+  --over: #e27aa5;
+  --cap-none: #ff8f7a;
+  --cap-part: #e9b93a;
+  --cap-none-mark: #ef4a4a;
+  --tint: rgba(229, 238, 237, 0.2);
   color-scheme: dark;
 }
 
@@ -77,7 +120,7 @@
 }
 ::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
-  border-radius: 5px;
+  border-radius: 4px;
   background: color-mix(in srgb, var(--muted) 45%, transparent) padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -92,6 +135,7 @@
   }
 }
 body {
+  margin: 0;
   background: var(--bg);
   color: var(--fg);
   font: 15px / 1.5 var(--sans);
@@ -152,7 +196,7 @@ select,
   color: var(--fg);
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 7px 9px;
   min-width: 0;
   width: 100%;
@@ -215,7 +259,7 @@ select {
     background: var(--surface);
     color: var(--fg);
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: 4px;
   }
   option {
     padding: 5px 8px;
@@ -338,7 +382,7 @@ button {
   font: inherit;
   font-size: 0.88rem;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid var(--line);
   background: var(--surface2);
   color: var(--fg);
@@ -356,7 +400,7 @@ button.primary {
 button.chip {
   padding: 3px 9px;
   font-size: 0.78rem;
-  border-radius: 99px;
+  border-radius: 4px;
 }
 button.x {
   padding: 2px 8px;
@@ -376,12 +420,17 @@ button.x {
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+}
+/* the closed Job and sync strip (one line, about 54 px tall as in prototype B17) */
+.panel.jobline {
+  padding: 12px 16px;
+  margin-bottom: -18px; /* cancels .wrap's gap: the strip sits flush on the tab bar, so the bar moves only the strip's height (B17: 53 px) */
 }
 .jobpick {
   grid-column: 1 / -1;
@@ -420,7 +469,7 @@ button.x {
 .jobbtn {
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 4px;
   background: none;
   line-height: 0;
   opacity: 0.55;
@@ -431,7 +480,7 @@ button.x {
 .jobbtn img {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 .jobbtn:hover {
   opacity: 0.9;
@@ -477,20 +526,25 @@ label.f,
 .multi-btn::after {
   content: "";
   position: absolute;
-  right: 15px;
+  right: 8px;
   top: 50%;
-  width: 6px;
-  height: 6px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: translateY(-75%) rotate(45deg);
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  background: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
 }
 /* the values a number field takes, next to its label: "1–100" */
 .f-range {
   margin-left: 4px;
   font-family: var(--mono);
   font-weight: 400;
-  color: color-mix(in srgb, var(--muted) 70%, transparent);
+  color: var(--muted);
 }
 .field-error {
   color: var(--bad);
@@ -516,7 +570,7 @@ input.lowered.flash {
     background: color-mix(in srgb, var(--gold) 30%, transparent);
   }
 }
-/* Item level as one field, "min – max" (owner, 2026-10-18), in the gear browser and Gear to search; it takes two of
+/* Item level as one field, "min – max" (owner), in the gear browser and Gear to search; it takes two of
    the five columns, like Target GCD under it */
 .ilvl-field {
   grid-column: span 2;
@@ -583,7 +637,7 @@ input.lowered.flash {
   gap: 6px;
 }
 .subtabs button {
-  border-radius: 99px;
+  border-radius: 4px;
   padding: 5px 14px;
 }
 .subtabs button[aria-pressed="true"] {
@@ -629,7 +683,7 @@ input.lowered.flash {
 }
 .note {
   background: var(--warn-bg);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 10px 12px;
   font-size: 0.84rem;
 }
@@ -656,17 +710,36 @@ details.panel:not([open]) {
   color: var(--muted);
   font-size: 0.8rem;
 }
-.hq {
+/* The HQ mark: the Lodestone symbol font's HQ glyph (U+E03C), loaded from a community mirror
+   (ewwwin/ffxiv-symbol-fonts) pinned to one commit and served by jsDelivr, which sends CORS headers, so it loads from file://. The mark is plain "(HQ)" by default;
+   ui/hq-font.js adds html.hqfont once the font has loaded and the glyph replaces the text, so a slow, blocked or
+   offline load never shows a missing-character box. */
+@font-face {
+  font-family: FFXIV_Lodestone_SSF;
+  src:
+    url(https://cdn.jsdelivr.net/gh/ewwwin/ffxiv-symbol-fonts@38be0d484de147598e3fb66e573e57b0dd0e13c8/FFXIV_Lodestone_SSF.woff)
+    format("woff"),
+    url(https://cdn.jsdelivr.net/gh/ewwwin/ffxiv-symbol-fonts@38be0d484de147598e3fb66e573e57b0dd0e13c8/FFXIV_Lodestone_SSF.ttf)
+    format("truetype");
+}
+.hqg {
+  margin-left: 5px;
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 400;
+}
+.hqg::before {
+  content: "(HQ)";
+}
+:root.hqfont .hqg {
   display: inline-block;
-  margin-left: 6px;
-  padding: 0 4px;
-  border: 1px solid var(--gold);
-  border-radius: 4px;
-  color: var(--gold);
-  font-size: 0.66rem;
-  font-weight: 600;
-  line-height: 1.4;
-  vertical-align: 1px;
+  font-family: FFXIV_Lodestone_SSF, sans-serif;
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: -1px;
+}
+:root.hqfont .hqg::before {
+  content: "\e03c";
 }
 /* the search's words in a name */
 .mark {
@@ -675,7 +748,7 @@ details.panel:not([open]) {
 }
 .callout {
   background: var(--warn-bg);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 10px 12px;
   margin: 0;
 }
@@ -702,14 +775,14 @@ details.panel:not([open]) {
 .pill.cat-tomestone {
   border-color: transparent;
   background: color-mix(in srgb, var(--gold) 18%, transparent);
-  color: var(--gold);
+  color: var(--gold-ink);
 }
 
 /* ==== Tables: cells, totals, the key, sortable headings, the column under the pointer ==== */
 .tablewrap {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--surface);
 }
 .tablewrap.tall {
@@ -761,8 +834,7 @@ tr.total td {
   font-weight: 600;
   background: var(--surface2);
 }
-/* The key above a table (owner, 2026-10-19): what the cap bar means, at the right of the line (the optimizer's solve
-   time at its left) */
+/* The key above a table: what the cap bar means, at the right of the line */
 .tablekey {
   display: flex;
   justify-content: space-between;
@@ -774,12 +846,12 @@ tr.total td {
   font-family: var(--mono);
   color: var(--fg);
 }
-/* The Gear browser's key keeps its own line, packed tight (owner's pick K1 d, 2026-10-20): the title
+/* The Gear browser's key keeps its own line, packed tight (owner's pick K1 d): the title
    and pill lines lose their bottom margin, and the key line pulls into the panel's gaps above and below it (.titleline and .pillline have no bottom margin for the same pick) */
 #tab-browse .tablekey {
   margin: -8px 0 -6px;
 }
-/* The Gear browser's page line (owner's pick P1 a, 2026-10-20): page numbers at the left of the key's line, which
+/* The Gear browser's page line (owner's pick P1 a): page numbers at the left of the key's line, which
    always shows (empty with one page and nothing synced) and keeps one button's height, so the table doesn't move as
    the key or the numbers come and go */
 #tab-browse .pageline {
@@ -801,7 +873,7 @@ tr.total td {
   height: 24px;
   padding: 0 5px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 4px;
   background: none;
   color: var(--muted);
   font: 500 0.78rem var(--mono);
@@ -855,7 +927,7 @@ th[aria-sort="descending"] .sortbtn::after {
 th[aria-sort="ascending"] .sortbtn::after {
   content: " \25B4";
 }
-/* The column under the pointer (owner, 2026-10-19), in the optimizer's and the gear browser's tables: its cells tinted
+/* The column under the pointer, in the gear browser's table: its cells tinted
    as the substat tiers table tints a tier, its heading in the text colour. The table holds the hovered column's key in
    data-col (set on mouseover from the cell's own data-col) */
 table[data-col="lvl"] td[data-col="lvl"],
@@ -880,10 +952,10 @@ table[data-col="spd"] th[data-col="spd"],
 table[data-col="spec"] th[data-col="spec"] {
   color: var(--fg);
 }
-/* The row under the pointer, in the same two tables, tinted like the column (owner, 2026-10-19), so the pointer marks
-   one cell's row and column at once */
-/* (:where keeps it at a class's weight, so the tables' later, plainer rules still read in order) */
-:where(#gear-table, #o-table) tr:hover > td {
+/* The row under the pointer, in the same table, tinted like the column, so the pointer marks one cell's row and column
+   at once */
+/* (:where keeps it at a class's weight, so the table's later, plainer rules still read in order) */
+:where(#gear-table) tr:hover > td {
   background: var(--surface2);
 }
 
@@ -912,7 +984,7 @@ table[data-col="spec"] th[data-col="spec"] {
   z-index: 10;
   background: var(--surface2);
   border: 1px solid var(--accent);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 14px 18px;
   box-shadow: var(--pop-shadow);
   max-height: calc(100vh - 160px);
@@ -969,7 +1041,7 @@ table[data-col="spec"] th[data-col="spec"] {
   background: var(--surface);
   border: 1px solid var(--pop-line);
   box-shadow: var(--pop-shadow);
-  border-radius: 6px;
+  border-radius: 4px;
 }
 .multi-opt {
   display: flex;
@@ -1006,13 +1078,17 @@ table[data-col="spec"] th[data-col="spec"] {
 .multi-opt input:checked::after {
   content: "";
   position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 4px;
-  height: 8px;
-  border: solid var(--accent-fg);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  background: var(--accent-fg);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
 }
 /* "Gear from": the market board switch over a divider, All / None / Default, the boxes in two columns of sections, and
    a line under them describing the box under the pointer or keyboard focus */
@@ -1137,7 +1213,7 @@ table[data-col="spec"] th[data-col="spec"] {
   max-width: 100%;
   padding: 2px 8px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--surface);
   color: inherit;
   font: inherit;
@@ -1148,12 +1224,16 @@ table[data-col="spec"] th[data-col="spec"] {
   content: "";
   flex: none;
   align-self: center;
-  width: 5px;
-  height: 5px;
-  margin: 0 2px 0 2px;
-  border-right: 1.5px solid var(--muted);
-  border-bottom: 1.5px solid var(--muted);
-  transform: translateY(-40%) rotate(45deg);
+  width: 18px;
+  height: 18px;
+  margin: 0 -3px;
+  background: var(--muted);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
 }
 .same-btn:hover,
 .same-btn[aria-expanded="true"] {
@@ -1181,7 +1261,7 @@ table[data-col="spec"] th[data-col="spec"] {
   background: var(--surface);
   border: 1px solid var(--pop-line);
   box-shadow: var(--pop-shadow);
-  border-radius: 6px;
+  border-radius: 4px;
 }
 .same-head {
   padding: 6px 8px 2px;
@@ -1214,7 +1294,7 @@ table[data-col="spec"] th[data-col="spec"] {
   background: var(--accent-soft);
   font-weight: 600;
 }
-/* A menu with a search box (owner, 2026-10-18): the Food row's (one line of search box and stat pills, then a Sort row
+/* A menu with a search box (owner): the Food row's (one line of search box and stat pills, then a Sort row
    while a pill is on) and the rows' pieces with the same result (the search box alone); only the list scrolls, and
    each expansion's heading stays in view while its entries pass */
 .search-menu {
@@ -1245,22 +1325,22 @@ table[data-col="spec"] th[data-col="spec"] {
 .menu-search::before {
   content: "";
   position: absolute;
-  left: 9px;
-  width: 13px;
-  height: 13px;
+  left: 8px;
+  width: 16px;
+  height: 16px;
   background: var(--muted);
   -webkit-mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M10.5 10.5 15 15' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z'/%3E%3C/svg%3E")
     no-repeat center / contain;
   mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='5' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M10.5 10.5 15 15' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z'/%3E%3C/svg%3E")
     no-repeat center / contain;
   pointer-events: none;
 }
 .menu-search input[type="text"] {
   padding: 5px 8px 5px 28px;
   font: 400 0.86rem var(--sans);
-  border-radius: 999px;
+  border-radius: 4px;
 }
 .menu-search input[type="text"]:focus-visible {
   outline: none;
@@ -1326,7 +1406,44 @@ table[data-col="spec"] th[data-col="spec"] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* the Food menu's Sort row (owner's pick F2 b, 2026-10-20): "Sort: ILVL / CRT / DET" under the search box, shown
+/* "Best for goal" (a set the optimizer made): a meal tagged best wears the .pill look after its name while the switch is
+   off (the view gives the "best" class only then), and the Food row shows the note beside its meal, on one line */
+/* the star (Remix "star-fill") for a meal tagged best for goal: a mask in the gold colour. In the list it follows the
+   meal's name, with the words as its alt text for a screen reader (the second content declaration; a browser without
+   the alt syntax keeps the first, an empty one, and draws the star all the same) */
+.star,
+.meal-item.best .meal-name::after {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  background: var(--gold);
+  vertical-align: -2px;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26Z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26Z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.meal-item.best .meal-name::after {
+  content: "";
+  /* biome-ignore lint/suspicious/noDuplicateProperties: the alt text syntax, with the line above as the fallback */
+  content: "" / "best for goal";
+  margin-left: 6px;
+}
+.toggle .star {
+  margin-right: 4px;
+}
+.mealline {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.mealline .small {
+  margin-left: 10px;
+  white-space: nowrap;
+}
+/* the Food menu's Sort row (owner's pick F2 b): "Sort: ILVL / CRT / DET" under the search box, shown
    while a pill is on; a smaller version of the Target GCD's segmented control (sized after the .seg rules) */
 .meal-sort {
   flex: none;
@@ -1338,16 +1455,7 @@ table[data-col="spec"] th[data-col="spec"] {
   font-size: 0.82rem;
   color: var(--muted);
 }
-/* the meals with the best's result, pinned on top (owner's pick F3 c, 2026-10-20): a rule under them sets them apart
-   from the list below */
-.meal-pinned::after {
-  content: "";
-  display: block;
-  height: 1px;
-  margin: 4px 8px 2px;
-  background: var(--line);
-}
-/* a meal's stat line: a stat on a picked pill is a soft chip like an unfilled pill (owner's pick F1 c, 2026-10-20);
+/* a meal's stat line: a stat on a picked pill is a soft chip like an unfilled pill (owner's pick F1 c);
    on the shown meal's row, already tinted, the chip takes the page background */
 .meal-line {
   display: inline-flex;
@@ -1371,8 +1479,7 @@ table[data-col="spec"] th[data-col="spec"] {
   color: var(--muted);
 }
 
-/* ==== Gear optimizer ==== */
-/* the optimizer's controls: one panel, Gear to search, then Goal under a rule */
+/* ==== Fill settings (a set page's dialog): Gear to search, then Goal under a rule ==== */
 .part {
   display: flex;
   flex-direction: column;
@@ -1394,10 +1501,6 @@ table[data-col="spec"] th[data-col="spec"] {
 .switches {
   gap: 4px 28px;
 }
-/* the optimizer's two rows of fields on the same five columns, so Goal lines up with Gear to search */
-#o-controls .grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
 /* Target GCD: the Goal row's last two columns, the box growing beside the exactly / or faster buttons */
 .gcd-field {
   grid-column: span 2;
@@ -1410,8 +1513,12 @@ table[data-col="spec"] th[data-col="spec"] {
   flex: 1 1 0;
   min-width: 70px;
 }
-/* the switches' line ends with tier ranking's switch ("Spare points to tiebreaks", its ? and note) and the Optimize
+/* the switches' line ends with tier ranking's switch ("Spare points to tiebreaks", its ? and note) and the Fill
    button, at the right */
+/* the line under the Goal switches after a pick moved another rank */
+.rank-note {
+  margin: 6px 0 0;
+}
 .rankwrap {
   position: relative;
   display: inline-flex;
@@ -1434,11 +1541,7 @@ button.run {
   padding: 8px 18px;
   font-weight: 600;
 }
-/* a result older than the settings, or shown while a new search runs: dimmed, its menus off */
-.is-stale {
-  opacity: 0.45;
-  pointer-events: none;
-}
+/* the line under a set page's header after a Fill that gave no suggestion */
 .stale-note {
   margin: 0 0 8px;
   color: var(--fg);
@@ -1446,7 +1549,7 @@ button.run {
 .seg {
   display: inline-flex;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
   background: var(--surface2);
 }
@@ -1490,116 +1593,39 @@ button.run {
   padding: 0 10px;
   font-size: 0.8rem;
 }
-.gcd-line {
-  font-size: 0.86rem;
-  color: var(--muted);
-}
-/* no set fits: the one case that needs a look */
-.gcd-line.bad {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--warn-bg);
-  color: var(--fg);
-}
-/* Pieces with the same result (optimizer result rows): the item cell's menu, the gear category pill, "HW · lvl 60".
-   The result table must fit at 960 px anyway, so it lets the menu overflow instead of scrolling. */
+/* A set page's gear table: the item cell's menus (the piece picker, the Food menu), the gear category pill, "HW · lvl
+   60". The table must fit at 960 px anyway, so it lets a menu overflow instead of scrolling. */
 .tablewrap.menus {
   overflow: visible;
 }
 td.item {
   white-space: normal;
 }
-/* the result's Defense row: one cell across the stat columns, wrapping at 960 px instead of widening the table */
+/* the Defense row: one cell across the stat columns, wrapping at 960 px instead of widening the table */
 td.defense {
   white-space: normal;
-}
-.readout {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.readout > div {
-  background: var(--surface);
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.readout b {
-  font-family: var(--mono);
-  font-size: 1.25rem;
-  font-weight: 500;
-}
-.readout span {
-  font-size: 0.74rem;
-  color: var(--muted);
-}
-/* Rank by tier: a stat held at its tier, in the Tier row */
-td.held {
-  background: var(--accent-soft);
-  font-weight: 600;
-}
-/* the optimizer is solving: an indeterminate bar, shown from the first frame (a delayed fade-in never finished while a
-   solve held the page's thread), moved by transform so it can keep running on the compositor */
-.progress {
-  position: relative;
-  height: 3px;
-  margin: 0 0 8px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: var(--accent-soft);
-}
-.progress > span {
-  position: absolute;
-  inset: 0;
-  width: 30%;
-  background: var(--accent);
-  animation: progress-slide 1.1s ease-in-out infinite;
-}
-@keyframes progress-slide {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(340%);
-  }
-}
-/* while a search is pending: "Searching", the bar and Cancel on one line above the result */
-.busyline {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 0 0 10px;
-  padding: 10px 12px 10px 16px;
-  background: var(--surface);
-  border: 1px solid var(--accent);
-  border-radius: 10px;
-  font-weight: 600;
-}
-.busyline .progress {
-  flex: 1;
-  margin: 0;
-}
-.busyline button {
-  font-weight: 600;
 }
 @media (prefers-reduced-motion: reduce) {
   input.lowered.flash {
     animation: none;
   }
-  .progress > span {
-    animation: none;
-    width: 100%;
-  }
 }
 
 /* ==== Gear browser ==== */
-/* A gear browser row that sync lowers (owner, 2026-10-19): the top line is what the player gets, bold (the lowered
+.settable tbody td:first-child {
+  border-left: 1px solid var(--line);
+}
+.settable tr.changed td:first-child {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.settable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 4px;
+}
+.settable tbody tr.total td:first-child,
+.settable tbody tr.tier td:first-child {
+  padding-left: 34px;
+}
+/* A gear browser row that sync lowers (owner): the top line is what the player gets, bold (the lowered
    stats with the cap bar); a muted line under it holds the piece's own numbers (the key above the table says so); a
    grey bar on the row's left edge */
 #gear-table tr.synced td:first-child {
@@ -1607,8 +1633,11 @@ td.held {
 }
 #gear-table td.cut > span:first-child {
   font-weight: 600;
+  box-shadow: inset 0 2px 0 currentColor;
+  padding-top: 2px;
 }
-#gear-table .was {
+#gear-table td[data-was]::after {
+  content: attr(data-was);
   display: block;
   font-size: 0.72rem;
   font-weight: 400;
@@ -1658,7 +1687,7 @@ td.held {
   height: 22px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: 4px;
   background: var(--surface2);
   color: var(--muted);
   font-size: 0.85rem;
@@ -1679,7 +1708,7 @@ td.held {
 .slotpills button {
   padding: 4px 8px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 4px;
   background: none;
   color: var(--muted);
   font: 500 0.8rem var(--sans);
@@ -1726,7 +1755,7 @@ td.held {
   gap: 6px;
   padding: 4px 12px 4px 10px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 4px;
   background: none;
   color: var(--fg);
   font: 500 0.8rem var(--sans);
@@ -1734,14 +1763,14 @@ td.held {
 }
 .resetbtn::before {
   content: "";
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   background: currentColor;
   -webkit-mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M1.5 2.5h10l-4 4.8v4.4l-2 1.3V7.3z'/%3E%3Cpath d='M11 10l3.5 3.5M14.5 10L11 13.5'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.92893 0.514648L21.0711 14.6568L19.6569 16.071L15.834 12.2486L15 13.4999V21.9999H9V13.4999L4 5.99993H3V3.99993L7.585 3.99965L5.51472 1.92886L6.92893 0.514648ZM9.585 5.99965L6.4037 5.99993L11 12.8944V19.9999H13V12.8944L14.392 10.8066L9.585 5.99965ZM21 3.99993V5.99993H20L18.085 8.87193L16.643 7.42893L17.5963 5.99993H15.213L13.213 3.99993H21Z'/%3E%3C/svg%3E")
     no-repeat center / contain;
   mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M1.5 2.5h10l-4 4.8v4.4l-2 1.3V7.3z'/%3E%3Cpath d='M11 10l3.5 3.5M14.5 10L11 13.5'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.92893 0.514648L21.0711 14.6568L19.6569 16.071L15.834 12.2486L15 13.4999V21.9999H9V13.4999L4 5.99993H3V3.99993L7.585 3.99965L5.51472 1.92886L6.92893 0.514648ZM9.585 5.99965L6.4037 5.99993L11 12.8944V19.9999H13V12.8944L14.392 10.8066L9.585 5.99965ZM21 3.99993V5.99993H20L18.085 8.87193L16.643 7.42893L17.5963 5.99993H15.213L13.213 3.99993H21Z'/%3E%3C/svg%3E")
     no-repeat center / contain;
 }
 /* while no filter is changed it keeps its place, unseen, so the pills do not move when it appears */
@@ -1860,7 +1889,7 @@ ul.facts li::marker {
 }
 .versus {
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--surface2);
   font-size: 0.86rem;
   display: flex;
@@ -1911,6 +1940,9 @@ ul.facts li::marker {
 }
 .versus td.n {
   vertical-align: top;
+}
+tr.emptyrow td {
+  color: var(--muted);
 }
 .versus tr.solo td {
   border-bottom: 0;
@@ -1996,7 +2028,7 @@ ul.facts li::marker {
   white-space: nowrap;
   font-size: 0.75rem;
   border: 1px dashed var(--line);
-  border-radius: 999px;
+  border-radius: 4px;
   padding: 1px 9px;
   color: var(--muted);
   text-decoration: line-through;
@@ -2043,6 +2075,9 @@ ul.facts li::marker {
   font-size: 0.72rem;
   line-height: 1.25;
   overflow: hidden;
+}
+.cc b {
+  font: 600 0.88rem / 1 var(--mono);
 }
 .slices span b,
 .slices span i {
@@ -2135,6 +2170,10 @@ svg.chart .hasteline {
 .gsteps tbody tr {
   cursor: pointer;
 }
+/* a row a draft or a Fill result changes */
+.settable tr.changed td {
+  background: var(--accent-soft);
+}
 .gsteps tbody tr:hover td {
   background: var(--surface2);
 }
@@ -2162,7 +2201,7 @@ svg.chart .hasteline {
 .ladder {
   width: 100%;
   /* columns split evenly whatever the numbers, so a level whose tiers reach four digits (1,010 at level 80) does not
-     shift the columns (owner, 2026-10-19) */
+     shift the columns (owner) */
   table-layout: fixed;
 }
 table.ladder th {
@@ -2198,6 +2237,12 @@ table.ladder th {
 .ladder th .lhaste {
   font-weight: 400;
   color: var(--muted);
+}
+.settable thead th {
+  top: var(--sh);
+  z-index: 4;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 .ladder tr.lcols th {
   font-size: 0.68rem;
@@ -2245,6 +2290,18 @@ table.ladder th {
 .ladder .lfoot {
   font-family: var(--sans);
 }
+.takebox span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+/* "Take" itself keeps the label's line height; the suggested piece after it at 1.25 */
+.takebox > span {
+  line-height: inherit;
+}
+.takebox > span > span {
+  line-height: 1.25;
+}
 .ladder .lfoot span {
   display: block;
   white-space: nowrap;
@@ -2264,16 +2321,1255 @@ footer {
   margin-left: 10px;
   padding: 2px 8px;
   border: 1px solid var(--gold);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--warn-bg);
   color: var(--gold);
   font: 600 0.75rem var(--mono);
   letter-spacing: 0.06em;
   vertical-align: middle;
 }
+.build-button {
+  cursor: pointer;
+}
+.build-button:hover {
+  filter: brightness(1.2);
+}
 .build-info {
   font-family: var(--mono);
   color: var(--gold);
+}
+
+/* ==== The Sheets tab: the sheet manager, a sheet's page, the frame of a set page, the dialogs ==== */
+/* text only a screen reader reads (the live region after a keyboard reorder) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-fg);
+}
+button.danger:hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+.sheetsview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* the Sheets tab sits flush under the tab bar (cancels the page's 18 px gap); each page sets its own top space: the list heading 18 px, the breadcrumb line 10 px, a set page's sticky header 8 px */
+#tab-sheets {
+  margin-top: -18px;
+}
+/* the heading of a list with its New button on one line */
+.listhead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.listhead h2 {
+  font-size: 1.8rem;
+  line-height: 1.3;
+}
+.listhead .sp,
+.sheettop .sp {
+  flex: 1 1 0;
+}
+/* a plain note after an action ("Deleted “UwU” sheet.") */
+.toast {
+  align-self: flex-start;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  font-size: 0.84rem;
+}
+/* the notes and boxes around the lists keep the 14 px they had between blocks */
+.sheetsview > .callout,
+#sh-unreadable {
+  margin-top: 14px;
+}
+/* the empty states: "No sheets yet", "No gear sets yet" */
+.startcard {
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 18px;
+  background: var(--surface);
+}
+.startcard h3 {
+  margin: 0 0 6px;
+}
+.startcard p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+/* the gear table: fixed columns (every stat 80 px, 72 below 1100 px wide), and its own outline drawn on the cells
+   (separate borders), so the stuck column names have real rounded corners; page-coloured wedges cover the corners of
+   the stuck row so the rows scrolling under it never show through */
+.tablewrap.settable {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+.settable table.coltint {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.settable thead th:first-child {
+  width: 112px;
+  padding-left: 34px;
+  border-left: 1px solid var(--line);
+  border-top-left-radius: 4px;
+}
+.settable thead th:last-child {
+  width: 84px;
+  border-right: 1px solid var(--line);
+  border-top-right-radius: 4px;
+}
+.settable thead th[data-col="ilvl"] {
+  width: 52px;
+}
+.settable thead th.n[data-col]:not([data-col="ilvl"]):not(:last-child) {
+  width: 80px;
+}
+@media (max-width: 1099px) {
+  .settable thead th.n[data-col]:not([data-col="ilvl"]):not(:last-child) {
+    width: 72px;
+  }
+  .settable thead th:last-child {
+    width: 76px;
+  }
+}
+.settable th.n,
+.settable td.n {
+  padding-left: 6px;
+  padding-right: 6px;
+  white-space: nowrap;
+}
+.settable th.n:last-child,
+.settable td.n:last-child {
+  padding-right: 10px;
+}
+.settable thead th:first-child::before,
+.settable thead th:last-child::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  width: 4px;
+  height: 4px;
+  pointer-events: none;
+}
+.settable thead th:first-child::before {
+  left: -1px;
+  background: radial-gradient(circle at 100% 100%, transparent 3.9px, var(--bg) 4.3px);
+}
+.settable thead th:last-child::before {
+  right: -1px;
+  background: radial-gradient(circle at 0 100%, transparent 3.9px, var(--bg) 4.3px);
+}
+.settable tbody {
+  background: var(--surface);
+  border-radius: 0 0 4px 4px;
+}
+/* a row, a button or an input scrolled to stays clear of the header and the stuck column names */
+.settable tbody tr {
+  scroll-margin-top: calc(var(--sh) + 44px);
+}
+:where(.settable tbody) :is(button, input) {
+  scroll-margin-top: calc(var(--sh) + 44px);
+}
+.settable tbody tr.sect th {
+  border-left: 1px solid var(--line);
+}
+.settable tbody td:last-child,
+.settable tbody tr.sect th {
+  border-right: 1px solid var(--line);
+}
+.settable tbody tr:last-child td {
+  border-bottom: 1px solid var(--line);
+}
+.settable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 4px;
+}
+.settable tbody tr.sect th {
+  position: static;
+  padding: 4px 10px 4px 34px;
+}
+.settable td.item {
+  white-space: normal;
+}
+/* the pin before a slot's name (Remix pushpin: filled pinned, outlined unpinned) */
+.settable td.pnc {
+  white-space: nowrap;
+}
+.pinic,
+.pinspacer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px 2px -4px -4px;
+  vertical-align: middle;
+}
+.pinic {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.pinic:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.pinic.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.pinic:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.pinic:disabled {
+  cursor: default;
+}
+.pnc > span:not(.pinspacer) {
+  vertical-align: middle;
+}
+.takebox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.takebox input[type="checkbox"] {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+/* the lists of sheets and of gear sets (the header cells counted by type: an x-for's <template> is a child too) */
+table.sets {
+  table-layout: fixed;
+}
+#tab-sheets table.sets td:first-child {
+  white-space: normal;
+}
+/* the manager's rows are top-aligned; a gear set's figures are centred beside its name */
+#tab-sheets table.sheetlist td {
+  vertical-align: top;
+}
+#tab-sheets table.sheetlist td:not(:first-child) {
+  padding-top: 9px;
+}
+table.sets.setlist th:first-child {
+  width: 34%;
+}
+table.sets.sheetlist th:nth-of-type(2) {
+  width: 136px;
+}
+table.sets.sheetlist th:nth-of-type(3) {
+  width: 140px;
+}
+table.sets.sheetlist th:nth-of-type(4) {
+  width: 52px;
+}
+table.sets.sheetlist th:nth-of-type(n + 5) {
+  width: 98px;
+}
+#tab-sheets table.sets th,
+#tab-sheets table.sets td {
+  padding: 7px 8px;
+}
+/* the column head sits over the names, after the 28 px drag handle and its 6 px gap (of-type: an x-for's <template> is a child too) */
+#tab-sheets table.sets th:first-of-type {
+  padding-left: 34px;
+}
+.clipname {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.sname {
+  display: block;
+  max-width: 100%;
+  font-weight: 600;
+  color: var(--fg);
+}
+.sorigin {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+.rowacts {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+.rowacts .linkbtn {
+  font-size: 0.78rem;
+}
+.rowacts .linkbtn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.jobcell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+table.sets .jobcell {
+  margin-top: -3px;
+}
+.jobico {
+  flex: none;
+  border-radius: 4px;
+}
+/* a row's drag handle runs its full height at the left of the first cell */
+.dragcell {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  margin: -7px 0 -7px -8px;
+}
+.dragbody {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 0;
+}
+.draghandle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  color: var(--muted);
+  cursor: grab;
+}
+/* the six dots (Remix Icon "draggable") */
+.draghandle::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 18.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM15.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 18.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM15.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+.draghandle:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.draghandle.off {
+  opacity: 0.4;
+  cursor: default;
+}
+.draghandle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+#tab-sheets tr.dragging td {
+  opacity: 0.45;
+}
+#tab-sheets tr.dropbefore td {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+#tab-sheets tr.dropafter td {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+/* the line of a sheet page and a set page: "Sheets / <sheet> / <set>" */
+.setline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 10px 0 8px;
+  font-size: 0.86rem;
+}
+.shead .setline {
+  margin: 0;
+}
+.setcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+}
+.setcrumb a {
+  flex: none;
+  color: var(--accent);
+}
+.setcrumb a + .csep ~ a {
+  flex: 0 1 auto;
+  min-width: 3ch;
+}
+.setcrumb .crumbhere {
+  flex: 0 1 auto;
+  min-width: 3ch;
+  color: var(--fg);
+}
+/* a sheet's own panel: name, description, job, level and item level sync */
+.sheettop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sheettop h2 {
+  min-width: 0;
+  flex: 0 1 auto;
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+.sheettop button {
+  flex: none;
+  white-space: nowrap;
+}
+.sheetdesc {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+.sheetfields {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.3fr) repeat(3, minmax(120px, 1fr));
+  gap: 14px 20px;
+  align-items: start;
+}
+.jobfixed {
+  min-height: 38px;
+  color: var(--fg);
+  font-size: 0.95rem;
+}
+/* the dialogs: a backdrop and a box in the middle of the window */
+.dlgback {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--backdrop);
+}
+.dlg {
+  position: fixed;
+  z-index: 61;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px 24px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 48px var(--dialog-shadow);
+}
+.dlg.wide {
+  width: min(780px, calc(100vw - 32px));
+}
+/* a question (delete, leave) is a little wider than a form */
+.dlg[role="alertdialog"] {
+  width: min(520px, calc(100vw - 32px));
+}
+.dlg h3 {
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+.dlg .question {
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  margin-bottom: 2px; /* with the 14 px gap: 16 px to the buttons */
+}
+/* the line under a question: 8 px below it, 16 px above the buttons, in the muted colour */
+.dlg .question + p {
+  margin: -8px 0 2px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.dlg textarea {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px 9px;
+  width: 100%;
+  resize: vertical;
+}
+.dlg textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.dlgrow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 20px;
+  align-items: start;
+}
+.dlgbtns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.dlgbtns button {
+  white-space: nowrap;
+}
+.dlgerr {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin-right: auto;
+  color: var(--bad);
+  font-size: 0.88rem;
+}
+.jobchoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.jobchoice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  background: var(--surface);
+}
+.jobchoice[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+/* Copy sheet: the pieces the new job cannot wear, and the box that accepts clearing them */
+.clearwarn {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cap-part);
+  border-radius: 4px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  font-size: 0.9rem;
+}
+.clearwarn ul {
+  margin: 6px 0 10px;
+  padding-left: 20px;
+  font-size: 0.88rem;
+  max-height: 118px;
+  overflow: auto;
+}
+.ackline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+#tab-sheets .ackline input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+html:has(.dlg) {
+  overflow: hidden;
+}
+
+/* ==== A set page (components/set-page.js): sticky header, gear table, menus, Fill settings ==== */
+.setpage {
+  --sh: 124px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+/* the sticky header: two boxes on the page's background, the set bar and the stat block, the breadcrumb above them */
+.shead {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  background: var(--bg);
+}
+.shead .tbar {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.topline > .sp {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.shead .setline .sp {
+  flex: 1 1 0;
+}
+.sheetro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  white-space: nowrap;
+  color: var(--fg);
+}
+/* the set switcher (after the set's name) and the sheet switcher (after the sheet's name): a caret and its menu */
+.setsw {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin-left: -2px;
+}
+.crumbmenubtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.crumbmenubtn:hover:not(:disabled),
+.crumbmenubtn[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.crumbmenubtn svg {
+  display: block;
+  flex: none;
+}
+.setmenu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  min-width: 260px;
+  max-width: 420px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--pop-line);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pop-shadow);
+}
+.setitem {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+}
+.setitem + .setitem {
+  margin-top: 2px;
+}
+.setitem:hover:not(:disabled),
+.setitem:focus-visible,
+.setitem.cur {
+  background: var(--accent-soft);
+}
+.setitem.cur {
+  font-weight: 600;
+}
+.setitem.setall {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 9px;
+  color: var(--accent);
+}
+.setitem.setnew {
+  margin-top: 9px;
+  color: var(--accent);
+}
+.setitem.setall::after,
+.setitem.setnew::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  border-top: 1px solid var(--line);
+  pointer-events: none;
+}
+.setitem.setall::after {
+  bottom: -5px;
+}
+.setitem.setnew::before {
+  top: -5px;
+}
+.setarrow {
+  flex: none;
+}
+/* the set bar: the name, Fill (or Apply and Discard), the goal, the gear icon, then Copy and Delete at the right; the
+   name shrinks first, then the goal gets an ellipsis, the piece count never */
+.topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.topline > button {
+  flex: none;
+}
+.shead .topline button:not(.gearbtn):not(.iconbtn) {
+  padding: 5px 12px;
+}
+.namebox {
+  display: flex;
+  align-items: center;
+  flex: 1 1 160px;
+  min-width: 120px;
+  max-width: 300px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.namebox .setname {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 4px 3px 10px;
+  font: 600 1.05rem var(--serif);
+}
+.namebox .iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 30px;
+  margin-right: 1px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+}
+.namebox .iconbtn:hover:not(:disabled) {
+  background: var(--surface2);
+  color: var(--fg);
+}
+.shead .fillbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.sugbtns button {
+  white-space: nowrap;
+}
+.matgrid button {
+  position: relative;
+  overflow: hidden;
+  padding: 2px 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.shead .fillbar button,
+.fillrun {
+  flex: none;
+}
+.fillrun {
+  display: inline-flex;
+  gap: 8px;
+}
+.goalsum {
+  display: flex;
+  gap: 0.3em;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+.goalsum .gtxt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.goalsum .gcnt {
+  flex: none;
+}
+/* in a draft the goal makes room for Apply and Discard */
+.shead.man .goalsum {
+  display: none;
+}
+.linkbtn.gearbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+}
+.linkbtn.gearbtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.linkbtn.gearbtn svg,
+.cfghead .linkbtn svg {
+  display: block;
+}
+.sugbtns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+/* the stat block: a row of figure names, then Total (at rest), or Now and After (a draft or a Fill result) */
+.tb3 {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.tb3 .crow {
+  display: grid;
+  grid-template-columns: minmax(110px, 166px) repeat(var(--figs), minmax(0, 1fr));
+  gap: 0 6px;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px 0 12px;
+}
+.tb3 .crow.hrow {
+  height: 24px;
+  padding-top: 2px;
+}
+/* a rule under the figure names and between Now and After (~, not +: an x-for's <template> sits between the rows) */
+.tb3 .crow ~ .crow {
+  border-top: 1px solid var(--line);
+}
+.tb3 .crow.after {
+  height: 48px;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  background: var(--accent-soft);
+}
+.tb3 .cl {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.tb3 .cn {
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+.cc.chg {
+  gap: 6px;
+}
+.crow.after .cc:not(.chg) {
+  margin-bottom: 4px;
+}
+.cc b.chgfig {
+  margin: -2px -4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--tint);
+  font-weight: 700;
+}
+.cc em.dl {
+  font: 400 0.85rem / 1 var(--mono);
+  font-style: normal;
+}
+.cc em.dl.good {
+  color: var(--delta-good);
+}
+.cc em.dl.bad {
+  color: var(--delta-bad);
+}
+.dlarrow {
+  display: inline-block;
+  margin: 0 -2px 0 -3px;
+  vertical-align: -5px;
+}
+/* the set's notes, under the header */
+.setnotes {
+  font-size: 0.9rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+/* a note after an action (a sheet or a gear set deleted, a copy made, ...) floats at the window's bottom on every Sheets screen: it never moves the table */
+.toast.floating {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 30;
+  max-width: calc(100vw - 32px);
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pop-shadow);
+}
+
+/* while a Fill result waits the table is locked: a click lands on the cell (and says why), the Take boxes still work */
+.ghostlock button:disabled {
+  pointer-events: none;
+  opacity: 1; /* the locked table keeps its full contrast */
+}
+.settable .same-btn:disabled {
+  cursor: default;
+}
+.same-btn.choose-empty {
+  border-style: dashed;
+  color: var(--accent);
+}
+/* the piece picker */
+.pick-menu {
+  width: min(480px, 80vw);
+  max-height: 420px;
+}
+.pick-menu .menu-list {
+  overflow-y: auto;
+}
+.pick-subs {
+  display: block;
+  font: 400 0.7rem var(--mono);
+  color: var(--muted);
+}
+.same-foot {
+  flex: none;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.74rem;
+  line-height: normal;
+  color: var(--muted);
+}
+.same-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pick-menu .same-item .pill {
+  margin-left: 6px;
+}
+/* the materia chips and the stone menu */
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.pop {
+  position: relative;
+}
+.mchip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  font: 500 0.66rem var(--mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mchip.over {
+  border-width: 1.5px;
+  border-color: var(--over);
+}
+.mchip.empty {
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
+}
+.mchip.empty:not(.over) {
+  border-color: var(--muted);
+}
+.mchip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+/* an empty slot behind another empty one waits for it (slots fill in order): dimmed by colour, as in prototype B17,
+   not by opacity */
+.mchip.empty:disabled {
+  color: color-mix(in srgb, var(--muted) 83%, var(--surface));
+  opacity: 1;
+}
+.mchip.empty:disabled:not(.over) {
+  border-color: color-mix(in srgb, var(--muted) 55%, var(--surface));
+}
+.mchip.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow:
+    0 0 0 1px var(--surface),
+    0 0 0 3px var(--accent);
+}
+.mchip.cap-none {
+  color: var(--cap-none);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.mchip.removed {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.matpop {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  top: calc(100% + 4px);
+  width: 380px;
+  padding: 8px 10px;
+  border: 1px solid var(--pop-line);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pop-shadow);
+  white-space: normal;
+}
+.matpop.all {
+  width: 420px;
+}
+.matpop h5 {
+  margin: 0 0 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.matgrid {
+  display: grid;
+  gap: 3px;
+  font: 500 0.72rem var(--mono);
+}
+.matgrid + .matgrid {
+  margin-top: 8px;
+}
+.matgrid .h {
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.66rem;
+  color: var(--fg);
+}
+.matgrid .h i {
+  font-style: normal;
+  color: var(--muted);
+}
+.matgrid .h.na {
+  color: var(--muted);
+}
+.matgrid .s {
+  align-self: center;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.matgrid button.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.matgrid button.na {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+}
+.matgrid button.cap-none::after,
+.matgrid button.cap-part::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  pointer-events: none;
+}
+.matgrid button.cap-none::after {
+  background: var(--cap-none-mark);
+}
+.matgrid button.cap-part::after {
+  background: var(--cap-part);
+}
+.matfoot {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.72rem;
+}
+.matfoot > :first-child {
+  justify-self: start;
+}
+.matfoot > :last-child {
+  justify-self: end;
+}
+.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.linkish:disabled {
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: default;
+}
+.rmnote {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+/* a figure's total before the cap hangs under it, centred, so the figure keeps the row's middle line */
+.settable tbody td.n span.atcap {
+  position: relative;
+}
+.settable tbody td.n .lost {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 3px;
+  transform: translateX(-50%);
+  font: 500 0.66rem / 1 var(--mono);
+  font-style: normal;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.settable .capped {
+  display: block;
+}
+/* the goal's rank before a stat's name: 1 Maximize, 2 and 3 the tiebreaks */
+i.rk {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--fg);
+  font: 700 11px / 16px var(--mono);
+  font-style: normal;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: 1px;
+}
+.settable .defense em {
+  font-style: normal;
+  color: var(--muted);
+}
+.defdot {
+  margin: 0 0.45em;
+}
+.defsep {
+  margin: 0 8px;
+  font-weight: 700;
+  color: var(--muted);
+}
+/* the Fill settings dialog */
+.dlg.cfgdlg {
+  width: min(900px, calc(100vw - 32px));
+  /* centred with auto margins, not a transform: a transform would make the dialog the box its fixed menus are placed
+     in, and its own scroll box (overflow: auto) would cut them. */
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  transform: none;
+}
+.cfghead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cfghead .linkbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  font-size: 1.1rem;
+}
+/* the part headings are smaller than the dialog's title */
+.dlg .part h3 {
+  font-size: 1.05rem;
+}
+/* the menus and the Spare points note float over the dialog, fixed to the window (placeMenu in ui/helpers.js sets their top,
+   left and size), so the dialog's scroll box does not cut them */
+.cfgdlg .multi-menu,
+.cfgdlg .popover {
+  position: fixed;
+}
+.cfgdlg .multi-menu {
+  z-index: 70;
+  min-height: 160px;
+  max-height: 50vh;
+  overflow: auto;
+}
+.cfgdlg .popover {
+  z-index: 70;
 }
 
 /* ==== Fallbacks for browsers without color-mix() ==== */
@@ -2302,4 +3598,13 @@ footer {
       background: var(--warn-bg);
     }
   }
+}
+.matgrid .pc {
+  align-self: center;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.matgrid .pc.na {
+  opacity: 0.6;
 }

@@ -7,8 +7,7 @@ import { equipLevel, mkItem } from '../../src/core/items.js';
 import { resultOf, sameOutcome, sameResult } from '../../src/core/same-result.js';
 import { dotMult, gcdFor } from '../../src/core/speed.js';
 import { rankTierOf, statTier } from '../../src/core/tiers.js';
-import { appState } from './helpers/common.js';
-import { viewOf } from './helpers/views.js';
+import { makeApp, solveOf } from './helpers/views.js';
 
 const sge = makeJobContext('SGE');
 const CTX = { level: 100, food: null, haste: 0 };
@@ -128,12 +127,12 @@ test('a piece that leaves another slot empty never replaces one that does not (a
   );
 });
 
-/* The owner's case (screenshot, 2026-10-16): Sage, level 50, item level 123, crafted and tomestone gear, Endwalker and
-   Dawntrail off, Mind then Critical Hit and Determination, best meal. Most pieces of item level 150 and up reach the
-   same caps, so every row has others. */
+/* The owner's case (a screenshot): Sage, level 50, item level 123, crafted and tomestone gear, Endwalker and Dawntrail
+   off, Mind then Critical Hit and Determination, best meal. Most pieces of item level 150 and up reach the same caps, so
+   every row has others. Solved as a set page's Fill (core/recipe.js runRecipe): found.options per row, found.picks. */
 function ownerCase() {
-  const app = appState({ job: 'SGE', level: 50, cap: 123, sync: true });
-  Object.assign(app.opt, {
+  const app = makeApp('SGE', { level: 50, cap: 123, sync: true });
+  Object.assign(app.recipe, {
     target: 'main',
     tb: 'crit',
     tb2: 'det',
@@ -145,43 +144,42 @@ function ownerCase() {
 }
 
 test("the owner's case: every row has others, shows the lowest equip level, and the result is unchanged", () => {
-  const app = ownerCase();
-  const v = viewOf(app);
-  assert.equal(v.kind, 'ok');
-  assert.ok(v.rows.every(r => r.same && r.same.count > 1));
-  // the result the readout and the Effect row show (gear only, gear and food) is the optimizer's: Mind 356 from gear
-  // plus Sage's base 232 at level 50 (202 x 115%)
+  const { run, set, panel } = solveOf(ownerCase());
+  assert.equal(run.status, 'ok');
+  const { picks, options } = run.found;
+  assert.ok(options.every(list => list.length > 1));
+  // the result (gear and food) is the search's: Mind 356 from gear plus Sage's base 232 at level 50 (202 x 115%)
   assert.deepEqual(
-    [v.total, v.gcd, ...v.tiers.map(t => t?.effect ?? null)],
+    [panel('main'), set.gcd.gcd.toFixed(2), ...set.tiers.map(t => t?.effect ?? null)],
     [588, '2.50', null, null, '29.1%', '+16.3%', '0.0%', '2.50s', '+0 MP'],
   );
-  for (const r of v.rows) {
-    const items = r.same.groups.flatMap(g => g.items);
-    const shown = items.find(x => x.on);
-    assert.equal(shown.name, r.item.name);
-    assert.equal(shown.lvl, Math.min(...items.map(x => x.lvl)), r.label);
-    assert.equal(equipLevel(r.item), shown.lvl);
-    assert.ok(r.category && r.from, r.label);
+  for (const [row, list] of options.entries()) {
+    const shown = picks[row].item;
+    assert.ok(
+      list.some(c => c.item === shown),
+      shown.name,
+    );
+    assert.equal(equipLevel(shown), Math.min(...list.map(c => equipLevel(c.item))), shown.name);
   }
 });
 
-test("the owner's case: a Unique ring is never in both ring rows, nor in the other row's menu", () => {
-  const v = viewOf(ownerCase());
-  const [r1, r2] = v.rows.filter(r => r.label.startsWith('Ring'));
+test("the owner's case: a Unique ring is never in both ring rows, nor in the other row's options", () => {
+  const { run } = solveOf(ownerCase());
+  const rings = run.found.picks.map((p, row) => ({ p, row })).filter(({ p }) => p.type === 'ring');
+  const [r1, r2] = rings.map(({ p, row }) => ({ item: p.item, names: run.found.options[row].map(c => c.item.name) }));
   assert.equal(r1.item.copies, 1, 'the easiest ring is Unique, so the rule matters here');
   assert.notEqual(r1.item, r2.item);
-  const names = r => r.same.groups.flatMap(g => g.items.map(x => x.name));
-  assert.ok(!names(r2).includes(r1.item.name));
-  assert.ok(!names(r1).includes(r2.item.name) || r2.item.copies === 2);
+  assert.ok(!r2.names.includes(r1.item.name));
+  assert.ok(!r1.names.includes(r2.item.name) || r2.item.copies === 2);
 });
 
-test("the owner's case: a piece picked from a menu is shown, and the result stays the same", () => {
+test("the owner's case: a piece picked from a row's options is shown, and the result stays the same", () => {
   const app = ownerCase();
-  const before = viewOf(app);
-  const other = before.rows[0].same.groups.flatMap(g => g.items).find(x => !x.on);
-  const after = viewOf(app, undefined, { 0: other.key });
-  assert.equal(after.rows[0].item.name, other.name);
-  const effects = v => v.tiers.map(t => t?.effect ?? null);
+  const before = solveOf(app);
+  const other = before.run.found.options[0].find(c => c.item !== before.run.found.picks[0].item);
+  const after = solveOf(app, undefined, { pieces: { 0: other.item.gameId } });
+  assert.equal(after.run.found.picks[0].item.name, other.item.name);
+  const effects = v => v.set.tiers.map(t => t?.effect ?? null);
   assert.deepEqual(effects(after), effects(before));
-  assert.equal(after.total, before.total);
+  assert.equal(after.panel('main'), before.panel('main'));
 });

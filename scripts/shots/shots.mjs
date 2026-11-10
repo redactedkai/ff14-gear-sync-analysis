@@ -2,15 +2,14 @@
    "Run by hand").
 
 Opens a built page from file:// in Chromium (Playwright) and takes a full-page PNG of each view in VIEWS at 1440 and
-960 px wide, in light and dark: 26 views, 104 shots, named `<view>-<width>-<scheme>.png`. Each view starts from a fresh
+960 px wide, in light and dark: 24 views, 96 shots, named `<view>-<width>-<scheme>.png`. Each view starts from a fresh
 browser context with its saved state already in localStorage, then clicks its way to what it shows.
 
 The shots are deterministic: Google Fonts are blocked (the page's fallback fonts; no network needed) and the fonts are
 awaited, CSS animations and transitions are off, the mouse is moved to the page's top-left corner and the tables'
-hovered column cleared before each shot (a leftover hover once lit a table column; views that show a hover keep it),
-and the optimizer's solve time is replaced by a fixed text. Two runs of the same page gave the same bytes for 94 of the
-104 shots (2026-10-19); in the other 10, a few dozen antialiased edge pixels (round buttons, a menu's edge) were 1/255
-apart, which compare.mjs's default threshold allows.
+hovered column cleared before each shot (a leftover hover once lit a table column; views that show a hover keep it).
+In a few shots a few dozen antialiased edge pixels (round buttons, a menu's edge) can be 1/255 apart between runs,
+which compare.mjs's default threshold allows.
 
 Without --page, it builds the page from src/ itself into <dir>/page.html, as the live page looks (no DEV badge or
 footer branch line, which would differ between branches: scripts/build/build.mjs, buildReleasePage), and leaves
@@ -35,7 +34,7 @@ const SCHEMES = ['light', 'dark'];
 const VIEWPORT_HEIGHT = 900;
 // time for Alpine to redraw after a click or a state change, before the next step
 const SETTLE_MS = 450;
-const OPTIMIZE_TIMEOUT_MS = 60_000;
+const FILL_TIMEOUT_MS = 60_000;
 
 const outDir = option('out');
 if (!outDir) {
@@ -59,19 +58,65 @@ if (readFileSync(pagePath, 'utf8').includes('class="build-badge"'))
   console.warn('warning: the page carries the DEV badge; build it with GITHUB_REF_NAME=main to compare across branches');
 
 /* Saved states the views start from (the shape of src/ui/state.js; restoreState fills in the rest). */
-const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'opt', mathTab: 'piece' };
-const WARRIOR = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'opt', mathTab: 'piece' };
-const BLUE_MAGE = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'opt', mathTab: 'piece' };
+const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', mathTab: 'piece' };
+const WARRIOR = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'browse', mathTab: 'piece' };
+const BLUE_MAGE = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'browse', mathTab: 'piece' };
+
+/* A saved Sage sheet (the shape src/ui/sheet-storage.js reads): level 100, synced to 123, one set of crafted item level
+   115 pieces with the weapon, hands and feet rows empty and every other row pinned, and an empty second set. */
+const SAGE_ROWS = [
+  ['weapon'],
+  ['offhand'],
+  ['head', 10880],
+  ['body', 10887],
+  ['hands'],
+  ['legs', 10908],
+  ['feet'],
+  ['ear', 11048],
+  ['neck', 11036],
+  ['wrist', 11042],
+  ['ring', 11054],
+  ['ring', 11054],
+];
+const SAGE_SHEET = {
+  v: 1,
+  id: 's_sage',
+  name: 'Bahamut T13 Healer',
+  description: 'Week 1',
+  job: 'SGE',
+  level: 100,
+  sync: { on: true, cap: 123 },
+  sets: [
+    {
+      id: 'g_mine',
+      name: 'Mine',
+      description: 'Crafted body',
+      pieces: SAGE_ROWS.map(([slot, gameId]) => (gameId ? { slot, gameId, stones: [] } : { slot })),
+      meal: null,
+      pinned: { pieces: [2, 3, 5, 7, 8, 9, 10, 11], meal: false },
+      fillSettings: null,
+      createdAt: 0,
+      updatedAt: 0,
+    },
+    {
+      id: 'g_empty',
+      name: 'Empty',
+      description: '',
+      pieces: SAGE_ROWS.map(([slot]) => ({ slot })),
+      meal: null,
+      pinned: { pieces: [], meal: false },
+      fillSettings: null,
+      createdAt: 0,
+      updatedAt: 0,
+    },
+  ],
+  gameData: { commit: 'd9582a6', date: '2026-09-30' },
+  createdAt: 0,
+  updatedAt: 0,
+};
+const SHEETS = { tab: 'sheets', sheets: [SAGE_SHEET] };
 
 const settle = page => page.waitForTimeout(SETTLE_MS);
-
-/* Press Optimize and wait for the result. */
-async function optimize(page) {
-  await page.click('#o-run');
-  await page.waitForSelector('#o-out .panel', { timeout: OPTIMIZE_TIMEOUT_MS });
-  await page.waitForSelector('#o-busy', { state: 'hidden', timeout: OPTIMIZE_TIMEOUT_MS });
-  await settle(page);
-}
 
 /* Click `selector`, then let the page redraw. */
 async function clickAndSettle(page, selector) {
@@ -79,52 +124,74 @@ async function clickAndSettle(page, selector) {
   await settle(page);
 }
 
+/* Open the seeded sheet's set named `set` from the sheet manager. */
+async function openSet(page, set = 'Mine') {
+  await clickAndSettle(page, '#sh-list a.sname');
+  await page.locator('#sh-sets a.sname', { hasText: set }).click();
+  await page.waitForSelector('#sh-gear');
+  await settle(page);
+}
+
+/* On a set page: press Fill and wait for its result. */
+async function fill(page) {
+  await page.click('#sh-fill');
+  await page.waitForSelector('#sh-discard', { timeout: FILL_TIMEOUT_MS });
+  await settle(page);
+}
+
 const noSteps = async () => {};
 
-/* Each view: the saved state it opens with (null: nothing saved, no job) and the steps that lead to it. `keepHover`:
-   the steps end on a hover the shot shows, so the mouse stays where it is. */
+/* Each view: the saved state it opens with (null: nothing saved; `sheets` lists sheet records to save beside it) and
+   the steps that lead to it. `keepHover`: the steps end on a hover the shot shows, so the mouse stays where it is. */
 const VIEWS = {
-  '01-nojob': { state: null, steps: noSteps },
-  '02-opt-empty': { state: SAGE, steps: noSteps },
-  '03-opt-result': { state: { ...SAGE, opt: { food: true } }, steps: optimize },
-  '04-opt-food-menu': {
-    state: { ...SAGE, opt: { food: true } },
+  '01-sheets-empty': { state: null, steps: noSteps },
+  '02-sheets-manager': { state: SHEETS, steps: noSteps },
+  '03-sheet-page': { state: SHEETS, steps: page => clickAndSettle(page, '#sh-list a.sname') },
+  '04-set-page': { state: SHEETS, steps: page => openSet(page) },
+  '05-set-fill-result': {
+    state: SHEETS,
     steps: async page => {
-      await optimize(page);
-      await clickAndSettle(page, '#o-meal-btn');
+      await openSet(page);
+      await fill(page);
     },
   },
-  '05-opt-same-menu': {
-    state: { ...SAGE, opt: { food: true } },
+  '06-set-food-menu': {
+    state: SHEETS,
     steps: async page => {
-      await optimize(page);
-      await clickAndSettle(page, '.same-btn:not(#o-meal-btn)');
+      await openSet(page);
+      await clickAndSettle(page, '#sh-meal-btn');
     },
   },
-  '06-opt-gcd-tb': {
-    state: { ...WARRIOR, opt: { food: true, target: 'crit', tb: 'det', gcd: 2.47, gcdMode: 'min' } },
+  '07-set-pick-menu': {
+    state: SHEETS,
     steps: async page => {
-      await optimize(page);
-      await clickAndSettle(page, '#o-rank-help');
+      await openSet(page);
+      await clickAndSettle(page, '#sh-gear tr[data-row="4"] [data-pick]');
     },
   },
-  '07-opt-from-menu': {
+  '08-set-filled-empty': {
+    state: SHEETS,
+    steps: async page => {
+      await openSet(page, 'Empty');
+      await fill(page);
+      await clickAndSettle(page, '#sh-apply');
+    },
+  },
+  '09-browse': { state: SAGE, steps: noSteps },
+  '10-browse-filtered': {
+    state: { ...SAGE, browse: { q: 'ward', min: 100, max: 400, lvl: 80, expOff: ['ARR'] } },
+    steps: noSteps,
+  },
+  '11-browse-from-menu': {
     state: SAGE,
     keepHover: true,
     steps: async page => {
-      await page.click('#o-from');
+      await page.click('#b-from');
       await page.hover('[data-activity]');
       await settle(page);
     },
   },
-  '08-opt-exp-menu': { state: SAGE, steps: page => clickAndSettle(page, '#o-exp') },
-  '09-browse': { state: { ...SAGE, tab: 'browse' }, steps: noSteps },
-  '10-browse-filtered': {
-    state: { ...SAGE, tab: 'browse', browse: { q: 'ward', min: 100, max: 400, lvl: 80, expOff: ['ARR'] } },
-    steps: noSteps,
-  },
-  '11-browse-from-menu': { state: { ...SAGE, tab: 'browse' }, steps: page => clickAndSettle(page, '#b-from') },
-  '12-browse-exp-menu': { state: { ...SAGE, tab: 'browse' }, steps: page => clickAndSettle(page, '#b-exp') },
+  '12-browse-exp-menu': { state: SAGE, steps: page => clickAndSettle(page, '#b-exp') },
   '13-math-piece': {
     state: { ...SAGE, tab: 'math', mathTab: 'piece', piece: { ilvl: 300, slot: 'body', subs: ['crit', 'spd'] } },
     steps: page => clickAndSettle(page, '#p-steps summary'),
@@ -147,36 +214,10 @@ const VIEWS = {
   },
   '19-math-tiers': { state: { ...WARRIOR, tab: 'math', mathTab: 'tiers' }, steps: noSteps },
   '20-math-tiers-help': { state: { ...SAGE, tab: 'math', mathTab: 'tiers' }, steps: page => clickAndSettle(page, '[data-help="crit"]') },
-  '21-pld-browse': { state: { ...SAGE, job: 'PLD', tab: 'browse', browse: { type: 'offhand' } }, steps: noSteps },
-  // a piece picked from the first row's same-result menu in place of the optimizer's
-  '22-opt-piece-picked': {
-    state: { ...SAGE, opt: { food: true } },
-    steps: async page => {
-      await optimize(page);
-      await clickAndSettle(page, '.same-btn:not(#o-meal-btn)');
-      await clickAndSettle(page, '.same-menu:not(.meal-menu) .same-item:not(.on)');
-    },
-  },
-  // a meal picked from the Food row's menu in place of the best one
-  '23-opt-meal-picked': {
-    state: { ...SAGE, opt: { food: true } },
-    steps: async page => {
-      await optimize(page);
-      await clickAndSettle(page, '#o-meal-btn');
-      await clickAndSettle(page, '#o-meal-menu .meal-item:not(.on)');
-    },
-  },
-  '24-browse-sorted': { state: { ...SAGE, tab: 'browse' }, steps: page => clickAndSettle(page, '[data-sort="ilvl"]') },
-  // a setting changed after a search: the result is dimmed with its note
-  '25-opt-stale': {
-    state: SAGE,
-    steps: async page => {
-      await optimize(page);
-      await page.selectOption('#o-target', { index: 2 });
-      await settle(page);
-    },
-  },
-  '26-blu-opt': { state: BLUE_MAGE, steps: optimize },
+  '21-pld-browse': { state: { ...SAGE, job: 'PLD', browse: { type: 'offhand' } }, steps: noSteps },
+  '22-browse-nojob': { state: { tab: 'browse' }, steps: noSteps },
+  '24-browse-sorted': { state: SAGE, steps: page => clickAndSettle(page, '[data-sort="ilvl"]') },
+  '26-blu-browse': { state: BLUE_MAGE, steps: noSteps },
 };
 
 /* Turns off CSS animations and transitions and hides the text caret, from the first paint. */
@@ -197,16 +238,20 @@ async function shoot(browser, { name, view, width, scheme }) {
     });
   }, NO_MOTION_CSS);
   // seed the saved state once, so a reload inside the steps keeps what the page saved
-  if (view.state)
-    await context.addInitScript(
-      ([key, saved]) => {
-        if (!sessionStorage.getItem('shots-seeded')) {
-          localStorage.setItem(key, saved);
-          sessionStorage.setItem('shots-seeded', '1');
-        }
-      },
-      [STORE_KEY, JSON.stringify(view.state)],
-    );
+  if (view.state) {
+    const { sheets = [], ...settings } = view.state;
+    const records = [
+      [STORE_KEY, JSON.stringify(settings)],
+      ...sheets.map(sheet => [`${STORE_KEY}:sheet:${sheet.id}`, JSON.stringify(sheet)]),
+      ...(sheets.length ? [[`${STORE_KEY}:sheets`, JSON.stringify({ v: 1, order: sheets.map(sheet => sheet.id) })]] : []),
+    ];
+    await context.addInitScript(records => {
+      if (!sessionStorage.getItem('shots-seeded')) {
+        for (const [key, value] of records) localStorage.setItem(key, value);
+        sessionStorage.setItem('shots-seeded', '1');
+      }
+    }, records);
+  }
   try {
     await shootInContext(context, { name, view, width, scheme });
   } finally {
@@ -223,12 +268,7 @@ async function shootInContext(context, { name, view, width, scheme }) {
   await settle(page);
   await view.steps(page);
 
-  // the solve time varies from run to run
-  await page.evaluate(() => {
-    const time = document.querySelector('#o-time');
-    if (time) time.textContent = 'Solved in 0 ms.';
-  });
-  // the pointer off everything: a result drawn (or scrolled) under the pointer after Optimize can leave a table's
+  // the pointer off everything: a result drawn (or scrolled) under the pointer after Fill can leave a table's
   // hovered column set (the table's data-col, src/index.html) with no later mouse event to clear it
   if (!view.keepHover) {
     await page.mouse.move(0, 0);

@@ -12,7 +12,7 @@
    - Stones are counted by grade: the best grade ("hi", XII at item level 690) in big slots only, the best grade that is
      not high ("lo": the odd grades V, VII, IX, XI) in any slot. Among melds with the same gains: the fewest stones,
      then the fewest hi stones (odd grades first; stone prices, retrieval and overmeld odds play no part), then the first
-     found (owner, 2026-10-16).
+     found (owner).
    - Each substat on a piece is capped at the piece's own cap (capsFor at its own item level, slot share and stat
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
@@ -20,7 +20,8 @@ import { MATERIA } from './tables.js';
 import { meldInfo } from './items.js';
 import { effStats, keepsMelds, meldCaps } from './piece.js';
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+/* The materia grades 1 to 12 as Roman numerals, for the chips and the melds text. */
+export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
 /* True when a stone of grade `grade` (1-based) fits gear of item level `ilvl`: the item level is at least the grade's
    gate (MATERIA.gate). False for a grade that does not exist. */
@@ -34,7 +35,7 @@ function highGrade(grade) {
   return MATERIA.high.includes(grade);
 }
 
-/* True when `stat` (a neutral key) can be melded for the job: a combat substat, never the main stat or Vitality. */
+/* True when `stat` (a stat key) can be melded for the job: a combat substat, never the main stat or Vitality. */
 function meldableStat(job, stat) {
   return job.substats.includes(stat);
 }
@@ -67,6 +68,43 @@ export function meldSlots(item) {
   // with overmelding: the guaranteed slots and the first overmeld slot take big stones, the rest of the 5 small ones
   const big = Math.min(5, m.slots + 1);
   return { big, small: 5 - big };
+}
+
+/* The grades meld slot `slot` (0-based, slot order) of `item` can take, for a set built by hand (the set page's materia
+   menu): one entry per grade 1 to 12, {grade, value (the points it adds), ok}. ok: the item level reaches the grade's
+   gate, and a high grade only in a big slot (gradeFits, highGrade). All false for a slot the piece does not have. */
+export function slotGrades(item, slot) {
+  const { big, small } = meldSlots(item);
+  const has = Number.isInteger(slot) && slot >= 0 && slot < big + small;
+  return MATERIA.values.map((value, i) => {
+    const grade = i + 1;
+    return { grade, value, ok: has && gradeFits(grade, item.ilvl) && !(highGrade(grade) && slot >= big) };
+  });
+}
+
+/* True when `item` (a pool item: {hq, ...}) uses the NQ overmeld rates: it cannot be high quality (hq false). Every other
+   piece uses the HQ rates (the usual case). Inferred from the sheet's two rate sets, not from a source that says which
+   pieces use which (docs/mechanics/materia.md, Overmeld odds). */
+export function usesNqOvermeldRates(item) {
+  return item.hq === false;
+}
+
+/* The overmeld slot number (1-based) of meld slot `slot` (0-based, slot order) on `item`: 1 for the first slot after the
+   guaranteed ones, up to 4. 0 for a guaranteed slot, a slot the piece does not have, or a piece that cannot overmeld. */
+export function overmeldNumber(item, slot) {
+  const m = meldInfo(item);
+  if (!m?.slots || !m.overmeld || !Number.isInteger(slot)) return 0;
+  const number = slot - m.slots + 1;
+  return number >= 1 && slot < 5 ? number : 0;
+}
+
+/* The chance in percent (0 to 100) that a stone of `grade` (1 to 12) melds into the `overNo`-th overmeld slot (1 to 4,
+   overmeldNumber) of `item`, from the MateriaGrade sheet (MATERIA.overmeld): the NQ rates for a piece that cannot be
+   high quality (usesNqOvermeldRates), the HQ rates for any other. 0 for the high grades past the first overmeld slot;
+   null for a grade or slot out of range. Shown only: the model counts every meld as a success. */
+export function overmeldChance(item, grade, overNo) {
+  const rates = (usesNqOvermeldRates(item) ? MATERIA.overmeld.nq : MATERIA.overmeld.hq)[grade - 1];
+  return rates?.[overNo - 1] ?? null;
 }
 
 /* Every way to share `n` identical stones among `k` buckets, as count arrays (cached: n <= 5, k <= 4). */
@@ -156,9 +194,9 @@ function bestPlacement(m) {
   return best;
 }
 
-/* The best melds of a piece for the objective `keys` (target, tiebreak 1, tiebreak 2; neutral stat keys), or null when
+/* The best melds of a piece for the objective `keys` (target, tiebreak 1, tiebreak 2; stat keys), or null when
    the piece takes no stones or no key is a meldable substat (a main stat target alone melds nothing). A slot whose
-   stone would add nothing to a key is left empty (`free`, owner's decision 2026-10-15): no stones in other substats.
+   stone would add nothing to a key is left empty (`free`, owner's decision): no stones in other substats.
    Returns {gain: {stat: n}, stones: [{stat, grade, n}], free}. The stats a piece ends up with are its own plus `gain`.
    `stones` is in slot order, the order they are melded in: the hi stones (which fit only the guaranteed slots and the
    first overmeld slot) first, then the lo stones. */
@@ -176,7 +214,7 @@ export function bestMeld(job, item, keys) {
    speed can break it), a vector beats another only at the same speed, so versions with less speed survive too.
    Only gain vectors that the lo stones reach from the later overmeld slots alone are versions: a lo stone in a big slot
    only lowers a gain, so it adds a vector only under a maximum, and there it found no better set in 2,045 Target GCD
-   runs while adding about 14% search work (docs/mechanics/materia.md, "Which stones are shown"; owner, 2026-10-16: dropped). It can
+   runs while adding about 14% search work (docs/mechanics/materia.md, "Which stones are shown"; owner: dropped). It can
    still be the placement shown for a vector. A piece that takes no stones has one version, no melds: [null]. */
 const versionMemo = new Map();
 export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
@@ -238,7 +276,7 @@ export function meldStones(item, meld) {
 }
 
 /* What a list of stones does to a pool item under sync, by the rules the optimizer melds by.
-   `stones`: one entry per meld slot, in slot order: {stat (neutral key), grade (1-12)} or null for an empty slot; [] for
+   `stones`: one entry per meld slot, in slot order: {stat (stat key), grade (1-12)} or null for an empty slot; [] for
    a piece without melds. sync: {cap, sync, level}, as for itemSyncIlvl.
    Returns {stats, gain, lost, removed, meld}:
    - stats: {stat: points} for each of the job's stats, after sync and the stones that stay;

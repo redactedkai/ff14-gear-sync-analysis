@@ -39,7 +39,7 @@ Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx p
 
 Details: `docs/engineering/architecture.md`.
 
-- Core code never reads global job state. Pass a **JobContext** (`makeJobContext(jobId)`) and use its neutral keys (`main`, `vit`, `crit`, `det`, `dh`, `spd`, `spec`). Never use job keys like `sps`, `piety` or `mind` in shared code or UI.
+- Core code never reads global job state. Pass a **JobContext** (`makeJobContext(jobId)`) and name stats by its **stat keys**: `main`, `vit`, `crit`, `det`, `dh`, `spd`, `spec`. A key is a position in the job's stat list, not one game stat: `main` is Strength, Dexterity, Intelligence or Mind; `spd` is the job's speed stat (Skill Speed or Spell Speed); `spec` is the special substat (Tenacity on tanks, Piety on healers, none on other jobs). `job.stats` lists the keys a job has and `job.label` names them. Never write the game's own names (`sks`, `sps`, `piety`, `ten`, `mind`) in shared code or UI.
 - Components build a `view` object; templates only display it. Keep big data (the item database, browse results) out of reactive state. The optimizer reads `Alpine.raw` data: reactive proxies were too slow, and a worker cannot be sent a proxy.
 - Dynamic `<select>`s use `x-for` with `:selected`. Reset to defaults asks first; switching job does not.
 - Use each piece's own slot code, not the job's weapon type (White Mage has one wand and shield).
@@ -71,7 +71,7 @@ Details: `docs/mechanics/math.md`, evidence in `docs/mechanics/validation.md`, m
 Details: `docs/engineering/data-pipeline.md`.
 
 - Source: xivapi/ffxiv-datamining CSVs. The commit appears in the generated files and the page footer.
-- Kept: combat gear from A Realm Reborn on, item level 15+, with at least one stat. Dropped: crafter and gatherer gear, and the codes in `gear_categories.LEFT_OUT`. HQ bonus only if `CanBeHq`.
+- Kept: combat gear from A Realm Reborn on, at any item level, with at least one stat (Blue Mage weapons have weapon damage only and are kept). Dropped: crafter and gatherer gear, and the codes in `gear_categories.LEFT_OUT`. HQ bonus only if `CanBeHq`.
 - "Gear from" boxes (quests, crafted, Savage, ...: what a player does to get a piece) and gear categories come from game codes and shop data, never item names (`scripts/data/gear_activities.py`). The generator stops on anything unknown.
 - The highest real item level is **795**. `ItemLevel` rows 796 to 920 have no gear. Don't call them "placeholders" or "intentional".
 
@@ -84,7 +84,7 @@ Roles, main stat, speed and special substat of each job: `docs/mechanics/math.md
 How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-ranking.md`. Rules:
 
 - Weapon damage is the implicit first key of every search (none for BLU); it is not offered as a goal.
-- Relics whose substats the player allocates are left out, with a note.
+- Relics whose substats the player allocates are left out of the search, with no note on the page (roadmap A11 models them).
 - **If you change scoring, pruning or the search, run `npm run test:full` (the exhaustive-search tests and the long sweep) and `npm run perf`.** It exits 1 on a truncated run or one over 1,000 nodes; it prints timing budget misses as information only: timing matters only above about 0.5 s, so don't rerun or investigate them below that.
 
 ## Page rules
@@ -101,7 +101,7 @@ How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-
 - Tables: a few words per cell; details go in notes below the table.
 - Page text is neutral and self-contained: no "wins" or advice between overgeared and melded gear, and no "this", "that" or "here" without naming the thing.
 - A mockup is an HTML page the owner can click, in `docs/scratchpad/<topic>/`, opened in the default browser.
-- Check claims against the game files, the Wiki or real items, and say what is verified and what is guessed. Log retracted claims in `docs/history.md`.
+- Check claims against the game files, the Wiki or real items, and say what is verified and what is guessed. Docs describe the current state only (no dates or decision logs); retracted claims go in `docs/history.md`.
 - Neutral defaults: no job, level 100, sync off, main stat, no tiebreaks. The one exception: nine "Gear from" boxes are off by default (Miscellaneous, Deep dungeons, Wondrous Tails, Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions; `on` in `item-format.json`), and the market board switch is on.
 - For a bug from a screenshot, reproduce it in a test first, then fix it.
 - Fix root causes.

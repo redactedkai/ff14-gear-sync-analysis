@@ -27,7 +27,7 @@ Row format: the fields of `itemRow.fields` in src/core/item-format.json, in that
   damagePhys, damageMag, defensePhys, defenseMag : weapon damage and defense (`damageDefense` in item-format.json):
              Item.DamagePhys etc., plus the HQ bonus (a BaseParamSpecial pair) when the item can be HQ; 0 when it has none
 
-The file also holds the materia table {values, gate, high} (`materia` in item-format.json, see materia_table()) and
+The file also holds the materia table {values, gate, high, overmeld} (`materia` in item-format.json, see materia_table()) and
 currentTomes, the short names of the two current tomestones (for the "Tomestones (Current)" box's hint).
 """
 
@@ -56,7 +56,7 @@ from item_format import (
     stat_factors,
 )
 
-MIN_ILVL = 15
+MIN_ILVL = 1
 
 
 def crafter_gatherer_params(base_param_csv, fmt):
@@ -149,12 +149,45 @@ def high_grades(grade_csv, values, fmt):
     return high
 
 
+def overmeld_rates(grade_csv, fmt):
+    """Step 5 of the materia table: the overmeld success rates {nq, hq} from MateriaGrade (`overmeldColumns`), each a list
+    of one row per grade (I first) of `overmeldSlots` percents, one per overmeld slot (first overmeld slot first). Raises
+    SchemaError when a column or grade row is missing, a rate is not a whole number from 0 to 100, a grade's rate rises
+    from one slot to the next, or an HQ rate is below the NQ one."""
+    materia = fmt['materia']
+    n_grades, n_slots = materia['grades'], materia['overmeldSlots']
+    sheet = Path(grade_csv).name
+    columns = {kind: [f'{name}[{i}]' for i in range(n_slots)] for kind, name in materia['overmeldColumns'].items()}
+    rows = {r['#']: r for r in read_csv(grade_csv, ['#', *sum(columns.values(), [])])}
+    missing = [str(g) for g in range(n_grades) if str(g) not in rows]
+    if missing:
+        raise SchemaError(f'{sheet}: no overmeld rates for grade row(s) {", ".join(missing)}')
+    table, problems = {}, []
+    for kind, cols in columns.items():
+        table[kind] = []
+        for g in range(n_grades):
+            cells = [rows[str(g)][c] for c in cols]
+            if not all(c.isdigit() and int(c) <= 100 for c in cells):
+                problems.append(f'grade row {g} {kind} rates {",".join(cells)}, expected {n_slots} whole percents')
+                continue
+            rates = [int(c) for c in cells]
+            if rates != sorted(rates, reverse=True):
+                problems.append(f'grade row {g} {kind} rates {",".join(cells)} rise from one slot to the next')
+            table[kind].append(rates)
+    if not problems and any(h < n for nq, hq in zip(table['nq'], table['hq']) for n, h in zip(nq, hq)):
+        problems.append('an HQ rate is below the NQ rate')
+    if problems:
+        raise SchemaError(f'{sheet}: ' + '; '.join(problems))
+    return table
+
+
 def materia_table(csv_dir, fmt, items=None):
-    """The materia table {values, gate, high}, one entry per grade (I first), from the Materia sheet (`materia` in
+    """The materia table {values, gate, high, overmeld}, one entry per grade (I first), from the Materia sheet (`materia` in
     item-format.json):
       values: what a grade adds to a combat substat (Materia Value);
       gate  : the lowest gear item level that takes it (the materia item's Item.LevelItem);
-      high  : the grades (1-based) that cannot go past the first overmeld slot (MateriaGrade `highColumn` 0).
+      high  : the grades (1-based) that cannot go past the first overmeld slot (MateriaGrade `highColumn` 0);
+      overmeld: {nq, hq}, the overmeld success rates in percent per grade and overmeld slot (overmeld_rates).
     Uses the rows of the `statKeys` stats that carry items; rows with values but no items are decoys and are skipped.
     Raises SchemaError when a stat has no row or several, the rows disagree, a grade is missing or extra, a gate is
     unknown or lower than the grade before, or the high grades are not the ones worth more than their neighbours.
@@ -180,7 +213,10 @@ def materia_table(csv_dir, fmt, items=None):
 
     # 4. the high grades, tied to the values
     high = high_grades(csv_path / f'{materia["gradeSheet"]}.csv', values, fmt)
-    return {'values': values, 'gate': gates, 'high': high}, decoys
+
+    # 5. the overmeld success rates, shown only (the search counts every meld as a success)
+    overmeld = overmeld_rates(csv_path / f'{materia["gradeSheet"]}.csv', fmt)
+    return {'values': values, 'gate': gates, 'high': high, 'overmeld': overmeld}, decoys
 
 
 def damage_defense(row, fmt):
@@ -249,6 +285,17 @@ def slot_code(slot_row, fmt):
 def blocks_other_slots(slot_row):
     """True for gear that occupies another slot too (an EquipSlotCategory value of -1)."""
     return slot_row is not None and any(v == '-1' for col, v in slot_row.items() if col != '#')
+
+
+def is_statless_weapon(row, slot, mask, fmt):
+    """True for a weapon of a job in `statlessWeaponJobs` (Blue Mage) that has weapon damage and no stat: it is kept
+    although the 'no stats' rule would drop it. Armor and other jobs' pieces never qualify."""
+    weapon_codes = {s['code'] for s in fmt['slots'] if s['type'] == 'weapon'}
+    job_bits = 0
+    for job in fmt['statlessWeaponJobs']:
+        job_bits |= 1 << fmt['jobs'].index(job)
+    has_damage = int(row['DamagePhys']) > 0 or int(row['DamageMag']) > 0
+    return slot in weapon_codes and has_damage and mask != 0 and mask & ~job_bits == 0
 
 
 def item_stats(row, stat_index):
@@ -382,7 +429,7 @@ def select(csv_dir, items=None):
             dropped['job'] += 1
             continue
         stats = item_stats(row, stat_index)
-        if not any(stats):
+        if not any(stats) and not is_statless_weapon(row, slot, mask, fmt):
             dropped['stats'] += 1
             continue
         if has_crafter_gatherer_stat(row, crafter_gatherer):

@@ -187,7 +187,7 @@ test("slot filter: only the chosen slot's rows; any is every slot; a slot the jo
   assert.equal(browseItems(war, { type: 'offhand' }).length, 0);
 });
 
-test('poolItemFromRow maps raw stats to neutral keys (healer and tank)', () => {
+test('poolItemFromRow maps raw stats to stat keys (healer and tank)', () => {
   // a real item level 130 Sage head piece with three substats
   const row = browseItems(sge, { type: 'head', ilvlMin: 130, ilvlMax: 130, lvlMax: 50 }).find(r => r.st[RAW.sps] > 0);
   const it = poolItemFromRow(sge, row);

@@ -150,7 +150,9 @@ export function buildMarks({ branch, commit }) {
   const label = 'DEV';
   const where = escapeHtml(branch) + (commit ? ` @ ${escapeHtml(commit)}` : '');
   return {
-    badge: ` <span class="build-badge" title="Test build from branch ${where}, not the live page">${label}</span>`,
+    badge:
+      ` <span class="build-badge" title="Test build from branch ${where}, not the live page">${label}</span>` +
+      ' <button type="button" class="build-badge build-button" title="Temporary: load the example sheets" @click="loadTestData()">test data</button>',
     footer: `<span class="build-info">${label} build: ${where}</span>`,
   };
 }

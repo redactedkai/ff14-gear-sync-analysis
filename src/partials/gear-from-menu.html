@@ -1,10 +1,10 @@
-<!-- The "Gear from" filter's dropdown, shared by the optimizer and the browser (helpers.js gearFromToggles).
-     {{id}}: the id prefix of the tab ('o' or 'b'); {{part}}: its settings in the store ('opt' or 'browse'). -->
-<div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+<!-- The "Gear from" filter's dropdown, shared by the Gear browser and a set's Fill settings (helpers.js gearFromToggles).
+     {{id}}: the id prefix ('b' the browser, 's' the Fill settings). -->
+<div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window.capture="closeMenuOnEscape($data, $event, $refs.fromBtn)" @resize.window="open && placeMenu($refs.fromMenu, $refs.fromBtn)" @scroll.window.capture="open && placeMenu($refs.fromMenu, $refs.fromBtn)">
   <span id="{{id}}-from-label">Gear from</span>
-  <button type="button" class="multi-btn" id="{{id}}-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-from-label {{id}}-from" @click="open = !open; $nextTick(() => fitFromMenu($refs.fromMenu))" x-text="fromSummary()"></button>
+  <button type="button" class="multi-btn" x-ref="fromBtn" id="{{id}}-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-from-label {{id}}-from" @click="open = !open; $nextTick(() => placeMenu($refs.fromMenu, $refs.fromBtn))" x-text="fromSummary()"></button>
   <div class="multi-menu from-menu" x-ref="fromMenu" id="{{id}}-from-menu" role="group" aria-labelledby="{{id}}-from-label" x-show="open" x-cloak @mouseleave="fromPointed = null">
-    <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear<small>Tradeable pieces show whatever their source.</small></span><input type="checkbox" role="switch" id="{{id}}-market" :checked="$store.app.{{part}}.market" @change="$store.app.{{part}}.market = $event.target.checked"></label>
+    <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear<small>Tradeable pieces show whatever their source.</small></span><input type="checkbox" role="switch" id="{{id}}-market" :checked="marketOn()" @change="setMarket($event.target.checked)"></label>
     <div class="from-head"><button type="button" class="linkbtn" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" @click="setFromAll('default')">Default</button></div>
     <div class="from-cols">
       <template x-for="col in gearFromColumns" :key="col.key"><div>

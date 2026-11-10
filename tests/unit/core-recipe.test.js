@@ -7,14 +7,13 @@ import { allMeals } from '../../src/core/food.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { recipeKey, runRecipe } from '../../src/core/recipe.js';
 import { makeSession } from '../../src/core/session.js';
-import { defaultState } from '../../src/ui/state.js';
-import { recipeOf, syncSettings } from '../../src/ui/settings.js';
+import { syncSettings } from '../../src/ui/settings.js';
 import { appState } from './helpers/common.js';
 
 const sge = makeJobContext('SGE');
 const SYNC = { cap: 123, sync: true, level: 100 };
-/* The page's recipe for Sage with `patch` on top. */
-const recipe = (patch = {}) => ({ ...recipeOf(appState({ job: 'SGE' })), ...patch });
+/* A set's recipe for Sage (its Fill settings at their defaults) with `patch` on top. */
+const recipe = (patch = {}) => ({ ...appState({ job: 'SGE' }).recipe, ...patch });
 
 test('recipeKey: each kind of session entry changes with exactly the fields it depends on', () => {
   const pool = ['exclude', 'market', 'expOff', 'min', 'max', 'lvl', 'melds'];
@@ -28,7 +27,7 @@ test('recipeKey: each kind of session entry changes with exactly the fields it d
   const base = recipe();
   for (const [kind, fields] of Object.entries(dependsOn)) {
     const key = recipeKey(kind, sge, SYNC, 100, base);
-    for (const field of Object.keys(defaultState().opt)) {
+    for (const field of Object.keys(base)) {
       const changed = recipeKey(kind, sge, SYNC, 100, { ...base, [field]: other(base[field]) });
       assert.equal(changed !== key, fields.includes(field), `${kind}: ${field}`);
     }
@@ -49,7 +48,7 @@ test('runRecipe: the set by gameId, the record with the goal as asked, and no se
   for (const [i, piece] of run.set.pieces.entries()) {
     const pick = run.found.picks[i];
     assert.equal(piece.gameId, pick.item?.gameId, `row ${i}`);
-    if (pick.item) assert.equal(piece.name, pick.item.name);
+    if (pick.item) assert.equal(piece.name, undefined);
   }
   assert.equal(run.set.meal, run.found.food.shown.key);
   // the record is a frozen copy: a later change to the recipe handed in does not reach it

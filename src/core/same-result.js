@@ -3,12 +3,12 @@
    an easier piece instead of the one the search happened to pick.
 
    "The same result" is the same main stat (it has no tiers: every point counts), the same weapon damage (ranked before
-   the goal, owner's decision 2026-10-18: a menu never offers a weapon with less) and every substat at the same tier,
+   the goal, owner's decision: a menu never offers a weapon with less) and every substat at the same tier,
    counted with the result's meal: the points between two tiers do nothing, so they may differ. The tiers are the ones
    tier ranking uses (rankTierOf, roadmap A7): speed by its GCD alone, with the job's haste (its DoT/HoT tick scaling
    may drop a step: the GCD matters far more), and Tenacity by its mitigation step (200) alone (its damage bonus may
    drop a step: tanks take Tenacity for mitigation, and Critical Hit, Determination or Direct Hit do more for damage);
-   owner's decisions 2026-10-16, as for tier ranking. When the search maximized the goal stat's raw points (the plain
+   owner's decisions, as for tier ranking. When the search maximized the goal stat's raw points (the plain
    optimizer, not tier ranking), those points stay too (ctx.goal), so the result never shows less of it than the search
    found.
    Rows share their spare points: two swaps that are each fine alone can push a tier down together. So every check is
@@ -19,11 +19,11 @@ import { equipLevel, slotInfo } from './items.js';
 import { vectorDims } from './optimizer/index.js';
 import { rankTierOf } from './tiers.js';
 
-/* What a set does, from gear totals ({neutral stat: points}, and weapon damage under WD_KEY) with the meal's bonus:
+/* What a set does, from gear totals ({stat key: points}, and weapon damage under WD_KEY) with the meal's bonus:
    {main, wd, goal, tiers}: its main stat; its weapon damage (null for a job that does not rank it); the goal stat's
    points if asked (else null); each substat's tier in job.substats order (rankTierOf; null for a stat without tiers).
    Two results are the same when sameOutcome says so. ctx = {level, food, haste, goal}: the synced level, the meal (a
-   foodChoices entry) or null, the job's always-on haste in percent (hasteFor; 0 for none), and the neutral stat whose
+   foodChoices entry) or null, the job's always-on haste in percent (hasteFor; 0 for none), and the stat key whose
    exact points must stay (the plain optimizer's goal), or null for tiers only (tier ranking). */
 export function resultOf(job, gearTotals, { level, food, haste = 0, goal = null }) {
   const totals = withFood(gearTotals, food ? foodBonus(job, food, gearTotals, level) : {});
@@ -41,7 +41,7 @@ export function sameOutcome(a, b) {
 }
 
 /* The pieces each row can show without changing the result, and the piece it shows.
-   picks: the optimizer's picks in panel order ({type, item, eff, meld}; item null for an empty slot).
+   picks: the optimizer's picks in panel order ({type, item, eff, meld, pinned}; item null for an empty slot).
    cands: {slot type: candidates} of the whole pool for the same goal, unpruned (buildCandidates with prune off): every
      piece with its synced stats and the melds the optimizer would give it, best score first; a piece can have several
      candidates (meld versions under a Target GCD).
@@ -53,10 +53,13 @@ export function sameOutcome(a, b) {
    Each row shows, in panel order: the player's pick if it still fits, else the piece with the lowest equip level that
    fits (then the lowest item level; the optimizer's own pick on a tie), so the table starts from the easiest gear.
    A piece must leave the same slots empty as the optimizer's pick (a cloak never replaces a plain body), and a Unique
-   piece can't be in two rows (rings). */
+   piece can't be in two rows (rings). A pinned pick (`pinned`, from solve with pinned pieces) never changes: its row's
+   menu holds only it, and it counts in what the other rows are measured against. */
 export function sameResult(job, picks, cands, ctx, chosen = {}) {
   const target = resultOf(job, sumOf(job, picks), ctx);
-  const shown = picks.map(p => (p.item ? { type: p.type, item: p.item, eff: p.eff, meld: p.meld ?? null } : p));
+  const shown = picks.map(p =>
+    p.item ? { type: p.type, item: p.item, eff: p.eff, meld: p.meld ?? null, ...(p.pinned ? { pinned: true } : {}) } : p,
+  );
   const blocksKey = blocks => [...blocks].sort().join();
   const pickBlocks = picks.map(p => (p.item ? blocksKey(slotInfo(job, p.item).blocks) : null));
 
@@ -64,6 +67,10 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
   const fitting = i => {
     const p = picks[i];
     if (!p.item) return [];
+    if (p.pinned)
+      return [
+        { item: p.item, eff: p.eff, meld: p.meld ?? null, blocks: slotInfo(job, p.item).blocks, copies: p.item.copies || 1, fixed: true },
+      ];
     const others = shown.filter((_, j) => j !== i);
     const rest = sumOf(job, others);
     // the main stat has no tiers and food never raises it: a piece must bring exactly what the set is missing (a
@@ -87,13 +94,13 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
 
   // 1. the player's picks, where they still fit
   for (const [i, gameId] of Object.entries(chosen)) {
-    const c = picks[i]?.item && gameId != null && fitting(+i).find(x => x.item.gameId === gameId);
+    const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(+i).find(x => x.item.gameId === gameId);
     if (c) shown[i] = asPick(picks[i].type, c);
   }
   // 2. every other row: the easiest piece that fits; the optimizer's pick stays on a tie (the sort is stable and the
   // pick is listed first)
   picks.forEach((p, i) => {
-    if (!p.item || i in chosen) return;
+    if (!p.item || p.pinned || i in chosen) return;
     const fits = fitting(i);
     const own = fits.find(c => c.item === shown[i].item);
     const best = [own, ...fits.filter(c => c !== own)].filter(Boolean).sort(easiest)[0];

@@ -6,7 +6,7 @@ import { offhandParts, predictRaw, statLine } from './formulas.js';
 import { rowStats } from './items.js';
 
 /* The item level range the stat model's patterns were measured on (substat shares, stat factors, the Direct Hit line).
-   The database starts lower (item level 15, gen_items.py MIN_ILVL) for gear worn in low-level duties; below this its
+   The database starts lower (item level 1, gen_items.py MIN_ILVL) for gear worn in low-level duties; below this its
    own stats are carried as they are and never predicted. */
 export const MODEL_MIN_ILVL = 100;
 /* The lowest item level bandAccuracy checks: the first band's start. */

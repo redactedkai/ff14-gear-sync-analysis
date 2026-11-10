@@ -10,11 +10,12 @@ import {
   defaultSubs,
   SEARCH_MAX_LENGTH,
   limitCapToLevel,
+  capLoweredText,
   loadSaved,
   save,
   STORE_KEY,
 } from '../../src/ui/state.js';
-import { DEFAULT_EXCLUDE, TARGET_GCD_RANGE } from '../../src/ui/settings.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { browseFiltered } from '../../src/ui/views/gear.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { DEFAULT_JOB, JOBS } from '../../src/core/constants.js';
@@ -26,10 +27,16 @@ const clone = o => JSON.parse(JSON.stringify(o));
 /* Defaults for `job`, or with no job chosen (null): placeholder job-dependent defaults from DEFAULT_JOB. */
 const fresh = job => {
   const s = defaultState();
-  s.job = job;
+  for (const target of [s, s.piece, s.browse]) target.job = job;
   resetForJob(s, makeJobContext(job ?? DEFAULT_JOB));
   return s;
 };
+/* The Job and sync panel's fields: the open tab's copy at the top and each tab's own in its group. */
+const PANEL_KEYS = ['job', 'cap', 'sync', 'level'];
+const PANEL_FIELDS = [null, 'piece', 'browse'];
+const withoutPanel = o => Object.fromEntries(Object.entries(o).filter(([k]) => !PANEL_KEYS.includes(k)));
+/* The state as the page saves it (store.persisted): without the open tab's top-level copy of its panel. */
+const savedForm = s => withoutPanel(s);
 /* A full, valid healer save that differs from the defaults in every field. */
 function validSave() {
   return {
@@ -52,22 +59,6 @@ function validSave() {
       sort: 'spd',
       dir: 'asc',
     },
-    opt: {
-      target: 'spec',
-      tb: '',
-      tb2: 'crit',
-      melds: false,
-      expOff: ['HW'],
-      exclude: ['crafted', 'pvp'],
-      market: false,
-      min: '',
-      max: 300,
-      lvl: 60,
-      food: true,
-      gcd: 2.4,
-      gcdMode: 'min',
-      byTier: false,
-    },
   };
 }
 
@@ -84,6 +75,10 @@ function expectFieldDefault(path, value, expected) {
   const want = restoreState(validSave());
   const keys = path.split('.');
   const last = keys.pop();
+  if (keys.length === 0 && PANEL_KEYS.includes(last)) {
+    // the save is the older one panel: a panel field is every tab's
+    for (const group of PANEL_FIELDS) (group ? want[group] : want)[last] = expected;
+  }
   keys.reduce((o, k) => o[k], want)[last] = expected;
   assert.deepEqual(got, want, `${path} = ${JSON.stringify(value)}`);
 }
@@ -95,11 +90,20 @@ test('null, undefined and non-object input give the defaults', () => {
   }
 });
 
-test('a valid full saved state round-trips unchanged', () => {
+test('a valid full saved state keeps every field, and the restored state survives a second save and restore', () => {
   const raw = validSave();
-  assert.deepEqual(restoreState(clone(raw)), raw);
-  // and the restored state survives a second save/restore
-  assert.deepEqual(restoreState(clone(restoreState(clone(raw)))), raw);
+  const s = restoreState(clone(raw));
+  // an older save has one panel, which every tab takes; the open tab (math) shows its copy
+  const { job, cap, sync, level, ...rest } = raw;
+  const panel = { job, cap, sync, level };
+  assert.deepEqual(withoutPanel(s), { ...rest, piece: { ...rest.piece, ...panel }, browse: { ...rest.browse, ...panel } });
+  assert.deepEqual(
+    PANEL_KEYS.map(k => s[k]),
+    PANEL_KEYS.map(k => panel[k]),
+  );
+  assert.deepEqual(restoreState(clone(savedForm(s))), s);
+  // an older save's Gear optimizer settings are dropped, the rest kept
+  assert.deepEqual(restoreState({ ...clone(raw), opt: { target: 'crit' }, optPanel: { job: 'SGE' } }), s);
 });
 
 test('an empty object gives the defaults, with no job chosen', () => {
@@ -134,9 +138,10 @@ test('older saves: the removed Sync limits sub-tab opens Piece stats, and its co
 });
 
 test('tab and math sub-tab: an unknown one opens the default; old tab names open their new place', () => {
-  assert.equal(D.tab, 'opt'); // the optimizer opens first
-  expectFieldDefault('tab', 42, 'opt');
-  expectFieldDefault('tab', 'nope', 'opt');
+  assert.equal(D.tab, 'sheets'); // the Sheets tab opens first
+  expectFieldDefault('tab', 42, 'sheets');
+  expectFieldDefault('tab', 'nope', 'sheets');
+  expectFieldDefault('tab', 'opt', 'sheets'); // the old Gear optimizer tab: its place is the Sheets tab
   expectFieldDefault('tab', 'pool', 'browse'); // the old Gear pool tab is now the Gear browser
   expectFieldDefault('mathTab', 'nope', 'piece');
   assert.equal(corrupt('mathTab', 'tiers').mathTab, 'tiers'); // the Tiers sub-tab is kept
@@ -148,10 +153,10 @@ test('tab and math sub-tab: an unknown one opens the default; old tab names open
 
 test('nested objects that are not objects fall back to their defaults', () => {
   const def = fresh('WHM');
-  for (const k of ['piece', 'gen', 'browse', 'opt']) {
+  for (const k of ['piece', 'gen', 'browse']) {
     for (const bad of [null, 'x', 5, []]) {
       const s = corrupt(k, bad);
-      assert.deepEqual(s[k], def[k], `${k} = ${JSON.stringify(bad)}`);
+      assert.deepEqual(withoutPanel(s[k] ?? {}), withoutPanel(def[k] ?? {}), `${k} = ${JSON.stringify(bad)}`);
       assert.equal(s.cap, 290);
     }
   }
@@ -183,36 +188,23 @@ test('gear browser fields: a bad search, slot, sort or order falls back to its d
   expectFieldDefault('browse.dir', 'asc', 'asc');
 });
 
-test('the gear filters, the same rules in the browser and the optimizer (each its own values)', () => {
-  for (const part of ['browse', 'opt']) {
-    assert.deepEqual([D[part].expOff, D[part].min, D[part].max, D[part].lvl], [[], '', '', 100]);
-    expectFieldDefault(`${part}.min`, '', '');
-    expectFieldDefault(`${part}.min`, '120', 120); // number inputs bound with x-model save strings
-    expectFieldDefault(`${part}.min`, 'abc', D[part].min);
-    expectFieldDefault(`${part}.min`, -10, 0);
-    expectFieldDefault(`${part}.max`, 5000, MAX_REAL);
-    expectFieldDefault(`${part}.max`, null, '');
-    expectFieldDefault(`${part}.lvl`, 500, 100);
-    expectFieldDefault(`${part}.lvl`, true, 100);
-    expectFieldDefault(`${part}.expOff`, 'SB', []);
-    expectFieldDefault(`${part}.expOff`, ['SB', 'XIV', 3, 'ARR'], ['ARR', 'SB']); // unknown values drop; EXPANSIONS order
-  }
-  // a save from before the optimizer had them: the defaults, not the browser's values
-  const older = validSave();
-  for (const k of ['expOff', 'min', 'max', 'lvl']) delete older.opt[k];
-  const s = restoreState(older);
-  assert.deepEqual([s.opt.expOff, s.opt.min, s.opt.max, s.opt.lvl], [[], '', '', 100]);
+test("the gear browser's gear filters: each falls back on its own", () => {
+  const part = 'browse';
+  assert.deepEqual([D[part].expOff, D[part].min, D[part].max, D[part].lvl], [[], '', '', 100]);
+  expectFieldDefault(`${part}.min`, '', '');
+  expectFieldDefault(`${part}.min`, '120', 120); // number inputs bound with x-model save strings
+  expectFieldDefault(`${part}.min`, 'abc', D[part].min);
+  expectFieldDefault(`${part}.min`, -10, 0);
+  expectFieldDefault(`${part}.max`, 5000, MAX_REAL);
+  expectFieldDefault(`${part}.max`, null, '');
+  expectFieldDefault(`${part}.lvl`, 500, 100);
+  expectFieldDefault(`${part}.lvl`, true, 100);
+  expectFieldDefault(`${part}.expOff`, 'SB', []);
+  expectFieldDefault(`${part}.expOff`, ['SB', 'XIV', 3, 'ARR'], ['ARR', 'SB']); // unknown values drop; EXPANSIONS order
 });
 
-test('optimizer fields: goal, Gear from boxes, market board, melds, Target GCD and Rank by tier each fall back on their own', () => {
-  assert.deepEqual([D.opt.target, D.opt.tb, D.opt.tb2], ['main', '', '']); // main stat first, no tiebreaks
-  expectFieldDefault('opt.target', 'nope', D.opt.target);
-  expectFieldDefault('opt.target', '', D.opt.target);
-  expectFieldDefault('opt.tb', 'nope', D.opt.tb);
-  expectFieldDefault('opt.tb', null, D.opt.tb);
-  expectFieldDefault('opt.tb2', 3, D.opt.tb2);
-  // nine "Gear from" boxes left out by default (owner, 2026-10-18), in the optimizer and the browser, each its own list;
-  // the market board switch on
+test("the gear browser's Gear from boxes and market board each fall back on their own", () => {
+  // nine "Gear from" boxes left out by default; the market board switch on
   assert.deepEqual(DEFAULT_EXCLUDE, [
     'misc',
     'deep_dungeons',
@@ -225,50 +217,20 @@ test('optimizer fields: goal, Gear from boxes, market board, melds, Target GCD a
     'events',
   ]);
   assert.equal(D.browse.market, true);
-  assert.equal(D.opt.market, true);
   assert.deepEqual(D.browse.exclude, DEFAULT_EXCLUDE);
-  assert.deepEqual(D.opt.exclude, DEFAULT_EXCLUDE);
-  assert.notEqual(D.opt.exclude, D.browse.exclude);
-  for (const part of ['browse', 'opt']) {
-    expectFieldDefault(`${part}.exclude`, 'ultimate', DEFAULT_EXCLUDE); // not a list: the default
-    expectFieldDefault(`${part}.exclude`, [], []); // every box ticked: kept, not the default
-    expectFieldDefault(`${part}.exclude`, ['ultimate', 'crafted'], ['crafted', 'ultimate']); // ACTIVITIES order
-    // a list with a key that is no box (an old gear-group save: 'savage', 'tomestone') starts over from the default
-    expectFieldDefault(`${part}.exclude`, ['ultimate', 'savage'], DEFAULT_EXCLUDE);
-    expectFieldDefault(`${part}.exclude`, ['ultimate', 3], DEFAULT_EXCLUDE);
-    expectFieldDefault(`${part}.market`, 'yes', true); // not a boolean: the default
-  }
+  assert.notEqual(D.browse.exclude, DEFAULT_EXCLUDE, 'a copy');
+  const part = 'browse';
+  expectFieldDefault(`${part}.exclude`, 'ultimate', DEFAULT_EXCLUDE); // not a list: the default
+  expectFieldDefault(`${part}.exclude`, [], []); // every box ticked: kept, not the default
+  expectFieldDefault(`${part}.exclude`, ['ultimate', 'crafted'], ['crafted', 'ultimate']); // ACTIVITIES order
+  // a list with a key that is no box (an old gear-group save: 'savage', 'tomestone') starts over from the default
+  expectFieldDefault(`${part}.exclude`, ['ultimate', 'savage'], DEFAULT_EXCLUDE);
+  expectFieldDefault(`${part}.exclude`, ['ultimate', 3], DEFAULT_EXCLUDE);
+  expectFieldDefault(`${part}.market`, 'yes', true); // not a boolean: the default
   expectFieldDefault('browse.exclude', null, DEFAULT_EXCLUDE);
   const older = validSave();
   delete older.browse.exclude; // a save from before the field existed
-  delete older.opt.exclude;
   assert.deepEqual(restoreState(older).browse.exclude, DEFAULT_EXCLUDE);
-  assert.deepEqual(restoreState(older).opt.exclude, DEFAULT_EXCLUDE);
-  // saves from the gear pool days had one list, browse.exclude, for both: the optimizer starts from it
-  const shared = validSave();
-  delete shared.opt.exclude;
-  assert.deepEqual(restoreState(shared).opt.exclude, ['tomes_current', 'ultimate']);
-  assert.equal(D.opt.melds, true); // melds on by default
-  expectFieldDefault('opt.melds', 'yes', true);
-  expectFieldDefault('opt.melds', null, true);
-  // Target GCD: empty (any GCD) and "exactly" by default; a number of seconds, a numeric string (x-model on a number
-  // input) taken to 0.01, anything else the default
-  assert.deepEqual([D.opt.gcd, D.opt.gcdMode], ['', 'exact']);
-  expectFieldDefault('opt.gcd', '', '');
-  expectFieldDefault('opt.gcd', '2.456', 2.46);
-  expectFieldDefault('opt.gcd', 'fast', D.opt.gcd);
-  expectFieldDefault('opt.gcd', 3, D.opt.gcd);
-  // every value the box can hold survives a reload: its own range (audit 2: a typed 3.00 used to become "Any")
-  for (const seconds of TARGET_GCD_RANGE) expectFieldDefault('opt.gcd', seconds, seconds);
-  expectFieldDefault('opt.gcd', 0, D.opt.gcd);
-  expectFieldDefault('opt.gcd', null, D.opt.gcd);
-  expectFieldDefault('opt.gcdMode', 'faster', D.opt.gcdMode);
-  // Rank by tier: on by default (owner's decision 2026-10-16), also for a save from before the switch existed
-  assert.equal(D.opt.byTier, true);
-  expectFieldDefault('opt.byTier', 'no', true);
-  const beforeTiers = validSave();
-  delete beforeTiers.opt.byTier;
-  assert.equal(restoreState(beforeTiers).opt.byTier, true);
 });
 
 test("a save from the gear pool days: the pool and the browser's list switch are dropped, the rest kept", () => {
@@ -293,7 +255,6 @@ test('a save from another role is repaired as before', () => {
   const m = restoreState(raw);
   const mnk = makeJobContext('MNK');
   assert.deepEqual(m.piece.subs, ['crit', null]);
-  assert.equal(m.opt.target, 'main');
   // PLD keeps an off-hand piece slot, two-handed jobs do not
   raw.job = 'PLD';
   raw.piece.slot = 'offhand';
@@ -305,11 +266,9 @@ test('a save from another role is repaired as before', () => {
 });
 
 test("a saved level above the job's level cap is clamped to it", () => {
-  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 }, opt: { lvl: 70 } });
+  const s = restoreState({ job: 'BST', level: 90, browse: { lvl: 70 } });
   assert.equal(s.level, 50);
   assert.equal(s.browse.lvl, 50);
-  assert.equal(s.opt.lvl, 50);
-  assert.equal(restoreState({ job: 'BST' }).opt.lvl, 50); // the default (100) too
   // a level at or below the cap is kept; Blue Mage caps at 80
   assert.equal(restoreState({ job: 'BST', level: 30 }).level, 30);
   assert.equal(restoreState({ job: 'BLU', level: 100 }).level, 80);
@@ -318,46 +277,24 @@ test("a saved level above the job's level cap is clamped to it", () => {
   assert.equal(restoreState({ level: 100 }).level, 100);
 });
 
-test('resetForJob: a job switch keeps the goal, tiebreaks, Target GCD and substats the new job can use (audit 11 #2)', () => {
-  const switched = (fromId, toId, opt, subs = ['crit', 'spd']) => {
+test('resetForJob: a job switch keeps the substats the new job can use (audit 11 #2)', () => {
+  const switched = (fromId, toId, subs) => {
     const s = fresh(fromId);
-    Object.assign(s.opt, opt);
     s.piece.subs = subs;
     resetForJob(s, makeJobContext(toId), makeJobContext(fromId));
     return s;
   };
-  // Sage to Scholar: the same stats under the same names, the same speed and no haste: everything stays
-  let s = switched('SGE', 'SCH', { target: 'spec', tb: 'spd', tb2: 'crit', gcd: 2.4 }, ['det', 'spd']);
-  assert.deepEqual([s.opt.target, s.opt.tb, s.opt.tb2, s.opt.gcd], ['spec', 'spd', 'crit', 2.4]);
-  assert.deepEqual(s.piece.subs, ['det', 'spd']);
-  // Sage to Warrior: Piety is not Tenacity and Spell Speed is not Skill Speed; Critical Hit stays
-  s = switched('SGE', 'WAR', { target: 'spec', tb: 'crit', tb2: 'spd', gcd: 2.4 }, ['spd', 'crit']);
-  assert.deepEqual([s.opt.target, s.opt.tb, s.opt.tb2, s.opt.gcd], ['main', 'crit', '', '']);
-  assert.deepEqual(s.piece.subs, defaultSubs());
-  // Sage to Black Mage: Spell Speed both, no haste either: the GCD stays; Mind is not Intelligence
-  s = switched('SGE', 'BLM', { target: 'main', tb: 'spd', gcd: 2.4 });
-  assert.deepEqual([s.opt.target, s.opt.tb, s.opt.gcd], ['main', 'spd', 2.4]);
-  // Warrior (goal Tenacity, tiebreak Strength) to Dragoon: the goal goes back to the main stat, which the tiebreak
-  // held, so the tiebreak clears (a stat holds one rank)
-  s = switched('WAR', 'DRG', { target: 'spec', tb: 'main' });
-  assert.deepEqual([s.opt.target, s.opt.tb], ['main', '']);
-  // Samurai to Monk: Skill Speed both, but another haste: the GCD goes
-  s = switched('SAM', 'MNK', { tb: 'spd', gcd: 2.1 });
-  assert.deepEqual([s.opt.tb, s.opt.gcd], ['spd', '']);
+  // Sage to Scholar: the same stats under the same names: the substats stay
+  assert.deepEqual(switched('SGE', 'SCH', ['det', 'spd']).piece.subs, ['det', 'spd']);
+  // Sage to Warrior: Spell Speed is not Skill Speed: the pair goes back
+  assert.deepEqual(switched('SGE', 'WAR', ['spd', 'crit']).piece.subs, defaultSubs());
+  // Sage to Black Mage: Spell Speed both: kept
+  assert.deepEqual(switched('SGE', 'BLM', ['crit', 'spd']).piece.subs, ['crit', 'spd']);
   // no job before: the defaults
-  s = fresh('SGE');
-  Object.assign(s.opt, { target: 'crit', gcd: 2.4 });
+  const s = fresh('SGE');
+  s.piece.subs = ['det', 'spd'];
   resetForJob(s, makeJobContext('SCH'));
-  assert.deepEqual([s.opt.target, s.opt.gcd], ['main', '']);
-});
-
-test("Food: off by default, a wrong type falls back; a save's old meal choice (foodPair) is dropped", () => {
-  assert.equal(restoreState(null).opt.food, false);
-  const s = restoreState({ job: 'SGE', opt: { food: true, foodPair: 'spd+spec' } });
-  assert.equal(s.opt.food, true);
-  // the Meal box is gone (2026-10-18): a meal is picked from the Food row's menu and not saved
-  assert.equal('foodPair' in s.opt, false);
-  assert.equal(restoreState({ job: 'SGE', opt: { food: 'yes' } }).opt.food, false);
+  assert.deepEqual(s.piece.subs, defaultSubs());
 });
 
 /* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level
@@ -374,9 +311,9 @@ test('limitCapToLevel: lowers a cap above what the level allows, and leaves ever
     assert.deepEqual(limitCapToLevel(a), { from: cap, to: want, level }, `cap ${cap} level ${level}`);
     assert.equal(a.cap, want);
   }
-  // with no level sync (level 100), only the highest real item level limits it
+  // at the job's level cap too: the level's ceiling is the highest real item level at level 100
   const top = app({ cap: 999, level: 100 });
-  assert.deepEqual(limitCapToLevel(top), { from: 999, to: MAX_REAL, level: null });
+  assert.deepEqual(limitCapToLevel(top), { from: 999, to: MAX_REAL, level: 100 });
   for (const s of [
     { cap: 123, level: 50 }, // T13: never raised
     { cap: 135, level: 50 },
@@ -390,21 +327,28 @@ test('limitCapToLevel: lowers a cap above what the level allows, and leaves ever
   }
 });
 
+/* The note under a cap field after limitCapToLevel lowered it: the Job and sync panel and a sheet's page share it. */
+test('capLoweredText: names the level, or the highest real item level', () => {
+  assert.equal(capLoweredText({ from: 500, to: 405, level: 70 }), 'Lowered to 405, the highest for level 70.');
+  assert.equal(capLoweredText({ from: 900, to: MAX_REAL, level: null }), `Lowered to ${MAX_REAL}, the highest item level.`);
+  assert.equal(capLoweredText(null), '');
+});
+
 test('restoreState: a saved cap above what the saved level allows is lowered', () => {
   const s = restoreState({ job: 'SGE', sync: true, cap: 500, level: 50 });
   assert.equal(s.cap, 135);
   assert.equal(restoreState({ job: 'SGE', sync: false, cap: 500, level: 50 }).cap, 500);
 });
 
-/* Audit 02, finding 1: restore ran limitCapToLevel without the job context, so a Blue Mage or Beastmaster at its own
-   level cap counted as level synced and a saved cap of 700 came back as 535. The live store keeps 700. */
-test('restoreState: a job at its own level cap keeps its saved cap, as the live page does', () => {
+/* The level limits the cap whatever the job: a Blue Mage at 80 or a Beastmaster at 50 (their own level caps) get the
+   level's ceiling, the same on restore as on the live page. */
+test("restoreState: a job at its own level cap gets the level's ceiling, as the live page does", () => {
   for (const [job, level] of [
     ['BLU', 80],
     ['BST', 50],
   ]) {
     const restored = restoreState({ job, sync: true, cap: 700, level });
-    assert.equal(restored.cap, 700, job);
+    assert.equal(restored.cap, capCeiling(level), job);
     const live = { ...restored, jobCtx: makeJobContext(job) };
     assert.equal(limitCapToLevel(live), null, job);
   }
@@ -417,11 +361,11 @@ test('restoreState: a job at its own level cap keeps its saved cap, as the live 
 test('defaultBrowse: what a job starts with, and no filter by its own check', () => {
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
-    assert.deepEqual(restoreState({ job: id }).browse, defaultBrowse(job), id);
+    assert.deepEqual(withoutPanel(restoreState({ job: id }).browse), defaultBrowse(job), id);
     assert.equal(defaultBrowse(job).lvl, job.maxLevel, id);
     assert.equal(browseFiltered(job, defaultBrowse(job)), false, id);
   }
-  assert.deepEqual(defaultState().browse, defaultBrowse(null));
+  assert.deepEqual(withoutPanel(defaultState().browse), defaultBrowse(null));
   assert.equal(defaultBrowse(null).lvl, 100);
   // each call is a fresh object: Reset filters assigns its arrays into the store
   assert.notEqual(defaultBrowse(null).exclude, defaultBrowse(null).exclude);

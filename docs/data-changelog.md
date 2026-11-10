@@ -5,3 +5,4 @@ One line per game data update: the date and short id of the [ffxiv-datamining](h
 The log starts with commit `d9582a6`; earlier updates are in the git history of `src/data/`.
 
 - 2026-09-30, `d9582a6` "TC 7.25 (#119)": 20,031 rows, 296 meals
+- same commit, floor lowered from item level 15 to 1 and Blue Mage weapons kept: 20,210 rows

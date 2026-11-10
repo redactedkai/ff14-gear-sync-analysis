@@ -7,7 +7,7 @@ Shared by every page in `docs/`. Keep pages consistent with it. A checklist is a
 | Folder | Holds | Pages today |
 | --- | --- | --- |
 | `docs/mechanics/` | How the game works, as this project models it, and the evidence for it | math, validation, materia |
-| `docs/engineering/` | How the code works: structure, data generation, the optimizer, tests, reference tables for game-file columns the generators read | architecture, data-pipeline, optimizer, tier-ranking, ui, testing, subcategory-sort-codes |
+| `docs/engineering/` | How the code works: structure, data generation, the optimizer, tests, reference tables for game-file columns the generators read | architecture, data-pipeline, optimizer, tier-ranking, perf-log, ui, testing, subcategory-sort-codes |
 | `docs/` (top level) | Pages for the whole set | README (the index), glossary, roadmap, history, data-changelog |
 | `docs/diagrams/` | Every SVG diagram, and this guide | |
 
@@ -48,6 +48,8 @@ Relative links only, so they work on GitHub and in a local checkout:
 - Explain with mathematical notation, not code. GitHub renders LaTeX: inline `$...$`, display blocks in `$$ ... $$` on their own lines. Use plain words for names in formulas, e.g. $\text{budget}(i)$ not `IL.crit[i]`.
 - Explain a concept in plain words first. A code name (a function, constant or file, in code font) may follow in the text where a reader needs it to find the code or a test; every concept still gets a row in the closing "Where this lives" table (concept → file). Formulas use plain words, never code names (above).
 - Plain, concise sentences. Headings in sentence case. No marketing tone.
+- Pages describe the current state only: no dates, owner marks, "before/since" notes or decision logs (git history keeps the past); `docs/history.md` keeps retracted claims and `docs/data-changelog.md` the data updates. A date stays only where it is evidence (a measurement, a check against a data commit) or a credit to an outside source.
+- A table cell holds a few words; details go in notes below the table.
 
 ## Status words
 
@@ -59,9 +61,11 @@ Mark every claim, in the same sentence or table row. Use these words:
 | **inferred** | Fits the data, but nothing outside confirms it. Add "strongly supported" or "supported second-hand" when there is partial evidence |
 | **assumed** | No evidence either way: a working assumption |
 | **second-hand** | An in-game value or report from someone else (a forum post, xivgear's test notes), not captured by this project |
-| **owner's decision** | A modelling choice the owner made; say what it rests on |
+| **owner's decision** | A modelling choice the owner made; say what it rests on (no date) |
 | **community reference** | A formula or table from a community source (AkhMorning), not the game files |
+| **not checked** | Nobody has tried to test the claim |
 
+- Write a status word in bold, as in the table above (**verified**, **inferred**), never in italics, so a reader can scan for them.
 - Never upgrade a status without new evidence, and never present an inference as fact.
 - When evidence changes a status, update every page that states it. When a claim is retracted, add an entry to `docs/history.md`.
 - Test expected values have their own kinds (external truth, independent derivation, brute-force reference, regression value): see [validation.md, section 1](../mechanics/validation.md#1-sources-of-truth).
@@ -70,6 +74,7 @@ Mark every claim, in the same sentence or table row. Use these words:
 
 - Use real numbers from the game data in worked examples, and check them by running the code (`node` + imports from `src/core/`) rather than computing by hand.
 - Say which data a page's counts describe (the datamining commit, for example `d9582a6`), and date measurements such as timings and probes.
+- Dated benchmark runs go to the perf log; a page keeps one current table.
 - Keep one decimal for percentages; 99.5% is not 100%.
 - Give each number one home page and link to it from elsewhere, so a patch changes one place. When a change alters a documented number or rule, update the page that states it.
 
@@ -100,6 +105,7 @@ Mark every claim, in the same sentence or table row. Use these words:
 ## Before finishing
 
 - [ ] Every claim carries a status word.
+- [ ] No dates other than evidence, no "before/since" or decision-log text.
 - [ ] Every number was re-run, and the page says which data it describes.
 - [ ] Every relative link and anchor resolves.
 - [ ] New terms are in the glossary; a new page is in the index.

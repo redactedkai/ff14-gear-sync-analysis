@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 692" role="img" aria-labelledby="t d">
   <title id="t">Data pipeline: from the game client to the page</title>
-  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the twenty CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,031 rows, item level 15 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). A fifth generator, in Node, runs the optimizer on the item, item level and food files and writes a fifth file: the most speed any job can have at each level from 1 to 100. Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
+  <desc id="d">The game client's sheets are exported to the xivapi/ffxiv-datamining repository, one CSV file per sheet. The fetch step makes a sparse clone of the latest commit with the twenty CSVs the project needs, and downloads the 23 job icons as PNG from xivapi's asset endpoint. Four Python generators (item database, item level, food, job icons) turn them into four generated files: the item database (20,210 rows, item level 1 to 795), the item level table (budgets for item levels 0 to 920, level data for levels 1 to 100, stat factors), the food table (296 meals) and the job icons (23 PNGs as data URLs). A fifth generator, in Node, runs the optimizer on the item, item level and food files and writes a fifth file: the most speed any job can have at each level from 1 to 100. Every generator, and the page code, reads one shared format definition (job, stat and slot orders, gear categories, food rules), which defines what each number in a generated row means. The esbuild page bundle packs code, styles and the generated files into one HTML file, so the browser loads no data at run time; it opens from disk with no server, and its footer names the source commit.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -95,9 +95,9 @@
   <text class="fg t" x="36" y="393">Generated files (never edited by hand)</text>
   <rect class="box" x="36" y="406" width="120" height="98" rx="8"/>
   <text class="fg t" x="96" y="429" text-anchor="middle">Item database</text>
-  <text class="muted s" x="96" y="449" text-anchor="middle">20,031 rows</text>
+  <text class="muted s" x="96" y="449" text-anchor="middle">20,210 rows</text>
   <text class="muted s" x="96" y="465" text-anchor="middle">item level</text>
-  <text class="muted s" x="96" y="481" text-anchor="middle">15 to 795</text>
+  <text class="muted s" x="96" y="481" text-anchor="middle">1 to 795</text>
   <rect class="box" x="168" y="406" width="120" height="98" rx="8"/>
   <text class="fg t" x="228" y="429" text-anchor="middle">Item levels</text>
   <text class="muted s" x="228" y="449" text-anchor="middle">budgets, 0 to 920</text>

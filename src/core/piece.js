@@ -29,7 +29,7 @@ export function keepsMelds(item, sync) {
   return itemSyncIlvl(item, sync) == null;
 }
 
-/* A pool item's stats after sync ({neutral stat: points}; its own stats when untouched). A piece is capped by its own
+/* A pool item's stats after sync ({stat key: points}; its own stats when untouched). A piece is capped by its own
    slot share and stat factors. */
 export function effStats(job, item, sync) {
   const target = itemSyncIlvl(item, sync);
@@ -38,7 +38,7 @@ export function effStats(job, item, sync) {
   return syncStats(job, item.stats, item.type, target, item.ilvl, s.pct, s.factors);
 }
 
-/* The cap of each stat on a pool item at its own item level, slot share and stat factors ({neutral stat: points}): how
+/* The cap of each stat on a pool item at its own item level, slot share and stat factors ({stat key: points}): how
    far melds can raise each substat (the meld cap; materia.md, "The cap on each substat"). Cached per item and job: the
    optimizer asks for every piece on every run. */
 const capCache = new WeakMap();
@@ -57,7 +57,7 @@ export function meldCaps(job, item) {
   return c;
 }
 
-/* The most each stat on a pool item can be after sync and melds ({neutral stat: points}): the cap at the item level it
+/* The most each stat on a pool item can be after sync and melds ({stat key: points}): the cap at the item level it
    is synced to, or, when it is untouched, its own cap (meldCaps). For the page's "at cap" marks. */
 export function itemCaps(job, item, sync) {
   const target = itemSyncIlvl(item, sync);

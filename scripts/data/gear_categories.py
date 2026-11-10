@@ -58,7 +58,10 @@ CATEGORY_BY_CODE = {
     510: 'quest',
     520: 'venture',  # retainer venture rewards (Explorer's, Mage's, Thormoen's ...)
     530: 'quest',  # starting gear of jobs that begin above level 1
+    550: 'dungeon',  # glamour; the one kept piece is Figment of Showtime (a Blue Mage weapon from a Figmental Weapon Coffer)
     830: 'seasonal_event',  # Hatching-tide egg caps
+    910: 'collaboration',  # Final Fantasy XIII event gear (Lightning Strikes, ilvl 13); the Collector's Edition helms are in ITEM_OVERRIDES
+    920: 'collaboration',  # Dragon Quest X event (Thug's Mug) and costume pieces
     921: 'collaboration',  # Yo-kai Watch weapons (Legendary Shogunyan Medals)
     922: 'collaboration',
     923: 'collaboration',
@@ -76,6 +79,8 @@ CURRENCY_OVERRIDES = {
 # Single pieces -> category:
 ITEM_OVERRIDES = {
     44410: ("Neophyte's Ring", 'quest'),  # code 370 (Occult Crescent), but the Hall of the Novice final reward
+    2634: ('Helm of Light', 'promotional'),  # code 910, but the 2.0 Collector's Edition bonus
+    2637: ('Onion Helm', 'legacy'),  # code 910, but the 1.0 Collector's Edition bonus, retired
     2752: ('Peregrine Helm', 'venture'),  # code 990 (legacy), but a Quick Exploration venture reward today
 }
 CATEGORIES = sorted(set(CATEGORY_BY_CODE.values()) | {'savage', 'ultimate', 'field_op', 'aetherial'})

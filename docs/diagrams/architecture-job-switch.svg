@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 410" role="img" aria-labelledby="t d">
   <title id="t">What a job switch resets and what it keeps</title>
-  <desc id="d">Switching to any other job, even one in the same role, happens at once with no confirmation. Kept when the new job can use it (a stat the new job has under the same name; the Target GCD when both jobs have the same speed stat and haste; a slot the job wears), else reset to the new job's defaults: the Piece stats substats (Critical Hit, then speed), the Piece stats slot (head, only if the new job lacks the slot), the optimizer target (main stat), both tiebreaks (none), the meal (best for goal: a meal picked from the Food menu is cleared), the Target GCD (any), the gear browser's slot (any slot) and sort (item level). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the equip level filters of the gear browser and of the optimizer. Kept: the sync cap and sync switch, the Gear from boxes and market board switch of both tabs, the expansion and item level filters, materia and food on or off, the Piece stats item level, the open tab and the search text.</desc>
+  <desc id="d">Switching to any other job in the Job and sync panel, even one in the same role, happens at once with no confirmation, and changes only the open tab's selections; the other tab keeps its own job. Kept when the new job can use it (a stat the new job has under the same name; a slot it wears), else reset to the new job's defaults. How the math works: the Piece stats substats (Critical Hit, then speed; both stay or both reset) and the Piece stats slot (head, only if the new job lacks the slot). Gear browser: the slot (any slot) and the sort (item level, high first; a sort by name, level, item level or a kept stat stays). Held to the new job's level cap, so lowered only if above it (for example 90 becomes 80 for Blue Mage): the synced level and the Gear browser's equip level filter. Kept: the sync cap and sync switch, the Gear browser's Gear from boxes and market board switch, its expansion and item level filters and search text, the Piece stats item level, the GCD and Substat tiers sub-tabs' own boxes (not saved) and the open tab. Not changed: the other tab's job and settings; a sheet on the Sheets tab has no panel, its job is set when it is made.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -25,54 +25,58 @@
       .rule { stroke: #92a5a5; }
     }
   </style>
-  <rect class="bg" x="0" y="0" width="720" height="470"/>
+  <rect class="bg" x="0" y="0" width="720" height="410"/>
 
-  <text class="fg t" x="20" y="30">Switching to any other job, even one in the same role</text>
-  <text class="muted s" x="20" y="50">Happens at once, without asking. First column: a stat stays if the new job has it under the same name.</text>
+  <text class="fg t" x="20" y="30">Switching to another job in the Job and sync panel</text>
+  <text class="muted s" x="20" y="50">Happens at once, without asking, and changes only the open tab's selections.</text>
+  <text class="muted s" x="20" y="66">A stat stays if the new job has it under the same name.</text>
 
   <!-- Column 1: reset -->
-  <rect class="box" x="20" y="70" width="250" height="380" rx="8"/>
-  <text class="accent t" x="36" y="96">Kept if the new job can use it, else</text>
-  <line class="rule" x1="36" y1="108" x2="254" y2="108"/>
-  <text class="fg l" x="36" y="130">Piece stats substats</text>
-  <text class="muted s" x="36" y="146">Critical Hit, then speed</text>
-  <text class="fg l" x="36" y="172">Piece stats slot</text>
-  <text class="muted s" x="36" y="188">head, only if the new job lacks it</text>
-  <text class="fg l" x="36" y="214">Optimizer target</text>
-  <text class="muted s" x="36" y="230">main stat</text>
-  <text class="fg l" x="36" y="256">Tiebreaks 1 and 2</text>
-  <text class="muted s" x="36" y="272">none</text>
-  <text class="fg l" x="36" y="298">Meal</text>
-  <text class="muted s" x="36" y="314">best for goal (a pick is cleared)</text>
-  <text class="fg l" x="36" y="340">Target GCD</text>
-  <text class="muted s" x="36" y="356">any</text>
-  <text class="fg l" x="36" y="382">Gear browser slot</text>
-  <text class="muted s" x="36" y="398">any slot</text>
-  <text class="fg l" x="36" y="424">Gear browser sort</text>
-  <text class="muted s" x="36" y="440">item level</text>
+  <rect class="box" x="20" y="86" width="250" height="300" rx="8"/>
+  <text class="accent t" x="36" y="112">Kept if the new job can use it, else</text>
+  <line class="rule" x1="36" y1="124" x2="254" y2="124"/>
+  <text class="muted l" x="36" y="146">How the math works</text>
+  <text class="fg l" x="36" y="166">Piece stats substats</text>
+  <text class="muted s" x="36" y="182">Critical Hit, then speed;</text>
+  <text class="muted s" x="36" y="198">both stay or both reset</text>
+  <text class="fg l" x="36" y="222">Piece stats slot</text>
+  <text class="muted s" x="36" y="238">head, only if the new job lacks it</text>
+  <text class="muted l" x="36" y="266">Gear browser</text>
+  <text class="fg l" x="36" y="286">Slot</text>
+  <text class="muted s" x="36" y="302">any slot</text>
+  <text class="fg l" x="36" y="326">Sort</text>
+  <text class="muted s" x="36" y="342">item level, high first;</text>
+  <text class="muted s" x="36" y="358">name, level or a kept stat stays</text>
 
-  <!-- Column 2: held to the level cap -->
-  <rect class="box" x="290" y="70" width="200" height="210" rx="8"/>
-  <text class="gold t" x="306" y="96">Held to the level cap</text>
-  <line class="rule" x1="306" y1="108" x2="474" y2="108"/>
-  <text class="fg l" x="306" y="130">Synced level</text>
-  <text class="fg l" x="306" y="156">Equip level filter,</text>
-  <text class="fg l" x="306" y="172">Gear browser</text>
-  <text class="fg l" x="306" y="198">Equip level filter,</text>
-  <text class="fg l" x="306" y="214">Gear to search</text>
-  <text class="muted s" x="306" y="244">lowered only if above the cap:</text>
-  <text class="muted s" x="306" y="260">90 becomes 80 for Blue Mage</text>
+  <!-- Column 2: held to the level cap, and what is not touched -->
+  <rect class="box" x="290" y="86" width="200" height="184" rx="8"/>
+  <text class="gold t" x="306" y="112">Held to the level cap</text>
+  <line class="rule" x1="306" y1="124" x2="474" y2="124"/>
+  <text class="fg l" x="306" y="146">Synced level</text>
+  <text class="fg l" x="306" y="172">Equip level filter,</text>
+  <text class="fg l" x="306" y="188">Gear browser</text>
+  <text class="muted s" x="306" y="218">lowered only if above the cap:</text>
+  <text class="muted s" x="306" y="234">90 becomes 80 for Blue Mage</text>
+
+  <rect class="box" x="290" y="286" width="200" height="100" rx="8"/>
+  <text class="fg t" x="306" y="312">Not changed</text>
+  <line class="rule" x1="306" y1="322" x2="474" y2="322"/>
+  <text class="muted s" x="306" y="342">The other tab keeps its own</text>
+  <text class="muted s" x="306" y="358">job. A sheet has no panel:</text>
+  <text class="muted s" x="306" y="374">its job is set when made.</text>
 
   <!-- Column 3: kept -->
-  <rect class="box" x="510" y="70" width="190" height="250" rx="8"/>
-  <text class="good t" x="526" y="96">Kept</text>
-  <line class="rule" x1="526" y1="108" x2="684" y2="108"/>
-  <text class="fg s" x="526" y="130">Sync cap and sync switch</text>
-  <text class="fg s" x="526" y="156">Gear from boxes</text>
-  <text class="muted s" x="526" y="172">(both lists)</text>
-  <text class="fg s" x="526" y="198">Expansion and</text>
-  <text class="fg s" x="526" y="214">item level filters</text>
-  <text class="fg s" x="526" y="240">Materia, food on or off</text>
-  <text class="fg s" x="526" y="266">Piece stats item level</text>
-  <text class="fg s" x="526" y="292">Open tab, search text</text>
+  <rect class="box" x="510" y="86" width="190" height="300" rx="8"/>
+  <text class="good t" x="526" y="112">Kept</text>
+  <line class="rule" x1="526" y1="124" x2="684" y2="124"/>
+  <text class="fg s" x="526" y="146">Sync cap and sync switch</text>
+  <text class="fg s" x="526" y="172">Gear from boxes, market</text>
+  <text class="fg s" x="526" y="188">board switch (browser)</text>
+  <text class="fg s" x="526" y="214">Expansion and item</text>
+  <text class="fg s" x="526" y="230">level filters (browser)</text>
+  <text class="fg s" x="526" y="256">Search text (browser)</text>
+  <text class="fg s" x="526" y="282">Piece stats item level</text>
+  <text class="fg s" x="526" y="308">GCD and Substat tiers</text>
+  <text class="fg s" x="526" y="324">boxes (not saved)</text>
+  <text class="fg s" x="526" y="350">Open tab</text>
 </svg>

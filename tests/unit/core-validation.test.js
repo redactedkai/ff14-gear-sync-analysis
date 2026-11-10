@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { MODEL_MIN_ILVL, bandAccuracy, rowItem, wikiChecks } from '../../src/core/validation.js';
 import { ITEMS } from '../../src/core/tables.js';
 import {
+  DB_SLOT_TYPE,
   ALL_JOBS_ACCESSORY_FACTORS,
   ITEM_STAT_ORDER,
   RAW_MAIN_IDX,
@@ -164,9 +165,14 @@ test('reduced-stat dungeon pieces: the list matches the data, each within 1, all
   assert.equal(exact, rows.length - 1);
 });
 
-test('every piece below item level 100 is predicted within 1', () => {
+/* The Replica shields (glamour copies of crafted and relic shields) are item level 1 with stats of their own
+   (equip level 50 or 60), so the item level model cannot predict them. */
+const REPLICA_SHIELD_COUNT = 20;
+test('every piece below item level 100 is predicted within 1, except the item level 1 Replica shields', () => {
+  const replicas = ITEMS.filter(r => r[ROW.ilvl] === 1 && r[ROW.equipLevel] > 1 && DB_SLOT_TYPE[r[ROW.slotCode]] === 'offhand');
+  assert.equal(replicas.length, REPLICA_SHIELD_COUNT);
   const off = ITEMS.filter(r => {
-    if (r[ROW.ilvl] >= MODEL_MIN_ILVL) return false;
+    if (r[ROW.ilvl] >= MODEL_MIN_ILVL || replicas.includes(r)) return false;
     const st = rowStats(r);
     return predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)).some((x, i) => Math.abs(x - st[i]) > 1);
   });

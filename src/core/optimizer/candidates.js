@@ -4,7 +4,7 @@
 
    A candidate (built by withMeld, read by search.js and solve in index.js):
      item    the pool item
-     eff     its effective stats: after sync, plus its melds ({neutral stat: points}, the job's stats), and its weapon
+     eff     its effective stats: after sync, plus its melds ({stat key: points}, the job's stats), and its weapon
              damage after sync under WD_KEY when the job ranks it (damage-defense.js; 0 off the weapon)
      copies  how many of it can be worn (2 for a non-Unique ring), counted per item, not per candidate
      blocks  slot types it leaves empty (a two-handed weapon the off-hand, a cloak the head)
@@ -12,13 +12,14 @@
      score   [weapon damage, target, tiebreak 1, tiebreak 2] packed into one number (makeScorer); set by buildCandidates
      sum     its stat total, the sort tiebreak; set by buildCandidates
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.js) may
-             swap a ring for any of them, including those pruning dropped */
+             swap a ring for any of them, including those pruning dropped
+     fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
 import { SLOT_TYPES } from '../constants.js';
 import { WD_KEY, weaponDamage } from '../damage-defense.js';
 import { meldInfo, slotInfo } from '../items.js';
-import { bestMeld, meldVersions } from '../meld.js';
+import { applyStones, bestMeld, meldVersions } from '../meld.js';
 import { effStats, itemSyncIlvl, keepsMelds } from '../piece.js';
-import { blockableTypes, typeMask } from './slot-index.js';
+import { FREE_RING, blockableTypes, typeMask } from './slot-index.js';
 
 /* The most keys of a goal: the target and two tiebreaks. Melds are chosen for these (weapon damage is no meld's). */
 const MAX_GOAL_KEYS = 3;
@@ -107,6 +108,15 @@ function withMeld(job, item, synced, meld, target) {
   });
   if (job.damageKey) v[WD_KEY] = weaponDamage(job, item, target);
   return { item, eff: v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld };
+}
+
+/* The candidate of a pinned piece: `item` (a pool item) worn with exactly `stones` (a set piece's stones: one entry per
+   meld slot, {stat, grade} or null; applyStones keeps the ones the piece takes under `sync`), as one candidate with one
+   meld, however many versions the optimizer would try. Its stats, melds and weapon damage are those the set's own
+   evaluation gives it (evaluateSet), so a pinned piece counts the same in the search and in the sheet. */
+export function fixedCandidate(job, item, stones, sync) {
+  const { meld } = applyStones(job, item, stones, sync);
+  return { ...withMeld(job, item, effStats(job, item, sync), meld, itemSyncIlvl(item, sync)), fixed: true };
 }
 
 /* With limits (a speed rule, stat minimums) and melds: one candidate per meld version of the piece (meldVersions) on
@@ -239,8 +249,8 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpd = false) {
 }
 
 /* objective = {target, tiebreak}, ranked after weapon damage (rankedKeys; `weaponFirst` false: the objective alone).
-   Returns {slotList, posList, dims, noMeldData, score}: slotList is the slot sequence to fill (slots that
-   have items, 'ring' twice); posList[i] is the candidate list for slotList[i], best score first. Each candidate lists
+   Returns {slotList, posList, dims, noMeldData, score, fixed, fixedBlocked}: slotList is the slot sequence to fill (slots
+   that have items, 'ring' twice), posList[i] is the candidate list for slotList[i], best score first. Each candidate lists
    the slot types it leaves empty (`blocks`); a slot some candidate can block comes after every other slot, so the
    search knows whether it is blocked when it gets there. The pool holds only gear the job can wear (it is emptied on a
    job change), so an off-hand in it means the job can use one. `melds`: give every piece that is not synced its best
@@ -251,13 +261,23 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpd = false) {
    the score and the limited stats only (pruneForLimits). The versions are on the objective's keys and the limited
    stats, after `versionKeys` (more stats keep more versions, which is still exact): tier ranking passes every key of
    its goal, in one order, so its stages share meldVersions' memo instead of each enumerating its own, and a
-   `versionCache` (itemVersions), so they build each piece's versions once. */
+   `versionCache` (itemVersions), so they build each piece's versions once.
+
+   `fixed`: pinned pieces (fixedCandidate), worn as they are. The search does not fill their slots: a slot with a pinned
+   piece, or covered by one (a pinned cloak covers the head), has no list; a pool piece that would cover a pinned
+   piece's slot is left out; with one ring pinned the other ring is a slot of its own (FREE_RING) whose pieces have
+   their copies less the pinned ring's (a pinned Unique ring is no candidate); with both pinned there is none. The
+   caller adds the pinned pieces' stats to the search's totals and takes them off its limits (solve in index.js).
+   `fixed` is returned as accepted; `fixedBlocked` lists the slots the pinned pieces leave empty that the pool has
+   pieces for, [{type, blockedBy}], for the empty picks: covered by a pinned piece (blockedBy: that item), or with no
+   piece that fits beside them, like the one free ring when only a pinned Unique ring is left (blockedBy: null). Throws on pins that cannot be worn together: two in
+   one slot, three rings, a Unique ring on both ring rows, or one in a slot another covers. */
 export function buildCandidates(
   job,
   pool,
   sync,
   { target, tiebreak = [] },
-  { prune = true, melds = false, speed = null, minStats = [], versionKeys = [], versionCache = null, weaponFirst = true } = {},
+  { prune = true, melds = false, speed = null, minStats = [], versionKeys = [], versionCache = null, weaponFirst = true, fixed = [] } = {},
 ) {
   const dims = vectorDims(job);
   const ranked = rankedKeys(job, target, tiebreak, weaponFirst);
@@ -266,19 +286,30 @@ export function buildCandidates(
   // melds are chosen per piece from the objective's keys (meld.js keeps the substats among them; weapon damage is no
   // meld's), before the score weights are derived from the vectors
   const keys = melds ? [target, ...tiebreak.filter(Boolean)].slice(0, MAX_GOAL_KEYS) : null;
+
+  // pinned pieces: the slot types they fill, what they cover, and how many copies of each ring they wear
+  const pinned = pinnedSlots(fixed);
+  const slotNames = SLOT_TYPES.map(t => (t === 'ring' && pinned.rings === 1 ? FREE_RING : t));
   const candsByType = {};
-  SLOT_TYPES.forEach(t => {
+  SLOT_TYPES.forEach((t, k) => {
+    const name = slotNames[k];
+    const taken = t === 'ring' ? pinned.rings === 2 : pinned.filled.has(t);
+    if (taken || pinned.covered.has(t)) {
+      candsByType[name] = [];
+      return;
+    }
     const items = pool.filter(i => i.type === t);
-    candsByType[t] =
+    const cands =
       melds && limitStats.length
         ? items.flatMap(item =>
             itemVersions(job, item, sync, [...new Set([...versionKeys, ...keys, ...limitStats])], speed === 'exact', versionCache),
           )
         : items.map(item => itemCandidate(job, item, sync, keys));
+    candsByType[name] = fixed.length ? leftFor(cands, pinned) : cands;
   });
-  const blockable = blockableTypes(SLOT_TYPES.map(t => candsByType[t]));
+  const blockable = blockableTypes(slotNames.map(n => candsByType[n]));
   // slots some candidate can leave empty go last, so the search knows whether a chosen piece blocks them
-  const order = [...SLOT_TYPES.filter(t => !blockable.has(t)), ...SLOT_TYPES.filter(t => blockable.has(t))];
+  const order = [...slotNames.filter(t => !blockable.has(t)), ...slotNames.filter(t => blockable.has(t))];
   const slotList = [];
   order.forEach(t => {
     if (!candsByType[t].length) return;
@@ -317,5 +348,66 @@ export function buildCandidates(
   });
   // for the page's note: pieces with no slot data (hand-made, generated) never take melds
   const noMeldData = melds ? pool.filter(i => !meldInfo(i)).length : 0;
-  return { slotList, posList: slotList.map(t => prunedByType[t]), dims, noMeldData, score };
+  const fixedBlocked = fixed.length
+    ? SLOT_TYPES.flatMap((t, k) => {
+        const hasPieces = pool.some(i => i.type === t);
+        if (pinned.covered.has(t)) return hasPieces ? [{ type: t, blockedBy: pinned.coveredBy.get(t) }] : [];
+        const open = t === 'ring' ? pinned.rings < 2 : !pinned.filled.has(t);
+        return open && hasPieces && !candsByType[slotNames[k]].length ? [{ type: t, blockedBy: null }] : [];
+      })
+    : [];
+  return { slotList, posList: slotList.map(t => prunedByType[t]), dims, noMeldData, score, fixed, fixedBlocked };
+}
+
+/* Where pinned pieces (`fixed`, fixedCandidate) sit: {filled: the slot types they wear, rings: how many of them are
+   rings, ringCopies: Map {item id: pinned rings of it}, covered: the slot types they cover, coveredBy: Map {slot type:
+   the pinned item covering it}}. Throws on pins that cannot be worn together (see buildCandidates). */
+function pinnedSlots(fixed) {
+  const filled = new Set();
+  const ringCopies = new Map();
+  const covered = new Set();
+  const coveredBy = new Map();
+  let rings = 0;
+  for (const cand of fixed) {
+    const type = cand.item.type;
+    if (type === 'ring') {
+      if (++rings > 2) throw new Error('Optimizer: more than two pinned rings');
+      // the search's own copy rule: a Unique ring has one copy, so pinning it on both ring rows cannot be worn
+      const worn = (ringCopies.get(cand.item.id) || 0) + 1;
+      if (worn > cand.copies) throw new Error(`Optimizer: ${worn} pinned copies of a ring with ${cand.copies}`);
+      ringCopies.set(cand.item.id, worn);
+    } else if (filled.has(type)) {
+      throw new Error(`Optimizer: two pinned pieces in the ${type} slot`);
+    }
+    filled.add(type);
+    for (const blocked of cand.blocks) {
+      covered.add(blocked);
+      coveredBy.set(blocked, cand.item);
+    }
+  }
+  for (const type of covered) if (filled.has(type)) throw new Error(`Optimizer: a pinned piece covers the pinned ${type} slot`);
+  return { filled, rings, ringCopies, covered, coveredBy };
+}
+
+/* Why pinned pieces (`fixed`, fixedCandidate) cannot be worn together (the message buildCandidates throws), or null when
+   they can. A ring's copies are its candidate's (2, or 1 for a Unique ring), the same count the search keeps. */
+export function pinProblem(fixed) {
+  try {
+    pinnedSlots(fixed);
+    return null;
+  } catch (error) {
+    return error.message;
+  }
+}
+
+/* The free candidates `cands` of one slot type that fit beside the pinned pieces (pinnedSlots): not those that would
+   cover a slot a pinned piece wears, and for rings the copies the pinned rings leave (a candidate with none left is
+   dropped). The inputs are not changed. */
+function leftFor(cands, pinned) {
+  return cands
+    .filter(c => !c.blocks.some(t => pinned.filled.has(t)))
+    .flatMap(c => {
+      const left = c.copies - (pinned.ringCopies.get(c.item.id) || 0);
+      return left > 0 ? [left === c.copies ? c : { ...c, copies: left }] : [];
+    });
 }

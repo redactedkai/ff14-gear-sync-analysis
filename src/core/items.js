@@ -1,5 +1,5 @@
 /* Pool items and the real-item database (src/data/items.json).
-   A pool item: {id, name, type, ilvl, stats (neutral keys), copies, src: 'game' | 'generated' | 'custom'}; a database
+   A pool item: {id, name, type, ilvl, stats (stat keys), copies, src: 'game' | 'generated' | 'custom'}; a database
    piece also has its gameId. `id` is made fresh for each object and means nothing outside this page load.
    Identity: anything that is kept (a set's pieces, saved picks) refers to a database piece by its gameId (the game's
    item id, itemById), with its name stored beside it for a reader; poolKey (name, slot, item level) only groups the same
@@ -66,13 +66,13 @@ export function rowStats(row) {
   return row[ROW.stats].split(',').map(Number);
 }
 
-/* A database row's raw stats as this job's neutral keys. The game's generic Main Attribute adds to the job's main stat;
+/* A database row's raw stats as this job's stat keys. The game's generic Main Attribute adds to the job's main stat;
    Secondary Attribute adds to its secondary stat: Piety or Tenacity where the job has one (spec), Direct Hit otherwise
    (xivgear's mapping, with in-game values for a healer and a Ninja). A tank's main stat here is Strength (verified: patch
    5.0 notes changed it from Vitality; ClassJob.PrimaryStat); its Tenacity from Secondary Attribute is inferred. */
 export function dbStats(job, raw) {
   const rawOf = k => raw[statIdx(k)] || 0;
-  const profile = job.profile; // which raw stat each neutral key means for this job
+  const profile = job.profile; // which raw stat each stat key means for this job
   const secAttr = rawOf('secAttr');
   return {
     main: rawOf(profile.main) + rawOf('mainAttr'),
@@ -86,7 +86,7 @@ export function dbStats(job, raw) {
 }
 
 const kindCache = new Map();
-/* The stat factors of a database item kind (a row's statFactor) as this job's neutral keys: MP[raw stat][kind] / 100
+/* The stat factors of a database item kind (a row's statFactor) as this job's stat keys: MP[raw stat][kind] / 100
    (Vitality 0.9 on Int/Mind gear; every main stat 0.9 on pieces that carry all four). Null for an unknown kind, which
    means the job's own factors (jobFactor in formulas.js). Frozen and cached per job and kind. A piece whose main stat is
    the generic Main Attribute still takes its kind's factor for the job's main stat under sync: Azeyma's Earrings
@@ -97,7 +97,7 @@ export function kindFactors(job, kind) {
   let factors = kindCache.get(key);
   if (!factors) {
     const profile = job.profile;
-    // the raw stat each neutral key reads for this job; MP holds percents, the factors here are fractions
+    // the raw stat each stat key reads for this job; MP holds percents, the factors here are fractions
     const rawKeyOf = { main: profile.main, vit: 'vit', crit: 'crit', det: 'det', dh: 'dh', spd: profile.spd, spec: profile.spec };
     factors = Object.freeze(Object.fromEntries(Object.entries(rawKeyOf).map(([s, k]) => [s, k ? MP[k][kind] / 100 : 1])));
     kindCache.set(key, factors);
@@ -197,38 +197,55 @@ export function browseItems(job, f) {
    identity to keep: several rows could share it, and a name can change in a patch; keep the gameId (itemById). */
 export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
-let rowIndex = null;
-/* The database facts about a pool item ({routes, slotCode, kind, lvl, scales, slots, overmeld, category}), looked up by its pool key, so saved pools need no
-   repair when a fact is added. Null for items not from the database (hand-made, generated). */
+// the database rows of each pool key, in database order, built once on first use; and the facts of each key looked up
+// so far. The index holds only rows, so building it is cheap: the page's thread builds it when it shows its first game
+// piece (a Fill's first result), and building every key's facts there blocked the page for about 25 ms (150 ms at 4x
+// CPU throttle)
+let rowsByKey = null;
+const factsByKey = new Map();
+
+/* The database facts about a pool item ({routes, slotCode, kind, lvl, scales, slots, overmeld, category,
+   damageDefense}), looked up by its pool key, so saved pools need no repair when a fact is added. The same object for
+   the same key. Null for items not from the database (hand-made, generated) and for a key no row has. */
 function rowFacts(item) {
   if (item.src !== 'game') return null;
-  if (!rowIndex) {
-    // built once: several rows could share a pool key (the same piece from two sources); their routes are joined (any
-    // one gets it) and every other fact comes from the first such row, so rows sharing a key must agree on those facts
-    // (core-items.test.js checks it; today no two rows share a key)
-    rowIndex = new Map();
+  if (!rowsByKey) {
+    rowsByKey = new Map();
     for (const r of ITEMS) {
-      const k = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });
-      const f = rowIndex.get(k);
-      rowIndex.set(k, {
-        routes: f ? [...new Set([...f.routes, ...r[ROW.routes]])] : r[ROW.routes],
-        slotCode: f ? f.slotCode : r[ROW.slotCode],
-        kind: f ? f.kind : r[ROW.kind],
-        lvl: f ? f.lvl : r[ROW.equipLevel],
-        scales: f ? f.scales : !!r[ROW.scales],
-        slots: f ? f.slots : r[ROW.meldSlots],
-        overmeld: f ? f.overmeld : !!r[ROW.overmeld],
-        category: f ? f.category : r[ROW.category],
-        damageDefense: f ? f.damageDefense : Object.fromEntries(DAMAGE_DEFENSE_KEYS.map(k => [k, r[ROW[k]]])),
-      });
+      const key = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });
+      const rows = rowsByKey.get(key);
+      if (rows) rows.push(r);
+      else rowsByKey.set(key, [r]);
     }
   }
-  return rowIndex.get(poolKey(item)) || null;
+  const key = poolKey(item);
+  if (!factsByKey.has(key)) factsByKey.set(key, factsOfRows(rowsByKey.get(key)));
+  return factsByKey.get(key);
+}
+
+/* The facts (rowFacts) of the database rows `rows` that share a pool key, or null for none. Several rows could share a
+   key (the same piece from two sources): their routes are joined (any one gets it) and every other fact comes from the
+   first row, so rows sharing a key must agree on those facts (core-items.test.js checks it; today no two rows share a
+   key). */
+function factsOfRows(rows) {
+  if (!rows) return null;
+  const first = rows[0];
+  return {
+    routes: rows.length > 1 ? [...new Set(rows.flatMap(r => r[ROW.routes]))] : first[ROW.routes],
+    slotCode: first[ROW.slotCode],
+    kind: first[ROW.kind],
+    lvl: first[ROW.equipLevel],
+    scales: !!first[ROW.scales],
+    slots: first[ROW.meldSlots],
+    overmeld: !!first[ROW.overmeld],
+    category: first[ROW.category],
+    damageDefense: Object.fromEntries(DAMAGE_DEFENSE_KEYS.map(k => [k, first[ROW[k]]])),
+  };
 }
 
 let idIndex = null;
 /* The database row (an ITEMS entry, read through ROW) of the game's item id `gameId`, or null when no row has it (a piece
-   the data no longer keeps, or not a number). The index is built once, on first use, like rowIndex; every row has its
+   the data no longer keeps, or not a number). The index is built once, on first use, like rowsByKey; every row has its
    own gameId (core-items.test.js checks it). */
 export function itemById(gameId) {
   if (!idIndex) {
@@ -276,7 +293,7 @@ export function categoryOf(item) {
 
 /* True for a relic whose substats the player allocates in game (Zodiac Zeta, Anima, Eureka, Resistance, Manderville,
    Phantom Occultum, ...): a database piece of the Relic category with no substat and no materia slot, as the game files
-   list them. The optimizer cannot model the allocation, so its search leaves them out (owner's decision 2026-10-18;
+   list them. The optimizer cannot model the allocation, so its search leaves them out (owner's decision;
    docs/engineering/optimizer.md section 7): as listed, with main stat only, they would win on main stat or
    weapon damage while giving up every substat. */
 export function allocatedRelic(job, item) {
@@ -390,7 +407,7 @@ export function jobGear(job) {
   return Object.freeze(browseItems(job, {}).map(r => poolItemFromRow(job, r)));
 }
 
-/* A parsed database row (parseRow) as a pool item, with its stats as this job's neutral keys and its gameId. */
+/* A parsed database row (parseRow) as a pool item, with its stats as this job's stat keys and its gameId. */
 export function poolItemFromRow(job, row) {
   return mkItem(row.name, row.type, row.ilvl, dbStats(job, row.st), {
     src: 'game',

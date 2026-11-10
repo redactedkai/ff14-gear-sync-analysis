@@ -1,6 +1,6 @@
 # Materia melds
 
-The gear optimizer can give each piece its best materia melds for the chosen objective, together with the choice of gear. This page states the meld rules, how they were checked and what melds change in results. How the optimizer finds the best melds of one piece, and why choosing them piece by piece is exact, is in [optimizer.md, section 6](../engineering/optimizer.md#6-melds-in-the-search).
+A set's Fill can give each piece its best materia melds for the chosen objective, together with the choice of gear. This page states the meld rules, how they were checked and what melds change in results. How the optimizer finds the best melds of one piece, and why choosing them piece by piece is exact, is in [optimizer.md, section 6](../engineering/optimizer.md#6-melds-in-the-search).
 
 Related pages: [optimizer.md](../engineering/optimizer.md) (the search and the best melds of one piece), [math.md](math.md) (caps and sync), [glossary.md](../glossary.md).
 
@@ -30,6 +30,18 @@ A stone's grade fixes its value, and each grade fits only gear at or above a min
 - **Main stats and Vitality cannot be melded:** their materia have value 0 (**verified**).
 - **Grades VI, VIII, X and XII** (the **high grades**) go into a guaranteed slot or the first overmeld slot, never later. Their overmeld success rate is 0% past the first overmeld slot (game files, `MateriaGrade`; **verified**).
 
+- **Overmeld odds** (game files, `MateriaGrade`; the HQ rows also match the Wiki's Advanced Materia Melding table; **verified**). The chance in percent that a stone melds into the 1st, 2nd, 3rd and 4th overmeld slot:
+
+| Grade | HQ piece | NQ piece |
+| --- | --- | --- |
+| I | 90, 48, 28, 16 | 80, 40, 20, 10 |
+| II | 82, 44, 26, 16 | 72, 36, 18, 10 |
+| III | 70, 38, 22, 14 | 60, 30, 16, 8 |
+| IV | 58, 32, 20, 12 | 48, 24, 12, 6 |
+| V, VII, IX, XI | 17, 10, 7, 5 | 12, 6, 3, 2 |
+| VI, VIII, X, XII | 17, 0, 0, 0 | 12, 0, 0, 0 |
+
+  The set page's stone menu shows these odds in an overmeld slot; they play no part in the search (every meld counts as a success). The Wiki's footnote gives 3% for the last NQ slot of grade V and up; the sheet says 2%, and the tool follows the sheet. Which pieces use the NQ rates is **inferred**: the Wiki ties the rates to the quality of the piece being melded ("assumes the gear is high-quality"), so a piece that cannot be HQ (`CanBeHq` false: 378 overmeldable pieces, for example Axe of the Fury) is always NQ, and every piece that can be HQ is taken as HQ (the tool models HQ stats). Crafted pieces made NQ in game are not modelled.
 - **Retrieval:** `MateriaGrade.ReturnRate` (the chance a stone comes back when the piece is retrieved or discarded) is 100 for grades I to X, 80 for XI and 40 for XII (**verified**, game files). Retrieval plays no part in the model.
 
 From grade VI on, the values alternate: each even grade is worth far more than the odd grade gated with it (VIII 24 against VII 8, XII 54 against XI 18), and only the even grades carry the slot restriction.
@@ -56,7 +68,7 @@ and without overmelding $B = g$, $S = 0$.
 
 The best stones by item level follow from the gate table. Below 290 the two are the same, so the split into big and small slots changes nothing there.
 
-![Step chart of the best stone by gear item level, from 100 (the lowest in the database) to 795. Big and small stone are the same below 290: IV (+4) from 100 to 159, V (+6) from 160 to 289. Then big and small: 290 to 419 VI (+16) and V (+6); 420 to 559 VIII (+24) and VII (+8); 560 to 689 X (+36) and IX (+12); 690 and up XII (+54) and XI (+18).](../diagrams/materia-stones.svg)
+![Step chart of the best stone by gear item level, from 100 to 795 (the chart starts at 100; the database starts at 15, where grade I opens). Big and small stone are the same below 290: IV (+4) from 100 to 159, V (+6) from 160 to 289. Then big and small: 290 to 419 VI (+16) and V (+6); 420 to 559 VIII (+24) and VII (+8); 560 to 689 X (+36) and IX (+12); 690 and up XII (+54) and XI (+18).](../diagrams/materia-stones.svg)
 
 **Pieces without guaranteed slots.** In the item data, no piece has 4 guaranteed slots or more than 5. 15 Paladin shields have no guaranteed slot but allow overmelding. The tool gives them no melds. That is **inferred**: xivgear (a community gear planner) gives them 5 slots, and no source says which is right.
 
@@ -93,11 +105,11 @@ Several melds can give a piece the same gains, when a stone's points are partly 
 3. the fewest big stones (odd grades first: XI over XII, V over VI);
 4. the first one found.
 
-A slot whose stone adds nothing to the target or a tiebreak stays empty, rather than taking a stone in another substat (the owner's decision, 2026-10-15).
+A slot whose stone adds nothing to the target or a tiebreak stays empty, rather than taking a stone in another substat (the owner's decision).
 
 ![Kirin's Osode of Fending with Determination as the target, 33 points of room. Two VI add 32 and are out at rule 1. One VI and three V add 33 with 4 stones, out at rule 2. Three VI add 33 with 3 stones, all big, out at rule 3. Two VI and one V add 33 with 3 stones, 2 big: shown, with 2 slots empty.](../diagrams/materia-ties.svg)
 
-Stone prices, retrieval and overmeld odds play no part (the owner's decision, 2026-10-16). Only what is shown changes: a small stone in a big slot never raises a gain, so the gains, and every result, are the same as with each slot holding its own stone. (With a speed maximum it could reach lower speeds, but in 2,045 Target GCD runs it found no better set for about 14% more search work, so the optimizer leaves it out; owner, 2026-10-16.)
+Stone prices, retrieval and overmeld odds play no part in the search (the owner's decision); the odds are only shown. Only what is shown changes: a small stone in a big slot never raises a gain, so the gains, and every result, are the same as with each slot holding its own stone. (With a speed maximum it could reach lower speeds, but in 2,045 Target GCD runs it found no better gear set for about 14% more search work, so the optimizer leaves it out; the owner's decision.)
 
 ## 3. Checks
 
@@ -125,11 +137,11 @@ Do melds change which gear the optimizer picks? Sync decides how many pieces kee
 | Cap 660, level 90 | 1,338 | 1,557 |
 | No sync | 1,749 | 1,968 |
 
-Under sync, a piece above the cap gets its stats lowered to the cap and loses its melds. A meldable piece at or below the cap is limited by its own, lower cap.
+The piece counts describe a database that started at item level 100; the current one starts at 15 (not re-run). Under sync, a piece above the cap gets its stats lowered to the cap and loses its melds. A meldable piece at or below the cap is limited by its own, lower cap.
 
 - **Full database pool, synced (caps 123 to 660, five objectives):** melds never raised the target. They moved tiebreaks only.
 - **Without sync,** they do raise it. Sage's Spell Speed goes from 2,609 to 2,899, Critical Hit from 3,135 to 3,168.
-- **Pools gathered around a cap** are different: there melds raise the target often (in about 6 of 10 runs, measured in the planning prototype; **inferred** from that prototype).
+- **Pools gathered around a cap** are different: there melds raise the target often (in about 6 of 10 prototype runs; **inferred**).
 
 ## 5. Verified and assumed
 
@@ -138,11 +150,13 @@ Under sync, a piece above the cap gets its stats lowered to the cap and loses it
 | Values, item level gates, no main stat or Vitality materia | Verified (game files, Lodestone) |
 | High grades not past the first overmeld slot | Verified (game files) |
 | Slots fill in order; overmelding after every guaranteed slot | Verified (Wiki) |
-| Which stones are shown among equal gains (section 2) | The owner's decision (2026-10-16), not a game rule |
+| Which stones are shown among equal gains (section 2) | The owner's decision, not a game rule |
 | Meld cap = the piece's own sync cap | Verified (real items, Wiki, xivgear) for factor 100; inferred below 100 |
 | Melds lost on synced pieces | Verified (owner, in game) |
-| Every meld succeeds | Assumed (owner's decision: odds are out of scope) |
-| A slot whose stone adds nothing to the target or a tiebreak stays empty | The owner's decision (2026-10-15), not a game rule |
+| Every meld succeeds | Assumed (owner's decision: the odds are shown, not searched) |
+| Overmeld odds per grade and slot | Verified (game files; HQ also Wiki) |
+| Pieces that cannot be HQ use the NQ odds | Inferred (Wiki: odds follow the piece's quality) |
+| A slot whose stone adds nothing to the target or a tiebreak stays empty | The owner's decision, not a game rule |
 | 0-slot pieces with overmelding take nothing | Inferred (xivgear gives them 5 slots) |
 | Shield and cloak caps (2H − 1H, share 220) | Inferred ([math.md, section 3](math.md#3-slot-shares)), and xivgear agrees |
 | HQ and NQ share a cap | Inferred; the tool models HQ stats |
@@ -155,9 +169,9 @@ Notes: HQ (high quality) and NQ (normal quality) are the two versions of a craft
 | Concept | File |
 | --- | --- |
 | Stones by item level, slots, best melds, meld text | `src/core/meld.js` (`stoneValues`, `meldSlots`, `bestMeld`, `meldText`) |
-| A given list of stones on a piece, by the same rules (a set built by hand) | `src/core/meld.js` (`applyStones`; `meldStones` turns a best meld into that list) |
+| A given list of stones on a piece, by the same rules (a gear set built by hand) | `src/core/meld.js` (`applyStones`; `meldStones` turns a best meld into that list) |
 | A piece's own caps; sync removing melds | `src/core/piece.js` (`meldCaps`, `keepsMelds`) |
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.js` (`meldInfo`), `src/core/tables.js` (`MATERIA`) |
 | Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |
-| The Materia switch, meld line and note | `src/ui/views/optimizer.js`, `src/index.html` |
+| The Materia switch and the materia menu | `src/ui/views/set-page.js` (`fillRecipe`, `materiaMenuView`), `src/index.html` (`#s-melds`) |
 | Tests | `tests/unit/core-meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/core-optimizer.exhaustive.test.js` |

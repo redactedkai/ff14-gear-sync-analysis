@@ -27,7 +27,7 @@ Which outside sources does the project trust, and how strong is each kind of evi
 
 | Source | What it gives | Used for |
 | --- | --- | --- |
-| Game item data (`Item` sheet) | Final stats of 17,316 real combat pieces at item level 100 and up | Sections 2, 4 and 6 |
+| Game item data (`Item` sheet) | Final stats of 17,323 real combat pieces at item level 100 and up | Sections 2, 4 and 6 |
 | FFXIV Wiki, Item Level Sync page | Substat caps at item level 475 | The sync clamp (section 3) |
 | Game `BaseParam` sheet (`MeldParam`) and `Item.BaseParamModifier` | Per-item stat percentages | The stat factor (section 2) |
 | xivgear (community gear planner), [source at commit 6c3c878](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts) | Its sync cap code and in-game notes in its tests; its whole core, run against this project's | Off-hand rule, cap order (section 8); every synced stat compared (section 10) |
@@ -45,7 +45,7 @@ Notes:
 | --- | --- | --- |
 | **External truth** | A number from the game data, the Wiki or AkhMorning | Evidence that the model is right |
 | **Independent derivation** | A number the test computes itself from raw game data (for example an `ItemLevel` row times a `BaseParam` slot share), without calling the function under test | It checks the code against the stated rule, but the rule is only as good as its own evidence |
-| **Brute-force reference** | The optimizer's answer compared with a search that tries every legal loadout | Evidence that the search finds the true best for the model's stats, not that the stats are right |
+| **Brute-force reference** | The optimizer's answer compared with a search that tries every legal gear set | Evidence that the search finds the true best for the model's stats, not that the stats are right |
 | **Regression value** | A number the code produced once, now pinned so it cannot change silently | It protects against regressions but is not evidence that the model is right |
 
 ## 2. Every real piece, by item level band
@@ -83,15 +83,15 @@ Every stat on the piece has to match, not just one.
 - **The budget table, the slot shares, the double rounding and the stat factor** are confirmed by these matches. The factor is read from the game files for each item ([math.md, section 4](math.md#the-stat-factor-of-an-item)). With a single rounding the same check gives 80.0% exact (13,306; [math.md, section 4](math.md#the-formula)).
 - **The shares stay inferred.** The 100 / 70 substat shares and the fixed 20% Direct Hit line on Mind-only gear remain an **inferred** pattern. They fit almost every piece, but the game files do not store them. Why the relic weapon steps carry two full substats is **not known**; the data only shows the pattern.
 - **Main Attribute and Secondary Attribute.** Sixteen pieces carry the game's generic Main Attribute and Secondary Attribute (`BaseParam` 55 and 56) instead of a named main stat: the ten Occult accessories, the five pre-order earrings and Neophyte's Ring. The check counts Main Attribute as a main stat and Secondary Attribute as a substat, each with its own factor (100 for every item kind). The ten Occult accessories at 745 are exact with the file's factors. The six all-jobs earrings and rings are exact with their own factors ("Explained exceptions" below); Neophyte's Ring's Determination 25 is the 70% share next to Secondary Attribute 35 (**verified**).
-- **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4](../engineering/data-pipeline.md#stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.
+- **Beastmaster.** The 35 pieces only Beastmaster can wear (item level 100 to 135, its one-handed axes and shields included; 28 of them in the 110–135 band) are all exact, the shields by the off-hand rule (**verified**, a unit test checks every one). They carry a Crucible bonus (+9 Strength and Vitality on Guttler) in the HQ bonus columns although they cannot be high quality, so it is not part of their stats ([data-pipeline.md, section 4.4](../engineering/data-pipeline.md#44-stats-and-the-hq-bonus)); the game applies it only inside the Crucible, which the tool does not model.
 - **Cloaks.** The two Vermilion Cloaks (item level 300), body pieces that also cover the head, have their own slot code with the game's body-plus-head share of 220 ‰, and the formula reproduces both exactly (**verified**; [data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
 
 Two wider checks fall outside the band table, the whole database at item level 100 and up and the pieces below it:
 
-![Two flows of real pieces. Item level 100 and up: 17,316 pieces, 17,292 exact (99.9%), 24 off by 1 and none off by more: 18 at item level 380, 4 in two weapon-and-shield pairs (275, 536), 2 Troian legs at 595. Exact because the model has a rule for them: 8 green HQ healer pieces at 110, the 6 all-jobs earrings and rings, the 11 Atma weapons. Below item level 100: 2,715 pieces, 2,695 exact (99.3%), 20 off by 1: 13 Replica High Allagan and Dreadwyrm pieces, 3 crafted weapons, the Plundered Earrings and Ear Cuffs, the Midnight Egg Cap and Harlequin's Acton. Of 42 misses on 2026-10-16, three general rules and the reduced-stat list fixed 22.](../diagrams/validation-funnel.svg)
+![Two flows of real pieces. Item level 100 and up: 17,323 pieces, 17,299 exact (99.9%), 24 off by 1 and none off by more (7 Blue Mage weapons have no stat and count as exact): 18 at item level 380, 4 in two weapon-and-shield pairs (275, 536), 2 Troian legs at 595. Exact because the model has a rule for them: 8 green HQ healer pieces at 110, the 6 all-jobs earrings and rings, the 11 Atma weapons. Below item level 100: 2,887 pieces, 2,839 exact (98.3%), 28 off by 1 and 20 off by more. The 20 are the Replica shields at item level 1, which have small stats of their own that the item level model does not give an item level 1 piece. The 28: 13 Replica High Allagan and Dreadwyrm pieces, 8 pieces at item level 1 to 10, 3 crafted weapons, the Plundered Earrings and Ear Cuffs, the Midnight Egg Cap and Harlequin's Acton. Of 42 misses on 2026-10-16, three general rules and the reduced-stat list fixed 22.](../diagrams/validation-funnel.svg)
 
 - The 11 Zodiac Atma weapons (item level 100) are exact because the model predicts them at item level 90: each is a copy of its Zenith step, stat for stat (**verified**, game data; [math.md, section 4](math.md#substat-shares-empirical)).
-- The pieces below item level 100 (in the database since 2026-10-15) are all within 1 (a unit test checks it); examined 2026-10-16 ("Below item level 100" below). The stat factor, three-substat and four-main-stat tests stop at 100.
+- The pieces below item level 100 (in the database) are all within 1 (a unit test checks it); examined 2026-10-16 ("Below item level 100" below). The stat factor, three-substat and four-main-stat tests stop at 100.
 
 ### What the misses look like
 
@@ -106,9 +106,9 @@ The 24 misses in the diagram, 0, 2, 22 and 0 per band (a probe run for this page
 
 These misses are not explained. They affect only Piece stats: the optimizer and the gear browser use each item's real stats.
 
-### Explained exceptions, now in the model
+### Explained exceptions in the model
 
-Two groups that used to miss have a known cause and a rule in the model ([math.md, section 4](math.md#substat-shares-empirical)):
+Two groups that the general formulas miss have a known cause and a rule in the model ([math.md, section 4](math.md#substat-shares-empirical)):
 
 - **Eight level 50 crafted HQ healer pieces at item level 110** carry Direct Hit at 25% of the slot's substat budget, not the 20% line. It is the old Accuracy stat, raised in patch 4.0.
   - The official patch 4.0 notes say "The \"accuracy\" attribute has been changed to \"direct hit\"" and that "the attributes of certain gear ... have been adjusted" ([patch 4.0 notes](https://na.finalfantasyxiv.com/lodestone/topics/detail/8937c86379b2124393409732025dac57f23839bc)).
@@ -167,7 +167,7 @@ For a substat (stat factor 100) the model's cap for a slot with share $p$ is $\o
 - **What this confirms:** the clamp rule (each stat on a piece above the cap is limited to the full-share value of a same-slot piece at the cap) for **substats**.
 - **What it does not cover:** the main stat and Vitality. The Wiki lists one cap per slot and only for substats; whether lower-ranked substats clamp against the full-share value is settled by the Wiki's Item Level page instead ([math.md, section 5](math.md#what-is-assumed)).
 
-**Tests.** The validation unit test checks all six rows (`wikiChecks` in `src/core/validation.js`; the page no longer shows this table). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
+**Tests.** The validation unit test checks all six rows (`wikiChecks` in `src/core/validation.js`). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
 
 ### The caps at item level 123
 
@@ -212,7 +212,7 @@ The GCD and DoT/HoT formulas are AkhMorning's community formulas, not game files
 | Level table (MAIN, SUB, DIV) | all 100 levels equal AkhMorning's [Level Modifiers](https://www.akhmorning.com/allagan-studies/modifiers/levelmods/) table, read from the page's script 2026-10-16 (nine levels pinned in the test) | External truth | Views |
 | GCD, level 100 | equals AkhMorning's speed table code at every speed 420 to 3,785 and seven recasts (1.5 to 4.0 s) | External truth | Speed |
 | Effects on panel numbers | Critical Hit, Direct Hit, Determination, Tenacity, Piety and GCD by AkhMorning's formulas on base + gear equal the tool's: two jobs, nine levels, seven gear values | External truth | Tiers |
-| Panel totals, Sage level 50 | Total = gear + 341 (Critical Hit, Direct Hit, Spell Speed), + 202 (Determination, Piety), + 0 (Mind, Vitality); With food adds the Food row | External truth (bases) | Views, smoke |
+| Panel totals, Sage level 50 | Total = gear + 341 (Critical Hit, Direct Hit, Spell Speed), + 202 (Determination, Piety, Vitality), + 232 (Mind; the job's modifier of the level's base main stat, without the clan's bonus, [math.md, section 6](math.md#totals-as-on-the-character-panel)); With food adds the Food row | External truth (bases) | Views, smoke |
 | Tiers sub-tab, level 100 | speed tiers on the panel 442, 527, 613 (2.49, 2.48, 2.47 s); tier sizes Critical Hit 13 or 14 (2780/200 = 13.9, as AkhMorning states), speed 85 or 86, level 50 speed 10 or 11 | External truth | Tiers |
 | Tenacity tiers, level 100 | 1,617: 1,616 to 1,629, +4.8% and −8.6% (both effects worked by hand) | Derivation | Tiers |
 | Tier lookup, every level | equals a scan of the formula | Independent reference | Speed |
@@ -226,37 +226,37 @@ Notes:
 
 ## 6. The optimizer against the true best
 
-Does the optimizer return the best loadout (one piece per slot), and does that depend on the stat model? The optimizer works on real item stats, so it does not depend on the substat shares.
+Does the optimizer return the best gear set (one piece per slot), and does that depend on the stat model? The optimizer works on real item stats, so it does not depend on the substat shares.
 
-Its checks compare it with a brute force that tries every legal loadout (seven real-gear pools, Unique rings, speed constraints, 600 random pools, the page views) and with a 9,800-run probe on real gear; it equals the brute force in every case. The brute force shares the optimizer's rule for a piece's synced stats, so these checks test the search, not the clamp (the clamp is section 3). Details and numbers: [optimizer.md, section 8](../engineering/optimizer.md#8-correctness-and-performance).
+Its checks compare it with a brute force that tries every legal gear set (seven real-gear pools, Unique rings, speed constraints, 600 random pools, the page views) and with a 9,800-run probe on real gear; it equals the brute force in every case. The brute force shares the optimizer's rule for a piece's synced stats, so these checks test the search, not the clamp (the clamp is section 3). Details and numbers: [optimizer.md, section 8](../engineering/optimizer.md#8-correctness-and-performance).
 
-None of these totals has been checked in game. They show the search returns the best loadout for the model's synced stats; whether the game syncs those pieces to the same values is the open question in section 8.
+None of these totals has been checked in game. They show the search returns the best gear set for the model's synced stats; whether the game syncs those pieces to the same values is the open question in section 8.
 
 ## 7. Which tests assert what
 
 Which test holds each check, and how strong is its expected value? What each test file covers in full is in [testing.md, section 2](../engineering/testing.md#2-what-each-file-covers). This table gives the kind of each expected value (section 1).
 
-| Test | Checks | Kind of expected value |
+| Test file | Checks | Kind of expected value |
 | --- | --- | --- |
-| Validation | Band accuracy; Wiki 475; named pieces | External truth (1) |
-| Formulas | The 130 head piece; level caps | External truth (2) |
-| Caps (real items) | Pieces at 120 and 125; caps at 123; 296 | Truth; derivation (3) |
-| Level sync | Level item levels; triggers and order; T13; optimizer | Game file; second-hand; reference (4) |
-| Sync | Clamp edge cases; Paladin Wiki 475 caps | Truth; derivation (5) |
-| Sync cap order | Cap order on in-game values; equal orders at factor 100 | Second-hand truth (6) |
-| Speed | GCD tiers and DoT scalars at 50, 90, 100; haste | External truth (AkhMorning, job guides) |
-| Optimizer | Seven real-gear pools; ring-pair bound | Brute-force reference |
-| Optimizer, exhaustive | Random pools; regressions; engine policies | Brute-force reference |
-| Optimizer, constraints | Speed limits on real Warrior gear | Brute-force reference |
-| Views | Optimizer view; excluded groups; Piece stats; caps; tiers | Mixed (7) |
-| Items | Browser filters, pool mapping, Unique copies | Real rows, picked by properties |
-| Piece substats | Ranks never repeat | Rules of the page |
-| Stat factor | Job factor vs item factor; named pieces | Game data; derivation (8) |
-| Data format, provenance | Shape of the generated data; data source | Format definition |
-| State | Saved state repaired field by field | Rules of the page |
-| Food | Real meals; xivgear's food values; best meal and gear | Game data; second-hand; brute-force reference |
-| Generator tests (Python) | Tests on small CSV fixtures | Hand-built fixtures (9) |
-| Smoke test (browser) | The built page, eight jobs | Mixed (10) |
+| `core-validation` | Band accuracy; Wiki 475; named pieces | External truth (1) |
+| `core-formulas` | The 130 head piece; level caps | External truth (2) |
+| `core-formulas.caps-at-123` | Pieces at 120 and 125; caps at 123; 296 | Truth; derivation (3) |
+| `core-sync-target` | Level item levels; triggers and order; T13; optimizer | Game file; second-hand; reference (4) |
+| `core-formulas.sync-clamp` | Clamp edge cases; Paladin Wiki 475 caps | Truth; derivation (5) |
+| `core-formulas.sync-cap-order` | Cap order on in-game values; equal orders at factor 100 | Second-hand truth (6) |
+| `core-speed` | GCD tiers and DoT scalars at 50, 90, 100; haste | External truth (AkhMorning, job guides) |
+| `core-optimizer` | Seven real-gear pools; ring-pair bound | Brute-force reference |
+| `core-optimizer.exhaustive` | Random pools; regressions; engine policies | Brute-force reference |
+| `core-optimizer.speed-limits` | Speed limits on real Warrior gear | Brute-force reference |
+| `ui-views-optimizer`, `ui-views-piece`, `ui-views-sync-explainer`, `ui-views-tiers` | Optimizer view; left-out Gear from boxes; Piece stats; caps; tiers | Mixed (7) |
+| `core-items` | Browser filters, pool mapping, Unique copies | Real rows, picked by properties |
+| `ui-ranks` | Ranks never repeat | Rules of the page |
+| `core-formulas.stat-factor` | Job factor vs item factor; named pieces | Game data; derivation (8) |
+| `core-item-format`, `core-tables.provenance` | Shape of the generated data; data source | Format definition |
+| `ui-state` | Saved state repaired field by field | Rules of the page |
+| `core-food` | Real meals; xivgear's food values; best meal and gear | Game data; second-hand; brute-force reference |
+| `tests/data/test_generators.py` | Tests on small CSV fixtures | Hand-built fixtures (9) |
+| `tests/e2e/smoke.mjs` | The built page, eight jobs | Mixed (10) |
 
 Notes:
 
@@ -271,9 +271,9 @@ Notes:
 9. Slots, exclusions including multi-slot gear, stat placement, HQ rule, job mask, Unique flag, sort order, budget columns, level data, stat factor kind and table, schema errors.
 10. Caps at 123 for eight jobs and the Wiki 475 table (as in the unit tests); Piece stats head piece values (external truth); real-gear optimizer totals for Sage and Warrior synced and unsynced (computed by the core and the brute force in Node at test time); Paladin off-hand; no "undefined" / "NaN" / "null" text, no JavaScript errors, no horizontal scroll at 960 px.
 
-## 8. Open question: in-game captures
+## 8. In-game captures still missing
 
-Which parts of the sync model rest on no capture of the game by this project, and what evidence exists instead? The Wiki check (section 3) covers substat caps only. Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)); the second and third are now verified from published values:
+Which parts of the sync model rest on no capture of the game by this project, and what evidence exists instead? The Wiki check (section 3) covers substat caps only. Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)). Only the first is open; the second and third are **verified** from published values:
 
 1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job), with the factor-first cap order below; supported by second-hand in-game values;
 2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$); **verified** (published) by the Wiki's Item Level page (accessories synced to 475: 127 / 89 becomes 88 / 88), and supported by a player's in-game report and The Balance's thresholds (below);
@@ -342,8 +342,8 @@ A player wrote in an issue on another tool ([ffxiv-characterstatus-refined #32](
 | Cap with the file's 90% (the model, xivgear, ffxiv-gearing) | 23 | 25 | 24 |
 | Cap at 100% | 26 | 28 | 24 |
 
-- The report fits the full factor on the main stat and Vitality; the Azeyma's row above (item level sync to 430, main stat 71) fits the 90%. Both are second-hand. The two differ in how the piece is synced (level sync on scaling gear against an item level cap), which might explain it (**inferred**, a guess).
-- Not acted on (owner's decision, 2026-10-15): the model keeps the 90% on these six pieces. If the report is right, their main stat and Vitality are too low under level sync (by 3 at 130), in all three tools, so neither the ffxiv-gearing check (section 9) nor the xivgear check can show it. A capture in a level-synced duty wearing one of them would settle it.
+- The report fits the full factor on the main stat and Vitality; the Azeyma's row above (item level sync to 430, main stat 71) fits the 90%. Both are second-hand. The two differ in how the piece is synced (level sync on scaling gear against an item level cap), which might explain it (**inferred**).
+- Not acted on (owner's decision): the model keeps the 90% on these six pieces. If the report is right, their main stat and Vitality are too low under level sync (by 3 at 130), in all three tools, so neither the ffxiv-gearing check (section 9) nor the xivgear check can show it. A capture in a level-synced duty wearing one of them would settle it.
 
 ### Evidence for question 2 (lower-ranked substats)
 
@@ -388,14 +388,14 @@ Does an independent implementation of sync, run on every piece and every sync se
 - at every sync it offers (each job level 50 to 100 up to the job's cap, level sync only and each duty item level it lists: 139 settings);
 - every stat of the job.
 
-**Result, 2026-10-16**, on the database from item level 15, with its tank Main Attribute rule corrected (D4) and its bonus stats taken off (D6): 11,480,969 piece checks, 73,252,638 stats, 99.90% equal (73,182,000), and every remaining difference is exactly 1. Every database piece is in its data. The live site gave exactly the same results as the local build (2026-10-16).
+**Result, 2026-11-10**, on the database from item level 1, with its tank Main Attribute rule corrected (D4) and its bonus stats taken off (D6): 11,719,808 piece checks, 74,773,659 stats, 99.90% equal (74,702,105), and every remaining difference is exactly 1. Every database piece is in its data. The live site gave exactly the same results as the local build on 2026-10-16; it was not run again on the current data.
 
-**Previous run.** At the previous run (2026-10-15, item level 100 and up: 55,426,805 stats, 99.87% equal, D1 64,080, D2 5,679) it did too; the 2,715 pieces below item level 100 added 17.8 million stats and 879 differences, all D1 or D2.
+**Split by item level.** Item level 100 and up compares 55,426,805 stats, 99.87% equal, with D1 64,080 and D2 5,679 as its only differences. The 2,887 pieces below item level 100 add 19.3 million stats and 1,795 differences, all D1 or D2 (644 D1 and 1,151 D2; 64,080 + 5,679 + 1,795 = 71,554, the total of the table below). The item level 100 and up figures are those of the run before the floor moved to item level 1, which only added pieces below item level 100 and Blue Mage weapons that have no stat (**inferred**: not split again). 916 of the D2 differences come from the shields below item level 15 (the 20 Replica shields among them).
 
 | Tag | Difference | Stats | Off by |
 | --- | --- | --- | --- |
 | D1 | Cap rounding order | 64,724 | 1 |
-| D2 | Off-hand (shield) caps | 5,914 | 1 |
+| D2 | Off-hand (shield) caps | 6,830 | 1 |
 | D3 | Gear that scales with level (fixed here) | 0 | – |
 | D4 | Main Attribute on tanks (corrected there) | 0 | – |
 | D6 | Bonus stats in Crucible, Occult Crescent (taken off there) | 0 | – |
@@ -405,17 +405,17 @@ Notes:
 
 - **D1.** It rounds a cap once, $\operatorname{round}(B \cdot s \cdot f / 10^5)$; this project floors twice first ([math.md, section 5](math.md#the-clamp-rule)). With a factor of 100 the two agree everywhere: its caps alone, at the 230 item levels its data defines, every slot code and stat factor kind, equal this project's in all 292,560 cases; with a factor below 100 they differ by 1 in 6,068 of 138,000. This project's order rests on three second-hand in-game values (section 8); its order on none found. Accepted either way (off by 1).
 - **D2.** It caps a shield at the 40% share; this project uses two-handed minus one-handed (**inferred**, fits 224 of 226 real off-hands). Never more than 1 apart.
-- **D3.** 260 pieces (`Item.SubStatCategory` 2) scale with the character: the game's own text says "IL and attributes synced to current job level" (242 pieces) or that attributes and item level vary with the current level (the six experience-bonus accessories); the other 12, the Pictomancer and Viper starting sets (equip level 89, item level 560), have no item text (**verified**, game data `d9582a6`, recounted 2026-10-16).
-  - ffxiv-gearing syncs them to the level's item level at every level it offers; this project synced them only like other gear, by equip level, so at level 50 with no item level cap Menphina's Earring (item level 430, equip level 1) kept its 430 stats here. **It was a gap in this project's model, fixed 2026-10-15** ([math.md, section 5](math.md#which-pieces-are-synced); [history.md](../history.md)): before the fix 4,023 stats differed for this reason, now 0.
+- **D3.** 260 pieces (`Item.SubStatCategory` 2) scale with the character: the game's own text, quoted with the count in [math.md, section 5](math.md#which-pieces-are-synced) (**verified**, game data `d9582a6`, recounted 2026-10-16), covers 242 pieces and the six experience-bonus accessories; the other 12, the Pictomancer and Viper starting sets (equip level 89, item level 560), have no item text.
+  - ffxiv-gearing syncs them to the level's item level at every level it offers; synced only like other gear, by equip level, at level 50 with no item level cap Menphina's Earring (item level 430, equip level 1) would keep its 430 stats. **The model syncs them the same way** ([math.md, section 5](math.md#which-pieces-are-synced)): without that rule 4,023 stats differed for this reason, with it 0.
   - The wiki's figures for the artifact armor among them (548 at level 89, 678 at level 99) equal `ParamGrow.ItemLevelSync` for those levels (**second-hand**), so this project uses that column at every level; ffxiv-gearing uses its own table at levels 50 to 100, the same values except 790 at 100, which no scaling piece reaches.
   - Now that both tools sync these pieces to the same item level, the cap rules apply to them too: 1,166 of the D1 and 50 of the D2 differences are on scaling pieces (tagged D3 before), and 60 D4 differences went away.
 - **D4.** It gives a tank's Main Attribute to Vitality; this project gives it to Strength (**verified**).
   - The patch 5.0 notes say "The main attribute of the Aetheryte Earring when equipped by a tank has been changed from vitality to strength." ([Lodestone](https://na.finalfantasyxiv.com/lodestone/topics/detail/330f2b280067d69d85b17831c66712a499e97484)). The game data agrees: `ClassJob.PrimaryStat` for every tank is 3 (Vitality) in the 4.55–4.58 data and 1 (Strength) from 5.0 to today (xivapi/ffxiv-datamining commits f10581e and 2c4f0a2). ffxiv-gearing's Vitality therefore matches the game only as it was from 4.5 to 4.58, when the Aetheryte Earring was the only item with Main Attribute.
   - In its code the value comes from a 2020 tank switch for its damage math (commit dc4935a), which its 2026 Main Attribute support reused (9bd08ba) (**inferred** as the cause). xivgear also gives tanks Strength and Tenacity (PR #884, 2026). No in-game character sheet of a tank wearing such a piece has been found.
-  - **Corrected in the check, not tagged:** before comparing, the harness sets ffxiv-gearing's tank `mainStat` to Strength in its own page, so its code runs with the rule the game has had since 5.0. Tagging every tank Strength and Vitality difference on these pieces would have hidden any other difference there. With the correction, each tank differs from it exactly as Monk does (65 D1, 40 D6), plus Paladin's shields; before, 4,752 stats were tagged D4, and the misrouted Main Attribute also made 3,000 of the D6 differences, on Occult Crescent pieces.
+  - **Corrected in the check, not tagged:** before comparing, the harness sets ffxiv-gearing's tank `mainStat` to Strength in its own page, so its code runs with the rule the game has had since 5.0. Tagging every tank Strength and Vitality difference on these pieces would have hidden any other difference there. With the correction, each tank differs from it exactly as Monk does (65 D1, 40 D6), plus Paladin's shields; without it, 4,752 stats were tagged D4, and the misrouted Main Attribute also made 3,000 of the D6 differences, on Occult Crescent pieces.
 - **D6.** It adds the Crucible bonus (Beastmaster gear, +5 to +10 Strength and Vitality) always and the Occult Crescent bonus (+40 to +160 main stat) at item level sync 700, uncapped; this project leaves both out on purpose ([data-pipeline.md, section 4](../engineering/data-pipeline.md#4-item-database-generation)).
   - Each bonus is a fixed value on the item's own row (`BaseParamSpecial` with `ItemSpecialBonus` 11 or 9; each Occult upgrade is its own row with a larger value) (**verified**, game data), so the check takes exactly that value off its stat before comparing: 3,276 stats (2,870 before the item level 15 floor), none left off by more than 1 afterwards.
-  - Tagging every difference on a bonus piece instead had hidden 1,705 ordinary ±1 differences there (Vitality on Occult healer and caster gear, D1; Beastmaster's shields, D2); they are now counted under D1 and D2.
+  - Tagging every difference on a bonus piece instead would hide 1,705 ordinary ±1 differences there (Vitality on Occult healer and caster gear, D1; Beastmaster's shields, D2); they are counted under D1 and D2.
 - **Which pieces a job can wear** differs, not compared: it reassigns some all-classes pieces by their main stat (573 to 764 pieces a job, mostly old accessories such as Earrings of Casting); this project follows `ClassJobCategory`, so a Sage may wear them, as in game.
 
 Re-run after a patch or a new ffxiv-gearing version: see the scripts in the table below (not part of `npm run check`; they need the clone and a browser).
@@ -437,7 +437,7 @@ Does the most used planner, with its own code and its own item data, agree too? 
 - each piece is equipped alone in a gear set, and every stat of the job is read from it (`getStatDetail`);
 - those stats are compared with this project's synced stats, piece by piece (matched by game id).
 
-**Result, 2026-10-16**, on the database from item level 15: 9,920,950 piece checks, 63,074,926 stats, **40 differ** (99.99994% equal), every one off by exactly 1 and with a known cause.
+**Result, 2026-11-10**, on the database from item level 1: 10,143,247 piece checks, 64,486,687 stats, **40 differ** (99.99994% equal), every one off by exactly 1 and with a known cause. They are the same 40 as before the floor moved from item level 15 to 1 (X3, below).
 
 | Tag | Difference | Stats | Off by |
 | --- | --- | --- | --- |
@@ -451,40 +451,60 @@ Does the most used planner, with its own code and its own item data, agree too? 
 Notes:
 
 - **D1, D2.** None: xivgear rounds caps factor first (this project's order came from its tests, section 8) and computes shield caps as two-handed minus one-handed, as this project does.
-- **X3.** 15 crafted Intelligence and Mind pieces whose equip level is above the synced level and whose item level equals that level's (Voeburtite and Fae gear at 400, equip level 73, under level 70 sync; Shisui of Casting at 270, equip level 63, under level 60), so the target is the piece's own item level. xivgear applies the caps, which with the 90% Vitality factor gives 1 less (Vitality 140 becomes 139); this project leaves a piece at or below its target untouched. Which the game does is not known (**not verified**: the Blue Mage capture in section 8 is a different piece). Accepted (off by 1).
+- **X3.** 15 crafted Intelligence and Mind pieces whose equip level is above the synced level and whose item level equals that level's (Voeburtite and Fae gear at 400, equip level 73, under level 70 sync; Shisui of Casting at 270, equip level 63, under level 60), so the target is the piece's own item level. xivgear applies the caps, which with the 90% Vitality factor gives 1 less (Vitality 140 becomes 139); this project leaves a piece at or below its target untouched. Which the game does is not known (**not checked**: the Blue Mage capture in section 8 is a different piece). Accepted (off by 1).
 - **X1.** xivgear takes the item level of level sync from the highest item level of the job's gear at that equip level (its data service's `maxIlvlPerLvl`), which counts shields: a few Paladin shields sit 5 above the other gear, so Paladin alone is synced to 405 / 535 / 665 at levels 70 / 80 / 90 where `ParamGrow.ItemLevelSync` gives 400 / 530 / 660 (**verified**: its client `datamanager_new.ts` and its data service's `ItemsEndpoint.groovy`; the game file). A player's test in xivgear issue #317 saw level 100 gear and weapons synced to 660 at level 90 (**second-hand**). **Corrected in the check:** after its data loads, every compared piece it synced by equip level is synced again by its own code at the game file's item level (2,753 piece checks, all Paladin).
 - **X2.** xivgear has no rule for gear whose item level follows the wearer's level (`Item.SubStatCategory` 2, not in its data): such a piece keeps its full stats under level sync (Halone's Earring at level 50: main stat 212 there, 23 here) and takes the cap alone under a cap above the level's item level. **Corrected in the check** with this project's rule, the same as ffxiv-gearing's (section 9, D3): 909 piece checks.
-- **Pieces.** At each job's first setting 1,237 to 3,719 pieces are in both. xivgear has 1,028 to 3,399 a job that this project does not (below the item level 15 floor, crafter and gatherer gear, Aetherial and 1.0 gear, and for Beastmaster gear above its level cap); this project has up to 966 a job that its data service does not return (some item levels below 300). Not compared.
+- **Pieces.** At each job's first setting 1,327 to 3,803 pieces are in both. xivgear has 973 to 3,309 a job that this project does not (crafter and gatherer gear, Aetherial and 1.0 gear, and for Beastmaster gear above its level cap); this project has up to 1,000 a job that its data service does not return (some item levels below 300). Not compared.
 
 Re-run after a patch or a new xivgear version with the scripts in the table below; they write `scripts/validate/out/xivgear.json` (not part of `npm run check`; they need the clone, and the first run fetches its data service).
 
-**Why xivgear is a check, not an export target.** It loads only items of item level 290 or higher (the floor for the job's minimum level 70; Blue Mage's is 50), so it dropped item level 130 pieces from a level 50, item level 123 set in a live test (2026-10-14) (**verified** in its source, `LEVEL_ITEMS[job.minLevel].minILvl`, and by that test). See [roadmap.md](../roadmap.md), out of scope. Importing from xivgear is roadmap A12; an imported set below level 70 can only hold item level 290+ pieces synced down, for the same reason.
+**Why xivgear is a check, not an export target.** It loads only items of item level 290 or higher (the floor for the job's minimum level 70; Blue Mage's is 50), so it dropped item level 130 pieces from a level 50, cap 123 set in a live test (2026-10-14) (**verified** in its source, `LEVEL_ITEMS[job.minLevel].minILvl`, and by that test). Exporting to xivgear is not planned: the [roadmap](../roadmap.md) lists no export. Importing from xivgear is roadmap A12; an imported set below level 70 can only hold item level 290+ pieces synced down, for the same reason.
 
 ## 11. Verified and assumed
 
-The status of each claim this page checks, in one place. Details are in the section named.
+The status of each claim about the stat model, in one place; [math.md, section 7](math.md#7-verified-and-assumed) keeps only the claims about weapon damage and defense, speed, haste and food. Details are in the section named; the numbered notes under the table (1 to 9) carry the extra evidence.
 
 | Claim | Status | Evidence |
 | --- | --- | --- |
-| Budget table, slot shares, double rounding, stat factor | **Verified** | 16,605 of 16,629 exact (section 2) |
-| 100 / 70 substat shares, fixed 20% Direct Hit line | **Inferred** | Fit almost every piece; not in the files (section 2) |
-| 25% Direct Hit on the eight green HQ healer pieces | **Inferred** | Fitted to the eight; patch 4.0 notes (section 2) |
-| Reduced stats on 18 item level 46 pieces | **Inferred**; listed by name (owner's decision) | Fitted to the 18 (section 2) |
-| Hand-edited stats of the six all-jobs pieces | **Verified**; factors by name (owner's decision) | Datamining history (section 2) |
+| Item level indexes the budget table; slot shares 140 / 100 / 40 / 85 / 135 / 220 / 67 (`BaseParam.csv`, all 14 stats); per-item stat factor | **Verified** | Game table and files; real items (1) |
+| Two roundings, half up | **Verified** | 16,605 of 16,629 exact, 99.9%; 80.0% with one rounding (section 2) |
+| Item stats: slot value first, then the factor | **Verified** (real items) | Factor first is wrong on 1,349 pieces (2) |
+| Job's factor where no item is involved | **Verified** (game files) | Every single-main-stat piece |
+| 100 / 70 substat shares, equal substats share a rank | **Inferred** (measured pattern) | 99.7 to 100.0% per band; not in the files (section 2) |
+| Direct Hit on Mind-only gear: fixed 20% line | **Inferred** (measured pattern) | 125 of 133 such pieces (section 2) |
+| 25% Direct Hit on the eight green HQ healer pieces | **Inferred** | Fitted to the eight, all 8 and no other; patch 4.0 notes (section 2) |
+| Reduced stats on 18 item level 46 pieces | **Inferred**; listed by name (owner's decision) | Fitted to the 18: 17 exact, 1 within 1 (section 2) |
+| Hand-edited stats of the six all-jobs pieces | **Verified**; factors by name (owner's decision) | Datamining history; all 6 exact (section 2) |
+| Atma weapons carry item level 90 stats | **Verified** (game data); applied by name | All 11 equal their Zenith step |
 | Sync clamp for substats | **Verified** | Wiki, 6 of 6 at 475 (section 3) |
-| Caps at item level 123 | **Inferred** (independent derivation) | No gear at 123; real pieces at 120 and 125 (section 3) |
-| Factor-first cap order | **Verified** by three **second-hand** in-game values; **inferred** for other caps with a factor below 100 | xivgear's tests (section 8; [math.md, section 5](math.md#the-clamp-rule)) |
-| Main stat and Vitality clamped like substats | **Inferred**, supported second-hand | xivgear's in-game values (section 8) |
-| Lower substats clamp at the full-share cap | **Verified** (published) | Wiki Item Level page; forum report, The Balance (section 8) |
+| Caps at item level 123 | **Inferred** (independent derivation) | No gear at 123; real pieces at 120 and 125; row 123 × slot share (6; section 3) |
+| Factor-first cap order | **Verified** by three **second-hand** in-game values; **inferred** for other caps with a factor below 100 | xivgear's tests (3; section 8; [math.md, section 5](math.md#the-clamp-rule)) |
+| Sync cap uses the piece's own factor | **Inferred**, supported second-hand | Azeyma's Earrings (4; section 8) |
+| Main stat and Vitality clamped like substats | **Inferred**, supported second-hand | Three in-game values (7); xivgear's Blue Mage set totals for Vitality (section 8) |
+| Lower substats clamp at the full-share cap | **Verified** (published) | Wiki Item Level page; forum report, The Balance (8; section 8) |
 | Sync never raises a stat | **Verified** for substats (published) | Wiki Item Level page ([math.md, section 5](math.md#what-is-assumed)) |
 | All-jobs pieces at 90% under level sync | **Second-hand**, conflicting; kept (owner's decision) | Report of full factor (section 8) |
-| Off-hand = two-handed − one-handed | **Inferred** | 224 of 226 real off-hands (section 9) |
-| Melds on synced gear, level sync trigger | **Verified** by the owner in game | Section 8 |
+| Off-hand = two-handed − one-handed | **Inferred** | 224 of 226 real off-hands (5; section 9) |
+| Melds on synced gear, level sync trigger | **Verified** by the owner in game | Section 8; [math.md, section 5](math.md#5-item-level-sync) |
+| Level sync item level = `ParamGrow.ItemLevelSync` | **Verified** (game file) | 50 → 130, ..., 90 → 660 |
 | Order when both sync triggers apply | **Second-hand** | xivgear issue #317 (section 8) |
-| A piece synced to its own item level is untouched | **Not verified** | xivgear differs by 1 (section 10) |
-| GCD, DoT and tier formulas | **Community reference** | Match AkhMorning's tables (section 5) |
-| Food formula, food under sync | Verified (owner, in a synced duty, 2026-10-18) | Section 8 |
-| Optimizer finds the best loadout for the model's stats | Brute-force reference | Equal in every case (section 6) |
+| Weapons use the same level sync item level | **Second-hand** at level 90; **inferred** elsewhere | One column; xivgear issue #317 (level 90) |
+| A piece synced to its own item level is untouched | **Not checked** | xivgear differs by 1 (section 10) |
+| GCD, DoT and tier formulas | **Community reference** | Match AkhMorning's tables (9; section 5) |
+| Food formula, food under sync | **Verified** (owner, in a synced duty, 2026-10-18) | Section 8; [math.md, section 6](math.md#food) |
+| Optimizer finds the best gear set for the model's stats | Brute-force reference | Equal in every case (section 6) |
+
+Notes:
+
+1. Vitality × 0.9 on Intelligence/Mind gear, every main stat and Vitality × 0.9 on four-main-stat gear; read from `BaseParam.MeldParam`, column `Item.BaseParamModifier`. Reproduces real items, the 13 four-main-stat pieces included.
+2. On the 1,349 Intelligence/Mind pieces where the two orders differ and the item order is right; factor first is right on 18.
+3. Three in-game values quoted in xivgear's tests fit factor first and not the item order (section 8). With a factor of 100 the two orders are the same.
+4. Azeyma's Earrings (kind 0) synced to 430 show the 90% main-stat cap of its kind for Ninja in game, not the job's full cap (xivgear's test note; section 8). xivgear does the same; no capture of this project's own.
+5. Against 195 for the 40 ‰ share. xivgear uses the same rule for shield caps. It sets the shield cap at 123 to 13.
+6. The table in [math.md, Caps at item level 123](math.md#caps-at-item-level-123). No gear exists at item level 123; real pieces at 120 and 125 follow the same rule in every slot ([section 3](#the-caps-at-item-level-123)).
+7. The three values in note 3. No capture of this project's own; xivgear clamps them too.
+8. A player's in-game report (Determination 129 → 123 at 345, not 86), The Balance's thresholds and the Wiki (section 8). No capture of this project's own.
+9. Level 50, 90 and 100 tier tables, asserted in tests ([section 5](#5-speed-and-gcd)).
 
 ## Where this lives
 

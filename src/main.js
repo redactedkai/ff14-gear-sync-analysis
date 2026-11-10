@@ -3,21 +3,28 @@ import Alpine from 'alpinejs';
 import './styles.css';
 import { restoreState, loadSaved, save } from './ui/state.js';
 import { createAppStore } from './ui/store.js';
+import { createSheetStore } from './ui/sheet-store.js';
 import { storeNumberField } from './ui/helpers.js';
+import { enableHqFont } from './ui/hq-font.js';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';
-import { optimizer } from './ui/components/optimizer.js';
 import { mealMenu } from './ui/components/meal-menu.js';
 import { tierControls, tierTable } from './ui/components/tiers.js';
 import { gcdControls, gcdTab } from './ui/components/gcd.js';
+import { sheetsTab } from './ui/components/sheets.js';
+import { setPage } from './ui/components/set-page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
 const SAVE_DEBOUNCE_MS = 150;
 
+enableHqFont(document.fonts, document.documentElement);
+
 Alpine.store('app', createAppStore(restoreState(loadSaved())));
 const app = Alpine.store('app');
+// the saved sheets: one record each, written on their own edits (not part of the settings the effect below saves)
+Alpine.store('sheets', createSheetStore());
 
 /* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only (a bound
    that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)); a fourth
@@ -25,11 +32,11 @@ const app = Alpine.store('app');
    filter an emptied box clears (storeNumberField) */
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
-/* The optimizer's Web Worker (ui/solver.js workerSolver), made on the solver's first request: the optimizer's Gear to
-   search line asks FOLLOW_MS after the page has a job, on any tab (the optimizer's panel is only hidden), so the
-   worker starts at load once a job is chosen. Started from a Blob URL of its bundle (the page is one file, also opened
-   from file://), then handed the data files' texts, which it parses on its own thread. Cancel starts a new one
-   (workerSolver cancel), from the same URL; it is never revoked, since a worker may still be fetching it. */
+/* The page's Web Worker for the searches (ui/solver.js workerSolver), made on the solver's first request: a set page
+   asks for its Fill settings' Gear to search line as it opens, so the worker starts with the first set page. Started
+   from a Blob URL of its bundle (the page is one file, also opened from file://), then handed the data files' texts,
+   which it parses on its own thread. Cancel starts a new one (workerSolver cancel), from the same URL; it is never
+   revoked, since a worker may still be fetching it. */
 let solverWorkerUrl = null;
 function startSolverWorker() {
   solverWorkerUrl ??= URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' }));
@@ -40,18 +47,19 @@ function startSolverWorker() {
 // searches in the worker, off the page's thread; on the page's thread when the browser will not run the worker
 const solver = workerSolver(startSolverWorker, inProcessSolver);
 
-// the optimizer takes Alpine's effect and raw from here, so its module loads without a page (its unit test)
+// the set page takes Alpine (raw) and the solver from here, so its module loads without a page (its unit test)
 Object.entries({
   page,
   settings,
   syncExplainer,
   gear,
-  optimizer: () => optimizer(Alpine, solver),
   mealMenu,
   tierTable,
   gcdTab,
   gcdControls,
   tierControls,
+  sheetsTab,
+  setPage: () => setPage(Alpine, solver),
 }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });

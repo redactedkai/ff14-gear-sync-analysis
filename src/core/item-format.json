@@ -26,6 +26,16 @@
     "BLU",
     "BST"
   ],
+  "_jobLevelCapsNote": "jobLevelCaps: jobs whose level cap is below the game's (the highest equip level in the item database), job id -> cap. constants.js reads it (JOB_LEVEL_CAPS); gen_gear_groups.py keeps such jobs in groups of their own cap.",
+  "jobLevelCaps": { "BLU": 80, "BST": 50 },
+  "_statlessWeaponJobsNote": "statlessWeaponJobs: jobs whose weapons have weapon damage but no stat (Blue Mage); gen_items.py keeps such a weapon although the 'no stats' rule would drop it. Armor of these jobs has stats and follows the normal rules.",
+  "statlessWeaponJobs": ["BLU"],
+  "gearGroups": {
+    "_comment": "Which jobs share gear, for Copy sheet (gen_gear_groups.py writes src/data/gear-groups.json). Over the pieces of `slotTypes` (slot `type` names below), two jobs are linked when `linkPercent` percent or more of the pieces either can wear are pieces both can (shared / either, by the job mask); a group is a set of jobs linked pairwise and with the same level cap (`jobLevelCaps`). The generator stops when the data is not so clean: a linked pair inside no clique, or an unlinked pair at or above `unlinkedPercentMax`.",
+    "slotTypes": ["head", "body", "hands", "legs", "feet"],
+    "linkPercent": 80,
+    "unlinkedPercentMax": 50
+  },
   "stats": [
     { "key": "str", "baseParam": 1, "itemLevelColumn": "Strength" },
     { "key": "dex", "baseParam": 2, "itemLevelColumn": "Dexterity" },
@@ -192,7 +202,7 @@
     ]
   },
   "materia": {
-    "_comment": "Melding. Item rows carry two more fields at `rowFields`: meldSlots, the item's `slotColumn` (guaranteed slots, 0 to `maxSlots`; gen_items.py stops above it), and overmeld, 1 when its `overmeldColumn` is True (overmelding allowed). The materia table in items.json ({values, gate, high}, one entry per grade I to `grades`) comes from the `sheet` rows whose `statColumn` is one of `statKeys` (BaseParam row ids from `stats`) and whose `itemColumn`[0] is non-zero; rows with values but no items are decoys and are skipped. The rows must agree: values from `valueColumn`[0..grades-1], gate = the `gateColumn` (Item.csv) of each grade's materia item, item and value columns past the last grade all 0, gates non-decreasing. high: the grades whose `highColumn` in `gradeSheet` (row = grade - 1) is 0, which must be the grades worth more than each neighbouring grade.",
+    "_comment": "Melding. Item rows carry two more fields at `rowFields`: meldSlots, the item's `slotColumn` (guaranteed slots, 0 to `maxSlots`; gen_items.py stops above it), and overmeld, 1 when its `overmeldColumn` is True (overmelding allowed). The materia table in items.json ({values, gate, high}, one entry per grade I to `grades`) comes from the `sheet` rows whose `statColumn` is one of `statKeys` (BaseParam row ids from `stats`) and whose `itemColumn`[0] is non-zero; rows with values but no items are decoys and are skipped. The rows must agree: values from `valueColumn`[0..grades-1], gate = the `gateColumn` (Item.csv) of each grade's materia item, item and value columns past the last grade all 0, gates non-decreasing. high: the grades whose `highColumn` in `gradeSheet` (row = grade - 1) is 0, which must be the grades worth more than each neighbouring grade. overmeld: the success rates of `gradeSheet`, {nq, hq}, each one row per grade of `overmeldSlots` percents (the `overmeldColumns` name[0..overmeldSlots-1]); shown only, the search counts every meld as a success.",
     "sheet": "Materia",
     "itemColumn": "Item",
     "valueColumn": "Value",
@@ -202,6 +212,8 @@
     "gateColumn": "LevelItem",
     "gradeSheet": "MateriaGrade",
     "highColumn": "OvermeldNQPercent[1]",
+    "overmeldColumns": { "nq": "OvermeldNQPercent", "hq": "OvermeldHQPercent" },
+    "overmeldSlots": 4,
     "slotColumn": "MateriaSlotCount",
     "overmeldColumn": "IsAdvancedMeldingPermitted",
     "maxSlots": 5,

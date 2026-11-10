@@ -17,7 +17,7 @@ function bound(members, saved) {
 const card = (view, stat) => view.cards.find(x => x.stat === stat);
 
 test('tiers table: each value starts at its base; a typed or clicked value is kept until the job or a level changes', () => {
-  const { app, c } = bound(tierTable(), { job: 'SGE', level: 50 });
+  const { app, c } = bound(tierTable(), { job: 'SGE', level: 50, tab: 'math' });
   const job = app.jobCtx;
   assert.equal(c.level, 50);
   assert.equal(card(c.view, 'crit').value, statBase(job, 'crit', 50));
@@ -51,7 +51,7 @@ test('tiers table: each value starts at its base; a typed or clicked value is ke
 /* Found by wave C (2026-10-19): values typed at one level were only hidden while the level differed, so going back to
    it brought them back (if nothing was typed in between). The comment above tierTable says they are dropped. */
 test('tiers table: values dropped by a level change stay dropped when the level comes back', () => {
-  const { app, c } = bound(tierTable(), { job: 'SGE', level: 50 });
+  const { app, c } = bound(tierTable(), { job: 'SGE', level: 50, tab: 'math' });
   const settle = watched(c);
   c.pick('det:420');
   assert.equal(card(c.view, 'det').value, 420);

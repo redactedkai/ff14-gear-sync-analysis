@@ -1,38 +1,42 @@
-/* Browser timing of the gear optimizer (docs/engineering/optimizer.md, section 8).
+/* Browser timing of a set page's Fill (docs/engineering/optimizer.md, section 8).
 
-Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures:
-'optimizer' (one optimizer run: src/ui/components/optimizer.js) and 'save' (serializing the saved state: src/main.js).
+Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures: 'fill' (one Fill's
+search, as the solver reports it: src/ui/components/set-page.js) and 'save' (serializing the saved state: src/main.js).
 
-The optimizer searches only when Optimize is pressed (src/ui/components/optimizer.js), so each step presses it.
-  1. seed: picks a job on the Gear optimizer tab and presses Optimize, which searches every database piece the job can
-     wear; then switches to the next job (a job switch). Keeps each saved state.
-  2. cold: a fresh browser context per run, with the saved state already in localStorage, so the page opens straight
-     on the optimizer; Optimize then makes the first optimizer run fully cold (no compiled code, no caches, the job's
-     gear not built).
-  3. warm: in that page, cycles the target stat, pressing Optimize each time, and times each run and the time from
-     the press to the result shown.
-  4. memory: 100 target changes and searches, JS heap before and after (with garbage collection). The page's heap
-     only: the optimizer's Web Worker (src/ui/solver.js) has its own, not counted.
+Each job gets one sheet, written to localStorage before the page loads: level 100, no sync, five gear sets with every
+row empty and unpinned, each set's Fill settings with another goal (FILL_TARGETS), the other settings at their defaults.
+  1. cold: a fresh browser context per run; the page opens, the first set's page is opened and Fill pressed, which
+     makes the first search fully cold (no compiled code, no caches, the job's gear not built in the worker).
+  2. warm: in that page, each set in turn: Fill, wait for its result, Discard; times each search and the time from the
+     press to the result shown.
+  3. memory: 100 more Fills over the sets, JS heap before and after (with garbage collection). The page's heap only:
+     the solver's Web Worker (src/ui/solver.js) has its own, not counted.
 Long tasks (the main thread blocked over 50 ms) are reported over the whole page, opening it included, and from the
-first Optimize to the memory step (the searches and drawing their results; the search itself runs in the worker).
+first Fill to the memory step (the searches and drawing their results; the search itself runs in the worker).
 Chrome's CPU throttle slows the page's main thread; the worker's search is slowed much less, so its times at 4x and 6x
 are not a slow device's.
 Each at CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
 
-Run: npm run build && node scripts/perf/browser.mjs [--runs 5] [--jobs PLD,SGE] [--rates 1,4,6]
+Run: npm run build && node scripts/perf/browser.mjs [--runs 5] [--jobs PLD,SGE] [--rates 1,4,6] [--page file.html]
+--page times another build of the page (a copy of dist/index.html), for a before and after run back to back.
 */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { STORE_KEY } from '../../src/ui/state.js';
-import { listOption, numberOption } from './args.mjs';
+import { listOption, numberOption, option } from './args.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const PAGE = pathToFileURL(resolve(ROOT, 'dist', 'index.html')).href;
+const PAGE = pathToFileURL(resolve(option('page') ?? resolve(ROOT, 'dist', 'index.html'))).href;
 const OUT = resolve(ROOT, 'scripts', 'perf', 'out');
 const TIMEOUT = 120_000;
+
+// one gear set per goal, in this order
+const FILL_TARGETS = ['crit', 'det', 'dh', 'spd', 'main'];
+const ROW_SLOTS = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];
 
 // long tasks (main thread blocked over 50 ms), recorded from the first moment of every page
 const LONGTASKS = `
@@ -61,100 +65,102 @@ async function throttle(pg, rate) {
 const waitMeasure = (pg, name, count) =>
   pg.waitForFunction(`performance.getEntriesByName('${name}').length >= ${count}`, undefined, { timeout: TIMEOUT });
 
-async function setJob(pg, job) {
-  await pg.click(`[data-job-id="${job}"]`);
-  await pg.waitForSelector(`[data-job="${job}"]`);
+/** `job`'s sheet as src/ui/sheet-storage.js saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
+function sheetFor(job) {
+  const sets = FILL_TARGETS.map((target, i) => ({
+    id: `g_${target}`,
+    name: `Goal ${target}`,
+    description: '',
+    pieces: ROW_SLOTS.map(slot => ({ slot })),
+    meal: null,
+    pinned: { pieces: [], meal: false },
+    fillSettings: {
+      goal: { target, tb: '', tb2: '', gcd: '', gcdMode: 'exact', byTier: true, melds: true, food: false },
+      searchCriteria: { expOff: [], exclude: [...DEFAULT_EXCLUDE], market: true, min: '', max: '', lvl: 100 },
+    },
+    createdAt: i,
+    updatedAt: i,
+  }));
+  return {
+    v: 1,
+    id: `s_${job}`,
+    name: `${job} timing`,
+    description: '',
+    job,
+    level: 100,
+    sync: { on: false, cap: 123 },
+    sets,
+    gameData: { commit: 'perf', date: '2026-01-01' },
+    createdAt: 0,
+    updatedAt: 0,
+  };
 }
 
-/** The pieces the optimizer searches, from its count line ("· searching 1,939 of 2,400 pieces"). */
-async function searched(pg) {
-  return Number.parseInt(/searching ([\d,]+)/.exec(await pg.locator('#o-count').innerText())[1].replace(/,/g, ''), 10);
+/** Open the set with `setId` of the only sheet, from wherever the Sheets tab is. */
+async function openSet(pg, sheet, setId) {
+  await pg.click('[data-tab=sheets]');
+  if (await pg.locator('#sh-manager').isVisible()) await pg.locator('#sh-list a.sname').first().click();
+  else if (await pg.locator('#sh-set').isVisible()) await pg.locator('#sh-set .setcrumb a:nth-of-type(2)').click();
+  const name = sheet.sets.find(s => s.id === setId).name;
+  await pg.locator('#sh-sets a.sname', { hasText: name }).click();
+  await pg.locator('#sh-fill').waitFor({ state: 'visible' });
 }
 
-/** The saved state once the save debounce has written the job. */
-async function savedState(pg, job) {
-  await pg.waitForFunction(
-    `(() => { try { const s = JSON.parse(localStorage.getItem('${STORE_KEY}')); return s.job === '${job}' && s.tab === 'opt'; } catch (e) { return false; } })()`,
-    undefined,
-    { timeout: TIMEOUT },
+/** Press Fill and wait for its result; returns the time from the press to the result shown (ms). */
+async function fill(pg) {
+  const before = (await measures(pg, 'fill')).length;
+  const t0 = await pg.evaluate('performance.now()');
+  await pg.click('#sh-fill');
+  await waitMeasure(pg, 'fill', before + 1);
+  await pg.locator('#sh-discard').waitFor({ state: 'visible' });
+  return (await pg.evaluate('performance.now()')) - t0;
+}
+
+async function coldAndWarm(browser, job, rate, warm) {
+  const sheet = sheetFor(job);
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(LONGTASKS);
+  await ctx.addInitScript(
+    `try { localStorage.setItem(${JSON.stringify(`${STORE_KEY}:sheet:${sheet.id}`)}, ${JSON.stringify(JSON.stringify(sheet))});
+      localStorage.setItem(${JSON.stringify(`${STORE_KEY}:sheets`)}, ${JSON.stringify(JSON.stringify({ v: 1, order: [sheet.id] }))}); } catch (e) {}`,
   );
-  return await pg.evaluate(`localStorage.getItem('${STORE_KEY}')`);
-}
-
-/** Pick each job through the UI on the optimizer tab; the second job onward is a job switch. */
-async function seed(browser, jobs, rate) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  await ctx.addInitScript(LONGTASKS);
-  const pg = await ctx.newPage();
-  pg.setDefaultTimeout(TIMEOUT);
-  await pg.goto(PAGE);
-  await throttle(pg, rate);
-  await pg.waitForSelector('[data-job-id]', { state: 'attached' });
-  const states = {};
-  const rows = [];
-  for (const job of jobs) {
-    const before = (await measures(pg, 'optimizer')).length;
-    const tJob = await pg.evaluate('performance.now()');
-    await setJob(pg, job); // the page opens on the optimizer tab
-    await pg.click('#o-run');
-    await waitMeasure(pg, 'optimizer', before + 1);
-    await pg.locator('#o-out .panel').waitFor({ state: 'visible' });
-    const total = (await pg.evaluate('performance.now()')) - tJob;
-    const opt = (await measures(pg, 'optimizer')).at(-1);
-    rows.push({ job, pieces: await searched(pg), optimizer_ms: opt, switch_total_ms: total });
-    states[job] = await savedState(pg, job);
-  }
-  const save = max(await measures(pg, 'save'));
-  const longMax = max(await pg.evaluate('window.__long'));
-  await ctx.close();
-  return { states, rows, save, longMax };
-}
-
-async function coldAndWarm(browser, state, rate, targets, warm) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  await ctx.addInitScript(LONGTASKS);
-  await ctx.addInitScript(`try { localStorage.setItem(${JSON.stringify(STORE_KEY)}, ${JSON.stringify(state)}); } catch (e) {}`);
   const pg = await ctx.newPage();
   pg.setDefaultTimeout(TIMEOUT);
   const cdp = await throttle(pg, rate); // before navigation, so page start-up is throttled too
   await pg.goto(PAGE);
-  const openTasks = await pg.evaluate('window.__long.length'); // long tasks before the first Optimize
-  await pg.click('#o-run');
-  await waitMeasure(pg, 'optimizer', 1);
-  await pg.locator('#o-out .panel').waitFor({ state: 'visible' });
+  await pg.waitForSelector('#sh-list a.sname');
+  await openSet(pg, sheet, sheet.sets[0].id);
+  const openTasks = await pg.evaluate('window.__long.length'); // long tasks before the first Fill
+  await fill(pg);
   const shown = await pg.evaluate('performance.now()'); // since navigation start
-  const cold = (await measures(pg, 'optimizer'))[0];
-  const out = { cold_ms: cold, load_to_result_ms: shown };
+  const out = { cold_ms: (await measures(pg, 'fill'))[0], load_to_result_ms: shown };
+  await pg.click('#sh-discard');
   let searchTasks = Infinity; // long tasks up to the memory step (its forced garbage collections block the thread too)
   if (warm) {
     const runs = [];
     const settles = [];
-    for (const t of targets) {
-      const before = (await measures(pg, 'optimizer')).length;
-      await pg.selectOption('#o-target', t);
-      const t0 = await pg.evaluate('performance.now()');
-      await pg.click('#o-run');
-      await waitMeasure(pg, 'optimizer', before + 1);
-      await pg.waitForFunction(`document.querySelector('#o-result')?.dataset.target === '${t}'`, undefined, { timeout: TIMEOUT });
-      settles.push((await pg.evaluate('performance.now()')) - t0);
-      runs.push((await measures(pg, 'optimizer')).at(-1));
+    for (const set of sheet.sets) {
+      await openSet(pg, sheet, set.id);
+      settles.push(await fill(pg));
+      runs.push((await measures(pg, 'fill')).at(-1));
+      await pg.click('#sh-discard');
     }
     out.warm_ms = runs;
     out.settle_ms = settles;
-    // memory: 100 more target changes, heap before and after garbage collection
+    // memory: 100 more Fills, heap before and after garbage collection
     searchTasks = await pg.evaluate('window.__long.length');
     await cdp.send('HeapProfiler.enable');
     await cdp.send('HeapProfiler.collectGarbage');
     const h0 = await pg.evaluate('performance.memory.usedJSHeapSize');
     for (let i = 0; i < 100; i++) {
-      const before = (await measures(pg, 'optimizer')).length;
-      await pg.selectOption('#o-target', targets[i % targets.length]);
-      await pg.click('#o-run');
-      await waitMeasure(pg, 'optimizer', before + 1);
+      if (i % 20 === 0) await openSet(pg, sheet, sheet.sets[(i / 20) % sheet.sets.length].id);
+      await fill(pg);
+      await pg.click('#sh-discard');
     }
     await cdp.send('HeapProfiler.collectGarbage');
     const h1 = await pg.evaluate('performance.memory.usedJSHeapSize');
     out.heap_mb = [h0 / 2 ** 20, h1 / 2 ** 20];
+    out.save_ms = max(await measures(pg, 'save'));
   }
   const long = await pg.evaluate('window.__long');
   out.longtask_max_ms = max(long);
@@ -173,32 +179,22 @@ async function main() {
   const results = [];
   const browser = await chromium.launch();
   try {
-    const { states } = await seed(browser, jobs, 1);
     for (const rate of rates) {
       console.log(`\nCPU ${rate}x${rate === 1 ? ' (this machine)' : ' slower'}`);
-      const { rows, save, longMax } = await seed(browser, jobs, rate);
-      for (const r of rows) {
-        console.log(
-          `  pick ${r.job} (${r.pieces.toLocaleString('en-US')} pieces searched): ` +
-            `optimizer ${r.optimizer_ms.toFixed(0)} ms, click to result ${r.switch_total_ms.toFixed(0)} ms`,
-        );
-      }
-      console.log(`  slowest save ${save.toFixed(0)} ms, longest blocked main thread ${longMax.toFixed(0)} ms`);
       for (const job of jobs) {
-        const targets = ['crit', 'det', 'dh', 'spd', 'main'];
         const runs = [];
-        for (let i = 0; i < runsN; i++) runs.push(await coldAndWarm(browser, states[job], rate, targets, i === 0));
+        for (let i = 0; i < runsN; i++) runs.push(await coldAndWarm(browser, job, rate, i === 0));
         const w = runs[0];
         console.log(
-          `  ${job}: cold optimizer run ${fmt(runs.map(r => r.cold_ms))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms))} ms`,
+          `  ${job}: cold Fill ${fmt(runs.map(r => r.cold_ms))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms))} ms`,
         );
         console.log(
-          `  ${job}: warm runs ${fmt(w.warm_ms)} ms; Optimize to result ${fmt(w.settle_ms)} ms; ` +
-            `heap ${w.heap_mb[0].toFixed(1)} -> ${w.heap_mb[1].toFixed(1)} MB after 100 changes; ` +
+          `  ${job}: warm Fills ${fmt(w.warm_ms)} ms; Fill to result ${fmt(w.settle_ms)} ms; ` +
+            `heap ${w.heap_mb[0].toFixed(1)} -> ${w.heap_mb[1].toFixed(1)} MB after 100 Fills; slowest save ${w.save_ms.toFixed(0)} ms; ` +
             `longest blocked main thread ${max(runs.map(r => r.longtask_max_ms)).toFixed(0)} ms, ` +
-            `${max(runs.map(r => r.longtask_search_max_ms)).toFixed(0)} ms from the first Optimize on`,
+            `${max(runs.map(r => r.longtask_search_max_ms)).toFixed(0)} ms from the first Fill on`,
         );
-        results.push({ rate, job, runs, switch: rows, save_ms: save });
+        results.push({ rate, job, runs });
       }
     }
   } finally {

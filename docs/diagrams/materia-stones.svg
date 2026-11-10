@@ -75,5 +75,5 @@
   <text class="s fg" x="480.4" y="340" text-anchor="middle">560</text>
   <text class="s fg" x="596.3" y="340" text-anchor="middle">690</text>
   <text class="s fg" x="690" y="340" text-anchor="middle">795</text>
-  <text class="s muted" x="380" y="368" text-anchor="middle">Gear item level (100 is the lowest in the database, 795 the highest)</text>
+  <text class="s muted" x="380" y="368" text-anchor="middle">Gear item level (chart starts at 100; the database starts at 15; 795 is the highest)</text>
 </svg>

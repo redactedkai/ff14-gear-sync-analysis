@@ -1,0 +1,40 @@
+/* Which jobs share gear, for Copy sheet: the gear groups of src/data/gear-groups.json (made by scripts/data/gen_gear_groups.py
+   from the item data: jobs that can wear 80 percent or more of the same head, body, hands, legs and feet pieces, with
+   the same level cap), and the pieces a job cannot wear. A set's pieces are as set.js keeps them. */
+import GEAR_GROUPS_FILE from '../data/gear-groups.json' with { type: 'json' };
+import { JOB_ROWS, ROW } from './constants.js';
+import { itemById } from './items.js';
+
+/* GEAR_GROUPS: [[job id, ...], ...], every job in exactly one group. */
+export const GEAR_GROUPS = Object.freeze(GEAR_GROUPS_FILE.groups.map(group => Object.freeze([...group])));
+
+/* The job ids a sheet for job `jobId` can be copied to: the other jobs of its gear group, in job order (empty for a job
+   alone in its group, Blue Mage and Beastmaster, or an unknown id). */
+export function copyTargets(jobId) {
+  const group = GEAR_GROUPS.find(g => g.includes(jobId));
+  return group ? group.filter(id => id !== jobId) : [];
+}
+
+/* The role name of the gear group of `jobId` ("Healers"), for the Copy sheet note: the job picker's row label
+   (constants.js JOB_ROWS) when every job of the group is in that one row, else null (a group that spans rows, or a job
+   alone in its group, Blue Mage and Beastmaster, takes no name). */
+export function gearGroupName(jobId) {
+  const group = GEAR_GROUPS.find(g => g.includes(jobId));
+  if (!group || group.length < 2) return null;
+  const row = JOB_ROWS.find(([, jobs]) => group.every(id => jobs.includes(id)));
+  return row ? row[0] : null;
+}
+
+/* The pieces of `pieces` (a set's pieces, set.js) that `job` (a JobContext) cannot wear, by the job mask of the piece's
+   database row: [{index (in `pieces`), slot, gameId, name (the database row's)}], in order. The mask only: the equip level is not checked
+   (`wearable` in items.js does that), since a level-synced piece stays wearable. Pieces not from the database (custom,
+   empty slots, or a game id no row has any more) are never listed. */
+export function piecesJobCannotWear(job, pieces) {
+  const bit = 1 << job.jobIndex;
+  const out = [];
+  pieces.forEach((piece, index) => {
+    const row = piece.gameId == null ? null : itemById(piece.gameId);
+    if (row && !(row[ROW.jobMask] & bit)) out.push({ index, slot: piece.slot, gameId: piece.gameId, name: row[ROW.name] });
+  });
+  return out;
+}

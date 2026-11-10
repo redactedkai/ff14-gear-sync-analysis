@@ -3,12 +3,19 @@
    other stats (tier ranking). */
 import { buildCandidates } from './candidates.js';
 import { branchAndBound } from './search.js';
+import { realSlotType } from './slot-index.js';
 import { SLOT_TYPES } from '../constants.js';
 
 /* The optimizer's other entry points for the modules built on it (same-result.js, target-gcd.js, tier-rank.js, the
    optimizer view): every candidate unpruned (buildCandidates), the dimensions a candidate tracks (vectorDims) and the
    keys a score ranks (rankedKeys). A piece under sync (itemSyncIlvl, effStats, itemCaps) is core/piece.js. */
-export { buildCandidates, rankedKeys, vectorDims } from './candidates.js';
+export {
+  buildCandidates,
+  fixedCandidate,
+  pinProblem,
+  rankedKeys,
+  vectorDims,
+} from './candidates.js';
 
 /* The speed rule of search options {spdMin, spdMax}: the bounds (null for none; a minimum of 0 or less is none) and its
    kind, 'exact' with a maximum (a band), 'min' with a minimum only, null with neither. */
@@ -26,9 +33,11 @@ function speedRule(opts) {
    hold any of `minStats`, or none. 'spd' in minStats is a speed rule of 'min' (unless `speed` is set).
    `versionKeys`: stats the meld versions are also on, and `versionCache`: meld versions shared with other lists of
    the same job and sync (buildCandidates). `weaponFirst` (default true): rank weapon damage before the objective
-   (rankedKeys in candidates.js); fastestGcd turns it off.
-   opts = {target='main', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst}.
-   Returns {slotList, posList, dims, noMeldData, speed, minStats}. */
+   (rankedKeys in candidates.js); fastestGcd turns it off. `fixed`: pinned pieces (fixedCandidate), worn as they are:
+   the search fills the other slots and solve counts the pinned ones in its totals and limits (buildCandidates).
+   opts = {target='main', tiebreak=[], melds=false, speed=null, minStats=[], versionKeys=[], versionCache, weaponFirst,
+   fixed=[]}.
+   Returns {slotList, posList, dims, noMeldData, speed, minStats, fixed, fixedBlocked}. */
 export function prepare(job, pool, sync, opts) {
   opts = opts || {};
   const target = opts.target || 'main';
@@ -48,6 +57,7 @@ export function prepare(job, pool, sync, opts) {
       versionKeys: opts.versionKeys || [],
       versionCache: opts.versionCache,
       weaponFirst: opts.weaponFirst !== false,
+      fixed: opts.fixed || [],
     },
   );
   return { ...cands, speed, minStats };
@@ -76,6 +86,28 @@ function limitsFor(prep, opts) {
   return limits;
 }
 
+/* The pinned pieces' totals over the dims, {dim: points}: what the search's own slots start from. */
+function fixedTotalsOf(fixed, dims) {
+  const totals = Object.fromEntries(dims.map(d => [d, 0]));
+  for (const cand of fixed) for (const d of dims) totals[d] += cand.eff[d] || 0;
+  return totals;
+}
+
+/* `limits` ({stat, min, max}, on the whole loadout's totals) as the search sees them, on the pieces it picks: the pinned
+   pieces' points (`fixedTotals`) come off each. A minimum they already meet is no limit; a limit with neither bound left
+   is dropped. Returns null when a maximum is already passed by the pinned pieces alone (no loadout meets it). */
+function limitsWithoutFixed(limits, fixedTotals) {
+  const out = [];
+  for (const limit of limits) {
+    const held = fixedTotals[limit.stat] || 0;
+    const min = limit.min > 0 && limit.min - held > 0 ? limit.min - held : null;
+    const max = limit.max != null ? limit.max - held : null;
+    if (max != null && max < 0) return null;
+    if (min != null || max != null) out.push({ ...limit, min, max });
+  }
+  return out;
+}
+
 /* True when picks (solve's) meet every limit ({stat, min, max}): a seed that does not is ignored, since the search would
    return it as the best when nothing beats its score. */
 function meetsLimits(picks, limits) {
@@ -98,7 +130,7 @@ export function seedStart(prep, picks) {
   }
   let score = 0;
   const best = prep.slotList.map(type => {
-    const p = byType.get(type)?.shift();
+    const p = byType.get(realSlotType(type))?.shift();
     if (!p?.item) return { cand: null, rank: -1, blockedBy: p?.blockedBy ? { item: p.blockedBy } : undefined };
     const cand = { item: p.item, eff: p.eff, meld: p.meld, score: prep.score(p.eff) };
     score += cand.score;
@@ -121,38 +153,43 @@ const DEFAULT_NODE_LIMIT = 1500000;
    search filters by the Lagrangian bound and may settle by a short trial search or Pareto fronts (search.js
    branchAndBound). `proven`: maxima earlier searches proved, [{stat, most, minStats, speed}] (regain.js), each under
    limits this search's include (the same speed rule, minimums no lower on minStats); tier ranking passes its
-   finished stages'. The result adds `method` ('trial', 'fronts' or 'search'), `kept` (candidates left after the
-   filters) and `frontSizes` to optimize's. */
+   finished stages'. Limits, seed and proven maxima are on the whole loadout, pinned pieces (prepare's `fixed`) included;
+   a pinned pick is marked `pinned`, and a seed's are ignored. The result adds `method` ('trial', 'fronts' or
+   'search'), `kept` (candidates left after the filters) and `frontSizes` to optimize's. */
 export function solve(prep, opts) {
   opts = opts || {};
-  const limits = limitsFor(prep, opts);
+  const wholeLimits = limitsFor(prep, opts);
   const nodeLimit = opts.nodeLimit || DEFAULT_NODE_LIMIT;
-  const { slotList, posList, dims, noMeldData } = prep;
-  const start = opts.seed && meetsLimits(opts.seed, limits) ? seedStart(prep, opts.seed) : null;
-  const { best, nodes, truncated, method, kept, frontSizes } = branchAndBound({
-    slotList,
-    posList,
-    dims,
-    limits,
-    nodeLimit,
-    plain: !!opts.plain,
-    lazyTables: opts.lazyTables,
-    start,
-    proven: opts.proven,
-  });
+  const { slotList, posList, dims, noMeldData, fixed = [], fixedBlocked = [] } = prep;
+
+  // 1. with pinned pieces, the limits and proven maxima as the search's own slots see them (without the pinned points),
+  // and a seed without its pinned picks; with none, everything as given
+  const fixedTotals = fixedTotalsOf(fixed, dims);
+  const limits = fixed.length ? limitsWithoutFixed(wholeLimits, fixedTotals) : wholeLimits;
+  const proven = fixed.length ? opts.proven?.map(p => ({ ...p, most: p.most - (fixedTotals[p.stat] || 0) })) : opts.proven;
+  const seedPicks = fixed.length ? opts.seed?.filter(p => !p.pinned) : opts.seed;
+  if (!limits) return { ok: false, truncated: false, nodes: 0, noMeldData, method: 'search', kept: 0 };
+  const start = seedPicks && meetsLimits(seedPicks, limits) ? seedStart(prep, seedPicks) : null;
+
+  // 2. the search; pinned pieces alone fill every slot when the search has none
+  const { best, nodes, truncated, method, kept, frontSizes } =
+    slotList.length || !fixed.length
+      ? branchAndBound({ slotList, posList, dims, limits, nodeLimit, plain: !!opts.plain, lazyTables: opts.lazyTables, start, proven })
+      : { best: limits.some(l => l.min > 0) ? null : [], nodes: 0, truncated: false, method: 'search', kept: 0 };
   if (!best) return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
 
+  // 3. the picks: pinned pieces first (a pinned ring before the free one), the slots they cover empty, then the search's
   const picks = [];
-  const totals = {};
-  dims.forEach(d => {
-    totals[d] = 0;
-  });
+  const totals = { ...fixedTotals };
+  for (const cand of fixed) picks.push({ type: cand.item.type, item: cand.item, eff: cand.eff, meld: cand.meld, pinned: true });
+  for (const { type, blockedBy } of fixedBlocked) picks.push({ type, item: null, blockedBy: blockedBy ?? null });
   best.forEach((slot, i) => {
+    const type = realSlotType(slotList[i]);
     if (!slot?.cand) {
-      picks.push({ type: slotList[i], item: null, blockedBy: slot?.blockedBy?.item ?? null });
+      picks.push({ type, item: null, blockedBy: slot?.blockedBy?.item ?? null });
       return;
     }
-    picks.push({ type: slotList[i], item: slot.cand.item, eff: slot.cand.eff, meld: slot.cand.meld });
+    picks.push({ type, item: slot.cand.item, eff: slot.cand.eff, meld: slot.cand.meld });
     dims.forEach(d => {
       totals[d] += slot.cand.eff[d];
     });
@@ -166,12 +203,13 @@ export function solve(prep, opts) {
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level}: item level cap, item level sync on, synced level (optional; see itemSyncIlvl in piece.js)
- * @param opts  {target='main', tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false}: mins = {stat: gear
+ * @param opts  {target='main', tiebreak=[], spdMin, spdMax, mins={}, nodeLimit=1.5e6, melds=false, fixed=[]}: `fixed`
+ *              pinned pieces (fixedCandidate), counted in the totals and every limit but not searched; mins = {stat: gear
  *              points}, minimums on any stat's total; melds gives every piece that is not synced its best materia melds
  *              for the objective; with a speed range or minimums, every meld split worth keeping (meldVersions in
  *              meld.js), since the best melds of a piece then depend on the rest of the loadout
  * @returns {ok:false, truncated, nodes, noMeldData} when nothing is feasible, otherwise
- *          {ok:true, picks:[{type, item, eff, meld, blockedBy}], totals, truncated, nodes, noMeldData}; picks are in the
+ *          {ok:true, picks:[{type, item, eff, meld, blockedBy, pinned}], totals, truncated, nodes, noMeldData}; picks are in the
  *          character panel's slot order (SLOT_TYPES), not the search order; an empty pick has item null, and blockedBy
  *          is the chosen item that leaves its slot empty (a cloak for the head), if any; meld is the pick's melds
  *          (bestMeld in meld.js) or null, and eff includes them; noMeldData counts the pool pieces with no slot data when

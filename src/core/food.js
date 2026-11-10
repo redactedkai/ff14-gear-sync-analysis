@@ -10,16 +10,16 @@ import { LEVEL_MAIN } from './constants.js';
 import { clampLevel, levelParams } from './level-params.js';
 import { FOODS } from './tables.js';
 
-/* The neutral stat a raw food stat means for the job, or null when the job has no such stat (Spell Speed food for a
+/* The stat key a raw food stat means for the job, or null when the job has no such stat (Spell Speed food for a
    Skill Speed job, Tenacity food for a job without Tenacity). */
-function neutralOf(job, raw) {
+function statKeyOf(job, raw) {
   if (raw === 'crit' || raw === 'det' || raw === 'dh') return raw;
   if (raw === job.profile.spd) return 'spd';
   if (raw === job.profile.spec) return 'spec';
   return null;
 }
 
-/* The base a neutral stat starts from at character level `level`, as the character panel counts it: for the main stat
+/* The base a stat key starts from at character level `level`, as the character panel counts it: for the main stat
    and Vitality the level's main stat base (LEVEL_MAIN) x the job's modifier (ClassJob; floor, as AkhMorning and xivgear
    do), without the clan's bonus (-3 to +3, which the page does not ask for); the level's main stat base for
    Determination and Piety; ParamGrow BaseSpeed for the other substats. */
@@ -44,7 +44,7 @@ function covers(a, b) {
 }
 
 /* Every HQ meal the job can use, oldest first (FOODS order, by item level): {key, name, ilvl, pair, stats: [{stat, pct,
-   max}], vit: {stat: 'vit', pct, max} or null}; key = the meal's name (unique in FOODS), pair = its neutral stats
+   max}], vit: {stat: 'vit', pct, max} or null}; key = the meal's name (unique in FOODS), pair = its stat keys
    joined by '+', primary first ('det+crit'). Only meals whose every stat the job has: 182 for Astrologian. The result's
    Food menu lists them all; foodChoices keeps the few the searches need. Cached per job. */
 const mealCache = new Map();
@@ -52,7 +52,7 @@ export function allMeals(job) {
   if (mealCache.has(job.jobId)) return mealCache.get(job.jobId);
   const out = [];
   for (const [name, ilvl, stats, vitality] of FOODS) {
-    const mapped = stats.map(([raw, pct, max]) => Object.freeze({ stat: neutralOf(job, raw), pct, max }));
+    const mapped = stats.map(([raw, pct, max]) => Object.freeze({ stat: statKeyOf(job, raw), pct, max }));
     if (mapped.some(s => s.stat == null)) continue;
     const vit = vitality ? Object.freeze({ stat: 'vit', pct: vitality[0], max: vitality[1] }) : null;
     out.push(Object.freeze({ key: name, name, ilvl, pair: mapped.map(s => s.stat).join('+'), stats: Object.freeze(mapped), vit }));
@@ -63,8 +63,8 @@ export function allMeals(job) {
 }
 
 /* The job's food choices, in the job's substat order: {key, name, ilvl, stats: [{stat, pct, max}], vit: {stat: 'vit',
-   pct, max} or null}, key = the neutral
-   stats joined by '+', primary first ('det+crit'). Only meals whose every stat the job has. Each stat pair (or single
+   pct, max} or null}, key = the stat keys
+   joined by '+', primary first ('det+crit'). Only meals whose every stat the job has. Each stat pair (or single
    stat) is its newest meal: FOODS is sorted by item level, and within a pair a newer meal never has a lower maximum
    (tests/unit/core-food.test.js). A choice that another one covers (every stat at least as high) is left out, since it can
    never give more: an old Critical Hit + Determination meal next to a new Determination + Critical Hit one, a one-stat
@@ -96,7 +96,7 @@ export function foodLabel(job, food) {
   return food.stats.map(s => job.label[s.stat]).join(' + ');
 }
 
-/* What `food` adds to gear totals `totals` ({neutral stat: gear points}) at `level`: {stat: {bonus, capped}}, capped when
+/* What `food` adds to gear totals `totals` ({stat key: gear points}) at `level`: {stat: {bonus, capped}}, capped when
    the percentage reaches the meal's maximum; its substats, and Vitality when the meal has some (food.vit). */
 export function foodBonus(job, food, totals, level) {
   const out = {};

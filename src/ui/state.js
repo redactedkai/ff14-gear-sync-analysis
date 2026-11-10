@@ -1,30 +1,61 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
-import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, HASTE, jobById } from '../core/constants.js';
+import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.js';
 import { makeJobContext } from '../core/job-context.js';
 import { MAX_REAL } from '../core/tables.js';
 import { capCeiling } from '../core/sync-target.js';
-import { uniqueRanks } from './ranks.js';
-import { DEFAULT_EXCLUDE, TARGET_GCD_RANGE, levelSyncOn, syncSettings } from './settings.js';
+import { DEFAULT_EXCLUDE, PANEL_GROUP, syncSettings } from './settings.js';
+import { STORE_KEY } from './store-key.js';
 
 /* Defaults favour no player's setup: level 100 (the level cap), no sync cap and sync off. */
 const DEFAULT_LEVEL = 100;
 
-/* The cap follows the synced level: a cap above what the level allows (capCeiling, the best gear made for it) is
-   lowered to it, while item level sync is on and level sync can apply; without level sync (the job's level cap), a cap
-   above the highest real item level is lowered to that. Above either the cap changes nothing (syncTarget), so the
-   field shows the cap that applies (owner's decision, 2026-10-18). A cap is never raised: a low cap is a real duty's
-   (Minimum IL). Called when the level settles, when a cap is entered, when sync is switched on, and on restore.
-   Returns {from, to, level} when it lowered the cap (the note under the field; level null when the highest real item
-   level was the limit), else null. */
+/* The cap follows the level: a cap above what the level allows (capCeiling, the best gear made for it) is lowered to it,
+   whatever the job (a job at its own level cap included), while item level sync is on. Above it the cap changes nothing
+   (syncTarget), so the field shows the cap that applies. A cap is never raised: a low cap is a real duty's (Minimum IL).
+   Called when the level settles, when a cap is entered, when sync is switched on, and on restore.
+   Returns {from, to, level} when it lowered the cap (the note under the field), else null. */
 export function limitCapToLevel(app) {
   if (!syncSettings(app).sync) return null;
-  const byLevel = levelSyncOn(app.jobCtx, app.level),
-    top = byLevel ? capCeiling(app.level) : MAX_REAL;
+  const top = app.level == null ? MAX_REAL : capCeiling(app.level);
   if (app.cap <= top) return null;
-  const lowered = { from: app.cap, to: top, level: byLevel ? app.level : null };
+  const lowered = { from: app.cap, to: top, level: app.level ?? null };
   app.cap = top;
   return lowered;
+}
+
+/* The note under a cap field after limitCapToLevel lowered it (`lowered` its {from, to, level}, or null: ''), on the Job
+   and sync panel and on a sheet's page and forms: "Lowered to 135, the highest for level 50." */
+export function capLoweredText(lowered) {
+  if (!lowered) return '';
+  return `Lowered to ${lowered.to}, the highest ${lowered.level == null ? 'item level' : `for level ${lowered.level}`}.`;
+}
+
+/* The closed Job and sync strip after "Job: <name>" (the Gear browser and How the math works tabs): "Level 100 · Item
+   level sync: off", or the cap in place of "off" while sync is on ("Item level sync: 275"; "on" while the cap field is
+   empty). Wording from prototype B17 (app.js sheetBar). */
+export function jobLineText(level, sync, cap) {
+  const syncText = !sync ? 'off' : cap == null ? 'on' : String(cap);
+  return `Level ${level} · Item level sync: ${syncText}`;
+}
+
+/* The error under a cap field holding text that is no whole item level from 1 (the field keeps its last cap). */
+export const CAP_TYPED_BAD_TEXT = `Enter a whole item level from 1 to ${MAX_REAL}`;
+
+/* Text typed in a cap field is no cap: not empty and not a whole number from 1. A whole number above the highest real
+   item level is a cap (limitCapToLevel lowers it). The Job and sync panel and a sheet's page. */
+export function capTextBad(text) {
+  const value = Number(text);
+  return text !== '' && !(Number.isInteger(value) && value >= 1);
+}
+
+/* The Job and sync panel's saved fields, which each reference tab holds for itself (settings.js PANEL_GROUP). */
+const PANEL_KEYS = ['job', 'cap', 'sync', 'level'];
+
+/* One tab's Job and sync panel at its defaults: {job (null: none chosen), cap (null: none), sync (item level sync
+   off), level (the synced level)}. */
+function defaultPanel() {
+  return { job: null, cap: null, sync: false, level: DEFAULT_LEVEL };
 }
 
 /* The Gear browser's settings at their defaults for `job` (a JobContext, or null before one is chosen). The one copy of
@@ -52,50 +83,28 @@ export function defaultBrowse(job = null) {
    restore (no gear name comes close; it bounds the one free-text field the page saves). */
 export const SEARCH_MAX_LENGTH = 100;
 
-/* The localStorage key of the saved state. Kept when the saved shape changes: restoreState repairs an older one (no
-   users to migrate yet; CLAUDE.md, Page rules). */
-export const STORE_KEY = 'ilvl-stat-lab-v4';
-/* The page's tabs (`tab`) and the math tab's sub-tabs (`mathTab`). */
-export const TABS = ['opt', 'browse', 'math'];
+/* The localStorage key of the saved state (store-key.js). */
+export { STORE_KEY };
+/* The page's tabs (`tab`; the first is the one a new visitor sees) and the math tab's sub-tabs (`mathTab`). The Sheets
+   tab has no Job and sync panel (each sheet holds its own job, level and sync; settings.js PANEL_GROUP lists no group
+   for it). */
+export const TABS = ['sheets', 'browse', 'math'];
 export const MATH_TABS = ['piece', 'gcd', 'tiers'];
 
 /* Every saved setting at its default, with no job chosen: the shape saved under STORE_KEY. The job-dependent fields
    are set for a job by resetForJob. */
 export function defaultState() {
   return {
-    job: null, // none until the user picks one
-    cap: null,
-    sync: false,
-    level: DEFAULT_LEVEL,
-    tab: 'opt',
+    // The Job and sync panel as the open tab holds it (the store's mirror of that tab's group; PANEL_GROUP): not saved
+    // itself, each tab's own copy is. job: none until the user picks one.
+    ...defaultPanel(),
+    tab: TABS[0],
     mathTab: 'piece',
-    // How the math works: the piece's item level (null: the cap; explainerItemLevel in views/sync-explainer.js),
-    // slot and two ranked substats
-    piece: { ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
-    // the Gear browser's filters and sort (defaultBrowse)
-    browse: defaultBrowse(),
-    // melds: give pieces their best materia melds. expOff, exclude, market, min, max, lvl: Gear to search, the browser's
-    // filters with their own values. food: add the best meal for the goal to the result (a meal picked from the Food
-    // row's menu is not saved, like the rows' picks; a save's old foodPair is dropped). gcd: the Target GCD in seconds,
-    // '' for any; gcdMode: 'exact' (exactly that GCD) or 'min' (that GCD or faster); exact by default, like xivgear
-    // (owner's decision 2026-10-16). byTier: rank the goal and tiebreaks by their tiers before their points
-    // (core/tier-rank.js); on by default (owner's decision 2026-10-16)
-    opt: {
-      target: 'main',
-      tb: '',
-      tb2: '',
-      melds: true,
-      expOff: [],
-      exclude: [...DEFAULT_EXCLUDE],
-      market: true,
-      min: '',
-      max: '',
-      lvl: 100,
-      food: false,
-      gcd: '',
-      gcdMode: 'exact',
-      byTier: true,
-    },
+    // How the math works: its own Job and sync panel (job, cap, sync, level), then the piece's item level (null: the
+    // cap; explainerItemLevel in views/sync-explainer.js), slot and two ranked substats
+    piece: { ...defaultPanel(), ilvl: null, slot: 'head', subs: ['crit', 'spd'] },
+    // the Gear browser's own Job and sync panel, then its filters and sort (defaultBrowse)
+    browse: { ...defaultPanel(), ...defaultBrowse() },
   };
 }
 
@@ -105,46 +114,41 @@ export function defaultSubs() {
   return ['crit', 'spd'];
 }
 
-/* The synced level and the two "Equip level" filters held to the job's level cap. */
-export function clampLevels(s, job) {
+/* The synced level (`s.level`, the open tab's panel) and, when `parts` has the Gear browser ('browse'), its "Equip
+   level" filter held to the job's level cap (resetForJob). */
+export function clampLevels(s, job, parts = ['browse']) {
   if (s.level > job.maxLevel) s.level = job.maxLevel;
-  for (const f of [s.browse, s.opt]) if (f.lvl !== '' && f.lvl > job.maxLevel) f.lvl = job.maxLevel;
+  const filter = s.browse;
+  if (parts.includes('browse') && filter.lvl !== '' && filter.lvl > job.maxLevel) filter.lvl = job.maxLevel;
 }
 
 /* On a job change from `from` (a JobContext, or null with no job chosen before) to `job`: the levels are held to the
-   job's cap, and the job-specific selections the new job can use stay (audit 11 #2). A stat choice stays when the new
-   job has the same stat under the same name (a neutral key can name another stat: `spec` is Piety on a healer and
-   Tenacity on a tank), else it goes back to its default; the Target GCD stays when both jobs have the same speed stat
-   and the same haste (the GCDs a job can reach depend on its haste). With no `from`, everything goes back. */
-export function resetForJob(s, job, from = null) {
+   job's cap, and the job-specific selections the new job can use stay. A stat choice stays when the new job has the
+   same stat under the same name (a stat key can name another stat: `spec` is Piety on a healer and Tenacity on a tank),
+   else it goes back to its default. With no `from`, everything goes back. `parts`: the tabs whose settings are reset,
+   any of 'math' (the piece) and 'browse'; both by default. A job change in one tab's panel passes that tab only, since
+   the other tab keeps its own job (the store's setJob). */
+export function resetForJob(s, job, from = null, parts = ['math', 'browse']) {
   const keeps = k => !!k && !!from && job.stats.includes(k) && from.label[k] === job.label[k];
-  clampLevels(s, job);
-  // Piece stats' two substats stay as a pair (the second may be none), else both go back
-  const [sub1, sub2] = s.piece.subs;
-  if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) s.piece.subs = defaultSubs();
-  if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
-  const goal = [s.opt.target, s.opt.tb, s.opt.tb2].map((k, i) => (keeps(k) ? k : i === 0 ? 'main' : ''));
-  [s.opt.target, s.opt.tb, s.opt.tb2] = uniqueRanks(goal).map(r => r ?? '');
-  const sameSpeed = keeps('spd') && (HASTE[from.jobId] ?? null) === (HASTE[job.jobId] ?? null);
-  if (!sameSpeed) s.opt.gcd = '';
-  // the browser's slot and sort: a slot the job wears and a sort by name, level, item level or a kept stat stay
-  const browse = defaultBrowse(job);
-  if (!from || !['any', ...job.activeSlotTypes].includes(s.browse.type)) s.browse.type = browse.type;
-  if (!from || !(['name', 'lvl', 'ilvl'].includes(s.browse.sort) || keeps(s.browse.sort))) {
-    s.browse.sort = browse.sort;
-    s.browse.dir = browse.dir;
+  clampLevels(s, job, parts);
+  if (parts.includes('math')) {
+    // Piece stats' two substats stay as a pair (the second may be none), else both go back
+    const [sub1, sub2] = s.piece.subs;
+    if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) s.piece.subs = defaultSubs();
+    if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
+  }
+  if (parts.includes('browse')) {
+    // the browser's slot and sort: a slot the job wears and a sort by name, level, item level or a kept stat stay
+    const browse = defaultBrowse(job);
+    if (!from || !['any', ...job.activeSlotTypes].includes(s.browse.type)) s.browse.type = browse.type;
+    if (!from || !(['name', 'lvl', 'ilvl'].includes(s.browse.sort) || keeps(s.browse.sort))) {
+      s.browse.sort = browse.sort;
+      s.browse.dir = browse.dir;
+    }
   }
 }
 
 /* ---- validators: each returns the value if it is valid (normalized), otherwise the fallback ---- */
-/** a Target GCD: '' or a number of seconds in TARGET_GCD_RANGE, the box's own range (a numeric string too: x-model on
-    a number input), to 0.01 */
-const gcdIn = (v, fallback) => {
-  if (v === '') return '';
-  const n = typeof v === 'string' && v.trim() !== '' ? Number(v) : v;
-  const [lowest, highest] = TARGET_GCD_RANGE;
-  return typeof n === 'number' && Number.isFinite(n) && n >= lowest && n <= highest ? Math.round(n * 100) / 100 : fallback;
-};
 const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -161,7 +165,7 @@ const str = (v, fallback) => (typeof v === 'string' ? v : fallback);
 const oneOf = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
 const ilvlIn = (v, fallback) => intIn(v, 1, MAX_REAL, fallback);
 
-/* The gear filter fields both tabs have (expOff, min, max, lvl) from saved `raw` into `f`. */
+/* The Gear browser's gear filter fields (expOff, min, max, lvl) from saved `raw` into `f`. */
 function restoreGearFilter(f, raw, job) {
   f.expOff = Array.isArray(raw.expOff) ? EXPANSIONS.map(e => e.short).filter(k => raw.expOff.includes(k)) : [];
   f.min = optIntIn(raw.min, 0, MAX_REAL, f.min);
@@ -180,7 +184,8 @@ function restorePieceSubs(raw, job) {
   return subs;
 }
 
-/* tab and mathTab; older saved state used the sub-view names as tabs, and 'pool' for the gear tab (now the browser) */
+/* tab and mathTab; older saved state used the sub-view names as tabs, 'pool' for the gear tab (now the browser) and
+   'opt' for the Gear optimizer tab the Sheets tab replaced */
 function restoreTabs(s, raw) {
   if (MATH_TABS.includes(raw.tab)) {
     s.mathTab = raw.tab;
@@ -199,56 +204,86 @@ function restoreExclude(raw, fallback) {
   return ACTIVITIES.map(a => a.key).filter(k => raw.includes(k));
 }
 
+/* Saved settings `raw` (parsed localStorage JSON) in the shape with the panel split: a copy in which `piece` and `browse`
+   each hold their own job, cap, sync and level (the saved top-level ones, where the group has none yet), and the
+   top-level four and an older save's Gear optimizer settings (`opt`, `optPanel`) are gone (no users to migrate: a
+   search's settings live on each gear set of a sheet). Anything that is not an object comes back unchanged. Pure; it
+   validates nothing: the restore of each group checks the values, as it does for every field. restoreState starts
+   from it. */
+export function splitPanelSettings(raw) {
+  if (!isObj(raw)) return raw;
+  const { opt: _opt, optPanel: _optPanel, ...rest } = raw;
+  const split = { ...rest };
+  for (const group of ['piece', 'browse']) {
+    const own = isObj(raw[group]) ? raw[group] : {};
+    split[group] = { ...own };
+    for (const key of PANEL_KEYS) if (key in raw && !(key in own)) split[group][key] = raw[key];
+  }
+  for (const key of PANEL_KEYS) delete split[key];
+  return split;
+}
+
+/* One tab's Job and sync panel from saved `own` (an object or not), checked: {job (null when unknown), cap, sync, level,
+   jobCtx}. The level is held to the job's level cap, and a cap above what the level allows is lowered (a save from
+   before the cap followed the level). The plain state has no jobCtx, and without it levelSyncOn would take the game's
+   level cap: Blue Mage at 80 or Beastmaster at 50 would count as level synced, unlike the live page. */
+function restorePanel(own) {
+  const saved = isObj(own) ? own : {},
+    panel = defaultPanel();
+  panel.job = jobById(saved.job) ? saved.job : null;
+  const jobCtx = makeJobContext(panel.job ?? DEFAULT_JOB); // with no job: placeholder defaults, replaced when one is chosen
+  panel.cap = saved.cap === null ? null : ilvlIn(saved.cap, panel.cap);
+  panel.sync = bool(saved.sync, panel.sync);
+  panel.level = intIn(saved.level, 1, jobCtx.maxLevel, Math.min(panel.level, jobCtx.maxLevel));
+  const lowered = limitCapToLevel({ ...panel, jobCtx });
+  if (lowered) panel.cap = lowered.to;
+  return { ...panel, jobCtx };
+}
+
 /* Build a valid state from parsed localStorage JSON (or null). Every field is checked for type and range;
-   an invalid field falls back to its default (for the restored job) and the valid ones are kept. */
+   an invalid field falls back to its default (for the restored job) and the valid ones are kept. Each tab is restored
+   for its own job (splitPanelSettings): `piece` and `browse` each hold their own job, cap, sync and level, and the
+   top-level four are the open tab's copy. An older save with one panel gives both tabs that panel. */
 export function restoreState(raw) {
   const s = defaultState();
   const r = isObj(raw) ? raw : null;
-  s.job = r && jobById(r.job) ? r.job : null;
-  const job = makeJobContext(s.job ?? DEFAULT_JOB); // with no job: placeholder defaults, replaced when one is chosen
-  resetForJob(s, job); // job-dependent defaults; saved values below replace them
-  if (!r) return s;
+  if (!r) {
+    resetForJob(s, makeJobContext(DEFAULT_JOB)); // job-dependent defaults for the placeholder job
+    return s;
+  }
+  const saved = splitPanelSettings(r);
+  restoreTabs(s, saved);
+  const panels = { math: restorePanel(saved.piece), browse: restorePanel(saved.browse) };
 
-  s.cap = r.cap === null ? null : ilvlIn(r.cap, s.cap);
-  s.sync = bool(r.sync, s.sync);
-  s.level = intIn(r.level, 1, job.maxLevel, s.level);
-  // a save from before the cap followed the level. The plain state has no jobCtx yet, and without it levelSyncOn would
-  // take the game's level cap: Blue Mage at 80 or Beastmaster at 50 would count as level synced, unlike the live page
-  const lowered = limitCapToLevel({ ...s, jobCtx: job });
-  if (lowered) s.cap = lowered.to;
-  restoreTabs(s, r);
+  // job-dependent defaults for each tab's own job; the saved values below replace them
+  for (const [part, group] of [
+    ['math', 'piece'],
+    ['browse', 'browse'],
+  ]) {
+    resetForJob(s, panels[part].jobCtx, null, [part]);
+    const { jobCtx: _jobCtx, ...panel } = panels[part];
+    Object.assign(s[group], panel);
+  }
 
-  const piece = isObj(r.piece) ? r.piece : {};
+  const piece = isObj(saved.piece) ? saved.piece : {};
+  const pieceJob = panels.math.jobCtx;
   s.piece.ilvl = piece.ilvl === null ? null : ilvlIn(piece.ilvl, s.piece.ilvl); // older saves: a number, kept
-  s.piece.slot = oneOf(piece.slot, job.activeSlotTypes, s.piece.slot);
-  s.piece.subs = restorePieceSubs(piece.subs, job);
+  s.piece.slot = oneOf(piece.slot, pieceJob.activeSlotTypes, s.piece.slot);
+  s.piece.subs = restorePieceSubs(piece.subs, pieceJob);
 
-  const b = isObj(r.browse) ? r.browse : {};
+  const b = isObj(saved.browse) ? saved.browse : {};
+  const browseJob = panels.browse.jobCtx;
   s.browse.q = str(b.q, s.browse.q).slice(0, SEARCH_MAX_LENGTH);
-  s.browse.type = oneOf(b.type, ['any', ...job.activeSlotTypes], s.browse.type);
-  restoreGearFilter(s.browse, b, job);
+  s.browse.type = oneOf(b.type, ['any', ...browseJob.activeSlotTypes], s.browse.type);
+  restoreGearFilter(s.browse, b, browseJob);
   s.browse.exclude = restoreExclude(b.exclude, s.browse.exclude);
   s.browse.market = bool(b.market, s.browse.market);
-  s.browse.sort = oneOf(b.sort, ['name', 'lvl', 'ilvl', ...job.stats], s.browse.sort);
+  s.browse.sort = oneOf(b.sort, ['name', 'lvl', 'ilvl', ...browseJob.stats], s.browse.sort);
   s.browse.dir = oneOf(b.dir, ['desc', 'asc'], s.browse.dir);
 
-  const o = isObj(r.opt) ? r.opt : {};
-  s.opt.target = oneOf(o.target, job.stats, s.opt.target);
-  s.opt.tb = oneOf(o.tb, ['', ...job.stats], s.opt.tb);
-  s.opt.tb2 = oneOf(o.tb2, ['', ...job.stats], s.opt.tb2);
-  // a goal saved before a stat could hold only one rank: a repeat of a rank above is cleared (ui/ranks.js)
-  [s.opt.target, s.opt.tb, s.opt.tb2] = uniqueRanks([s.opt.target, s.opt.tb, s.opt.tb2]).map(r => r ?? '');
-  s.opt.melds = bool(o.melds, s.opt.melds);
-  s.opt.food = bool(o.food, s.opt.food);
-  s.opt.byTier = bool(o.byTier, s.opt.byTier);
-  s.opt.gcd = gcdIn(o.gcd, s.opt.gcd);
-  s.opt.gcdMode = oneOf(o.gcdMode, ['exact', 'min'], s.opt.gcdMode);
-  // a save from before the optimizer had its own list (the gear pool days, when the browser's list served both)
-  // starts from the browser's
-  const oldSave = isObj(r.opt) && !('exclude' in r.opt);
-  s.opt.exclude = restoreExclude(oldSave ? b.exclude : o.exclude, s.opt.exclude);
-  s.opt.market = bool(o.market, s.opt.market);
-  restoreGearFilter(s.opt, o, job);
+  // the open tab's panel is the top-level copy (on the Sheets tab, which has none, the Gear browser's stands in)
+  const openGroup = s[PANEL_GROUP[s.tab] ?? PANEL_GROUP.browse];
+  Object.assign(s, Object.fromEntries(PANEL_KEYS.map(key => [key, openGroup[key]])));
   return s;
 }
 

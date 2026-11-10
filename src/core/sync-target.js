@@ -23,7 +23,7 @@ export function levelSyncIlvl(level) {
    datamining d9582a6: the 492 caps of every duty with a level sync, Minimum IL included; verified 2026-10-18), so it
    changes no real duty; what a higher cap does is untested. Holding gear to it keeps every setting to what a duty can
    do: at level 50 with cap 400 a level 70 piece is synced to 135, where the cap alone gave it item level 400 stats
-   (owner's decision, 2026-10-18; it replaces an error for such caps). */
+   (owner's decision; it replaces an error for such caps). */
 let ceilings = null;
 export function capCeiling(level) {
   if (!ceilings) {

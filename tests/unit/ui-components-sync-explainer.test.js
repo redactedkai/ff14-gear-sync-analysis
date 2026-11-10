@@ -17,20 +17,19 @@ function bound(saved = { job: 'SGE', sync: true, cap: 123, tab: 'math' }) {
 
 test('Piece stats: its views follow the settings, each built once per change', () => {
   const { app, c } = bound();
-  const goal = [app.opt.target, app.opt.tb, app.opt.tb2];
   const pick = explainerItemLevel(app.jobCtx, syncSettings(app), app.piece);
   assert.deepEqual([c.ilvlRange, c.il, c.ilvlNote], [pick.range, pick.il, pick.note]);
-  assert.deepEqual(c.explainer, explainerView(app.jobCtx, syncSettings(app), app.piece, goal, { piece: 0 }));
+  assert.deepEqual(c.explainer, explainerView(app.jobCtx, syncSettings(app), app.piece, { piece: 0 }));
   assert.equal(c.steps.cap, 123);
   // the same settings: the same objects
   const first = c.pieceViews;
   assert.equal(c.pieceViews, first);
   assert.equal(c.explainer, first.explainer);
-  // the item level, the slot, the goal, the cap and the chart's width are inputs
+  // the item level, the slot, the substats, the cap and the chart's width are inputs
   for (const change of [
     () => (app.piece.ilvl = 130),
     () => (app.piece.slot = 'body'),
-    () => (app.opt.target = 'crit'),
+    () => (app.piece.subs = ['det', 'crit']),
     () => (app.cap = 200),
     () => (c.widths.piece = 640),
   ]) {

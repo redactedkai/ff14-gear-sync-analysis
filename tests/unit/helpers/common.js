@@ -7,6 +7,7 @@ import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.js';
 import { restoreState } from '../../../src/ui/state.js';
+import { defaultFillSettings, fillRecipe } from '../../../src/ui/views/fill-settings.js';
 
 /* A seeded random number generator returning floats in [0, 1): the same seed gives the same sequence, so a failure
    names a case that can be reproduced. */
@@ -59,10 +60,12 @@ export const SLOT_PERMILLE = {
 };
 
 /* A store-shaped state object, as the Alpine store holds it: a save restored by restoreState, plus the job context
-   and the highest real item level, then `patch` on top. */
+   and the highest real item level, and `recipe`, a set's recipe at its Fill settings' defaults for the job
+   (views/fill-settings.js fillRecipe), then `patch` on top. */
 export function appState(saved, patch = {}) {
   const s = restoreState(saved);
-  return Object.assign(s, { jobCtx: makeJobContext(s.job), maxReal: MAX_REAL }, patch);
+  const jobCtx = makeJobContext(s.job);
+  return Object.assign(s, { jobCtx, maxReal: MAX_REAL, recipe: fillRecipe(defaultFillSettings(jobCtx)) }, patch);
 }
 
 /* AkhMorning's Level Modifiers table (Allagan Studies), read from the page's script

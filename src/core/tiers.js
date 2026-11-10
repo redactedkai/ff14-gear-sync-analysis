@@ -10,7 +10,7 @@ import { levelParams } from './level-params.js';
 import { statBase } from './food.js';
 
 /* Tenacity's other effect, damage taken, steps every 200 (xivmath `tenacityIncomingDmg`). Tier ranking uses it: players
-   stack Tenacity for mitigation (owner, 2026-10-16). The optimizer's Tier row shows the damage step (112). */
+   stack Tenacity for mitigation (owner). The optimizer's Tier row shows the damage step (112). */
 const TEN_MITIGATION_STEP = 200;
 
 /* Each substat's effects, in the order the page shows them: {kind, step}, step the c in floor(c x g / div) (speed has
@@ -38,14 +38,14 @@ const SPEC_EFFECTS = {
   ],
 };
 
-/* The effects of a neutral stat for the job ({kind, step} objects), or null for stats without tiers (main, vit, a missing
+/* The effects of a stat key for the job ({kind, step} objects), or null for stats without tiers (main, vit, a missing
    spec). */
 function effectsOf(job, stat) {
   if (stat === 'spec') return job.specKind ? SPEC_EFFECTS[job.specKind] : null;
   return EFFECTS[stat] ?? null;
 }
 
-/* The step size of a neutral stat's first effect, or null for speed and stats without tiers. */
+/* The step size of a stat key's first effect, or null for speed and stats without tiers. */
 function stepOf(job, stat) {
   return effectsOf(job, stat)?.[0].step ?? null;
 }
@@ -112,7 +112,7 @@ function tierAt(effects, g, level, haste) {
    - base: the character's own value (statBase), the panel's lowest; under: `total` was below it (it counts as base);
    - kinds: the stat's effect kinds (EFFECTS), one value per kind in each row;
    - rows: 2 x near + 1 tiers with the value's tier in the middle; near either end (the base, or the last GCD step) the
-     rows stop at the end and run on past the other side instead of leaving rows empty (owner, 2026-10-19), so the
+     rows stop at the end and run on past the other side instead of leaving rows empty (owner), so the
      value's tier moves off the middle. Each {start, next, values, changed}: start and next on the panel scale (next
      null for the last tier), values as text, changed[k] true when value k differs from the tier before (all true for
      the first tier). Fewer rows only when the stat has fewer tiers;

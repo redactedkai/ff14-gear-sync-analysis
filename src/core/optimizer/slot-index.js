@@ -29,3 +29,13 @@ const TYPE_BIT = new Map(SLOT_TYPES.map((type, i) => [type, 1 << i]));
 export function typeMask(blocks) {
   return blocks.reduce((mask, type) => mask | TYPE_BIT.get(type), 0);
 }
+
+/* The name of the search slot for the one free ring while the other ring is pinned (fixed pieces, buildCandidates). It is
+   a slot type of its own so the search sees an ordinary one-piece slot: the search treats two consecutive 'ring' slots
+   as a pair sharing one list, and has no case for a single one. Never a piece's type: `realSlotType` gives the type. */
+export const FREE_RING = 'ring (free)';
+
+/* The slot type of a search slot name: FREE_RING is a 'ring', every other name is its own type. */
+export function realSlotType(slot) {
+  return slot === FREE_RING ? 'ring' : slot;
+}

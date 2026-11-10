@@ -4,8 +4,8 @@
 
    A set (makeSet; frozen):
      pieces  one per row, in the character panel's order (SLOT_TYPES; 'ring' twice), each
-             {slot, gameId, name, stones} for a database piece: its game id (itemById) and its name beside it, for a
-               reader; the id is what counts (architecture.md, "Piece identity");
+             {slot, gameId, stones} for a database piece: its game id (itemById); no name is kept (architecture.md, "Piece
+               identity");
              {slot, custom, stones} for a piece not from the database: `custom` is the pool item itself (hand-made or
                generated; for now only tests and the optimizer's own pools make them);
              {slot} for an empty slot: covered by another piece (a cloak covers the head), or no copy left.
@@ -42,9 +42,7 @@ export function setFromPicks(picks, meal = null) {
     picks.map(p => {
       if (!p.item) return { slot: p.type };
       const stones = meldStones(p.item, p.meld ?? null);
-      return p.item.gameId != null
-        ? { slot: p.type, gameId: p.item.gameId, name: p.item.name, stones }
-        : { slot: p.type, custom: p.item, stones };
+      return p.item.gameId != null ? { slot: p.type, gameId: p.item.gameId, stones } : { slot: p.type, custom: p.item, stones };
     }),
     meal,
   );
@@ -59,13 +57,12 @@ function pieceItem(job, piece) {
 }
 
 /* What a set adds up to, for `job` (a JobContext) at character level `level` under `sync` ({cap, sync, level}, as for
-   itemSyncIlvl). Returns (every stat map over job.stats, neutral keys):
+   itemSyncIlvl). Returns (every stat map over job.stats, stat keys):
    - rows: one per piece, in the set's order. A worn piece: {slot, label, item (its pool item), target (the item level it
      is synced to, or null), stats (after sync and stones), caps (itemCaps: the most each stat can be, for "at cap"
      marks), meld (applyStones' meld or null), meldText, lost and removed (applyStones), category ({key, label} or
      null), from ("HW · lvl 60", or null for a piece not from the database)}. An empty slot: {slot, label, item: null,
-     blockedBy (the name of the worn piece that covers the slot, or ''), missing (the saved name of a game id no row
-     has, or null)}. label: the slot's name, rings numbered ("Ring 2"), a piece covering more than one slot says so
+     blockedBy (the name of the worn piece that covers the slot, or '')}. label: the slot's name, rings numbered ("Ring 2"), a piece covering more than one slot says so
      ("Body + Head").
    - gear: the gear's totals; meal: the allMeals entry or null; bonus: what it adds on this gear ({stat: {bonus,
      capped}}, foodBonus; {} without a meal); withFood: the totals with it (the gear's without one); base: the
@@ -109,7 +106,6 @@ export function evaluateSet(job, set, sync, level) {
         label,
         item: null,
         blockedBy: cover?.item.name ?? '',
-        missing: w.piece.gameId != null ? (w.piece.name ?? null) : null,
       };
     }
     if (w.piece.slot !== 'ring') label = slotLabel(w.piece.slot, slotInfo(job, w.item).blocks);

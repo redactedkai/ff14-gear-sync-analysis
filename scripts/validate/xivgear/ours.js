@@ -47,7 +47,7 @@ const OFF_BUCKETS = [
 
 const jobs = new Map();
 
-/* The job's level cap, our neutral stat key -> their stat key, and our wearable pieces by game id. */
+/* The job's level cap, our stat key -> their stat key, and our wearable pieces by game id. */
 function job(jobId) {
   let j = jobs.get(jobId);
   if (!j) {
@@ -69,7 +69,7 @@ function job(jobId) {
   return j;
 }
 
-/* For their test: the job's level cap and the stat keys to read, in our neutral order. */
+/* For their test: the job's level cap and the stat keys to read, in our stat key order. */
 export function jobInfo(jobId) {
   const j = job(jobId);
   return { maxLevel: j.ctx.maxLevel, stats: Object.entries(j.map), pieces: j.pieces.size };

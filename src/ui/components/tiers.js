@@ -1,7 +1,7 @@
 /* How the math works, Substat tiers: the substats' tier ladder (views/tiers.js). The values are not saved: each starts
    at the substat's base, and what the user types or clicks is kept on top until the job or the level changes. The level
    is the synced level until the user types another into the math bar's box; it is in $store.app.tiers (not saved),
-   shared by the bar (tierControls) and the table (tierTable), as the GCD tab's are (owner, 2026-10-19: every sub-tab's
+   shared by the bar (tierControls) and the table (tierTable), as the GCD tab's are (owner: every sub-tab's
    controls in the bar). The values are worked out on every read (no effect that refills them later), so a level typed
    in the settings shows its own tiers and values in one render. */
 import { numberField, viewCache } from '../helpers.js';
@@ -23,8 +23,12 @@ export function tierTable() {
     /* values typed or clicked, {stat: value}, and the settings they were made under (editsKey) */
     edits: {},
     editsFor: '',
+    /* the math tab's own Job and sync panel (store.panel) */
+    get panel() {
+      return this.$store.app.panel('math');
+    },
     get level() {
-      return tierLevel(this.$store.app.jobCtx, this.$store.app.level, this.$store.app.tiers.level);
+      return tierLevel(this.panel.jobCtx, this.panel.level, this.$store.app.tiers.level);
     },
     /* the tier under the mouse ('stat:start'): all its cells are highlighted, since a click on any of them sets it */
     hover: '',
@@ -33,8 +37,7 @@ export function tierTable() {
     helpAt: { top: 0, left: 0 },
     /* the job and levels the values were made under: edits made under another key are dropped */
     get editsKey() {
-      const app = this.$store.app;
-      return JSON.stringify([app.job, this.level, app.level]);
+      return JSON.stringify([this.panel.job, this.level, this.panel.level]);
     },
     init() {
       // the settings changed: drop the edits for good (liveEdits already hides them for the render in between), so
@@ -51,12 +54,13 @@ export function tierTable() {
     /* the cards (views/tiers.js tiersView), or null with no job; built again only when the job, the level or the edits
        change */
     get view() {
-      const app = this.$store.app;
-      if (!app.job) return null;
-      const job = app.jobCtx,
+      if (!this.panel.job) return null;
+      const job = this.panel.jobCtx,
         level = this.level,
         edits = this.liveEdits;
-      return views.get(JSON.stringify([app.job, level, edits]), () => tiersView(job, { ...tierValues(job, level), ...edits }, level));
+      return views.get(JSON.stringify([this.panel.job, level, edits]), () =>
+        tiersView(job, { ...tierValues(job, level), ...edits }, level),
+      );
     },
     get help() {
       return this.view?.cards.find(g => g.stat === this.helpFor)?.help ?? null;
@@ -68,7 +72,7 @@ export function tierTable() {
     },
     /* a value typed into a substat's box (Enter or leaving the box); the box shows the value kept */
     type(stat, el) {
-      const value = tierInput(this.$store.app.jobCtx, stat, el.value, this.level);
+      const value = tierInput(this.panel.jobCtx, stat, el.value, this.level);
       if (value == null) return;
       this.setEdit(stat, value);
       el.value = value;
@@ -99,20 +103,24 @@ export function tierTable() {
 /* The math bar's Substat tiers control: its Level box. */
 export function tierControls() {
   return {
-    get level() {
-      return tierLevel(this.$store.app.jobCtx, this.$store.app.level, this.$store.app.tiers.level);
+    /* the math tab's own Job and sync panel (store.panel) */
+    get panel() {
+      return this.$store.app.panel('math');
     },
-    /* the level box: each valid level counts as it is typed, as in the settings' level box (owner, 2026-10-19); the
+    get level() {
+      return tierLevel(this.panel.jobCtx, this.panel.level, this.$store.app.tiers.level);
+    },
+    /* the level box: each valid level counts as it is typed, as in the settings' level box (owner); the
        synced level itself, or an empty box left or entered, follows the synced level again */
     get levelField() {
       const app = this.$store.app;
       return numberField(
         () => this.level,
         v => {
-          app.tiers.level = v === app.level ? null : v;
+          app.tiers.level = v === this.panel.level ? null : v;
         },
         1,
-        () => app.jobCtx.maxLevel,
+        () => this.panel.jobCtx.maxLevel,
         {
           live: true,
           onEmpty: input => {

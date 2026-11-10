@@ -7,9 +7,35 @@ import { DEFAULT_EXCLUDE } from './settings.js';
    "1.234" would read like a decimal next to GCDs such as "2.48s". The Defense row formats the same way. */
 export const fmtInt = n => n.toLocaleString('en-US');
 
+/* "3 slots", "1 change", "2 matches": a count and its word (a word ending in s or ch takes "es"). */
+export function plural(count, word) {
+  return `${count} ${word}${count === 1 ? '' : /(s|ch)$/.test(word) ? 'es' : 's'}`;
+}
+
+/* `one` for a count of 1, else `many`: the hand-written pair of a sentence ("it"/"them", "its slot is"/"their slots are"). */
+export function oneOrMany(count, one, many) {
+  return count === 1 ? one : many;
+}
+
+/* A deep copy of plain data (a saved sheet, a gear set, Fill settings): the JSON round trip, which also drops Alpine's
+   reactive wrappers. Only for JSON-safe data: no functions, no undefined kept, no Map. */
+export function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 /* How long a typed number waits before it is committed: typing "123" commits once, not 1, 12 and 123, so the views
    (and the optimizer) do not recompute for the numbers on the way. */
 export const TYPING_DEBOUNCE_MS = 300;
+
+/* Flash a cap field the page just lowered (its `lowered` class, styles.css): the flash restarts on each lowering, by
+   dropping the class, letting the browser see it gone, and adding it back. Used by the Job and sync panel (page.js
+   lowerCap) and a sheet's page (components/sheets.js). `field`: the input, or nothing (no flash). */
+export function flashLowered(field) {
+  if (!field?.classList) return;
+  field.classList.remove('flash');
+  void field.offsetWidth;
+  field.classList.add('flash');
+}
 
 /* A bound of numberField: a number, or a function read at each input. */
 const bound = b => (typeof b === 'function' ? b() : b);
@@ -18,12 +44,12 @@ const bound = b => (typeof b === 'function' ? b() : b);
    storeNumberField). A step (mouse wheel, arrow keys) commits at once; typing commits TYPING_DEBOUNCE_MS after the last
    keystroke, and only an in-range value, so a value on the way ("9" of "90") is held back. Enter or leaving the field
    (change) commits at once, and an out-of-range value is moved to the nearest bound and shown in the box, so the box
-   and the setting always agree (owner, 2026-10-19: "-5" in a filter becomes its lowest value, not "no limit"). While
+   and the setting always agree (owner: "-5" in a filter becomes its lowest value, not "no limit"). While
    the field has focus and already shows the stored value, the typed text is left alone ("2.40" stays as typed). A bound
    may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap).
    Options:
    - snap: false keeps an out-of-range value out on change too, for a box that explains it (the sync cap's error).
-   - live: commit each valid value as it is typed, with no wait (the synced level: owner, 2026-10-17); typing "90" then
+   - live: commit each valid value as it is typed, with no wait (the synced level: owner); typing "90" then
      shows level 9 for a moment, which is cheap, and the optimizer has its own wait.
    - decimals: the digits kept after the point (0, whole numbers, by default; the Target GCD keeps 2).
    - empty: the value an emptied box commits, as it is typed (a filter's '' for no limit); left out, an empty box
@@ -114,31 +140,6 @@ export function deepFreeze(value) {
   return value;
 }
 
-/* Run `compute` now and whenever the reactive values it reads change; the expensive part it returns runs at most once
-   per `ms`, during a burst of changes as well as after it: scrolling through a number box moves the Target GCD range
-   with it instead of only when the scrolling stops (owner, 2026-10-19). The first run waits `ms` too, so first paint
-   does not. The expensive part always runs from a timer, never inside the effect, so nothing it reads is tracked: a
-   value it sets (the component's own state) does not rerun the effect. Used by the optimizer's Gear to search line.
-   `alpine`: Alpine, or what a test passes for its effect. */
-export function throttledEffect(alpine, compute, ms) {
-  let timer = null;
-  let pending = null;
-  let lastRun = Date.now();
-  const fire = () => {
-    timer = null;
-    lastRun = Date.now();
-    const run = pending;
-    pending = null;
-    run();
-  };
-  alpine.effect(() => {
-    pending = compute(); // reads (and so tracks) dependencies synchronously
-    if (timer) return; // a run is already due; it takes the latest inputs
-    // after a rest the wait is 0: the run comes next, still outside the effect
-    timer = setTimeout(fire, Math.max(0, lastRun + ms - Date.now()));
-  });
-}
-
 /* numberField bound to a dotted path in the store, e.g. storeNumberField(store, 'piece.ilvl', 1, 795); options as for
    numberField. Registered as the $num magic in main.js. */
 export function storeNumberField(store, path, lo, hi, options = {}) {
@@ -156,7 +157,7 @@ export function storeNumberField(store, path, lo, hi, options = {}) {
   );
 }
 
-/* The "Gear from" menu's two columns of sections (owner's layout, 2026-10-18): each {key, sections: [{title, boxes}]},
+/* The "Gear from" menu's two columns of sections (owner's layout): each {key, sections: [{title, boxes}]},
    boxes being ACTIVITIES entries in their order. */
 const FROM_COLUMNS = [
   ['Everyday', 'Time-limited'],
@@ -189,34 +190,95 @@ export function gearFromSummary(off, market) {
   return text;
 }
 
-/* Component members for one "Gear from" filter: `$store.app[part].exclude` (ACTIVITIES keys left out, in ACTIVITIES
-   order) and `$store.app[part].market` (the market board switch). The component provides `emptyBoxes`, the keys with
+/* Where a filter's settings live, for gearFromToggles and expansionToggles: `part` a field of $store.app ('browse'),
+   changed in place; or an accessor {read(component) → the settings, write(component, patch)} for settings kept
+   elsewhere (a gear set's Fill settings, changed through the sheet store). Returns the accessor. */
+function filterAccess(part) {
+  if (typeof part !== 'string') return part;
+  return { read: self => self.$store.app[part], write: (self, patch) => Object.assign(self.$store.app[part], patch) };
+}
+
+/* Room kept between a floating menu and the window's edges, and the least height a menu is cut to, in px. */
+const MENU_EDGE_PX = 8;
+const MENU_MIN_HEIGHT_PX = 160;
+
+/* Members shared by the dropdown menus and notes (Expansion, Gear from, the "Spare points" note): where they open and
+   what Escape does. Spread into the components that use the partials (gearFromToggles and expansionToggles do). */
+const menuFloat = {
+  /* Escape with the menu open: closes that menu only (`state.open` false), keeps the key from the page (a set's Fill
+     settings would close with it) and puts the focus back on the menu's button. With no menu open it does nothing,
+     so the next Escape reaches the page. Returns whether it closed a menu. `state`: {open}, `event`: the key event. */
+  closeMenuOnEscape(state, event, button) {
+    if (!state.open) return false;
+    state.open = false;
+    event.preventDefault();
+    event.stopPropagation();
+    button?.focus();
+    return true;
+  },
+  /* Put `menu` (shown) under `anchor`, the button that opened it. On a page it is absolutely placed by its CSS and only
+     opens leftwards (right edge on the button's) near the window's right edge, so the page does not scroll sideways.
+     In a Fill settings dialog (.cfgdlg) it is fixed to the window, so the dialog's own scroll box does not cut it: its
+     top is under the button, its height is cut to the window's bottom, its width to the window's, and it opens
+     leftwards when it would pass the window's right edge; a note (.popover) always opens leftwards. */
+  placeMenu(menu, anchor) {
+    if (!menu || !anchor) return;
+    const windowWidth = document.documentElement.clientWidth;
+    if (!menu.closest('.cfgdlg')) {
+      menu.classList.remove('to-left');
+      if (menu.getBoundingClientRect().right > windowWidth - MENU_EDGE_PX) menu.classList.add('to-left');
+      return;
+    }
+    menu.classList.remove('to-left');
+    const button = anchor.getBoundingClientRect();
+    const top = button.bottom + 4;
+    const box = menu.style;
+    box.top = `${top}px`;
+    box.right = 'auto';
+    box.bottom = 'auto';
+    box.minWidth = `${button.width}px`;
+    box.maxWidth = `${windowWidth - 2 * MENU_EDGE_PX}px`;
+    box.maxHeight = `${Math.max(MENU_MIN_HEIGHT_PX, window.innerHeight - top - 12)}px`;
+    box.left = `${button.left}px`;
+    const width = menu.getBoundingClientRect().width;
+    // a note (.popover, the "Spare points" one) has its right edge on the button's, as in B17, so it stays inside the dialog;
+    // a menu opens rightwards, and leftwards only when it would pass the window's right edge
+    const rightEdgeOnButton = menu.classList.contains('popover') || button.left + width > windowWidth - MENU_EDGE_PX;
+    if (rightEdgeOnButton) box.left = `${Math.max(MENU_EDGE_PX, button.right - width)}px`;
+  },
+};
+
+/* Component members for one "Gear from" filter (`part`: filterAccess): its `exclude` (ACTIVITIES keys left out, in
+   ACTIVITIES order) and `market` (the market board switch). The component provides `emptyBoxes`, the keys with
    nothing for the current job and filters (greyed out). `fromPointed` is the box (or 'market') under the pointer or
    keyboard focus, described under the menu. Methods, not getters (see expansionToggles). */
 export function gearFromToggles(part) {
+  const access = filterAccess(part);
   return {
+    ...menuFloat,
     gearFromColumns: GEAR_FROM_COLUMNS,
     fromPointed: null,
     fromSummary() {
-      return gearFromSummary(this.$store.app[part].exclude, this.$store.app[part].market);
+      const f = access.read(this);
+      return gearFromSummary(f.exclude, f.market);
     },
     fromOn(key) {
-      return !this.$store.app[part].exclude.includes(key);
+      return !access.read(this).exclude.includes(key);
     },
     setFromOn(key, on) {
-      const off = this.$store.app[part].exclude;
-      this.$store.app[part].exclude = ACTIVITIES.map(a => a.key).filter(k => (k === key ? !on : off.includes(k)));
+      const off = access.read(this).exclude;
+      access.write(this, { exclude: ACTIVITIES.map(a => a.key).filter(k => (k === key ? !on : off.includes(k))) });
     },
-    /* Opened near the window's right edge, the menu would make the page scroll sideways: it then opens leftwards, its
-       right edge on the button's. */
-    fitFromMenu(menu) {
-      if (!menu) return;
-      menu.classList.remove('to-left');
-      if (menu.getBoundingClientRect().right > document.documentElement.clientWidth - 8) menu.classList.add('to-left');
+    /* the market board switch */
+    marketOn() {
+      return !!access.read(this).market;
+    },
+    setMarket(on) {
+      access.write(this, { market: !!on });
     },
     /* "All", "None" or "Default" at the top of the menu */
     setFromAll(which) {
-      this.$store.app[part].exclude = which === 'all' ? [] : which === 'none' ? ACTIVITIES.map(a => a.key) : [...DEFAULT_EXCLUDE];
+      access.write(this, { exclude: which === 'all' ? [] : which === 'none' ? ACTIVITIES.map(a => a.key) : [...DEFAULT_EXCLUDE] });
     },
     fromEmpty(key) {
       return (this.emptyBoxes || []).includes(key);
@@ -234,11 +296,13 @@ export function gearFromToggles(part) {
   };
 }
 
-/* Component members for one Expansion filter, `$store.app[part].expOff` (EXPANSIONS short names switched off, oldest
-   first): the list, the dropdown button's text ("All expansions", one name, or how many are on) and the toggles.
+/* Component members for one Expansion filter (`part`: filterAccess): its `expOff` (EXPANSIONS short names switched off,
+   oldest first): the list, the dropdown button's text ("All expansions", one name, or how many are on) and the toggles.
    Methods, not getters: the components spread this object, which would run a getter before Alpine binds it. */
 export function expansionToggles(part) {
+  const access = filterAccess(part);
   return {
+    ...menuFloat,
     expansions: EXPANSIONS,
     expSummary() {
       const on = EXPANSIONS.filter(e => this.expShown(e.short));
@@ -247,11 +311,11 @@ export function expansionToggles(part) {
       return on.length === 1 ? on[0].name : `${on.length} expansions`;
     },
     expShown(short) {
-      return !this.$store.app[part].expOff.includes(short);
+      return !access.read(this).expOff.includes(short);
     },
     setExpShown(short, on) {
-      const off = this.$store.app[part].expOff.filter(k => k !== short);
-      this.$store.app[part].expOff = on ? off : EXPANSIONS.map(e => e.short).filter(k => k === short || off.includes(k));
+      const off = access.read(this).expOff.filter(k => k !== short);
+      access.write(this, { expOff: on ? off : EXPANSIONS.map(e => e.short).filter(k => k === short || off.includes(k)) });
     },
   };
 }

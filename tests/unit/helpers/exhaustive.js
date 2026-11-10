@@ -49,9 +49,14 @@ function blockableTypes(job, pool) {
   return new Set(pool.flatMap(i => slotInfo(job, i).blocks));
 }
 
-function choicesFor(pool, t) {
+/* The choices for slot type `t` from `pool`: one item per slot, for rings a pair (the same item twice only with 2
+   copies). `pinnedRings`: the rings already worn by pinned pieces (items), which leave their copies out: with one, a
+   single ring from the items with a copy left; with two, none. */
+function choicesFor(pool, t, pinnedRings = []) {
   const items = pool.filter(i => i.type === t);
   if (t !== 'ring') return items.map(i => [i]);
+  if (pinnedRings.length === 2) return [];
+  if (pinnedRings.length === 1) return items.filter(i => (i.copies || 1) > (i === pinnedRings[0] ? 1 : 0)).map(i => [i]);
   const pairs = [];
   items.forEach((a, x) => {
     items.forEach((b, y) => {
@@ -60,6 +65,25 @@ function choicesFor(pool, t) {
     });
   });
   return pairs.length ? pairs : items.map(i => [i]);
+}
+
+/* A pinned piece's stat vector (job stats, and 'wd' when the job ranks weapon damage), written independently of
+   src/core/meld.js: its stats after sync, plus each stone's value for its stat, the stat cut at the piece's own cap
+   (capsFor) without lowering a stat already above it, as enumerateVectors does. A synced piece keeps no stone.
+   `stones`: {stat, grade} or null per meld slot, in slot order (a null ends the usable stones, as the game fills slots
+   in order); the caller gives only stones the piece takes. */
+export function pinnedVector(job, item, sync, stones) {
+  const v = { ...effWithWd(job, item, sync) };
+  if (itemSyncIlvl(item, sync) != null) return v;
+  const s = slotInfo(job, item);
+  const caps = capsFor(job, item.type, item.ilvl, s.pct, s.factors);
+  const added = {};
+  for (const stone of stones) {
+    if (!stone) break;
+    added[stone.stat] = (added[stone.stat] || 0) + MATERIA.values[stone.grade - 1];
+  }
+  for (const [stat, points] of Object.entries(added)) v[stat] = Math.max(v[stat] || 0, Math.min((v[stat] || 0) + points, caps[stat]));
+  return v;
 }
 
 /* Every effective stat vector a piece can reach with melds, written independently of src/core/meld.js: each slot gets
@@ -157,8 +181,10 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
 
    Effective (synced) stats come from the optimizer's own effStats and weaponDamage, so this reference does not check
    the sync clamp; that is covered by core-formulas.sync-clamp.test.js, the Wiki item level 475 caps and the caps at 123 (docs/engineering/testing.md).
-   `mins` = {stat: total}: minimums on any stat's total, checked like spdMin. */
-export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, mins = {}, melds = false }) {
+   `mins` = {stat: total}: minimums on any stat's total, checked like spdMin.
+   `fixed`: pinned pieces, [{item, vector (pinnedVector)}]: worn as they are, counted in every total, and their slots
+   are not searched (forEachLoadout). */
+export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = null, spdMax = null, mins = {}, melds = false, fixed = [] }) {
   const keys = [target, ...tiebreak.filter(Boolean)];
   const ranked = job.damageKey ? ['wd', ...keys] : keys;
   // with melds every piece brings each of its meld vectors (meldVectors); two copies of a ring may take different ones.
@@ -168,7 +194,7 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
   const minStats = Object.keys(mins).filter(s => mins[s] > 0);
   const meldKeys = [...new Set([...keys, ...(ranged ? ['spd'] : []), ...minStats])];
   let best = null;
-  forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: spdMax != null }, get => {
+  forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: spdMax != null, fixed }, get => {
     if (spdMin != null && get('spd') < spdMin) return;
     if (spdMax != null && get('spd') > spdMax) return;
     if (minStats.some(s => get(s) < mins[s])) return;
@@ -179,24 +205,34 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
 }
 
 /* Call visit(get) for every legal loadout (see exhaustive for the rules), where get(stat) is the loadout's total of a
-   neutral stat, or of weapon damage (wd) when the job ranks it. With melds every piece brings each of its meld vectors
+   stat key, or of weapon damage (wd) when the job ranks it. With melds every piece brings each of its meld vectors
    on `meldKeys` (meldVectors; exactSpd as there). Loadouts whose every slot choice has the same totals and blocks as
-   another's are visited once: visit sees only totals, so they could not differ. */
-export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], exactSpd = false }, visit) {
+   another's are visited once: visit sees only totals, so they could not differ.
+   `fixed` = [{item, vector}]: pinned pieces (vector: pinnedVector), worn in addition to the loadout and counted in its
+   totals. A slot they wear, or two rings, is not chosen; a slot one of them covers is empty; no chosen piece may cover a
+   slot they wear; with one pinned ring the other ring is a single, from the items with a copy left. */
+export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], exactSpd = false, fixed = [] }, visit) {
   const stats = job.damageKey ? [...job.stats, 'wd'] : job.stats;
-  const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t));
-  const blockable = blockableTypes(job, pool);
+  const pinnedRings = fixed.filter(f => f.item.type === 'ring').map(f => f.item);
+  const worn = new Set(fixed.filter(f => f.item.type !== 'ring').map(f => f.item.type));
+  const covered = new Set(fixed.flatMap(f => slotInfo(job, f.item).blocks));
+  const blockable = new Set([...blockableTypes(job, pool), ...covered]);
+  // a pool piece that would cover a slot a pinned piece wears is no choice; a slot left with none is not chosen at all
+  const fits = items => !items.some(i => slotInfo(job, i).blocks.some(t => worn.has(t)));
+  const slots = SLOT_TYPES.filter(t => pool.some(i => i.type === t) && !worn.has(t) && choicesFor(pool, t, pinnedRings).some(fits));
   const vectorsOf = i => (melds ? meldVectors(job, i, sync, meldKeys, { exactSpd }) : [effWithWd(job, i, sync)]);
   /* each choice (an item, a ring pair, or empty) as its effective stat totals in job.stats order and what it blocks */
   const choices = slots.map(t => {
-    const list = choicesFor(pool, t).flatMap(items => {
-      const blocks = items.flatMap(i => slotInfo(job, i).blocks);
-      let sums = [stats.map(() => 0)];
-      items.forEach(i => {
-        sums = sums.flatMap(v => vectorsOf(i).map(e => v.map((x, k) => x + (e[stats[k]] || 0))));
+    const list = choicesFor(pool, t, pinnedRings)
+      .filter(fits)
+      .flatMap(items => {
+        const blocks = items.flatMap(i => slotInfo(job, i).blocks);
+        let sums = [stats.map(() => 0)];
+        items.forEach(i => {
+          sums = sums.flatMap(v => vectorsOf(i).map(e => v.map((x, k) => x + (e[stats[k]] || 0))));
+        });
+        return sums.map(v => ({ v, blocks, empty: false }));
       });
-      return sums.map(v => ({ v, blocks, empty: false }));
-    });
     if (blockable.has(t)) list.push({ v: stats.map(() => 0), blocks: [], empty: true });
     // one of each identical choice: two rings' meld vectors often add up to the same totals in several ways (about 7
     // in 8 ring pair choices on a pool with overmelded rings), and every copy multiplies the loadouts to visit
@@ -208,12 +244,12 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
       return true;
     });
   });
-  const tot = stats.map(() => 0);
+  const tot = stats.map(s => fixed.reduce((n, f) => n + (f.vector[s] || 0), 0));
   const get = s => tot[stats.indexOf(s)] || 0;
   const picked = [];
   const rec = k => {
     if (k === choices.length) {
-      const blocked = new Set(picked.flatMap(c => c.blocks));
+      const blocked = new Set([...picked.flatMap(c => c.blocks), ...covered]);
       if (picked.some((c, i) => c.empty !== blocked.has(slots[i]))) return;
       visit(get);
       return;

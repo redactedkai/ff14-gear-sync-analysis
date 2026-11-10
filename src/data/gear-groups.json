@@ -1,0 +1,16 @@
+{
+"_generated":"GENERATED from xivapi/ffxiv-datamining d9582a624eaec69d45649366dee801c2f3a6e9b3 (2026-09-30T03:03:49-05:00). Do not edit; see docs/engineering/data-pipeline.md.",
+"source":{"repo":"xivapi/ffxiv-datamining","commit":"d9582a624eaec69d45649366dee801c2f3a6e9b3","date":"2026-09-30T03:03:49-05:00"},
+"formatVersion":1,
+"groups":[
+["PLD","WAR","DRK","GNB"],
+["WHM","SCH","AST","SGE"],
+["MNK","SAM"],
+["DRG","RPR"],
+["NIN","VPR"],
+["BRD","MCH","DNC"],
+["BLM","SMN","RDM","PCT"],
+["BLU"],
+["BST"]
+]
+}

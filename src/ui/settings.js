@@ -1,18 +1,35 @@
 /* The page's settings as the core and the views take them: plain values read from the store's fields, so a view never
-   needs the store itself (a set of the planned sheet will hand in its own). Pure: no Alpine import and no other UI
-   module, so state.js, helpers.js, the views and the components can all use it without an import going back up. */
+   needs the store itself (a sheet hands in its own). Pure: no Alpine import and no other UI module, so state.js,
+   helpers.js, the views and the components can all use it without an import going back up. */
 import { ACTIVITIES } from '../core/constants.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
+import { makeJobContext } from '../core/job-context.js';
 import { MAX_LEVEL } from '../core/tables.js';
 
-/* "Gear from" boxes left out until the user ticks them back in, in the optimizer and the gear browser alike: those with
-   `on: false` in item-format.json (owner's decision, 2026-10-18: Miscellaneous, Deep dungeons, Wondrous Tails,
-   Variant & Criterion, PvP, Extreme (Current), Savage (Current), Ultimate, Events & promotions). In ACTIVITIES order. */
+/* Each reference tab has its own Job and sync panel (job, cap, sync, level), saved in a group of the state: the store
+   field that holds it, by tab ('browse' the Gear browser, 'math' How the math works). The store also mirrors the open
+   tab's panel in its top-level job, cap, sync and level, which the panel's fields edit. The Sheets tab has none: a sheet
+   holds its own job, level and sync (ui/sheet-store.js). */
+export const PANEL_GROUP = Object.freeze({ browse: 'browse', math: 'piece' });
+
+/* The Job and sync panel of `tab` ('browse' or 'math'), whether or not that tab is open: {job (id or null),
+   jobCtx, cap, sync, level}. `app` is the store or a state shaped like it. The open tab's is the top-level copy (what the
+   panel edits); another tab's is its saved group. A component reads its own tab's panel here, so a hidden tab never
+   works with the open tab's job. */
+export function panelOf(app, tab) {
+  if (tab === app.tab) return { job: app.job, jobCtx: app.jobCtx, cap: app.cap, sync: app.sync, level: app.level };
+  const { job, cap, sync, level } = app[PANEL_GROUP[tab]];
+  return { job, jobCtx: makeJobContext(job), cap, sync, level };
+}
+
+/* "Gear from" boxes left out until the user ticks them back in, in a set's Fill settings and the gear browser alike:
+   those with `on: false` in item-format.json (Miscellaneous, Deep dungeons, Wondrous Tails, Variant & Criterion, PvP,
+   Extreme (Current), Savage (Current), Ultimate, Events & promotions). In ACTIVITIES order. */
 export const DEFAULT_EXCLUDE = Object.freeze(ACTIVITIES.filter(a => !a.on).map(a => a.key));
 
 /* The Target GCD a player can set, in seconds: [lowest, highest]. The highest is 2.50, the slowest base GCD
-   (BASE_GCD_MS): no gear is slower (owner, 2026-10-19: the box moves a higher value to 2.50). The optimizer's box and
-   restoreState both take it from here. */
+   (BASE_GCD_MS): no gear is slower, so the box moves a higher value to 2.50. The Fill settings' box takes it from
+   here. */
 export const TARGET_GCD_RANGE = Object.freeze([0.5, 2.5]);
 
 /* The sync settings the core takes, from the store's fields {cap, sync, level} (sync: the item level sync switch):
@@ -39,34 +56,4 @@ export function shownSync(job, sync) {
   if (sync.sync && (!byLevel || sync.cap <= capCeiling(sync.level))) return { cap: sync.cap, level: sync.level, byLevel: false };
   if (byLevel) return { cap: levelSyncIlvl(sync.level), level: sync.level, byLevel: true };
   return null;
-}
-
-/* The optimizer's recipe, from the store: a copy of its `opt` settings (state.js defaultState: the goal, the filters
-   under Gear to search, materia, food, the Target GCD and rank by tier; core/recipe.js), lists copied, so a later
-   change in the store never reaches a recipe already handed out. */
-export function recipeOf(app) {
-  return Object.fromEntries(Object.entries(app.opt).map(([k, v]) => [k, Array.isArray(v) ? [...v] : v]));
-}
-
-/* The settings an optimizer result depends on, as one string: the job and sync settings and every optimizer setting
-   (each field of `opt`, by name, so a field added to defaultState is part of it without another edit). A result is
-   for the current settings exactly when it was solved with the same key. Read synchronously, it also makes an effect
-   track every one of them (the optimizer component). */
-export function optimizerKey(app) {
-  const opt = app.opt;
-  return JSON.stringify([
-    app.job,
-    app.cap,
-    app.sync,
-    app.level,
-    ...Object.keys(opt)
-      .sort()
-      .map(k => [k, opt[k]]),
-  ]);
-}
-
-/* What the optimizer's view builders take, from the store: {job (the JobContext), sync (syncSettings), level (the
-   synced level), recipe (recipeOf)}. */
-export function optimizerInputs(app) {
-  return { job: app.jobCtx, sync: syncSettings(app), level: app.level, recipe: recipeOf(app) };
 }

@@ -8,11 +8,14 @@ import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
 import { statBase } from '../../src/core/food.js';
+import { runRecipe } from '../../src/core/recipe.js';
+import { makeSession } from '../../src/core/session.js';
+import { evaluateSet } from '../../src/core/set.js';
 
-// "Gear from" boxes left out by default, in the optimizer and the browser (owner's decision); smoke.mjs uses them too.
+// "Gear from" boxes left out by default, in a set's Fill settings and the browser (owner's decision); smoke.mjs uses them too.
 export { DEFAULT_EXCLUDE };
 
-// The optimizer searches every piece the job can wear that "Gear from" lets through (the default boxes, market board on)
+// A set's Fill searches every piece the job can wear that "Gear from" lets through (the default boxes, market board on)
 // minus the relics whose substats the player allocates (allocatedRelic). Totals are character panel numbers as the page
 // shows them: the level's base added for a substat (statBase; its values are checked against AkhMorning in
 // tests/unit/core-food.test.js).
@@ -36,8 +39,9 @@ export function coreGear(jobId, sync, target, extra = [], def = DEFAULT_EXCLUDE,
   };
 }
 
-/** The optimizer's gear filters (Gear to search): the pieces browseItems keeps with the same filters that the default
- * "Gear from" boxes let through, minus the allocated relics. */
+/** The core's best `target` over the pieces the browser's own filters keep (`f`: browseItems', so a different route to
+ * the pool than the Fill's), through the default "Gear from" boxes, minus the allocated relics, with materia on; plus the
+ * piece counts. For the Fill settings' Expansion, item level and equip level boxes. */
 export function coreFiltered(jobId, sync, target, f) {
   const job = makeJobContext(jobId);
   const all = browseItems(job, {}).length;
@@ -50,6 +54,45 @@ export function coreFiltered(jobId, sync, target, f) {
   return { all, searched: pool.length, on };
 }
 
+// A set's default Fill settings as a recipe (ui/views/set-page.js defaultFillSettings, typed in here): the main stat, no
+// tiebreak, materia on, food off, any GCD, spare points to tiebreaks on, every expansion, the default "Gear from" boxes
+// and the market board, no item level range, the equip level filter at the level cap.
+const DEFAULT_RECIPE = {
+  target: 'main',
+  tb: '',
+  tb2: '',
+  melds: true,
+  food: false,
+  gcd: '',
+  gcdMode: 'exact',
+  byTier: true,
+  expOff: [],
+  exclude: DEFAULT_EXCLUDE,
+  market: true,
+  min: '',
+  max: '',
+  lvl: 100,
+};
+
+/** What a Fill with the settings `fields` (a recipe's, over the defaults) finds for `jobId` under `sync` ({cap, sync,
+ * level}): the character panel's totals of the set it suggests (gear, meal and the level's base, as the Total row shows
+ * them), the meal's bonus per stat, its GCD text ("2.48s"), the meal's key, or only {status} when there is no set. */
+export function coreRecipe(jobId, sync, fields) {
+  const job = makeJobContext(jobId);
+  const level = sync.level ?? 100;
+  const run = runRecipe(job, sync, level, { ...DEFAULT_RECIPE, ...fields }, makeSession());
+  if (run.status !== 'ok') return { status: run.status };
+  const evaluated = evaluateSet(job, run.set, sync, level);
+  const totals = Object.fromEntries(job.stats.map(s => [s, evaluated.withFood[s] + evaluated.base[s]]));
+  const bonus = Object.fromEntries(job.stats.map(s => [s, evaluated.bonus[s]?.bonus ?? 0]));
+  return { status: 'ok', totals, bonus, gcd: `${evaluated.gcd.gcd.toFixed(2)}s`, meal: evaluated.meal?.key ?? null };
+}
+
+/** The stat keys `jobId` has (job.stats), for a step that needs to know whether a job has a special substat. */
+export function coreStats(jobId) {
+  return [...makeJobContext(jobId).stats];
+}
+
 export function coreRings(jobId, ilvlMin, ilvlMax, lvlMax) {
   const job = makeJobContext(jobId);
   const allowed = allowedActivities(DEFAULT_EXCLUDE, true);
@@ -57,7 +100,7 @@ export function coreRings(jobId, ilvlMin, ilvlMax, lvlMax) {
   return { count: rows.length, x2: rows.filter(r => !r.unique).length };
 }
 
-const FUNCTIONS = { coreGear, coreFiltered, coreRings };
+const FUNCTIONS = { coreGear, coreFiltered, coreRecipe, coreRings, coreStats };
 
 if (!isMainThread) {
   parentPort.on('message', ({ id, fn, args }) => {

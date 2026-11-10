@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-labelledby="t d">
   <title id="t">Differential testing of the optimizer against the brute-force reference</title>
-  <desc id="d">Two kinds of small pool feed the test: real-gear pools (seven jobs covering every role, 24 to 33 items, 3,072 to 147,456 loadouts) and random pools drawn from fixed seeds, so every run tests the same pools. Each pool goes to both the optimizer, a branch and bound search with pruning and bounds, and the brute-force reference, which enumerates every legal loadout, drops those outside the speed range and keeps the lexicographically best totals (goal stat, then tiebreak 1, then tiebreak 2), with no pruning and no score weighting. The two results are compared on every substat: equal passes, any difference fails and names a pool that can be reproduced. Three rules are shared by both sides, so this comparison does not check them: the rule for a piece's effective (synced) stats, checked instead by the sync tests and the caps at item level 475 and 123; a single ring only when no ring pair exists; and no slot left empty to meet a constraint. The two policies are tested directly on two-item pools.</desc>
+  <desc id="d">Two kinds of small pool feed the test: real-gear pools (seven jobs covering every role, 24 to 33 items, 3,072 to 147,456 gear sets) and random pools drawn from fixed seeds, so every run tests the same pools. Each pool goes to both the optimizer, a branch and bound search with pruning and bounds, and the brute-force reference, which enumerates every legal gear set, drops those outside the speed range and keeps the lexicographically best totals (goal stat, then tiebreak 1, then tiebreak 2), with no pruning and no score weighting. The two results are compared on every substat: equal passes, any difference fails and names a pool that can be reproduced. Three rules are shared by both sides, so this comparison does not check them: the rule for a piece's effective (synced) stats, checked instead by the sync tests and the caps at item level 475 and 123; a single ring only when no ring pair exists; and no slot left empty to meet a constraint. The two policies are tested directly on two-item pools.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -41,7 +41,7 @@
   <rect class="box" x="40" y="24" width="300" height="76" rx="8"/>
   <text class="fg t" x="190" y="50" text-anchor="middle">Real-gear pools</text>
   <text class="muted s" x="190" y="70" text-anchor="middle">7 jobs, every role</text>
-  <text class="muted s" x="190" y="87" text-anchor="middle">24–33 items, 3,072–147,456 loadouts</text>
+  <text class="muted s" x="190" y="87" text-anchor="middle">24–33 items, 3,072–147,456 gear sets</text>
 
   <rect class="box" x="380" y="24" width="300" height="76" rx="8"/>
   <text class="fg t" x="530" y="50" text-anchor="middle">Random pools</text>
@@ -63,11 +63,11 @@
   <text class="muted s" x="190" y="208" text-anchor="middle">branch and bound search</text>
   <text class="muted s" x="190" y="226" text-anchor="middle">with pruning and bounds</text>
   <text class="bad s" x="190" y="254" text-anchor="middle">a wrong bound silently returns</text>
-  <text class="bad s" x="190" y="271" text-anchor="middle">a worse loadout</text>
+  <text class="bad s" x="190" y="271" text-anchor="middle">a worse gear set</text>
 
   <rect class="ref" x="380" y="158" width="300" height="126" rx="8"/>
   <text class="accent t" x="530" y="186" text-anchor="middle">Brute-force reference</text>
-  <text class="muted s" x="530" y="208" text-anchor="middle">1. every legal loadout</text>
+  <text class="muted s" x="530" y="208" text-anchor="middle">1. every legal gear set</text>
   <text class="muted s" x="530" y="226" text-anchor="middle">2. drop those outside the speed range</text>
   <text class="muted s" x="530" y="244" text-anchor="middle">3. keep the best (goal, tiebreak 1, tiebreak 2)</text>
   <text class="muted s" x="530" y="271" text-anchor="middle">no pruning, no score weighting</text>

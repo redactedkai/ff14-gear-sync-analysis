@@ -9,7 +9,7 @@ import { statBase } from '../../core/food.js';
 import { MAX_SPEED } from '../../core/tables.js';
 import { fmtInt } from '../helpers.js';
 
-/* Tiers shown either side of each value's tier (15 rows; there is no More tiers button: owner, 2026-10-19). */
+/* Tiers shown either side of each value's tier (15 rows; there is no More tiers button: owner). */
 export const TIER_NEAR = 7;
 /* The highest value a box takes: far above any real total (a few thousand), and inside the speed search (speed.js). */
 export const TIER_VALUE_MAX = 99999;
@@ -19,7 +19,7 @@ const COLUMN = { rate: 'Rate', onCrit: 'On crit', dmgHeal: 'Dmg & heal', dmgTake
 const lineWord = kind => (kind === 'gcd' || kind === 'mp' ? COLUMN[kind] : COLUMN[kind].toLowerCase());
 
 /* What each substat does, for its ? note (AkhMorning, checked 2026-10-17; a direct hit adds 25% damage). Keyed by the
-   neutral stat, with spec split by what the job's special substat does (JobContext.specKind). */
+   stat key, with spec split by what the job's special substat does (JobContext.specKind). */
 const AFFECTS = {
   crit: 'Raises the chance of a critical hit (Rate) and how much a critical hit adds (On crit), for damage and healing. On crit is always the rate + 35%.',
   det: 'Raises all damage and healing done (Dmg & heal). Heals received are not affected.',
@@ -47,7 +47,7 @@ export function tierValues(job, level) {
 }
 
 /* A value typed into a substat's box, held to the base at `level` and the most it can be there, with no note (the box
-   shows the value kept: owner, 2026-10-19); null for text that is not a number. The most: for speed, the most total
+   shows the value kept: owner); null for text that is not a number. The most: for speed, the most total
    speed any job can have at the level (MAX_SPEED, as the GCD tab's slider); for the others, TIER_VALUE_MAX. */
 export function tierInput(job, stat, text, level) {
   const v = Math.round(Number(text));
@@ -69,7 +69,7 @@ function helpOf(job, stat, level, haste) {
 
 /* The Tiers view of `job` (a JobContext, or null with no job chosen) at `level` for `values` ({stat: panel value}), or
    null with no job: {level, cards}, one card per
-   substat, each its own small table (owner, 2026-10-19: a table across all substats read as one row of stats, with
+   substat, each its own small table (owner: a table across all substats read as one row of stats, with
    empty space between a From column and its effects). A card: {stat, label, value, lines (the effect lines under its
    box), haste (speed's: the job's haste at the level, "with Fuka 10%", else ''), help, names (its column names),
    rows, foot: {spare, toNext}}. rows: [[{text, eff, mark, cur, to, title}]], From first; cur: the value's tier (the

@@ -31,6 +31,33 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
   for (const link of links) assert.match(link, /referrerpolicy="no-referrer"/);
 });
 
+/* The page painted half-built for a moment on every load (owner's report): the script is the last thing in the file, and
+   the browser paints the markup above it while still reading it, before Alpine runs. An x-show shows its element until
+   Alpine evaluates it, so the Job and sync panel (x-show: not on the Sheets tab) showed, empty, with the tab bar and no
+   tab. The page root carries x-cloak (hidden by styles.css until Alpine removes it) and holds every element of the
+   body, so no x-show, tab-dependent or not, can show before Alpine. tests/e2e/smoke.mjs checkFirstPaint watches the
+   frames themselves. */
+test('page template: nothing paints before Alpine has built it', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const html = await readFile(new URL('../../src/index.html', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../../src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\[x-cloak\]\s*\{\s*display:\s*none\s*!important;?\s*\}/);
+  const body = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('<!-- SCRIPT -->'));
+  const noComments = body.replace(/<!--[\s\S]*?-->/g, '').trim();
+  const root = noComments.match(/^<div class="wrap"[^>]*>/)?.[0];
+  assert.ok(root, 'the body starts with the page root');
+  assert.match(root, /\sx-cloak[\s>]/, 'the page root is cloaked');
+  assert.ok(noComments.endsWith('</div>'), 'nothing after the page root');
+  // the root's own closing tag ends the body: every <div> opened in it is closed before the end
+  let depth = 0;
+  for (const tag of noComments.matchAll(/<(\/?)div\b/g)) {
+    depth += tag[1] ? -1 : 1;
+    if (depth === 0) assert.equal(tag.index + '</div>'.length, noComments.length, 'the page root closes before the end of the body');
+  }
+  // the tab-dependent bindings are all inside it (the Job and sync panel among them)
+  assert.ok(body.includes(`x-show="$store.app.tab !== 'sheets'"`));
+});
+
 /* The bundled libraries' MIT notices reach the page through esbuild's legalComments: 'eof', which moves the legal
    comments found in the bundled code to the end of the script. Alpine ships no notice of its own, so none is invented
    for it; the page credits the project in its footer instead (src/index.html). */
@@ -82,20 +109,21 @@ test('build includes: a partial is filled in, indented like its marker, its lead
   assert.throws(() => expandIncludes('<!-- INCLUDE m.html id=o -->', name => partials[name]), /no value for \{\{part\}\}/);
 });
 
-test('page template: both tabs take their filter menus from the partials', async () => {
+test('page template: the browser and a set page take their filter menus from the partials', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = await readFile(new URL('../../src/index.html', import.meta.url), 'utf8');
   const page = expandIncludes(html);
-  for (const id of ['o', 'b']) {
+  for (const id of ['b', 's']) {
     for (const el of [`${id}-exp-menu`, `${id}-from-menu`, `${id}-market`, `${id}-from-desc`]) assert.match(page, new RegExp(`id="${el}"`));
   }
-  assert.match(page, /\$store\.app\.opt\.market = /);
-  assert.match(page, /\$store\.app\.browse\.market = /);
+  // the market switch goes through the component's own accessor (helpers.js gearFromToggles), never the store directly
+  assert.match(page, /@change="setMarket\(\$event\.target\.checked\)"/);
+  assert.doesNotMatch(page, /\$store\.app\.\w+\.market = /);
   assert.doesNotMatch(page, /\{\{|INCLUDE/);
 });
 
 /* The page's bytes must not change between builds of the same source: the worker's data module lists its files in the
-   order esbuild's onLoad callbacks ran, which is not stable, so the list is sorted before use. Found 2026-11-03: five
+   order esbuild's onLoad callbacks ran, which is not stable, so the list is sorted before use. Five
    builds of one tree gave four different hashes, differing only in WORKER_DATA's key order. */
 test('build: two builds of the same source give the same page', async () => {
   const { build } = await import('esbuild');
@@ -165,10 +193,10 @@ test('build: the solver worker loads from the posted data texts and answers like
   self.onmessage({ data: { data: structuredClone(WORKER_DATA) } });
   assert.equal(self.__solverData, undefined, 'the texts are let go once loaded');
   const { inProcessSolver, solverRequest } = await import('../../src/ui/solver.js');
-  const { optimizerInputs } = await import('../../src/ui/settings.js');
-  const { restoreState } = await import('../../src/ui/state.js');
-  const { createAppStore } = await import('../../src/ui/store.js');
-  const inputs = optimizerInputs(createAppStore(restoreState({ job: 'WHM', sync: true, cap: 200, level: 100, opt: { food: true } })));
+  const { inputsOf, makeApp } = await import('./helpers/views.js');
+  const app = makeApp('WHM', { cap: 200, level: 100 });
+  app.recipe.food = true;
+  const inputs = inputsOf(app);
   // pool items' own ids ('i1552') count the items built in their thread, so they differ between the two
   const withoutPoolIds = view =>
     JSON.parse(JSON.stringify(view, (key, value) => (key === 'id' && /^i\d+$/.test(value) ? undefined : value)));

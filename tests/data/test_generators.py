@@ -33,6 +33,7 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import fetch  # noqa: E402
 import gear_activities  # noqa: E402
 import gear_categories  # noqa: E402
+import gen_gear_groups  # noqa: E402
 import gen_item_level  # noqa: E402
 import gen_items  # noqa: E402
 import gen_job_icons  # noqa: E402
@@ -139,18 +140,18 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(len(kept) + sum(dropped.values()), n_items)
         # the fixture's empty names, belt, soul crystal and non-gear rows, item level 14 piece, base-class-only pieces,
         # no-stat pieces, crafter and gatherer pieces and unsupported multi-slot piece
-        self.assertEqual(dropped, {'name': 2, 'slot': 147, 'ilvl': 1, 'job': 4, 'stats': 3, 'crafter_gatherer': 2, 'multi_slot': 1})
+        self.assertEqual(dropped, {'name': 2, 'slot': 149, 'ilvl': 1, 'job': 4, 'stats': 3, 'crafter_gatherer': 2, 'multi_slot': 1})
         # one piece names an EquipSlotCategory id with no row, one a ClassJobCategory id with no row
         self.assertEqual(dangling, {'EquipSlotCategory': 1, 'ClassJobCategory': 1})
         report = gen_items.drop_report(n_items, dropped, {'diadem': 2}, 22)
         self.assertEqual(
             report,
-            f'Item.csv {n_items} rows: no name -2, no slot code (belts, soul crystals, not gear) -147, item level under 15 -1, '
+            f'Item.csv {n_items} rows: no name -2, no slot code (belts, soul crystals, not gear) -149, item level under 1 -1, '
             'no combat job -4, no stats -3, crafter or gatherer stat -2, multi-slot with no slot code -1, '
             'category diadem (LEFT_OUT) -2; kept 22',
         )
         report = gen_items.drop_report(n_items, dropped, {}, 22, dangling)
-        self.assertIn('-147 (1 with an id that has no EquipSlotCategory row)', report)
+        self.assertIn('-149 (1 with an id that has no EquipSlotCategory row)', report)
         self.assertIn('no combat job -4 (1 with an id that has no ClassJobCategory row)', report)
 
     def test_damage_defense_fields(self):
@@ -182,6 +183,11 @@ class GenItemsTest(unittest.TestCase):
                 'values': [1, 2, 3, 4, 6, 16, 8, 24, 12, 36, 18, 54],
                 'gate': [15, 30, 45, 70, 160, 290, 420, 420, 560, 560, 690, 690],
                 'high': [6, 8, 10, 12],
+                'overmeld': {
+                    # MateriaGrade rows 0 to 11; the HQ rows for grades I to V+ are the Wiki's Advanced Materia Melding table
+                    'nq': [[80, 40, 20, 10], [72, 36, 18, 10], [60, 30, 16, 8], [48, 24, 12, 6]] + [[12, 6, 3, 2], [12, 0, 0, 0]] * 4,
+                    'hq': [[90, 48, 28, 16], [82, 44, 26, 16], [70, 38, 22, 14], [58, 32, 20, 12]] + [[17, 10, 7, 5], [17, 0, 0, 0]] * 4,
+                },
             },
         )
         _, decoys = gen_items.materia_table(FIXTURES, gen_items.load_format())
@@ -299,10 +305,10 @@ class GenItemsTest(unittest.TestCase):
         self.assertEqual(self.row('Test Sallet NoHQ')[7], 0)
 
     def test_minimum_item_level(self):
-        self.assertEqual(gen_items.MIN_ILVL, 15)  # Sastasha's entry level, the lowest dungeon
-        self.assertEqual(self.row('Test Min Ilvl')[2], 15)
-        self.assertNotIn('Test Below Min Ilvl', self.by_name)
-        self.assertTrue(all(r[2] >= 15 for r in self.rows))
+        self.assertEqual(gen_items.MIN_ILVL, 1)  # the lowest item level the game has (starter gear)
+        self.assertEqual(self.row('Test Min Ilvl')[2], 1)
+        self.assertNotIn('Test Below Min Ilvl', self.by_name)  # item level 0
+        self.assertTrue(all(r[2] >= 1 for r in self.rows))
 
     def test_excluded_jobs(self):
         for name in ('Test No Category', 'Test Gladiator Only', 'Test Crafter Only', 'Test Unknown Category'):
@@ -1109,6 +1115,18 @@ class SchemaDriftTest(unittest.TestCase):
         edit_csv(self.dir / 'MateriaGrade.csv', fn)
         self.assert_fails(gen_items, 'MateriaGrade.csv', 'grades [8, 10, 12]', '[6, 8, 10, 12]')
 
+    def test_overmeld_rates_stops(self):
+        for cell, value, words in [
+            ('OvermeldHQPercent[2]', '', ('MateriaGrade.csv', 'grade row 0', 'hq')),  # empty
+            ('OvermeldNQPercent[3]', '101', ('MateriaGrade.csv', 'grade row 0', 'nq')),  # over 100
+            ('OvermeldNQPercent[1]', '90', ('MateriaGrade.csv', 'rise from one slot')),  # rises
+            ('OvermeldHQPercent[0]', '79', ('MateriaGrade.csv', 'HQ rate is below')),
+        ]:
+            with self.subTest(cell=cell, value=value):
+                shutil.copy(FIXTURES / 'MateriaGrade.csv', self.dir / 'MateriaGrade.csv')
+                self.set_cell('MateriaGrade.csv', '0', cell, value)
+                self.assert_fails(gen_items, *words)
+
     # one test per remaining stop: each edits a copy of the fixtures the way a patch might and expects the error to
     # name what changed
 
@@ -1230,6 +1248,84 @@ class PinningTest(unittest.TestCase):
             blob = subprocess.run(['git', '-C', str(clone), 'rev-parse', 'HEAD:csv/Item.csv'], capture_output=True, text=True)
             self.assertEqual(summary.csv_blobs(clone / 'csv', ['Item', 'Scratch', 'Missing']), {'Item': blob.stdout.strip()})
             self.assertIsNone(summary.csv_blobs(clone / 'missing', ['Item']))
+
+
+class GenGearGroupsTest(unittest.TestCase):
+    """gen_gear_groups.py: the gear groups (jobs sharing 80 percent of their head, body, hands, legs and feet pieces, with
+    the same level cap) from item rows, and from the shipped item database."""
+
+    def setUp(self):
+        self.fmt = load_format()
+        self.fields = row_fields(self.fmt)
+
+    def row(self, slot_code, jobs):
+        """An item row (name, slot code and job mask only; the generator reads nothing else) wearable by `jobs`."""
+        row = [0] * len(self.fmt['itemRow']['fields'])
+        row[self.fields['name']] = 'x'
+        row[self.fields['slotCode']] = slot_code
+        row[self.fields['jobMask']] = sum(1 << self.fmt['jobs'].index(j) for j in jobs)
+        return row
+
+    def rows(self, shares):
+        """Rows for `shares`, [(jobs, how many body pieces only those jobs wear)]: a body piece (slot code 4) per entry
+        copy, plus one weapon (code 0) for every job, which is left out of the count."""
+        every_job = self.fmt['jobs']
+        out = [self.row(0, every_job)]
+        for jobs, count in shares:
+            out += [self.row(4, jobs) for _ in range(count)]
+        return out
+
+    def test_groups_are_jobs_linked_pairwise_with_the_same_level_cap(self):
+        # PLD and WAR share 100 of 101 pieces; BLM, RDM and BLU share all theirs, but BLU has another level cap
+        every_other = [j for j in self.fmt['jobs'] if j not in ('PLD', 'WAR', 'BLM', 'RDM', 'BLU')]
+        rows = self.rows([(['PLD', 'WAR'], 100), (['PLD'], 1), (['BLM', 'RDM', 'BLU'], 100)] + [([j], 100) for j in every_other])
+        groups = gen_gear_groups.gear_groups(rows, self.fmt)
+        self.assertIn(['PLD', 'WAR'], groups)
+        self.assertIn(['BLM', 'RDM'], groups)
+        self.assertIn(['BLU'], groups)  # same gear, but level cap 80
+        self.assertEqual(sorted(j for g in groups for j in g), sorted(self.fmt['jobs']))
+
+    def test_threshold_is_shared_over_either(self):
+        # PLD wears 100 pieces, WAR wears 80 of them: 80 / 100 shared, exactly the link percent
+        rest = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
+        groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 80), (['PLD'], 20)] + rest), self.fmt)
+        self.assertIn(['PLD', 'WAR'], groups)
+        # 79 percent is in the gap between linked and clearly apart, so the generator stops
+        with self.assertRaisesRegex(SchemaError, 'not clear'):
+            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 79), (['PLD'], 21)] + rest), self.fmt)
+        # 40 / 140 shared: apart
+        groups = gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 40), (['PLD'], 60), (['WAR'], 60)] + rest), self.fmt)
+        self.assertIn(['PLD'], groups)
+
+    def test_unclear_data_stops_the_generator(self):
+        rest = [([j], 100) for j in self.fmt['jobs'] if j not in ('PLD', 'WAR')]
+        # 70 shared of 130 pieces either wears (54 percent) is neither linked nor clearly apart
+        with self.assertRaisesRegex(SchemaError, 'not clear'):
+            gen_gear_groups.gear_groups(self.rows([(['PLD', 'WAR'], 70), (['PLD'], 30), (['WAR'], 30)] + rest), self.fmt)
+        # a job that can wear nothing: the job mask order is probably wrong
+        with self.assertRaisesRegex(SchemaError, 'can wear no piece'):
+            gen_gear_groups.gear_groups([self.row(0, self.fmt['jobs'])], self.fmt)
+
+    def test_shipped_groups_follow_the_shipped_items(self):
+        items = json.loads((ROOT / 'src' / 'data' / 'items.json').read_text(encoding='utf-8'))
+        shipped = json.loads((ROOT / 'src' / 'data' / 'gear-groups.json').read_text(encoding='utf-8'))
+        groups = gen_gear_groups.gear_groups(items['items'], self.fmt)
+        self.assertEqual(shipped['groups'], groups)
+        self.assertEqual(shipped['source'], items['source'])
+        # the measured table: nine groups, the two limited jobs alone
+        self.assertEqual(
+            groups,
+            [['PLD', 'WAR', 'DRK', 'GNB'], ['WHM', 'SCH', 'AST', 'SGE'], ['MNK', 'SAM'], ['DRG', 'RPR'], ['NIN', 'VPR'],
+             ['BRD', 'MCH', 'DNC'], ['BLM', 'SMN', 'RDM', 'PCT'], ['BLU'], ['BST']],
+        )  # fmt: skip
+
+    def test_output_is_reproducible(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            first, second = Path(tmp) / 'a.json', Path(tmp) / 'b.json'
+            run_quiet(gen_gear_groups.main, str(ROOT / 'src' / 'data' / 'items.json'), str(first))
+            run_quiet(gen_gear_groups.main, str(ROOT / 'src' / 'data' / 'items.json'), str(second))
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            self.assertEqual(first.read_bytes(), (ROOT / 'src' / 'data' / 'gear-groups.json').read_bytes())
 
 
 class SummaryTest(unittest.TestCase):

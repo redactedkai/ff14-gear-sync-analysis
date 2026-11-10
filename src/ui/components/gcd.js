@@ -5,7 +5,7 @@ import { GCD_LEVELS, HASTE_OPTIONS, gcdLevelInput, gcdView, speedRange as speedR
 
 /* The tab's level: the one typed into its box, else the synced level, held to the levels the tab covers. */
 function tabLevel(app) {
-  return Math.max(1, Math.min(GCD_LEVELS, app.gcd.level ?? app.level));
+  return Math.max(1, Math.min(GCD_LEVELS, app.gcd.level ?? app.panel('math').level));
 }
 
 /* The sub-tab: the facts, the chart and the step table. A bar or a row clicked sets the level or the speed. */
@@ -44,7 +44,7 @@ export function gcdTab() {
 /* The math bar's GCD controls: Level, Haste, and the speed row (slider, box, Reset). The boxes count a typed number
    once typing stops (TYPING_DEBOUNCE_MS) or at once on Enter or leaving the box, then show what is used: a level out of
    range is corrected, its note as the box's hover text (no note beside the box, which moved the controls after it, and
-   no gold border or flash: owner, 2026-10-19); a speed is held to the level's range. */
+   no gold border or flash: owner); a speed is held to the level's range. */
 export function gcdControls() {
   let levelTimer = null,
     speedTimer = null;
@@ -93,7 +93,7 @@ export function gcdControls() {
         this.levelError = `Enter a whole level from 1 to ${GCD_LEVELS}`;
         return;
       }
-      app.gcd.level = r.level === app.level ? null : r.level;
+      app.gcd.level = r.level === app.panel('math').level ? null : r.level;
       el.value = r.level;
       this.levelNote = r.note;
     },

@@ -32,11 +32,17 @@ export const FOODS = FOOD_FILE.foods;
    and the best HQ meal). */
 export const MAX_SPEED = Object.freeze([...MAX_SPEED_FILE.total]);
 /* MATERIA: the materia table, one entry per grade I to XII. values: what a grade adds to a combat substat; gate: the
-   lowest gear item level that takes it; high: the grades (1-based) that cannot go past the first overmeld slot. */
+   lowest gear item level that takes it; high: the grades (1-based) that cannot go past the first overmeld slot;
+   overmeld: {nq, hq}, the success rate in percent of an overmeld per grade and overmeld slot, nq[grade - 1][slot - 1]
+   (MateriaGrade; shown only, the model counts every meld as a success). */
 export const MATERIA = Object.freeze({
   values: Object.freeze([...ITEMS_FILE.materia.values]),
   gate: Object.freeze([...ITEMS_FILE.materia.gate]),
   high: Object.freeze([...ITEMS_FILE.materia.high]),
+  overmeld: Object.freeze({
+    nq: Object.freeze(ITEMS_FILE.materia.overmeld.nq.map(rates => Object.freeze([...rates]))),
+    hq: Object.freeze(ITEMS_FILE.materia.overmeld.hq.map(rates => Object.freeze([...rates]))),
+  }),
 });
 
 /* Short footer text naming the game-data source, or '' when unknown. */

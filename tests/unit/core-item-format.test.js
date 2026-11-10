@@ -43,7 +43,7 @@ test('ROW names the item row fields at the positions of itemRow.fields in item-f
 });
 
 test('every generated data file names the format version of item-format.json', () => {
-  for (const name of ['items.json', 'item-level.json', 'food.json', 'max-speed.json', 'summary.json']) {
+  for (const name of ['items.json', 'item-level.json', 'food.json', 'gear-groups.json', 'max-speed.json', 'summary.json']) {
     const doc = JSON.parse(readFileSync(new URL(`../../src/data/${name}`, import.meta.url), 'utf8'));
     assert.equal(doc.formatVersion, ITEM_FORMAT.formatVersion, `${name} formatVersion`);
   }
@@ -153,19 +153,11 @@ test('slot shares used by the page are the item-format.json percents (checked ag
   }
 });
 
-/* Known gaps in the game data, not pipeline faults: Blue Mage weapons exist in Item.csv (10 rows) but carry no stats,
-   so the generator drops them. */
-const NO_ITEMS_EXPECTED = { BLU: ['weapon'] };
-
 test('every job has at least one item for each of its active slots (a renamed job column would leave none)', () => {
   JOBS.forEach(({ id }, bit) => {
     const job = makeJobContext(id);
     const codes = new Set(ITEMS.filter(r => r[ROW.jobMask] & (1 << bit)).map(r => r[ROW.slotCode]));
     for (const t of job.activeSlotTypes) {
-      if (NO_ITEMS_EXPECTED[id]?.includes(t)) {
-        assert.ok(!ITEMS.some(r => r[ROW.jobMask] & (1 << bit) && DB_SLOT_TYPE[r[ROW.slotCode]] === t), `${id} ${t}: remove the exception`);
-        continue;
-      }
       const want = t === 'weapon' ? [job.weaponMode === '2h' ? 0 : 1] : [DB_SLOT_TYPE.indexOf(t)];
       assert.ok(
         want.some(c => codes.has(c)),

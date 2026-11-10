@@ -1,5 +1,5 @@
 /* A JobContext is an immutable description of everything that depends on the selected job:
-   which raw stats the neutral keys mean, labels, weapon mode and slot shares.
+   which raw stats the stat keys mean, labels, weapon mode and slot shares.
    Core functions take it as their first argument instead of reading shared globals. */
 import {
   JOBS,
@@ -87,7 +87,7 @@ export function makeJobContext(jobId) {
   return ctx;
 }
 
-/* the ItemLevel budget column for a neutral stat key */
+/* the ItemLevel budget column for a stat key */
 export function statColumn(job, stat) {
   if (stat === 'main') return IL[job.profile.main];
   if (stat === 'spd') return IL[job.profile.spd];

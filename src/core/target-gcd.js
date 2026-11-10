@@ -1,6 +1,6 @@
 /* Target GCD: the best loadout whose GCD is exactly a given value ('exact', as xivgear's meld solver) or that value or
    faster ('min'), counted with food and with the job's always-on haste (hasteFor: Monk, Ninja, Samurai, Viper; short
-   buffs are not counted, owner's decision 2026-10-15). Within that, loadouts rank by target and tiebreaks as usual.
+   buffs are not counted, owner's decision). Within that, loadouts rank by target and tiebreaks as usual.
    - The GCD target becomes a speed minimum, or a band, on total speed (speedForGcd).
    - Food raises speed by min(max, floor(pct x (base + gear) / 100)), which never falls as gear speed rises, so each meal
      turns that into a minimum (or band) on gear speed (gearNeeded). Food is no longer picked after the search: the meal
@@ -16,7 +16,8 @@ import { BASE_GCD_MS, gcdFor, hasteFor, speedForGcd } from './speed.js';
  * @param job   JobContext
  * @param pool  pool items
  * @param sync  {cap, sync, level} as for optimize
- * @param opts  {target='main', tiebreak=[], melds=false, nodeLimit, gcd (seconds), mode: 'exact' | 'min',
+ * @param opts  {target='main', tiebreak=[], melds=false, fixed=[] (pinned pieces, fixedCandidate: their speed counts), nodeLimit,
+ *              gcd (seconds), mode: 'exact' | 'min',
  *              food: null (no food) | a foodChoices entry | 'best' (every choice of the job), level (for haste, food and
  *              the GCD; default sync.level, else the job's level cap)}
  * @param prep  optional candidates from an earlier call with the same pool, sync, objective, melds and mode (returned
@@ -38,7 +39,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   if (!band) return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
 
   const meals = mealsFor(job, opts.food);
-  prep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode });
+  prep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode, fixed: opts.fixed });
   const runs = new Map(); // "gear min,gear max" -> solve result
   const entries = []; // {meal, totals, r, band} per meal with a loadout, for pickMeal
   for (const meal of meals) {
@@ -117,7 +118,9 @@ export function gearBand(job, meal, band, level) {
    less. opts = {melds, food, nodeLimit, level} as for optimizeGcd. Null when the pool has no loadout. */
 export function fastestGcd(job, pool, sync, opts) {
   const { level, hastePct: pct } = goalSettings(job, sync, opts);
-  const r = solve(prepare(job, pool, sync, { target: 'spd', melds: opts.melds, weaponFirst: false }), { nodeLimit: opts.nodeLimit });
+  const r = solve(prepare(job, pool, sync, { target: 'spd', melds: opts.melds, weaponFirst: false, fixed: opts.fixed }), {
+    nodeLimit: opts.nodeLimit,
+  });
   if (!r.ok) return null;
   const meals = mealsFor(job, opts.food);
   let spd = r.totals.spd || 0;

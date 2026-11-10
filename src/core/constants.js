@@ -1,5 +1,5 @@
 /* Static game and project constants. Nothing here changes at runtime.
-   Internal stat keys are role-neutral: main (Str/Dex/Int/Mind), vit, crit, det, dh,
+   Internal stat keys name a position in the job's stat list, not one game stat: main (Str/Dex/Int/Mind), vit, crit, det, dh,
    spd (Skill/Spell Speed), spec (Piety/Tenacity/none). A JobContext (job-context.js) maps them per job.
    The generated-data format (job bit order, raw stat order, slot codes) comes from item-format.json, which the
    Python generators read too. */
@@ -63,7 +63,7 @@ export const ALL_JOBS_ACCESSORY_FACTORS = Object.freeze({
 /* 18 A Realm Reborn dungeon pieces at item level 46 (equip level 44) whose stats sit below their item level: each main
    stat at 90% of the usual value, Vitality and every substat at 80% (fits 17 of 18; Harlequin's Acton's Intelligence
    stays 1 off). The other 26 pieces of their sets and level follow the usual rule and nothing in the data marks these,
-   so the rule goes by name (owner's decision, 2026-10-16). Measured on these pieces only. Accuracy check only. */
+   so the rule goes by name (owner's decision). Measured on these pieces only. Accuracy check only. */
 export const REDUCED_STAT_PIECES = Object.freeze({
   names: new Set([
     "Buccaneer's Tricorne",
@@ -97,7 +97,7 @@ export const SPD_SHORT = Object.freeze({ sks: 'SkS', sps: 'SpS' });
 export const SPEC_NAME = Object.freeze({ piety: 'Piety', ten: 'Tenacity' });
 export const SPEC_SHORT = Object.freeze({ piety: 'PIE', ten: 'TNC' });
 
-/* Role profiles: which raw stat each neutral key means. */
+/* Role profiles: which raw stat each stat key means. */
 export const PROFILES = Object.freeze({
   healer: Object.freeze({ label: 'Healer', main: 'mind', spd: 'sps', spec: 'piety' }),
   tank: Object.freeze({ label: 'Tank', main: 'str', spd: 'sks', spec: 'ten' }),
@@ -149,7 +149,7 @@ export const DEFAULT_JOB = JOBS[0].id;
 export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']); /* 1H weapon + shield; everyone else uses a 2H weapon */
 /* Jobs whose weapons carry no real weapon damage, so the optimizer does not rank it (damage-defense.js): Blue Mage's
    weapons all hold 6 physical and 1 magic damage (Item.csv); its weapon damage comes from Intelligence instead
-   (xivgear's bluWdfromInt), which a goal covers when Intelligence is in it (owner's decision 2026-10-18). */
+   (xivgear's bluWdfromInt), which a goal covers when Intelligence is in it (owner's decision). */
 export const NO_WEAPON_DAMAGE_JOBS = Object.freeze(['BLU']);
 /* Limited jobs stop below the game's level cap. The game files hold no level cap (ClassJob has no such column; its
    IsLimitedJob flag marks exactly these two jobs), so these come from the official patch notes on the Lodestone:
@@ -158,8 +158,8 @@ export const NO_WEAPON_DAMAGE_JOBS = Object.freeze(['BLU']);
    level 1 with a maximum level of 50" (Patch 7.56 Notes,
    https://na.finalfantasyxiv.com/lodestone/topics/detail/a8a526ad64db45c8ca8d1c7fdcce8a5eedaa18bc). Every other job caps
    at the highest equip level in the item database (MAX_LEVEL in tables.js, 100). */
-export const JOB_LEVEL_CAPS = Object.freeze({ BLU: 80, BST: 50 });
-/* Haste that is up all fight in practice, counted in the Target GCD (owner's decision 2026-10-15; short buffs such as
+export const JOB_LEVEL_CAPS = Object.freeze({ ...ITEM_FORMAT.jobLevelCaps });
+/* Haste that is up all fight in practice, counted in the Target GCD (owner's decision; short buffs such as
    Presence of Mind, Ley Lines, Army's Paeon and Inspiration are not): job -> {name, steps: [{level (the level it starts
    at), pct (percent), source (the trait or action that gives it)}]}, steps in level order. Percents, levels and names from the official job guides
    (https://na.finalfantasyxiv.com/jobguide/, read 2026-10-15, rechecked 2026-10-16). A level synced below the job's
@@ -240,7 +240,7 @@ export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 /* The game's generic "Main Attribute" (pre-order earrings): the wearer's main stat (see items.js dbStats, which also
    maps the generic "Secondary Attribute"). */
 export const RAW_MAIN_ATTR_IDX = ITEM_STAT_ORDER.indexOf('mainAttr');
-/* Indices into a row's raw stat array (ITEM_STAT_ORDER), not neutral keys. Substats: every stat but the main stats, Vitality and Main Attribute (Secondary Attribute ranks as a substat). */
+/* Indices into a row's raw stat array (ITEM_STAT_ORDER), not stat keys. Substats: every stat but the main stats, Vitality and Main Attribute (Secondary Attribute ranks as a substat). */
 export const RAW_SUBSTAT_IDX = Object.freeze(
   ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX && i !== RAW_MAIN_ATTR_IDX),
 );

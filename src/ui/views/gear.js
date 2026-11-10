@@ -27,14 +27,14 @@ export const PAGE_SIZE = 100;
    many, so the arrows don't move as the page changes. */
 export const PAGE_SLOTS = 7;
 
-/* The slot pills' groups, in the order they show (owner, 2026-10-18): weapon and shield, armor, accessories. */
+/* The slot pills' groups, in the order they show (owner): weapon and shield, armor, accessories. */
 const SLOT_GROUPS = [
   ['weapon', 'offhand'],
   ['head', 'body', 'hands', 'legs', 'feet'],
   ['ear', 'neck', 'wrist', 'ring'],
 ];
 
-/* The orders the table's headings sort by: 'name', 'lvl', 'ilvl' or a neutral stat key (its synced value), each 'desc'
+/* The orders the table's headings sort by: 'name', 'lvl', 'ilvl' or a stat key (its synced value), each 'desc'
    (high first; Z to A for names) or 'asc'. Ties go to the higher item level, then the name. */
 function byOrder(sort, dir) {
   const sign = dir === 'asc' ? -1 : 1;
@@ -82,20 +82,23 @@ export function browseFiltered(job, b) {
   );
 }
 
-/* A stat's cell in the browser: {text, cls, was}. Lowered by sync: the synced value, bold with the cap bar (sync takes
-   a stat to exactly the piece's cap), and `was` the value before sync for the muted line under it; else the value,
-   dimmed when zero, and `was` null. */
-export function browseCell(raw, synced) {
+/* A stat's cell in the browser, as plain fields the template reads one by one: {text, cls, col, title, was}. `col` is
+   the stat's key (the column), `cls` the cell's classes, `text` the value on the top line and `title` its tooltip.
+   Lowered by sync: the synced value, bold with the cap bar (sync takes a stat to exactly the piece's cap; both come
+   from the cell's `cut` class in styles.css), and `was` the value before sync, which the CSS draws as the muted line
+   under it (from the cell's data-was attribute); else the value, dimmed when zero, and `title` and `was` null (no
+   attribute). */
+export function browseCell(raw, synced, col = '') {
   raw = raw || 0;
   synced = synced || 0;
-  if (synced < raw) return { text: String(synced), cls: 'n cut', was: String(raw) };
-  return { text: String(raw), cls: raw ? 'n' : 'n dim', was: null };
+  if (synced < raw) return { text: String(synced), cls: 'n cut', col, title: 'Maxed on this piece', was: String(raw) };
+  return { text: String(raw), cls: raw ? 'n' : 'n dim', col, title: null, was: null };
 }
 
 /* "1 match", "1,939 matches". */
 const matchCount = n => `${fmtInt(n)} ${n === 1 ? 'match' : 'matches'}`;
 
-/* The page line's numbers for page `current` of `count` (owner's pick P1 a, 2026-10-20): an array of page numbers,
+/* The page line's numbers for page `current` of `count` (owner's pick P1 a): an array of page numbers,
    with null for a gap ("…"). Every page while there are PAGE_SLOTS or fewer; else always PAGE_SLOTS entries: page 1, the current page with one page each side, the last
    page, and a gap between them where pages are skipped. Near an end, the pages run on from that end instead
    (1 2 3 4 5 … 22), so a gap never stands for a single page. One page gives [1]. */
@@ -126,8 +129,9 @@ export function pageList(current, count) {
 /* The gear browser's list, on page `page` (1 first; held to the pages there are, so a page past the end shows the
    last): {shown, anySynced, countText, page, pageCount, pageButtons, prevPage, nextPage, emptyBoxes, slots}. shown:
    that page's PAGE_SIZE matches, in the heading's order, each with its cells (browseCell: the synced stat on the top
-   line, the piece's own under it), its name cut for the search's highlight (nameParts), and `synced` true when sync lowers
-   its item level. The item level column shows the piece's own item level (owner, 2026-10-19: the synced one there was
+   line, the piece's own under it), its name cut for the search's highlight (nameParts: {text, hit, cls}), `synced` true when sync lowers its item level
+   (`rowCls`: the row's class for it), and `twice` true for a ring that can be worn on both fingers. Every field is plain
+   text or a flag, read once by the template. The item level column shows the piece's own item level (owner: the synced one there was
    confusing). slots: the slot pills, [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by
    group (1 to 3), count the matches in that slot under the other filters. For `job` (a JobContext) under `sync` ({cap,
    sync, level}: ui/settings.js syncSettings), with the browser's settings `browse` (the store's: state.js
@@ -169,14 +173,19 @@ export function gearView(job, sync, browse, page = 1) {
   const pageCount = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
   const pageShown = Math.min(Math.max(1, Math.round(page) || 1), pageCount);
   const firstRow = (pageShown - 1) * PAGE_SIZE;
-  const shown = all.slice(firstRow, firstRow + PAGE_SIZE).map(x => ({
-    ...x,
-    key: poolKey(x),
-    slot: slotLabel(x.type, x.blocks),
-    nameParts: markWords(x.name, b.q),
-    synced: x.target != null && x.target < x.ilvl,
-    cells: job.stats.map(s => browseCell(x.raw[s], x.eff[s])),
-  }));
+  const shown = all.slice(firstRow, firstRow + PAGE_SIZE).map(x => {
+    const synced = x.target != null && x.target < x.ilvl;
+    return {
+      ...x,
+      key: poolKey(x),
+      slot: slotLabel(x.type, x.blocks),
+      nameParts: markWords(x.name, b.q).map(part => ({ ...part, cls: part.hit ? 'mark' : '' })),
+      synced,
+      rowCls: synced ? 'synced' : '',
+      twice: x.copies === 2,
+      cells: job.stats.map(s => browseCell(x.raw[s], x.eff[s], s)),
+    };
+  });
 
   // the slot pills: how many matches each slot has under the other filters
   const counts = {};

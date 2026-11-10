@@ -31,7 +31,7 @@ function stonesOf(job, text) {
 /* A recorded case's set: its pieces by game id with their stones, and its meal. */
 function caseSet(job, c) {
   return makeSet(
-    c.pieces.map(([slot, gameId, name, meld]) => (gameId == null ? { slot } : { slot, gameId, name, stones: stonesOf(job, meld) })),
+    c.pieces.map(([slot, gameId, , meld]) => (gameId == null ? { slot } : { slot, gameId, stones: stonesOf(job, meld) })),
     c.meal,
   );
 }
@@ -177,11 +177,11 @@ test('evaluateSet: stones a piece cannot keep, points past the cap, a game id th
         { stat: 'det', grade: 5 },
       ],
     },
-    { slot: 'head', gameId: 999999999, name: 'A piece from an older patch', stones: [] },
+    { slot: 'head', gameId: 999999999, stones: [] },
   ]);
   const free = evaluateSet(war, set, { cap: null, sync: false, level: 100 }, 100);
   assert.deepEqual([free.rows[0].stats.det, free.rows[0].lost, free.lost.det], [110, { det: 5 }, 5]);
-  assert.deepEqual([free.rows[1].item, free.rows[1].missing], [null, 'A piece from an older patch']);
+  assert.equal(free.rows[1].item, null);
   const synced = evaluateSet(war, set, { cap: 290, sync: true, level: 100 }, 100);
   assert.deepEqual(
     synced.rows[0].removed.map(x => x.reason),

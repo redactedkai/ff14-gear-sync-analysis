@@ -1,8 +1,8 @@
 /* How the math works, Piece stats: what sync does to one piece, against the same piece at the cap with its melds. Pure
    view builder: no Alpine import, so Node can load and test it.
    A "generic piece" here is a piece built from the budget table (buildPiece): the main stat, Vitality and the two
-   chosen substats at their 100% / 70% shares, with 2 meld slots (meldInfo). Its melds are the optimizer's for the
-   current Goal (bestMeld), so the explainer and the optimizer meld alike (owner, 2026-10-16). */
+   chosen substats at their 100% / 70% shares, with 2 meld slots (meldInfo). Its melds are the optimizer's best stones
+   (bestMeld) in those two substats, so the explainer and a Fill meld alike. */
 import { MATERIA, MAX_REAL } from '../../core/tables.js';
 import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.js';
@@ -30,14 +30,11 @@ function chosenSubs(subs) {
   return subs.slice(0, 2).map(s => s || null);
 }
 
-/* The keys melds go into for `job`: the optimizer's Goal (`goal`: [target, tiebreak 1, tiebreak 2], '' for none) where
-   those are substats; when none is (a main stat or Vitality goal, which materia cannot add), the two chosen substats
-   (`subs`, Piece stats' ranks), the 2nd first: the 1st is at the piece's own cap already. {keys, fromGoal} */
-export function meldKeys(job, goal, subs) {
-  const substats = goal.filter(k => k && job.substats.includes(k));
-  if (substats.length) return { keys: substats, fromGoal: true };
+/* The keys melds go into: the two chosen substats (`subs`, Piece stats' ranks), the 2nd first, since the 1st is at the
+   piece's own cap already. */
+export function meldKeys(subs) {
   const [s1, s2] = chosenSubs(subs);
-  return { keys: [s2, s1].filter(Boolean), fromGoal: false };
+  return [s2, s1].filter(Boolean);
 }
 
 /* One generic piece of slot `type` at item level `il` in a duty synced to `cap`: its stats before and after sync, its
@@ -96,7 +93,7 @@ function computeRange(job, cap, subs) {
 }
 
 /* The slider's range and the chosen item level: {range: [lo, hi], il, note}. With a sync, explainerRange and the saved
-   item level (null: the cap, where Reset puts it; owner's decision, 2026-10-18); without one, every real item level
+   item level (null: the cap, where Reset puts it; owner's decision); without one, every real item level
    (null: the highest). `note` says where the range comes from (the slider's tooltip). For `job` under `sync`
    (syncSettings), and Piece stats' `piece` ({ilvl, slot, subs}). */
 export function explainerItemLevel(job, sync, piece) {
@@ -134,10 +131,10 @@ export function explainerOffText(syncSwitch) {
 }
 
 /* Everything Piece stats shows for `job` under `sync` (syncSettings), or null while no sync applies: Piece stats'
-   `settings` ({ilvl, slot, subs}: the store's `piece`) against the same piece at the cap, melded for the optimizer's
-   `goal` ([target, tiebreak 1, tiebreak 2]; meldKeys). `widths`: the chart container's width in px ({piece}), so the
+   `settings` ({ilvl, slot, subs}: the store's `piece`) against the same piece at the cap, melded in the two chosen
+   substats (meldKeys). `widths`: the chart container's width in px ({piece}), so the
    chart is drawn at its own size and its text stays at the page's size. */
-export function explainerView(job, sync, settings, goal, widths = {}) {
+export function explainerView(job, sync, settings, widths = {}) {
   const shown = shownSync(job, sync);
   if (!shown) return null;
   const cap = shown.cap,
@@ -145,7 +142,7 @@ export function explainerView(job, sync, settings, goal, widths = {}) {
     type = settings.slot,
     slotName = SLOT_LABEL[type].toLowerCase();
   const subs = chosenSubs(settings.subs);
-  const { keys, fromGoal } = meldKeys(job, goal, settings.subs);
+  const keys = meldKeys(settings.subs);
 
   // the range and the chosen item level
   const {
@@ -201,7 +198,6 @@ export function explainerView(job, sync, settings, goal, widths = {}) {
     : !keptStones.length
       ? 'No materia fits this item level.'
       : `${keptStones.map(s => `${s.n} × Grade ${ROMAN[s.grade - 1]} ${job.label[s.stat]}`).join(', ')}, kept`;
-  const goalNote = fromGoal ? '' : `The Goal (${job.label[goal[0]] || goal[0]}) takes no materia, so melds go into the substats above.`;
 
   // the table under the bars: the piece, then the piece at the cap (or the one row when they are the same; the page
   // keeps the second row's space so the panel does not jump as the slider passes the cap)
@@ -266,7 +262,6 @@ export function explainerView(job, sync, settings, goal, widths = {}) {
     bars,
     stoneChips,
     meldNote,
-    goalNote,
     vsRows,
     verdict,
     curveNote,

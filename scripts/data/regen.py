@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate src/data/item-level.json, src/data/items.json, src/data/food.json, src/data/job-icons.js,
-src/data/max-speed.json and src/data/summary.json from what fetch.py saved in data/, then rebuild dist/. The summary
-step prints the counts that moved since the last run and adds a line to docs/data-changelog.md for a new commit.
+src/data/gear-groups.json, src/data/max-speed.json and src/data/summary.json from what fetch.py saved in data/, then
+rebuild dist/. The summary step prints the counts that moved since the last run and adds a line to docs/data-changelog.md for a new commit.
 
 Usage: python scripts/data/regen.py [--allow-dirty]
 
@@ -52,6 +52,8 @@ REPORT = str(Path(work.name) / 'items-report.json')  # the item generator's coun
 STEPS = [
     ('Generating the item level table', [py, str(DATA / 'gen_item_level.py'), str(CSV), str(OUT / 'item-level.json'), *prov]),
     ('Generating the item database', [py, str(DATA / 'gen_items.py'), str(CSV), str(OUT / 'items.json'), *prov, '--report', REPORT]),
+    # which jobs share gear (Copy sheet), from the item database made above
+    ('Generating the gear groups', [py, str(DATA / 'gen_gear_groups.py'), str(OUT / 'items.json'), str(OUT / 'gear-groups.json')]),
     ('Generating the food table', [py, str(DATA / 'gen_food.py'), str(CSV), str(OUT / 'food.json'), *prov]),
     ('Generating the job icons', [py, str(DATA / 'gen_job_icons.py')]),
     # the most speed per level comes from the optimizer (JavaScript), over the item and food tables made above

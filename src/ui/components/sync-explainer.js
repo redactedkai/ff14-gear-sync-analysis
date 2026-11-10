@@ -18,15 +18,15 @@ export function syncExplainer() {
        level, explainerItemLevel), explainer, steps}. Read through the getters below. */
     get pieceViews() {
       const app = this.$store.app;
-      const job = app.jobCtx,
-        sync = syncSettings(app),
+      const panel = app.panel('math'),
+        job = panel.jobCtx,
+        sync = syncSettings(panel),
         piece = app.piece,
-        goal = [app.opt.target, app.opt.tb, app.opt.tb2],
         width = this.widths.piece;
-      const key = JSON.stringify([job.jobId, sync, piece.ilvl, piece.slot, piece.subs, goal, width]);
+      const key = JSON.stringify([job.jobId, sync, piece.ilvl, piece.slot, piece.subs, width]);
       return views.get(key, () => {
         const pick = explainerItemLevel(job, sync, piece);
-        return { pick, explainer: explainerView(job, sync, piece, goal, { piece: width }), steps: pieceView(job, sync, piece, pick.il) };
+        return { pick, explainer: explainerView(job, sync, piece, { piece: width }), steps: pieceView(job, sync, piece, pick.il) };
       });
     },
     /* Piece stats' two panels (explainerView), or null while no sync applies; and its step-by-step section (pieceView).
@@ -48,13 +48,13 @@ export function syncExplainer() {
       return this.pieceViews.pick.note;
     },
     helpOpen: false,
-    /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
+    /* the job chosen in the math tab's own Job and sync panel (JobContext) */
     get jobCtx() {
-      return this.$store.app.jobCtx;
+      return this.$store.app.panel('math').jobCtx;
     },
     /* what Piece stats says while no sync applies (views explainerOffText) */
     get offText() {
-      return explainerOffText(this.$store.app.sync);
+      return explainerOffText(this.$store.app.panel('math').sync);
     },
     /* the math bar's Slot, 1st substat and 2nd substat menus: [value, label] */
     get slotOptions() {

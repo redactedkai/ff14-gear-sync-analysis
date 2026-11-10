@@ -2,7 +2,7 @@
 
 The page lets a player hide gear by where it comes from (crafted, tomestone, Savage raid, ...), but the game files have no documented "source" column. This page is the reference for the undocumented column the project uses instead, `Item.SubcategorySort`: what each of its codes means on gear, how each meaning was checked, and the two extra signals (shop data and dye slots) that the item database generator adds where a code is not enough.
 
-Related pages: [data-pipeline.md, section 4](data-pipeline.md#gear-category) (how the categories become the page's source groups), [glossary.md](../glossary.md) (Savage, Ultimate, relic weapon, Field Op, tomestones, Diadem gear).
+Related pages: [data-pipeline.md, section 4.12](data-pipeline.md#412-gear-category) (how the categories become the page's "Gear from" boxes), [glossary.md](../glossary.md) (Savage, Ultimate, relic weapon, Field Op, tomestones, Diadem gear).
 
 ## How a code is read
 
@@ -36,7 +36,7 @@ The splits in step 4: code 10 by slot (weapons and shields are Relic, the rest F
 How to read the table:
 
 - **Category** is the one the code is filed under. Where a piece is moved to another category, the note says by what.
-- **Pieces** counts the gear the generator keeps before the gear left out is dropped (so the Diadem and Aetherial gear is counted): item level 100+ at game data `d9582a6` for the codes found there; the codes added when the floor moved to item level 15 (430, 470, 520, 830, 921, 990, Aetherial) count item level 15 to 99 at `a67c23b`. Lower floors also added pieces to older codes (Grand Company, PvP, dungeon), not recounted here.
+- **Pieces** counts the gear the generator keeps before the gear left out is dropped (so the Diadem and Aetherial gear is counted): item level 100+ at game data `d9582a6` for the codes found there; the codes added when the floor moved to item level 15 (430, 470, 520, 830, 921, 990, Aetherial) count item level 15 to 99 at `a67c23b`. The later move of the floor to item level 1 added codes 550, 910 and 920 and pieces to older codes (Grand Company, PvP, dungeon), not recounted here.
 - ✅ = checked against the wiki or Lodestone, one piece per group.
 - A code with a longer explanation has a note under the table.
 
@@ -71,7 +71,10 @@ How to read the table:
 | 510 | Quest | 10 | Nameless, Red | Quest reward (Samurai, Red Mage starter gear) | ✅ Verified |
 | 520 | Venture | 37 | Thormoen's Pride, Explorer's, Mage's, Stonewall, Gysahl Ring | Retainer venture rewards (Quick and Field Exploration), item level 49 to 52 | ✅ Verified |
 | 530 | Quest (job starter) | 32 | Outsider's, Bookwyrm's, Weathered Painter's | Starter gear of GNB, DNC, SGE, RPR, VPR, PCT | ✅ Verified |
+| 550 | Dungeon | 1 | Figment of Showtime | Glamour; the one piece with a stat is a Blue Mage weapon from a Figmental Weapon Coffer (Cenote Ja Ja Gural treasure dungeon, 7.1) | ✅ Verified (Console Games Wiki) |
 | 830 | Seasonal event | 4 | Chocobo Egg Cap, Midnight Egg Cap | Hatching-tide egg caps (item level 15 to 40), sold for gil after the event | ✅ Verified |
+| 910 | Collaboration | 18 | Blazefire Saber, l'Cie Bardiche, Guardian Corps Coat, Bohemian's Coat | Final Fantasy XIII event gear (item level 13: 8 weapons, 8 armor pieces); the two Collector's Edition helms share the code and are overridden by item id | ✅ Verified (former event items) |
+| 920 | Collaboration | 1 | Thug's Mug | Dragon Quest X event helm (item level 10); the rest of the code is item level 1 costume with no stats | ✅ Verified |
 | 921 | Collaboration | 14 | Whisker of the Brave Cat, Ears of the Moon Rabbit | Yo-kai Watch collaboration weapons (item level 30), bought with Legendary Shogunyan Medals | ✅ Verified |
 | 922 | Collaboration | 119 | Makai, Mado, The Fanged Wolf | GARO collaboration gear, bought with Wolf Marks (PvP) | ✅ Verified |
 | 923 | Collaboration | 44 | Veldian, Augmented Veldian | Monster Hunter crossover weapons (The Windward Wilds, 7.35) | ✅ Verified |
@@ -87,6 +90,7 @@ Notes on single codes:
 - **250.** Heavensward Diadem gear (retired) and A Realm Reborn's Aetherial gear (dungeon and treasure loot, item level 14 to 50). Both have random secondary attributes (the item text says "This weapon's secondary attributes are random."; the export's descriptions are empty), so the stats in the game files are not what a piece has: both are left out of the database.
 - **320.** The 182 without a recipe: 38 Paladin swords and shields (the recipe makes a "Paladin's … Arms" set holding both), 71 Yama (traded for Rakshasa Tokens from turning in crafted gear), 73 pre-ShB augmented crafted.
 - **370.** Neophyte's Ring is a Hall of the Novice reward (filed under Quest, overridden by item id).
+- **910.** Helm of Light (2.0 Collector's Edition bonus, filed under Promotional) and Onion Helm (1.0 Collector's Edition bonus, retired, filed under Legacy) are overridden by item id.
 - **990.** The "Dated" gear, the Chocobo Mask (achievement), White Ravens (The Rising 2018). Exception: the Peregrine Helm is a Quick Exploration venture reward today (filed under Venture, overridden by item id).
 
 ## Field Op gear
@@ -153,4 +157,4 @@ The codes do not follow the step number: 11, 12 and 13 mark single steps, and th
 | Savage currencies and the dye-slot cross-check | `scripts/data/gear_categories.py` (`savage_items`, `check`) |
 | Ultimate totems and the recipe flag | `scripts/data/gear_sources.py` (`ULTIMATE_TOTEMS`) |
 | A category's activity for a piece with no way in ("Gear from") | `scripts/data/gear_activities.py` (`DROP_ACTIVITY`) |
-| How pieces get their "Gear from" routes | [data-pipeline.md, section 4](data-pipeline.md#sources) |
+| How pieces get their "Gear from" routes | [data-pipeline.md, section 4.6](data-pipeline.md#46-sources) |
