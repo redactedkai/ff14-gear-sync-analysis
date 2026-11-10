@@ -880,7 +880,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Job icon number is $62100 + r$ | verified | all 23 icons looked at (section 2) |
 | Main Attribute and Secondary Attribute mapping | second-hand; tank case inferred | xivgear's tests (section 3) |
 | The four main-stat budget columns are equal | verified | game data (section 3) |
-| Item level floor of 15 | owner's decision | Sastasha has no item level sync, verified (section 4.1) |
+| Item level floor of 1 | owner's decision | every combat piece with a stat is kept, from the starter gear up (section 4.1) |
 | Code 250 gear has random secondary attributes | second-hand | item text (section 4.1) |
 | HQ bonus only when `CanBeHq` | **verified** | by count: 328 rows, 325 selected (section 4.4) |
 | Beastmaster's Crucible bonus applies only in the Crucible | second-hand | Console Games Wiki (section 4.4) |
