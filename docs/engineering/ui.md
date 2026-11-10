@@ -177,8 +177,8 @@ The gear table draws its own outline so the stuck column-name row has real round
 
 | Concept | File |
 | --- | --- |
-| The page template (frame, Job and sync panel, Sheets shell and dialogs, Gear browser, footer) | `src/index.html` |
-| The Math tab, the sheet manager and sheet page, a set's page | `src/partials/math-tab.html`, `sheet-screens.html`, `set-page.html` |
+| The page template (frame, Job and sync panel, Sheets shell and dialogs, footer) | `src/index.html` |
+| The Math tab, the Gear browser, the sheet manager and sheet page, a set's page | `src/partials/math-page.html`, `gear-page.html`, `sheet-pages.html`, `set-page.html` |
 | What the solver answers for a Fill: the answer, the Gear to search line and the Target GCD label | `src/ui/views/solve.js` (`solveView`, `gearToSearchView`, `searchCount`) |
 | The Food row's menu | `src/ui/components/meal-menu.js`, `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `mealLine`, `sortMeals`, `mealList`, `mealBestKeys`, `mealBestNote`); `src/core/food.js` (`allMeals`) |
 | Pieces and meals with the same result | `src/core/same-result.js` (`sameMeals`), `src/core/tiers.js` (`rankTierOf`), `src/core/items.js` (`searchMatches`) |
