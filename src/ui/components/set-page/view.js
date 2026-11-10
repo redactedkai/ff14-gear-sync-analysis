@@ -11,7 +11,7 @@ import { draftView, samePieces } from '../../views/set-draft.js';
 import { setMealMenuView } from '../../views/set-meal-menu.js';
 import { setRowsView } from '../../views/set-rows.js';
 import { suggestionView } from '../../views/set-suggestion.js';
-import { evaluateInSheet, setFigures, setTotalsView } from '../../views/set-totals.js';
+import { evaluateInSheet, figureColumns, setFigures, setTotalsView } from '../../views/set-totals.js';
 
 /* The line shown after a click on the table while a Fill result waits. */
 export const LOCKED_TABLE_TEXT = 'Pieces and stones can be changed after Apply or Discard.';
@@ -134,7 +134,7 @@ export function viewPart(raw) {
         mode,
         rows,
         totals,
-        head: { names: figures.map(f => ({ key: f.key, label: f.label })), rows: headRows },
+        head: { names: figures.map(f => ({ key: f.key, label: f.label })), columns: figureColumns(figures), rows: headRows },
         plan: { label: plan.label, disabled: plan.disabled, count: plan.count },
         goalLine: goal ? goalText(job, goal) : '',
         apply,

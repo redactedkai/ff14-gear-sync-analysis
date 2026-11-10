@@ -81,7 +81,7 @@
     <button type="button" class="primary" id="sh-new-set-first" :disabled="$store.sheets.busy" @click="$store.sheets.newSet()">New set</button>
   </div></template>
   <template x-if="!page.empty"><div class="tablewrap"><table class="sets setlist" id="sh-sets">
-    <thead><tr><th>Set</th><template x-for="c in page.columns" :key="c"><th class="n" x-text="c"></th></template></tr></thead>
+    <thead><tr><th>Set</th><template x-for="(c, k) in page.columns" :key="c"><th class="n" :class="{ wide: page.wideColumns[k] }" x-text="c"></th></template></tr></thead>
     <tbody>
       <template x-for="(r, i) in page.rows" :key="r.id">
         <tr :data-set="r.id" :class="{ dragging: dragging?.kind === 'set' && dragging.from === i, dropbefore: dropMark('set', i) === 'before', dropafter: dropMark('set', i) === 'after' }"
@@ -100,7 +100,7 @@
               </div>
             </div>
           </div></td>
-          <template x-for="f in r.figures" :key="f.key"><td class="n" x-text="f.text"></td></template>
+          <template x-for="f in r.figures" :key="f.key"><td class="n" x-text="f.shown ?? f.text"></td></template>
         </tr>
       </template>
     </tbody>

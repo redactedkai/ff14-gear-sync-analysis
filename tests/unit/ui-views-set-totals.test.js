@@ -160,6 +160,20 @@ test('a job without a special substat has no such figure (Dragoon); the other fi
   assert.deepEqual(keys, ['main', 'gcd', 'crit', 'critDmg', 'det', 'dh', 'dot']);
 });
 
+test('a job with an always-on haste labels the GCD "with Haste" and shows it without the haste, then with it', () => {
+  // no gear and no meal: the base recast, 2.50 s, then the haste cuts it by its percent (floored to hundredths):
+  // Greased Lightning 20% (Monk, level 100), Increase Attack Speed 15% (Ninja), Fuka 13% (Samurai), Swiftscaled 15% (Viper)
+  const expected = { MNK: '2.00s', NIN: '2.12s', SAM: '2.17s', VPR: '2.12s' };
+  for (const [jobId, hasted] of Object.entries(expected)) {
+    const sheet = sheetOf(jobId, [], { sync: { on: false, cap: 795 } });
+    const gcd = setFigures(evaluateInSheet(sheet, { ...warSet(), pieces: [{ slot: 'weapon' }] })).find(f => f.key === 'gcd');
+    assert.deepEqual([gcd.label, gcd.text, gcd.shown], ['GCD (with Haste)', hasted, `2.50s (${hasted})`], jobId);
+  }
+  // a job without haste keeps the plain label and no `shown`
+  const sage = setFigures(evaluateInSheet(sheetOf('SGE', []), sageSet())).find(f => f.key === 'gcd');
+  assert.deepEqual([sage.label, sage.shown], ['GCD', undefined]);
+});
+
 test("figureChange: signed difference in the figure's own unit and decimals; equal figures give null", () => {
   assert.deepEqual(figureChange('19.3%', '21.0%'), { text: '+1.7%', up: true });
   assert.deepEqual(figureChange('2.49s', '2.48s'), { text: '−0.01s', up: false });

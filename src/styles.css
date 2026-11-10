@@ -2587,6 +2587,9 @@ table.sets.sheetlist th:nth-of-type(2) {
 table.sets.sheetlist th:nth-of-type(3) {
   width: 140px;
 }
+table.sets.setlist th.wide {
+  width: 150px;
+}
 table.sets.sheetlist th:nth-of-type(4) {
   width: 52px;
 }
@@ -3173,7 +3176,7 @@ html:has(.dlg) {
 }
 .tb3 .crow {
   display: grid;
-  grid-template-columns: minmax(110px, 166px) repeat(var(--figs), minmax(0, 1fr));
+  grid-template-columns: minmax(110px, 166px) var(--cols, repeat(var(--figs), minmax(0, 1fr)));
   gap: 0 6px;
   align-items: center;
   height: 30px;

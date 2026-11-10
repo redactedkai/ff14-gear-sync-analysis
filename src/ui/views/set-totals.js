@@ -17,6 +17,9 @@ import { isUsed } from './saved-set.js';
    Hit's second effect, the DoT/HoT bonus of the speed). */
 const FIGURES = ['main', 'gcd', 'crit', 'critDmg', 'det', 'dh', 'spec', 'dot'];
 const FIGURE_LABEL = { gcd: 'GCD', critDmg: 'Crit dmg', dot: 'DoT' };
+/* The GCD figure's label for a job with an always-on haste (HASTE in core/constants.js): its text is the hasted GCD, and
+   `shown` adds the GCD without the haste in front of it. */
+const HASTE_GCD_LABEL = 'GCD (with Haste)';
 /* The job's stat behind a figure id: the stat key for a stat figure, null for a derived one or a job without it. */
 function figureStat(job, id) {
   if (id === 'main') return job.mainKey;
@@ -98,7 +101,9 @@ export function setTotalsView(context) {
 /* The header's figures for a set evaluated by evaluateInSheet (`context`), as texts the way the character panel's
    effects read: [{key, label, text}] in FIGURES order, "MND 6,406"-style numbers for the main stat, the GCD ("2.48s"),
    Critical Hit rate ("19.3%"), its Crit dmg ("+54.3%"), Determination, Direct Hit, the special substat (a job without
-   one has no such figure), and the DoT/HoT bonus ("+0.7%"). Tiers count the meal, as the Tier row does. */
+   one has no such figure), and the DoT/HoT bonus ("+0.7%"). Tiers count the meal, as the Tier row does. A job with an
+   always-on haste (Monk, Ninja, Samurai, Viper) has the label "GCD (with Haste)", its `text` the hasted GCD (the one the
+   delta lines compare) and `shown` "2.49s (1.99s)": the GCD without the haste, then with it. */
 export function setFigures(context) {
   const { job, level, evaluated } = context;
   const tierOf = stat => evaluated.tiers[job.stats.indexOf(stat)];
@@ -114,11 +119,20 @@ export function setFigures(context) {
     spec: specKey ? tierOf(specKey).effect : null,
     dot: `+${evaluated.gcd.dot.toFixed(1)}%`,
   };
+  const hasted = !!evaluated.gcd.haste;
   return FIGURES.filter(key => text[key] != null).map(key => ({
     key,
-    label: FIGURE_LABEL[key] ?? job.short[figureStat(job, key)],
+    label: key === 'gcd' && hasted ? HASTE_GCD_LABEL : (FIGURE_LABEL[key] ?? job.short[figureStat(job, key)]),
     text: text[key],
+    // what the page shows when it differs from `text` (the figure deltas are taken from `text`): "2.49s (1.99s)"
+    ...(key === 'gcd' && hasted ? { shown: `${evaluated.gcd.unhasted.toFixed(2)}s (${text.gcd})` } : {}),
   }));
+}
+
+/* The widths of a row of figures (setFigures' list), for a CSS grid: one share per figure, a figure with a `shown` text
+   (the GCD of a job with haste, "2.49s (1.99s)") gets 1.7 shares. */
+export function figureColumns(figures) {
+  return figures.map(figure => (figure.shown ? 'minmax(0, 1.7fr)' : 'minmax(0, 1fr)')).join(' ');
 }
 
 /* How a figure changed from `before` to `after` (texts as setFigures gives them): {text ("+1.7%", "−0.01s"), up}, or null

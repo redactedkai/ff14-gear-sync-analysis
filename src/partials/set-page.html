@@ -36,9 +36,9 @@
       <button type="button" id="sh-set-copy" :disabled="$store.sheets.busy" @click="copySet()">Copy</button>
       <button type="button" class="danger" id="sh-set-delete" :disabled="$store.sheets.busy" @click="askDelete('set', saved.id)">Delete</button>
     </div></div>
-    <template x-if="view.head.rows.length"><div class="totals tb3" id="sh-figures" :style="`--figs: ${view.head.names.length}`">
+    <template x-if="view.head.rows.length"><div class="totals tb3" id="sh-figures" :style="`--figs: ${view.head.names.length}; --cols: ${view.head.columns}`">
       <div class="crow hrow"><span class="cl"></span><template x-for="n in view.head.names" :key="n.key"><span class="cn" x-text="n.label"></span></template></div>
-      <template x-for="(r, k) in view.head.rows" :key="k"><div class="crow" :class="{ after: r.after }"><span class="cl" :title="r.label" x-text="r.label"></span><template x-for="f in r.figures" :key="f.key"><span class="cc" :class="{ chg: !!f.change }" :data-fig="f.key"><template x-if="f.change"><em class="dl" :class="f.change.good ? 'good' : 'bad'"><svg class="dlarrow" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" :d="f.change.up ? 'M12 8L18 14H6L12 8Z' : 'M12 16L6 10H18L12 16Z'"/></svg><span x-text="f.change.text"></span></em></template><b :class="f.change ? 'chgfig' : ''" x-text="f.text"></b></span></template></div></template>
+      <template x-for="(r, k) in view.head.rows" :key="k"><div class="crow" :class="{ after: r.after }"><span class="cl" :title="r.label" x-text="r.label"></span><template x-for="f in r.figures" :key="f.key"><span class="cc" :class="{ chg: !!f.change }" :data-fig="f.key"><template x-if="f.change"><em class="dl" :class="f.change.good ? 'good' : 'bad'"><svg class="dlarrow" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" :d="f.change.up ? 'M12 8L18 14H6L12 8Z' : 'M12 16L6 10H18L12 16Z'"/></svg><span x-text="f.change.text"></span></em></template><b :class="f.change ? 'chgfig' : ''" x-text="f.shown ?? f.text"></b></span></template></div></template>
     </div></template>
   </div>
   <template x-if="setHeader.notes"><p class="setnotes" id="sh-set-notes" x-text="setHeader.notes"></p></template>
