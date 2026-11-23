@@ -225,7 +225,7 @@ Notes on the longer rows:
 7. `core/set`: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has.
 8. `core/stat-keys`: `currentStatKey` reads old position keys as a job's own, and `remapStatKey` moves a key to another job by position. The guard is that `src/core` and `src/ui/views` hard-code no job-specific stat key outside the allow-listed tables.
 9. `core/tier-rank`: the reference tries every gear set and meal, with the stage rule written out. The cases are 20 of three keys and a Target GCD, a stage stopped at its node limit, an infeasible Target GCD, and 360 more random cases in `tests/sweep/`.
-10. `scripts/build`: the DEV badge outside `main`, the page template and its partials, the licence notices found in the bundled code, two builds of one tree giving the same page, the page's 4 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread.
+10. `scripts/build`: the DEV badge outside `main`, the page template and its partials, the licence notices found in the bundled code, two builds of one tree giving the same page, the page's 4 MB ceiling (`scripts/build.size`: the gzip size budget of the page's own JavaScript, section 4.1), the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread.
 11. `ui/components/meal-menu`: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to ILVL, a pick.
 12. `ui/components/sheets`: the screens, New sheet's default name, refused names left empty with their reason, Copy and Delete through their dialogs, set notes, Escape, nothing opening while an Auto-fill runs, keyboard and drag reordering, the note that clears itself.
 13. `ui/sheets/storage`: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage, and a saved time outside the range of a `Date` (1e300) making the record unreadable instead of breaking the Sheets tab.
@@ -560,6 +560,14 @@ Cite the source (a URL for a published number) in a comment next to the value. A
 **Keep shared logic job-agnostic in tests too.** The tool supports all 23 combat jobs. Tests of shared logic should either loop over several jobs (the real-gear optimizer tests cover every role) or use the job only as an example of a role (Sage for healers, Warrior for tanks). Do not encode a Sage-only assumption into a test of shared code.
 
 **Assert, don't print.** A check that only prints a value cannot fail. The band accuracy test prints its per-band shares as diagnostics but asserts the thresholds.
+
+### 4.1 Raising the size budget
+
+`tests/unit/scripts/build.size.test.js` bundles `src/main.js` as the build does, with every `src/data/` file replaced by an empty stub, gzips the JavaScript (level 9, so the same source gives the same bytes) and compares it with `OWN_CODE_GZIP_BUDGET_BYTES` in the test. The budget is the measured size plus about 1 kB. The 4 MB page ceiling in `build.test.js` is separate and stays: it watches the whole page, the data included.
+
+When the test fails, its message gives the current size and the budget. Decide first whether the growth is meant. If it is, set the constant to the new measured size plus about 1 kB and name the reason in the comment next to it (the step or library that added the bytes). If not, remove what grew.
+
+The budget is raised on purpose by each phase that adds a runtime library: Lit and Zag together add about 45 to 75 kB gzip, so the phase that brings them in raises the budget by its measured amount in the same commit, and later phases that remove Alpine code lower it again. A budget that was never raised is not a sign the code is small; it is the check that no one raised it by accident.
 
 ## 5. Adding a test
 
