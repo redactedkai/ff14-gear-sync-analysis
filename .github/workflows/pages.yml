@@ -47,7 +47,7 @@ jobs:
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium firefox webkit
 
-      # lint, build, unit tests and the browser smoke test; a failure stops the deploy
+      # lint, typecheck, build, unit tests, the component stories in Chromium and the browser smoke test; a failure stops the deploy
       - run: npm run check
       # the component stories in Chromium, Firefox and WebKit (check ran them in Chromium only)
       - run: npm run test:stories:all

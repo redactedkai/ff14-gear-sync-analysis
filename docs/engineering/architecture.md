@@ -368,9 +368,9 @@ Because the data is part of the script rather than fetched, the page works from 
 
 The steps are: install once, work, check, look. Every command, with how long it takes, is in the [root README](../../README.md#develop); this section adds what each step does.
 
-- **Install** (`npm install`, or `npm ci`; it installs esbuild, Biome, Playwright and Alpine). Biome does lint and format; Playwright drives the browser for the smoke test (run `npx playwright install chromium` once). The project requires Node 22.18 or later (type stripping runs `.ts` files; `tsc --noEmit` is the type check, `tsconfig.json`).
+- **Install** (`npm install`, or `npm ci`; it installs esbuild, Biome, ESLint, TypeScript, Playwright, Lit, Zag and Alpine). Biome does lint and format; Playwright drives the browser for the smoke test (run `npx playwright install chromium` once). The project requires Node 22.18 or later (type stripping runs `.ts` files; `tsc --noEmit` is the type check, `tsconfig.json`).
 - **Work** (`npm run dev`). The page is rebuilt (not minified) whenever a source file or the HTML template changes, and the output folder is served on a local address the command prints. Reload the browser to see a change.
-- **Check** (`npm run check`: lint, build, all tests). Lint, format check, build, unit tests, browser smoke test. It must pass before a change is called done. The generator tests (Python) and the Python lint run in `npm run check:all`, needed when the data pipeline changes.
+- **Check** (`npm run check`: lint, typecheck, build, unit tests, component stories, browser smoke test). Lint is Biome (with a format check) and ESLint for the Lit elements. It must pass before a change is called done. The generator tests (Python) and the Python lint run in `npm run check:all`, needed when the data pipeline changes.
 - **Look** (open the built page at the five viewports in [testing.md, section 3.1](testing.md#31-viewports-to-look-at-for-ui-changes), from 960 px up to 2560 x 1440). The page must never scroll sideways; wide tables scroll inside their own box.
 
 Tests are described in [testing.md](testing.md). After a game patch, the data is refreshed with the steps in [data-pipeline.md, section 9](data-pipeline.md#9-updating-after-a-game-patch).

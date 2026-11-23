@@ -14,7 +14,7 @@ The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23
 - `src/ui/`: state, Alpine store, view builders (`views/`, unit-tested), components.
 - `src/data/`: **generated, never edit by hand.** Change `scripts/data/` and run `python scripts/data/regen.py`.
 - `scripts/`: build, data generators, perf, and validation against ffxiv-gearing and xivgear (run by hand).
-- `tests/`: `unit/`, `sweep/` (long optimizer sweep), `data/` (generators), `e2e/smoke.mjs` (the runner; the checks are in `e2e/checks/`), `domains.mjs` (sorts every file into one of 11 domains).
+- `tests/`: `unit/`, `sweep/` (long optimizer sweep), `data/` (generators), `e2e/smoke.mjs` (the runner; the checks are in `e2e/checks/`), `stories/` (Lit elements in a gallery page, three engines), `visual/` (screenshot baselines), `domains.mjs` (sorts every file into one of 11 domains).
 - `docs/`: `mechanics/` (the game), `engineering/` (the code), plus glossary, roadmap, history.
 - `docs/scratchpad/`: gitignored. Reports, mockups and agent output go in `docs/scratchpad/<topic>/`; nothing committed links to it.
 
@@ -22,7 +22,7 @@ Pushing to `main` deploys to GitHub Pages (the only workflow).
 
 ## Branches
 
-Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check`, the `tests/sweep/` sweep and the Python lint and tests on `dev`, `main` and PRs, and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner. The merge steps are in the `merge-wave` skill (`.claude/skills/merge-wave/SKILL.md`).
+Feature branch → `dev` → `main`, one way, fast-forward when possible. Never commit on `main` directly. Before merging to `main`, run `npm run check` on `dev` and look at the page. Hotfixes branch from `main` and merge into `dev` too. After every merge into `dev`, rebuild (`npm run build` on `dev`) so the local `dist/index.html` shows `dev`. Non-`main` builds show a DEV badge. CI runs `npm run check`, the `tests/sweep/` sweep and the Python lint and tests on `dev`, `main` and PRs (the Visual workflow compares screenshot baselines in a pinned Linux image), and deploys only from `main`. Several sessions may work on this machine at once: before merging into `dev`, run `git worktree list`, and if another session holds `dev` or the main checkout, leave the merge to the owner. The merge steps are in the `merge-wave` skill (`.claude/skills/merge-wave/SKILL.md`).
 
 ## Commands
 

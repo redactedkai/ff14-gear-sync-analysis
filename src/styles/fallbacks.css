@@ -1,6 +1,5 @@
 /* ==== Rules that come last ==== */
-/* The last layer, so these beat the same selectors in set-page.css. (The color-mix() fallbacks that used to be here went
-   with the old build floor: every build target has color-mix().) */
+/* The last layer, so these beat the same selectors in set-page.css. (Every build target has color-mix(), so it needs no fallback.) */
 .matgrid .pc {
   align-self: center;
   text-align: center;

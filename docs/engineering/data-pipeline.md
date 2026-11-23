@@ -725,7 +725,7 @@ One command, `npm run data:update`, does steps 1 and 2.
    - It then prints the inferred routes line (section 4.6): a jump there means many new pieces or currencies were placed by a fallback rule rather than the game files.
    - The only other output is a warning when a patch adds multi-slot gear with no slot code; read it before going on.
 3. **Compare**: the last step before the build writes `src/data/summary.json` and compares its counts with the committed one (see below). Read every count it names.
-4. **Check**: run the full check (lint, build, unit tests, generator tests, browser smoke test). Every test must pass.
+4. **Check**: run the full check (`npm run check:all`: lint, typecheck, build, unit tests, component stories, browser smoke test, then the Python lint and generator tests). Every test must pass.
 5. **Review** the change in the generated files with `git diff`: each changed item, budget column, level or meal is its own line (section 4). Then update counts quoted in the docs, such as the 20,210 rows above, and add a few words to the new line in [data-changelog.md](../data-changelog.md).
 
 **The summary and the drift check.** `scripts/data/summary.py` writes `src/data/summary.json`: the source record, `formatVersion`, the blob id of each CSV (section 6) and the counts a patch could change without any check failing:
