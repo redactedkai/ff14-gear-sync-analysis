@@ -124,7 +124,7 @@ export const DOMAINS = {
       'src/ui/router/**',
       'src/ui/components/{page,compose,overlay,job-menu,cap-controls}.js',
       'src/partials/job-menu.html',
-      'src/ui/{state,store,store-key,job-sync-panel,level-cap,messages,number-field,overlays,ranks,text,view-cache,hq-font}.js',
+      'src/ui/{state,store,store-key,job-sync-panel,level-cap,messages,number-commit,number-field,overlays,ranks,text,view-cache,hq-font}.js',
     ],
     tests: [
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',

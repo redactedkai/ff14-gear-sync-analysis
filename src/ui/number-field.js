@@ -1,6 +1,6 @@
 /* The page's one pattern for number boxes (numberField, storeNumberField) and the flash of a lowered cap field: DOM code,
    used by the components only. */
-import { clamp } from '../core/clamp.js';
+import { commit, roundTo } from './number-commit.js';
 
 /* How long a typed number waits before it is committed: typing "123" commits once, not 1, 12 and 123, so the views
    (and the optimizer) do not recompute for the numbers on the way. */
@@ -44,26 +44,13 @@ const bound = b => (typeof b === 'function' ? b() : b);
    held to its range while typing. */
 export function numberField(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty, snap = true } = {}) {
   let timer = null;
-  const scale = 10 ** decimals;
-  const round = v => Math.round(v * scale) / scale;
   /* commits `raw`; on the final commit (change) an out-of-range value moves to the nearest bound, and `input` shows it */
-  const commit = (raw, input = null) => {
+  const commitText = (raw, input = null) => {
     clearTimeout(timer);
-    if (raw === '') {
-      if (empty !== undefined && get() !== empty) set(empty);
-      return;
-    }
-    let v = +raw;
-    if (Number.isNaN(v)) return;
-    if (!snap && round(v) !== v) return; // more digits than the box takes: kept out, not rounded
-    const low = bound(lo),
-      high = bound(hi);
-    if (v < low || v > high) {
-      if (!input || !snap) return;
-      v = clamp(v, low, high);
-      input.value = round(v);
-    }
-    if (round(v) !== get()) set(round(v));
+    const result = commit(raw, { min: bound(lo), max: bound(hi), decimals, snap, exact: !snap, empty, final: input !== null });
+    if (!result) return;
+    if (result.clamped) input.value = result.value;
+    if (result.value !== get()) set(result.value);
   };
   // the min and max attributes from the bounds: a function is read at each render, Infinity sets none
   const attribute = (name, b) => (typeof b === 'function' || Number.isFinite(b) ? { [name]: () => bound(b) } : {});
@@ -73,18 +60,18 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
     ':value'() {
       const v = get(),
         el = this.$el;
-      return el === document.activeElement && round(+el.value) === v ? el.value : v;
+      return el === document.activeElement && roundTo(+el.value, decimals) === v ? el.value : v;
     },
     '@input'(e) {
       const raw = e.target.value;
       clearTimeout(timer);
       // a step (mouse wheel, arrow keys, the spinner) is no InputEvent with an inputType: commit it at once, so the
       // page follows the value as it scrolls; typed digits wait, so "9" on the way to "90" is held back
-      if (live || !e.inputType) commit(raw);
-      else timer = setTimeout(() => commit(raw), TYPING_DEBOUNCE_MS);
+      if (live || !e.inputType) commitText(raw);
+      else timer = setTimeout(() => commitText(raw), TYPING_DEBOUNCE_MS);
     },
     '@change'(e) {
-      commit(e.target.value, e.target);
+      commitText(e.target.value, e.target);
       if (e.target.value === '' && onEmpty) onEmpty(e.target);
     },
   };

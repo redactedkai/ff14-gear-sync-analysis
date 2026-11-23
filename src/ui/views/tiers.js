@@ -10,6 +10,7 @@ import { statBase } from '../../core/base-stats.js';
 import { levelParams } from '../../core/level-params.js';
 import { MAX_SPEED } from '../../core/tables.js';
 import { fmtInt } from '../text.js';
+import { commit } from '../number-commit.js';
 import { deepFreeze } from '../view-cache.js';
 
 /* The rows kept for the cards last shown, by the key of what they depend on (rowsOf): the job, substat and level change
@@ -63,9 +64,8 @@ function tierMost(job, stat, level) {
 /* A value typed into a substat's box, held to the base at `level` and the most it can be there (tierMost), with no note
    (the box shows the value kept: owner); null for text that is not a number. */
 export function tierInput(job, stat, text, level) {
-  const v = Math.round(Number(text));
-  if (text === '' || !Number.isFinite(v)) return null;
-  return Math.max(statBase(job, stat, level), Math.min(tierMost(job, stat, level), v));
+  const result = commit(text, { min: statBase(job, stat, level), max: tierMost(job, stat, level), final: true });
+  return result ? result.value : null;
 }
 
 /* The ? note of a substat: {title, affects, size}. */

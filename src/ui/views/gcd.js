@@ -1,11 +1,11 @@
 /* How the math works, GCD: how speed becomes the GCD at a level, on its own settings (a level, a haste and a speed;
    not the job, sync or optimizer). The facts for one speed, the speed one 0.01 s step takes at every level, and the GCD
    steps around the speed. Pure: no Alpine, so Node can test it. */
-import { clamp } from '../../core/clamp.js';
 import { HASTE, jobById } from '../../core/constants.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';
 import { levelParams } from '../../core/level-params.js';
 import { MAX_SPEED } from '../../core/tables.js';
+import { commit } from '../number-commit.js';
 import { speedStepChartSvg } from '../sync-charts.js';
 
 /* The levels the tab covers: every level of the game, whatever the job (its own setting). */
@@ -33,9 +33,8 @@ export const HASTE_SIZER = HASTE_OPTIONS.map(option => option.label).join('\n');
 
 /* `level` held to 1 and GCD_LEVELS: {level}. Null for text that is not a whole number. */
 export function gcdLevelInput(text) {
-  const v = Number(text);
-  if (text === '' || !Number.isInteger(v)) return null;
-  return { level: clamp(v, 1, GCD_LEVELS) };
+  const result = commit(text, { min: 1, max: GCD_LEVELS, exact: true, final: true });
+  return result && { level: result.value };
 }
 
 /* The speed range at `level`: {base, most}, total speed (base + gear + food) from the level's base to the most any job

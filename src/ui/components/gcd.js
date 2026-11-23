@@ -2,6 +2,7 @@
    share their settings through $store.app.gcd (not saved). The level follows the synced level until one is typed. */
 import { clamp } from '../../core/clamp.js';
 import { LEVEL_TEXT } from '../level-cap.js';
+import { commit } from '../number-commit.js';
 import { TYPING_DEBOUNCE_MS } from '../number-field.js';
 import { viewCache } from '../view-cache.js';
 import { GCD_LEVELS, HASTE_OPTIONS, HASTE_SIZER, gcdLevelInput, gcdView, speedRange as speedRangeAt } from '../views/gcd.js';
@@ -105,8 +106,9 @@ export function gcdControls() {
         speedTimer = setTimeout(() => this.typeSpeed(el, true), TYPING_DEBOUNCE_MS);
         return;
       }
-      const v = Math.round(Number(el.value));
-      if (el.value !== '' && Number.isFinite(v)) this.$store.app.gcd.speed = v;
+      // a whole number, not held to the range here: the `speed` getter holds it, and the box shows that
+      const typed = commit(el.value, { final: true });
+      if (typed) this.$store.app.gcd.speed = typed.value;
       el.value = this.speed;
     },
     slide(value) {

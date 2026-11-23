@@ -163,7 +163,7 @@ Each part is a function returning its members, and `setPage` merges them into on
 
 **Shared menus with another owner.** The Food row's menu (`components/meal-menu.js`) takes a `source` (where the menu comes from, what a pick does, which change closes it): the set page's `mealSource`. The Expansion and "Gear categories" boxes (`gearFromToggles`, `expansionToggles` in `components/filter-menus.js`) take either a part of the shared store (`'browse'`) or an accessor `{read(component), write(component, patch)}`: the set page's reads and writes its set's Auto-fill settings.
 
-**Number inputs.** A number box bound to a setting uses one helper (`$num` in the template, `numberField` in `src/ui/number-field.js`) with two rules:
+**Number inputs.** What typed text commits and what the box shows is one pure function, `commit(text, options)` in `src/ui/number-commit.js` (with `formatNumber`), used by every number box. A number box bound to a setting uses one helper (`$num` in the template, `numberField` in `src/ui/number-field.js`), which adds the timing, with two rules:
 
 - **Range.** Values are rounded to a whole number (the Target GCD keeps hundredths). While typing, only an in-range value is committed, so a value on the way ("9" of "90") is held back rather than corrected under the user's cursor. On Enter or leaving the box, an out-of-range value moves to the nearest bound and the box shows it, so the box and the setting always agree. The box's `min` and `max` attributes come from the same bounds; a filter's bound of Infinity sets none, and its markup's `max` (the end of the real range) only stops the arrow keys.
 - **When it commits.** A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12. A step (mouse wheel, arrow keys) commits at once, so the page follows the value as it scrolls (timeline in [Heavy work](#heavy-work-debounced-only-when-visible-or-on-request)).
@@ -182,8 +182,8 @@ The Target GCD range is `TARGET_GCD_RANGE` in `job-sync-panel.js`, also used by 
 
 Two kinds of box keep their own handlers, on purpose:
 
-- the GCD tab's level and speed correct what is typed and say so;
-- the boxes that commit only on Enter or leaving (Piece stats' item level, the tiers' substat values), since a value on the way would be held to its range while typing.
+- the GCD tab's level and speed correct what is typed and say so (the rule is `commit`'s, the debounce and the message are the tab's);
+- the boxes that commit only on Enter or leaving (Piece stats' item level, the tiers' substat values, through `commit` with `final`), since a value on the way would be held to its range while typing.
 
 **Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
 
