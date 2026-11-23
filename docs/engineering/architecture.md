@@ -183,7 +183,7 @@ The Target GCD range is `TARGET_GCD_RANGE` in `job-sync-panel.js`, also used by 
 Two kinds of box keep their own handlers, on purpose:
 
 - the GCD tab's level and speed correct what is typed and say so (the rule is `commit`'s, the debounce and the message are the tab's);
-- the boxes that commit only on Enter or leaving (Piece stats' item level, the tiers' substat values, through `commit` with `final`), since a value on the way would be held to its range while typing.
+- the boxes that commit only on Enter or leaving (the tiers' substat values go through `commit` with `final`; Piece stats' item level keeps its own rounding and bounds in `setIlvl`), since a value on the way would be held to its range while typing.
 
 **Changing the job.** Nothing but the job-specific selections is lost, so the page switches at once, without asking:
 
