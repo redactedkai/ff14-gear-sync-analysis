@@ -18,7 +18,7 @@ The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23
 - `docs/`: `mechanics/` (the game), `engineering/` (the code), plus glossary, roadmap, history.
 - `docs/scratchpad/`: gitignored. Reports, mockups and agent output go in `docs/scratchpad/<topic>/`; nothing committed links to it.
 
-Pushing to `main` deploys to GitHub Pages (the only workflow).
+Pushing to `main` deploys to GitHub Pages (`pages.yml`; `visual.yml` only compares screenshots).
 
 ## Branches
 

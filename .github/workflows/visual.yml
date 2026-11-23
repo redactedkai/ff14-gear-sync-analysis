@@ -2,7 +2,7 @@
 # between operating systems, so the baselines are made and compared nowhere else (docs/engineering/testing.md,
 # "Screenshot baselines"). Keep the image tag the same as PINNED_IMAGE in scripts/visual.mjs (a unit test checks it).
 #
-# - compare: on a push to dev or main and on pull requests, runs `npm run test:visual`. With no baselines committed yet it
+# - compare: on a push to dev or main and on pull requests, runs `npm run test:visual`. With no baselines in the folder it
 #   passes with a message. On a difference it fails and uploads the expected, actual and diff images and the report.
 # - update-baselines: by hand only (Run workflow). Makes new baselines in the same image and uploads them as an artifact.
 #   It never commits or pushes: download the artifact, put the images in tests/visual/__screenshots__/, commit them.
