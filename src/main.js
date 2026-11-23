@@ -128,3 +128,17 @@ addEventListener('pagehide', () => {
 });
 
 Alpine.start();
+
+/* The test hook (read-only, in every build): the two stores, and `scope(selector)`, the data of the Alpine component on the
+   first element that matches (a component's own fields, such as the Gear browser's `view`). Tests read the page's state
+   here instead of Alpine's private fields. */
+const debugHook = {};
+Object.defineProperties(debugHook, {
+  app: { get: () => app, enumerable: true },
+  sheets: { get: () => Alpine.store('sheets'), enumerable: true },
+  scope: { value: selector => Alpine.$data(document.querySelector(selector)), enumerable: true },
+});
+Object.defineProperty(window, 'gsaDebug', { value: Object.freeze(debugHook), enumerable: true });
+
+// the start marker the startup check reads (src/startup-failure.js): set only once Alpine.start() has returned
+document.documentElement.dataset.started = '';

@@ -72,9 +72,10 @@ export async function checkStartupFailures(pg) {
     check(blank.error === 'Error: injected failure (smoke test)', `blank case error text: '${blank.error}'`);
     check(await page.locator('#startfail-reload').isVisible(), 'no Reload button');
 
+    // an error inside Alpine, in a known spot: the Job strip's element gets an x-init that calls a function nobody defines
     const partUrl = variantUrl('part', html => {
       if (!html.includes('x-data="settings"')) throw new Error('the page has no x-data="settings"');
-      return html.replace('x-data="settings"', 'x-data="settingsMissing"');
+      return html.replace('x-data="settings"', 'x-data="settings" x-init="settingsMissing()"');
     });
     const part = await failedStart(page, partUrl);
     check(part.heading.length > 0, 'partly built: no heading');

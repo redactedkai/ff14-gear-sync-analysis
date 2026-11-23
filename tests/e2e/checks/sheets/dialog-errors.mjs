@@ -133,7 +133,7 @@ export async function checkDialogErrors(pg) {
 
   // the sheet is gone: no field, so the title row, at the right of the title; nothing is marked
   await pg.evaluate(text => {
-    const data = document.querySelector('#tab-sheets')._x_dataStack[0];
+    const data = window.gsaDebug.scope('#tab-sheets');
     data.dialog.error = text;
     data.dialog.errorField = '';
   }, SHEET_GONE_TEXT);

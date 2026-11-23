@@ -355,9 +355,8 @@ const gear = {
   ],
 };
 
-/* The Alpine store of the app, read from the math tab's own scope (the page keeps Alpine to itself, so a check that sets
-   the page's state reaches it through the element, as the smoke test does). */
-const APP = "document.querySelector('#tab-math')._x_dataStack[0].$store.app";
+/* The app's settings store, read through the page's read-only test hook (src/main.js, window.gsaDebug). */
+const APP = 'window.gsaDebug.app';
 
 /* A function that runs `code` (statements using `app`, the page's settings store) in the page. */
 const setApp = code => page => page.evaluate(`(() => { const app = ${APP}; ${code} })()`);

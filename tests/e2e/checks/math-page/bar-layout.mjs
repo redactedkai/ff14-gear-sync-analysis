@@ -124,7 +124,7 @@ export async function checkSyncChip(pg) {
 export async function checkLevelBox(pg) {
   await pg.setViewportSize(DEFAULT_WINDOW);
   await showMath(pg, 'piece');
-  const storedLevel = () => pg.evaluate(() => document.querySelector('#tab-math')._x_dataStack[0].$store.app.level);
+  const storedLevel = () => pg.evaluate(() => window.gsaDebug.app.level);
   const flag = pg.locator('.sync-level .f-flag');
   await pg.click('#p-sync-chip');
   await expect(pg.locator('#p-level')).toHaveValue('50');

@@ -12,7 +12,7 @@ import { SHARED_SETUP } from '../../lib/setup.mjs';
    window.__rowsWatch(true) starts a requestAnimationFrame loop that runs it before every frame is drawn; window.__rowsWatch(false)
    stops it and returns {frames, bad: the first mismatch seen in any frame, or ''}. */
 function installRowsCheck() {
-  const component = () => document.querySelector('#tab-browse [x-data="gear"]')._x_dataStack[0];
+  const component = () => window.gsaDebug.scope('#tab-browse [x-data="gear"]');
   window.__rowsMismatch = () => {
     const shown = component().view?.shown ?? [];
     const rows = [...document.querySelectorAll('#gear-table tbody tr[data-key]')];
