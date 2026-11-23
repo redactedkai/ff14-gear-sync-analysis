@@ -50,7 +50,7 @@
 }
 .settable thead th {
   top: var(--sh);
-  z-index: 4;
+  z-index: var(--z-head);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
@@ -84,7 +84,7 @@
 .ladder .lhead {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-row);
   height: var(--ladder-names);
   background: var(--surface2);
   border-bottom: 1px solid var(--line);

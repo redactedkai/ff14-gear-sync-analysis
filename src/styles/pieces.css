@@ -27,12 +27,6 @@
 .list li + li {
   margin-top: 3px;
 }
-.note {
-  background: var(--warn-bg);
-  border-radius: 4px;
-  padding: 10px 12px;
-  font-size: 0.84rem;
-}
 .formula {
   font-family: var(--mono);
   font-size: 0.8rem;
@@ -180,7 +174,7 @@ th {
   top: 0;
   /* above the cells' positioned boxes (a row's piece menu button) scrolled under it; the menus of a set page's table
      are under its column names (set-page.css) */
-  z-index: 1;
+  z-index: var(--z-row);
 }
 th.n,
 td.n {
@@ -357,7 +351,7 @@ th.n[aria-sort="ascending"] .sortbtn::before {
   right: 0;
   top: calc(100% + 8px);
   width: min(720px, calc(100vw - 32px));
-  z-index: 10;
+  z-index: var(--z-popover);
   background: var(--surface2);
   border: 1px solid var(--accent);
   border-radius: 4px;
@@ -372,7 +366,7 @@ th.n[aria-sort="ascending"] .sortbtn::before {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9;
+  z-index: var(--z-backdrop);
   background: var(--backdrop);
 }
 .popover.statpop {
@@ -395,7 +389,7 @@ th.n[aria-sort="ascending"] .sortbtn::before {
 /* the Substat tiers note scrolls with its button (it is absolute in the panel), so it goes under the pinned math bar (2) like the
    tables it sits in, and over the table's cells */
 #t-pop {
-  z-index: 1;
+  z-index: var(--z-row);
 }
 /* a substat's ? and its note */
 .help.shelp {

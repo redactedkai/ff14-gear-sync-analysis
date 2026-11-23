@@ -3,7 +3,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  z-index: 20;
+  z-index: var(--z-menu);
   margin-top: 4px;
   min-width: 100%;
   display: flex;
@@ -328,7 +328,6 @@
 .same-btn[aria-expanded="true"] {
   border-color: var(--accent);
 }
-.same-count,
 .same-lvl,
 .from {
   font: 500 0.72rem var(--mono);
@@ -342,7 +341,7 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 20;
+  z-index: var(--z-menu);
   width: min(440px, 70vw);
   max-height: 340px;
   overflow-y: auto;
@@ -490,7 +489,7 @@
 .menu-list .same-head {
   position: sticky;
   top: -2px;
-  z-index: 1;
+  z-index: var(--z-row);
   background: var(--surface);
 }
 /* a meal on one line: its item level first ("i770", as players write it), the name, what it adds at the right */

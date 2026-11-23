@@ -10,7 +10,7 @@
 .shead {
   position: sticky;
   top: 0;
-  z-index: 8;
+  z-index: var(--z-sticky-head);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -80,7 +80,7 @@
   position: absolute;
   left: 0;
   top: calc(100% + 4px);
-  z-index: 60;
+  z-index: var(--z-switcher);
   min-width: 260px;
   max-width: 420px;
   max-height: 60vh;
@@ -410,7 +410,7 @@
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
-  z-index: 30;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -566,7 +566,7 @@
 }
 .matpop {
   position: absolute;
-  z-index: 20;
+  z-index: var(--z-menu);
   left: 0;
   top: calc(100% + 4px);
   width: 380px;
@@ -582,7 +582,7 @@
    The Food menu is in the table's Food row, so it is one of them. */
 .settable .same-menu,
 .settable .matpop {
-  z-index: 3;
+  z-index: var(--z-cell-menu);
 }
 .matpop.all {
   width: 420px;
@@ -731,7 +731,7 @@ i.rk {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 30;
+  z-index: var(--z-dialog);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -762,12 +762,12 @@ i.rk {
   position: fixed;
 }
 .setpop .multi-menu {
-  z-index: 70;
+  z-index: var(--z-nested);
   max-height: 50vh;
   overflow: auto;
 }
 .setpop .popover {
-  z-index: 70;
+  z-index: var(--z-nested);
 }
 /* the Gear categories menu has one height whatever the tab, so no 50vh cut; placeMenu still cuts it to a window too short for it */
 .setpop .from-menu {
@@ -827,4 +827,11 @@ i.rk {
 #gear-table[data-sorted="piety"] td[data-col="piety"],
 #gear-table[data-sorted="ten"] td[data-col="ten"] {
   background: var(--accent-soft);
+}
+/* A library positioner (an element with data-part="positioner") places a menu itself, with a transform and its own stacking,
+   so the menu inside it takes no position of its own. The rule is here, in the last layer that gives these menus a position
+   (.setpop and .matpop above, and the menus of menus.css and pieces.css), and last in the file, so it wins at equal
+   specificity. Inert until a positioner exists. */
+[data-part="positioner"] > :is(.popover, .multi-menu, .same-menu, .setmenu, .matpop, .setpop) {
+  position: static;
 }

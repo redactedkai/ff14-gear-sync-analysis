@@ -868,6 +868,6 @@ table.sets .jobcell {
   height: 18px;
   margin: 0;
 }
-html:has(.dlg) {
+html:has(.dlg[open], .dlg[data-state="open"]) {
   overflow: hidden;
 }

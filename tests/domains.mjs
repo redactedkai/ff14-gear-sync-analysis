@@ -142,6 +142,7 @@ export const DOMAINS = {
       'tests/e2e/lib/visual.mjs',
       'tests/unit/styles/theme-tokens.test.js',
       'tests/unit/styles/layers.test.js',
+      'tests/unit/styles/z-index-scale.test.js',
       'tests/unit/helpers/css-colors.js',
     ],
   },

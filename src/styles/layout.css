@@ -257,7 +257,7 @@ html[data-boot-tab="math"] .boot [data-boot="math"] {
 /* while a tab opens the tab bar stays above the loading layer (only then: a menu from the page's top must stay above it) */
 .tab-loading .pagetop {
   position: relative;
-  z-index: 41;
+  z-index: var(--z-loading-top);
   background: var(--bg);
 }
 /* A tab opening: a layer over the page below the tab bar, with a loading line. It fades in after 200 ms (opacity only, which
@@ -265,7 +265,7 @@ html[data-boot-tab="math"] .boot [data-boot="math"] {
 .tabload {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: var(--z-loading);
   display: flex;
   justify-content: center;
   align-items: flex-start;
