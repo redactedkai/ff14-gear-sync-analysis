@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 import { buildMarks, esbuildOptions, expandIncludes, SRC, startupScript } from '../../../scripts/build/build.mjs';
 
-/* R8: esbuild reads a .ts module imported with its .ts extension (which Node's type stripping needs too), strips the types
+/* esbuild reads a .ts module imported with its .ts extension (which Node's type stripping needs too), strips the types
    and bundles it; the page's own text.ts and view-cache.ts are built this way. */
 test('build: esbuild bundles a .ts module imported by its .ts extension, types stripped', async () => {
   const result = await esbuild.build({

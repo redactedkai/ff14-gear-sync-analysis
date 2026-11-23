@@ -19,7 +19,8 @@ export const PARTIALS = join(SRC, 'partials');
 
 /* The oldest browsers the page runs in: the Baseline 2024 floor, the first version of each core browser that has every
    feature that became Baseline newly available in 2024 (Chrome and Edge 130, Firefox 132, Safari 18.2; from the
-   baseline-browser-mapping package, getCompatibleVersions({ targetYear: 2024 }), which reads the web-features data).
+   baseline-browser-mapping package, getCompatibleVersions({ targetYear: 2024 }), which reads the web-features data; the
+   package is not a dependency of this repo, so run it with npx to check the numbers).
    The page uses nothing newer. Naming the browsers instead of an ES version lets esbuild decide what to lower: at this
    floor it lowers no JS the page writes, and no CSS prefix or fallback is needed for the features the stylesheet uses
    (cascade layers, :has(), color-mix(), mask, the inherited ::backdrop variable). */

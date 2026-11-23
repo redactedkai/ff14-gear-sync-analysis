@@ -7,8 +7,9 @@
 
    Failed start = an uncaught error or an unhandled rejection before the check, or, at the check, no start marker
    (main.js sets data-started on <html> once Alpine.start() has returned) or a page root ([x-data]) that is missing or
-   still has x-cloak (Alpine removes it as it builds the page). The check runs once, one timer turn after DOMContentLoaded: the app's script is a
-   classic inline script at the end of <body>, so it has run to its end (Alpine.start() included) before DOMContentLoaded,
+   still has x-cloak (Alpine removes it as it builds the page). The check runs once, one timer turn after
+   DOMContentLoaded: the app's script is a classic inline script at the end of <body>, so it has run to its end
+   (Alpine.start() included) before DOMContentLoaded,
    and the errors Alpine rethrows with setTimeout(0) were queued before the check's own timer. No clock is involved, so a
    slow device cannot raise a false alarm. After the check the listeners are removed: a later error is not a startup
    failure. docs/engineering/architecture.md, "Startup failure". */

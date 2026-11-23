@@ -10,9 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { BROWSER_TARGETS } from '../../scripts/build/build.mjs';
 
 // the folder of the stories gallery (tests/stories/)
-export const STORIES_DIR = dirname(fileURLToPath(import.meta.url));
+const STORIES_DIR = dirname(fileURLToPath(import.meta.url));
 // where the gallery is built (gitignored)
-export const OUT_DIR = join(STORIES_DIR, 'out');
+const OUT_DIR = join(STORIES_DIR, 'out');
 
 /* Every file under `folder`, as paths with forward slashes (the `out` folder is skipped). */
 function listFiles(folder) {
@@ -40,7 +40,7 @@ function writeRegistry() {
 }
 
 /* Builds the gallery into out/ and returns the number of story files. */
-export async function buildGallery() {
+async function buildGallery() {
   const storyCount = writeRegistry();
   await esbuild.build({
     entryPoints: [join(STORIES_DIR, 'gallery/main.js')],

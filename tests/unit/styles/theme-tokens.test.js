@@ -71,7 +71,7 @@ test('the UI scripts hold no quoted color literal (a style set from script would
   assert.deepEqual(quotedColors(new URL('ui/', SRC).pathname.slice(1)), []);
 });
 
-/* R8: the scan reads .ts files too: a planted .ts stray with a quoted color is found, a clean one is not. */
+/* the scan reads .ts files too: a planted .ts stray with a quoted color is found, a clean one is not. */
 test('the scan sees a quoted color in a .ts file', () => {
   const base = mkdtempSync(join(tmpdir(), 'theme-tokens-ts-'));
   try {

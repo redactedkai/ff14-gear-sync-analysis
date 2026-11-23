@@ -7,7 +7,7 @@ import { STORE_KEY } from '../../src/ui/store-key.js';
 // time for the page to redraw after a click or a state change, before the next step
 export const SETTLE_MS = 450;
 // longest wait, in milliseconds, for an Auto-fill to finish before a view's shot is taken
-export const FILL_TIMEOUT_MS = 60_000;
+const FILL_TIMEOUT_MS = 60_000;
 
 /* Saved states the views start from (the shape of src/ui/state.js; restoreState fills in the rest). */
 const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', mathTab: 'piece' };
@@ -179,7 +179,7 @@ const NO_MOTION_CSS =
 
 /* The localStorage entries (pairs of key and JSON text) that make a page open in `state`, a view's saved state: the
    settings, then each sheet record and the sheet order. Empty for no saved state. */
-export function seedRecords(state) {
+function seedRecords(state) {
   if (!state) return [];
   const { sheets = [], ...settings } = state;
   return [

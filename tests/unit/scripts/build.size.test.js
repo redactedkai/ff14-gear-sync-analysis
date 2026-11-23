@@ -1,4 +1,4 @@
-/* The size budget of the page's own code (refactor step R12). The 4 MB page ceiling in build.test.js watches the whole
+/* The size budget of the page's own code. The 4 MB page ceiling in build.test.js watches the whole
    page, where the item database is most of the bytes; this test watches the code we write and the libraries we bundle
    (JavaScript only, data left out), so a careless import shows up even when the page stays far below 4 MB. The method is
    Lit's check-size.js: bundle, gzip, compare with a number kept in the test. */
@@ -11,7 +11,7 @@ import { esbuildOptions, jsonParseData } from '../../../scripts/build/build.mjs'
 /* The budget: gzip bytes of the page's JavaScript with everything from src/data/ left out. It is the size at the time of the
    last deliberate raise plus a headroom of about 1 kB, so a growth beyond that fails and the owner decides: raise
    it on purpose (docs/engineering/testing.md, "Raising the size budget") or remove what grew. */
-const OWN_CODE_GZIP_BUDGET_BYTES = 138_800; // measured 137,849 without src/data/ (R12), plus 951 bytes
+const OWN_CODE_GZIP_BUDGET_BYTES = 138_800; // measured 137,849 without src/data/, plus 951 bytes
 
 /* esbuild plugin placed before jsonParseData: every generated data file (src/data/*.json, plus the base64 job icons in
    src/data/job-icons.js) becomes an empty stub, so the bundle holds only our own code and libraries. Nothing runs the

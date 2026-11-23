@@ -29,7 +29,7 @@ test('no module under src/ui or src/core imports Alpine: only main.js does', () 
   assert.match(readFileSync(new URL('../../../src/main.js', import.meta.url), 'utf8'), /from 'alpinejs'/);
 });
 
-/* R8: the scan lists .ts files. A planted .ts file that imports Alpine is listed, and the pattern matches its import. */
+/* the scan lists .ts files. A planted .ts file that imports Alpine is listed, and the pattern matches its import. */
 test('the scan sees a .ts file that imports Alpine', () => {
   const base = mkdtempSync(join(tmpdir(), 'no-alpine-ts-'));
   try {

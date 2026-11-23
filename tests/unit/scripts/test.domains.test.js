@@ -108,7 +108,7 @@ test('domains: an unknown or empty domain name is an error that lists the valid 
   assert.throws(() => parseDomains(''), /unknown domain/);
 });
 
-/* TypeScript files (R8): a .ts file must be seen by the guard like a .js file. Each test plants one in a temporary tree
+/* TypeScript files: a .ts file must be seen by the guard like a .js file. Each test plants one in a temporary tree
    (the registry's folders, one stray file) and expects the guard's own functions to report it. */
 function withPlantedFiles(paths, run) {
   const root = mkdtempSync(join(tmpdir(), 'domains-ts-'));

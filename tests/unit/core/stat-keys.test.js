@@ -104,7 +104,7 @@ test('shared code names no job-specific stat outside the allow-listed tables (co
   assert.deepEqual(keyHits(), []);
 });
 
-/* R8: the scan reads .ts files too: a planted .ts stray in each scanned folder is found, and a .js one beside it. */
+/* the scan reads .ts files too: a planted .ts stray in each scanned folder is found, and a .js one beside it. */
 test('the scan sees a .ts stray in src/core and src/ui/views (and still a .js one)', () => {
   const base = mkdtempSync(path.join(tmpdir(), 'stat-keys-ts-'));
   const line = 'export const t: Record<string, number> = { mind: 1 };';
