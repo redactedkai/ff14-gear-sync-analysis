@@ -14,7 +14,9 @@ function zTokens() {
 }
 
 test('every z-index is a --z-* token, never a bare number', () => {
-  const bare = [...css.matchAll(/z-index:\s*([^;]+);/g)].map(match => match[1].trim()).filter(value => !/^var\(--z-[a-z0-9-]+\)$/.test(value));
+  const bare = [...css.matchAll(/z-index:\s*([^;]+);/g)]
+    .map(match => match[1].trim())
+    .filter(value => !/^var\(--z-[a-z0-9-]+\)$/.test(value));
   assert.deepEqual(bare, [], 'a z-index that is not a --z-* token');
 });
 
@@ -41,7 +43,10 @@ test('the scale keeps its order: row, bar, popover, menu, dialog, toast (a tie i
 });
 
 test('a menu inside a library positioner is static, so the positioner places it', () => {
-  assert.match(css, /\[data-part="positioner"\]\s*>\s*:is\(\.popover,\s*\.multi-menu,\s*\.same-menu,\s*\.setmenu,\s*\.matpop,\s*\.setpop\)\s*\{\s*position:\s*static/);
+  assert.match(
+    css,
+    /\[data-part="positioner"\]\s*>\s*:is\(\.popover,\s*\.multi-menu,\s*\.same-menu,\s*\.setmenu,\s*\.matpop,\s*\.setpop\)\s*\{\s*position:\s*static/,
+  );
 });
 
 test('the page scroll lock follows an open dialog, not a mounted one', () => {
