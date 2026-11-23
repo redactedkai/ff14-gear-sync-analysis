@@ -45,7 +45,7 @@
     "lint:lit": "eslint --max-warnings 0 --no-error-on-unmatched-pattern src/ui/elements",
     "test:stories": "node -e \"console.log('test:stories: nothing yet')\"",
     "test:stories:all": "node -e \"console.log('test:stories:all: nothing yet')\"",
-    "test:visual": "node -e \"console.log('test:visual: nothing yet')\""
+    "test:visual": "node scripts/visual.mjs"
   },
   "license": "MIT",
   "dependencies": {

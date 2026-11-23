@@ -1,0 +1,81 @@
+# Screenshot baselines (tests/visual/): dark theme, two widths, in the pinned Playwright image only. Screenshots differ
+# between operating systems, so the baselines are made and compared nowhere else (docs/engineering/testing.md,
+# "Screenshot baselines"). Keep the image tag the same as PINNED_IMAGE in scripts/visual.mjs (a unit test checks it).
+#
+# - compare: on a push to dev or main and on pull requests, runs `npm run test:visual`. With no baselines committed yet it
+#   passes with a message. On a difference it fails and uploads the expected, actual and diff images and the report.
+# - update-baselines: by hand only (Run workflow). Makes new baselines in the same image and uploads them as an artifact.
+#   It never commits or pushes: download the artifact, put the images in tests/visual/__screenshots__/, commit them.
+# Actions are pinned to full commit SHAs, with the release in the trailing comment.
+name: Visual
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      update-baselines:
+        description: 'Make new baselines and upload them as an artifact (nothing is committed or pushed)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      env:
+        GSA_VISUAL_IMAGE: v1.64.1-noble
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:visual
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-diff
+          path: tests/visual/test-results/
+          retention-days: 14
+
+  update-baselines:
+    if: github.event_name == 'workflow_dispatch' && inputs.update-baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      env:
+        GSA_VISUAL_IMAGE: v1.64.1-noble
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:visual -- --update
+      # a second run on the same commit must find no difference, or the new baselines are not worth committing
+      - run: npm run test:visual
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-baselines
+          path: tests/visual/__screenshots__/
+          retention-days: 14
+          if-no-files-found: error

@@ -141,6 +141,7 @@ export const DOMAINS = {
       'tests/e2e/checks/look/**',
       'tests/e2e/lib/axe.mjs',
       'tests/e2e/lib/visual.mjs',
+      'tests/visual/**',
       'tests/unit/styles/theme-tokens.test.js',
       'tests/unit/styles/layers.test.js',
       'tests/unit/styles/z-index-scale.test.js',
@@ -149,7 +150,7 @@ export const DOMAINS = {
   },
   tooling: {
     title: 'The build, the test runners and the repo code rules',
-    src: ['scripts/build/**', 'scripts/layout-stress/**', 'scripts/{check-deps,py,test}.mjs'],
+    src: ['scripts/build/**', 'scripts/layout-stress/**', 'scripts/{check-deps,py,test,visual}.mjs'],
     tests: [
       'tests/domains.mjs',
       'tests/e2e/{smoke,groups}.mjs',

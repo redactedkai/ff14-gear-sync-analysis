@@ -11,3 +11,4 @@ __pycache__/
 /docs/scratchpad/
 .claude/worktrees/
 .claude/settings.local.json
+/tests/visual/test-results/
