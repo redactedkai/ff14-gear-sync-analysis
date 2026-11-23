@@ -32,22 +32,25 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # Playwright's Chromium, cached by the Playwright version in package-lock.json. On a cache hit only the
-      # system packages Chromium needs are installed (they live outside the cache).
+      # Playwright's three engines (the page's smoke test uses Chromium; the component stories run in all three), cached by
+      # the Playwright version in package-lock.json. On a cache hit only the system packages they need are installed (they
+      # live outside the cache).
       - id: playwright-version
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
       - id: playwright-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium-firefox-webkit
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium firefox webkit
 
       # lint, build, unit tests and the browser smoke test; a failure stops the deploy
       - run: npm run check
+      # the component stories in Chromium, Firefox and WebKit (check ran them in Chromium only)
+      - run: npm run test:stories:all
       # the long random sweep of tier ranking against its reference (tests/sweep/), kept out of npm test for speed
       - run: node --test "tests/sweep/*.test.js"
       - if: github.ref == 'refs/heads/main'

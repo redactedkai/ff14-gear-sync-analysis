@@ -121,6 +121,8 @@ export const DOMAINS = {
     title: 'The page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls',
     src: [
       'src/{main.js,index.html,startup-failure.js}',
+      // the Lit elements, one folder per domain (this one holds the placeholder counter of the stories chain)
+      'src/ui/elements/app/**',
       'src/ui/router/**',
       'src/ui/components/{page,compose,overlay,job-menu,cap-controls}.js',
       'src/partials/job-menu.html',
@@ -153,6 +155,8 @@ export const DOMAINS = {
     src: ['scripts/build/**', 'scripts/layout-stress/**', 'scripts/{check-deps,py,test,visual}.mjs'],
     tests: [
       'tests/domains.mjs',
+      // the component stories: the gallery, the fixtures, the config and the stories of every element (one folder per domain)
+      'tests/stories/**',
       'tests/e2e/{smoke,groups}.mjs',
       'tests/e2e/lib/{constants,expect,nav}.mjs',
       'tests/unit/helpers/common.js',

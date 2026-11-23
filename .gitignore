@@ -12,3 +12,4 @@ __pycache__/
 .claude/worktrees/
 .claude/settings.local.json
 /tests/visual/test-results/
+/tests/stories/out/

@@ -12,7 +12,7 @@ With that said, this is a hobby project that I work on my free time. Bug reports
 
 ## Requirements
 
-- Node 22.18 or later (it runs `.ts` files by stripping their types). Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
+- Node 22.18 or later (it runs `.ts` files by stripping their types). Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test and the component stories (`npx playwright install firefox webkit` too for `test:stories:all`). Building and testing the page needs only Node.
 - Python 3.11 or later, only for the data pipeline, its generator tests and Ruff: `python -m pip install -r requirements-dev.txt`. CI runs Ruff and the generator tests on 3.11 (the oldest supported) and 3.13 (`.python-version`). The npm scripts run `python3` or `python`, whichever exists (`scripts/py.mjs`).
 
 Run all commands from the repo root.
@@ -46,12 +46,14 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run test:changed` | The unit tests of the domains that own the files `git status` lists as changed (one line per path says why; `-- --list` shows the mapping only). For work in progress; `check` is still the bar for done |
 | `npm run test:<domain>` | The unit tests of one domain: `model`, `data` (with the Python tests), `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`. Add `-- --fast` to leave out the long files, `-- --smoke` to build a private copy of the page and run that domain's browser checks. For work in progress; `check` is still the bar for done |
 | `npm run lint` | Biome (JavaScript, TypeScript, JSON, CSS): lint and format check, no file changes; a warning fails it; then `lint:lit` |
-| `npm run lint:lit` | ESLint with `eslint-plugin-lit` and `eslint-plugin-lit-a11y` on the Lit elements (`src/ui/elements/**`), the markup Biome cannot read; passes when there are none yet |
+| `npm run lint:lit` | ESLint with `eslint-plugin-lit` and `eslint-plugin-lit-a11y` on the Lit elements (`src/ui/elements/**`), the markup Biome cannot read; the elements' markup |
 | `npm run typecheck` | `tsc --noEmit` over the `.ts` files (`tsconfig.json`: strict, erasable syntax only, `.js` files not checked); part of `check` |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
-| `npm run check` | Lint (with format check), typecheck, build, unit tests, smoke test; no Python; about 1 min. Warns if installed packages differ from the lock (run `npm ci`). Run before calling a change done |
-| `npm run check:all` | `check`, then `lint:py` and `test:py`. Run it when touching `scripts/data/` or after `data:update` |
+| `npm run test:stories` | Builds the story gallery and runs the component stories (`tests/stories/`) in Chromium, about 5 s; part of `check` |
+| `npm run test:stories:all` | The same stories in Chromium, Firefox and WebKit, about 15 s; run by CI and `check:all` |
+| `npm run check` | Lint (with format check), typecheck, build, unit tests, component stories (Chromium), smoke test; no Python; about 1 min. Warns if installed packages differ from the lock (run `npm ci`). Run before calling a change done |
+| `npm run check:all` | `check`, then `test:stories:all`, `lint:py` and `test:py`. Run it when touching `scripts/data/` or after `data:update` |
 | `npm run data:update` | After a game patch: fetch the newest game data CSVs into `data/`, regenerate `src/data/` and rebuild |
 | `npm run perf` | Optimizer timing, 6 jobs' full pools (about 4 min); run it after changing the search |
 | `npm run perf:full` | Optimizer timing, every job's full pool (about 25 min) |
@@ -72,7 +74,7 @@ Run `npm run data:update`, then `npm run check` and review the diff of the gener
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` runs `npm run check`, the long `tests/sweep/` sweep, and `lint:py` and `test:py` on Python 3.11 and 3.13, on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
+`.github/workflows/pages.yml` runs `npm run check`, the component stories in all three engines, the long `tests/sweep/` sweep, and `lint:py` and `test:py` on Python 3.11 and 3.13, on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
 
 ## Documentation
 
