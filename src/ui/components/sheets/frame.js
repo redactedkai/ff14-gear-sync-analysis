@@ -3,6 +3,8 @@
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: capTypedBad (settings.js) and
    listSort (view.js), which a change of sheet and the Effects / Stat points switch reset. */
 
+import { afterDraw } from '../compose.js';
+
 /* Returns the part's members. */
 export function framePart() {
   // the component's own element, kept at init: `this.$el` is the element a handler ran on, and a click can remove that
@@ -58,9 +60,7 @@ export function framePart() {
     /* Runs `callback` once Alpine has drawn the change just made, unless the component's element is gone by then (as the
        set page's afterDraw). */
     afterDraw(callback) {
-      this.$nextTick(() => {
-        if (tabEl.isConnected) callback();
-      });
+      afterDraw(this, () => tabEl, callback);
     },
   };
 }

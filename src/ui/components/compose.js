@@ -14,3 +14,12 @@ export function compose(...parts) {
   }
   return component;
 }
+
+/* Runs `callback` once Alpine has drawn the change just made (`component` is the Alpine component whose `$nextTick` is
+   used), unless `element` is gone from the page by then (a page left, a result discarded): the callback's elements and refs
+   went with it. `element` is read when the draw is done, so pass a function: `() => the element`. */
+export function afterDraw(component, getElement, callback) {
+  component.$nextTick(() => {
+    if (getElement().isConnected) callback();
+  });
+}

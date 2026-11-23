@@ -3,6 +3,7 @@
    A part of the setPage component (components/set-page.js composes the parts; `page` is the state they share). */
 
 import { overlays } from '../../overlays.js';
+import { afterDraw } from '../compose.js';
 import { RANK_NOTE_LAYER, SET_MENU_LAYER, SETTINGS_LAYER } from './menus.js';
 
 /* `page`: {el, refs}, the shared holder of the page's own element and its refs, kept from init: `this.$el` and `this.$refs`
@@ -55,9 +56,7 @@ export function framePart(page) {
     /* Runs `callback` once Alpine has drawn the change just made, unless the page is gone by then (an Auto-fill cancelled or a
        result discarded by leaving the page): its elements and refs are gone with it. */
     afterDraw(callback) {
-      this.$nextTick(() => {
-        if (page.el.isConnected) callback();
-      });
+      afterDraw(this, () => page.el, callback);
     },
     focusFill() {
       this.afterDraw(() => {

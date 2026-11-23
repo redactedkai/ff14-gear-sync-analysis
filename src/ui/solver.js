@@ -65,7 +65,7 @@ function cancelledError() {
    (tier ranking with a Target GCD, eight sweeps sharing the machine; perf-log.md section 5.1), and
    a Gear to search request takes 20 to 100 ms, so 60 s leaves a slow device three times that and still ends a worker
    that will never answer. */
-export const SOLVER_TIMEOUT_MS = 60_000;
+const SOLVER_TIMEOUT_MS = 60_000;
 
 /* The error of a request stopped by SOLVER_TIMEOUT_MS; its message ends the page's "The search failed: ..." line. */
 function timedOutError(ms) {

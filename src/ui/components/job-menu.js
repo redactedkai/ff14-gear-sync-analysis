@@ -10,11 +10,11 @@ import { compose } from './compose.js';
 import { overlay } from './overlay.js';
 
 /* The Job control's label in the math bar. */
-export const JOB_MENU_TEXT = { label: 'Job' };
+const JOB_MENU_TEXT = { label: 'Job' };
 
 /* Every job's "Name (CODE)", one per line: the hidden copy that gives the math bar's Job button the width of the widest job
    (Dark Knight (DRK), Astrologian (AST), Pictomancer (PCT)), so no pick changes it. */
-export const JOB_SIZER = JOBS.map(job => `${job.name} (${job.id})`).join('\n');
+const JOB_SIZER = JOBS.map(job => `${job.name} (${job.id})`).join('\n');
 
 /* The job menu's members: the overlay's (`jobMenuOpen`, `openJobMenu`, `closeJobMenu(restoreFocus)`, `toggleJobMenu`:
    components/overlay.js), the rows ({label, jobs: [{id, name, icon}]}), the job it edits (`menuJobId`, `menuJobCtx`,

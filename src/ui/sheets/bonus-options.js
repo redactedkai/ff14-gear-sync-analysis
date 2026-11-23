@@ -5,7 +5,7 @@ import { PARTY_ROLES_MAX, clanGroups } from '../../core/clan-bonus.js';
 /* The first entry of the Clan list, which means no clan. */
 export const NO_CLAN_TEXT = 'Select Race/Clan';
 /* The first entry of the Party bonus list, which means no party bonus. */
-export const NO_PARTY_TEXT = 'No party bonus';
+const NO_PARTY_TEXT = 'No party bonus';
 
 /* The text of the Party bonus entry for `roles` unique roles: "No party bonus" for 0, "1 unique role (1%)", "2 unique
    roles (2%)" ... 1% per role. */

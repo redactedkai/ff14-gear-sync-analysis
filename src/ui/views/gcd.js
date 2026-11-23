@@ -18,7 +18,7 @@ const STEPS_AVERAGED = 10;
 /* The Haste menu text of a job with always-on haste: the job and its source by name ("Samurai, Fuka"), no percent. The
    percents depend on the level, so the tab shows them where the level is known: the haste among the facts, and every
    step of the source on the chart. `jobId`: a HASTE key. */
-export function hasteOptionLabel(jobId) {
+function hasteOptionLabel(jobId) {
   return `${jobById(jobId).name}, ${HASTE[jobId].name}`;
 }
 
