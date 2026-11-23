@@ -818,3 +818,36 @@ test('sync on with no cap yet is an empty il, and opens as sync on', () => {
   const again = setup('#/gear?job=SGE&il=');
   assert.deepEqual([again.app.sync, again.app.cap], [true, null]);
 });
+
+test('a reload of an entry scrolled before restores its scroll; the positions are kept for the next reload', () => {
+  const restored = [];
+  const history = fakeHistory('#/sheets/s_1', { id: 'own', pos: 0 });
+  const { router } = setup(
+    '',
+    undefined,
+    {
+      savedScroll: { own: 320, other: 90 },
+      restoreScroll: y => restored.push(y),
+    },
+    history,
+  );
+  assert.deepEqual(restored, [320]);
+  assert.deepEqual(router.scrollPositions(), { own: 320, other: 90 });
+  router.noteScroll(500, 1000);
+  assert.equal(router.scrollPositions().own, 500);
+});
+
+test('an entry the router has not seen scrolled, and a first load, restore nothing', () => {
+  const restored = [];
+  setup(
+    '',
+    undefined,
+    { savedScroll: { elsewhere: 200 }, restoreScroll: y => restored.push(y) },
+    fakeHistory('#/sheets/s_1', { id: 'own', pos: 0 }),
+  );
+  setup('', undefined, {
+    savedScroll: { own: 200 },
+    restoreScroll: y => restored.push(y),
+  });
+  assert.deepEqual(restored, []);
+});

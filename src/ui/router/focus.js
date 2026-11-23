@@ -17,9 +17,11 @@ const STABLE_FRAMES = 3;
 /* Focus the open screen's heading and scroll the page to `scrollY` once the screen is drawn: after the tab being opened
    (`isPending()`: a tab is opening, which waits for a painted frame) and the frame that draws the screen. `doc`: the document,
    `raf`: requestAnimationFrame, `scrollTo(y)`: scrolls the page, `scrolledTo()`: where it is scrolled. The heading is made focusable (tabindex -1) and is left out of
-   the Tab order; nothing is focused when the screen has no heading, and the scroll happens either way. */
+   the Tab order; nothing is focused when the screen has no heading, and the scroll happens either way. `focus: false` only
+   scrolls (a reload puts the page back where it was without moving the focus). */
 export function focusScreenHeading({
   scrollY = 0,
+  focus = true,
   isPending = () => false,
   doc = document,
   raf = requestAnimationFrame,
@@ -32,7 +34,7 @@ export function focusScreenHeading({
     if (isPending() && frames++ < MAX_FRAMES_WAITED) return raf(attempt);
     return raf(() => {
       const heading = screenHeading(doc);
-      if (heading) {
+      if (heading && focus) {
         heading.tabIndex = -1;
         heading.focus({ preventScroll: true });
       }

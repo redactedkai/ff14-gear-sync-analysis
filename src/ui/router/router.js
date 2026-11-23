@@ -92,10 +92,23 @@ const WRITE_COOLDOWN_MS = 100;
    Forward (a click already places the focus where the player acted) and scrolls to where the player left that screen (`scrollY`,
    0 for an entry the router has not seen scrolled); the page reports its scrolling with `noteScroll(y)`, and `readScroll()`
    gives {y, maxY} where it is scrolled now (null: unknown), read as the router pushes a screen so the screen it leaves keeps
-   the position it had however late the scroll event comes. Returns {start, noteScroll, routeFromStores, applyRoute}: `start()`
-   reads the address, opens its screen and begins following the stores and the browser; `routeFromStores` and `applyRoute` are
-   for tests. */
-export function createRouter({ app, sheets, port, watch, setTitle = () => {}, focusScreen = () => {}, readScroll = () => null }) {
+   the position it had however late the scroll event comes. The page lets the router place the scroll (history.scrollRestoration
+   is 'manual'), so a reload would lose its place: `savedScroll` ({entry id: y}, from `scrollPositions()` of the page before the
+   reload) seeds the positions, and `restoreScroll(y)` scrolls to the one of the entry the reload is on (no focus move).
+   Returns {start, noteScroll, scrollPositions, routeFromStores, applyRoute}: `start()` reads the address, opens its screen and
+   begins following the stores and the browser; `scrollPositions()` gives {entry id: y} for every entry scrolled; `routeFromStores`
+   and `applyRoute` are for tests. */
+export function createRouter({
+  app,
+  sheets,
+  port,
+  watch,
+  setTitle = () => {},
+  focusScreen = () => {},
+  readScroll = () => null,
+  savedScroll = {},
+  restoreScroll = () => {},
+}) {
   // the entry the browser is on, and the entry whose screen the stores show (they differ while a held move is undone)
   let at = null;
   let shown = null;
@@ -114,7 +127,7 @@ export function createRouter({ app, sheets, port, watch, setTitle = () => {}, fo
   let coolTimer = null;
   let dirty = false;
   // how far the page was scrolled on each entry the router made, by entry id (kept while the page is open)
-  const scrollByEntry = new Map();
+  const scrollByEntry = new Map(Object.entries(savedScroll));
 
   /* The router moved the browser: until it arrives the stores' changes write no address. */
   function startSettling() {
@@ -445,6 +458,8 @@ export function createRouter({ app, sheets, port, watch, setTitle = () => {}, fo
     const route = parseRoute(port.read()) ?? { ...DEFAULT_ROUTE };
     applyRoute(route, { atStart: true, withParams: !own });
     port.replace(formatRoute(canonicalOf(route, { follow: own })), at);
+    // a reload: the browser no longer puts the page back where it was, so the router does
+    if (own && scrollByEntry.has(at.id)) restoreScroll(scrollByEntry.get(at.id));
     port.onPop(onPop);
     watch(() => formatRoute(routeFromStores()), onStoresChanged);
     setTitle(titleFromStores());
@@ -461,5 +476,5 @@ export function createRouter({ app, sheets, port, watch, setTitle = () => {}, fo
     scrollByEntry.set(at.id, y);
   }
 
-  return { start, routeFromStores, applyRoute, noteScroll };
+  return { start, routeFromStores, applyRoute, noteScroll, scrollPositions: () => Object.fromEntries(scrollByEntry) };
 }

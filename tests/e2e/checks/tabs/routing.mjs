@@ -244,3 +244,60 @@ export async function checkAddressSettings(pg) {
     "s => s.job === 'DRK' && s.piece.slot === 'ear' && s.piece.ilvl === 710 && s.piece.subs.join() === 'det,' && s.piece.slots === 1",
   );
 }
+
+/** How far the set page is scrolled in the scroll checks below (px): well past the browser's own clamp on a shorter screen. */
+const SCROLLED_PX = 400;
+
+/** Back to a scrolled screen shows no position in between: from the frame the browser moves until the router has placed the
+ * screen, the page is at the position it left or the one it returns to, never a third (the browser's own restore, clamped to
+ * the shorter screen still on show, used to flash there). */
+export async function checkScrollOnBack(pg) {
+  await seedSheet(pg, SET_SHEET);
+  await openSageSet(pg);
+  const setHash = await hashOf(pg);
+  const leftAt = await pg.evaluate(y => {
+    window.scrollTo(0, y);
+    return window.scrollY;
+  }, SCROLLED_PX);
+  check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the check below proves nothing`);
+  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await expectHash(pg, /^#\/gear(\?|$)/, 'the Gear browser');
+  await expect(pg.locator('#b-q')).toBeVisible();
+  const startAt = await pg.evaluate(() => window.scrollY);
+
+  // record the scroll position on every frame, then go Back and wait for the router to place the set page
+  await pg.evaluate(() => {
+    const frames = [];
+    const record = () => {
+      frames.push(Math.round(window.scrollY));
+      window.gsaScrollFrames.timer = requestAnimationFrame(record);
+    };
+    window.gsaScrollFrames = { frames, timer: 0 };
+    record();
+  });
+  await pg.goBack();
+  await expectHash(pg, setHash, 'Back to the set page');
+  await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
+  await pg.waitForTimeout(300); // frames after landing: it stays there
+  const frames = await pg.evaluate(() => {
+    cancelAnimationFrame(window.gsaScrollFrames.timer);
+    return window.gsaScrollFrames.frames;
+  });
+  const strays = [...new Set(frames)].filter(y => Math.abs(y - startAt) > 1 && Math.abs(y - leftAt) > 1);
+  check(strays.length === 0, `Back showed the scroll positions ${strays.join(', ')} (left from ${startAt}, back to ${leftAt})`);
+}
+
+/** A reload on a scrolled screen keeps its place, whether the browser or the router restores it. */
+export async function checkScrollOnReload(pg) {
+  await seedSheet(pg, SET_SHEET);
+  await openSageSet(pg);
+  const leftAt = await pg.evaluate(y => {
+    window.scrollTo(0, y);
+    return window.scrollY;
+  }, SCROLLED_PX);
+  check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the check below proves nothing`);
+  await pg.waitForTimeout(200); // the scroll event is noted
+  await pg.reload();
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 2, leftAt);
+}

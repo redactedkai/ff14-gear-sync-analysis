@@ -161,3 +161,20 @@ test('a scroll the browser clamps a frame later is scrolled again once the page 
   assert.equal(position, 400);
   assert.ok(wanted.length >= 2, 'it asked again after the page was drawn too short');
 });
+
+test('focus: false only scrolls', () => {
+  const only = heading(true);
+  const clock = frames();
+  const scrolled = [];
+  focusScreenHeading({
+    scrollY: 120,
+    focus: false,
+    doc: docOf([panel(true, [only])]),
+    raf: clock.raf,
+    scrollTo: y => scrolled.push(y),
+    scrolledTo: () => scrolled.at(-1),
+  });
+  clock.run();
+  assert.equal(only.focused, null);
+  assert.deepEqual(scrolled, [120]);
+});

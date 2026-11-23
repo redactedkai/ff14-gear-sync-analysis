@@ -38,6 +38,27 @@ Alpine.store('sheets', createSheetStore());
 function pageScroll() {
   return { y: scrollY, maxY: document.documentElement.scrollHeight - innerHeight };
 }
+/* Where each history entry was scrolled, kept over a reload (sessionStorage: this tab only, a convenience, so every access is
+   in a try/catch). The browser's own restore is off (below), so the router places the scroll itself. */
+const SCROLL_KEY = 'gsa-scroll-by-entry';
+function loadScrollPositions() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) ?? '{}');
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch {
+    return {};
+  }
+}
+function saveScrollPositions(positions) {
+  try {
+    sessionStorage.setItem(SCROLL_KEY, JSON.stringify(positions));
+  } catch {
+    // blocked or full: a reload then opens at the top
+  }
+}
+/* The router places the scroll of every Back and Forward after it has drawn the screen. The browser's own restore would show its
+   remembered position first, clamped to the screen still on show (a flicker), so it is off; set before the router starts. */
+history.scrollRestoration = 'manual';
 // the address and the two stores follow each other (ui/router/): Back, Forward, reload and bookmarks work
 const router = createRouter({
   app,
@@ -49,8 +70,11 @@ const router = createRouter({
   },
   focusScreen: scrollY => focusScreenHeading({ scrollY, isPending: () => app.pendingTab !== null }),
   readScroll: pageScroll,
+  savedScroll: loadScrollPositions(),
+  restoreScroll: scrollY => focusScreenHeading({ scrollY, focus: false, isPending: () => app.pendingTab !== null }),
 });
 router.start();
+addEventListener('pagehide', () => saveScrollPositions(router.scrollPositions()));
 // a change of screen (tab, sub-tab, sheet, gear set, Back and Forward) closes every open menu and popover; the router owns the focus then
 for (const screen of [() => app.tab, () => app.mathTab, () => Alpine.store('sheets').sheetId, () => Alpine.store('sheets').setId]) {
   Alpine.watch(screen, () => overlays.closeAll());
