@@ -27,7 +27,7 @@
     "test:look": "node scripts/test.mjs --domain look",
     "test:tooling": "node scripts/test.mjs --domain tooling",
     "test:changed": "node scripts/test.mjs --changed",
-    "lint": "biome lint --error-on-warnings . && biome format .",
+    "lint": "biome lint --error-on-warnings . && biome format . && npm run lint:lit",
     "lint:py": "node scripts/py.mjs -m ruff check . && node scripts/py.mjs -m ruff format --check .",
     "format": "biome format --write .",
     "format:py": "node scripts/py.mjs -m ruff format .",
@@ -42,7 +42,7 @@
     "shots:compare": "node scripts/shots/compare.mjs",
     "stress:layout": "node scripts/layout-stress/index.mjs",
     "typecheck": "node -e \"console.log('typecheck: nothing yet')\"",
-    "lint:lit": "node -e \"console.log('lint:lit: nothing yet')\"",
+    "lint:lit": "eslint --max-warnings 0 --no-error-on-unmatched-pattern src/ui/elements",
     "test:stories": "node -e \"console.log('test:stories: nothing yet')\"",
     "test:stories:all": "node -e \"console.log('test:stories:all: nothing yet')\"",
     "test:visual": "node -e \"console.log('test:visual: nothing yet')\""

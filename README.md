@@ -45,7 +45,8 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run test:fast` | Every unit test except the 19 long files (`LONG` in `tests/domains.mjs`): about 12 s against about 40 s for `npm test`. For work in progress; `check` is still the bar for done |
 | `npm run test:changed` | The unit tests of the domains that own the files `git status` lists as changed (one line per path says why; `-- --list` shows the mapping only). For work in progress; `check` is still the bar for done |
 | `npm run test:<domain>` | The unit tests of one domain: `model`, `data` (with the Python tests), `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`. Add `-- --fast` to leave out the long files, `-- --smoke` to build a private copy of the page and run that domain's browser checks. For work in progress; `check` is still the bar for done |
-| `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check, no file changes; a warning fails it |
+| `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check, no file changes; a warning fails it; then `lint:lit` |
+| `npm run lint:lit` | ESLint with `eslint-plugin-lit` and `eslint-plugin-lit-a11y` on the Lit elements (`src/ui/elements/**`), the markup Biome cannot read; passes when there are none yet |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
 | `npm run check` | Lint (with format check), build, unit tests, smoke test; no Python; about 1 min. Warns if installed packages differ from the lock (run `npm ci`). Run before calling a change done |
