@@ -42,14 +42,14 @@
 
   <!-- Critical Hit -->
   <text class="lbl fg" x="148" y="99" text-anchor="end">Critical Hit</text>
-  <rect class="box" x="160" y="76" width="462" height="36" rx="8"/>
+  <rect class="box" x="160" y="76" width="462" height="36" rx="4"/>
   <text class="s fg" x="391" y="98" text-anchor="middle">own 110</text>
   <text class="s muted" x="636" y="99">no room:</text>
   <text class="s muted" x="636" y="115">adds 0</text>
 
   <!-- Determination -->
   <text class="lbl fg" x="148" y="175" text-anchor="end">Determination</text>
-  <rect class="box" x="160" y="152" width="323.4" height="36" rx="8"/>
+  <rect class="box" x="160" y="152" width="323.4" height="36" rx="4"/>
   <text class="s fg" x="321.7" y="174" text-anchor="middle">own 77</text>
   <rect class="stone" x="483.4" y="152" width="67.2" height="36"/>
   <text class="lbl accent" x="517" y="175" text-anchor="middle">VI +16</text>

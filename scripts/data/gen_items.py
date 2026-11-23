@@ -12,7 +12,7 @@ Row format: the fields of `itemRow.fields` in src/core/item-format.json, in that
   jobMask  : bit i set when `jobs[i]` in src/core/item-format.json can equip it
   stats    : in the order of `stats` in src/core/item-format.json  (HQ values = NQ + BaseParamValueSpecial)
   hq       : 1 when the item can be high quality (CanBeHq), so its stats are the HQ ones
-  routes   : the ways to get the piece for the "Gear from" filter (gear_activities.py): a list of bit masks, any one of
+  routes   : the ways to get the piece for the "Gear categories" filter (gear_activities.py): a list of bit masks, any one of
              which gets it; bit i of a mask = `activities[i]` of item-format.json, and bit len(activities) the market
              board (tradeable pieces). Empty for a piece that can no longer be obtained
   kind     : the item's BaseParamModifier, an index into the stat factor table MP of item-level.json (`statFactor` in

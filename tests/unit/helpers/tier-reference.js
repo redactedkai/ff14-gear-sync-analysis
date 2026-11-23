@@ -1,5 +1,5 @@
-/* The reference for rank by tier (core/tier-rank.js), shared by tests/unit/core-tier-rank.test.js and the longer sweep in
-   tests/full/: every legal loadout (forEachLoadout, with its own stone enumeration), every meal, food and tiers
+/* The reference for rank by tier (core/tier-rank.js), shared by tests/unit/core/tier-rank.test.js and the longer sweep in
+   tests/sweep/: every legal loadout (forEachLoadout, with its own stone enumeration), every meal, food and tiers
    computed from the formulas (not gearNeeded or rankTierOf), and the stage rule of the spec applied to the whole list,
    with weapon damage first when the job ranks it (a key without tiers, held at its most; owner's decision 2026-10-18).
    Pools are small real ones from three item level windows, with a weapon slot in place of the necklace, so weapon
@@ -27,9 +27,8 @@ export function refTier(job, stat, total, level, haste) {
 }
 
 /* The best [tier per key, total per key] (totals with food) by the spec's stages, over every loadout and meal:
-   per meal, for each key, keep the loadouts whose total is at least one above the start of the best tier left (or the
-   most left, if less), then the best totals in key order; across meals, the best tiers, then the best totals. Null when
-   no loadout meets the GCD. */
+   per meal, for each key, keep the loadouts whose total is at least the start of the best tier left, then the best totals in key
+   order; across meals, the best tiers, then the best totals. Null when no loadout meets the GCD. */
 export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd = null, mode = 'exact', fixed = [] }) {
   const keys = job.damageKey ? ['wd', ...goal] : goal;
   const haste = hasteFor(job.jobId, level)?.pct ?? 0;
@@ -64,7 +63,7 @@ export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd 
       if (tier != null) {
         let start = most;
         while (start > 0 && refTier(job, k, start - 1, level, haste) === tier) start--;
-        hold = Math.min(start + 1, most);
+        hold = start;
       }
       tiers.push(tier ?? most);
       left = left.filter(x => total(x, k) >= hold);
@@ -134,7 +133,7 @@ export function checkNoGcd(seed, count) {
 /* `count` random cases with a Target GCD from seed `seed`, each against the reference: four jobs (two with always-on
    haste), level 100, both GCD modes, food off or every meal, a GCD at the free result's or one step either side; two
    keys, or with `threeKeys` three in two cases of three. Cases before `from` are drawn but not solved, so a long sweep
-   can be split across files (tests/full/) and still check the same cases. Returns {runs, infeasible}. */
+   can be split across files (tests/sweep/) and still check the same cases. Returns {runs, infeasible}. */
 export function checkGcd(seed, count, threeKeys = false, from = 0) {
   const rand = rng(seed),
     int = n => Math.floor(rand() * n);

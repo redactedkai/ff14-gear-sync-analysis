@@ -53,49 +53,49 @@
 <text class="small muted" x="20" y="52">Example: healer head piece, item level 130, synced to item level 123</text>
 <text class="fg" x="495" y="80" text-anchor="middle" font-weight="600">Spell Speed</text>
 <text class="fg" x="630" y="80" text-anchor="middle" font-weight="600">Piety</text>
-<rect class="box" x="20" y="92" width="330" height="50" rx="8"/>
+<rect class="box" x="20" y="92" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="113">Item level</text>
 <text class="small muted" x="34" y="131">an index into the budget table</text>
 <line class="s-muted" x1="358" y1="117" x2="425" y2="117" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num fg" x="495" y="122" text-anchor="middle">130</text>
 <text class="num fg" x="630" y="122" text-anchor="middle">130</text>
 <line class="s-muted" x1="185" y1="144" x2="185" y2="157" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="20" y="160" width="330" height="50" rx="8"/>
+<rect class="box" x="20" y="160" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="181">Look up the budget for this stat</text>
 <text class="small muted" x="34" y="199">ItemLevel sheet, row 130</text>
 <line class="s-muted" x1="358" y1="185" x2="425" y2="185" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num fg" x="495" y="190" text-anchor="middle">363</text>
 <text class="num fg" x="630" y="190" text-anchor="middle">363</text>
 <line class="s-muted" x1="185" y1="212" x2="185" y2="225" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="20" y="228" width="330" height="50" rx="8"/>
+<rect class="box" x="20" y="228" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="249">× slot share ÷ 1000</text>
 <text class="small muted" x="34" y="267">head: 85</text>
 <line class="s-muted" x1="358" y1="253" x2="425" y2="253" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num fg" x="495" y="258" text-anchor="middle">30.855</text>
 <text class="num fg" x="630" y="258" text-anchor="middle">30.855</text>
 <line class="s-muted" x1="185" y1="280" x2="185" y2="293" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="20" y="296" width="330" height="50" rx="8"/>
+<rect class="box" x="20" y="296" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="317">Round (first rounding)</text>
 <text class="small muted" x="34" y="335">the full-share slot budget</text>
 <line class="s-muted" x1="358" y1="321" x2="425" y2="321" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num fg" x="495" y="326" text-anchor="middle">31</text>
 <text class="num fg" x="630" y="326" text-anchor="middle">31</text>
 <line class="s-muted" x1="185" y1="348" x2="185" y2="361" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="20" y="364" width="330" height="50" rx="8"/>
+<rect class="box" x="20" y="364" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="385">× substat share by rank</text>
 <text class="small muted" x="34" y="403">rank 1: 100%, rank 2: 70%; healer DH: 20%</text>
 <line class="s-muted" x1="358" y1="389" x2="425" y2="389" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num fg" x="495" y="394" text-anchor="middle">× 1.0 = 31</text>
 <text class="num fg" x="630" y="394" text-anchor="middle">× 0.7 = 21.7</text>
 <line class="s-muted" x1="185" y1="416" x2="185" y2="429" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="20" y="432" width="330" height="50" rx="8"/>
+<rect class="box" x="20" y="432" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="453">Round (second rounding)</text>
 <text class="small muted" x="34" y="471">the stat printed on the item</text>
 <line class="s-muted" x1="358" y1="457" x2="425" y2="457" stroke-width="1" stroke-dasharray="2 4"/>
 <text class="num good" x="495" y="462" text-anchor="middle">31</text>
 <text class="num good" x="630" y="462" text-anchor="middle">22</text>
 <line class="s-muted" x1="185" y1="484" x2="185" y2="497" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="clampbox" x="20" y="500" width="330" height="50" rx="8"/>
+<rect class="clampbox" x="20" y="500" width="330" height="50" rx="4"/>
 <text class="fg" x="34" y="521">Sync clamp: min(value, cap)</text>
 <text class="small muted" x="34" y="539">only if item level > cap; cap 123: 29</text>
 <line class="s-muted" x1="358" y1="525" x2="425" y2="525" stroke-width="1" stroke-dasharray="2 4"/>

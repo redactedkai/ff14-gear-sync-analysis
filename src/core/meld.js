@@ -206,6 +206,8 @@ export function bestMeld(job, item, keys) {
   return meldFromPlacement(m, bestPlacement(m));
 }
 
+const versionMemo = new Map();
+
 /* Every placement worth keeping when the loadout has limits (a speed rule for Target GCD, stat minimums for tier
    ranking), as bestMeld results. With a minimum or maximum, one best placement per piece is no longer exact: the best
    melds of a piece depend on how much of the limited stat the rest of the loadout has. So every gain vector that no
@@ -216,7 +218,6 @@ export function bestMeld(job, item, keys) {
    only lowers a gain, so it adds a vector only under a maximum, and there it found no better set in 2,045 Target GCD
    runs while adding about 14% search work (docs/mechanics/materia.md, "Which stones are shown"; owner: dropped). It can
    still be the placement shown for a vector. A piece that takes no stones has one version, no melds: [null]. */
-const versionMemo = new Map();
 export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
   const m = meldSetup(job, item, keys);
   if (!m) return [null];

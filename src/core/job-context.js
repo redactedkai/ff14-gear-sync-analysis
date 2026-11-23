@@ -5,6 +5,7 @@ import {
   JOBS,
   DEFAULT_JOB,
   ONE_HANDED_JOBS,
+  MIXED_WEAPON_JOBS,
   NO_WEAPON_DAMAGE_JOBS,
   JOB_LEVEL_CAPS,
   PROFILES,
@@ -26,7 +27,10 @@ const CASTER_MAIN_KEYS = Object.freeze(['int', 'mind']);
 /** @param {string} jobId e.g. 'SGE'. Unknown ids fall back to DEFAULT_JOB. Results are cached and frozen.
  *  Stat keys are the game's own (constants.js STAT_LABEL). The job's: mainKey (str, dex, int or mind), speedKey (sks or
  *  sps), specKey (piety or ten; null for a job without a special substat); stats = [mainKey, 'vit', 'crit', 'det',
- *  'dh', speedKey, specKey?], substats = the stats after the first two. */
+ *  'dh', speedKey, specKey?], substats = the stats after the first two.
+ *  weaponMode: '2h' (no shield; no Off-hand row), '1h+oh' (1H weapon and shield only: ONE_HANDED_JOBS) or 'mixed' (2H
+ *  weapons, or 1H weapons with a shield, at every level: MIXED_WEAPON_JOBS). activeSlotTypes holds 'offhand' unless the
+ *  mode is '2h'; slotPct.weapon is the 1H share for the two modes with a shield (what a hand-made weapon takes). */
 export function makeJobContext(jobId) {
   let jobIndex = JOBS.findIndex(j => j.id === jobId);
   if (jobIndex < 0) jobIndex = JOBS.findIndex(j => j.id === DEFAULT_JOB);
@@ -36,7 +40,9 @@ export function makeJobContext(jobId) {
   const { mainKey, speedKey, specKey } = PROFILES[profileId];
   const substats = [...SHARED_SUBSTATS, speedKey, ...(specKey ? [specKey] : [])];
   const stats = [mainKey, 'vit', ...substats];
-  const weaponMode = ONE_HANDED_JOBS.includes(id) ? '1h+oh' : '2h';
+  const weaponMode = ONE_HANDED_JOBS.includes(id) ? '1h+oh' : MIXED_WEAPON_JOBS.includes(id) ? 'mixed' : '2h';
+  // a job with a shield uses the Off-hand row; a mixed job's generic weapon (Stat Allocation) is the 1H one beside it
+  const hasOffhand = weaponMode !== '2h';
   const ctx = {
     jobId: id,
     jobName,
@@ -51,10 +57,10 @@ export function makeJobContext(jobId) {
     label: Object.fromEntries(stats.map(s => [s, STAT_LABEL[s]])),
     short: Object.fromEntries(stats.map(s => [s, STAT_SHORT[s]])),
     weaponMode,
-    slotPct: { ...BASE_SLOT_PCT, weapon: WEAPON_PCT[weaponMode] },
-    activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || weaponMode === '1h+oh'),
+    slotPct: { ...BASE_SLOT_PCT, weapon: WEAPON_PCT[hasOffhand ? '1h+oh' : '2h'] },
+    activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || hasOffhand),
     /* the job's modifiers of its main stat and Vitality, in percent (ClassJob), by stat key: its base is the level's
-       main stat base x the modifier (food.js statBase) */
+       main stat base x the modifier (base-stats.js statBase) */
     attributeMods: Object.freeze({ [mainKey]: JOB_MODS[id][mainKey], vit: JOB_MODS[id].vit }),
     /* Vitality for Int/Mind jobs is the Vit budget x 0.9 (rounded again) */
     vitFactor: CASTER_MAIN_KEYS.includes(mainKey) ? 0.9 : 1,

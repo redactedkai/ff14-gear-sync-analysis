@@ -8,6 +8,8 @@ Final Fantasy XIV (FFXIV) terms, project terms and outside sources, for readers 
 
 **Atma weapons.** One step of the Zodiac relic weapons, at item level 100. The 11 Atma weapons carry exactly the stats of the step before, Zenith, at item level 90, so the model predicts them at 90. See [math.md, section 4](mechanics/math.md#substat-shares-empirical). Whether each claim is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
 
+**Average item level.** The average of the worn pieces' item levels over 12 slots (empty slots count 0, a two-handed weapon counts twice), shown in the set page's Total row as a whole number with a leading `~`. See [math.md, section 6](mechanics/math.md#average-item-level).
+
 **Base class.** The starting class a job grows out of, such as Gladiator for Paladin. Gear only a base class can wear is left out of the database. See [data-pipeline.md, section 4.3](engineering/data-pipeline.md#43-job-mask).
 
 **Crafter and gatherer gear.** Gear for the non-combat jobs, with stats such as GP, CP, Craftsmanship, Control, Gathering and Perception. The database leaves out any piece that carries one of them, even when every class can wear it. See [data-pipeline.md, section 4.1](engineering/data-pipeline.md#41-selection).
@@ -71,7 +73,7 @@ See [math.md, section 5](mechanics/math.md#5-item-level-sync); the evidence is i
 - A piece has up to 5 slots. Crafted gear and the old PvP sets can be **overmelded** past their guaranteed slots, and the high grades (VI, VIII, X, XII) never go past the first overmeld slot.
 - Each substat on a piece is capped at the piece's own cap.
 - On synced-down gear melds do not count (checked by the owner in game; status in [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed)).
-- A set's Fill gives each piece that is not synced its best melds (the "Materia" switch, on by default).
+- A set's Auto-fill gives each piece that is not synced its best melds (the "Materia" switch, on by default).
 
 See [materia.md](mechanics/materia.md).
 
@@ -97,7 +99,7 @@ See [materia.md](mechanics/materia.md).
 
 **Skill Speed, Spell Speed.** The speed substat: Skill Speed for physical jobs (weaponskills), Spell Speed for casters and healers (spells). It shortens the GCD and strengthens DoT and HoT ticks. The project calls both "speed". See [math.md, section 6](mechanics/math.md#6-speed-and-substat-tiers).
 
-**Slot.** Where a piece is worn: weapon, off-hand (shield: Paladin and Beastmaster, plus one White Mage shield at item level 100), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings. There is no belt slot in the current game. A few pieces take two slots: a two-handed weapon leaves the off-hand empty, and the two Vermilion Cloaks (body) leave the head empty. See [math.md, section 3](mechanics/math.md#3-slot-shares).
+**Slot.** Where a piece is worn: weapon, off-hand (shield: Paladin, Beastmaster, White Mage and Black Mage), head, body, hands, legs, feet, earring, necklace, bracelet, and two rings. There is no belt slot in the current game. A few pieces take two slots: a two-handed weapon leaves the off-hand empty (a White Mage or Black Mage chooses between it and a one-handed weapon with a shield), and the two Vermilion Cloaks (body) leave the head empty. See [math.md, section 3](mechanics/math.md#3-slot-shares).
 
 **Substat.** Any stat other than the main stat and Vitality: Critical Hit, Determination, Direct Hit, the speed stat, and for tanks and healers Tenacity or Piety. Most pieces carry two. Old Mind-only healer gear can carry a third (Direct Hit), and eight early relic healer weapons carry only one. See [math.md, section 4](mechanics/math.md#substat-shares-empirical).
 
@@ -146,7 +148,7 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Feasible.** A gear set is feasible when it meets every rule and limit of the search at hand: one item per slot (two rings), Unique items, blocked slots, the speed range and any stat minimums. See [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
-**Gear from, route, market board switch.** The filter in Gear to search and the Gear browser that leaves gear out by what a player does to get it: 20 boxes (Quests & story, Crafted, Normal duties, Hunts, Savage (Current) ...) and a market board switch. A piece's **routes** are its ways to get it, each needing every box in it; a piece is listed when one route needs only ticked boxes, or, with the switch on, when it is tradeable. See [data-pipeline.md, section 4.6](engineering/data-pipeline.md#46-sources) and [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters).
+**Gear categories, route, market board switch.** The name of a filter (in Gear to search and in the Gear browser) that leaves gear out by what a player does to get it, a **route**: 20 boxes (Quests & story, Crafted, Normal duties, Hunts, Savage (Current) ...) and a market board switch. A piece's **routes** are its ways to get it, each needing every box in it; a piece is listed when one route needs only ticked boxes, or, with the switch on, when it is tradeable. Not to be confused with a piece's own **gear category** (Crafted, Dungeon, Raid ...: the label the page shows on each piece, data-pipeline.md section 4.12), which is one fact about the piece; the filter is about the routes to it, and a piece with no other way in takes its routes from its own category. See [data-pipeline.md, section 4.6](engineering/data-pipeline.md#46-sources) and [optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters).
 
 **Gear set.** One piece per gear slot (two rings), each with its meld stones, plus an optional meal: the optimizer's answer, and what the planned gear sheet (roadmap A4) will hold. Job, level and sync are not part of it. Evaluating it gives totals, tiers, defense and the GCD. In the code it is a `set`, plain data `{pieces, meal}`. Older text and the code call it a loadout (see Loadout). See [architecture.md, section 7](engineering/architecture.md#7-pieces-and-sets-in-the-core) and [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement).
 
@@ -178,13 +180,13 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Pareto front.** In tier ranking's searches: the partial gear sets, built from the last slot back, that no other partial set beats on score and every held stat. The best full set meeting every limit is always in the last front, so no search tree is needed. See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
 
-**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, equip level, item level range, Gear from); the user does not pick it ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Pool.** The items the optimizer chooses from. On the page it is every piece the job can wear from the item database, that passes the filters under Gear to search (expansions, equip level, item level range, Gear categories); the user does not pick it ([optimizer.md, section 7](engineering/optimizer.md#7-the-pages-pool-and-its-filters)). See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem) and [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Probe.** A one-off measurement run for the docs, not a committed test (for example the 9,800-run real-gear probe). `npm test` does not re-check its numbers. See [optimizer.md, section 8](engineering/optimizer.md#8-correctness-and-performance).
 
 **Provenance.** The record of which commit of the datamining repository the game data was generated from. It is written into every generated data file and shown in the page footer. See [data-pipeline.md, section 6](engineering/data-pipeline.md#6-provenance).
 
-**Recipe.** What an optimizer search is asked for: a set's Fill settings as one plain object (goal and tiebreaks, the filters under Gear to search, materia, food, Target GCD and its mode, rank by tier). Solving it gives a set. See [architecture.md, section 8](engineering/architecture.md#8-recipes-and-the-solver-session).
+**Recipe.** What an optimizer search is asked for: a set's Auto-fill settings as one plain object (goal and tiebreaks, the filters under Gear to search, materia, food, Target GCD and its mode, rank by tier). Solving it gives a set. See [architecture.md, section 8](engineering/architecture.md#8-recipes-and-the-solver-session).
 
 **Reduced-cost fixing.** Dropping a candidate before the search because no gear set holding it can beat a set already in hand, shown with a bound that prices every limit (a Lagrangian bound). Exact. See [tier-ranking.md, section 4.2](engineering/tier-ranking.md#42-pruning-against-the-gear-set-in-hand).
 
@@ -230,11 +232,13 @@ See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [sect
 
 **Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files; it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it. The optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md). Status: whether it is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
 
-**Tabs.** The page has two working tabs, **Sheets** and **Gear browser**, and a reference tab, **How the math works**, with three sub-tabs: **Piece stats**, **GCD** and **Substat tiers**. What each one shows: [ui.md, section 1](engineering/ui.md#1-the-tabs).
+**Tabs.** The page has two working tabs, **Sheets** and **Gear browser**, and a reference tab, **How the math works**, with three sub-tabs: **Stat Allocation**, **GCD Scaling** and **Substat tiers**. What each one shows: [ui.md, section 1](engineering/ui.md#1-the-tabs).
 
 **Target GCD.** A GCD the optimizer must reach, "exactly" or "or faster", counted with food and haste. It becomes a speed range, and the best set by the goal within it wins. On the page it is a box in the Goal row, empty by default. See [math.md, section 6](mechanics/math.md#target-gcd) and [optimizer.md, section 2](engineering/optimizer.md#2-formal-statement); the control is in [ui.md, section 2](engineering/ui.md#target-gcd).
 
 **Goal, target, tiebreak.** The optimizer's objective: the stat to maximize (the target), then up to two stats that decide between gear sets with the same target total. The three together are the **goal** (the page's Goal row: Maximize, Tiebreak 1, Tiebreak 2); the **target** is the first one only. See [optimizer.md, section 1](engineering/optimizer.md#1-the-problem).
+
+**Test domain.** A part of the product (`model`, `data`, `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`) that owns files of `src/`, `scripts/` and `tests/`. `npm run test:<domain>` runs its unit tests. See [testing.md, section 1.1](engineering/testing.md#11-domains).
 
 **Tier (breakpoint).** A substat's effect (critical hit rate, Determination bonus, GCD, ...) moves in steps, so points between two steps do nothing. The optimizer result shows each substat's effect from gear, the points above the start of its step (spare) and the points to the next. See [math.md, section 6](mechanics/math.md#substat-tiers-breakpoints).
 

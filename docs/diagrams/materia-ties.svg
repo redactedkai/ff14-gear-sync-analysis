@@ -47,9 +47,9 @@
 
   <!-- chips: width 48, gap 8, height 28 -->
   <!-- row 1: VI VI -->
-  <rect class="chipBig" x="28" y="88" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="28" y="88" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="52" y="107" text-anchor="middle">VI</text>
-  <rect class="chipBig" x="84" y="88" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="84" y="88" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="108" y="107" text-anchor="middle">VI</text>
   <text class="num fg" x="310" y="107" text-anchor="end">+32</text>
   <text class="num fg" x="370" y="107" text-anchor="end">2</text>
@@ -57,13 +57,13 @@
   <text class="s bad" x="470" y="107">out at rule 1: less gain</text>
 
   <!-- row 2: VI V V V -->
-  <rect class="chipBig" x="28" y="132" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="28" y="132" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="52" y="151" text-anchor="middle">VI</text>
-  <rect class="chipSmall" x="84" y="132" width="48" height="28" rx="8"/>
+  <rect class="chipSmall" x="84" y="132" width="48" height="28" rx="4"/>
   <text class="lbl gold" x="108" y="151" text-anchor="middle">V</text>
-  <rect class="chipSmall" x="140" y="132" width="48" height="28" rx="8"/>
+  <rect class="chipSmall" x="140" y="132" width="48" height="28" rx="4"/>
   <text class="lbl gold" x="164" y="151" text-anchor="middle">V</text>
-  <rect class="chipSmall" x="196" y="132" width="48" height="28" rx="8"/>
+  <rect class="chipSmall" x="196" y="132" width="48" height="28" rx="4"/>
   <text class="lbl gold" x="220" y="151" text-anchor="middle">V</text>
   <text class="num fg" x="310" y="151" text-anchor="end">+33</text>
   <text class="num fg" x="370" y="151" text-anchor="end">4</text>
@@ -71,11 +71,11 @@
   <text class="s bad" x="470" y="151">out at rule 2: more stones</text>
 
   <!-- row 3: VI VI VI -->
-  <rect class="chipBig" x="28" y="176" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="28" y="176" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="52" y="195" text-anchor="middle">VI</text>
-  <rect class="chipBig" x="84" y="176" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="84" y="176" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="108" y="195" text-anchor="middle">VI</text>
-  <rect class="chipBig" x="140" y="176" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="140" y="176" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="164" y="195" text-anchor="middle">VI</text>
   <text class="num fg" x="310" y="195" text-anchor="end">+33</text>
   <text class="num fg" x="370" y="195" text-anchor="end">3</text>
@@ -83,12 +83,12 @@
   <text class="s bad" x="470" y="195">out at rule 3: more big stones</text>
 
   <!-- row 4: VI VI V (shown) -->
-  <rect class="rowGood" x="20" y="214" width="680" height="44" rx="8"/>
-  <rect class="chipBig" x="28" y="222" width="48" height="28" rx="8"/>
+  <rect class="rowGood" x="20" y="214" width="680" height="44" rx="4"/>
+  <rect class="chipBig" x="28" y="222" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="52" y="241" text-anchor="middle">VI</text>
-  <rect class="chipBig" x="84" y="222" width="48" height="28" rx="8"/>
+  <rect class="chipBig" x="84" y="222" width="48" height="28" rx="4"/>
   <text class="lbl accent" x="108" y="241" text-anchor="middle">VI</text>
-  <rect class="chipSmall" x="140" y="222" width="48" height="28" rx="8"/>
+  <rect class="chipSmall" x="140" y="222" width="48" height="28" rx="4"/>
   <text class="lbl gold" x="164" y="241" text-anchor="middle">V</text>
   <text class="num fg" x="310" y="241" text-anchor="end">+33</text>
   <text class="num fg" x="370" y="241" text-anchor="end">3</text>

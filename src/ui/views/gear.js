@@ -1,5 +1,5 @@
 /* Gear browser: the item database rows the job can wear that match the filters, with their synced stats.
-   Gear the browser's "Gear from" filter leaves out (`browse.exclude` and `browse.market`, its own; the optimizer has
+   Gear the browser's "Gear categories" filter leaves out (`browse.exclude` and `browse.market`, its own; the optimizer has
    `opt.exclude` and `opt.market`) is not listed.
    Pure view builder: no Alpine import, so Node can load and test it. */
 import {
@@ -7,27 +7,29 @@ import {
   browseItems,
   copiesOf,
   dbStats,
-  emptyActivities,
+  activityCounts,
   gearFilter,
   kindFactors,
   poolKey,
   routesAllow,
   slotLabel,
 } from '../../core/items.js';
+import { clamp } from '../../core/clamp.js';
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
-import { fmtInt } from '../helpers.js';
+import { fmtInt } from '../text.js';
 import { defaultBrowse } from '../state.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
-/* The rows on one page of the table. */
-export const PAGE_SIZE = 100;
+/* The rows on one page of the table. The time of a sort or a page turn is mostly the time to draw the rows (about 1.3 ms
+   a row), so a page is 50 rather than 100. */
+export const PAGE_SIZE = 50;
 
 /* The places for page numbers and gaps ("…") on the page line once the pages don't all fit (pageList). Always this
    many, so the arrows don't move as the page changes. */
 export const PAGE_SLOTS = 7;
 
-/* The slot pills' groups, in the order they show (owner): weapon and shield, armor, accessories. */
+/* The Slot menu's groups, in the order they show (owner): weapon and shield, armor, accessories. */
 const SLOT_GROUPS = [
   ['weapon', 'offhand'],
   ['head', 'body', 'hands', 'legs', 'feet'],
@@ -67,7 +69,7 @@ const sameSet = (a, b) => [...a].sort().join() === [...b].sort().join();
 
 /* Whether any of the browser's filters is off its default (defaultBrowse; Reset filters shows only then): the name
    search (spaces aside), the slot, the item level range, the equip level (empty or the job's level cap is no filter), the
-   expansions, or Gear from (its boxes in any order, or the market board switch). The sort is not a filter. */
+   expansions, or Gear categories (its boxes in any order, or the market board switch). The sort is not a filter. */
 export function browseFiltered(job, b) {
   const d = defaultBrowse(job);
   return (
@@ -82,17 +84,26 @@ export function browseFiltered(job, b) {
   );
 }
 
-/* A stat's cell in the browser, as plain fields the template reads one by one: {text, cls, col, title, was}. `col` is
-   the stat's key (the column), `cls` the cell's classes, `text` the value on the top line and `title` its tooltip.
+/* A stat's cell in the browser, as plain fields the template reads one by one: {text, cls, col, was}. `col` is
+   the stat's key (the column), `cls` the cell's classes and `text` the value on the top line.
    Lowered by sync: the synced value, bold with the cap bar (sync takes a stat to exactly the piece's cap; both come
-   from the cell's `cut` class in styles.css), and `was` the value before sync, which the CSS draws as the muted line
-   under it (from the cell's data-was attribute); else the value, dimmed when zero, and `title` and `was` null (no
-   attribute). */
+   from the cell's `cut` class in src/styles/gear-browser.css), and `was` the value before sync, which the CSS draws as the muted line
+   under it (from the cell's data-was attribute); else the value, dimmed when zero, and `was` null (no attribute). */
 export function browseCell(raw, synced, col = '') {
   raw = raw || 0;
   synced = synced || 0;
-  if (synced < raw) return { text: String(synced), cls: 'n cut', col, title: 'Maxed on this piece', was: String(raw) };
-  return { text: String(raw), cls: raw ? 'n' : 'n dim', col, title: null, was: null };
+  if (synced < raw) return { text: String(synced), cls: 'n cut', col, was: String(raw) };
+  return { text: String(raw), cls: raw ? 'n' : 'n dim', col, was: null };
+}
+
+/* The slot label as the cell shows it: a piece that takes three or more slots ("Body + Hands + Legs + Feet") goes on two
+   lines, split in the middle ("Body + Hands", a line break, "Legs + Feet"), so one rare piece does not set the Slot
+   column's width; the template keeps the break (white-space: pre-line). */
+export function slotCellText(label) {
+  const parts = label.split(' + ');
+  if (parts.length < 3) return label;
+  const half = Math.ceil(parts.length / 2);
+  return `${parts.slice(0, half).join(' + ')}\n${parts.slice(half).join(' + ')}`;
 }
 
 /* "1 match", "1,939 matches". */
@@ -127,19 +138,20 @@ export function pageList(current, count) {
 }
 
 /* The gear browser's list, on page `page` (1 first; held to the pages there are, so a page past the end shows the
-   last): {shown, anySynced, countText, page, pageCount, pageButtons, prevPage, nextPage, emptyBoxes, slots}. shown:
+   last): {shown, anySynced, countText, page, pageCount, pageButtons, prevPage, nextPage, fromCounts, slots, slotLabel}. shown:
    that page's PAGE_SIZE matches, in the heading's order, each with its cells (browseCell: the synced stat on the top
    line, the piece's own under it), its name cut for the search's highlight (nameParts: {text, hit, cls}), `synced` true when sync lowers its item level
-   (`rowCls`: the row's class for it), and `twice` true for a ring that can be worn on both fingers. Every field is plain
+   (`rowCls`: the row's class for it), `slot` (the label, "Body + Head") and `slotText` (what the cell shows: slotCellText), and `twice` true for a ring that can be worn on both fingers. Every field is plain
    text or a flag, read once by the template. The item level column shows the piece's own item level (owner: the synced one there was
-   confusing). slots: the slot pills, [{key, label, count, group, sep}], 'any' first (group 0), then the job's slots by
-   group (1 to 3), count the matches in that slot under the other filters. For `job` (a JobContext) under `sync` ({cap,
-   sync, level}: ui/settings.js syncSettings), with the browser's settings `browse` (the store's: state.js
-   defaultBrowse). The page line: pageButtons, [{key, page, current}] from pageList (page null for a gap; none with one
+   confusing). slots: the Slot menu's choices, [{key, label, count, countText, group}], 'any' first (label "Any slot", group 0), then the job's
+   slots by group (1 to 3), count the matches in that slot under the other filters (countText: with thousands separators);
+   slotLabel: the label of the chosen slot, the closed Slot button's text. For `job` (a JobContext) under `sync` ({cap,
+   sync, level}: ui/job-sync-panel.js syncSettings), with the browser's settings `browse` (the store's: state.js
+   defaultBrowse). The page line: pageButtons, [{key, page, current}] from pageList (page null for a gap; just 1 with one
    page), and prevPage and nextPage, the arrows' pages (null at the ends). */
 export function gearView(job, sync, browse, page = 1) {
   const b = browse;
-  // every slot first, for the pills' counts; the slot filter is applied after
+  // every slot first, for the Slot menu's counts; the slot filter is applied after
   const rows = browseItems(job, { ...gearFilter(b), q: b.q });
   const allowed = allowedActivities(b.exclude || [], b.market !== false);
   const inSlot = r => b.type === 'any' || r.type === b.type;
@@ -171,7 +183,7 @@ export function gearView(job, sync, browse, page = 1) {
 
   // the page's rows, with the page held to 1..pageCount
   const pageCount = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
-  const pageShown = Math.min(Math.max(1, Math.round(page) || 1), pageCount);
+  const pageShown = clamp(Math.round(page) || 1, 1, pageCount);
   const firstRow = (pageShown - 1) * PAGE_SIZE;
   const shown = all.slice(firstRow, firstRow + PAGE_SIZE).map(x => {
     const synced = x.target != null && x.target < x.ilvl;
@@ -179,6 +191,7 @@ export function gearView(job, sync, browse, page = 1) {
       ...x,
       key: poolKey(x),
       slot: slotLabel(x.type, x.blocks),
+      slotText: slotCellText(slotLabel(x.type, x.blocks)),
       nameParts: markWords(x.name, b.q).map(part => ({ ...part, cls: part.hit ? 'mark' : '' })),
       synced,
       rowCls: synced ? 'synced' : '',
@@ -187,20 +200,22 @@ export function gearView(job, sync, browse, page = 1) {
     };
   });
 
-  // the slot pills: how many matches each slot has under the other filters
+  // the Slot menu's choices: how many matches each slot has under the other filters
   const counts = {};
   for (const r of listed) counts[r.type] = (counts[r.type] || 0) + 1;
-  // sep: a gap before the pill, where a new group starts
-  const slots = [{ key: 'any', label: 'Any', count: listed.length, group: 0, sep: false }];
+  const slots = [{ key: 'any', label: 'Any slot', count: listed.length, countText: fmtInt(listed.length), group: 0 }];
   SLOT_GROUPS.forEach((group, g) => {
     for (const t of group)
-      if (job.activeSlotTypes.includes(t))
-        slots.push({ key: t, label: SLOT_LABEL[t], count: counts[t] || 0, group: g + 1, sep: slots.at(-1).group !== g + 1 });
+      if (job.activeSlotTypes.includes(t)) {
+        const count = counts[t] || 0;
+        slots.push({ key: t, label: SLOT_LABEL[t], count, countText: fmtInt(count), group: g + 1 });
+      }
   });
+  // the closed Slot button's text: the chosen slot's label ('Any slot' when the chosen one is not one of the job's)
+  const chosenSlotLabel = (slots.find(p => p.key === browse.type) ?? slots[0]).label;
 
-  // the page line's buttons: none with one page; a page's key is its number, a gap's 'gap' and its place
-  const pageButtons =
-    pageCount > 1 ? pageList(pageShown, pageCount).map((p, i) => ({ key: p ?? `gap${i}`, page: p, current: p === pageShown })) : [];
+  // the page line's buttons, always shown (one page gives just "1", with both arrows off); a page's key is its number, a gap's 'gap' and its place
+  const pageButtons = pageList(pageShown, pageCount).map((p, i) => ({ key: p ?? `gap${i}`, page: p, current: p === pageShown }));
 
   return Object.freeze({
     shown: Object.freeze(shown),
@@ -212,8 +227,10 @@ export function gearView(job, sync, browse, page = 1) {
     pageButtons: Object.freeze(pageButtons.map(Object.freeze)),
     prevPage: pageShown > 1 ? pageShown - 1 : null,
     nextPage: pageShown < pageCount ? pageShown + 1 : null,
-    // "Gear from" boxes with nothing for the job and the other filters: greyed out in the menu
-    emptyBoxes: Object.freeze(emptyActivities(rows.filter(inSlot).map(r => r.routes))),
+    // how many pieces each "Gear categories" box holds for the job and the other filters ({box key: count}, activityCounts;
+    // the boxes ticked and the market board are not applied): the numbers in the menu
+    fromCounts: Object.freeze(activityCounts(rows.filter(inSlot).map(r => r.routes))),
     slots: Object.freeze(slots),
+    slotLabel: chosenSlotLabel,
   });
 }

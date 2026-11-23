@@ -2,6 +2,7 @@
    switch (while some meal is tagged) and, while a pill is on, a Sort row (views/meal-menu.js mealMenu, mealList). A nested x-data inside the component that owns the
    meals, which hands it a `source` (components/set-page.js mealSource). */
 import { drawInSteps } from '../draw-in-steps.js';
+import { overlays } from '../overlays.js';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../views/limit-rows.js';
 import { mealList, mealPillOff, mealsPassing } from '../views/meal-menu.js';
 
@@ -9,6 +10,9 @@ import { mealList, mealPillOff, mealsPassing } from '../views/meal-menu.js';
 const SHOWN_MEAL_OFFSET_PX = 40;
 /* Meals drawn below the shown meal when the menu opens, so the list can scroll to it. */
 const ROWS_BELOW_SHOWN = 10;
+
+/* The Food menu's id in the overlay manager (overlays.js). */
+const MEAL_LAYER = 'mealMenu';
 
 /* The Food menu's component (x-data="mealMenu(mealSource)" on the Food row): its open state, search, pills and sort.
    `source`: {menu(component) → the menu (views/meal-menu.js mealMenu's shape) or null, pick(component, key), watch (a
@@ -34,11 +38,28 @@ export function mealMenu(source) {
       this.$watch(source.watch, () => {
         this.mealOpen = false;
       });
+      // a menu closed by the page itself is taken off the overlay manager too
+      this.$watch('mealOpen', open => {
+        if (!open) overlays.close(MEAL_LAYER);
+      });
     },
-    /* Open or close the Food menu; opened, the search box takes the keys and the list starts at the shown meal. */
+    /* Open or close the Food menu; opened, it is a layer of the overlay manager (Escape, a press outside and Tab out close it),
+       the search box takes the keys and the list starts at the shown meal. */
     toggleMealMenu() {
-      this.mealOpen = !this.mealOpen;
-      if (!this.mealOpen) return;
+      if (this.mealOpen) {
+        if (!overlays.close(MEAL_LAYER, { restoreFocus: true })) this.mealOpen = false;
+        return;
+      }
+      overlays.open({
+        id: MEAL_LAYER,
+        root: () => this.$root,
+        opener: () => this.$refs.mealBtn,
+        tabOut: true,
+        close: () => {
+          this.mealOpen = false;
+        },
+      });
+      this.mealOpen = true;
       // the pills stay as the player left them, unless they would leave the list empty for this menu: then they start
       // over, empty
       if (this.mealStats.length && !mealsPassing(this.mealItems, { ...this.mealFilters, query: '' }).length) {
@@ -49,7 +70,7 @@ export function mealMenu(source) {
       // after x-if has drawn the menu (it is built only while open)
       this.$nextTick(() =>
         requestAnimationFrame(() => {
-          this.$refs.mealQuery.focus();
+          this.$refs.mealQuery?.focus();
           const list = this.$refs.mealList,
             on = list.querySelector('.on');
           if (on) list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - SHOWN_MEAL_OFFSET_PX;
@@ -136,7 +157,7 @@ export function mealMenu(source) {
     },
     /* A meal picked from the list: the menu closes and the owner takes it (source.pick). */
     chooseMeal(key) {
-      this.mealOpen = false;
+      if (!overlays.close(MEAL_LAYER, { restoreFocus: true })) this.mealOpen = false;
       source.pick(this, key);
     },
   };

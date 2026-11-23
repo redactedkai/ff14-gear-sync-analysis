@@ -4,13 +4,22 @@
 import { jobGear } from '../../../core/items.js';
 import { drawInSteps } from '../../draw-in-steps.js';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.js';
+import { overlays } from '../../overlays.js';
 import { piecePickerView } from '../../views/piece-menu.js';
 import { materiaMenuView } from '../../views/stone-menu.js';
 
 /* A menu's gap to the window's bottom edge and to the pinned header (px). */
 const MENU_MARGIN_PX = 12;
+/* The gap kept between the pinned header and a menu's button when the page is scrolled to show the menu (px). */
+const MENU_BUTTON_MARGIN_PX = 8;
 /* The lowest a menu that does not fit is made before it scrolls inside (px). */
 const MENU_MIN_PX = 160;
+
+/* The ids of the set page's layers in the overlay manager (overlays.js): the one open menu (a picker, a materia menu, the set
+   switcher), the Auto-fill settings popover and its "Spare points" note. */
+export const SET_MENU_LAYER = 'setMenu';
+export const SETTINGS_LAYER = 'settings';
+export const RANK_NOTE_LAYER = 'rankNote';
 
 /* The job's wearable pieces (items.js jobGear) for the piece picker, built once per job and kept out of reactive state
    (big data: CLAUDE.md). */
@@ -38,13 +47,23 @@ export function menusPart(raw) {
 
     /* ---- menus ---- */
 
-    /* Open or close menu `id` (`box`: the element the menu opens in); an opened menu takes the keys and is scrolled
-       into the window, below the pinned header. */
+    /* Open or close menu `id` (`box`: the element the menu opens in, whose first button opens it); an opened menu is a layer of
+       the overlay manager (Escape, a press outside and Tab out close it, and the focus goes back to its button after Escape) and
+       is scrolled into the window, below the pinned header. */
     toggleMenu(id, box) {
       if (id !== 'sets' && this.locked) return;
-      this.open = this.open === id ? null : id;
       this.query = '';
-      if (!this.open) return;
+      if (this.open === id) return this.closeOpenMenu();
+      overlays.open({
+        id: SET_MENU_LAYER,
+        root: () => box,
+        opener: () => box?.querySelector('button'),
+        tabOut: true,
+        close: () => {
+          this.open = null;
+        },
+      });
+      this.open = id;
       if (id.startsWith('pick:')) this.drawPickerInSteps(Number(id.slice(5)));
       this.$nextTick(() =>
         requestAnimationFrame(() => {
@@ -56,20 +75,34 @@ export function menusPart(raw) {
         }),
       );
     },
-    /* Close menu `id` if it is the open one (a click outside it). */
-    closeMenu(id) {
-      if (this.open === id) this.open = null;
+    /* Close the open menu (a pick, the button again); the focus goes back to the menu's button unless `restoreFocus` is false. */
+    closeOpenMenu(restoreFocus = true) {
+      if (this.open === null) return;
+      if (!overlays.close(SET_MENU_LAYER, { restoreFocus })) this.open = null;
     },
-    /* Room for an open menu: the window below the pinned header and, for a menu in the table, the stuck column names. */
+    /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the
+       pinned header and, for a menu in the table, the stuck column names); `anchorTop` the top of the box its button is in
+       (the menu hangs under it: .same and .pop in the table), which the page keeps under that line too, so the button stays in
+       sight; and `room` the height left for the menu from there to the window's bottom. A menu in the pinned header
+       (the set switcher) has no button to keep in sight: its own top counts as the anchor and the room starts at `top`. */
     menuRoom(menu) {
       const head = this.$refs.head;
       let top = head.getBoundingClientRect().bottom;
+      let anchorTop = menu.getBoundingClientRect().top;
+      let buttonGap = 0; // how far under `top` the page keeps the button: the room of a menu in the table starts there
       const names = this.$refs.table.querySelector('thead th');
-      if (names && !menu.closest('.shead')) top = Math.max(top, names.getBoundingClientRect().bottom);
-      return { top, room: innerHeight - top - MENU_MARGIN_PX };
+      if (names && !menu.closest('.shead')) {
+        top = Math.max(top, names.getBoundingClientRect().bottom);
+        anchorTop = menu.offsetParent?.getBoundingClientRect().top ?? anchorTop;
+        buttonGap = MENU_BUTTON_MARGIN_PX;
+      }
+      // the menu opens `offset` px under its anchor's top (the button's height and the gap): that much of the room is the button's
+      const offset = menu.getBoundingClientRect().top - anchorTop;
+      return { top, room: innerHeight - top - buttonGap - offset - MENU_MARGIN_PX, anchorTop };
     },
-    /* Scroll the page so an opened menu sits between the pinned header and the window's bottom; one taller than that
-       gets a height that fits and scrolls inside. */
+    /* Scroll the page so an opened menu and its button sit between the pinned header and the window's bottom; a menu taller
+       than the room gets a height that fits and scrolls inside. The button is what stays below the pinned parts (the page
+       never scrolls it under them to show more of the menu). */
     keepMenuInView(menu) {
       if (!menu) return;
       const list = menu.querySelector('.menu-list') ?? menu;
@@ -78,10 +111,10 @@ export function menusPart(raw) {
       // the search box and the footer stay; the list takes what is left (their height is measured, not guessed)
       const whole = menu.getBoundingClientRect().height;
       if (whole > room) list.style.maxHeight = `${Math.max(MENU_MIN_PX, room - (whole - list.getBoundingClientRect().height))}px`;
-      const { top, room: left } = this.menuRoom(menu);
+      const { top, room: left, anchorTop } = this.menuRoom(menu);
       const box = menu.getBoundingClientRect();
-      const under = box.top - top - 8; // negative: the menu's top is under the pinned header
-      const past = box.bottom - innerHeight + MENU_MARGIN_PX; // positive: its bottom is past the window
+      const under = anchorTop - top - MENU_BUTTON_MARGIN_PX; // negative: the button is under the pinned header
+      const past = box.bottom - innerHeight + MENU_MARGIN_PX; // positive: the menu's bottom is past the window
       const dy = box.height > left || under < 0 ? under : Math.min(past, under);
       if (dy > 0 || under < 0) scrollBy({ top: dy });
     },
@@ -115,13 +148,12 @@ export function menusPart(raw) {
       return lastCut.view;
     },
     /* A click inside the open piece picker of row `index`: one handler on the list instead of one per row. The row clicked
-       carries its piece's gameId (data-game-id) or is the Empty this slot row (data-empty-slot); a disabled row (a Unique
+       carries its piece's gameId (data-game-id); a disabled row (a Unique
        ring worn in the other ring row), the search box and the Clear search button do nothing here. */
     pickClick(event, index) {
       const row = event.target.closest?.('.same-item');
       if (!row || row.disabled) return;
-      if (row.hasAttribute('data-empty-slot')) this.pick(index, null);
-      else if (row.dataset.gameId !== undefined) this.pick(index, Number(row.dataset.gameId));
+      if (row.dataset.gameId !== undefined) this.pick(index, Number(row.dataset.gameId));
     },
     /* The open materia menu of row `index`, slot `slot` (materiaMenuView). */
     materia(index, slot) {

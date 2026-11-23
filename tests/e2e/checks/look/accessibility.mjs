@@ -1,0 +1,107 @@
+// Accessibility rules (axe-core) on every main screen and on the open menus and dialogs, dark scheme.
+
+import { openViewSet, viewSheets } from './screens.mjs';
+import { axeViolations, splitKnown } from '../../lib/axe.mjs';
+import { check, expect, stepRecord } from '../../lib/expect.mjs';
+import { seedSheets } from '../../lib/sheets.mjs';
+
+/** Findings the page has today (reported to the owner, not yet changed): printed as "KNOWN FAILURE" lines, they do not fail the
+ * run, and a finding that stops happening fails it until it is removed here. `rule` is axe's rule id, `target` limits the entry
+ * to one element's selector and `targetContains` to selectors holding that text (none of the two: any element), `note` says
+ * what is wrong. */
+const KNOWN_AXE = [
+  { rule: 'aria-command-name', targetContains: '.draghandle', note: 'the drag handles of the sheet and set lists have no accessible name' },
+  { rule: 'heading-order', target: 'h5', note: 'the materia menu title is an h5 with no h4 before it' },
+  { rule: 'landmark-one-main', note: 'the page has no <main> landmark' },
+  { rule: 'region', note: 'the tab bar and the screen headings sit outside any landmark' },
+  { rule: 'label-content-name-mismatch', target: '#b-from', note: 'Gear from button: its aria-label leaves out the visible text' },
+  { rule: 'label-content-name-mismatch', target: '#p-piece-chip', note: 'piece chip: its aria-label leaves out the visible text' },
+];
+
+/** Runs axe on the open screen `name` and records what it finds: a failed check for each new violation (rule, level, and the
+ * first elements), a KNOWN FAILURE line for each known one. `seen` collects the KNOWN_AXE entries that happened. */
+async function checkScreen(pg, name, seen) {
+  const { fresh, matched } = splitKnown(await axeViolations(pg), KNOWN_AXE);
+  for (const entry of matched) {
+    seen.add(entry);
+    stepRecord
+      .getStore()
+      .known.set(
+        `axe ${entry.rule} ${entry.target ?? entry.targetContains ?? ''}`,
+        `KNOWN FAILURE (accessibility, ${entry.rule}): ${entry.note}`,
+      );
+  }
+  for (const violation of fresh) {
+    const shown = violation.targets.slice(0, 3).join(', ');
+    const more = violation.targets.length > 3 ? ` and ${violation.targets.length - 3} more` : '';
+    check(false, `accessibility (${name}): ${violation.rule} [${violation.impact}] ${violation.help}: ${shown}${more}`);
+  }
+}
+
+/** Opens math sub-tab `sub` ('piece', 'gcd' or 'tiers'). */
+async function openMathTab(pg, sub) {
+  await pg.click(`[data-sub=${sub}]`);
+  await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
+}
+
+/** axe-core's rules on the Sheets list, the New sheet dialog, a sheet's page, a set page and its materia menu, the Gear
+ * browser with its Job menu open, and the three Math sub-tabs, in the dark scheme (light is not checked for now). The page has
+ * no iframes, so one run of the injected script covers each state. */
+export async function checkAccessibility(pg) {
+  const seen = new Set(); // the KNOWN_AXE entries that happened
+  await pg.emulateMedia({ colorScheme: 'dark' });
+  await seedSheets(pg, viewSheets());
+  await pg.click('[data-tab=sheets]');
+  await expect(pg.locator('#sh-list')).toBeVisible();
+  await checkScreen(pg, 'Sheets list', seen);
+
+  // the New sheet dialog
+  await pg.click('#sh-new');
+  await expect(pg.locator('#sh-dialog')).toBeVisible();
+  await checkScreen(pg, 'New sheet dialog', seen);
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#sh-dialog')).toHaveCount(0);
+
+  // a sheet's page, then a set page and the materia menu of its overmeld slot
+  await pg.locator('#sh-list a.sname', { hasText: 'Five sets' }).click();
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await checkScreen(pg, 'sheet page', seen);
+  await pg.click('#sh-sheet .setcrumb a');
+  await openViewSet(pg, 'Sage with an earring', 'Mine');
+  await checkScreen(pg, 'set page', seen);
+  await pg.click('[data-chip="7:2"]');
+  await expect(pg.locator('.matpop')).toBeVisible();
+  await checkScreen(pg, 'materia menu', seen);
+  await pg.keyboard.press('Escape');
+
+  // the Gear browser, then its Job menu
+  await pg.click('[data-tab=browse]');
+  await expect(pg.locator('#job-menu-btn')).toBeVisible();
+  await checkScreen(pg, 'Gear browser', seen);
+  await pg.click('#job-menu-btn');
+  await expect(pg.locator('#job-menu')).toBeVisible();
+  await checkScreen(pg, 'Gear browser, Job menu open', seen);
+  await pg.keyboard.press('Escape');
+
+  // the three Math sub-tabs
+  await pg.click('[data-tab=math]');
+  for (const [sub, name] of [
+    ['piece', 'Stat Allocation'],
+    ['gcd', 'GCD Scaling'],
+    ['tiers', 'Substat tiers'],
+  ]) {
+    await openMathTab(pg, sub);
+    await checkScreen(pg, name, seen);
+  }
+
+  // a known finding that no longer happens is removed from KNOWN_AXE
+  for (const entry of KNOWN_AXE) {
+    const where = entry.target ?? entry.targetContains;
+    check(
+      seen.has(entry),
+      `accessibility: the known finding "${entry.rule}${where ? ` ${where}` : ''}" no longer happens: remove it from KNOWN_AXE`,
+    );
+  }
+  await pg.emulateMedia({ colorScheme: null });
+  await pg.click('[data-tab=browse]');
+}

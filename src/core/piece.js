@@ -38,10 +38,11 @@ export function effStats(job, item, sync) {
   return syncStats(job, item.stats, item.type, target, item.ilvl, s.pct, s.factors);
 }
 
+const capCache = new WeakMap();
+
 /* The cap of each stat on a pool item at its own item level, slot share and stat factors ({stat key: points}): how
    far melds can raise each substat (the meld cap; materia.md, "The cap on each substat"). Cached per item and job: the
    optimizer asks for every piece on every run. */
-const capCache = new WeakMap();
 export function meldCaps(job, item) {
   let byJob = capCache.get(item);
   if (!byJob) {

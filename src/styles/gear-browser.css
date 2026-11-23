@@ -1,0 +1,378 @@
+/* ==== the Job and sync strip (Gear browser): one row under the tab bar, a label over each 40 px control.
+   The Job, level and item level boxes share one width, the widest "Name (CODE)" of any job (Dark Knight (DRK), Astrologian
+   (AST), Pictomancer (PCT)) with its icon and chevron. The columns are 18 px apart so the row fits at 960 px. ==== */
+.jobstrip {
+  --strip-box: 210px;
+  --box-h: calc(16px + 1.5rem); /* the height of the strip's boxes, as the math bar's: 40px at 100% text, growing with the text size */
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  flex-direction: row;
+  gap: 12px 18px;
+  padding: 12px 16px;
+}
+.jobstrip .f {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.jobstrip .f > span:first-child,
+.jobstrip .f > label {
+  height: 18px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.jobstrip input[type="number"] {
+  width: var(--strip-box);
+  height: var(--box-h);
+  box-sizing: border-box;
+}
+.jobstrip .toggle,
+.jobstrip .stripctl {
+  display: flex;
+  align-items: center;
+  height: var(--box-h);
+}
+.jobstrip .jobstrip-gap {
+  flex: 1 1 0;
+}
+.jobstrip .boxf {
+  min-width: var(--strip-box);
+}
+.jobstrip #reset {
+  height: var(--box-h);
+  box-sizing: border-box;
+  padding: 0 20px;
+  font-size: 0.95rem;
+}
+.jobfield {
+  position: relative;
+}
+/* the Job box: also the math bar's (width: there it comes from a hidden copy of the widest job, .sized in pieces.css) */
+.jobstrip .jobbox,
+.mathbar .jobbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--box-h);
+  box-sizing: border-box;
+}
+.jobstrip .jobbox {
+  width: var(--strip-box);
+}
+.jobstrip .jobbox img,
+.mathbar .jobbox img {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  flex: none;
+}
+.jobstrip .jobtext,
+.mathbar .jobtext {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jobstrip .jobcode,
+.mathbar .jobcode {
+  color: var(--muted);
+}
+/* the job menu under the Job box: a label and a line of 40 px icons for each role; the chosen job is the bright one */
+.jobmenu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px var(--dialog-shadow);
+}
+.jobmenu .jobicons {
+  flex-wrap: nowrap;
+}
+.jobmenu .jobbtn {
+  opacity: 0.6;
+}
+.jobmenu .jobbtn:hover {
+  opacity: 0.95;
+}
+.jobmenu .jobbtn[aria-checked="true"] {
+  opacity: 1;
+}
+.jobmenu .jobbtn[aria-checked="true"] img {
+  box-shadow: none;
+}
+/* the Food menu's Sort row: a smaller segmented control */
+.meal-sort .seg label {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+}
+/* A set page's gear table: the item cell's menus (the piece picker, the Food menu), the gear category pill, "HW · lvl
+   60". The table must fit at 960 px anyway, so it lets a menu overflow instead of scrolling. */
+.tablewrap.menus {
+  overflow: visible;
+}
+td.item {
+  white-space: normal;
+}
+/* the Defense row: one cell across the stat columns, wrapping at 960 px instead of widening the table */
+td.defense {
+  white-space: normal;
+}
+@media (prefers-reduced-motion: reduce) {
+  input.lowered.flash {
+    animation: none;
+  }
+}
+
+/* ==== Gear browser ==== */
+.settable tbody td:first-child {
+  border-left: 1px solid var(--line);
+}
+.settable tr.changed td:first-child {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.settable tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 4px;
+}
+.settable tbody tr.total td:first-child,
+.settable tbody tr.tier td:first-child {
+  padding-left: 34px;
+}
+.settable.ghostlock tr.changed td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent); /* an Auto-fill result waits: the same teal as the bar */
+}
+/* The Gear browser's table has fixed column widths, whatever the rows or the sort: Item takes the rest and cuts a long
+   name with an ellipsis (the full text is the cell's title); each other column's width is the room its widest content
+   needs (Slot: its longest line, "Body + Hands", 86 px of text plus 12 px of padding) */
+#gear-table {
+  table-layout: fixed;
+}
+#gear-table td:first-child,
+#gear-table td:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A slot label of three or more slots keeps its line break (slotCellText) */
+#gear-table .slotname {
+  white-space: pre-line;
+}
+#gear-table th.c-slot {
+  width: 100px;
+}
+/* The Slot cells keep only 2px on the right (the Item cell has its own 10px on its left), so "Body + Hands" (86 px) fits
+   in the 100 px column */
+#gear-table th.c-slot,
+#gear-table td:first-child {
+  padding-right: 2px;
+}
+/* A gear browser row that sync lowers (owner): the top line is what the player gets, bold (the lowered
+   stats with the cap bar); a muted line under it holds the piece's own numbers (the key above the table says so); a
+   grey bar on the row's left edge */
+#gear-table tr.synced td:first-child {
+  box-shadow: inset 3px 0 0 var(--muted);
+}
+#gear-table td.cut > span:first-child {
+  font-weight: 600;
+  box-shadow: inset 0 2px 0 currentColor;
+  padding-top: 2px;
+  line-height: 1.25;
+}
+#gear-table td[data-was]::after {
+  content: attr(data-was);
+  display: block;
+  line-height: 1.25;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.browse-filters {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+/* The gear browser's title line: the heading, the search bar (Slot menu and name search) taking the rest, the match count and
+   Reset filters at the right */
+.titleline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.titleline h2 {
+  flex: none;
+}
+.titleline .count {
+  flex: none;
+}
+.menu-search.big-search {
+  flex: 1;
+  min-width: 0;
+}
+.menu-search.big-search::before {
+  left: 14px;
+  width: 16px;
+  height: 16px;
+}
+.menu-search.big-search input[type="text"] {
+  padding: 9px 44px 9px 40px;
+  font-size: 1rem;
+  border-radius: 999px;
+}
+.kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: 500 0.72rem var(--mono);
+  color: var(--muted);
+}
+.big-search .kbd,
+.big-search .clear {
+  position: absolute;
+  right: 12px;
+}
+.big-search .clear {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.big-search .clear:hover {
+  color: var(--fg);
+}
+/* The name search and the Slot menu are one round bar with a single border: the Slot button at its left, a thin divider,
+   then the search. The border takes the accent colour while either part has focus; the Slot button lightens under the
+   pointer and while its menu is open. */
+.searchbar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+}
+.searchbar:focus-within {
+  border-color: var(--accent);
+}
+.searchbar .big-search input[type="text"] {
+  border: 0;
+  background: transparent;
+  border-radius: 0 999px 999px 0;
+}
+.slotpick {
+  position: relative;
+  flex: none;
+  display: grid;
+}
+.slotpick::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  right: 0;
+  bottom: 9px;
+  width: 1px;
+  background: var(--line);
+  pointer-events: none;
+}
+.slot-btn {
+  grid-area: 1 / 1;
+  border: 0;
+  border-radius: 999px 0 0 999px;
+  background: transparent;
+  padding: 9px 30px 9px 16px;
+  font-size: 1rem;
+}
+.slot-btn:hover,
+.slot-btn[aria-expanded="true"] {
+  background: var(--surface2);
+}
+/* the menu's rows in the Expansion menu's own style, as buttons: the slot at the left, its number of matches at the right
+   in mono type; a slot with no match is greyed out; the chosen one is bold */
+.slot-menu .multi-opt {
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: var(--sans);
+  text-align: left;
+  justify-content: space-between;
+}
+.slot-menu .multi-opt:hover:not(:disabled),
+.slot-menu .multi-opt.on {
+  background: var(--surface2);
+}
+.slot-menu .multi-opt.on {
+  font-weight: 600;
+}
+.slot-menu .multi-opt:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.slot-menu .n,
+.slot-sizer .n {
+  font: 400 0.72rem var(--mono);
+  color: var(--muted);
+}
+/* the menu's rows again, unseen, in the button's grid cell: the button is as wide as the widest row (so the open menu, which is
+   as wide as the button, has the width its rows need) */
+.slot-sizer {
+  grid-area: 1 / 1;
+  position: static;
+  min-width: 0;
+  margin: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* Reset filters, at the end of the title line while a filter is changed: a pill-shaped button with a funnel-and-x icon drawn in
+   the text colour */
+.resetbtn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--fg);
+  font: 500 0.8rem var(--sans);
+}
+.resetbtn::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.92893 0.514648L21.0711 14.6568L19.6569 16.071L15.834 12.2486L15 13.4999V21.9999H9V13.4999L4 5.99993H3V3.99993L7.585 3.99965L5.51472 1.92886L6.92893 0.514648ZM9.585 5.99965L6.4037 5.99993L11 12.8944V19.9999H13V12.8944L14.392 10.8066L9.585 5.99965ZM21 3.99993V5.99993H20L18.085 8.87193L16.643 7.42893L17.5963 5.99993H15.213L13.213 3.99993H21Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.92893 0.514648L21.0711 14.6568L19.6569 16.071L15.834 12.2486L15 13.4999V21.9999H9V13.4999L4 5.99993H3V3.99993L7.585 3.99965L5.51472 1.92886L6.92893 0.514648ZM9.585 5.99965L6.4037 5.99993L11 12.8944V19.9999H13V12.8944L14.392 10.8066L9.585 5.99965ZM21 3.99993V5.99993H20L18.085 8.87193L16.643 7.42893L17.5963 5.99993H15.213L13.213 3.99993H21Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+/* while no filter is changed it keeps its place, unseen, so the search does not change width when it appears */
+.resetbtn.off {
+  visibility: hidden;
+}
+.resetbtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.resetbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

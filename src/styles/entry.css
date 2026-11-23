@@ -1,0 +1,23 @@
+/* The page's stylesheet. Every rule is in a cascade layer (tests/unit/styles/layers.test.js), and a later layer beats an earlier
+   one whatever the specificity, so a file never has to out-specify an earlier file:
+   - tokens: the :root token blocks; base: the page, scrollbars, headings; controls: the bare inputs, selects and buttons;
+   - components: the shared pieces, one sublayer per file; views: one sublayer per screen file; fallbacks: last.
+   A component that relies on a control's state (button:hover, button:disabled) says so in its own rule. */
+@layer tokens, base, controls, components, views, fallbacks;
+@import "./tokens.css" layer(tokens); /* the :root token blocks: light, dark by system setting, dark forced */
+@import "./base.css" layer(base); /* the page, scrollbars, headings */
+@import "./controls.css" layer(controls); /* inputs, selects, sliders, switches, buttons */
+@import "./layout.css" layer(components.layout); /* panels, the settings panel, fields, tabs */
+@import "./pieces.css" layer(components.pieces); /* small shared pieces, tables, popovers and ? buttons */
+@import "./menus.css" layer(components.menus); /* dropdown menus */
+@import "./fill-settings.css" layer(components.menus); /* the Fill settings dialog of a set page */
+@import "./gear-browser.css" layer(views.gear-browser); /* the Job and sync strip, the Gear browser */
+@import "./math-bar.css" layer(views.math); /* How the math works: the bar, charts and legends */
+@import "./math-piece-stats.css" layer(views.math); /* Piece stats */
+@import "./math-gcd.css" layer(views.math); /* GCD */
+@import "./math-tiers.css" layer(views.math); /* Substat tiers */
+@import "./math-controls.css" layer(views.math); /* Stat Allocation's controls row: Piece chip, Sync chip, Gear item level, Job menu */
+@import "./footer.css" layer(views.footer); /* footer and the dev build marks */
+@import "./sheets.css" layer(views.sheets); /* the Sheets tab: manager, a sheet's page, the frame of a set page, dialogs */
+@import "./set-page.css" layer(views.set-page); /* a set page: header, gear table, menus, Fill settings */
+@import "./fallbacks.css" layer(fallbacks); /* browsers without color-mix() */

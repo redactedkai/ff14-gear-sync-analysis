@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 790" role="img" aria-labelledby="t d">
+  <title id="t">The UI's modules and how they depend on each other</title>
+  <desc id="d">Boot starts routing and saved state. Both feed the stores and panels, which the view layer reads. The view layer uses form inputs, overlays, drawing, messages and the solver worker. Styling and fonts serve every part. Build, tests, layout stress and test data sit around the page. Overlays and messages are done in several places and have no single module.</desc>
+  <style>
+    .bg { fill: #fffdf7; }
+    .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
+    .box.gap { stroke: #8f5f0c; stroke-dasharray: 6 4; }
+    .group { fill: none; stroke: #586869; stroke-width: 1.2; stroke-dasharray: 2 4; }
+    .fg { fill: #1b2a2c; }
+    .muted { fill: #586869; }
+    .flow { fill: none; stroke: #0d6e72; stroke-width: 1.5; }
+    .head { fill: #0d6e72; }
+    text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .t { font-size: 14px; font-weight: 600; }
+    .s { font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #142023; }
+      .box { fill: #1b2b2e; stroke: #e5eeed; }
+      .box.gap { stroke: #e2b659; }
+      .group { stroke: #92a5a5; }
+      .fg { fill: #e5eeed; }
+      .muted { fill: #92a5a5; }
+      .flow { stroke: #4cc2b6; }
+      .head { fill: #4cc2b6; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="head"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="720" height="790"/>
+  <rect class="box have" x="250" y="20" width="220" height="60" rx="4"/><text class="fg t" x="360" y="41" text-anchor="middle">Boot and failure message</text><text class="muted s" x="360" y="58" text-anchor="middle">Starts the page;</text><text class="muted s" x="360" y="73" text-anchor="middle">explains a failed start</text>
+  <path class="flow" d="M300 80 V100 H160 V120" marker-end="url(#arrow)"/>
+  <path class="flow" d="M420 80 V100 H560 V120" marker-end="url(#arrow)"/>
+  <rect class="box have" x="60" y="120" width="200" height="60" rx="4"/><text class="fg t" x="160" y="141" text-anchor="middle">Routing</text><text class="muted s" x="160" y="158" text-anchor="middle">Addresses and link settings,</text><text class="muted s" x="160" y="173" text-anchor="middle">focus and scroll on Back</text>
+  <rect class="box have" x="460" y="120" width="200" height="60" rx="4"/><text class="fg t" x="560" y="141" text-anchor="middle">Saved state</text><text class="muted s" x="560" y="158" text-anchor="middle">Defaults, repair on load,</text><text class="muted s" x="560" y="173" text-anchor="middle">the browser’s storage</text>
+  <path class="flow" d="M160 180 V204 H300 V224" marker-end="url(#arrow)"/>
+  <path class="flow" d="M560 180 V204 H420 V224" marker-end="url(#arrow)"/>
+  <rect class="box have" x="230" y="224" width="260" height="60" rx="4"/><text class="fg t" x="360" y="245" text-anchor="middle">Stores and panels</text><text class="muted s" x="360" y="262" text-anchor="middle">The settings every part reads;</text><text class="muted s" x="360" y="277" text-anchor="middle">each tab’s job and sync panel</text>
+  <path class="flow" d="M360 284 V324" marker-end="url(#arrow)"/>
+  <rect class="box have" x="20" y="324" width="680" height="60" rx="4"/><text class="fg t" x="360" y="345" text-anchor="middle">View layer</text><text class="muted s" x="360" y="362" text-anchor="middle">Components, pure view builders and page templates:</text><text class="muted s" x="360" y="377" text-anchor="middle">each area shows a ready-made view of the settings</text>
+  <rect class="box have" x="20" y="432" width="124" height="64" rx="4"/><text class="fg t" x="82" y="453" text-anchor="middle">Form inputs</text><text class="muted s" x="82" y="470" text-anchor="middle">Number boxes,</text><text class="muted s" x="82" y="485" text-anchor="middle">error flags</text>
+  <path class="flow" d="M82 384 V432" marker-end="url(#arrow)"/>
+  <rect class="box gap" x="159" y="432" width="124" height="64" rx="4"/><text class="fg t" x="221" y="453" text-anchor="middle">Overlays</text><text class="muted s" x="221" y="470" text-anchor="middle">Menus, popovers,</text><text class="muted s" x="221" y="485" text-anchor="middle">dialogs</text>
+  <path class="flow" d="M221 384 V432" marker-end="url(#arrow)"/>
+  <rect class="box have" x="298" y="432" width="124" height="64" rx="4"/><text class="fg t" x="360" y="453" text-anchor="middle">Drawing</text><text class="muted s" x="360" y="470" text-anchor="middle">Charts, long</text><text class="muted s" x="360" y="485" text-anchor="middle">lists in steps</text>
+  <path class="flow" d="M360 384 V432" marker-end="url(#arrow)"/>
+  <rect class="box gap" x="437" y="432" width="124" height="64" rx="4"/><text class="fg t" x="499" y="453" text-anchor="middle">Messages</text><text class="muted s" x="499" y="470" text-anchor="middle">Save errors,</text><text class="muted s" x="499" y="485" text-anchor="middle">notes, toasts</text>
+  <path class="flow" d="M499 384 V432" marker-end="url(#arrow)"/>
+  <rect class="box have" x="576" y="432" width="124" height="64" rx="4"/><text class="fg t" x="638" y="453" text-anchor="middle">Solver worker</text><text class="muted s" x="638" y="470" text-anchor="middle">Auto-fill off the</text><text class="muted s" x="638" y="485" text-anchor="middle">page’s thread</text>
+  <path class="flow" d="M638 384 V432" marker-end="url(#arrow)"/>
+  <rect class="box have" x="20" y="530" width="680" height="50" rx="4"/><text class="fg t" x="360" y="551" text-anchor="middle">Styling and fonts</text><text class="muted s" x="360" y="568" text-anchor="middle">Colour tokens, dark and light themes, layout, font fallbacks: used by every part above</text>
+  <rect class="group" x="12" y="612" width="696" height="130" rx="4"/>
+  <text class="muted s" x="28" y="634">Around the page</text>
+  <rect class="box have" x="28" y="650" width="156" height="64" rx="4"/><text class="fg t" x="106" y="671" text-anchor="middle">Build</text><text class="muted s" x="106" y="688" text-anchor="middle">One-file page,</text><text class="muted s" x="106" y="703" text-anchor="middle">dev server</text>
+  <rect class="box have" x="198" y="650" width="156" height="64" rx="4"/><text class="fg t" x="276" y="671" text-anchor="middle">Tests</text><text class="muted s" x="276" y="688" text-anchor="middle">Unit and smoke,</text><text class="muted s" x="276" y="703" text-anchor="middle">screenshots</text>
+  <rect class="box have" x="368" y="650" width="156" height="64" rx="4"/><text class="fg t" x="446" y="671" text-anchor="middle">Layout stress</text><text class="muted s" x="446" y="688" text-anchor="middle">Widths, fonts,</text><text class="muted s" x="446" y="703" text-anchor="middle">content extremes</text>
+  <rect class="box have" x="538" y="650" width="156" height="64" rx="4"/><text class="fg t" x="616" y="671" text-anchor="middle">Test data</text><text class="muted s" x="616" y="688" text-anchor="middle">Sample sheets</text><text class="muted s" x="616" y="703" text-anchor="middle">and a button</text>
+  <rect class="box have" x="20" y="762" width="34" height="18" rx="4"/><text class="muted s" x="62" y="776">one module</text><rect class="box gap" x="170" y="762" width="34" height="18" rx="4"/><text class="muted s" x="212" y="776">done in several places, no single module</text>
+</svg>

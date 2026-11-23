@@ -44,7 +44,7 @@
   </defs>
   <rect class="bg" x="0" y="0" width="720" height="420"/>
   <text class="fg h" x="20" y="32">Code 20 (8-player raids): which pieces are Savage</text>
-  <rect class="on" x="20" y="56" width="200" height="196" rx="8"/>
+  <rect class="on" x="20" y="56" width="200" height="196" rx="4"/>
   <text class="fg h" x="34" y="82">1. Seed</text>
   <text class="fg s" x="34" y="106">code-20 armor and weapons</text>
   <text class="fg s" x="34" y="124">with a dye slot</text>
@@ -53,7 +53,7 @@
   <text class="gold" x="34" y="194">Grand Champion's</text>
   <text class="gold" x="34" y="212">Coat of Aiming</text>
   <text class="muted s" x="34" y="230">790, 2 dye slots</text>
-  <rect class="on" x="260" y="56" width="200" height="196" rx="8"/>
+  <rect class="on" x="260" y="56" width="200" height="196" rx="4"/>
   <text class="fg h" x="274" y="82">2. Savage currencies</text>
   <text class="fg s" x="274" y="106">every cost in a shop that</text>
   <text class="fg s" x="274" y="124">sells a seed piece</text>
@@ -62,7 +62,7 @@
   <text class="gold" x="274" y="194">AAC Illustrated:</text>
   <text class="gold" x="274" y="212">HW Edition I</text>
   <text class="muted s" x="274" y="230">a raid book</text>
-  <rect class="kept" x="500" y="56" width="200" height="196" rx="8"/>
+  <rect class="kept" x="500" y="56" width="200" height="196" rx="4"/>
   <text class="fg h" x="514" y="82">3. Savage</text>
   <text class="fg s" x="514" y="106">the seed, plus every piece</text>
   <text class="fg s" x="514" y="124">sold for a Savage currency</text>
@@ -73,12 +73,12 @@
   <text class="muted s" x="514" y="230">790, no dye slot</text>
   <line class="flow" x1="222" y1="154" x2="257" y2="154" marker-end="url(#arrow)"/>
   <line class="flow" x1="462" y1="154" x2="497" y2="154" marker-end="url(#arrow)"/>
-  <rect class="box" x="20" y="276" width="330" height="104" rx="8"/>
+  <rect class="box" x="20" y="276" width="330" height="104" rx="4"/>
   <text class="fg h" x="34" y="302">Every other code-20 piece: Raid</text>
   <text class="fg s" x="34" y="326">Heavyweight Gloves of Healing: 770, no dye slot,</text>
   <text class="fg s" x="34" y="344">bought with Heavy Hologauntlets (not a Savage</text>
   <text class="fg s" x="34" y="362">currency). The Coils: no dye slots, no shops.</text>
-  <rect class="stop" x="370" y="276" width="330" height="104" rx="8"/>
+  <rect class="stop" x="370" y="276" width="330" height="104" rx="4"/>
   <text class="bad h" x="384" y="302">Cross-check: the run stops</text>
   <text class="fg s" x="384" y="326">if a Savage armor piece or weapon has no dye</text>
   <text class="fg s" x="384" y="344">slot: a Savage shop would then also take a</text>

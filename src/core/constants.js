@@ -7,9 +7,6 @@ import ITEM_FORMAT from './item-format.json' with { type: 'json' };
 
 /* The substats every job has; the speed stat and the special substat follow in a job's own list. */
 export const SHARED_SUBSTATS = Object.freeze(['crit', 'det', 'dh']);
-/* The substats whose character base is the level's main stat base, not the speed base (food.js statBase): the ones the
-   game scales from the main stat. */
-export const MAIN_BASED_SUBSTATS = Object.freeze(['det', 'piety']);
 
 export const SLOT_TYPES = Object.freeze(['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
 export const SLOT_LABEL = Object.freeze({
@@ -25,6 +22,10 @@ export const SLOT_LABEL = Object.freeze({
   wrist: 'Bracelet',
   ring: 'Ring',
 });
+/* The four accessory slots, which share one budget share (item-format.json: 67 per mille each); a menu that groups
+   them calls the group ACCESSORIES_LABEL. */
+export const ACCESSORY_SLOTS = Object.freeze(['ear', 'neck', 'wrist', 'ring']);
+export const ACCESSORIES_LABEL = 'Accessories';
 
 /* Slot share of the ItemLevel budget, in thousandths: `percent` per slot in item-format.json, which
    gen_item_level.py checks against the BaseParam sheet. The weapon value depends on the weapon mode
@@ -173,7 +174,13 @@ export const jobById = id => JOBS.find(j => j.id === id);
 /* The job context used to render (hidden) job-dependent parts before a job is chosen, and the fallback for an unknown
    id in makeJobContext. The page itself starts with no job. */
 export const DEFAULT_JOB = JOBS[0].id;
-export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']); /* 1H weapon + shield; everyone else uses a 2H weapon */
+/* The jobs with a shield, by weapon mode (makeJobContext's weaponMode). Both lists come from the item database (job mask
+   and slot code: 1H weapon, shield, 2H weapon); tests/unit/core/job-context.weapon-mode.test.js derives them again from
+   items.json, so a data update that gives another job a shield fails there. Every other job uses a 2H weapon.
+   ONE_HANDED_JOBS: only 1H weapons and shields exist (weaponMode '1h+oh'). */
+export const ONE_HANDED_JOBS = Object.freeze(['PLD', 'BST']);
+/* MIXED_WEAPON_JOBS: 2H weapons and also 1H weapons with shields, at every level (weaponMode 'mixed'). */
+export const MIXED_WEAPON_JOBS = Object.freeze(['WHM', 'BLM']);
 /* Jobs whose weapons carry no real weapon damage, so the optimizer does not rank it (damage-defense.js): Blue Mage's
    weapons all hold 6 physical and 1 magic damage (Item.csv); its weapon damage comes from Intelligence instead
    (xivgear's bluWdfromInt), which a goal covers when Intelligence is in it (owner's decision). */
@@ -281,7 +288,7 @@ export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
 export const DB_SLOT_BLOCKS = Object.freeze(ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])));
 /* The slot code of a two-handed weapon (`twoHanded` in item-format.json). */
 export const TWO_HANDED_SLOT_CODE = ITEM_FORMAT.slots.findIndex(s => s.type === 'weapon' && s.twoHanded);
-/* The boxes of the "Gear from" filter, by what a player does to get a piece (scripts/data/gear_activities.py):
+/* The boxes of the "Gear categories" filter, by what a player does to get a piece (scripts/data/gear_activities.py):
    {key, label, section, on (ticked by default), hint, bit}, in the menu's order. Bit i of a route mask = ACTIVITIES[i]. */
 export const ACTIVITIES = Object.freeze(
   ITEM_FORMAT.activities.map((a, i) =>
@@ -290,15 +297,3 @@ export const ACTIVITIES = Object.freeze(
 );
 /* The route bit of the market board: a tradeable piece has the route made of this bit alone. */
 export const ACTIVITY_MARKET_BIT = 1 << ITEM_FORMAT.activities.length;
-
-/* The character's base main stat at each level 1..100 (index = level - 1), the base that Determination and Piety start
-   from (Critical Hit, Direct Hit, speed and Tenacity start from ParamGrow BaseSpeed). Not in the game files (no sheet
-   holds it); AkhMorning's Level Modifiers table (Allagan Studies), which Ariyala and the FF Wiki repeat. Its BaseSpeed
-   and LevelModifier columns equal ParamGrow's at every level, and this column equals xivgear's at 50, 60, ..., 100.
-   Inferred; used only for food, which is a percentage of the whole stat (docs/mechanics/math.md, section 6, Food). */
-export const LEVEL_MAIN = Object.freeze([
-  20, 21, 22, 24, 26, 27, 29, 31, 33, 35, 36, 38, 41, 44, 46, 49, 52, 54, 57, 60, 63, 67, 71, 74, 78, 81, 85, 89, 92, 97, 101, 106, 110,
-  115, 119, 124, 128, 134, 139, 144, 150, 155, 161, 166, 171, 177, 183, 189, 196, 202, 204, 205, 207, 209, 210, 212, 214, 215, 217, 218,
-  224, 228, 236, 244, 252, 260, 268, 276, 284, 292, 296, 300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360, 365, 370, 375,
-  380, 385, 390, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440,
-]);

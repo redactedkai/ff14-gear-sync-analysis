@@ -44,7 +44,7 @@
   <text class="mono fg" x="492" y="84">C: c1 (25, 40), c2 (10, 45)</text>
 
   <!-- column 1: after C -->
-  <rect class="box" x="40" y="104" width="190" height="300" rx="8"/>
+  <rect class="box" x="40" y="104" width="190" height="300" rx="4"/>
   <text class="fg head" x="58" y="130">After C</text>
   <text class="mono fg" x="58" y="160">c1      (25, 40)</text>
   <text class="mono fg" x="58" y="184">c2      (10, 45)</text>
@@ -53,7 +53,7 @@
   <path class="accentStroke" d="M232,250 L262,250" marker-end="url(#arrow)"/>
 
   <!-- column 2: after B -->
-  <rect class="box" x="266" y="104" width="190" height="300" rx="8"/>
+  <rect class="box" x="266" y="104" width="190" height="300" rx="4"/>
   <text class="fg head" x="284" y="130">After B</text>
   <text class="mono fg" x="284" y="160">b1+c1   (55, 40)</text>
   <text class="mono bad" x="284" y="184">b1+c2   (40, 45)</text>
@@ -67,7 +67,7 @@
   <path class="accentStroke" d="M458,250 L488,250" marker-end="url(#arrow)"/>
 
   <!-- column 3: after A -->
-  <rect class="box" x="492" y="104" width="188" height="300" rx="8"/>
+  <rect class="box" x="492" y="104" width="188" height="300" rx="4"/>
   <text class="fg head" x="508" y="130">After A</text>
   <text class="mono fg" x="508" y="160">a1+b1+c1 (105, 50)</text>
   <rect class="goodStroke" x="502" y="168" width="170" height="22" rx="4"/>

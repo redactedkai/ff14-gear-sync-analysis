@@ -24,8 +24,7 @@ export function mealMenu(job, level, gearTotals, shown, bestKeys = []) {
       name: m.name,
       ilvl: m.ilvl,
       label: foodLabel(job, m),
-      // what the template shows of it: the row's hover text and the item level text
-      title: `${foodLabel(job, m)} · item level ${m.ilvl}`,
+      // what the template shows of it: the item level text
       ilvlText: `i${m.ilvl}`,
       stats: m.stats.map(x => x.stat),
       adds: lines.map(s => ({ stat: s, text: `${job.short[s]} +${bonus[s].bonus}`, value: bonus[s].bonus })),
@@ -48,7 +47,7 @@ export function mealMenu(job, level, gearTotals, shown, bestKeys = []) {
 }
 
 /* The meals tagged "best for goal" for the set `gearSet` as it is saved: its saved list (`bestMeals`, meal keys in allMeals
-   order, written by Apply on a Fill result and dropped by a change of the set's pieces, stones, Fill settings or sheet
+   order, written by Apply on an Auto-fill result and dropped by a change of the set's pieces, stones, Auto-fill settings or sheet
    level and sync). It stays when only the meal is changed by hand, so the menu keeps its "Best for goal" switch. A
    damaged value (not a list of keys) counts as none: []. */
 export function mealBestKeys(gearSet) {

@@ -1,0 +1,383 @@
+/* ==== Layout: panels, the settings panel, fields, tabs ==== */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.jobpick {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.jobpick b {
+  color: var(--fg);
+}
+.jobrows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.jobrow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.jobrow-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.jobicons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+/* A job tile: the button itself never moves; hover lifts its icon (and, when chosen, the ring around it). A button that lifts
+   itself leaves a pointer on its bottom edge outside it, so hover ends, the tile drops, hover starts again, and it flickers. */
+.jobbtn {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  line-height: 0;
+  opacity: 0.55;
+  transition: opacity 0.12s;
+}
+.jobbtn img {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  transition: transform 0.12s;
+}
+.jobbtn:hover {
+  opacity: 0.9;
+}
+.jobbtn:hover img {
+  transform: translateY(-1px);
+}
+.jobbtn[aria-checked="true"] {
+  opacity: 1;
+}
+.jobbtn[aria-checked="true"] img {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 10px var(--accent);
+}
+label.f,
+.f.field,
+.f.multi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+  min-width: 0;
+}
+/* a dropdown of checkboxes (the gear browser's Expansion filter), drawn like a select */
+.f.multi {
+  position: relative;
+}
+.multi-btn {
+  font-family: var(--sans);
+  position: relative;
+  text-align: left;
+  padding-right: 34px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.multi-btn::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  background: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+/* the values a number field takes, next to its label: "1–100" */
+.f-range {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--muted);
+}
+/* a field label that carries a range: the range sits at the label line's right end, over the box's right edge */
+.f > :is(span, label):first-child:has(> .f-range) {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+/* a label with a note at its right end: the characters left in a text box, from 85% full */
+.f-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.f-left {
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--gold);
+}
+.f-left.full {
+  color: var(--bad);
+}
+/* an item level field's label line, with a flag in the range's place (cap-flag.html): the flag is as tall as the line, so
+   the icon never makes the field taller */
+.f > span.capline:first-child:has(> .f-range),
+.f > label.capline:first-child:has(> .f-range) {
+  align-items: center;
+}
+/* the flag: an icon and a few words in the range's place, red for text that is no cap, gold for a cap the page lowered (the
+   whole sentence is the field's tooltip and its live region) */
+.f-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.f-flag svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.f-flag.error {
+  color: var(--bad);
+}
+.f-flag.lowered {
+  color: var(--gold);
+}
+/* the page lowered the cap to what the level allows (settings component, capLowered): a gold border, and a gold flash on
+   each lowering (lowerCap restarts it) */
+input.lowered {
+  border-color: var(--gold);
+}
+input.lowered.flash {
+  animation: cap-lowered 1.2s ease-out;
+}
+@keyframes cap-lowered {
+  from {
+    background: color-mix(in srgb, var(--gold) 30%, transparent);
+  }
+}
+/* Item level as one field, "min – max" (owner), in the gear browser and Gear to search; it takes two of
+   the five columns, like Target GCD under it */
+.ilvl-field {
+  grid-column: span 2;
+}
+.pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pair input {
+  flex: 1;
+  min-width: 0;
+}
+.pair > span {
+  color: var(--muted);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.grid {
+  display: grid;
+  gap: 12px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tabs button {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: none;
+  padding: 10px 14px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tabs button[aria-selected="true"],
+html[data-boot-tab="sheets"] .boot [data-boot="sheets"],
+html[data-boot-tab="browse"] .boot [data-boot="browse"],
+html[data-boot-tab="math"] .boot [data-boot="math"] {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.tab[hidden],
+.subtab[hidden] {
+  display: none !important;
+}
+.subtab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.tabs button.aside {
+  margin-left: auto;
+  font-style: italic;
+}
+/* the title and the tab bar: closer together than the page's other blocks (10 px, not the page's 18 px gap) */
+.pagetop {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* while a tab opens the tab bar stays above the loading layer (only then: a menu from the page's top must stay above it) */
+.tab-loading .pagetop {
+  position: relative;
+  z-index: 41;
+  background: var(--bg);
+}
+/* A tab opening: a layer over the page below the tab bar, with a loading line. It fades in after 200 ms (opacity only, which
+   the browser animates while the page's script is busy), so a tab that opens faster never shows it. The tab bar stays above it. */
+.tabload {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 11rem;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 1.5rem;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  animation: tabload-in 120ms linear 200ms forwards;
+}
+/* The boot shell (#boot): shown only while the page starts (startup-failure.js), its loading line named for the saved tab. */
+.boot {
+  display: none;
+}
+.bootload {
+  margin: 64px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+html[data-boot-tab="sheets"] .bootload::after {
+  content: "Loading Sheets…";
+}
+html[data-boot-tab="browse"] .bootload::after {
+  content: "Loading the Gear browser…";
+}
+html[data-boot-tab="math"] .bootload::after {
+  content: "Loading math analysis…";
+}
+.tabload::before,
+.bootload::before {
+  content: "";
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 4px solid var(--pop-line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: tabload-spin 700ms linear infinite;
+}
+@keyframes tabload-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tabload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabload::before,
+  .bootload::before {
+    animation: none;
+  }
+}
+/* the Math tab's sub-tabs: text tabs, the open one underlined in the accent colour (the line under the strip is math-bar.css's) */
+.subtabs {
+  display: flex;
+  gap: 22px;
+}
+.subtabs button {
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px; /* the underline sits on the strip's own line */
+  padding: 6px 2px 8px;
+  color: var(--label, var(--muted)); /* the math bar's --label */
+  font-weight: 500;
+  text-align: left; /* the text grows to the right inside the button's fixed width (below) */
+}
+/* a button's width does not depend on which tab is open: a hidden copy of its label in the open tab's bold (data-label) sets it, so
+   the bold text fits inside it and no button after it moves */
+.subtabs button::after {
+  content: attr(data-label);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: 600;
+}
+.subtabs button:hover {
+  color: var(--fg);
+}
+.subtabs button[aria-pressed="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.boot,
+.boot button {
+  cursor: progress; /* its tab buttons do nothing until the page has started */
+}
+.boot .tabs button {
+  opacity: 0.55; /* the tabs look unavailable: they do nothing until the page has started; the saved tab, selected, is full */
+}
+html[data-boot-tab="sheets"] .boot [data-boot="sheets"],
+html[data-boot-tab="browse"] .boot [data-boot="browse"],
+html[data-boot-tab="math"] .boot [data-boot="math"] {
+  opacity: 1;
+}

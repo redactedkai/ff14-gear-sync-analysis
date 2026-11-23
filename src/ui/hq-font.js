@@ -1,7 +1,7 @@
-/* The HQ mark's font: the Lodestone symbol font, hotlinked from a community mirror (styles.css @font-face). The mark
+/* The HQ mark's font: the Lodestone symbol font, hotlinked from a community mirror (src/styles/pieces.css @font-face). The mark
    shows plain "(HQ)" until the font has loaded; then the root element gets the class HQ_FONT_CLASS and the CSS swaps in
    the glyph. Offline, blocked or slow, the text stays, so a missing-character box never shows. */
-export const HQ_FONT_FAMILY = 'FFXIV_Lodestone_SSF';
+const HQ_FONT_FAMILY = 'FFXIV_Lodestone_SSF';
 export const HQ_GLYPH = String.fromCharCode(0xe03c); // the HQ symbol in that font
 export const HQ_FONT_CLASS = 'hqfont';
 

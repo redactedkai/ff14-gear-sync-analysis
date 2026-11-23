@@ -37,23 +37,23 @@ The sections run from the newest date to the oldest; each says which page it bel
 
 ## 2. Runs of 2026-11-10
 
-### 2.1 The set page after a Fill
+### 2.1 The set page after an Auto-fill
 
-The longest main-thread block after a Fill on the set page, in Chromium (`npm run perf:browser --runs 2 --rates 1,4 --jobs PLD,SGE`, three alternating pairs of before and after builds). The cause was the page redrawing after a Fill, not the search:
+The longest main-thread block after an Auto-fill on the set page, in Chromium (`npm run perf:browser --runs 2 --rates 1,4 --jobs PLD,SGE`, three alternating pairs of before and after builds). The cause was the page redrawing after an Auto-fill, not the search:
 
 - The first piece shown built a lookup of all 20,031 item rows on the page's thread (about 25 ms at normal speed, 150 to 190 ms at 4x).
-- Every Fill built the table's `x-if` blocks again (153 blocks and about 690 elements in one task, 35 ms of it the view itself).
+- Every Auto-fill built the table's `x-if` blocks again (153 blocks and about 690 elements in one task, 35 ms of it the view itself).
 
 The fix kept each row's pin, source line and stat cells in the row and hid them while the row is empty (33 `x-if` blocks and about 316 elements). It also built each piece's facts when first asked for.
 
 | Longest main-thread block | Before | After |
 | --- | --- | --- |
-| From the first Fill on, normal speed, Paladin | 68 to 73 ms | 0 ms (no task over 50 ms) |
-| From the first Fill on, normal speed, Sage | 67 to 75 ms | 0 ms |
-| From the first Fill on, 4x CPU, Paladin | 370 to 404 ms | 344 to 444 ms |
-| From the first Fill on, 4x CPU, Sage | 366 to 402 ms (745 once) | 284 to 303 ms |
-| The first Fill's result task, 4x (trace, four runs each) | 381 to 746 ms | 264 to 287 ms |
-| A later Fill's result task, 4x (best of three) | 243 ms | 172 ms |
+| From the first Auto-fill on, normal speed, Paladin | 68 to 73 ms | 0 ms (no task over 50 ms) |
+| From the first Auto-fill on, normal speed, Sage | 67 to 75 ms | 0 ms |
+| From the first Auto-fill on, 4x CPU, Paladin | 370 to 404 ms | 344 to 444 ms |
+| From the first Auto-fill on, 4x CPU, Sage | 366 to 402 ms (745 once) | 284 to 303 ms |
+| The first Auto-fill's result task, 4x (trace, four runs each) | 381 to 746 ms | 264 to 287 ms |
+| A later Auto-fill's result task, 4x (best of three) | 243 ms | 172 ms |
 
 One "after" pass ran at 64% CPU load from other work and is left out.
 
@@ -61,6 +61,30 @@ One "after" pass ran at 64% CPU load from other work and is left out.
 - Opening a filled set is the same (about 310 to 390 ms).
 - Discard at 4x went from about 145 to 170 ms.
 - `npm run perf` counters did not change: 7,884 runs, the largest search 310 and 458 nodes, no truncated run.
+
+### 2.2 The Gear browser's rows keyed by place
+
+A click in the Gear browser removed the 50 rows and built 50 new ones, because the rows were keyed by the item. Keyed by their place on the page (`:key="rowPlace"` in `gear-page.html`) the 50 rows stay and only their bindings change.
+
+- **Method:** Chromium at 1280 x 900, dark, Black Mage, level 50, item level 135 with sync on, 2,478 matches, 50 rows. Real mouse clicks, 5 fresh runs per click, the longest Event Timing entry of the click (what INP uses), the best of the 5 in ms (the browser rounds to 8 ms). Both pages (the build before the change and the build after) were measured back to back, twice. The second round ran on a quiet machine; the first ran while other sessions loaded it (about 1.5 times slower on both pages), so only the second is tabled.
+- **Verified** (second round, best of 5 in ms):
+
+| Click | 4x before | 4x after | 1x before | 1x after |
+| --- | --- | --- | --- | --- |
+| Slot pill (Weapon) | 624 | 400 | 96 | 64 |
+| Slot pill (Head) | 648 | 344 | 96 | 56 |
+| Sort by Item | 576 | 376 | 88 | 64 |
+| Sort by item level | 664 | 400 | 88 | 64 |
+| Page button (Next) | 664 | 416 | 96 | 72 |
+| Page button (page 3) | 576 | 384 | 88 | 64 |
+| Expansion box off | 640 | 416 | 96 | 72 |
+| Expansion box on again | 400 | 368 | 56 | 64 |
+| Job pick (Sage) | 632 | 504 | 104 | 80 |
+| Job pick (Black Mage) | 592 | 424 | 96 | 72 |
+| Gear categories All | 456 | 368 | 72 | 64 |
+
+- The clicks that change few rows (a box back on, the sync switch, Reset filters) are about the same.
+- **Wrong frame found and fixed:** a kept row showed the new item's name with the old item's HQ mark and x2 mark for one drawn frame, because Alpine's `x-show` shows and hides in the next animation frame. Both marks are now `:hidden` bindings; a frame recorder over 36 actions then saw no frame that the unkeyed page did not also draw ([architecture.md, section 3](architecture.md#3-the-ui-pattern)).
 
 ## 3. Runs of 2026-10-19
 
@@ -87,6 +111,7 @@ Since 2026-10-19 the page's searches run in a Web Worker (audit 16 R8; [architec
 - **Drawing the result (2026-10-19).** The rows' menus are now built only while open, the view is frozen all through, and a stat cell has one span ([architecture.md, section 3](architecture.md#3-the-ui-pattern)). Longest blocked main thread after the reply, measured with CDP tracing (best runs):
   - The long search above (level 90, cap 123, Target GCD 2.47, food, tier ranking): about 90 → 25 ms at normal speed and 550 → 130 to 150 ms at 4× slower.
   - Sage at level 100 with the defaults: 31 → 18 ms, and 140 → 105 ms at 4×.
+- **Opening a piece menu (Sage, head slot, 311 rows).** Drawing the first rows and the rest in steps ([architecture.md, section 3](architecture.md#3-the-ui-pattern)) showed the menu after about 36 ms instead of 149 ms at normal speed, with no task over 50 ms. Measured on a prototype of the stepped menu, not on the built page.
 - **4× and 6× slower** are not a slow device's for the search itself: Chrome's CPU throttle slows the page's main thread, and the worker much less. So "Solved in" at those rates is lower than a slow device would show.
 - **Sizes.** The page grows by the worker's code, about 83 kB; the data is not copied ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)). The page's heap drops by 5 to 7 MB (Paladin 31.6 → 24.8 MB, Sage 29.8 → 24.8 MB), since the job's gear now lives in the worker's own heap, which `browser.mjs` does not count.
 
@@ -119,7 +144,7 @@ Raw and tier ranking, each run, on `dev` at `ef9575a`, with the item data as of 
 - Food off and the best meal.
 - No Target GCD or one at 10%, 25%, 50%, 75% and 90% of the way from the GCD with no speed to the fastest the gear reaches, in both modes (Speed first runs without one).
 
-That is 71,264 runs. The page's settings: the default Gear from boxes left out, melds on, the page's node limit, a cold candidate cache per run. Ten workers on the owner's machine, Node 22; other work may have shared the machine.
+That is 71,264 runs. The page's settings: the default Gear categories boxes left out, melds on, the page's node limit, a cold candidate cache per run. Ten workers on the owner's machine, Node 22; other work may have shared the machine.
 
 | Runs | Median raw / tier | 95th percentile raw / tier | Slowest raw / tier | Over 1.5 s raw / tier |
 | --- | --- | --- | --- | --- |

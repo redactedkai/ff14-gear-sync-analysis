@@ -1,0 +1,166 @@
+/* ==== Fill settings (a set page's dialog): Gear to search, then Goal under a rule ==== */
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.part + .part {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+/* the count after a tab's or part's heading ("· searching 1,939 of 1,999 pieces") */
+.count {
+  display: inline-block; /* wraps as one piece under a long heading */
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+/* the Goal's switches sit on the columns of the grids above and below (same 150 px minimum, same 16 px gap): Materia
+   and Food in the first two, tier ranking's switch ("Spare points to tiebreaks", its ? and note) from the third on */
+.row.switches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px 16px;
+}
+/* the line under the Goal switches after a pick moved another rank */
+.rank-note {
+  margin: 6px 0 0;
+}
+.rankwrap {
+  position: relative;
+  grid-column: 3 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Spare points to tiebreaks with no tiebreak set: shown, but dimmed and disabled (nothing to send spare points to) */
+.rankwrap .toggle.off {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.rankwrap .popover.statpop {
+  right: 0;
+}
+button.run {
+  min-width: 120px;
+  padding: 8px 18px;
+  font-weight: 600;
+}
+/* the line under a set page's header after a Fill that gave no suggestion */
+.stale-note {
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface2);
+}
+.seg label {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  color: var(--fg);
+  cursor: pointer;
+}
+.seg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+/* the chosen option: .on is bound in the template, for browsers without :has() (Firefox before 121). It must stay a rule
+   of its own: a browser that does not know :has() drops a whole selector list that contains it */
+.seg label.on {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.seg label:has(input:checked) {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.seg label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.seg.off {
+  opacity: 0.45;
+}
+.seg.off label {
+  cursor: not-allowed;
+}
+/* Target GCD: the Goal row's last two columns, one each: the box over the fourth (it ends where the item level pair below
+   ends) and the exactly / or faster buttons over the fifth (they start where Gear categories starts) */
+.gcd-field {
+  grid-column: span 2;
+}
+/* its label line: the name and range at the left (never cut), the always-on haste or "Off" at the right (cut with an ellipsis) */
+.gcd-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+.gcd-left {
+  flex: none;
+}
+.gcd-range {
+  line-height: 1; /* the mono font's taller line must not grow the label line */
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--muted);
+}
+.gcd-side {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  color: var(--muted);
+}
+.gcd-field .row {
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 16px;
+}
+.gcd-field input[type="number"],
+.gcd-field .seg {
+  flex: 0 0 calc((100% - 16px) / 2); /* a half each (not "1 1 0": the input's padding would make its half the larger) */
+  min-width: 0;
+  box-sizing: border-box;
+}
+.gcd-field .seg label {
+  flex: 1;
+  justify-content: center;
+  padding: 0 8px;
+}
+/* A quiet switch (the Gear sets list's Effects | Stat points): no solid accent fill, a lower box on the raised fill (so the
+   option that is not chosen stands out from the page); the chosen option has the soft accent fill, a thin accent
+   outline and the accent text, the other one the normal text colour (a muted option reads as switched off) */
+.seg.quiet {
+  background: var(--surface2);
+}
+.seg.quiet label {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  color: var(--fg);
+}
+.seg.quiet label.on {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.seg.quiet label:has(input:checked) {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}

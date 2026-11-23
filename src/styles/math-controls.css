@@ -1,0 +1,199 @@
+/* ==== Stat Allocation's Piece chip and its popover ==== */
+/* The chip is a menu button (the Slot menu's look, padding and caret) of one size in every state: its text sits in a .sized cell
+   with a hidden copy of every text it can show (views PIECE_CHIP_SIZERS), so it is as wide as the longest and no wider, in
+   whatever font the page has. It has no open look of its own: the chip's border and the focus ring stay as they are. */
+.mathbar .piecewrap {
+  position: relative; /* the popover's containing block */
+  flex: 0 0 auto;
+}
+.mathbar .piecechip {
+  width: auto;
+  font-family: var(--sans);
+  color: var(--fg);
+  border-color: var(--pop-line);
+  font-size: 0.92rem;
+  text-align: left;
+}
+.mathbar .piecechip .sizertext {
+  padding: 0;
+  font: inherit;
+}
+/* The popover hangs just under the chip, its left edge the chip's (its right edge the chip's when it would run past the bar's
+   right end: .to-left), over what is below the bar's row: the item level slider and a little of the line under the bar. The
+   three menus sit side by side, each with its label on top as in the bar (the .mctl rules), the substat menus as wide as the
+   widest substat text of any job. It is the ? popover's surface at the width of its content, with the neutral line. */
+.popover.piecepop {
+  right: auto;
+  left: 0;
+  top: calc(100% + 4px); /* the chip's wrapper (position: relative) is its containing block */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  border-color: var(--pop-line);
+}
+.popover.piecepop.to-left {
+  left: auto;
+  right: 0;
+}
+.piecepop .mctl > select {
+  width: 0; /* a menu adds nothing to its field's width: it takes the width of the label above or of the widest text */
+  min-width: 100%;
+}
+.mathbar .piecepop .sizertext {
+  padding: 0 37px 0 9px; /* 9 left + 34 chevron room + 2 border + 1 for rounding */
+}
+
+/* ==== Stat Allocation's Sync chip and its popover ==== */
+/* The chip is a menu button (the Slot menu's look, padding and caret) of one size in every state: its text sits in a .sized cell
+   with a hidden copy of the widest text of each kind (views SYNC_CHIP_SIZERS), so it is as wide as the longest and no wider, in
+   whatever font the page has. The level and item level are bold; with IL Sync off the item level is regular and light. The item level is gold while the page lowered the typed cap, red with no item level; all red while the level box
+   holds bad text. It has no open look of its own: its border and the focus ring stay as they are. */
+.mathbar .syncwrap {
+  position: relative; /* the popover's containing block */
+  flex: 0 0 auto;
+}
+.mathbar .syncchip {
+  width: auto;
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  border-color: var(--pop-line);
+  font-size: 0.92rem;
+  text-align: left;
+}
+.mathbar .syncchip .sizertext {
+  padding: 0;
+  font: inherit;
+}
+.mathbar .syncchip .lv,
+.mathbar .syncchip .il {
+  font-weight: 600;
+}
+.mathbar .syncchip .dot {
+  margin: 0 0.28em;
+  color: var(--label);
+}
+.mathbar .syncchip .il.quiet {
+  font-weight: 400;
+  color: var(--label);
+}
+.mathbar .syncchip .il.lowered {
+  color: var(--gold);
+}
+.mathbar .syncchip .il.error,
+.mathbar .syncchip.error :is(.lv, .il) {
+  color: var(--bad);
+}
+/* The popover hangs just under the chip, its left edge the chip's (its right edge the chip's when it would run past the bar's right
+   end: .to-left), over what is below the bar's row. Level, Synced IL and the IL Sync switch sit in one row, each with its label on
+   top as in the bar (the .mctl rules). It is the ? popover's surface at the width of its content, with the neutral line. */
+.popover.syncpop {
+  right: auto;
+  left: 0;
+  top: calc(100% + 4px);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  border-color: var(--pop-line);
+  white-space: normal;
+  font-variant-numeric: tabular-nums;
+}
+.popover.syncpop.to-left {
+  left: auto;
+  right: 0;
+}
+
+/* The label over a chip is never wider than the chip: a hidden copy of the label, in the label's own size (.mctl), sits in the
+   chip's .sized cell. The chip is the cell plus its own padding and caret room (9 + 34 + 2px border = 45px), so the copy's right
+   margin takes 45px back: the cell is only as wide as the label needs beyond that. */
+.mathbar :is(.piecechip, .syncchip) .labelsizer {
+  font-size: 0.78rem;
+  padding: 0;
+  margin-right: -45px;
+}
+
+/* ==== Stat Allocation's Gear item level control, in the bar's controls row ==== */
+/* It takes the width the chips leave and is never narrower than its own content, whose slider track has a floor (--il-track-min);
+   where that does not fit, the flex wrap puts the whole control on a row of its own. Its label sits on the label line of the
+   other controls (the .mctl rules) and the slider, the bounds, the number box and Reset on the line of their boxes, as tall as a
+   box. */
+.mathbar .ilgroup {
+  --il-track-min: 150px;
+  flex: 1 1 0;
+  min-width: min-content;
+  align-items: stretch;
+}
+.mathbar .ilgroup label {
+  white-space: nowrap;
+}
+.mathbar .ilrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--box-h); /* as the menus and chips */
+}
+.mathbar .ilrow input[type="range"] {
+  flex: 1 1 var(--il-track-min);
+  min-width: var(--il-track-min);
+}
+/* the number box is as wide as its widest value (the hidden copy, views IL_BOX_SIZER): that text, the box's 9px padding and 1px border
+   each side, and 4px more so the caret never sits on the border */
+.mathbar .ilrow .ilnum {
+  flex: none;
+  min-width: max-content; /* its hidden copy is clipped, so without this the bar would count only the box's padding as its least width */
+}
+.mathbar .ilrow .ilnum .sizertext {
+  font: 0.92rem var(--mono);
+  padding: 0 12px;
+}
+/* the gold mark after the Sync settings label: the chip's number is an inferred level sync target (its title and the chip's description
+   say so); it sits in the label line and takes no height of its own */
+.mathbar #p-sync-label .guess {
+  cursor: help;
+}
+
+/* ==== The Job menu, first section of the controls row of Stat Allocation and Substat tiers ==== */
+/* The button is the strip's Job box (the .jobbox rules in gear-browser.css: the job's icon, "Name (CODE)", the chevron), except its
+   width: it is one size for every job, because the text sits in a .sized cell with a hidden copy of the widest "Name (CODE)"
+   of all the jobs (JOB_SIZER), in whatever font the page has; and its height, --box-h like every box of the bar. It is the first
+   section of the controls row, so it has no rule before it. */
+.mathbar .jobctl {
+  position: relative; /* the menu's containing block */
+  flex: 0 0 auto;
+  margin-right: var(--job-gap-extra);
+}
+.mathbar .jobbox {
+  width: auto;
+  border-color: var(--pop-line); /* the stronger edge of the bar's other boxes (the strip's Job box keeps --line) */
+}
+/* the bar's menu buttons (Job, the chips) have the select's drawn chevron (controls.css), not the strip's bolder one */
+.mathbar .multi-btn::after {
+  content: none;
+}
+.mathbar .jobbox .sized {
+  display: grid; /* a block: an inline cell would add a line's descender room under its text */
+}
+.mathbar .jobctl .jobbox .sizertext {
+  font: 500 0.92rem var(--sans);
+  padding: 0;
+}
+/* the menu under the button, its left edge the button's (and the bar's); taller than the room under a short window scrolls */
+.mathbar .jobmenu {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+/* the second rule, between Sync settings and the Gear item level group, has the same wider gap as the first (after the Job box) */
+.mathbar .syncwrap {
+  margin-right: var(--job-gap-extra);
+}
+/* the ? help takes the focus when it opens (its text is not a control): no ring on the panel itself */
+#m-help-pop:focus {
+  outline: none;
+}

@@ -26,7 +26,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { buildReleasePage } from '../build/build.mjs';
-import { STORE_KEY } from '../../src/ui/state.js';
+import { STORE_KEY } from '../../src/ui/store-key.js';
 import { flag, numberOption, option } from '../perf/args.mjs';
 
 const WIDTHS = [1440, 960];
@@ -62,7 +62,7 @@ const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', math
 const WARRIOR = { job: 'WAR', cap: 123, sync: true, level: 90, tab: 'browse', mathTab: 'piece' };
 const BLUE_MAGE = { job: 'BLU', cap: 123, sync: true, level: 80, tab: 'browse', mathTab: 'piece' };
 
-/* A saved Sage sheet (the shape src/ui/sheet-storage.js reads): level 100, synced to 123, one set of crafted item level
+/* A saved Sage sheet (the shape src/ui/sheets/storage.js reads): level 100, synced to 123, one set of crafted item level
    115 pieces with the weapon, hands and feet rows empty and every other row pinned, and an empty second set. */
 const SAGE_ROWS = [
   ['weapon'],
@@ -132,7 +132,7 @@ async function openSet(page, set = 'Mine') {
   await settle(page);
 }
 
-/* On a set page: press Fill and wait for its result. */
+/* On a set page: press Auto-fill and wait for its result. */
 async function fill(page) {
   await page.click('#sh-fill');
   await page.waitForSelector('#sh-discard', { timeout: FILL_TIMEOUT_MS });
@@ -268,7 +268,7 @@ async function shootInContext(context, { name, view, width, scheme }) {
   await settle(page);
   await view.steps(page);
 
-  // the pointer off everything: a result drawn (or scrolled) under the pointer after Fill can leave a table's
+  // the pointer off everything: a result drawn (or scrolled) under the pointer after Auto-fill can leave a table's
   // hovered column set (the table's data-col, src/partials/gear-page.html) with no later mouse event to clear it
   if (!view.keepHover) {
     await page.mouse.move(0, 0);

@@ -2,7 +2,7 @@
    pins, which are saved at once and kept in an open draft.
    A part of the setPage component (components/set-page.js composes the parts). */
 import { draftNote, draftView, samePieces } from '../../views/set-draft.js';
-import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../views/set-edits.js';
+import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../sheets/set-edits.js';
 
 /* `raw`: Alpine.raw or a stand-in (components/set-page.js). Returns the part's members. */
 export function draftPart(raw) {
@@ -24,33 +24,36 @@ export function draftPart(raw) {
     },
     /* A piece picked for row `index` (null: Empty this slot). */
     pick(index, gameId) {
-      let refused = '';
+      let toast = '';
       this.edit(set => {
         const done = placePiece(this.job, set, index, gameId);
-        if (!done.ok) refused = done.note;
+        if (done.ok) toast = done.removedNote;
         return done.ok ? done.gearSet : null;
       });
-      if (refused) this.$store.sheets.note = refused;
-      this.open = null;
+      // a pick that took a piece off (a 2H weapon, a shield) says so; a refused one (the picker does not offer it) does nothing
+      if (toast) this.$store.sheets.note = toast;
+      this.closeOpenMenu();
     },
     setStone(index, slot, stat, grade) {
       this.edit(set => withStone(this.job, set, index, slot, { stat, grade }));
-      this.open = null;
+      this.closeOpenMenu();
     },
     removeStone(index, slot) {
       this.edit(set => withoutStone(this.job, set, index, slot));
-      this.open = null;
+      this.closeOpenMenu();
     },
     setMeal(key) {
       this.edit(set => withMeal(set, key ?? null));
-      this.open = null;
+      this.closeOpenMenu();
     },
-    /* Apply on a draft: the set takes it (pieces, stones, meal, pins), and a note says what changed. */
+    /* Apply on a draft: the set takes it (pieces, stones, meal, pins), and a note says what changed. The Apply button is off at
+       0 changes, but the leave question's "Apply and leave" is not: a draft that equals the saved set closes with no note
+       (it would only say "no changes"), and the pins it holds are saved as before. */
     applyDraft() {
       const draft = raw(this.draft);
       if (!draft) return;
       const changes = draftView(this.sheet, this.saved, draft).changes;
-      // a change of a piece or a stone by hand ends "best for goal" (the set is no longer as Fill made it); a meal or a pin
+      // a change of a piece or a stone by hand ends "best for goal" (the set is no longer as Auto-fill made it); a meal or a pin
       // alone keeps it
       const saved = this.$store.sheets.updateSet(this.saved.id, {
         pieces: draft.pieces,
@@ -60,8 +63,8 @@ export function draftPart(raw) {
       });
       if (saved.ok === false && saved.error) return;
       this.draft = null;
-      this.open = null;
-      this.$store.sheets.note = draftNote('Applied', changes);
+      this.closeOpenMenu(false);
+      if (changes.count) this.$store.sheets.note = draftNote('Applied', changes);
       this.focusFill();
     },
     /* Discard on a draft: back as the set is saved. */
@@ -70,7 +73,7 @@ export function draftPart(raw) {
       if (!draft) return;
       const changes = draftView(this.sheet, this.saved, draft).changes;
       this.draft = null;
-      this.open = null;
+      this.closeOpenMenu(false);
       this.$store.sheets.note = draftNote('Discarded', changes);
       this.focusFill();
     },

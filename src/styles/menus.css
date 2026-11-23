@@ -1,0 +1,586 @@
+/* ==== Dropdown menus: Expansion and Gear categories (both tabs), and the menus with a search box ==== */
+.multi-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 4px;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--pop-line);
+  box-shadow: var(--pop-shadow);
+  border-radius: 4px;
+}
+.multi-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--fg);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.multi-opt:hover {
+  background: var(--surface2);
+}
+/* the menus' checkboxes, drawn in the theme: an outlined box, filled with the accent and a tick when on */
+.multi-opt input {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.multi-opt input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.multi-opt input:checked::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  background: var(--accent-fg);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+/* "Gear categories": a head (the market board switch at the left, All / None / Default at the right), a tab per section and the
+   selected tab's boxes with what each covers. One layout at every window width (two columns). All the tabs' panels sit in
+   one grid cell and the ones not selected are invisible, so the menu is as tall as the tallest tab and never changes size. */
+.from-menu {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-content: start;
+  /* as wide as the box titles and their numbers need (the hints do not count: .from-hint), 436 px at the least (the least that fits
+     the longest hint on two lines), and inside the window */
+  width: max-content;
+  min-width: 436px;
+  max-width: calc(100vw - 16px);
+  padding: 6px 4px 4px;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--fg);
+}
+.from-menu.to-left {
+  left: auto;
+  right: 0;
+}
+/* the market board switch: the switch, then its label, with no text of its own under it */
+.from-switch {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  align-items: center;
+  margin: 0 0 2px;
+  padding: 4px 8px 6px;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--fg);
+  cursor: pointer;
+}
+.from-switch:hover,
+.from-switch:focus-within {
+  background: var(--surface2);
+}
+.from-switch input {
+  appearance: none;
+  position: relative;
+  width: 32px;
+  height: 18px;
+  margin: 0;
+  border-radius: 9px;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.from-switch input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: left 0.15s;
+}
+.from-switch input:checked {
+  background: var(--accent);
+}
+.from-switch input:checked::before {
+  left: 16px;
+}
+.from-switch input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.from-acts {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  display: flex;
+  gap: 12px;
+  padding: 0 8px 2px;
+}
+.from-tabs {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  margin: 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+.from-tabs [role="tab"] {
+  flex: 1 1 auto;
+  margin: 0 0 -1px;
+  padding: 7px 6px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.from-tabs [role="tab"]:hover {
+  background: var(--surface2);
+  color: var(--fg);
+}
+.from-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+.from-tabs [role="tab"]:focus-visible {
+  outline-offset: -2px;
+}
+.from-tab-n {
+  margin-left: 5px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+.from-panels {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: grid;
+  padding: 6px 4px 4px;
+}
+/* a panel reads down each of its two columns (--rows rows tall); one with .by-row reads across, two boxes to a row */
+.from-panel {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rows), auto);
+  grid-auto-columns: 1fr;
+  column-gap: 8px;
+  align-content: start;
+}
+.from-panel.by-row {
+  grid-auto-flow: row;
+  grid-template-rows: none;
+  grid-template-columns: 1fr 1fr;
+}
+.from-panel.is-off {
+  visibility: hidden;
+}
+/* a box: the checkbox, its title line (the name in bold, the number of pieces at the right end) and what it covers in muted text
+   under it */
+.multi-opt.from-opt {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 0 10px;
+  align-items: start;
+  padding: 6px 8px;
+  white-space: normal;
+}
+.from-opt input {
+  grid-row: 1;
+  margin: 2px 0 0;
+}
+.from-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.from-name {
+  min-width: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+/* how many pieces the box holds under the current filters: a fixed 6-character column, so the menu keeps its width as the numbers
+   change; muted, and gold and bold for 0 */
+.from-count {
+  flex: none;
+  width: 6ch;
+  margin-left: auto;
+  font: 500 0.72rem var(--mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.from-count.zero {
+  font-weight: 700;
+  color: var(--gold);
+}
+/* the closed "Gear categories" field: the count, then the market stall glyph before the chevron: gold when market board gear is
+   included, red with a slash when it is left out. The slash has a gap in the page background around it, so it cuts
+   cleanly through the awning. */
+.from-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.from-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.from-market {
+  flex: none;
+}
+/* included: gold; excluded: the delete button's red (--danger), with the slash */
+.from-market.on {
+  color: var(--gold);
+}
+.from-market.off {
+  color: var(--danger);
+}
+.from-slash-gap,
+.from-slash {
+  fill: none;
+  stroke-linecap: round;
+}
+.from-slash-gap {
+  stroke: var(--bg);
+  stroke-width: 5;
+}
+.from-slash {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.from-hint {
+  grid-column: 2;
+  contain: inline-size; /* the hints do not make the menu wider */
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+.same {
+  position: relative;
+}
+.same-btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.same-btn::after {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  margin: 0 -3px;
+  background: var(--muted);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+.same-btn:hover:not(:disabled),
+.same-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+.same-count,
+.same-lvl,
+.from {
+  font: 500 0.72rem var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.from {
+  margin-top: 2px;
+}
+.same-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  width: min(440px, 70vw);
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 6px 4px;
+  background: var(--surface);
+  border: 1px solid var(--pop-line);
+  box-shadow: var(--pop-shadow);
+  border-radius: 4px;
+}
+.same-head {
+  padding: 6px 8px 2px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.same-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+.same-item:hover {
+  background: var(--surface2);
+}
+.same-item.on {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+/* A menu with a search box (owner): the Food row's (one line of search box and stat pills, then a Sort row
+   while a pill is on) and the rows' pieces with the same result (the search box alone); only the list scrolls, and
+   each expansion's heading stays in view while its entries pass */
+.search-menu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.meal-menu {
+  width: min(560px, 80vw);
+}
+.menu-tools {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+/* the search box: slim and round, sans text after a magnifier drawn in the muted colour, a border when focused */
+.menu-search {
+  position: relative;
+  flex: 1 1 120px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.menu-search::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  width: 16px;
+  height: 16px;
+  background: var(--muted);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  pointer-events: none;
+}
+.menu-search input[type="text"] {
+  padding: 5px 8px 5px 28px;
+  font: 400 0.86rem var(--sans);
+  border-radius: 4px;
+}
+.menu-search input[type="text"]:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+.menu-clear {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
+  font: 400 0.8rem var(--sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.menu-clear:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+.meal-pills {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+.meal-pill {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.78rem var(--sans);
+  cursor: pointer;
+}
+.meal-pill:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+.meal-pill.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.meal-pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.menu-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 4px 6px;
+}
+.menu-list .same-head {
+  position: sticky;
+  top: -2px;
+  z-index: 1;
+  background: var(--surface);
+}
+/* a meal on one line: its item level first ("i770", as players write it), the name, what it adds at the right */
+.same-item.meal-item {
+  align-items: center;
+}
+.meal-lead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.meal-ilvl {
+  flex: none;
+  width: 2.7em;
+  font: 400 0.76rem var(--mono);
+  color: var(--muted);
+}
+.meal-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* "Best for goal" (a set the optimizer made): a meal tagged best wears the .pill look after its name while the switch is
+   off (the view gives the "best" class only then), and the Food row shows the note beside its meal, on one line */
+/* the star (Remix "star-fill") for a meal tagged best for goal: a mask in the gold colour. In the list it follows the
+   meal's name, with the words as its alt text for a screen reader (the second content declaration; a browser without
+   the alt syntax keeps the first, an empty one, and draws the star all the same) */
+.star,
+.meal-item.best .meal-name::after {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  background: var(--gold);
+  vertical-align: -2px;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26Z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26Z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.meal-item.best .meal-name::after {
+  content: "";
+  margin-left: 6px;
+}
+.toggle .star {
+  margin-right: 4px;
+}
+.mealline {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.mealline .small {
+  margin-left: 10px;
+  white-space: nowrap;
+}
+/* the Food menu's Sort row (owner's pick F2 b): "Sort: ILVL / CRT / DET" under the search box, shown
+   while a pill is on; a smaller version of the Target GCD's segmented control (sized after the .seg rules) */
+.meal-sort {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+/* a meal's stat line: a stat on a picked pill is a soft chip like an unfilled pill (owner's pick F1 c);
+   on the shown meal's row, already tinted, the chip takes the page background */
+.meal-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.meal-stat.hit {
+  margin: 0 -2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.same-item.on .meal-stat.hit {
+  background: var(--bg);
+}
+.menu-empty {
+  padding: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

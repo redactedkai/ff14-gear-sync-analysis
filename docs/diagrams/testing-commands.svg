@@ -52,31 +52,31 @@
   <path class="brace" d="M20,98 V88 H452 V98"/>
 
   <!-- Steps: 6 boxes, width 96, gap 16 -->
-  <rect class="box" x="20" y="108" width="96" height="72" rx="8"/>
+  <rect class="box" x="20" y="108" width="96" height="72" rx="4"/>
   <text class="fg t" x="68" y="135" text-anchor="middle">lint</text>
   <text class="muted s" x="68" y="154" text-anchor="middle">Biome, with</text>
   <text class="muted s" x="68" y="170" text-anchor="middle">format check</text>
 
-  <rect class="box" x="132" y="108" width="96" height="72" rx="8"/>
+  <rect class="box" x="132" y="108" width="96" height="72" rx="4"/>
   <text class="fg t" x="180" y="135" text-anchor="middle">build</text>
   <text class="muted s" x="180" y="154" text-anchor="middle">the one</text>
   <text class="muted s" x="180" y="170" text-anchor="middle">HTML page</text>
 
-  <rect class="box" x="244" y="108" width="96" height="72" rx="8"/>
+  <rect class="box" x="244" y="108" width="96" height="72" rx="4"/>
   <text class="fg t" x="292" y="135" text-anchor="middle">test</text>
   <text class="muted s" x="292" y="154" text-anchor="middle">unit tests,</text>
   <text class="muted s" x="292" y="170" text-anchor="middle">Node</text>
 
-  <rect class="box" x="356" y="108" width="96" height="72" rx="8"/>
+  <rect class="box" x="356" y="108" width="96" height="72" rx="4"/>
   <text class="fg t" x="404" y="135" text-anchor="middle">test:smoke</text>
   <text class="muted s" x="404" y="154" text-anchor="middle">the built page</text>
   <text class="muted s" x="404" y="170" text-anchor="middle">in Chromium</text>
 
-  <rect class="py" x="492" y="108" width="96" height="72" rx="8"/>
+  <rect class="py" x="492" y="108" width="96" height="72" rx="4"/>
   <text class="fg t" x="540" y="135" text-anchor="middle">lint:py</text>
   <text class="muted s" x="540" y="154" text-anchor="middle">Ruff</text>
 
-  <rect class="py" x="604" y="108" width="96" height="72" rx="8"/>
+  <rect class="py" x="604" y="108" width="96" height="72" rx="4"/>
   <text class="fg t" x="652" y="135" text-anchor="middle">test:py</text>
   <text class="muted s" x="652" y="154" text-anchor="middle">generator</text>
   <text class="muted s" x="652" y="170" text-anchor="middle">tests, Python</text>
@@ -90,7 +90,7 @@
   <text class="bad s" x="20" y="206">Each arrow is taken only on success: both commands stop at the first failure.</text>
 
   <!-- Run by hand -->
-  <rect class="hand" x="20" y="230" width="680" height="76" rx="8"/>
+  <rect class="hand" x="20" y="230" width="680" height="76" rx="4"/>
   <text class="fg t" x="40" y="256">Run by hand, never part of check</text>
   <text class="muted s" x="40" y="278">perf, perf:full, perf:adversarial, perf:browser (measurements, not pass/fail)</text>
   <text class="muted s" x="40" y="295">Target GCD sweep; the checks against ffxiv-gearing and xivgear; shots, shots:compare</text>

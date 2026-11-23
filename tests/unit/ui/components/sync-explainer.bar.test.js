@@ -1,0 +1,182 @@
+/* The math bar's controls in the Stat Allocation component (src/ui/components/sync-explainer.js) and the shared Job menu
+   (components/job-menu.js), bound to a plain store as Alpine binds them: the Job menu edits the open sub-tab's own job, the
+   Level box and the IL Sync switch keep the stored cap at level sync's item level while IL Sync is off, the two chips
+   say the current settings, and one popover is open at a time. Item levels are the game's ParamGrow.ItemLevelSync: level
+   85 gives 536, level 80 gives 530. */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { syncExplainer } from '../../../../src/ui/components/sync-explainer.js';
+import { settings } from '../../../../src/ui/components/page.js';
+import { SYNC_CHIP_TEXT, pieceChipView, syncChipView } from '../../../../src/ui/views/sync-explainer.js';
+import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
+import { createAppStore } from '../../../../src/ui/store.js';
+import { overlays } from '../../../../src/ui/overlays.js';
+import { restoreOpen } from '../../helpers/common.js';
+
+/* The component bound to the store of `saved` (the math tab open), with stand-ins for the DOM it touches. */
+function bound(saved = {}) {
+  overlays.closeAll(); // the page's manager is shared: no layer of an earlier test stays open
+  const app = createAppStore(restoreOpen({ tab: 'math', piece: { job: 'SGE', cap: 123, sync: true, level: 85 }, ...saved }));
+  const focused = [];
+  const refs = {};
+  for (const name of ['jobButton', 'level', 'cap', 'syncChip', 'pieceChip', 'pieceFirst'])
+    refs[name] = { focus: () => focused.push(name), value: '' };
+  const watchers = {};
+  const c = Object.assign(syncExplainer(), {
+    $store: { app },
+    $refs: refs,
+    $nextTick: fn => fn(),
+    $watch: (path, fn) => {
+      watchers[path] = [...(watchers[path] ?? []), fn];
+    },
+  });
+  c.init();
+  return { app, c, focused, watchers };
+}
+
+test("Job menu: it edits the open sub-tab's own job: Stat Allocation's on its sub-tab, Substat tiers' on its", () => {
+  const { app, c } = bound({ tiers: { job: 'WAR' } });
+  assert.equal(c.jobOwner, 'math');
+  assert.equal(c.menuJobId, 'SGE');
+  c.requestJob('BLM');
+  assert.deepEqual([app.job, app.panel('math').job, app.tiers.job], ['BLM', 'BLM', 'WAR']);
+  app.showSub('tiers');
+  assert.equal(c.jobOwner, 'tiers');
+  assert.equal(c.menuJobId, 'WAR');
+  assert.equal(c.menuJobCtx.jobId, 'WAR');
+  c.requestJob('NIN');
+  assert.deepEqual([app.tiers.job, app.job], ['NIN', 'BLM'], "Stat Allocation's job is untouched");
+  app.showSub('gcd'); // no Job box there: the owner is the math panel, which nothing reads on that sub-tab
+  assert.equal(c.jobOwner, 'math');
+});
+
+test('Job menu: the Job button opens it with the focus on the chosen job; a tile closes it with the focus on the Job button', () => {
+  const { c, focused } = bound();
+  const tile = { focus: () => focused.push('tile') };
+  c.$refs.jobMenu = { querySelector: selector => (selector === '[aria-checked="true"]' ? tile : null) };
+  c.toggleJobMenu();
+  assert.equal(c.jobMenuOpen, true);
+  assert.deepEqual(focused, ['tile']);
+  c.requestJob('WHM');
+  assert.deepEqual([c.jobMenuOpen, focused.at(-1)], [false, 'jobButton']);
+});
+
+test('one popover of the bar is open at a time, and closeAll (a change of screen) closes them', () => {
+  const { c } = bound();
+  c.$refs.pieceMenu = c.$refs.syncMenu = null;
+  c.openJobMenu();
+  c.toggleSyncMenu();
+  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [false, false, true]);
+  c.togglePieceMenu();
+  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [false, true, false]);
+  c.openJobMenu();
+  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [true, false, false]);
+  c.toggleSyncMenu();
+  overlays.closeAll();
+  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [false, false, false]);
+});
+
+test("Sync chip: opening puts the focus on the Level box, closing on the chip; the chip says the store's settings", () => {
+  const { app, c, focused } = bound();
+  c.toggleSyncMenu();
+  assert.deepEqual(focused, ['level']);
+  c.closeSyncMenu(true);
+  assert.equal(focused.at(-1), 'syncChip');
+  const expected = syncChipView(app.jobCtx, { cap: 123, sync: true, level: 85 }, app.piece.slot, { switchOn: true });
+  assert.deepEqual(c.syncChip, expected);
+  assert.equal(c.syncText, SYNC_CHIP_TEXT);
+  // IL Sync on with no item level: the missing-item-level text
+  app.cap = null;
+  assert.equal(c.syncChip.parts.at(-1).text, SYNC_CHIP_TEXT.needCap);
+});
+
+test("Substats & materia chip: it says the piece's substats and slots; opening puts the focus on the 1st substat menu", () => {
+  const { app, c, focused } = bound();
+  assert.deepEqual(c.pieceChip, pieceChipView(app.jobCtx, app.piece));
+  c.togglePieceMenu();
+  assert.deepEqual([c.pieceMenuOpen, focused], [true, ['pieceFirst']]);
+  c.togglePieceMenu();
+  assert.deepEqual([c.pieceMenuOpen, focused.at(-1)], [false, 'pieceChip']);
+});
+
+test('IL Sync switch: off stores the item level level sync gives (536 at level 85); on keeps the stored cap', () => {
+  const { app, c } = bound();
+  app.sync = false;
+  c.onSyncSwitch(false);
+  assert.equal(app.cap, 536);
+  app.sync = true;
+  c.onSyncSwitch(true);
+  assert.equal(app.cap, 536, 'switching on copies nothing');
+  app.cap = 270;
+  app.level = 100;
+  app.sync = false;
+  c.onSyncSwitch(false);
+  assert.equal(app.cap, null, 'at the level cap there is no level sync');
+  // bad text left in the box is dropped with the switch
+  c.capTypedBad = true;
+  c.onSyncSwitch(true);
+  assert.equal(c.capTypedBad, false);
+});
+
+test('Level box: each valid level counts as typed; while IL Sync is off the cap follows it, with it on the cap stays', () => {
+  const { app, c } = bound({ piece: { job: 'SGE', cap: 123, sync: false, level: 85 } });
+  assert.equal(app.cap, 536, 'load');
+  const type = value => c.levelBind['@input']({ target: { value }, inputType: 'insertText' });
+  type('80');
+  assert.deepEqual([app.level, app.cap], [80, 530]);
+  type('100');
+  assert.deepEqual([app.level, app.cap], [100, null]);
+  type('101'); // above Sage's level cap: not taken
+  assert.deepEqual([app.level, app.cap], [100, null]);
+  const on = bound({ piece: { job: 'SGE', cap: 123, sync: true, level: 85 } });
+  on.c.levelBind['@input']({ target: { value: '80' }, inputType: 'insertText' });
+  assert.deepEqual([on.app.level, on.app.cap], [80, 123]);
+});
+
+test("the Gear browser strip has the same Job menu (its own owner), and the bar's and the strip's menus never share a job", () => {
+  const app = createAppStore(restoreOpen({ tab: 'browse', browse: { job: 'WAR' }, piece: { job: 'SGE' }, tiers: { job: 'WHM' } }));
+  const strip = Object.assign(settings(), { $store: { app }, $refs: { jobButton: { focus() {} } }, $nextTick: fn => fn() });
+  assert.equal(strip.jobOwner, 'browse');
+  assert.equal(strip.menuJobId, 'WAR');
+  strip.requestJob('DRG');
+  assert.deepEqual([app.job, app.panel('math').job, app.tiers.job], ['DRG', 'SGE', 'WHM']);
+});
+
+test('Level box: text that is no level is flagged and not stored; the flag clears with a valid level, a job change, a tab change and closing the popover', () => {
+  const { app, c, watchers } = bound({ piece: { job: 'PLD', cap: null, sync: false, level: 90 } });
+  const max = app.jobCtx.maxLevel; // Paladin's 100
+  const range = LEVEL_TEXT.range(max);
+  const fire = fns => {
+    for (const fn of fns) fn();
+  };
+  assert.deepEqual(c.levelFlag(range), { kind: '', short: '', full: '' });
+  for (const text of ['0', '101', '-5', '12.5', '', 'abc']) {
+    c.onLevelInput(text);
+    assert.equal(c.levelError, LEVEL_TEXT.typedBad(max), `'${text}'`);
+    assert.deepEqual(c.levelFlag(range), { kind: 'error', short: rangeOnly(range), full: LEVEL_TEXT.typedBad(max) }, `'${text}'`);
+    assert.equal(app.level, 90, `a level of '${text}' is not stored`);
+  }
+  // a valid level is committed as it is typed and ends the error
+  c.onLevelInput('85');
+  c.levelBind['@input']({ target: { value: '85' }, inputType: 'insertText' });
+  assert.equal(app.level, 85);
+  // the watcher Alpine runs when the stored level changes
+  fire(watchers['$store.app.level']);
+  assert.equal(c.levelError, '');
+  // the error also ends with a job change, a tab change and closing the popover; the box shows the stored level again
+  for (const end of [() => fire(watchers['$store.app.job']), () => fire(watchers['$store.app.tab']), () => c.closeSyncMenu()]) {
+    c.syncMenuOpen = true;
+    c.onLevelInput('0');
+    c.$refs.level.value = '0';
+    end();
+    assert.equal(c.levelError, '');
+    assert.equal(c.$refs.level.value, app.level);
+  }
+});
+
+test('Level box: a bad level does not change the stored cap while IL Sync is off', () => {
+  const { app, c } = bound({ piece: { job: 'PLD', cap: 530, sync: false, level: 80 } });
+  c.onLevelInput('101');
+  assert.equal(app.cap, 530);
+  assert.equal(c.levelError !== '', true);
+});

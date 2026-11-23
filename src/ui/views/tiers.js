@@ -1,22 +1,27 @@
-/* How the math works, Substat tiers: every substat of the job as a card of tiers (a ladder), each around its value, the
-   value's tier on the middle row unless it is near the base or the last tier (core/tiers.js tierLadder). Values are
-   character panel numbers: each starts at the substat's base (tierValues), and the user types or clicks others. The
-   tiers follow the job and the sub-tab's own level (the synced level until the user types another); item level sync
-   does not change them. The view object is built here; the template only shows it. */
-import { tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.js';
+/* How the math works, Substat tiers: every substat of the job as a card of tiers (a ladder), every tier from the
+   substat's base up to the most a box takes (core/tiers.js tierLadder), each row the range of character panel values
+   that give its effect. Values are character panel numbers: each starts at the substat's base (tierValues), and the
+   user types or clicks others. The tiers follow the job and the sub-tab's own level (the synced level until the user
+   types another); item level sync does not change them. The view object is built here; the template only shows it. */
+import { clamp } from '../../core/clamp.js';
+import { rowIndexAt, tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
-import { statBase } from '../../core/food.js';
+import { statBase } from '../../core/base-stats.js';
+import { levelParams } from '../../core/level-params.js';
 import { MAX_SPEED } from '../../core/tables.js';
-import { fmtInt } from '../helpers.js';
+import { fmtInt } from '../text.js';
+import { deepFreeze } from '../view-cache.js';
 
-/* Tiers shown either side of each value's tier (15 rows; there is no More tiers button: owner). */
-export const TIER_NEAR = 7;
-/* The highest value a box takes: far above any real total (a few thousand), and inside the speed search (speed.js). */
-export const TIER_VALUE_MAX = 99999;
+/* The rows kept for the cards last shown, by the key of what they depend on (rowsOf): the job, substat and level change
+   them, a value never does. Enough for the cards of a few jobs and levels. */
+const ROWS_KEPT = 30;
+const rowsKept = new Map();
 
 /* Each effect kind's column name; the header line under a substat's name uses the same words ("+58.7% on crit"). */
 const COLUMN = { rate: 'Rate', onCrit: 'On crit', dmgHeal: 'Dmg & heal', dmgTaken: 'Dmg taken', gcd: 'GCD', mp: 'MP' };
 const lineWord = kind => (kind === 'gcd' || kind === 'mp' ? COLUMN[kind] : COLUMN[kind].toLowerCase());
+/* The first column: the range of panel values a row covers. */
+const POINTS_COLUMN = 'Points';
 
 const SPEED_AFFECTS =
   'Shortens the GCD (the recast of weaponskills and spells) in 0.01 s steps. Points between two steps still add a little to damage and healing over time and to auto-attacks.';
@@ -37,10 +42,10 @@ const AFFECTS = {
 const sizeList = sizes => (sizes.length === 1 ? String(sizes[0]) : `${sizes.slice(0, -1).join(', ')} or ${sizes.at(-1)}`);
 
 /* The sub-tab's level for `job` (a JobContext): `typed` (a level typed into its box, or null) held to 1 and the job's
-   level cap, else `syncedLevel` (the settings' synced level). */
+   level cap, else `syncedLevel` (the job's level cap: Substat tiers has no synced level of its own). */
 export function tierLevel(job, syncedLevel, typed) {
   if (typed == null) return syncedLevel;
-  return Math.max(1, Math.min(job.maxLevel, typed));
+  return clamp(typed, 1, job.maxLevel);
 }
 
 /* Each of `job`'s substats' starting value at `level`: its base there, {stat: value}. */
@@ -48,14 +53,19 @@ export function tierValues(job, level) {
   return Object.fromEntries(job.substats.map(s => [s, statBase(job, s, level)]));
 }
 
-/* A value typed into a substat's box, held to the base at `level` and the most it can be there, with no note (the box
-   shows the value kept: owner); null for text that is not a number. The most: for speed, the most total
-   speed any job can have at the level (MAX_SPEED, as the GCD tab's slider); for the others, TIER_VALUE_MAX. */
+/* The highest panel value of a substat at `level`: its base plus the most gear points any job can have of one stat
+   there (MAX_SPEED, the most total speed, less the base speed; a guess for the other substats, which draw on the same
+   pieces and melds). The ladder ends at it and so does the box. */
+function tierMost(job, stat, level) {
+  return statBase(job, stat, level) + MAX_SPEED[level - 1] - levelParams(level).sub;
+}
+
+/* A value typed into a substat's box, held to the base at `level` and the most it can be there (tierMost), with no note
+   (the box shows the value kept: owner); null for text that is not a number. */
 export function tierInput(job, stat, text, level) {
   const v = Math.round(Number(text));
   if (text === '' || !Number.isFinite(v)) return null;
-  const most = stat === job.speedKey ? MAX_SPEED[level - 1] : TIER_VALUE_MAX;
-  return Math.max(statBase(job, stat, level), Math.min(most, v));
+  return Math.max(statBase(job, stat, level), Math.min(tierMost(job, stat, level), v));
 }
 
 /* The ? note of a substat: {title, affects, size}. */
@@ -70,45 +80,93 @@ function helpOf(job, stat, level, haste) {
   return { title: job.label[stat], affects, size };
 }
 
+/* A row's range of panel values: "341–342" for a tier from 341 up to 342, "343" for one value, "365+" for the last
+   tier. `next` is the first value of the tier after it, null for the last. */
+function rangeText(start, next) {
+  if (next == null) return `${fmtInt(start)}+`;
+  return next - start === 1 ? fmtInt(start) : `${fmtInt(start)}–${fmtInt(next - 1)}`;
+}
+
+/* `text` safe inside HTML (the column names hold "&"). */
+const escapeHtml = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
+/* A card's table without its rows, as HTML: the column names inside an empty row group the page draws the rows in
+   (components/tiers.js). The rows are divs, not table rows, so they can be drawn a window at a time; the roles make
+   them a table for a screen reader. */
+function ladderShell(names) {
+  const head = names.map(name => `<span role="columnheader">${escapeHtml(name)}</span>`).join('');
+  return `<div class="ladder cols${names.length}" role="table"><div class="lhead" role="row">${head}</div><div class="lbody" role="rowgroup"></div></div>`;
+}
+
+/* One row ({range, values, marks, to}) as HTML: plain text and one data attribute, with no state of its own. */
+function rowHtml(row) {
+  const cells = row.values.map((text, k) => `<span role="cell" class="eff${row.marks[k] ? ' chg2' : ''}">${escapeHtml(text)}</span>`);
+  return `<div class="lrow" role="row" data-to="${row.to}"><span role="cell">${row.range}</span>${cells.join('')}</div>`;
+}
+
+/* The rows of one substat of `job` at `level` (haste in percent): {key, kinds, names, rows, shell, rowsHtml}. Made once per job,
+   substat, level and haste, then kept (ROWS_KEPT): a value typed or clicked only moves the highlighted row. rows:
+   [{start, range, values (text per effect), marks (per effect: it changed at this tier, only for a stat with two
+   effects), to}], frozen so Alpine leaves them alone; key: what they were made from, for the page to tell new rows
+   from the same ones; shell: the table without rows; rowsHtml: each row drawn, one string per row. */
+function rowsOf(job, stat, level, haste) {
+  const key = `${job.jobId}|${stat}|${level}|${haste}`;
+  const kept = rowsKept.get(key);
+  if (kept) return kept;
+
+  // 1. every tier of the substat from its base to its most
+  const ladder = tierLadder(job, stat, level, 0, Infinity, haste, tierMost(job, stat, level));
+  const rows = ladder.rows.map(tier => {
+    const some = ladder.kinds.length > 1 && !tier.changed.every(Boolean);
+    return {
+      start: tier.start,
+      range: rangeText(tier.start, tier.next),
+      values: tier.values,
+      marks: tier.changed.map(changed => some && changed),
+      to: `${stat}:${tier.start}`,
+    };
+  });
+
+  // 2. the table, kept with them
+  const names = [POINTS_COLUMN, ...ladder.kinds.map(kind => COLUMN[kind])];
+  const made = deepFreeze({ key, kinds: ladder.kinds, names, rows, shell: ladderShell(names), rowsHtml: rows.map(rowHtml) });
+  rowsKept.set(key, made);
+  if (rowsKept.size > ROWS_KEPT) rowsKept.delete(rowsKept.keys().next().value);
+  return made;
+}
+
 /* The Tiers view of `job` (a JobContext, or null with no job chosen) at `level` for `values` ({stat: panel value}), or
-   null with no job: {level, cards}, one card per
-   substat, each its own small table (owner: a table across all substats read as one row of stats, with
-   empty space between a From column and its effects). A card: {stat, label, value, lines (the effect lines under its
-   box), haste (speed's: the job's haste at the level, "with Fuka 10%", else ''), help, names (its column names),
-   rows, foot: {spare, toNext}}. rows: [[{text, eff, mark, cur, to, title}]], From first; cur: the value's tier (the
-   middle row unless the value is near the base or the last tier: tierLadder); mark: with two effects, the one that
-   changes at the tier; to: 'stat:start' to set the value by a click. */
+   null with no job: {level, cards}, one card per substat (owner: a card each, its own table, since a table across all
+   substats read as one row of stats). A card: {stat, label, value, lines (the effect lines under its box), haste
+   (speed's: the job's haste at the level, "with Fuka 10%", else ''), help, names (its column names, Points first),
+   rows (every tier, see rowsOf), rowsKey, rowsShell and rowsHtml (the rows' key, the table without rows and each
+   row drawn: what the page draws the rows from), cur (the index of the value's tier in rows), foot: {spare, toNext}}. Each row's `to` is 'stat:start', what a click on it sets the value to. */
 export function tiersView(job, values, level) {
   if (!job) return null;
   const haste = hasteFor(job.jobId, level);
   const cards = job.substats.map(stat => {
-    // 1. the substat's tiers around its value
+    // 1. the substat's tiers, and the value's place in them
     const value = values[stat] ?? statBase(job, stat, level);
-    const ladder = tierLadder(job, stat, level, value, TIER_NEAR, haste?.pct ?? 0);
+    const { key, kinds, names, rows, shell, rowsHtml } = rowsOf(job, stat, level, haste?.pct ?? 0);
+    const cur = rowIndexAt(rows, value);
+    const spare = Math.max(0, value - rows[cur].start);
+    const nextStart = rows[cur + 1]?.start;
 
-    // 2. one row per tier, the value's tier highlighted
-    const rows = ladder.rows.map((t, i) => {
-      const to = `${stat}:${t.start}`,
-        title = `Set ${job.label[stat]} to ${t.start}`,
-        cur = i === ladder.cur;
-      const some = ladder.kinds.length > 1 && !t.changed.every(Boolean);
-      return [
-        { text: fmtInt(t.start), eff: false, mark: false, cur, to, title },
-        ...t.values.map((text, k) => ({ text, eff: true, mark: some && t.changed[k], cur, to, title })),
-      ];
-    });
-
-    // 3. the header, the column names and the footer
+    // 2. the header, the column names and the footer
     return {
       stat,
       label: job.label[stat],
       value,
-      lines: ladder.kinds.map((kind, k) => `${ladder.rows[ladder.cur].values[k]} ${lineWord(kind)}`),
+      lines: kinds.map((kind, k) => `${rows[cur].values[k]} ${lineWord(kind)}`),
       haste: stat === job.speedKey && haste ? `with ${haste.name} ${haste.pct}%` : '',
       help: helpOf(job, stat, level, haste?.pct ?? 0),
-      names: ['From', ...ladder.kinds.map(kind => COLUMN[kind])],
+      names,
       rows,
-      foot: { spare: fmtInt(ladder.spare), toNext: ladder.toNext == null ? null : fmtInt(ladder.toNext) },
+      rowsKey: key,
+      rowsShell: shell,
+      rowsHtml,
+      cur,
+      foot: { spare: fmtInt(spare), toNext: nextStart == null ? null : fmtInt(nextStart - Math.max(value, rows[0].start)) },
     };
   });
   return { level, cards };

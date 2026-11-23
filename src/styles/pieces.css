@@ -1,0 +1,409 @@
+/* ==== Small shared pieces: colors, notes, pills, details ==== */
+.dim {
+  color: var(--muted);
+}
+.ok {
+  color: var(--good);
+}
+.bad {
+  color: var(--bad);
+}
+.gold {
+  color: var(--gold);
+}
+/* a target or tiebreak number at the piece's cap: a line over it, "it hits the ceiling" */
+.atcap {
+  box-shadow: inset 0 2px 0 currentColor;
+  padding-top: 2px;
+  line-height: 1.25;
+}
+.small {
+  font-size: 0.82rem;
+}
+.list {
+  margin: 4px 0 8px;
+  padding-left: 18px;
+}
+.list li + li {
+  margin-top: 3px;
+}
+.note {
+  background: var(--warn-bg);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 0.84rem;
+}
+.formula {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: normal !important;
+}
+.empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+}
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+/* a closed details panel: its hidden content is still a flex item, so the panel's gap would add space below the summary */
+details.panel:not([open]) {
+  gap: 0;
+}
+.x2 {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+/* The HQ mark: the Lodestone symbol font's HQ glyph (U+E03C), loaded from a community mirror
+   (ewwwin/ffxiv-symbol-fonts) pinned to one commit and served by jsDelivr, which sends CORS headers, so it loads from file://. The mark is plain "(HQ)" by default;
+   ui/hq-font.js adds html.hqfont once the font has loaded and the glyph replaces the text, so a slow, blocked or
+   offline load never shows a missing-character box. */
+@font-face {
+  font-family: FFXIV_Lodestone_SSF;
+  src:
+    url(https://cdn.jsdelivr.net/gh/ewwwin/ffxiv-symbol-fonts@38be0d484de147598e3fb66e573e57b0dd0e13c8/FFXIV_Lodestone_SSF.woff)
+    format("woff"),
+    url(https://cdn.jsdelivr.net/gh/ewwwin/ffxiv-symbol-fonts@38be0d484de147598e3fb66e573e57b0dd0e13c8/FFXIV_Lodestone_SSF.ttf)
+    format("truetype");
+}
+.hqg {
+  margin-left: 5px;
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 400;
+}
+.hqg::before {
+  content: "(HQ)";
+}
+/* hidden by the :hidden binding (a row kept for another item switches it at once; x-show waits a frame): the font rule below sets display */
+.hqg[hidden],
+:root.hqfont .hqg[hidden] {
+  display: none;
+}
+:root.hqfont .hqg {
+  display: inline-block;
+  font-family: FFXIV_Lodestone_SSF, sans-serif;
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: -1px;
+}
+:root.hqfont .hqg::before {
+  content: "\e03c";
+}
+/* the search's words in a name */
+.mark {
+  border-radius: 2px;
+  background: var(--warn-bg);
+}
+.callout {
+  background: var(--warn-bg);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin: 0;
+}
+.pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--muted);
+  font: 600 0.64rem var(--sans);
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.from .pill {
+  margin: 0 6px 0 0;
+}
+.pill.cat-crafted {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pill.cat-tomestone {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  color: var(--gold-ink);
+}
+/* a select shows only its chosen option, so it is wrapped with a hidden copy of all its texts in one grid cell: the box is as wide as the longest text and never changes with the pick */
+.sized {
+  display: inline-grid;
+  min-width: 0;
+}
+.sized > * {
+  grid-area: 1 / 1;
+}
+.sizertext {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+  font: 0.92rem var(--sans);
+  padding: 0 45px 0 9px;
+}
+
+/* ==== Tables: cells, totals, the key, sortable headings, the column under the pointer ==== */
+.tablewrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.tablewrap.tall {
+  max-height: 420px;
+  overflow-y: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.86rem;
+}
+th,
+td {
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--surface2);
+  position: sticky;
+  top: 0;
+  /* above the cells' positioned boxes (a row's piece menu button) scrolled under it; the menus of a set page's table
+     are under its column names (set-page.css) */
+  z-index: 1;
+}
+th.n,
+td.n {
+  text-align: right;
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+table.compact th {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+}
+table.compact th,
+table.compact td {
+  padding: 7px 8px;
+}
+tr.total td {
+  font-weight: 600;
+  background: var(--surface2);
+}
+/* the Stat Total row's item level cell holds the set's average ("~77"): italic marks it as a derived figure, not a piece's own level */
+tr.total td[data-col="ilvl"] {
+  font-style: italic;
+}
+/* The key above a table: what the cap bar means, at the right of the line */
+.tablekey {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.tablekey .atcap {
+  font-family: var(--mono);
+  color: var(--fg);
+}
+/* The Gear browser's key keeps its own line, packed tight (owner's pick K1 d): the title
+   line loses its bottom margin, and the key line pulls into the panel's gaps above and below it (.titleline has no bottom margin for the same pick) */
+#tab-browse .tablekey {
+  margin: -8px 0 -6px;
+}
+/* The Gear browser's page line (owner's pick P1 a): page numbers at the left of the key's line, which
+   always shows (empty with one page and nothing synced) and keeps one button's height, so the table doesn't move as
+   the key or the numbers come and go */
+#tab-browse .pageline {
+  align-items: center;
+  min-height: 24px;
+  margin: -4px 0 -2px;
+}
+#tab-browse .pageline #b-key {
+  margin-left: auto;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -6px;
+}
+.pager button {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: 500 0.78rem var(--mono);
+  cursor: pointer;
+}
+.pager button:hover:not(:disabled) {
+  border-color: var(--line);
+  color: var(--fg);
+}
+.pager button[aria-current="page"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.pager button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pager button:disabled:hover {
+  border-color: var(--line);
+}
+.pager .step {
+  font-size: 0.95rem;
+}
+.pager .gap {
+  min-width: 18px;
+  text-align: center;
+  color: var(--muted);
+  font: 0.78rem var(--mono);
+}
+/* Sortable headings: a click sorts by the column, a second flips it; the sorted one in the accent, with ▾ (high
+   first) or ▴ */
+.sortbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.sortbtn:hover {
+  color: var(--fg);
+}
+th[aria-sort="descending"] .sortbtn,
+th[aria-sort="ascending"] .sortbtn {
+  color: var(--accent);
+}
+/* The arrow's room is kept on every sortable heading (hidden until it is the sorted one), so a sort never changes a
+   column's width */
+.sortbtn::after {
+  content: " \25BE";
+  visibility: hidden;
+}
+th[aria-sort="descending"] .sortbtn::after,
+th[aria-sort="ascending"] .sortbtn::after {
+  visibility: visible;
+}
+th[aria-sort="ascending"] .sortbtn::after {
+  content: " \25B4";
+}
+/* A right-aligned (numeric) heading carries the arrow before its label, so the label's right edge lines up with the
+   numbers below it */
+th.n .sortbtn::after {
+  content: none;
+}
+th.n .sortbtn::before {
+  content: "\25BE";
+  margin-right: 0.2em;
+  font-size: 1.3em;
+  line-height: 1;
+  visibility: hidden;
+}
+th.n[aria-sort="descending"] .sortbtn::before,
+th.n[aria-sort="ascending"] .sortbtn::before {
+  visibility: visible;
+}
+th.n[aria-sort="ascending"] .sortbtn::before {
+  content: "\25B4";
+}
+/* The row under the pointer, in the same table, tinted like the column, so the pointer marks one cell's row and column
+   at once */
+/* (:where keeps it at a class's weight, so the table's later, plainer rules still read in order) */
+:where(#gear-table) tr:hover > td {
+  background: var(--surface2);
+}
+
+/* ==== Popovers and ? buttons ==== */
+/* the "?" button and its popup, which stands apart from the panels: raised background, accent border, dimmed page */
+.helpwrap {
+  margin-left: auto;
+  position: relative;
+}
+.help {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 600;
+}
+.help[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(720px, calc(100vw - 32px));
+  z-index: 10;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: var(--pop-shadow);
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+.popover a {
+  color: var(--accent);
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  background: var(--backdrop);
+}
+.popover.statpop {
+  right: auto;
+  width: 340px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.statpop h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+.statpop p {
+  margin: 0 0 6px;
+}
+.statpop p:last-child {
+  margin: 0;
+}
+/* the Substat tiers note scrolls with its button (it is absolute in the panel), so it goes under the pinned math bar (2) like the
+   tables it sits in, and over the table's cells */
+#t-pop {
+  z-index: 1;
+}
+/* a substat's ? and its note */
+.help.shelp {
+  width: 20px;
+  height: 20px;
+  font-size: 0.72rem;
+  vertical-align: 1px;
+  margin-left: 2px;
+  text-transform: none;
+  letter-spacing: 0;
+}

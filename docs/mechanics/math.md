@@ -42,7 +42,7 @@ Notes on the table:
   - The "Dexterity" column: Ninja (NIN), Viper (VPR), Bard (BRD), Machinist (MCH) and Dancer (DNC).
   - Casters: Black Mage (BLM), Summoner (SMN), Red Mage (RDM), Pictomancer (PCT) and Blue Mage (BLU).
 - Speed and the special substat also count as substats.
-- Paladin and Beastmaster wear a one-handed weapon and a shield (section 3); every other job a two-handed weapon.
+- Paladin and Beastmaster wear a one-handed weapon and a shield; White Mage and Black Mage wear either that or a two-handed weapon (section 3); every other job a two-handed weapon.
 - Beastmaster's speed stat and missing special substat are **inferred** from its melee role (no game column names a job's substats; xivgear uses the same), and its own gear carries neither.
 
 - **Level cap.** Two limited jobs stop below the game's level cap of 100: Blue Mage at 80 and Beastmaster at 50. This is **verified** by the Lodestone's [Patch 6.45 Notes](https://na.finalfantasyxiv.com/lodestone/topics/detail/2a6c65f39b5b16b58bd4f0d9b1edaa8c0b7ec4f3), "The level cap for blue mage has been increased to 80", and [Patch 7.56 Notes](https://na.finalfantasyxiv.com/lodestone/topics/detail/a8a526ad64db45c8ca8d1c7fdcce8a5eedaa18bc), "begins at level 1 with a maximum level of 50". The game files hold no level cap; their `ClassJob` sheet flags exactly these two jobs as limited (`IsLimitedJob`).
@@ -101,13 +101,14 @@ That fraction is the slot's **slot share**, stored in per mille (thousandths) in
 
 - The sheet's waist column is 0; the game no longer has a belt slot.
 - The cloak share is the game's body-plus-head column. The two real cloaks (Vermilion Cloaks, item level 300) are reproduced exactly with it ([validation.md, section 2](validation.md#2-every-real-piece-by-item-level-band)).
-- Paladin and Beastmaster are the only combat jobs with a one-handed weapon plus a shield (100 + 40). Every other job uses a two-handed weapon (140).
+- Only Paladin, Beastmaster, White Mage and Black Mage have shields (**verified**: the item data's job lists, by slot code; a unit test derives the four from it, so a data update that gives another job a shield fails there). Paladin and Beastmaster have only one-handed weapons and shields (100 + 40). White Mage and Black Mage also have two-handed weapons (140), and both kinds exist at every equip level from 1 to 50 (**verified**: game files), so the tool offers them the Off-hand row at every level and the search chooses between a two-handed weapon and a wand and shield. Every other job uses a two-handed weapon (140).
 
 **The off-hand is the two-handed value minus the one-handed value.** Real shields do not follow the 40 ‰ share directly. Each stat on an off-hand equals the two-handed weapon's value minus the one-handed weapon's value at the same item level and substat share, each computed with the formula of section 4. That is 140 − 100 = 40, but rounded as two weapons rather than once at 40. Two examples, then the count:
 
 - Vanguard Shield, item level 672: Critical Hit 63 = 218 − 155, where 40 ‰ gives 62.
 - The item level 120 shields: Tenacity 13 = 47 − 34, where 40 ‰ gives 14.
 - It reproduces 224 of 226 real off-hands exactly, against 195 for the 40 ‰ share.
+- White Mage's 28 and Black Mage's 27 shields (equip level 1 to 50) and their 28 and 42 one-handed weapons: 124 of 125 are exact, the casters' Vitality factor on the shields included; Round Shield (item level 10) is one point off, as it is for Paladin and Beastmaster (**verified**: unit test `core/formulas.shields`). Their synced stats follow the same rule, with no in-game capture (**inferred**).
 
 **Inferred**: it fits the data, but the game files do not say how shields are built. Sync uses it too, so a shield's caps are the two-handed cap minus the one-handed cap (section 5).
 
@@ -163,13 +164,13 @@ $$
 
 | Kind of item | Main stat | Vitality | Pieces |
 | --- | --- | --- | --- |
-| Strength (1, 2, 3, 10), Dexterity (4, 11, 12) | 100% | 100% | 12,733 |
-| Intelligence (5), Mind (6) | 100% | 90% | 6,528 |
-| Strength + Dexterity (7) | 100% | 100% | 411 |
-| Intelligence + Mind (8) | 100% | 90% | 297 |
-| All four main stats (0) | 90% | 90% | 62 |
+| Strength (1, 2, 3, 10), Dexterity (4, 11, 12) | 100% | 100% | 12,794 |
+| Intelligence (5), Mind (6) | 100% | 90% | 6,556 |
+| Strength + Dexterity (7) | 100% | 100% | 450 |
+| Intelligence + Mind (8) | 100% | 90% | 326 |
+| All four main stats (0) | 90% | 90% | 84 |
 
-Counts are database pieces (the current database, from item level 1, data `d9582a6`, 2026-10-16). Notes on the kinds, at item level 100 and up (60, 5 and 19 pieces of kinds 7, 8 and 0; below 100 they also cover older sets, such as the Replica Allagan "of Striking" gear and the Grand Company Elite sets):
+Counts are database pieces (the current database, from item level 1, data `d9582a6`). Notes on the kinds, at item level 100 and up (60, 5 and 19 pieces of kinds 7, 8 and 0; below 100 they also cover older sets, such as the Replica Allagan "of Striking" gear and the Grand Company Elite sets):
 
 - Kind 7 is the Beastmaster gear (its job sets, Guttler, the Beastliege's and Kornago weapons and shields), the Gloam, High Allagan and Guardian's "of Striking" sets and the Occult "of Blood" accessories. Kind 8 is the Occult "of Magic" accessories. (Occult accessories are item level 745 field operation gear.)
 - Kind 9 is crafter and gatherer gear, which the database leaves out.
@@ -278,12 +279,12 @@ For example 157 at item level 790, 131 at 660, 64 at 123. The optimizer ranks it
 - Weapon damage has share 1,000 on main-hand weapons and 0 elsewhere.
 - Defense has head, hands and feet 176, body and legs 236, the two-slot body and legs codes 412, the full-body code 824, and 0 on weapons, shields and accessories.
 
-- Defense under sync: **second-hand**, in-instance values from xivgear's tests: item level 663 chests synced to 660 go from 842 to 837 Defense (Maiming) and from 481 to 478 Defense (Healing), and an accessory's 1 goes to 0. The formula gives all of them (tests/unit/core-damage-defense.test.js).
+- Defense under sync: **verified** in game for kinds 4 and 6 (the owner's recordings, below) and **second-hand** for kind 2, from in-instance values in xivgear's tests: item level 663 chests synced to 660 go from 842 to 837 Defense (Maiming) and from 481 to 478 Defense (Healing), and an accessory's 1 goes to 0. The formula gives all of them (tests/unit/core/damage-defense.test.js).
   - **Caveat: the evidence is narrow.** It covers kind 2 at item level 660 and kind 6 at 660 and 605.
   - The 605 case is [xivgear issue #746](https://github.com/xiv-gear-planner/gear-planner/issues/746) (2025-09, with screenshots; **second-hand**). An Astrologian set of 11 kind 6 pieces, level 90 synced to 605, shows 1,798 Defense and 3,145 Magic Defense in game, exactly what the model gives.
   - The kind's factor does not describe every piece's own Defense. The cap at a piece's own item level gives back its own Defense and Magic Defense for none of the 58 kind 0 pieces with defense (the four-main-stat sets, the all-jobs accessories). Kind 7 and kind 2 pieces have misfits too (the Gloam "of Striking" set, Hetairos). All were found by comparing every piece's own Defense with its kind's cap at its own item level (**verified** against the game data `d9582a6`).
   - For example, Field Commander's Coat (kind 0) carries Defense 117 and Magic Defense 205, a 40/70 ratio, while kind 0's factors are 66/33; synced to 123, its Magic Defense drops to 61.
-  - So the cap is **second-hand** for the kinds tested and **assumed** for the rest. Defense is shown, never ranked, so a wrong cap changes no gear choice.
+  - So the cap is **verified** in game for kinds 4 and 6 (the owner's recordings: 60 synced Defense and Magic Defense values, all equal), supported by xivgear's in-game values for kind 2, and **assumed** for the rest. Defense is shown, never ranked, so a wrong cap changes no gear choice.
 - Weapon damage under sync: that sync lowers it is **second-hand** (players' reports from synced duties, 2019: a higher-level relic in The Weapon's Refrain, synced to 375, hit like the 375 weapons or one point under; Square Enix forum threads 385429 and 385378).
   - The exact value, the `ItemLevel` table's at the synced item level, is **inferred**. The formula gives every weapon's own weapon damage at its own item level (5,412 of the 5,425 weapons in the item database; the exceptions are 10 Atma weapons and 3 at item level 30), and xivgear and ffxiv-gearing clamp it so in code.
   - The Character Panel Refined plugin's item tooltips show the same value under sync (`ItemTooltipAugments.cs`; **inferred**, weakly supported: its other tooltip rules scale main stat, Vitality and Defense by a ratio, which does not match xivgear's in-instance Defense).
@@ -320,7 +321,7 @@ A synced piece also loses its materia melds (**verified** by the owner in game; 
 - The same holds for a limited job at its own cap (Blue Mage 80, Beastmaster 50, section 1): it cannot wear gear of a higher equip level, so How the math works shows no level sync there.
 - Scaling gear (above) is the exception: at 80 a Blue Mage wears Azeyma's and Halone's Earrings (item level 560 and 690) at 530, at 50 a Beastmaster wears the five scaling accessories it can equip at 130.
 
-**When both apply, the item level cap wins**, even where it is the higher of the two, **up to $\text{top}(L)$**, the highest item level of gear made for level $L$. In Aloalo Island (level 90, cap 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660. Level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). **Second-hand**: a player's report quoted by xivgear, which applies the same order; not captured by this project.
+**When both apply, the item level cap wins**, even where it is the higher of the two, **up to $\text{top}(L)$**, the highest item level of gear made for level $L$. In Aloalo Island (level 90, cap 665) a player saw level 95 and 96 gear at item level 666 and 669 with item level 665 stats, not 660. Level 94 gear at item level 663 (below the cap) was synced to 660 by its level ([xivgear issue #317](https://github.com/xiv-gear-planner/gear-planner/issues/317)). **Verified** against xivgear, which applies the same order (`datamanager_new.ts`), and a player's in-game report in its issue #317. The owner's recordings confirm the order where the cap is the lower of the two; no recording has a cap above $\text{sync}(L)$.
 
 In the owner's case the order does not matter: at T13 the cap 123 is below $\text{sync}(50) = 130$.
 
@@ -447,7 +448,7 @@ $$
 \lfloor 355 \times 0.9 \rfloor = 319,\ \lfloor 319 \times 1.35 \rfloor = 430,\ 43.0 \to 43; \qquad \lfloor 375 \times 0.9 \rfloor = 337,\ \lfloor 337 \times 1.35 \rfloor = 454,\ 45.4 \to 45
 $$
 
-**Evidence for the cap order.** xivgear computes caps this way (`statCapWithJob`, [xivmath.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/xivmath.ts#L647-L649)), and three in-game values quoted in its tests fit the factor-first cap and miss the item order by 1; the values, the arithmetic and the sources are in [validation.md, section 8](validation.md#8-in-game-captures-still-missing). **Verified** by these three second-hand in-game values; for the other factor-below-100 caps the order is **inferred** from them.
+**Evidence for the cap order.** xivgear computes caps this way (`statCapWithJob`, [xivmath.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/xivmath.ts#L647-L649)), and three in-game values quoted in its tests fit the factor-first cap and miss the item order by 1; the values, the arithmetic and the sources are in [validation.md, section 8](validation.md#8-in-game-captures-still-missing). **Verified** in game: the owner's recordings show Vitality 56 on three Sage pieces (head, hands, feet) synced to 270, where the item order gives 57, and the three values in xivgear's tests agree.
 
 ### Caps at item level 123
 
@@ -461,7 +462,10 @@ Cap 123 uses budget row 123: main stat 355, substat 346, Vitality 375. The Intel
 | Two-handed weapon | 48 | 50 | 53 | 47 |
 | One-handed weapon (Paladin, Beastmaster) | 35 | 36 | 38 | – |
 | Shield (Paladin, Beastmaster) | 13 | 14 | 15 | – |
+| One-handed weapon (White Mage, Black Mage) | 35 | 36 | – | 34 |
+| Shield (White Mage, Black Mage) | 13 | 14 | – | 13 |
 
+- A dash marks a Vitality column the job does not use: Paladin and Beastmaster have Strength, White Mage and Black Mage Intelligence or Mind. Substat and main-stat caps do not depend on the job's stat family. A caster's one-handed weapon is $\lfloor 337 \times 1.00 \rfloor = 337 \to 34$ and its shield the two-handed cap minus that, $47 - 34 = 13$ (**inferred**, as for the Paladin shield, section 3).
 - On the worked example piece, cap 123 changes Mind from 33 to 30, Vitality from 32 to 29 and Spell Speed from 31 to 29. Piety (22) and Direct Hit (6) stay as they are.
 - For jobs with no special substat (melee, Dexterity and caster DPS), Piety or Tenacity on a piece is ignored, so its cap is 0.
 
@@ -477,16 +481,16 @@ Three parts of the clamp rule rest on less than the Wiki check above:
 
 - **Main stat and Vitality** are clamped the same way as substats, with the piece's own stat factor.
   - The Wiki table covers substats only. The three second-hand in-game values of the clamp rule above (two Vitality caps and a kind 0 earring's main stat at its kind's 90%; [validation.md, section 8](validation.md#8-in-game-captures-still-missing)) support it. So does a whole gear set for Vitality: xivgear's level-sync test of 11 Blue Mage pieces at item level 530 expects Vitality 784 at level 60 and 523 at level 50, values committed before its fix ([PR #950](https://github.com/xiv-gear-planner/gear-planner/pull/950)). The model gives both exactly (the item order gives 787; **second-hand**, their in-game origin inferred).
-  - This project has no capture of its own, so the clamp stays **inferred** for Vitality as for the main stat (owner's decision), and so does using the piece's factor rather than the job's.
+  - **Verified** in game for single-main-stat gear: the owner's recordings give 108 synced main stat and Vitality values (Sage and Bard, item level 770 gear synced to 100, 130, 240, 270 and 273), all equal to the model. Using the piece's own factor on the kind 0 pieces stays **inferred**: none was recorded.
   - xivgear does the same: its caps take the factor from the item (`BaseParamModifier`), and its `applyStatCaps` ([gear.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/gear.ts)) clamps every stat on a synced piece, main stats and Vitality included, exempting only weapon delay (`NO_SYNC_STATS`, [geartypes.ts](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/xivmath/src/geartypes.ts)). With the factor-first order, its cap formula and this page's are the same.
 - **Lower-ranked substats** are clamped against the full-share cap. The alternative would clamp them against their own share at the cap (for example $\operatorname{round}(29 \times 0.7) = 20$ for a 70% Piety on a head piece at 123, instead of 29). **Verified** (published): the FFXIV Wiki's Item Level page shows accessories synced to item level 475 (cap 88).
   - An item level 600 piece's 127 / 89 becomes 88 / 88, so the 70% line reaches the full cap.
-  - An item level 500 piece's 93 / 65 becomes 88 / 65 (the formula gives the same six numbers; tests/unit/ui-views-sync-explainer.test.js).
+  - An item level 500 piece's 93 / 65 becomes 88 / 65 (the formula gives the same six numbers; tests/unit/ui/views/sync-explainer.test.js).
   - A player's in-game report and The Balance's item level thresholds for "both substats capped" agree.
   - The evidence is in [validation.md, section 8](validation.md#8-in-game-captures-still-missing).
 - **No scaling up**: sync never raises a stat. **Verified** for substats (published): the Wiki's 65 stays 65 above, and its page says "Substats will not be scaled up".
 
-An in-game capture under a known sync would settle the first point; what to capture is in [validation.md, section 8](validation.md#8-in-game-captures-still-missing).
+An in-game capture of a kind 0 piece under sync would settle the last open part; what to capture is in [validation.md, section 8](validation.md#8-in-game-captures-still-missing).
 
 ## 6. Speed and substat tiers
 
@@ -602,18 +606,18 @@ Like the GCD, every other substat's effect moves in steps (critical rate, Determ
 - **The target:** since every effect only rises with more points, the highest raw target total is always in the highest reachable step. Proved from the formulas and confirmed on 736 optimizer runs on full pools.
 - **Tiebreaks:** in 200 of 572 runs with a target and one tiebreak, another gear set keeps the target's step and puts the tiebreak a step higher. This happens mostly at level 100, where steps are 14 to 25 points wide, and rarely at level 50 (cap 123), where they are 1 to 3. It nearly always needs different gear, not different melds ([materia.md](materia.md)).
 - **What the tool does:** by default it ranks by step (tier ranking, [tier-ranking.md](../engineering/tier-ranking.md)): it holds the target and each tiebreak at the start of its best step plus one point, in order, then ranks the raw totals. With the Spare points to tiebreaks switch off it ranks raw totals only. Either way, under the result it shows each substat's effect (from gear, and with food when Food is on), the points above the start of its step and the points to the next.
-- **Substat tiers sub-tab:** How the math works shows every substat's steps around a value (`tierLadder` in `src/core/tiers.js`). Where a substat has two effects, a step ends where either changes.
+- **Substat tiers sub-tab:** How the math works shows every step of each substat from its base up to the most a box takes (`tierLadder` in `src/core/tiers.js`), each row as the range of panel values that give its effect. Where a substat has two effects, a step ends where either changes. The most is the same gear for every substat, the most speed any job can have at the level (`MAX_SPEED`); for the substats other than speed that is a guess, since each draws on the same pieces and melds, so a substat that can go a little higher is held to it.
   - Critical Hit's rate and what a critical hit adds (40% plus the rate's step, so always the rate + 35%) step together.
   - Tenacity's damage and healing (112) and damage taken (200) step apart, so its steps are 1 to 14 points at level 100.
   - Critical Hit, Determination and Tenacity's first effect apply to outgoing healing too, Direct Hit to damage only (AkhMorning, checked 2026-10-17).
 
-  The Substat tiers sub-tab, which shows these steps around a value on its own level, is in [ui.md, section 4](../engineering/ui.md#4-the-how-the-math-works-tab).
+  The Substat tiers sub-tab, which shows these steps on its own level, is in [ui.md, section 4](../engineering/ui.md#4-the-how-the-math-works-tab).
 
 **Verified**, by measuring with an independent dynamic program. The step formulas are the community ones from AkhMorning, matching xivgear (**inferred**).
 
 ### Totals as on the character panel
 
-Which number does the page show for a total: gear points only, or what the character panel in game shows? The result's Total and With food rows show every stat as the character panel does: the character's base plus gear (plus food), apart from the clan's bonus.
+Which number does the page show for a total: gear points only, or what the character panel in game shows? The result's Total and With food rows show every stat as the character panel does: the character's base plus gear (plus food). The main stat and Vitality also count the clan's bonus and the party bonus when the sheet sets them, and leave them out otherwise. They never enter the optimizer or Auto-fill, which rank on gear points.
 
 - The base is $\text{sub}$ for Critical Hit, Direct Hit, Skill or Spell Speed and Tenacity, and the level's base main stat (AkhMorning's table, in no game sheet; **inferred**) for Determination and Piety: at level 50, 341 and 202; at level 100, 420 and 440.
 - The effects and tiers come out the same either way, since each formula subtracts that base again.
@@ -621,8 +625,21 @@ Which number does the page show for a total: gear points only, or what the chara
   - The modifiers are in `ClassJob` (**verified** game file): Sage Mind 115 and Vitality 100, Warrior Strength 105 and Vitality 110; tanks' Vitality 110, Dragoon's and Reaper's 105, everyone else's 100.
   - The formula is AkhMorning's and xivgear's (**inferred**).
   - At level 50 a Sage starts from 232 Mind and 202 Vitality.
-- The panel also adds the clan's bonus (`Tribe`, **verified** game file): −1 to +3 Strength, −3 to +3 Dexterity and Intelligence, −2 to +3 Mind and Vitality. The page does not ask for the clan, so its main stat and Vitality can be up to 3 points off the panel's (owner's decision).
+- The panel also adds the clan's bonus. The values are **verified**: the game's `Tribe` sheet, xivgear's `RACE_STATS` and the Wiki's Starting Attributes page (a base of 20 plus the offset) agree. They run from −1 to +3 for Strength, −3 to +3 for Dexterity and Intelligence, and −2 to +3 for Mind and Vitality, the same at every level. That the character panel counts them is **confirmed by the owner** (their panel shows it) and matches xivgear and the Wiki's attribute formula. A clan's race is the Wiki's grouping of the same clans in the same order (Hyur: Midlander, Highlander; Elezen: Wildwood, Duskwight; and so on to Viera: Rava, Veena). A saved sheet holds the clan (`sheet.clan`, none by default); only the main stat and Vitality take it, and a stat the clan does not change (the substats) takes nothing.
+- The party bonus is 1% of every attribute (Strength, Dexterity, Vitality, Intelligence and Mind) for each unique role in the current party (tank, healer, melee, physical ranged, magical ranged), at most 5%: the Patch 5.0 notes and the Wiki's Party page, **verified**. The Wiki's example is a party of Paladin, White Mage, Black Mage and Pictomancer: three roles (the two magical ranged jobs count once), so 3%. The party need not be full (the example has four players). The tool shows only the job's main stat and Vitality, so those are the two it applies the bonus to. A saved sheet holds the number of roles (`sheet.partyRoles`, 0 to 5, none by default). It rounds down: xivgear does (it shows 1376 for the set above, not 1377), and the owner confirms the game does too. It applies at any sync, in synced duties and Ultimates as well: xivgear has no sync condition and shows it at a synced level 70, and the owner confirms the game adds it at the end, like a meal, on top of the synced gear (**confirmed by the owner**, not recorded in a session file).
+- The order is xivgear's: main stat and Vitality are $\lfloor (\text{base} + \text{clan} + \text{gear}) \times (1 + 0.01 \times \text{roles}) \rfloor$ plus the meal's points; every other stat is base + gear + meal. A meal's percentage is taken of the value before the party bonus, so for Vitality of base + clan + gear. An xivgear sheet at level 70 with item level sync 375, no clan and five unique roles shows the Strength of a set this tool totals as 1311 as 1376 ($\lfloor 1311 \times 1.05 \rfloor = \lfloor 1376.55 \rfloor$; the owner's screenshot, **verified**). A Strength +2 clan would make it $\lfloor 1313 \times 1.05 \rfloor = 1378$.
 - AkhMorning's level table equals the tool's at all 100 levels, and its effect formulas on panel numbers equal the tool's ([validation.md, section 5](validation.md#5-speed-and-gcd)).
+
+### Average item level
+
+The set page's Total row shows the average item level of the worn gear, as the character panel does (`averageItemLevel`, `core/set.js`).
+
+- The sum of the slots' item levels over the slots: weapon, off-hand, head, body, hands, legs, feet, earrings, necklace, bracelet and two rings, 12 in all (xivgear's `avgIlvl`, `gear.ts` at commit `6c3c878`: **verified** in code; that the game does the same is **inferred**, from the [Wiki's Item Level page](https://ffxiv.consolegameswiki.com/wiki/Item_Level)). The soul crystal is not counted (**inferred**).
+- A two-handed weapon counts twice, in place of the off-hand (xivgear pushes its item level twice; the Wiki says the same: **verified** in code, **inferred** for the game). A one-handed weapon counts once, with a shield or without; with no shield the off-hand counts 0 (xivgear: **verified** in code; the game's own rule for it is a **guess**).
+- An empty slot counts 0, and so does a slot another piece covers (a robe over the head; no source, a **guess**). Every slot is in the divisor (xivgear: "Empty slots count as zero").
+- Blue Mage: the weapon and off-hand are left out and the divisor is 10 (xivgear: "ignore BLU weapon", **verified** in code; the game's own rule is a **guess**).
+- The item level is each piece's own, not the synced one; the meal is not counted.
+- The page shows the quotient rounded to the nearest whole number, with a leading `~` ("~77") so it reads as an average (**owner's decision**). xivgear returns the unrounded quotient and the game's rounding is not documented, so a shown figure can be 1 off the panel's (**guess**).
 
 ### Food
 
@@ -652,7 +669,7 @@ Note on the table:
 
 - Within one ordered stat pair (primary, secondary), a newer meal never has a lower maximum (all 255 two-substat meals), so each pair is represented by its newest meal.
 - A meal is left out when another one has each of its stats at an equal or higher maximum (an old Critical Hit + Determination meal next to a new Determination + Critical Hit one), so a job has 7 to 13 choices.
-- Vitality from food is counted like a substat's, from the Vitality base above. Without the clan's bonus it can be a point lower than in game. It never decides the meal unless Vitality is the target or a tiebreak: the "most food points" step after the goal and tiebreaks counts substats only.
+- Vitality from food is counted like a substat's, from the Vitality base above plus the clan's offset when a saved sheet sets a clan (never the party bonus). The searches leave the clan out, so their Vitality food can be a point off the game's. It never decides the meal unless Vitality is the target or a tiebreak: the "most food points" step after the goal and tiebreaks counts substats only.
 
 **Food does not change the gear with raw ranking** and no target GCD. For each stat, $g + f(g)$ rises with every gear point (the floor and the cap never make it fall). So ranking gear sets by gear totals and by totals with food gives the same order, and the optimizer is unchanged.
 
@@ -674,6 +691,7 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | Claim | Status | Evidence |
 | --- | --- | --- |
 | Weapon damage = the `ItemLevel` budget at the weapon's item level | Verified (game files) | 5,566 of 5,579 combat weapons in `Item.csv`; 5,412 of 5,425 in the database |
+| Defense clamped like a stat under sync, kinds 4 and 6 | **Verified** (in game) | The owner's recordings: 60 synced Defense and Magic Defense values at item level 100 to 273, all equal |
 | Defense clamped like a stat under sync, kinds 2 and 6 at item level 660 | **Second-hand** (in-instance values) | xivgear's tests, 3 of 3, item level 660 ([caveat](#weapon-damage-and-defense)) |
 | Defense clamped like a stat under sync, kind 6 at item level 605 | **Second-hand** | [xivgear issue #746](https://github.com/xiv-gear-planner/gear-planner/issues/746): an Astrologian set of 11 pieces, with screenshots |
 | Defense clamped like a stat under sync, other kinds | **Assumed** | No in-game value; the kind's factor does not give some pieces' own Defense ([caveat](#weapon-damage-and-defense)) |
@@ -699,13 +717,14 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | An item's stat factors (from its kind) | `src/core/items.js` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.js` |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/piece.js` |
-| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/state.js` (`limitCapToLevel`, called by the settings component in `src/ui/components/page.js`); `src/ui/settings.js` (`shownSync` for How the math works) |
-| The cap shown on How the math works; level sync off at the job's cap | `src/ui/settings.js` (`shownSync`, `levelSyncOn`) |
+| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/level-cap.js` (`limitCapToLevel`, called by the settings component in `src/ui/components/page.js`); `src/ui/job-sync-panel.js` (`shownSync` for How the math works) |
+| The cap shown on How the math works; level sync off at the job's cap | `src/ui/job-sync-panel.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.js` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.js` |
 | The 1.50 s GCD floor | `src/core/constants.js` (`GCD_FLOOR_MS`) |
 | Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
-| Food: bonus, base, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json`; main stat base `LEVEL_MAIN` in `src/core/constants.js` |
+| Food: bonus, choices per job, best meal for a goal, gear needed for a total | `src/core/food.js`; meals in `src/data/food.json` |
+| A character's base stat at a level (`statBase`), main stat base `LEVEL_MAIN` | `src/core/base-stats.js` |
 | Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.js`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.js` |
-| Accuracy against real items, Wiki 475 check | `src/core/validation.js` |
+| Accuracy against real items, Wiki 475 check | `tests/unit/helpers/model-validation.js` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
-| Tests for the above | `tests/unit/core-formulas.test.js`, `core-formulas.sync-clamp.test.js`, `core-formulas.sync-cap-order.test.js`, `core-sync-target.test.js`, `core-speed.test.js`, `core-validation.test.js`, `core-formulas.stat-factor.test.js` |
+| Tests for the above | `tests/unit/core/formulas.test.js`, `core/formulas.sync-clamp.test.js`, `core/formulas.sync-cap-order.test.js`, `core/sync-target.test.js`, `core/speed.test.js`, `core/formulas.model-accuracy.test.js`, `core/formulas.stat-factor.test.js` |

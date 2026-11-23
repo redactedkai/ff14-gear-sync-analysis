@@ -1,21 +1,79 @@
-<!-- The "Gear from" filter's dropdown, shared by the Gear browser and a set's Fill settings (helpers.js gearFromToggles).
-     {{id}}: the id prefix ('b' the browser, 's' the Fill settings). -->
-<div class="f multi" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window.capture="closeMenuOnEscape($data, $event, $refs.fromBtn)" @resize.window="open && placeMenu($refs.fromMenu, $refs.fromBtn)" @scroll.window.capture="open && placeMenu($refs.fromMenu, $refs.fromBtn)">
-  <span id="{{id}}-from-label">Gear from</span>
-  <button type="button" class="multi-btn" x-ref="fromBtn" id="{{id}}-from" aria-haspopup="true" :aria-expanded="String(open)" aria-labelledby="{{id}}-from-label {{id}}-from" @click="open = !open; $nextTick(() => placeMenu($refs.fromMenu, $refs.fromBtn))" x-text="fromSummary()"></button>
-  <div class="multi-menu from-menu" x-ref="fromMenu" id="{{id}}-from-menu" role="group" aria-labelledby="{{id}}-from-label" x-show="open" x-cloak @mouseleave="fromPointed = null">
-    <label class="from-switch" @mouseenter="fromPointed = 'market'" @focusin="fromPointed = 'market'"><span>Include market board gear</span><input type="checkbox" role="switch" id="{{id}}-market" :checked="marketOn()" @change="setMarket($event.target.checked)"></label>
-    <div class="from-head"><button type="button" class="linkbtn" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" @click="setFromAll('default')">Default</button></div>
-    <div class="from-cols">
-      <template x-for="col in gearFromColumns" :key="col.key"><div>
-        <template x-for="sec in col.sections" :key="sec.title"><div>
-          <div class="from-sec" x-text="sec.title"></div>
-          <template x-for="a in sec.boxes" :key="a.key">
-            <label class="multi-opt" :class="{ 'from-empty': fromEmpty(a.key) }" @mouseenter="fromPointed = a.key" @focusin="fromPointed = a.key"><input type="checkbox" :data-activity="a.key" :checked="fromOn(a.key)" @change="setFromOn(a.key, $event.target.checked)"><span x-text="a.label"></span></label>
-          </template>
-        </div></template>
+<!-- The "Gear categories" filter's dropdown, shared by the Gear browser and a set's Auto-fill settings (components/filter-menus.js gearFromToggles).
+     The menu has a head (the market board switch at the left, All / None / Default at the right), one tab per section with its ticked count,
+     and the selected tab's boxes, each with what it covers under its name and, at the right end of its title line, how many pieces it
+     holds under the current filters (fromCounts: no number until the count is known, a gold 0 for none; the sentence for a screen reader is the
+     row's title and a hidden description, the visible number aria-hidden). The head's buttons come last in the markup so the Tab order is
+     the switch, the tabs, the boxes, then All / None / Default; the CSS puts them in the head.
+     {{id}}: the id prefix ('b' the browser, 's' the Auto-fill settings). -->
+<div
+  class="f multi"
+  x-ref="fromControl"
+  x-data="menuScope('{{id}}-from', 'fromBtn', '{{id}}' === 's' ? 'settings' : null, { tab: fromTabs[0].key })"
+  @resize.window="filterMenuOpen && placeMenu($refs.fromMenu, $refs.fromBtn, $refs.fromControl)"
+  @scroll.window.capture="if (filterMenuOpen && !isOwnScroll($event, $refs.fromMenu)) placeMenu($refs.fromMenu, $refs.fromBtn, $refs.fromControl)">
+  <span id="{{id}}-from-label">Gear categories</span>
+  <button
+    type="button"
+    class="multi-btn from-btn"
+    x-ref="fromBtn"
+    id="{{id}}-from"
+    aria-haspopup="true"
+    :aria-expanded="String(filterMenuOpen)"
+    aria-labelledby="{{id}}-from-label {{id}}-from"
+    @click="toggleFilterMenu(); $nextTick(() => placeMenu($refs.fromMenu, $refs.fromBtn, $refs.fromControl))"
+    @keydown.arrow-down.prevent="openFilterMenu(); $nextTick(() => placeMenu($refs.fromMenu, $refs.fromBtn, $refs.fromControl))"
+    :title="fromMarketWords()"><span class="from-text" x-text="fromSummary()"></span><svg
+      class="from-market"
+      :class="fromMarketOff() ? 'off' : 'on'"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      role="img"
+      :aria-label="fromMarketWords()"><path fill="currentColor" d="M21 13.2422V20H22V22H2V20H3V13.2422C1.79401 12.435 1 11.0602 1 9.5C1 8.67286 1.22443 7.87621 1.63322 7.19746L4.3453 2.5C4.52393 2.1906 4.85406 2 5.21132 2H18.7887C19.1459 2 19.4761 2.1906 19.6547 2.5L22.3575 7.18172C22.7756 7.87621 23 8.67286 23 9.5C23 11.0602 22.206 12.435 21 13.2422ZM19 13.9725C18.8358 13.9907 18.669 14 18.5 14C17.2409 14 16.0789 13.478 15.25 12.6132C14.4211 13.478 13.2591 14 12 14C10.7409 14 9.5789 13.478 8.75 12.6132C7.9211 13.478 6.75911 14 5.5 14C5.331 14 5.16417 13.9907 5 13.9725V20H19V13.9725ZM5.78865 4L3.35598 8.21321C3.12409 8.59843 3 9.0389 3 9.5C3 10.8807 4.11929 12 5.5 12C6.53096 12 7.44467 11.3703 7.82179 10.4295C8.1574 9.59223 9.3426 9.59223 9.67821 10.4295C10.0553 11.3703 10.969 12 12 12C13.031 12 13.9447 11.3703 14.3218 10.4295C14.6574 9.59223 15.8426 9.59223 16.1782 10.4295C16.5553 11.3703 17.469 12 18.5 12C19.8807 12 21 10.8807 21 9.5C21 9.0389 20.8759 8.59843 20.6347 8.19746L18.2113 4H5.78865Z"/><g x-show="fromMarketOff()"><path class="from-slash-gap" d="M2 22L22 2"/><path class="from-slash" d="M2 22L22 2"/></g></svg></button>
+  <div
+    class="multi-menu from-menu"
+    x-ref="fromMenu"
+    id="{{id}}-from-menu"
+    role="group"
+    aria-labelledby="{{id}}-from-label"
+    x-show="filterMenuOpen"
+    x-cloak>
+    <label class="from-switch"><input
+      type="checkbox"
+      role="switch"
+      id="{{id}}-market"
+      :checked="marketOn()"
+      @change="setMarket($event.target.checked)"><span>Include market board gear</span></label>
+    <div class="from-tabs" role="tablist" aria-label="Sections of Gear categories" x-ref="fromTabs" @keydown="fromTabKey($data, $event, $refs.fromTabs)">
+      <template x-for="t in fromTabs" :key="t.key"><button
+        type="button"
+        role="tab"
+        :id="'{{id}}-from-tab-' + t.key"
+        :aria-controls="'{{id}}-from-panel-' + t.key"
+        :aria-selected="String(tab === t.key)"
+        :tabindex="tab === t.key ? 0 : -1"
+        @click="tab = t.key"><span x-text="t.title"></span><span class="from-tab-n" x-text="fromTabCount(t)"></span></button></template>
+    </div>
+    <div class="from-panels">
+      <template x-for="t in fromTabs" :key="t.key"><div
+        class="from-panel"
+        :class="{ 'by-row': t.byRow, 'is-off': tab !== t.key }"
+        :style="'--rows: ' + t.rows"
+        role="tabpanel"
+        :id="'{{id}}-from-panel-' + t.key"
+        :aria-labelledby="'{{id}}-from-tab-' + t.key">
+        <template x-for="a in t.boxes" :key="a.key">
+          <label
+            class="multi-opt from-opt"
+            :title="fromCountWords(a.key) || null"><input
+            type="checkbox"
+            :data-activity="a.key"
+            :aria-describedby="'{{id}}-from-hint-' + a.key + ' {{id}}-from-count-' + a.key"
+            :checked="fromOn(a.key)"
+            @change="setFromOn(a.key, $event.target.checked)"><span class="from-line"><span class="from-name" x-text="a.label"></span><span class="from-count" :class="{ zero: fromZero(a.key) }" aria-hidden="true" x-text="fromCountText(a.key)"></span></span><span class="from-hint" :id="'{{id}}-from-hint-' + a.key" x-text="a.hint"></span><span hidden :id="'{{id}}-from-count-' + a.key" x-text="fromCountWords(a.key)"></span></label>
+        </template>
       </div></template>
     </div>
-    <p class="from-desc" id="{{id}}-from-desc"><template x-if="fromDescription()"><span><b x-text="fromDescription().label + ':'"></b> <span x-text="fromDescription().text"></span></span></template></p>
+    <div class="from-acts"><button type="button" class="linkbtn" data-action="all" @click="setFromAll('all')">All</button><button type="button" class="linkbtn" data-action="none" @click="setFromAll('none')">None</button><button type="button" class="linkbtn" data-action="default" @click="setFromAll('default')">Default</button></div>
   </div>
 </div>

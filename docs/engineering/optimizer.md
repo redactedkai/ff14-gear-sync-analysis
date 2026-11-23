@@ -8,7 +8,7 @@ Related pages: [math.md](../mechanics/math.md) (how a piece's stats are computed
 
 ## Overview in plain words
 
-What happens when the user presses Fill on a set page, step by step (each step's section has the details and the proof):
+What happens when the user presses Auto-fill on a set page, step by step (each step's section has the details and the proof):
 
 1. **The pool.** Every piece the job can wear that the Gear to search filters let through (section 7), with its synced stats when sync applies to it, and its best melds when it is not synced and Materia is on (section 6).
 2. **One number per piece.** Each piece's stats become one integer that ranks weapon damage first, then the target stat, then tiebreak 1 and tiebreak 2, so comparing two gear sets is comparing two sums (section 3).
@@ -28,7 +28,7 @@ What does the optimizer choose, and from what?
 
 **Slots that are not independent.**
 
-- Paladin and Beastmaster carry a one-handed weapon plus a shield (the off-hand slot); every other job uses a two-handed weapon, which leaves the off-hand empty. White Mage has both kinds at item level 100 (one wand and shield pair from A Realm Reborn).
+- Paladin and Beastmaster carry a one-handed weapon plus a shield (the off-hand slot); White Mage and Black Mage have both kinds (A Realm Reborn wands, scepters and shields up to item level 100), and every other job uses a two-handed weapon, which leaves the off-hand empty: for White Mage and Black Mage the search chooses between a two-handed weapon and a one-handed weapon with a shield, and the set page's Off-hand row shows the shield at every level.
 - A few body pieces (the Vermilion Cloaks) also cover the head and leave it empty.
 - A ring marked [Unique](../glossary.md#game-terms) can be worn only once, so it cannot fill both ring slots.
 
@@ -48,7 +48,7 @@ It is an implicit key: the page does not offer it as a goal, names it only in a 
 - **Copies.** Each pool item has a number of copies. A Unique ring can be worn once; any other ring can be worn in both ring slots, so it gets 2 copies. Everything else has 1 copy (it only fits one slot anyway). The copies come from the game data when an item is added and are not edited on the page; the gear table marks a 2-copy ring ×2.
 - **A speed range** (optional): a minimum and a maximum for the speed stat (Skill Speed or Spell Speed). Other stats have no limits, except the minimums tier ranking adds (section 5). The Target GCD layer (section 2) sets the range from a [GCD](../glossary.md#game-terms), the time between most actions; the page's control is in [ui.md, section 2](ui.md#target-gcd).
 
-**The pool** on the page is every piece the job can wear that the "Gear from" filter lets through; the rest is removed before the optimizer runs, so the search itself is unchanged (section 7).
+**The pool** on the page is every piece the job can wear that the "Gear categories" filter lets through; the rest is removed before the optimizer runs, so the search itself is unchanged (section 7).
 
 **Effective stats.** Some content lowers gear to a fixed item level ([item level sync](../glossary.md#game-terms)): sync caps each stat on a piece above the cap item level; see [math.md, section 5](../mechanics/math.md#5-item-level-sync). The optimizer uses the **effective** stats: the synced stats when sync is on, the item's own stats otherwise. With **melds** on (the page's default), every piece that is not synced first gets its best [materia](../glossary.md#game-terms) melds (stones that add a substat) for the objective, and its stats include them. Without a speed range one melded version per piece is enough, as section 6 shows, so the search itself does not change; with one, a piece brings each meld split worth keeping (section 6).
 
@@ -135,7 +135,7 @@ With one ring pinned, the other ring is a slot of its own (`FREE_RING` in `slot-
 
 With no pinned piece nothing changes: same lists, same node counts (checked on 540 searches, 106,307 nodes).
 
-Tests: `core-optimizer.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core-recipe.pins.test.js`.
+Tests: `core/optimizer/index.pinned.test.js` against the brute-force reference with the same pins (`fixed` in `tests/unit/helpers/exhaustive.js`, written independently), and `core/recipe.pins.test.js`.
 
 ### Target GCD: from a GCD to a speed range
 
@@ -495,20 +495,20 @@ What does the page hand to the engine? (What it shows back is in [ui.md](ui.md).
 
 **Gear to search** has the Gear browser's filters, in the same order, with the optimizer's own values:
 
-- Expansion, Equip level (pieces up to that equip level), item level from and to (each empty means no limit; the equip level starts at the job's level cap), and Gear from.
+- Expansion, Equip level (pieces up to that equip level), item level from and to (each empty means no limit; the equip level starts at the job's level cap), and Gear categories.
 - A piece passes exactly when the browser would list it with the same filters and no name or slot. The filters only narrow the pool, so they never make the search slower.
-- **Gear from** (owner's design) is a dropdown of 20 boxes by what a player does to get a piece, in two columns of sections: Everyday and Time-limited, Side content and Hard content.
+- **Gear categories** (owner's design) is a dropdown of 20 boxes by what a player does to get a piece, in three tabs: Everyday, Side content and Hard content.
   - *Rule:* a piece is searched when one of its ways to get it needs only ticked boxes (its routes, from the game files: [data-pipeline.md, section 4.6](data-pipeline.md#46-sources)). Savage and Extreme have a Current box (the level cap) and a Legacy one (below it, farmable unsynced); Ultimate is one box.
   - *Controls:* at the top of the menu, a market board switch (on by default) searches every tradeable piece whatever its boxes, then All, None and Default.
-  - *Feedback:* a line under the boxes describes the one under the pointer or keyboard focus; a box with nothing for the job and the other filters is greyed out but can still be ticked.
-  - *Defaults and saving:* nine boxes are off by default (`on` in the format file); the button reads "11 of 20", and adds "· no market board" only when the switch is off. A saved choice, including every box ticked, is kept.
+  - *Feedback:* a line under the boxes describes the one under the pointer or keyboard focus; each box shows at the right end of its title line how many pieces it holds in the pool under the other filters (`gearFromCounts`; a piece with two routes is in both boxes, so the numbers can add up to more than the pool), a box with none shows a gold 0 and can still be ticked.
+  - *Defaults and saving:* nine boxes are off by default (`on` in the format file); the button reads "11 of 20", and shows the market stall glyph in both states: gold when the market board switch is on, red and slashed when it is off. A saved choice, including every box ticked, is kept.
 - The heading counts the pieces searched out of every piece the job can wear (for Sage at level 50 with the default filters, "searching 2,153 of 2,422 pieces", 2026-10-20).
 - **Relics whose substats the player allocates** are always left out of the search (the page shows no note; roadmap A11 models them). Such a relic has no substats in the game files (category relic, no meld slots, no substats; `allocatedRelic`), but the highest weapon damage of its time, so with weapon damage first it would win with none of the goal's stats. Modeling the allocation is roadmap A11.
 - The Gear browser has its own filters, so looking gear up never changes the search; when no piece passes, the page says so instead of a result.
 
 - The page keeps the candidate lists and the fastest GCD between runs, so a new GCD reruns only the search.
 
-What the page shows back, and its controls around the search (the Target GCD box, Fill, the "Spare points to tiebreaks" switch, the character panel totals, the Food row's menu), is in [ui.md, section 2](ui.md#2-fill-the-search-on-a-set-page).
+What the page shows back, and its controls around the search (the Target GCD box, Auto-fill, the "Spare points to tiebreaks" switch, the character panel totals, the Food row's menu), is in [ui.md, section 2](ui.md#2-auto-fill-the-search-on-a-set-page).
 
 ## 8. Correctness and performance
 
@@ -533,7 +533,7 @@ Today's figures, each with its date and the command that reproduces it. Earlier 
 | Quick benchmark (6 jobs, 7,884 runs), median, melds off / on | 12.7 / 19.0 ms | 2026-10-17 | `npm run perf` |
 | The same, largest search, melds off / on | 310 / 458 nodes | 2026-10-17 | `npm run perf` |
 | Target GCD, a new GCD for the same goal, median / slowest | 5 ms / 1,075 ms | 2026-10-16 | `node scripts/perf/target-gcd-sweep.mjs` |
-| The page, Paladin: main thread blocked from the first Fill on, longest (0: no task over 50 ms) | 0 ms | 2026-11-10 | `npm run perf:browser -- --runs 2 --rates 1,4 --jobs PLD,SGE` |
+| The page, Paladin: main thread blocked from the first Auto-fill on, longest (0: no task over 50 ms) | 0 ms | 2026-11-10 | `npm run perf:browser -- --runs 2 --rates 1,4 --jobs PLD,SGE` |
 
 Most of a run is building the candidate lists (syncing, melds, vectors, pruning: about 90%), not the search.
 
@@ -585,10 +585,10 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 
 - **Workloads:**
   - W1: every job with its full pool, sync settings, levels, melds on and off and about 40 objectives;
-  - X: all the Gear from box settings of `excludeMasks` (none left out, the default nine, each of those nine back on, and others);
+  - X: all the Gear categories box settings of `excludeMasks` (none left out, the default nine, each of those nine back on, and others);
   - OFULL: every target with every first and second tiebreak;
   - adversarial pools (`adversarial.mjs`): near-ties, a Unique ring storm, blocking pieces, huge stats, a forced 700,000-node truncation.
-- **Budgets.** `bench.mjs` exits 1 when a run is truncated or takes more than 1,000 nodes: those are counts, the same on every PC. It prints the timing budgets' misses as information only (timing matters only above about 0.5 s); `--strict` makes a timing miss exit 1 too. `adversarial.mjs` exits 1 when a hostile pool run is truncated; its forced stall is meant to reach the limit and only prints a note when it no longer does (with the speed tables it stops after a few dozen nodes).
+- **Budgets.** `bench.mjs` exits 1 when a run is truncated or takes more than 1,000 nodes: those are counts, the same on every PC. It prints the timing budgets' misses as information only (timing matters only above about 1 s); `--strict` makes a timing miss exit 1 too. `adversarial.mjs` exits 1 when a hostile pool run is truncated; its forced stall is meant to reach the limit and only prints a note when it no longer does (with the speed tables it stops after a few dozen nodes).
 
 | Metric | Budget |
 | --- | --- |
@@ -599,7 +599,7 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | Truncated runs | 0 |
 | Second identical sweep (`memory.mjs`) | 0 new meld memo entries, 1 MB of heap |
 
-- **Known misses on this PC** (per the owner's rule, timing matters only above about 0.5 s):
+- **Known misses on this PC** (per the owner's rule, timing matters only above about 1 s):
   - the first call and the node count: 83.9 ms and 1,209 nodes in the [full sweep](perf-log.md#81-every-jobs-full-pool). `npm run perf` stayed within 1,000 nodes on 2026-10-19, 458 at most, and a sweep over 1,000 now exits 1;
   - the timing budgets after the [item level floor drop](perf-log.md#71-item-level-floor-15).
 - **If a budget fails,** try in this order, each keeping results identical: profile; fix the hot path; cache candidate lists across runs; bound the meld memo. (The last item, a Web Worker, is done: [the page with a Web Worker](perf-log.md#31-the-page-with-a-web-worker); it keeps the page responsive, it does not make a search faster.)
@@ -637,11 +637,11 @@ The workloads live in `scripts/perf/workloads.mjs`, the budgets in `bench.mjs` a
 | A result's rows, totals, tiers, defense and GCD (the gear set it shows) | `src/core/set.js` (`setFromPicks`, `evaluateSet`), called by `runRecipe` in `src/core/recipe.js` and by a set page's views (`src/ui/views/set-totals.js`, `meal-menu.js`) |
 | Other pieces with the same result (A9) | `src/core/same-result.js` (`resultOf`, `sameOutcome`, `sameResult`), called by `runRecipe`; the unpruned candidates are `buildCandidates` with pruning off |
 | The Food row's menu | `allMeals` in `src/core/food.js`; `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `sortMeals`, `mealList`) and `setMealMenuView` in `src/ui/views/set-meal-menu.js`; its search, pills and sort in `src/ui/components/meal-menu.js` (`mealMenu`, `mealView`) |
-| Page use: the job's gear, Gear from, node limit, the solve, result | `src/core/recipe.js`, `src/core/session.js`, `src/core/items.js`, `src/ui/views/solve.js`, `src/ui/views/fill.js`, `src/ui/helpers.js` (functions in note 2 below the table) |
-| Page timing marks (`fill`, `save`) | `src/ui/components/set-page/fill.js`, `settings.js`, `src/main.js` |
+| Page use: the job's gear, Gear categories, node limit, the solve, result | `src/core/recipe.js`, `src/core/session.js`, `src/core/items.js`, `src/ui/solve.js`, `src/ui/sheets/fill.js`, `src/ui/components/filter-menus.js` (functions in note 2 below the table) |
+| Page timing marks (`fill`, `save`) | `src/ui/components/set-page/fill.js`, `auto-fill-settings.js`, `src/main.js` |
 | Dated benchmark runs | `docs/engineering/perf-log.md` |
 | Stress-test scripts | `scripts/perf/` (`bench.mjs`, `split.mjs`, `adversarial.mjs`, `browser.mjs`, `db-parse.mjs`, `compare.mjs`, `memory.mjs`, `workloads.mjs`, `target-gcd-sweep.mjs`) |
-| Tests | `tests/unit/core-optimizer.test.js`, `tests/unit/core-optimizer.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core-optimizer.speed-limits.test.js`, `tests/unit/core-target-gcd.test.js`, `tests/unit/core-target-gcd.exhaustive.test.js`, `tests/unit/core-optimizer.stat-minimums.test.js`, `tests/unit/core-optimizer-regain.test.js` |
+| Tests | `tests/unit/core/optimizer/index.test.js`, `tests/unit/core/optimizer/index.exhaustive.test.js` (with the brute-force reference in `tests/unit/helpers/exhaustive.js`), `tests/unit/core/optimizer/index.speed-limits.test.js`, `tests/unit/core/target-gcd.test.js`, `tests/unit/core/target-gcd.exhaustive.test.js`, `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js` |
 
 Notes on the table:
 
@@ -651,9 +651,9 @@ Notes on the table:
    - the search: `prepareSearch` (the filters and slot order), `newSearch` (its one state object), `dfs`, `tryGroups`, `tryInOrder`, `tryChild`; `branchAndBound` runs them;
    - constants: `LAZY_TABLES`, the 2,000-node threshold for the tables per set of blocked slots; `TRIAL_NODES`, the trial search before the fronts; `MEMO_FRONT`, the 32 states per memo key.
 2. **Page use:**
-   - `src/core/recipe.js`: `runRecipe`, `recipePool`, `emptyGearFrom`, `NODE_LIMIT`, `recipeKey`;
+   - `src/core/recipe.js`: `runRecipe`, `recipePool`, `gearFromCounts`, `NODE_LIMIT`;
    - `src/core/session.js`: `makeSession`; `src/core/items.js`: `jobGear`;
-   - the views `solveView` (with a Fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/views/solve.js`;
-   - a saved set's pins, count and result mapping in `src/ui/views/fill.js`;
+   - the views `solveView` (with an Auto-fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/solve.js`;
+   - a saved set's pins, count and result mapping in `src/ui/sheets/fill.js`;
    - the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.js`;
-   - the menu `gearFromToggles` in `src/ui/helpers.js`.
+   - the menu `gearFromToggles` in `src/ui/components/filter-menus.js`.

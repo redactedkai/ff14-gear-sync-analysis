@@ -1,4 +1,4 @@
-/* The page's solver: what runs a set page's Fill (views/solve.js solveView) and the line under its Fill settings' Gear
+/* The page's solver: what runs a set page's Auto-fill (solve.js solveView) and the line under its Auto-fill settings' Gear
    to search (gearToSearchView), on the page's thread or in a Web Worker. Under a Target GCD with tier ranking a search
    can take seconds; in the worker the page stays responsive meanwhile.
 
@@ -15,12 +15,12 @@
    worker bundle, scripts/build/build.mjs solverWorker); its entry is ui/solver-worker.js. */
 import { makeJobContext } from '../core/job-context.js';
 import { makeSession } from '../core/session.js';
-import { gearToSearchView, solveView } from './views/solve.js';
+import { gearToSearchView, solveView } from './solve.js';
 
-/* A solver request from a component's inputs: `kind` 'solve' (a Fill's answer) or 'gearToSearch' (the line under Gear
-   to search); `inputs` {job: a JobContext, sync (settings.js syncSettings), level, recipe (views/fill-settings.js
+/* A solver request from a component's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
+   to search); `inputs` {job: a JobContext, sync (job-sync-panel.js syncSettings), level, recipe (sheets/fill-settings.js
    fillRecipe)}; options: `key` (a string or number) names the caller, so that workerSolver keeps its requests apart
-   from other callers' (a gear set's id); `pins` (views/fill.js fillPlan's {pieces, meal}) the slots a Fill keeps, sent
+   from other callers' (a gear set's id); `pins` (sheets/fill.js fillPlan's {pieces, meal}) the slots an Auto-fill keeps, sent
    only when there are some. The JobContext goes as its id, rebuilt by the handler (makeJobContext is cached and pure).
    The other inputs must be plain data, not Alpine's reactive proxies (read them through Alpine.raw), or posting them to
    the worker throws. */
@@ -103,7 +103,7 @@ export function inProcessSolver(session = makeSession()) {
    A request that cannot be posted (not plain data) is answered with the error, and the next waiting request of its
    kind is posted, so no caller waits behind it.
 
-   cancel(kind, key) stops the request of that kind in the worker (a Fill's Cancel): a worker cannot be interrupted
+   cancel(kind, key) stops the request of that kind in the worker (an Auto-fill's Cancel): a worker cannot be interrupted
    mid-search, so it is terminated, and a fresh one is started at once (it parses the data again; its session builds
    the job's gear again). The cancelled request and the ones waiting behind it are rejected with a cancelled error
    (isCancelled); with a `key`, only that key's: when that key's request is in the worker, the other keys' waiting

@@ -2,7 +2,7 @@
 
 The page lets a player hide gear by where it comes from (crafted, tomestone, Savage raid, ...), but the game files have no documented "source" column. This page is the reference for the undocumented column the project uses instead, `Item.SubcategorySort`: what each of its codes means on gear, how each meaning was checked, and the two extra signals (shop data and dye slots) that the item database generator adds where a code is not enough.
 
-Related pages: [data-pipeline.md, section 4.12](data-pipeline.md#412-gear-category) (how the categories become the page's "Gear from" boxes), [glossary.md](../glossary.md) (Savage, Ultimate, relic weapon, Field Op, tomestones, Diadem gear).
+Related pages: [data-pipeline.md, section 4.12](data-pipeline.md#412-gear-category) (how the categories become the page's "Gear categories" boxes), [glossary.md](../glossary.md) (Savage, Ultimate, relic weapon, Field Op, tomestones, Diadem gear).
 
 ## How a code is read
 
@@ -156,5 +156,5 @@ The codes do not follow the step number: 11, 12 and 13 mark single steps, and th
 | Code to category table, overrides, gear left out | `scripts/data/gear_categories.py` (`CATEGORY_BY_CODE`, `CURRENCY_OVERRIDES`, `ITEM_OVERRIDES`, `LEFT_OUT`) |
 | Savage currencies and the dye-slot cross-check | `scripts/data/gear_categories.py` (`savage_items`, `check`) |
 | Ultimate totems and the recipe flag | `scripts/data/gear_sources.py` (`ULTIMATE_TOTEMS`) |
-| A category's activity for a piece with no way in ("Gear from") | `scripts/data/gear_activities.py` (`DROP_ACTIVITY`) |
-| How pieces get their "Gear from" routes | [data-pipeline.md, section 4.6](data-pipeline.md#46-sources) |
+| A category's activity for a piece with no way in ("Gear categories") | `scripts/data/gear_activities.py` (`DROP_ACTIVITY`) |
+| How pieces get their "Gear categories" routes | [data-pipeline.md, section 4.6](data-pipeline.md#46-sources) |

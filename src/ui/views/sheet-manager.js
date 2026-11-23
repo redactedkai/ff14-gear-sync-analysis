@@ -1,20 +1,30 @@
 /* The sheet manager (the Sheets tab's first level): every saved sheet as a row, the unreadable records, and the empty
-   state. Takes what sheet-storage.js loadSheets returns and builds a plain view object; the template only displays it.
+   state. Takes what sheets/storage.js loadSheets returns and builds a plain view object; the template only displays it.
    Pure: no Alpine, no store. Rules: docs/engineering/sheets.md ("Saved data", "Reading and writing"). */
 import { jobById } from '../../core/constants.js';
-import { UNAVAILABLE_MESSAGE } from '../sheet-storage.js';
+import { patchOnDay } from '../../core/patches.js';
+import { UNAVAILABLE_MESSAGE } from '../sheets/storage.js';
 import { localDate, syncShort } from './sheet-text.js';
 
 /* The manager's column names, in the order of a row's cells. */
-export const MANAGER_COLUMNS = Object.freeze(['Sheet', 'Job', 'Level, sync', 'Sets', 'Created', 'Changed', 'Game data']);
+const MANAGER_COLUMNS = Object.freeze(['Sheet', 'Job', 'Level / IL', 'Sets', 'Created', 'Changed', 'Patch']);
+
+/* The hover text of a sheet's Patch cell for its `gameData` ({commit, date}, either may be missing or empty): "Game data
+   d9582a6, 2026-09-30", "Game data 2026-09-30" with no commit, '' with no date. */
+function dataTitle(gameData) {
+  if (!gameData?.date) return '';
+  return `Game data ${gameData.commit ? `${gameData.commit}, ` : ''}${gameData.date}`;
+}
 
 /* The text of the manager for `loaded` (loadSheets' result: {available, sheets, unreadable, indexProblem}). Returns:
    - unavailableText: UNAVAILABLE_MESSAGE when storage cannot be used, else '';
    - empty: no readable sheet; emptyCard {title, text, buttonText} is the "No sheets yet" card (the header's New sheet
      button shows only with sheets: showNewButton);
    - columns: MANAGER_COLUMNS; rows: one per sheet in the user's order, {id, name (the full name, also the hover text),
-     descriptionLine (its first line, or "No description"), hasDescription, jobId, jobName, settingsText ("Lv 100, ilvl
-     123"), setCount, created, changed ("2026-11-09"), gameData (the data source date it was made with)};
+     descriptionLine (its first line, or "No description"), hasDescription, jobId, jobName, settingsText ("Lv 100 / IL
+     123"), setCount, created, changed ("2026-11-09"), patch (the game patch of the data it was made with, "7.56": the
+     newest patch released on or before the data's date, patchOnDay; '' when the sheet names no data date), patchTitle
+     (the hover text of that cell: the data's short commit and date, "Game data d9582a6, 2026-09-30"; '' with no date)};
    - unreadable: the records that could not be read, {id, key, cause, text ("Could not be read: not valid JSON")}, each
      with a Delete button; unreadableTitle is their heading. */
 export function sheetManagerView(loaded) {
@@ -31,7 +41,8 @@ export function sheetManagerView(loaded) {
       setCount: sheet.sets.length,
       created: localDate(sheet.createdAt),
       changed: localDate(sheet.updatedAt),
-      gameData: sheet.gameData?.date ?? '',
+      patch: patchOnDay(sheet.gameData?.date),
+      patchTitle: dataTitle(sheet.gameData),
     };
   });
   return {
@@ -41,7 +52,7 @@ export function sheetManagerView(loaded) {
     showNewButton: rows.length > 0,
     emptyCard: {
       title: 'No sheets yet',
-      text: 'A sheet is for one piece of content: a job, a level and an item level sync. It holds the gear sets you compare for it.',
+      text: 'A sheet is for one piece of content: a job, a level and an IL Sync. It holds the gear sets you compare for it.',
       buttonText: 'New sheet',
     },
     columns: MANAGER_COLUMNS,

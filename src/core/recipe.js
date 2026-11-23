@@ -1,11 +1,11 @@
-/* A recipe and its solve: what to look for, and the set that answers it. Each gear set of a sheet keeps its own Fill
+/* A recipe and its solve: what to look for, and the set that answers it. Each gear set of a sheet keeps its own Auto-fill
    settings, which make its recipe, so the solve takes the recipe and a solver session (session.js) as plain inputs,
    never the page's store.
 
-   A recipe: a set's Fill settings as one flat object (ui/views/fill-settings.js fillRecipe):
+   A recipe: a set's Auto-fill settings as one flat object (ui/sheets/fill-settings.js fillRecipe):
      target, tb, tb2   the goal: a stat key to maximize, then up to two tiebreaks ('' for none)
      expOff, exclude, market, min, max, lvl
-                       the filters under Gear to search: expansions switched off, "Gear from" boxes left out
+                       the filters under Gear to search: expansions switched off, "Gear categories" boxes left out
                        (ACTIVITIES keys), the market board switch, the item level range and the equip level ('' for no
                        limit; gearFilter in items.js)
      melds             give pieces their best materia melds
@@ -18,7 +18,7 @@
    Pins are no part of a recipe either: they are the set's own pieces and meal that a solve must keep (runRecipe's
    `pins`; pinProblems). A set's pinned rows are pins, the other rows are what the solve fills. */
 import { allMeals, bestFood, foodChoices } from './food.js';
-import { allocatedRelic, emptyActivities, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.js';
+import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.js';
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.js';
 import { realSlotType } from './optimizer/slot-index.js';
 import { itemSyncIlvl } from './piece.js';
@@ -34,7 +34,7 @@ import { rankByTier } from './tier-rank.js';
    (docs/engineering/optimizer.md section 5, Node limit). Each search of a solve has its own budget. */
 export const NODE_LIMIT = 700000;
 
-/* `gear` (pool items) through the recipe's filters under Gear to search: Gear from and the market board, then the
+/* `gear` (pool items) through the recipe's filters under Gear to search: Gear categories and the market board, then the
    expansions, item level range and equip level. */
 function filtered(recipe, gear) {
   return filterGear(withActivities(gear, recipe.exclude || [], recipe.market !== false), gearFilter(recipe));
@@ -47,16 +47,19 @@ export function recipePool(job, recipe, gear) {
   return filtered(recipe, gear).filter(i => wearable(job, i) && !allocatedRelic(job, i));
 }
 
-/* The "Gear from" boxes with nothing for the job under the recipe's other filters (emptyActivities): the menu greys
-   them out. */
-export function emptyGearFrom(job, recipe, gear) {
+/* How many pieces each "Gear categories" box holds in the pool the recipe searches, {key: count} (activityCounts): the pool
+   under the recipe's other filters (expansions, item level range, equip level), wearable by `job`, without the relics whose
+   substats the player allocates. The boxes ticked and the market board switch are not applied, so the counts do not change
+   when a box is ticked; a piece obtainable in two ways is in both boxes. The menu shows them, a box at 0 has nothing for the job
+   and filters. */
+export function gearFromCounts(job, recipe, gear) {
   const pool = filterGear(gear, gearFilter(recipe)).filter(i => wearable(job, i) && !allocatedRelic(job, i));
-  return emptyActivities(pool.map(itemRoutes).filter(Boolean));
+  return activityCounts(pool.map(itemRoutes).filter(Boolean));
 }
 
 /* The Target GCD asked for, in seconds, or null for none: the box is empty, or the goal is speed itself (the box is
    disabled then: maximizing speed already gives the fastest GCD). */
-export function askedGcd(job, recipe) {
+function askedGcd(job, recipe) {
   if (recipe.target === job.speedKey || recipe.gcd === '' || recipe.gcd == null) return null;
   const g = Number(recipe.gcd);
   return Number.isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : null;
@@ -64,7 +67,7 @@ export function askedGcd(job, recipe) {
 
 /* The meal the player picked (`mealKey`, an allMeals key, or null) as its allMeals entry, or null: with Food off, or a
    key no meal of the job has, there is none. */
-export function pickedMeal(job, recipe, mealKey) {
+function pickedMeal(job, recipe, mealKey) {
   return (recipe.food && mealKey && allMeals(job).find(m => m.key === mealKey)) || null;
 }
 

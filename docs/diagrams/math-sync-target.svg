@@ -45,10 +45,10 @@
 <text class="small muted" x="20" y="52">Tried top to bottom; the first yes decides. i = item level, e = equip level, L = synced level,</text>
 <text class="small muted" x="20" y="68">C = item level cap, sync(L) = the item level the game assigns to level L.</text>
 <text class="small accent" x="20" y="86">Examples at T13: L = 50, C = 123, sync(50) = 130.</text>
-<rect class="box" x="20" y="106" width="280" height="80" rx="8"/>
+<rect class="box" x="20" y="106" width="280" height="80" rx="4"/>
 <text class="fg" x="36" y="141">Scales with the wearer</text>
 <text class="fg" x="36" y="161">and sync(L) &lt; i?</text>
-<rect class="box" x="380" y="106" width="320" height="80" rx="8"/>
+<rect class="box" x="380" y="106" width="320" height="80" rx="4"/>
 <text class="fg strong" x="396" y="132">sync(L), or C where lower</text>
 <text class="small muted" x="396" y="152">C only with item level sync on and i &gt; C</text>
 <text class="small accent" x="396" y="172">T13: scaling earring, item level 560 → 123</text>
@@ -56,10 +56,10 @@
 <text class="small good" x="340" y="138" text-anchor="middle">yes</text>
 <line class="s-muted" x1="160" y1="188" x2="160" y2="219" stroke-width="1.5" marker-end="url(#arrow)"/>
 <text class="small muted" x="170" y="209">no</text>
-<rect class="box" x="20" y="222" width="280" height="80" rx="8"/>
+<rect class="box" x="20" y="222" width="280" height="80" rx="4"/>
 <text class="fg" x="36" y="257">Item level sync on</text>
 <text class="fg" x="36" y="277">and i &gt; C?</text>
-<rect class="box" x="380" y="222" width="320" height="80" rx="8"/>
+<rect class="box" x="380" y="222" width="320" height="80" rx="4"/>
 <text class="fg strong" x="396" y="248">C, or top(L) where lower and e &gt; L</text>
 <text class="small muted" x="396" y="268">top(L): the best gear made for level L</text>
 <text class="small accent" x="396" y="288">T13: worked example head, 130 → 123</text>
@@ -67,10 +67,10 @@
 <text class="small good" x="340" y="254" text-anchor="middle">yes</text>
 <line class="s-muted" x1="160" y1="304" x2="160" y2="335" stroke-width="1.5" marker-end="url(#arrow)"/>
 <text class="small muted" x="170" y="325">no</text>
-<rect class="box" x="20" y="338" width="280" height="80" rx="8"/>
+<rect class="box" x="20" y="338" width="280" height="80" rx="4"/>
 <text class="fg" x="36" y="373">Equip level above the</text>
 <text class="fg" x="36" y="393">synced level: e &gt; L?</text>
-<rect class="box" x="380" y="338" width="320" height="80" rx="8"/>
+<rect class="box" x="380" y="338" width="320" height="80" rx="4"/>
 <text class="fg strong" x="396" y="364">sync(L)</text>
 <text class="small muted" x="396" y="384">ParamGrow.ItemLevelSync of level L</text>
 <text class="small accent" x="396" y="404">T13: item level 120, equip level 51 → 130</text>
@@ -78,7 +78,7 @@
 <text class="small good" x="340" y="370" text-anchor="middle">yes</text>
 <line class="s-muted" x1="160" y1="420" x2="160" y2="451" stroke-width="1.5" marker-end="url(#arrow)"/>
 <text class="small muted" x="170" y="441">no</text>
-<rect class="goodbox" x="20" y="454" width="280" height="80" rx="8"/>
+<rect class="goodbox" x="20" y="454" width="280" height="80" rx="4"/>
 <text class="fg strong" x="36" y="480">Untouched</text>
 <text class="small muted" x="36" y="500">stats and melds as on the item</text>
 <text class="small accent" x="36" y="520">T13: item level 120, equip level 50</text>

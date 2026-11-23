@@ -1,0 +1,36 @@
+/* ==== Fallbacks for browsers without color-mix() ==== */
+/* Before Chrome 111, Firefox 113 and Safari 16.2. A declaration with color-mix() and a var() is not dropped
+   when it is read: it turns invalid when computed and the color is lost, so a plain one written before it would not
+   help. These plain colors apply only where color-mix() is missing. */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  ::-webkit-scrollbar-thumb {
+    background: var(--line) padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted) padding-box;
+  }
+  :root {
+    scrollbar-color: var(--line) transparent;
+  }
+  .pill.cat-tomestone {
+    background: var(--warn-bg);
+  }
+  .f-range,
+  .steps-table .why {
+    color: var(--muted);
+  }
+  @keyframes cap-lowered {
+    from {
+      background: var(--warn-bg);
+    }
+  }
+}
+.matgrid .pc {
+  align-self: center;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.matgrid .pc.na {
+  opacity: 0.6;
+}

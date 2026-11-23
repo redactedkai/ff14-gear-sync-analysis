@@ -7,7 +7,7 @@ import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.js';
 import { restoreState } from '../../../src/ui/state.js';
-import { defaultFillSettings, fillRecipe } from '../../../src/ui/views/fill-settings.js';
+import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
 
 /* A seeded random number generator returning floats in [0, 1): the same seed gives the same sequence, so a failure
    names a case that can be reproduced. */
@@ -59,9 +59,17 @@ export const SLOT_PERMILLE = {
   ring: 67,
 };
 
+/* A saved state restored for the screen it names: a test's save may hold `tab` and `mathTab` (the page no longer saves them; the
+   address names the open tab, so restoreState takes them apart from the save). Returns restoreState's state. */
+export function restoreOpen(saved) {
+  if (saved === null || typeof saved !== 'object') return restoreState(saved);
+  const { tab, mathTab, ...rest } = saved;
+  return restoreState(rest, { tab, mathTab });
+}
+
 /* A store-shaped state object, as the Alpine store holds it: a save restored by restoreState, plus the job context
-   and the highest real item level, and `recipe`, a set's recipe at its Fill settings' defaults for the job
-   (views/fill-settings.js fillRecipe), then `patch` on top. */
+   and the highest real item level, and `recipe`, a set's recipe at its Auto-fill settings' defaults for the job
+   (sheets/fill-settings.js fillRecipe), then `patch` on top. */
 export function appState(saved, patch = {}) {
   const s = restoreState(saved);
   const jobCtx = makeJobContext(s.job);
@@ -101,4 +109,22 @@ export function watched(c) {
   return () => {
     for (const check of checks) check();
   };
+}
+
+/* True when `text` holds the number `value` as a whole word (hasNumber('Auto-fill 12 slots', 12); 2 is not found in
+   '12'). A test of a note or label asserts the numbers the text must reflect, not its sentence. */
+export function hasNumber(text, value) {
+  return new RegExp(`\\b${value}\\b`).test(text);
+}
+
+/* True when `text` holds every one of `parts` (names, stat labels, numbers as text). The same use as hasNumber:
+   the inputs a note must show, not its wording. */
+export function hasParts(text, ...parts) {
+  return parts.every(part => text.includes(part));
+}
+
+/* True when a chart's SVG has a text label that starts with the stat value `value` and holds the item level `itemLevel`
+   (the chart's "24: at the cap from 140" lines), whatever the words between. */
+export function labelled(svg, value, itemLevel) {
+  return [...svg.matchAll(/<text[^>]*>([^<]*)</g)].some(match => match[1].startsWith(`${value}:`) && hasNumber(match[1], itemLevel));
 }

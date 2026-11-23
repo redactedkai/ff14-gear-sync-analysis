@@ -1,100 +1,316 @@
 /* How the math works: what sync does to one piece (views/sync-explainer.js), the step-by-step
-   table for the same piece (views/piece.js), and the "How sync works" popup. */
-import { explainerItemLevel, explainerOffText, explainerView } from '../views/sync-explainer.js';
-import { pieceView, withSub } from '../views/piece.js';
+   table for the same piece (views/piece.js), and the sync help popup. */
+import { MAX_LEVEL } from '../../core/tables.js';
+import {
+  IL_BOX_SIZER,
+  IL_CONTROL_TEXT,
+  NO_SUBSTAT_LABEL,
+  PIECE_CHIP_SIZERS,
+  PIECE_CHIP_TEXT,
+  SUBSTAT_SIZER,
+  SYNC_CHIP_SIZERS,
+  SYNC_CHIP_TEXT,
+  capGuessText,
+  explainerItemLevel,
+  explainerOffText,
+  explainerView,
+  pieceChipView,
+  syncChipView,
+  widestNumber,
+} from '../views/sync-explainer.js';
+import { SLOT_SIZER, pieceView, slotGroups, withSub } from '../views/piece.js';
 import { rankChoices } from '../ranks.js';
-import { syncSettings } from '../settings.js';
-import { viewCache } from '../helpers.js';
-import { SLOT_LABEL } from '../../core/constants.js';
+import { levelSyncCap, mathJobOwner, meldSlotChoices, meldSlotsOf, syncSettings } from '../job-sync-panel.js';
+import { numberField } from '../number-field.js';
+import { viewCache } from '../view-cache.js';
+import { capControls, levelControls } from './cap-controls.js';
+import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
+import { compose } from './compose.js';
+import { jobMenu } from './job-menu.js';
+import { wrapTab } from '../native-dialog.js';
+import { overlay } from './overlay.js';
 
-/* The math tab's component (x-data on the whole tab): Piece stats' views and its controls in the math bar. */
+/* The math tab's component (x-data on the whole tab): Piece stats' views, and the bar's Job menu and Stat Allocation's
+   controls (its two chips and the item level slider). */
 export function syncExplainer() {
-  // Piece stats' views and the settings they were built for (helpers.js viewCache), and the observer of the chart's
+  // Piece stats' views and the settings they were built for (view-cache.js viewCache), and the observer of the chart's
   // width, made when the chart first shows
   const views = viewCache();
   let observer = null;
-  return {
-    /* Piece stats' views for the settings now, built again only when they change: {pick (the slider's range and item
-       level, explainerItemLevel), explainer, steps}. Read through the getters below. */
-    get pieceViews() {
-      const app = this.$store.app;
-      const panel = app.panel('math'),
-        job = panel.jobCtx,
-        sync = syncSettings(panel),
-        piece = app.piece,
-        width = this.widths.piece;
-      const key = JSON.stringify([job.jobId, sync, piece.ilvl, piece.slot, piece.subs, width]);
-      return views.get(key, () => {
-        const pick = explainerItemLevel(job, sync, piece);
-        return { pick, explainer: explainerView(job, sync, piece, { piece: width }), steps: pieceView(job, sync, piece, pick.il) };
-      });
+  return compose(
+    {
+      init() {
+        this.initCap(); // the Synced IL box's rules (cap-controls.js)
+        this.initLevel(); // the Level box's validation (cap-controls.js)
+        // the Level box: each valid level counts as it is typed (as the Gear browser strip's), and while IL Sync is off the
+        // stored cap follows the level (store.followLevelSync): the box's own commit, not a watcher
+        const app = this.$store.app;
+        this.levelBind = numberField(
+          () => app.level,
+          level => {
+            app.level = level;
+            app.followLevelSync();
+          },
+          1,
+          () => app.jobCtx.maxLevel,
+          { live: true, snap: false }, // a bad level stays in the box, flagged, not moved to the nearest one
+        );
+      },
+      levelBind: null,
+      // the Level box's range and error texts (level-cap.js), and its widest flag for the hidden label row
+      levelText: LEVEL_TEXT,
+      get levelFlagSizer() {
+        return rangeOnly(LEVEL_TEXT.range(this.widestLevel));
+      },
+      get capFlagSizer() {
+        return rangeOnly(rangeText(this.widestItemLevel));
+      },
+      // the Gear item level control's label and the number box's widest text
+      ilText: IL_CONTROL_TEXT,
+      ilBoxSizer: IL_BOX_SIZER,
+      /* the highest level of any job: the Level box's hidden label row is written at this limit, so the box does not change
+         with the job */
+      levelLimitAny: MAX_LEVEL,
+      /* the widest numbers the label rows can show, as wide as the limits (views widestNumber) */
+      get widestItemLevel() {
+        return widestNumber(this.$store.app.maxReal);
+      },
+      get widestLevel() {
+        return widestNumber(this.levelLimitAny);
+      },
+      /* The IL Sync switch of this tab was changed by the user (its change event; never a watcher on `sync`, which also
+         fires when a tab change swaps the panel and would break the tabs' isolation). Switched off: the stored cap becomes
+         the item level level sync gives at the open level, or no cap where no level sync applies. Switched on: nothing is
+         copied; the box shows the stored cap. Any bad text left in the box is dropped. */
+      onSyncSwitch(on) {
+        const app = this.$store.app;
+        this.capTypedBad = false;
+        if (!on) app.cap = levelSyncCap(app.jobCtx, app.level);
+      },
+      /* Piece stats' views for the settings now, built again only when they change: {pick (the slider's range and item
+         level, explainerItemLevel), explainer, steps}. Read through the getters below. */
+      get pieceViews() {
+        const app = this.$store.app;
+        const panel = app.panel('math'),
+          job = panel.jobCtx,
+          sync = syncSettings(panel),
+          piece = app.piece,
+          width = this.widths.piece;
+        const key = JSON.stringify([job.jobId, sync, piece.ilvl, piece.slot, piece.subs, meldSlotsOf(piece), width]);
+        return views.get(key, () => {
+          const pick = explainerItemLevel(job, sync, piece);
+          return { pick, explainer: explainerView(job, sync, piece, { piece: width }), steps: pieceView(job, sync, piece, pick.il) };
+        });
+      },
+      /* Piece stats' two panels (explainerView), or null while no sync applies; and its step-by-step section (pieceView).
+         Named apart from the GCD and tiers sub-tabs' `view`, which sit inside this component's scope. */
+      get explainer() {
+        return this.pieceViews.explainer;
+      },
+      get steps() {
+        return this.pieceViews.steps;
+      },
+      /* the Gear item level slider: its [lowest, highest] item level, the item level shown, and the slider's hover text */
+      get ilvlRange() {
+        return this.pieceViews.pick.range;
+      },
+      get il() {
+        return this.pieceViews.pick.il;
+      },
+      /* A key press in the "?" help: Tab stays inside it (it is modal: the page behind is dimmed and out of reach) */
+      wrapHelpTab(event) {
+        wrapTab(event, this.$refs.helpPop);
+      },
+      /* the job chosen in the math tab's own Job and sync panel (JobContext) */
+      get jobCtx() {
+        return this.$store.app.panel('math').jobCtx;
+      },
+      /* the Synced IL box's guess tooltip while the item level shown is level sync's for a weapon or off-hand (views
+         capGuessText), else '' */
+      get capGuess() {
+        const panel = this.$store.app.panel('math');
+        return capGuessText(panel.jobCtx, syncSettings(panel), this.$store.app.piece.slot);
+      },
+      /* the Synced IL field's tooltip: the flag's sentence (error, lowered), else the guess text; `range` is "1–795" */
+      capTitle(range) {
+        return this.capFlag(range).full || this.capGuess;
+      },
+      /* what Piece stats says while no sync applies (views explainerOffText) */
+      get offText() {
+        return explainerOffText(this.$store.app.panel('math').sync);
+      },
+      /* the math bar's Slot menu: one choice per group of slots that share a budget share ({value, label, slots}), and the
+         1st substat and 2nd substat menus: [value, label] */
+      slotSizer: SLOT_SIZER, // every text of the Slot menu, one per line: its width (views SLOT_SIZER)
+      get slotOptions() {
+        return slotGroups(this.jobCtx);
+      },
+      /* the Materia slots menu: the totals the chosen slot's pieces have, the one shown, and a change of slot (a choice the
+         new slot's pieces do not have goes back to the slot's usual total) */
+      get slotCounts() {
+        return meldSlotChoices(this.$store.app.piece.slot);
+      },
+      get slotsShown() {
+        return meldSlotsOf(this.$store.app.piece);
+      },
+      setSlot(slotType) {
+        const piece = this.$store.app.piece;
+        piece.slot = slotType;
+        if (!meldSlotChoices(slotType).includes(piece.slots)) piece.slots = null;
+      },
+      /* The Substats & materia chip: one control in the bar that says the 1st and 2nd substat and the Materia slots in a few
+         words (views pieceChipView) and opens a popover under the chip with the three menus. The texts, and the widest of its
+         words for the hidden copies that give the chip one width (views PIECE_CHIP_TEXT, PIECE_CHIP_SIZERS). The popover is
+         an overlay (below, overlays.js): opening puts the focus on the 1st substat menu; Escape and the chip close it with the
+         focus back on the chip; a click outside or Tab out of it closes it where the focus went. */
+      pieceText: PIECE_CHIP_TEXT,
+      pieceChipSizers: PIECE_CHIP_SIZERS,
+      pieceMenuToLeft: false, // the popover's right edge is the chip's, not its left (see placePieceMenu)
+      get pieceChip() {
+        return pieceChipView(this.jobCtx, this.$store.app.piece);
+      },
+      /* Which edge of the popover lines up with the chip's: the left one (it hangs under the chip, to the right), or the right
+         one (class to-left) when it would run past the bar's right edge. Measured each time it opens and when the window is
+         resized. */
+      placePieceMenu() {
+        const { pieceChip, pieceMenu } = this.$refs;
+        if (!pieceMenu || !this.pieceMenuOpen) return;
+        const barRight = pieceChip.closest('.mathbar').getBoundingClientRect().right;
+        this.pieceMenuToLeft = pieceChip.getBoundingClientRect().left + pieceMenu.offsetWidth > barRight;
+      },
+      /* The Sync settings chip: one control in the bar that says the synced level, the synced item level and whether IL Sync
+         is on, in a few words (views syncChipView), and opens a popover under the chip with Level, Synced IL and the IL Sync
+         switch (the store's level, cap and sync, as the Gear browser's strip edits them). An overlay too (below): opening puts
+         the focus on the Level box; Escape and the chip close it with the focus back on the chip; a click outside or Tab out
+         of it closes it where the focus went. */
+      syncText: SYNC_CHIP_TEXT,
+      syncChipSizers: SYNC_CHIP_SIZERS,
+      syncMenuToLeft: false, // the popover's right edge is the chip's, not its left (see placeSyncMenu)
+      get syncChip() {
+        const panel = this.$store.app.panel('math');
+        const loweredFrom = this.capLowered && this.capLowered.to === panel.cap ? this.capLowered.from : null;
+        return syncChipView(panel.jobCtx, syncSettings(panel), this.$store.app.piece.slot, {
+          switchOn: !!panel.sync,
+          loweredFrom,
+          capMissing: !!panel.sync && panel.cap == null,
+        });
+      },
+      /* the Level and Synced IL boxes show the store's values again, dropping what they hold that is no level or cap */
+      clearTypedErrors() {
+        this.levelTypedBad = false;
+        this.capTypedBad = false;
+        this.$nextTick(() => {
+          const app = this.$store.app;
+          if (this.$refs.level) this.$refs.level.value = app.level ?? '';
+          if (this.$refs.cap) this.$refs.cap.value = app.cap ?? '';
+        });
+      },
+      /* which edge of the popover lines up with the chip's: as placePieceMenu */
+      placeSyncMenu() {
+        const { syncChip, syncMenu } = this.$refs;
+        if (!syncMenu || !this.syncMenuOpen) return;
+        const barRight = syncChip.closest('.mathbar').getBoundingClientRect().right;
+        this.syncMenuToLeft = syncChip.getBoundingClientRect().left + syncMenu.offsetWidth > barRight;
+      },
+      /* every text of the two substat menus, one per line: their width (views SUBSTAT_SIZER) */
+      substatSizer: SUBSTAT_SIZER,
+      get substatOptions() {
+        return this.jobCtx.substats.map(s => [s, this.jobCtx.label[s]]);
+      },
+      /* the 2nd substat's options: none, then every substat but the 1st (ui/ranks.js) */
+      get substat2Options() {
+        const subs = this.$store.app.piece.subs;
+        return [['', NO_SUBSTAT_LABEL]].concat(rankChoices(subs, 1, this.jobCtx.substats).map(s => [s, this.jobCtx.label[s]]));
+      },
+      // the chart's container width (px): the chart is drawn at its own width, so its text keeps the page's size
+      widths: { piece: 0 },
+      /* The chart's box, each time it is drawn (x-init: it exists only while a view is shown): its width is followed. */
+      observeChart(el) {
+        observer ??= new ResizeObserver(entries => {
+          for (const e of entries) {
+            const w = Math.round(e.contentRect.width);
+            if (w && w !== this.widths.piece) this.widths.piece = w;
+          }
+        });
+        observer.observe(el);
+      },
+      setSub(i, value) {
+        const p = this.$store.app.piece;
+        p.subs = withSub(p.subs, i, value, this.jobCtx.substats);
+      },
+      setIlvl(value) {
+        const v = Math.round(Number(value));
+        if (Number.isFinite(v)) this.$store.app.piece.ilvl = Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v));
+      },
+      /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
+      get ilvlFill() {
+        const [lo, hi] = this.ilvlRange;
+        return hi > lo ? ((this.il - lo) / (hi - lo)) * 100 : 0;
+      },
+      resetIlvl() {
+        this.$store.app.piece.ilvl = null;
+      },
     },
-    /* Piece stats' two panels (explainerView), or null while no sync applies; and its step-by-step section (pieceView).
-       Named apart from the GCD and tiers sub-tabs' `view`, which sit inside this component's scope. */
-    get explainer() {
-      return this.pieceViews.explainer;
-    },
-    get steps() {
-      return this.pieceViews.steps;
-    },
-    /* the Gear item level slider: its [lowest, highest] item level, the item level shown, and the slider's hover text */
-    get ilvlRange() {
-      return this.pieceViews.pick.range;
-    },
-    get il() {
-      return this.pieceViews.pick.il;
-    },
-    get ilvlNote() {
-      return this.pieceViews.pick.note;
-    },
-    helpOpen: false,
-    /* the job chosen in the math tab's own Job and sync panel (JobContext) */
-    get jobCtx() {
-      return this.$store.app.panel('math').jobCtx;
-    },
-    /* what Piece stats says while no sync applies (views explainerOffText) */
-    get offText() {
-      return explainerOffText(this.$store.app.panel('math').sync);
-    },
-    /* the math bar's Slot, 1st substat and 2nd substat menus: [value, label] */
-    get slotOptions() {
-      return this.jobCtx.activeSlotTypes.map(t => [t, SLOT_LABEL[t]]);
-    },
-    get substatOptions() {
-      return this.jobCtx.substats.map(s => [s, this.jobCtx.label[s]]);
-    },
-    /* the 2nd substat's options: none, then every substat but the 1st (ui/ranks.js) */
-    get substat2Options() {
-      const subs = this.$store.app.piece.subs;
-      return [['', 'none']].concat(rankChoices(subs, 1, this.jobCtx.substats).map(s => [s, this.jobCtx.label[s]]));
-    },
-    // the chart's container width (px): the chart is drawn at its own width, so its text keeps the page's size
-    widths: { piece: 0 },
-    /* The chart's box, each time it is drawn (x-init: it exists only while a view is shown): its width is followed. */
-    observeChart(el) {
-      observer ??= new ResizeObserver(entries => {
-        for (const e of entries) {
-          const w = Math.round(e.contentRect.width);
-          if (w && w !== this.widths.piece) this.widths.piece = w;
-        }
-      });
-      observer.observe(el);
-    },
-    setSub(i, value) {
-      const p = this.$store.app.piece;
-      p.subs = withSub(p.subs, i, value, this.jobCtx.substats);
-    },
-    setIlvl(value) {
-      const v = Math.round(Number(value));
-      if (Number.isFinite(v)) this.$store.app.piece.ilvl = Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v));
-    },
-    /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
-    get ilvlFill() {
-      const [lo, hi] = this.ilvlRange;
-      return hi > lo ? ((this.il - lo) / (hi - lo)) * 100 : 0;
-    },
-    resetIlvl() {
-      this.$store.app.piece.ilvl = null;
-    },
-  };
+    capControls('math'),
+    levelControls(),
+    // the "?" help is modal: the focus goes into it, Tab stays inside and a press on the dimmed page closes it (its backdrop)
+    overlay('helpPanel', {
+      root() {
+        return this.$refs.helpWrap;
+      },
+      opener() {
+        return this.$refs.helpButton;
+      },
+      focusIn() {
+        return this.$refs.helpPop;
+      },
+      tabOut: false,
+    }),
+    // the bar's two chips' popovers (the Job menu's overlay is jobMenu's)
+    overlay('pieceMenu', {
+      root() {
+        return this.$refs.pieceWrap;
+      },
+      opener() {
+        return this.$refs.pieceChip;
+      },
+      focusIn() {
+        return this.$refs.pieceFirst;
+      },
+      // a native menu's open list takes the first Escape: it closes only the list
+      ignoreEscape(event) {
+        return Boolean(event.target.closest?.('option'));
+      },
+      onOpen() {
+        this.$nextTick(() => this.placePieceMenu());
+      },
+    }),
+    overlay('syncMenu', {
+      root() {
+        return this.$refs.syncWrap;
+      },
+      opener() {
+        return this.$refs.syncChip;
+      },
+      focusIn() {
+        return this.$refs.level;
+      },
+      ignoreEscape(event) {
+        return Boolean(event.target.closest?.('option'));
+      },
+      onOpen() {
+        this.$nextTick(() => this.placeSyncMenu());
+      },
+      onClose() {
+        this.clearTypedErrors(); // text that is no level or cap does not stay behind a closed popover
+      },
+    }),
+    // the Job menu: it edits the open sub-tab's own job (Stat Allocation's or Substat tiers')
+    jobMenu({
+      focusOnOpen: true,
+      owner() {
+        return mathJobOwner(this.$store.app.mathTab);
+      },
+    }),
+  );
 }

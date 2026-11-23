@@ -61,12 +61,12 @@ Then by task:
 | Page | What it covers |
 | --- | --- |
 | [architecture.md](engineering/architecture.md) | Layers, the job context, the shared store and views, what is saved in the browser, the single-file build, the dev loop, pieces and gear sets, recipes and the solver session, the optimizer's worker |
-| [data-pipeline.md](engineering/data-pipeline.md) | The game sheets used, fetching, the shared format file, item database rules and fields, the item level table, the food table, "Gear from" sources and gear categories, provenance, facts about the current data, the steps after a game patch |
-| [optimizer.md](engineering/optimizer.md) | How the best gear set is found: an overview in plain words, then the lexicographic score (weapon damage first), Target GCD, dominance pruning, branch and bound, melds in the search, the page's pool and filters (Gear from), correctness and timing |
+| [data-pipeline.md](engineering/data-pipeline.md) | The game sheets used, fetching, the shared format file, item database rules and fields, the item level table, the food table, routes for the Gear categories filter and each piece's own gear category, provenance, facts about the current data, the steps after a game patch |
+| [optimizer.md](engineering/optimizer.md) | How the best gear set is found: an overview in plain words, then the lexicographic score (weapon damage first), Target GCD, dominance pruning, branch and bound, melds in the search, the page's pool and filters (Gear categories), correctness and timing |
 | [tier-ranking.md](engineering/tier-ranking.md) | Ranking gear sets by stat tiers: the stages, and the shortfall filter, reduced-cost fixing, regain cuts, trial search and Pareto fronts that make those searches fast |
-| [ui.md](engineering/ui.md) | The page's tabs and controls: what each tab shows, a set page's Fill and its settings (Target GCD, the tier switch, character panel totals, the Food menu), the Gear browser's layout, the How the math works sub-tabs |
-| [sheets.md](engineering/sheets.md) | The Sheets tab's saved data (sheets, gear sets, piece rows, Fill settings), reading and writing, pins and Fill, drafts and suggestions, the edit lock, names, Copy sheet |
-| [testing.md](engineering/testing.md) | Test layers, what each test file covers, the brute-force reference, commands, conventions, which expected numbers may move after a patch |
+| [ui.md](engineering/ui.md) | The page's tabs and controls: what each tab shows, a set page's Auto-fill and its settings (Target GCD, the tier switch, character panel totals, the Food menu), the Gear browser's layout, the How the math works sub-tabs |
+| [sheets.md](engineering/sheets.md) | The Sheets tab's saved data (sheets, gear sets, piece rows, Auto-fill settings), reading and writing, pins and Auto-fill, drafts and suggestions, the edit lock, names, Copy sheet |
+| [testing.md](engineering/testing.md) | Test layers, the test domains, what each test file covers, the brute-force reference, commands, conventions, which expected numbers may move after a patch |
 | [perf-log.md](engineering/perf-log.md) | Every dated benchmark run of the optimizer, tier ranking and the page build, newest first: the figures that look like they conflict, and which one applies today; each page keeps one current table |
 | [subcategory-sort-codes.md](engineering/subcategory-sort-codes.md) | Working notes: what each `Item.SubcategorySort` code means for gear, piece counts, and how each was checked |
 
@@ -78,4 +78,5 @@ Then by task:
 | [roadmap.md](roadmap.md) | Feature ideas: to build, built |
 | [history.md](history.md) | Claims and results that were corrected: what replaced them, how the mistake was found, and when |
 | [data-changelog.md](data-changelog.md) | One line per game data update: the datamining commit, rows and meals |
+| [READING-SESSIONS.md](READING-SESSIONS.md) | The format of the Dalamud plugin's in-game recordings (session files), for checking the sync model against them |
 | [diagrams/STYLE.md](diagrams/STYLE.md) | Where a page goes, how to link, how to write and mark claims, how to draw a diagram |

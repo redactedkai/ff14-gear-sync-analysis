@@ -49,16 +49,16 @@
 <text class="title fg" x="20" y="30">Why a beaten ring can still be needed</text>
 <text class="small muted" x="20" y="52">Three Unique rings (one copy each), no other stats. Two ring slots to fill.</text>
 
-<rect class="box" x="140" y="72" width="120" height="44" rx="8"/>
+<rect class="box" x="140" y="72" width="120" height="44" rx="4"/>
 <text class="fg b" x="160" y="99">A</text><text class="num gold b" x="240" y="99" text-anchor="end">10</text>
-<rect class="box" x="300" y="72" width="120" height="44" rx="8"/>
+<rect class="box" x="300" y="72" width="120" height="44" rx="4"/>
 <text class="fg b" x="320" y="99">B</text><text class="num gold b" x="400" y="99" text-anchor="end">9</text>
-<rect class="box" x="460" y="72" width="120" height="44" rx="8"/>
+<rect class="box" x="460" y="72" width="120" height="44" rx="4"/>
 <text class="fg b" x="480" y="99">C</text><text class="num gold b" x="560" y="99" text-anchor="end">5</text>
 <text class="small muted" x="360" y="140" text-anchor="middle">A beats B and C; B beats C</text>
 
 <!-- old rule -->
-<rect class="box-bad" x="20" y="160" width="330" height="290" rx="8"/>
+<rect class="box-bad" x="20" y="160" width="330" height="290" rx="4"/>
 <text class="fg b" x="36" y="186">Old rule (before the F1 fix)</text>
 <text class="small muted" x="36" y="206">Drop an item if any single item with at least</text>
 <text class="small muted" x="36" y="222">as many copies beats it.</text>
@@ -71,7 +71,7 @@
 <text class="fg" x="36" y="418">Best pair: A + empty =</text><text class="num bad b" x="334" y="418" text-anchor="end">10</text>
 
 <!-- new rule -->
-<rect class="box-good" x="370" y="160" width="330" height="290" rx="8"/>
+<rect class="box-good" x="370" y="160" width="330" height="290" rx="4"/>
 <text class="fg b" x="386" y="186">Current rule</text>
 <text class="small muted" x="386" y="206">Drop an item only if the items beating it have</text>
 <text class="small muted" x="386" y="222">at least 2 copies between them (2 ring slots).</text>

@@ -1,16 +1,20 @@
 /* How the math works, GCD (views/gcd.js): the sub-tab (gcdTab) and its controls in the math bar (gcdControls), which
    share their settings through $store.app.gcd (not saved). The level follows the synced level until one is typed. */
-import { TYPING_DEBOUNCE_MS, viewCache } from '../helpers.js';
-import { GCD_LEVELS, HASTE_OPTIONS, gcdLevelInput, gcdView, speedRange as speedRangeAt } from '../views/gcd.js';
+import { clamp } from '../../core/clamp.js';
+import { LEVEL_TEXT } from '../level-cap.js';
+import { TYPING_DEBOUNCE_MS } from '../number-field.js';
+import { viewCache } from '../view-cache.js';
+import { GCD_LEVELS, HASTE_OPTIONS, HASTE_SIZER, gcdLevelInput, gcdView, speedRange as speedRangeAt } from '../views/gcd.js';
 
-/* The tab's level: the one typed into its box, else the synced level, held to the levels the tab covers. */
+/* The tab's level: the one typed into its box, else Stat Allocation's synced level (the only thing it takes from another
+   sub-tab: a level, no job), held to the levels the tab covers. */
 function tabLevel(app) {
-  return Math.max(1, Math.min(GCD_LEVELS, app.gcd.level ?? app.panel('math').level));
+  return clamp(app.gcd.level ?? app.panel('math').level, 1, GCD_LEVELS);
 }
 
 /* The sub-tab: the facts, the chart and the step table. A bar or a row clicked sets the level or the speed. */
 export function gcdTab() {
-  // the last view and the settings it was built for (helpers.js viewCache): the template reads `view` several times a
+  // the last view and the settings it was built for (view-cache.js viewCache): the template reads `view` several times a
   // render, and a build walks every level for the chart
   const views = viewCache();
   return {
@@ -50,10 +54,10 @@ export function gcdControls() {
     speedTimer = null;
   return {
     hasteOptions: HASTE_OPTIONS,
+    hasteSizer: HASTE_SIZER,
     /* the highest level the Level box takes (every level of the game: views/gcd.js GCD_LEVELS) */
     gcdLevels: GCD_LEVELS,
-    /* the box's hover text after a correction ("Lowered to 100, the highest level."), or for text that is no level */
-    levelNote: '',
+    /* set for text that is no level: the box shows as invalid */
     levelError: '',
     get level() {
       return tabLevel(this.$store.app);
@@ -81,7 +85,6 @@ export function gcdControls() {
       }
       const app = this.$store.app;
       this.levelError = '';
-      this.levelNote = '';
       // an empty box follows the synced level again
       if (el.value === '') {
         app.gcd.level = null;
@@ -90,12 +93,11 @@ export function gcdControls() {
       }
       const r = gcdLevelInput(el.value);
       if (!r) {
-        this.levelError = `Enter a whole level from 1 to ${GCD_LEVELS}`;
+        this.levelError = LEVEL_TEXT.typedBad(GCD_LEVELS);
         return;
       }
       app.gcd.level = r.level === app.panel('math').level ? null : r.level;
       el.value = r.level;
-      this.levelNote = r.note;
     },
     typeSpeed(el, now = false) {
       clearTimeout(speedTimer);

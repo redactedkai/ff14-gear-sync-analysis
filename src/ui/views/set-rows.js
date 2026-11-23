@@ -6,12 +6,13 @@ import { allocatedRelic, meldInfo, poolItemById } from '../../core/items.js';
 import { ROMAN, meldSlots } from '../../core/meld.js';
 import { meldCaps } from '../../core/piece.js';
 import { MATERIA } from '../../core/tables.js';
-import { fillPlan } from './fill.js';
+import { fillPlan } from '../sheets/fill.js';
+import { SHIELD_NEEDS_ONE_HANDED } from '../sheets/set-edits.js';
 import { mealBestNote } from './meal-menu.js';
-import { usedRows } from './saved-set.js';
+import { MEAL_ROW_LABEL, usedRows } from '../sheets/saved-set.js';
 
 /* The line a row shows where a saved game id has no row in the item data (docs/engineering/sheets.md, "Missing items"). */
-export function missingItemText(gameId) {
+function missingItemText(gameId) {
   return `missing item ${gameId}`;
 }
 
@@ -23,7 +24,7 @@ export function pieceName(job, piece) {
 }
 
 /* The goal's stat ranks, {stat key: 1, 2 or 3} (1 maximize, 2 tiebreak 1, 3 tiebreak 2), for the badges before the column
-   names. `goal`: a set's fillSettings.goal ({target, tb, tb2}), or null while the set has no Fill settings (no badges). */
+   names. `goal`: a set's fillSettings.goal ({target, tb, tb2}), or null while the set has no Auto-fill settings (no badges). */
 export function rankBadges(job, goal) {
   const ranks = {};
   [goal?.target, goal?.tb, goal?.tb2].forEach((stat, i) => {
@@ -84,9 +85,11 @@ function statCell(job, row, stat) {
 }
 
 /* The view of one used row of the set. `index` is the saved row's number, `piece` the saved row, `row` its evaluation,
-   `pinned` whether Fill must keep it (fill.js fillPlan), `changed` whether a draft or suggestion changes it, `take` the
-   row's Take box while a Fill suggestion shows ({taken, text}: set-suggestion.js suggestionView's takes, or null). An
-   empty row: {empty: true, emptyText ("Choose a piece", "covered by X Robe", "missing item 123"), blockedBy, missing}; a
+   `pinned` whether Auto-fill must keep it (fill.js fillPlan), `changed` whether a draft or suggestion changes it, `take` the
+   row's Take box while an Auto-fill suggestion shows ({taken, text}: set-suggestion.js suggestionView's takes, or null). An
+   empty row: {empty: true, emptyText ("Choose a piece", "Unavailable", "missing item 123"), blockedBy, coveredTitle ("Covered by X Robe"), missing,
+   covered (the row is under a piece that covers it, so its control is disabled), shieldNote (the Off-hand row under a
+   two-handed weapon: SHIELD_NEEDS_ONE_HANDED, else null)}; a
    worn one: the piece's facts, chips and cells. */
 function rowView(job, index, piece, row, pinned, changed, take) {
   const common = { index, slot: piece.slot, label: row.label, pinned, changed, take };
@@ -96,8 +99,11 @@ function rowView(job, index, piece, row, pinned, changed, take) {
       ...common,
       empty: true,
       blockedBy: row.blockedBy,
+      covered: !!row.blockedBy,
+      shieldNote: row.blockedBy && piece.slot === 'offhand' ? SHIELD_NEEDS_ONE_HANDED : null,
       missing,
-      emptyText: row.blockedBy ? `covered by ${row.blockedBy}` : (missing ?? 'Choose a piece'),
+      emptyText: row.blockedBy ? 'Unavailable' : (missing ?? 'Choose a piece'),
+      coveredTitle: row.blockedBy ? `Covered by ${row.blockedBy}` : null,
     };
   }
   const stones = piece.stones ?? [];
@@ -132,7 +138,7 @@ function foodRow(job, gearSet, evaluated, pinned, changed, take, bestKeys) {
     // a saved key no meal has any more is named, as a missing piece is
     const missing = gearSet.meal != null ? `missing meal ${gearSet.meal}` : null;
     return {
-      label: 'Food',
+      label: MEAL_ROW_LABEL,
       empty: true,
       emptyText: missing ?? 'No food',
       ilvl: null,
@@ -144,7 +150,7 @@ function foodRow(job, gearSet, evaluated, pinned, changed, take, bestKeys) {
     };
   }
   return {
-    label: 'Food',
+    label: MEAL_ROW_LABEL,
     empty: false,
     name: meal.name,
     hq: true,
@@ -163,11 +169,10 @@ function foodRow(job, gearSet, evaluated, pinned, changed, take, bestKeys) {
 
 /* The set page's table for a saved set evaluated by evaluateInSheet (`context`), without the Total, Tier and Defense rows
    (setTotalsView). Options: `goal` (the set's fillSettings.goal, or null: rank badges), `changedRows` (saved row numbers
-   a draft or suggestion changes, for the highlight), `mealChanged`, and while a Fill suggestion shows `takes` and
+   a draft or suggestion changes, for the highlight), `mealChanged`, and while an Auto-fill suggestion shows `takes` and
    `mealTake` (set-suggestion.js suggestionView's: the Take boxes; `gearSet` is then the suggestion's `shown`), `bestKeys`
    (the meals tagged "best for goal", meal-menu.js mealBestKeys of the saved set; [] for a draft or a suggestion). Returns:
-   - headers: the stat columns {stat, text (the job's short name), rank (1 to 3 or null; see rankBadges), rankLabel
-     ("goal rank 1")};
+   - headers: the stat columns {stat, text (the job's short name), rank (1 to 3 or null; see rankBadges)};
    - rows: one view per row the job uses, in the saved order (rowView), each with `pinned`: the set pins the row and it
      holds a piece (fill.js fillPlan, the one rule); a row the job does not use is left out, its piece stays saved;
    - food: the Food row; consumablesLabel: the header row above it;
@@ -190,7 +195,6 @@ export function setRowsView(
       stat,
       text: job.short[stat],
       rank: ranks[stat] ?? null,
-      rankLabel: ranks[stat] ? `goal rank ${ranks[stat]}` : '',
     })),
     rows,
     consumablesLabel: 'Consumables',

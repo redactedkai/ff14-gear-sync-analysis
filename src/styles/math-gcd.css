@@ -1,0 +1,68 @@
+/* ==== How the math works: GCD ==== */
+/* GCD (components/gcd.js): the facts and the chart on the left, the step table on the right across both */
+.gcdgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+}
+.gcdgrid > .panel:not(#g-steps) {
+  grid-column: 1;
+}
+#g-steps {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.gfacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 32px;
+}
+.gfacts b {
+  display: block;
+  font: 600 1.5rem var(--mono);
+}
+.gfacts span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+svg.chart .stepbar {
+  fill: var(--accent);
+  opacity: 0.35;
+  cursor: pointer;
+}
+svg.chart .stepbar:hover {
+  opacity: 0.6;
+}
+svg.chart .stepbar.on {
+  opacity: 1;
+}
+svg.chart .hasteline {
+  stroke: var(--fg);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  opacity: 0.7;
+}
+.gsteps tbody tr {
+  cursor: pointer;
+}
+/* a row a draft or a Fill result changes */
+.settable tr.changed td {
+  background: var(--accent-soft);
+}
+.gsteps tbody tr:hover td {
+  background: var(--surface2);
+}
+.gsteps tbody tr.cur td {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.gsteps tbody tr.out {
+  cursor: default;
+}
+.gsteps tbody tr.out td {
+  color: var(--muted);
+  opacity: 0.5;
+}

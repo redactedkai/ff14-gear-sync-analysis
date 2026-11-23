@@ -1,11 +1,28 @@
 /* Piece stats: how one piece's stats come from its item level, line by line, and what sync does to them.
    Pure view builder: no Alpine import, so Node can load and test it. */
-import { SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
+import { ACCESSORIES_LABEL, ACCESSORY_SLOTS, JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
+import { makeJobContext } from '../../core/job-context.js';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';
 import { MAX_REAL } from '../../core/tables.js';
 import { statEffectKinds } from '../../core/tiers.js';
-import { shownSync } from '../settings.js';
+import { shownSync } from '../job-sync-panel.js';
 import { withRank } from '../ranks.js';
+
+/* The Slot menu's choices for `job` (a JobContext): the job's slots that share a budget share, each group one choice, in
+   slot order: [{value (the group's first slot, what the piece's slot is set to), label ("Head / Hands / Feet"; "Accessories" for the four accessories), slots}].
+   Slots with the same share get the same stats at every item level, so one choice stands for the group (two-handed:
+   Weapon; Head, Hands, Feet; Body, Legs; the four accessories; a job with a shield (weaponMode '1h+oh' or 'mixed') has the one-handed
+   Weapon and the Off-hand apart). */
+export function slotGroups(job) {
+  const groups = new Map(); // share (per mille) -> slots
+  for (const type of job.activeSlotTypes) {
+    const share = job.slotPct[type];
+    groups.set(share, [...(groups.get(share) ?? []), type]);
+  }
+  // the four accessories take one short name, so the Slot menu stays narrow
+  const labelOf = slots => (slots.join() === ACCESSORY_SLOTS.join() ? ACCESSORIES_LABEL : slots.map(t => SLOT_LABEL[t]).join(' / '));
+  return [...groups.values()].map(slots => ({ value: slots[0], label: labelOf(slots), slots }));
+}
 
 /* A slot share in per mille as a percent: one decimal shows it exactly (85 ‰ = 8.5%). */
 const sharePct = perMille => `${perMille / 10}%`;
@@ -43,29 +60,32 @@ function ownSentence(steps, il, main) {
   return `${text}.`;
 }
 
-/* One sentence for where a stat's ceiling comes from (capDerivation), for the substat share `w`, worded like
+/* One sentence for where a stat's ceiling comes from (capDerivation), worded like
    ownSentence's; `main`: the job's main stat name. */
-function capSentence(d, cap, w, main) {
-  if (d.offhand) return `The two-handed cap ${d.offhand.two} minus the one-handed cap ${d.offhand.one}.`;
-  let text = `${sharePct(d.pct)} of the item level ${cap} budget (${d.base})`;
+function capSentence(d, cap, main) {
+  if (d.offhand) return `Most allowed: the two-handed ceiling ${d.offhand.two} minus the one-handed ceiling ${d.offhand.one}.`;
+  let text = `Most allowed: ${sharePct(d.pct)} of the item level ${cap} budget (${d.base})`;
   if (d.factorPct !== 100) text += `, with ${d.factorPct}% on ${main} gear`;
-  if (w != null && w !== 100) text += `, with no ${w}% for the 2nd substat`;
   return `${text}.`;
 }
 
+/* Every text the Slot menu can show, one per line: the slot groups of all the jobs. The menu is as wide as the longest and
+   never changes with the job or the pick (the .sizertext of a select, as the substat menus), whatever the font. */
+export const SLOT_SIZER = [...new Set(JOBS.flatMap(job => slotGroups(makeJobContext(job.id)).map(group => group.label)))].join('\n');
+
 /* The slots of a full set as slices of one budget, in per mille: the job's slots with both rings (they add up to the
-   whole budget, 1,000), `slot` marked. [{label, width, on}] */
+   whole budget, 1,000), the slots that share `slot`'s share marked (the Slot menu's group: Head, Hands and Feet).
+   [{label, width, on}] */
 function budgetSlices(job, slot) {
-  const types = [...job.activeSlotTypes, 'ring'];
-  let ringSeen = false;
-  return types.map(t => {
-    const on = t === slot && !(t === 'ring' && ringSeen);
-    if (t === 'ring') ringSeen = true;
-    return { label: SLOT_LABEL[t], width: job.slotPct[t], share: sharePct(job.slotPct[t]), on };
-  });
+  return [...job.activeSlotTypes, 'ring'].map(t => ({
+    label: SLOT_LABEL[t],
+    width: job.slotPct[t],
+    share: sharePct(job.slotPct[t]),
+    on: job.slotPct[t] === job.slotPct[slot],
+  }));
 }
 
-/* The step-by-step section of Piece stats for `job` (a JobContext) under `sync` ({cap, sync, level}: ui/settings.js
+/* The step-by-step section of Piece stats for `job` (a JobContext) under `sync` ({cap, sync, level}: ui/job-sync-panel.js
    syncSettings), for Piece stats' piece (`piece`: {ilvl, slot, subs}, the store's `piece`) at item level `ilvl` (the
    explainer's chosen one, explainerItemLevel; null: the piece's own, else the highest): a summary, the slot slices of
    the budget, and per stat the piece's value and, under sync, the ceiling (the same slot at the synced item level),
@@ -103,7 +123,7 @@ export function pieceView(job, sync, piece, ilvl) {
       ownText: ownSentence(d.steps, il, job.label[job.mainKey]),
       ownFormula: formulaText(d.steps),
       cap: c?.value ?? null,
-      capText: c ? capSentence(c, cap, sub ? w : null, job.label[job.mainKey]) : '',
+      capText: c ? capSentence(c, cap, job.label[job.mainKey]) : '',
       capFormula: c ? capFormulaText(c) : '',
       // the number the duty keeps: the piece's own, unless it is above the cap and over its ceiling
       ownKept: status !== 'above' || raw <= c.value,
@@ -142,9 +162,9 @@ export function pieceView(job, sync, piece, ilvl) {
     shareText: isOffhand(t)
       ? 'An off-hand is the two-handed weapon’s value minus the one-handed weapon’s'
       : `The ${slotName} takes ${sharePct(job.slotPct[t])}`,
-    ruleText: `what this ${slotName} has, and what a ${slotName} at the synced item level has (its ceiling).`,
+    ruleText: `either this ${slotName}'s own value or the ceiling at the synced item level.`,
     ownHead: `This ${slotName} (item level ${il})`,
-    capHead: `A ${slotName} at item level ${cap} (the ceiling)`,
+    capHead: `The ceiling at item level ${cap}`,
     slices: budgetSlices(job, t),
     // sync cuts the 70% line to the full-share cap, so it ends up level with the first (math.md section 5)
     evenSubs: status === 'above' && rows.some(r => r.w === SUB_WEIGHTS[1] && r.syn === r.cap),

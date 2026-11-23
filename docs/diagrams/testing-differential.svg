@@ -38,12 +38,12 @@
   <rect class="bg" x="0" y="0" width="720" height="560"/>
 
   <!-- Row 1: pool sources -->
-  <rect class="box" x="40" y="24" width="300" height="76" rx="8"/>
+  <rect class="box" x="40" y="24" width="300" height="76" rx="4"/>
   <text class="fg t" x="190" y="50" text-anchor="middle">Real-gear pools</text>
   <text class="muted s" x="190" y="70" text-anchor="middle">7 jobs, every role</text>
   <text class="muted s" x="190" y="87" text-anchor="middle">24–33 items, 3,072–147,456 gear sets</text>
 
-  <rect class="box" x="380" y="24" width="300" height="76" rx="8"/>
+  <rect class="box" x="380" y="24" width="300" height="76" rx="4"/>
   <text class="fg t" x="530" y="50" text-anchor="middle">Random pools</text>
   <text class="muted s" x="530" y="70" text-anchor="middle">drawn from fixed seeds,</text>
   <text class="muted s" x="530" y="87" text-anchor="middle">so every run tests the same pools</text>
@@ -58,14 +58,14 @@
   <text class="muted s" x="360" y="132" text-anchor="middle">same pool to both</text>
 
   <!-- Row 2: the two sides -->
-  <rect class="box" x="40" y="158" width="300" height="126" rx="8"/>
+  <rect class="box" x="40" y="158" width="300" height="126" rx="4"/>
   <text class="fg t" x="190" y="186" text-anchor="middle">Optimizer</text>
   <text class="muted s" x="190" y="208" text-anchor="middle">branch and bound search</text>
   <text class="muted s" x="190" y="226" text-anchor="middle">with pruning and bounds</text>
   <text class="bad s" x="190" y="254" text-anchor="middle">a wrong bound silently returns</text>
   <text class="bad s" x="190" y="271" text-anchor="middle">a worse gear set</text>
 
-  <rect class="ref" x="380" y="158" width="300" height="126" rx="8"/>
+  <rect class="ref" x="380" y="158" width="300" height="126" rx="4"/>
   <text class="accent t" x="530" y="186" text-anchor="middle">Brute-force reference</text>
   <text class="muted s" x="530" y="208" text-anchor="middle">1. every legal gear set</text>
   <text class="muted s" x="530" y="226" text-anchor="middle">2. drop those outside the speed range</text>
@@ -77,7 +77,7 @@
   <path class="flow" d="M530,284 V318 H452" marker-end="url(#arrow)"/>
 
   <!-- Row 3: compare -->
-  <rect class="box" x="270" y="300" width="180" height="72" rx="8"/>
+  <rect class="box" x="270" y="300" width="180" height="72" rx="4"/>
   <text class="fg t" x="360" y="327" text-anchor="middle">Compare</text>
   <text class="muted s" x="360" y="346" text-anchor="middle">every substat</text>
   <text class="muted s" x="360" y="362" text-anchor="middle">(not pinned totals)</text>
@@ -89,7 +89,7 @@
   <line class="flow" x1="452" y1="338" x2="526" y2="338" marker-end="url(#arrow)"/>
 
   <!-- Row 4: shared rules -->
-  <rect class="shared" x="40" y="400" width="640" height="136" rx="8"/>
+  <rect class="shared" x="40" y="400" width="640" height="136" rx="4"/>
   <text class="fg t" x="60" y="426">Shared by both sides, so this comparison does not check them</text>
   <text class="fg s" x="60" y="454">effective (synced) stats of a piece</text>
   <text class="muted s" x="384" y="454">→ sync tests, caps at item level 475 and 123</text>

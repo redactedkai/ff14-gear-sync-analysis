@@ -10,8 +10,8 @@ regen.py runs it after the generators. summary.json is committed with the data a
            only the commit (`git ls-tree <commit> csv/en` gives the same ids);
   counts : the counts a game patch could move without any check failing: the funnel of the item database (Item.csv
            rows, rows each rule left out, LEFT_OUT categories, dangling ids), the rows kept, the highest item level,
-           rows per slot code, per gear category and per "Gear from" box, pieces with no route, the inferred routes
-           by activity, and the meals.
+           rows per slot code, per gear category of a piece and per box of the Gear categories filter, pieces with no route,
+           the inferred routes by activity, and the meals.
 Each count is compared with the previous summary.json: any count that moved by more than DRIFT_SHARE (and DRIFT_MIN),
 or appeared or went away, is printed as a warning to look into before committing. Nothing stops the run.
 

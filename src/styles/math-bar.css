@@ -1,0 +1,227 @@
+/* ==== How the math works: the bar, charts and legends ==== */
+/* How the math works: the sync explainer (components/sync-explainer.js) */
+/* its sticky bar: sub-tabs, the Job menu and the open sub-tab's controls, the item level slider and the help button */
+.mathbar {
+  --label: color-mix(in srgb, var(--fg) 82%, var(--muted)); /* labels, inactive tabs and slider numbers: a step under the menus' own text */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px; /* between the sub-tabs and the controls row */
+  --box-h: calc(16px + 1.5rem); /* the height of every box in the bar, the Job box's (40px at 100% text) and it grows with the text size */
+  position: sticky;
+  top: 0; /* pinned flush at the window's top: the page has no strip above it on this tab */
+  z-index: 2;
+  background: var(--bg);
+  padding: 0 0 10px; /* no room above the sub-tabs: pinned, they sit flush at the window's top */
+  margin-top: -6px; /* the page's 18px gap under the tab bar is 12px here: the sub-tab buttons have 6px of padding of their own, so their text sits as far below the tab bar's rule as a box's top edge does on the other tabs */
+  border-bottom: 1px solid var(--line);
+}
+/* The controls row (Job, Piece, Sync, Item level group) is a container with three layouts made on purpose, by its own width:
+   - wide, 78rem (1,248px at 100% text) and more: one row, Job | Piece | Sync | Item level.
+   - middle, 56rem to 78rem: row 1 Job | Piece | Sync, row 2 the Item level control alone (the .barbreak.after-sync).
+   - narrow, under 56rem (large text): row 1 Job | Piece, row 2 Sync | Item level (the .barbreak.after-piece).
+   Measured widths of the controls row that each needs on one line (px at 100% text; the page's fonts, the fallback fonts, Verdana,
+   the widest font tried): all four sections 1,134 / 1,150 / 1,223, so 78rem leaves 25px in Verdana; the first three 777 / 781 / 851,
+   so 56rem (896px) leaves 45px in Verdana. The thresholds are in rem, so they follow the text size and the browser's font settings
+   (a container query's em would be the body's fixed 15px); the fixed-px parts (the slider's floor) make that safe at larger text.
+   flex-wrap stays as the safety net for extreme text sizes.
+   Sections: Job | Piece (Slot, Substats and materia) and Sync (Sync settings), no rule between those two | Item level (Gear item level). Each divided section
+   (.divided) has a thin rule half a gap to its left (the wider gap after the Job box and after Sync settings: 24px, the rule centred in
+   it). The rule of a section that starts a line lands outside the line's left edge and is
+   clipped there (overflow-x: clip; the clip margin keeps the focus rings, which are 3px out; the rule is 6px out), so a rule only
+   ever separates two sections on one line and none starts or ends a line. Popovers open downwards (overflow-y stays visible) and
+   stay inside the row's width. */
+.mathbar .barrow {
+  --bar-gap-x: 12px;
+  --job-gap-extra: 12px; /* more room around the first rule, between the Job box and the controls */
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px var(--bar-gap-x); /* between the controls: less than the gap inside each (label to menu) */
+  container-type: inline-size;
+  overflow-x: clip;
+  overflow-clip-margin: 4px;
+}
+.mathbar .divided {
+  position: relative;
+}
+.mathbar .divided::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--bar-gap-x) / -2);
+  width: 1px;
+  background: color-mix(in srgb, var(--line) 45%, var(--pop-line));
+}
+.mathbar .afterjob::before,
+.mathbar .ilgroup::before {
+  left: calc(var(--bar-gap-x) / -2 - var(--job-gap-extra) / 2); /* centred in the wider gap */
+}
+.mathbar .piecesec {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--bar-gap-x);
+}
+.mathbar .barbreak {
+  display: none;
+  flex: 0 0 100%;
+  height: 0;
+  margin-top: -10px; /* the row gap on both sides of the break would be 20px: one is enough */
+}
+@container (width < 78rem) {
+  .mathbar .barbreak.after-sync {
+    display: block;
+  }
+}
+@container (width < 56rem) {
+  .mathbar .barbreak.after-sync {
+    display: none;
+  }
+  .mathbar .barbreak.after-piece {
+    display: block;
+  }
+}
+/* a control: its label on top of the menu or box */
+.mathbar .mctl {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.78rem; /* as a field label in the Auto-fill settings */
+  color: var(--label);
+  white-space: nowrap;
+}
+.mathbar .mctl :is(select, input) {
+  color: var(--fg);
+}
+/* what you click or type into has the stronger edge (the menus' own, --pop-line) */
+.mathbar .mctl :is(select, input),
+.ilctl input[type="number"],
+.ilctl button,
+.ilrow button,
+.mathbar .help {
+  border-color: var(--pop-line);
+}
+.mathbar .help {
+  border-width: 2px;
+}
+/* every box of the bar is as high as the Job box (--box-h); the popovers' own menus keep theirs */
+.mathbar
+:is(
+  .mctl.menu select,
+  .mctl.wide input,
+  .mctl.fit select,
+  .piecechip,
+  .syncchip,
+  .jobbox,
+  .ilrow .ilnum input,
+  .ilctl input[type="number"]
+) {
+  height: var(--box-h);
+  box-sizing: border-box;
+}
+/* the GCD and Substat tiers fields (Level, Haste): the width and look of a field in the Auto-fill settings, the range at the
+   label line's right end */
+.mathbar .mctl.wide {
+  width: 157px;
+}
+/* the Slot menu: as wide as its longest choice of any job ("Head / Hands / Feet"): the hidden copy of all the texts (.sizertext,
+   slotSizer) adds the select's own 9px left padding, 34px right padding (the chevron's room) and 2px of border (plus 1 for
+   rounding), so the width follows the font and no job or pick changes it */
+.mathbar .menu .sizertext {
+  padding: 0 37px 0 9px;
+}
+.mathbar .mctl:is(.wide, .menu) :is(input, select) {
+  width: 100%;
+  box-sizing: border-box;
+}
+/* a menu as wide as its longest choice (Haste), never narrower than a field: its select sits in a .sized box (sheets.css), which
+   takes the width of the hidden list of all the texts, in whatever font the page has */
+.mathbar .fit .sized {
+  min-width: 157px;
+}
+.mathbar .mctl-head {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.mathbar .f-range {
+  color: var(--label);
+  line-height: 1; /* the mono range must not make its label line taller than the other controls' (the Job menu's label is on the same line) */
+}
+/* the sub-tabs: a text strip on its own row above the controls */
+.mathbar .subtabs {
+  flex: 0 0 100%;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+/* the ? button sits at the right end of the sub-tabs row, above the line under the tabs; the sticky bar is its containing block and
+   its popover opens under it */
+.mathbar .helpwrap {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  margin-left: 0;
+}
+.ilctl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-basis: 100%;
+}
+.ilctl input[type="range"] {
+  flex: 1;
+}
+.ilctl input[type="number"] {
+  width: 80px;
+}
+.ilctl .bound,
+.ilrow .bound {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--label);
+  min-width: 3ch;
+  text-align: center;
+}
+svg.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+svg.chart text {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+svg.chart text.exp {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.legend .ownline {
+  flex-basis: 100%; /* the entry always starts a new line */
+}
+.legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+svg.chart text.lbl {
+  font-family: var(--sans);
+  font-size: 12px;
+  fill: var(--fg);
+}

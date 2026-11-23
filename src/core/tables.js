@@ -19,6 +19,9 @@ export const MP = ITEM_LEVEL_FILE.MP;
 export const SHARES = ITEM_LEVEL_FILE.SHARES;
 /* JOB_MODS: each job's attribute modifiers in percent, {job: {str, dex, int, mind, vit}} (ClassJob; job-context.js). */
 export const JOB_MODS = ITEM_LEVEL_FILE.JOBS;
+/* CLANS: the 16 clans in the game's order, [{race, clan, str, dex, int, mind, vit}]: the points a clan adds to a character's
+   attributes (Tribe and Race sheets), flat at every level (clan-bonus.js). */
+export const CLANS = ITEM_LEVEL_FILE.CLANS;
 /* ITEMS: the real-gear database rows (format in constants.js). */
 export const ITEMS = ITEMS_FILE.items;
 /* CURRENT_TOMES: the short names of the two current tomestones (e.g. ['Mathematics', 'Mnemonics']), for the

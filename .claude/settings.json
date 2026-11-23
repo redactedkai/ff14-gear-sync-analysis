@@ -15,7 +15,21 @@
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
-      "Bash(git worktree list:*)"
+      "Bash(git worktree list:*)",
+      "Bash(npm run test:fast:*)",
+      "Bash(npm run test:model:*)",
+      "Bash(npm run test:data:*)",
+      "Bash(npm run test:solver:*)",
+      "Bash(npm run test:auto-fill:*)",
+      "Bash(npm run test:set-page:*)",
+      "Bash(npm run test:sheets:*)",
+      "Bash(npm run test:gear-browser:*)",
+      "Bash(npm run test:math-page:*)",
+      "Bash(npm run test:app:*)",
+      "Bash(npm run test:look:*)",
+      "Bash(npm run test:tooling:*)",
+      "Bash(npm run test:changed:*)",
+      "Bash(node scripts/test.mjs:*)"
     ]
   }
 }

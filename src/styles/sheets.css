@@ -1,0 +1,873 @@
+/* ==== The Sheets tab: the sheet manager, a sheet's page, the frame of a set page, the dialogs ==== */
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-fg);
+}
+button.danger:hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+.sheetsview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* the Sheets tab sits flush under the tab bar (cancels the page's 18 px gap); each page sets its own top space: the list heading 12 px, the breadcrumb line 10 px, a set page's sticky header 8 px */
+#tab-sheets {
+  margin-top: -18px;
+}
+/* the heading of a list with its New button on one line */
+.listhead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.listhead h2 {
+  font-size: 1.8rem;
+  line-height: 1.3;
+}
+.listhead .sp {
+  flex: 1 1 0;
+}
+/* a plain note after an action ("Deleted “UwU” sheet.") */
+.toast {
+  align-self: flex-start;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  font-size: 0.84rem;
+}
+/* the notes and boxes around the lists keep the 14 px they had between blocks */
+.sheetsview > .callout,
+#sh-unreadable {
+  margin-top: 14px;
+}
+/* the empty states: "No sheets yet", "No gear sets yet" */
+.startcard {
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 18px;
+  background: var(--surface);
+}
+.startcard h3 {
+  margin: 0 0 6px;
+}
+.startcard p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+/* the gear table: fixed columns (every stat 80 px, 72 below 1100 px wide), and its own outline drawn on the cells
+   (separate borders), so the stuck column names have real rounded corners; page-coloured wedges cover the corners of
+   the stuck row so the rows scrolling under it never show through */
+.tablewrap.settable {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+.settable table.coltint {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.settable thead th:first-child {
+  width: 112px;
+  padding-left: 34px;
+  border-left: 1px solid var(--line);
+  border-top-left-radius: 4px;
+}
+.settable thead th:last-child {
+  width: 84px;
+  border-right: 1px solid var(--line);
+  border-top-right-radius: 4px;
+}
+.settable thead th[data-col="ilvl"] {
+  width: 52px;
+}
+.settable thead th.n[data-col]:not([data-col="ilvl"]):not(:last-child) {
+  width: 80px;
+}
+@media (max-width: 1099px) {
+  .settable thead th.n[data-col]:not([data-col="ilvl"]):not(:last-child) {
+    width: 72px;
+  }
+  .settable thead th:last-child {
+    width: 76px;
+  }
+}
+/* the numeric columns have less side padding, so the numbers sit closer (the Gear browser's table too) */
+.settable th.n,
+.settable td.n,
+#gear-table th.n,
+#gear-table td.n {
+  padding-left: 6px;
+  padding-right: 6px;
+  white-space: nowrap;
+}
+.settable th.n:last-child,
+.settable td.n:last-child,
+#gear-table th.n:last-child,
+#gear-table td.n:last-child {
+  padding-right: 10px;
+}
+/* Every number column (Lv, Ilvl, each stat) has the same width: the room the widest sorted heading needs ("▾ ILVL" and
+   the padding, 54 px); a 4-digit value needs 45 px */
+#gear-table th.n {
+  width: 55px;
+}
+.settable thead th:first-child::before,
+.settable thead th:last-child::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  width: 4px;
+  height: 4px;
+  pointer-events: none;
+}
+.settable thead th:first-child::before {
+  left: -1px;
+  background: radial-gradient(circle at 100% 100%, transparent 3.9px, var(--bg) 4.3px);
+}
+.settable thead th:last-child::before {
+  right: -1px;
+  background: radial-gradient(circle at 0 100%, transparent 3.9px, var(--bg) 4.3px);
+}
+.settable tbody {
+  background: var(--surface);
+  border-radius: 0 0 4px 4px;
+}
+/* a row, a button or an input scrolled to stays clear of the header and the stuck column names */
+.settable tbody tr {
+  scroll-margin-top: calc(var(--sh) + 44px);
+}
+:where(.settable tbody) :is(button, input) {
+  scroll-margin-top: calc(var(--sh) + 44px);
+}
+.settable tbody tr.sect th {
+  border-left: 1px solid var(--line);
+}
+.settable tbody td:last-child,
+.settable tbody tr.sect th {
+  border-right: 1px solid var(--line);
+}
+.settable tbody tr:last-child td {
+  border-bottom: 1px solid var(--line);
+}
+.settable tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 4px;
+}
+.settable tbody tr.sect th {
+  position: static;
+  padding: 4px 10px 4px 34px;
+}
+.settable td.item {
+  white-space: normal;
+}
+/* the pin before a slot's name (Remix pushpin: filled pinned, outlined unpinned) */
+.settable td.pnc {
+  white-space: nowrap;
+}
+.pinic,
+.pinspacer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px 2px -4px -4px;
+  vertical-align: middle;
+}
+.pinic {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.pinic:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.pinic.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.pinic:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.pinic:disabled {
+  cursor: default;
+}
+.pnc > span:not(.pinspacer) {
+  vertical-align: middle;
+}
+.takebox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.takebox input[type="checkbox"] {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+/* a covered Off-hand's box follows the weapon's: dimmed, not clickable */
+.takebox.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* the lists of sheets and of gear sets (the header cells counted by type: an x-for's <template> is a child too) */
+table.sets {
+  table-layout: fixed;
+}
+#tab-sheets table.sets td:first-child {
+  white-space: normal;
+}
+/* the manager's rows are top-aligned; a gear set's figures are centred beside its name */
+#tab-sheets table.sheetlist td {
+  vertical-align: top;
+}
+#tab-sheets table.sheetlist td:not(:first-child) {
+  padding-top: 9px;
+}
+table.sets.sheetlist th:nth-of-type(2) {
+  width: 136px;
+}
+table.sets.sheetlist th:nth-of-type(3) {
+  width: 140px;
+}
+/* The gear sets list's figure columns have fixed widths, whatever the sets: the Set column takes the rest. Each is the room
+   its widest text needs with 16 px of padding: a 4-digit number 33 px, a percent "+99.9%" 50 px, "+999 MP" 58 px, the
+   heading "CRIT DMG" with its sort arrow 73 px, "GCD (with Haste)" 134 px (the job with an always-on haste); the stat
+   points view has numbers only, each given 72 px */
+#sh-sets th.n {
+  width: 68px;
+}
+#sh-sets th[data-fig="main"] {
+  width: 56px;
+}
+#sh-sets th[data-fig="gcd"] {
+  width: 64px;
+}
+#sh-sets th[data-fig="critDmg"] {
+  width: 92px;
+}
+#sh-sets th[data-fig="spec"] {
+  width: 76px;
+}
+#sh-sets th[data-fig="dot"] {
+  width: 60px;
+}
+#sh-sets th.wide {
+  width: 150px;
+}
+#sh-sets.points th.n {
+  width: 72px;
+}
+table.sets.sheetlist th:nth-of-type(4) {
+  width: 52px;
+}
+table.sets.sheetlist th:nth-of-type(n + 5) {
+  width: 98px;
+}
+#tab-sheets table.sets th,
+#tab-sheets table.sets td {
+  padding: 7px 8px;
+}
+/* the column head sits over the names, after the 28 px drag handle and its 6 px gap (of-type: an x-for's <template> is a child too) */
+#tab-sheets table.sets th:first-of-type {
+  padding-left: 34px;
+}
+.clipname {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.sname {
+  display: block;
+  max-width: 100%;
+  font-weight: 600;
+  color: var(--fg);
+}
+.sorigin {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+.rowacts {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+.rowacts .linkbtn {
+  font-size: 0.78rem;
+}
+.rowacts .linkbtn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.jobcell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+table.sets .jobcell {
+  margin-top: -3px;
+}
+.jobico {
+  flex: none;
+  border-radius: 4px;
+}
+/* a row's drag handle runs its full height at the left of the first cell */
+.dragcell {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  margin: -7px 0 -7px -8px;
+}
+.dragbody {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 0;
+}
+.draghandle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  color: var(--muted);
+  cursor: grab;
+}
+/* the six dots (Remix Icon "draggable") */
+.draghandle::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 18.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM15.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 18.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM15.5 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+.draghandle:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.draghandle.off {
+  opacity: 0.4;
+  cursor: default;
+}
+.draghandle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+#tab-sheets tr.dragging td {
+  opacity: 0.45;
+}
+#tab-sheets tr.dropbefore td {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+#tab-sheets tr.dropafter td {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+/* a click anywhere on a row opens it (the row's click handler; the name link stays the keyboard way in): the pointer says so,
+   and the row is tinted under the pointer and while its name link has the keyboard focus. The buttons, the drag handle and
+   the link keep their own cursors. */
+#tab-sheets table.sets tbody tr {
+  cursor: pointer;
+}
+#tab-sheets table.sets tbody tr:hover td,
+#tab-sheets table.sets tbody tr:has(a.sname:focus-visible) td {
+  background: var(--surface2);
+}
+/* the line of a sheet page and a set page: "Sheets / <sheet> / <set>" */
+.setline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 10px 0 8px;
+  font-size: 0.86rem;
+}
+.shead .setline {
+  margin: 0;
+}
+.setcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+}
+.setcrumb a {
+  flex: none;
+  color: var(--accent);
+}
+.setcrumb a + .csep ~ a {
+  flex: 0 1 auto;
+  min-width: 3ch;
+}
+.setcrumb .crumbhere {
+  flex: 0 1 auto;
+  min-width: 3ch;
+  color: var(--fg);
+}
+/* a sheet's own panel: a lighter banner with the job's icon, the job, the name, the description and the buttons, over the
+   settings (level, item level, item level sync) */
+.sheetpanel {
+  padding: 0;
+  gap: 0;
+}
+.sheetbanner {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 3px 3px 0 0;
+  background: var(--surface2);
+}
+/* the name, the job's icon and the buttons share one row; with a 2-line name the icon and the buttons stay at the top */
+.sheettop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.sheetident {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.sheeticon {
+  flex: none;
+  border-radius: 7px;
+}
+.sheetnames {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+.sheetjob {
+  font: 500 0.7rem / 1.15 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sheettop h2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* two lines at most, then an ellipsis; the whole name is the tooltip */
+  overflow: hidden;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: 600 1.5rem / 1.2 var(--serif);
+}
+/* the buttons: an icon and a word each, centred on the 44 px icon (a 32 px button: 6 px down) */
+.sheetacts {
+  display: flex;
+  gap: 8px;
+  flex: none;
+  margin-top: 6px;
+}
+.sheetacts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  white-space: nowrap;
+}
+.sheetacts button:not(.danger) {
+  background: var(--surface);
+}
+.btnicon {
+  flex: none;
+}
+/* a sheet's name and description in one block, the description 2 px under the name, as on a gear set page */
+.sheethead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sheetdesc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* two lines at most, as a gear set's description in its page header */
+  overflow: hidden;
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.sheetfields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  padding: 10px 16px 12px;
+}
+/* level and item level: each box is as wide as its label line with the longest flag ("Item level" and "1–795 only", about 150 px), so the row fits at 960 px */
+.sheetfields > label.f:nth-child(-n + 2) {
+  width: 160px;
+}
+/* the Clan and Party bonus boxes at the row's right end, level with the other fields; below 1100 px or so they wrap to a second line, still at the right */
+.sheetbonus {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 14px 20px;
+  margin-left: auto;
+}
+/* the line under the Gear sets table that says what the clan and the party bonus changed; it always takes its line (hidden when empty), so setting a bonus moves nothing */
+.setsnote {
+  margin: 8px 0 0;
+  min-height: 1.5em;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+/* the dialogs: native <dialog> elements opened with showModal(), so the browser draws the backdrop, keeps Tab and clicks
+   inside, makes the page behind inert and puts the box above everything else (top layer: no z-index). The browser's own
+   box is reset here: margin auto (with its inset of 0) centres the box, and its width and height limits give way to ours. */
+.dlg {
+  margin: auto;
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  width: min(480px, calc(100vw - 32px));
+  overflow: auto;
+  padding: 20px 24px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 48px var(--dialog-shadow);
+}
+/* a closed <dialog> stays display: none (the browser's rule); only an open one is a flex column */
+.dlg[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* the backdrop: --backdrop, which a ::backdrop inherits from :root only in Chrome 122, Firefox 120 and Safari 17.4 and later.
+   The build runs in Chrome 97, Firefox 104 and Safari 15.4, where the variable is not there: the fallback after the comma
+   repeats the token's value, for each theme as the tokens pick it (tokens.css). */
+.dlg::backdrop {
+  background: var(--backdrop, rgba(0, 0, 0, 0.45));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dlg::backdrop {
+    background: var(--backdrop, rgba(0, 0, 0, 0.55));
+  }
+}
+:root[data-theme="dark"] .dlg::backdrop {
+  background: var(--backdrop, rgba(0, 0, 0, 0.55));
+}
+/* the X at a dialog's top right: the same as Cancel (a question: Keep editing) */
+.dlgclose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.dlgclose:hover {
+  color: var(--fg);
+  background: var(--line);
+}
+.dlg.wide {
+  width: min(780px, calc(100vw - 32px));
+}
+/* a question (delete, leave) is a little wider than a form */
+.dlg[role="alertdialog"] {
+  width: min(520px, calc(100vw - 32px));
+}
+.dlg h3 {
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+/* the title line of a dialog, with a "?" after it on Copy sheet; the panel opens inline under the line, so the dialog's scrolling never clips it */
+.dlgtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+.dlg .question,
+.dlg .dlgtitle {
+  padding-right: 32px; /* clear of the close button */
+}
+/* Copy sheet's title: the sheet's name is cut with an ellipsis, inside its quotes, so the title stays on one line with the "?" beside it */
+.dlg h3.clipped {
+  display: flex;
+  min-width: 0;
+  max-width: calc(100% - 42px);
+}
+.dlg h3.clipped > span {
+  flex: none;
+}
+.dlg h3.clipped > .clipname {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.helpspan {
+  display: contents;
+}
+.copyhelp {
+  flex: 1 1 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface2);
+  font-size: 0.88rem;
+}
+.copyhelp h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+.copyhelp p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+.copyhelp dl.outcomes {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.copyhelp dl.outcomes div {
+  display: contents;
+}
+.copyhelp dt {
+  font-weight: 600;
+}
+.copyhelp dd {
+  margin: 0;
+}
+.copyhelp h5 {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.copyhelp p.foot {
+  font-size: 0.82rem;
+}
+.copyhelp li.own {
+  color: var(--accent);
+}
+.dlg .question {
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  margin-bottom: 2px; /* with the 14 px gap: 16 px to the buttons */
+}
+/* the line under a question: 8 px below it, 16 px above the buttons, in the muted colour */
+.dlg .question + p {
+  margin: -8px 0 2px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.dlg textarea {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px 9px;
+  width: 100%;
+  resize: vertical;
+}
+.dlg textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* the fields, the Copy sheet warning and the buttons of a sheet dialog; a New sheet and a Copy sheet put the buttons at the right of the fields row (the Copy warning goes under both) */
+.dlgform {
+  display: grid;
+  gap: 14px 20px;
+}
+.dlgform.new,
+.dlgform.copy {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+}
+.dlgrow {
+  display: grid;
+  grid-template-columns: 160px 160px auto; /* level, item level, then the sync switch, as in the Job and sync strip, at the left */
+  justify-content: start;
+  gap: 14px 20px;
+  align-items: start;
+}
+.dlgbtns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.dlgbtns button {
+  white-space: nowrap;
+}
+.dlgform.new .dlgbtns,
+.dlgform.copy .dlgbtns {
+  grid-area: 1 / 2;
+  flex-wrap: nowrap;
+}
+.dlgform.new .dlgrow,
+.dlgform.copy .dlgrow {
+  grid-area: 1 / 1;
+}
+.dlgerr {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin-right: auto;
+  color: var(--bad);
+  font-size: 0.88rem;
+}
+/* the reason a refused Sheets dialog shows (dialog-error.html): in the label row of the field it is about, at the right of the label, or in the
+   title row for a reason about no field. The label rows are one height whether they hold a message or not, so nothing moves when it comes or goes. */
+.dlg .f-head {
+  height: 18px;
+  align-items: center;
+}
+.dlgmsg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 auto 0 12px;
+  color: var(--bad);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.dlgmsg svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.dlgtitle .dlgmsg {
+  margin: 0 0 0 auto;
+}
+/* the Job label row: the label, then the reason */
+.jobpick > .f-head {
+  justify-content: flex-start;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+/* the field a reason is about: a red border (and a red focus ring, so the ring cannot hide it), an outline round the job icons, a red warning block */
+.dlg input.invalid {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad);
+}
+.dlg input.invalid:focus-visible {
+  outline-color: var(--bad);
+}
+.dlg .jobpick.invalid .jobrows {
+  outline: 1px solid var(--bad);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+.dlg .clearwarn.invalid {
+  border-color: var(--bad);
+}
+.dlg .clearwarn.invalid #sh-dlg-ack {
+  outline: 2px solid var(--bad);
+  outline-offset: 1px;
+}
+/* the tick box line of the Copy sheet warning: the box and its text, the reason at the right */
+.ackrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ackrow .dlgmsg {
+  margin: 0;
+}
+.jobchoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.jobchoice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  background: var(--surface);
+}
+.jobchoice[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+/* Copy sheet: the pieces the new job cannot wear, and the box that accepts clearing them */
+.clearwarn {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cap-part);
+  border-radius: 4px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  font-size: 0.9rem;
+}
+.dlgform.copy .clearwarn {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+.clearwarn ul {
+  margin: 6px 0 10px;
+  padding-left: 20px;
+  font-size: 0.88rem;
+  max-height: 118px;
+  overflow: auto;
+}
+.ackline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+#tab-sheets .ackline input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+html:has(.dlg) {
+  overflow: hidden;
+}

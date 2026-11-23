@@ -3,9 +3,10 @@
      of the goal's stats. A job uses physical or magic damage (JobContext damageKey); Blue Mage none.
    - Defense: shown under the result table with the share of damage it removes; never ranked.
    Both are synced like a stat: min(own, the cap at the synced item level), the cap from the ItemLevel budget, the
-   piece's factor (MP) and its slot share (SHARES), capFromBudget's steps. Defense under sync is verified in-instance by
-   xivgear's tests (item level 663 chests at 660: 842 → 837 and 481 → 478 Defense); weapon damage under sync is a
-   guess (the tools clamp it the same way; no in-game measurement was found). */
+   piece's factor (MP) and its slot share (SHARES), capFromBudget's steps. Defense under sync is verified in game for
+   kinds 4 and 6 (the owner's recordings), by xivgear's in-instance values for kind 2 (item level 663 chests at 660:
+   842 → 837 and 481 → 478 Defense) and assumed for the rest; weapon damage under sync is a guess (the tools clamp it
+   the same way; no in-game measurement was found). */
 import { DB_SLOT_TYPE } from './constants.js';
 import { capFromBudget, clampIlvl } from './formulas.js';
 import { damageDefenseFacts } from './items.js';

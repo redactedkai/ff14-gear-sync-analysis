@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-labelledby="t d">
   <title id="t">A tier is a step</title>
-  <desc id="d">Critical Hit rate against the total of Critical Hit (gear points plus food) at level 90, where the rate is 5% plus floor(200 g / 1,900) per mille. The rate is a step function: 29.1% from 2,290, 29.2% from 2,299, 29.3% from 2,309, 29.4% from 2,318, 29.5% from 2,328. Every total from 2,309 to 2,317 gives the same 29.3%, so the points past a tier's start can go elsewhere. The tier's start is 2,309; tier ranking holds the stat at the start plus one, 2,310, so that a one-point error in the model does not drop the tier.</desc>
+  <desc id="d">Critical Hit rate against the total of Critical Hit (gear points plus food) at level 90, where the rate is 5% plus floor(200 g / 1,900) per mille. The rate is a step function: 29.1% from 2,290, 29.2% from 2,299, 29.3% from 2,309, 29.4% from 2,318, 29.5% from 2,328. Every total from 2,309 to 2,317 gives the same 29.3%, so the points past a tier's start can go elsewhere. The tier's start is 2,309; tier ranking holds the stat at the tier's start.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; }
@@ -58,9 +58,9 @@
   <circle class="accent" cx="632" cy="130" r="4.5"/>
 
   <!-- the hold -->
-  <path class="goldStroke" d="M380,210 L380,300"/>
-  <text class="gold head small" x="388" y="244">hold ≥ 2,310</text>
-  <text class="gold small" x="388" y="262">start + 1</text>
+  <path class="goldStroke" d="M366,210 L366,300"/>
+  <text class="gold head small" x="388" y="244">hold ≥ 2,309</text>
+  <text class="gold small" x="388" y="262">the tier's start</text>
 
   <!-- x ticks: the tier starts -->
   <path class="axis" d="M226,300 L226,306 M366,300 L366,306 M492,300 L492,306 M632,300 L632,306"/>

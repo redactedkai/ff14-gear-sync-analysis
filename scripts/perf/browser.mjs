@@ -1,18 +1,18 @@
-/* Browser timing of a set page's Fill (docs/engineering/optimizer.md, section 8).
+/* Browser timing of a set page's Auto-fill (docs/engineering/optimizer.md, section 8).
 
-Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures: 'fill' (one Fill's
+Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures: 'fill' (one Auto-fill's
 search, as the solver reports it: src/ui/components/set-page.js) and 'save' (serializing the saved state: src/main.js).
 
 Each job gets one sheet, written to localStorage before the page loads: level 100, no sync, five gear sets with every
-row empty and unpinned, each set's Fill settings with another goal (FILL_TARGETS), the other settings at their defaults.
-  1. cold: a fresh browser context per run; the page opens, the first set's page is opened and Fill pressed, which
+row empty and unpinned, each set's Auto-fill settings with another goal (FILL_TARGETS), the other settings at their defaults.
+  1. cold: a fresh browser context per run; the page opens, the first set's page is opened and Auto-fill pressed, which
      makes the first search fully cold (no compiled code, no caches, the job's gear not built in the worker).
-  2. warm: in that page, each set in turn: Fill, wait for its result, Discard; times each search and the time from the
+  2. warm: in that page, each set in turn: Auto-fill, wait for its result, Discard; times each search and the time from the
      press to the result shown.
   3. memory: 100 more Fills over the sets, JS heap before and after (with garbage collection). The page's heap only:
      the solver's Web Worker (src/ui/solver.js) has its own, not counted.
 Long tasks (the main thread blocked over 50 ms) are reported over the whole page, opening it included, and from the
-first Fill to the memory step (the searches and drawing their results; the search itself runs in the worker).
+first Auto-fill to the memory step (the searches and drawing their results; the search itself runs in the worker).
 Chrome's CPU throttle slows the page's main thread; the worker's search is slowed much less, so its times at 4x and 6x
 are not a slow device's.
 Each at CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
@@ -26,8 +26,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { makeJobContext } from '../../src/core/job-context.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
-import { STORE_KEY } from '../../src/ui/state.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.js';
+import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.js';
+import { STORE_KEY } from '../../src/ui/store-key.js';
 import { listOption, numberOption, option } from './args.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -37,7 +38,6 @@ const TIMEOUT = 120_000;
 
 // one gear set per goal, in this order; 'speed' and 'main' stand for the job's own speed and main stat
 const FILL_TARGETS = ['crit', 'det', 'dh', 'speed', 'main'];
-const ROW_SLOTS = ['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring', 'ring'];
 
 // long tasks (main thread blocked over 50 ms), recorded from the first moment of every page
 const LONGTASKS = `
@@ -66,14 +66,14 @@ async function throttle(pg, rate) {
 const waitMeasure = (pg, name, count) =>
   pg.waitForFunction(`performance.getEntriesByName('${name}').length >= ${count}`, undefined, { timeout: TIMEOUT });
 
-/** `job`'s sheet as src/ui/sheet-storage.js saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
+/** `job`'s sheet as src/ui/sheets/storage.js saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
 function sheetFor(job) {
   const ctx = makeJobContext(job);
   const sets = FILL_TARGETS.map(goal => (goal === 'main' ? ctx.mainKey : goal === 'speed' ? ctx.speedKey : goal)).map((target, i) => ({
     id: `g_${target}`,
     name: `Goal ${target}`,
     description: '',
-    pieces: ROW_SLOTS.map(slot => ({ slot })),
+    pieces: SET_ROW_SLOTS.map(slot => ({ slot })),
     meal: null,
     pinned: { pieces: [], meal: false },
     fillSettings: {
@@ -108,7 +108,7 @@ async function openSet(pg, sheet, setId) {
   await pg.locator('#sh-fill').waitFor({ state: 'visible' });
 }
 
-/** Press Fill and wait for its result; returns the time from the press to the result shown (ms). */
+/** Press Auto-fill and wait for its result; returns the time from the press to the result shown (ms). */
 async function fill(pg) {
   const before = (await measures(pg, 'fill')).length;
   const t0 = await pg.evaluate('performance.now()');
@@ -132,7 +132,7 @@ async function coldAndWarm(browser, job, rate, warm) {
   await pg.goto(PAGE);
   await pg.waitForSelector('#sh-list a.sname');
   await openSet(pg, sheet, sheet.sets[0].id);
-  const openTasks = await pg.evaluate('window.__long.length'); // long tasks before the first Fill
+  const openTasks = await pg.evaluate('window.__long.length'); // long tasks before the first Auto-fill
   await fill(pg);
   const shown = await pg.evaluate('performance.now()'); // since navigation start
   const out = { cold_ms: (await measures(pg, 'fill'))[0], load_to_result_ms: shown };
@@ -188,13 +188,13 @@ async function main() {
         for (let i = 0; i < runsN; i++) runs.push(await coldAndWarm(browser, job, rate, i === 0));
         const w = runs[0];
         console.log(
-          `  ${job}: cold Fill ${fmt(runs.map(r => r.cold_ms))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms))} ms`,
+          `  ${job}: cold Auto-fill ${fmt(runs.map(r => r.cold_ms))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms))} ms`,
         );
         console.log(
-          `  ${job}: warm Fills ${fmt(w.warm_ms)} ms; Fill to result ${fmt(w.settle_ms)} ms; ` +
+          `  ${job}: warm Fills ${fmt(w.warm_ms)} ms; Auto-fill to result ${fmt(w.settle_ms)} ms; ` +
             `heap ${w.heap_mb[0].toFixed(1)} -> ${w.heap_mb[1].toFixed(1)} MB after 100 Fills; slowest save ${w.save_ms.toFixed(0)} ms; ` +
             `longest blocked main thread ${max(runs.map(r => r.longtask_max_ms)).toFixed(0)} ms, ` +
-            `${max(runs.map(r => r.longtask_search_max_ms)).toFixed(0)} ms from the first Fill on`,
+            `${max(runs.map(r => r.longtask_search_max_ms)).toFixed(0)} ms from the first Auto-fill on`,
         );
         results.push({ rate, job, runs });
       }

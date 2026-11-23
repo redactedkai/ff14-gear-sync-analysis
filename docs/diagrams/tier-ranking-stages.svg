@@ -42,7 +42,7 @@
   <text class="muted small" x="40" y="58">Dark Knight, level 90, item level 660, GCD exactly 2.30 with Nachos. Goal: Critical Hit &gt; Determination &gt; Direct Hit.</text>
 
   <!-- search 1 -->
-  <rect class="box" x="40" y="78" width="640" height="108" rx="8"/>
+  <rect class="box" x="40" y="78" width="640" height="108" rx="4"/>
   <circle class="accent" cx="70" cy="104" r="14"/>
   <text class="num head" x="70" y="109" text-anchor="middle">1</text>
   <text class="fg head" x="96" y="109">Most Critical Hit</text>
@@ -54,7 +54,7 @@
   <path class="accentStroke" d="M360,186 L360,206" marker-end="url(#arrow)"/>
 
   <!-- search 2 -->
-  <rect class="box" x="40" y="210" width="640" height="108" rx="8"/>
+  <rect class="box" x="40" y="210" width="640" height="108" rx="4"/>
   <circle class="accent" cx="70" cy="236" r="14"/>
   <text class="num head" x="70" y="241" text-anchor="middle">2</text>
   <text class="fg head" x="96" y="241">Most Determination, with Critical Hit held</text>
@@ -66,7 +66,7 @@
   <path class="accentStroke" d="M360,318 L360,338" marker-end="url(#arrow)"/>
 
   <!-- search 3 -->
-  <rect class="box" x="40" y="342" width="640" height="108" rx="8"/>
+  <rect class="box" x="40" y="342" width="640" height="108" rx="4"/>
   <circle class="accent" cx="70" cy="368" r="14"/>
   <text class="num head" x="70" y="373" text-anchor="middle">3</text>
   <text class="fg head" x="96" y="373">Most Direct Hit, with both held</text>
@@ -78,7 +78,7 @@
   <path class="accentStroke" d="M360,450 L360,470" marker-end="url(#arrow)"/>
 
   <!-- search 4 -->
-  <rect class="box" x="40" y="474" width="640" height="88" rx="8"/>
+  <rect class="box" x="40" y="474" width="640" height="88" rx="4"/>
   <circle class="good" cx="70" cy="500" r="14"/>
   <text class="num head" x="70" y="505" text-anchor="middle">4</text>
   <text class="fg head" x="96" y="505">Raw order under all three holds</text>

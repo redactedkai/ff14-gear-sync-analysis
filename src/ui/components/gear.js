@@ -1,22 +1,25 @@
 /* Gear browser: look up the item database with filters (see views/gear.js). Recomputed only while its tab is open.
-   Layout (owner; mockups B1 with C2's pills): the name search on the title's line, slot pills with their
-   counts and, while a filter is changed, Reset at their end (its place kept while hidden); one row of filters; sorting
-   from the table's headings. */
+   Layout (owner): the title's line holds one round search bar (the Slot menu, with each slot's count, then the name search), the
+   match count and, while a filter is changed, Reset (its place kept while hidden); one row of filters; sorting from the
+   table's headings. */
 import { SEARCH_MAX_LENGTH, defaultBrowse } from '../state.js';
-import { syncSettings } from '../settings.js';
+import { syncSettings } from '../job-sync-panel.js';
 import { browseFiltered, gearView } from '../views/gear.js';
-import { expansionToggles, gearFromToggles, viewCache } from '../helpers.js';
+import { viewCache } from '../view-cache.js';
+import { expansionToggles, gearFromToggles } from './filter-menus.js';
 
 /* The browser's component: its view (gearView, rebuilt while the tab is open), its page, its two filter menus, the sort
    and Reset filters. */
 export function gear() {
-  // the list and the settings it was built for (helpers.js viewCache)
+  // the list and the settings it was built for (view-cache.js viewCache)
   const views = viewCache();
   return {
     /* the page picked on the page line (1 first), and the list it was picked for (listKey): any change to the list
        goes back to page 1. Not saved: a reload starts at page 1 (owner's pick P1 a). */
     page: 1,
     pageFor: '',
+    /* the column under the pointer (its data-col key, '' for none or for the Item and Slot columns): its cells are tinted */
+    hotCol: '',
     /* what the list depends on: the job, the sync settings, and the browser's filters and sort */
     get listKey() {
       const app = this.$store.app;
@@ -63,10 +66,11 @@ export function gear() {
     },
     /* the Expansion filter, browse.expOff (the optimizer has its own, opt.expOff) */
     ...expansionToggles('browse'),
-    /* the "Gear from" filter: the browser's own boxes and market board switch (browse.exclude, browse.market) */
+    /* the "Gear categories" filter: the browser's own boxes and market board switch (browse.exclude, browse.market) */
     ...gearFromToggles('browse'),
-    get emptyBoxes() {
-      return this.view?.emptyBoxes || [];
+    /* how many pieces each "Gear categories" box holds for the list now ({box key: count}), or null before the list is built */
+    get fromCounts() {
+      return this.view?.fromCounts ?? null;
     },
     /* A heading clicked: the table sorts by it; the same heading again flips the order. A new heading starts high
        first, names A to Z. */

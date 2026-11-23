@@ -1,0 +1,105 @@
+/* ==== Tokens ==== */
+/* Colors only through these tokens. The dark values are written twice (the system setting, and
+   data-theme="dark"); the two lists must match. */
+:root {
+  --bg: #f4f2ea;
+  --surface: #fffdf7;
+  --surface2: #ece9dd;
+  --fg: #1b2a2c;
+  --muted: #586869;
+  --line: #d6d1bf;
+  /* a dropdown menu's edge: stronger than --line, with a shadow, so it stands off the page under it */
+  --pop-line: #a9a28a;
+  --pop-shadow: 0 8px 24px rgba(40, 35, 20, 0.18);
+  /* the shadow colour under a dialog */
+  --dialog-shadow: rgba(0, 0, 0, 0.45);
+  --accent: #0d6e72;
+  --accent-fg: #ffffff;
+  --accent-soft: #d5ebe8;
+  --gold: #8f5f0c;
+  --gold-ink: #6b4707;
+  --good: #25773a;
+  --bad: #b0402c;
+  --warn-bg: #f6e8c8;
+  --danger: #b0402c;
+  --danger-hover: #c04a35;
+  --danger-fg: #ffffff;
+  --backdrop: rgba(0, 0, 0, 0.45);
+  /* a set page: a delta line that is better (green) or worse (red); an overmeld slot's border; a stone past its stat's
+     cap (counts for nothing, or in part) and the corner mark of such a cell in the materia menu; the neutral tint of a
+     changed figure and of a goal rank badge */
+  --delta-good: #1b6e3a;
+  --delta-bad: #b3261e;
+  --over: #c2457a;
+  --cap-none: #b3261e;
+  --cap-part: #8a6100;
+  --cap-none-mark: #d32f2f;
+  --tint: rgba(27, 42, 44, 0.22);
+  --serif: "Spectral", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1517;
+    --surface: #142023;
+    --surface2: #1b2b2e;
+    --fg: #e5eeed;
+    --muted: #92a5a5;
+    --line: #2b3d40;
+    --pop-line: #4f6d70;
+    --pop-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --dialog-shadow: rgba(0, 0, 0, 0.45);
+    --accent: #4cc2b6;
+    --accent-fg: #06191a;
+    --accent-soft: #17383a;
+    --gold: #e2b659;
+    --gold-ink: #e2b659;
+    --good: #6cc788;
+    --bad: #f08a74;
+    --warn-bg: #3a3220;
+    --danger: #b8412d;
+    --danger-hover: #c64b36;
+    --danger-fg: #ffffff;
+    --backdrop: rgba(0, 0, 0, 0.55);
+    --delta-good: #7ee0a0;
+    --delta-bad: #ff8f7a;
+    --over: #e27aa5;
+    --cap-none: #ff8f7a;
+    --cap-part: #e9b93a;
+    --cap-none-mark: #ef4a4a;
+    --tint: rgba(229, 238, 237, 0.2);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1517;
+  --surface: #142023;
+  --surface2: #1b2b2e;
+  --fg: #e5eeed;
+  --muted: #92a5a5;
+  --line: #2b3d40;
+  --pop-line: #4f6d70;
+  --pop-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --dialog-shadow: rgba(0, 0, 0, 0.45);
+  --accent: #4cc2b6;
+  --accent-fg: #06191a;
+  --accent-soft: #17383a;
+  --gold: #e2b659;
+  --gold-ink: #e2b659;
+  --good: #6cc788;
+  --bad: #f08a74;
+  --warn-bg: #3a3220;
+  --danger: #b8412d;
+  --danger-hover: #c64b36;
+  --danger-fg: #ffffff;
+  --backdrop: rgba(0, 0, 0, 0.55);
+  --delta-good: #7ee0a0;
+  --delta-bad: #ff8f7a;
+  --over: #e27aa5;
+  --cap-none: #ff8f7a;
+  --cap-part: #e9b93a;
+  --cap-none-mark: #ef4a4a;
+  --tint: rgba(229, 238, 237, 0.2);
+  color-scheme: dark;
+}

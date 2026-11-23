@@ -188,7 +188,7 @@ export const poolKey = x => [x.name, x.type, x.ilvl].join('|');
 
 // the database rows of each pool key, in database order, built once on first use; and the facts of each key looked up
 // so far. The index holds only rows, so building it is cheap: the page's thread builds it when it shows its first game
-// piece (a Fill's first result), and building every key's facts there blocked the page for about 25 ms (150 ms at 4x
+// piece (an Auto-fill's first result), and building every key's facts there blocked the page for about 25 ms (150 ms at 4x
 // CPU throttle)
 let rowsByKey = null;
 const factsByKey = new Map();
@@ -214,7 +214,7 @@ function rowFacts(item) {
 
 /* The facts (rowFacts) of the database rows `rows` that share a pool key, or null for none. Several rows could share a
    key (the same piece from two sources): their routes are joined (any one gets it) and every other fact comes from the
-   first row, so rows sharing a key must agree on those facts (core-items.test.js checks it; today no two rows share a
+   first row, so rows sharing a key must agree on those facts (tests/unit/core/items.identity.test.js checks it; today no two rows share a
    key). */
 function factsOfRows(rows) {
   if (!rows) return null;
@@ -235,7 +235,7 @@ function factsOfRows(rows) {
 let idIndex = null;
 /* The database row (an ITEMS entry, read through ROW) of the game's item id `gameId`, or null when no row has it (a piece
    the data no longer keeps, or not a number). The index is built once, on first use, like rowsByKey; every row has its
-   own gameId (core-items.test.js checks it). */
+   own gameId (tests/unit/core/items.identity.test.js checks it). */
 export function itemById(gameId) {
   if (!idIndex) {
     idIndex = new Map();
@@ -318,13 +318,14 @@ export function meldInfo(item) {
 
 /* A pool item's slot share (pct, thousandths), the slot types it leaves empty (blocks) and its stat factors (factors,
    kindFactors). A database piece has those of its slot code and item kind; any other piece those of the job: a weapon
-   on a two-handed job blocks the off-hand, and factors null means the job's own (jobFactor in formulas.js). */
+   on a two-handed job (weaponMode '2h') blocks the off-hand, and factors null means the job's own (jobFactor in formulas.js). */
 export function slotInfo(job, item) {
   const f = rowFacts(item);
   if (f) return { pct: DB_SLOT_PCT[f.slotCode], blocks: DB_SLOT_BLOCKS[f.slotCode], factors: kindFactors(job, f.kind) };
   return {
     pct: job.slotPct[item.type],
-    // a weapon on a two-handed job is a two-handed weapon, which blocks the off-hand
+    // a hand-made weapon on a two-handed job is a two-handed weapon, which blocks the off-hand; on a 'mixed' job it is
+    // the one-handed one (job.slotPct.weapon), as on Paladin
     blocks: item.type === 'weapon' && job.weaponMode === '2h' ? DB_SLOT_BLOCKS[TWO_HANDED_SLOT_CODE] : [],
     factors: null,
   };
@@ -335,7 +336,7 @@ export function slotLabel(type, blocks) {
   return [SLOT_LABEL[type], ...blocks.filter(t => t !== 'offhand').map(t => SLOT_LABEL[t])].join(' + ');
 }
 
-/* The route bits the "Gear from" filter allows: every ACTIVITIES box not in `off` (a list of keys), plus the market
+/* The route bits the "Gear categories" filter allows: every ACTIVITIES box not in `off` (a list of keys), plus the market
    board when `market` is on. */
 export function allowedActivities(off, market) {
   const boxes = ACTIVITIES.filter(a => !off.includes(a.key)).reduce((m, a) => m | a.bit, 0);
@@ -347,12 +348,19 @@ export function routesAllow(routes, allowed) {
   return routes.some(m => (m & ~allowed) === 0);
 }
 
-/* The ACTIVITIES keys no piece in `routeLists` can come from (an array of route lists): boxes with nothing for the
-   current job and filters, which the menu greys out. */
-export function emptyActivities(routeLists) {
-  let seen = 0;
-  for (const routes of routeLists) for (const m of routes) seen |= m;
-  return ACTIVITIES.filter(a => !(seen & a.bit)).map(a => a.key);
+/* How many pieces each "Gear categories" box holds: {key: count} for every ACTIVITIES key, in menu order, 0 for a box with
+   nothing. `routeLists`: one list of routes (bit masks over ACTIVITIES) per piece. A piece counts once in every box that one
+   of its routes goes through, so a piece with two routes (or one route through two boxes) is in each of those boxes and the
+   counts can add up to more than the number of pieces. The menu shows the counts; a box at 0 has nothing for the current
+   job and filters. */
+export function activityCounts(routeLists) {
+  const counts = Object.fromEntries(ACTIVITIES.map(a => [a.key, 0]));
+  for (const routes of routeLists) {
+    let reached = 0;
+    for (const route of routes) reached |= route;
+    for (const a of ACTIVITIES) if (reached & a.bit) counts[a.key]++;
+  }
+  return counts;
 }
 
 /* The gear filters as the page's settings hold them, {expOff, min, max, lvl} (the browser's or a recipe's; '' for no
@@ -375,7 +383,7 @@ export function filterGear(pool, f) {
   });
 }
 
-/* The pool items the "Gear from" filter lets through: `off` is the list of ACTIVITIES keys left out, `market` the market
+/* The pool items the "Gear categories" filter lets through: `off` is the list of ACTIVITIES keys left out, `market` the market
    board switch. Items not from the database (hand-made, generated) always pass. */
 export function withActivities(pool, off, market) {
   const allowed = allowedActivities(off, market);

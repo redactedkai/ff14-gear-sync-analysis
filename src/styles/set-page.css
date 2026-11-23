@@ -1,0 +1,830 @@
+/* ==== A set page (components/set-page.js): sticky header, gear table, menus, Fill settings ==== */
+.setpage {
+  --sh: 124px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+/* the sticky header: two boxes on the page's background, the set bar and the stat block, the breadcrumb above them */
+.shead {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  background: var(--bg);
+}
+/* the set box: the heading on the lighter banner, and the set bar under a divider (no overflow clipping: the settings popover opens below the bar) */
+.shead .setbox {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.shead .tbar {
+  position: relative; /* the Auto-fill settings popover opens under the bar, as wide as the bar up to 900px */
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 3px 3px;
+}
+.shead.sug .tbar {
+  box-shadow: inset 4px 0 0 var(--accent); /* an Auto-fill result is waiting */
+}
+.shead.man .tbar {
+  box-shadow: inset 4px 0 0 var(--gold); /* a manual draft is waiting */
+}
+.shead .setline .sp {
+  flex: 1 1 0;
+}
+.sheetro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  white-space: nowrap;
+  color: var(--fg);
+}
+/* the set switcher (after the set's name) and the sheet switcher (after the sheet's name): a caret and its menu */
+.setsw {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin-left: -2px;
+}
+.crumbmenubtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.crumbmenubtn:hover:not(:disabled),
+.crumbmenubtn[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.crumbmenubtn svg {
+  display: block;
+  flex: none;
+}
+.setmenu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  min-width: 260px;
+  max-width: 420px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--pop-line);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pop-shadow);
+}
+.setitem {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+}
+.setitem + .setitem {
+  margin-top: 2px;
+}
+.setitem:hover:not(:disabled),
+.setitem:focus-visible,
+.setitem.cur {
+  background: var(--accent-soft);
+}
+.setitem.cur {
+  font-weight: 600;
+}
+.setitem.setall {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 9px;
+  color: var(--accent);
+}
+.setitem.setnew {
+  margin-top: 9px;
+  color: var(--accent);
+}
+.setitem.setall::after,
+.setitem.setnew::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  border-top: 1px solid var(--line);
+  pointer-events: none;
+}
+.setitem.setall::after {
+  bottom: -5px;
+}
+.setitem.setnew::before {
+  top: -5px;
+}
+.setarrow {
+  flex: none;
+}
+/* the set bar: Fill (or Apply and Discard), the goal and the gear icon; the goal gets an ellipsis first, the piece count
+   never */
+.topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.topline > button {
+  flex: none;
+}
+/* the heading of a set page, inside the sticky header: the set's name in a serif face, Edit, Copy and Delete at the right of
+   the same line, the notes under it, all their lines */
+.setheading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 16px;
+  border-radius: 3px 3px 0 0;
+  background: var(--surface2);
+  line-height: 1.15;
+}
+.sethd {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* the name wraps (at most the name box's 60 characters) so it is always readable in full */
+.setheading .setname {
+  min-width: 0;
+  margin: 0;
+  font: 600 1.5rem / 1.2 var(--serif);
+  overflow-wrap: anywhere;
+}
+.setactions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.setactions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  white-space: nowrap;
+}
+.setactions button:not(.danger) {
+  background: var(--surface);
+}
+.shead .fillbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.sugbtns button {
+  white-space: nowrap;
+}
+.matgrid button {
+  position: relative;
+  overflow: hidden;
+  padding: 2px 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface2);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.shead .fillbar > button,
+.fillrun {
+  flex: none;
+}
+.fillrun {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* the chip after the gear button while Gear to search leaves no piece: the cap flag's look (gold, icon and a few words) */
+.nopieces {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 5px;
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nopieces svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.goalsum {
+  display: flex;
+  gap: 0.3em;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+.goalsum .gtxt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+/* "Solving…" beside Cancel */
+.solving {
+  font-size: 0.85rem;
+}
+/* the gear button and the popover it opens: the popover is placed against the bar (.tbar), not this box */
+.gearwrap {
+  display: inline-flex;
+}
+.linkbtn.gearbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+}
+.linkbtn.gearbtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.linkbtn.gearbtn svg {
+  display: block;
+}
+.sugbtns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+/* the bar's own buttons only: the settings popover is inside the bar and has buttons of its own */
+.shead .topline .fillbar > button:not(.gearbtn),
+.shead .topline .sugbtns button,
+.shead .topline .fillrun button {
+  padding: 5px 12px;
+}
+/* the stat block: a row of figure names, then Total (at rest), or Now and After (a draft or a Fill result) */
+.tb3 {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.tb3 .crow {
+  display: grid;
+  grid-template-columns: minmax(110px, 166px) var(--cols, repeat(var(--figs), minmax(0, 1fr)));
+  gap: 0 6px;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px 0 12px;
+}
+.tb3 .crow.hrow {
+  height: 24px;
+  padding-top: 2px;
+}
+/* a rule under the figure names and between Now and After (~, not +: an x-for's <template> sits between the rows) */
+.tb3 .crow ~ .crow {
+  border-top: 1px solid var(--line);
+}
+.tb3 .crow.after {
+  background: var(--accent-soft);
+}
+/* the After row is taller only when a figure has a delta line over it: with no change in any figure it is as tall as Now */
+.tb3 .crow.after.moved {
+  height: 48px;
+  padding-top: 3px;
+  padding-bottom: 5px;
+}
+.tb3 .cl {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.tb3 .cn {
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+.cc.chg {
+  gap: 6px;
+}
+.crow.after.moved .cc:not(.chg) {
+  margin-bottom: 4px;
+}
+.cc b.chgfig {
+  margin: -2px -4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--tint);
+  font-weight: 700;
+}
+.cc em.dl {
+  font: 400 0.85rem / 1 var(--mono);
+  font-style: normal;
+}
+.cc em.dl.good {
+  color: var(--delta-good);
+}
+.cc em.dl.bad {
+  color: var(--delta-bad);
+}
+.dlarrow {
+  display: inline-block;
+  margin: 0 -2px 0 -3px;
+  vertical-align: -5px;
+}
+/* a set's notes (the heading's, and a row of the sheet page's list) */
+.setnotes {
+  font-size: 0.9rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+/* the description in the sticky header: two lines at most, so a long one never takes the window */
+.setheading .setnotes {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+/* a gear set's description in a list row: one line, cut with an ellipsis (the row's own class, setnotes, would otherwise wrap it) */
+.sorigin.setnotes {
+  white-space: nowrap;
+}
+/* the notes (ui/messages.js) float at the window's bottom on every tab, one over the other: they never move the page. The note after
+   an action (a sheet or a gear set deleted, a copy made, ...) and the message of a failed save, which stays until a save succeeds */
+.notes {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content; /* with left: 50% the box would otherwise stop growing at half the window, and max-width never applies */
+  max-width: calc(100vw - 32px);
+  pointer-events: none; /* only the notes take the pointer, not the strip around them */
+}
+.toast.floating {
+  align-self: center;
+  margin: 0;
+  pointer-events: auto;
+  max-width: 100%;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pop-shadow);
+}
+.toast.saveerror {
+  border-color: var(--bad);
+}
+/* with nothing to say a note is in the page for the screen reader's sake and shows nothing */
+.toast.floating:empty {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* while a Fill result waits the table is locked: a click lands on the cell (and says why), the Take boxes still work */
+.ghostlock button:disabled {
+  pointer-events: none;
+  opacity: 1; /* the locked table keeps its full contrast */
+}
+.settable .same-btn:disabled {
+  cursor: default;
+}
+.same-btn.choose-empty {
+  border-style: dashed;
+  color: var(--accent);
+}
+/* an Off-hand row a two-handed weapon covers: dashed and muted, no caret, not a menu (aria-disabled, so a keyboard still reaches it and reads the line under it) */
+.same-btn.covered {
+  border-style: dashed;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.same-btn.covered::after {
+  display: none;
+}
+.same-btn.covered:hover {
+  border-color: var(--line);
+}
+.shield-note {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+/* the piece picker */
+.pick-menu {
+  width: min(480px, 80vw);
+  max-height: 420px;
+}
+.pick-menu .menu-list {
+  overflow-y: auto;
+}
+.pick-subs {
+  display: block;
+  font: 400 0.7rem var(--mono);
+  color: var(--muted);
+}
+.same-foot {
+  flex: none;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.74rem;
+  line-height: normal;
+  color: var(--muted);
+}
+.same-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pick-menu .same-item .pill {
+  margin-left: 6px;
+}
+/* the materia chips and the stone menu */
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.pop {
+  position: relative;
+}
+.mchip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  font: 500 0.66rem var(--mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mchip.over {
+  border-width: 1.5px;
+  border-color: var(--over);
+}
+.mchip.empty {
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
+}
+.mchip.empty:not(.over) {
+  border-color: var(--muted);
+}
+.mchip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+/* an empty slot behind another empty one waits for it (slots fill in order): dimmed by colour, as in prototype B17,
+   not by opacity */
+.mchip.empty:disabled {
+  color: color-mix(in srgb, var(--muted) 83%, var(--surface));
+  opacity: 1;
+}
+.mchip.empty:disabled:not(.over) {
+  border-color: color-mix(in srgb, var(--muted) 55%, var(--surface));
+}
+.mchip.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow:
+    0 0 0 1px var(--surface),
+    0 0 0 3px var(--accent);
+}
+.mchip.cap-none {
+  color: var(--cap-none);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.mchip.removed {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.matpop {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  top: calc(100% + 4px);
+  width: 380px;
+  padding: 8px 10px;
+  border: 1px solid var(--pop-line);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--pop-shadow);
+  white-space: normal;
+}
+/* a menu of the table (a piece menu, a materia menu) is drawn over the table's cells and under the pinned parts: the column names (4)
+   and the sticky header (8, with the Apply bar and the stat block), so a menu scrolled up under them never covers them.
+   The Food menu is in the table's Food row, so it is one of them. */
+.settable .same-menu,
+.settable .matpop {
+  z-index: 3;
+}
+.matpop.all {
+  width: 420px;
+}
+.matpop h5 {
+  margin: 0 0 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.matgrid {
+  display: grid;
+  gap: 3px;
+  font: 500 0.72rem var(--mono);
+}
+.matgrid + .matgrid {
+  margin-top: 8px;
+}
+.matgrid .h {
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.66rem;
+  color: var(--fg);
+}
+.matgrid .h i {
+  font-style: normal;
+  color: var(--muted);
+}
+.matgrid .h.na {
+  color: var(--muted);
+}
+.matgrid .s {
+  align-self: center;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.matgrid button.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.matgrid button.na {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+}
+.matgrid button.cap-none::after,
+.matgrid button.cap-part::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  pointer-events: none;
+}
+.matgrid button.cap-none::after {
+  background: var(--cap-none-mark);
+}
+.matgrid button.cap-part::after {
+  background: var(--cap-part);
+}
+.matfoot {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.72rem;
+}
+.matfoot > :first-child {
+  justify-self: start;
+}
+.matfoot > :last-child {
+  justify-self: end;
+}
+.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.linkish:disabled {
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: default;
+}
+.rmnote {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+/* a figure's total before the cap hangs under it, centred, so the figure keeps the row's middle line */
+.settable tbody td.n span.atcap {
+  position: relative;
+}
+.settable tbody td.n .lost {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 3px;
+  transform: translateX(-50%);
+  font: 500 0.66rem / 1 var(--mono);
+  font-style: normal;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.settable .capped {
+  display: block;
+}
+/* the goal's rank before a stat's name: 1 Maximize, 2 and 3 the tiebreaks */
+i.rk {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--fg);
+  font: 700 11px / 16px var(--mono);
+  font-style: normal;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: 1px;
+}
+.settable .defense em {
+  font-style: normal;
+  color: var(--muted);
+}
+.defdot {
+  margin: 0 0.45em;
+}
+.defsep {
+  margin: 0 8px;
+  font-weight: 700;
+  color: var(--muted);
+}
+/* the Auto-fill settings popover (not modal): under the bar, over the table, left-aligned, no backdrop */
+.setpop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(900px, 100%);
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  padding: 20px 24px;
+  border: 1px solid var(--pop-line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--pop-shadow);
+}
+.setpop .help.shelp {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  font-size: 0.78rem;
+  vertical-align: baseline;
+}
+.setpop .part h3 {
+  font-size: 1.05rem;
+}
+/* the menus and the Spare points note float over the popover, fixed to the window (placeMenu in ui/components/filter-menus.js sets their top,
+   left and size), so the popover's scroll box does not cut them; the popover has no transform, so they stay fixed to the window */
+.setpop .multi-menu,
+.setpop .popover {
+  position: fixed;
+}
+.setpop .multi-menu {
+  z-index: 70;
+  max-height: 50vh;
+  overflow: auto;
+}
+.setpop .popover {
+  z-index: 70;
+}
+/* the Gear categories menu has one height whatever the tab, so no 50vh cut; placeMenu still cuts it to a window too short for it */
+.setpop .from-menu {
+  max-height: none;
+}
+
+/* The column under the pointer, in the gear browser's table: its cells tinted as the substat tiers table tints a tier, its
+   heading in the text colour; and the column the table is sorted by (its heading is in the accent): its cells tinted in
+   the accent. The table holds the pointed-at column's key in data-hot and the sorted column's in data-sorted, and these
+   rules pair each key with the cells of that column, so no cell carries a class for it (a binding on every cell made a
+   sort 20 ms slower). One selector per column key: a stat key that is not listed here is not tinted (a unit test checks
+   every key is). Only the Gear browser tints the pointer's row and column or the sorted column. */
+#gear-table[data-hot="lvl"] td[data-col="lvl"],
+#gear-table[data-hot="ilvl"] td[data-col="ilvl"],
+#gear-table[data-hot="str"] td[data-col="str"],
+#gear-table[data-hot="dex"] td[data-col="dex"],
+#gear-table[data-hot="int"] td[data-col="int"],
+#gear-table[data-hot="mind"] td[data-col="mind"],
+#gear-table[data-hot="vit"] td[data-col="vit"],
+#gear-table[data-hot="crit"] td[data-col="crit"],
+#gear-table[data-hot="det"] td[data-col="det"],
+#gear-table[data-hot="dh"] td[data-col="dh"],
+#gear-table[data-hot="sks"] td[data-col="sks"],
+#gear-table[data-hot="sps"] td[data-col="sps"],
+#gear-table[data-hot="piety"] td[data-col="piety"],
+#gear-table[data-hot="ten"] td[data-col="ten"] {
+  background: var(--surface2);
+}
+#gear-table[data-hot="lvl"] th[data-col="lvl"],
+#gear-table[data-hot="ilvl"] th[data-col="ilvl"],
+#gear-table[data-hot="str"] th[data-col="str"],
+#gear-table[data-hot="dex"] th[data-col="dex"],
+#gear-table[data-hot="int"] th[data-col="int"],
+#gear-table[data-hot="mind"] th[data-col="mind"],
+#gear-table[data-hot="vit"] th[data-col="vit"],
+#gear-table[data-hot="crit"] th[data-col="crit"],
+#gear-table[data-hot="det"] th[data-col="det"],
+#gear-table[data-hot="dh"] th[data-col="dh"],
+#gear-table[data-hot="sks"] th[data-col="sks"],
+#gear-table[data-hot="sps"] th[data-col="sps"],
+#gear-table[data-hot="piety"] th[data-col="piety"],
+#gear-table[data-hot="ten"] th[data-col="ten"] {
+  color: var(--fg);
+}
+#gear-table[data-sorted="lvl"] td[data-col="lvl"],
+#gear-table[data-sorted="ilvl"] td[data-col="ilvl"],
+#gear-table[data-sorted="str"] td[data-col="str"],
+#gear-table[data-sorted="dex"] td[data-col="dex"],
+#gear-table[data-sorted="int"] td[data-col="int"],
+#gear-table[data-sorted="mind"] td[data-col="mind"],
+#gear-table[data-sorted="vit"] td[data-col="vit"],
+#gear-table[data-sorted="crit"] td[data-col="crit"],
+#gear-table[data-sorted="det"] td[data-col="det"],
+#gear-table[data-sorted="dh"] td[data-col="dh"],
+#gear-table[data-sorted="sks"] td[data-col="sks"],
+#gear-table[data-sorted="sps"] td[data-col="sps"],
+#gear-table[data-sorted="piety"] td[data-col="piety"],
+#gear-table[data-sorted="ten"] td[data-col="ten"] {
+  background: var(--accent-soft);
+}

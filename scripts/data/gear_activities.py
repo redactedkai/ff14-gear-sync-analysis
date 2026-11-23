@@ -1,4 +1,4 @@
-"""What a player does to get each piece: the boxes of the page's "Gear from" filter (`activities` in
+"""What a player does to get each piece: the boxes of the page's "Gear categories" filter (`activities` in
 src/core/item-format.json), from the game files only (no item names).
 
 routes(csv_dir, kept, cats) returns {Item.csv id: [route mask, ...]}. A piece has routes, any one of which gets it; a
@@ -6,7 +6,7 @@ route needs every box in its mask (bit i = `activities[i]`). A tradeable piece a
 board bit alone (bit len(activities)), so the page's market board switch shows it whatever its source. A piece with no
 route (retired, can no longer be obtained) is never listed.
 
-How a route is found (docs/engineering/data-pipeline.md, "Gear from"):
+How a route is found (docs/engineering/data-pipeline.md, "Gear categories"):
 - a tomestone named by item id is Poetics (slot 1 of TomestonesItem), a current one (slots 2 to 4; 4 is last patch's,
   still exchanged) or retired (slot 0);
 - an item's ways to get it: a recipe (Crafting), a gil shop (Vendor), a Grand Company seal shop, a quest reward
@@ -42,7 +42,7 @@ GIL, WOLF_MARK, MGP = 1, 25, 29
 FIXED_ITEMS = {GIL: 'Gil', WOLF_MARK: 'Wolf Mark', MGP: 'MGP'}  # item id -> expected name; their activities in activities_of
 
 # Currencies the game files cannot place: item id -> (expected name, routes). A route is a set of activities; no route
-# means retired. Checked on the Console Games Wiki (docs/engineering/data-pipeline.md, "Gear from").
+# means retired. Checked on the Console Games Wiki (docs/engineering/data-pipeline.md, "Gear categories").
 CURRENCIES = {
     10307: ('Centurio Seal', [{'Hunts'}]),
     26533: ('Sack of Nuts', [{'Hunts'}]),

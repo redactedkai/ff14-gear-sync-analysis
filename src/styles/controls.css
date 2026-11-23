@@ -1,0 +1,260 @@
+/* ==== Controls: inputs, selects, sliders, switches, buttons ==== */
+input[type="number"],
+input[type="text"],
+select,
+.multi-btn {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px 9px;
+  min-width: 0;
+  width: 100%;
+}
+/* number boxes without the browser's grey step arrows, which ignore the theme; the arrow keys still step */
+input[type="number"] {
+  appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+/* selects draw their own chevron, inset from the right edge like the multi-select's (the native arrow sits against
+   the border); two diagonal strokes in the text colour, so it follows the theme. The chosen text is one line cut at the
+   box: with an ellipsis where the browser draws one (the closed select of its own style, Firefox and Safari), and at
+   least never drawn outside the box (a customizable select, below, clips but shows no ellipsis). The math bar's menu buttons (the Job
+   box and the two chips) draw the same chevron, so every box of the bar has one. */
+select,
+.mathbar .multi-btn {
+  font-family: var(--sans);
+  appearance: none;
+  padding-right: 34px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.8px),
+      currentColor calc(50% - 0.8px),
+      currentColor calc(50% + 0.8px),
+      transparent calc(50% + 0.8px)
+    ),
+    linear-gradient(
+      135deg,
+      transparent calc(50% - 0.8px),
+      currentColor calc(50% - 0.8px),
+      currentColor calc(50% + 0.8px),
+      transparent calc(50% + 0.8px)
+    );
+  background-size: 4.5px 4.5px;
+  background-repeat: no-repeat;
+  background-position:
+    calc(100% - 18.5px) calc(50% + 1px),
+    calc(100% - 14px) calc(50% + 1px);
+}
+/* the open list of a select, drawn like the Gear categories menu: browsers with customizable selects (Chrome and Edge 135+)
+   draw it from these rules; the others keep their own list. The chevron above stays, so the built-in icon and the
+   tick next to the chosen option are hidden. */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+  select::picker-icon,
+  option::checkmark {
+    display: none;
+  }
+  /* below the select, above it only when the list does not fit (Chrome's default picks the side with more room) */
+  ::picker(select) {
+    position-try-order: normal;
+    position-try-fallbacks: flip-block;
+    margin: 4px 0;
+    padding: 4px;
+    max-height: 340px;
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  option {
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.92rem;
+    font-weight: 400;
+    cursor: pointer;
+  }
+  option:hover,
+  option:focus-visible {
+    background: var(--surface2);
+    outline: none;
+  }
+  option:checked {
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  /* a list in groups (the Clan box): a group's label is a small muted heading with a divider above all but the first,
+     its options indented under it */
+  select optgroup {
+    display: block;
+    padding: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  select optgroup + optgroup {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+  }
+  select optgroup option {
+    padding-left: 22px;
+    font-size: 0.92rem;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--fg);
+  }
+}
+input.invalid {
+  border-color: var(--bad);
+}
+input:disabled,
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:disabled:hover {
+  border-color: var(--line);
+}
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* the slider: a thin track filled with the accent up to the thumb (--fill, set by the page), a round accent thumb */
+input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--line) var(--fill, 0%));
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  font-size: 0.92rem;
+  color: var(--fg);
+}
+/* a checkbox drawn as an on/off switch */
+.switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 42px;
+  height: 24px;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+.switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.switch:checked::before {
+  background: var(--accent-fg);
+  transform: translateX(18px);
+}
+button {
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--fg);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+button:hover {
+  border-color: var(--accent);
+}
+button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+button.chip {
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  border-radius: 4px;
+}
+button.x {
+  padding: 2px 8px;
+  color: var(--bad);
+}
+.linkbtn {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}

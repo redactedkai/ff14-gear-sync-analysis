@@ -74,7 +74,7 @@
   <text class="muted small" x="156" y="388">then the slots are ordered, shortest list first</text>
 
   <!-- the trial search, and the fallbacks -->
-  <rect class="box" x="40" y="398" width="350" height="118" rx="8"/>
+  <rect class="box" x="40" y="398" width="350" height="118" rx="4"/>
   <text class="fg head" x="60" y="424">A short trial search settles it</text>
   <text class="fg small" x="60" y="448">at most 20,000 nodes; this one needs 2,648.</text>
   <text class="fg small" x="60" y="468">No gear set beats the one in hand:</text>
@@ -83,7 +83,7 @@
   <path class="mutedStroke" d="M390,457 L424,457"/>
   <path class="accentStroke" d="M424,457 L428,457" marker-end="url(#arrow)"/>
 
-  <rect class="box" x="430" y="398" width="250" height="118" rx="8"/>
+  <rect class="box" x="430" y="398" width="250" height="118" rx="4"/>
   <text class="fg head" x="450" y="424">If it does not finish</text>
   <text class="muted small" x="450" y="448">Pareto fronts; if a front passes</text>
   <text class="muted small" x="450" y="468">150,000 entries or 1,000,000</text>

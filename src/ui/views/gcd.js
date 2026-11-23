@@ -1,6 +1,7 @@
 /* How the math works, GCD: how speed becomes the GCD at a level, on its own settings (a level, a haste and a speed;
    not the job, sync or optimizer). The facts for one speed, the speed one 0.01 s step takes at every level, and the GCD
    steps around the speed. Pure: no Alpine, so Node can test it. */
+import { clamp } from '../../core/clamp.js';
 import { HASTE, jobById } from '../../core/constants.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';
 import { levelParams } from '../../core/level-params.js';
@@ -14,26 +15,27 @@ export const GCD_STEPS_NEAR = 6;
 /* Steps averaged for "speed per step": the first is short (the base sits partway into it), so a few are read. */
 const STEPS_AVERAGED = 10;
 
-/* The Haste menu: none, then each job with always-on haste and every percent it reaches ("Samurai, Fuka: 10/13%"); the
-   chart marks the levels. [{value: job id or '', label}]. */
+/* The Haste menu text of a job with always-on haste: the job and its source by name ("Samurai, Fuka"), no percent. The
+   percents depend on the level, so the tab shows them where the level is known: the haste among the facts, and every
+   step of the source on the chart. `jobId`: a HASTE key. */
+export function hasteOptionLabel(jobId) {
+  return `${jobById(jobId).name}, ${HASTE[jobId].name}`;
+}
+
+/* The Haste menu: none, then each job with always-on haste. [{value: job id or '', label}]. */
 export const HASTE_OPTIONS = Object.freeze([
   Object.freeze({ value: '', label: 'None' }),
-  ...Object.entries(HASTE).map(([id, h]) =>
-    Object.freeze({
-      value: id,
-      label: `${jobById(id).name}, ${h.name}: ${h.steps.map(st => st.pct).join('/')}%`,
-    }),
-  ),
+  ...Object.keys(HASTE).map(id => Object.freeze({ value: id, label: hasteOptionLabel(id) })),
 ]);
+/* Every Haste text, one per line: the menu is as wide as the longest and never changes with the pick (the .sizertext of
+   a select, as in the Clan box). */
+export const HASTE_SIZER = HASTE_OPTIONS.map(option => option.label).join('\n');
 
-/* `level` held to 1 and GCD_LEVELS: {level, note}, note "Lowered to 100, the highest level." (or raised to 1) when it
-   was out of range, as the Synced item level field says it. Null for text that is not a whole number. */
+/* `level` held to 1 and GCD_LEVELS: {level}. Null for text that is not a whole number. */
 export function gcdLevelInput(text) {
   const v = Number(text);
   if (text === '' || !Number.isInteger(v)) return null;
-  if (v > GCD_LEVELS) return { level: GCD_LEVELS, note: `Lowered to ${GCD_LEVELS}, the highest level.` };
-  if (v < 1) return { level: 1, note: 'Raised to 1, the lowest level.' };
-  return { level: v, note: '' };
+  return { level: clamp(v, 1, GCD_LEVELS) };
 }
 
 /* The speed range at `level`: {base, most}, total speed (base + gear + food) from the level's base to the most any job
@@ -57,7 +59,7 @@ export function speedPerStep(level, haste = 0) {
 const cutText = mult => (mult >= 1 ? '0.0%' : `−${((1 - mult) * 100).toFixed(1)}%`);
 
 /* The GCD steps around `gear` (speed above the base): ROWS steps, the one `gear` is in kept in the middle unless it is
-   near the base or the 1.5 s floor, where the rows stop at the end instead of leaving rows empty (as Substat tiers).
+   near the base or the 1.5 s floor, where the rows stop at the end instead of leaving rows empty.
    [{gear (the step's first gear speed), gcd, cur}]. */
 function stepWindow(level, haste, gear) {
   const ROWS = 2 * GCD_STEPS_NEAR + 1;

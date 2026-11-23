@@ -1,0 +1,247 @@
+/* ==== How the math works: Substat tiers ==== */
+/* Tiers: the substats' tier ladders (components/tiers.js), a card per substat in a grid that wraps on a narrow window.
+   A card: its header (name, box, effect lines), a scroll area with every tier of the substat (its column names stay at
+   the top), and its footer. Every area is the same height, about the 15 rows the page showed before the rows scrolled. */
+.tiercards {
+  --ladder-row: 31px;
+  --ladder-names: 27px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.tiercard {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.tierhead {
+  padding: 7px 8px;
+  text-align: right;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--line);
+}
+.tierhead .lname {
+  white-space: nowrap;
+  font: 600 0.8rem var(--sans);
+  color: var(--fg);
+}
+.tierhead input {
+  width: 84px;
+  font-family: var(--mono);
+  margin: 4px 0;
+}
+/* the effect lines under a substat's box, one per effect; room for two in every header, so the cards line up */
+.tierhead .leff {
+  display: block;
+  min-height: 2.7em;
+  font: 600 0.74rem / 1.35 var(--mono);
+  color: var(--fg);
+}
+.tierhead .lline {
+  display: block;
+  white-space: nowrap;
+}
+/* the haste the GCD counts, under the speed column's GCD */
+.tierhead .lhaste {
+  font-weight: 400;
+  color: var(--muted);
+}
+.settable thead th {
+  top: var(--sh);
+  z-index: 4;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+/* the rows: their own scroll, with Tab and the arrow keys reaching it */
+.tierscroll {
+  position: relative;
+  overflow-y: auto;
+  height: calc(var(--ladder-names) + 15 * var(--ladder-row));
+}
+.tierscroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* the table: divs in a grid, a row each (views/tiers.js). The column names stay stuck at the top of the area. A row has
+   a fixed height, so the page can draw only the rows around the ones in view and pad the rest (tier-window.js). */
+.ladder {
+  /* the first column holds a range up to "3,673–3,680"; the others share the rest and may be narrower than their
+     names, which wrap */
+  --ladder-cols: 96px repeat(2, minmax(0, 1fr));
+  font-size: 0.8rem;
+}
+.ladder.cols2 {
+  --ladder-cols: 96px minmax(0, 1fr);
+}
+.ladder .lhead,
+.ladder .lrow {
+  display: grid;
+  grid-template-columns: var(--ladder-cols);
+  align-items: center;
+}
+.ladder .lhead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: var(--ladder-names);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ladder .lrow {
+  box-sizing: border-box;
+  height: var(--ladder-row);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.ladder .lbody > .lrow:last-child {
+  border-bottom: 0;
+}
+.ladder span {
+  padding: 0 4px;
+  text-align: right;
+  white-space: nowrap;
+}
+.lhead > span {
+  white-space: normal;
+}
+.ladder .lrow .eff {
+  color: var(--muted);
+}
+.ladder .lrow.cur {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.ladder .lrow.cur .eff,
+.ladder .lrow .chg2 {
+  color: var(--fg);
+}
+.ladder .lrow .chg2 {
+  font-weight: 600;
+}
+/* the tier under the mouse: its whole row, since a click on any of its cells sets it */
+.ladder .lrow:hover {
+  background: var(--surface2);
+}
+.ladder .lrow.cur:hover {
+  background: var(--accent-soft);
+  box-shadow:
+    inset 0 1px 0 var(--accent),
+    inset 0 -1px 0 var(--accent);
+}
+.tiercard .lfoot {
+  padding: 7px 8px;
+  text-align: right;
+  background: var(--surface2);
+  border-top: 1px solid var(--line);
+  font-family: var(--sans);
+}
+.lfoot > span {
+  display: block;
+  white-space: nowrap;
+}
+.takebox span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+/* "Take" itself keeps the label's line height; the suggested piece after it at 1.25 */
+.takebox > span {
+  line-height: inherit;
+}
+.takebox > span > span {
+  line-height: 1.25;
+}
+
+/* Stat Allocation's sync fields (Level, Synced item level, IL Sync) sit in the Sync chip's popover (below). */
+/* Level and Synced IL: one grid of two equal columns, as wide as the widest label row in any state. A hidden copy of that
+   row (.sizer, in the first cell) sets the width from the page's own font, so the fit does not depend on which font loads. */
+.mathbar .syncpair {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  align-items: end;
+}
+.mathbar .syncpair > .mctl {
+  width: auto;
+}
+.mathbar .mctl.sync-level {
+  grid-area: 1 / 1;
+}
+.mathbar .mctl.sync-cap {
+  grid-area: 1 / 2;
+}
+.mathbar .mctl.sizer {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  padding-right: 4px; /* slack for rounding */
+}
+.mathbar .sizer .mctl-head {
+  align-self: stretch;
+}
+.mathbar .syncpair .mctl-head {
+  height: 1.5em; /* one height in every state (range, flag, star), so the label and the box never move */
+  align-items: center;
+}
+.mathbar .syncpair .f-flag {
+  height: 100%;
+  line-height: 1;
+}
+.mathbar .syncpair .f-flag svg {
+  display: block;
+}
+.f-flag .flagicon {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+/* the gold "*" after "Synced IL": the number is an inferred level sync target (the box's tooltip says so) */
+.mathbar .guess {
+  color: var(--gold);
+  margin-left: 2px;
+}
+.mathbar .mctl.sync-switch {
+  width: auto;
+}
+.mathbar .mctl input[type="number"] {
+  box-sizing: border-box;
+  width: 100%;
+}
+/* the boxes take the width of their column, not their own default width */
+.mathbar .syncpair input[type="number"] {
+  width: 0;
+  min-width: 100%;
+}
+.mathbar .mctl :is(input, select):disabled {
+  opacity: 0.5;
+}
+.mathbar .mctl .toggle {
+  min-height: 38px;
+}
+.mathbar .mctl-head.capline {
+  align-items: center;
+}
+.mathbar .mctl-head .f-flag {
+  font-size: 0.78rem;
+}
+.mathbar .mctl-head .f-flag.lowered {
+  color: var(--gold);
+}
+/* the math bar's own field border (above) would hide the invalid look; the error colour wins */
+.mathbar .mctl input.invalid {
+  border-color: var(--bad);
+}
+.mathbar input.lowered {
+  border-color: var(--gold);
+}

@@ -1,5 +1,7 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  // .claude/settings.local.json is a per-machine file (gitignored) that Claude Code rewrites in its own layout, so it is
+  // left out like the other generated or local files
   "files": {
     "includes": [
       "**",
@@ -12,7 +14,8 @@
       "!scripts/validate/out",
       "!package-lock.json",
       "!docs/scratchpad",
-      "!.claude/worktrees"
+      "!.claude/worktrees",
+      "!.claude/settings.local.json"
     ]
   },
   "formatter": {
@@ -53,6 +56,17 @@
     {
       "includes": ["scripts/validate/xivgear/xg_sync_test.ts"],
       "linter": { "enabled": false }
+    },
+    {
+      // the startup-failure script is a classic ES5 script (it must run in a browser too old for the rest): function
+      // expressions, var, a catch variable and no optional chaining are the point, not style slips
+      "includes": ["src/startup-failure.js"],
+      "linter": {
+        "rules": {
+          "complexity": { "useArrowFunction": "off", "useOptionalChain": "off" },
+          "correctness": { "noInnerDeclarations": "off", "noUnusedVariables": "off" }
+        }
+      }
     }
   ],
   "assist": {

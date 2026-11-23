@@ -4,6 +4,7 @@
    - speedStepChartSvg (GCD): the speed one 0.01 s GCD step takes at each level, with a haste's levels.
    Each is drawn at its container's width (`width`, px), so its text stays at the page's size. Every text passed in (a
    slot or stat name) goes through escapeXml, so a name can never add markup; the rest is numbers. */
+import { clamp } from '../core/clamp.js';
 
 const DEFAULT_WIDTH = 760;
 const MIN_WIDTH = 420;
@@ -29,17 +30,21 @@ function xAxis(x0, x1, X, H, B, caption) {
   return g + `<text x="${(X(x0) + X(x1)) / 2}" y="${H - 4}" text-anchor="middle">${escapeXml(caption)}</text>`;
 }
 
-/* The cap line (unlabelled: the legend names it), the item level marker of the chosen piece or set, and the shaded range `more` (item levels, in order). */
+/* Half the width of the marker's "IL 266" label in px, the closest its centre goes to the chart's edge. */
+const LABEL_HALF_WIDTH = 24;
+
+/* The cap line (unlabelled: the legend names it), the item level marker of the chosen piece or set (its label above the plot, on top of the marker line), and the shaded range `more` (item levels, in order). */
 function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
   let g = '';
   if (more.length)
     g += `<rect data-shade="${more[0]}-${more[more.length - 1]}" x="${X(more[0])}" y="${T}" width="${Math.max(1, X(more[more.length - 1]) - X(more[0]))}" height="${H - T - B}" fill="var(--fg)" opacity=".07"/>`;
   if (cap >= x0 && cap <= x1)
     g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3"/>`; // named in the page's legend
-  const right = X(il) > W * 0.75;
   g += `<line x1="${X(il)}" x2="${X(il)}" y1="${T}" y2="${H - B}" stroke="var(--fg)" opacity=".5"/>`;
   g += `<circle cx="${X(il)}" cy="${markerY}" r="6" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
-  g += `<text class="lbl" x="${X(il) + (right ? -9 : 9)}" text-anchor="${right ? 'end' : 'start'}" y="${H - B - 8}">Item level ${il}</text>`;
+  // the label is centred on the line, kept inside the chart at either end
+  const labelX = clamp(X(il), LABEL_HALF_WIDTH, W - LABEL_HALF_WIDTH);
+  g += `<text class="lbl" x="${labelX}" text-anchor="middle" y="${T - 6}">IL ${il}</text>`;
   return g;
 }
 
@@ -54,11 +59,11 @@ export const OVERGEAR_BANDS = Object.freeze([
    points the piece's melds add); ref: the piece at the cap's points (with its melds); labels and ceilings: each chosen
    substat's name and its cap at the synced item level. Drawn as stacked bands (the substats, then the melds), so the top
    edge is the piece's points and each band shows where its substat reaches its ceiling. */
-export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], ceilings = [], width }) {
+export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = [], width }) {
   if (!curve.length) return '';
   const W = Math.max(MIN_WIDTH, Math.round(width || DEFAULT_WIDTH)),
     H = 300,
-    L = 46,
+    L = 58, // room for the y-axis caption left of the tick numbers
     R = 16,
     T = 18,
     B = 34;
@@ -74,7 +79,8 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], c
   let g = '';
   for (let v = 0; v <= ymax; v += step)
     g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
-  g += xAxis(x0, x1, X, H, B, `Item level of the ${slotName}`);
+  g += xAxis(x0, x1, X, H, B, 'Item Level');
+  g += `<text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})">Stat points</text>`;
 
   // the bands: each substat on the ones below it, then the melds; a band is the area between two running totals
   const layers = [...curve[0].parts.map((_, i) => p => p.parts[i]), p => p.melds];
@@ -94,14 +100,14 @@ export function overgearChartSvg({ curve, cap, il, ref, slotName, labels = [], c
   g += marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY: Y(at.points) });
   g += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="6 3"/><text x="${L + 6}" y="${Y(ref) - 6}" style="fill:var(--gold)">${ref}: item level ${cap} with its melds</text>`;
 
-  // band labels: each substat's name at the left, inside its band; where it reaches its ceiling at the right
+  // band labels: each substat's name at the left, inside its band; where it first reaches its ceiling (at any item level, the cap's or below) at the right
   const first = curve[Math.min(2, curve.length - 1)],
     last = curve[curve.length - 1];
   labels.forEach((name, i) => {
     const mid = p => Y(below(p, i) + p.parts[i] / 2) + 4;
     if (Y(below(first, i)) - Y(below(first, i) + first.parts[i]) >= 16)
       g += `<text class="lbl" x="${X(first.il) + 4}" y="${mid(first)}">${escapeXml(name)}</text>`;
-    const capped = curve.find(p => p.il > cap && p.parts[i] >= ceilings[i]);
+    const capped = curve.find(p => p.parts[i] >= ceilings[i]);
     if (capped && Y(below(last, i)) - Y(below(last, i) + last.parts[i]) >= 16)
       g += `<text class="lbl" x="${X(x1) - 4}" text-anchor="end" y="${mid(last)}">${ceilings[i]}: at the cap from ${capped.il}</text>`;
   });
@@ -132,7 +138,7 @@ export function speedStepChartSvg({ bars, level, marks: hasteMarks = [], width }
   for (const f of [0, 0.5, 1])
     g += `<line x1="${L}" x2="${W - R}" y1="${Y(top * f)}" y2="${Y(top * f)}" stroke="var(--line)"/><text x="${L - 6}" y="${Y(top * f) + 4}" text-anchor="end">${Math.round(top * f)}</text>`;
   for (const b of bars)
-    g += `<rect class="stepbar${b.level === level ? ' on' : ''}" data-level="${b.level}" x="${(X(b.level) + 1).toFixed(1)}" y="${Y(b.speed).toFixed(1)}" width="${Math.max(1, slot - 2).toFixed(1)}" height="${Math.max(1, H - B - Y(b.speed)).toFixed(1)}"><title>Level ${b.level}: about ${Math.round(b.speed)} speed per step</title></rect>`;
+    g += `<rect class="stepbar${b.level === level ? ' on' : ''}" data-level="${b.level}" x="${(X(b.level) + 1).toFixed(1)}" y="${Y(b.speed).toFixed(1)}" width="${Math.max(1, slot - 2).toFixed(1)}" height="${Math.max(1, H - B - Y(b.speed)).toFixed(1)}"></rect>`;
   // a dotted line where the haste starts or grows, labelled at the top (on its left side near the right edge)
   for (const m of hasteMarks) {
     const x = X(m.level),

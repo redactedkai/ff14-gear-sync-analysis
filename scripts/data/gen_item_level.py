@@ -3,7 +3,7 @@
 
 Usage: python scripts/data/gen_item_level.py <path-to-ffxiv-datamining>/csv/en  [out.json]  [--source-commit SHA --source-date ISO]
 
-Output: {"_generated": notice, "source": ..., "formatVersion": n, "IL": ..., "PG": ..., "MP": ..., "SHARES": ..., "JOBS": ...}
+Output: {"_generated": notice, "source": ..., "formatVersion": n, "IL": ..., "PG": ..., "MP": ..., "SHARES": ..., "JOBS": ..., "CLANS": ...}
 _generated = one-line "do not edit" notice naming the source commit.
 source = {repo, commit, date} of the datamining commit the CSVs come from, or null when unknown (the page's DATA_SOURCE).
 formatVersion = `formatVersion` of src/core/item-format.json, the format the file follows (in every generated file).
@@ -18,12 +18,15 @@ IL and MP also hold the weapon damage and defense entries (`damageDefense` in it
 SHARES = {weapon damage or defense key: [slot share in thousandths per slot code]}, from their BaseParam rows (the stats'
      shares are the slot `percent`s in item-format.json; these differ).
 JOBS = {job: {attribute key: modifier in percent}} for every job in item-format.json, from ClassJob.csv (`jobModifiers`).
+CLANS = [{race, clan, <attribute key>: offset}] for the 16 clans in Tribe row order, from Tribe.csv and Race.csv (`clans`):
+     the points a clan adds to a character's attributes, flat at every level.
 
 Also checks BaseParam.csv: every stat's slot shares must equal the slot `percent`s in src/core/item-format.json, which
 the page uses. Missing columns or a mismatch stop the generator with exit status 1.
 """
 
 import argparse
+import re
 from pathlib import Path
 
 import provenance
@@ -43,6 +46,34 @@ def job_modifiers(class_job_csv, fmt):
         if not all(v.isdigit() and int(v) > 0 for v in mods.values()):
             raise SchemaError(f'ClassJob.csv {job}: modifiers {mods}, expected positive whole numbers')
         out[job] = {k: int(v) for k, v in mods.items()}
+    return out
+
+
+def clan_bonuses(tribe_csv, race_csv, fmt):
+    """[{race, clan, <attribute key>: offset}] for the clans of fmt['clans'], in Tribe row order. A clan's race is Race.csv
+    row ceil(Tribe row / tribesPerRace) (the sheets hold no link; the Wiki's Starting Attributes page groups the clans the
+    same way). Raises SchemaError when a Tribe row 1 to `count` or a Race row 1 to `raceCount` is missing or has no name,
+    when two clans share a name, or when an offset is not a whole number."""
+    spec = fmt['clans']
+    cols, name_col = spec['columns'], spec['nameColumn']
+    tribes = {int(r['#']): r for r in read_csv(tribe_csv, ['#', name_col, *cols.values()])}
+    races = {int(r['#']): r for r in read_csv(race_csv, ['#', name_col])}
+    missing = [f'Tribe {i}' for i in range(1, spec['count'] + 1) if not tribes.get(i, {}).get(name_col)]
+    missing += [f'Race {i}' for i in range(1, spec['raceCount'] + 1) if not races.get(i, {}).get(name_col)]
+    if missing:
+        raise SchemaError(f'Tribe.csv or Race.csv has no name for {", ".join(missing)}')
+    if spec['count'] != spec['raceCount'] * spec['tribesPerRace']:
+        raise SchemaError(f'item-format.json clans: {spec["count"]} clans is not {spec["raceCount"]} races x {spec["tribesPerRace"]}')
+    out = []
+    for i in range(1, spec['count'] + 1):
+        row = tribes[i]
+        offsets = {k: row[c] for k, c in cols.items()}
+        if not all(re.fullmatch(r'-?\d+', v) for v in offsets.values()):
+            raise SchemaError(f'Tribe.csv {row[name_col]}: offsets {offsets}, expected whole numbers')
+        race = races[(i - 1) // spec['tribesPerRace'] + 1][name_col]
+        out.append({'race': race, 'clan': row[name_col], **{k: int(v) for k, v in offsets.items()}})
+    if len({c['clan'] for c in out}) != len(out):
+        raise SchemaError('Tribe.csv: two clans share a name')
     return out
 
 
@@ -87,8 +118,10 @@ def main(csv_dir, out, source='detect'):
     IL = {k: [int(r[c]) for r in il_rows] for k, c in il_cols.items()}
     PG = level_data(d / 'ParamGrow.csv')
     JOBS = job_modifiers(d / 'ClassJob.csv', fmt)
+    CLANS = clan_bonuses(d / 'Tribe.csv', d / 'Race.csv', fmt)
     # {"_generated": notice, "source": provenance, "formatVersion": n, "IL": {stat: [budget]}, "PG": [[...]], "MP": {stat: [%]},
-    # "SHARES": {key: [share per slot code]}, "JOBS": {job: {attribute: %}}}: one stat, level or job per line
+    # "SHARES": {key: [share per slot code]}, "JOBS": {job: {attribute: %}}, "CLANS": [clan]}: one stat, level, job
+    # or clan per line
     doc = {
         '_generated': provenance.note(source),
         'source': source,
@@ -98,8 +131,9 @@ def main(csv_dir, out, source='detect'):
         'MP': MP,
         'SHARES': SHARES,
         'JOBS': JOBS,
+        'CLANS': CLANS,
     }
-    provenance.write_generated(out, provenance.json_lines(doc, expand=('IL', 'PG', 'MP', 'SHARES', 'JOBS')))
+    provenance.write_generated(out, provenance.json_lines(doc, expand=('IL', 'PG', 'MP', 'SHARES', 'JOBS', 'CLANS')))
 
 
 if __name__ == '__main__':

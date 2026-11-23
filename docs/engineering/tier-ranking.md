@@ -10,7 +10,7 @@ What happens when the page ranks by tier (the "Spare points to tiebreaks" switch
 
 1. **What a tier is.** A secondary stat's effect moves in steps: Critical Hit's rate rises one step every 9 or 10 points at level 90, and speed's effect is the GCD (the time between most actions), which drops 0.01 s at a time. Points between two steps are wasted, so two gear sets are compared by the step they reach, not by raw points (section 1).
 2. **One search per ranked stat.** The goal is a target stat and up to two tiebreaks, in order, with weapon damage ahead of them all. A first search finds the most of the target and so its best tier. A second finds the most of tiebreak 1 and a third the most of tiebreak 2. A last one ranks the raw totals so that leftover points go to the target (section 2).
-3. **Each search holds the stats before it.** A search must keep every earlier stat one point above the start of the tier it reached, then maximizes its own stat. Each search also starts from the gear set the one before found, so it only has to find something better (section 2).
+3. **Each search holds the stats before it.** A search must keep every earlier stat at the start of the tier it reached, then maximizes its own stat. Each search also starts from the gear set the one before found, so it only has to find something better (section 2).
 4. **Filters shrink the lists.** Before a search, every piece (and every way of filling its materia slots) that cannot be in a gear set meeting the holds and beating the gear set in hand is dropped. Three kinds go: pieces too far below the best of their slot, pieces a bound prices out, and pieces the proofs of the earlier searches rule out. In the worked example 10,846 candidates become 68 (section 4).
 5. **A short search, or fronts, finish it.** A trial search of at most 20,000 nodes settles most searches. When it does not, a dynamic program over the slots keeps only the partial gear sets no other beats (Pareto fronts); the plain branch and bound is the last resort (section 5).
 
@@ -37,7 +37,7 @@ What does "rank by tiers" mean, and why is it a different objective from the pla
 
 **Tiers.** A secondary stat's effect moves in steps. Critical Hit's rate is $5\% + \lfloor 200\, g / \text{div} \rfloor$ per mille, where $g$ is the gear's points of the stat (plus food) and $\text{div}$ a constant per character level (community reference: AkhMorning, matched by xivgear). Speed's effect is the GCD (the global cooldown, the time between most actions), which drops 0.01 s at a time. Main stat and Vitality have no useful steps here; every point counts.
 
-![Critical Hit rate against its total at level 90, where div is 1,900 and one step is 9 or 10 points: 29.2% from 2,299, 29.3% from 2,309, 29.4% from 2,318. Every total from 2,309 to 2,317 gives 29.3%, so the points between two steps do nothing. Tier ranking holds the stat at the tier's start plus one, 2,310, so that a one-point error in the model does not drop the tier.](../diagrams/tier-ranking-tiers.svg)
+![Critical Hit rate against its total at level 90, where div is 1,900 and one step is 9 or 10 points: 29.2% from 2,299, 29.3% from 2,309, 29.4% from 2,318. Every total from 2,309 to 2,317 gives 29.3%, so the points between two steps do nothing. Tier ranking holds the stat at the tier's start, 2,309.](../diagrams/tier-ranking-tiers.svg)
 
 Write $\tau_d(T)$ for the tier of stat $d$ at total $T$, and $\text{start}_d(t)$ for its least total. Every $\tau_d$ is a **non-decreasing step function**: a floor of an increasing function, or for speed, a GCD that only shortens with more speed.
 
@@ -81,7 +81,7 @@ $$
 with $t_q = \tau_{k_q}(M_q)$ and the **hold**
 
 $$
-h_q = \min\bigl(\text{start}_{k_q}(t_q) + 1,\ M_q\bigr).
+h_q = \text{start}_{k_q}(t_q).
 $$
 
 Last,
@@ -92,11 +92,11 @@ $$
 
 which is the plain optimizer under three extra minimum rows, scalarized as in [optimizer.md, section 3](optimizer.md#3-turning-the-lexicographic-order-into-one-number). Each $(P_q)$ is an MMKP: the plain model plus one covering row per earlier key.
 
-**Why this is exact.** Since $\tau_d$ is non-decreasing, $\{x : \tau_d(T_d(x)) \ge t\} = \{x : T_d(x) \ge \text{start}_d(t)\}$, a single linear covering row. So the gear sets whose $k_0$ is in its best tier are exactly the feasible gear sets with $T_{k_0} \ge \text{start}(t_0)$; maximizing $T_{k_1}$ over them finds the best $\tau_{k_1}$ among them (monotonicity again), and so on by induction. This is the standard preemptive scheme (Ehrgott 2005, *Multicriteria Optimization*, Springer, on lexicographic optimization), with the optimal value of each stage turned into a minimum for the next. The "+ 1" narrows each gear set to the ones a point inside the tier; that is the owner's rule, not a relaxation.
+**Why this is exact.** Since $\tau_d$ is non-decreasing, $\{x : \tau_d(T_d(x)) \ge t\} = \{x : T_d(x) \ge \text{start}_d(t)\}$, a single linear covering row. So the gear sets whose $k_0$ is in its best tier are exactly the feasible gear sets with $T_{k_0} \ge \text{start}(t_0)$; maximizing $T_{k_1}$ over them finds the best $\tau_{k_1}$ among them (monotonicity again), and so on by induction. This is the standard preemptive scheme (Ehrgott 2005, *Multicriteria Optimization*, Springer, on lexicographic optimization), with the optimal value of each stage turned into a minimum for the next.
 
 **Food.** A meal adds $f(g) = \min(\text{max}, \lfloor p\,(b + g)/100 \rfloor)$ to a stat with $g$ gear points ([math.md, section 6](../mechanics/math.md#6-speed-and-substat-tiers)). $g + f(g)$ is non-decreasing in $g$, so a hold on the total with food becomes a minimum on gear points: the least $g$ whose total reaches the hold (found by bisection). Each meal runs the stages on its own. After each stage only the meals that reach the best tier go on (the others lose on that tier whatever follows), and meals asking for the same problem share it.
 
-**Weapon damage first.** Every search ranks the weapon's weapon damage before the target ([optimizer.md, section 1](optimizer.md#1-the-problem); not for Blue Mage). Tier ranking runs it as one more stage before $(P_0)$: weapon damage has no tiers, so its stage finds the most, $M_{\text{wd}}$, and holds it there ($h_{\text{wd}} = M_{\text{wd}}$, no "+ 1"). The keys above then run under that hold, and the last stage ranks weapon damage first among the raw totals. A stage of its own keeps the regain cuts (section 4.4) valid: each later stage has every row of the one before. Weapon damage is not named in the "Ranked by tier" line; a note under the result says it comes first.
+**Weapon damage first.** Every search ranks the weapon's weapon damage before the target ([optimizer.md, section 1](optimizer.md#1-the-problem); not for Blue Mage). Tier ranking runs it as one more stage before $(P_0)$: weapon damage has no tiers, so its stage finds the most, $M_{\text{wd}}$, and holds it there ($h_{\text{wd}} = M_{\text{wd}}$). The keys above then run under that hold, and the last stage ranks weapon damage first among the raw totals. A stage of its own keeps the regain cuts (section 4.4) valid: each later stage has every row of the one before. Weapon damage is not named in the "Ranked by tier" line; a note under the result says it comes first.
 
 **A Target GCD** turns into a band on gear speed per meal ([optimizer.md, section 2](optimizer.md#target-gcd-from-a-gcd-to-a-speed-range)), a capacity and a covering row present in every stage.
 
@@ -225,7 +225,7 @@ $$
 T_{k_q}(x) + \sum_s \rho_q(x_s) \;\le\; M_q, \qquad\text{and since } T_{k_q}(x) \ge h_q:\qquad \sum_s \rho_q(x_s) \;\le\; M_q - h_q .
 $$
 
-Every feasible set of the later stage meets this row, so adding it removes no feasible gear set. The room $M_q - h_q$ is the hold margin plus whatever the tier start leaves, usually less than one materia stone. So the row says this: the gear set may put almost no stone, and no whole piece, against key $k_q$ where a swap could have put it back.
+Every feasible set of the later stage meets this row, so adding it removes no feasible gear set. The room $M_q - h_q$ is whatever the tier start leaves, usually less than one materia stone. So the row says this: the gear set may put almost no stone, and no whole piece, against key $k_q$ where a swap could have put it back.
 
 **In the search.** The regain is a column of a new knapsack row with a small capacity:
 
@@ -397,7 +397,7 @@ The remaining time is mostly building the candidate lists (meld versions and dom
     Why item levels 400 and 123 are this hard is still unexplained (under investigation).
   - The rows that make "one more point of the target" impossible are three or four tight limits at once (the speed band and two held keys). Every bound here keeps or prices one row at a time, or relaxes integrality, so none sees it. The Lagrangian bound allows 213 points of Direct Hit in the White Mage case at level 100, exactly 2.31, Piety > Determination > Direct Hit, food off (which finishes at Direct Hit 12). The regain cuts see one earlier stage's row each, which is why they help, but not all of them together.
   - Open: a bound that sees the held rows, the band and the copy and conflict rows at once. The solver review measured a linear-programming relaxation with those rows at 17 points of Direct Hit on a Black Mage stage where the Lagrangian bound here allows 191; nothing of the kind is built.
-- **Pinned pieces.** With pinned pieces (`fixed`, [optimizer.md, section 2](optimizer.md#the-game-rules-in-the-model)) every minimum, band and proven maximum is on the whole gear set, pinned points included, and a pinned meal is the only meal; the stages search the other slots. Checked against the reference with the same pins (`core-optimizer.pinned.test.js`, `tests/full/core-tier-rank.pinned.test.js`).
+- **Pinned pieces.** With pinned pieces (`fixed`, [optimizer.md, section 2](optimizer.md#the-game-rules-in-the-model)) every minimum, band and proven maximum is on the whole gear set, pinned points included, and a pinned meal is the only meal; the stages search the other slots. Checked against the reference with the same pins (`core/optimizer/index.pinned.test.js`, `tests/sweep/core-tier-rank.pinned.test.js`).
 - **Tied gear sets.** Several gear sets can share the same ranked totals; the search returns the first it finds, so which one comes back depends on the search order (the slot order, [optimizer.md, section 9](optimizer.md#9-known-behaviours-and-limits)). They can differ in the stats that are not ranked.
 
   In the 17,648-case sweep ([performance log, section 5.2](perf-log.md#52-the-prototype-on-all-23-jobs)), where the code before and the prototype returned different tied gear sets, the expected damage per second differed by −2.8% to +2.9% in tier ranking and −1.5% to +1.9% in raw ranking. That estimate uses Character Panel Refined's expected damage per hit (**community reference**) divided by the GCD; it is not a simulation.
@@ -405,7 +405,7 @@ The remaining time is mostly building the candidate lists (meld versions and dom
   There is no tie rule (**owner's decision**: the search may still change); options discussed were the most main stat then the least spare speed, or the tiers of the unranked substats.
 - **Time per node.** Searches run about 5 to 12 µs a node, so the node limit bounds the time of the search part (about 4 to 8 s at 700,000). The limit is per search and a ranking runs several, so a ranking that stops takes longer: 9.9 to 37.6 s in the 2026-10-18 sweep. The fronts are bounded by their own limits (section 5); without the comparison limit, a front that gave up could take minutes first.
 - **Haste jobs in the 2026-10-16 sweep.** Monk, Samurai, Ninja and Viper have a GCD below 2.50 s with no speed at all; that sweep's halfway GCD lands above it, so those runs end at once ("unreachable") and are left out of the timings.
-- **The page.** Tier ranking is on by default and solves in the page's Web Worker, so the page stays free ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)); a set page's Fill shows “Solving…” and Cancel while it runs. In the 2026-10-18 sweep:
+- **The page.** Tier ranking is on by default and solves in the page's Web Worker, so the page stays free ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)); a set page's Auto-fill shows “Solving…” and Cancel while it runs. In the 2026-10-18 sweep:
   - without a Target GCD, median 0.24 s and at most 1.1 s;
   - with one, median 0.35 to 0.45 s, 95th percentile 1.1 to 1.7 s, and up to 38 s in the slow spots above.
 
@@ -423,5 +423,5 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 | Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, all run by `prepareSearch`; `TRIAL_NODES`, `branchAndBound`) |
 | Regain cuts | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts, the staircase dominance | `src/core/optimizer/front.js` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
-| The page: switch, Solving… and Cancel | `src/core/recipe.js` (`runRecipe`), `src/ui/views/fill-settings.js` (`fillRecipe`), `src/ui/views/solve.js` (`solveView`), `src/ui/components/set-page.js` (`fill`), `src/index.html` (`#s-by-tier`, `#sh-cancel`) |
-| Tests | `tests/unit/core-tier-rank.test.js` (reference in `tests/unit/helpers/tier-reference.js`; 360 more cases in `tests/full/`, `npm run test:full`), `tests/unit/core-optimizer.stat-minimums.test.js`, `tests/unit/core-optimizer-regain.test.js`; the page in `tests/unit/ui-views-optimizer.test.js` and `tests/e2e/smoke.mjs` (`checkRankByTier`) |
+| The page: switch, Solving… and Cancel | `src/core/recipe.js` (`runRecipe`), `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/solve.js` (`solveView`), `src/ui/components/set-page.js` (`fill`), `src/index.html` (`#s-by-tier`, `#sh-cancel`) |
+| Tests | `tests/unit/core/tier-rank.test.js` (reference in `tests/unit/helpers/tier-reference.js`; 360 more cases in `tests/sweep/`, `npm run test:full`), `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js` |

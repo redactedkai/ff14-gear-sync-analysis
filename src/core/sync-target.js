@@ -12,6 +12,8 @@ export function levelSyncIlvl(level) {
   return levelParams(level).sync;
 }
 
+let ceilings = null; // per equip level: the highest item level of the non-scaling gear made for it (filled on first use)
+
 /* The highest item level an item level cap syncs gear made for a higher level to, at synced level `level`: the highest
    item level of gear made for that level (equip level `level`), or the level's own item level where that is higher.
    It is the Wiki's "the max IL achievable by gear matching the class level" (Item Level page, "Item Level vs. Class
@@ -24,7 +26,6 @@ export function levelSyncIlvl(level) {
    changes no real duty; what a higher cap does is untested. Holding gear to it keeps every setting to what a duty can
    do: at level 50 with cap 400 a level 70 piece is synced to 135, where the cap alone gave it item level 400 stats
    (owner's decision; it replaces an error for such caps). */
-let ceilings = null;
 export function capCeiling(level) {
   if (!ceilings) {
     ceilings = [];

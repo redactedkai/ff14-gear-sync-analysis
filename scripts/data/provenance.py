@@ -1,14 +1,16 @@
-"""Which xivapi/ffxiv-datamining commit the generated data comes from.
+"""Which commit of a source repository the generated data comes from: xivapi/ffxiv-datamining for the game's tables,
+xivapi/ffxiv-datamining-patches for the patch list.
 
-detect(csv_dir) asks git for the commit of the clone that holds the CSVs. It returns None when the directory is not
-inside a git clone of ffxiv-datamining (for example test fixtures), so a fixture inside this project's own repo is
-not mistaken for game data.
+detect(csv_dir) asks git for the commit of the clone that holds the CSVs (detect(directory, PATCHES_REPO) the patch
+list's). It returns None when the directory is not inside a git clone of that repository (for example test fixtures),
+so a fixture inside this project's own repo is not mistaken for game data.
 """
 
 import json
 import subprocess
 
 REPO = 'xivapi/ffxiv-datamining'
+PATCHES_REPO = 'xivapi/ffxiv-datamining-patches'
 
 
 def _git(csv_dir, *args):
@@ -16,11 +18,12 @@ def _git(csv_dir, *args):
     return r.stdout.strip() if r.returncode == 0 else None
 
 
-def detect(csv_dir):
-    """{'repo', 'commit', 'date'} for the clone containing csv_dir, or None."""
+def detect(csv_dir, repo=REPO):
+    """{'repo', 'commit', 'date'} for the clone of `repo` ("owner/name") containing csv_dir, or None. The clone's origin
+    must be that repository exactly: ffxiv-datamining-patches is not ffxiv-datamining."""
     try:
         url = _git(csv_dir, 'remote', 'get-url', 'origin') or ''
-        if 'ffxiv-datamining' not in url:
+        if url.rstrip('/').removesuffix('.git').rsplit('/', 1)[-1] != repo.split('/')[1]:
             return None
         out = _git(csv_dir, 'log', '-1', '--format=%H %cI')
     except OSError:  # git not installed
@@ -28,7 +31,7 @@ def detect(csv_dir):
     if not out:
         return None
     commit, date = out.split(' ', 1)
-    return make(commit, date)
+    return make(commit, date, repo)
 
 
 def local_edits(csv_dir):
@@ -42,14 +45,15 @@ def local_edits(csv_dir):
     return [line for line in r.stdout.splitlines() if line.strip()] if r.returncode == 0 else None
 
 
-def make(commit, date):
-    return {'repo': REPO, 'commit': commit, 'date': date}
+def make(commit, date, repo=REPO):
+    return {'repo': repo, 'commit': commit, 'date': date}
 
 
-def note(source):
-    """One-line notice naming the source commit, written as a generated JSON file's "_generated" field."""
+def note(source, repo=REPO):
+    """One-line notice naming the source commit, written as a generated JSON file's "_generated" field. `repo` is named
+    when the commit is unknown (source None)."""
     if source is None:
-        return 'GENERATED from xivapi/ffxiv-datamining (commit unknown). Do not edit; see docs/engineering/data-pipeline.md.'
+        return f'GENERATED from {repo} (commit unknown). Do not edit; see docs/engineering/data-pipeline.md.'
     return f'GENERATED from {source["repo"]} {source["commit"]} ({source["date"]}). Do not edit; see docs/engineering/data-pipeline.md.'
 
 

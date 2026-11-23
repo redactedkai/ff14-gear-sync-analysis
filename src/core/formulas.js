@@ -1,5 +1,6 @@
 /* Stat formulas: how item level becomes the stats on a piece, and what item level sync clamps.
    See docs/mechanics/math.md (sections 4 and 5) for each rule and docs/mechanics/validation.md for the evidence. */
+import { clamp } from './clamp.js';
 import {
   SUB_WEIGHTS,
   MIND_DIRECT_HIT_SHARE,
@@ -23,23 +24,23 @@ import {
 import { IL, MP, MAX_ILVL } from './tables.js';
 
 /* Round half up. The epsilon keeps values like 22.4999999 (float noise from x.5 products) from rounding down. */
-export function rnd(x) {
+function rnd(x) {
   return Math.floor(x + 0.5 + 1e-9);
 }
 /* Any input (number or typed text) as a whole item level inside the ItemLevel table, 0 to MAX_ILVL. */
 export function clampIlvl(i) {
   i = Math.round(+i || 0);
-  return Math.max(0, Math.min(MAX_ILVL, i));
+  return clamp(i, 0, MAX_ILVL);
 }
 
 /* A stat object with each of the job's stat keys (job.stats) at 0. */
-export function blankStats(job) {
+function blankStats(job) {
   return Object.fromEntries(job.stats.map(s => [s, 0]));
 }
 
 /* The stat factor of `stat` when no real item is involved: the one the job's own gear carries. In the game files every
    piece with a single main stat has 100 for that stat, and Vitality 90 on Intelligence/Mind gear, 100 otherwise
-   (BaseParam MeldParam; checked against every database piece in tests/unit/core-formulas.stat-factor.test.js). */
+   (BaseParam MeldParam; checked against every database piece in tests/unit/core/formulas.stat-factor.test.js). */
 export function jobFactor(job, stat) {
   return stat === 'vit' ? job.vitFactor : 1;
 }
@@ -47,9 +48,10 @@ export function jobFactor(job, stat) {
 /* One stat line from its ItemLevel budget `base`, rounded after each step: the slot's share of the budget (`pct`, per
    mille), then the stat factor (`factor`, a fraction: 0.9 for Vitality on Int/Mind gear; skipped at 1), then the
    substat share (`weight`, percent: 70 for the second substat; skipped at 100 or null). The rule of every item stat
-   (pieceValue, statDerivation, predictRaw, the Wiki checks in validation.js), written once. Returns {base, steps,
-   value}: steps holds each step that applies, with its unrounded value: {kind: 'slot', base, pct, exact, value},
-   {kind: 'factor', factor, exact, value}, {kind: 'share', weight, exact, value}; value is the last step's. */
+   (pieceValue, statDerivation, predictRaw, the Wiki checks in the test helper model-validation.js), written once.
+   Returns {base, steps, value}: steps holds each step that applies, with its unrounded value:
+   {kind: 'slot', base, pct, exact, value}, {kind: 'factor', factor, exact, value},
+   {kind: 'share', weight, exact, value}; value is the last step's. */
 export function statLine(base, pct, factor = 1, weight = 100) {
   const steps = [];
 
@@ -117,7 +119,7 @@ export function buildPiece(job, ilvl, type, subs) {
    the stat factor first, then the slot share, flooring both and rounding once at the end,
    round(floor(floor(B x f) x pct / 100) / 10) with f in percent and pct in thousandths. An item's own stats
    (statLine, pieceValue) round the slot share first and then apply the factor, which fits real items far better. The
-   cap order reproduces three in-game sync values quoted second-hand in xivgear's tests: Vitality 56 on a Blue Mage head
+   cap order reproduces three in-game sync values from xivgear's tests: Vitality 56 on a Blue Mage head
    at item level 270, Vitality 123 on a Red Mage head at 530 (the native 530 head carries 122) and main stat 71 on
    Azeyma's Earrings at 430 (docs/mechanics/math.md, section 5). For a factor of 1 both orders give the same number. `pct` and
    `factor` as in pieceValue; an off-hand is the two-handed cap minus the one-handed cap (isOffhand). */

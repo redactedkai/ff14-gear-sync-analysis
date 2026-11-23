@@ -38,22 +38,22 @@
   <rect class="bg" x="0" y="0" width="720" height="520"/>
 
   <!-- The steps: four boxes 150 wide, 27 apart -->
-  <rect class="box" x="20" y="20" width="150" height="72" rx="8"/>
+  <rect class="box" x="20" y="20" width="150" height="72" rx="4"/>
   <text class="fg t" x="95" y="47" text-anchor="middle">Saved JSON</text>
   <text class="muted s" x="95" y="66" text-anchor="middle">old, from another job,</text>
   <text class="muted s" x="95" y="82" text-anchor="middle">or hand-edited</text>
 
-  <rect class="box" x="197" y="20" width="150" height="72" rx="8"/>
+  <rect class="box" x="197" y="20" width="150" height="72" rx="4"/>
   <text class="fg t" x="272" y="47" text-anchor="middle">One panel per tab</text>
   <text class="muted s" x="272" y="66" text-anchor="middle">an older single panel</text>
   <text class="muted s" x="272" y="82" text-anchor="middle">goes to both tabs</text>
 
-  <rect class="box" x="374" y="20" width="150" height="72" rx="8"/>
+  <rect class="box" x="374" y="20" width="150" height="72" rx="4"/>
   <text class="fg t" x="449" y="47" text-anchor="middle">Defaults per job</text>
   <text class="muted s" x="449" y="66" text-anchor="middle">each tab for its own</text>
   <text class="muted s" x="449" y="82" text-anchor="middle">job (none if unknown)</text>
 
-  <rect class="box" x="551" y="20" width="150" height="72" rx="8"/>
+  <rect class="box" x="551" y="20" width="150" height="72" rx="4"/>
   <text class="fg t" x="626" y="47" text-anchor="middle">Check each field</text>
   <text class="good s" x="626" y="66" text-anchor="middle">right type, range: kept</text>
   <text class="bad s" x="626" y="82" text-anchor="middle">otherwise: its default</text>

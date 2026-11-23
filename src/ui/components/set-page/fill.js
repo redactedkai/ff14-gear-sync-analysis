@@ -1,46 +1,55 @@
-/* A set page's Fill and its answer: running the solver for the set's unpinned slots, Cancel, the suggestion with its Take
-   boxes, and Apply or Discard on it. While a Fill runs, $store.sheets.busy locks every edit on the Sheets tab.
+/* A set page's Auto-fill and its answer: running the solver for the set's unpinned slots, Cancel, the suggestion with its Take
+   boxes, and Apply or Discard on it. While an Auto-fill runs, $store.sheets.busy locks every edit on the Sheets tab.
    A part of the setPage component (components/set-page.js composes the parts). */
-import { clone } from '../../helpers.js';
+import { clone } from '../../text.js';
+import { overlays } from '../../overlays.js';
 import { isCancelled, solverRequest } from '../../solver.js';
-import { fillPlan } from '../../views/fill.js';
-import { fillRecipe } from '../../views/fill-settings.js';
-import { appliedFields, fillAnswerView, suggestionView } from '../../views/set-suggestion.js';
+import { fillPlan } from '../../sheets/fill.js';
+import { fillRecipe } from '../../sheets/fill-settings.js';
+import { appliedFields, failedText, fillAnswerView, suggestionView } from '../../views/set-suggestion.js';
 import { evaluateInSheet } from '../../views/set-totals.js';
-import { LOCKED_TABLE_TEXT } from './view.js';
+import { FILL_CANCELLED_TEXT, LOCKED_TABLE_TEXT, RESULT_DISCARDED_TEXT } from './view.js';
 
 /* `solver`: ui/solver.js's; `raw`: Alpine.raw or a stand-in; `page`: {el, refs} (frame.js). Returns the part's members. */
 export function fillPart(solver, raw, page) {
   let fillId = 0;
-  // the gear set id Fill is running for (its solver lane's key), or null
+  // the gear set id Auto-fill is running for (its solver lane's key), or null
   let fillKey = null;
 
   return {
-    // the Fill result waiting for Apply or Discard: {suggested ({pieces, meal}), declined: {rows, meal}}, or null
+    // the Auto-fill result waiting for Apply or Discard: {suggested ({pieces, meal}), declined: {rows, meal}}, or null
     suggestion: null,
-    // this page's Fill is running
+    // this page's Auto-fill is running
     running: false,
-    // the tie list of a Fill with nothing to change, saved when the Fill ends (finishFill, endFill)
+    // the tie list of an Auto-fill with nothing to change, saved when the Auto-fill ends (finishFill, endFill)
     bestMealsAfterFill: null,
-    // a click on the table while a Fill result waits: the line saying why nothing changed
-    // the line after a Fill that gave no suggestion (no set found, a pin dropped), '' for none
+    // the pins left after an answer named pins it cannot keep, {pieces (the pinned rows left), meal (whether the meal stays
+    // pinned)}, saved when the Auto-fill ends (finishFill, endFill): the sheet is busy until then, so an edit made as the
+    // answer arrives is refused
+    pinsAfterFill: null,
+    // a click on the table while an Auto-fill result waits: the line saying why nothing changed
+    // the line after an Auto-fill that gave no suggestion (no set found, a pin dropped), '' for none
     fillLine: '',
 
-    /* ---- Fill ---- */
+    /* ---- Auto-fill ---- */
 
-    /* Fill the unpinned slots: the solver is asked with the set's Fill settings (saved the first time) and its pins, in
+    /* Auto-fill the unpinned slots: the solver is asked with the set's Auto-fill settings (saved the first time) and its pins, in
        the set's own lane (its id as the key); the answer shows as a suggestion, or as a line when there is none. */
     async fill() {
       const store = this.$store.sheets;
       const saved = this.saved;
       if (!saved || this.draft || store.busy || this.suggestion) return;
+      // the button is off with no piece to search, but only once the count is in: wait for it, then ask again
+      if (this.countPending()) {
+        await this.countLanded();
+        if (this.searchedCount === 0 || this.saved !== saved || this.draft || store.busy || this.suggestion) return;
+      }
       const job = this.job;
       const plan = fillPlan(job, saved);
       if (plan.disabled) return;
       const settings = this.fillSettings;
       if (!saved.fillSettings) store.updateSet(saved.id, { fillSettings: settings });
-      this.settingsOpen = false;
-      this.open = null;
+      overlays.closeAll();
       this.fillLine = '';
 
       // the request: plain data only (a worker cannot be sent a proxy)
@@ -55,7 +64,7 @@ export function fillPart(solver, raw, page) {
       fillKey = saved.id;
       this.running = true;
       store.busy = true;
-      // Cancel has the focus unless the Fill is already over (answered, or cancelled) by the time it is drawn
+      // Cancel has the focus unless the Auto-fill is already over (answered, or cancelled) by the time it is drawn
       this.afterDraw(() => {
         if (this.running) page.refs.cancel.focus();
       });
@@ -68,19 +77,19 @@ export function fillPart(solver, raw, page) {
         const { result, ms } = await solver.request(request);
         // the search's own time, not the wait for the worker's reply; read by scripts/perf/browser.mjs
         if (Number.isFinite(ms)) performance.measure('fill', { start: performance.now() - ms, duration: ms });
-        if (id === fillId) this.finishFill(result, pins);
+        if (id === fillId) this.finishFill(result);
       } catch (error) {
-        if (!isCancelled(error) && id === fillId) this.fillLine = `Fill failed: ${String(error?.message || error).replace(/\.$/, '')}.`;
+        if (!isCancelled(error) && id === fillId) this.fillLine = failedText(error?.message || error);
       } finally {
         if (id === fillId) this.endFill();
       }
     },
-    /* The solver's answer (`result`, views/solve.js solveView's) for the pins sent. */
-    finishFill(result, pins) {
-      const answer = fillAnswerView(this.sheet, this.saved, result, pins);
+    /* The solver's answer (`result`, solve.js solveView's). */
+    finishFill(result) {
+      const answer = fillAnswerView(this.sheet, this.saved, result);
       if (answer.kind === 'suggestion') {
         this.suggestion = { suggested: answer.suggested, declined: { rows: [], meal: false } };
-        // nothing to change: the set is already what Fill makes, so it keeps the meals tagged "best for goal" (Apply is off);
+        // nothing to change: the set is already what Auto-fill makes, so it keeps the meals tagged "best for goal" (Apply is off);
         // saved by endFill, once the sheet is no longer busy
         const bestMeals = answer.suggested.bestMeals;
         if (bestMeals && !suggestionView(this.sheet, this.saved, answer.suggested, this.suggestion.declined).total)
@@ -89,14 +98,15 @@ export function fillPart(solver, raw, page) {
           requestAnimationFrame(() => {
             if (!page.el.isConnected) return;
             page.el.querySelector('tr.changed')?.scrollIntoView({ block: 'nearest' });
-            (page.refs.apply.disabled ? page.refs.discard : page.refs.apply).focus({ preventScroll: true });
+            const { apply, discard } = page.refs;
+            (apply?.disabled ? discard : apply)?.focus({ preventScroll: true });
           }),
         );
         return;
       }
       if (answer.kind === 'badpin') {
-        if (answer.droppedRows.length)
-          this.$store.sheets.updateSet(this.saved.id, { pinned: { ...this.saved.pinned, pieces: answer.pinnedRows } });
+        if (answer.droppedRows.length || answer.mealDropped)
+          this.pinsAfterFill = { pieces: answer.pinnedRows, meal: !!this.saved.pinned?.meal && !answer.mealDropped };
         this.fillLine = [...answer.messages, answer.droppedText].filter(Boolean).join(' ');
         return;
       }
@@ -108,12 +118,14 @@ export function fillPart(solver, raw, page) {
       this.$store.sheets.busy = false;
       if (this.bestMealsAfterFill) this.$store.sheets.updateSet(this.saved.id, { bestMeals: this.bestMealsAfterFill });
       this.bestMealsAfterFill = null;
+      if (this.pinsAfterFill) this.$store.sheets.updateSet(this.saved.id, { pinned: { ...this.saved.pinned, ...this.pinsAfterFill } });
+      this.pinsAfterFill = null;
     },
-    /* Cancel: the Fill stops (the worker is replaced, ui/solver.js), the set stays as it is. */
+    /* Cancel: the Auto-fill stops (the worker is replaced, ui/solver.js), the set stays as it is. */
     cancelFill() {
       if (!this.running) return;
       this.stopFill();
-      this.$store.sheets.note = 'Fill cancelled.';
+      this.$store.sheets.note = FILL_CANCELLED_TEXT;
       this.focusFill();
     },
     stopFill() {
@@ -138,7 +150,7 @@ export function fillPart(solver, raw, page) {
       if (!s) return;
       const view = suggestionView(this.sheet, this.saved, s.suggested, s.declined);
       if (view.applyDisabled) return;
-      this.$store.sheets.updateSet(this.saved.id, appliedFields(this.saved, s.suggested, s.declined));
+      this.$store.sheets.updateSet(this.saved.id, appliedFields(this.saved, s.suggested, s.declined, this.job));
       this.suggestion = null;
       this.$store.sheets.note = view.appliedNote;
       this.focusFill();
@@ -146,10 +158,10 @@ export function fillPart(solver, raw, page) {
     discardSuggestion() {
       if (!this.suggestion) return;
       this.suggestion = null;
-      this.$store.sheets.note = 'Fill result discarded.';
+      this.$store.sheets.note = RESULT_DISCARDED_TEXT;
       this.focusFill();
     },
-    /* A click on the table while a Fill result waits: say why nothing happens, as a toast. */
+    /* A click on the table while an Auto-fill result waits: say why nothing happens, as a toast. */
     tableClick(event) {
       if (this.suggestion && !event.target.closest?.('.takebox')) this.$store.sheets.note = LOCKED_TABLE_TEXT;
     },

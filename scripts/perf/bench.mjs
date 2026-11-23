@@ -166,7 +166,7 @@ const truncatedRuns = rows.filter(r => r.truncated).length;
 if (truncatedRuns) gateFails.push(`${truncatedRuns} run(s) truncated at the node limit`);
 
 // Timing budgets (optimizer.md, section 8, "What the perf scripts measure"), information only: they depend on the PC,
-// and timing matters only above about 0.5 s. --strict makes a miss exit 1. "first" stands in for the cold budget.
+// and timing matters only above about 1 s. --strict makes a miss exit 1. "first" stands in for the cold budget.
 const timingMisses = [];
 const check = (ok, msg) => {
   if (!ok) timingMisses.push(msg);
@@ -180,7 +180,7 @@ if (on) {
 if (off) check(off.p95 <= 30, `melds off p95 ${fmt(off.p95)} > 30 ms`);
 console.log(
   timingMisses.length
-    ? `\ntiming budget misses (information only; timing matters above about 0.5 s):\n  ${timingMisses.join('\n  ')}`
+    ? `\ntiming budget misses (information only; timing matters above about 1 s):\n  ${timingMisses.join('\n  ')}`
     : '\nall timing budgets met',
 );
 

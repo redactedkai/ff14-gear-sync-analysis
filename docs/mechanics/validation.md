@@ -31,13 +31,14 @@ Which outside sources does the project trust, and how strong is each kind of evi
 | FFXIV Wiki, Item Level Sync page | Substat caps at item level 475 | The sync clamp (section 3) |
 | Game `BaseParam` sheet (`MeldParam`) and `Item.BaseParamModifier` | Per-item stat percentages | The stat factor (section 2) |
 | xivgear (community gear planner), [source at commit 6c3c878](https://github.com/xiv-gear-planner/gear-planner/blob/6c3c878e708b9d98f1c4cb091723a2a0a6343603/packages/core/src/datamanager_new.ts) | Its sync cap code and in-game notes in its tests; its whole core, run against this project's | Off-hand rule, cap order (section 8); every synced stat compared (section 10) |
+| The owner's in-game recordings | Each worn piece's stats in a duty, unsynced, level-synced and at minimum item level | Main stat, Vitality and Defense clamp, cap order (sections 8 and 11) |
 | ffxiv-gearing (community gear planner), [source at commit 8d75ef8](https://github.com/Asvel/ffxiv-gearing/tree/8d75ef89c317401727066a28025fb4d860a92f20) | Its synced stats for every piece and duty sync | Section 9 |
 | AkhMorning (community reference), [Skill and Spell Speed page](https://www.akhmorning.com/allagan-studies/stats/speed/) | GCD and DoT formula, tier tables | Speed and GCD (section 5) |
 
 Notes:
 
 - Each item names a column of the stat factor table (Vitality 90 on Intelligence/Mind gear, every main stat 90 on four-main-stat gear; [math.md, section 4](math.md#the-stat-factor-of-an-item)).
-- xivgear is a community reference, not external truth; its in-game values are second-hand.
+- xivgear is the most used planner and its rules are trusted here; its in-game values are quoted, not captured by this project. The owner's own recordings (Sage and Bard, nine sessions) are first-party.
 
 **Kinds of expected value.** A test compares the code's output with an expected value. Where that value comes from decides what a pass proves. There are four kinds, and each section below says which it uses:
 
@@ -167,7 +168,7 @@ For a substat (stat factor 100) the model's cap for a slot with share $p$ is $\o
 - **What this confirms:** the clamp rule (each stat on a piece above the cap is limited to the full-share value of a same-slot piece at the cap) for **substats**.
 - **What it does not cover:** the main stat and Vitality. The Wiki lists one cap per slot and only for substats; whether lower-ranked substats clamp against the full-share value is settled by the Wiki's Item Level page instead ([math.md, section 5](math.md#what-is-assumed)).
 
-**Tests.** The validation unit test checks all six rows (`wikiChecks` in `src/core/validation.js`). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
+**Tests.** The validation unit test checks all six rows (`wikiChecks` in `tests/unit/helpers/model-validation.js`). The sync unit test checks the one-handed weapon and shield rows through a Paladin's caps, so the job-dependent weapon path is covered too.
 
 ### The caps at item level 123
 
@@ -238,32 +239,33 @@ Which test holds each check, and how strong is its expected value? What each tes
 
 | Test file | Checks | Kind of expected value |
 | --- | --- | --- |
-| `core-validation` | Band accuracy; Wiki 475; named pieces | External truth (1) |
-| `core-formulas` | The 130 head piece; level caps | External truth (2) |
-| `core-formulas.caps-at-123` | Pieces at 120 and 125; caps at 123; 296 | Truth; derivation (3) |
-| `core-sync-target` | Level item levels; triggers and order; T13; optimizer | Game file; second-hand; reference (4) |
-| `core-formulas.sync-clamp` | Clamp edge cases; Paladin Wiki 475 caps | Truth; derivation (5) |
-| `core-formulas.sync-cap-order` | Cap order on in-game values; equal orders at factor 100 | Second-hand truth (6) |
-| `core-speed` | GCD tiers and DoT scalars at 50, 90, 100; haste | External truth (AkhMorning, job guides) |
-| `core-optimizer` | Seven real-gear pools; ring-pair bound | Brute-force reference |
-| `core-optimizer.exhaustive` | Random pools; regressions; engine policies | Brute-force reference |
-| `core-optimizer.speed-limits` | Speed limits on real Warrior gear | Brute-force reference |
-| `ui-views-optimizer`, `ui-views-piece`, `ui-views-sync-explainer`, `ui-views-tiers` | Optimizer view; left-out Gear from boxes; Piece stats; caps; tiers | Mixed (7) |
-| `core-items` | Browser filters, pool mapping, Unique copies | Real rows, picked by properties |
-| `ui-ranks` | Ranks never repeat | Rules of the page |
-| `core-formulas.stat-factor` | Job factor vs item factor; named pieces | Game data; derivation (8) |
-| `core-item-format`, `core-tables.provenance` | Shape of the generated data; data source | Format definition |
-| `ui-state` | Saved state repaired field by field | Rules of the page |
-| `core-food` | Real meals; xivgear's food values; best meal and gear | Game data; second-hand; brute-force reference |
-| `tests/data/test_generators.py` | Tests on small CSV fixtures | Hand-built fixtures (9) |
-| `tests/e2e/smoke.mjs` | The built page, eight jobs | Mixed (10) |
+| `core/formulas.model-accuracy` | Band accuracy; Wiki 475; named pieces | External truth (1) |
+| `core/formulas` | The 130 head piece; level caps | External truth (2) |
+| `core/formulas.caps-at-123` | Pieces at 120 and 125; caps at 123; 296 | Truth; derivation (3) |
+| `core/sync-target` | Level item levels; triggers and order; T13; optimizer | Game file; second-hand; reference (4) |
+| `core/formulas.sync-clamp` | Clamp edge cases; Paladin Wiki 475 caps | Truth; derivation (5) |
+| `core/formulas.sync-cap-order` | Cap order on in-game values; equal orders at factor 100 | Second-hand truth (6) |
+| `core/speed` | GCD tiers and DoT scalars at 50, 90, 100; haste | External truth (AkhMorning, job guides) |
+| `core/optimizer/index` | Seven real-gear pools; ring-pair bound | Brute-force reference |
+| `core/optimizer/index.exhaustive` | Random pools; regressions; engine policies | Brute-force reference |
+| `core/optimizer/index.speed-limits` | Speed limits on real Warrior gear | Brute-force reference |
+| `ui/views/piece`, `ui/views/sync-explainer`, `ui/views/tiers` | Piece stats; caps; tiers | Mixed (7) |
+| `core/items` | Browser filters, pool mapping, Unique copies | Real rows, picked by properties |
+| `ui/ranks` | Ranks never repeat | Rules of the page |
+| `core/formulas.stat-factor` | Job factor vs item factor; named pieces | Game data; derivation (8) |
+| `core/item-format`, `core/tables.provenance` | Shape of the generated data; data source | Format definition |
+| `ui/state` | Saved state repaired field by field | Rules of the page |
+| `core/food` | Real meals; xivgear's food values; best meal and gear | Game data; second-hand; brute-force reference |
+| `core/optimizer/index.exact-solver`, `core/food.reference`, `core/piece.sync-cap-grid`, `core/meld.real-pieces` | Optimizer, food, caps and melds on every job or piece | Independent references written in the test |
+| `tests/data/test_*.py` | Tests on small CSV fixtures | Hand-built fixtures (9) |
+| `tests/e2e/checks/tabs/walk.mjs` | The built page, eight jobs | Mixed (10) |
 
 Notes:
 
 1. Band accuracy thresholds and the pieces listed in section 2, Wiki 475 caps, and the highest real item level inside the budget table.
 2. The item level 130 healer head piece is external truth (game data); the level caps are from the Lodestone patch notes.
 3. No gear exists at item level 123; real pieces at 120 and 125 in every slot carry round(row × share) as main stat and largest substat (external truth). The page's caps at 123 equal caps derived from `ItemLevel` row 123 and the `BaseParam` shares (Sage, Warrior, Paladin); the ten armor and accessory caps sum to 296, 2.22 s at level 50, and the generic-piece optimizer reaches that sum (independent derivation; 2.22 s is AkhMorning).
-4. `ParamGrow.ItemLevelSync` at each level cap and 1 to 49 (game file); the two triggers, the order when both apply (second-hand: xivgear issue #317), no equip level; no real piece level-synced at level 100; at T13 (level 50, cap 123) exactly 71 pieces newly synced, to 130, none loses a stat; level 90 roulette: level 100 head pieces capped at the item level 660 head values (derived from `ItemLevel` row 660 and the 85 ‰ share); optimizer equals the brute force under level sync (Sage, Warrior, Paladin). The views under level sync are in `ui-views.level-sync.test.js`.
+4. `ParamGrow.ItemLevelSync` at each level cap and 1 to 49 (game file); the two triggers, the order when both apply (second-hand: xivgear issue #317), no equip level; no real piece level-synced at level 100; at T13 (level 50, cap 123) exactly 71 pieces newly synced, to 130, none loses a stat; level 90 roulette: level 100 head pieces capped at the item level 660 head values (derived from `ItemLevel` row 660 and the 85 ‰ share); optimizer equals the brute force under level sync (Sage, Warrior, Paladin). The views under level sync are in `ui/views/level-sync.test.js`.
 5. A real item level 130 head piece at, below and one above the cap; unknown item level; no special substat; missing stats. Wiki rows are external truth; head caps at 123 and 129 are derived from `ItemLevel` and the 85 ‰ share; the edge cases are rules of the model.
 6. The in-game values of section 8 (xivgear's test notes), on the real items where named; with a factor of 100 the cap order equals the item order at every item level 1 to 795 and every slot share; an off-hand cap is the two-handed minus the one-handed cap. Budgets are game data; equal orders are an independent comparison.
 7. Real gear: brute-force reference. Piece stats raw values: external truth (game data). Caps, 296: independent derivation (caps unit test). Tier at 1,839 and the level table: external truth (AkhMorning).
@@ -273,16 +275,18 @@ Notes:
 
 ## 8. In-game captures still missing
 
-Which parts of the sync model rest on no capture of the game by this project, and what evidence exists instead? The Wiki check (section 3) covers substat caps only. Three parts of the sync model have no capture of this project's own ([math.md, section 5](math.md#what-is-assumed)). Only the first is open; the second and third are **verified** from published values:
+Which parts of the sync model rest on no capture of the game by this project, and what evidence exists instead? The Wiki check (section 3) covers substat caps only. The owner's recordings cover the main stat, Vitality and Defense clamp for single-main-stat gear and the level's item level; the rest of the sync model ([math.md, section 5](math.md#what-is-assumed)) is below. Only the kind 0 part of the first is open; the second and third are **verified** from published values:
 
-1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job), with the factor-first cap order below; supported by second-hand in-game values;
+1. the main stat and Vitality are clamped like substats (with the piece's own stat factor, so a Field Commander's piece is capped at 90% of the main-stat cap for every job), with the factor-first cap order below; **verified** in game for single-main-stat gear (108 recorded values, Sage and Bard); open only for the kind 0 pieces;
 2. lower-ranked substats clamp against the full-share cap, not against their own share (for a 70% Piety on a head piece at cap 123: 29, not $\operatorname{round}(29 \times 0.7) = 20$); **verified** (published) by the Wiki's Item Level page (accessories synced to 475: 127 / 89 becomes 88 / 88), and supported by a player's in-game report and The Balance's thresholds (below);
 3. sync never raises a stat: **verified** for substats (published): the Wiki's 93 / 65 becomes 88 / 65, and its page says "Substats will not be scaled up".
 
-**Level sync.** Melds on synced gear and the level sync trigger are settled (verified by the owner in game). What each part of level sync rests on is in [math.md, section 5](math.md#which-pieces-are-synced); the order when both triggers apply is second-hand, and weapons using the same level item level is second-hand at level 90 (xivgear issue #317) and inferred elsewhere. Two captures would check them:
+**Level sync.** Melds on synced gear and the level sync trigger are settled (verified by the owner in game). What each part of level sync rests on is in [math.md, section 5](math.md#which-pieces-are-synced); the order when both triggers apply is **verified** against xivgear and the owner's recordings where the cap is the lower of the two, and weapons using the same level item level is second-hand at level 90 (xivgear issue #317) and inferred elsewhere. What a capture would still check:
 
-- one in a level-synced duty with item level sync off (a roulette), with one piece above the level's item level, would check the level item level directly;
-- one in a duty whose item level cap is above that level's item level, with a piece above both, would check the order.
+- the level's item level is **verified** in game at levels 52, 62 and 64 (the owner's recordings: pieces synced to 130, 270 and 273);
+- one in a duty whose item level cap is above that level's item level, with a piece above both, would check the order there (no recording has such a cap; seven duties have one).
+
+Also open: a kind 0 piece under level sync (the conflicting report below), the Piety melding window on a factor-70 piece, and synced Defense for kind 12 and the kinds other than 2, 4 and 6 (recordings hold unsynced Defense for kind 12, no synced value).
 
 ### Optional in-game checks
 
@@ -290,17 +294,16 @@ Checks that could move a stat by more than 1, if the owner wants more captures. 
 
 | # | Check | Where | Model says | If wrong |
 | --- | --- | --- | --- | --- |
-| 1 | Main stat and Vitality clamp | Cap 123, item level 130 head | Mind 30, Vit 29 | Mind 33, Vit 32 |
-| 2 | Cap uses the piece's own factor | Cap 123, Field Commander's Coat | Mind 43, Vit 45 | Mind 48, Vit 51 |
-| 3 | Lower substat clamps to the full cap | Cap 123, item level 130 head | Piety 22 | Piety 20 |
-| 4 | Item level cap beats the level's | Level 90, cap 665, gear above both | Head substat 186 | 184 |
-| 5 | Weapon uses the level's item level | Level 50 FATE, no item level sync | Weapon Mind 54 | Another value |
-| 6 | No scaling up | Cap 123, a piece below 123 | Stats unchanged | Stats raised |
+| 1 | Cap uses the piece's own factor | Cap 123, Field Commander's Coat | Mind 43, Vit 45 | Mind 48, Vit 51 |
+| 2 | Lower substat clamps to the full cap | Cap 123, item level 130 head | Piety 22 | Piety 20 |
+| 3 | Item level cap beats the level's | Level 90, cap 665, gear above both | Head substat 186 | 184 |
+| 4 | Weapon uses the level's item level | Level 50 FATE, no item level sync | Weapon Mind 54 | Another value |
+| 5 | No scaling up | Cap 123, a piece below 123 | Stats unchanged | Stats raised |
 
-- **1 and 3** use one real item level 130 healer head: Mind 33, Vitality 32, Spell Speed 31, Piety 22, Direct Hit 6.
-- **2:** Field Commander's Coat is item level 160 with all four main stats, for every job.
-- **4:** the player report behind the current rule was Aloalo Island (level 90, item level 665).
-- **5:** FATEs sync level only, so a weapon above level 50 syncs to item level 130 by level alone.
+- **2** uses a real item level 130 healer head: Mind 33, Vitality 32, Spell Speed 31, Piety 22, Direct Hit 6.
+- **1:** Field Commander's Coat is item level 160 with all four main stats, for every job.
+- **3:** the player report behind the current rule was Aloalo Island (level 90, item level 665).
+- **4:** FATEs sync level only, so a weapon above level 50 syncs to item level 130 by level alone.
 
 ### Second-hand in-game values (xivgear's test notes)
 
@@ -478,16 +481,16 @@ The status of each claim about the stat model, in one place; [math.md, section 7
 | Atma weapons carry item level 90 stats | **Verified** (game data); applied by name | All 11 equal their Zenith step |
 | Sync clamp for substats | **Verified** | Wiki, 6 of 6 at 475 (section 3) |
 | Caps at item level 123 | **Inferred** (independent derivation) | No gear at 123; real pieces at 120 and 125; row 123 × slot share (6; section 3) |
-| Factor-first cap order | **Verified** by three **second-hand** in-game values; **inferred** for other caps with a factor below 100 | xivgear's tests (3; section 8; [math.md, section 5](math.md#the-clamp-rule)) |
+| Factor-first cap order | **Verified** (in game) | The owner's recordings (three Vitality values at 270) and xivgear's tests (3; section 8; [math.md, section 5](math.md#the-clamp-rule)) |
 | Sync cap uses the piece's own factor | **Inferred**, supported second-hand | Azeyma's Earrings (4; section 8) |
-| Main stat and Vitality clamped like substats | **Inferred**, supported second-hand | Three in-game values (7); xivgear's Blue Mage set totals for Vitality (section 8) |
+| Main stat and Vitality clamped like substats | **Verified** (in game) for single-main-stat gear | 108 recorded values, Sage and Bard (7); xivgear clamps them too |
 | Lower substats clamp at the full-share cap | **Verified** (published) | Wiki Item Level page; forum report, The Balance (8; section 8) |
 | Sync never raises a stat | **Verified** for substats (published) | Wiki Item Level page ([math.md, section 5](math.md#what-is-assumed)) |
 | All-jobs pieces at 90% under level sync | **Second-hand**, conflicting; kept (owner's decision) | Report of full factor (section 8) |
 | Off-hand = two-handed − one-handed | **Inferred** | 224 of 226 real off-hands (5; section 9) |
 | Melds on synced gear, level sync trigger | **Verified** by the owner in game | Section 8; [math.md, section 5](math.md#5-item-level-sync) |
 | Level sync item level = `ParamGrow.ItemLevelSync` | **Verified** (game file) | 50 → 130, ..., 90 → 660 |
-| Order when both sync triggers apply | **Second-hand** | xivgear issue #317 (section 8) |
+| Order when both sync triggers apply | **Verified** against xivgear and a player's in-game report | xivgear's code, issue #317 (section 8); the owner's recordings where the cap is the lower; no cap above sync(L) recorded |
 | Weapons use the same level sync item level | **Second-hand** at level 90; **inferred** elsewhere | One column; xivgear issue #317 (level 90) |
 | A piece synced to its own item level is untouched | **Not checked** | xivgear differs by 1 (section 10) |
 | GCD, DoT and tier formulas | **Community reference** | Match AkhMorning's tables (9; section 5) |
@@ -502,7 +505,7 @@ Notes:
 4. Azeyma's Earrings (kind 0) synced to 430 show the 90% main-stat cap of its kind for Ninja in game, not the job's full cap (xivgear's test note; section 8). xivgear does the same; no capture of this project's own.
 5. Against 195 for the 40 ‰ share. xivgear uses the same rule for shield caps. It sets the shield cap at 123 to 13.
 6. The table in [math.md, Caps at item level 123](math.md#caps-at-item-level-123). No gear exists at item level 123; real pieces at 120 and 125 follow the same rule in every slot ([section 3](#the-caps-at-item-level-123)).
-7. The three values in note 3. No capture of this project's own; xivgear clamps them too.
+7. The owner's recordings: 54 main stat and 54 Vitality values under sync, all equal. No kind 0 piece was recorded.
 8. A player's in-game report (Determination 129 → 123 at 345, not 86), The Balance's thresholds and the Wiki (section 8). No capture of this project's own.
 9. Level 50, 90 and 100 tier tables, asserted in tests ([section 5](#5-speed-and-gcd)).
 
@@ -510,14 +513,14 @@ Notes:
 
 | Concept | File |
 | --- | --- |
-| Band accuracy, Wiki 475 table | `src/core/validation.js` (`bandAccuracy`, `wikiChecks`) |
+| Band accuracy, Wiki 475 table | `tests/unit/helpers/model-validation.js` (`bandAccuracy`, `wikiChecks`) |
 | Prediction of a real piece's stats | `src/core/formulas.js` (`predictRaw`) |
 | Caps used by the tests above | `src/core/formulas.js` (`capsFor`, `capValue`) |
 | Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js` (`syncTarget`, `levelSyncIlvl`) |
 | GCD, tier scan and tier lookup | `src/core/speed.js` (`gcdFor`, `gcdTiers`, `gcdTierAt`) |
 | Brute-force reference and real-gear pools | `tests/unit/helpers/exhaustive.js` (`exhaustive`, `gamePool`) |
-| Unit tests named above | `tests/unit/core-validation.test.js`, `core-formulas.test.js`, `core-formulas.caps-at-123.test.js`, `core-formulas.sync-clamp.test.js`, `core-formulas.sync-cap-order.test.js`, `core-sync-target.test.js`, `core-speed.test.js`, `core-optimizer.test.js`, `core-optimizer.exhaustive.test.js`, `core-optimizer.speed-limits.test.js`, `core-formulas.stat-factor.test.js`, `ui-views-*.test.js`, `core-items.test.js`, `core-item-format.test.js`, `core-tables.provenance.test.js`, `ui-state.test.js` |
-| Generator tests | `tests/data/test_generators.py` |
+| Unit tests named above | `tests/unit/core/formulas.model-accuracy.test.js`, `core/formulas.test.js`, `core/formulas.caps-at-123.test.js`, `core/formulas.sync-clamp.test.js`, `core/formulas.sync-cap-order.test.js`, `core/sync-target.test.js`, `core/speed.test.js`, `core/optimizer/index.test.js`, `core/optimizer/index.exhaustive.test.js`, `core/optimizer/index.speed-limits.test.js`, `core/formulas.stat-factor.test.js`, `ui/views/*.test.js`, `core/items.test.js`, `core/item-format.test.js`, `core/tables.provenance.test.js`, `ui/state.test.js` |
+| Generator tests | `tests/data/test_*.py` |
 | Smoke test | `tests/e2e/smoke.mjs` |
 | Check against ffxiv-gearing (section 9) | `scripts/validate/gearing/` (`fetch.py` clones and builds it, `run.mjs --site local\|live` compares, `ours.js` is this project's side) |
 | Check against xivgear (section 10) | `scripts/validate/xivgear/` (`fetch.py` clones it and installs its dependencies, `run.py` compares, `xg_sync_test.ts` runs in its test runner, `ours.js` is this project's side and the corrections) |

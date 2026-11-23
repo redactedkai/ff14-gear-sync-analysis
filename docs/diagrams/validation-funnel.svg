@@ -43,19 +43,19 @@
 
 <!-- Row 1: item level 100 and up -->
 <text class="head accent" x="20" y="88">Item level 100 and up</text>
-<rect class="box" x="20" y="100" width="150" height="130" rx="8"/>
+<rect class="box" x="20" y="100" width="150" height="130" rx="4"/>
 <text class="num big fg" x="95" y="160" text-anchor="middle">17,323</text>
 <text class="fg" x="95" y="184" text-anchor="middle">pieces</text>
 <line class="s-muted" x1="170" y1="126" x2="198" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
 <line class="s-muted" x1="170" y1="204" x2="198" y2="204" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="goodbox" x="200" y="100" width="170" height="52" rx="8"/>
+<rect class="goodbox" x="200" y="100" width="170" height="52" rx="4"/>
 <text class="good head" x="285" y="122" text-anchor="middle"><tspan class="num">17,299</tspan> exact</text>
 <text class="small muted" x="285" y="142" text-anchor="middle">99.9%</text>
-<rect class="badbox" x="200" y="178" width="170" height="52" rx="8"/>
+<rect class="badbox" x="200" y="178" width="170" height="52" rx="4"/>
 <text class="bad head" x="285" y="200" text-anchor="middle"><tspan class="num">24</tspan> off by 1</text>
 <text class="small muted" x="285" y="220" text-anchor="middle">none off by more</text>
 <line class="s-muted" x1="370" y1="204" x2="398" y2="204" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="badbox" x="400" y="100" width="300" height="130" rx="8"/>
+<rect class="badbox" x="400" y="100" width="300" height="130" rx="4"/>
 <text class="head fg" x="416" y="126">Unexplained, left as they are</text>
 <text class="list fg" x="416" y="156"><tspan class="num">18</tspan> at item level 380 (Vitality 80, formula 79)</text>
 <text class="list fg" x="416" y="182"><tspan class="num">4</tspan> in two weapon-and-shield pairs (275, 536)</text>
@@ -66,19 +66,19 @@
 
 <!-- Row 2: below item level 100 -->
 <text class="head accent" x="20" y="310">Below item level 100</text>
-<rect class="box" x="20" y="322" width="150" height="130" rx="8"/>
+<rect class="box" x="20" y="322" width="150" height="130" rx="4"/>
 <text class="num big fg" x="95" y="382" text-anchor="middle">2,887</text>
 <text class="fg" x="95" y="406" text-anchor="middle">pieces, 1 to 99</text>
 <line class="s-muted" x1="170" y1="348" x2="198" y2="348" stroke-width="1.5" marker-end="url(#arrow)"/>
 <line class="s-muted" x1="170" y1="426" x2="198" y2="426" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="goodbox" x="200" y="322" width="170" height="52" rx="8"/>
+<rect class="goodbox" x="200" y="322" width="170" height="52" rx="4"/>
 <text class="good head" x="285" y="344" text-anchor="middle"><tspan class="num">2,839</tspan> exact</text>
 <text class="small muted" x="285" y="364" text-anchor="middle">98.3%</text>
-<rect class="badbox" x="200" y="400" width="170" height="52" rx="8"/>
+<rect class="badbox" x="200" y="400" width="170" height="52" rx="4"/>
 <text class="bad head" x="285" y="422" text-anchor="middle"><tspan class="num">28</tspan> off by 1</text>
 <text class="small muted" x="285" y="442" text-anchor="middle">20 off by more</text>
 <line class="s-muted" x1="370" y1="426" x2="398" y2="426" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="badbox" x="400" y="322" width="300" height="130" rx="8"/>
+<rect class="badbox" x="400" y="322" width="300" height="130" rx="4"/>
 <text class="head fg" x="416" y="346">Unexplained, left as they are</text>
 <text class="list fg" x="416" y="366"><tspan class="num">20</tspan> Replica shields, item level 1 (off by more)</text>
 <text class="list fg" x="416" y="384"><tspan class="num">13</tspan> Replica High Allagan, Dreadwyrm (50)</text>

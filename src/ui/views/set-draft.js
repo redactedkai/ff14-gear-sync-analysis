@@ -6,8 +6,8 @@ import { allMeals } from '../../core/food.js';
 import { ROMAN } from '../../core/meld.js';
 import { pieceName } from './set-rows.js';
 import { figuresAgainst, evaluateInSheet, setFigures } from './set-totals.js';
-import { plural } from '../helpers.js';
-import { rowLabel, sameRow, usedRows } from './saved-set.js';
+import { plural } from '../text.js';
+import { rowLabel, sameRow, usedRows } from '../sheets/saved-set.js';
 
 /* A piece's stones with equal ones grouped, "CRT XII ×2, DET XI" ("none" without stones). */
 function stonesText(job, piece) {
@@ -23,10 +23,10 @@ function stonesText(job, piece) {
   return groups.map(group => (group.count > 1 ? `${group.text} ×${group.count}` : group.text)).join(', ');
 }
 
-/* "2 slots and the meal", "the meal", "3 slots": what changes, from the number of rows and whether the meal. */
+/* "2 slots and meal", "the meal", "3 slots": what changes, from the number of rows and whether the meal. */
 export function changeText(slots, meal) {
   if (!meal) return plural(slots, 'slot');
-  return slots ? `${plural(slots, 'slot')} and the meal` : 'the meal';
+  return slots ? `${plural(slots, 'slot')} and meal` : 'the meal';
 }
 
 /* The name of a saved meal key, "none" for no meal; a key no meal has any more is named by its key. */
@@ -40,7 +40,7 @@ function mealName(job, key) {
    - rows: [{index (the saved row's number), label, before, after (piece names, "empty" for none), meldsOnly: the same
      piece with other stones, beforeStones, afterStones ("CRT XII, DET XI")}], in row order;
    - meal: null when the meal is the same, else {before, after} (names, "none" for no meal);
-   - count: rows plus the meal when it changed; countText: changeText ("2 slots and the meal"; '' for no change). */
+   - count: rows plus the meal when it changed; countText: changeText ("2 slots and meal"; '' for no change). */
 export function draftChanges(job, saved, draft) {
   const rows = [];
   for (const { index, row: piece } of usedRows(job, draft)) {
@@ -75,7 +75,8 @@ export function samePieces(saved, draft) {
 
 /* The draft of `draft` against the set as saved, `saved` (both GearSets of `sheet`). Returns:
    - changes: draftChanges; changedRows: the saved row numbers that differ, mealChanged (setRowsView's highlight);
-   - header: the Now and After rows of the stat block, [{label, after, figures}]: Now is the saved set ("Now · before your
+   - header: the Now and After rows of the stat block, [{label, after, moved, figures}] (moved: some After figure has a delta
+     line, so the row needs room for it): Now is the saved set ("Now · before your
      changes"), After the draft ("After · 2 changes", "After · no changes") with figures {key, label, text, change}: change
      {text ("+1.7%"), up, good} is the delta line over the After figure (null where the figure is the same; good is the
      colour: green when better, red when worse, the GCD better lower);
@@ -93,7 +94,12 @@ export function draftView(sheet, saved, draft) {
     mealChanged: !!changes.meal,
     header: [
       { label: 'Now · before your changes', after: false, figures: nowFigures.map(figure => ({ ...figure, change: null })) },
-      { label: `After · ${changes.count ? plural(changes.count, 'change') : 'no changes'}`, after: true, figures: afterFigures },
+      {
+        label: `After · ${changes.count ? plural(changes.count, 'change') : 'no changes'}`,
+        after: true,
+        moved: afterFigures.some(figure => figure.change),
+        figures: afterFigures,
+      },
     ],
     applyText: changes.count ? `Apply ${plural(changes.count, 'change')}` : 'No changes',
     applyDisabled: !changes.count,
@@ -102,10 +108,11 @@ export function draftView(sheet, saved, draft) {
   };
 }
 
-/* The plain note after a draft ends, `verb` 'Applied' or 'Discarded', `changes` draftChanges': "Applied: 2 slots and the
-   meal changed.", "Discarded: 1 slot changed, back as it was before.", "Applied: no changes." */
+/* The plain note after a draft ends, `verb` 'Applied' or 'Discarded', `changes` draftChanges': "Applied: 2 slots and
+   meal changed.", "Discarded: 1 slot reverted.", "Discarded: no changes." (Apply is never asked for a draft with no changes: the
+   draft closes with no note) */
 export function draftNote(verb, changes) {
   if (!changes.count) return `${verb}: no changes.`;
   const what = changeText(changes.rows.length, !!changes.meal);
-  return verb === 'Applied' ? `Applied: ${what} changed.` : `Discarded: ${what} changed, back as it was before.`;
+  return verb === 'Applied' ? `Applied: ${what} changed.` : `Discarded: ${what} reverted.`;
 }

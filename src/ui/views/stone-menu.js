@@ -4,8 +4,8 @@
 import { meldInfo, poolItemById } from '../../core/items.js';
 import { ROMAN, meldSlots, overmeldChance, overmeldNumber, slotGrades, usesNqOvermeldRates } from '../../core/meld.js';
 import { meldCaps } from '../../core/piece.js';
-import { rowLabel } from './saved-set.js';
-import { lastStone, paddedStones } from './set-edits.js';
+import { rowLabel } from '../sheets/saved-set.js';
+import { lastStone, paddedStones } from '../sheets/set-edits.js';
 
 /* How many grades the materia menu shows before "Show all grades": the most valuable ones the slot takes. */
 const BEST_GRADES = 4;

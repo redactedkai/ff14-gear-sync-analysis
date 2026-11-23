@@ -3,7 +3,7 @@
    objects keeps them warm from solve to solve.
 
    Nothing else is kept: the search's candidate lists (tier ranking's, Target GCD's, the rows' menus, the fastest GCD)
-   are built again by every solve. Measured against keeping them: a repeated Fill saved 0.1 to 0.8 s for 8 to 50 MB per
+   are built again by every solve. Measured against keeping them: a repeated Auto-fill saved 0.1 to 0.8 s for 8 to 50 MB per
    recipe, and a new Target GCD on the same set saved 0.2 to 1.5 s with tier ranking on, so it was dropped.
 
    Gear comes from one source for the whole session (`gear`, by default every piece the job can wear): a test with its

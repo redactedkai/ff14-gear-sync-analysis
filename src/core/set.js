@@ -20,7 +20,9 @@
    itself (architecture.md, section 7). */
 import { SLOT_LABEL } from './constants.js';
 import { mitigationPct, setDefense } from './damage-defense.js';
-import { allMeals, foodBonus, statBase, withFood } from './food.js';
+import { statBase } from './base-stats.js';
+import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.js';
+import { allMeals, foodBonus, withFood } from './food.js';
 import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.js';
 import { applyStones, meldStones, meldText } from './meld.js';
 import { itemCaps, itemSyncIlvl } from './piece.js';
@@ -65,17 +67,25 @@ function pieceItem(job, piece) {
      blockedBy (the name of the worn piece that covers the slot, or '')}. label: the slot's name, rings numbered ("Ring 2"), a piece covering more than one slot says so
      ("Body + Head").
    - gear: the gear's totals; meal: the allMeals entry or null; bonus: what it adds on this gear ({stat: {bonus,
-     capped}}, foodBonus; {} without a meal); withFood: the totals with it (the gear's without one); base: the
-     character's own points (statBase, without the clan's bonus); lost: points of the stones past the pieces' caps;
-     melded: how many pieces have melds.
+     capped}}, foodBonus; {} without a meal, worked out on the base + the clan's offset + the gear); withFood: the totals
+     with it (the gear's without one); base: the character's own points (statBase, without the clan's bonus); lost:
+     points of the stones past the pieces' caps; melded: how many pieces have melds.
+   - panel: the character panel's number of every stat, with the meal (clan-bonus.js characterStat): base + gear + meal,
+     and for the main stat and Vitality floor((base + clan + gear) x party bonus) + meal. panelGear: the same without the
+     meal. With no bonuses they are base + withFood and base + gear. bonuses: {clan (a clan name or null), partyRoles
+     (0 to 5)} as counted. The searches and Auto-fill never pass bonuses (they rank on gear points).
    - tiers: per stat (job.stats order) {effect, start, next, spare, toNext, zero} of its total with food, or null for a
      stat with no tiers. Speed with the job's haste counts its hasted GCD and steps; spare is the points above the
      tier's start, toNext to the next (null at the last).
    - defense: {phys, mag, physPct, magPct}: the set's defense after sync and the share of damage it removes, in whole
      percent.
    - gcd: {spd, haste (hasteFor, or null), gcd (seconds, with haste), unhasted (seconds), dot (percent DoT/HoT bonus)}
-     from the speed with food. */
-export function evaluateSet(job, set, sync, level) {
+     from the speed with food.
+   `bonuses` ({clan, partyRoles}, optional) is what a saved sheet sets on top of its gear: the clan's name (null or an
+   unknown name: none) and the unique party roles (a whole number 0 to 5). They change only panel, panelGear and the
+   meal's Vitality (the clan's offset is part of the base the meal's percent is taken of); gear, withFood and the rest
+   are the gear's own. */
+export function evaluateSet(job, set, sync, level, bonuses = {}) {
   // 1. each piece: its pool item and its stats with the stones that stay
   const worn = set.pieces.map(piece => {
     const item = pieceItem(job, piece);
@@ -86,10 +96,24 @@ export function evaluateSet(job, set, sync, level) {
   const lost = sumOver(w => w.lost);
 
   // 2. the meal and the totals with it; the character's base for the panel's numbers
+  const clan = isClan(bonuses.clan) ? bonuses.clan : null;
+  const roles = partyRoles(bonuses.partyRoles);
+  const clanBase = Object.fromEntries(bonusStats(job).map(s => [s, clanOffset(clan, s)]));
   const meal = (set.meal != null && allMeals(job).find(m => m.key === set.meal)) || null;
-  const bonus = meal ? foodBonus(job, meal, gear, level) : {};
+  const bonus = meal ? foodBonus(job, meal, gear, level, clanBase) : {};
   const totals = withFood(gear, bonus);
   const base = Object.fromEntries(job.stats.map(s => [s, statBase(job, s, level)]));
+
+  // the character panel's numbers, one rule for every reader (clan-bonus.js): without and with the meal
+  const panelOf = withMeal =>
+    Object.fromEntries(
+      job.stats.map(s => [
+        s,
+        characterStat(job, s, { base: base[s], gear: gear[s], meal: withMeal ? (bonus[s]?.bonus ?? 0) : 0, clan, roles }),
+      ]),
+    );
+  const panelGear = panelOf(false);
+  const panel = panelOf(true);
 
   // 3. one row per piece; rings numbered
   let ringN = 0;
@@ -165,10 +189,47 @@ export function evaluateSet(job, set, sync, level) {
     bonus,
     withFood: totals,
     base,
+    panel,
+    panelGear,
+    bonuses: { clan, partyRoles: roles },
     lost,
     melded: worn.filter(w => w.meld).length,
     tiers,
     defense,
     gcd,
   });
+}
+
+/* The set's average item level, as the character panel shows it, for `job` (a JobContext) and `rows` (evaluateSet's
+   rows): {value (the exact quotient, in item levels), slots (what it is divided by), worn (pieces counted)}, or null when
+   no piece is worn. Each piece counts its own item level (not the synced one). Rules (docs/mechanics/math.md, "Average item
+   level"; xivgear's avgIlvl, gear.ts at commit 6c3c878, and the Wiki's Item Level page):
+   - the sum of the slots' item levels over the slots: 12 for a job with an off-hand row (weapon, off-hand, head, body, hands,
+     legs, feet, ears, neck, wrists, two rings), the weapon counting twice for a two-handed job;
+   - an empty slot, or one a worn piece covers (a robe over the head), counts 0 (the panel divides by every slot);
+   - a two-handed weapon counts twice, in place of the off-hand; a one-handed weapon counts once and an empty off-hand 0
+     (xivgear; whether the game does the same for a one-handed weapon without a shield is a guess);
+   - a job whose weapons carry no damage (job.damageKey null, Blue Mage) leaves the weapon and off-hand out: 10 slots
+     (xivgear);
+   - the meal is not counted. */
+export function averageItemLevel(job, rows) {
+  const used = rows.filter(row => job.activeSlotTypes.includes(row.slot));
+  const levelOf = row => row?.item?.ilvl ?? 0;
+
+  // 1. the slots other than the weapon and off-hand
+  const values = used.filter(row => row.slot !== 'weapon' && row.slot !== 'offhand').map(levelOf);
+
+  // 2. the weapon and off-hand (none for a job without weapon damage); a two-handed weapon fills the off-hand's place
+  if (job.damageKey) {
+    const weapon = used.find(row => row.slot === 'weapon');
+    const offhand = used.find(row => row.slot === 'offhand');
+    const twoHanded = !offhand || (weapon?.item && slotInfo(job, weapon.item).blocks.includes('offhand'));
+    values.push(levelOf(weapon), twoHanded ? levelOf(weapon) : levelOf(offhand));
+  }
+
+  // 3. nothing worn in the counted slots: no average
+  const isHandSlot = row => row.slot === 'weapon' || row.slot === 'offhand';
+  const worn = used.filter(row => row.item && (job.damageKey || !isHandSlot(row))).length;
+  if (!worn) return null;
+  return { value: values.reduce((sum, level) => sum + level, 0) / values.length, slots: values.length, worn };
 }

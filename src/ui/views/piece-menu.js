@@ -3,8 +3,8 @@
 import { EXPANSIONS, SLOT_LABEL } from '../../core/constants.js';
 import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.js';
 import { meldSlots } from '../../core/meld.js';
-import { plural } from '../helpers.js';
-import { uniqueTaken } from './set-edits.js';
+import { plural } from '../text.js';
+import { uniqueTaken } from '../sheets/set-edits.js';
 
 /* "2 slots" or "2+3 slots" (guaranteed + overmeld), "no materia slots", for a picker line. */
 function slotsText(item) {
@@ -74,7 +74,7 @@ function setFacts(fact, row, job, gearSet, index) {
 
 /* The piece picker of row `index` of `gearSet` (a search menu, as the Food menu is): every piece of `gear` (the job's wearable pieces: items.js jobGear) for the row's slot, by
    expansion newest first, each newest first, after the search `query` (name or gear category). Returns {placeholder
-   ("Search head pieces"), canEmpty (the row holds a piece: "Empty this slot" first), groups [{label, items: [{key
+   ("Search head pieces"), canEmpty (the row holds a piece: the "Empty this slot" button in the search row), groups [{label, items: [{key
    (gameId), name, hq, category, unique, taken (a Unique ring in the other ring row), line ("CRT 306 · DET 214 · 2
    slots"), levels ("640, lvl 90"), on}]}], count (the pieces the search leaves), emptyText (the
    search leaves nothing, or '' ), footText ("412 pieces")}. */

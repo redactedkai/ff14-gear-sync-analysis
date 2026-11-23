@@ -16,21 +16,16 @@ The code is split into four layers. Each layer depends only on the layers above 
 | --- | --- | --- |
 | 1. Generated game data | Budget tables, level data, item database, food table, job icons | nothing |
 | 2. Core logic | Formulas, sync, speed, item queries, pieces and sets, recipes and the solver session, optimizer, accuracy checks | data |
-| 3. UI state | Saved state, the shared store, and the settings as plain inputs | core |
-| 4. Components and template | One component per page area | UI state, core |
+| 3. UI state | Saved state, the shared store, the settings as plain inputs, the sheet model (`src/ui/sheets/`) and the solver (`src/ui/solver.js`, `src/ui/solve.js`) | core |
+| 4. Components and template | One component per page area, and the pure view builders (`src/ui/views/`) they use | UI state, core |
 
 Notes:
 
 - **Data.** The item level budget table, per-level speed data, stat factor table, materia table, item database, food table and job icons. Produced by the data pipeline and never edited by hand. Row counts are in [data-pipeline.md, section 7](data-pipeline.md#7-facts-about-the-current-data).
 - **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches keyed by their pure inputs. The job gear kept between solves is not module state: it lives in a solver session object that the caller creates and passes in ([section 8](#8-recipes-and-the-solver-session)). Because nothing in it touches the browser, the core runs unchanged in Node, which is how the unit tests use it.
-- **UI state.** It holds:
-  - the saved state (defaults, repair on load, browser storage);
-  - one shared store, with the current settings, the current job context, and the actions that change them;
-  - two small pure modules the rest of the UI builds on. `settings.js` turns the store's fields into the plain inputs the core and the views take (each tab's panel, the sync settings). `ranks.js` holds the rule of the ranked stat menus.
-
-  Neither module imports another UI module, so no import goes back up the layers: `state.js` and `helpers.js` use them, and nothing below the views imports a view.
+- **UI state.** The saved state (defaults, repair on load, browser storage), one shared store (the current settings, the current job context and the actions that change them), the sheet model (`src/ui/sheets/`: a sheet’s rules and its saved records, not a view) and the solver (`src/ui/solver.js`, `src/ui/solve.js`, the handler that runs in the worker). Two small pure modules sit under them: `job-sync-panel.js` turns the store’s fields into the plain inputs the core and the views take (each tab’s panel, the sync settings), and `ranks.js` holds the rule of the ranked stat menus. Neither imports another UI module, and the views import the sheet model and these modules, never the other way round, so no import goes back up the layers. The modules of the UI, and what each owns, are in [section 3](#the-uis-modules).
 - **Components.** Each assembles the plain inputs of its area from the store, hands them to a pure view builder (`src/ui/views/`) and keeps the ready-to-display "view" it returns. The HTML template binds to those views and to store actions.
-- **The optimizer's worker.** One part runs off the page's thread. A set page's Fill and its Gear to search line go to a Web Worker with its own copy of the core logic, which parses the data texts the page hands it (`src/ui/solver.js`, `src/ui/solver-worker.js`; [section 9](#9-the-optimizers-worker)). If the browser will not run it, they run on the page's thread instead.
+- **The optimizer's worker.** One part runs off the page's thread. A set page's Auto-fill and its Gear to search line go to a Web Worker with its own copy of the core logic, which parses the data texts the page hands it (`src/ui/solver.js`, `src/ui/solver-worker.js`; [section 9](#9-the-optimizers-worker)). If the browser will not run it, they run on the page's thread instead.
 
 The page uses one runtime library, Alpine.js, for reactivity and templating. The build uses one tool, esbuild. Adding any other dependency is a decision for the owner (see `CLAUDE.md`).
 
@@ -42,7 +37,7 @@ Almost everything depends on the selected [job](../glossary.md) (a character's c
 
 - which stat is the main stat, and which speed stat applies;
 - whether there is a special substat (Piety, Tenacity or none);
-- whether the weapon is two-handed or a one-handed weapon plus shield;
+- whether the weapon is two-handed, a one-handed weapon plus shield, or either (`weaponMode` '2h', '1h+oh', 'mixed');
 - which gear slots exist, and how Vitality is scaled.
 
 The 23 combat jobs fall into five role profiles that decide most of this (table in [math.md, section 1](../mechanics/math.md#1-terms)).
@@ -66,9 +61,9 @@ The tool computes all of this **once per job** into a *job context*: a small, fr
 What a job context contains:
 
 - **Stat keys for this job.** A stat key is the game's own name for a stat: `str`, `dex`, `int`, `mind` (the main stat), `vit`, `crit`, `det`, `dh`, `sks`, `sps` (speed), `piety`, `ten` (the special substat). The context lists the keys the job has (`stats`: the main stat, Vitality, then the substats; six or seven keys, with no placeholder for a missing special substat). It also names three of them for code that needs "the job's own": `mainKey` (Mind for a healer, Strength for a tank), `speedKey` (Spell Speed or Skill Speed) and `specKey` (Piety, Tenacity or null). Display names (`label`, `short`) come from one table by key, `STAT_LABEL` and `STAT_SHORT` in `src/core/constants.js`.
-- **Weapon mode and slots.** Two-handed weapon, or one-handed weapon plus off-hand (Paladin, Beastmaster). This fixes the list of active slots for Piece stats and the slot filter, and the weapon's [slot share](../glossary.md) (140 or 100 per mille). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
+- **Weapon mode and slots.** Two-handed weapon (`'2h'`), one-handed weapon plus off-hand (`'1h+oh'`: Paladin, Beastmaster) or either (`'mixed'`: White Mage, Black Mage), from the lists `ONE_HANDED_JOBS` and `MIXED_WEAPON_JOBS` in `constants.js`; a unit test derives both from the item data. A job with a shield has the Off-hand among its active slots, which fixes the slots of Piece stats and the slot filter; the weapon's [slot share](../glossary.md) a hand-made weapon takes is 140 per mille for '2h' and 100 for the other two (Piece stats offers the one-handed Weapon and the Off-hand for a mixed job). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
 - **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise. This is the factor the job's own gear carries. It is used only where no real item is involved (How the math works). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
-- **Level cap.** 100, or the limited job's own: Blue Mage 80, Beastmaster 50 (a constant from the Lodestone patch notes; the game files have none, [math.md, section 1](../mechanics/math.md#1-terms)). The synced level and the equip level filter stop there, and gear above it is left out of the gear list and the search.
+- **Level cap.** 100, or the limited job's own: Blue Mage 80, Beastmaster 50 (a constant from the Lodestone patch notes, the same as xivgear's `JOB_DATA`; the game files hold no cap as a number, but each job's own gear stops at that equip level, [math.md, section 1](../mechanics/math.md#1-terms)). The synced level and the equip level filter stop there, and gear above it is left out of the gear list and the search.
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
 
 Three properties make contexts safe to pass around:
@@ -77,7 +72,7 @@ Three properties make contexts safe to pass around:
 - **Frozen** (deeply): no caller can change one by accident.
 - **Total:** an unknown job id gets the default job's context (Paladin).
 
-**Why it is built this way.** Keeping the current job's stat mapping in shared mutable variables that every function read would let code that forgot to update them, or ran between two updates, see a mix of two jobs. An explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. The stat keys matter for the same reason. Shared code may name a key in a table, but a job-specific key written into logic (`'sks'` where `job.speedKey` belongs) would break for the other jobs, so it asks the context (`tests/unit/core-stat-keys.test.js` greps `src/core` and `src/ui/views` for strays).
+**Why it is built this way.** Keeping the current job's stat mapping in shared mutable variables that every function read would let code that forgot to update them, or ran between two updates, see a mix of two jobs. An explicit, frozen context makes each function's job dependence visible in its arguments and lets the tests run any job side by side. The stat keys matter for the same reason. Shared code may name a key in a table, but a job-specific key written into logic (`'sks'` where `job.speedKey` belongs) would break for the other jobs, so it asks the context (`tests/unit/core/stat-keys.test.js` greps `src/core` and `src/ui/views` for strays).
 
 **From raw rows to stat keys.** The game database stores stats in a fixed raw order of 14 stats: all four main stats (Strength, Dexterity, Intelligence, Mind), Vitality, Piety, Tenacity, Direct Hit, Critical Hit, Determination, Skill Speed, Spell Speed. After them come the game's generic Main Attribute and Secondary Attribute.
 
@@ -91,15 +86,45 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 
 ![At page load the saved state is read from browser storage, repaired, and becomes the shared store. A change in the store re-runs each component effect that read it; the effect calls the core logic and derives a frozen view, which the template displays. User input calls store actions, which change the store again. The store is saved back to browser storage 150 ms after the last change.](../diagrams/architecture-ui-flow.svg)
 
+### The UI's modules
+
+![Boot starts routing and saved state; both feed the stores and panels, which the view layer reads. The view layer uses form inputs, overlays, drawing, messages and the solver worker; styling and fonts serve every part. Build, tests, layout stress and test data sit around the page. Overlays and messages are done in several places and have no single module.](../diagrams/architecture-ui-modules.svg)
+
+| Module | What it owns | Where |
+| --- | --- | --- |
+| Boot and failure message | Start-up order; a message when the page cannot start | `src/main.js`, `src/startup-failure.js` |
+| Routing | The address of each screen, the settings in its query, the title, focus and scroll on Back and Forward | `src/ui/router/` |
+| Saved state | Defaults, repair on load, the saved shape, browser storage | `src/ui/state.js`, `src/ui/sheets/storage.js` |
+| Stores and panels | The shared store, the sheets' store, each tab's Job and sync panel, the cap and level rules | `src/ui/store.js`, `src/ui/sheets/store.js`, `src/ui/job-sync-panel.js`, `src/ui/level-cap.js` |
+| View layer | Pure view builders, the view cache, one component per area, the templates | `src/ui/views/`, `src/ui/view-cache.js`, `src/ui/components/`, `src/partials/` |
+| Form inputs | The number-box pattern, the cap and level error flags, the ranked stat menus | `src/ui/number-field.js`, `src/ui/components/cap-controls.js`, `src/ui/ranks.js` |
+| Overlays | Menus, popovers and dialogs | several places (below) |
+| Drawing | Charts, long lists drawn in steps, the window of rows of a Substat tiers card | `src/ui/sync-charts.js`, `src/ui/draw-in-steps.js`, `src/ui/tier-window.js` |
+| Messages | Save errors, notes, toasts, dialog errors | several places (below) |
+| Solver worker | Auto-fill off the page's thread, with a fallback to the page's thread | `src/ui/solver.js`, `src/ui/solver-worker.js` |
+| Styling and fonts | Colour tokens, dark and light themes, layout, font fallbacks, the HQ mark's font | `src/styles/`, `src/ui/hq-font.js` |
+| Build | The one-file page and the dev server | `scripts/build/` |
+| Tests | Unit domains, the smoke test, screenshots | `tests/`, `scripts/test.mjs`, `scripts/shots/` |
+| Layout stress | Width, font and content sweeps, per browser | `scripts/layout-stress/` |
+| Test data | The test data button and its sample sheets | `src/ui/test-data.js` |
+
+Imports run one way, as in the layers: boot starts routing and saved state, both fill the stores, the view layer reads the stores and uses the parts below it, and nothing imports upward.
+
+- **Overlays.** Menus, popovers and notes opened by a button are layers of one manager (`ui/overlays.js`): one stack, and one listener each for Escape, a press outside and the focus moving away. A component declares its overlay with `overlay(name, {...})` (`components/overlay.js`), which gives `<name>Open`, `open<Name>()`, `close<Name>(restoreFocus)` and `toggle<Name>()`; the templates that are partials use `menuScope(id, button, parent)` (`x-data` of the menu's wrapper). The set page's menus, the Auto-fill settings popover and the sheet switcher register their layers from their own code (`components/set-page/menus.js`, `auto-fill-settings.js`, `meal-menu.js`, `sheets/settings.js`).
+  - *Rules:* Escape closes the topmost layer and puts the focus back on its button. A press outside closes it, and the focus stays where the press went. Tab out closes it (the Auto-fill settings popover is the exception: it is not modal and stays open). ArrowDown on a menu's button opens it. Opening a layer closes the others, except the ones it is part of (the settings' menus and note). A change of screen (tab, sub-tab, sheet, gear set, Back or Forward) closes every layer and never moves the focus: the router owns it (`main.js`).
+  - *Modal:* the Sheets dialogs and the leave question are native `<dialog>` elements, opened by `showModal()` through the `x-modal` directive (`ui/native-dialog.js`): the page behind is inert, Escape is the dialog's `cancel` event, Tab stays inside, and a change of page closes them. The `::backdrop` colours are written as literals as well as tokens (a test holds them equal), since older engines do not pass CSS variables to `::backdrop`. The math tab's "?" help is modal too: the focus goes into it and Tab stays inside.
+  - *Not in the manager:* a native `<select>`'s own list (the manager leaves an Escape that comes from an option to it), and the Copy dialog's "?" panel (its open state is the dialog's, closed first by the dialog's cancel).
+- **Messages.** The note after an action and the message of a failed save are one element at the window's bottom, outside the tabs (`src/ui/messages.js`, `#sh-toast` and `#sh-save-error`): both are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. The text lives in the sheets store (`note`, `saveMessage`); a note clears itself after `NOTE_MS`, and a failed save's message stays until a save succeeds. A dialog's field errors share one partial (`src/partials/dialog-error.html`). The bar for unavailable storage (`#sh-unavailable`) is still on the Sheets tab.
+
 ### One shared store
 
-All state that matters lives in one shared store: the saved settings, plus a few values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in, so they follow the synced level until the user sets one. A Fill's result is not in the store: the set page keeps it as a suggestion until Apply or Discard.
+All state that matters lives in one shared store: the saved settings, plus a few values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in: GCD Scaling follows Stat Allocation's synced level until the user sets one, and Substat tiers (which has its own job) its job's level cap. An Auto-fill's result is not in the store: the set page keeps it as a suggestion until Apply or Discard.
 
-There is no gear pool to keep: a Fill searches every piece the job can wear that passes the set's filters ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters) says why no pool is built), so the store holds only settings. Searching everything costs nothing in speed (building a job's gear takes about 5 to 10 ms; a whole search takes about 20 ms, see [optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
+There is no gear pool to keep: an Auto-fill searches every piece the job can wear that passes the set's filters ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters) says why no pool is built), so the store holds only settings. Searching everything costs nothing in speed (building a job's gear takes about 5 to 10 ms; a whole search takes about 20 ms, see [optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
 
-Changes go through store actions: set job, reset everything, switch tab or math sub-tab.
+Changes go through store actions: set job (`setJob(id, owner)`, owner `'browse'`, `'math'` or `'tiers'`), reset everything, switch tab or math sub-tab.
 
-**The sheets' store.** The Sheets tab has a second store, `Alpine.store('sheets')` (`createSheetStore` in `src/ui/sheet-store.js`). It holds:
+**The sheets' store.** The Sheets tab has a second store, `Alpine.store('sheets')` (`createSheetStore` in `src/ui/sheets/store.js`). It holds:
 
 - the saved sheets;
 - the open screen (`screen`: the manager, a sheet or a set, with `sheetId` and `setId`);
@@ -107,29 +132,38 @@ Changes go through store actions: set job, reset everything, switch tab or math 
 
 The sheets are user data, not settings, so they stay out of reactive state: the store keeps them as plain data in its closure and counts its changes in `rev`. Every reader (`list`, `sheet`, `currentSheet`, `currentSet`) reads `rev` first, so a binding that shows a sheet tracks it, and every action bumps it.
 
-The operations on the plain data (a new sheet or set, Copy sheet with the pieces the new job cannot wear cleared, names) are pure functions in `src/ui/sheet-ops.js`; what the open dialog's main button does with its fields is `src/ui/sheet-dialogs.js` (`submitDialog`). While `busy` is set (a Fill runs) every edit action is refused. The component (`components/sheets.js`) builds its views from the store with `viewCache`, keyed by `rev`, and keeps only the open dialog's fields and a row being dragged.
+The operations on the plain data (a new sheet or set, Copy sheet with the pieces the new job cannot wear cleared, names) are pure functions in `src/ui/sheets/ops.js`; what the open dialog's main button does with its fields is `src/ui/sheets/dialogs.js` (`submitDialog`). While `busy` is set (an Auto-fill runs) every edit action is refused. The component (`components/sheets.js`) builds its views from the store with `viewCache`, keyed by `rev`, and keeps only the open dialog's fields and a row being dragged.
 
-**The set page.** A set page is its own component (`components/set-page.js`), nested inside the Sheets tab's and re-created for each set it shows (the template keys it by the set's id), so nothing of one set's page outlives it. The component is composed of parts, one file each in `components/set-page/`:
+**The Sheets tab's component.** `components/sheets.js` is a thin composer: `sheetsTab()` joins six parts, one file each in `components/sheets/`, with `compose` (`components/compose.js`, shared with the set page, which throws when two parts define the same member). Each part is a function that returns its members; they share `this`, so a part calls another's members, and each file's header names the members it borrows. A closure variable stays inside the one part that uses it (`managerCache`, `pageCache`, `headerCache` in `view.js`; `noteTimer` and `tabEl` in `frame.js`; `returnFocus` in `dialog.js`), so none is passed between parts:
+
+- `frame.js`: start (a sheet's page opening clean), the `sheets` store getter, the screen to draw, the breadcrumb links and `afterDraw`;
+- `view.js`: the manager, the sheet's page and the set page's header views, and the sort of the gear sets list;
+- `settings.js`: the sheet page's breadcrumb menu, level box, cap box, sync switch and their notes;
+- `dialog.js`: New sheet, Copy sheet, Edit sheet, Edit gear set and Delete, with the focus returning to the opener, the form fields and the keys;
+- `reorder.js`: dragging rows and the Up and Down keys on a handle;
+- `open-row.js`: a click anywhere on a row of the manager or of a sheet's gear sets opens it (`openRow`, on the row's `<tr>`). A click on the row's own controls (the name link, the buttons, the drag handle) and one that ends a text selection in the row are left alone. The name link stays the keyboard and screen-reader way in; the row has no role and no tab stop.
+
+**The set page.** A set page is its own component (`components/set-page.js`, composed with the same `compose`), nested inside the Sheets tab's and re-created for each set it shows (the template keys it by the set's id), so nothing of one set's page outlives it. The component is composed of parts, one file each in `components/set-page/`:
 
 - `frame.js`: start, stop and the focus after a draw;
 - `view.js`: the set shown and its view;
 - `menus.js`: the open menu;
 - `draft.js`: edits by hand and pins;
-- `fill.js`: a Fill and its suggestion;
-- `settings.js`: the Fill settings dialog and the Gear to search count;
+- `fill.js`: an Auto-fill and its suggestion;
+- `auto-fill-settings.js`: the Auto-fill settings popover and the Gear to search count;
 - `leave.js`: the question before leaving and the page's keys.
 
 Each part is a function returning its members, and `setPage` merges them into one object (getters kept), so the parts call each other through `this`. What they share (the page's element and refs, the solver) is passed to them.
 
-- **What is saved when.** Nothing it proposes is saved until Apply: the manual draft (a second GearSet) and a Fill's suggestion live in the component only. A pin and the Fill settings go through `updateSet` at once.
+- **What is saved when.** Nothing it proposes is saved until Apply: the manual draft (a second GearSet) and an Auto-fill's suggestion live in the component only. A pin and the Auto-fill settings go through `updateSet` at once.
 - **The view.** Its `view` getter builds the table, the totals and the stat block of the set shown (the saved one, the draft, or the saved one with the suggestion taken) through `viewCache`, keyed by `rev`, the draft and the suggestion.
-- **Edits by hand.** They are pure functions of plain data in `views/set-edits.js`; the piece picker (`views/piece-menu.js`), the materia menu (`views/stone-menu.js`) and the Food menu (`views/set-meal-menu.js`) are pure views too. The job's wearable pieces for the picker are built once per job and kept in a module `Map`, out of reactive state. The picker's lines (name, stats, sort order) are built once per job and slot (a `WeakMap` in `piece-menu.js`), and the view is kept for the next read of it. The picker and the Food menu draw their rows in steps (`views/limit-rows.js`, `ui/draw-in-steps.js`): about 30 rows when the menu opens, 40 more each frame, so the menu appears at once and no task is long.
-- **A Fill.** It asks the page's solver (`solver.js`) with the set's id as the request's `key`, so a set's requests replace only that set's earlier ones, and sets the store's `busy` while it runs.
-- **The leave guard.** The set page registers a **leave guard** on the store (`leaveGuard`). The store's moves off a set page (`openManager`, `openSheet`, `openSet` of another set, `closeSet`) call `askLeave(move)` first. While a draft, a running Fill or a waiting result is there, the guard keeps the move and asks; the answer runs it.
+- **Edits by hand.** They are pure functions of plain data in `sheets/set-edits.js`; the piece picker (`views/piece-menu.js`), the materia menu (`views/stone-menu.js`) and the Food menu (`views/set-meal-menu.js`) are pure views too. The job's wearable pieces for the picker are built once per job and kept in a module `Map`, out of reactive state. The picker's lines (name, stats, sort order) are built once per job and slot (a `WeakMap` in `piece-menu.js`), and the view is kept for the next read of it. The picker and the Food menu draw their rows in steps (`views/limit-rows.js`, `ui/draw-in-steps.js`): about 30 rows when the menu opens, 40 more each frame, so the menu appears at once and no task is long.
+- **An Auto-fill.** It asks the page's solver (`solver.js`) with the set's id as the request's `key`, so a set's requests replace only that set's earlier ones, and sets the store's `busy` while it runs.
+- **The leave guard.** The set page registers a **leave guard** on the store (`leaveGuard`). The store's moves off a set page (`openManager`, `openSheet`, `openSet` of another set, `closeSet`) call `askLeave(move)` first. While a draft, a running Auto-fill or a waiting result is there, the guard keeps the move and asks; the answer runs it.
 
-**Shared menus with another owner.** The Food row's menu (`components/meal-menu.js`) takes a `source` (where the menu comes from, what a pick does, which change closes it): the set page's `mealSource`. The Expansion and "Gear from" boxes (`gearFromToggles`, `expansionToggles` in `helpers.js`) take either a part of the shared store (`'browse'`) or an accessor `{read(component), write(component, patch)}`: the set page's reads and writes its set's Fill settings.
+**Shared menus with another owner.** The Food row's menu (`components/meal-menu.js`) takes a `source` (where the menu comes from, what a pick does, which change closes it): the set page's `mealSource`. The Expansion and "Gear categories" boxes (`gearFromToggles`, `expansionToggles` in `components/filter-menus.js`) take either a part of the shared store (`'browse'`) or an accessor `{read(component), write(component, patch)}`: the set page's reads and writes its set's Auto-fill settings.
 
-**Number inputs.** A number box bound to a setting uses one helper (`$num` in the template, `numberField` in `src/ui/helpers.js`) with two rules:
+**Number inputs.** A number box bound to a setting uses one helper (`$num` in the template, `numberField` in `src/ui/number-field.js`) with two rules:
 
 - **Range.** Values are rounded to a whole number (the Target GCD keeps hundredths). While typing, only an in-range value is committed, so a value on the way ("9" of "90") is held back rather than corrected under the user's cursor. On Enter or leaving the box, an out-of-range value moves to the nearest bound and the box shows it, so the box and the setting always agree. The box's `min` and `max` attributes come from the same bounds; a filter's bound of Infinity sets none, and its markup's `max` (the end of the real range) only stops the arrow keys.
 - **When it commits.** A typed value is committed 300 ms after the last keystroke, or at once on Enter or when the field loses focus, so typing 123 never commits 1 and 12. A step (mouse wheel, arrow keys) commits at once, so the page follows the value as it scrolls (timeline in [Heavy work](#heavy-work-debounced-only-when-visible-or-on-request)).
@@ -144,7 +178,7 @@ The boxes that differ from those two rules:
 | Synced level | the rules above | each valid value as it is typed |
 | Substat tiers level | the rules above | each valid value as it is typed |
 
-The Target GCD range is `TARGET_GCD_RANGE` in `settings.js`, also used by `restoreState`.
+The Target GCD range is `TARGET_GCD_RANGE` in `job-sync-panel.js`, also used by `restoreState`.
 
 Two kinds of box keep their own handlers, on purpose:
 
@@ -161,17 +195,18 @@ What the diagram shows, by outcome:
   - on How the math works: the Piece stats substats (Critical Hit, then speed; both stay or both reset) and the slot (head, only if the new job lacks it);
   - on the Gear browser: the slot (any slot) and the sort (item level).
 - **Held to the new job's level cap, lowered only if above it** (90 becomes 80 for Blue Mage): the synced level and the Gear browser's equip level filter.
-- **Kept:** sync cap and sync switch, the browser's Gear from boxes, market board switch, expansion and item level filters and search text, the Piece stats item level, the GCD and Substat tiers boxes, and the open tab.
+- **Kept:** sync cap and sync switch, the browser's Gear categories boxes, market board switch, expansion and item level filters and search text, the Piece stats item level, the GCD and Substat tiers boxes, and the open tab.
 - **Not changed:** the other tab's job and settings; a sheet has no panel, its job is set when it is made.
 
-**One panel per tab.** The Gear browser and How the math works each have their own Job and sync settings (job, cap, sync, level), saved in `browse` and `piece`. The store's top-level `job`, `cap`, `sync`, `level` and `jobCtx` are the open tab's copy, which the one panel on the page edits; `showTab` keeps the leaving tab's copy in its group and loads the new tab's.
+**One panel per tab.** The Gear browser and How the math works (Stat Allocation) each have their own Job and sync settings (job, cap, sync, level), saved in `browse` and `piece`. The store's top-level `job`, `cap`, `sync`, `level` and `jobCtx` are the open tab's copy, which the open tab's controls edit (the Gear browser's strip, Stat Allocation's math bar); `showTab` keeps the leaving tab's copy in its group and loads the new tab's. Substat tiers has its own job, saved as `tiers: { job }` (`tiers.job`, default Paladin, repaired on restore): `panel('tiers')` returns that job with no cap, no sync and the job's level cap as the level, and `setJob(id, 'tiers')` calls `setTiersJob`. `mathJobOwner(mathTab)` names the owner of the open sub-tab's Job box (`'tiers'` on Substat tiers, `'math'` otherwise). GCD Scaling has no job box.
 
-- **Reading.** A component reads its own tab's panel through `store.panel(tab)` (`panelOf` in `settings.js`), so a hidden tab never works with the open tab's job.
+- **Reading.** A component reads its own tab's panel through `store.panel(tab)` (`panelOf` in `job-sync-panel.js`), so a hidden tab never works with the open tab's job.
 - **Changing the job.** `setJob` resets only the open tab's selections (`resetForJob` takes the tabs to reset).
 - **Restoring.** `restoreState` takes each group through `splitPanelSettings`, restores it for its own job, and gives an older save's single panel to both tabs.
+- **The cap on Stat Allocation.** While IL Sync is off the cap holds the item level that level sync gives (`holdLevelSyncCap`: null at the job's level cap). It follows the level box, the job, Reset and a load (`followLevelSync`, called by those actions and by `setPanel`, `restoreState`), never a watcher; switching IL Sync on keeps it.
 - **The Sheets tab.** It has no panel (`PANEL_GROUP` has no group for it; each sheet holds its own job, level and sync). The panel is hidden there, going to it keeps the top-level copy as it was, and a save made on it restores the Gear browser's panel as the top-level copy.
 
-**Reset to defaults** puts the open tab's settings back (its panel and its own fields), with no job chosen, after the browser's own confirmation dialog. The other tabs and the math sub-tab stay as they are.
+**Reset to defaults** puts the open tab's settings back (its panel and its own fields), with the default job (Paladin), after the browser's own confirmation dialog. The other tabs and the math sub-tab stay as they are.
 
 ### Each area derives a view
 
@@ -181,12 +216,12 @@ The functions that build views are pure and live apart from the components, with
 
 - the job context;
 - the sync settings (`syncSettings`);
-- the area's own settings (the browser's filters, Piece stats' piece, a set's Fill recipe);
-- for a Fill, a solver session.
+- the area's own settings (the browser's filters, Piece stats' piece, a set's Auto-fill recipe);
+- for an Auto-fill, a solver session.
 
-A component assembles those inputs from its store (`settings.js` has the helpers, such as `syncSettings`). So the unit tests check what each tab shows directly. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
+A component assembles those inputs from its store (`job-sync-panel.js` has the helpers, such as `syncSettings`). So the unit tests check what each tab shows directly. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
 
-**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The component has a getter, `view` (Piece stats: `pieceViews`, read through `explainer`, `steps` and the slider's getters), that reads the inputs from the store, makes a key of them, and asks a `viewCache` (`helpers.js`) for the view of that key. A new key builds the view; the same key returns the last one.
+**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The component has a getter, `view` (Piece stats: `pieceViews`, read through `explainer`, `steps` and the slider's getters), that reads the inputs from the store, makes a key of them, and asks a `viewCache` (`view-cache.js`) for the view of that key. A new key builds the view; the same key returns the last one.
 
 - Reading the inputs inside the getter makes every binding that shows the view track them, so the page updates in the same render as the setting.
 - The template reads the view many times a render; the cache builds it once.
@@ -194,23 +229,24 @@ A component assembles those inputs from its store (`settings.js` has the helpers
 
 The Gear browser's getter returns its last view while its tab is hidden, so the list is built only while it can be seen.
 
-**Results on request** (a set's Fill). Its result is not derived from the store on each change: **Fill** asks the solver for it, and the set page keeps it as a suggestion. What follows the set's Fill settings (the piece count, the greyed-out "Gear from" boxes, the Target GCD range) is one view, `gearToSearchView`. The set page asks the solver for it when the page opens, when its Fill settings open, and after each change of them (`refreshCount`). A newer answer replaces an older one.
+**Results on request** (a set's Auto-fill). Its result is not derived from the store on each change: **Auto-fill** asks the solver for it, and the set page keeps it as a suggestion. What follows the set's Auto-fill settings (the piece count, the pieces per "Gear categories" box, the Target GCD range) is one view, `gearToSearchView`. The set page asks the solver for it when the page opens, when its Auto-fill settings open, and after each change of them (`refreshCount`). A newer answer replaces an older one.
 
 Each component reads the job through its own `jobCtx` getter (the store's `jobCtx`), never through a parent component's scope; nested components that share a page area are named apart (Piece stats' `explainer` and `steps` around the GCD and tiers sub-tabs' `view`). The Food row's menu is its own component (`mealMenu`) inside the set page's. No component imports Alpine: `main.js` imports it and hands the set page its `raw` and the solver, so every component module loads in Node and its unit test binds it to a plain store.
 
 **Large data never enters reactive state.** Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps nested objects as they are read. A frozen object is left as it is. Keeping big lists frozen or outside the store avoids wrapping thousands of rows on every recompute:
 
 - The item database is a plain module-level constant that the core reads directly. It is never placed in the store.
-- The views with long lists (the gear browser's rows, a set page's table, the accuracy panel) are frozen before they are stored on the component. A set page's view is frozen all through (`deepFreeze` in `helpers.js`): with only its top frozen, `x-for` still wrapped each row it hands the template, and each cell read from a row, in a proxy.
+- The views with long lists (the gear browser's rows, a set page's table) are frozen before they are stored on the component. A set page's view is frozen all through (`deepFreeze` in `view-cache.js`): with only its top frozen, `x-for` still wrapped each row it hands the template, and each cell read from a row, in a proxy.
 - A menu inside a table (the piece picker, the materia menu, the Food menu) is built with `x-if` only while it is open, not hidden with `x-show`. Built hidden on every row, such menus were about four fifths of a result's elements and most of the time to draw it. The longest blocked main thread after a slow result went from about 90 to 25 ms, and from about 550 to 140 ms at 4× CPU throttle.
-- The small parts of a set page's row that every worn piece shows (the pin, the gear category and source line, the stat cells) are the other way round: kept in every row and hidden with `x-show` while the row is empty. A Fill turns every empty row into a worn one at once, and building those parts with `x-if` then made about 700 elements in one task; now about 300 (the materia chips and the Take boxes, still built with `x-if`).
+- The small parts of a set page's row that every worn piece shows (the pin, the gear category and source line, the stat cells) are the other way round: kept in every row and hidden with `x-show` while the row is empty. An Auto-fill turns every empty row into a worn one at once, and building those parts with `x-if` then made about 700 elements in one task; now about 300 (the materia chips and the Take boxes, still built with `x-if`).
 - The gear browser's rows are template markup (`src/partials/gear-page.html`), not HTML strings built in JavaScript.
   - *Plain fields:* the view builder (`views/gear.js`) gives each row plain fields (`rowCls`, `nameParts` with a class each, `twice`, and per stat a cell with `cls`, `col`, `title`, `text`, `was`). So every binding is one property read, and text goes through `x-text`, which never makes markup.
-  - *Few bindings:* a stat cell is one `td` and one span (5 bindings). The cap bar and the bold come from the `cut` class, and the muted number under the value is drawn by CSS from the cell's `data-was` attribute (`#gear-table td[data-was]::after`), not by a bound element. A page is 100 rows, and the time is the number of bindings.
+  - *Few bindings:* a stat cell is one `td` and one span (5 bindings). The cap bar and the bold come from the `cut` class, and the muted number under the value is drawn by CSS from the cell's `data-was` attribute (`#gear-table td[data-was]::after`), not by a bound element. A page is 50 rows, and the time is the number of bindings. The pointed-at and the sorted column are tinted by one `<style>` rule each (`columnTintCss`), not a class on every cell.
   - *Measured* at 4× CPU throttle on a busy machine (so ±15%): switching from Sheets to the Gear browser blocks the main thread for about 1.6 s at best, with 4,060 elements and 373 templates. The first per-part templates took 1.6 to 1.8 s; one `x-html` string per row took 0.7 s.
   - *No effect:* fewer templates, `x-show` instead of `x-if`, frozen rows, `x-bind` objects, unkeyed or indexed `x-for` and unrolled cells did not change the time; only fewer bindings per cell did.
-- The database facts of a piece (`rowFacts` in `items.js`) are looked up through an index of rows by pool key, built on first use, and each key's facts are built when first asked for. The page's thread builds the index when it shows its first game piece (a Fill's first result). Building every key's facts there blocked it for about 25 ms (150 ms at 4× CPU throttle).
-- The job's gear a Fill searches is built once per job, frozen, and kept in the solver session, which lives in the page's Web Worker ([section 9](#9-the-optimizers-worker)), never in reactive state. Frozen means the list and each pool item with its stats (`mkItem` in `items.js`), so the worker and the page's thread hold the same frozen objects, and `deepFreeze` stops at them.
+  - *Rows keyed by place:* the `x-for` over `view.shown` is keyed by the row's place on the page (`:key="rowPlace"`), not by the item. A sort, a page, a slot, a filter or a job change keeps the 50 rows and only rebinds them, instead of removing 50 and building 50: about 30% less time for a click in the table at 4× CPU throttle ([perf-log.md](perf-log.md), section 2.2). The cost is that a kept row shows its old item until every binding has run, so every binding in a row must be one that Alpine applies at once. `x-show` is not: Alpine shows and hides in the next animation frame (`requestAnimationFrame`), so a kept row drew the new name with the old item's HQ mark and x2 mark for one frame. The two marks are `:hidden` bindings (`.hqg[hidden]` in `pieces.css` beats the font rule's `display`). Nothing in a row may follow the place instead of the item: the smoke step `checkBrowserRowsMatchView` compares every row with `view.shown` before each drawn frame.
+- The database facts of a piece (`rowFacts` in `items.js`) are looked up through an index of rows by pool key, built on first use, and each key's facts are built when first asked for. The page's thread builds the index when it shows its first game piece (an Auto-fill's first result). Building every key's facts there blocked it for about 25 ms (150 ms at 4× CPU throttle).
+- The job's gear an Auto-fill searches is built once per job, frozen, and kept in the solver session, which lives in the page's Web Worker ([section 9](#9-the-optimizers-worker)), never in reactive state. Frozen means the list and each pool item with its stats (`mkItem` in `items.js`), so the worker and the page's thread hold the same frozen objects, and `deepFreeze` stops at them.
 - The set page reads its draft and suggestion through `Alpine.raw`, without the proxies, and sends the worker plain copies: a worker cannot be sent a proxy.
 
 ### Heavy work: debounced, only when visible, or on request
@@ -220,25 +256,24 @@ Cheap areas recompute at once; expensive ones wait, run only while the user can 
 | Page area | When it recomputes |
 | --- | --- |
 | Settings, How the math works | On every relevant change |
-| Real-gear accuracy check | Once, when its panel is first opened |
 | Gear browser | On a relevant change, while the Gear browser tab is open |
-| A set's Fill | When the user presses Fill (the piece count: note below) |
+| A set's Auto-fill | When the user presses Auto-fill (the piece count: note below) |
 
 Notes:
 
 - **Settings, How the math works** are cheap: a few formulas per piece; the explainer's curves (a few thousand generic pieces per setting) are remembered per setting, so a slider move costs a few milliseconds.
 - **Accuracy check**: it scans every item in the database, so it runs only once.
-- **Gear browser**: the database matches of its filters (including its own Gear from boxes and market board switch), with synced stats. It recomputes on any change of its filters, sort, job, cap, sync, level or page, and shows 100 matches a page; any change but the page goes back to page 1. Its layout is in [ui.md, section 3](ui.md#3-the-gear-browser-tab).
-- **A set's Fill**: every piece the job can wear that passes the filters under the set's Gear to search (expansions, equip level, item level range, Gear from; the browser's filters with the set's own values). Its parts:
-  - *When it runs:* only when the user presses Fill, not on a change of those filters or the set's Fill settings. The piece count under Gear to search is asked for when the set page or its Fill settings open, and after each change of them.
+- **Gear browser**: the database matches of its filters (including its own Gear categories boxes and market board switch), with synced stats. It recomputes on any change of its filters, sort, job, cap, sync, level or page, and shows 50 matches a page; any change but the page goes back to page 1. Its layout is in [ui.md, section 3](ui.md#3-the-gear-browser-tab).
+- **A set's Auto-fill**: every piece the job can wear that passes the filters under the set's Gear to search (expansions, equip level, item level range, Gear categories; the browser's filters with the set's own values). Its parts:
+  - *When it runs:* only when the user presses Auto-fill, not on a change of those filters or the set's Auto-fill settings. The piece count under Gear to search is asked for when the set page or its Auto-fill settings open, and after each change of them.
   - *Where it runs:* in a Web Worker, so the page stays responsive while it runs (tier ranking can take a few seconds); "Solving…" and Cancel show until the answer comes, and every edit on the Sheets tab is off ([section 9](#9-the-optimizers-worker)).
-  - *Its answer:* a suggestion the set page keeps until Apply or Discard; nothing is saved before Apply ([ui.md, section 2](ui.md#2-fill-the-search-on-a-set-page)).
-  - *On failure:* a search that fails (not a cancel) leaves the set as it was, with the line "Fill failed: <reason>." under the set's header.
+  - *Its answer:* a suggestion the set page keeps until Apply or Discard; nothing is saved before Apply ([ui.md, section 2](ui.md#2-auto-fill-the-search-on-a-set-page)).
+  - *On failure:* a search that fails (not a cancel) leaves the set as it was, with the line "Auto-fill failed: <reason>." under the set's header.
   - *Limits and timing:* [node limit](../glossary.md) 700,000. The page records how long each search took as the `fill` performance measure (the first search for a job includes building its gear).
 
-**How the waits work.** A typed number and the save are debounced: their timer restarts on every change, so typing 123 commits once and a burst of changes saves once. A set's piece count is asked for after each committed change of its Fill settings; the solver answers in the set's lane, so a newer request replaces one still waiting. Pressing Fill right after typing still searches with the value typed: the click first moves the focus out of the box, which commits it. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
+**How the waits work.** A typed number and the save are debounced: their timer restarts on every change, so typing 123 commits once and a burst of changes saves once. A set's piece count is asked for after each committed change of its Auto-fill settings; the solver answers in the set's lane, so a newer request replaces one still waiting. Pressing Auto-fill right after typing still searches with the value typed: the click first moves the focus out of the box, which commits it. Run times are in [optimizer.md, section 8](optimizer.md#8-correctness-and-performance).
 
-![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open Gear browser recompute at once; a set's Fill on the Sheets tab does not run; the saved state is written 150 ms later. The field's wait and the save's restart on every change. A box in a set's Fill settings commits the same way, then asks for its Gear to search count at once.](../diagrams/architecture-timing.svg)
+![Timeline in milliseconds after typing 1, 12 and 123 into the sync cap, 100 ms apart as an example. The field commits only 123, 300 ms after the last keystroke (Enter or leaving the field commits at once). When the store changes, Settings, How the math works and the open Gear browser recompute at once; a set's Auto-fill on the Sheets tab does not run; the saved state is written 150 ms later. The field's wait and the save's restart on every change. A box in a set's Auto-fill settings commits the same way, then asks for its Gear to search count at once.](../diagrams/architecture-timing.svg)
 
 ## 4. Persistence
 
@@ -246,7 +281,7 @@ Notes:
 
 The page remembers the user's settings in the browser's local storage. This is a convenience for one viewer on one browser: the page renders correctly without it, and every read and write is guarded, so a private window or blocked storage simply starts from the defaults.
 
-**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level, open tab and math sub-tab, the Piece stats inputs (slot, substats, item level), browse filters and sort with its Gear from boxes and market board switch. The saved sheets have their own records (below). The job context, the job's gear, views and browse results are not saved; they are rebuilt.
+**What is saved.** One JSON object under one key: job, sync cap, sync on or off, character level (a panel each for the Gear browser and Stat Allocation), Substat tiers' job, open tab and math sub-tab, the Piece stats inputs (slot, substats, materia slots, item level), browse filters and sort with its Gear categories boxes and market board switch. The saved sheets have their own records (below). The job context, the job's gear, views and browse results are not saved; they are rebuilt.
 
 **When.** One effect serializes the whole saved object (the sheets are saved separately, on their own edits), which makes it depend on every saved field, and writes it 150 ms after the last change.
 
@@ -259,7 +294,7 @@ The example in the diagram, from running the code: a save with the math tab for 
 - Math tab: the old tab name "pool" becomes the Gear browser; job Blue Mage is kept; level 95 becomes 80; sync cap 9999 becomes 795; Piece stats slot off-hand becomes head; substats speed, speed, Critical Hit become speed, none.
 - Gear browser: job Sage and level 95 are kept; its sort by Tenacity becomes item level; an older save's Gear optimizer settings are dropped.
 
-A saved job id that is not a known job means no job is chosen; the job-dependent defaults then come from the default job until the user picks one. The rules for each field:
+A saved job id that is not a known job becomes the default job (Paladin). The rules for each field:
 
 - numbers are rounded and clamped (item levels to 1 to 795, the highest real item level; character level to 1 to the job's level cap, 100 or the limited job's own);
 - choices (tab, slot, stat, sort, filter) must be one of the values valid for this job;
@@ -268,7 +303,7 @@ A saved job id that is not a known job means no job is chosen; the job-dependent
 
 An invalid field falls back to its default and the valid ones are kept. The state unit tests cover this field by field ([testing.md, section 2](testing.md#2-what-each-file-covers)).
 
-**Saved sheets.** Sheets are the first user data, so they are not in the settings object. `src/ui/sheet-storage.js` keeps them under two more keys of the same family:
+**Saved sheets.** Sheets are the first user data, so they are not in the settings object. `src/ui/sheets/storage.js` keeps them under two more keys of the same family:
 
 - `ilvl-stat-lab-v4:sheets`: the index, `{v: 1, order}`, the sheet ids, first is top.
 - `ilvl-stat-lab-v4:sheet:<id>`: one whole sheet, its gear sets inside.
@@ -303,25 +338,27 @@ No saved setting names a piece. A saved sheet's gear sets do: each row's piece b
 
 The build turns the source modules into one self-contained file in three steps:
 
-1. **Bundle.** esbuild starts from the entry module and follows every import: Alpine, the UI, the core, the generated data, and the stylesheet.
+1. **Bundle.** esbuild starts from the entry module and follows every import: Alpine, the UI, the core, the generated data, and the stylesheet (`src/styles/entry.css`, which imports the files of `src/styles/` in cascade order).
    - Each `src/data/*.json` becomes a `JSON.parse` call on its compacted text (the `jsonParseData` plugin: browsers read JSON faster than the same object as code; data-pipeline.md section 8).
-   - It writes one minified script and one stylesheet, in memory. The script is a self-running function, for Chrome 97, Firefox 104 and Safari 15.4 and later: `BROWSER_TARGETS`, set by the newest JS API the page calls, `findLast`. esbuild adds the CSS prefixes those need.
+   - It writes one minified script and one stylesheet, in memory. The script is a self-running function, for Chrome 99, Firefox 104 and Safari 15.4 and later: `BROWSER_TARGETS`, set by the newest JS API the page calls, `findLast` (Chrome 97, Firefox 104, Safari 15.4), and by the stylesheet's cascade layers (`@layer`, Chrome 99). esbuild adds the CSS prefixes those need.
 2. **Inline.** The HTML template has markers for the styles, the script and the build marks. The build replaces them with the stylesheet, the script and, on any branch but `main`, a "DEV" test-build badge next to the title plus the branch and commit in the footer. A `main` build, which is what deploys, has no marks. The branch comes from GitHub Actions' `GITHUB_REF_NAME` when set, else from git; with neither (or a detached checkout) there are no marks.
    The optimizer's Web Worker is a second bundle, built inside the first by the `solverWorker` plugin from `src/ui/solver-worker.js` and inlined into the page's script as a string ([section 9](#9-the-optimizers-worker)).
-3. **Checks.** The build stops with an error if a marker is missing, if there is no script output, or if the script contains the text `</script` (which would end the inline script early). A unit test fails the check if the page passes 4 MB (`tests/unit/scripts-build.test.js`).
+3. **Checks.** The build stops with an error if a marker is missing, if there is no script output, or if the script contains the text `</script` (which would end the inline script early). A unit test fails the check if the page passes 4 MB (`tests/unit/scripts/build.test.js`).
 
 **Licence notices.** esbuild runs with `legalComments: 'eof'` (its default), which moves every legal comment in the bundled code to the end of the page's script; that covers the `@vue/reactivity` and `@vue/shared` notices Alpine vendors. Alpine itself ships no licence file and no copyright comment, so none is invented for it: the page's footer carries the project's own copyright line instead, and the README lists what is bundled.
 
 The page loads nothing at run time except two kinds of font:
 
 - **Web fonts**, which come from Google Fonts when online.
-- **The Lodestone symbol font for the HQ mark**, hotlinked from the community mirror ewwwin/ffxiv-symbol-fonts, pinned to one commit and served by jsDelivr (`@font-face` in `styles.css`; never bundled, since no Square Enix licence names the font and the mirror has no licence file).
+- **The Lodestone symbol font for the HQ mark**, hotlinked from the community mirror ewwwin/ffxiv-symbol-fonts, pinned to one commit and served by jsDelivr (`@font-face` in `src/styles/pieces.css`; never bundled, since no Square Enix licence names the font and the mirror has no licence file).
 
 The HQ mark is plain "(HQ)" until `ui/hq-font.js` sees the font load and adds `html.hqfont`, which swaps in the glyph. Without a connection the page falls back to system fonts and still works.
 
 Because the data is part of the script rather than fetched, the page works from a `file://` address, where browsers refuse to fetch local files. The size of the page and its parts is in [data-pipeline.md, section 8](data-pipeline.md#8-building-the-page).
 
-**First paint.** The script is the last thing in the file, and the browser paints the markup above it while it is still reading the script, before Alpine has run. Until then every `x-show` element shows, whatever its condition, and no `x-text` has its text. The page root (`<div class="wrap">`, which holds the whole body) carries `x-cloak`, hidden by `styles.css` until Alpine removes it once it has built the page, so the first frame shows the finished page with the open tab. `tests/unit/scripts-build.test.js` checks the root is cloaked and holds everything; the smoke test's `checkFirstPaint` records every frame from the first, on each tab and after a reload from a set page.
+**First paint.** The script is the last thing in the file, and the browser paints the markup above it while it is still reading the script, before Alpine has run. Until then every `x-show` element shows, whatever its condition, and no `x-text` has its text. The page root (`<div class="wrap">`, which holds the whole body) carries `x-cloak`, hidden by `src/styles/base.css` until Alpine removes it once it has built the page, so the first frame shows the finished page with the open tab. `tests/unit/scripts/build.test.js` checks the root is cloaked and holds everything; the smoke test's `checkFirstPaint` records every frame from the first, on each tab and after a reload from a set page.
+
+**Startup failure.** The first thing in `<head>`, before the `<style>`, is a small classic ES5 script (`src/startup-failure.js`, about 3.4 KB minified; `startupScript()` in `scripts/build/build.mjs` writes `STORE_KEY` into it and minifies it, and the build stops if it holds a closing script tag). It makes its own message with DOM calls and inline styles that use only CSS system colours (`Canvas`, `CanvasText`, `GrayText`, `Highlight`), so it reads in the light and dark OS themes and still works when the stylesheet or the app's script is broken. It listens for `error` and `unhandledrejection`, and checks once, in a `setTimeout(0)` after `DOMContentLoaded` (the app's script has run to its end by then, and the errors Alpine rethrows were queued earlier): the start failed if an error came before the check, or the page root is missing or still has `x-cloak`. Until the check has run, a style rule (`.wrap{display:none!important}`) keeps the page root unpainted, so a start that fails midway never shows its half-built page for a frame (`display:none`, not `visibility:hidden`: a descendant with `visibility:visible` of its own, such as the Gear browser's sort arrow, paints through a hidden ancestor). In its place a boot shell (`#boot` in `src/index.html`: the title, an inert tab bar with the tab the address names selected and the others dimmed, and a loading line named for that tab; the script reads the address (`#/gear`, `#/math...`, else the Sheets tab) into `data-boot-tab` on `<html>`) shows from the first paint, so a slow start is not a blank page. The check removes the rule and the shell on every path, which moves a healthy page's real first paint to one timer turn after `DOMContentLoaded`; a failed start hides the shell with the rest of the page. Then the listeners are removed; later errors are not startup failures. The message has the heading "The page failed to start." and hides the rest of the page, also when the root was built (an Alpine error), since a half-built page cannot be trusted. It shows the first error as text, a Reload button, and, when a key equal to `STORE_KEY` or starting with `STORE_KEY:` exists, a Reset saved data button that asks first, removes only those keys and reloads. When no saved data exists, the message says so and has no Reset button; when `localStorage` throws, it says the browser does not let the page read its saved data and has no Reset button. A `<noscript>` line at the top of `<body>` covers JavaScript off. The smoke test's `checks/startup/` covers each case. A saved time outside the range of a `Date` (beyond 8.64e15 ms) makes a sheet record unreadable (`isTime` in `src/ui/sheets/storage.js`), so a damaged date cannot throw while the Sheets tab formats it.
 
 **Why one file:** the owner opens it locally and can keep or share it as a single file. No server, no install, no version mismatch between page and data.
 
@@ -340,12 +377,12 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 
 ## 7. Pieces and sets in the core
 
-**The question:** where do the rules live that turn chosen gear into what the page shows? In three core modules, so a Fill's answer and a gear set chosen by hand go through the same code.
+**The question:** where do the rules live that turn chosen gear into what the page shows? In three core modules, so an Auto-fill's answer and a gear set chosen by hand go through the same code.
 
 | Module | Holds | Used by |
 | --- | --- | --- |
 | `piece.js` | A piece under sync: its synced item level, its stats there, the most each stat can be, whether it keeps its melds (note 1) | the optimizer, `meld.js`, `set.js`, the views |
-| `meld.js` | The meld rules (gates, high grades only in the big slots, caps) and what they are used for (note 2) | the optimizer, `set.js`, `views/set-page.js` |
+| `meld.js` | The meld rules (gates, high grades only in the big slots, caps) and what they are used for (note 2) | the optimizer, `set.js`, `sheets/fill-settings.js`, `views/stone-menu.js` |
 | `set.js` | A gear set as plain frozen data (`makeSet`, `setFromPicks`) and what it adds up to (`evaluateSet`) | `recipe.js`, the set page's views |
 
 1. `piece.js` holds the item level a piece is synced to (`itemSyncIlvl`), its stats there (`effStats`), the most each stat can be (`itemCaps`, `meldCaps`) and whether it keeps its melds (`keepsMelds`).
@@ -375,14 +412,14 @@ A relic whose substats the player allocates (roadmap A11) is the same case: a cu
 
 ## 8. Recipes and the solver session
 
-**The question:** how is a search asked for, and what is kept between searches (only the job's gear)? A **recipe** says what to look for: a set's Fill settings (`fillRecipe` in `views/fill-settings.js`: goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices, pins)` in `src/core/recipe.js` solves it and returns `{status, set, record, found}`:
+**The question:** how is a search asked for, and what is kept between searches (only the job's gear)? A **recipe** says what to look for: a set's Auto-fill settings (`fillRecipe` in `sheets/fill-settings.js`: goal and tiebreaks, the filters under Gear to search, materia, food, the Target GCD and its mode, rank by tier). `runRecipe(job, sync, level, recipe, session, choices, pins)` in `src/core/recipe.js` solves it and returns `{status, set, record, found}`:
 
 - **status:** `ok`, or why there is no gear set (`excluded`, `noset`, `nogcd`, `infeasible`, `badpin`: a pin cannot be kept, listed in `found.badPins`).
 - **set:** the gear set the result shows, as plain data ([section 7](#7-pieces-and-sets-in-the-core)): each row the player's pick where it still gives the same result, else the easiest piece that does; the meal the Food row shows.
 - **record:** how the gear set was made: job, sync, level and a frozen copy of the recipe, so a gear set keeps the goal it was solved for whatever changes later.
 - **found:** what the display needs beyond the gear set: the rows' menus of pieces with the same result, the meals with the best's result, the stats tier ranking holds, the Target GCD facts, the node limit note.
 
-`choices` are picks on a last result (`{pieces: {row: gameId}, meal}`), not saved; the page passes none. `pins` are what the solve must keep, `{pieces: [{slot, gameId, stones}], meal}`: a set's pinned rows and meal. A pinned piece is worn with exactly its stones, counts in the totals, tiers and a Target GCD, and need not pass the recipe's filters; a pinned meal is the meal even with Food off; the search fills the other slots (`resolvePins`; [optimizer.md, section 2](optimizer.md#the-game-rules-in-the-model)). A subset of the pins is a partial fill. The solver's handler calls `runRecipe` through `solveView` (`views/solve.js`), which returns the plain set; the set page evaluates it (`evaluateSet`) and formats it.
+`choices` are picks on a last result (`{pieces: {row: gameId}, meal}`), not saved; the page passes none. `pins` are what the solve must keep, `{pieces: [{slot, gameId, stones}], meal}`: a set's pinned rows and meal. A pinned piece is worn with exactly its stones, counts in the totals, tiers and a Target GCD, and need not pass the recipe's filters; a pinned meal is the meal even with Food off; the search fills the other slots (`resolvePins`; [optimizer.md, section 2](optimizer.md#the-game-rules-in-the-model)). A subset of the pins is a partial fill. The solver's handler calls `runRecipe` through `solveView` (`solve.js`), which returns the plain set; the set page evaluates it (`evaluateSet`) and formats it.
 
 **The solver session** (`makeSession` in `src/core/session.js`) holds the one thing a solve keeps for the next: each job's gear, every piece the job can wear as frozen pool items (5 to 10 ms to build). It keeps the gear of the last four jobs, least recently used dropped first. The page has one session, in the solver's worker ([section 9](#9-the-optimizers-worker)), shared by every set page. The meld caps are cached per pool item, so the same gear objects keep them warm.
 
@@ -390,7 +427,7 @@ Nothing else is kept. Every solve builds its candidate lists, the fastest GCD an
 
 ## 9. The optimizer's worker
 
-**The question:** how does a search of several seconds leave the page responsive? Under a Target GCD with tier ranking a search can hold a thread for seconds. A set page's Fill and its Gear to search line run in a Web Worker; the page thread only sends the request and shows the reply.
+**The question:** how does a search of several seconds leave the page responsive? Under a Target GCD with tier ranking a search can hold a thread for seconds. A set page's Auto-fill and its Gear to search line run in a Web Worker; the page thread only sends the request and shows the reply.
 
 | Part | Where | What it does |
 | --- | --- | --- |
@@ -402,14 +439,14 @@ Nothing else is kept. Every solve builds its candidate lists, the fastest GCD an
 
 Notes:
 
-- **The request's fields.** The kind is `solve` or `gearToSearch`. The optional `key` is the caller (a set's id). `pins` are the slots a Fill keeps; they are sent only when there are some.
+- **The request's fields.** The kind is `solve` or `gearToSearch`. The optional `key` is the caller (a set's id). `pins` are the slots an Auto-fill keeps; they are sent only when there are some.
 - **One file, from `file://`.** The worker's code is a string in the page's script; `main.js` starts it from a Blob URL. Chromium and Firefox run a Blob-URL worker from a `file://` page (checked with Playwright: Chromium, and Firefox 155 and 157 with no page errors); Safari is not checked.
 - **The data, held once.** The worker needs the item database and the other data files, but the page does not carry a second copy. Each data module of the page also exports its text (`jsonParseData`), and the page posts those strings to the worker as its first message; the worker parses them on its own thread. The worker's bundle is wrapped to run on that message, since its data modules read the texts while it loads. The page grows by the worker's code only, about 83 KB ([data-pipeline.md, section 8](data-pipeline.md#8-building-the-page)).
 - **Started when needed.** The worker starts on the solver's first request: the Gear to search line a set page asks for as it opens. The page's first paint does not wait for it.
 - **One copy of the job's gear.** The solver session lives in the worker, so the page thread never builds the job's gear.
 - **Newer requests.** One request per kind is in the worker at a time. A newer one waits and replaces any request already waiting from the same caller, whose caller gets the newer one's reply, so settings changed during a long search are not all solved in turn. A caller is named by the request's optional `key` (a gear set's id, say): requests with different keys never replace each other and each gets its own reply; requests without a key count as one caller. The set page drops a reply it no longer wants (`fillId`, `countId`). A newer request does not stop the one in the worker: only Cancel does.
 - **One worker for both kinds.** A worker runs one request at a time, so the Gear to search line waits behind a running search. A filter changed during a long search updates the line when the search ends (measured: 1,248 ms after the change, in a 1.45 s Warrior search). Cancel ends the wait at once. A second worker would parse the data again (about 50 ms) and keep a second copy of the job's gear.
-- **Cancel.** A set page's Cancel (`cancelFill`) returns the page to idle at once, with the set as it was and the line "Fill cancelled.", and calls the solver's `cancel('solve', key)` with the set's id.
+- **Cancel.** A set page's Cancel (`cancelFill`) returns the page to idle at once, with the set as it was and the line "Auto-fill cancelled.", and calls the solver's `cancel('solve', key)` with the set's id.
   - *The restart:* a worker cannot be interrupted mid-search, so when a search is in the worker, `workerSolver` terminates the worker and starts a fresh one at once. The new worker is handed the data texts again and parses them; its session builds the job's gear again.
   - *The callers:* the cancelled search's caller, and any search waiting behind it, get a cancelled error (`isCancelled`), which the component ignores.
   - *Gear to search:* requests not yet answered are posted to the new worker; with none, the last one is asked again, so the new worker builds the job's gear before the next search.
@@ -424,11 +461,12 @@ Notes:
 
 | Concept | File |
 | --- | --- |
-| Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/gear-groups.json`, `src/data/max-speed.json` |
+| Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/gear-groups.json`, `src/data/max-speed.json`, `src/data/summary.json` |
 | Data generators (`regen.py` runs them in order; the last, in Node, writes `max-speed.json`) | `scripts/data/gen_item_level.py`, `gen_items.py`, `gen_gear_groups.py`, `gen_food.py`, `gen_job_icons.py`, `gen_max_speed.mjs` |
 | Tables and limits derived from the data | `src/core/tables.js` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `mainKey`, `speedKey`, `specKey`, `activeSlotTypes`, `vitFactor` and `maxLevel`) |
+| A character's base stat at a level | `src/core/base-stats.js` (`statBase`, `LEVEL_MAIN`) |
 | Stat labels; level caps | `src/core/constants.js` (`STAT_LABEL`, `STAT_SHORT`; `JOB_LEVEL_CAPS`) |
 | Saved position keys | `src/core/stat-keys.js` (`currentStatKey`, `remapStatKey`) |
 | Raw row to stat keys, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
@@ -439,42 +477,47 @@ Notes:
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.js`, `gear-groups.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `validation.js`, `optimizer/` |
-| Entry point: restore, register the two stores and the components, save effect | `src/main.js` |
-| Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
-| Saved sheets: the index and one record per sheet, read, write, order, delete, the full-storage and unavailable-storage results | `src/ui/sheet-storage.js` (`loadSheets`, `saveSheet`, `saveOrder`, `deleteSheet`, `parseSheet`, `storageAvailable`) |
-| The sheets' store: the sheets out of reactive state (`rev`), the open screen, the actions, the edit lock while a Fill runs | `src/ui/sheet-store.js` (`createSheetStore`; its members are in the notes below the table) |
-| Sheets and gear sets as plain data: new, copied, Copy sheet's cleared pieces, names, moving a row | `src/ui/sheet-ops.js` (`newSheet`, `newGearSet`, `copyGearSet`, `copySheet`, `piecesToClear`, `cleanName`, `cleanDescription`, `copyName`, `defaultSheetName`, `defaultSetName`, `moveItem`, `NAME_MAX_LENGTH`) |
-| What a Sheets dialog's main button does: the fields to the store call of its kind, the refused-form error, the blank name put back | `src/ui/sheet-dialogs.js` (`submitDialog`, `shownName`) |
+| Other core modules | `src/core/formulas.js`, `gear-groups.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `optimizer/` |
+| Entry point: restore, register the two stores and the components, start the router, save effect | `src/main.js` |
+| Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`) |
+| Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
+| Saved sheets: the index and one record per sheet, read, write, order, delete, the full-storage and unavailable-storage results | `src/ui/sheets/storage.js` (`loadSheets`, `saveSheet`, `saveOrder`, `deleteSheet`, `parseSheet`, `storageAvailable`) |
+| The sheets' store: the sheets out of reactive state (`rev`), the open screen, the actions, the edit lock while an Auto-fill runs | `src/ui/sheets/store.js` (`createSheetStore`; its members are in the notes below the table) |
+| Sheets and gear sets as plain data: new, copied, Copy sheet's cleared pieces, names, moving a row | `src/ui/sheets/ops.js` (`newSheet`, `newGearSet`, `copyGearSet`, `copySheet`, `piecesToClear`, `cleanName`, `cleanDescription`, `copyName`, `defaultSheetName`, `defaultSetName`, `moveItem`, `NAME_MAX_LENGTH`) |
+| What a Sheets dialog's main button does: the fields to the store call of its kind, the refused form's error and the field it is about | `src/ui/sheets/dialogs.js` (`submitDialog`, `shownName`) |
 | Shared store and actions | `src/ui/store.js` (`createAppStore`: `panel`, `showTab`, `setJob`, `resetAll`, `persisted`; `PERSISTED_KEYS`) |
-| The store's settings as plain inputs: each tab's panel, sync settings, the cap Piece stats shows, the Target GCD range, the default Gear from boxes | `src/ui/settings.js` (`panelOf`, `PANEL_GROUP`, `syncSettings`, `levelSyncOn`, `shownSync`, `TARGET_GCD_RANGE`, `DEFAULT_EXCLUDE`) |
+| The store's settings as plain inputs: each tab's panel, sync settings, the cap Piece stats shows, the Target GCD range, the default Gear categories boxes, the example piece's materia slot totals | `src/ui/job-sync-panel.js` (`panelOf`, `PANEL_GROUP`, `syncSettings`, `shownSync`, `TARGET_GCD_RANGE`, `DEFAULT_EXCLUDE`, `meldSlotChoices`, `meldSlotsOf`) |
+| The cap follows the level: the rule that lowers a cap, the flag in a cap field's label line | `src/ui/level-cap.js` (`limitCapToLevel`, `capLoweredText`, `capFlag`, `capTextBad`, `CAP_TYPED_BAD_TEXT`), `src/partials/cap-flag.html` |
 | The ranked stat menus (one rank per stat, swaps) | `src/ui/ranks.js` (`rankChoices`, `withRank`, `uniqueRanks`) |
-| The view pattern, frozen views, number-field binding, "Gear from" boxes | `src/ui/helpers.js` (`viewCache`, `deepFreeze`, `numberField`, `storeNumberField`, `gearFromToggles`, `expansionToggles`) |
-| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `tiers.js`, `solve.js`, `meal-menu.js`, `fill.js`, `saved-set.js`; the set page's views (rows below) and the sheet views (notes below the table)) |
+| Text helpers the views share: counts, plurals, a deep copy | `src/ui/text.js` (`fmtInt`, `plural`, `oneOrMany`, `clone`) |
+| The view pattern, frozen views | `src/ui/view-cache.js` (`viewCache`, `deepFreeze`) |
+| Number-field binding, the flash of a lowered cap field (components only) | `src/ui/number-field.js` (`numberField`, `storeNumberField`, `flashLowered`, `TYPING_DEBOUNCE_MS`) |
+| The Expansion and "Gear categories" menus, where a floating menu opens (components only) | `src/ui/components/filter-menus.js` (`gearFromToggles`, `expansionToggles`, `gearFromSummary`, `gearFromHint`, `placeMenu`) |
+| View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `tiers.js`, `meal-menu.js`; the set page's views (rows below) and the sheet views (notes below the table)) |
 | Charts | `src/ui/sync-charts.js` (SVG for `x-html`; every name passed in goes through `escapeXml`) |
 | Gear browser rows a page, page numbers shown | `src/ui/views/gear.js` (`PAGE_SIZE`, `PAGE_SLOTS`) |
-| A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.js` (`runRecipe`, `recipePool`, `emptyGearFrom`, `askedGcd`, `gcdRange`, `recipeKey`, `NODE_LIMIT`) |
+| A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.js` (`runRecipe`, `recipePool`, `gearFromCounts`, `askedGcd`, `gcdRange`, `NODE_LIMIT`) |
 | The solver session; the job's gear it keeps | `src/core/session.js` (`makeSession`, `SESSION_SIZE`); `src/core/items.js` (`jobGear`) |
-| What the solver answers for a Fill: the Gear to search line, the solve | `src/ui/views/solve.js` (`gearToSearchView`, `searchCount`, `solveView`, which takes the Fill's pins and answers `badpin` with plain messages) |
+| What the solver answers for an Auto-fill: the Gear to search line, the solve | `src/ui/solve.js` (`gearToSearchView`, `searchCount`, `solveView`, which takes the Auto-fill's pins and answers `badpin` with plain messages) |
 | The Food menu's list: meals passing the filters, their lines, sort | `src/ui/views/meal-menu.js` (`mealMenu`, `mealList`, `mealsPassing`, `sortMeals`) |
-| Which rows of a saved set hold a piece, row labels | `src/ui/views/saved-set.js` (`usedRows`, `holdsPiece`, `rowLabel`, `sameRow`) |
-| Partial fill of a saved gear set: the pins, the "Fill N unpinned slots" count, the result put back on the open rows, bad-pin messages | `src/ui/views/fill.js` (`fillPlan`, `applyFill`, `dropBadPins`, `badPinMessages`) |
-| A set page's Fill settings and recipe, the goal line | `src/ui/views/fill-settings.js` (`defaultFillSettings`, `fillSettingsOf`, `fillRecipe`, `goalText`) |
-| A set page's edits by hand (a piece, a stone, the meal, a pin) | `src/ui/views/set-edits.js` (`placePiece`, `withStone`, `withoutStone`, `withMeal`, `withPin`) |
+| Which rows of a saved set hold a piece, row labels | `src/ui/sheets/saved-set.js` (`usedRows`, `holdsPiece`, `rowLabel`, `sameRow`) |
+| Partial fill of a saved gear set: the pins, the "Auto-fill N slots" count, the result put back on the open rows, bad-pin messages | `src/ui/sheets/fill.js` (`fillPlan`, `applyFill`, `dropBadPins`, `badPinMessages`) |
+| A set page's Auto-fill settings and recipe, the goal line | `src/ui/sheets/fill-settings.js` (`defaultFillSettings`, `fillSettingsOf`, `fillRecipe`, `goalText`) |
+| A set page's edits by hand (a piece, a stone, the meal, a pin) | `src/ui/sheets/set-edits.js` (`placePiece`, `withStone`, `withoutStone`, `withMeal`, `withPin`) |
 | A set page's piece picker, materia menu and meal menu; the grades a meld slot takes | `src/ui/views/piece-menu.js` (`piecePickerView`), `stone-menu.js` (`materiaMenuView`), `set-meal-menu.js` (`setMealMenuView`); `src/core/meld.js` (`slotGrades`) |
 | The set page component | `src/ui/components/set-page.js` and its parts in `src/ui/components/set-page/` |
 | Sheet view builders: a saved sheet and its gear sets as plain view objects (see the notes below the table) | `src/ui/views/sheet-manager.js`, `sheet-sets.js`, `sheet-forms.js`, `set-rows.js`, `set-totals.js`, `set-draft.js`, `set-suggestion.js`, `sheet-text.js` |
 | The page's solver: requests, the handler, the worker and page-thread solvers; the worker's entry; starting it | `src/ui/solver.js` (`solverRequest`, `makeSolverHandler`, `workerSolver`, `inProcessSolver`); `src/ui/solver-worker.js`; `src/main.js` (`startSolverWorker`) |
 | Components | `src/ui/components/` (`page.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `meal-menu.js`, `tiers.js`, `sheets.js`, `set-page.js`) |
-| Template, partials and styles | `src/index.html`, `src/partials/`, `src/styles.css` (see the notes below the table) |
+| Template, partials and styles | `src/index.html`, `src/partials/`, `src/styles/` (see the notes below the table) |
 | Build and dev server; the worker bundle | `scripts/build/build.mjs` (`solverWorker`, `jsonParseData`), `scripts/build/dev.mjs` |
 | Node version, scripts, dependencies | `package.json` |
 | Lint and format configuration | `biome.jsonc`, `pyproject.toml` |
-| Diagrams | `docs/diagrams/architecture-layers.svg`, `docs/diagrams/architecture-ui-flow.svg`, `docs/diagrams/architecture-job-switch.svg`, `docs/diagrams/architecture-timing.svg`, `docs/diagrams/architecture-restore.svg` |
+| Diagrams | `docs/diagrams/architecture-layers.svg`, `docs/diagrams/architecture-ui-flow.svg`, `docs/diagrams/architecture-ui-modules.svg`, `docs/diagrams/architecture-job-switch.svg`, `docs/diagrams/architecture-timing.svg`, `docs/diagrams/architecture-restore.svg` |
 
 Notes on four rows of the table:
 
-- **The sheets' store** (`createSheetStore` in `src/ui/sheet-store.js`) has these members:
+- **The sheets' store** (`createSheetStore` in `src/ui/sheets/store.js`) has these members:
   - state: `list`, `sheet`, `currentSheet`, `currentSet`, `busy`;
   - screens: `openManager`, `openSheet`, `openSet`, `closeSet`;
   - sheet actions: `createSheet`, `editSheet`, `copySheet`, `deleteSheet`, `moveSheet`, `stepSheet`, `setLevel`, `setSyncOn`, `setCap`;
@@ -482,13 +525,14 @@ Notes on four rows of the table:
   - the leave guard: `leaveGuard`, `askLeave`.
 - **Sheet view builders** (`views/sheet-manager.js`, `sheet-sets.js`, `sheet-forms.js`, `set-rows.js`, `set-totals.js`, `set-draft.js`, `set-suggestion.js`, `sheet-text.js`) build:
   - the manager list, a sheet's page and set list;
-  - the dialogs (New sheet, Copy sheet with its pieces to clear, Name and description, Delete);
+  - the dialogs (New sheet, Copy sheet with its pieces to clear, Edit sheet, Edit gear set, Delete);
   - a set's rows with materia chips, cap marks and Take boxes;
   - the Total, Tier and Defense rows and header figures with delta lines;
-  - a manual draft's changes, a Fill suggestion, and the Fill answers that are no suggestion (bad pins, no set).
+  - a manual draft's changes, an Auto-fill suggestion, and the Auto-fill answers that are no suggestion (bad pins, no set).
 - **Template.** `src/index.html` has the markers `<!-- STYLES -->`, `<!-- SCRIPT -->`, `<!-- BUILD_BADGE -->`, `<!-- BUILD_INFO -->`, and `<!-- INCLUDE name.html key=value -->` for a partial.
-- **Partials and styles.** `src/partials/` holds the components that are big or reused: `math-page.html`, `gear-page.html`, `sheet-pages.html`, `set-page.html` (included once each) and the Expansion and "Gear from" menus (`expansion-menu.html`, `gear-from-menu.html`: one copy for the browser and a set page's Fill settings, filled in with `id=`).
+- **Partials and styles.** `src/partials/` holds the components that are big or reused: `math-page.html`, `gear-page.html`, `sheet-pages.html`, `set-page.html` (included once each) and the Expansion and "Gear categories" menus (`expansion-menu.html`, `gear-from-menu.html`: one copy for the browser and a set page's Auto-fill settings, filled in with `id=`).
   - *Nesting:* a partial may include partials, three levels deep at most, and a partial that includes itself stops the build. A partial's leading comment is dropped from the page; comments below it stay.
+  - *Layout:* long opening tags put one attribute per line (the `<link>` tags in the head stay on one line, a test matches them as text).
   - *Scopes:* scopes, refs and ids work across a partial boundary because the build pastes them in before Alpine sees the page.
   - *Where markup goes:* new markup of a component goes in that component's partial; `index.html` keeps the frame, the Job and sync panel, the Sheets shell with its dialogs and the footer. Filled in by `expandIncludes` in the build.
-  - *Styles:* `src/styles.css` is grouped by area: tokens, base, controls, layout, shared pieces, tables, popovers, menus, then each tab.
+  - *Styles:* `src/styles/` holds one file per area, each a run of whole sections, in cascade order: `tokens` (the `:root` colors, light and both dark lists), `base`, `controls`, `layout`, `pieces` (shared pieces, tables, popovers), `menus` (dropdown menus), `fill-settings` (a set page's Fill settings dialog), `gear-browser`, the math tab's `math-bar`, `math-piece-stats`, `math-gcd`, `math-tiers` and `math-controls` (the controls row of Stat Allocation), `footer`, `sheets`, `set-page`, `fallbacks`. `src/styles/entry.css` imports them in that order; esbuild bundles the imports (the `styles:bundle` plugin), and the tests that read the stylesheet as text get the same text from `readStyles()` in `scripts/build/styles.mjs`, which follows the entry's `@import` lines. Every rule is in a cascade layer, named in the first line of `entry.css`: `tokens`, `base`, `controls` (the bare inputs, selects and buttons), `components` (one sublayer per shared file: `components.layout`, `.pieces`, `.menus` (its two files)), `views` (one sublayer per screen file: `views.gear-browser`, `.math` (its five files), `.footer`, `.sheets`, `.set-page`) and `fallbacks`; a later layer beats an earlier one whatever the specificity, so a shared file never beats a screen's file, and `tests/unit/styles/layers.test.js` fails on a rule outside a layer. A component that relies on a control's state (`button:hover`, `button:disabled`) says so in its own rule (`.build-button:hover`, `.meal-pill:hover:not(:disabled)`, `.pager button:disabled:hover`), because a generic rule in the `controls` layer no longer outranks a later class rule by specificity. Inside a file, source order and specificity decide as before; moving a rule between files, or a file in the list, changes which rule wins a tie only inside a layer.

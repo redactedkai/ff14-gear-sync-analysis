@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Build the single-file page: bundle src/main.js (and the CSS it imports) with esbuild,
+/* Build the single-file page: bundle src/main.js (and the CSS it imports: src/styles/*.css) with esbuild,
    then inline both into src/index.html -> dist/index.html. The result opens straight from file://.
 
    Run from anywhere:  node scripts/build/build.mjs   (or: npm run build)
@@ -9,16 +9,19 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ENTRY_FILE, STYLES_DIR } from './styles.mjs';
+import { STORE_KEY } from '../../src/ui/store-key.js';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const SRC = join(ROOT, 'src');
 export const DIST = join(ROOT, 'dist');
 export const PARTIALS = join(SRC, 'partials');
 
-/* The oldest browsers the page runs in. The floor is set by the JS APIs the page calls, which esbuild does not
-   polyfill: Array.prototype.findLast (Chrome 97, Firefox 104, Safari 15.4) and .at(). Naming the browsers instead of
-   an ES version also lets esbuild add the CSS prefixes they need (mask: -webkit-mask before Chrome 120). */
-export const BROWSER_TARGETS = ['chrome97', 'firefox104', 'safari15.4'];
+/* The oldest browsers the page runs in. The floor is set by what esbuild does not polyfill or lower: the JS APIs the page
+   calls, Array.prototype.findLast (Chrome 97, Firefox 104, Safari 15.4) and .at(), and the stylesheet's cascade layers
+   (@layer, Chrome 99, Firefox 97, Safari 15.4; a browser without them drops every layered rule). Naming the browsers instead
+   of an ES version also lets esbuild add the CSS prefixes and lower the CSS they need (mask: -webkit-mask before Chrome 120). */
+export const BROWSER_TARGETS = ['chrome99', 'firefox104', 'safari15.4'];
 
 /* esbuild plugin: each generated data file (src/data/*.json) goes into the bundle as `JSON.parse("...")`, not as the
    object literal esbuild writes for a JSON import, so the page loads data as data, as Node (and so the tests) does.
@@ -110,9 +113,23 @@ export const solverWorker = {
   },
 };
 
+/* esbuild plugin: the module `styles:bundle` (imported by main.js) is the page's stylesheet: src/styles/entry.css, which
+   imports the files of src/styles/ in cascade order (esbuild bundles the imports and watches them in `npm run dev`). */
+export const pageStyles = {
+  name: 'page-styles',
+  setup(build) {
+    build.onResolve({ filter: /^styles:bundle$/ }, ({ path }) => ({ path, namespace: 'page-styles' }));
+    build.onLoad({ filter: /.*/, namespace: 'page-styles' }, () => ({
+      contents: `@import "./${ENTRY_FILE}";`,
+      loader: 'css',
+      resolveDir: STYLES_DIR,
+    }));
+  },
+};
+
 export function esbuildOptions({ minify = true } = {}) {
   return {
-    plugins: [jsonParseData, solverWorker],
+    plugins: [jsonParseData, solverWorker, pageStyles],
     entryPoints: [join(SRC, 'main.js')],
     bundle: true,
     format: 'iife',
@@ -151,15 +168,15 @@ export function buildMarks({ branch, commit }) {
   const where = escapeHtml(branch) + (commit ? ` @ ${escapeHtml(commit)}` : '');
   return {
     badge:
-      ` <span class="build-badge" title="Test build from branch ${where}, not the live page">${label}</span>` +
-      ' <button type="button" class="build-badge build-button" title="Temporary: load the example sheets" @click="loadTestData()">test data</button>',
+      ` <span class="build-badge">${label}</span>` +
+      ' <button type="button" class="build-badge build-button" @click="loadTestData()">test data</button>',
     footer: `<span class="build-info">${label} build: ${where}</span>`,
   };
 }
 
 /* The template with every `<!-- INCLUDE name.html key=value ... -->` line replaced by src/partials/name.html: each
    {{key}} in the partial becomes its value, the partial's leading comment (what it is and its keys) is dropped, and its
-   lines take the marker's indentation. One copy of markup the page shows twice (the Expansion and "Gear from" menus of
+   lines take the marker's indentation. One copy of markup the page shows twice (the Expansion and "Gear categories" menus of
    the optimizer and the browser). A partial may include other partials (at most MAX_INCLUDE_DEPTH levels deep; `parents`
    is the chain of partials being expanded). Throws on a missing partial, a {{key}} the marker does not give, a partial
    that includes itself, or nesting deeper than the limit. */
@@ -191,6 +208,20 @@ export function expandIncludes(template, readPartial = name => readFileSync(join
   });
 }
 
+/* The "failed to start" script (src/startup-failure.js) as the page inlines it: the saved-data key written over its
+   marker (src/ui/store-key.js, the one place the key is spelled), minified to ES5. Throws if the result would end the
+   inline script early or is not ES5. The page puts it first in <head> (writePage, the STARTUP marker). */
+export function startupScript() {
+  const source = readFileSync(join(SRC, 'startup-failure.js'), 'utf8');
+  if (!source.includes('@STORE_KEY@')) throw new Error('src/startup-failure.js has no @STORE_KEY@ marker');
+  const code = esbuild.transformSync(
+    source.replace('@STORE_KEY@', () => STORE_KEY),
+    { minify: true, target: 'es5', charset: 'utf8' },
+  ).code;
+  if (/<\/script/i.test(code)) throw new Error('the startup script contains "</script", which would end the inline script early');
+  return code;
+}
+
 /* Inline the bundle outputs into the HTML template and write the page to `outFile` (dist/index.html by default).
    Returns the byte size. `info`: the branch and commit (buildInfo), which decide the test-build marks. */
 export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 'index.html')) {
@@ -205,14 +236,16 @@ export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 
   if (/<\/script/i.test(js)) throw new Error('bundle contains "</script", which would end the inline script early');
   const template = expandIncludes(readFileSync(join(SRC, 'index.html'), 'utf8'));
   if (template.includes('<!-- INCLUDE')) throw new Error('src/index.html has an INCLUDE marker the build cannot read');
-  for (const marker of ['<!-- STYLES -->', '<!-- SCRIPT -->', '<!-- BUILD_BADGE -->', '<!-- BUILD_INFO -->']) {
+  for (const marker of ['<!-- STARTUP -->', '<!-- STYLES -->', '<!-- SCRIPT -->', '<!-- BUILD_BADGE -->', '<!-- BUILD_INFO -->']) {
     if (!template.includes(marker)) throw new Error(`src/index.html is missing the ${marker} marker`);
   }
   // function replacements, so "$&"-style sequences in the bundle are not treated as patterns
   const marks = buildMarks(info);
+  const startup = startupScript();
   const html = template
     .replace('<!-- BUILD_BADGE -->', () => marks.badge)
     .replace('<!-- BUILD_INFO -->', () => marks.footer)
+    .replace('<!-- STARTUP -->', () => `<script>\n${startup}</script>`)
     .replace('<!-- STYLES -->', () => `<style>\n${css}</style>`)
     .replace('<!-- SCRIPT -->', () => `<script>\n${js}</script>`);
   mkdirSync(dirname(outFile), { recursive: true });

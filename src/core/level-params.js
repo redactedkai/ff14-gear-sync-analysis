@@ -1,15 +1,16 @@
 /* Per-level game data: the ParamGrow sheet (generated into tables.js PG). One row per character level from 1 to the
-   level cap; its columns feed speed (speed.js), substat tiers (tiers.js), food bases (food.js), level sync
+   level cap; its columns feed speed (speed.js), substat tiers (tiers.js), base stats (base-stats.js), level sync
    (sync-target.js), defense mitigation (damage-defense.js) and the expansion bounds (items.js). */
+import { clamp } from './clamp.js';
 import { MAX_LEVEL, PG } from './tables.js';
 
 /* The position of each ParamGrow column in a PG row (scripts/data/gen_item_level.py writes them in this order). */
 const PG_COLUMN = Object.freeze({ baseSpeed: 0, levelModifier: 1, itemLevelSync: 2 });
 
 /* A character level as a whole number from 1 to MAX_LEVEL, the levels PG has a row for. Any input: a level past the
-   cap reads the cap's row (tests/unit/core-constants.level-tables.test.js holds PG to MAX_LEVEL rows). */
+   cap reads the cap's row (tests/unit/core/constants.level-tables.test.js holds PG to MAX_LEVEL rows). */
 export function clampLevel(level) {
-  return Math.max(1, Math.min(MAX_LEVEL, level | 0));
+  return clamp(level | 0, 1, MAX_LEVEL);
 }
 
 /* ParamGrow at character `level` (clampLevel): {sub, div, sync}.

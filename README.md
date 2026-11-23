@@ -4,6 +4,12 @@ In FFXIV, some content **syncs** a character down: item level sync caps each sta
 
 It builds to a single self-contained HTML page, `dist/index.html`, that opens from disk with no server. The only outside requests are the Google Fonts stylesheet and the HQ symbol font from a community mirror; offline, the page falls back to system fonts and a plain "(HQ)". The npm package is named `ff14-gear-sync-analysis`.
 
+## AI Disclosure
+
+The majority of this project's code, tests, and documentation was generated with AI assistance under my direction. I define the requirements and architecture, and I review, run, and test all changes before they are committed.
+
+With that said, this is a hobby project that I work on my free time. Bug reports and pull requests are welcome.
+
 ## Requirements
 
 - Node 22 or later. Run `npm install` once (or `npm ci` for a clean install that matches `package-lock.json` exactly, as CI does), and `npx playwright install chromium` once for the smoke test. Building and testing the page needs only Node.
@@ -20,7 +26,7 @@ npm run build     # builds dist/index.html
 
 Open `dist/index.html` in a browser. For development, `npm run dev` rebuilds on every change and serves the page locally.
 
-The page opens on **Sheets**: make a sheet for a job, level and item level sync, add gear sets to it, and press **Fill** on a set to find the gear that maximizes a chosen stat. Sheets are saved in the browser. On the other tabs, pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs keeps the job-specific settings the new job can use (the browser's slot and sort, Piece stats' substats) and resets the rest.
+The page opens on **Sheets**: make a sheet for a job, level and item level sync, add gear sets to it, and press **Auto-fill** on a set to find the gear that maximizes a chosen stat. Sheets are saved in the browser. On the other tabs, pick your job from the icons at the top, then set the synced level, and turn on item level sync with a cap if you want one. A fresh page starts with no job, level 100 and sync off; **Reset to defaults** gets back there. Your settings are saved in the browser, so they come back on the next visit. Switching jobs keeps the job-specific settings the new job can use (the browser's slot and sort, Piece stats' substats) and resets the rest.
 
 The page has two working tabs, **Sheets** and **Gear browser**, and a reference tab, **How the math works**. What each one shows: [docs/engineering/ui.md, section 1](docs/engineering/ui.md#1-the-tabs).
 
@@ -33,9 +39,12 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run build` | Bundle everything into `dist/index.html` (opens straight from disk) |
 | `npm run dev` | Rebuild on every change and serve `dist/` locally |
 | `npm test` | Unit tests (core logic, page views, data format, saved state) |
-| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/full/`, about 35 s); run it before changing scoring, pruning or the search. CI runs it |
+| `npm run test:full` | Unit tests and a long random sweep of the optimizer's tier ranking (`tests/sweep/`, about 35 s); run it before changing scoring, pruning or the search. CI runs it |
 | `npm run test:py` | The Python data generator tests |
-| `npm run test:smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes |
+| `npm run test:smoke` | Browser smoke test of the built page (build first); prints `no errors` when it passes. `-- --domain <name>` runs one domain's groups and prints `no errors (partial: N of M groups)` |
+| `npm run test:fast` | Every unit test except the 19 long files (`LONG` in `tests/domains.mjs`): about 12 s against about 40 s for `npm test`. For work in progress; `check` is still the bar for done |
+| `npm run test:changed` | The unit tests of the domains that own the files `git status` lists as changed (one line per path says why; `-- --list` shows the mapping only). For work in progress; `check` is still the bar for done |
+| `npm run test:<domain>` | The unit tests of one domain: `model`, `data` (with the Python tests), `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`. Add `-- --fast` to leave out the long files, `-- --smoke` to build a private copy of the page and run that domain's browser checks. For work in progress; `check` is still the bar for done |
 | `npm run lint` | Biome (JavaScript, JSON, CSS): lint and format check, no file changes; a warning fails it |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
@@ -48,6 +57,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run perf:browser` | Build, then time the page in Chromium at normal speed and 4× and 6× slower (about 10 min) |
 | `npm run shots -- --out <dir>` | Screenshots of every view at 1440 and 960 px, light and dark (about 80 s); it builds its own copy of the page into `<dir>`, without the DEV badge, and leaves `dist/` alone ([testing.md](docs/engineering/testing.md)) |
 | `npm run shots:compare -- <dirA> <dirB>` | Pixel compare two screenshot folders; lists what differs, exits 1 on a difference |
+| `npm run stress:layout [-- --quick --fonts --browsers=chromium,firefox,webkit]` | Layout stress tool: builds a private copy of the page and checks every screen in 30 window sizes (6 screens x 8 Windows scales), a width sweep, text and font setups and extreme content, in a report; `--quick` about 1.5 min, a full run about 7 min; not part of `check` ([testing.md, section 3.1](docs/engineering/testing.md#31-viewports-to-look-at-for-ui-changes)) |
 | `node scripts/perf/db-parse.mjs` | Time how long Chromium takes to read and run the inlined item database and the page's script, at normal speed and 4× and 6× slower (build first; about 1 min) |
 | `node scripts/perf/target-gcd-sweep.mjs [--workers 5] [--jobs SGE,WAR] [--resume]` | Target GCD on every job's pool and sync setting, with checks (about an hour with 5 workers) |
 
@@ -59,7 +69,7 @@ Run `npm run data:update`, then `npm run check` and review the diff of the gener
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` runs `npm run check`, the long `tests/full/` sweep, and `lint:py` and `test:py` on Python 3.9 and 3.13, on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
+`.github/workflows/pages.yml` runs `npm run check`, the long `tests/sweep/` sweep, and `lint:py` and `test:py` on Python 3.9 and 3.13, on every push to `dev` or `main` and on pull requests. It publishes `dist/index.html` only from `main` (on a push, or by hand from the Actions tab), and only after those checks pass. One-time setup: in the repository's Settings → Pages, set Source to **GitHub Actions**. The page is then at `https://<owner>.github.io/<repo>/`. It is a single file with no paths to fix, so it works under that subpath as is.
 
 ## Documentation
 
@@ -73,16 +83,16 @@ The full rules are in [CLAUDE.md](CLAUDE.md); start the docs at [docs/README.md]
 - **Branches.** Work on a feature branch off `dev`, merge it into `dev`, and move `dev` to `main` (fast-forward when possible). Never commit on `main`: a push to `main` deploys the live page. Builds from any other branch show a DEV badge.
 - **Done means `npm run check` passes.** For UI changes, also look at the page at the five viewports in [testing.md, section 3.1](docs/engineering/testing.md#31-viewports-to-look-at-for-ui-changes). Run `npm run check:all` when touching `scripts/data/`, and `npm run test:full` and `npm run perf` when changing the optimizer's scoring, pruning or search.
 - **Code rules** (details in [architecture.md](docs/engineering/architecture.md)):
-  - Core code takes a JobContext (`makeJobContext(jobId)`) and uses its stat keys (`main`, `crit`, `det`, `dh`, `spd`, `spec`, `vit`), never job-specific ones such as `piety` or `mind`.
+  - Core code takes a JobContext (`makeJobContext(jobId)`) and uses the game's stat keys (`str`, `dex`, `int`, `mind`, `vit`, `crit`, `det`, `dh`, `sks`, `sps`, `piety`, `ten`); shared logic never hard-codes a job-specific one but asks the job (`job.speedKey`, not `'sks'`).
   - Read item database rows through `ROW` (`row[ROW.ilvl]`), never by position.
   - Keep big data (the item database, search results) out of Alpine's reactive state; components build a `view` object and templates only display it.
   - Write a rule once and share it; two copies drift.
   - `src/data/` is generated: change `scripts/data/` and regenerate, never edit it by hand.
-- **Tests.** Unit tests go in `tests/unit/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/smoke.mjs`. Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -l "core/sync-target.js" tests/unit/*.js`. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
+- **Tests.** Unit tests go in `tests/unit/<src folder>/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/checks/` (run by `tests/e2e/smoke.mjs`). Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -rl "core/sync-target.js" tests/unit`. Each test belongs to one domain (`tests/domains.mjs`); `npm run test:<domain>` runs it. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).
 
 ## Data
 
-Item stats, the item level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data; the page footer names the commit used. The speed-to-GCD formulas follow AkhMorning's guide, a community reference rather than game files. The substat share rule (100/70%, plus a fixed 20% Direct Hit line on older healer gear) is a pattern measured on real items, not something stored in the game files. Which claims are verified, inferred or assumed is listed once, in [validation.md, section 11](docs/mechanics/validation.md#11-verified-and-assumed). Only Piece stats depends on it; the optimizer and the gear browser use each item's real stats.
+Item stats, the item level budget table and level parameters come from the [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining) CSVs, exports of the game client's own data; the page footer names the commit used. The speed-to-GCD formulas follow AkhMorning's guide, a community reference rather than game files. The substat share rule (100/70%, plus a fixed 20% Direct Hit line on older healer gear) is a pattern measured on real items, not something stored in the game files. Which claims are verified, inferred or assumed is listed once, in [validation.md, section 11](docs/mechanics/validation.md#11-verified-and-assumed). Only Stat Allocation depends on it; the optimizer and the gear browser use each item's real stats.
 
 ## License and credits
 
@@ -90,7 +100,7 @@ Item stats, the item level budget table and level parameters come from the [xiva
 - **Game data and icons:** the FINAL FANTASY XIV game data in `src/data/` (item names and stats, level tables, food) and the 23 job icons in `src/data/job-icons.js` are © SQUARE ENIX CO., LTD. and are not covered by the MIT licence. This is an unofficial, non-commercial fan tool, under Square Enix's [FINAL FANTASY XIV Materials Usage License](https://support.na.square-enix.com/rule.php?id=5382&tag=authc).
 - **Data source:** [xivapi/ffxiv-datamining](https://github.com/xivapi/ffxiv-datamining); each generated file records the commit it came from.
 - **Formulas:** the speed, GCD, tier, defense and food formulas follow [AkhMorning](https://www.akhmorning.com/); sync rules and caps were checked against [xivgear](https://xivgear.app/) and the [Console Games Wiki](https://ffxiv.consolegameswiki.com/). Each is credited where it is used (`docs/mechanics/`); they are re-implemented from the published maths, and no code is copied from them.
-- **Interface icons:** a few small icons in `src/styles.css` (arrows, tick, search, reset) are paths from [Remix Icon](https://remixicon.com/) 4.6.0, Apache License 2.0, © Remix Design.
+- **Interface icons:** a few small icons in `src/styles/` (arrows, tick, search, reset) are paths from [Remix Icon](https://remixicon.com/) 4.6.0, Apache License 2.0, © Remix Design.
 - **Bundled:** Alpine.js and @vue/reactivity, both MIT. The build keeps the notices found in the bundled code (the Vue ones) in the page's script through esbuild's `legalComments: 'eof'`; Alpine ships no notice of its own, so none is invented for it.
 
 **Privacy.** The page loads its fonts from Google Fonts and the HQ symbol font from cdn.jsdelivr.net (a pinned copy of a GitHub mirror), which see each visitor's IP address. It has no analytics or cookies; settings are saved only in the browser's `localStorage`.

@@ -1,5 +1,5 @@
 """Two facts about gear that the gear categories need (gear_categories.py): is it crafted, and is it bought with an
-ultimate's totem. Where a piece comes from for the page's "Gear from" filter is gear_activities.py.
+ultimate's totem. Where a piece comes from for the page's "Gear categories" filter is gear_activities.py.
 
 flags(csv_dir, items) returns {item id: bit mask} over FLAGS.
 

@@ -47,34 +47,34 @@
 <!-- Row A: factor first -->
 <text class="head accent" x="20" y="124">Factor first</text>
 <text class="small muted" x="20" y="142">the model</text>
-<rect class="box" x="150" y="106" width="76" height="40" rx="8"/>
+<rect class="box" x="150" y="106" width="76" height="40" rx="4"/>
 <text class="num val fg" x="188" y="132" text-anchor="middle">736</text>
 <text class="small muted" x="267" y="98" text-anchor="middle">× 0.9, floor</text>
 <line class="s-muted" x1="226" y1="126" x2="306" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="308" y="106" width="76" height="40" rx="8"/>
+<rect class="box" x="308" y="106" width="76" height="40" rx="4"/>
 <text class="num val fg" x="346" y="132" text-anchor="middle">662</text>
 <text class="small muted" x="425" y="98" text-anchor="middle">× 0.85, floor</text>
 <line class="s-muted" x1="384" y1="126" x2="464" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="466" y="106" width="76" height="40" rx="8"/>
+<rect class="box" x="466" y="106" width="76" height="40" rx="4"/>
 <text class="num val fg" x="504" y="132" text-anchor="middle">562</text>
 <text class="small muted" x="504" y="162" text-anchor="middle">tenths</text>
 <text class="small muted" x="583" y="98" text-anchor="middle">÷ 10, round</text>
 <line class="s-muted" x1="542" y1="126" x2="622" y2="126" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="goodbox" x="624" y="106" width="76" height="40" rx="8"/>
+<rect class="goodbox" x="624" y="106" width="76" height="40" rx="4"/>
 <text class="num val good" x="662" y="132" text-anchor="middle">56</text>
 
 <!-- Row B: item order -->
 <text class="head accent" x="20" y="214">Item order</text>
 <text class="small muted" x="20" y="232">as an item's own stats</text>
-<rect class="box" x="150" y="196" width="76" height="40" rx="8"/>
+<rect class="box" x="150" y="196" width="76" height="40" rx="4"/>
 <text class="num val fg" x="188" y="222" text-anchor="middle">736</text>
 <text class="small muted" x="346" y="188" text-anchor="middle">× 85 / 1000 = 62.56, round</text>
 <line class="s-muted" x1="226" y1="216" x2="464" y2="216" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="box" x="466" y="196" width="76" height="40" rx="8"/>
+<rect class="box" x="466" y="196" width="76" height="40" rx="4"/>
 <text class="num val fg" x="504" y="222" text-anchor="middle">63</text>
 <text class="small muted" x="583" y="188" text-anchor="middle">× 0.9 = 56.7, round</text>
 <line class="s-muted" x1="542" y1="216" x2="622" y2="216" stroke-width="1.5" marker-end="url(#arrow)"/>
-<rect class="badbox" x="624" y="196" width="76" height="40" rx="8"/>
+<rect class="badbox" x="624" y="196" width="76" height="40" rx="4"/>
 <text class="num val bad" x="662" y="222" text-anchor="middle">57</text>
 
 <!-- In-game value -->

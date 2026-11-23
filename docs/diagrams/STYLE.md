@@ -97,7 +97,7 @@ Mark every claim, in the same sentence or table row. Use these words:
 | cap / clamp / rejected (`.bad`) | `#b0402c` | `#f08a74` |
 | kept / accepted (`.good`) | `#25773a` | `#6cc788` |
 
-- Boxes: `rx="8"`, 1.5px strokes, arrows with a single shared `<marker>`. Align to a grid; equal spacing between siblings.
+- Boxes: `rx="4"`, 1.5px strokes, arrows with a single shared `<marker>`. Align to a grid; equal spacing between siblings.
 - Render each SVG to PNG and look at it in light and dark, e.g. headless Edge:
   `"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --disable-gpu --screenshot=out.png --window-size=900,700 file:///.../diagram.svg`
   (for dark, wrap the SVG in a scratch HTML page with `<meta name="color-scheme" content="dark">` or emulate via `--force-dark-mode`). Fix overlaps, clipping and uneven spacing.

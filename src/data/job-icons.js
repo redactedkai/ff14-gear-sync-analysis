@@ -1,5 +1,5 @@
 /* GENERATED from the game's framed job icons (icon 062100 + ClassJob row, via xivapi's asset endpoint; see
-   scripts/data/fetch.py). Do not edit; see docs/engineering/data-pipeline.md. Fetched 2026-10-14 (newest file date).
+   scripts/data/fetch.py). Do not edit; see docs/engineering/data-pipeline.md. Fetched 2026-11-20 (fetch.py).
    sha256 of each PNG:
    PLD 783ad6cbc33ef876f8846e228f2e727bd61acddb1c50974fc060aea2885a2153
    WAR 5424449bec8e8042c5cd71092bebb5b17a70ec4f8c9dd33b85aab324b7697534

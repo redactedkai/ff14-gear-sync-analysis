@@ -39,25 +39,25 @@
   <rect class="bg" x="0" y="0" width="720" height="580"/>
 
   <!-- Layer 1: generated data -->
-  <rect class="box" x="20" y="30" width="420" height="72" rx="8"/>
+  <rect class="box" x="20" y="30" width="420" height="72" rx="4"/>
   <text class="fg t" x="230" y="57" text-anchor="middle">1. Generated game data</text>
   <text class="muted s" x="230" y="76" text-anchor="middle">budget table, level data, item database</text>
   <text class="muted s" x="230" y="92" text-anchor="middle">written by the data pipeline, never edited by hand</text>
 
   <!-- Layer 2: core -->
-  <rect class="box" x="20" y="132" width="420" height="72" rx="8"/>
+  <rect class="box" x="20" y="132" width="420" height="72" rx="4"/>
   <text class="fg t" x="230" y="159" text-anchor="middle">2. Core logic</text>
   <text class="muted s" x="230" y="178" text-anchor="middle">job context, stat formulas, sync, speed, items, optimizer</text>
   <text class="muted s" x="230" y="194" text-anchor="middle">pure functions, no page access, runs in Node too</text>
 
   <!-- Layer 3: UI state -->
-  <rect class="box" x="20" y="234" width="420" height="72" rx="8"/>
+  <rect class="box" x="20" y="234" width="420" height="72" rx="4"/>
   <text class="fg t" x="230" y="261" text-anchor="middle">3. UI state</text>
   <text class="muted s" x="230" y="280" text-anchor="middle">one shared store: settings, current job context</text>
   <text class="muted s" x="230" y="296" text-anchor="middle">saved state restored and repaired at load</text>
 
   <!-- Layer 4: components -->
-  <rect class="box" x="20" y="336" width="420" height="72" rx="8"/>
+  <rect class="box" x="20" y="336" width="420" height="72" rx="4"/>
   <text class="fg t" x="230" y="363" text-anchor="middle">4. Components and page template</text>
   <text class="muted s" x="230" y="382" text-anchor="middle">one component per page area, each derives a view</text>
   <text class="muted s" x="230" y="398" text-anchor="middle">the markup only displays views and calls store actions</text>
@@ -71,17 +71,17 @@
   <line class="flow" x1="120" y1="408" x2="120" y2="474" marker-end="url(#arrow)"/>
   <text class="muted s" x="130" y="446">all layers, styles and data</text>
 
-  <rect class="box" x="20" y="476" width="200" height="72" rx="8"/>
+  <rect class="box" x="20" y="476" width="200" height="72" rx="4"/>
   <text class="fg t" x="120" y="503" text-anchor="middle">Bundler</text>
   <text class="muted s" x="120" y="522" text-anchor="middle">joins all modules into</text>
   <text class="muted s" x="120" y="538" text-anchor="middle">one script and one stylesheet</text>
 
-  <rect class="box" x="260" y="476" width="200" height="72" rx="8"/>
+  <rect class="box" x="260" y="476" width="200" height="72" rx="4"/>
   <text class="fg t" x="360" y="503" text-anchor="middle">One HTML file</text>
   <text class="muted s" x="360" y="522" text-anchor="middle">code, styles and data inlined,</text>
   <text class="muted s" x="360" y="538" text-anchor="middle">about 2.1 MB</text>
 
-  <rect class="box" x="500" y="476" width="200" height="72" rx="8"/>
+  <rect class="box" x="500" y="476" width="200" height="72" rx="4"/>
   <text class="fg t" x="600" y="503" text-anchor="middle">Browser</text>
   <text class="muted s" x="600" y="522" text-anchor="middle">opens it from disk,</text>
   <text class="muted s" x="600" y="538" text-anchor="middle">no server</text>
@@ -90,13 +90,13 @@
   <line class="flow" x1="460" y1="512" x2="498" y2="512" marker-end="url(#arrow)"/>
 
   <!-- Tests column -->
-  <rect class="test" x="500" y="30" width="200" height="72" rx="8"/>
+  <rect class="test" x="500" y="30" width="200" height="72" rx="4"/>
   <text class="gold t" x="600" y="57" text-anchor="middle">Generator tests</text>
   <text class="muted s" x="600" y="76" text-anchor="middle">Python, on small test CSVs</text>
   <text class="muted s" x="600" y="92" text-anchor="middle">and the data format</text>
   <line class="check" x1="500" y1="66" x2="442" y2="66" marker-end="url(#garrow)"/>
 
-  <rect class="test" x="500" y="132" width="200" height="174" rx="8"/>
+  <rect class="test" x="500" y="132" width="200" height="174" rx="4"/>
   <text class="gold t" x="600" y="200" text-anchor="middle">Unit tests</text>
   <text class="muted s" x="600" y="219" text-anchor="middle">Node, one file per module</text>
   <text class="muted s" x="600" y="235" text-anchor="middle">core logic, real items,</text>
@@ -104,7 +104,7 @@
   <line class="check" x1="500" y1="168" x2="442" y2="168" marker-end="url(#garrow)"/>
   <line class="check" x1="500" y1="270" x2="442" y2="270" marker-end="url(#garrow)"/>
 
-  <rect class="test" x="500" y="336" width="200" height="72" rx="8"/>
+  <rect class="test" x="500" y="336" width="200" height="72" rx="4"/>
   <text class="gold t" x="600" y="363" text-anchor="middle">Smoke test</text>
   <text class="muted s" x="600" y="382" text-anchor="middle">real browser, 8 jobs, every tab,</text>
   <text class="muted s" x="600" y="398" text-anchor="middle">desktop and 960 px width</text>

@@ -5,9 +5,8 @@
    - Weapon damage comes first when the job ranks it (rankedKeys in optimizer/candidates.js; owner), as a key
      without tiers (a set page's Tier row has no weapon damage).
    - One search per key, in order: maximize the key under the minimums so far, note the tier it reaches, then hold the
-     key there through a minimum on its gear points (gearNeeded) for every later search. A key is held one point above
-     its tier start (HOLD_MARGIN, owner: a one-point model error should not drop the tier), or at the most
-     reached when that is less. Every tier rises with points, so each search's best lands in the best tier left.
+     key there through a minimum on its gear points (gearNeeded) for every later search. A key is held at its tier
+     start; a key without tiers at the most reached. Every tier rises with points, so each search's best lands in the best tier left.
    - A last search maximizes the keys' raw totals under every minimum.
    - Meals: each meal runs the stages on its own; after each stage only the meals reaching the best tier go on (the
      others lose on that tier whatever follows), and meals asking for the same search share it. Among the meals left,
@@ -20,9 +19,6 @@ import { prepare, solve } from './optimizer/index.js';
 import { speedForGcd } from './speed.js';
 import { fastestGcd, foodFields, gearBand, goalSettings } from './target-gcd.js';
 import { rankTierOf, tierStart } from './tiers.js';
-
-/* Points a held key keeps above its tier start, when the loadouts reach that many. */
-const HOLD_MARGIN = 1;
 
 /* What a finished stage search `result` proves for a meal's `state` (rankByTier's): {stat, most, minStats, speed}, the
    most gear points of `stat` under the state's minimums and speed band (optimizer/regain.js). */
@@ -132,7 +128,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
       .filter(x => x.tier === bestTier)
       .map(({ state, most, tier }) => {
         // a key without tiers is held at the most reached: every point counts
-        const hold = tierOf ? Math.min(tierStart(tierOf, most) + HOLD_MARGIN, most) : most;
+        const hold = tierOf ? tierStart(tierOf, most) : most;
         const gearMin = gearNeeded(job, state.meal, stat, hold, level);
         return {
           ...state,

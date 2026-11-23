@@ -1,6 +1,6 @@
 # Materia melds
 
-A set's Fill can give each piece its best materia melds for the chosen objective, together with the choice of gear. This page states the meld rules, how they were checked and what melds change in results. How the optimizer finds the best melds of one piece, and why choosing them piece by piece is exact, is in [optimizer.md, section 6](../engineering/optimizer.md#6-melds-in-the-search).
+A set's Auto-fill can give each piece its best materia melds for the chosen objective, together with the choice of gear. This page states the meld rules, how they were checked and what melds change in results. How the optimizer finds the best melds of one piece, and why choosing them piece by piece is exact, is in [optimizer.md, section 6](../engineering/optimizer.md#6-melds-in-the-search).
 
 Related pages: [optimizer.md](../engineering/optimizer.md) (the search and the best melds of one piece), [math.md](math.md) (caps and sync), [glossary.md](../glossary.md).
 
@@ -90,11 +90,11 @@ and the stones put into substat $k$ add $\min(h_k,\ \text{their total value})$ t
 
 **Exceptions.** The top substat of 16,957 of 16,979 checked pieces equals this cap (**verified**, game files and the formula). 22 pieces miss it: 18 A Realm Reborn relic steps, Neophyte's Ring, Alexandrian Metal Blade (72 against 71), Alexandrian Metal Buckler (28 against 29) and Troian Hose of Fending (253 against 254). Their meld cap is unknown.
 
-**Evidence.** This is **verified** for substats with a stat factor of 100: the top substat of real pieces equals it, and the Wiki's Kirin's Osode of Fending (item level 300 body) caps at 110 with its 77 melded up to 110. Where the factor is below 100 (for example Piety on kind 0 earrings, at 90%), the cap uses the factor-first cap order, which is **inferred** beyond three second-hand in-game values.
+**Evidence.** This is **verified** for substats with a stat factor of 100: the top substat of real pieces equals it, and the Wiki's Kirin's Osode of Fending (item level 300 body) caps at 110 with its 77 melded up to 110. The only meldable stat with a factor below 100 is Piety (70 on many all-class and caster pieces; pieces of kind 0, with factor 90, have no meld slots). There the cap is assumed to be the same factor-first number as the sync cap: the game's melding window was never seen for it, and the three second-hand in-game values are sync caps of Vitality or a main stat. xivgear computes it the same way, so it is not independent evidence.
 
 ### Sync removes melds
 
-A piece keeps its melds only if it is not synced: its item level is at or below the item level cap (with item level sync on), and its equip level is at or below the synced level. **Verified** in game by the owner. A piece exactly at the cap keeps them.
+A piece keeps its melds only if it is not synced: its item level is at or below the item level cap (with item level sync on), and its equip level is at or below the synced level. **Verified** in game by the owner, and by the Wiki's Item Level Sync and Level Sync pages ("ignored"). A piece exactly at the cap keeps them (a forum report, second-hand).
 
 ### Which stones are shown
 
@@ -151,8 +151,8 @@ The piece counts describe a database that started at item level 100; the current
 | High grades not past the first overmeld slot | Verified (game files) |
 | Slots fill in order; overmelding after every guaranteed slot | Verified (Wiki) |
 | Which stones are shown among equal gains (section 2) | The owner's decision, not a game rule |
-| Meld cap = the piece's own sync cap | Verified (real items, Wiki, xivgear) for factor 100; inferred below 100 |
-| Melds lost on synced pieces | Verified (owner, in game) |
+| Meld cap = the piece's own sync cap | Verified (real items, Wiki, xivgear) for factor 100; assumed for Piety at 70 (same formula, no melding window value seen) |
+| Melds lost on synced pieces | Verified (owner, in game; Wiki Item Level Sync and Level Sync pages; Square Enix forum thread 443791 for a piece at the cap keeping them) |
 | Every meld succeeds | Assumed (owner's decision: the odds are shown, not searched) |
 | Overmeld odds per grade and slot | Verified (game files; HQ also Wiki) |
 | Pieces that cannot be HQ use the NQ odds | Inferred (Wiki: odds follow the piece's quality) |
@@ -173,5 +173,5 @@ Notes: HQ (high quality) and NQ (normal quality) are the two versions of a craft
 | A piece's own caps; sync removing melds | `src/core/piece.js` (`meldCaps`, `keepsMelds`) |
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.js` (`meldInfo`), `src/core/tables.js` (`MATERIA`) |
 | Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |
-| The Materia switch and the materia menu | `src/ui/views/set-page.js` (`fillRecipe`, `materiaMenuView`), `src/partials/set-page.html` (`#s-melds`) |
-| Tests | `tests/unit/core-meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/core-optimizer.exhaustive.test.js` |
+| The Materia switch and the materia menu | `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/views/stone-menu.js` (`materiaMenuView`), `src/partials/set-page.html` (`#s-melds`) |
+| Tests | `tests/unit/core/meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/core/optimizer/index.exhaustive.test.js` |

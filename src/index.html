@@ -2,124 +2,272 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- STARTUP -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Gear Sync Analysis</title>
 <!-- the fonts load without blocking first paint: print-only until loaded, then for all media, so a stalled request
-     cannot hold the page up; the system fallbacks in styles.css show until then (and without the request). No referrer:
+     cannot hold the page up; the system fallbacks in src/styles/fallbacks.css show until then (and without the request). No referrer:
      Google is not told which page asked -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap" media="print" onload="this.media='all'" referrerpolicy="no-referrer">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap" referrerpolicy="no-referrer"></noscript>
 <!-- STYLES -->
 </head>
 <body>
-<!-- Number boxes bound to a setting use x-bind="$num(path, lo, hi, options)" (helpers.js numberField), which also sets
+<noscript><p style="margin:24px 16px;font:15px/1.5 system-ui,'Segoe UI',sans-serif">Gear Sync Analysis needs JavaScript. Turn JavaScript on for this page and reload.</p></noscript>
+<!-- Number boxes bound to a setting use x-bind="$num(path, lo, hi, options)" (number-field.js numberField), which also sets
      the box's min and max from lo and hi. The gear filters and the sync cap take any number from 1 up, as typed (hi
      Infinity): a minimum above every item level is a filter nothing passes, and the page says so; restoreState holds
      a saved one to the real range. Their :max here, the end of the real range, only stops the arrow keys. The Target
-     GCD takes TARGET_GCD_RANGE (settings.js): a higher value moves to 2.50.
+     GCD takes TARGET_GCD_RANGE (job-sync-panel.js): a higher value moves to 2.50.
      Dynamic <select>s render options with x-for and mark the current one with :selected (x-model on a select
      whose options are created by x-for can miss the initial value). -->
-<!-- x-cloak (styles.css) keeps the page unpainted until Alpine has built it: the script is the last thing in the file, and
+<!-- x-cloak (src/styles/) keeps the page unpainted until Alpine has built it: the script is the last thing in the file, and
      the browser paints the markup above it while it is still reading it, so without it the Job and sync panel (shown
      until x-show runs) and the tab bar showed with no tab, and no job, for a moment before every first paint -->
-<div class="wrap" x-data="page" x-cloak>
+<!-- The boot shell: what shows from the first paint until the page has started (startup-failure.js shows it, with the saved
+     tab chosen, and removes it at the check; it is hidden without JavaScript). Not part of the page: no Alpine, no data-tab. -->
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="pagetop">
+    <header><h1>Gear Sync Analysis</h1></header>
+    <nav class="tabs">
+      <button type="button" tabindex="-1" data-boot="sheets">Sheets</button>
+      <button type="button" tabindex="-1" data-boot="browse">Gear browser</button>
+      <button type="button" tabindex="-1" data-boot="math" class="aside">How the math works</button>
+    </nav>
+  </div>
+  <div class="bootload"></div>
+</div>
+<div class="wrap" x-data="page" x-cloak :class="{ 'tab-loading': $store.app.pendingTab }">
+<div class="pagetop">
 <header>
   <h1>Gear Sync Analysis<!-- BUILD_BADGE --></h1>
 </header>
 
-<!-- Closed (the default while a job is chosen): a one-line strip, as in prototype B17. Change opens the full panel,
-     Close shuts it (settings.open, page.js). -->
-<section class="panel" :class="{ jobline: !open }" aria-label="Job and sync settings" x-data="settings" x-show="$store.app.tab !== 'sheets'" :data-job="$store.app.job || ''">
-  <div class="row" id="job-strip" x-show="!open"><span>Job: <b x-text="$store.app.job ? jobCtx.jobName : 'none chosen'"></b> &middot; <span id="job-line" x-text="lineText"></span></span><span style="flex:1"></span><button class="chip" id="job-change" type="button" x-ref="changeButton" aria-expanded="false" aria-controls="job-panel" @click="toggleOpen()">Change</button></div>
-  <div class="settings" id="job-panel" x-show="open" @keydown.escape="closeOnEscape()">
-    <div class="f jobpick">
-      <div class="row"><span id="job-label">Job: <b id="job-name" x-text="$store.app.job ? jobCtx.jobName : 'none chosen'"></b></span><span style="flex:1"></span><button class="chip" id="reset" type="button" @click="requestReset()">Reset to defaults</button><button class="chip" id="job-close" type="button" x-ref="closeButton" aria-expanded="true" aria-controls="job-panel" @click="toggleOpen()">Close</button></div>
-      <div class="jobrows" role="radiogroup" aria-labelledby="job-label">
-        <template x-for="row in jobRows" :key="row.label">
-          <div class="jobrow" role="group" :aria-label="row.label">
-            <span class="jobrow-label" x-text="row.label"></span>
-            <div class="jobicons">
-            <template x-for="j in row.jobs" :key="j.id">
-              <button type="button" class="jobbtn" role="radio" :data-job-id="j.id" :title="j.name" :aria-label="j.name"
-                :aria-checked="String(j.id === $store.app.job)" @click="requestJob(j.id)"><img :src="j.icon" alt="" width="40" height="40"></button>
-            </template>
-            </div>
-          </div>
-        </template>
-      </div>
-    </div>
-    <label class="f"><span>Synced level <span class="f-range" id="level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span>
-      <input type="number" id="level" step="1" inputmode="numeric" x-bind="$num('level', 1, () => $store.app.jobCtx.maxLevel, { live: true })">
-    </label>
-    <div class="f field"><label for="cap">Synced item level <span class="f-range" id="cap-range" x-text="`1–${$store.app.maxReal}`"></span></label>
-      <input type="number" id="cap" x-ref="cap" :disabled="!$store.app.sync" :max="$store.app.maxReal" step="1" inputmode="numeric"
-        x-bind="$num('cap', 1, Infinity, { snap: false })" @input="onCapInput($event.target.value)" :class="{ invalid: !!capError, lowered: !!capLoweredNote }" :aria-invalid="String(!!capError)" aria-describedby="cap-error cap-lowered">
-      <span class="field-error" id="cap-error" x-show="capError" x-text="capError"></span>
-      <span class="field-note lowered" id="cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span>
-    </div>
-    <label class="f">Item level sync
-      <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sync" x-model="$store.app.sync"><span x-text="$store.app.sync ? 'On' : 'Off'"></span></span>
-    </label>
-  </div>
-</section>
-
-<!-- the tabs stay while the open tab has no job: each tab has its own Job and sync panel (the Sheets tab none: a sheet
-     holds its own), so another tab may have one -->
+<!-- the Gear browser has a Job and sync strip (below); How the math works has its Job menu in the math bar; the Sheets tab has
+     neither: a sheet holds its own job, level and sync -->
 <nav class="tabs" role="tablist" aria-label="Sections">
-  <button role="tab" data-tab="sheets" type="button" :aria-selected="String($store.app.tab === 'sheets')" @click="goTab('sheets')">Sheets</button>
-  <button role="tab" data-tab="browse" type="button" :aria-selected="String($store.app.tab === 'browse')" @click="goTab('browse')">Gear browser</button>
-  <button role="tab" data-tab="math" type="button" class="aside" :aria-selected="String($store.app.tab === 'math')" @click="goTab('math')">How the math works</button>
+  <button
+    role="tab"
+    data-tab="sheets"
+    type="button"
+    :aria-selected="String(($store.app.pendingTab ?? $store.app.tab) === 'sheets')"
+    @click="goTab('sheets')">Sheets</button>
+  <button
+    role="tab"
+    data-tab="browse"
+    type="button"
+    :aria-selected="String(($store.app.pendingTab ?? $store.app.tab) === 'browse')"
+    @click="goTab('browse')">Gear browser</button>
+  <button
+    role="tab"
+    data-tab="math"
+    type="button"
+    class="aside"
+    :aria-selected="String(($store.app.pendingTab ?? $store.app.tab) === 'math')"
+    @click="goTab('math')">How the math works</button>
 </nav>
+</div>
+<div class="tabload" role="status" x-show="$store.app.pendingTab" x-text="loadingText"></div>
+<!-- The Job and sync strip of the Gear browser: one row under the tab bar, always the same (no open and closed form): the Job
+     box (the job's icon, name and code) that opens a menu with one line of icons per role, the synced level, the item level and
+     its switch, and Reset. The job is always one (Paladin by default). settings in page.js. -->
+<section
+  class="panel jobstrip"
+  aria-label="Job and sync settings"
+  x-data="settings"
+  x-show="$store.app.tab === 'browse'"
+  :data-job="$store.app.job || ''">
+  <div class="f boxf jobfield" x-ref="jobWrap">
+    <span id="job-label">Job</span>
+    <button
+      type="button"
+      class="multi-btn jobbox"
+      id="job-menu-btn"
+      x-ref="jobButton"
+      aria-haspopup="true"
+      :aria-expanded="String(jobMenuOpen)"
+      aria-labelledby="job-label job-name job-code"
+      @click="toggleJobMenu()"
+      @keydown.arrow-down.prevent="openJobMenu()">
+      <img :src="jobIcon" alt="" width="26" height="26"><span class="jobtext"><span id="job-name" x-text="jobCtx.jobName"></span> <span class="jobcode" id="job-code" x-text="`(${$store.app.job})`"></span></span>
+    </button>
+    <!-- INCLUDE job-menu.html id=job-menu label=job-label -->
+  </div>
+  <label class="f boxf"><span>Synced level <span class="f-range" id="level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span>
+    <input
+      type="number"
+      id="level"
+      step="1"
+      inputmode="numeric"
+      x-bind="$num('level', 1, () => $store.app.jobCtx.maxLevel, { live: true })">
+  </label>
+  <div class="f boxf field" :title="capFlag(`1–${$store.app.maxReal}`).full"><label for="cap" class="capline">Synced item level
+      <!-- INCLUDE cap-flag.html id=cap-range range=`1–${$store.app.maxReal}` flag=capFlag(`1–${$store.app.maxReal}`) -->
+    </label>
+    <input
+      type="number"
+      id="cap"
+      x-ref="cap"
+      :disabled="!$store.app.sync"
+      :max="$store.app.maxReal"
+      step="1"
+      inputmode="numeric"
+      x-bind="$num('cap', 1, Infinity, { snap: false })"
+      @input="onCapInput($event.target.value)"
+      :class="{ invalid: !!capError, lowered: !!capLoweredNote }"
+      :aria-invalid="String(!!capError)"
+      aria-describedby="cap-error cap-lowered">
+    <span class="sr-only" id="cap-error" x-show="capError" x-text="capError"></span>
+    <span class="sr-only" id="cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span>
+  </div>
+  <label class="f"><span>IL Sync</span>
+    <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sync" x-model="$store.app.sync"><span x-text="$store.app.sync ? 'On' : 'Off'"></span></span>
+  </label>
+  <span class="jobstrip-gap"></span>
+  <div class="f"><span aria-hidden="true">&nbsp;</span><span class="stripctl"><button class="chip" id="reset" type="button" @click="requestReset()">Reset</button></span></div>
+</section>
 <!-- SHEETS: the sheet manager, a sheet's page, the frame of a set page and their dialogs (components/sheets.js; the store
-     $store.sheets is ui/sheet-store.js). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
-<section class="tab" id="tab-sheets" role="tabpanel" aria-label="Sheets" hidden :hidden="$store.app.tab !== 'sheets'" x-data="sheetsTab">
+     $store.sheets is ui/sheets/store.js). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
+<section class="tab" id="tab-sheets" role="tabpanel" hidden :hidden="$store.app.tab !== 'sheets'" x-data="sheetsTab">
 <div class="sheetsview">
-  <p class="sr-only" id="sh-live" aria-live="polite" x-text="$store.sheets.announcement"></p>
   <p class="callout small" id="sh-unavailable" x-show="manager.unavailableText" x-text="manager.unavailableText"></p>
-  <p class="callout small" id="sh-save-error" role="alert" x-show="$store.sheets.saveMessage" x-text="$store.sheets.saveMessage"></p>
 
   <!-- INCLUDE sheet-pages.html -->
 
   <!-- INCLUDE set-page.html -->
 
-  <!-- THE DIALOGS: one at a time; Escape cancels, Enter in a one-line box presses the main button, Tab stays inside -->
-  <template x-if="dialog"><div>
-    <div class="dlgback" @click="closeDialog()"></div>
-    <div class="dlg" x-ref="dialog" id="sh-dialog" :class="{ wide: dialog.kind === 'new' || dialog.kind === 'copy' }" :role="dialog.kind === 'delete' ? 'alertdialog' : 'dialog'" aria-modal="true" aria-labelledby="sh-dlg-title" @keydown="dialogKey($event)">
+  <!-- THE DIALOGS: a native <dialog> only while one is open (x-modal, ui/native-dialog.js: showModal() when it is drawn, close() when it is removed, the backdrop click and Tab kept inside); one at a time; Escape (the dialog's cancel event) cancels, Enter in a one-line box presses the main button; a change of page closes it -->
+  <template x-if="dialog"><dialog
+      class="dlg"
+      x-ref="dialog"
+      id="sh-dialog"
+      :class="{ wide: dialog.kind === 'new' || dialog.kind === 'copy' }"
+      :role="dialog.kind === 'delete' ? 'alertdialog' : 'dialog'"
+      aria-modal="true"
+      aria-labelledby="sh-dlg-title"
+      x-modal="closeDialog()"
+      @keydown="dialogKey($event)"
+      @cancel.prevent="cancelDialog()"
+      @popstate.window="closeDialog(false)">
       <template x-if="dialog.kind === 'delete'"><div style="display:contents">
         <p class="question" id="sh-dlg-title" x-text="dialogView.question"></p>
-        <div class="dlgbtns"><p class="dlgerr" role="alert" x-show="dialog.error" x-text="dialog.error"></p><button type="button" class="danger" id="sh-dlg-ok" @click="submitDialog()" x-text="dialogView.buttonText"></button><button type="button" id="sh-dlg-cancel" @click="closeDialog()">Cancel</button></div>
+        <div class="dlgbtns"><p class="dlgerr" role="alert" x-show="dialogView.error" x-text="dialogView.error"></p><button type="button" class="danger" id="sh-dlg-ok" @click="submitDialog()" x-text="dialogView.buttonText"></button><button type="button" id="sh-dlg-cancel" @click="closeDialog()">Cancel</button></div>
       </div></template>
       <template x-if="dialog.kind !== 'delete'"><div style="display:contents">
-        <h3 id="sh-dlg-title" x-text="dialogView.title"></h3>
-        <label class="f">Name<input type="text" id="sh-dlg-name" autocomplete="off" :maxlength="dialogView.nameMax" :placeholder="dialogView.namePlaceholder ?? ''" :value="dialogName" @input="typeName($event.target.value)"></label>
-        <template x-if="dialog.kind !== 'copy'"><label class="f"><span>Description <span class="f-range" x-text="dialog.description.length ? `${dialog.description.length} / ${dialogView.descriptionMax}` : 'optional'"></span></span><textarea id="sh-dlg-description" :rows="dialog.kind === 'new' ? 2 : 3" :maxlength="dialogView.descriptionMax" x-model="dialog.description"></textarea></label></template>
-        <template x-if="dialog.kind === 'new'"><div class="f jobpick"><span id="sh-dlg-job">Job: <b x-text="dialogView.jobText"></b> <span class="f-range" x-text="dialogView.jobNote"></span></span>
-          <div class="jobrows" role="radiogroup" aria-labelledby="sh-dlg-job"><template x-for="row in jobPicker" :key="row.label"><div class="jobrow" role="group" :aria-label="row.label"><span class="jobrow-label" x-text="row.label"></span><div class="jobicons"><template x-for="j in row.jobs" :key="j.id"><button type="button" class="jobbtn" role="radio" :data-job-id="j.id" :title="j.name" :aria-label="j.name" :aria-checked="String(j.id === dialog.job)" @click="chooseJob(j.id)"><img :src="j.icon" alt="" width="40" height="40"></button></template></div></div></template></div>
+        <div class="dlgtitle">
+          <template x-if="dialog.kind === 'copy'"><h3 id="sh-dlg-title" class="clipped"><span>Copy “</span><span class="clipname" x-text="dialogView.sheetName"></span><span>” sheet</span></h3></template>
+          <template x-if="dialog.kind !== 'copy'"><h3 id="sh-dlg-title" x-text="dialogView.title"></h3></template>
+          <template x-if="dialog.kind === 'copy'"><span class="helpspan"><button
+            type="button"
+            class="help"
+            id="sh-dlg-help"
+            aria-controls="sh-dlg-help-panel"
+            :aria-expanded="String(dialog.helpOpen)"
+            aria-label="How copying works"
+            @click="dialog.helpOpen = !dialog.helpOpen">?</button>
+            <div class="copyhelp" id="sh-dlg-help-panel" x-show="dialog.helpOpen" x-cloak>
+              <h4 x-text="dialogView.help.title"></h4>
+              <dl class="outcomes"><template x-for="outcome in dialogView.help.outcomes" :key="outcome.label"><div><dt x-text="outcome.label"></dt><dd x-text="outcome.text"></dd></div></template></dl>
+              <h5 x-text="dialogView.help.groupsTitle"></h5>
+              <ul class="facts"><template x-for="group in dialogView.help.groups" :key="group.jobs"><li :class="{ own: group.own }"><b x-show="group.label" x-text="group.label + ': '"></b><span x-text="group.jobs"></span></li></template></ul>
+              <p class="foot" x-text="dialogView.help.footText"></p>
+            </div></span></template>
+          <!-- INCLUDE dialog-error.html id=sh-dlg-title-err place=title -->
+        </div>
+        <label class="f"><span class="f-head"><span id="sh-dlg-name-label">Name</span>
+          <!-- INCLUDE dialog-error.html id=sh-dlg-name-err place=name -->
+          <span
+          class="f-left"
+          x-show="dialogName.length >= dialogView.nameMax * 0.85"
+          :class="{ full: dialogName.length >= dialogView.nameMax }"
+          x-text="`${dialogView.nameMax - dialogName.length} left`"></span></span><input
+            type="text"
+            id="sh-dlg-name"
+            aria-labelledby="sh-dlg-name-label"
+            :class="{ invalid: !!dialogView.errors.name }"
+            :aria-invalid="dialogView.errors.name ? 'true' : null"
+            :aria-describedby="dialogView.errors.name ? 'sh-dlg-name-err' : null"
+            autocomplete="off"
+            :maxlength="dialogView.nameMax"
+            :placeholder="dialogView.namePlaceholder ?? ''"
+            :value="dialogName"
+            @input="typeName($event.target.value)"></label>
+        <template x-if="dialog.kind !== 'copy'"><label class="f"><span class="f-head"><span>Description <span class="f-range">(optional)</span></span><span
+          class="f-left"
+          x-show="dialog.description.length >= dialogView.descriptionMax * 0.85"
+          :class="{ full: dialog.description.length >= dialogView.descriptionMax }"
+          x-text="`${dialogView.descriptionMax - dialog.description.length} left`"></span></span><textarea id="sh-dlg-description" rows="5" :maxlength="dialogView.descriptionMax" x-model="dialog.description" @input="clearDialogError()"></textarea></label></template>
+        <template x-if="dialog.kind === 'new'"><div class="f jobpick" :class="{ invalid: !!dialogView.errors.job }">
+          <div class="f-head"><span>Job</span>
+            <!-- INCLUDE dialog-error.html id=sh-dlg-job-err place=job -->
+          </div>
+          <div class="jobrows" role="radiogroup" aria-label="Job" :aria-invalid="dialogView.errors.job ? 'true' : null" :aria-describedby="dialogView.errors.job ? 'sh-dlg-job-err' : null"><template x-for="row in jobPicker" :key="row.label"><div class="jobrow" role="group" :aria-label="row.label"><span class="jobrow-label" x-text="row.label"></span><div class="jobicons"><template x-for="j in row.jobs" :key="j.id"><button
+            type="button"
+            class="jobbtn"
+            role="radio"
+            :data-job-id="j.id"
+            :title="j.name"
+            :aria-label="j.name"
+            :aria-checked="String(j.id === dialog.job)"
+            @click="chooseJob(j.id)"><img :src="j.icon" alt="" width="40" height="40"></button></template></div></div></template></div>
         </div></template>
-        <template x-if="dialog.kind === 'copy'"><div class="f jobpick"><span id="sh-dlg-job">Job: <b x-text="dialogView.jobText"></b> <span class="f-range" x-text="dialogView.jobNote"></span></span>
-          <div class="jobchoices" role="radiogroup" aria-labelledby="sh-dlg-job"><template x-for="j in dialogView.jobs" :key="j.id"><button type="button" class="jobchoice" role="radio" :data-job-id="j.id" :aria-checked="String(j.checked)" @click="chooseJob(j.id)"><img class="jobico" :src="jobIcons[j.id]" alt="" width="28" height="28"><span x-text="j.name"></span></button></template></div>
+        <template x-if="dialog.kind === 'copy'"><div class="f jobpick">
+          <div class="f-head"><span>Job</span></div>
+          <div class="jobchoices" role="radiogroup" aria-label="Job"><template x-for="j in dialogView.jobs" :key="j.id"><button
+            type="button"
+            class="jobchoice"
+            role="radio"
+            :data-job-id="j.id"
+            :aria-checked="String(j.checked)"
+            @click="chooseJob(j.id)"><img class="jobico" :src="jobIcons[j.id]" alt="" width="28" height="28"><span x-text="j.name"></span></button></template></div>
         </div></template>
+        <!-- the fields, the Copy sheet warning and the buttons: on a New sheet the buttons sit at the right of the fields row -->
+        <div class="dlgform" :class="dialog.kind">
         <template x-if="dialog.kind === 'new' || dialog.kind === 'copy'"><div class="dlgrow">
           <label class="f"><span>Level <span class="f-range" x-text="dialogView.level.rangeText"></span></span><input type="number" id="sh-dlg-level" step="1" inputmode="numeric" x-bind="formField('level')"></label>
-          <label class="f">Item level sync <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sh-dlg-sync" :checked="dialog.sync.on" @change="setFormSync($event.target.checked)"><span x-text="dialog.sync.on ? 'On' : 'Off'"></span></span></label>
-          <label class="f"><span>Item level cap <span class="f-range" x-text="dialogView.cap.rangeText"></span></span><input type="number" id="sh-dlg-cap" step="1" inputmode="numeric" :max="dialogView.cap.max" :disabled="!dialog.sync.on" x-bind="formField('cap')" :class="{ lowered: !!formCapNote }" aria-describedby="sh-dlg-cap-lowered">
-            <span class="field-note lowered" id="sh-dlg-cap-lowered" x-show="formCapNote" x-text="formCapNote" aria-live="polite"></span></label>
+          <label class="f" :title="formCapFlag(dialogView.cap.rangeText).full"><span class="capline">Item level
+            <!-- INCLUDE cap-flag.html id=sh-dlg-cap-range range=dialogView.cap.rangeText flag=formCapFlag(dialogView.cap.rangeText) -->
+          </span><input
+            type="number"
+            id="sh-dlg-cap"
+            step="1"
+            inputmode="numeric"
+            :max="dialogView.cap.max"
+            :disabled="!dialog.sync.on"
+            x-bind="formField('cap')"
+            :class="{ lowered: !!formCapNote }"
+            aria-describedby="sh-dlg-cap-lowered">
+            <span class="sr-only" id="sh-dlg-cap-lowered" x-show="formCapNote" x-text="formCapNote" aria-live="polite"></span></label>
+          <label class="f">IL Sync <span class="toggle"><input
+            type="checkbox"
+            role="switch"
+            class="switch"
+            id="sh-dlg-sync"
+            :checked="dialog.sync.on"
+            @change="setFormSync($event.target.checked)"><span x-text="dialog.sync.on ? 'On' : 'Off'"></span></span></label>
         </div></template>
-        <template x-if="dialog.kind === 'copy' && dialogView.warning"><div class="clearwarn" role="group" aria-label="Pieces that will be cleared" id="sh-dlg-clear">
+        <template x-if="dialog.kind === 'copy' && dialogView.warning"><div class="clearwarn" :class="{ invalid: !!dialogView.errors.ack }" role="group" aria-label="Pieces that will be cleared" id="sh-dlg-clear">
           <p><b x-text="dialogView.warning.title"></b> <span x-text="dialogView.warning.text"></span></p>
           <ul><template x-for="item in dialogView.warning.items" :key="item.key"><li><span class="dim" x-text="`${item.setName} ·`"></span> <span x-text="`${item.slotLabel}: ${item.name}`"></span></li></template></ul>
-          <label class="ackline"><input type="checkbox" id="sh-dlg-ack" x-model="dialog.ack"><span x-text="dialogView.warning.ackText"></span></label>
+          <div class="ackrow">
+            <label class="ackline"><input type="checkbox" id="sh-dlg-ack" x-model="dialog.ack" @change="clearDialogError()" :aria-invalid="dialogView.errors.ack ? 'true' : null" :aria-describedby="dialogView.errors.ack ? 'sh-dlg-ack-err' : null"><span x-text="dialogView.warning.ackText"></span></label>
+            <!-- INCLUDE dialog-error.html id=sh-dlg-ack-err place=ack -->
+          </div>
         </div></template>
-        <div class="dlgbtns"><p class="dlgerr" role="alert" x-show="dialog.error" x-text="dialog.error"></p><button type="button" class="primary" id="sh-dlg-ok" :disabled="!!dialogView.disabled" @click="submitDialog()" x-text="dialogView.buttonText"></button><button type="button" @click="closeDialog()">Cancel</button></div>
+        <div class="dlgbtns"><button
+          type="button"
+          class="primary"
+          id="sh-dlg-ok"
+          :disabled="!!dialogView.disabled"
+          @click="submitDialog()"
+          x-text="dialogView.buttonText"></button><button type="button" @click="closeDialog()">Cancel</button></div>
+        </div>
       </div></template>
-    </div>
-  </div></template>
+      <button type="button" class="dlgclose" aria-label="Close" @click="closeDialog()"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 10.5858L16.9497 5.63604L18.364 7.05025L13.4142 12L18.364 16.9497L16.9497 18.364L12 13.4142L7.05025 18.364L5.63604 16.9497L10.5858 12L5.63604 7.05025L7.05025 5.63604L12 10.5858Z"/></svg></button>
+  </dialog></template>
 </div>
 </section>
 
-<template x-if="!$store.app.job && $store.app.tab !== 'sheets'"><div class="panel empty" id="no-job">Choose a job above to see its gear.</div></template>
-<template x-if="$store.app.job"><div style="display:contents">
 
 <!-- THE MATH: what sync does to one piece (Piece stats) and to a full set's GCD (GCD), and the substats' tiers (Substat tiers);
      controls in a sticky bar, each shown on the sub-tabs it applies to -->
@@ -127,7 +275,13 @@
 
 <!-- GEAR BROWSER -->
 <!-- INCLUDE gear-page.html -->
-</div></template>
+
+<!-- THE NOTES (ui/messages.js): the note after an action and the message of a failed save, at the window's bottom on every tab. Both
+     are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. -->
+<div class="notes" x-data="notes">
+  <p class="toast floating" id="sh-toast" role="status" x-text="text"></p>
+  <p class="toast floating saveerror" id="sh-save-error" role="alert" x-text="saveMessage"></p>
+</div>
 
 <footer>
   <span><span x-show="dataSource" x-text="dataSource + ' · '"></span>Speed formulas: AkhMorning · Icons: Remix Icon (Apache 2.0) · HQ symbol: Lodestone font via the ewwwin/ffxiv-symbol-fonts mirror · FINAL FANTASY XIV and its job icons © SQUARE ENIX CO., LTD. Unofficial fan tool. Code © 2026 redactedkai, MIT.</span>

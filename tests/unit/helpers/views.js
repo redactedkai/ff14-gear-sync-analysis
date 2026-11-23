@@ -1,14 +1,14 @@
 /* Shared setup of the view builder and solve tests: store-shaped state with sync on at cap 123 and a set's recipe (its
-   Fill settings at their defaults, rank by tier off), small real-gear pools whose best loadouts the brute force
-   (exhaustive.js) can check, a solve as a set page's Fill asks for it (core/recipe.js runRecipe, evaluated by
+   Auto-fill settings at their defaults, rank by tier off), small real-gear pools whose best loadouts the brute force
+   (exhaustive.js) can check, a solve as a set page's Auto-fill asks for it (core/recipe.js runRecipe, evaluated by
    core/set.js evaluateSet), and the other tabs' builders called as their components call them. */
 import { recipePool, runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
 import { evaluateSet } from '../../../src/core/set.js';
-import { syncSettings } from '../../../src/ui/settings.js';
+import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { gearView } from '../../../src/ui/views/gear.js';
 import { pieceView } from '../../../src/ui/views/piece.js';
-import { searchCount } from '../../../src/ui/views/solve.js';
+import { searchCount } from '../../../src/ui/solve.js';
 import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.js';
 import { appState } from './common.js';
 import { gamePool } from './exhaustive.js';
@@ -40,7 +40,7 @@ export function solveOf(app, gear, choices = {}, pins = null) {
 }
 /* The pool the solve searches for `app` (core/recipe.js recipePool), from `gear` or the job's own. */
 export const poolOf = (app, gear) => recipePool(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));
-/* {searched, left} under Gear to search (views/solve.js searchCount). */
+/* {searched, left} under Gear to search (solve.js searchCount). */
 export const countOf = (app, gear) => searchCount(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));
 
 /* A store-shaped state object, as the Alpine store holds it, with a set's recipe; sync on at cap 123 unless `patch`

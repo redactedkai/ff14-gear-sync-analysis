@@ -1,7 +1,7 @@
 /* Performance workloads for the gear optimizer (docs/engineering/optimizer.md, section 8).
    Every pool is built fresh from the item database, so a new pool means new item objects (cold caches keyed by item). */
 import { ACTIVITIES, JOBS } from '../../src/core/constants.js';
-import { DEFAULT_EXCLUDE } from '../../src/ui/settings.js';
+import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { browseItems, poolItemFromRow } from '../../src/core/items.js';
 
@@ -74,7 +74,7 @@ export function objectivesFull(job) {
   return out;
 }
 
-/* "Gear from" settings to time, {off: ACTIVITIES keys left out, market}: every box, the defaults with and without the
+/* "Gear categories" settings to time, {off: ACTIVITIES keys left out, market}: every box, the defaults with and without the
    market board, the defaults plus each box they leave out (one at a time), and the defaults minus each big box. Every
    subset of 20 boxes would be a million runs; these cover the pool sizes a player meets. */
 export function excludeMasks() {
