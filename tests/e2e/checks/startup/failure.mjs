@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
 import { OUT, PAGE_PATH, STORE_KEY } from '../../lib/constants.mjs';
 import { check, expect } from '../../lib/expect.mjs';
 import { afterFrames, newPage } from '../../lib/nav.mjs';
@@ -168,7 +169,8 @@ export async function checkStartupMarkerAfterStart(pg) {
  * colon) and no other page's, then reloads. */
 export async function checkStartupReset(pg) {
   const { page, close } = await openPage(pg);
-  const keys = () => page.evaluate(() => Object.keys(localStorage).sort());
+  // the smoke runner's own dev flag (init-scripts.mjs NO_UNLOAD_GUARD) is not one of the page's saved data
+  const keys = async () => (await page.evaluate(() => Object.keys(localStorage).sort())).filter(key => key !== UNLOAD_GUARD_OFF_KEY);
   try {
     await page.goto(variantUrl('reset', throwing));
     await page.evaluate(

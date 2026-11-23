@@ -55,6 +55,34 @@ test('leaving: a draft asks Apply or Discard, Keep stays; a running Auto-fill as
   assert.equal(sheets.note, RESULT_DISCARDED_TEXT);
 });
 
+test('unsettled: the store asks the open set page, with no side effect, for a draft, a running Auto-fill and a waiting result', async () => {
+  const solver = heldSolver();
+  const { c, sheets } = bind(twoToFill(), solver);
+  assert.equal(sheets.hasUnsettled(), false);
+
+  c.pick(HEAD, SAGE_IDS.head);
+  assert.equal(sheets.hasUnsettled(), true);
+  assert.equal(c.leaveAsk, null); // asking changes nothing
+  c.discardDraft();
+  assert.equal(sheets.hasUnsettled(), false);
+
+  await tick();
+  const answered = c.fill();
+  assert.equal(sheets.hasUnsettled(), true); // running
+  const { request, resolve } = solver.held.shift();
+  resolve(await inProcessSolver().request(request));
+  await answered;
+  assert.ok(c.suggestion);
+  assert.equal(sheets.hasUnsettled(), true); // waiting result
+  c.suggestion = null;
+  assert.equal(sheets.hasUnsettled(), false);
+
+  c.pick(HEAD, SAGE_IDS.head);
+  sheets.openManager();
+  c.answerLeave('discard');
+  assert.equal(sheets.hasUnsettled(), false); // off the set page
+});
+
 /* A key event as pageKey reads it. */
 function keyEvent(key, extra = {}) {
   return {

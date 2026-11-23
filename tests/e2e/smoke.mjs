@@ -40,11 +40,13 @@ SMOKE_TIMEOUT (ms for any single wait, default 10000; page loads wait 30000 or t
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
+import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.js';
 import { parseDomains } from '../domains.mjs';
 import { GROUPS } from './groups.mjs';
 import { OUT, PAGE, PAGE_PATH, WORKERS, shot } from './lib/constants.mjs';
 import { coreWorker, startCore } from './lib/core.mjs';
 import { stepRecord } from './lib/expect.mjs';
+import { NO_UNLOAD_GUARD } from './lib/init-scripts.mjs';
 import { newPage, waitReady } from './lib/nav.mjs';
 import { setUpShared, sharedSetupChanges } from './lib/setup.mjs';
 
@@ -52,6 +54,8 @@ import { setUpShared, sharedSetupChanges } from './lib/setup.mjs';
 async function runGroup(browser, group) {
   const rec = { name: group.steps.map(s => s.name).join(', '), errors: [], failures: [], known: new Map(), steps: [] };
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
+  // every group starts with the reload and close guard off, so its reloads are not held (checkUnloadGuard turns it on)
+  await ctx.addInitScript(NO_UNLOAD_GUARD, UNLOAD_GUARD_OFF_KEY);
   if (group.initScript) await ctx.addInitScript(group.initScript);
   try {
     await stepRecord.run(rec, async () => {

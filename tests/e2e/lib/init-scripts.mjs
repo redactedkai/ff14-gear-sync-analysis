@@ -44,3 +44,19 @@ export const SLOW_COUNT = () => {
     }
   };
 };
+
+/** Turns the page's reload and close guard off (the dev flag, src/ui/router/unload-guard.js), so a step that reloads or closes
+ * the page while a draft is open is not held by the browser's question. Every group gets it (smoke.mjs runGroup), before the
+ * page's own script. `flagKey` is the flag's localStorage key. The flag is set once per tab (sessionStorage remembers it), so a
+ * step that wants the guard sets the flag to '0' and later loads keep it, and a reset of the page's saved keys (the startup
+ * check) is not undone by the next load. */
+export const NO_UNLOAD_GUARD = flagKey => {
+  try {
+    if (sessionStorage.getItem(flagKey) === null) {
+      sessionStorage.setItem(flagKey, 'set');
+      localStorage.setItem(flagKey, '1');
+    }
+  } catch {
+    // no storage: the guard is on, as for a person
+  }
+};

@@ -4,9 +4,11 @@ import 'styles:bundle'; // the stylesheet: src/styles/entry.css imports the file
 import { restoreState, loadSaved, save } from './ui/state.js';
 import { createAppStore } from './ui/store.js';
 import { createSheetStore } from './ui/sheets/store.js';
+import { defaultStorage } from './ui/sheets/storage.js';
 import { createRouter, windowPort } from './ui/router/router.js';
 import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.js';
 import { focusScreenHeading } from './ui/router/focus.js';
+import { installUnloadGuard } from './ui/router/unload-guard.js';
 import { storeNumberField } from './ui/number-field.js';
 import { notes } from './ui/messages.js';
 import { modalDirective } from './ui/native-dialog.js';
@@ -150,6 +152,9 @@ Alpine.effect(() => {
 addEventListener('pagehide', () => {
   if (unsavedJson !== null) save(unsavedJson);
 });
+
+// a reload or a closed tab asks first while a gear set's page holds a draft, a running Auto-fill or a waiting result
+installUnloadGuard({ target: window, hasUnsettled: () => Alpine.store('sheets').hasUnsettled(), storage: defaultStorage() });
 
 Alpine.start();
 

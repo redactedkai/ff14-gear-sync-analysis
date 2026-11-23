@@ -81,6 +81,7 @@ import {
   checkRoutingGuard,
   checkScrollOnBack,
   checkScrollOnReload,
+  checkUnloadGuard,
 } from './checks/tabs/routing.mjs';
 import { walkJob } from './checks/tabs/walk.mjs';
 import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.mjs';
@@ -128,6 +129,7 @@ export const GROUPS = [
   { steps: [step(checkRouting, 'app')] },
   { steps: [step(checkRoutingGuard, 'app')] },
   { steps: [step(checkRoutingAfterReload, 'app')] },
+  { steps: [step(checkUnloadGuard, 'app')] },
   { steps: [step(checkAddressSettings, 'app')] },
   { steps: [step(checkScrollOnBack, 'app'), step(checkScrollOnReload, 'app')] },
   { steps: [step(checkSheets, 'sheets')] },

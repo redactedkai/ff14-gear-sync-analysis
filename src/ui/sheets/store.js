@@ -107,6 +107,9 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
     busy: false,
     // the open set page's question before leaving it, or null: guard(move) → true when it took the move over
     leaveGuard: null,
+    // the open set page's side-effect-free question "is work held?", or null: () → whether a draft, a running Auto-fill or a
+    // waiting result would be lost (the reload and close guard asks it; ui/router/unload-guard.js)
+    unsettled: null,
 
     /* ---- reading ---- */
 
@@ -160,6 +163,11 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
     /* Whether the open set page holds the move `move` back to ask first (leaveGuard); false on any other screen. */
     askLeave(move) {
       return this.screen === 'set' && typeof this.leaveGuard === 'function' && this.leaveGuard(move) === true;
+    },
+
+    /* Whether the open set page holds work a reload or a closed tab would lose (unsettled); false on any other screen. */
+    hasUnsettled() {
+      return this.screen === 'set' && typeof this.unsettled === 'function' && this.unsettled() === true;
     },
 
     /* The address (a hash) of the Sheets screen of `sheetId` and `setId`: the list with neither, the sheet's page with a sheet, the

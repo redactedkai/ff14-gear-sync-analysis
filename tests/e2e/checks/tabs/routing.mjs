@@ -1,6 +1,7 @@
 // Addresses: every screen has its own, and Back, Forward and reload move between them.
 
-import { check, expect } from '../../lib/expect.mjs';
+import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
+import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { waitSaved } from '../../lib/nav.mjs';
 import { expectApplyCount, openSageSet, seedSheet } from '../../lib/sheets.mjs';
@@ -172,6 +173,54 @@ export async function checkRoutingAfterReload(pg) {
   await pg.click('#sh-leave-discard');
   await expect(pg.locator('#sh-sets')).toBeVisible();
   await expectHash(pg, sheetHash, 'the next Back after a refused typed address');
+}
+
+/** The reload and close guard: with the dev flag on its off value, a reload with no draft goes through, a reload with a draft
+ * raises the browser's beforeunload question (Cancel keeps the page and the draft, Reload drops them), and with the flag
+ * off (the smoke default) no question comes. */
+export async function checkUnloadGuard(pg) {
+  await seedSheet(pg, SET_SHEET);
+  await openSageSet(pg);
+  const questions = [];
+  pg.on('dialog', dialog => {
+    questions.push(dialog.type());
+    // Cancel the first question (the page stays); Reload at the second
+    (questions.length === 1 ? dialog.dismiss() : dialog.accept()).catch(() => {});
+  });
+  const reload = () => pg.evaluate(() => location.reload());
+  const settle = () => pg.waitForTimeout(300); // a question, if any, comes within a frame or two of the reload
+
+  // the guard on (the flag at '0': the init script keeps a flag that is set)
+  await pg.evaluate(key => localStorage.setItem(key, '0'), UNLOAD_GUARD_OFF_KEY);
+  await reload(); // nothing held: no question
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  check(questions.length === 0, `no question with nothing held: ${questions}`);
+
+  const hands = pg.locator('#sh-gear tr[data-row="4"]');
+  await hands.locator('[data-pick]').click();
+  await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
+  await expectApplyCount(pg, 1);
+  await reload();
+  await poll('the first question', async () => ({ ok: questions.length === 1, got: questions.length }));
+  check(questions[0] === 'beforeunload', `the question is the browser's beforeunload: ${questions[0]}`);
+  await settle();
+  await expectApplyCount(pg, 1); // Cancel: the draft is still there
+
+  await reload();
+  await poll('the second question', async () => ({ ok: questions.length === 2, got: questions.length }));
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  await expect(pg.locator('#sh-apply')).toHaveCount(0); // Reload: the draft is gone
+
+  // the flag off: a draft is reloaded with no question
+  await pg.evaluate(key => localStorage.setItem(key, '1'), UNLOAD_GUARD_OFF_KEY);
+  await hands.locator('[data-pick]').click();
+  await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
+  await expectApplyCount(pg, 1);
+  await reload();
+  await settle();
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  await expect(pg.locator('#sh-apply')).toHaveCount(0);
+  check(questions.length === 2, `no question with the flag off: ${questions}`);
 }
 
 /** The settings an address names (the Gear browser's filters and the math views' fields): a link applies them and the page

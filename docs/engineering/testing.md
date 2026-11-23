@@ -174,6 +174,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/solver | the optimizer's solver (note 17) |
 | ui/router/router | the router over a stand-in history: opening each address, the not found screen, pushing and replacing entries, Back and Forward, and the leave guard holding a move back, undoing it and doing it again |
 | ui/router/routes | the address of each screen: parse and format round trip, junk addresses, percent-encoded ids, the page title |
+| ui/router/unload-guard | the reload and close guard: asks only while work is held, and the dev flag turns it off |
 | ui/state | restoring saved state, including a save with position keys in `piece.subs` and `browse.sort`; loading and saving with a storage that throws |
 | ui/state.fuzz | restoreState on settings damaged in several fields: in range, never throws, restores to itself |
 | ui/state.tiers-job | Substat tiers' saved job: default, restore repair, a save with none |
@@ -389,6 +390,7 @@ Notes:
   - the sheet's cap check (`checkSheetCap`): the same up-arrow presses and 400 ms on the sheet page's cap field.
 
   An Auto-fill that must still be running (the edit lock, focus after Cancel) runs on a worker stand-in that never answers (`HOLD_SOLVE`); Cancel clicks Auto-fill and Cancel in one task, so the search cannot have answered between them. The "cancelled search never ran" checks wait for the frames an Auto-fill on the page's thread waits for (`afterFrames`), not for a time.
+  Every group starts with the reload and close guard's dev flag set (`NO_UNLOAD_GUARD` in `tests/e2e/lib/init-scripts.mjs`, run by `smoke.mjs` for each group; the flag is `ilvl-stat-lab-v4:no-unload-guard` = `1`, set once per tab), so the many reloads with a draft open are not held by the browser's question. `checkUnloadGuard` sets it to `0` to check the guard itself. A check that lists or clears the page's localStorage keys leaves the flag out (`checkStartupReset`).
 
   The Target GCD label of the Auto-fill settings reads "Target GCD" alone until the Gear to search count lands, so `checkGcdLabel` waits for each case's own settled sentence (the range's figures and the haste, or "off: the target is speed"), never for the absence of figures. A second group runs it on a worker stand-in that answers a count after 300 ms (`SLOW_COUNT`), so a read of the unsettled label fails at once on any machine.
 

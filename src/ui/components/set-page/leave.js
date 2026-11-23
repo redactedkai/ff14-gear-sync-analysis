@@ -17,9 +17,14 @@ export function leavePart(page) {
 
     /* ---- leaving the page ---- */
 
+    /* What the page holds that leaving would lose: 'draft', 'running' (an Auto-fill), 'result' (a waiting Auto-fill result), or
+       null. Changes nothing; the leave question and the reload and close guard (store.unsettled) both ask it. */
+    unsettledKind() {
+      return this.draft ? 'draft' : this.running ? 'running' : this.suggestion ? 'result' : null;
+    },
     /* The store's leave guard: with a draft, a running Auto-fill or a waiting result, ask first and hold `move` back. */
     guardLeave(move) {
-      const kind = this.draft ? 'draft' : this.running ? 'running' : this.suggestion ? 'result' : null;
+      const kind = this.unsettledKind();
       if (!kind) return false;
       overlays.closeAll(); // no menu or popover stays open under the question
       this.leaveAsk = { kind, move };

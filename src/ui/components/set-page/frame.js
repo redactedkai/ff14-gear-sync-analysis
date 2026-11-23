@@ -16,6 +16,7 @@ export function framePart(page) {
     init() {
       page.el = this.$el;
       this.$store.sheets.leaveGuard = move => this.guardLeave(move);
+      this.$store.sheets.unsettled = () => this.unsettledKind() !== null;
       this.refreshCount();
       // the gear and its popover are in the bar only at rest: a draft, a result or a running Auto-fill closes the popover
       this.$watch(
@@ -50,6 +51,7 @@ export function framePart(page) {
     destroy() {
       headWatch?.disconnect();
       if (this.$store.sheets.leaveGuard) this.$store.sheets.leaveGuard = null;
+      if (this.$store.sheets.unsettled) this.$store.sheets.unsettled = null;
       if (this.running) this.stopFill();
     },
 
