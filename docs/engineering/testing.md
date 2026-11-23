@@ -65,7 +65,7 @@ Which file tests what? One line per file; the file itself says the rest.
 
 ### Unit tests
 
-**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js`. A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.js` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.js` is in `tests/unit/core/formulas.sync-clamp.test.js`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.js`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
+**Naming rule.** The folder of a test file under `tests/unit/` is the folder of the module it tests under `src/`, and the file is the module's name, then `.test.js` (`.test.ts` for a module written in TypeScript: Node strips the types, and a `.ts` import names its extension). A file on one concern of a module adds the concern after a dot. So the test for `src/ui/views/gcd.js` is `tests/unit/ui/views/gcd.test.js`, and the sync clamp of `src/core/formulas.js` is in `tests/unit/core/formulas.sync-clamp.test.js`. A folder counts as a module (`src/core/optimizer/` is `core/optimizer/index`, so `core/optimizer/index.exhaustive.test.js`). Tests of `scripts/` go in `tests/unit/scripts/` and tests of the smoke test's own helpers (`tests/e2e/lib/`) in `tests/unit/smoke-helpers/`; the CSS tests are in `tests/unit/styles/`, named for the concern. A test that crosses modules goes in the file of the module whose rule it checks, or in the folder that holds the modules it scans (`ui/no-alpine`, `ui/views/no-bad-values`). Sorted by path, a module's files sit together. A test's domain is its module's (section 1.1). The test lists below name a file by its path under `tests/unit/`, without `.test.js`.
 
 | File | Covers |
 | --- | --- |
@@ -185,11 +185,11 @@ Which file tests what? One line per file; the file itself says the rest.
 | smoke-helpers/axe | the smoke test's (`tests/e2e/lib/axe.mjs`) split of axe-core findings into new and known ones: an entry for a rule, for one element, for the elements whose selector holds a text, another rule's entry, an entry that matched nothing |
 | smoke-helpers/visual | the smoke test's (`tests/e2e/lib/visual.mjs`) contrast arithmetic and token reader against the WCAG's published values (21:1, #767676 and #777777 on white), large text, translucent layers |
 | scripts/test | the test wrapper: its options, the unit files a domain selects, and which domains a changed path points to (`--changed`) |
-| scripts/test.domains | the domain guard: every file in one domain, smoke steps and `test:<domain>` scripts named |
+| scripts/test.domains | the domain guard: every file in one domain (a planted `.ts` stray is reported), smoke steps and `test:<domain>` scripts named |
 | ui/sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
-| ui/text | en-US counts, the one-or-many text |
+| ui/text (`.test.ts`) | en-US counts, the one-or-many text |
 | ui/tier-window | the rows a Substat tiers card draws: those in view, the margin, when to draw again, where to scroll to center a row |
-| ui/view-cache | the view cache, deep freezing |
+| ui/view-cache (`.test.ts`) | the view cache, deep freezing |
 | ui/views/gcd | How the math works, GCD (note 20) |
 | ui/views/gear | Gear browser: rows and synced stats, the Slot menu, sorting, search, Reset filters |
 | ui/views/gear.naive-browser | the Gear browser's rows, order and slot counts against a naive filter and sort, on random settings |
@@ -406,7 +406,7 @@ Which command runs which check? Run from the repository root.
 
 The figure shows:
 
-- `npm run check` runs lint (Biome, with a format check), build (the one HTML page), test (unit tests in Node) and smoke (the built page in Chromium), in that order. It needs no Python and is the bar for calling a change done.
+- `npm run check` runs lint (Biome, with a format check), typecheck (`tsc --noEmit`), build (the one HTML page), test (unit tests in Node) and smoke (the built page in Chromium), in that order. It needs no Python and is the bar for calling a change done.
 - `npm run check:all` runs check, then lint:py (Ruff) and test:py (generator tests in Python). Run it when touching scripts/data/ or after data:update.
 - Both stop at the first failure.
 - The perf commands, the Target GCD sweep, the checks against ffxiv-gearing and xivgear, the screenshot scripts and the layout stress tool are run by hand and are never part of check.

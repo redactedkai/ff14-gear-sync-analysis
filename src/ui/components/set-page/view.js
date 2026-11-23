@@ -2,7 +2,7 @@
    per change of the set, the draft or the suggestion (the stat block, the table, the totals, the Auto-fill and Apply buttons).
    A part of the setPage component (components/set-page.js composes the parts). */
 import { makeJobContext } from '../../../core/job-context.js';
-import { deepFreeze, viewCache } from '../../view-cache.js';
+import { deepFreeze, viewCache } from '../../view-cache.ts';
 import { fillPlan } from '../../sheets/fill.js';
 import { fillSettingsOf, goalText } from '../../sheets/fill-settings.js';
 import { mealBestKeys } from '../../views/meal-menu.js';

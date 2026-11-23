@@ -9,9 +9,9 @@ import { hasteFor } from '../../core/speed.js';
 import { statBase } from '../../core/base-stats.js';
 import { levelParams } from '../../core/level-params.js';
 import { MAX_SPEED } from '../../core/tables.js';
-import { fmtInt } from '../text.js';
+import { fmtInt } from '../text.ts';
 import { commit } from '../number-commit.js';
-import { deepFreeze } from '../view-cache.js';
+import { deepFreeze } from '../view-cache.ts';
 
 /* The rows kept for the cards last shown, by the key of what they depend on (rowsOf): the job, substat and level change
    them, a value never does. Enough for the cards of a few jobs and levels. */

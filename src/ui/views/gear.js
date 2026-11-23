@@ -17,7 +17,7 @@ import {
 import { clamp } from '../../core/clamp.js';
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
-import { fmtInt } from '../text.js';
+import { fmtInt } from '../text.ts';
 import { defaultBrowse } from '../state.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 

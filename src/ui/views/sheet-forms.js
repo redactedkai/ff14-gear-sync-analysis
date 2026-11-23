@@ -4,7 +4,7 @@
    store. Rules: docs/engineering/sheets.md ("Names", "Copy sheet", "Where an action lands"). */
 import { SLOT_LABEL, jobById } from '../../core/constants.js';
 import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.js';
-import { oneOrMany, plural } from '../text.js';
+import { oneOrMany, plural } from '../text.ts';
 import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, piecesToClear, ranges } from '../sheets/ops.js';
 
 /* Where a refused form's reason shows, from the form's `error` (the reason, '' for none) and `errorField` (the FORM_FIELD

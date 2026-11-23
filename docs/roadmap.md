@@ -84,10 +84,10 @@ Grouped by area. Within an area the rows are in build order (the owner's order);
 
 | ID | Idea | In one line |
 | --- | --- | --- |
-| A22 | Type checking | JSDoc types checked by `tsc`, file by file |
+| A22 | Type checking | Built: `tsc --noEmit` over `.ts` files; `.js` files convert one by one |
 | A99 | Take the test data out of the build | The test data button, `test-data.js` and `test-sheets.json` ship in the page with no build condition; decide before any release whether they stay |
 
-- **A22.** Type checking, so the code is easier to maintain. Needs the owner's yes for two dev dependencies (`typescript`, `@types/alpinejs`); nothing ships in the page.
+- **A22.** Built: `tsconfig.json` (strict, `noEmit`, `erasableSyntaxOnly`, `allowJs` with `checkJs` off), `npm run typecheck` inside `npm run check`, and Node 22.18+ (type stripping runs `.ts` unit tests). `src/ui/text.ts` and `src/ui/view-cache.ts` are the first `.ts` modules, imported with their `.ts` extension; esbuild strips their types. Not done: the other files stay `.js` and unchecked; each converts when it is touched. The rest of the plan below is the older JSDoc idea, kept for the typing choices:
   - Start with JSDoc types checked by `tsc` (`checkJs`, `noEmit`, non-strict), files stay `.js`, `npm run check` gets a `typecheck` step.
   - Opt in per file with `// @ts-check`, from `src/core` and `src/ui/views` outward; turn the shape comments into `@typedef`s.
   - Stat keys, job ids and profiles become unions derived from the frozen tables (`as const`); no `enum`.

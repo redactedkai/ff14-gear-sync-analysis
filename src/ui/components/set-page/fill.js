@@ -1,7 +1,7 @@
 /* A set page's Auto-fill and its answer: running the solver for the set's unpinned slots, Cancel, the suggestion with its Take
    boxes, and Apply or Discard on it. While an Auto-fill runs, $store.sheets.busy locks every edit on the Sheets tab.
    A part of the setPage component (components/set-page.js composes the parts). */
-import { clone } from '../../text.js';
+import { clone } from '../../text.ts';
 import { overlays } from '../../overlays.js';
 import { isCancelled, solverRequest } from '../../solver.js';
 import { fillPlan } from '../../sheets/fill.js';

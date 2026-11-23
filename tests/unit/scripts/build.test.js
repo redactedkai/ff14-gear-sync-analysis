@@ -3,8 +3,28 @@
 import { test } from 'node:test';
 import * as esbuild from 'esbuild';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 import { buildMarks, esbuildOptions, expandIncludes, SRC, startupScript } from '../../../scripts/build/build.mjs';
+
+/* R8: esbuild reads a .ts module imported with its .ts extension (which Node's type stripping needs too), strips the types
+   and bundles it; the page's own text.ts and view-cache.ts are built this way. */
+test('build: esbuild bundles a .ts module imported by its .ts extension, types stripped', async () => {
+  const result = await esbuild.build({
+    stdin: {
+      contents:
+        "import { plural } from './src/ui/text.ts';\nimport { viewCache } from './src/ui/view-cache.ts';\nglobalThis.out = [plural, viewCache];",
+      resolveDir: fileURLToPath(new URL('../../../', import.meta.url)),
+      loader: 'js',
+    },
+    bundle: true,
+    write: false,
+    format: 'esm',
+  });
+  const code = result.outputFiles[0].text;
+  assert.match(code, /NumberFormat\("en-US"\)/, 'the body of text.ts is in the bundle');
+  assert.doesNotMatch(code, /:\s*(number|string|unknown)\b/, 'no type annotation is left');
+});
 
 /* A build marks itself as a test build everywhere but main (CLAUDE.md, Branches). */
 test('build marks: none on main or an unknown branch; DEV elsewhere, with branch and commit', () => {

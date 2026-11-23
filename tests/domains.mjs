@@ -124,7 +124,8 @@ export const DOMAINS = {
       'src/ui/router/**',
       'src/ui/components/{page,compose,overlay,job-menu,cap-controls}.js',
       'src/partials/job-menu.html',
-      'src/ui/{state,store,store-key,job-sync-panel,level-cap,messages,number-commit,number-field,overlays,ranks,text,view-cache,hq-font}.js',
+      'src/ui/{state,store,store-key,job-sync-panel,level-cap,messages,number-commit,number-field,overlays,ranks,hq-font}.js',
+      'src/ui/{text,view-cache}.ts',
     ],
     tests: [
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',
@@ -193,17 +194,18 @@ const SKIPPED_FOLDERS = new Set(['__pycache__', 'out', 'node_modules']);
 
 // Every file under `folder` (relative to the repo root), as sorted paths with forward slashes, relative to the root.
 // Folders that hold generated or foreign files (`out`, `__pycache__`, `node_modules`) are left out.
-export function listFiles(folder) {
+// `root` is the repo root; only the guard tests pass another, a temporary tree with a planted file.
+export function listFiles(folder, root = ROOT) {
   const found = [];
   const visit = current => {
     for (const name of readdirSync(current)) {
       if (SKIPPED_FOLDERS.has(name)) continue;
       const path = join(current, name);
       if (statSync(path).isDirectory()) visit(path);
-      else found.push(relative(ROOT, path).replaceAll('\\', '/'));
+      else found.push(relative(root, path).replaceAll('\\', '/'));
     }
   };
-  visit(join(ROOT, folder));
+  visit(join(root, folder));
   return found.sort();
 }
 
@@ -232,9 +234,9 @@ export function domainsOfSource(file) {
 // The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.js gives src/ui/views/gcd.js; a `.concern` is
 // dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.js).
 export function mirroredModule(testFile, sourceFiles) {
-  const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.js$/);
+  const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.(?:js|ts)$/);
   if (!parts) return null;
-  return ['js', 'json'].map(ext => `src/${parts[1]}/${parts[2]}.${ext}`).find(path => sourceFiles.has(path)) ?? null;
+  return ['js', 'ts', 'json'].map(ext => `src/${parts[1]}/${parts[2]}.${ext}`).find(path => sourceFiles.has(path)) ?? null;
 }
 
 const SOURCE_FILES = new Set(listFiles('src'));
@@ -262,17 +264,21 @@ export function parseDomains(text) {
   return names;
 }
 
-// The unit test files (tests/unit/**/*.test.js) of the named domains, sorted. `fast` leaves out the LONG files.
-export function unitFilesOf(domainNames, { fast = false } = {}) {
-  return listFiles('tests/unit')
-    .filter(file => file.endsWith('.test.js'))
+// A test file's name: `.test.js`, or `.test.ts` (Node strips the types when it loads one).
+const TEST_FILE = /\.test\.(js|ts)$/;
+
+// The unit test files (tests/unit/**/*.test.{js,ts}) of the named domains, sorted. `fast` leaves out the LONG files.
+// `root` is the repo root (another only in the guard tests).
+export function unitFilesOf(domainNames, { fast = false, root = ROOT } = {}) {
+  return listFiles('tests/unit', root)
+    .filter(file => TEST_FILE.test(file))
     .filter(file => domainNames.some(name => domainsOfTest(file).includes(name)))
     .filter(file => !(fast && LONG.includes(file)));
 }
 
-// The sweep test files (tests/sweep/*.test.js) of the named domains, sorted.
+// The sweep test files (tests/sweep/*.test.{js,ts}) of the named domains, sorted.
 export function sweepFilesOf(domainNames) {
-  return listFiles('tests/sweep').filter(file => file.endsWith('.test.js') && domainNames.some(name => domainsOfTest(file).includes(name)));
+  return listFiles('tests/sweep').filter(file => TEST_FILE.test(file) && domainNames.some(name => domainsOfTest(file).includes(name)));
 }
 
 // The Python generator test files (tests/data/test_*.py) of the named domains, sorted.

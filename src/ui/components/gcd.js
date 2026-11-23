@@ -4,7 +4,7 @@ import { clamp } from '../../core/clamp.js';
 import { LEVEL_TEXT } from '../level-cap.js';
 import { commit } from '../number-commit.js';
 import { TYPING_DEBOUNCE_MS } from '../number-field.js';
-import { viewCache } from '../view-cache.js';
+import { viewCache } from '../view-cache.ts';
 import { GCD_LEVELS, HASTE_OPTIONS, HASTE_SIZER, gcdLevelInput, gcdView, speedRange as speedRangeAt } from '../views/gcd.js';
 
 /* The tab's level: the one typed into its box, else Stat Allocation's synced level (the only thing it takes from another
@@ -15,7 +15,7 @@ function tabLevel(app) {
 
 /* The sub-tab: the facts, the chart and the step table. A bar or a row clicked sets the level or the speed. */
 export function gcdTab() {
-  // the last view and the settings it was built for (view-cache.js viewCache): the template reads `view` several times a
+  // the last view and the settings it was built for (view-cache.ts viewCache): the template reads `view` several times a
   // render, and a build walks every level for the chart
   const views = viewCache();
   return {

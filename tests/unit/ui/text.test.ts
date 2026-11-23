@@ -1,22 +1,25 @@
-/* The text helpers (src/ui/text.js): counts in en-US numbers (fmtInt) and the hand-written pair of a sentence (oneOrMany). */
+/* The text helpers (src/ui/text.ts): counts in en-US numbers (fmtInt) and the hand-written pair of a sentence (oneOrMany). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fmtInt, joinNames, oneOrMany } from '../../../src/ui/text.js';
+import { fmtInt, joinNames, oneOrMany } from '../../../src/ui/text.ts';
 
 /* Audit 13, finding 6: counts followed the browser's locale ("1.234" in German reads like a decimal next to "2.48s").
    The default locale of this process cannot be changed, so the test watches which locale the formatter fmtInt keeps is
    made for (the module is loaded again to see it made). */
 test('fmtInt: thousands separators in en-US whatever the browser locale', async () => {
   const NumberFormat = Intl.NumberFormat;
-  const asked = [];
-  Intl.NumberFormat = class extends NumberFormat {
-    constructor(locale, options) {
+  const asked: (string | string[] | undefined)[] = [];
+  class SpyingNumberFormat extends NumberFormat {
+    constructor(locale?: string | string[], options?: Intl.NumberFormatOptions) {
       asked.push(locale);
       super(locale, options);
     }
-  };
+  }
+  Intl.NumberFormat = SpyingNumberFormat as typeof Intl.NumberFormat;
   try {
-    const fresh = await import('../../../src/ui/text.js?locale-check');
+    // a query on the path loads the module again; a variable keeps TypeScript from resolving it as a file name
+    const freshPath = '../../../src/ui/text.ts?locale-check';
+    const fresh: typeof import('../../../src/ui/text.ts') = await import(freshPath);
     assert.equal(fresh.fmtInt(1234567), '1,234,567');
   } finally {
     Intl.NumberFormat = NumberFormat;

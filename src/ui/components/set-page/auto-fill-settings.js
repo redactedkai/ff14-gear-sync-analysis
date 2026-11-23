@@ -3,7 +3,7 @@
    A part of the setPage component (components/set-page.js composes the parts). */
 import { numberField } from '../../number-field.js';
 import { overlays } from '../../overlays.js';
-import { clone } from '../../text.js';
+import { clone } from '../../text.ts';
 import { expansionToggles, gearFromToggles } from '../filter-menus.js';
 import { gearFilter } from '../../../core/items.js';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.js';

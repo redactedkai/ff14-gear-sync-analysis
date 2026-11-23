@@ -5,7 +5,7 @@
 import { makeJobContext } from '../../core/job-context.js';
 import { fillPlan } from '../sheets/fill.js';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-totals.js';
-import { plural } from '../text.js';
+import { plural } from '../text.ts';
 import { ranges } from '../sheets/ops.js';
 import { settingsLine } from './sheet-text.js';
 

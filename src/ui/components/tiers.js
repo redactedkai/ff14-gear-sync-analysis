@@ -9,7 +9,7 @@ import { numberField } from '../number-field.js';
 import { compose } from './compose.js';
 import { overlay } from './overlay.js';
 import { rowsInView, rowsToDraw, scrollTopToCenter, viewLeavesDrawn } from '../tier-window.js';
-import { viewCache } from '../view-cache.js';
+import { viewCache } from '../view-cache.ts';
 import { tierInput, tierLevel, tiersView, tierValues } from '../views/tiers.js';
 
 /* Space kept between a ? note and the panel's edge, and between it and its button (px); the note starts HELP_SHIFT px
@@ -71,7 +71,7 @@ function centerCurrent(area, state) {
 
 /* The Substat tiers sub-tab: the cards, the values typed or clicked, and each substat's ? note. */
 export function tierTable() {
-  // the last view and what it was built from (view-cache.js viewCache): the template and `help` read `view` many times a
+  // the last view and what it was built from (view-cache.ts viewCache): the template and `help` read `view` many times a
   // render
   const views = viewCache();
   // what each card's scroll area shows now, by the area (see above). Kept outside the reactive state: it holds page

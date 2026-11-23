@@ -2,7 +2,8 @@
    job-specific stat: the game's names are keys in tables, and logic reads job.mainKey, job.speedKey and job.specKey. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeJobContext } from '../../../src/core/job-context.js';
@@ -70,31 +71,52 @@ const GAME_KEYS = 'sks|sps|piety|ten|str|dex|int|mind';
 const KEY_USE = new RegExp(`(['"\`])(${GAME_KEYS})\\1|\\b(${GAME_KEYS}):|\\.(${GAME_KEYS})\\b`);
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-function sourceFiles(dir) {
-  return readdirSync(path.join(root, dir)).flatMap(name => {
+/* The .js and .ts files under `dir` (relative to `base`: the repo root, or a tree a test plants). */
+function sourceFiles(dir, base = root) {
+  return readdirSync(path.join(base, dir)).flatMap(name => {
     const rel = `${dir}/${name}`;
-    if (statSync(path.join(root, rel)).isDirectory()) return sourceFiles(rel);
-    return rel.endsWith('.js') ? [rel] : [];
+    if (statSync(path.join(base, rel)).isDirectory()) return sourceFiles(rel, base);
+    return /\.(js|ts)$/.test(rel) ? [rel] : [];
   });
 }
 /* The code of a file with its comments taken out (block comments, then // to the end of a line, not after a colon so that
    https:// in a string stays whole), lines kept so a hit can be named. */
-function codeOf(rel) {
-  const text = readFileSync(path.join(root, rel), 'utf8');
+function codeOf(rel, base = root) {
+  const text = readFileSync(path.join(base, rel), 'utf8');
   return text.replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, '')).replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-test('shared code names no job-specific stat outside the allow-listed tables (core and views)', () => {
+/* The lines of shared code (src/core, src/ui/views) under `base` that name a job-specific stat, as "file:line: text". */
+function keyHits(base = root) {
   const hits = [];
-  for (const rel of [...sourceFiles('src/core'), ...sourceFiles('src/ui/views')]) {
+  for (const rel of [...sourceFiles('src/core', base), ...sourceFiles('src/ui/views', base)]) {
     if (ALLOWED.has(rel)) continue;
-    codeOf(rel)
+    codeOf(rel, base)
       .split('\n')
       .forEach((line, i) => {
         if (KEY_USE.test(line)) hits.push(`${rel}:${i + 1}: ${line.trim()}`);
       });
   }
-  assert.deepEqual(hits, []);
+  return hits;
+}
+
+test('shared code names no job-specific stat outside the allow-listed tables (core and views)', () => {
+  assert.deepEqual(keyHits(), []);
+});
+
+/* R8: the scan reads .ts files too: a planted .ts stray in each scanned folder is found, and a .js one beside it. */
+test('the scan sees a .ts stray in src/core and src/ui/views (and still a .js one)', () => {
+  const base = mkdtempSync(path.join(tmpdir(), 'stat-keys-ts-'));
+  const line = 'export const t: Record<string, number> = { mind: 1 };';
+  try {
+    for (const file of ['src/core/stray.ts', 'src/ui/views/stray.ts', 'src/core/stray.js']) {
+      mkdirSync(path.dirname(path.join(base, file)), { recursive: true });
+      writeFileSync(path.join(base, file), `${line}\n`);
+    }
+    assert.deepEqual(keyHits(base), [`src/core/stray.js:1: ${line}`, `src/core/stray.ts:1: ${line}`, `src/ui/views/stray.ts:1: ${line}`]);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 });
 
 test('the guard sees a stray key (it would fail on one)', () => {

@@ -1,7 +1,7 @@
 /* What the Sheets tab's list screens draw: the sheet manager, a sheet's page and the set page's header line, each built once
    per change of the sheets (views/sheet-manager.js, sheet-sets.js), and the sort of the sheet page's gear sets list.
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: sheets (frame.js). */
-import { deepFreeze, viewCache } from '../../view-cache.js';
+import { deepFreeze, viewCache } from '../../view-cache.ts';
 import { sheetManagerView } from '../../views/sheet-manager.js';
 import { notFoundView } from '../../views/sheet-text.js';
 import { nextListSort, setHeaderView, sheetPageView, sortSetRows } from '../../views/sheet-sets.js';

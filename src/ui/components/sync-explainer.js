@@ -22,7 +22,7 @@ import { SLOT_SIZER, pieceView, slotGroups, withSub } from '../views/piece.js';
 import { rankChoices } from '../ranks.js';
 import { levelSyncCap, mathJobOwner, meldSlotChoices, meldSlotsOf, syncSettings } from '../job-sync-panel.js';
 import { numberField } from '../number-field.js';
-import { viewCache } from '../view-cache.js';
+import { viewCache } from '../view-cache.ts';
 import { capControls, levelControls } from './cap-controls.js';
 import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
 import { compose } from './compose.js';
@@ -33,7 +33,7 @@ import { overlay } from './overlay.js';
 /* The math tab's component (x-data on the whole tab): Piece stats' views, and the bar's Job menu and Stat Allocation's
    controls (its two chips and the item level slider). */
 export function syncExplainer() {
-  // Piece stats' views and the settings they were built for (view-cache.js viewCache), and the observer of the chart's
+  // Piece stats' views and the settings they were built for (view-cache.ts viewCache), and the observer of the chart's
   // width, made when the chart first shows
   const views = viewCache();
   let observer = null;

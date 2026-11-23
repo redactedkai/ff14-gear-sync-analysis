@@ -5,7 +5,9 @@
    its module's path says). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { GROUPS } from '../../e2e/groups.mjs';
 import {
   DOMAINS,
@@ -16,6 +18,7 @@ import {
   domainsOfTest,
   listFiles,
   matchesPattern,
+  mirroredModule,
   parseDomains,
   unitFilesOf,
 } from '../../domains.mjs';
@@ -94,7 +97,7 @@ test('domains: every domain has a test:<domain> script in package.json, and no o
 });
 
 test('domains: the domains together run every unit test file, each once', () => {
-  const everyUnitFile = listFiles('tests/unit').filter(file => file.endsWith('.test.js'));
+  const everyUnitFile = listFiles('tests/unit').filter(file => /\.test\.(js|ts)$/.test(file));
   const perDomain = DOMAIN_NAMES.flatMap(name => unitFilesOf([name]));
   assert.deepEqual([...perDomain].sort(), everyUnitFile);
 });
@@ -103,4 +106,48 @@ test('domains: an unknown or empty domain name is an error that lists the valid 
   assert.deepEqual(parseDomains('sheets, set-page'), ['sheets', 'set-page']);
   assert.throws(() => parseDomains('sheets,nope'), /unknown domain nope; the domains are model, data/);
   assert.throws(() => parseDomains(''), /unknown domain/);
+});
+
+/* TypeScript files (R8): a .ts file must be seen by the guard like a .js file. Each test plants one in a temporary tree
+   (the registry's folders, one stray file) and expects the guard's own functions to report it. */
+function withPlantedFiles(paths, run) {
+  const root = mkdtempSync(join(tmpdir(), 'domains-ts-'));
+  try {
+    for (const path of paths) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), '// planted\n');
+    }
+    return run(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test('domains guard: a .ts file in src/ or scripts/ that no domain claims is reported', () => {
+  withPlantedFiles(['src/ui/stray.ts', 'scripts/stray.ts'], root => {
+    const files = [...listFiles('src', root), ...listFiles('scripts', root)];
+    assert.deepEqual(files, ['src/ui/stray.ts', 'scripts/stray.ts']);
+    assert.deepEqual(ownershipProblems(files, domainsOfSource), ['src/ui/stray.ts: no domain', 'scripts/stray.ts: no domain']);
+  });
+});
+
+test('domains guard: a .ts file the registry names has its domain (text.ts and view-cache.ts are in app)', () => {
+  assert.ok(SOURCE_FILES.includes('src/ui/text.ts'));
+  assert.deepEqual(domainsOfSource('src/ui/text.ts'), ['app']);
+  assert.deepEqual(domainsOfSource('src/ui/view-cache.ts'), ['app']);
+  assert.deepEqual(domainsOfSource('src/ui/text.js'), [], 'the old .js path is gone');
+});
+
+test('domains guard: a .test.ts file is a unit test, listed once and mirrored to its .ts module', () => {
+  withPlantedFiles(['tests/unit/ui/text.test.ts', 'tests/unit/ui/stray.test.ts'], root => {
+    assert.deepEqual(unitFilesOf(['app'], { root }), ['tests/unit/ui/text.test.ts'], 'the mirrored one runs; the stray has no domain');
+    assert.deepEqual(ownershipProblems(unitFilesOf(DOMAIN_NAMES, { root }), domainsOfTest), []);
+    assert.deepEqual(ownershipProblems(listFiles('tests/unit', root), domainsOfTest), ['tests/unit/ui/stray.test.ts: no domain']);
+  });
+  const modules = new Set(['src/ui/text.ts', 'src/ui/views/gcd.js']);
+  assert.equal(mirroredModule('tests/unit/ui/text.test.ts', modules), 'src/ui/text.ts');
+  assert.equal(mirroredModule('tests/unit/ui/views/gcd.test.js', modules), 'src/ui/views/gcd.js');
+  assert.deepEqual(domainsOfTest('tests/unit/ui/text.test.ts'), ['app']);
+  assert.ok(unitFilesOf(['app']).includes('tests/unit/ui/text.test.ts'));
+  assert.ok(unitFilesOf(['app']).includes('tests/unit/ui/view-cache.test.ts'));
 });

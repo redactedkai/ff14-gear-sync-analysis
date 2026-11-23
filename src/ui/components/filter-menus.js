@@ -3,7 +3,7 @@
 import { ACTIVITIES, EXPANSIONS } from '../../core/constants.js';
 import { CURRENT_TOMES, MAX_LEVEL } from '../../core/tables.js';
 import { DEFAULT_EXCLUDE } from '../job-sync-panel.js';
-import { fmtInt } from '../text.js';
+import { fmtInt } from '../text.ts';
 
 /* The "Gear categories" menu's tabs, in order: each {title, order?}. `title` is the `section` of its boxes in item-format.json;
    `order` (optional) lists the box keys in the order the tab reads row by row, two to a row, instead of ACTIVITIES order (which

@@ -5,7 +5,8 @@
    made-up CSS first, so it cannot pass by finding nothing. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 import { readThemeTokens } from '../../e2e/lib/visual.mjs';
@@ -56,13 +57,30 @@ test('the page HTML paints no literal color: no style attribute or fill/stroke/c
   assert.deepEqual(found, []);
 });
 
-test('the UI scripts hold no quoted color literal (a style set from script would ignore the theme)', () => {
+/* The quoted colors in the .js and .ts files under `dir`, as "file: match". */
+function quotedColors(dir) {
   const found = [];
-  for (const file of walk(new URL('ui/', SRC).pathname.slice(1)).filter(f => f.endsWith('.js'))) {
+  for (const file of walk(dir).filter(f => /\.(js|ts)$/.test(f))) {
     const code = readFileSync(file, 'utf8');
     for (const [match] of code.matchAll(/['"`]\s*(#[0-9a-f]{3,8}|(?:rgba?|hsla?)\([^'"`)]*\))\s*['"`]/gi)) found.push(`${file}: ${match}`);
   }
-  assert.deepEqual(found, []);
+  return found;
+}
+
+test('the UI scripts hold no quoted color literal (a style set from script would ignore the theme)', () => {
+  assert.deepEqual(quotedColors(new URL('ui/', SRC).pathname.slice(1)), []);
+});
+
+/* R8: the scan reads .ts files too: a planted .ts stray with a quoted color is found, a clean one is not. */
+test('the scan sees a quoted color in a .ts file', () => {
+  const base = mkdtempSync(join(tmpdir(), 'theme-tokens-ts-'));
+  try {
+    writeFileSync(join(base, 'stray.ts'), "export const paint: string = '#ff0000';\n");
+    writeFileSync(join(base, 'fine.ts'), "export const paint: string = 'var(--fg)';\n");
+    assert.deepEqual(quotedColors(base), [`${join(base, 'stray.ts')}: '#ff0000'`]);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 });
 
 test('the light and the dark token lists name the same tokens; the system-dark and forced-dark lists are equal', () => {

@@ -1,12 +1,12 @@
-/* The view cache and deepFreeze (src/ui/view-cache.js). */
+/* The view cache and deepFreeze (src/ui/view-cache.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deepFreeze, viewCache } from '../../../src/ui/view-cache.js';
+import { deepFreeze, viewCache } from '../../../src/ui/view-cache.ts';
 
 test('viewCache: a view is built once per key; last() is the last one built, null before any', () => {
-  const views = viewCache();
+  const views = viewCache<{ value: number } | null>();
   let builds = 0;
-  const build = value => () => {
+  const build = (value: number) => () => {
     builds++;
     return { value };
   };
@@ -15,7 +15,7 @@ test('viewCache: a view is built once per key; last() is the last one built, nul
   assert.equal(views.get('a', build(2)), a);
   assert.equal(builds, 1);
   const b = views.get('b', build(3));
-  assert.deepEqual([b.value, views.last()], [3, b]);
+  assert.deepEqual([b?.value, views.last()], [3, b]);
   assert.notEqual(views.get('a', build(4)), a, 'only the last key is kept');
   // a view of null counts as built
   const none = () => {

@@ -9,7 +9,7 @@ import { equipLevel, jobGear, poolItemById, slotInfo } from '../../core/items.js
 import { applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../sheets/fill.js';
 import { changeText, draftChanges } from './set-draft.js';
 import { evaluateInSheet, figuresAgainst, setFigures } from './set-totals.js';
-import { plural } from '../text.js';
+import { plural } from '../text.ts';
 import { fillSettingsOf } from '../sheets/fill-settings.js';
 import { MEAL_ROW_LABEL, holdsPiece, rowLabel, sameRow, usedRows } from '../sheets/saved-set.js';
 

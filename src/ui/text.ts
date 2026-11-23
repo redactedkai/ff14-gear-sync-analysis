@@ -5,26 +5,26 @@
    kept, not `n.toLocaleString('en-US')`: that builds a formatter per call, about 25 times slower over the 1,400 rows of
    Substat tiers. */
 const INTEGER_FORMAT = new Intl.NumberFormat('en-US');
-export const fmtInt = n => INTEGER_FORMAT.format(n);
+export const fmtInt = (n: number): string => INTEGER_FORMAT.format(n);
 
 /* "3 slots", "1 change", "2 matches": a count and its word (a word ending in s or ch takes "es"). */
-export function plural(count, word) {
+export function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : /(s|ch)$/.test(word) ? 'es' : 's'}`;
 }
 
 /* `one` for a count of 1, else `many`: the hand-written pair of a sentence ("it"/"them", "its slot is"/"their slots are"). */
-export function oneOrMany(count, one, many) {
+export function oneOrMany<T>(count: number, one: T, many: T): T {
   return count === 1 ? one : many;
 }
 
 /* Names as one phrase, in order: "Head", "Head and Food", "Head, Ring 2 and Food" ('' for none). */
-export function joinNames(names) {
+export function joinNames(names: string[]): string {
   if (names.length < 2) return names.join('');
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 /* A deep copy of plain data (a saved sheet, a gear set, Auto-fill settings): the JSON round trip, which also drops Alpine's
    reactive wrappers. Only for JSON-safe data: no functions, no undefined kept, no Map. */
-export function clone(value) {
+export function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }

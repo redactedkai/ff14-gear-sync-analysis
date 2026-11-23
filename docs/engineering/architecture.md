@@ -96,7 +96,7 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 | Routing | The address of each screen, the settings in its query, the title, focus and scroll on Back and Forward | `src/ui/router/` |
 | Saved state | Defaults, repair on load, the saved shape, browser storage | `src/ui/state.js`, `src/ui/sheets/storage.js` |
 | Stores and panels | The shared store, the sheets' store, each tab's Job and sync panel, the cap and level rules | `src/ui/store.js`, `src/ui/sheets/store.js`, `src/ui/job-sync-panel.js`, `src/ui/level-cap.js` |
-| View layer | Pure view builders, the view cache, one component per area, the templates | `src/ui/views/`, `src/ui/view-cache.js`, `src/ui/components/`, `src/partials/` |
+| View layer | Pure view builders, the view cache, one component per area, the templates | `src/ui/views/`, `src/ui/view-cache.ts`, `src/ui/components/`, `src/partials/` |
 | Form inputs | The number-box pattern, the cap and level error flags, the ranked stat menus | `src/ui/number-field.js`, `src/ui/components/cap-controls.js`, `src/ui/ranks.js` |
 | Overlays | Menus, popovers and dialogs | several places (below) |
 | Drawing | Charts, long lists drawn in steps, the window of rows of a Substat tiers card | `src/ui/sync-charts.js`, `src/ui/draw-in-steps.js`, `src/ui/tier-window.js` |
@@ -221,7 +221,7 @@ The functions that build views are pure and live apart from the components, with
 
 A component assembles those inputs from its store (`job-sync-panel.js` has the helpers, such as `syncSettings`). So the unit tests check what each tab shows directly. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
 
-**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The component has a getter, `view` (Piece stats: `pieceViews`, read through `explainer`, `steps` and the slider's getters), that reads the inputs from the store, makes a key of them, and asks a `viewCache` (`view-cache.js`) for the view of that key. A new key builds the view; the same key returns the last one.
+**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The component has a getter, `view` (Piece stats: `pieceViews`, read through `explainer`, `steps` and the slider's getters), that reads the inputs from the store, makes a key of them, and asks a `viewCache` (`view-cache.ts`) for the view of that key. A new key builds the view; the same key returns the last one.
 
 - Reading the inputs inside the getter makes every binding that shows the view track them, so the page updates in the same render as the setting.
 - The template reads the view many times a render; the cache builds it once.
@@ -236,7 +236,7 @@ Each component reads the job through its own `jobCtx` getter (the store's `jobCt
 **Large data never enters reactive state.** Alpine makes an object it holds reactive by wrapping it in a proxy, and wraps nested objects as they are read. A frozen object is left as it is. Keeping big lists frozen or outside the store avoids wrapping thousands of rows on every recompute:
 
 - The item database is a plain module-level constant that the core reads directly. It is never placed in the store.
-- The views with long lists (the gear browser's rows, a set page's table) are frozen before they are stored on the component. A set page's view is frozen all through (`deepFreeze` in `view-cache.js`): with only its top frozen, `x-for` still wrapped each row it hands the template, and each cell read from a row, in a proxy.
+- The views with long lists (the gear browser's rows, a set page's table) are frozen before they are stored on the component. A set page's view is frozen all through (`deepFreeze` in `view-cache.ts`): with only its top frozen, `x-for` still wrapped each row it hands the template, and each cell read from a row, in a proxy.
 - A menu inside a table (the piece picker, the materia menu, the Food menu) is built with `x-if` only while it is open, not hidden with `x-show`. Built hidden on every row, such menus were about four fifths of a result's elements and most of the time to draw it. The longest blocked main thread after a slow result went from about 90 to 25 ms, and from about 550 to 140 ms at 4× CPU throttle.
 - The small parts of a set page's row that every worn piece shows (the pin, the gear category and source line, the stat cells) are the other way round: kept in every row and hidden with `x-show` while the row is empty. An Auto-fill turns every empty row into a worn one at once, and building those parts with `x-if` then made about 700 elements in one task; now about 300 (the materia chips and the Take boxes, still built with `x-if`).
 - The gear browser's rows are template markup (`src/partials/gear-page.html`), not HTML strings built in JavaScript.
@@ -368,7 +368,7 @@ Because the data is part of the script rather than fetched, the page works from 
 
 The steps are: install once, work, check, look. Every command, with how long it takes, is in the [root README](../../README.md#develop); this section adds what each step does.
 
-- **Install** (`npm install`, or `npm ci`; it installs esbuild, Biome, Playwright and Alpine). Biome does lint and format; Playwright drives the browser for the smoke test (run `npx playwright install chromium` once). The project requires Node 22 or later.
+- **Install** (`npm install`, or `npm ci`; it installs esbuild, Biome, Playwright and Alpine). Biome does lint and format; Playwright drives the browser for the smoke test (run `npx playwright install chromium` once). The project requires Node 22.18 or later (type stripping runs `.ts` files; `tsc --noEmit` is the type check, `tsconfig.json`).
 - **Work** (`npm run dev`). The page is rebuilt (not minified) whenever a source file or the HTML template changes, and the output folder is served on a local address the command prints. Reload the browser to see a change.
 - **Check** (`npm run check`: lint, build, all tests). Lint, format check, build, unit tests, browser smoke test. It must pass before a change is called done. The generator tests (Python) and the Python lint run in `npm run check:all`, needed when the data pipeline changes.
 - **Look** (open the built page at the five viewports in [testing.md, section 3.1](testing.md#31-viewports-to-look-at-for-ui-changes), from 960 px up to 2560 x 1440). The page must never scroll sideways; wide tables scroll inside their own box.
@@ -489,8 +489,8 @@ Notes:
 | The store's settings as plain inputs: each tab's panel, sync settings, the cap Piece stats shows, the Target GCD range, the default Gear categories boxes, the example piece's materia slot totals | `src/ui/job-sync-panel.js` (`panelOf`, `PANEL_GROUP`, `syncSettings`, `shownSync`, `TARGET_GCD_RANGE`, `DEFAULT_EXCLUDE`, `meldSlotChoices`, `meldSlotsOf`) |
 | The cap follows the level: the rule that lowers a cap, the flag in a cap field's label line | `src/ui/level-cap.js` (`limitCapToLevel`, `capLoweredText`, `capFlag`, `capTextBad`, `CAP_TYPED_BAD_TEXT`), `src/partials/cap-flag.html` |
 | The ranked stat menus (one rank per stat, swaps) | `src/ui/ranks.js` (`rankChoices`, `withRank`, `uniqueRanks`) |
-| Text helpers the views share: counts, plurals, a deep copy | `src/ui/text.js` (`fmtInt`, `plural`, `oneOrMany`, `clone`) |
-| The view pattern, frozen views | `src/ui/view-cache.js` (`viewCache`, `deepFreeze`) |
+| Text helpers the views share: counts, plurals, a deep copy | `src/ui/text.ts` (`fmtInt`, `plural`, `oneOrMany`, `clone`) |
+| The view pattern, frozen views | `src/ui/view-cache.ts` (`viewCache`, `deepFreeze`) |
 | Number-field binding, the flash of a lowered cap field (components only) | `src/ui/number-field.js` (`numberField`, `storeNumberField`, `flashLowered`, `TYPING_DEBOUNCE_MS`) |
 | The Expansion and "Gear categories" menus, where a floating menu opens (components only) | `src/ui/components/filter-menus.js` (`gearFromToggles`, `expansionToggles`, `gearFromSummary`, `gearFromHint`, `placeMenu`) |
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `gcd.js`, `gear.js`, `tiers.js`, `meal-menu.js`; the set page's views (rows below) and the sheet views (notes below the table)) |

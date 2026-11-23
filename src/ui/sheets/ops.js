@@ -9,7 +9,7 @@ import { piecesJobCannotWear } from '../../core/gear-groups.js';
 import { makeJobContext } from '../../core/job-context.js';
 import { remapStatKey } from '../../core/stat-keys.js';
 import { DATA_SOURCE, MAX_REAL } from '../../core/tables.js';
-import { clone } from '../text.js';
+import { clone } from '../text.ts';
 import { limitCapToLevel } from '../level-cap.js';
 import { SET_ROW_SLOTS, SHEET_VERSION } from './storage.js';
 

@@ -8,7 +8,7 @@ import { MAX_REAL } from '../../../../src/core/tables.js';
 import { UNAVAILABLE_MESSAGE } from '../../../../src/ui/sheets/storage.js';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.js';
 import { firstSortDir, nextListSort, setHeaderView, sheetPageView, sortSetRows } from '../../../../src/ui/views/sheet-sets.js';
-import { plural } from '../../../../src/ui/text.js';
+import { plural } from '../../../../src/ui/text.ts';
 import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.js';
 import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
 

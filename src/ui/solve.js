@@ -5,7 +5,7 @@
    session (core/session.js), never the store.
    Pure view builders: no Alpine import, so Node can load and test them. */
 import { gcdRange, gearFromCounts, recipePool, runRecipe } from '../core/recipe.js';
-import { fmtInt } from './text.js';
+import { fmtInt } from './text.ts';
 import { badPinMessages } from './sheets/fill.js';
 
 /* {searched, left}: how many pieces of `gear` (a session's gear for `job`) the recipe searches, and how many its

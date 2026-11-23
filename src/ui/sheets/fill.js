@@ -14,7 +14,7 @@
    - Nothing pinned: every slot is open and `pins` is null, so the solve is the plain one. Every slot pinned, the meal
      included: the count is 0 and the button is off. Every piece pinned and the meal open is a fill of the meal alone. */
 import { hasPins } from '../../core/recipe.js';
-import { joinNames, oneOrMany, plural } from '../text.js';
+import { joinNames, oneOrMany, plural } from '../text.ts';
 import { usedRows } from './saved-set.js';
 
 /* The meal of `gearSet` that Auto-fill keeps: its meal while the meal is pinned and there is one, else null. */

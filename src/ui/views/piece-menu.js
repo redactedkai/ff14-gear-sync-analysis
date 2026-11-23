@@ -3,7 +3,7 @@
 import { EXPANSIONS, SLOT_LABEL } from '../../core/constants.js';
 import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.js';
 import { meldSlots } from '../../core/meld.js';
-import { plural } from '../text.js';
+import { plural } from '../text.ts';
 import { uniqueTaken } from '../sheets/set-edits.js';
 
 /* "2 slots" or "2+3 slots" (guaranteed + overmeld), "no materia slots", for a picker line. */

@@ -5,13 +5,13 @@
 import { SEARCH_MAX_LENGTH, defaultBrowse } from '../state.js';
 import { syncSettings } from '../job-sync-panel.js';
 import { browseFiltered, gearView } from '../views/gear.js';
-import { viewCache } from '../view-cache.js';
+import { viewCache } from '../view-cache.ts';
 import { expansionToggles, gearFromToggles } from './filter-menus.js';
 
 /* The browser's component: its view (gearView, rebuilt while the tab is open), its page, its two filter menus, the sort
    and Reset filters. */
 export function gear() {
-  // the list and the settings it was built for (view-cache.js viewCache)
+  // the list and the settings it was built for (view-cache.ts viewCache)
   const views = viewCache();
   return {
     /* the page picked on the page line (1 first), and the list it was picked for (listKey): any change to the list

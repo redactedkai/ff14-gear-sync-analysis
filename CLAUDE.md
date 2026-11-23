@@ -26,9 +26,9 @@ Feature branch → `dev` → `main`, one way, fast-forward when possible. Never 
 
 ## Commands
 
-Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.11+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
+Needs Node 22.18+ (type stripping runs `.ts` files in Node; `npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.11+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
 
-- `npm run check` (a warning if installed packages differ from the lock, then lint, build, `npm test`, `test:smoke`; no Python; about 1 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
+- `npm run check` (a warning if installed packages differ from the lock, then lint, `typecheck`, build, `npm test`, `test:smoke`; no Python; about 1 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
 - `npm run check:all` (adds `lint:py`, `test:py`) when touching `scripts/data/` or after `data:update`.
 - While iterating, run the part you are changing: `npm run test:<domain>` (unit tests, seconds; `-- --smoke` adds its browser checks on a private copy of the page; `-- --fast` leaves out the long files), `npm run test:changed` for the domains `git status` points to, or `npm run test:fast` for every unit test but the long ones (about 12 s). Domains: `model`, `data`, `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`. A partial run is never the bar for done: `npm run check` is, and only its bare `no errors` counts (a filtered smoke run prints `no errors (partial: ...)`).
 - For UI changes, also look at the page at the viewports listed in `docs/engineering/testing.md` section 3.1 (named by CSS screen, from the 960 px floor up to 2560 x 1440).
@@ -40,6 +40,7 @@ Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx p
 
 Details: `docs/engineering/architecture.md`.
 
+- New modules may be `.ts` (TypeScript 6, `tsconfig.json`: strict, `erasableSyntaxOnly`, no enums, namespaces, parameter properties or decorators). A `.ts` file is imported with its extension (`'../text.ts'`); `npm run typecheck` checks them, `.js` files stay unchecked. The first two are `src/ui/text.ts` and `src/ui/view-cache.ts`.
 - Core code never reads global job state. Pass a **JobContext** (`makeJobContext(jobId)`). **Stat keys** are the game's own stat names: `str`, `dex`, `int`, `mind` (the main stat), `vit`, `crit`, `det`, `dh`, `sks`, `sps` (speed), `piety`, `ten` (the special substat). `job.stats` lists the keys a job has (a job without a special substat has six), `job.substats` the substats, and `job.mainKey`, `job.speedKey` and `job.specKey` (null for none) name its main, speed and special stat; `job.label` and `job.short` name them. Shared code (`src/core`, `src/ui/views`) may name a key in a table or a per-key map (labels, tier effects) but never hard-codes a job-specific key in logic: ask the job (`job.speedKey`, not `'sks'`). A unit test (`tests/unit/core/stat-keys.test.js`) greps for strays.
 - Components build a `view` object; templates only display it. Keep big data (the item database, browse results) out of reactive state. The optimizer reads `Alpine.raw` data: reactive proxies were too slow, and a worker cannot be sent a proxy.
 - Dynamic `<select>`s use `x-for` with `:selected`. Reset to defaults asks first; switching job does not.
