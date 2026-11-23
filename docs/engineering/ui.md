@@ -346,6 +346,10 @@ The gear table draws its own outline so the stuck column-name row has real round
 
 `checkRadii` reads the corner pixels at 2x device scale, in a 1920 x 950 window scrolled to the page bottom: every pixel outside the arc must be the page colour.
 
+## 8. Stacking scale
+
+Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-row` 1 up to `--z-nested` 70; `--z-dialog` and `--z-toast` share 30). A unit test (`tests/unit/styles/z-index-scale.test.js`) fails on a bare number. A menu inside a library positioner (`[data-part="positioner"]`) is `position: static`, and the page scroll lock follows an open dialog (`.dlg[open]` or `.dlg[data-state="open"]`).
+
 ## Where this lives
 
 | Concept | File |
@@ -368,5 +372,3 @@ Notes on the table:
 
 - The Sheets tab component handles the screens, dialogs and reordering; its store holds the sheets, the open screen and the actions.
 - A set page's component handles the draft, pins, Auto-fill and the question before leaving; its own views are the Auto-fill settings, edits by hand, the piece picker, and the materia and meal menus.
-
-**Stacking scale.** Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-row` 1 up to `--z-nested` 70; `--z-dialog` and `--z-toast` share 30). A unit test (`tests/unit/styles/z-index-scale.test.js`) fails on a bare number. A menu inside a library positioner (`[data-part="positioner"]`) is `position: static`, and the page scroll lock follows an open dialog (`.dlg[open]` or `.dlg[data-state="open"]`).
