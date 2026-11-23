@@ -68,6 +68,7 @@ import {
   checkStartupShell,
 } from './checks/startup/failure.mjs';
 import { checkLevelSync } from './checks/tabs/level-sync.mjs';
+import { checkLinkClicks } from './checks/tabs/links.mjs';
 import {
   checkHelpIsModal,
   checkNoteSurvivesTabChange,
@@ -127,6 +128,7 @@ export const GROUPS = [
   { steps: [step(checkSlotMenu, 'gear-browser')] },
   { steps: [step(checkTabPanels, 'app')] },
   { steps: [step(checkRouting, 'app')] },
+  { steps: [step(checkLinkClicks, 'app')] },
   { steps: [step(checkRoutingGuard, 'app')] },
   { steps: [step(checkRoutingAfterReload, 'app')] },
   { steps: [step(checkUnloadGuard, 'app')] },

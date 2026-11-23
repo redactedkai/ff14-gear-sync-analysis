@@ -154,7 +154,7 @@ export async function checkStartupMarkerAfterStart(pg) {
   });
   try {
     await page.goto(pathToFileURL(PAGE_PATH).href);
-    await expect(page.locator('[data-tab=sheets][aria-selected=true]')).toBeVisible();
+    await expect(page.locator('[data-tab=sheets][aria-current=page]')).toBeVisible();
     const markerAt = await page.evaluate(() => window.__markerAt);
     check(Object.keys(markerAt).length === 2, `Alpine's start events seen: ${JSON.stringify(markerAt)}`);
     check(!markerAt['alpine:init'], 'the start marker was already set when Alpine began to start');
@@ -270,7 +270,7 @@ export async function checkStartupShell(pg) {
       const cdp = await page.context().newCDPSession(page);
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
       await page.goto(pathToFileURL(PAGE_PATH).href + hash);
-      await expect(page.locator(`[data-tab=${tab}][aria-selected=true]`)).toBeVisible();
+      await expect(page.locator(`[data-tab=${tab}][aria-current=page]`)).toBeVisible();
       await expect(page.locator('#boot')).toHaveCount(0);
       const shell = await page.evaluate(() => window.__shell);
       check(shell.shown, `${what}: the boot shell was never painted before the page started`);

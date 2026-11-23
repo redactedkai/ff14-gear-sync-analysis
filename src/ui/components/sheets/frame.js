@@ -3,6 +3,7 @@
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: capTypedBad (settings.js) and
    listSort (view.js), which a change of sheet and the Effects / Stat points switch reset. */
 
+import { followInPage } from '../../router/plain-click.js';
 import { afterDraw } from '../compose.js';
 
 /* Returns the part's members. */
@@ -51,10 +52,18 @@ export function framePart() {
       if (missing?.setId && this.sheets.sheet(missing.sheetId)) this.sheets.openSheet(missing.sheetId);
       else this.sheets.openManager();
     },
-    /* A breadcrumb link: 'sheets' the manager, 'sheet' the open sheet's page. */
-    goCrumb(to) {
-      if (to === 'sheets') this.sheets.openManager();
-      else this.sheets.closeSet();
+    /* A breadcrumb link (`event` its click): 'sheets' the manager, 'sheet' the open sheet's page. Only a plain click moves
+       inside the page; any other click is left to the browser (plain-click.js). */
+    goCrumb(to, event) {
+      followInPage(event, () => {
+        if (to === 'sheets') this.sheets.openManager();
+        else this.sheets.closeSet();
+      });
+    },
+    /* A name link of a list (`event` its click): a plain click runs `move` (open that sheet or gear set); any other click is
+       left to the browser. */
+    openFromLink(event, move) {
+      followInPage(event, move);
     },
 
     /* Runs `callback` once Alpine has drawn the change just made, unless the component's element is gone by then (as the

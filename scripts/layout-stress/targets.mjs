@@ -36,7 +36,7 @@ const LABELS = [
   '.f > span:first-child:not(.toggle)',
   '.f-head > span:first-child',
   '.capline',
-  '.tabs button',
+  '.tabs a',
   'button.primary',
   'button.chip',
   '.listhead h2',

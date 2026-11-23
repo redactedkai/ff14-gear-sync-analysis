@@ -1,9 +1,9 @@
 <!-- The Gear browser page (`gear`): title line (the name search with the Slot menu, the match count, Reset filters), filters (with the
      Expansion and "Gear categories" menus), the result table and its paging. Included once, from index.html's job template. No keys. -->
-<section class="tab" id="tab-browse" role="tabpanel" hidden :hidden="$store.app.tab !== 'browse'">
+<section class="tab" id="tab-browse" aria-labelledby="b-heading" hidden :hidden="$store.app.tab !== 'browse'">
   <div class="panel" x-data="gear" @keydown.window="slashToSearch($event)">
     <div class="titleline">
-      <h2>Gear browser</h2>
+      <h2 id="b-heading">Gear browser</h2>
       <div class="searchbar">
         <div
           class="slotpick"

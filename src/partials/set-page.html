@@ -10,11 +10,11 @@
 <div class="setpage" x-data="setPage" @keydown="pageKey($event)">
   <div class="shead" x-ref="head" :class="{ sug: view.mode === 'suggestion', man: view.mode === 'draft' }">
     <div class="setline">
-      <nav class="setcrumb" aria-label="Breadcrumb"><a :href="$store.sheets.href()" @click.prevent="goCrumb('sheets')">Sheets</a><span class="csep" aria-hidden="true">/</span><a
+      <nav class="setcrumb" aria-label="Breadcrumb"><a :href="$store.sheets.href()" @click="goCrumb('sheets', $event)">Sheets</a><span class="csep" aria-hidden="true">/</span><a
         :href="$store.sheets.href($store.sheets.sheetId)"
         class="clipname"
         :title="setHeader.crumbs[1].text"
-        @click.prevent="goCrumb('sheet')"
+        @click="goCrumb('sheet', $event)"
         x-text="setHeader.crumbs[1].text"></a><span class="csep" aria-hidden="true">/</span><span
         class="crumbhere clipname"
         aria-current="page"

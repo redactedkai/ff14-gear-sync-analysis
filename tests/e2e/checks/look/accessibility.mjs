@@ -13,7 +13,6 @@ const KNOWN_AXE = [
   { rule: 'aria-command-name', targetContains: '.draghandle', note: 'the drag handles of the sheet and set lists have no accessible name' },
   { rule: 'heading-order', target: 'h5', note: 'the materia menu title is an h5 with no h4 before it' },
   { rule: 'landmark-one-main', note: 'the page has no <main> landmark' },
-  { rule: 'region', note: 'the tab bar and the screen headings sit outside any landmark' },
   { rule: 'label-content-name-mismatch', target: '#b-from', note: 'Gear from button: its aria-label leaves out the visible text' },
   { rule: 'label-content-name-mismatch', target: '#p-piece-chip', note: 'piece chip: its aria-label leaves out the visible text' },
 ];

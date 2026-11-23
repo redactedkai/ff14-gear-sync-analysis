@@ -1,6 +1,8 @@
 /* Page root and the job / sync settings panel. Each component reads the job through its own `jobCtx` getter, not
    through a parent's scope. */
 import { dataSourceLabel } from '../../core/tables.js';
+import { followInPage } from '../router/plain-click.js';
+import { formatRoute } from '../router/routes.js';
 import { loadExampleSheets } from '../test-data.js';
 import { capControls } from './cap-controls.js';
 import { compose } from './compose.js';
@@ -22,14 +24,26 @@ export function page() {
       this.$store.app.showTab('sheets');
       sheets.openManager();
     },
-    /* A tab button: open tab `tab`. Leaving the Sheets tab while its set page has something to settle (a manual draft,
+    /* The address of tab `tab` (a tab link's href; for the math tab, `mathTab` or the open sub-tab), so Open in new tab and
+       Copy link give the screen. */
+    tabHref(tab, mathTab = this.$store.app.mathTab) {
+      return formatRoute(tab === 'math' ? { tab, mathTab } : { tab });
+    },
+    /* A tab link's click (`event`): a plain click opens tab `tab`; a Ctrl, Cmd, Shift or Alt click is left to the browser
+       (plain-click.js). Leaving the Sheets tab while its set page has something to settle (a manual draft,
        a running Auto-fill, an Auto-fill result waiting) asks first, with the set page's own question (sheets/store.js askLeave);
        the answer opens the tab. The tab shows as selected with a loading line first (store.openTab). */
-    goTab(tab) {
-      const app = this.$store.app;
-      if (tab === (app.pendingTab ?? app.tab)) return;
-      if (app.tab === 'sheets' && tab !== 'sheets' && this.$store.sheets.askLeave(() => app.openTab(tab))) return;
-      app.openTab(tab);
+    goTab(tab, event) {
+      followInPage(event, () => {
+        const app = this.$store.app;
+        if (tab === (app.pendingTab ?? app.tab)) return;
+        if (app.tab === 'sheets' && tab !== 'sheets' && this.$store.sheets.askLeave(() => app.openTab(tab))) return;
+        app.openTab(tab);
+      });
+    },
+    /* A math sub-tab link's click (`event`): a plain click shows sub-tab `sub`; any other click is the browser's. */
+    goSub(sub, event) {
+      followInPage(event, () => this.$store.app.showSub(sub));
     },
     /* The loading line while a tab opens, or '' when none is (the tab buttons, store.openTab). */
     get loadingText() {

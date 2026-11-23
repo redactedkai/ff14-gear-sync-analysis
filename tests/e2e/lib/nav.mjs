@@ -20,13 +20,13 @@ const MATH_FIELDS = { level: '#p-level', cap: '#p-cap', sync: '#p-sync', jobButt
 
 /** The fields of the open tab. */
 async function panelFields(pg) {
-  const tab = await pg.locator('[role=tab][data-tab][aria-selected="true"]').getAttribute('data-tab');
+  const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
   return tab === 'math' ? MATH_FIELDS : STRIP_FIELDS;
 }
 
 /** Open math sub-tab `sub` ('piece', 'gcd' or 'tiers') if another one is open. */
 async function openSub(pg, sub) {
-  if ((await pg.locator(`[data-sub=${sub}]`).getAttribute('aria-pressed')) === 'true') return;
+  if ((await pg.locator(`[data-sub=${sub}]`).getAttribute('aria-current')) === 'page') return;
   await pg.click(`[data-sub=${sub}]`);
   await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
 }
@@ -35,10 +35,10 @@ async function openSub(pg, sub) {
  * Substat tiers' own: GCD Scaling has none, so Stat Allocation is opened then). With `piece`, Stat Allocation's own panel is wanted
  * (its Job box and Sync settings), so that sub-tab is opened. Returns the tab's fields. The Sheets tab has none. */
 async function openSettings(pg, { piece = false } = {}) {
-  if (await pg.locator('[data-tab=sheets][aria-selected="true"]').count()) return STRIP_FIELDS;
+  if (await pg.locator('[data-tab=sheets][aria-current="page"]').count()) return STRIP_FIELDS;
   const fields = await panelFields(pg);
   if (fields === MATH_FIELDS) {
-    if (piece || (await pg.locator('[data-sub=gcd]').getAttribute('aria-pressed')) === 'true') await openSub(pg, 'piece');
+    if (piece || (await pg.locator('[data-sub=gcd]').getAttribute('aria-current')) === 'page') await openSub(pg, 'piece');
   }
   await expect(pg.locator(fields.jobButton)).toBeVisible();
   return fields;
@@ -167,7 +167,7 @@ export const afterFrames = pg =>
 /** Wait until the page's own state (the open tab and its Job and sync panel) is saved: a change is saved a moment later,
  * and a reload before that opens the page as it was. */
 export async function waitStateSaved(pg) {
-  const tab = await pg.locator('[role=tab][data-tab][aria-selected="true"]').getAttribute('data-tab');
+  const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
   if (tab === 'sheets') return waitSaved(pg, "s => s.tab === 'sheets'");
   const panel = await readPanel(pg);
   const cap = JSON.stringify(panel.cap);
@@ -211,7 +211,7 @@ export async function setCap(pg, value) {
 export async function waitSaved(pg, jsCondition) {
   await pg.waitForFunction(
     `(k => { const GROUP = { sheets: 'browse', browse: 'browse', math: 'piece' };
-      const tab = document.querySelector('[role=tab][data-tab][aria-selected="true"]')?.dataset.tab;
+      const tab = document.querySelector('[data-tab][aria-current="page"]')?.dataset.tab;
       const withOpenPanel = s => ({ ...s, tab, ...(s[GROUP[tab]] && ['job', 'cap', 'sync', 'level'].reduce((o, f) => ({ ...o, [f]: s[GROUP[tab]][f] }), {})) });
       let s; try { s = JSON.parse(localStorage.getItem(k)); } catch { return false; }
       return !!s && (${jsCondition})(withOpenPanel(s)); })(${JSON.stringify(STORE_KEY)})`,

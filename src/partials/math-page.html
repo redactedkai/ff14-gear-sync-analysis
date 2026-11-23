@@ -3,30 +3,30 @@
 <section
   class="tab"
   id="tab-math"
-  role="tabpanel"
+  aria-labelledby="tablink-math"
   hidden
   :hidden="$store.app.tab !== 'math'"
   x-data="syncExplainer">
 <div class="mathbar" id="m-bar">
   <nav class="subtabs" aria-label="Math views">
-    <button
+    <a
       data-sub="piece"
       data-label="Stat Allocation"
-      type="button"
-      :aria-pressed="String($store.app.mathTab === 'piece')"
-      @click="$store.app.showSub('piece')">Stat Allocation</button>
-    <button
+      :href="tabHref('math', 'piece')"
+      :aria-current="$store.app.mathTab === 'piece' ? 'page' : null"
+      @click="goSub('piece', $event)">Stat Allocation</a>
+    <a
       data-sub="gcd"
       data-label="GCD Scaling"
-      type="button"
-      :aria-pressed="String($store.app.mathTab === 'gcd')"
-      @click="$store.app.showSub('gcd')">GCD Scaling</button>
-    <button
+      :href="tabHref('math', 'gcd')"
+      :aria-current="$store.app.mathTab === 'gcd' ? 'page' : null"
+      @click="goSub('gcd', $event)">GCD Scaling</a>
+    <a
       data-sub="tiers"
       data-label="Substat tiers"
-      type="button"
-      :aria-pressed="String($store.app.mathTab === 'tiers')"
-      @click="$store.app.showSub('tiers')">Substat tiers</button>
+      :href="tabHref('math', 'tiers')"
+      :aria-current="$store.app.mathTab === 'tiers' ? 'page' : null"
+      @click="goSub('tiers', $event)">Substat tiers</a>
   </nav>
   <!-- the ? button sits at the right end of the sub-tabs row (css), so it comes right after them in the tab order -->
   <div class="helpwrap" x-ref="helpWrap" x-show="$store.app.mathTab === 'piece'">

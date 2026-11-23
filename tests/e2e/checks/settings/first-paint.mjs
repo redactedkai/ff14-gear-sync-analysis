@@ -73,7 +73,7 @@ export async function checkFirstPaint(pg) {
  * on the Gear browser, and every frame that showed the page showed it as it settled. */
 async function checkPaints(pg, where) {
   await pg.waitForFunction(() => window.__firstPaint?.length >= 30); // a few frames after the page is ready
-  const tab = await pg.locator('[role=tab][data-tab][aria-selected="true"]').getAttribute('data-tab');
+  const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
   const frames = await pg.evaluate(() => window.__firstPaint);
   const settled = frames.at(-1);
   check(

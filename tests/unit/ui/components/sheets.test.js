@@ -102,13 +102,13 @@ test('gear sets: Edit names a set and its notes, which the list shows as one lin
     ['Sage', '100'].every(part => c.setHeader.settingsText.includes(part)),
     c.setHeader.settingsText,
   );
-  c.goCrumb('sheet');
+  c.goCrumb('sheet', { button: 0, preventDefault() {} });
   assert.equal(c.screen, 'sheet');
   c.openEditSet(sheets.currentSheet.sets[0].id);
   c.dialog.description = 'My own set\nsecond line';
   c.submitDialog();
   assert.deepEqual([c.page.rows[0].descriptionLine, c.page.rows[0].description], ['My own set', 'My own set\nsecond line']);
-  c.goCrumb('sheets');
+  c.goCrumb('sheets', { button: 0, preventDefault() {} });
   assert.equal(c.screen, 'sheets');
 });
 
@@ -388,6 +388,7 @@ test('the component: its six parts define every member the templates use, getter
       'openDialog',
       'openEditSet',
       'openEditSheet',
+      'openFromLink',
       'openNewSheet',
       'openRow',
       'pickClan',

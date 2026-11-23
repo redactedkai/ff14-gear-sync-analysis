@@ -60,7 +60,7 @@ export async function checkReloadPersists(pg) {
 
   await pg.reload();
   await waitReady(pg);
-  const selected = (await pg.getAttribute('[data-tab=math]', 'aria-selected')) === 'true';
+  const selected = (await pg.getAttribute('[data-tab=math]', 'aria-current')) === 'page';
   check(selected && (await pg.locator('#tab-piece').isVisible()), 'after reload How the math works is not the open tab');
   for (const [sel, v] of Object.entries(inputs)) {
     const got = await fieldValue(pg, sel);

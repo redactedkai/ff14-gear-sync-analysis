@@ -8,7 +8,7 @@ export const SHARED_SETUP = { job: 'SGE', sync: true, cap: '123', level: '50' };
 /** Set the page to SHARED_SETUP, on the Gear browser (the page opens on the Sheets tab, which has no panel). */
 export async function setUpShared(pg) {
   await pg.click('[data-tab=browse]');
-  await expect(pg.locator('[data-tab=browse]')).toHaveAttribute('aria-selected', 'true');
+  await expect(pg.locator('[data-tab=browse]')).toHaveAttribute('aria-current', 'page');
   await setJob(pg, SHARED_SETUP.job);
   await setCap(pg, SHARED_SETUP.cap);
   await setNumber(pg, '#level', SHARED_SETUP.level);

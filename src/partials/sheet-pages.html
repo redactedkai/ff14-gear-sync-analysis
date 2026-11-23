@@ -36,7 +36,7 @@
               @dragend="dragEnd()"
               @keydown="handleKey('sheet', i, $event)"></span>
             <div class="dragbody">
-              <a :href="$store.sheets.href(r.id)" class="sname clipname" @click.prevent="$store.sheets.openSheet(r.id)" x-text="r.name"></a>
+              <a :href="$store.sheets.href(r.id)" class="sname clipname" @click="openFromLink($event, () => $store.sheets.openSheet(r.id))" x-text="r.name"></a>
               <span class="sorigin clipname" x-text="r.descriptionLine"></span>
               <div class="rowacts">
                 <button type="button" class="linkbtn" data-action="open" @click="$store.sheets.openSheet(r.id)">Open</button>
@@ -69,7 +69,7 @@
 
 <!-- A SHEET'S PAGE: its settings (level and item level sync applied as typed), then its gear sets -->
 <template x-if="screen === 'sheet' && page"><div class="sheetsview" id="sh-sheet">
-  <div class="setline"><nav class="setcrumb" aria-label="Breadcrumb"><a :href="$store.sheets.href()" @click.prevent="goCrumb('sheets')">Sheets</a><span class="csep" aria-hidden="true">/</span><span class="crumbhere clipname" aria-current="page" :title="page.name" x-text="page.name"></span>
+  <div class="setline"><nav class="setcrumb" aria-label="Breadcrumb"><a :href="$store.sheets.href()" @click="goCrumb('sheets', $event)">Sheets</a><span class="csep" aria-hidden="true">/</span><span class="crumbhere clipname" aria-current="page" :title="page.name" x-text="page.name"></span>
     <span class="setsw">
       <button
         type="button"
@@ -233,7 +233,7 @@
               @dragend="dragEnd()"
               @keydown="handleKey('set', i, $event)"></span>
             <div class="dragbody">
-              <a :href="$store.sheets.href($store.sheets.sheetId, r.id)" class="sname clipname" :title="r.name" @click.prevent="$store.sheets.openSet(r.id)" x-text="r.name"></a>
+              <a :href="$store.sheets.href($store.sheets.sheetId, r.id)" class="sname clipname" :title="r.name" @click="openFromLink($event, () => $store.sheets.openSet(r.id))" x-text="r.name"></a>
               <template x-if="r.descriptionLine"><span class="sorigin clipname setnotes" :title="r.description" x-text="r.descriptionLine"></span></template>
               <span class="sorigin" x-text="r.originText"></span>
               <div class="rowacts">

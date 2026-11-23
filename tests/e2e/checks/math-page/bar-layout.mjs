@@ -274,7 +274,7 @@ export async function checkMathBarBoxes(pg) {
   // the sub-tab buttons do not move when another sub-tab is chosen
   const lefts = () =>
     pg.evaluate(() =>
-      [...document.querySelectorAll('.subtabs button')].map(button => Math.round(button.getBoundingClientRect().left * 10) / 10),
+      [...document.querySelectorAll('.subtabs a')].map(button => Math.round(button.getBoundingClientRect().left * 10) / 10),
     );
   const before = await lefts();
   for (const sub of ['gcd', 'tiers', 'piece']) {

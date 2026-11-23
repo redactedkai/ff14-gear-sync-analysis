@@ -58,7 +58,7 @@ export async function checkRouting(pg) {
   await pg.goBack();
   await expectHash(pg, setHash, 'Back from the Gear browser');
   await expect(pg.locator('#sh-gear')).toBeVisible();
-  await expect(pg.locator('[data-tab=sheets]')).toHaveAttribute('aria-selected', 'true');
+  await expect(pg.locator('[data-tab=sheets]')).toHaveAttribute('aria-current', 'page');
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 2, leftAt);
   await pg.goBack();
   await expectHash(pg, sheetHash, 'Back from the set page');
@@ -84,7 +84,7 @@ export async function checkRouting(pg) {
   await expect(pg.locator('#tab-gcd')).toBeVisible();
   await pg.goBack();
   await expectHash(pg, /^#\/math\/piece(\?|$)/, 'Back to the piece view');
-  await expect(pg.locator('[data-sub=piece]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('[data-sub=piece]')).toHaveAttribute('aria-current', 'page');
 
   // the Sheets tab button returns to the screen the tab was left on
   await pg.click('[data-tab=sheets]');

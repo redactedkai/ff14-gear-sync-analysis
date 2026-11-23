@@ -217,7 +217,11 @@ input.lowered.flash {
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
 }
-.tabs button {
+.tabs a {
+  font-size: 0.88rem; /* the size and weight a button has: the links look as the buttons did */
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
   border: 0;
   border-bottom: 3px solid transparent;
   border-radius: 0;
@@ -226,7 +230,7 @@ input.lowered.flash {
   color: var(--muted);
   white-space: nowrap;
 }
-.tabs button[aria-selected="true"],
+.tabs a[aria-current="page"],
 html[data-boot-tab="sheets"] .boot [data-boot="sheets"],
 html[data-boot-tab="browse"] .boot [data-boot="browse"],
 html[data-boot-tab="math"] .boot [data-boot="math"] {
@@ -244,7 +248,7 @@ html[data-boot-tab="math"] .boot [data-boot="math"] {
   gap: 16px;
   min-width: 0;
 }
-.tabs button.aside {
+.tabs a.aside {
   margin-left: auto;
   font-style: italic;
 }
@@ -334,7 +338,10 @@ html[data-boot-tab="math"] .bootload::after {
   display: flex;
   gap: 22px;
 }
-.subtabs button {
+.subtabs a {
+  font-size: 0.88rem; /* the size a button has: the links look as the buttons did */
+  text-decoration: none;
+  cursor: pointer;
   background: none;
   border: 0;
   border-bottom: 3px solid transparent;
@@ -347,7 +354,7 @@ html[data-boot-tab="math"] .bootload::after {
 }
 /* a button's width does not depend on which tab is open: a hidden copy of its label in the open tab's bold (data-label) sets it, so
    the bold text fits inside it and no button after it moves */
-.subtabs button::after {
+.subtabs a::after {
   content: attr(data-label);
   display: block;
   height: 0;
@@ -355,10 +362,10 @@ html[data-boot-tab="math"] .bootload::after {
   visibility: hidden;
   font-weight: 600;
 }
-.subtabs button:hover {
+.subtabs a:hover {
   color: var(--fg);
 }
-.subtabs button[aria-pressed="true"] {
+.subtabs a[aria-current="page"] {
   border-bottom-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
@@ -370,10 +377,10 @@ html[data-boot-tab="math"] .bootload::after {
   min-width: 0;
 }
 .boot,
-.boot button {
+.boot a {
   cursor: progress; /* its tab buttons do nothing until the page has started */
 }
-.boot .tabs button {
+.boot .tabs a {
   opacity: 0.55; /* the tabs look unavailable: they do nothing until the page has started; the saved tab, selected, is full */
 }
 html[data-boot-tab="sheets"] .boot [data-boot="sheets"],

@@ -118,7 +118,7 @@ export async function checkJobLevelCap(pg) {
   await setNumber(pg, '#level', '70');
   await pg.waitForTimeout(DEBOUNCE_SETTLE_MS); // a typed level above the cap is not saved: nothing signals a save that does not happen
   const level = await pg.evaluate(
-    `(s => s[{ sheets: 'browse', browse: 'browse', math: 'piece' }[document.querySelector('[role=tab][data-tab][aria-selected="true"]').dataset.tab]].level)(JSON.parse(localStorage.getItem("${STORE_KEY}")))`,
+    `(s => s[{ sheets: 'browse', browse: 'browse', math: 'piece' }[document.querySelector('[data-tab][aria-current="page"]').dataset.tab]].level)(JSON.parse(localStorage.getItem("${STORE_KEY}")))`,
   );
   check(level === 50, `BST: a typed level 70 was taken (saved level ${JSON.stringify(level)})`);
   await setNumber(pg, '#level', '40');

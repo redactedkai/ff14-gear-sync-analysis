@@ -109,6 +109,9 @@ test('Reset to defaults: asks first, and resets only on yes', () => {
 
 /* A tab button (goTab): leaving the Sheets tab asks the set page first (sheets/store.js askLeave); the answer opens the
    tab. Other tabs switch at once. */
+/* A plain click on a tab link (plain-click.js). */
+const plain = { button: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, preventDefault() {} };
+
 test('goTab: leaving the Sheets tab with something to settle asks first; the answer opens the tab', async () => {
   const frames = globalThis.requestAnimationFrame;
   globalThis.requestAnimationFrame = fn => fn(); // the tab opens after one frame: here at once
@@ -124,7 +127,7 @@ test('goTab: leaving the Sheets tab with something to settle asks first; the ans
     },
   };
   const c = Object.assign(page(), { $store: { app, sheets } });
-  c.goTab('browse');
+  c.goTab('browse', plain);
   assert.equal(app.tab, 'sheets', 'the question is open: the tab stays');
   pending();
   assert.equal(app.pendingTab, 'browse', 'the tab is marked while it opens');
@@ -133,17 +136,20 @@ test('goTab: leaving the Sheets tab with something to settle asks first; the ans
   // nothing to settle: at once
   app.showTab('sheets');
   settle = false;
-  c.goTab('math');
+  c.goTab('math', plain);
   await settled();
   assert.equal(app.tab, 'math');
   // from another tab nothing is asked
   settle = true;
   pending = null;
-  c.goTab('browse');
+  c.goTab('browse', plain);
   await settled();
   assert.deepEqual([app.tab, pending], ['browse', null]);
   // the tab already open (or opening) does nothing
-  c.goTab('browse');
+  c.goTab('browse', plain);
+  assert.equal(app.pendingTab, null);
+  // a Ctrl click is the browser's: the page does not move
+  c.goTab('math', { ...plain, ctrlKey: true });
   assert.equal(app.pendingTab, null);
   globalThis.requestAnimationFrame = frames;
 });

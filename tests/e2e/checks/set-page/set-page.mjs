@@ -23,7 +23,7 @@ export async function checkTabGuard(pg) {
   await pg.click('[data-tab=math]');
   await expect(pg.locator('#sh-leave')).toBeVisible();
   await pg.click('#sh-leave-discard');
-  await expect(pg.locator('[data-tab=math]')).toHaveAttribute('aria-selected', 'true');
+  await expect(pg.locator('[data-tab=math]')).toHaveAttribute('aria-current', 'page');
   await pg.click('[data-tab=browse]');
   await expect(pg.locator('#tab-browse')).toBeVisible();
 }
