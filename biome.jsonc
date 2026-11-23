@@ -11,6 +11,7 @@
       "!node_modules",
       "!tests/e2e/out",
       "!tests/stories/out",
+      "!tests/visual/test-results",
       "!scripts/perf/out",
       "!scripts/validate/out",
       "!package-lock.json",

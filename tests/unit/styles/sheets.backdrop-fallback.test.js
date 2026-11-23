@@ -1,7 +1,7 @@
 /* The dialogs' backdrop (src/styles/sheets.css, `.dlg::backdrop`) reads the --backdrop token, which a ::backdrop inherits from
-   :root only in Chrome 122, Firefox 120 and Safari 17.4 and later. Older browsers use the fallback value written after the
-   comma, once for the light theme and once for each way of choosing the dark one. Those literals must equal the token's own
-   values in src/styles/tokens.css, so a change of the token fails here until the fallback follows. */
+   :root only in Chrome 122, Firefox 120 and Safari 17.4 and later. The build floor has it, so the fallback value written after
+   the comma is only a guard, once for the light theme and once for each way of choosing the dark one. Those literals must
+   equal the token's own values in src/styles/tokens.css, so a change of the token fails here until the fallback follows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readStyles } from '../../../scripts/build/styles.mjs';

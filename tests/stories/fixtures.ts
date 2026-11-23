@@ -26,6 +26,7 @@ type Fixtures = {
   axe: () => Promise<string[]>;
 };
 
+/* Playwright's `test` with two extra fixtures, `consoleLog` and `axe`; a page error or console error fails the test. */
 export const test = base.extend<Fixtures>({
   consoleLog: [
     async ({ page }, use, testInfo) => {

@@ -64,6 +64,9 @@ test('size budget: two measurements give the same bytes', async () => {
 
 test('size budget: the budget is no more than 1 kB above the measured size, and 1 kB below it would fail', async () => {
   const { gzipBytes } = await measureOwnCode();
-  assert.ok(OWN_CODE_GZIP_BUDGET_BYTES - gzipBytes <= 1_000, 'the budget has slack beyond its headroom: lower it to the measured size plus about 1 kB');
+  assert.ok(
+    OWN_CODE_GZIP_BUDGET_BYTES - gzipBytes <= 1_000,
+    'the budget has slack beyond its headroom: lower it to the measured size plus about 1 kB',
+  );
   assert.ok(gzipBytes > OWN_CODE_GZIP_BUDGET_BYTES - 1_000, 'a budget 1 kB below this one would not fail');
 });

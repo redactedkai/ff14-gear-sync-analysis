@@ -9,7 +9,9 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BROWSER_TARGETS } from '../../scripts/build/build.mjs';
 
+// the folder of the stories gallery (tests/stories/)
 export const STORIES_DIR = dirname(fileURLToPath(import.meta.url));
+// where the gallery is built (gitignored)
 export const OUT_DIR = join(STORIES_DIR, 'out');
 
 /* Every file under `folder`, as paths with forward slashes (the `out` folder is skipped). */

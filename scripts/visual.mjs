@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 // the Playwright image the baselines belong to: the playwright version of package.json, then the Ubuntu 24.04 build
 export const PINNED_IMAGE = 'mcr.microsoft.com/playwright:v1.64.1-noble';
+// the environment variable that says the run is inside the pinned image; its value is the image tag
 export const IMAGE_ENV = 'GSA_VISUAL_IMAGE';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');

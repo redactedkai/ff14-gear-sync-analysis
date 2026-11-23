@@ -62,6 +62,7 @@ import {
   checkStartupBlockedStorage,
   checkStartupFailures,
   checkStartupHealthy,
+  checkStartupMarkerMissing,
   checkStartupReset,
   checkStartupShell,
 } from './checks/startup/failure.mjs';
@@ -208,6 +209,7 @@ export const GROUPS = [
       step(checkStartupHealthy, 'app'),
       step(checkStartupShell, 'app'),
       step(checkStartupFailures, 'app'),
+      step(checkStartupMarkerMissing, 'app'),
       step(checkStartupReset, 'app'),
       step(checkStartupBlockedStorage, 'app'),
     ],

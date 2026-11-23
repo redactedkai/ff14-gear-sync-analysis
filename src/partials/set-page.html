@@ -146,14 +146,14 @@
                       :disabled="targetIsSpeed"
                       x-bind="fillField('gcd')">
                     <div class="seg" role="radiogroup" aria-label="Target GCD mode" :class="{ off: targetIsSpeed }">
-                      <label :class="{ on: fillSettings.goal.gcdMode === 'exact' }"><input
+                      <label><input
                         type="radio"
                         name="s-gcd-mode"
                         value="exact"
                         :disabled="targetIsSpeed"
                         :checked="fillSettings.goal.gcdMode === 'exact'"
                         @change="setGoalField('gcdMode', 'exact')">exactly</label>
-                      <label :class="{ on: fillSettings.goal.gcdMode === 'min' }"><input
+                      <label><input
                         type="radio"
                         name="s-gcd-mode"
                         value="min"

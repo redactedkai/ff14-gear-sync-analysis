@@ -6,6 +6,7 @@ import { STORE_KEY } from '../../src/ui/store-key.js';
 
 // time for the page to redraw after a click or a state change, before the next step
 export const SETTLE_MS = 450;
+// longest wait, in milliseconds, for an Auto-fill to finish before a view's shot is taken
 export const FILL_TIMEOUT_MS = 60_000;
 
 /* Saved states the views start from (the shape of src/ui/state.js; restoreState fills in the rest). */
@@ -67,6 +68,7 @@ const SAGE_SHEET = {
 };
 const SHEETS = { tab: 'sheets', sheets: [SAGE_SHEET] };
 
+/* Waits SETTLE_MS for the page to redraw; returns a promise. `page` is a Playwright page. */
 export const settle = page => page.waitForTimeout(SETTLE_MS);
 
 /* Click `selector`, then let the page redraw. */

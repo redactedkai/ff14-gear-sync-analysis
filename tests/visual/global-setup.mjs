@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildReleasePage } from '../../scripts/build/build.mjs';
 
+// the environment variable that holds the path of the page the visual tests open (set by the global setup)
 export const PAGE_ENV = 'GSA_VISUAL_PAGE';
 
 /* Playwright's global setup: returns a teardown-free setup; sets PAGE_ENV to the built page, unless it is already set

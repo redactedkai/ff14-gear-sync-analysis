@@ -25,7 +25,7 @@ What runs, on what, and how much of it?
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
 | Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 10 tests in 3 files, in Chromium (about 2 s of test time) and also in Firefox and WebKit |
-| Smoke test (browser) | the built page in headless Chromium | one script, 44 groups of 75 steps |
+| Smoke test (browser) | the built page in headless Chromium | one script, 44 groups of 76 steps |
 
 Notes:
 

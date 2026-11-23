@@ -3,6 +3,7 @@
    TypeScriptField in broken-elements.story.js pins that setting; the page's own elements still avoid the pattern. */
 import { LitElement, html } from 'lit';
 
+/* The element whose `count = 0` initializer sits next to `static properties`; the story that mounts it proves the build setting. */
 export class TsFieldElement extends LitElement {
   static properties = { count: { type: Number } };
 

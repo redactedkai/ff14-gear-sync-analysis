@@ -10,6 +10,7 @@ import { LitElement, html } from 'lit';
 /* The `count-change` event: `detail` is the new count. */
 export const COUNT_CHANGE_EVENT = 'count-change';
 
+/* The `gsa-counter` element (registered below): a count with add and remove buttons; see the file header for the rules. */
 export class GsaCounter extends LitElement {
   static properties = { count: { type: Number } };
 

@@ -1,5 +1,5 @@
 // The "Page failed to start" message (src/startup-failure.js): none on a healthy load; shown on a page that fails in
-// each way (a throw in the app script, an error inside Alpine, a file cut short); its Reset button; no Reset button
+// each way (a throw in the app script, an error inside Alpine, a file cut short, the start marker missing); its Reset button; no Reset button
 // when the browser blocks storage. The broken pages are copies of the built page written to the output folder.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -111,6 +111,29 @@ export async function checkStartupFailures(pg) {
       check(got.heading.length > 0, `file cut ${what}: no heading`);
       check(got.error.startsWith('The page was not built'), `file cut ${what}: error text '${got.error}'`);
     }
+  } finally {
+    await close();
+  }
+}
+
+// the line main.js runs last once the page is built; startup-failure.js reads the attribute it sets
+const STARTED_MARKER = 'document.documentElement.dataset.started="";';
+
+/** The copy without the line that marks the page as started: every script runs and throws nothing, but the page never
+ * says it finished. */
+const withoutStartMarker = html => {
+  if (!html.includes(STARTED_MARKER)) throw new Error('the page has no started-marker line to remove');
+  return html.replace(STARTED_MARKER, '');
+};
+
+/** A page whose start marker is missing and that threw no error: the message still shows, saying the page was not built. */
+export async function checkStartupMarkerMissing(pg) {
+  const { page, close } = await openPage(pg);
+  try {
+    const got = await failedStart(page, variantUrl('nomarker', withoutStartMarker));
+    check(got.heading.length > 0, 'marker missing: no heading');
+    check(got.error.startsWith('The page was not built'), `marker missing: error text '${got.error}'`);
+    check(await page.locator('#startfail-reload').isVisible(), 'marker missing: no Reload button');
   } finally {
     await close();
   }
