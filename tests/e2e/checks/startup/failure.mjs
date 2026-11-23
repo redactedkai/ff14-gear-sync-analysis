@@ -139,6 +139,31 @@ export async function checkStartupMarkerMissing(pg) {
   }
 }
 
+/** The start marker is set only once Alpine.start() has returned: a listener from before the page's scripts reads it when Alpine
+ * begins (`alpine:init`) and when it has built the page (`alpine:initialized`, still inside start()); the marker is absent at both
+ * and set once the page has loaded. A marker set before the start would claim a start that has not happened. */
+export async function checkStartupMarkerAfterStart(pg) {
+  const { page, close } = await openPage(pg, () => {
+    window.__markerAt = {};
+    for (const name of ['alpine:init', 'alpine:initialized']) {
+      document.addEventListener(name, () => {
+        window.__markerAt[name] = 'started' in document.documentElement.dataset;
+      });
+    }
+  });
+  try {
+    await page.goto(pathToFileURL(PAGE_PATH).href);
+    await expect(page.locator('[data-tab=sheets][aria-selected=true]')).toBeVisible();
+    const markerAt = await page.evaluate(() => window.__markerAt);
+    check(Object.keys(markerAt).length === 2, `Alpine's start events seen: ${JSON.stringify(markerAt)}`);
+    check(!markerAt['alpine:init'], 'the start marker was already set when Alpine began to start');
+    check(!markerAt['alpine:initialized'], 'the start marker was already set before Alpine.start() returned');
+    check(await page.evaluate(() => 'started' in document.documentElement.dataset), 'the started page has no start marker');
+  } finally {
+    await close();
+  }
+}
+
 /** Reset: Cancel keeps every key; Delete removes the page's keys (the settings key and every key that starts with it and a
  * colon) and no other page's, then reloads. */
 export async function checkStartupReset(pg) {
