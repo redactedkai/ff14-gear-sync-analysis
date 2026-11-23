@@ -17,11 +17,13 @@ export const SRC = join(ROOT, 'src');
 export const DIST = join(ROOT, 'dist');
 export const PARTIALS = join(SRC, 'partials');
 
-/* The oldest browsers the page runs in. The floor is set by what esbuild does not polyfill or lower: the JS APIs the page
-   calls, Array.prototype.findLast (Chrome 97, Firefox 104, Safari 15.4) and .at(), and the stylesheet's cascade layers
-   (@layer, Chrome 99, Firefox 97, Safari 15.4; a browser without them drops every layered rule). Naming the browsers instead
-   of an ES version also lets esbuild add the CSS prefixes and lower the CSS they need (mask: -webkit-mask before Chrome 120). */
-export const BROWSER_TARGETS = ['chrome99', 'firefox104', 'safari15.4'];
+/* The oldest browsers the page runs in: the Baseline 2024 floor, the first version of each core browser that has every
+   feature that became Baseline newly available in 2024 (Chrome and Edge 130, Firefox 132, Safari 18.2; from the
+   baseline-browser-mapping package, getCompatibleVersions({ targetYear: 2024 }), which reads the web-features data).
+   The page uses nothing newer. Naming the browsers instead of an ES version lets esbuild decide what to lower: at this
+   floor it lowers no JS the page writes, and no CSS prefix or fallback is needed for the features the stylesheet uses
+   (cascade layers, :has(), color-mix(), mask, the inherited ::backdrop variable). */
+export const BROWSER_TARGETS = ['chrome130', 'firefox132', 'safari18.2'];
 
 /* esbuild plugin: each generated data file (src/data/*.json) goes into the bundle as `JSON.parse("...")`, not as the
    object literal esbuild writes for a JSON import, so the page loads data as data, as Node (and so the tests) does.

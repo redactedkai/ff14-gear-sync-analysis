@@ -192,7 +192,7 @@ export async function checkRadii(pg) {
         })
         .filter(r => r.selectorText?.endsWith('::-webkit-scrollbar-thumb'))
         .map(r => r.style.borderRadius)
-        .filter(Boolean); // the thumb's color fallback for old browsers (fallbacks.css) sets no radius
+        .filter(Boolean);
     });
     check(thumb.length > 0 && thumb.every(r => r === '4px'), `radius: the scrollbar thumb is ${thumb.join(', ')}, not 4px`);
 

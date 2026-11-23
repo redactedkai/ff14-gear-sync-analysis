@@ -570,8 +570,7 @@ table.sets .jobcell {
   gap: 14px;
 }
 /* the backdrop: --backdrop, which a ::backdrop inherits from :root only in Chrome 122, Firefox 120 and Safari 17.4 and later.
-   The build runs in Chrome 97, Firefox 104 and Safari 15.4, where the variable is not there: the fallback after the comma
-   repeats the token's value, for each theme as the tokens pick it (tokens.css). */
+   The build floor (Chrome 130, Firefox 132, Safari 18.2) has it, so the fallback after the comma is only a guard; it repeats the token's value, for each theme as the tokens pick it (tokens.css). */
 .dlg::backdrop {
   background: var(--backdrop, rgba(0, 0, 0, 0.45));
 }

@@ -20,4 +20,4 @@
 @import "./footer.css" layer(views.footer); /* footer and the dev build marks */
 @import "./sheets.css" layer(views.sheets); /* the Sheets tab: manager, a sheet's page, the frame of a set page, dialogs */
 @import "./set-page.css" layer(views.set-page); /* a set page: header, gear table, menus, Fill settings */
-@import "./fallbacks.css" layer(fallbacks); /* browsers without color-mix() */
+@import "./fallbacks.css" layer(fallbacks); /* last-layer overrides */
