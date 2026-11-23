@@ -1,4 +1,4 @@
-# Run `npm run check` and the Python checks (on Python 3.9, the oldest supported, and 3.13) on every push to dev or main and on pull requests; publish
+# Run `npm run check` and the Python checks (on Python 3.11, the oldest supported, and 3.13) on every push to dev or main and on pull requests; publish
 # dist/index.html to GitHub Pages only on a push to main (or by hand) after every check passes.
 # One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
 # Actions are pinned to full commit SHAs, with the release in the trailing comment.
@@ -64,7 +64,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        python-version: ['3.9', '3.13']
+        python-version: ['3.11', '3.13']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

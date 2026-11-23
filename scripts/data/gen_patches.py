@@ -22,7 +22,7 @@ dates never go back; a version listed twice has the same date both times.
 import argparse
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import provenance
@@ -33,7 +33,7 @@ VERSION = re.compile(r'\d+\.\d+[a-z]?')
 
 def release_day(timestamp):
     """The UTC day, "YYYY-MM-DD", of a Unix timestamp in seconds."""
-    return datetime.fromtimestamp(timestamp, timezone.utc).strftime('%Y-%m-%d')
+    return datetime.fromtimestamp(timestamp, UTC).strftime('%Y-%m-%d')
 
 
 def patch_table(entries):

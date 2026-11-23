@@ -126,7 +126,7 @@ def grade_values(row, key, fmt, gate_of_item, problems):
         if level is None or not level.isdigit():
             problems.append(f'{where} {col} = {row[col]}: no materia item with a {materia["gateColumn"]}')
         gates.append(int(level) if level and level.isdigit() else None)
-    if None not in gates and any(b < a for a, b in zip(gates, gates[1:])):
+    if None not in gates and any(b < a for a, b in zip(gates, gates[1:], strict=False)):
         problems.append(f'{where} gates {",".join(map(str, gates))} decrease')
     return [int(v) if v.isdigit() else v for v in values], gates
 
@@ -174,7 +174,7 @@ def overmeld_rates(grade_csv, fmt):
             if rates != sorted(rates, reverse=True):
                 problems.append(f'grade row {g} {kind} rates {",".join(cells)} rise from one slot to the next')
             table[kind].append(rates)
-    if not problems and any(h < n for nq, hq in zip(table['nq'], table['hq']) for n, h in zip(nq, hq)):
+    if not problems and any(h < n for nq, hq in zip(table['nq'], table['hq'], strict=True) for n, h in zip(nq, hq, strict=True)):
         problems.append('an HQ rate is below the NQ rate')
     if problems:
         raise SchemaError(f'{sheet}: ' + '; '.join(problems))

@@ -17,7 +17,7 @@ import base64
 import hashlib
 import json
 import struct
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import provenance
@@ -35,7 +35,7 @@ def fetch_date(icon_dir, paths):
     if record.exists():
         return record.read_text(encoding='utf-8').strip(), 'fetch.py'
     newest = max(path.stat().st_mtime for path in paths)
-    return datetime.fromtimestamp(newest, timezone.utc).date().isoformat(), 'newest file date'
+    return datetime.fromtimestamp(newest, UTC).date().isoformat(), 'newest file date'
 
 
 def header(date, how, hashes):

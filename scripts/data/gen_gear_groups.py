@@ -46,7 +46,7 @@ def gear_groups(rows, fmt):
     fields = row_fields(fmt)
     slot_codes = {s['code'] for s in fmt['slots'] if s['type'] in rule['slotTypes']}
     sets = wearers_by_job(rows, fields, jobs, slot_codes)
-    for job, wearable in zip(jobs, sets):
+    for job, wearable in zip(jobs, sets, strict=True):
         if not wearable:
             raise SchemaError(f'{job} can wear no piece of {", ".join(rule["slotTypes"])}: is the job mask order still right?')
 

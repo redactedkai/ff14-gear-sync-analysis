@@ -1,7 +1,7 @@
 # Tool configuration only; the Python scripts are not a package.
 [tool.ruff]
 line-length = 140
-target-version = "py39"
+target-version = "py311"
 extend-exclude = ["./data", "./dist", "./node_modules", "./docs/scratchpad"]
 
 [tool.ruff.format]

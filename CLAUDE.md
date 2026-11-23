@@ -26,7 +26,7 @@ Feature branch → `dev` → `main`, one way, fast-forward when possible. Never 
 
 ## Commands
 
-Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.9+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
+Needs Node 22+ (`npm install`, or `npm ci` for a clean install; then once `npx playwright install chromium`). Python 3.11+ (`pip install -r requirements-dev.txt`) is only for the data pipeline and its tests. Every command, with its time: README, "Develop".
 
 - `npm run check` (a warning if installed packages differ from the lock, then lint, build, `npm test`, `test:smoke`; no Python; about 1 min): **Run it before saying something works.** All unit tests must pass, the smoke test must print `no errors`, and a lint warning fails it.
 - `npm run check:all` (adds `lint:py`, `test:py`) when touching `scripts/data/` or after `data:update`.

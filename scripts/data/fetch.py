@@ -18,7 +18,7 @@ import re
 import subprocess
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import gear_activities
@@ -81,7 +81,7 @@ def fetch_icons(csv_dir):
         with urllib.request.urlopen(req, timeout=30) as r:
             (ICON_DIR / f'{job}.png').write_bytes(r.read())
     # the endpoint has no version: the job icon generator writes this date and each icon's sha256 into its header
-    (ICON_DIR / gen_job_icons.FETCH_RECORD).write_text(datetime.now(timezone.utc).date().isoformat() + '\n', encoding='utf-8')
+    (ICON_DIR / gen_job_icons.FETCH_RECORD).write_text(datetime.now(UTC).date().isoformat() + '\n', encoding='utf-8')
 
 
 def git_out(*args, cwd=None):
