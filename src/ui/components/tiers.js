@@ -243,14 +243,14 @@ export function tierControls() {
       return numberField(
         () => this.level,
         v => {
-          app.tiers.level = v === this.panel.level ? null : v;
+          app.setTiersLevel(v === this.panel.level ? null : v);
         },
         1,
         () => this.panel.jobCtx.maxLevel,
         {
           live: true,
           onEmpty: input => {
-            app.tiers.level = null;
+            app.setTiersLevel(null);
             input.value = this.level;
           },
         },

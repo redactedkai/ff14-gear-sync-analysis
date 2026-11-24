@@ -33,6 +33,22 @@ test('1,000 updates in one tick notify the listener once', async () => {
   assert.equal(notified, 2, 'the next tick notifies again');
 });
 
+test('onUpdate hears each action as it counts: the slice and its new revision, before the tick ends', () => {
+  const heard: [string, number][] = [];
+  const store = new Store<DemoState>(
+    { settings: { count: 0 }, screen: { tab: 'sheets' } },
+    { onUpdate: (slice, revision) => heard.push([slice, revision]) },
+  );
+  store.update('settings/count', () => {});
+  store.update('screen/tab', () => {});
+  store.update('settings/count', () => {});
+  assert.deepEqual(heard, [
+    ['settings', 1],
+    ['screen', 1],
+    ['settings', 2],
+  ]);
+});
+
 test('a revision per slice: an action bumps the slice its name starts with and no other', () => {
   const store = demoStore();
   store.update('settings/count', state => {

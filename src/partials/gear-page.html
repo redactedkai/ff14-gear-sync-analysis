@@ -41,7 +41,7 @@
               :class="{ on: $store.app.browse.type === p.key }"
               :aria-pressed="String($store.app.browse.type === p.key)"
               :disabled="!p.count && $store.app.browse.type !== p.key"
-              @click="$store.app.browse.type = p.key; closeFilterMenu(true)"><span x-text="p.label"></span><span class="n" x-text="p.countText"></span></button></template>
+              @click="$store.app.editBrowse({ type: p.key }); closeFilterMenu(true)"><span x-text="p.label"></span><span class="n" x-text="p.countText"></span></button></template>
           </div>
         </div>
         <span class="menu-search big-search"><input
@@ -52,13 +52,13 @@
           autocomplete="off"
           :maxlength="searchMaxLength"
           aria-label="Search gear by name"
-          x-model.debounce.300ms="$store.app.browse.q"><span class="kbd" x-show="!$store.app.browse.q">/</span><button
+          x-model.debounce.300ms="search"><span class="kbd" x-show="!$store.app.browse.q">/</span><button
           type="button"
           class="clear"
           x-show="$store.app.browse.q"
           x-cloak
           aria-label="Clear the search"
-          @click="$store.app.browse.q = ''; $refs.search.focus()">×</button></span>
+          @click="$store.app.editBrowse({ q: '' }); $refs.search.focus()">×</button></span>
       </div>
       <span class="count" id="b-count" x-text="view ? view.countText : ''"></span>
       <button

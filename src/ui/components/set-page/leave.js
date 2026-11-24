@@ -50,7 +50,7 @@ export function leavePart(page) {
       } else if (ask.kind === 'running') this.cancelFill();
       else {
         this.suggestion = null;
-        this.$store.sheets.note = RESULT_DISCARDED_TEXT;
+        this.$store.sheets.setNote(RESULT_DISCARDED_TEXT);
       }
       ask.move();
     },

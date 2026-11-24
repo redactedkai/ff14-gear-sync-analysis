@@ -22,8 +22,8 @@ import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';
 import { applyFill } from '../../../../src/ui/sheets/fill.js';
 import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.js';
-import { createSheetStore } from '../../../../src/ui/sheets/store.js';
 import { localDate } from '../../../../src/ui/views/sheet-text.js';
+import { createSheetsFacade } from '../../helpers/stores.js';
 
 /* A Storage stand-in. `failWith`: an error every setItem throws (a full storage: name 'QuotaExceededError'). */
 function fakeStorage({ failWith = null } = {}) {
@@ -327,7 +327,7 @@ test('a damaged record next to good ones: the store lists it as unreadable and k
   const storage = fakeStorage();
   saveSheet(makeSheet('s_good'), storage);
   storage.setItem(sheetKey('s_bad'), JSON.stringify(withSet('s_bad', set => ({ ...set, pieces: [null] }))));
-  const store = createSheetStore({ storage });
+  const store = createSheetsFacade({ storage });
   assert.deepEqual(
     store.list().sheets.map(sheet => sheet.id),
     ['s_good'],

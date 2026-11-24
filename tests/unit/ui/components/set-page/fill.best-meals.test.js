@@ -4,11 +4,11 @@
    box and Food off drop it. Real Sage gear at level 100 and at level 50, item level sync 123. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSheetStore } from '../../../../../src/ui/sheets/store.js';
 import { mealMenu as mealMenuComponent } from '../../../../../src/ui/components/meal-menu.js';
 import { fakeFrames, pageMagics } from '../../../helpers/page-magics.js';
 import { bind, twoToFill } from '../../../helpers/set-page-bind.js';
 import { SAGE_IDS } from '../../../helpers/sheet-fixtures.js';
+import { createSheetsFacade } from '../../../helpers/stores.js';
 
 fakeFrames({ immediate: true });
 
@@ -46,7 +46,7 @@ test('Auto-fill then Apply whole: the tie list is saved, the Food row says "best
       [...saved.bestMeals].sort(),
     );
     // a reload reads it back
-    assert.deepEqual(createSheetStore({ storage }).sheet('s_1').sets[0].bestMeals, saved.bestMeals);
+    assert.deepEqual(createSheetsFacade({ storage }).sheet('s_1').sets[0].bestMeals, saved.bestMeals);
   }
 });
 

@@ -95,7 +95,7 @@ The answer is a one-way data flow: one store, one derived view per page area, an
 | Boot and failure message | Start-up order; a message when the page cannot start | `src/main.js`, `src/startup-failure.js` |
 | Routing | The address of each screen, the settings in its query, the title, focus and scroll on Back and Forward | `src/ui/router/` |
 | Saved state | Defaults, repair on load, the saved shape, browser storage | `src/ui/state.js`, `src/ui/sheets/storage.js` |
-| Stores and panels | The shared store, the sheets' store, each tab's Job and sync panel, the cap and level rules | `src/ui/store.js`, `src/ui/sheets/store.js`, `src/ui/job-sync-panel.js`, `src/ui/level-cap.js` |
+| Stores and panels | The shared store with its slices, actions and facades, each tab's Job and sync panel, the cap and level rules | `src/ui/store/`, `src/ui/job-sync-panel.js`, `src/ui/level-cap.js` |
 | View layer | Pure view builders, the view cache, one component per area, the templates | `src/ui/views/`, `src/ui/view-cache.ts`, `src/ui/components/`, `src/partials/` |
 | Form inputs | The number-box pattern, the cap and level error flags, the ranked stat menus | `src/ui/number-field.js`, `src/ui/components/cap-controls.js`, `src/ui/ranks.js` |
 | Overlays | Menus, popovers and dialogs | several places (below) |
@@ -114,23 +114,37 @@ Imports run one way, as in the layers: boot starts routing and saved state, both
   - *Rules:* Escape closes the topmost layer and puts the focus back on its button. A press outside closes it, and the focus stays where the press went. Tab out closes it (the Auto-fill settings popover is the exception: it is not modal and stays open). ArrowDown on a menu's button opens it. Opening a layer closes the others, except the ones it is part of (the settings' menus and note). A change of screen (tab, sub-tab, sheet, gear set, Back or Forward) closes every layer and never moves the focus: the router owns it (`main.js`).
   - *Modal:* the Sheets dialogs and the leave question are native `<dialog>` elements, opened by `showModal()` through the `x-modal` directive (`ui/native-dialog.js`): the page behind is inert, Escape is the dialog's `cancel` event, Tab stays inside, and a change of page closes them. The `::backdrop` colours are written as literals as well as tokens (a test holds them equal), since older engines do not pass CSS variables to `::backdrop`. The math tab's "?" help is modal too: the focus goes into it and Tab stays inside.
   - *Not in the manager:* a native `<select>`'s own list (the manager leaves an Escape that comes from an option to it), and the Copy dialog's "?" panel (its open state is the dialog's, closed first by the dialog's cancel).
-- **Messages.** The note after an action and the message of a failed save are one element at the window's bottom, outside the tabs (`src/ui/messages.js`, `#sh-toast` and `#sh-save-error`): both are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. The text lives in the sheets store (`note`, `saveMessage`); a note clears itself after `NOTE_MS`, and a failed save's message stays until a save succeeds. A dialog's field errors share one partial (`src/partials/dialog-error.html`). The bar for unavailable storage (`#sh-unavailable`) is still on the Sheets tab.
+- **Messages.** The note after an action and the message of a failed save are one element at the window's bottom, outside the tabs (`src/ui/messages.js`, `#sh-toast` and `#sh-save-error`): both are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. The text lives in the sheets slice (`note`, `saveMessage`); a note clears itself after `NOTE_MS`, and a failed save's message stays until a save succeeds. A dialog's field errors share one partial (`src/partials/dialog-error.html`). The bar for unavailable storage (`#sh-unavailable`) is still on the Sheets tab.
 
 ### One shared store
 
-All state that matters lives in one shared store: the saved settings, plus a few values that are not saved. The **current job context** is replaced whenever the job changes; until the user picks a job, the default job's context stands in. The **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in: GCD Scaling follows Stat Allocation's synced level until the user sets one, and Substat tiers (which has its own job) its job's level cap. An Auto-fill's result is not in the store: the set page keeps it as a suggestion until Apply or Discard.
+All state that matters lives in one store (`src/ui/store/`): a plain object tree that named actions change in place, with a revision per top-level slice and one notification per tick. It is not a reactive proxy, so the optimizer and the worker read plain data: a change is announced by `store.update(name, change)` (`store.ts`), never noticed by a setter. The **job context** of a panel is made from its job's id (`makeJobContext`, cached, frozen); the **highest real item level** bounds the item level boxes. The GCD and Substat tiers sub-tabs keep **their own boxes** (a level, and for GCD a haste and a speed), each empty until typed in: GCD Scaling follows Stat Allocation's synced level until the user sets one, and Substat tiers (which has its own job) its job's level cap. An Auto-fill's result is not in the store: the set page keeps it as a suggestion until Apply or Discard.
+
+| Slice | Holds | Saved |
+| --- | --- | --- |
+| `settings` | the Gear browser's filters, Stat Allocation's example piece, the sheet list's figures, Substat tiers' job, and each reference tab's Job and sync panel (job, cap, sync, level) | yes |
+| `screen` | the open tab and math sub-tab, and the tab a click is opening | no (the address names it) |
+| `math` | the GCD sub-tab's settings and the level typed on Substat tiers | no |
+| `sheets` | the saved sheets as loaded, the screen the Sheets tab shows (manager, sheet or gear set), the note, the save message, the edit lock | each sheet on its own edit |
+| `setPages` | one entry per open gear set page (draft, suggestion, Auto-fill status; the set page keeps these itself for now) | no |
+
+- **Actions.** An action is named `<slice>/<name>` (`settings/setJob`); `update` counts it in the slice's revision and in a log of the last 50 names, and tells the listeners once at the end of the tick, however many actions ran in it. The actions are in `app-actions.ts` (settings, screen, math) and `sheets-actions.ts` (the Sheets tab); an action that would change nothing returns before `update`, so nothing renders or saves. A number typed in a box is checked by the box (`number-commit.js`) before it calls an action.
+- **Reading.** The selectors in `app-state.ts` return plain data from the state: `panelOf(state, tab)` (a tab has one panel, held once in `settings.panels`), `persisted`, `currentSheet`, `routeOf`. `Select` (`select.ts`) is a controller that asks its host to render again only when what it selected changed; `watch` (`watch.ts`) calls a function when a selector's value changes, and the router and the overlay manager use it.
+- **Facades.** The templates and components read `$store.app` and `$store.sheets`, two facades over the store (`app-facade.ts`, `sheets-facade.ts`, put together with the actions by `page-store.ts`). A getter reads the revision of the slice it shows (an Alpine-tracked copy that `update` writes as the action runs), so a binding runs again after a change of that slice, and returns the plain state; a method is an action. Nothing in a facade can be assigned to: a write is a call (`editPanel`, `editBrowse`, `editPiece`, `editGcd`, `setSheetFigures`, `setNote`, ...), and `tests/unit/ui/store/no-direct-writes.test.js` searches the sources for an assignment. The number boxes write through `setField(path, value)`.
+- **Saving.** `autosave.ts` subscribes once to the store: it writes the JSON of `persisted(state)` 150 ms after the last change of the `settings` slice, and at once when the page is hidden. The sheets are saved by their actions, one record each (`sheets/storage.js`).
+- **Test hook.** `window.gsaDebug` holds the two facades, `state` (the store's state) and `log` (the last 50 action names), read only.
 
 There is no gear pool to keep: an Auto-fill searches every piece the job can wear that passes the set's filters ([optimizer.md, section 7](optimizer.md#7-the-pages-pool-and-its-filters) says why no pool is built), so the store holds only settings. Searching everything costs nothing in speed (building a job's gear takes about 5 to 10 ms; a whole search takes about 20 ms, see [optimizer.md, section 8](optimizer.md#8-correctness-and-performance)).
 
-Changes go through store actions: set job (`setJob(id, owner)`, owner `'browse'`, `'math'` or `'tiers'`), reset everything, switch tab or math sub-tab.
+Changes of the settings go through the actions: set job (`setJob(id, owner)`, owner `'browse'`, `'math'` or `'tiers'`), reset everything, switch tab or math sub-tab, and the edits of a panel, the browser's filters, the piece and the GCD settings.
 
-**The sheets' store.** The Sheets tab has a second store, `Alpine.store('sheets')` (`createSheetStore` in `src/ui/sheets/store.js`). It holds:
+**The sheets' part.** The Sheets tab's slice (`sheets`) holds:
 
-- the saved sheets;
+- the saved sheets (`data`);
 - the open screen (`screen`: the manager, a sheet or a set, with `sheetId` and `setId`);
 - the actions that make, edit, copy, delete and reorder sheets and gear sets, change a sheet's level and item level sync, and save a set (`updateSet`, for the set page).
 
-The sheets are user data, not settings, so they stay out of reactive state: the store keeps them as plain data in its closure and counts its changes in `rev`. Every reader (`list`, `sheet`, `currentSheet`, `currentSet`) reads `rev` first, so a binding that shows a sheet tracks it, and every action bumps it.
+The sheets are user data, not settings: an action replaces a sheet, never edits it in place, and every reader (`list`, `sheet`, `currentSheet`, `currentSet` of the facade) hands out the plain data. The facade's `rev` is the slice's revision, so a view cached by it is built again after any action of the Sheets tab. The set page's leave guard and its question "is work held?" are two functions the actions keep (`setLeaveGuard`, `setUnsettledProbe`), since a function is not state.
 
 The operations on the plain data (a new sheet or set, Copy sheet with the pieces the new job cannot wear cleared, names) are pure functions in `src/ui/sheets/ops.js`; what the open dialog's main button does with its fields is `src/ui/sheets/dialogs.js` (`submitDialog`). While `busy` is set (an Auto-fill runs) every edit action is refused. The component (`components/sheets.js`) builds its views from the store with `viewCache`, keyed by `rev`, and keeps only the open dialog's fields and a row being dragged.
 
@@ -481,14 +495,14 @@ Notes:
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
 | Other core modules | `src/core/formulas.js`, `gear-groups.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `optimizer/` |
-| Entry point: restore, register the two stores and the components, start the router, save effect | `src/main.js` |
+| Entry point: restore, make the store and register its two facades and the components, start the router, autosave | `src/main.js` |
 | Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`), `plain-click.js` (`plainClick`, `followInPage`), `scroll-storage.js` (`readScrollPositions`, `writeScrollPositions`), `unload-guard.js` (`installUnloadGuard`, `UNLOAD_GUARD_OFF_KEY`) |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
 | Saved sheets: the index and one record per sheet, read, write, order, delete, the full-storage and unavailable-storage results | `src/ui/sheets/storage.js` (`loadSheets`, `saveSheet`, `saveOrder`, `deleteSheet`, `parseSheet`, `storageAvailable`) |
-| The sheets' store: the sheets out of reactive state (`rev`), the open screen, the actions, the edit lock while an Auto-fill runs | `src/ui/sheets/store.js` (`createSheetStore`; its members are in the notes below the table) |
+| The sheets' actions: the sheets as plain data, the open screen, the actions, the edit lock while an Auto-fill runs | `src/ui/store/sheets-actions.ts` (`createSheetsActions`), `src/ui/store/sheets-facade.ts` (`createSheetsFacade`; the members are in the notes below the table), `src/ui/sheets/store-shared.js` (the refusal texts, `readSheets`) |
 | Sheets and gear sets as plain data: new, copied, Copy sheet's cleared pieces, names, moving a row | `src/ui/sheets/ops.js` (`newSheet`, `newGearSet`, `copyGearSet`, `copySheet`, `piecesToClear`, `cleanName`, `cleanDescription`, `copyName`, `defaultSheetName`, `defaultSetName`, `moveItem`, `NAME_MAX_LENGTH`) |
 | What a Sheets dialog's main button does: the fields to the store call of its kind, the refused form's error and the field it is about | `src/ui/sheets/dialogs.js` (`submitDialog`, `shownName`) |
-| Shared store and actions | `src/ui/store.js` (`createAppStore`: `panel`, `showTab`, `setJob`, `resetAll`, `persisted`; `PERSISTED_KEYS`) |
+| Shared store and actions | `src/ui/store/store.ts` (`Store`), `app-state.ts` (the state and the selectors: `panelOf`, `persisted`, `routeOf`), `app-actions.ts` (`setJob`, `showTab`, `resetAll`, `editPanel`, `editBrowse`, ...), `app-facade.ts` (`$store.app`), `page-store.ts` (`createPageStore`), `autosave.ts`, `select.ts`, `watch.ts` |
 | The store's settings as plain inputs: each tab's panel, sync settings, the cap Piece stats shows, the Target GCD range, the default Gear categories boxes, the example piece's materia slot totals | `src/ui/job-sync-panel.js` (`panelOf`, `PANEL_GROUP`, `syncSettings`, `shownSync`, `TARGET_GCD_RANGE`, `DEFAULT_EXCLUDE`, `meldSlotChoices`, `meldSlotsOf`) |
 | The cap follows the level: the rule that lowers a cap, the flag in a cap field's label line | `src/ui/level-cap.js` (`limitCapToLevel`, `capLoweredText`, `capFlag`, `capTextBad`, `CAP_TYPED_BAD_TEXT`), `src/partials/cap-flag.html` |
 | The ranked stat menus (one rank per stat, swaps) | `src/ui/ranks.js` (`rankChoices`, `withRank`, `uniqueRanks`) |
@@ -520,12 +534,12 @@ Notes:
 
 Notes on four rows of the table:
 
-- **The sheets' store** (`createSheetStore` in `src/ui/sheets/store.js`) has these members:
-  - state: `list`, `sheet`, `currentSheet`, `currentSet`, `busy`;
+- **The sheets' facade** (`createSheetsFacade` in `src/ui/store/sheets-facade.ts`, with the actions of `sheets-actions.ts`) has these members:
+  - state: `list`, `sheet`, `currentSheet`, `currentSet`, `busy`, `note`, `saveMessage`, `rev`;
   - screens: `openManager`, `openSheet`, `openSet`, `closeSet`;
   - sheet actions: `createSheet`, `editSheet`, `copySheet`, `deleteSheet`, `moveSheet`, `stepSheet`, `setLevel`, `setSyncOn`, `setCap`;
   - set actions: `newSet`, `copySet`, `deleteSet`, `editSet`, `updateSet`, `moveSet`, `stepSet`;
-  - the leave guard: `leaveGuard`, `askLeave`.
+  - the set page's functions: `setLeaveGuard`, `setUnsettledProbe`, `askLeave`, `hasUnsettled`, `setBusy`, `setNote`.
 - **Sheet view builders** (`views/sheet-manager.js`, `sheet-sets.js`, `sheet-forms.js`, `set-rows.js`, `set-totals.js`, `set-draft.js`, `set-suggestion.js`, `sheet-text.js`) build:
   - the manager list, a sheet's page and set list;
   - the dialogs (New sheet, Copy sheet with its pieces to clear, Edit sheet, Edit gear set, Delete);

@@ -7,12 +7,12 @@ import assert from 'node:assert/strict';
 import { statBase } from '../../../../src/core/base-stats.js';
 import { tierControls, tierTable } from '../../../../src/ui/components/tiers.js';
 
-import { createAppStore } from '../../../../src/ui/store.js';
 import { watched, restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.js';
 
 /* A component bound to the store of `saved`, as Alpine binds it ($store.app). */
 function bound(members, saved) {
-  const app = createAppStore(restoreOpen(saved));
+  const app = createAppFacade(restoreOpen(saved));
   return { app, c: Object.assign(members, { $store: { app } }) };
 }
 const card = (view, stat) => view.cards.find(x => x.stat === stat);
@@ -36,12 +36,12 @@ test('tiers table: each value starts at its base; a typed or clicked value is ke
   c.pick('det:420');
   assert.deepEqual([card(c.view, 'crit').value, card(c.view, 'det').value], [600, 420]);
   // the sub-tab's own level changed: the values made at the old one are dropped
-  app.tiers.level = 60;
+  app.setTiersLevel(60);
   assert.equal(c.level, 60);
   assert.equal(card(c.view, 'crit').value, statBase(job, 'crit', 60));
   // a value set at the new level replaces them: back at the old level, the bases again
   c.pick('det:300');
-  app.tiers.level = null;
+  app.setTiersLevel(null);
   assert.equal(card(c.view, 'crit').value, statBase(job, 'crit', 100));
   // and Substat tiers' own job
   c.pick('crit:500');
@@ -69,14 +69,14 @@ test('tiers table: values dropped by a level change stay dropped when the level 
   const settle = watched(c);
   c.pick('det:420');
   assert.equal(card(c.view, 'det').value, 420);
-  app.tiers.level = 60;
+  app.setTiersLevel(60);
   settle();
-  app.tiers.level = null;
+  app.setTiersLevel(null);
   settle();
   assert.equal(card(c.view, 'det').value, statBase(app.jobCtx, 'det', 100));
   // Stat Allocation's synced level and job are not Substat tiers': the values stay
   c.pick('det:420');
-  app.level = 60;
+  app.editPanel({ level: 60 });
   settle();
   app.setJob('WHM');
   settle();
@@ -91,7 +91,7 @@ test('tiers table: values dropped by a level change stay dropped when the level 
 
 test("tiers table: the sub-tab's level is held to the job's cap; a tab always has a job (Paladin by default); the ? note is the open substat's", () => {
   const { app, c } = bound(tierTable(), { job: 'BLU', level: 70 });
-  app.tiers.level = 95;
+  app.setTiersLevel(95);
   assert.equal(c.level, 80); // Blue Mage's level cap
   const view = c.view;
   assert.equal(c.view, view, 'built once for the same settings');
@@ -119,7 +119,7 @@ test("tiers Level box: each valid level counts as typed; the job's level cap, or
   assert.equal(app.tiers.level, 45);
   leave('50');
   assert.equal(app.tiers.level, null);
-  app.tiers.level = 30;
+  app.setTiersLevel(30);
   const input = { value: '' };
   field['@change']({ target: input });
   assert.equal(app.tiers.level, null);
@@ -137,7 +137,7 @@ test("tiers components: the job is Substat tiers' own; the math panel's job and 
     assert.equal(c.level, 100);
   }
   app.setJob('BLM', 'math');
-  app.level = 70;
+  app.editPanel({ level: 70 });
   assert.deepEqual([table.panel.job, table.level, controls.panel.job, controls.level], ['WAR', 100, 'WAR', 100]);
   app.setJob('NIN', 'tiers');
   assert.deepEqual([table.panel.job, controls.panel.job, app.job], ['NIN', 'NIN', 'BLM']);

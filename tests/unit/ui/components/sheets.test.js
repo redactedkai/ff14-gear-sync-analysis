@@ -7,9 +7,10 @@ import { MAX_REAL } from '../../../../src/core/tables.js';
 import { capLoweredText } from '../../../../src/ui/level-cap.js';
 import { sheetsTab } from '../../../../src/ui/components/sheets.js';
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.js';
-import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, createSheetStore } from '../../../../src/ui/sheets/store.js';
+import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../src/ui/sheets/store-shared.js';
 import { pageMagics } from '../../helpers/page-magics.js';
 import { fakeStorage } from '../../helpers/sheet-fixtures.js';
+import { createSheetsFacade } from '../../helpers/stores.js';
 
 /* The note under a cap field after the cap was lowered to `cap` for `level`: the shared builder's own output (its sentence
    is asserted once, in ui/level-cap.test.js), never empty. */
@@ -23,7 +24,7 @@ function loweredNote(cap, level) {
    once, $refs holds the dialog) and $watch keeps its callbacks for the test to call. */
 function bind() {
   let next = 0;
-  const sheets = createSheetStore({ storage: fakeStorage(), makeId: prefix => `${prefix}${++next}` });
+  const sheets = createSheetsFacade({ storage: fakeStorage(), makeId: prefix => `${prefix}${++next}` });
   const watchers = {};
   const c = Object.assign(sheetsTab(), {
     $store: { sheets },
@@ -143,7 +144,7 @@ test('Escape cancels a dialog; nothing opens while an Auto-fill runs', () => {
   c.openNewSheet();
   c.cancelDialog(); // the dialog's cancel event, which the browser raises for Escape
   assert.equal(c.dialog, null);
-  sheets.busy = true;
+  sheets.setBusy(true);
   c.openNewSheet();
   assert.equal(c.dialog, null);
 });

@@ -11,7 +11,7 @@ import {
   NO_PIECES_TEXT,
   RESULT_DISCARDED_TEXT,
 } from '../../../../../src/ui/components/set-page/view.js';
-import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store.js';
+import { LOCKED_TEXT } from '../../../../../src/ui/sheets/store-shared.js';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';
 import { makeSession } from '../../../../../src/core/session.js';
 import { bind, heldSolver, lateSolver, refusingSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';

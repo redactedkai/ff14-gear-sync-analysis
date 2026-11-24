@@ -8,6 +8,13 @@ export const ACTION_LOG_LIMIT = 50;
 /* A function that is told the state may have changed. It reads what it needs from `store.state`. */
 export type Listener = () => void;
 
+/* What a Store takes besides its state. onUpdate(slice, revision): called inside `update`, as soon as the action has counted, with the
+   slice the action named and that slice's new revision; the page hands in a function that copies the revision into an object its
+   template engine tracks (the facades read that copy), so a template re-runs without waiting for the tick's notification. */
+export interface StoreOptions {
+  onUpdate?: (slice: string, revision: number) => void;
+}
+
 /* The slice an action name belongs to: the text before the first slash ('settings/editBrowse' is slice 'settings'). */
 export function sliceOf(actionName: string): string {
   const slash = actionName.indexOf('/');
@@ -28,10 +35,12 @@ export class Store<State extends Record<string, object>> {
 
   #listeners = new Set<Listener>();
   #notifyQueued = false;
+  #onUpdate: ((slice: string, revision: number) => void) | undefined;
 
   /* A store over `state`: the object is used as it is (not copied), so the caller keeps no other way to change it. */
-  constructor(state: State) {
+  constructor(state: State, options: StoreOptions = {}) {
     this.state = state;
+    this.#onUpdate = options.onUpdate;
     this.revs = Object.fromEntries(Object.keys(state).map(slice => [slice, 0])) as { [Slice in keyof State]: number };
   }
 
@@ -47,6 +56,7 @@ export class Store<State extends Record<string, object>> {
     } finally {
       this.revs[slice as keyof State] += 1;
       this.rev += 1;
+      this.#onUpdate?.(slice, this.revs[slice as keyof State]);
       this.log.push(name);
       if (this.log.length > ACTION_LOG_LIMIT) this.log.splice(0, this.log.length - ACTION_LOG_LIMIT);
       this.#queueNotification();

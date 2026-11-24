@@ -15,8 +15,8 @@ export function framePart(page) {
   return {
     init() {
       page.el = this.$el;
-      this.$store.sheets.leaveGuard = move => this.guardLeave(move);
-      this.$store.sheets.unsettled = () => this.unsettledKind() !== null;
+      this.$store.sheets.setLeaveGuard(move => this.guardLeave(move));
+      this.$store.sheets.setUnsettledProbe(() => this.unsettledKind() !== null);
       this.refreshCount();
       // the gear and its popover are in the bar only at rest: a draft, a result or a running Auto-fill closes the popover
       this.$watch(
@@ -50,8 +50,8 @@ export function framePart(page) {
     },
     destroy() {
       headWatch?.disconnect();
-      if (this.$store.sheets.leaveGuard) this.$store.sheets.leaveGuard = null;
-      if (this.$store.sheets.unsettled) this.$store.sheets.unsettled = null;
+      this.$store.sheets.setLeaveGuard(null);
+      this.$store.sheets.setUnsettledProbe(null);
       if (this.running) this.stopFill();
     },
 

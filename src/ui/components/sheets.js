@@ -1,7 +1,7 @@
 /* The Sheets tab: the sheet manager, a sheet's page with its breadcrumb menu of sheets, and the frame of a set page (the
    set page itself is components/set-page.js, nested inside this one), with the dialogs (New sheet, Copy sheet, "Edit sheet",
    "Edit gear set", Delete) and reordering rows by drag or by the keyboard. The sheets and the screen live in
-   Alpine.store('sheets') (ui/sheets/store.js); this component builds the views from it (views/sheet-manager.js,
+   Alpine.store('sheets') (ui/store/sheets-facade.ts); this component builds the views from it (views/sheet-manager.js,
    sheet-sets.js, sheet-forms.js) and keeps only what is on screen: the open dialog's fields, a row being dragged. Rules:
    docs/engineering/sheets.md.
 

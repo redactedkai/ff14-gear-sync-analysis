@@ -63,7 +63,7 @@ export function fillPart(solver, raw, page) {
       const id = ++fillId;
       fillKey = saved.id;
       this.running = true;
-      store.busy = true;
+      store.setBusy(true);
       // Cancel has the focus unless the Auto-fill is already over (answered, or cancelled) by the time it is drawn
       this.afterDraw(() => {
         if (this.running) page.refs.cancel.focus();
@@ -115,7 +115,7 @@ export function fillPart(solver, raw, page) {
     endFill() {
       this.running = false;
       fillKey = null;
-      this.$store.sheets.busy = false;
+      this.$store.sheets.setBusy(false);
       if (this.bestMealsAfterFill) this.$store.sheets.updateSet(this.saved.id, { bestMeals: this.bestMealsAfterFill });
       this.bestMealsAfterFill = null;
       if (this.pinsAfterFill) this.$store.sheets.updateSet(this.saved.id, { pinned: { ...this.saved.pinned, ...this.pinsAfterFill } });
@@ -125,7 +125,7 @@ export function fillPart(solver, raw, page) {
     cancelFill() {
       if (!this.running) return;
       this.stopFill();
-      this.$store.sheets.note = FILL_CANCELLED_TEXT;
+      this.$store.sheets.setNote(FILL_CANCELLED_TEXT);
       this.focusFill();
     },
     stopFill() {
@@ -152,18 +152,18 @@ export function fillPart(solver, raw, page) {
       if (view.applyDisabled) return;
       this.$store.sheets.updateSet(this.saved.id, appliedFields(this.saved, s.suggested, s.declined, this.job));
       this.suggestion = null;
-      this.$store.sheets.note = view.appliedNote;
+      this.$store.sheets.setNote(view.appliedNote);
       this.focusFill();
     },
     discardSuggestion() {
       if (!this.suggestion) return;
       this.suggestion = null;
-      this.$store.sheets.note = RESULT_DISCARDED_TEXT;
+      this.$store.sheets.setNote(RESULT_DISCARDED_TEXT);
       this.focusFill();
     },
     /* A click on the table while an Auto-fill result waits: say why nothing happens, as a toast. */
     tableClick(event) {
-      if (this.suggestion && !event.target.closest?.('.takebox')) this.$store.sheets.note = LOCKED_TABLE_TEXT;
+      if (this.suggestion && !event.target.closest?.('.takebox')) this.$store.sheets.setNote(LOCKED_TABLE_TEXT);
     },
   };
 }

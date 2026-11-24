@@ -47,14 +47,20 @@ test('Gear categories menu: every box once, in its tab; each hint filled in', ()
 function component(members, store) {
   return Object.assign(members, { $store: { app: store } });
 }
+/* A second part, besides the browser's, changed in place: an accessor, as a gear set's Auto-fill settings give one. */
+const OPT_PART = { read: self => self.$store.app.opt, write: (self, patch) => Object.assign(self.$store.app.opt, patch) };
 const twoParts = () => ({
   opt: { exclude: [...DEFAULT_EXCLUDE], market: true, expOff: [] },
   browse: { exclude: [], market: false, expOff: ['ARR'] },
+  // the app facade's action for the browser's filters
+  editBrowse(patch) {
+    Object.assign(this.browse, patch);
+  },
 });
 
 test("Gear categories boxes: a box on or off, All, None and Default, on the component's own part only", () => {
   const store = twoParts();
-  const opt = component(gearFromToggles('opt'), store);
+  const opt = component(gearFromToggles(OPT_PART), store);
   const keys = ACTIVITIES.map(a => a.key);
   assert.equal(opt.fromOn('pvp'), false);
   assert.equal(opt.fromOn('crafted'), true);
@@ -89,7 +95,7 @@ test("Gear categories boxes: a box on or off, All, None and Default, on the comp
 });
 
 test('Gear categories piece counts: a number per box, none before the count has landed, words for a screen reader', () => {
-  const menu = component(gearFromToggles('opt'), twoParts());
+  const menu = component(gearFromToggles(OPT_PART), twoParts());
   // before a count has landed (the component has none): no number, no sentence about one
   assert.deepEqual([menu.fromCount('crafted'), menu.fromCountText('crafted'), menu.fromCountWords('crafted')], [null, '', '']);
   menu.fromCounts = { crafted: 1380, pvp: 0, quests: 1 };
@@ -157,7 +163,7 @@ test('Gear categories tabs: Everyday, Side content and Hard content, with the re
 });
 
 test('Gear categories tab counts: the ticked boxes of the tab over its total, following the boxes and All, None and Default', () => {
-  const menu = component(gearFromToggles('opt'), twoParts());
+  const menu = component(gearFromToggles(OPT_PART), twoParts());
   const counts = () => GEAR_FROM_SECTIONS.map(tab => menu.fromTabCount(tab));
   // Default leaves out Miscellaneous (Everyday), five Side content boxes and three Hard content boxes
   assert.deepEqual(counts(), ['7/8', '2/7', '2/5']);
@@ -181,7 +187,7 @@ test('fromTabAfterKey: the arrows move and wrap, Home and End jump, other keys s
 });
 
 test('Gear categories tab row: a key selects and focuses the tab and keeps the key from the page; other keys are left alone', () => {
-  const { fromTabKey } = gearFromToggles('opt');
+  const { fromTabKey } = gearFromToggles(OPT_PART);
   const buttons = GEAR_FROM_SECTIONS.map(focusable);
   const tablist = { querySelectorAll: selector => (selector === '[role="tab"]' ? buttons : []) };
   const state = { tab: 'everyday' };
@@ -245,7 +251,7 @@ test('placeBelowOrAbove: the Expansion menu (214 px) flips at 720 high; a menu t
 
 test("Expansion filter: the button's text, and a box on or off keeping the oldest-first order, on its own part only", () => {
   const store = twoParts();
-  const opt = component(expansionToggles('opt'), store);
+  const opt = component(expansionToggles(OPT_PART), store);
   assert.equal(opt.expansions, EXPANSIONS);
   const allShown = opt.expSummary();
   assert.ok(allShown.length > 0);

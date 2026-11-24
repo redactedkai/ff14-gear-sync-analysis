@@ -358,32 +358,32 @@ const gear = {
 /* The app's settings store, read through the page's read-only test hook (src/main.js, window.gsaDebug). */
 const APP = 'window.gsaDebug.app';
 
-/* A function that runs `code` (statements using `app`, the page's settings store) in the page. */
+/* A function that runs `code` (statements using `app`, the page's settings facade: its edit actions write) in the page. */
 const setApp = code => page => page.evaluate(`(() => { const app = ${APP}; ${code} })()`);
 
 /* The content states of Stat Allocation's bar: what its chips and boxes say must not change where its controls sit. */
 const BAR_STATES = [
-  { id: 'sync off, level 100', apply: setApp("app.setJob('PLD'); app.sync = false; app.level = 100; app.cap = null;") },
-  { id: 'sync on, no cap', apply: setApp("app.setJob('PLD'); app.sync = true; app.level = 85; app.cap = null;") },
+  { id: 'sync off, level 100', apply: setApp("app.setJob('PLD'); app.editPanel({ sync: false, level: 100, cap: null });") },
+  { id: 'sync on, no cap', apply: setApp("app.setJob('PLD'); app.editPanel({ sync: true, level: 85, cap: null });") },
   {
     id: 'a weapon, five melds',
-    apply: setApp("app.setJob('WHM'); app.sync = true; app.level = 85; app.cap = 270; app.piece.slot = 'weapon'; app.piece.slots = 5;"),
+    apply: setApp("app.setJob('WHM'); app.editPanel({ sync: true, level: 85, cap: 270 }); app.editPiece({ slot: 'weapon', slots: 5 });"),
   },
   {
     id: 'Beastmaster ring, level 50',
-    apply: setApp("app.setJob('BST'); app.sync = true; app.level = 50; app.cap = 130; app.piece.slot = 'ring'; app.piece.slots = 0;"),
+    apply: setApp("app.setJob('BST'); app.editPanel({ sync: true, level: 50, cap: 130 }); app.editPiece({ slot: 'ring', slots: 0 });"),
   },
   {
     id: 'the widest numbers',
-    apply: setApp("app.setJob('PLD'); app.sync = true; app.level = 100; app.cap = 795; app.piece.slot = 'body'; app.piece.slots = 5;"),
+    apply: setApp("app.setJob('PLD'); app.editPanel({ sync: true, level: 100, cap: 795 }); app.editPiece({ slot: 'body', slots: 5 });"),
   },
 ];
 
 /* The widest level and item level typed into Stat Allocation's bar (the stress build's limits). */
-const MATH_PIECE_WIDEST = setApp("app.setJob('PLD'); app.sync = true; app.level = app.jobCtx.maxLevel; app.cap = 8888;");
+const MATH_PIECE_WIDEST = setApp("app.setJob('PLD'); app.editPanel({ sync: true, level: app.jobCtx.maxLevel, cap: 8888 });");
 
 /* The widest level typed into a level box (the stress build's limit). */
-const MATH_LEVEL_WIDEST = setApp('app.level = app.jobCtx.maxLevel;');
+const MATH_LEVEL_WIDEST = setApp('app.editPanel({ level: app.jobCtx.maxLevel });');
 
 /* Opens the Job menu of the math bar if it is shut (picking a job may close it). */
 const openMathJobMenu = page => clickUntilVisible(page, '#m-job-btn', '#m-job-menu');

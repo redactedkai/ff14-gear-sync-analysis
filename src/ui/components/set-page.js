@@ -2,7 +2,7 @@
    settings read-only, the set bar with Auto-fill, the goal and the gear icon, and the stat block), the gear table with its
    piece pickers, materia and meal menus and pins, the Auto-fill settings popover, an Auto-fill and its suggestion with Take boxes,
    a manual draft, and the question before leaving. Nested inside the Sheets tab's component (components/sheets.js),
-   whose dialogs it uses (Edit gear set, Delete) and whose store, $store.sheets (ui/sheets/store.js), holds the
+   whose dialogs it uses (Edit gear set, Delete) and whose store, $store.sheets (ui/store/sheets-facade.ts), holds the
    saved set. The template re-creates it for each set it shows (keyed by the set's id), so nothing here outlives a set.
 
    Nothing proposed is saved until Apply (docs/engineering/sheets.md, "Drafts and suggestions"): the manual draft

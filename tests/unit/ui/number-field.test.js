@@ -194,8 +194,20 @@ test('number box: its min and max attributes come from its own bounds; Infinity 
   assert.ok(!(':max' in filter), 'a filter keeps the max its markup gives it, for the arrow keys only');
 });
 
+/* A store stand-in over the plain object `fields`: the number box writes through setField(path, value), as the app facade's. */
+function storeOver(fields) {
+  return {
+    ...fields,
+    setField(path, value) {
+      const keys = path.split('.');
+      const last = keys.pop();
+      keys.reduce((holder, key) => holder[key], this)[last] = value;
+    },
+  };
+}
+
 test('Target GCD box: 0.50 to 2.50 seconds; a higher value moves to 2.50 when the box is left', () => {
-  const store = { opt: { gcd: '' } };
+  const store = storeOver({ opt: { gcd: '' } });
   const gcd = storeNumberField(store, 'opt.gcd', ...TARGET_GCD_RANGE, { decimals: 2, empty: '' });
   assert.deepEqual([gcd[':min'](), gcd[':max']()], [0.5, 2.5]);
   const input = { value: '3.00' };
@@ -205,8 +217,8 @@ test('Target GCD box: 0.50 to 2.50 seconds; a higher value moves to 2.50 when th
   assert.equal(store.opt.gcd, 0.5);
 });
 
-test('store number box: reads and writes the setting at its dotted path, an out-of-range value moved to the nearest bound', () => {
-  const store = { piece: { ilvl: 130 }, opt: { gcd: '' } };
+test('store number box: reads the setting at its dotted path and writes it through the store, an out-of-range value moved to the nearest bound', () => {
+  const store = storeOver({ piece: { ilvl: 130 }, opt: { gcd: '' } });
   const ilvl = storeNumberField(store, 'piece.ilvl', 1, 795);
   ilvl['@change']({ target: { value: '560' } });
   assert.equal(store.piece.ilvl, 560);

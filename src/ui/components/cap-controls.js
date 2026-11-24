@@ -47,7 +47,10 @@ export function capControls(ownTab) {
     /* limitCapToLevel, keeping what it lowered for the note. A second lowering (the up arrow at the limit) updates the note
        in place and flashes the field again: hiding and showing the note made the panel jump (owner's report, 2026-10-18). */
     lowerCap() {
-      const lowered = limitCapToLevel(this.$store.app);
+      const app = this.$store.app;
+      // limitCapToLevel lowers the cap of the object it is given: a copy of the panel's fields, then the store gets the new cap
+      const lowered = limitCapToLevel({ cap: app.cap, sync: app.sync, level: app.level });
+      if (lowered) app.editPanel({ cap: lowered.to });
       this.capLowered = lowered;
       if (lowered) flashLowered(this.$refs.cap);
     },
@@ -60,7 +63,7 @@ export function capControls(ownTab) {
       return capFlag({ error: this.capError, missing: this.capMissing, note: this.capLoweredNote, lowered: this.capLowered, range });
     },
     onCapInput(text) {
-      if (text === '') this.$store.app.cap = null; // an empty field means no cap
+      if (text === '') this.$store.app.editPanel({ cap: null }); // an empty field means no cap
       this.capTypedBad = capTextBad(text);
     },
     /* sync is on, the field is empty and holds no text that is no cap (that error comes first) */

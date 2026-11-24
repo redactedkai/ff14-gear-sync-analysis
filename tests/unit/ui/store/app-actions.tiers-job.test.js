@@ -1,4 +1,4 @@
-/* The math sub-tabs' own jobs and the math panel's cap in the store (src/ui/store.js): Substat tiers has its own saved job
+/* The math sub-tabs' own jobs and the math panel's cap in the store (src/ui/store/app-actions.ts): Substat tiers has its own saved job
    (setTiersJob; setJob routes owner 'tiers' to it) that never touches Stat Allocation's panel, and the other way round; with IL
    Sync off the math panel's cap follows level sync's item level on the user actions that change it (the level box, a job
    change, Reset, a link), and never on a tab change. Item levels are the game's ParamGrow.ItemLevelSync: level 85 gives 536,

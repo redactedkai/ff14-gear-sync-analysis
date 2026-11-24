@@ -77,17 +77,14 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
   };
 }
 
-/* numberField bound to a dotted path in the store, e.g. storeNumberField(store, 'piece.ilvl', 1, 795); options as for
-   numberField. Registered as the $num magic in main.js. */
+/* numberField bound to a dotted path in the store, e.g. storeNumberField(app, 'piece.ilvl', 1, 795); options as for
+   numberField. The value is read from the store along the path and written by `store.setField(path, value)`, the store's one
+   action for a number box (ui/store/app-facade.ts). Registered as the $num magic in main.js. */
 export function storeNumberField(store, path, lo, hi, options = {}) {
-  const keys = path.split('.'),
-    last = keys.pop();
-  const target = () => keys.reduce((o, k) => o[k], store);
+  const keys = path.split('.');
   return numberField(
-    () => target()[last],
-    v => {
-      target()[last] = v;
-    },
+    () => keys.reduce((holder, key) => holder[key], store),
+    value => store.setField(path, value),
     lo,
     hi,
     options,

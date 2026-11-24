@@ -8,13 +8,14 @@ import { syncSettings } from './job-sync-panel.js';
    whatever the job (a job at its own level cap included), while item level sync is on. Above it the cap changes nothing
    (syncTarget), so the field shows the cap that applies. A cap is never raised: a low cap is a real duty's (Minimum IL).
    Called when the level settles, when a cap is entered, when sync is switched on, and on restore.
+   `panel`: {cap, sync, level}, changed in place (a copy of a panel's fields, or a sheet's settings: the store is told after).
    Returns {from, to, level} when it lowered the cap (the note under the field), else null. */
-export function limitCapToLevel(app) {
-  if (!syncSettings(app).sync) return null;
-  const top = app.level == null ? MAX_REAL : capCeiling(app.level);
-  if (app.cap <= top) return null;
-  const lowered = { from: app.cap, to: top, level: app.level ?? null };
-  app.cap = top;
+export function limitCapToLevel(panel) {
+  if (!syncSettings(panel).sync) return null;
+  const top = panel.level == null ? MAX_REAL : capCeiling(panel.level);
+  if (panel.cap <= top) return null;
+  const lowered = { from: panel.cap, to: top, level: panel.level ?? null };
+  panel.cap = top;
   return lowered;
 }
 

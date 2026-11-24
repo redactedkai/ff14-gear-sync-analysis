@@ -9,14 +9,14 @@ import { syncExplainer } from '../../../../src/ui/components/sync-explainer.js';
 import { settings } from '../../../../src/ui/components/page.js';
 import { SYNC_CHIP_TEXT, pieceChipView, syncChipView } from '../../../../src/ui/views/sync-explainer.js';
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
-import { createAppStore } from '../../../../src/ui/store.js';
 import { overlays } from '../../../../src/ui/overlays.js';
 import { restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.js';
 
 /* The component bound to the store of `saved` (the math tab open), with stand-ins for the DOM it touches. */
 function bound(saved = {}) {
   overlays.closeAll(); // the page's manager is shared: no layer of an earlier test stays open
-  const app = createAppStore(restoreOpen({ tab: 'math', piece: { job: 'SGE', cap: 123, sync: true, level: 85 }, ...saved }));
+  const app = createAppFacade(restoreOpen({ tab: 'math', piece: { job: 'SGE', cap: 123, sync: true, level: 85 }, ...saved }));
   const focused = [];
   const refs = {};
   for (const name of ['jobButton', 'level', 'cap', 'syncChip', 'pieceChip', 'pieceFirst'])
@@ -86,7 +86,7 @@ test("Sync chip: opening puts the focus on the Level box, closing on the chip; t
   assert.deepEqual(c.syncChip, expected);
   assert.equal(c.syncText, SYNC_CHIP_TEXT);
   // IL Sync on with no item level: the missing-item-level text
-  app.cap = null;
+  app.editPanel({ cap: null });
   assert.equal(c.syncChip.parts.at(-1).text, SYNC_CHIP_TEXT.needCap);
 });
 
@@ -101,15 +101,15 @@ test("Substats & materia chip: it says the piece's substats and slots; opening p
 
 test('IL Sync switch: off stores the item level level sync gives (536 at level 85); on keeps the stored cap', () => {
   const { app, c } = bound();
-  app.sync = false;
+  app.editPanel({ sync: false });
   c.onSyncSwitch(false);
   assert.equal(app.cap, 536);
-  app.sync = true;
+  app.editPanel({ sync: true });
   c.onSyncSwitch(true);
   assert.equal(app.cap, 536, 'switching on copies nothing');
-  app.cap = 270;
-  app.level = 100;
-  app.sync = false;
+  app.editPanel({ cap: 270 });
+  app.editPanel({ level: 100 });
+  app.editPanel({ sync: false });
   c.onSyncSwitch(false);
   assert.equal(app.cap, null, 'at the level cap there is no level sync');
   // bad text left in the box is dropped with the switch
@@ -134,7 +134,7 @@ test('Level box: each valid level counts as typed; while IL Sync is off the cap 
 });
 
 test("the Gear browser strip has the same Job menu (its own owner), and the bar's and the strip's menus never share a job", () => {
-  const app = createAppStore(restoreOpen({ tab: 'browse', browse: { job: 'WAR' }, piece: { job: 'SGE' }, tiers: { job: 'WHM' } }));
+  const app = createAppFacade(restoreOpen({ tab: 'browse', browse: { job: 'WAR' }, piece: { job: 'SGE' }, tiers: { job: 'WHM' } }));
   const strip = Object.assign(settings(), { $store: { app }, $refs: { jobButton: { focus() {} } }, $nextTick: fn => fn() });
   assert.equal(strip.jobOwner, 'browse');
   assert.equal(strip.menuJobId, 'WAR');

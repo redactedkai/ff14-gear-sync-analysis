@@ -77,12 +77,15 @@ export function gearFromCountWords(count) {
   return `${fmtInt(count)} ${count === 1 ? 'piece' : 'pieces'} in this category under the current filters.`;
 }
 
-/* Where a filter's settings live, for gearFromToggles and expansionToggles: `part` a field of $store.app ('browse'),
-   changed in place; or an accessor {read(component) → the settings, write(component, patch)} for settings kept
+/* The action of $store.app that changes each field a filter's settings can live in. */
+const WRITE_ACTION = { browse: 'editBrowse' };
+
+/* Where a filter's settings live, for gearFromToggles and expansionToggles: `part` a field of $store.app ('browse'), changed by
+   its action (editBrowse); or an accessor {read(component) → the settings, write(component, patch)} for settings kept
    elsewhere (a gear set's Auto-fill settings, changed through the sheet store). Returns the accessor. */
 function filterAccess(part) {
   if (typeof part !== 'string') return part;
-  return { read: self => self.$store.app[part], write: (self, patch) => Object.assign(self.$store.app[part], patch) };
+  return { read: self => self.$store.app[part], write: (self, patch) => self.$store.app[WRITE_ACTION[part]](patch) };
 }
 
 /* Room kept between a floating menu and the window's edges, the least height a menu is cut to when it has no room on

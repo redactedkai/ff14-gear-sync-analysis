@@ -8,7 +8,7 @@
      set's page, a "not found" address), so Back never returns to a dead address. A change of settings on the same screen
      replaces the entry's query. The address is not written when it already names the screen.
    - Address to stores: Back, Forward, a typed address or a link opens the screen the address names through the stores'
-     own actions, so the set page's leave guard (sheets/store.js askLeave) asks first when a draft, a running Auto-fill or a
+     own actions, so the set page's leave guard (ui/store/sheets-actions.ts askLeave) asks first when a draft, a running Auto-fill or a
      waiting result would be lost.
 
    History entries: every entry the router writes carries a state {id, pos}: `id` is unique to the entry (it keys the scroll
@@ -86,8 +86,8 @@ const QUERY_PAUSE_MS = 400;
    within it is written when it ends. */
 const WRITE_COOLDOWN_MS = 100;
 
-/* The router over the app store `app`, the sheets store `sheets`, a history `port` and `watch(getter, callback)` (Alpine's
-   watch: calls `callback(value)` after `getter()` changes; the getter's reads are what it watches). `setTitle(text)` sets the
+/* The router over the app store `app`, the sheets store `sheets`, a history `port` and `watch(getter, callback)` (the store's
+   watch: calls `callback(value)` after a store change that makes `getter()` differ from before). `setTitle(text)` sets the
    page title as the screen changes (routes.js titleOf); `focusScreen(scrollY)` moves the focus to the new screen after a Back or
    Forward (a click already places the focus where the player acted) and scrolls to where the player left that screen (`scrollY`,
    0 for an entry the router has not seen scrolled); the page reports its scrolling with `noteScroll(y)`, and `readScroll()`
@@ -184,14 +184,15 @@ export function createRouter({
       const job = readJobQuery(route.params);
       const settings = readQuery(view, route.params, job, job.maxLevel);
       app.setTiersJob(settings.job);
-      Object.assign(app.tiers, settings);
+      app.setTiersLevel(settings.level);
     } else if (view === 'gcd') {
-      Object.assign(app.gcd, readQuery(view, route.params, null, app.panel('math').level));
+      app.editGcd(readQuery(view, route.params, null, app.panel('math').level));
     } else {
       const panel = readPanelQuery(route.params, app.panel(route.tab).cap);
       const settings = readQuery(view, route.params, panel.jobCtx, panel.level);
       app.setPanel(route.tab, panel);
-      Object.assign(settingsOf(route), settings);
+      if (view === 'gear') app.editBrowse(settings);
+      else app.editPiece(settings);
     }
   }
 

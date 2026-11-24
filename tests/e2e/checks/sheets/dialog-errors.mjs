@@ -5,7 +5,7 @@ import { check, expect } from '../../lib/expect.mjs';
 import { pieceSheet } from '../../lib/fixtures.mjs';
 import { hasHScroll } from '../../lib/nav.mjs';
 import { rowAction, seedSheet } from '../../lib/sheets.mjs';
-import { SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store.js';
+import { SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.js';
 
 // White Mage, one gear set holding the Ironworks Magitek Cane (game id 8645) in its weapon row: no other healer wears it
 const CANE_SHEET = pieceSheet('s_cane', 'Canes', 'WHM', 0, 8645, []);

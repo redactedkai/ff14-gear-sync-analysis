@@ -33,7 +33,7 @@ export function page() {
        handler for Space on the tab links would bring it back. */
     /* A tab link's click (`event`): a plain click opens tab `tab`; a Ctrl, Cmd, Shift or Alt click is left to the browser
        (plain-click.js). Leaving the Sheets tab while its set page has something to settle (a manual draft,
-       a running Auto-fill, an Auto-fill result waiting) asks first, with the set page's own question (sheets/store.js askLeave);
+       a running Auto-fill, an Auto-fill result waiting) asks first, with the set page's own question (ui/store/sheets-actions.ts askLeave);
        the answer opens the tab. The tab shows as selected with a loading line first (store.openTab). */
     goTab(tab, event) {
       followInPage(event, () => {

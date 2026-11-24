@@ -3,13 +3,12 @@
    are the fixtures' ('s_1', 'g_1'). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSheetStore } from '../../../../src/ui/sheets/store.js';
 import { createRouter } from '../../../../src/ui/router/router.js';
 import { DEFAULT_ROUTE, formatRoute, titleOf } from '../../../../src/ui/router/routes.js';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 import { saveSheet } from '../../../../src/ui/sheets/storage.js';
-import { defaultState } from '../../../../src/ui/state.js';
-import { createAppStore } from '../../../../src/ui/store.js';
+import { restoreOpen } from '../../helpers/common.js';
+import { createStores } from '../../helpers/stores.js';
 
 /* A browser history: `entries` ({hash, state}), `at` (the current one). A move the page asks for (go) and one the player
    makes (back, forward, type) are delivered to the router's popstate listener when the test calls `deliver()`; a move past
@@ -64,17 +63,12 @@ function fakeHistory(startHash = '', startState = null) {
   return history;
 }
 
-/* The app store as the router uses it: the real store (settings, panels, setPanel, showTab and showSub) over the defaults,
-   with openTab opening at once (the real one waits for a painted frame). */
-function fakeApp(tab = 'sheets', mathTab = 'piece') {
-  return {
-    ...createAppStore(defaultState()),
-    tab,
-    mathTab,
-    openTab(next) {
-      this.showTab(next);
-    },
-  };
+/* The page's real store (the state, the actions and the two facades the router reads) over the defaults, with the tab and math view
+   open, the sheets over `storage`, and openTab opening at once (the real one waits for a painted frame). */
+function fakeStores(storage, tab = 'sheets', mathTab = 'piece') {
+  const stores = createStores(restoreOpen({ tab, mathTab }), { storage });
+  stores.app.openTab = next => stores.app.showTab(next);
+  return stores;
 }
 
 /* A watch that runs by hand: `fire()` re-reads every getter and calls the callback of those whose value changed. */
@@ -101,9 +95,8 @@ function fakeWatch() {
 function setup(startHash = '', prepare = () => {}, routerOptions = {}, history = fakeHistory(startHash)) {
   const storage = fakeStorage();
   saveSheet(sheetOf('SGE', [sageSet(), sageSet({ id: 'g_2', name: 'Set 2' })], { name: 'Sage 123' }), storage);
-  const sheets = createSheetStore({ storage });
+  const { store, app, sheets } = fakeStores(storage);
   const clock = fakeWatch();
-  const app = fakeApp();
   prepare(app);
   const titles = [];
   const focused = [];
@@ -118,7 +111,7 @@ function setup(startHash = '', prepare = () => {}, routerOptions = {}, history =
   });
   router.start();
   const hash = () => history.read();
-  return { app, sheets, history, router, clock, titles, focused, hash, storage };
+  return { store, app, sheets, history, router, clock, titles, focused, hash, storage };
 }
 
 test('a bare address opens the Sheets list and becomes #/sheets', () => {
@@ -189,8 +182,10 @@ test('a tab link pushes the tab; the Sheets tab returns to the screen it was lef
 });
 
 test('a tab being opened counts as open, so the address does not lag behind a click', () => {
-  const { app, clock, hash } = setup('');
-  app.pendingTab = 'math';
+  const { store, clock, hash } = setup('');
+  store.update('screen/openTab', state => {
+    state.screen.pendingTab = 'math';
+  });
   clock.fire();
   assert.equal(hash(), '#/math/piece');
 });
@@ -272,11 +267,11 @@ test('a typed #/math is made #/math/piece', () => {
 /* The set page's leave guard: holds the move back and keeps it for the answer. */
 function holdingGuard(sheets) {
   const state = { asked: 0, held: null };
-  sheets.leaveGuard = move => {
+  sheets.setLeaveGuard(move => {
     state.asked += 1;
     state.held = move;
     return true;
-  };
+  });
   return state;
 }
 
@@ -294,7 +289,7 @@ test('Back from a set page that holds a draft is undone; "leave" does the move a
   assert.equal(hash(), '#/sheets/s_1/sets/g_1', 'the address is put back');
   assert.equal(history.at, 2);
   // the player answers "leave": the guard clears and the held move runs
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(sheets.screen, 'sheet');
@@ -334,7 +329,7 @@ test('a typed address off a set page that holds a draft is refused: the browser 
   assert.equal(sheets.screen, 'set');
   assert.equal(history.at, 2, 'the browser is back on the set page');
   assert.equal(history.entries.length, 4, 'the typed entry is still ahead');
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(hash(), '#/gear');
@@ -355,7 +350,7 @@ test('"keep editing" after a typed address: the next Back is a Back, not a dupli
   history.back();
   history.deliver();
   assert.equal(guard.asked, 2, 'Back asks again');
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(hash(), '#/sheets/s_1', 'and leaves to the sheet page');
@@ -381,7 +376,7 @@ test('a reload keeps the entries: Back from a set page with a draft is undone to
   assert.equal(history.at, 2, 'back on the set page');
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
   assert.deepEqual(history.entries[2].state, { id: 'c', pos: 2 }, 'the entry keeps its state');
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(history.at, 1);
@@ -408,7 +403,7 @@ test('history that branched: a jump of two entries over a held move is undone by
   assert.equal(guard.asked, 1);
   assert.equal(history.at, 2, 'the browser went back by the same two');
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(history.at, 0);
@@ -429,7 +424,7 @@ test('two Backs in one task over a held move end on the entry the page shows', (
   assert.equal(history.at, 2);
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
   // the player answers "leave": the move the question was about (the first Back) is made
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(sheets.screen, 'sheet');
@@ -482,7 +477,7 @@ test('a reload of an entry the router wrote keeps the saved settings and rewrite
 test('a search text waiting for its pause goes into the entry when a tab link leaves it', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { app, history, clock } = setup('#/gear');
-  app.browse.q = 'Moon';
+  app.editBrowse({ q: 'Moon' });
   clock.fire();
   assert.equal(history.entries[0].hash, '#/gear');
   app.openTab('sheets');
@@ -496,7 +491,7 @@ test('a search text waiting for its pause is kept for the entry when Back leaves
   const { app, history, clock, hash } = setup('#/sheets');
   app.openTab('browse');
   clock.fire();
-  app.browse.q = 'Moon';
+  app.editBrowse({ q: 'Moon' });
   clock.fire();
   history.back();
   history.deliver();
@@ -519,7 +514,7 @@ test('changes of settings are written at most once in the cooldown, and the last
     replace(...args);
   };
   for (let min = 1; min <= 250; min += 1) {
-    app.browse.min = min;
+    app.editBrowse({ min });
     clock.fire();
     t.mock.timers.tick(5);
   }
@@ -634,18 +629,18 @@ test("a change of settings replaces the address's query and adds no history entr
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { app, history, clock, hash } = setup('#/gear');
   const entries = history.entries.length;
-  app.browse.sort = 'det';
+  app.editBrowse({ sort: 'det' });
   clock.fire();
   assert.equal(hash(), '#/gear?sort=det');
   t.mock.timers.tick(100); // a write is followed by a short cooldown
-  app.browse.type = 'ring';
-  app.browse.market = false;
+  app.editBrowse({ type: 'ring' });
+  app.editBrowse({ market: false });
   clock.fire();
   assert.equal(hash(), '#/gear?slot=ring&market=0&sort=det');
   t.mock.timers.tick(100);
-  app.browse.sort = 'ilvl';
-  app.browse.type = 'any';
-  app.browse.market = true;
+  app.editBrowse({ sort: 'ilvl' });
+  app.editBrowse({ type: 'any' });
+  app.editBrowse({ market: true });
   clock.fire();
   assert.equal(hash(), '#/gear', 'every setting back at its default: no query');
   assert.equal(history.entries.length, entries);
@@ -654,13 +649,13 @@ test("a change of settings replaces the address's query and adds no history entr
 test('a change of the search text waits until typing pauses; another change writes it at once', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { app, clock, hash } = setup('#/gear');
-  app.browse.q = 'M';
+  app.editBrowse({ q: 'M' });
   clock.fire();
-  app.browse.q = 'Moon';
+  app.editBrowse({ q: 'Moon' });
   clock.fire();
   assert.equal(hash(), '#/gear', 'still typing');
   t.mock.timers.tick(300);
-  app.browse.q = 'Moon St';
+  app.editBrowse({ q: 'Moon St' });
   clock.fire();
   t.mock.timers.tick(300);
   assert.equal(hash(), '#/gear', 'each key starts the pause again');
@@ -668,10 +663,10 @@ test('a change of the search text waits until typing pauses; another change writ
   assert.equal(hash(), '#/gear?q=Moon%20St');
   // a filter changed while text waits takes the text with it
   t.mock.timers.tick(100);
-  app.browse.q = 'Moon Staff';
+  app.editBrowse({ q: 'Moon Staff' });
   clock.fire();
   assert.equal(hash(), '#/gear?q=Moon%20St');
-  app.browse.sort = 'det';
+  app.editBrowse({ sort: 'det' });
   clock.fire();
   assert.equal(hash(), '#/gear?q=Moon%20Staff&sort=det');
   t.mock.timers.tick(1000);
@@ -709,7 +704,7 @@ test('each math view has its own settings: Stat Allocation and Substat tiers', (
   const tiers = setup('#/math/tiers?tierlevel=90');
   assert.equal(tiers.app.tiers.level, 90);
   assert.equal(tiers.hash(), '#/math/tiers?tierlevel=90');
-  tiers.app.tiers.level = null;
+  tiers.app.setTiersLevel(null);
   tiers.clock.fire();
   assert.equal(tiers.hash(), '#/math/tiers');
 });
@@ -718,7 +713,7 @@ test('Back and Forward move between screens, not settings: the page keeps its se
   const { app, history, clock, hash } = setup('#/gear?sort=det');
   app.openTab('sheets');
   clock.fire();
-  app.browse.sort = 'dh'; // changed while another screen is open: the entry of the Gear browser still says det
+  app.editBrowse({ sort: 'dh' }); // changed while another screen is open: the entry of the Gear browser still says det
   history.back();
   history.deliver();
   assert.equal(app.browse.sort, 'dh');
@@ -748,7 +743,7 @@ test('a link with settings that leaves a set page that holds a draft waits for t
   assert.equal(guard.asked, 1);
   assert.equal(app.browse.sort, 'ilvl', 'not applied yet');
   assert.equal(hash(), '#/sheets/s_1/sets/g_1');
-  sheets.leaveGuard = null;
+  sheets.setLeaveGuard(null);
   guard.held();
   history.deliver();
   assert.equal(app.browse.sort, 'det');
@@ -774,9 +769,7 @@ test('a link names the job, level and item level sync of the tab; what it leaves
   assert.equal(hash(), '#/gear?job=SGE&level=90&il=123&slot=ring');
   // the reader had sync on and a cap: a link with no il is sync off, and the held cap is not a setting of the link
   const second = setup('#/gear?job=WAR', page => {
-    page.browse.sync = true; // the Gear browser's own panel, as saved
-    page.browse.cap = 600;
-    page.browse.level = 70;
+    page.editPanel({ sync: true, cap: 600, level: 70 }, 'browse'); // the Gear browser's own panel, as saved
   });
   assert.deepEqual(
     [second.app.job, second.app.level, second.app.sync, second.app.cap],
@@ -787,12 +780,12 @@ test('a link names the job, level and item level sync of the tab; what it leaves
 
 test('a link to a tab that is not open sets the panel of that tab and leaves the open tab alone', () => {
   const { app, history, hash } = setup('#/sheets');
-  app.piece.job = 'DRK';
+  app.editPanel({ job: 'DRK' }, 'math');
   history.type('#/gear?job=SGE&il=123');
   history.deliver();
   assert.equal(app.tab, 'browse');
   assert.deepEqual([app.job, app.sync, app.cap], ['SGE', true, 123], 'the panel of the Gear browser is the open one now');
-  assert.equal(app.piece.job, 'DRK', 'the math panel is not touched');
+  assert.equal(app.panel('math').job, 'DRK', 'the math panel is not touched');
   assert.equal(hash(), '#/gear?job=SGE&il=123');
 });
 
@@ -833,13 +826,13 @@ test('the address follows the panel: a job, a level and the item level sync swit
   clock.fire();
   assert.equal(hash(), '#/gear?job=SGE');
   t.mock.timers.tick(100);
-  app.level = 90;
-  app.cap = 123;
-  app.sync = true;
+  app.editPanel({ level: 90 });
+  app.editPanel({ cap: 123 });
+  app.editPanel({ sync: true });
   clock.fire();
   assert.equal(hash(), '#/gear?job=SGE&level=90&il=123');
   t.mock.timers.tick(100);
-  app.sync = false; // the cap stays held, and is no setting
+  app.editPanel({ sync: false }); // the cap stays held, and is no setting
   clock.fire();
   assert.equal(hash(), '#/gear?job=SGE&level=90');
   assert.equal(history.entries.length, entries);
@@ -847,7 +840,7 @@ test('the address follows the panel: a job, a level and the item level sync swit
 
 test('sync on with no cap yet is an empty il, and opens as sync on', () => {
   const first = setup('#/gear?job=SGE');
-  first.app.sync = true;
+  first.app.editPanel({ sync: true });
   first.clock.fire();
   assert.equal(first.hash(), '#/gear?job=SGE&il=');
   const again = setup('#/gear?job=SGE&il=');

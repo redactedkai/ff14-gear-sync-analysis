@@ -1,9 +1,10 @@
 /* Entry point: restore saved state, register the store and components, start Alpine. */
 import Alpine from 'alpinejs';
 import 'styles:bundle'; // the stylesheet: src/styles/entry.css imports the files in cascade order
-import { restoreState, loadSaved, save } from './ui/state.js';
-import { createAppStore } from './ui/store.js';
-import { createSheetStore } from './ui/sheets/store.js';
+import { restoreState, loadSaved } from './ui/state.js';
+import { createPageStore } from './ui/store/page-store.ts';
+import { startAutosave } from './ui/store/autosave.ts';
+import { watch } from './ui/store/watch.ts';
 import { defaultStorage } from './ui/sheets/storage.js';
 import { createRouter, windowPort } from './ui/router/router.js';
 import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.js';
@@ -27,16 +28,19 @@ import { setPage } from './ui/components/set-page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
-const SAVE_DEBOUNCE_MS = 150;
-
 enableHqFont(document.fonts, document.documentElement);
 
 // the screen the address names opens first (a bare or unknown address is the Sheets list): the tab and math view are not saved
 const openRoute = parseRoute(location.hash) ?? DEFAULT_ROUTE;
-Alpine.store('app', createAppStore(restoreState(loadSaved(), openRoute)));
+/* The page's one store (ui/store/): the state, its actions and the two facades the templates read. Alpine tracks the revision of each
+   slice (Alpine.reactive), so a template that reads a facade runs again when an action changes the slice it read. The saved sheets
+   are one record each, written on their own edits (not part of the settings that autosave writes). */
+const pageStore = createPageStore({ restored: restoreState(loadSaved(), openRoute), track: revisions => Alpine.reactive(revisions) });
+const { store } = pageStore;
+Alpine.store('app', pageStore.app);
+Alpine.store('sheets', pageStore.sheets);
 const app = Alpine.store('app');
-// the saved sheets: one record each, written on their own edits (not part of the settings the effect below saves)
-Alpine.store('sheets', createSheetStore());
+const sheets = Alpine.store('sheets');
 /* Where the page is scrolled: {y, maxY (the furthest it can scroll now)}. */
 function pageScroll() {
   return { y: scrollY, maxY: document.documentElement.scrollHeight - innerHeight };
@@ -49,9 +53,9 @@ history.scrollRestoration = 'manual';
 // the address and the two stores follow each other (ui/router/): Back, Forward, reload and bookmarks work
 const router = createRouter({
   app,
-  sheets: Alpine.store('sheets'),
+  sheets,
   port: windowPort(),
-  watch: Alpine.watch,
+  watch: (select, callback) => watch(store, select, callback),
   setTitle: text => {
     document.title = text;
   },
@@ -64,8 +68,13 @@ const router = createRouter({
 router.start();
 addEventListener('pagehide', () => writeScrollPositions(tabScrollStorage, router.scrollPositions()));
 // a change of screen (tab, sub-tab, sheet, gear set, Back and Forward) closes every open menu and popover; the router owns the focus then
-for (const screen of [() => app.tab, () => app.mathTab, () => Alpine.store('sheets').sheetId, () => Alpine.store('sheets').setId]) {
-  Alpine.watch(screen, () => overlays.closeAll());
+for (const screen of [
+  state => state.screen.tab,
+  state => state.screen.mathTab,
+  state => state.sheets.sheetId,
+  state => state.sheets.setId,
+]) {
+  watch(store, screen, () => overlays.closeAll());
 }
 addEventListener('popstate', () => overlays.closeAll());
 // where the page is scrolled is kept for each history entry, so Back returns to it
@@ -119,38 +128,23 @@ Object.entries({
   Alpine.data(name, factory);
 });
 
-/* Save whenever any persisted field changes: the effect tracks every field by serializing them (settings only, so it
-   is cheap; scripts/perf/browser.mjs times it as 'save'), and the save runs SAVE_DEBOUNCE_MS after the last change. */
-let saveTimer = null;
-let unsavedJson = null;
-Alpine.effect(() => {
-  const t0 = performance.now();
-  const json = JSON.stringify(app.persisted());
-  performance.measure('save', { start: t0 }); // read by scripts/perf/browser.mjs
-  clearTimeout(saveTimer);
-  unsavedJson = json;
-  saveTimer = setTimeout(() => {
-    unsavedJson = null;
-    save(json);
-  }, SAVE_DEBOUNCE_MS);
-});
-// a reload or a closed tab within the debounce does not lose the last change (a link opened and the page reloaded at once)
-addEventListener('pagehide', () => {
-  if (unsavedJson !== null) save(unsavedJson);
-});
+/* Save the settings 150 ms after the last change and when the page is hidden (ui/store/autosave.ts). */
+startAutosave(store);
 
 // a reload or a closed tab asks first while a gear set's page holds a draft, a running Auto-fill or a waiting result
-installUnloadGuard({ target: window, hasUnsettled: () => Alpine.store('sheets').hasUnsettled(), storage: defaultStorage() });
+installUnloadGuard({ target: window, hasUnsettled: () => sheets.hasUnsettled(), storage: defaultStorage() });
 
 Alpine.start();
 
-/* The test hook (read-only, in every build): the two stores, and `scope(selector)`, the data of the Alpine component on the
+/* The test hook (read-only, in every build): the two facades, the store's state and action log, and `scope(selector)`, the data of the Alpine component on the
    first element that matches (a component's own fields, such as the Gear browser's `view`). Tests read the page's state
-   here instead of Alpine's private fields. */
+   here instead of Alpine's private fields. `state` is the store's live state and `log` the names of its last 50 actions. */
 const debugHook = {};
 Object.defineProperties(debugHook, {
   app: { get: () => app, enumerable: true },
-  sheets: { get: () => Alpine.store('sheets'), enumerable: true },
+  sheets: { get: () => sheets, enumerable: true },
+  state: { get: () => store.state, enumerable: true },
+  log: { get: () => [...store.log], enumerable: true },
   scope: { value: selector => Alpine.$data(document.querySelector(selector)), enumerable: true },
 });
 Object.defineProperty(window, 'gsaDebug', { value: Object.freeze(debugHook), enumerable: true });

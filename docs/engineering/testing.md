@@ -170,7 +170,6 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/sheets/storage.fill-and-meal | the Food-related fields of a saved set: the meal and the Auto-fill food, materia and tier switches, and a wrong type |
 | ui/sheets/storage.fuzz | saved sheet records damaged in several fields through every reader and view |
 | ui/sheets/storage.stat-keys | a v1 record read with the game's keys, and a record with the game's keys read as it is (note 14) |
-| ui/sheets/store | the sheets' store over a storage stand-in (note 15) |
 | ui/solve | the solver's answers: solveView by kind, an error as an answer, Gear to search |
 | ui/solver | the optimizer's solver (note 17) |
 | ui/router/focus | the focus and scroll after Back, Forward and a reload: the heading focused, a deep position scrolled to in the call itself with the page held tall and let go once it holds, a newer move taking over, a tab still opening waited for |
@@ -184,18 +183,16 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/state.tiers-job | Substat tiers' saved job: default, restore repair, a save with none |
 | ui/state.panels | each reference tab's own Job and sync panel on restore; an old save's optimizer settings dropped |
 | ui/state.split-panel | the saved settings with the Job and sync panel split between the Gear browser and the math tab and the old `opt` dropped |
-| ui/store | job switch and reset |
-| ui/store.tiers-job | `setJob(id, 'tiers')` and `panel('tiers')`: the other panels untouched, Substat tiers' level cleared at the job's level cap, `tiers.job` saved |
-| ui/store.panels | the two reference tabs' panels in the store: switching, persisting, job resets |
-| ui/store.sheets-tab | the Sheets tab has no panel (note 18) |
 | ui/store/store (`.test.ts`) | the new store: 1,000 updates in a tick give one notification, a revision per slice, the log of 50 action names, listeners, big data kept by reference |
 | ui/store/select (`.test.ts`) | `Select` over a fake host: renders only on a change of what it selected, unsubscribes on disconnect (1,000 cycles leave none), `shallowEq` |
 | ui/store/watch (`.test.ts`) | `watch`: once per tick, previous value, `equals`, stop |
 | ui/store/autosave (`.test.ts`) | the save 150 ms after the last change on a fake clock, one write for 1,000 changes, `pagehide` flush, a throwing storage ignored |
 | ui/store/app-state (`.test.ts`) | the five slices, actions that change nothing are not counted, `panelOf`, `persisted` in the saved shape, gear set pages, `routeOf` against the router's routes |
-| ui/store/app-state.differential (`.test.ts`) | random action sequences (36 runs of 250 steps, fixed seeds) on the old Alpine store and the new one: the saved JSON, each panel, the open tab and the typed levels equal after every step |
-| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the old app store's tests (`ui/store*`) run against the new actions through `tests/unit/helpers/store-adapters.ts` |
-| ui/store/sheets-actions, `.clan-party` | the old Sheets store's tests (`ui/sheets/store*`) run against the new actions through the same adapter |
+| ui/store/app-state.differential (`.test.ts`) | random action sequences (36 runs of 250 steps, fixed seeds) on the Alpine app store as it was (kept as the oracle in `tests/unit/helpers/old-app-store.js`) and the new one: the saved JSON, each panel, the open tab and the typed levels equal after every step |
+| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the Alpine app store's tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
+| ui/store/sheets-actions, `.clan-party` | the sheets' store over a storage stand-in (note 15), run against the actions through the same adapter |
+| ui/store/app-facade, sheets-facade (`.test.ts`) | the facades the templates read (`$store.app`, `$store.sheets`): each getter reads the revision of its slice, an action writes it as it runs, every member of the old stores is there, nothing can be assigned to, the number boxes' `setField`, the set page's guard and probe, `commitSheet` |
+| ui/store/no-direct-writes | a search of `src/` for any write to a facade that is not an action call: `x-model` on a store field, `app.<field> =`, `Object.assign(app...)`, `sheets.<field> =` |
 | styles/z-index-scale | every `z-index` is a `--z-*` token, the tokens keep their order (dialog and toast on one level), the rules a library positioner needs are in place |
 | styles/theme-tokens | colors only through the CSS tokens (note 19) |
 | styles/gear-column-tint | the Gear browser CSS tints the column of every stat the table can sort or hover |
@@ -250,10 +247,10 @@ Notes on the longer rows:
 12. `ui/components/sheets`: the screens, New sheet's default name, refused names left empty with their reason, Copy and Delete through their dialogs, set notes, Escape, nothing opening while an Auto-fill runs, keyboard and drag reordering, the note that clears itself.
 13. `ui/sheets/storage`: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage, and a saved time outside the range of a `Date` (1e300) making the record unreadable instead of breaking the Sheets tab.
 14. `ui/sheets/storage.stat-keys`: the v1 record has position keys (`main`, `spd`, `spec`) per stat profile.
-15. `ui/sheets/store`: making, editing, copying (the White Mage cane cleared after the question), deleting and reordering sheets and gear sets. Also the screen each action leaves open, the level and cap held to their ranges, the edit lock while an Auto-fill runs, a full storage keeping the edit, no storage, unreadable records deleted, and a second store reading back what was saved.
+15. `ui/store/sheets-actions`: making, editing, copying (the White Mage cane cleared after the question), deleting and reordering sheets and gear sets. Also the screen each action leaves open, the level and cap held to their ranges, the edit lock while an Auto-fill runs, a full storage keeping the edit, no storage, unreadable records deleted, and a second store reading back what was saved.
 16. `ui/sheets/ops`: names and descriptions as stored, default and copy names, a new sheet and set read back by the storage, Copy sheet clearing the pieces the new job cannot wear, moving a row.
 17. `ui/solver`: the request handler as a plain function (the worker's), requests and replies through a structured clone (the solve reply carries the plain gear set and the recipe), the worker solver's ids. Also one request per kind in the worker with the newest waiting, and the fallback to the page thread when the worker cannot start or fails.
-18. `ui/store.sheets-tab`: going there and back keeps every tab's panel, the save holds none for it, a save made there opens there.
+18. `ui/store/app-actions.sheets-tab`: going there and back keeps every tab's panel, the save holds none for it, a save made there opens there.
 19. `styles/theme-tokens`: no literal #hex, rgb(), hsl() or color name in a rule of `src/styles/*.css`, an inline style or color attribute of the page's HTML (the Sheets markup included) or a quoted color in the UI scripts, with no exception. The scan is run on made-up CSS first. The light and the two dark token lists name the same tokens, and the dark ones are equal.
 20. `ui/views/gcd`: the facts for a speed (checked against the optimizer's 2.10 s and +11 at level 50), the step table's window, the level box's correction, the haste menu and chart marks; the stored most speed per level against the searches.
 21. `ui/views/set-suggestion`: the rows it changes with their Take boxes, the set as taken, Now and After, Apply's text, pinned rows kept, an empty set, the table rows with Take boxes; bad pins dropped and named, no set.

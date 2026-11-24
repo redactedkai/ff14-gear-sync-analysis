@@ -183,13 +183,13 @@
         name="sh-figures"
         value="effects"
         :checked="$store.app.sheetFigures === 'effects'"
-        @change="$store.app.sheetFigures = 'effects'">Effects</label>
+        @change="$store.app.setSheetFigures('effects')">Effects</label>
       <label :class="{ on: $store.app.sheetFigures === 'points' }"><input
         type="radio"
         name="sh-figures"
         value="points"
         :checked="$store.app.sheetFigures === 'points'"
-        @change="$store.app.sheetFigures = 'points'">Stat points</label>
+        @change="$store.app.setSheetFigures('points')">Stat points</label>
     </div></template>
     <span class="sp"></span>
     <template x-if="!page.empty"><button type="button" class="primary" id="sh-new-set" :disabled="$store.sheets.busy" @click="$store.sheets.newSet()">New set</button></template>

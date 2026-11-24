@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { holdLevelSyncCap, levelSyncCap, mathJobOwner, panelOf } from '../../../src/ui/job-sync-panel.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { restoreOpen } from '../helpers/common.js';
-import { createAppStore } from '../../../src/ui/store.js';
+import { createAppFacade } from '../helpers/stores.js';
 
 test("levelSyncCap: the item level level sync gives, none at the job's level cap", () => {
   const sage = makeJobContext('SGE');
@@ -47,7 +47,7 @@ test('mathJobOwner: Substat tiers has its own job, the other sub-tabs use the ma
 });
 
 test("panelOf('tiers'): the tiers job, no cap, IL Sync off, the job's level cap as its level; the same whichever tab is open", () => {
-  const store = createAppStore(
+  const store = createAppFacade(
     restoreOpen({ tab: 'browse', browse: { job: 'WAR', level: 90 }, piece: { job: 'BLM', level: 70 }, tiers: { job: 'BLU' } }),
   );
   for (const tab of ['browse', 'math']) {

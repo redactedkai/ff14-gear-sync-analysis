@@ -31,7 +31,7 @@ export function draftPart(raw) {
         return done.ok ? done.gearSet : null;
       });
       // a pick that took a piece off (a 2H weapon, a shield) says so; a refused one (the picker does not offer it) does nothing
-      if (toast) this.$store.sheets.note = toast;
+      if (toast) this.$store.sheets.setNote(toast);
       this.closeOpenMenu();
     },
     setStone(index, slot, stat, grade) {
@@ -64,7 +64,7 @@ export function draftPart(raw) {
       if (saved.ok === false && saved.error) return;
       this.draft = null;
       this.closeOpenMenu(false);
-      if (changes.count) this.$store.sheets.note = draftNote('Applied', changes);
+      if (changes.count) this.$store.sheets.setNote(draftNote('Applied', changes));
       this.focusFill();
     },
     /* Discard on a draft: back as the set is saved. */
@@ -74,7 +74,7 @@ export function draftPart(raw) {
       const changes = draftView(this.sheet, this.saved, draft).changes;
       this.draft = null;
       this.closeOpenMenu(false);
-      this.$store.sheets.note = draftNote('Discarded', changes);
+      this.$store.sheets.setNote(draftNote('Discarded', changes));
       this.focusFill();
     },
 

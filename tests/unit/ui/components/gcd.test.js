@@ -6,13 +6,13 @@ import assert from 'node:assert/strict';
 import { gcdControls, gcdTab } from '../../../../src/ui/components/gcd.js';
 import { TYPING_DEBOUNCE_MS } from '../../../../src/ui/number-field.js';
 
-import { createAppStore } from '../../../../src/ui/store.js';
 import { GCD_LEVELS, speedRange } from '../../../../src/ui/views/gcd.js';
 import { restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.js';
 
 /* A component bound to the store of a Sage at level 50, as Alpine binds it ($store.app). */
 function bound(members, saved = { job: 'SGE', level: 50 }) {
-  const app = createAppStore(restoreOpen(saved));
+  const app = createAppFacade(restoreOpen(saved));
   return { app, c: Object.assign(members, { $store: { app } }) };
 }
 
@@ -23,15 +23,15 @@ test('GCD controls: the level follows the synced level until one is typed; the s
   // no speed asked: the base, the slider's thumb at its start
   assert.equal(c.speed, base);
   assert.equal(c.speedFill, 0);
-  app.gcd.speed = most + 100;
+  app.editGcd({ speed: most + 100 });
   assert.equal(c.speed, most);
   assert.equal(c.speedFill, 100);
-  app.gcd.speed = base - 1;
+  app.editGcd({ speed: base - 1 });
   assert.equal(c.speed, base);
-  app.gcd.speed = Math.round((base + most) / 2);
+  app.editGcd({ speed: Math.round((base + most) / 2) });
   assert.ok(Math.abs(c.speedFill - 50) < 1);
   // a typed level wins over the synced one, and the range follows it
-  app.gcd.level = 90;
+  app.editGcd({ level: 90 });
   assert.equal(c.level, 90);
   assert.deepEqual(c.speedRange, speedRange(90));
   c.slide('700');
@@ -66,7 +66,7 @@ test('GCD Level box: counted once typing stops; out of range corrected with a no
   el.value = '50';
   c.typeLevel(el, true);
   assert.deepEqual([app.gcd.level, c.levelError], [null, '']);
-  app.gcd.level = 80;
+  app.editGcd({ level: 80 });
   el.value = '';
   c.typeLevel(el, true);
   assert.deepEqual([app.gcd.level, el.value], [null, 50]);
@@ -94,7 +94,7 @@ test('GCD tab: the view is built once per setting and width; a bar sets the leve
   c.width = 700;
   assert.notEqual(c.view, first);
   const atWidth = c.view;
-  app.gcd.level = 60;
+  app.editGcd({ level: 60 });
   assert.notEqual(c.view, atWidth);
   // a click inside a bar of the chart: the bar's level
   c.pickLevel({ target: { closest: () => ({ dataset: { level: '70' } }) } });

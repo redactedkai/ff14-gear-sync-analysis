@@ -3,12 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { NOTE_MS, notes } from '../../../src/ui/messages.js';
-import { createSheetStore } from '../../../src/ui/sheets/store.js';
 import { fakeStorage } from '../helpers/sheet-fixtures.js';
+import { createStores } from '../helpers/stores.js';
 
 /* The component with a store and the watchers it asked Alpine for. */
 function bind() {
-  const sheets = createSheetStore({ storage: fakeStorage() });
+  const { store, sheets } = createStores(undefined, { storage: fakeStorage() });
   const watchers = {};
   const c = Object.assign(notes(), {
     $store: { sheets },
@@ -17,14 +17,14 @@ function bind() {
     },
   });
   c.init();
-  return { c, sheets, watchers };
+  return { c, store, sheets, watchers };
 }
 
 test('a note after an action clears itself, and the same note said again stays NOTE_MS from the second time', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { c, sheets, watchers } = bind();
   const say = text => {
-    sheets.note = text;
+    sheets.setNote(text);
     watchers['$store.sheets.noteSeq']();
   };
   const text = 'Deleted “X”.';
@@ -46,9 +46,12 @@ test('a note after an action clears itself, and the same note said again stays N
 
 test("a failed save's message is shown as the store holds it, and is not timed", t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
-  const { c, sheets } = bind();
+  const { c, store } = bind();
   assert.equal(c.saveMessage, '');
-  sheets.saveMessage = 'Could not save.';
+  // what a failed save leaves in the state (sheets-actions.ts noteSaveIn)
+  store.update('sheets/commitSheet', state => {
+    state.sheets.saveMessage = 'Could not save.';
+  });
   t.mock.timers.tick(NOTE_MS * 3);
   assert.equal(c.saveMessage, 'Could not save.');
 });

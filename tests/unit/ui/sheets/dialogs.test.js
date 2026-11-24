@@ -2,20 +2,15 @@
    a refused form gets the store's reason and the field it is about, and is left as it is (a blank name stays blank). */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  ACK_REQUIRED_TEXT,
-  EMPTY_NAME_TEXT,
-  JOB_REQUIRED_TEXT,
-  SHEET_GONE_TEXT,
-  createSheetStore,
-} from '../../../../src/ui/sheets/store.js';
+import { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, SHEET_GONE_TEXT } from '../../../../src/ui/sheets/store-shared.js';
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.js';
 import { shownName, submitDialog } from '../../../../src/ui/sheets/dialogs.js';
 import { WHM_CANE, fakeStorage, piece, sageSet } from '../../helpers/sheet-fixtures.js';
+import { createSheetsFacade } from '../../helpers/stores.js';
 
 function makeStore() {
   let next = 0;
-  return createSheetStore({ storage: fakeStorage(), makeId: prefix => `${prefix}${++next}` });
+  return createSheetsFacade({ storage: fakeStorage(), makeId: prefix => `${prefix}${++next}` });
 }
 const SAGE = { name: 'Bahamut T13', job: 'SGE', level: 100, sync: { on: true, cap: 123 } };
 

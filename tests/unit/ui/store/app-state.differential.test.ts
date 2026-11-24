@@ -1,11 +1,11 @@
-/* The new store against the old Alpine store (ui/store.js createAppStore): the same random sequences of actions run on both, and after
+/* The new store against the old Alpine store (helpers/old-app-store.js, the Alpine store as it was): the same random sequences of actions run on both, and after
    each one the saved JSON (key order too), the open tab and math view, each tab's panel, the typed levels and the GCD settings must be
    equal. The sequences come from a seeded generator, so a failure names the seed and the step that reproduces it. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../../src/core/constants.js';
 import { restorePanel, restoreState } from '../../../../src/ui/state.js';
-import { createAppStore as createOldStore } from '../../../../src/ui/store.js';
+import { createAppStore as createOldStore } from '../../helpers/old-app-store.js';
 import { createAppActions } from '../../../../src/ui/store/app-actions.ts';
 import { createAppStore, jobCtxOf, panelOf, persisted } from '../../../../src/ui/store/app-state.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';

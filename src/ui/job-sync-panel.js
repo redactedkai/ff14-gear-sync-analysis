@@ -47,7 +47,7 @@ export function meldSlotsOf(piece) {
 /* Each reference tab has its own Job and sync panel (job, cap, sync, level), saved in a group of the state: the store
    field that holds it, by tab ('browse' the Gear browser, 'math' How the math works: Stat Allocation's). The store also
    mirrors the open tab's panel in its top-level job, cap, sync and level, which the panel's fields edit. The Sheets tab
-   has none: a sheet holds its own job, level and sync (ui/sheets/store.js). Two more owners of a job have no mirror:
+   has none: a sheet holds its own job, level and sync (ui/store/sheets-actions.ts). Two more owners of a job have no mirror:
    Substat tiers (owner 'tiers': a job only, saved as `tiers.job`; its level is its own box) and GCD Scaling (no job at
    all). */
 export const PANEL_GROUP = Object.freeze({ browse: 'browse', math: 'piece' });

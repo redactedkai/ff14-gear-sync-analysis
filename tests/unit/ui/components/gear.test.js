@@ -6,13 +6,13 @@ import assert from 'node:assert/strict';
 import { gear } from '../../../../src/ui/components/gear.js';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { defaultBrowse } from '../../../../src/ui/state.js';
-import { createAppStore } from '../../../../src/ui/store.js';
 import { gearView } from '../../../../src/ui/views/gear.js';
 import { watched, restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.js';
 
 /* The component bound to the store of `saved`, as Alpine binds it ($store.app). */
 function bound(saved = { job: 'SGE', tab: 'browse', sync: true, cap: 123 }) {
-  const app = createAppStore(restoreOpen(saved));
+  const app = createAppFacade(restoreOpen(saved));
   return { app, c: Object.assign(gear(), { $store: { app } }) };
 }
 
@@ -29,19 +29,19 @@ test('gear browser: the view is the list for the settings now, built once per ch
   assert.equal(c.fromCounts, first.fromCounts);
   assert.equal(c.fromCount('crafted'), first.fromCounts.crafted);
   // a filter changes: a new list
-  app.browse.q = 'ring';
+  app.editBrowse({ q: 'ring' });
   const ring = c.view;
   assert.notEqual(ring, first);
   assert.ok(ring.shown.every(x => /ring/i.test(x.name)));
   // hidden, the tab keeps its last list whatever changes; shown again, it follows the settings
   app.showTab('opt');
-  app.browse.q = 'bracelet';
+  app.editBrowse({ q: 'bracelet' });
   assert.equal(c.view, ring);
   app.showTab('browse');
   assert.ok(c.view.shown.every(x => /bracelet/i.test(x.name)));
   // the sync settings and the job are inputs too
   const before = c.view;
-  app.cap = 300;
+  app.editPanel({ cap: 300 });
   assert.notEqual(c.view, before);
   app.setJob('WAR');
   assert.ok(c.view.shown.every(x => x.cells.length === app.jobCtx.stats.length));
@@ -56,7 +56,7 @@ test('gear browser: a heading sorts high first (names A to Z), again flips; Rese
   c.sortBy('name');
   assert.deepEqual([app.browse.sort, app.browse.dir], ['name', 'asc']);
   assert.equal(c.filtered, false);
-  Object.assign(app.browse, { q: 'ward', min: 100, type: 'ring' });
+  app.editBrowse({ q: 'ward', min: 100, type: 'ring' });
   assert.equal(c.filtered, true);
   c.resetBrowseFilters();
   const { sort, dir, ...filters } = defaultBrowse(app.jobCtx);
@@ -89,12 +89,12 @@ test('gear browser: a page button scrolls the table to its top; any change to th
   c.goPage(9);
   assert.deepEqual([c.view.page, c.$refs.rows.scrollTop], [9, 0]);
   const changes = [
-    () => (app.browse.type = 'head'),
-    () => (app.browse.q = 'healing'),
-    () => (app.browse.min = 300),
+    () => app.editBrowse({ type: 'head' }),
+    () => app.editBrowse({ q: 'healing' }),
+    () => app.editBrowse({ min: 300 }),
     () => c.sortBy('crit'),
-    () => (app.level = 90),
-    () => Object.assign(app, { sync: true, cap: 375 }),
+    () => app.editPanel({ level: 90 }),
+    () => app.editPanel({ sync: true, cap: 375 }),
     () => app.setJob('WHM'),
   ];
   for (const change of changes) {

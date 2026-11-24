@@ -8,12 +8,12 @@ import { dataSourceLabel, MAX_REAL } from '../../../../src/core/tables.js';
 import { page, settings } from '../../../../src/ui/components/page.js';
 
 import { capLoweredText } from '../../../../src/ui/level-cap.js';
-import { createAppStore } from '../../../../src/ui/store.js';
 import { restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.js';
 
 /* The settings panel bound to a store of `saved` (on the Gear browser unless it says otherwise), with a stand-in for the cap field (its flash class). */
 function panel(saved) {
-  const app = createAppStore(restoreOpen({ tab: 'browse', ...saved }));
+  const app = createAppFacade(restoreOpen({ tab: 'browse', ...saved }));
   const classes = new Set();
   const cap = { classList: { add: c => classes.add(c), remove: c => classes.delete(c) }, offsetWidth: 0 };
   const c = Object.assign(settings(), { $store: { app }, $refs: { cap, jobButton: { focus() {} } }, $nextTick: fn => fn() });
@@ -44,7 +44,7 @@ test('job picker: every job once, in its role row, with its name and icon; a pic
 test('cap field: no error while sync is off; while on, a missing cap or text that is no whole item level says so', () => {
   const { app, c } = panel({ job: 'SGE', sync: false });
   assert.equal(c.capError, '');
-  app.sync = true;
+  app.editPanel({ sync: true });
   const missing = c.capError;
   assert.ok(missing.length > 0, 'a missing cap says so');
   c.onCapInput('12.5');
@@ -55,14 +55,14 @@ test('cap field: no error while sync is off; while on, a missing cap or text tha
   // a whole number above the highest real item level is a cap too (the page lowers it)
   c.onCapInput(`${MAX_REAL + 100}`);
   assert.equal(c.capTypedBad, false);
-  app.cap = 300;
+  app.editPanel({ cap: 300 });
   c.onCapInput('');
   assert.equal(app.cap, null, 'an empty field is no cap');
 });
 
 test('cap lowered by the page: the field flashes and the note names the cap and why; none once the cap fits', () => {
   const { app, c, classes } = panel({ job: 'SGE', sync: true, cap: 123, level: 50 });
-  app.cap = 600;
+  app.editPanel({ cap: 600 });
   c.lowerCap();
   assert.deepEqual(c.capLowered, { from: 600, to: app.cap, level: 50 });
   assert.ok(app.cap < 600);
@@ -76,7 +76,7 @@ test('cap lowered by the page: the field flashes and the note names the cap and 
   c.capTypedBad = true;
   assert.equal(c.capLoweredNote, '');
   c.capTypedBad = false;
-  app.cap = 123;
+  app.editPanel({ cap: 123 });
   c.lowerCap();
   assert.equal(c.capLowered, null);
   assert.equal(c.capLoweredNote, '');
@@ -110,13 +110,13 @@ test('Reset to defaults: asks first, and resets only on yes', () => {
 /* A plain click on a tab link (plain-click.js). */
 const plain = { button: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, preventDefault() {} };
 
-/* A tab link (goTab): leaving the Sheets tab asks the set page first (sheets/store.js askLeave); the answer opens the
+/* A tab link (goTab): leaving the Sheets tab asks the set page first (ui/store/sheets-actions.ts askLeave); the answer opens the
    tab. Other tabs switch at once. */
 test('goTab: leaving the Sheets tab with something to settle asks first; the answer opens the tab', async () => {
   const frames = globalThis.requestAnimationFrame;
   globalThis.requestAnimationFrame = fn => fn(); // the tab opens after one frame: here at once
   const settled = () => new Promise(resolve => setTimeout(resolve, 5));
-  const app = createAppStore(restoreOpen({ tab: 'sheets' }));
+  const app = createAppFacade(restoreOpen({ tab: 'sheets' }));
   let pending = null;
   let settle = true;
   const sheets = {

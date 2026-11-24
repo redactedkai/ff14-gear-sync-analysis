@@ -18,7 +18,7 @@ export function settingsPart() {
   return {
     // the sheet page's breadcrumb menu of sheets (the caret after the sheet's name) is open
     sheetMenu: false,
-    // the cap the sheet page last lowered: {sheetId, from, to, level} (sheets/store.js editSettings), for the note under the
+    // the cap the sheet page last lowered: {sheetId, from, to, level} (ui/store/sheets-actions.ts editSettings), for the note under the
     // field; null once a change leaves the cap as typed
     capLowered: null,
     // the sheet page's cap field holds text that is no whole item level (the sheet keeps its last cap: capTextBad)

@@ -48,7 +48,7 @@ export function syncExplainer() {
         this.levelBind = numberField(
           () => app.level,
           level => {
-            app.level = level;
+            app.editPanel({ level });
             app.followLevelSync();
           },
           1,
@@ -85,7 +85,7 @@ export function syncExplainer() {
       onSyncSwitch(on) {
         const app = this.$store.app;
         this.capTypedBad = false;
-        if (!on) app.cap = levelSyncCap(app.jobCtx, app.level);
+        if (!on) app.editPanel({ cap: levelSyncCap(app.jobCtx, app.level) });
       },
       /* Piece stats' views for the settings now, built again only when they change: {pick (the slider's range and item
          level, explainerItemLevel), explainer, steps}. Read through the getters below. */
@@ -154,9 +154,8 @@ export function syncExplainer() {
         return meldSlotsOf(this.$store.app.piece);
       },
       setSlot(slotType) {
-        const piece = this.$store.app.piece;
-        piece.slot = slotType;
-        if (!meldSlotChoices(slotType).includes(piece.slots)) piece.slots = null;
+        const app = this.$store.app;
+        app.editPiece(meldSlotChoices(slotType).includes(app.piece.slots) ? { slot: slotType } : { slot: slotType, slots: null });
       },
       /* The Substats & materia chip: one control in the bar that says the 1st and 2nd substat and the Materia slots in a few
          words (views pieceChipView) and opens a popover under the chip with the three menus. The texts, and the widest of its
@@ -235,12 +234,12 @@ export function syncExplainer() {
         observer.observe(el);
       },
       setSub(i, value) {
-        const p = this.$store.app.piece;
-        p.subs = withSub(p.subs, i, value, this.jobCtx.substats);
+        const app = this.$store.app;
+        app.editPiece({ subs: withSub(app.piece.subs, i, value, this.jobCtx.substats) });
       },
       setIlvl(value) {
         const v = Math.round(Number(value));
-        if (Number.isFinite(v)) this.$store.app.piece.ilvl = Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v));
+        if (Number.isFinite(v)) this.$store.app.editPiece({ ilvl: Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v)) });
       },
       /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
       get ilvlFill() {
@@ -248,7 +247,7 @@ export function syncExplainer() {
         return hi > lo ? ((this.il - lo) / (hi - lo)) * 100 : 0;
       },
       resetIlvl() {
-        this.$store.app.piece.ilvl = null;
+        this.$store.app.editPiece({ ilvl: null });
       },
     },
     capControls('math'),

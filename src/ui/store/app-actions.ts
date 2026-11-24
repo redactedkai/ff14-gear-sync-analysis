@@ -1,5 +1,5 @@
 /* The actions that change the settings, the screen, the math tab's unsaved settings and the open gear set pages. Each is one
-   `store.update('<slice>/<name>', ...)` (store.ts); the rules are the old Alpine store's (ui/store.js), kept as they were.
+   `store.update('<slice>/<name>', ...)` (store.ts); the rules are those of the Alpine store the page had before, kept as they were.
    What each slice holds: app-state.ts. */
 import { makeJobContext } from '../../core/job-context.js';
 import { holdLevelSyncCap } from '../job-sync-panel.js';
@@ -50,6 +50,14 @@ function screenAfterOpening(screen: ScreenState, tabName: string): { tab: string
   return { tab: TABS.includes(tabName) ? tabName : TABS[0], mathTab: screen.mathTab };
 }
 
+/* Whether every field of `fields` already holds the value it is given in `target` (the same value by `Object.is`: a new array or
+   object counts as a change, as it did when the old store was assigned to). An edit that changes nothing must not count, or
+   the page draws again for it: a chart redrawn between a press and a release loses the click. */
+function holdsAll(target: object, fields: object): boolean {
+  const held = target as Record<string, unknown>;
+  return Object.entries(fields).every(([field, value]) => Object.is(held[field], value));
+}
+
 /* The actions of the app state on `store`, as an object of functions (each returns nothing unless said). */
 export function createAppActions(store: AppStore, options: AppActionOptions = {}) {
   const frame = options.frame ?? ((callback: () => void) => requestAnimationFrame(callback));
@@ -97,6 +105,10 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
        they were. */
     followLevelSync(): void {
       if (store.state.screen.tab !== 'math') return;
+      // the cap level sync gives, tried on a copy: a panel that already holds it is not an action
+      const held = { ...store.state.settings.panels.math };
+      holdLevelSyncCap(held);
+      if (held.cap === store.state.settings.panels.math.cap) return;
       store.update('settings/followLevelSync', followLevelSyncIn);
     },
 
@@ -105,6 +117,11 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
        as setJob does. The one place an address writes the panel, so the rules for cap and sync live here. */
     setPanel(tab: string, panel: Panel): void {
       if (!hasPanel(tab)) return;
+      // the panel as it would be held, tried on a copy: the same job and the same fields are not an action
+      const held = panelFields(panel);
+      if (tab === 'math') holdLevelSyncCap(held);
+      const current = store.state.settings.panels[tab];
+      if (current.job === panel.job && holdsAll(current, held)) return;
       store.update('settings/setPanel', state => {
         const target = state.settings.panels[tab];
         const from = target.job ? makeJobContext(target.job) : null;
@@ -132,14 +149,16 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
     /* Change fields of `tab`'s panel (the open tab's by default) as typed: no check and no job reset (setJob does that). */
     editPanel(fields: Partial<Panel>, tab: string = store.state.screen.tab): void {
       if (!hasPanel(tab)) return;
+      const edit = Object.fromEntries(PANEL_KEYS.filter(key => key in fields).map(key => [key, fields[key]]));
+      if (holdsAll(store.state.settings.panels[tab], edit)) return;
       store.update('settings/editPanel', state => {
-        const target = state.settings.panels[tab];
-        Object.assign(target, Object.fromEntries(PANEL_KEYS.filter(key => key in fields).map(key => [key, fields[key]])));
+        Object.assign(state.settings.panels[tab], edit);
       });
     },
 
     /* Change fields of the Gear browser's filters and sort as typed. */
     editBrowse(fields: Partial<AppState['settings']['browse']>): void {
+      if (holdsAll(store.state.settings.browse, fields)) return;
       store.update('settings/editBrowse', state => {
         Object.assign(state.settings.browse, fields);
       });
@@ -147,6 +166,7 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
 
     /* Change fields of Stat Allocation's example piece as typed. */
     editPiece(fields: Partial<AppState['settings']['piece']>): void {
+      if (holdsAll(store.state.settings.piece, fields)) return;
       store.update('settings/editPiece', state => {
         Object.assign(state.settings.piece, fields);
       });
@@ -200,6 +220,7 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
 
     /* Change fields of the GCD sub-tab's settings as typed. */
     editGcd(fields: Partial<AppState['math']['gcd']>): void {
+      if (holdsAll(store.state.math.gcd, fields)) return;
       store.update('math/editGcd', state => {
         Object.assign(state.math.gcd, fields);
       });

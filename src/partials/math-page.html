@@ -155,7 +155,7 @@
       </div>
       <div class="mctl">
         <label for="p-slots" x-text="pieceText.slots"></label>
-        <select id="p-slots" @change="$store.app.piece.slots = Number($event.target.value)">
+        <select id="p-slots" @change="$store.app.editPiece({ slots: Number($event.target.value) })">
           <template x-for="n in slotCounts" :key="n"><option :value="n" x-text="n" :selected="n === slotsShown"></option></template>
         </select>
       </div>
@@ -251,7 +251,7 @@
         </div>
       </div>
       <label class="mctl sync-switch"><span>IL Sync</span>
-        <span class="toggle"><input type="checkbox" role="switch" class="switch" id="p-sync" x-model="$store.app.sync" @change="onSyncSwitch($event.target.checked)"></span>
+        <span class="toggle"><input type="checkbox" role="switch" class="switch" id="p-sync" :checked="$store.app.sync" @change="$store.app.editPanel({ sync: $event.target.checked }); onSyncSwitch($event.target.checked)"></span>
       </label>
     </div>
   </div>
@@ -311,7 +311,7 @@
       @change="typeLevel($el, true)">
   </label>
   <label class="mctl fit">Haste
-    <span class="sized"><select id="g-haste" @change="$store.app.gcd.haste = $event.target.value">
+    <span class="sized"><select id="g-haste" @change="$store.app.editGcd({ haste: $event.target.value })">
       <template x-for="o in hasteOptions" :key="o.value"><option :value="o.value" x-text="o.label" :selected="o.value === $store.app.gcd.haste"></option></template>
     </select><span class="sizertext" aria-hidden="true" x-text="hasteSizer"></span></span>
   </label>

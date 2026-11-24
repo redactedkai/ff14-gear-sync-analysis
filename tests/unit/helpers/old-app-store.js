@@ -1,12 +1,16 @@
-/* Alpine.store('app'): the saved state plus the actions that change it.
+/* The Alpine app store as it was before the page's store (src/ui/store/) replaced it, kept only as the oracle of the differential test
+   (tests/unit/ui/store/app-state.differential.test.ts): the same random actions run on it and on the new store, and the saved JSON,
+   the open tab and each tab's panel must stay equal. Test code: nothing in src imports it.
+
+   Alpine.store('app'): the saved state plus the actions that change it.
    Templates read it as $store.app.<field>. `job` is the chosen job's id ('SGE', or null for none), `jobCtx` its frozen
    JobContext (makeJobContext; derived, not saved). `job`, `cap`, `sync` and `level` are the open tab's Job and sync panel
    (each tab has its own, saved in a group: PANEL_GROUP); the panel's fields edit them, and `panel(tab)` reads any tab's.
    Substat tiers has its own job, `tiers.job` (saved), apart from the panel: `panel('tiers')`. */
-import { makeJobContext } from '../core/job-context.js';
-import { MAX_REAL } from '../core/tables.js';
-import { restoreState, resetForJob, TABS, MATH_TABS } from './state.js';
-import { PANEL_GROUP, holdLevelSyncCap, panelOf } from './job-sync-panel.js';
+import { makeJobContext } from '../../../src/core/job-context.js';
+import { MAX_REAL } from '../../../src/core/tables.js';
+import { restoreState, resetForJob, TABS, MATH_TABS } from '../../../src/ui/state.js';
+import { PANEL_GROUP, holdLevelSyncCap, panelOf } from '../../../src/ui/job-sync-panel.js';
 
 /* The store's fields that are saved (defaultState's); the rest (jobCtx, maxReal, gcd, tiers and the actions) are not.
    The top-level job, cap, sync and level are not saved: they are the open tab's copy of its group's panel (PANEL_GROUP),

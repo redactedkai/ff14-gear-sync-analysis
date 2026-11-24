@@ -7,8 +7,8 @@ import { allMeals } from '../../../../src/core/food.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { copyGearSet, copySheet, newGearSet, repairSheet } from '../../../../src/ui/sheets/ops.js';
 import { parseSheet } from '../../../../src/ui/sheets/storage.js';
-import { createSheetStore } from '../../../../src/ui/sheets/store.js';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { createSheetsFacade } from '../../helpers/stores.js';
 
 const AT = Date.UTC(2026, 10, 10, 12);
 /* three real meals of Sage, as an Auto-fill result's tie list names them */
@@ -55,7 +55,7 @@ test('Copy sheet keeps them for the same job, level and sync, and drops them whe
 
 test("a change of the open sheet's level or sync drops the tagged meals of its sets, saved; any other edit keeps them", () => {
   const storage = fakeStorage();
-  const store = createSheetStore({ storage });
+  const store = createSheetsFacade({ storage });
   store.createSheet({ name: 'S', description: '', job: 'SGE', level: 100, sync: { on: true, cap: 123 } });
   const { id } = store.newSet();
   store.updateSet(id, { bestMeals: TIED });
@@ -65,7 +65,7 @@ test("a change of the open sheet's level or sync drops the tagged meals of its s
   assert.deepEqual(store.currentSet.bestMeals, TIED, 'the same level: nothing changed');
   store.setCap(120);
   assert.equal(store.currentSet.bestMeals, null);
-  assert.equal(createSheetStore({ storage }).sheet(store.currentSheet.id).sets[0].bestMeals, null, 'saved');
+  assert.equal(createSheetsFacade({ storage }).sheet(store.currentSheet.id).sets[0].bestMeals, null, 'saved');
   store.updateSet(id, { bestMeals: TIED });
   store.setSyncOn(false);
   assert.equal(store.currentSet.bestMeals, null);

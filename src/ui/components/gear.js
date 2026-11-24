@@ -58,6 +58,13 @@ export function gear() {
       this.pageFor = this.listKey;
       if (this.$refs.rows) this.$refs.rows.scrollTop = 0;
     },
+    /* the name search box's text: what it shows is the filter's text, and typing it (after the box's wait) sets the filter by its action */
+    get search() {
+      return this.$store.app.browse.q;
+    },
+    set search(text) {
+      this.$store.app.editBrowse({ q: text });
+    },
     /* the name search box's maxlength (state.js SEARCH_MAX_LENGTH) */
     searchMaxLength: SEARCH_MAX_LENGTH,
     /* the job chosen in the browser's own Job and sync panel (JobContext) */
@@ -75,12 +82,10 @@ export function gear() {
     /* A heading clicked: the table sorts by it; the same heading again flips the order. A new heading starts high
        first, names A to Z. */
     sortBy(key) {
-      const b = this.$store.app.browse;
-      if (b.sort === key) b.dir = b.dir === 'desc' ? 'asc' : 'desc';
-      else {
-        b.sort = key;
-        b.dir = key === 'name' ? 'asc' : 'desc';
-      }
+      const app = this.$store.app;
+      const b = app.browse;
+      if (b.sort === key) app.editBrowse({ dir: b.dir === 'desc' ? 'asc' : 'desc' });
+      else app.editBrowse({ sort: key, dir: key === 'name' ? 'asc' : 'desc' });
     },
     /* a heading's aria-sort: 'descending', 'ascending' or 'none' */
     sortState(key) {
@@ -95,7 +100,7 @@ export function gear() {
     /* Reset filters: every filter back to its default (defaultBrowse; the sort stays) */
     resetBrowseFilters() {
       const { sort, dir, ...filters } = defaultBrowse(this.jobCtx);
-      Object.assign(this.$store.app.browse, filters);
+      this.$store.app.editBrowse(filters);
     },
     /* "/" anywhere on the tab but in a box jumps to the name search, as on many sites */
     slashToSearch(event) {

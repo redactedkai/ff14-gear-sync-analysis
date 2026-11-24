@@ -37,11 +37,11 @@ export function gcdTab() {
     /* a bar of the chart: its level */
     pickLevel(e) {
       const bar = e.target.closest('[data-level]');
-      if (bar) this.$store.app.gcd.level = Number(bar.dataset.level);
+      if (bar) this.$store.app.editGcd({ level: Number(bar.dataset.level) });
     },
     /* a step of the table: its speed (none past the most any job can have) */
     pickSpeed(row) {
-      if (!row.out) this.$store.app.gcd.speed = row.speed;
+      if (!row.out) this.$store.app.editGcd({ speed: row.speed });
     },
   };
 }
@@ -88,7 +88,7 @@ export function gcdControls() {
       this.levelError = '';
       // an empty box follows the synced level again
       if (el.value === '') {
-        app.gcd.level = null;
+        app.editGcd({ level: null });
         el.value = this.level;
         return;
       }
@@ -97,7 +97,7 @@ export function gcdControls() {
         this.levelError = LEVEL_TEXT.typedBad(GCD_LEVELS);
         return;
       }
-      app.gcd.level = r.level === app.panel('math').level ? null : r.level;
+      app.editGcd({ level: r.level === app.panel('math').level ? null : r.level });
       el.value = r.level;
     },
     typeSpeed(el, now = false) {
@@ -108,15 +108,15 @@ export function gcdControls() {
       }
       // a whole number, not held to the range here: the `speed` getter holds it, and the box shows that
       const typed = commit(el.value, { final: true });
-      if (typed) this.$store.app.gcd.speed = typed.value;
+      if (typed) this.$store.app.editGcd({ speed: typed.value });
       el.value = this.speed;
     },
     slide(value) {
-      this.$store.app.gcd.speed = Number(value);
+      this.$store.app.editGcd({ speed: Number(value) });
     },
     /* back to the level's base: no speed from gear or food */
     resetSpeed() {
-      this.$store.app.gcd.speed = null;
+      this.$store.app.editGcd({ speed: null });
     },
   };
 }

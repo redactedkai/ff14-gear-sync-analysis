@@ -6,13 +6,13 @@ import assert from 'node:assert/strict';
 import { syncExplainer } from '../../../../src/ui/components/sync-explainer.js';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 
-import { createAppStore } from '../../../../src/ui/store.js';
 import { OFF_TEXT, explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.js';
 import { restoreOpen } from '../../helpers/common.js';
+import { createAppFacade } from '../../helpers/stores.js';
 
 /* The component bound to the store of `saved`, as Alpine binds it ($store.app). */
 function bound(saved = { job: 'SGE', sync: true, cap: 123, tab: 'math' }) {
-  const app = createAppStore(restoreOpen(saved));
+  const app = createAppFacade(restoreOpen(saved));
   return { app, c: Object.assign(syncExplainer(), { $store: { app } }) };
 }
 
@@ -28,10 +28,10 @@ test('Piece stats: its views follow the settings, each built once per change', (
   assert.equal(c.explainer, first.explainer);
   // the item level, the slot, the substats, the cap and the chart's width are inputs
   for (const change of [
-    () => (app.piece.ilvl = 130),
-    () => (app.piece.slot = 'body'),
-    () => (app.piece.subs = ['det', 'crit']),
-    () => (app.cap = 200),
+    () => app.editPiece({ ilvl: 130 }),
+    () => app.editPiece({ slot: 'body' }),
+    () => app.editPiece({ subs: ['det', 'crit'] }),
+    () => app.editPanel({ cap: 200 }),
     () => (c.widths.piece = 640),
   ]) {
     const before = c.pieceViews;
@@ -40,11 +40,11 @@ test('Piece stats: its views follow the settings, each built once per change', (
   }
   assert.ok(c.explainer.curveChartSvg.includes('640'), 'the chart is drawn at its box width');
   // no sync: no explainer, and the note says why
-  app.sync = false;
+  app.editPanel({ sync: false });
   assert.equal(c.explainer, null);
   assert.equal(c.offText, OFF_TEXT.off);
-  app.sync = true;
-  app.cap = null;
+  app.editPanel({ sync: true });
+  app.editPanel({ cap: null });
   assert.equal(c.explainer, null);
   assert.equal(c.offText, OFF_TEXT.needCap);
 });
@@ -112,10 +112,10 @@ test('Piece stats: the Materia slots menu follows the slot; a slot change drops 
   const { app, c } = bound();
   c.setSlot('ear');
   assert.deepEqual([c.slotCounts, c.slotsShown], [[0, 1, 2, 5], 1]); // accessories: usually 1
-  app.piece.slots = 5;
+  app.editPiece({ slots: 5 });
   c.setSlot('ring');
   assert.deepEqual([app.piece.slot, app.piece.slots, c.slotsShown], ['ring', 5, 5]); // 5 is fine on a ring
-  app.piece.slots = 1;
+  app.editPiece({ slots: 1 });
   c.setSlot('head');
   assert.deepEqual([c.slotCounts, app.piece.slots, c.slotsShown], [[0, 2, 5], null, 2]); // no armor has 1
 });

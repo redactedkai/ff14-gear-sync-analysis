@@ -1,5 +1,5 @@
 /* The Sheets tab's actions on the store: the saved sheets and the screen it shows, with the rules of the old Sheets store
-   (ui/sheets/store.js) kept as they were; the rules and the saved shapes are docs/engineering/sheets.md.
+   kept as they were; the rules and the saved shapes are docs/engineering/sheets.md.
 
    Screens: 'sheets' (the sheet manager), 'sheet' (one sheet's page: sheetId) and 'set' (one gear set's page: sheetId and setId).
    Which sheet or set is open is screen state, never saved; the page always opens at the manager.
@@ -315,6 +315,12 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     openSet,
     showMissing,
     closeSet,
+
+    /* `sheet` (a whole saved sheet) put in the list, in place of the one with its id or on top when new, and saved, its updatedAt
+       stamped unless `touch` is false. Returns {ok: true} or the failed save. For the example sheets of a DEV build. */
+    commitSheet(sheet: Sheet, { touch = true }: { touch?: boolean } = {}): SheetResult {
+      return store.update('sheets/commitSheet', state => commitIn(state.sheets, sheet, touch));
+    },
 
     /* The set page's question before leaving it, or null for none: `guard(move)` returns true when it took the move over. */
     setLeaveGuard(guard: LeaveGuard | null): void {

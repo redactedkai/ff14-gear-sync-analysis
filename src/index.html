@@ -121,13 +121,13 @@
     <span class="sr-only" id="cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span>
   </div>
   <label class="f"><span>IL Sync</span>
-    <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sync" x-model="$store.app.sync"><span x-text="$store.app.sync ? 'On' : 'Off'"></span></span>
+    <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sync" :checked="$store.app.sync" @change="$store.app.editPanel({ sync: $event.target.checked })"><span x-text="$store.app.sync ? 'On' : 'Off'"></span></span>
   </label>
   <span class="jobstrip-gap"></span>
   <div class="f"><span aria-hidden="true">&nbsp;</span><span class="stripctl"><button class="chip" id="reset" type="button" @click="requestReset()">Reset</button></span></div>
 </section>
 <!-- SHEETS: the sheet manager, a sheet's page, the frame of a set page and their dialogs (components/sheets.js; the store
-     $store.sheets is ui/sheets/store.js). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
+     $store.sheets is ui/store/sheets-facade.ts). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
 <section class="tab" id="tab-sheets" aria-labelledby="tablink-sheets" hidden :hidden="$store.app.tab !== 'sheets'" x-data="sheetsTab">
 <div class="sheetsview">
   <p class="callout small" id="sh-unavailable" x-show="manager.unavailableText" x-text="manager.unavailableText"></p>

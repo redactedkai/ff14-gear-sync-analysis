@@ -2,12 +2,12 @@
    manual draft (Apply, Discard) and pins saved at once. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSheetStore } from '../../../../../src/ui/sheets/store.js';
 import { placePiece } from '../../../../../src/ui/sheets/set-edits.js';
 import { makeJobContext } from '../../../../../src/core/job-context.js';
 import { bind } from '../../../helpers/set-page-bind.js';
 import { hasNumber } from '../../../helpers/common.js';
 import { SAGE_IDS, sageSet } from '../../../helpers/sheet-fixtures.js';
+import { createSheetsFacade } from '../../../helpers/stores.js';
 
 const SGE = makeJobContext('SGE');
 const HEAD = 2;
@@ -32,7 +32,7 @@ test('a draft: edits by hand stay in memory until Apply, which saves them with t
   assert.deepEqual(sheets.currentSet.pieces[HEAD].stones, [{ stat: 'det', grade: 4 }, null, null, null, null]);
   assert.deepEqual(sheets.currentSet.pinned.pieces, [HEAD]);
   // a reload (a second store on the same storage) reads the applied set back
-  const reloaded = createSheetStore({ storage }).sheet('s_1').sets[0];
+  const reloaded = createSheetsFacade({ storage }).sheet('s_1').sets[0];
   assert.deepEqual(reloaded.pieces[HEAD].stones[0], { stat: 'det', grade: 4 });
 
   c.setMeal(null);

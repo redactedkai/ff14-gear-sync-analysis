@@ -84,18 +84,23 @@ test('unsettled: the store asks the open set page, with no side effect, for a dr
 });
 
 test('unsettled: only the set page counts; the same draft shows on another screen as nothing to lose', () => {
-  const { c, sheets } = bind(twoToFill());
+  const { c, store, sheets } = bind(twoToFill());
   c.pick(HEAD, SAGE_IDS.head);
   assert.equal(c.unsettledKind(), 'draft');
   assert.equal(sheets.hasUnsettled(), true);
+  // the open screen, set by hand: a move off the set page would ask the page first
+  const showScreen = screen =>
+    store.update('sheets/openManager', state => {
+      state.sheets.screen = screen;
+    });
 
   // the draft is still held, but the open screen is no longer the set page
   for (const screen of ['sheet', 'sheets']) {
-    sheets.screen = screen;
+    showScreen(screen);
     assert.equal(c.unsettledKind(), 'draft', `the draft is held on ${screen}`);
     assert.equal(sheets.hasUnsettled(), false, `${screen} screen`);
   }
-  sheets.screen = 'set';
+  showScreen('set');
   assert.equal(sheets.hasUnsettled(), true);
 });
 
