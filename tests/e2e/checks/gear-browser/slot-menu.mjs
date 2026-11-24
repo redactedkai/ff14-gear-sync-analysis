@@ -92,8 +92,8 @@ export async function checkSlotMenu(pg) {
   await expect(pg.locator('#b-slot')).toHaveText('Ring');
   await expect(pg.locator('#b-slots')).toBeHidden();
   check((await focusedId(pg)) === 'b-slot', 'a choice did not put the focus back on the Slot button');
-  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-checked', 'false');
 
   // a click outside closes it
   await pg.click('#b-slot');

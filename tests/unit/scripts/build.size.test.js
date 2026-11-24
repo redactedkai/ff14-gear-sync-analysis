@@ -11,7 +11,7 @@ import { esbuildOptions, jsonParseData } from '../../../scripts/build/build.mjs'
 /* The budget: gzip bytes of the page's JavaScript with everything from src/data/ left out. It is the size at the time of the
    last deliberate raise plus a headroom of about 1 kB, so a growth beyond that fails and the owner decides: raise
    it on purpose (docs/engineering/testing.md, "Raising the size budget") or remove what grew. */
-const OWN_CODE_GZIP_BUDGET_BYTES = 143_100; // measured 142,234 without src/data/, plus 866 bytes; the store, its facades and the set page actions added 3,311
+const OWN_CODE_GZIP_BUDGET_BYTES = 184_500; // measured 183,551 without src/data/, plus 949 bytes; the first Lit element (the Slot menu) added 40,626: Lit 7 kB, the Zag menu with its popper, dismissable layer and dom-query 33 kB, the element 1 kB (gzip, estimated from raw sizes)
 
 /* esbuild plugin placed before jsonParseData: every generated data file (src/data/*.json, plus the base64 job icons in
    src/data/job-icons.js) becomes an empty stub, so the bundle holds only our own code and libraries. Nothing runs the
