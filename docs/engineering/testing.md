@@ -543,7 +543,7 @@ Screen shares (Steam hardware survey, October 2026, primary display, [source](ht
 | popup-inside-window | warn | A help popup ends inside the window when the page is at the top. |
 | sticky-bar-share | warn | The math bar is at most 25% of the window height. |
 | menu-keeps-layout | fail | Opening a menu or popover does not move the controls around it. |
-| tabs-keep-place | fail | Switching between the sub-tabs does not move the tab strip, the ? button or the Job box, and a round trip gives the same layout. |
+| tabs-start-at-top | fail | A sub-tab opened by a click starts at the top of the page, switching between the sub-tabs does not move the tab strip, the ? button or the Job box, and a round trip gives the same layout. |
 | pinned-bar-at-top | fail | A sticky bar stays at the top of the window when the page is scrolled, and its controls keep their places. |
 | bar-dividers | fail | The math bar's dividers show exactly when their section is not first on its line, in the middle of the gap. |
 | bar-breakpoints | fail | Stat Allocation's controls change rows at 56 rem and 78 rem and nowhere else (at the page's own text size). |

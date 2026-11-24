@@ -421,20 +421,28 @@ const subTabGeometry = page =>
     };
   });
 
+/* How far the page is scrolled before a sub-tab is clicked, in px. */
+const SUB_TAB_SCROLLED_PX = 120;
+
 /* The selector each sub-tab waits for. */
 const SUB_TAB_READY = { piece: '#p-slot', tiers: '#t-level', gcd: '#g-level' };
 
-/* Goes Stat Allocation, Substat tiers, GCD Scaling and back, and reports what moved: the sub-tabs stay put, the Job
-   box is where it was on Substat tiers and absent on GCD Scaling (it has no job), and the way back gives the layout it started with. */
-async function subTabsKeepPlace(page) {
+/* Goes Stat Allocation, Substat tiers, GCD Scaling and back, and reports what is wrong: a sub-tab opened by a click starts at the
+   top of the page (the page was scrolled before the click), the sub-tabs stay put, the Job box is where it was on Substat tiers
+   and absent on GCD Scaling (it has no job), and the way back gives the layout it started with. */
+async function subTabsStartAtTop(page) {
   const found = [];
-  const open = async sub => {
+  const open = async (sub, scrollFirst = true) => {
+    // scrolled a little before the click (a page too short to scroll stays at 0), so that a sub-tab that kept the depth shows
+    if (scrollFirst) await page.evaluate(scrolledPx => window.scrollTo(0, scrolledPx), SUB_TAB_SCROLLED_PX);
     await page.click(`[data-sub="${sub}"]`);
     await page.waitForSelector(SUB_TAB_READY[sub], { state: 'visible', timeout: 10000 });
     await settle(page);
+    const top = await page.evaluate(() => window.scrollY);
+    if (top !== 0) found.push({ rule: 'tabs-start-at-top', detail: `${sub} opens at ${top} px, not at the top`, where: 'math' });
   };
   const config = probeConfig(MATH_VIEWS[0]);
-  await open('piece');
+  await open('piece', false);
   const geometry = { piece: await subTabGeometry(page) };
   const start = await page.evaluate(measureView, config);
   for (const sub of ['tiers', 'gcd']) {
@@ -445,18 +453,18 @@ async function subTabsKeepPlace(page) {
   const end = await page.evaluate(measureView, config);
   if (JSON.stringify(geometry.piece.job) !== JSON.stringify(geometry.tiers.job)) {
     found.push({
-      rule: 'tabs-keep-place',
+      rule: 'tabs-start-at-top',
       detail: `the Job box is at ${JSON.stringify(geometry.piece.job)} on Stat Allocation and ${JSON.stringify(geometry.tiers.job)} on Substat tiers`,
       where: 'math',
     });
   }
-  if (geometry.gcd.job) found.push({ rule: 'tabs-keep-place', detail: 'the Job box shows on GCD Scaling', where: 'math' });
+  if (geometry.gcd.job) found.push({ rule: 'tabs-start-at-top', detail: 'the Job box shows on GCD Scaling', where: 'math' });
   for (const sub of ['tiers', 'gcd']) {
     geometry[sub].tabs.forEach((box, index) => {
       const was = geometry.piece.tabs[index];
       if (Math.abs(was[0] - box[0]) > 0.6 || Math.abs(was[1] - box[1]) > 0.6) {
         found.push({
-          rule: 'tabs-keep-place',
+          rule: 'tabs-start-at-top',
           detail: `sub-tab ${index + 1} moves from ${was.slice(0, 2)} to ${box.slice(0, 2)} on ${sub}`,
           where: 'math',
         });
@@ -465,7 +473,7 @@ async function subTabsKeepPlace(page) {
   }
   const moved = compareProbes(start, end, ['top', 'subtabs', 'bar']);
   if (moved.length)
-    found.push({ rule: 'tabs-keep-place', detail: `a round trip changes the layout: ${moved.slice(0, 3).join('; ')}`, where: 'math' });
+    found.push({ rule: 'tabs-start-at-top', detail: `a round trip changes the layout: ${moved.slice(0, 3).join('; ')}`, where: 'math' });
   return found;
 }
 
@@ -527,7 +535,7 @@ export const SCREENS = Object.freeze([
   sheets,
   set,
   gear,
-  mathScreen(MATH_VIEWS[0], { crossCheck: subTabsKeepPlace, crossFixture: 'none' }),
+  mathScreen(MATH_VIEWS[0], { crossCheck: subTabsStartAtTop, crossFixture: 'none' }),
   mathScreen(MATH_VIEWS[1]),
   mathScreen(MATH_VIEWS[2]),
 ]);

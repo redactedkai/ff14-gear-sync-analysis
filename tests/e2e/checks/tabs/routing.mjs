@@ -638,7 +638,7 @@ const TALL_SHEET = {
 /** How many other sheets fill the Sheets list in the check below (so the list can scroll): copies of TALL_SHEET. */
 const LIST_FILLER_COUNT = 24;
 
-/** A screen opened by a click or by the page's own navigation starts at the top, whatever depth the screen before it was
+/** A screen opened by a click or by the page's own navigation (a math sub-tab included) starts at the top, whatever depth the screen before it was
  * scrolled to, and no frame draws it at that depth (the browser kept the position when the screens were swapped). The screen left
  * keeps its own position: Back draws it at the depth it was left at, from its first frame. Frames are counted, never timed. */
 export async function checkScrollOnOpenedScreen(pg) {
@@ -724,5 +724,15 @@ export async function checkScrollOnOpenedScreen(pg) {
     depth: SCROLLED_PX,
     open: () => clickFromPage(pg, '[data-tab]', 'Sheets'),
     toMarker: '#sh-sets',
+  });
+  // a math sub-tab is a screen too: it starts at the top. A short window makes Stat Allocation scroll.
+  await pg.setViewportSize({ width: 960, height: 420 });
+  await openFromScrolled({
+    what: 'the Substat tiers sub-tab opened from the scrolled Stat Allocation',
+    fromAddress: '#/math/piece',
+    fromMarker: '#p-slot',
+    depth: SCROLLED_PX,
+    open: () => clickFromPage(pg, '[data-sub]', 'Substat tiers'),
+    toMarker: '#t-level',
   });
 }

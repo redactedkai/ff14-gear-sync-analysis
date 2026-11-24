@@ -48,9 +48,9 @@ export const RULES = Object.freeze({
   'popup-inside-window': ['warn', 'A help popup ends inside the window when the page is at the top.'],
   'sticky-bar-share': ['warn', `The math bar is at most ${THRESHOLDS.maxBarPercent}% of the window height.`],
   'menu-keeps-layout': ['fail', 'Opening a menu or popover does not move the controls around it.'],
-  'tabs-keep-place': [
+  'tabs-start-at-top': [
     'fail',
-    'Switching between the sub-tabs does not move the tab strip, the ? button or the Job box, and a round trip gives the same layout.',
+    'A sub-tab opened by a click starts at the top of the page, switching between the sub-tabs does not move the tab strip, the ? button or the Job box, and a round trip gives the same layout.',
   ],
   'pinned-bar-at-top': [
     'fail',
