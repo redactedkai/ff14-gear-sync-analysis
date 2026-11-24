@@ -163,3 +163,69 @@ test('big data goes in by reference: a frozen list stays the same object', () =>
   assert.equal(store.state.results.rows, rows);
   assert.ok(Object.isFrozen(store.state.results.rows));
 });
+
+test('a part has a revision that counts only the actions that changed it, found by comparing it before and after', () => {
+  interface PartState extends Record<string, object> {
+    settings: { filters: { q: string; kinds: string[] }; panels: { a: { level: number }; b: { level: number } }; title: string };
+  }
+  const heard: [string, number][] = [];
+  const store = new Store<PartState>(
+    { settings: { filters: { q: '', kinds: [] }, panels: { a: { level: 1 }, b: { level: 1 } }, title: 'x' } },
+    {
+      parts: { settings: ['filters', 'panels.a', 'panels.b', 'title'] },
+      onUpdate: (key, revision) => heard.push([key, revision]),
+    },
+  );
+  assert.deepEqual(store.revisionKeys(), ['settings', 'settings.filters', 'settings.panels.a', 'settings.panels.b', 'settings.title']);
+  store.update('settings/q', state => {
+    state.settings.filters.q = 'ring';
+  });
+  store.update('settings/same', state => {
+    state.settings.filters.q = 'ring';
+    state.settings.title = 'x';
+  });
+  store.update('settings/b', state => {
+    state.settings.panels.b.level = 2;
+  });
+  store.update('settings/kinds', state => {
+    state.settings.filters.kinds = [];
+  });
+  assert.deepEqual(
+    [
+      store.revs.settings,
+      store.revs['settings.filters'],
+      store.revs['settings.panels.a'],
+      store.revs['settings.panels.b'],
+      store.revs['settings.title'],
+    ],
+    [4, 2, 0, 1, 0],
+    'an equal value is no change; a new array is one',
+  );
+  assert.deepEqual(heard.slice(0, 3), [
+    ['settings', 1],
+    ['settings.filters', 1],
+    ['settings', 2],
+  ]);
+});
+
+test('a part is counted even when the action throws after changing it', () => {
+  const store = new Store<{ screen: { tab: string } } & Record<string, object>>({ screen: { tab: 'a' } }, { parts: { screen: ['tab'] } });
+  assert.throws(() =>
+    store.update('screen/open', state => {
+      state.screen.tab = 'b';
+      throw new Error('stop');
+    }),
+  );
+  assert.deepEqual([store.revs.screen, store.revs['screen.tab']], [1, 1]);
+});
+
+test('a key of a slice with parts that is in no part stops the store from being made', () => {
+  assert.throws(
+    () => new Store<DemoState>({ settings: { count: 0 }, screen: { tab: 'a' } }, { parts: { screen: [] } }),
+    /screen\.tab is in no part/,
+  );
+  assert.throws(
+    () => new Store({ settings: { panels: { a: 1, b: 2 } } }, { parts: { settings: ['panels.a'] } }),
+    /settings\.panels is in no part/,
+  );
+});

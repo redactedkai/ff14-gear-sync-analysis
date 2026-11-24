@@ -1,6 +1,6 @@
-/* The app facade (src/ui/store/app-facade.ts), `$store.app` on the page: each getter reads the revision of the slice it shows, so a
-   template tracks it; each method is an action, counted as the action runs; nothing can be assigned to. A recording stand-in for
-   the template engine's tracked revisions tells which slice a getter reads. */
+/* The app facade (src/ui/store/app-facade.ts), `$store.app` on the page: each getter reads the revision of each part of the state it
+   shows and no other, so a template tracks it; each method is an action, counted as the action runs; nothing can be assigned to. A
+   recording stand-in for the template engine's tracked revisions tells which revisions a getter reads. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.js';
@@ -10,7 +10,7 @@ import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreOpen } from '../../helpers/common.js';
 
 /* A page store over `saved` (state.js restoreState's input, with the open tab) whose revisions record every read and every write
-   in `trail`: 'read:<slice>' and 'write:<slice>:<revision>'. */
+   in `trail`: 'read:<key>' and 'write:<key>:<revision>', a key being a slice ('settings') or a part ('settings.browse'). */
 function recorded(saved: object = { tab: 'browse' }) {
   const trail: string[] = [];
   const stores = createPageStore({
@@ -18,72 +18,121 @@ function recorded(saved: object = { tab: 'browse' }) {
     storage: null,
     track: (revisions: SliceRevisions) =>
       new Proxy(revisions, {
-        get(target, slice: string) {
-          trail.push(`read:${slice}`);
-          return target[slice];
+        get(target, key: string) {
+          trail.push(`read:${key}`);
+          return target[key];
         },
-        set(target, slice: string, revision: number) {
-          trail.push(`write:${slice}:${revision}`);
-          target[slice] = revision;
+        set(target, key: string, revision: number) {
+          trail.push(`write:${key}:${revision}`);
+          target[key] = revision;
           return true;
         },
       }),
   });
-  /* The slices the reads of `read` touched, once each, in order. */
-  const slicesRead = (read: () => unknown) => {
+  /* The revision keys the reads of `read` touched, once each, sorted. */
+  const keysRead = (read: () => unknown) => {
     trail.length = 0;
     read();
-    return [...new Set(trail.filter(entry => entry.startsWith('read:')).map(entry => entry.slice(5)))];
+    return [...new Set(trail.filter(entry => entry.startsWith('read:')).map(entry => entry.slice(5)))].sort();
   };
-  return { ...stores, trail, slicesRead };
+  return { ...stores, trail, keysRead };
 }
 
-test('each getter reads the revision of the slice it shows', () => {
-  const { app, slicesRead } = recorded();
+test('each getter reads the revision of each part it shows, and no other', () => {
+  const { app, keysRead } = recorded();
   assert.deepEqual(
-    slicesRead(() => app.tab),
-    ['screen'],
+    keysRead(() => app.tab),
+    ['screen.tab'],
   );
   assert.deepEqual(
-    slicesRead(() => app.mathTab),
-    ['screen'],
+    keysRead(() => app.mathTab),
+    ['screen.mathTab'],
   );
   assert.deepEqual(
-    slicesRead(() => app.pendingTab),
-    ['screen'],
+    keysRead(() => app.pendingTab),
+    ['screen.pendingTab'],
   );
-  for (const field of ['job', 'jobCtx', 'cap', 'sync', 'level'] as const)
-    assert.deepEqual(slicesRead(() => app[field]).sort(), ['screen', 'settings'], `${field}: the open tab's panel`);
-  for (const field of ['browse', 'piece', 'sheetFigures'] as const)
+  const panelFieldOf = { job: 'job', jobCtx: 'job', cap: 'cap', sync: 'sync', level: 'level' } as const;
+  for (const [getter, field] of Object.entries(panelFieldOf))
     assert.deepEqual(
-      slicesRead(() => app[field]),
-      ['settings'],
-      field,
+      keysRead(() => app[getter as keyof typeof panelFieldOf]),
+      ['screen.tab', `settings.panels.browse.${field}`],
+      `${getter}: the open tab's panel field`,
+    );
+  app.showTab('math');
+  for (const [getter, field] of Object.entries(panelFieldOf))
+    assert.deepEqual(
+      keysRead(() => app[getter as keyof typeof panelFieldOf]),
+      ['screen.tab', `settings.panels.math.${field}`],
+      `${getter}: the math tab's panel once it is open`,
     );
   assert.deepEqual(
-    slicesRead(() => app.gcd),
-    ['math'],
+    keysRead(() => app.browse),
+    ['settings.browse'],
   );
-  assert.deepEqual(slicesRead(() => app.tiers).sort(), ['math', 'settings']);
   assert.deepEqual(
-    slicesRead(() => app.panel('browse')),
+    keysRead(() => app.piece),
+    ['settings.piece'],
+  );
+  assert.deepEqual(
+    keysRead(() => app.sheetFigures),
+    ['settings.sheetFigures'],
+  );
+  assert.deepEqual(
+    keysRead(() => app.gcd),
+    ['math.gcd'],
+  );
+  assert.deepEqual(
+    keysRead(() => app.tiers),
+    ['math.tiersLevel', 'settings.tiers'],
+  );
+  assert.deepEqual(
+    keysRead(() => app.panel('browse')),
+    ['cap', 'job', 'level', 'sync'].map(field => `settings.panels.browse.${field}`),
+  );
+  assert.deepEqual(
+    keysRead(() => app.panel('math')),
+    ['cap', 'job', 'level', 'sync'].map(field => `settings.panels.math.${field}`),
+  );
+  assert.deepEqual(
+    keysRead(() => app.panel('tiers')),
+    ['settings.tiers'],
+  );
+  assert.deepEqual(
+    keysRead(() => app.persisted()),
     ['settings'],
   );
   assert.deepEqual(
-    slicesRead(() => app.persisted()),
-    ['settings'],
+    keysRead(() => app.route()),
+    ['screen.mathTab', 'screen.pendingTab', 'screen.tab', 'sheets'],
   );
 });
 
-test('an action writes the revision of its slice as it runs, so a template is run again without waiting for the tick', () => {
+test('an action writes the revisions of its slice and of the parts it changed as it runs, so a template is run again without waiting for the tick', () => {
   const { app, trail } = recorded();
   trail.length = 0;
   app.editBrowse({ q: 'ring' });
-  assert.deepEqual(trail, ['write:settings:1']);
+  assert.deepEqual(trail, ['write:settings:1', 'write:settings.browse:1']);
   app.editGcd({ speed: 400 });
   app.showSub('gcd');
-  assert.deepEqual(trail.slice(1), ['write:math:1', 'write:screen:1']);
+  assert.deepEqual(trail.slice(2), ['write:math:1', 'write:math.gcd:1', 'write:screen:1', 'write:screen.mathTab:1']);
   assert.equal(app.browse.q, 'ring', 'the state is read at once, whatever the tick');
+});
+
+test('the objects a getter hands out are frozen copies, the same one until their part changes', () => {
+  const { app } = recorded();
+  const before = app.browse;
+  assert.equal(app.browse, before, 'the same object while nothing changed');
+  assert.ok(Object.isFrozen(before) && Object.isFrozen(before.expOff), 'frozen all through');
+  assert.throws(() => {
+    (before as { q: string }).q = 'x';
+  }, TypeError);
+  app.editPiece({ slot: 'body' });
+  assert.equal(app.browse, before, "another part's change leaves it alone");
+  app.editBrowse({ q: 'ring' });
+  assert.notEqual(app.browse, before);
+  assert.deepEqual([before.q, app.browse.q], ['', 'ring'], 'the old copy keeps what it showed');
+  assert.ok(Object.isFrozen(app.gcd) && Object.isFrozen(app.piece) && Object.isFrozen(app.tiers));
 });
 
 test("the members of the old Alpine store are there, and the open tab's panel is the one they show", () => {

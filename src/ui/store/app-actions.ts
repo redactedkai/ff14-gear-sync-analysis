@@ -4,7 +4,7 @@
 import { makeJobContext } from '../../core/job-context.js';
 import { holdLevelSyncCap } from '../job-sync-panel.js';
 import { MATH_TABS, TABS, resetForJob, restoreState } from '../state.js';
-import { PANEL_KEYS, panelFields, settingsOf } from './app-state.ts';
+import { PANEL_KEYS, PANEL_TABS, panelFields, settingsOf } from './app-state.ts';
 import type { AppState, AppStore, Panel, PanelTab, RestoredState, ScreenState } from './app-state.ts';
 
 /* How the actions reach what is not state. frame(callback): run `callback` on the next animation frame (the default is the browser's
@@ -16,12 +16,9 @@ export interface AppActionOptions {
 /* A frozen JobContext (job-context.js makeJobContext). */
 type JobContext = ReturnType<typeof makeJobContext>;
 
-/* The tabs that have a Job and sync panel. */
-const PANEL_TABS: readonly string[] = ['browse', 'math'];
-
 /* Whether `tab` is one with a Job and sync panel (the Sheets tab has none). */
 function hasPanel(tab: string): tab is PanelTab {
-  return PANEL_TABS.includes(tab);
+  return (PANEL_TABS as readonly string[]).includes(tab);
 }
 
 /* Hold the job's level cap on the synced level and the Gear browser's equip level filter, and reset the selections the new job

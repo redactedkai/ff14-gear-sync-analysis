@@ -7,7 +7,7 @@ import { createAppActions } from './app-actions.ts';
 import type { AppActionOptions } from './app-actions.ts';
 import { createAppFacade } from './app-facade.ts';
 import type { SliceRevisions } from './app-facade.ts';
-import { initialState } from './app-state.ts';
+import { STATE_PARTS, initialState } from './app-state.ts';
 import type { RestoredState, SheetsData } from './app-state.ts';
 import { createSetPageActions } from './set-page-actions.ts';
 import { createSheetsActions } from './sheets-actions.ts';
@@ -31,15 +31,15 @@ export interface PageStoreOptions extends AppActionOptions, SheetsActionOptions 
 export function createPageStore(options: PageStoreOptions) {
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
   const state = initialState(options.restored, storage ? (readSheets(storage) as SheetsData) : NO_SHEETS);
-  // the revisions the facades read: the template engine's own copy when `track` gives one, else the store's
-  const tracked: SliceRevisions | null = options.track
-    ? options.track(Object.fromEntries(Object.keys(state).map(slice => [slice, 0])))
-    : null;
+  // the revisions the facades read: the template engine's own copy when `track` gives one (it starts from the store's), else the store's
+  let tracked: SliceRevisions | null = null;
   const store = new Store(state, {
-    onUpdate: (slice, revision) => {
-      if (tracked) tracked[slice] = revision;
+    parts: STATE_PARTS,
+    onUpdate: (key, revision) => {
+      if (tracked) tracked[key] = revision;
     },
   });
+  if (options.track) tracked = options.track({ ...store.revs });
   const revisions = tracked ?? store.revs;
   const appActions = createAppActions(store, options);
   const sheetsActions = createSheetsActions(store, { ...options, storage });

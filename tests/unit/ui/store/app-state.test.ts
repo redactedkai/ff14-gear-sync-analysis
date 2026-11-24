@@ -32,7 +32,13 @@ const start = (saved: unknown = null) => createAppStore(restoreOpen(saved) as Re
 test('the five slices, each with a revision at 0', () => {
   const store = start();
   assert.deepEqual(Object.keys(store.state), ['settings', 'screen', 'math', 'sheets', 'setPages']);
-  assert.deepEqual({ ...store.revs }, { settings: 0, screen: 0, math: 0, sheets: 0, setPages: 0 });
+  const slices = { settings: 0, screen: 0, math: 0, sheets: 0, setPages: 0 };
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(store.revs).filter(([key]) => !key.includes('.'))),
+    slices,
+    'a part has a revision too, under its own key',
+  );
+  assert.ok(Object.values(store.revs).every(revision => revision === 0));
 });
 
 test('each action bumps its own slice only', () => {
@@ -45,7 +51,13 @@ test('each action bumps its own slice only', () => {
   actions.setTiersLevel(60);
   sheets.setNote('hello');
   pages.openPage('g_1');
-  assert.deepEqual({ ...store.revs }, { settings: 1, screen: 1, math: 1, sheets: 1, setPages: 1 });
+  assert.deepEqual(Object.fromEntries(Object.entries(store.revs).filter(([key]) => !key.includes('.'))), {
+    settings: 1,
+    screen: 1,
+    math: 1,
+    sheets: 1,
+    setPages: 1,
+  });
   assert.deepEqual(store.log, ['settings/editBrowse', 'screen/showTab', 'math/setTiersLevel', 'sheets/setNote', 'setPages/openPage']);
 });
 

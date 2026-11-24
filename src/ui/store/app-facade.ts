@@ -1,15 +1,18 @@
 /* The app store as the page's templates and components read it (`$store.app`): the members the old Alpine store had, over the
-   store's state. Each getter reads the revision of the slice it shows, so a template or a getter that reads it is run again when an
-   action changes that slice, and hands out the state itself (plain data, never a copy); each method calls an action. Nothing here
-   can be assigned to: every write is a call (`editPanel`, `editBrowse`, ...), so the store counts it, the page draws it and the
-   settings are saved. What the state holds: app-state.ts. */
+   store's state. Each getter reads the revision of each part of the state it returns and no other (app-state.ts STATE_PARTS), so
+   a template or a getter that reads it is run again when an action changes that part, and not when it changes another. The plain
+   objects it hands out are frozen copies, made again only after their part changed, so nothing outside an action can change the
+   state through them. Each method calls an action. Nothing here can be assigned to: every write is a call (`editPanel`,
+   `editBrowse`, ...), so the store counts it, the page draws it and the settings are saved. What the state holds: app-state.ts. */
 import { MAX_REAL } from '../../core/tables.js';
-import { jobCtxOf, panelOf, persisted, routeOf } from './app-state.ts';
+import { deepFreeze } from '../view-cache.ts';
+import { PANEL_KEYS, jobCtxOf, panelOf, persisted, routeOf } from './app-state.ts';
 import type { AppActions } from './app-actions.ts';
-import type { AppStore } from './app-state.ts';
+import type { AppStore, Panel } from './app-state.ts';
+import { partKey } from './store.ts';
 
-/* The revision of each slice: what a getter reads so its reader is run again after a change of that slice. The page hands in an
-   object its template engine tracks; a test hands in the store's own. */
+/* The revision of each slice and each of its parts (store.ts revs): what a getter reads so its reader is run again after a change
+   of what it shows. The page hands in an object its template engine tracks; a test hands in the store's own. */
 export type SliceRevisions = Record<string, number>;
 
 /* The tab whose Job and sync panel the top-level job, cap, sync and level show: the open tab's, and the Gear browser's while the
@@ -18,9 +21,38 @@ function panelTabOf(tab: string): 'browse' | 'math' {
   return tab === 'math' ? 'math' : 'browse';
 }
 
+/* A function that returns a frozen copy of what `read` gives, made again only when the revision it is handed differs from the
+   last one's: the same object comes back until the part changed. */
+function frozenView<View extends object>(read: () => View): (revision: string) => View {
+  let lastRevision: string | null = null;
+  let view: View;
+  return revision => {
+    if (revision !== lastRevision) {
+      view = deepFreeze(structuredClone(read()));
+      lastRevision = revision;
+    }
+    return view;
+  };
+}
+
 /* The facade of `store` and its `actions` (createAppActions); `revisions` as above. */
 export function createAppFacade(store: AppStore, actions: AppActions, revisions: SliceRevisions) {
   const { state } = store;
+  /* Read the revision of the part `path` of slice `slice` (so the reader tracks it) and return it, as text. */
+  const read = (slice: string, path: string) => String(revisions[partKey(slice, path)]);
+  /* Read the revision of the open tab (which says whose panel it is) and of its panel's field `field`. */
+  const readOpenPanel = (field: keyof Panel) => {
+    void revisions[partKey('screen', 'tab')];
+    void revisions[partKey('settings', `panels.${panelTabOf(state.screen.tab)}.${field}`)];
+  };
+  /* Read the revision of every field of tab `tab`'s panel ('tiers' has only its job). */
+  const readPanel = (tab: string) => {
+    if (tab === 'tiers') void revisions[partKey('settings', 'tiers')];
+    else for (const field of PANEL_KEYS) void revisions[partKey('settings', `panels.${tab}.${field}`)];
+  };
+  const browseView = frozenView(() => state.settings.browse);
+  const pieceView = frozenView(() => state.settings.piece);
+  const gcdView = frozenView(() => state.math.gcd);
   return {
     /* The highest real item level, the top of every item level box. */
     maxReal: MAX_REAL,
@@ -29,17 +61,17 @@ export function createAppFacade(store: AppStore, actions: AppActions, revisions:
 
     /* The open tab: 'sheets', 'browse' or 'math'. */
     get tab() {
-      void revisions.screen;
+      void revisions[partKey('screen', 'tab')];
       return state.screen.tab;
     },
     /* The open math sub-tab: 'piece', 'gcd' or 'tiers'. */
     get mathTab() {
-      void revisions.screen;
+      void revisions[partKey('screen', 'mathTab')];
       return state.screen.mathTab;
     },
     /* The tab a click is opening (shown as selected before it is built), or null. */
     get pendingTab() {
-      void revisions.screen;
+      void revisions[partKey('screen', 'pendingTab')];
       return state.screen.pendingTab;
     },
 
@@ -47,77 +79,71 @@ export function createAppFacade(store: AppStore, actions: AppActions, revisions:
 
     /* The job's id. */
     get job() {
-      void revisions.screen;
-      void revisions.settings;
+      readOpenPanel('job');
       return panelOf(state, panelTabOf(state.screen.tab)).job;
     },
     /* The job's frozen JobContext. */
     get jobCtx() {
-      void revisions.screen;
-      void revisions.settings;
+      readOpenPanel('job');
       return jobCtxOf(state, panelTabOf(state.screen.tab));
     },
     /* The item level cap (null: none). */
     get cap() {
-      void revisions.screen;
-      void revisions.settings;
+      readOpenPanel('cap');
       return state.settings.panels[panelTabOf(state.screen.tab)].cap;
     },
     /* Whether item level sync is on. */
     get sync() {
-      void revisions.screen;
-      void revisions.settings;
+      readOpenPanel('sync');
       return state.settings.panels[panelTabOf(state.screen.tab)].sync;
     },
     /* The synced level. */
     get level() {
-      void revisions.screen;
-      void revisions.settings;
+      readOpenPanel('level');
       return state.settings.panels[panelTabOf(state.screen.tab)].level;
     },
 
     /* ---- the settings ---- */
 
-    /* The Gear browser's filters and sort (its own fields; its panel is `panel('browse')`). */
+    /* The Gear browser's filters and sort (its own fields; its panel is `panel('browse')`), frozen. */
     get browse() {
-      void revisions.settings;
-      return state.settings.browse;
+      return browseView(read('settings', 'browse'));
     },
-    /* Stat Allocation's example piece (its own fields; its panel is `panel('math')`). */
+    /* Stat Allocation's example piece (its own fields; its panel is `panel('math')`), frozen. */
     get piece() {
-      void revisions.settings;
-      return state.settings.piece;
+      return pieceView(read('settings', 'piece'));
     },
     /* What the sheet list's gear sets show: 'effects' or 'points'. */
     get sheetFigures() {
-      void revisions.settings;
+      void revisions[partKey('settings', 'sheetFigures')];
       return state.settings.sheetFigures;
     },
-    /* The GCD sub-tab's settings: {level, haste, speed}. */
+    /* The GCD sub-tab's settings: {level, haste, speed}, frozen. */
     get gcd() {
-      void revisions.math;
-      return state.math.gcd;
+      return gcdView(read('math', 'gcd'));
     },
-    /* Substat tiers' job (saved) and the level typed on it (null: the job's level cap): a new object each time. */
+    /* Substat tiers' job (saved) and the level typed on it (null: the job's level cap): a new frozen object each time. */
     get tiers() {
-      void revisions.settings;
-      void revisions.math;
-      return { job: state.settings.tiers.job, level: state.math.tiersLevel };
+      void revisions[partKey('settings', 'tiers')];
+      void revisions[partKey('math', 'tiersLevel')];
+      return Object.freeze({ job: state.settings.tiers.job, level: state.math.tiersLevel });
     },
 
     /* The Job and sync panel of `tab` ('browse', 'math' or 'tiers'), open or not: {job, jobCtx, cap, sync, level}, a new object. */
     panel(tab: string) {
-      void revisions.settings;
+      readPanel(tab);
       return panelOf(state, tab);
     },
-    /* The saved fields (what is written to localStorage). */
+    /* The saved fields (what is written to localStorage), the whole `settings` slice read. */
     persisted() {
       void revisions.settings;
       return persisted(state);
     },
     /* The screen the app store shows, as a route without the settings query (the router adds that). */
     route() {
-      void revisions.screen;
+      void revisions[partKey('screen', 'tab')];
+      void revisions[partKey('screen', 'mathTab')];
+      void revisions[partKey('screen', 'pendingTab')];
       void revisions.sheets;
       return routeOf(state);
     },

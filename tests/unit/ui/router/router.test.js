@@ -463,8 +463,7 @@ test('a reload of an entry the router wrote keeps the saved settings and rewrite
   const { app, hash } = setup(
     '',
     page => {
-      page.browse.sort = 'dh';
-      page.browse.type = 'ring';
+      page.editBrowse({ sort: 'dh', type: 'ring' });
     },
     {},
     history,
@@ -605,9 +604,7 @@ test('the scroll events of a placement and of the browser clamping a page are no
 
 test('a link with a query applies its settings, takes the defaults for the names it leaves out, and is rewritten as the settings', () => {
   const { app, hash } = setup('#/gear?sort=det&min=700&colour=red', page => {
-    page.browse.q = 'saved search';
-    page.browse.dir = 'asc';
-    page.browse.type = 'ring';
+    page.editBrowse({ q: 'saved search', dir: 'asc', type: 'ring' });
   });
   assert.equal(app.browse.sort, 'det');
   assert.equal(app.browse.min, 700);
@@ -619,7 +616,7 @@ test('a link with a query applies its settings, takes the defaults for the names
 
 test("a link with no query keeps the reader's settings and the address stays bare", () => {
   const { app, hash } = setup('#/gear', page => {
-    page.browse.sort = 'det';
+    page.editBrowse({ sort: 'det' });
   });
   assert.equal(app.browse.sort, 'det');
   assert.equal(hash(), '#/gear');
@@ -675,7 +672,7 @@ test('a change of the search text waits until typing pauses; another change writ
 
 test('a tab link to the Gear browser pushes its address with the settings it holds', () => {
   const { app, clock, hash, history } = setup('', page => {
-    page.browse.sort = 'dh';
+    page.editBrowse({ sort: 'dh' });
   });
   app.openTab('browse');
   clock.fire();

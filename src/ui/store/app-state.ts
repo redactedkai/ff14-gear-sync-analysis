@@ -3,6 +3,9 @@
 
    Decisions of the design:
    - Five slices, the top-level keys, and an action is named '<slice>/<name>' ('settings/setJob'); the slice's revision counts it.
+     The settings, screen and math slices are split into parts (`STATE_PARTS`), each with a revision that counts the actions that
+     changed it (store.ts compares the part before and after), so a reader of the Gear browser's filters is not run again by a
+     change of a panel. A getter of the facade reads the revision of the parts it returns, no more.
        settings  what is saved: the Gear browser's filters, Stat Allocation's piece, the sheet list's figures, Substat tiers' job,
                  and each reference tab's Job and sync panel (job, cap, sync, level).
        screen    the open tab and math sub-tab, and the tab a click is opening. Not saved: the address names it.
@@ -42,6 +45,9 @@ export interface Panel {
 
 /* The tabs that have a Job and sync panel (job-sync-panel.js PANEL_GROUP): the Gear browser and How the math works. */
 export type PanelTab = 'browse' | 'math';
+
+/* The tabs that have a Job and sync panel, in the order `settings.panels` holds them. */
+export const PANEL_TABS: readonly PanelTab[] = ['browse', 'math'];
 
 /* The panel's four fields, in the order they are saved. */
 export const PANEL_KEYS = ['job', 'cap', 'sync', 'level'] as const;
@@ -284,9 +290,18 @@ export function initialState(restored: RestoredState, sheetsData: SheetsData): A
   };
 }
 
+/* The parts of the slices that have a revision of their own (store.ts StoreOptions.parts): a reader of one part is not run again
+   by a change of another. Every key of these slices is in one (the store checks), so a new field must be placed. The `sheets` and
+   `setPages` slices are read whole. */
+export const STATE_PARTS: Record<string, readonly string[]> = {
+  settings: [...PANEL_TABS.flatMap(tab => PANEL_KEYS.map(key => `panels.${tab}.${key}`)), 'browse', 'piece', 'tiers', 'sheetFigures'],
+  screen: ['tab', 'mathTab', 'pendingTab', 'openingTabRequest'],
+  math: ['gcd', 'tiersLevel'],
+};
+
 /* The store of the page for a restored state and the saved sheets. */
 export function createAppStore(restored: RestoredState, sheetsData: SheetsData): AppStore {
-  return new Store(initialState(restored, sheetsData));
+  return new Store(initialState(restored, sheetsData), { parts: STATE_PARTS });
 }
 
 /* ---- selectors: each takes the state and returns plain data; none changes anything ---- */
