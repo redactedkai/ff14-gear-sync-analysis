@@ -98,7 +98,8 @@ test.describe('<gsa-slot-menu>', () => {
     const button = component.getByRole('button', { name: 'Slot: Any slot' });
     await button.focus();
     await page.keyboard.press('ArrowDown');
-    await expect(page.locator('#b-slots')).toBeVisible();
+    // Zag moves the focus into the list a frame after it opens; a Tab before that would start from the button
+    await expect(page.locator('#b-slots')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.locator('#b-slots')).toBeHidden();
     await expect(button).toHaveAttribute('aria-expanded', 'false');
