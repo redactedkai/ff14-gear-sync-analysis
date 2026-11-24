@@ -160,11 +160,15 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Incumbent.** The best complete gear set a search has found so far. Branch and bound compares every partial set against it, and a seed is the first incumbent. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
+**Island.** A Lit element that the page's Alpine templates place inside a screen Alpine runs. Its wrapper's `x-effect` sets the element's properties and the wrapper listens for its events; the element carries `x-ignore` and never reads the store. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+
 **Job context.** Everything job-dependent (stat mapping, weapon mode, active slots, the job's Vitality factor), computed once per job into a frozen object that every core function takes as its first argument. See [architecture.md, section 2](engineering/architecture.md#2-the-job-context).
 
 **Job mask.** A number in each database row with one bit per combat job that can wear the piece. See [data-pipeline.md, section 4.3](engineering/data-pipeline.md#43-job-mask).
 
 **Lexicographic order.** Ranking by the target first, then tiebreak 1, then tiebreak 2: a lower key only decides between gear sets that are equal on every higher one. The optimizer packs it into one integer score per item. See [optimizer.md, section 3](engineering/optimizer.md#3-turning-the-lexicographic-order-into-one-number).
+
+**Lit element.** A custom element written with the Lit library, drawn into the element itself (light DOM) so the page's CSS reaches it. The elements are in `src/ui/elements/`, one folder per domain; the first is the Gear browser's Slot menu. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Loadout.** Another name for a **gear set**; the docs write gear set. See Gear set.
 
@@ -245,6 +249,8 @@ See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [sect
 **Tier ranking.** Ranking gear sets by the tiers of the target and tiebreaks, in order, then by their raw totals. Each ranked stat is held one point above the start of its best tier (roadmap A7, "Rank by tier"; the page's Spare points to tiebreaks switch, on by default). See [tier-ranking.md](engineering/tier-ranking.md); the switch is in [ui.md, section 2](engineering/ui.md#spare-points-to-tiebreaks-rank-by-tier).
 
 **Trial search.** In a search with a seed: the branch and bound run first for at most 20,000 nodes. Most tier ranking searches end there; only the others build Pareto fronts. Not the same as a probe (a measurement). See [tier-ranking.md, section 5](engineering/tier-ranking.md#5-pareto-fronts).
+
+**Zag layer.** A menu or popover whose keys, focus and placement come from a Zag machine (the `@zag-js/*` packages, through `@zag-js/vanilla`), run by the Zag controller for a Lit element and registered with the page's overlay manager by the overlay bridge. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 ## Outside sources
 

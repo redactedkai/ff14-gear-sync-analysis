@@ -4,14 +4,14 @@ Rules for working in this repo. Details are in `docs/` (start at `docs/README.md
 
 ## The project
 
-An FFXIV gear tool: pick a job and a sync cap, see what a piece's stats become, and find the real gear that maximizes a chosen stat. It ships as **one HTML file** (`dist/index.html`, opens from `file://`), built by esbuild from ES modules in `src/`, with Alpine.js as the only runtime dependency.
+An FFXIV gear tool: pick a job and a sync cap, see what a piece's stats become, and find the real gear that maximizes a chosen stat. It ships as **one HTML file** (`dist/index.html`, opens from `file://`), built by esbuild from ES modules in `src/`, with Alpine.js, Lit, Zag (`@zag-js/*`) and floating-ui as the runtime libraries.
 
 The owner plays Sage at item level 123, but the tool is **job-agnostic**: all 23 combat jobs, any cap, any level. No Sage-only or Spell-Speed-only wording, defaults or logic. Next work: `docs/roadmap.md`.
 
 ## Layout
 
 - `src/core/`: pure logic, no DOM, runs in Node. `item-format.json` defines the data format for both JS and Python.
-- `src/ui/`: state, Alpine store, view builders (`views/`, unit-tested), components.
+- `src/ui/`: state, Alpine store, view builders (`views/`, unit-tested), components, and `elements/` (Lit elements, one folder per domain, and the Zag controller they share).
 - `src/data/`: **generated, never edit by hand.** Change `scripts/data/` and run `python scripts/data/regen.py`.
 - `scripts/`: build, data generators, perf, and validation against ffxiv-gearing and xivgear (run by hand).
 - `tests/`: `unit/`, `sweep/` (long optimizer sweep), `data/` (generators), `e2e/smoke.mjs` (the runner; the checks are in `e2e/checks/`), `stories/` (Lit elements in a gallery page, three engines), `visual/` (screenshot baselines), `domains.mjs` (sorts every file into one of 11 domains).
@@ -42,7 +42,7 @@ Details: `docs/engineering/architecture.md`.
 
 - New modules may be `.ts` (TypeScript 6, `tsconfig.json`: strict, `erasableSyntaxOnly`, no enums, namespaces, parameter properties or decorators). A `.ts` file is imported with its extension (`'../text.ts'`); `npm run typecheck` checks them, `.js` files stay unchecked. The first two are `src/ui/text.ts` and `src/ui/view-cache.ts`.
 - UI elements (`src/ui/elements/<domain>/`) are Lit elements in light DOM (`createRenderRoot() { return this; }`): no shadow DOM, no `static styles`, no `<slot>`; CSS stays in `src/styles/`. Reactive properties use `static properties` with defaults set in the constructor (`declare` fields in TypeScript), no decorators. A template only displays: no logic in `html` beyond conditions and loops; objects go in with `.prop`.
-- Every overlay and composite widget goes through the Zag controller (`@zag-js/vanilla` only, `src/ui/elements/shared/`): no hand-written Escape, outside-click or focus-trap code; machine ids start with `zg-`; an open Zag layer registers with the overlay manager through the bridge.
+- A new overlay or composite widget goes through the Zag controller (`@zag-js/vanilla` only, `src/ui/elements/shared/`): no hand-written Escape, outside-click or focus-trap code, except a close or key rule written down in architecture.md (the Slot menu's Tab-out). Machine ids start with `zg-`; an open Zag layer registers with the overlay manager through the bridge. The older menus stay on the overlay manager until each is converted.
 - While Alpine runs a screen, a Lit element is an island: its wrapper's `x-effect` sets its properties, the wrapper listens for its events, and the element carries `x-ignore` and never reads `$store` (architecture.md section 3).
 - A new element has a story and a spec in `tests/stories/<domain>/` (keyboard model of its APG pattern, axe) that pass in Chromium, Firefox and WebKit (`npm run test:stories:all`); its logic that needs no Zag has a Node unit test.
 - Pin Lit and every `@zag-js/*` package to exact versions and update all `@zag-js/*` together. No React, Vue or similar framework or runtime, as a dependency or a peer, in the page or the tooling.

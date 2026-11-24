@@ -433,6 +433,33 @@ test('a screen opened at the top is put there once, the player scrolling next is
   assert.equal(first.focused, null, 'the focus stays where the click put it');
 });
 
+test('a screen opened at the top does not watch the page size: a layout change that moves the page later does not pull it back', () => {
+  const doc = docOf([panel(true, [heading(true)])]);
+  const clock = frames();
+  let at = 400;
+  const scrolled = [];
+  const watchers = [];
+  focusScreenHeading({
+    focus: false,
+    once: true,
+    doc,
+    raf: clock.raf,
+    scrollTo: y => {
+      scrolled.push(y);
+      at = y;
+    },
+    scrolledTo: () => at,
+    watchSize: onResize => {
+      watchers.push(onResize);
+      return () => {};
+    },
+  });
+  clock.run();
+  at = 90; // the player scrolls, then the screen changes height
+  for (const onResize of watchers) onResize();
+  assert.deepEqual(scrolled, [0], 'the page is placed once and never moved by a size change');
+});
+
 test('a screen opened at the top while a tab is still opening waits for the tab, then scrolls once', () => {
   const doc = docOf([panel(true, [heading(true)])]);
   const clock = frames();

@@ -234,7 +234,7 @@ test('store number box: reads the setting at its dotted path and writes it throu
 });
 
 /* A binding that Alpine runs again because another setting of the same part changed (a Gear categories box changed the Gear
-   browser's filters) must leave the text typed in this box alone, as the old per-setting tracking did. */
+   browser's filters) must leave the text typed in this box alone: only a change of this box's own stored value rewrites it. */
 test('number box: a run of the binding that finds the stored value unchanged keeps the text typed in the box, focused or not', () => {
   globalThis.document = { activeElement: null };
   try {

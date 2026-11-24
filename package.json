@@ -51,6 +51,7 @@
   "dependencies": {
     "@zag-js/collapsible": "1.49.0",
     "@zag-js/combobox": "1.49.0",
+    "@zag-js/core": "1.49.0",
     "@zag-js/dialog": "1.49.0",
     "@zag-js/menu": "1.49.0",
     "@zag-js/popover": "1.49.0",

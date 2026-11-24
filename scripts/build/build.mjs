@@ -131,6 +131,26 @@ export const pageStyles = {
   },
 };
 
+/* The bundled packages that carry no licence notice in their code, and the package whose LICENSE file holds the notice for
+   each group (the packages of one group share it: `@zag-js/*` is one project, `@floating-ui/*` another). esbuild keeps the
+   notices that are in the code (Lit's and Vue's); the page's script ends with these as well. Alpine ships none of its own. */
+export const NOTICE_PACKAGES = [
+  { name: 'Zag', licenseOf: '@zag-js/menu', bundles: /^@zag-js\// },
+  { name: 'Floating UI', licenseOf: '@floating-ui/dom', bundles: /^@floating-ui\// },
+  { name: 'proxy-compare', licenseOf: 'proxy-compare', bundles: /^proxy-compare$/ },
+];
+
+/* The text that ends the page's script: for each group of NOTICE_PACKAGES, its LICENSE file as it is in node_modules. */
+export function bundledLicenseNotices() {
+  const notices = NOTICE_PACKAGES.map(({ name, licenseOf }) => {
+    const text = readFileSync(join(ROOT, 'node_modules', licenseOf, 'LICENSE'), 'utf8')
+      .trim()
+      .replaceAll('*/', '* /');
+    return `${name} (${licenseOf})\n\n${text}`;
+  });
+  return `/*! Licence notices of bundled packages (MIT)\n\n${notices.join('\n\n---\n\n')}\n*/`;
+}
+
 export function esbuildOptions({ minify = true } = {}) {
   return {
     plugins: [jsonParseData, solverWorker, pageStyles],
@@ -140,6 +160,7 @@ export function esbuildOptions({ minify = true } = {}) {
     target: BROWSER_TARGETS,
     minify,
     legalComments: 'eof', // esbuild's default, named so a later edit does not drop the bundled notices
+    footer: { js: bundledLicenseNotices() },
     write: false,
     outdir: join(DIST, 'assets'), // required for the separate CSS output; nothing is written there
     logLevel: 'warning',

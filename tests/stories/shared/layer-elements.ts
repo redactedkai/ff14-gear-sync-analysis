@@ -2,7 +2,7 @@
    - `zag-test-popover`: a Zag popover through the Zag controller and the overlay bridge, the way a real element is built;
    - `app-menu-stub`: a layer opened by the page's own overlay manager (src/ui/overlays.js), as the app's menus are.
    Either can hold the other, so a story can open a Zag layer inside an app layer and the other way round. They live in the
-   tests because nothing on the page uses the controller yet. */
+   tests because the page has no Zag popover, and a story needs one beside a page layer, inside one and holding one. */
 import * as popover from '@zag-js/popover';
 import { LitElement, html, nothing } from 'lit';
 import { createOverlayBridge } from '../../../src/ui/elements/shared/overlay-bridge.ts';

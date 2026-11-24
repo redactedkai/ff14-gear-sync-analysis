@@ -72,8 +72,8 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
       const v = get(),
         el = this.$el;
       // the binding also runs when another setting read from the same part of the store changed (a Gear categories box changes
-      // the Gear browser's filters): the box then keeps what was typed ("60.7" for the stored 61), as it did when each setting
-      // was tracked alone; it shows the stored value when that changed
+      // the Gear browser's filters): the box then keeps what was typed ("60.7" for the stored 61); it shows the stored value
+      // only when that changed
       const unchanged = shown.has && Object.is(v, shown.value) && !justWrote;
       shown = { has: true, value: v };
       if (unchanged) return el.value;
