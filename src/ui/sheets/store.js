@@ -26,7 +26,7 @@
 import { isClan, partyRoles } from '../../core/clan-bonus.js';
 import { makeJobContext } from '../../core/job-context.js';
 import { formatRoute } from '../router/routes.js';
-import { defaultStorage, deleteSheet as removeRecord, loadSheets, saveOrder, saveSheet } from './storage.js';
+import { defaultStorage, deleteSheet as removeRecord, saveOrder, saveSheet } from './storage.js';
 import {
   cleanDescription,
   FORM_FIELD,
@@ -40,38 +40,25 @@ import {
   newSheet,
   piecesToClear,
   randomId,
-  repairSheet,
   sheetSettings,
 } from './ops.js';
+import {
+  ACK_REQUIRED_TEXT,
+  EMPTY_NAME_TEXT,
+  JOB_REQUIRED_TEXT,
+  LOCKED_TEXT,
+  NO_SHEET_OPEN_TEXT,
+  SET_GONE_TEXT,
+  SHEET_GONE_TEXT,
+  copiedNote,
+  deletedSetNote,
+  deletedSheetNote,
+  readSheets,
+  refuse,
+} from './store-shared.js';
 
-/* Why an edit is refused while an Auto-fill runs. */
-export const LOCKED_TEXT = 'Nothing can be edited while Auto-fill is running.';
-/* Why a name is refused (a New sheet, Copy sheet, Edit sheet or Edit gear set form; the box stays as it is). */
-export const EMPTY_NAME_TEXT = 'Name cannot be empty.';
-/* Why a New sheet form is refused with no job picked. */
-export const JOB_REQUIRED_TEXT = 'Choose a job.';
-/* Why a Copy sheet form is refused while the pieces the new job cannot wear are not accepted as cleared. */
-export const ACK_REQUIRED_TEXT = 'Tick the box to clear the pieces the job cannot wear.';
-/* Why an action on a sheet is refused when the sheet no longer exists (deleted in another tab). */
-export const SHEET_GONE_TEXT = 'The sheet is gone.';
-
-/* A refusal: {ok: false, error (the reason, for the user)} and, when the reason is about one field of a form, `field` (a
-   FORM_FIELD value: the dialog marks that field and shows the reason in its label row). */
-function refuse(error, field) {
-  return field ? { ok: false, error, field } : { ok: false, error };
-}
-
-/* The note after a sheet or a gear set is copied: `name` is the copy's name. */
-export function copiedNote(name) {
-  return `Copied as “${name}”.`;
-}
-
-/* loadSheets(storage) with each sheet's level and cap repaired (sheets/ops.js repairSheet): a saved cap above what its level
-   allows is lowered as the page lowers a typed one. The repair is written with the sheet's next edit. */
-function readSheets(storage) {
-  const loaded = loadSheets(storage);
-  return { ...loaded, sheets: loaded.sheets.map(repairSheet) };
-}
+// the texts moved to store-shared.js; the tests and the page import them from here as before
+export { ACK_REQUIRED_TEXT, EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT, LOCKED_TEXT, SHEET_GONE_TEXT, copiedNote };
 
 /* The store for Alpine.store('sheets'). Options (for tests): `storage` (a Storage, or null for none; the browser's by
    default), `now()` (the time in ms) and `makeId(prefix)` (a fresh id). */
@@ -315,7 +302,7 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       this.rev++;
       if (data.available) this.noteSave(id, removeRecord(id, storage));
       if (this.sheetId === id) Object.assign(this, { screen: 'sheets', sheetId: null, setId: null, missing: null });
-      this.note = `Deleted “${sheet.name}” sheet.`;
+      this.note = deletedSheetNote(sheet.name);
       return { ok: true };
     },
 
@@ -376,7 +363,7 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       const refused = this.locked();
       if (refused) return refused;
       const sheet = this.currentSheet;
-      if (!sheet) return { ok: false, error: 'No sheet is open.' };
+      if (!sheet) return { ok: false, error: NO_SHEET_OPEN_TEXT };
       const { lowered, ...fields } = sheetSettings(sheet.job, change(sheet), { level: sheet.level, cap: sheet.sync.cap });
       if (Object.entries(fields).every(([key, value]) => JSON.stringify(sheet[key]) === JSON.stringify(value)))
         return { ok: true, lowered };
@@ -400,7 +387,7 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       const refused = this.locked();
       if (refused) return refused;
       const sheet = this.currentSheet;
-      if (!sheet) return { ok: false, error: 'No sheet is open.' };
+      if (!sheet) return { ok: false, error: NO_SHEET_OPEN_TEXT };
       // a sheet saved before the bonuses has neither field: that is none
       const current = { clan: sheet.clan ?? null, partyRoles: sheet.partyRoles ?? 0 };
       if (Object.entries(fields).every(([key, value]) => current[key] === value)) return { ok: true };
@@ -414,7 +401,7 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       const refused = this.locked();
       if (refused) return refused;
       const sheet = this.currentSheet;
-      if (!sheet) return { ok: false, error: 'No sheet is open.' };
+      if (!sheet) return { ok: false, error: NO_SHEET_OPEN_TEXT };
       const gearSet = newGearSet(defaultSetName(sheet), this.newSetId(sheet), now());
       this.commit({ ...sheet, sets: [...sheet.sets, gearSet] });
       Object.assign(this, { screen: 'set', setId: gearSet.id, missing: null });
@@ -434,7 +421,7 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       if (refused) return refused;
       const sheet = this.currentSheet;
       const at = sheet?.sets.findIndex(gearSet => gearSet.id === id) ?? -1;
-      if (at < 0) return { ok: false, error: 'The gear set is gone.' };
+      if (at < 0) return { ok: false, error: SET_GONE_TEXT };
       const original = sheet.sets[at];
       const name = copyName(
         original.name,
@@ -453,10 +440,10 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       if (refused) return refused;
       const sheet = this.currentSheet;
       const gearSet = this.set(id);
-      if (!gearSet) return { ok: false, error: 'The gear set is gone.' };
+      if (!gearSet) return { ok: false, error: SET_GONE_TEXT };
       this.commit({ ...sheet, sets: sheet.sets.filter(s => s.id !== id) });
       if (this.setId === id) Object.assign(this, { screen: 'sheet', setId: null, missing: null });
-      this.note = `Deleted “${gearSet.name}” gear set.`;
+      this.note = deletedSetNote(gearSet.name);
       return { ok: true };
     },
 
@@ -475,7 +462,7 @@ export function createSheetStore({ storage = defaultStorage(), now = () => Date.
       const refused = this.locked();
       if (refused) return refused;
       const sheet = this.currentSheet;
-      if (!sheet?.sets.some(gearSet => gearSet.id === id)) return { ok: false, error: 'The gear set is gone.' };
+      if (!sheet?.sets.some(gearSet => gearSet.id === id)) return { ok: false, error: SET_GONE_TEXT };
       const at = now();
       const sets = sheet.sets.map(gearSet => (gearSet.id === id ? { ...gearSet, ...fields, updatedAt: at } : gearSet));
       return this.commit({ ...sheet, sets });

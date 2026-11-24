@@ -83,7 +83,8 @@ export const DOMAINS = {
       'src/ui/components/sheets.js',
       'src/ui/components/sheets/**',
       'src/ui/native-dialog.js',
-      'src/ui/sheets/{bonus-options,dialogs,ops,storage,store}.js',
+      'src/ui/sheets/{bonus-options,dialogs,ops,storage,store,store-shared}.js',
+      'src/ui/store/sheets-actions.ts',
       'src/ui/views/{sheet-forms,sheet-manager,sheet-sets,sheet-text}.js',
       'src/ui/{test-data.js,test-sheets.json}',
       'src/partials/{sheet-pages,cap-flag,dialog-error}.html',
@@ -128,6 +129,7 @@ export const DOMAINS = {
       'src/partials/job-menu.html',
       'src/ui/{state,store,store-key,job-sync-panel,level-cap,messages,number-commit,number-field,overlays,ranks,hq-font}.js',
       'src/ui/{text,view-cache}.ts',
+      'src/ui/store/{store,select,watch,app-state,app-actions,autosave}.ts',
     ],
     tests: [
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',
@@ -135,6 +137,7 @@ export const DOMAINS = {
       'tests/unit/ui/views/level-sync.test.js',
       'tests/unit/startup-failure.test.js',
       'tests/unit/helpers/{fuzz,views}.js',
+      'tests/unit/helpers/store-adapters.ts',
     ],
   },
   look: {

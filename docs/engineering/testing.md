@@ -188,6 +188,14 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/store.tiers-job | `setJob(id, 'tiers')` and `panel('tiers')`: the other panels untouched, Substat tiers' level cleared at the job's level cap, `tiers.job` saved |
 | ui/store.panels | the two reference tabs' panels in the store: switching, persisting, job resets |
 | ui/store.sheets-tab | the Sheets tab has no panel (note 18) |
+| ui/store/store (`.test.ts`) | the new store: 1,000 updates in a tick give one notification, a revision per slice, the log of 50 action names, listeners, big data kept by reference |
+| ui/store/select (`.test.ts`) | `Select` over a fake host: renders only on a change of what it selected, unsubscribes on disconnect (1,000 cycles leave none), `shallowEq` |
+| ui/store/watch (`.test.ts`) | `watch`: once per tick, previous value, `equals`, stop |
+| ui/store/autosave (`.test.ts`) | the save 150 ms after the last change on a fake clock, one write for 1,000 changes, `pagehide` flush, a throwing storage ignored |
+| ui/store/app-state (`.test.ts`) | the five slices, actions that change nothing are not counted, `panelOf`, `persisted` in the saved shape, gear set pages, `routeOf` against the router's routes |
+| ui/store/app-state.differential (`.test.ts`) | random action sequences (36 runs of 250 steps, fixed seeds) on the old Alpine store and the new one: the saved JSON, each panel, the open tab and the typed levels equal after every step |
+| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the old app store's tests (`ui/store*`) run against the new actions through `tests/unit/helpers/store-adapters.ts` |
+| ui/store/sheets-actions, `.clan-party` | the old Sheets store's tests (`ui/sheets/store*`) run against the new actions through the same adapter |
 | styles/z-index-scale | every `z-index` is a `--z-*` token, the tokens keep their order (dialog and toast on one level), the rules a library positioner needs are in place |
 | styles/theme-tokens | colors only through the CSS tokens (note 19) |
 | styles/gear-column-tint | the Gear browser CSS tints the column of every stat the table can sort or hover |
