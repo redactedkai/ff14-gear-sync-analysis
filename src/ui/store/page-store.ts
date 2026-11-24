@@ -54,5 +54,15 @@ export function createPageStore(options: PageStoreOptions) {
   };
 }
 
+/* `facade` frozen, for the page to register as a store (`Alpine.store`): nothing can be assigned to it, defined on it, deleted from it
+   or added to it later, so a console command cannot shadow or remove what a template reads (`Object.defineProperty(app, 'job', ...)`,
+   `delete app.browse`). The facades are read-only objects already: their getters read the store's revisions, which the page's
+   template engine tracks, so the engine has no need to wrap them in a reactive proxy, and a frozen object is left as it is
+   (the engine does not wrap an object that cannot be extended). Only the page seals them: the unit tests add stand-ins to the
+   facades they build. */
+export function sealFacade<Facade extends object>(facade: Facade): Readonly<Facade> {
+  return Object.freeze(facade);
+}
+
 /* A page store. */
 export type PageStore = ReturnType<typeof createPageStore>;

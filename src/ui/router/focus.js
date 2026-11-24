@@ -46,10 +46,15 @@ export function isPlacingScroll() {
    `releaseHeight()` clears it (the style attribute with it) once the position has held. While the screen is still being drawn it
    may grow to reach the position; `naturalHeight()` (the screen's own height, not the held one) tells: once the screen stops
    growing short of the position, the hold is let go and the page shows the screen's own end, not blank space.
-   `viewportHeight()` is the window's height. */
+   `viewportHeight()` is the window's height.
+
+   `once: true` is for a screen the page opens itself, which starts at the top (`scrollY` 0): the position is put there as the
+   screen is swapped in and never again, with no focus move and no hold on the page's height, so the player's first scroll on the new
+   screen is not pulled back. It still cancels an earlier call that is still placing a position (a Back made a moment before). */
 export function focusScreenHeading({
   scrollY = 0,
   focus = true,
+  once = false,
   isPending = () => false,
   doc = document,
   raf = requestAnimationFrame,
@@ -107,6 +112,7 @@ export function focusScreenHeading({
       releaseHeight(); // the height an earlier call held, which this call replaces
     }
     scrollTo(target);
+    if (once) return;
     // the page's own update may still change the screen after this (a part of it hides a moment later) and the browser moves the
     // position with it: whenever the layout changes, the position is put back before the frame is drawn, not on the next one
     stopWatching = watchSize(() => {
@@ -150,6 +156,10 @@ export function focusScreenHeading({
       lastReach = naturalHeight() - viewportHeight();
     }
     framesSincePlaced += 1;
+    if (once) {
+      finish();
+      return;
+    }
     if (framesSincePlaced === 2) {
       const heading = screenHeading(doc);
       if (heading && focus) {

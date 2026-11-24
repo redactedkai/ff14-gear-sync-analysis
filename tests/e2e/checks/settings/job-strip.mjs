@@ -2,7 +2,7 @@
 
 import { DEBOUNCE_SETTLE_MS, NARROW } from '../../lib/constants.mjs';
 import { check, expect } from '../../lib/expect.mjs';
-import { hasHScroll, pickJob, setCap, setJob, setNumber, showTab } from '../../lib/nav.mjs';
+import { afterFrames, hasHScroll, pickJob, setCap, setJob, setNumber, showTab } from '../../lib/nav.mjs';
 import { SHARED_SETUP } from '../../lib/setup.mjs';
 
 /** The strip's gap under the tab bar, in px (on the Gear browser). */
@@ -101,6 +101,8 @@ export async function checkJobStrip(pg) {
 
   // How the math works: the math bar sticks flush at the top of the window while the page scrolls
   await pg.click('[data-tab=math]');
+  await expect(pg.locator('#m-bar')).toBeVisible();
+  await afterFrames(pg); // the new screen has been put at the top, which scrolling now would not be pulled back from
   await pg.setViewportSize({ width: NARROW.width, height: SHORT_WINDOW_HEIGHT }); // shorter than the page, so it scrolls whatever the layout
   await pg.evaluate(() => window.scrollTo(0, 400));
   await pg.waitForFunction(() => window.scrollY > 100);

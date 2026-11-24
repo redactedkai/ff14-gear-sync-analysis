@@ -12,7 +12,12 @@ import {
   checkBrowserFourDigits,
   checkBrowserPages,
 } from './checks/gear-browser/columns.mjs';
-import { checkExpansionFilter, checkPldOffhand, checkRingCopies } from './checks/gear-browser/filters.mjs';
+import {
+  checkExpansionFilter,
+  checkPldOffhand,
+  checkRingCopies,
+  checkTypedNumberStaysAfterOtherFilter,
+} from './checks/gear-browser/filters.mjs';
 import { checkGearFrom } from './checks/gear-browser/gear-from.mjs';
 import { checkGearFromCountsBrowser, checkGearFromCountsFill } from './checks/gear-browser/piece-counts.mjs';
 import { checkOffhandPills } from './checks/gear-browser/offhand-pills.mjs';
@@ -83,11 +88,13 @@ import {
   checkScrollOnBack,
   checkScrollOnBackToLeftPosition,
   checkScrollOnBackToMath,
+  checkScrollOnOpenedScreen,
   checkScrollOnForwardToUnscrolled,
   checkScrollOnForward,
   checkScrollOnReload,
   checkUnloadGuard,
 } from './checks/tabs/routing.mjs';
+import { checkStoresSealed } from './checks/tabs/facades.mjs';
 import { walkJob } from './checks/tabs/walk.mjs';
 import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.mjs';
 
@@ -131,6 +138,7 @@ export const GROUPS = [
   { steps: [step(checkBrowserFourDigits, 'gear-browser')] },
   { steps: [step(checkSlotMenu, 'gear-browser')] },
   { steps: [step(checkTabPanels, 'app')] },
+  { steps: [step(checkStoresSealed, 'app')] },
   { steps: [step(checkRouting, 'app')] },
   { steps: [step(checkLinkClicks, 'app')] },
   { fresh: true, steps: [step(checkForcedColorsCurrentTab, 'app')] },
@@ -148,6 +156,7 @@ export const GROUPS = [
   },
   { fresh: true, steps: [step(checkScrollOnBackToMath, 'app')] },
   { fresh: true, steps: [step(checkScrollOnForwardToUnscrolled, 'app')] },
+  { fresh: true, steps: [step(checkScrollOnOpenedScreen, 'app')] },
   { steps: [step(checkSheets, 'sheets')] },
   { steps: [step(checkSheetForms, 'sheets')] },
   { steps: [step(checkDialogErrors, 'sheets')] },
@@ -220,6 +229,7 @@ export const GROUPS = [
     ],
   },
   { slow: true, steps: [step(checkExpansionFilter, 'gear-browser'), step(checkReset, 'app')] },
+  { steps: [step(checkTypedNumberStaysAfterOtherFilter, 'gear-browser')] },
   { slow: true, steps: [step(checkReloadPersists, 'app')] },
   { slow: true, steps: [step(checkCorruptedStorage, 'app')] },
   { slow: true, steps: [step(checkLevelSync, 'app'), step(checkJobLevelCap, 'app')] },

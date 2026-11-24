@@ -5,7 +5,7 @@ import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js'
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { afterFrames, waitSaved } from '../../lib/nav.mjs';
-import { expectApplyCount, openSageSet, seedSheet } from '../../lib/sheets.mjs';
+import { expectApplyCount, openSageSet, seedSheet, seedSheets } from '../../lib/sheets.mjs';
 
 /** The address (its hash) of the page now. */
 const hashOf = pg => pg.evaluate(() => location.hash);
@@ -624,4 +624,104 @@ export async function checkScrollOnReload(pg) {
   await pg.reload();
   await expect(pg.locator('#sh-gear')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 2, leftAt);
+}
+
+/** A sheet with twelve sets: its page is tall, so it scrolls deeper than the set pages are drawn at when they first appear. */
+const TALL_SHEET = {
+  ...FIVE_SETS_SHEET,
+  id: 's_tall',
+  name: 'Tall sheet',
+  sets: Array.from({ length: 12 }, (_, number) => ({ ...SET_SHEET.sets[0], id: `g_tall_${number + 1}`, name: `Set ${number + 1}` })),
+};
+
+/** How many other sheets fill the Sheets list in the check below (so the list can scroll): copies of TALL_SHEET. */
+const LIST_FILLER_COUNT = 24;
+
+/** A screen opened by a click or by the page's own navigation starts at the top, whatever depth the screen before it was
+ * scrolled to, and no frame draws it at that depth (the browser kept the position when the screens were swapped). The screen left
+ * keeps its own position: Back draws it at the depth it was left at, from its first frame. Frames are counted, never timed. */
+export async function checkScrollOnOpenedScreen(pg) {
+  await pg.setViewportSize({ width: 1000, height: 600 });
+  const fillers = Array.from({ length: LIST_FILLER_COUNT }, (_, number) => ({
+    ...TALL_SHEET,
+    id: `s_filler_${number}`,
+    name: `Filler ${number}`,
+  }));
+  await seedSheets(pg, [TALL_SHEET, ...fillers]);
+  const setSelector = '#sh-gear';
+
+  /** Opens `to` from `from` (the screen `fromAddress` names, scrolled to `depth`), and goes Back; `open` clicks from the page. */
+  const openFromScrolled = async ({ what, fromAddress, fromMarker, depth, open, toMarker }) => {
+    await typeAddress(pg, fromAddress);
+    await expect(pg.locator(fromMarker)).toBeVisible();
+    await framesPass(pg, STAY_FRAMES);
+    const leftAt = await scrollPageTo(pg, depth);
+    check(leftAt > 100, `${what}: the screen left cannot be scrolled (${leftAt}), so the check proves nothing`);
+    await afterFrames(pg); // the scroll event is noted
+
+    // opened: from its first frame the new screen is at the top
+    await startFrameRecorder(pg, toMarker);
+    await open();
+    await expect(pg.locator(toMarker)).toBeVisible();
+    await framesPass(pg, STAY_FRAMES);
+    let frames = await stopFrameRecorder(pg);
+    let strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
+    check(
+      frames.some(frame => frame.shown) && strays.length === 0,
+      `${what}: the new screen was drawn at ${strays.join(', ')} before the top (the screen left was at ${leftAt})`,
+    );
+
+    // Back: the screen left is drawn at the depth it was left at, from its first frame
+    await startFrameRecorder(pg, fromMarker);
+    await pg.goBack();
+    await expect(pg.locator(fromMarker)).toBeVisible();
+    await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
+    await framesPass(pg, STAY_FRAMES);
+    frames = await stopFrameRecorder(pg);
+    strays = drawnPositions(frames).filter(y => Math.abs(y - leftAt) > 1);
+    check(strays.length === 0, `${what}: Back drew the screen left at ${strays.join(', ')} before ${leftAt}`);
+  };
+
+  const listHeight = await pg.evaluate(() => document.documentElement.scrollHeight);
+  check(listHeight > 1200, `the Sheets list is too short to scroll (${listHeight}), so the checks below prove nothing`);
+  await openFromScrolled({
+    what: 'a sheet opened from the scrolled list',
+    fromAddress: '#/sheets',
+    fromMarker: '#sh-list',
+    depth: SCROLLED_PX,
+    open: () => clickFromPage(pg, '#sh-list a.sname', TALL_SHEET.name),
+    toMarker: '#sh-sets',
+  });
+  await openFromScrolled({
+    what: 'a gear set opened from the scrolled sheet page',
+    fromAddress: `#/sheets/${TALL_SHEET.id}`,
+    fromMarker: '#sh-sets',
+    depth: SCROLLED_PX,
+    open: () => clickFromPage(pg, '#sh-sets a.sname', 'Set 4'),
+    toMarker: setSelector,
+  });
+  await openFromScrolled({
+    what: 'the sheet page opened from the breadcrumb of the scrolled set page',
+    fromAddress: `#/sheets/${TALL_SHEET.id}/sets/${TALL_SHEET.sets[3].id}`,
+    fromMarker: setSelector,
+    depth: SCROLLED_PX,
+    open: () => clickFromPage(pg, '.setcrumb a', TALL_SHEET.name),
+    toMarker: '#sh-sets',
+  });
+  await openFromScrolled({
+    what: 'the Gear browser opened from the scrolled sheet page',
+    fromAddress: `#/sheets/${TALL_SHEET.id}`,
+    fromMarker: '#sh-sets',
+    depth: SCROLLED_PX,
+    open: () => clickFromPage(pg, '[data-tab]', 'Gear browser'),
+    toMarker: '#b-q',
+  });
+  await openFromScrolled({
+    what: 'the Sheets tab, which reopens its sheet page, opened from the scrolled Gear browser',
+    fromAddress: '#/gear',
+    fromMarker: '#b-q',
+    depth: SCROLLED_PX,
+    open: () => clickFromPage(pg, '[data-tab]', 'Sheets'),
+    toMarker: '#sh-sets',
+  });
 }

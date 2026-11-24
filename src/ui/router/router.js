@@ -95,6 +95,8 @@ const WRITE_COOLDOWN_MS = 100;
    the position it had however late the scroll event comes. The page lets the router place the scroll (history.scrollRestoration
    is 'manual'), so a reload would lose its place: `savedScroll` ({entry id: y}, from `scrollPositions()` of the page before the
    reload) seeds the positions, and `restoreScroll(y)` scrolls to the one of the entry the reload is on (no focus move).
+   `startAtTop()` puts a screen the page opens itself (a click, a link of the page; not Back, Forward or a reload) at the top,
+   whatever depth the screen before it was scrolled to.
    `isPlacing()` says whether the page is still being put at a position (a Back, Forward or reload): the scroll events of that
    time are the placement's own and the browser's clamp to a screen not yet drawn, never the player's, so `noteScroll` leaves them
    out and an entry keeps the position it was left at however quickly the next move comes.
@@ -111,6 +113,7 @@ export function createRouter({
   readScroll = () => null,
   savedScroll = {},
   restoreScroll = () => {},
+  startAtTop = () => {},
   isPlacing = () => false,
 }) {
   // the entry the browser is on, and the entry whose screen the stores show (they differ while a held move is undone)
@@ -292,18 +295,23 @@ export function createRouter({
   }
 
   /* A new screen: its address becomes a new entry after the one the page is on. What the entry being left was waiting to
-     write (a search text) goes into it first, and where it is scrolled is kept for it. */
+     write (a search text) goes into it first, and where it is scrolled is kept for it. The new screen starts at the top (Back
+     and Forward place a saved position instead): it is already in the page when this runs, before the next frame is drawn. */
   function pushScreen(hash) {
     flushWrites();
     const scrolledTo = readScroll();
     if (scrolledTo) {
-      rememberScroll(scrolledTo.y, scrolledTo.maxY, scrollByEntry.get(at.id) ?? 0);
-      lastScrollY = scrolledTo.y;
+      // the browser may have clamped the position while the new screen was swapped in (a shorter page): the position its scroll
+      // events noted, which is the deeper one then, is where the screen was left
+      const noted = scrollByEntry.get(at.id) ?? 0;
+      rememberScroll(Math.max(scrolledTo.y, noted), scrolledTo.maxY, noted);
+      lastScrollY = scrolledTo.y; // the late scroll event of the screen left reports this position
     }
     const entry = { id: newEntryId(), pos: at.pos + 1 };
     port.push(hash, entry);
     at = entry;
     shown = entry;
+    startAtTop();
   }
 
   /* The settings of the screen `here` (its address's route) changed to those of `route`: replace the address's query. A change

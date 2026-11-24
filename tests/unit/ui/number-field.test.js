@@ -232,3 +232,62 @@ test('store number box: reads the setting at its dotted path and writes it throu
   ilvl['@change']({ target: { value: '300' } });
   assert.equal(store.piece.ilvl, 300);
 });
+
+/* A binding that Alpine runs again because another setting of the same part changed (a Gear categories box changed the Gear
+   browser's filters) must leave the text typed in this box alone, as the old per-setting tracking did. */
+test('number box: a run of the binding that finds the stored value unchanged keeps the text typed in the box, focused or not', () => {
+  globalThis.document = { activeElement: null };
+  try {
+    let stored = 61;
+    const field = numberField(
+      () => stored,
+      v => {
+        stored = v;
+      },
+      1,
+      Number.POSITIVE_INFINITY,
+      { empty: '' },
+    );
+    const input = { value: '' };
+    const run = () => field[':value'].call({ $el: input });
+    input.value = String(run()); // the first run shows the stored value
+    assert.equal(input.value, '61');
+    input.value = '60.7'; // typed, committed as 61, box left
+    assert.equal(run(), '60.7', 'another setting of the part changed: the typed text stays');
+    stored = 70; // this box's own setting changed (a reset, the address): the box shows it
+    assert.equal(run(), 70);
+    input.value = '';
+    assert.equal(run(), '', 'an emptied box stays empty while its setting is unchanged');
+    stored = '';
+    assert.equal(run(), '');
+  } finally {
+    delete globalThis.document;
+  }
+});
+
+test('number box: a typed value the setting lowers back to what it was is shown lowered, not kept as typed', async () => {
+  globalThis.document = { activeElement: null };
+  try {
+    let stored = 135; // a cap the level allows; 500 is lowered to it
+    const field = numberField(
+      () => stored,
+      v => {
+        stored = Math.min(v, 135);
+      },
+      1,
+      795,
+    );
+    const input = { value: '' };
+    const run = () => field[':value'].call({ $el: input });
+    input.value = String(run());
+    input.value = '500';
+    field['@change']({ target: input }); // typed and left: the setting ends where it was
+    assert.equal(stored, 135);
+    assert.equal(run(), 135, 'the page updates the box after the box wrote');
+    await Promise.resolve(); // the page has updated
+    input.value = '134.6';
+    assert.equal(run(), '134.6', 'a later run that finds the setting unchanged keeps the typed text');
+  } finally {
+    delete globalThis.document;
+  }
+});

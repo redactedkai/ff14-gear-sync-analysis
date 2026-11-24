@@ -406,3 +406,53 @@ test('a newer move takes over: the older one stops scrolling and does not releas
   assert.equal(page.log.filter(entry => entry === 'scroll 400').length, 1, 'the first move scrolled only in its own call');
   assert.equal(page.log.filter(entry => entry === 'release').length, 1, 'one release, by the newer move');
 });
+
+test('a screen opened at the top is put there once, the player scrolling next is left alone, and the placement is over after one frame', () => {
+  const first = heading(true);
+  const doc = docOf([panel(true, [first])]);
+  const clock = frames();
+  let at = 400; // the screen before it was scrolled to 400
+  const scrolled = [];
+  focusScreenHeading({
+    focus: false,
+    once: true,
+    doc,
+    raf: clock.raf,
+    scrollTo: y => {
+      scrolled.push(y);
+      at = y;
+    },
+    scrolledTo: () => at,
+  });
+  assert.deepEqual(scrolled, [0], 'at the top before the first frame');
+  assert.equal(isPlacingScroll(), true);
+  at = 120; // the player scrolls the new screen
+  clock.run();
+  assert.deepEqual(scrolled, [0], 'not pulled back');
+  assert.equal(isPlacingScroll(), false);
+  assert.equal(first.focused, null, 'the focus stays where the click put it');
+});
+
+test('a screen opened at the top while a tab is still opening waits for the tab, then scrolls once', () => {
+  const doc = docOf([panel(true, [heading(true)])]);
+  const clock = frames();
+  let pending = true;
+  const scrolled = [];
+  focusScreenHeading({
+    focus: false,
+    once: true,
+    isPending: () => pending,
+    doc,
+    raf: clock.raf,
+    scrollTo: y => scrolled.push(y),
+    scrolledTo: () => 0,
+  });
+  assert.deepEqual(scrolled, [], 'the old tab is still on show');
+  clock.step();
+  clock.step();
+  assert.deepEqual(scrolled, []);
+  pending = false;
+  clock.run();
+  assert.deepEqual(scrolled, [0]);
+  assert.equal(isPlacingScroll(), false);
+});
