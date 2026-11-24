@@ -18,6 +18,7 @@ import { clamp } from '../../core/clamp.js';
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { fmtInt } from '../text.ts';
+import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../elements/gear-browser/slot-menu-names.ts';
 import { defaultBrowse } from '../state.js';
 import { SLOT_LABEL } from '../../core/constants.js';
 
@@ -154,7 +155,7 @@ export function gearView(job, sync, browse, page = 1) {
   // every slot first, for the Slot menu's counts; the slot filter is applied after
   const rows = browseItems(job, { ...gearFilter(b), q: b.q });
   const allowed = allowedActivities(b.exclude || [], b.market !== false);
-  const inSlot = r => b.type === 'any' || r.type === b.type;
+  const inSlot = r => b.type === ANY_SLOT_KEY || r.type === b.type;
   const listed = rows.filter(r => routesAllow(r.routes, allowed));
   const all = listed.filter(inSlot).map(r => {
     const raw = dbStats(job, r.st);
@@ -203,7 +204,7 @@ export function gearView(job, sync, browse, page = 1) {
   // the Slot menu's choices: how many matches each slot has under the other filters
   const counts = {};
   for (const r of listed) counts[r.type] = (counts[r.type] || 0) + 1;
-  const slots = [{ key: 'any', label: 'Any slot', count: listed.length, countText: fmtInt(listed.length), group: 0 }];
+  const slots = [{ key: ANY_SLOT_KEY, label: ANY_SLOT_LABEL, count: listed.length, countText: fmtInt(listed.length), group: 0 }];
   SLOT_GROUPS.forEach((group, g) => {
     for (const t of group)
       if (job.activeSlotTypes.includes(t)) {

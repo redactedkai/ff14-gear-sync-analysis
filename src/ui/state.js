@@ -5,6 +5,7 @@ import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.
 import { makeJobContext } from '../core/job-context.js';
 import { currentStatKey } from '../core/stat-keys.js';
 import { MAX_REAL } from '../core/tables.js';
+import { ANY_SLOT_KEY } from './elements/gear-browser/slot-menu-names.ts';
 import { DEFAULT_EXCLUDE, PANEL_GROUP, holdLevelSyncCap, meldSlotChoices } from './job-sync-panel.js';
 import { limitCapToLevel } from './level-cap.js';
 import { STORE_KEY } from './store-key.js';
@@ -30,7 +31,7 @@ function defaultPanel() {
 export function defaultBrowse(job = null) {
   return {
     q: '',
-    type: 'any',
+    type: ANY_SLOT_KEY,
     expOff: [],
     exclude: [...DEFAULT_EXCLUDE],
     market: true,
@@ -114,7 +115,7 @@ export function resetForJob(s, job, from = null, parts = ['math', 'browse']) {
   if (parts.includes('browse')) {
     // the browser's slot and sort: a slot the job wears and a sort by name, level, item level or a kept stat stay
     const browse = defaultBrowse(job);
-    if (!from || !['any', ...job.activeSlotTypes].includes(s.browse.type)) s.browse.type = browse.type;
+    if (!from || ![ANY_SLOT_KEY, ...job.activeSlotTypes].includes(s.browse.type)) s.browse.type = browse.type;
     if (!from || !(['name', 'lvl', 'ilvl'].includes(s.browse.sort) || keeps(s.browse.sort))) {
       s.browse.sort = browse.sort;
       s.browse.dir = browse.dir;
@@ -188,7 +189,7 @@ export function restorePieceFields(raw, job, base) {
 export function restoreBrowseFields(raw, job, base) {
   const fields = { ...base };
   fields.q = cutText(str(raw.q, base.q), SEARCH_MAX_LENGTH);
-  fields.type = oneOf(raw.type, ['any', ...job.activeSlotTypes], base.type);
+  fields.type = oneOf(raw.type, [ANY_SLOT_KEY, ...job.activeSlotTypes], base.type);
   restoreGearFilter(fields, raw, job);
   fields.exclude = restoreExclude(raw.exclude, base.exclude);
   fields.market = bool(raw.market, base.market);

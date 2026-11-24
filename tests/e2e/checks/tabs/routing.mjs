@@ -1,5 +1,6 @@
 // Addresses: every screen has its own, and Back, Forward and reload move between them.
 
+import { ANY_SLOT_LABEL, slotButtonName } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.js';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
 import { check, expect, poll } from '../../lib/expect.mjs';
@@ -253,7 +254,7 @@ export async function checkAddressSettings(pg) {
   await typeAddress(pg, '#/gear?job=SGE&il=123&slot=ring&min=700&sort=det&colour=red');
   await expectHash(pg, '#/gear?job=SGE&il=123&slot=ring&min=700&sort=det', 'a link with settings');
   await expect(pg.locator('#b-min')).toHaveValue('700');
-  await expect(pg.locator('#b-slot')).toHaveAttribute('aria-label', 'Slot: Ring');
+  await expect(pg.locator('#b-slot')).toHaveAttribute('aria-label', slotButtonName('Ring'));
 
   // saved at once: a bare address after a reload shows them, and stays bare
   await waitSaved(
@@ -282,7 +283,7 @@ export async function checkAddressSettings(pg) {
   await expectHash(pg, '#/gear?max=790', 'a link that names one setting');
   await expect(pg.locator('#b-min')).toHaveValue('');
   await expect(pg.locator('#b-q')).toHaveValue('');
-  await expect(pg.locator('#b-slot')).toHaveAttribute('aria-label', 'Slot: Any slot');
+  await expect(pg.locator('#b-slot')).toHaveAttribute('aria-label', slotButtonName(ANY_SLOT_LABEL));
 
   // a search text that ends inside an emoji is cut before it, and the page still starts from the address after a reload
   await typeAddress(pg, `#/gear?q=${'x'.repeat(99)}%F0%9F%98%80`);

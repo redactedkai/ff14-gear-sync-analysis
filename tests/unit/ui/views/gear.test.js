@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../../../src/core/constants.js';
 import { browseItems } from '../../../../src/core/items.js';
+import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, browseCell, markWords, pageList, slotCellText } from '../../../../src/ui/views/gear.js';
 import { gearViewOf, makeApp } from '../../helpers/views.js';
 
@@ -159,18 +160,18 @@ test('gear browser view: the Slot menu names its first choice "Any slot", prints
     v.slots.map(p => p.group),
     [0, ...v.slots.slice(1).map(p => p.group)],
   );
-  assert.equal(v.slots[0].label, 'Any slot');
+  assert.equal(v.slots[0].label, ANY_SLOT_LABEL);
   for (const p of v.slots) assert.equal(p.countText, p.count.toLocaleString('en-US'), p.key);
   assert.ok(v.slots[0].count >= 1000 && v.slots[0].countText.includes(','), 'the whole list has four digits, so its count has a separator');
   // the closed button: the chosen slot's label, and "Any slot" for a slot the job does not have
-  assert.equal(v.slotLabel, 'Any slot');
+  assert.equal(v.slotLabel, ANY_SLOT_LABEL);
   app.browse.type = 'ring';
   assert.equal(gearViewOf(app).slotLabel, 'Ring');
   app.browse.type = 'offhand';
   assert.equal(gearViewOf(app).slotLabel, 'Off-hand');
   const sage = makeApp('SGE');
   sage.browse.type = 'offhand';
-  assert.equal(gearViewOf(sage).slotLabel, 'Any slot');
+  assert.equal(gearViewOf(sage).slotLabel, ANY_SLOT_LABEL);
 });
 
 /* The page line (owner's pick P1 a, 2026-10-20): every page while 7 fit, else 7 entries, null for a gap. */

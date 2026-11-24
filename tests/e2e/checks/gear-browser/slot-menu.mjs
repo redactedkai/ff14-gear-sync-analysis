@@ -1,5 +1,6 @@
 // Gear browser: the Slot menu on the title line, one round bar with the name search.
 
+import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { check, expect } from '../../lib/expect.mjs';
 import { chooseSlot, fillBrowser, focusedId, hasHScroll, showTab } from '../../lib/nav.mjs';
 
@@ -28,7 +29,7 @@ const menuFit = pg =>
 export async function checkSlotMenu(pg) {
   await showTab(pg, 'browse');
   await fillBrowser(pg, '', '', '');
-  await expect(pg.locator('#b-slot')).toHaveText('Any slot');
+  await expect(pg.locator('#b-slot')).toHaveText(ANY_SLOT_LABEL);
 
   // one bar: the border is the bar's, not the search box's
   const borders = await pg.evaluate(() => ({
@@ -131,5 +132,80 @@ export async function checkSlotMenu(pg) {
   await expect(pg.locator('#b-slots [data-slot="ring"]')).toBeDisabled();
   await expect(pg.locator('#b-slots [data-slot="weapon"]')).toBeEnabled();
   await pg.click('#b-reset');
-  await expect(pg.locator('#b-slot')).toHaveText('Any slot');
+  await expect(pg.locator('#b-slot')).toHaveText(ANY_SLOT_LABEL);
+}
+
+/** The Slot menu with the page's data: its counts have thousands separators (the view's text, not the raw number); every slot it
+ * offers, off-hand and weapon included, sets the browser's slot to its own key when picked; opening the Expansion menu or the Gear
+ * categories menu closes it, and one Escape closes it and nothing more. Leaves the browser's filters at their defaults. */
+export async function checkSlotMenuPicksAndLayers(pg) {
+  await showTab(pg, 'browse');
+  await fillBrowser(pg, '', '', '');
+
+  // the counts: thousands separators as the view writes them, and at least one number is over 999
+  await pg.click('#b-slot');
+  const counts = await pg.locator('#b-slots .multi-opt .n').allTextContents();
+  const withoutSeparator = counts.filter(text => Number(text.replaceAll(',', '')).toLocaleString('en-US') !== text);
+  check(withoutSeparator.length === 0, `the Slot menu counts without thousands separators: ${withoutSeparator.join(' ')}`);
+  check(
+    counts.some(text => text.includes(',')),
+    `no count of the Slot menu is over 999 (${counts.join(' ')}), so the separator check proves nothing`,
+  );
+  await pg.keyboard.press('Escape');
+
+  // every slot the menu lists sets its own key (a row greyed out for lack of a match cannot be picked, so each job is tried
+  // with the item level range that leaves every slot a match)
+  const keys = await pg.evaluate(() => [...document.querySelectorAll('#b-slots [data-slot]')].map(row => row.dataset.slot));
+  check(keys.includes('weapon') && keys.length > 5, `the Slot menu lists ${keys.join(', ')}`);
+  for (const key of keys) {
+    await chooseSlot(pg, key);
+    await pg.waitForFunction(slot => window.gsaDebug.app.browse.type === slot, key);
+  }
+  await chooseSlot(pg, 'any');
+
+  // another layer: the Expansion and the Gear categories menu close the Slot menu when they open
+  for (const opener of ['#b-exp', '#b-from']) {
+    await pg.click('#b-slot');
+    await expect(pg.locator('#b-slots')).toBeVisible();
+    await pg.click(opener);
+    await expect(pg.locator('#b-slots')).toBeHidden();
+    await expect(pg.locator(opener)).toHaveAttribute('aria-expanded', 'true');
+    await pg.keyboard.press('Escape');
+    await expect(pg.locator(opener)).toHaveAttribute('aria-expanded', 'false');
+  }
+
+  // one Escape closes the Slot menu; a second one closes nothing else and leaves the focus on the button
+  await pg.click('#b-slot');
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#b-slots')).toBeHidden();
+  await pg.keyboard.press('Escape');
+  check((await focusedId(pg)) === 'b-slot', 'a second Escape moved the focus off the Slot button');
+}
+
+/** In a short window (1280 x 500, 960 x 420) the open Slot menu stays below its button and the page scrolls: each row can be
+ * brought into view, and none of them lies above the top of the page. Leaves the window as it was. */
+export async function checkSlotMenuShortWindow(pg) {
+  await showTab(pg, 'browse');
+  await fillBrowser(pg, '', '', '');
+  const normal = pg.viewportSize();
+  for (const [width, height] of [
+    [1280, 500],
+    [960, 420],
+  ]) {
+    await pg.setViewportSize({ width, height });
+    await pg.click('#b-slot');
+    await expect(pg.locator('#b-slots')).toBeVisible();
+    const rowCount = await pg.locator('#b-slots .multi-opt').count();
+    for (let index = 0; index < rowCount; index++) {
+      await pg.locator('#b-slots .multi-opt').nth(index).scrollIntoViewIfNeeded();
+      const box = await pg.locator('#b-slots .multi-opt').nth(index).boundingBox();
+      check(
+        box !== null && box.y >= 0 && box.y + box.height <= height + 1,
+        `at ${width} x ${height} row ${index} of the Slot menu cannot be brought into view: ${JSON.stringify(box)}`,
+      );
+    }
+    await pg.keyboard.press('Escape');
+    await expect(pg.locator('#b-slots')).toBeHidden();
+  }
+  await pg.setViewportSize(normal);
 }
