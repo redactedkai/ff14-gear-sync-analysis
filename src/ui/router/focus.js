@@ -14,11 +14,21 @@ function screenHeading(doc) {
 const MAX_SCROLL_FRAMES = 30;
 const STABLE_FRAMES = 3;
 
+/* The latest call's number: a call that is no longer the latest (a newer Back or Forward started) stops scrolling and leaves the
+   page's height alone, so two moves never pull the page in turn. */
+let latestCall = 0;
+
 /* Focus the open screen's heading and scroll the page to `scrollY` once the screen is drawn: after the tab being opened
    (`isPending()`: a tab is opening, which waits for a painted frame) and the frame that draws the screen. `doc`: the document,
-   `raf`: requestAnimationFrame, `scrollTo(y)`: scrolls the page, `scrolledTo()`: where it is scrolled. The heading is made focusable (tabindex -1) and is left out of
-   the Tab order; nothing is focused when the screen has no heading, and the scroll happens either way. `focus: false` only
-   scrolls (a reload puts the page back where it was without moving the focus). */
+   `raf`: requestAnimationFrame, `scrollTo(y)`: scrolls the page, `scrolledTo()`: where it is scrolled. The heading is made
+   focusable (tabindex -1) and is left out of the Tab order; nothing is focused when the screen has no heading, and the scroll
+   happens either way. `focus: false` only scrolls (a reload puts the page back where it was without moving the focus).
+
+   A move to a screen left scrolled deep (`scrollY` above 0, no tab opening) scrolls in the call itself, before the screen is
+   swapped in and before the next paint, so the screen is drawn at that position from its first frame, not at the top for a
+   frame until the scroll below catches up. The page is held tall enough for that: `holdHeight(y)` sets a minimum height of `y`
+   plus a window on the root element, and `releaseHeight()` clears it once the position has held, so a screen that turns out
+   shorter than the position then shows its own end. */
 export function focusScreenHeading({
   scrollY = 0,
   focus = true,
@@ -27,12 +37,26 @@ export function focusScreenHeading({
   raf = requestAnimationFrame,
   scrollTo = y => window.scrollTo(0, y),
   scrolledTo = () => window.scrollY,
+  holdHeight = y => {
+    doc.documentElement.style.minHeight = `${y + doc.defaultView.innerHeight}px`;
+  },
+  releaseHeight = () => {
+    doc.documentElement.style.minHeight = '';
+  },
 } = {}) {
   const MAX_FRAMES_WAITED = 120;
+  const call = ++latestCall;
   let frames = 0;
+  let holding = false;
+  const finish = () => {
+    if (holding && call === latestCall) releaseHeight();
+    holding = false;
+  };
   const attempt = () => {
+    if (call !== latestCall) return undefined;
     if (isPending() && frames++ < MAX_FRAMES_WAITED) return raf(attempt);
     return raf(() => {
+      if (call !== latestCall) return;
       const heading = screenHeading(doc);
       if (heading && focus) {
         heading.tabIndex = -1;
@@ -48,14 +72,27 @@ export function focusScreenHeading({
   let scrollFrames = 0;
   let stableFrames = 0;
   const scrollToWhenTall = y => {
+    if (call !== latestCall) return;
     if (Math.abs(scrolledTo() - y) <= 1) {
       stableFrames += 1;
     } else {
       stableFrames = 0;
       scrollTo(y);
     }
-    if (stableFrames >= STABLE_FRAMES || scrollFrames++ >= MAX_SCROLL_FRAMES) return;
+    if (stableFrames >= STABLE_FRAMES || scrollFrames++ >= MAX_SCROLL_FRAMES) {
+      finish();
+      return;
+    }
     raf(() => scrollToWhenTall(y));
   };
+
+  // the position is placed now, in the task that swaps the screen, so no frame shows the screen at the top
+  if (scrollY > 0 && !isPending()) {
+    holdHeight(scrollY);
+    holding = true;
+    scrollTo(scrollY);
+  } else {
+    releaseHeight(); // the height an earlier call held, which this call replaces
+  }
   raf(attempt);
 }

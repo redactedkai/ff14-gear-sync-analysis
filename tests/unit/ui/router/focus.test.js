@@ -18,7 +18,7 @@ const heading = visible => ({
 });
 /* A tab panel holding `headings`. */
 const panel = (visible, headings) => ({ ...(visible ? shown : hidden), querySelectorAll: () => headings });
-const docOf = panels => ({ querySelectorAll: () => panels });
+const docOf = panels => ({ querySelectorAll: () => panels, documentElement: { style: {} }, defaultView: { innerHeight: 900 } });
 /* Frames that run when the test says so. */
 function frames() {
   const queue = [];
@@ -177,4 +177,73 @@ test('focus: false only scrolls', () => {
   clock.run();
   assert.equal(only.focused, null);
   assert.deepEqual(scrolled, [120]);
+});
+
+/* A page stand-in for the early scroll: a held height lets it scroll as deep as the position (a screen being swapped in is shorter
+   until it is drawn), and it records what was held and released, in order. */
+function heldPage({ reachableWhenDrawn }) {
+  const page = { position: 0, held: 0, log: [], drawn: false };
+  page.options = {
+    scrollTo: y => {
+      page.log.push(`scroll ${y}`);
+      page.position = Math.min(y, page.drawn ? reachableWhenDrawn : Math.max(page.held, 0));
+    },
+    scrolledTo: () => page.position,
+    holdHeight: y => {
+      page.held = y;
+      page.log.push(`hold ${y}`);
+    },
+    releaseHeight: () => {
+      page.held = 0;
+      page.log.push('release');
+    },
+  };
+  return page;
+}
+
+test('a deep position is scrolled to in the call itself, with the height held, and the height is let go once it has held', () => {
+  const page = heldPage({ reachableWhenDrawn: 900 });
+  const clock = frames();
+  focusScreenHeading({ scrollY: 400, doc: docOf([panel(true, [])]), raf: clock.raf, ...page.options });
+  assert.deepEqual(page.log, ['hold 400', 'scroll 400'], 'before any frame has run');
+  assert.equal(page.position, 400);
+  page.drawn = true;
+  clock.run();
+  assert.equal(page.position, 400);
+  assert.deepEqual(page.log, ['hold 400', 'scroll 400', 'release'], 'no second scroll, and the height is let go at the end');
+});
+
+test('a screen shorter than the position gets its height back and shows its own end', () => {
+  const page = heldPage({ reachableWhenDrawn: 250 });
+  const clock = frames();
+  focusScreenHeading({ scrollY: 400, doc: docOf([panel(true, [])]), raf: clock.raf, ...page.options });
+  page.drawn = true;
+  page.position = Math.min(page.position, 250); // the screen is drawn, and the browser clamps the held position
+  clock.run();
+  assert.equal(page.log.at(-1), 'release');
+  assert.equal(page.held, 0);
+  assert.equal(page.position, 250);
+});
+
+test('position 0 and a tab still opening scroll nothing early and hold no height', () => {
+  const top = heldPage({ reachableWhenDrawn: 900 });
+  const clock = frames();
+  focusScreenHeading({ scrollY: 0, doc: docOf([panel(true, [])]), raf: clock.raf, ...top.options });
+  assert.deepEqual(top.log, ['release'], 'only the release of an earlier call');
+
+  const opening = heldPage({ reachableWhenDrawn: 900 });
+  focusScreenHeading({ scrollY: 300, isPending: () => true, doc: docOf([panel(true, [])]), raf: clock.raf, ...opening.options });
+  assert.deepEqual(opening.log, ['release']);
+});
+
+test('a newer move takes over: the older one stops scrolling and does not release the height the newer one holds', () => {
+  const page = heldPage({ reachableWhenDrawn: 900 });
+  const clock = frames();
+  focusScreenHeading({ scrollY: 400, doc: docOf([panel(true, [])]), raf: clock.raf, ...page.options });
+  focusScreenHeading({ scrollY: 120, doc: docOf([panel(true, [])]), raf: clock.raf, ...page.options });
+  page.drawn = true;
+  clock.run();
+  assert.equal(page.position, 120);
+  assert.equal(page.log.filter(entry => entry === 'scroll 400').length, 1, 'the first move scrolled only in its own call');
+  assert.equal(page.log.filter(entry => entry === 'release').length, 1, 'one release, by the newer move');
 });

@@ -336,6 +336,14 @@ export async function checkScrollOnBack(pg) {
   check(strays.length === 0, `Back showed the scroll positions ${strays.join(', ')} (left from ${startAt}, back to ${leftAt})`);
 }
 
+/** A sheet with five sets (so its page is long enough to scroll). */
+const FIVE_SETS_SHEET = {
+  ...SET_SHEET,
+  id: 's_five',
+  name: 'Five sets',
+  sets: [1, 2, 3, 4, 5].map(number => ({ ...SET_SHEET.sets[0], id: `g_five_${number}`, name: `Set ${number}` })),
+};
+
 /** Starts a recorder that notes, after each frame is drawn (a message posted from the frame's callback runs after its layout),
  * where the page is scrolled and whether the element `marker` is drawn (it takes room on the page); kept in window.gsaScrollFrames. */
 const startFrameRecorder = (pg, marker) =>
@@ -360,6 +368,38 @@ const stopFrameRecorder = pg =>
     window.gsaScrollFrames.stopped = true;
     return window.gsaScrollFrames.frames;
   });
+
+/** Forward to a screen that was left scrolled shows it at that position from its first frame: no frame of the new screen is
+ * drawn at the top first (a screen still being built is shorter than the position, which the browser clamps to the top). */
+export async function checkScrollOnForward(pg) {
+  await seedSheet(pg, FIVE_SETS_SHEET);
+  await pg.click('[data-tab=sheets]');
+  await pg.locator('#sh-list a.sname', { hasText: FIVE_SETS_SHEET.name }).click();
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await pg.locator('#sh-sets a.sname', { hasText: 'Set 4' }).click();
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  const leftAt = await pg.evaluate(y => {
+    window.scrollTo(0, y);
+    return window.scrollY;
+  }, SCROLLED_PX);
+  check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the check below proves nothing`);
+  await pg.waitForTimeout(200); // the scroll event is noted
+  await pg.goBack();
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await pg.waitForTimeout(300);
+
+  await startFrameRecorder(pg, '#sh-gear');
+  await pg.goForward();
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
+  await pg.waitForTimeout(300); // frames after landing: it stays there
+  const frames = (await stopFrameRecorder(pg)).filter(frame => frame.shown);
+  const strays = [...new Set(frames.map(frame => frame.y))].filter(y => Math.abs(y - leftAt) > 1);
+  check(
+    frames.length > 0 && strays.length === 0,
+    `Forward drew the set page at ${strays.join(', ')} before ${leftAt} (${frames.length} frames)`,
+  );
+}
 
 /** Back from the Gear browser to a scrolled math view shows no third position: from the frame the browser moves until the router has
  * placed the view, the page is at the position it left or the one it returns to (the browser's own scroll anchoring, which moves the
