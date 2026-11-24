@@ -94,6 +94,7 @@ import {
   checkScrollOnReload,
   checkUnloadGuard,
 } from './checks/tabs/routing.mjs';
+import { checkStoresSealed } from './checks/tabs/facades.mjs';
 import { walkJob } from './checks/tabs/walk.mjs';
 import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.mjs';
 
@@ -137,6 +138,7 @@ export const GROUPS = [
   { steps: [step(checkBrowserFourDigits, 'gear-browser')] },
   { steps: [step(checkSlotMenu, 'gear-browser')] },
   { steps: [step(checkTabPanels, 'app')] },
+  { steps: [step(checkStoresSealed, 'app')] },
   { steps: [step(checkRouting, 'app')] },
   { steps: [step(checkLinkClicks, 'app')] },
   { fresh: true, steps: [step(checkForcedColorsCurrentTab, 'app')] },

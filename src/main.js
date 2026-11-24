@@ -3,7 +3,7 @@ import Alpine from 'alpinejs';
 import 'styles:bundle'; // the stylesheet: src/styles/entry.css imports the files in cascade order
 import { restoreState, loadSaved } from './ui/state.js';
 import { unsettled } from './ui/store/app-state.ts';
-import { createPageStore } from './ui/store/page-store.ts';
+import { createPageStore, sealFacade } from './ui/store/page-store.ts';
 import { startAutosave } from './ui/store/autosave.ts';
 import { watch } from './ui/store/watch.ts';
 import { defaultStorage } from './ui/sheets/storage.js';
@@ -38,8 +38,8 @@ const openRoute = parseRoute(location.hash) ?? DEFAULT_ROUTE;
    are one record each, written on their own edits (not part of the settings that autosave writes). */
 const pageStore = createPageStore({ restored: restoreState(loadSaved(), openRoute), track: revisions => Alpine.reactive(revisions) });
 const { store } = pageStore;
-Alpine.store('app', pageStore.app);
-Alpine.store('sheets', pageStore.sheets);
+Alpine.store('app', sealFacade(pageStore.app));
+Alpine.store('sheets', sealFacade(pageStore.sheets));
 const app = Alpine.store('app');
 const sheets = Alpine.store('sheets');
 /* Where the page is scrolled: {y, maxY (the furthest it can scroll now)}. */
