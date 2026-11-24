@@ -70,5 +70,5 @@ test('a sealed facade still reads, runs its actions and answers as the template 
   assert.equal(Object.isExtensible(app), false);
   assert.equal(Object.isExtensible(sheets), false);
   // the engine's registration (Alpine.store) lists the members once to look for interceptors and an `init`: none is defined here
-  assert.equal(Object.prototype.hasOwnProperty.call(app, 'init'), false);
+  assert.equal(Object.hasOwn(app, 'init'), false);
 });
