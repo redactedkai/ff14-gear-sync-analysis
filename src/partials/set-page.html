@@ -388,7 +388,7 @@
                   :checked="mealBestOnly"
                   @change="setMealBest($event.target.checked)"><span><span class="star" aria-hidden="true"></span>Best for goal</span></label></template>
               </div>
-              <template x-if="mealView.sorts.length"><div class="meal-sort"><span id="sh-meal-sort-label">Sort</span><div class="seg" role="radiogroup" aria-labelledby="sh-meal-sort-label"><template x-for="o in mealView.sorts" :key="o.key"><label :class="{ on: mealSortBy === o.key }"><input type="radio" name="sh-meal-sort" :value="o.key" :checked="mealSortBy === o.key" @change="mealSortBy = o.key"><span x-text="o.label"></span></label></template></div></div></template>
+              <template x-if="mealView.sorts.length"><div class="meal-sort"><span id="sh-meal-sort-label">Sort</span><div class="seg" role="radiogroup" aria-labelledby="sh-meal-sort-label"><template x-for="o in mealView.sorts" :key="o.key"><label><input type="radio" name="sh-meal-sort" :value="o.key" :checked="mealSortBy === o.key" @change="mealSortBy = o.key"><span x-text="o.label"></span></label></template></div></div></template>
               <div class="menu-list" x-ref="mealList" @click="mealClick($event)">
                 <template x-if="mealMenuView.hasMeal"><button type="button" class="same-item" data-meal=""><span>No food</span><span class="same-lvl"></span></button></template>
                 <template x-for="g in mealView.groups" :key="g.key"><div :data-group="g.key"><template x-if="g.label"><div class="same-head" x-text="g.label"></div></template>

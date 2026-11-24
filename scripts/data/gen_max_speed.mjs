@@ -38,13 +38,19 @@ import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
 const CAP_FROM_LEVEL = 15;
 const NODE_LIMIT = 2e6;
 
+/* Whether a file under src/core is part of what the table is computed from: a JavaScript or TypeScript module, or JSON data
+   (a new `.ts` module is hashed too, so a stale table is never missed). */
+export function isCoreInput(path) {
+  return /\.(js|ts|json)$/.test(path);
+}
+
 /* The files the table is computed from, relative to the repo root, sorted: the item, food and item level data, the
    shared format, every module under src/core and this script. */
 export function inputFiles() {
   const root = new URL('../../', import.meta.url);
   const core = readdirSync(new URL('src/core/', root), { recursive: true })
     .map(path => `src/core/${String(path).replaceAll('\\', '/')}`)
-    .filter(path => path.endsWith('.js') || path.endsWith('.json'));
+    .filter(isCoreInput);
   const data = ['src/data/items.json', 'src/data/food.json', 'src/data/item-level.json'];
   return [...data, ...core, 'scripts/data/gen_max_speed.mjs'].sort();
 }

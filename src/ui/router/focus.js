@@ -145,6 +145,9 @@ export function focusScreenHeading({
         return;
       }
       place();
+      // the tab was swapped in a task before this frame, so the screen is complete: the height now is what the first look below
+      // compares with, and a hold the screen does not reach is let go before this frame is drawn
+      lastReach = naturalHeight() - viewportHeight();
     }
     framesSincePlaced += 1;
     if (framesSincePlaced === 2) {

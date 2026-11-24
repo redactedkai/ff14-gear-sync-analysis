@@ -8,12 +8,29 @@ import { hasHScroll } from '../../lib/nav.mjs';
 import { expectApplyCount, expectMealEmpty, expectPieceEmpty, openSageSet, seedSheet } from '../../lib/sheets.mjs';
 
 /** Longest main-thread task allowed while a set page's piece menu or Food menu opens and draws its rows, at 4x slower CPU
- * (ms). Measured at 4x: 1.0 to 2.1 s before the menus drew their rows in steps and 0.2 to 0.3 s after; the margin is wide so a busy machine does not fail the run. */
+ * (ms), on a machine as fast as the one it was measured on (CALIBRATION_REFERENCE_MS); a slower or busier machine gets a
+ * proportionally longer limit (see menuLimit). Measured at 4x: 1.0 to 2.1 s before the menus drew their rows in steps and 0.07 to
+ * 0.25 s after. */
 const MENU_LONG_TASK_MS = 1000;
 
 /** How many times a menu is opened and timed; the best (shortest) longest task counts, because a busy machine only ever
  * makes a task longer, so a menu that draws in steps is fast at least once and one that does not is slow every time. */
 const MENU_RUNS = 3;
+
+/** The calibration task: a fixed amount of plain arithmetic (loop passes), timed in the page at the same 4x slowdown as the menus,
+ * so a slow or busy machine lengthens it as it lengthens the menus' own tasks. It is run CALIBRATION_RUNS times and the shortest
+ * counts (load only lengthens a task). */
+const CALIBRATION_PASSES = 10_000_000;
+const CALIBRATION_RUNS = 4;
+
+/** What the calibration task takes at 4x slower CPU on an idle machine (ms; measured 71 to 75 ms on the owner's machine): the speed
+ * MENU_LONG_TASK_MS is stated for. */
+const CALIBRATION_REFERENCE_MS = 75;
+
+/** The longest task allowed for a menu (ms) when the calibration task took `calibrationMs`: MENU_LONG_TASK_MS on a machine as fast
+ * as the reference (or faster), and that much times how many times slower than the reference the machine is now. A menu that
+ * draws its rows with more work than before takes longer by the same factor whatever the machine's speed, so it still fails. */
+const menuLimit = calibrationMs => MENU_LONG_TASK_MS * Math.max(1, calibrationMs / CALIBRATION_REFERENCE_MS);
 
 /** The menus of a set page draw a long list in steps (ui/views/limit-rows.js): on open the menu shows a window of rows and
  * the later ones follow, so no task is long at 4x slower CPU; every piece is still there at the end (the footer's count),
@@ -51,16 +68,35 @@ export async function checkMenuSteps(pg) {
       },
       [buttonSel, menuSel],
     );
-  // Open the menu MENU_RUNS times (shut between); the rows are checked on every run, the longest task is the best of the runs
+  // The shortest of CALIBRATION_RUNS runs of the calibration task (ms), at the page's current slowdown
+  const calibrate = () =>
+    pg.evaluate(
+      ([passes, runs]) => {
+        let shortest = Number.POSITIVE_INFINITY;
+        let sink = 0; // the sum is kept so the loop is not optimized away
+        for (let run = 0; run < runs; run++) {
+          const start = performance.now();
+          for (let pass = 0; pass < passes; pass++) sink += pass % 7;
+          shortest = Math.min(shortest, performance.now() - start);
+        }
+        return sink >= 0 ? shortest : 0;
+      },
+      [CALIBRATION_PASSES, CALIBRATION_RUNS],
+    );
+  // Open the menu MENU_RUNS times (shut between); the rows are checked on every run, the longest task is the best of the runs.
+  // `limit` is what the longest task may be (ms): the calibration task is timed before and after, and the shorter of the two
+  // sets it (menuLimit), so a machine that is busy for the whole step is allowed what it is slower by
   const openBest = async (buttonSel, menuSel) => {
     let best;
+    let calibrationMs = await calibrate();
     for (let run = 0; run < MENU_RUNS; run++) {
       if (run) await close();
       const got = await open(buttonSel, menuSel);
       assert.ok(got.last > got.first, `${menuSel} draws its rows in steps: ${got.first} then ${got.last}`);
       if (!best || got.longest < best.longest) best = got;
     }
-    return best;
+    calibrationMs = Math.min(calibrationMs, await calibrate());
+    return { ...best, limit: menuLimit(calibrationMs), calibrationMs };
   };
   const close = async () => {
     await pg.keyboard.press('Escape');
@@ -79,8 +115,8 @@ export async function checkMenuSteps(pg) {
     'the head menu ends with every piece',
   );
   assert.ok(
-    head.longest < MENU_LONG_TASK_MS,
-    `the head menu's longest task at 4x: ${head.longest} ms (limit ${MENU_LONG_TASK_MS}, best of ${MENU_RUNS})`,
+    head.longest < head.limit,
+    `the head menu's longest task at 4x: ${Math.round(head.longest)} ms (limit ${Math.round(head.limit)} for a calibration task of ${Math.round(head.calibrationMs)} ms, best of ${MENU_RUNS})`,
   );
   const lastKey = await pg.locator('.pick-menu .same-item[data-game-id]').last().getAttribute('data-game-id');
   const lastName = await pg.locator('.pick-menu .same-item[data-game-id]').last().locator('span span').first().innerText();
@@ -96,8 +132,8 @@ export async function checkMenuSteps(pg) {
   const food = await openBest('#sh-meal-btn', '#sh-meal-menu');
   assert.ok(food.last > food.first, `the Food menu draws its meals in steps: ${food.first} then ${food.last}`);
   assert.ok(
-    food.longest < MENU_LONG_TASK_MS,
-    `the Food menu's longest task at 4x: ${food.longest} ms (limit ${MENU_LONG_TASK_MS}, best of ${MENU_RUNS})`,
+    food.longest < food.limit,
+    `the Food menu's longest task at 4x: ${Math.round(food.longest)} ms (limit ${Math.round(food.limit)} for a calibration task of ${Math.round(food.calibrationMs)} ms, best of ${MENU_RUNS})`,
   );
   await close();
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
