@@ -132,6 +132,9 @@ export function createRouter({
   let dirty = false;
   // how far the page was scrolled on each entry the router made, by entry id (kept while the page is open)
   const scrollByEntry = new Map(Object.entries(savedScroll));
+  // where the page was last seen scrolled (px): from the scroll events, from the position read as a screen is pushed, and the
+  // position a Back, Forward or reload puts the page at
+  let lastScrollY = 0;
 
   /* The router moved the browser: until it arrives the stores' changes write no address. */
   function startSettling() {
@@ -293,7 +296,10 @@ export function createRouter({
   function pushScreen(hash) {
     flushWrites();
     const scrolledTo = readScroll();
-    if (scrolledTo) noteScroll(scrolledTo.y, scrolledTo.maxY);
+    if (scrolledTo) {
+      rememberScroll(scrolledTo.y, scrolledTo.maxY, scrollByEntry.get(at.id) ?? 0);
+      lastScrollY = scrolledTo.y;
+    }
     const entry = { id: newEntryId(), pos: at.pos + 1 };
     port.push(hash, entry);
     at = entry;
@@ -416,7 +422,7 @@ export function createRouter({
     const canonical = formatRoute(canonicalOf(route, { follow: own }));
     if (hash !== canonical) port.replace(canonical, entry);
     shown = entry;
-    focusScreen(scrollByEntry.get(entry.id) ?? 0);
+    placeScreen(entry);
   }
 
   /* The player answered "leave": open the screen of the held move, then move the browser to its entry. */
@@ -431,7 +437,7 @@ export function createRouter({
     applyRoute(route, { withParams: !own });
     const canonical = formatRoute(canonicalOf(route, { follow: own }));
     shown = entry;
-    focusScreen(scrollByEntry.get(entry.id) ?? 0);
+    placeScreen(entry);
     const distance = entry.pos - at.pos;
     if (distance === 0) {
       if (hash !== canonical) port.replace(canonical, at);
@@ -464,21 +470,39 @@ export function createRouter({
     applyRoute(route, { atStart: true, withParams: !own });
     port.replace(formatRoute(canonicalOf(route, { follow: own })), at);
     // a reload: the browser no longer puts the page back where it was, so the router does
-    if (own && scrollByEntry.has(at.id)) restoreScroll(scrollByEntry.get(at.id));
+    if (own && scrollByEntry.has(at.id)) {
+      lastScrollY = scrollByEntry.get(at.id);
+      restoreScroll(lastScrollY);
+    }
     port.onPop(onPop);
     watch(() => formatRoute(routeFromStores()), onStoresChanged);
     setTitle(titleFromStores());
     watch(titleFromStores, setTitle);
   }
 
+  /* Focus the screen of `entry` and put the page where the player left it. */
+  function placeScreen(entry) {
+    lastScrollY = scrollByEntry.get(entry.id) ?? 0;
+    focusScreen(lastScrollY);
+  }
+
   /* The page scrolled to `y` (`maxY`: the furthest it can scroll now): remembered for the entry the page is on, so Back and Forward
-     return to it. A scroll up that ends at the very end of the page is the browser holding the position to a page that has just
+     return to it. An event that finds the page where it was last seen is not a scroll of the screen now open: it is the late event
+     of the screen the page has just left (a scroll event comes a frame after the scroll, and a screen pushed meanwhile is the
+     entry the page is on by then). */
+  function noteScroll(y, maxY = Number.POSITIVE_INFINITY) {
+    const previousY = lastScrollY;
+    lastScrollY = y;
+    if (y !== previousY) rememberScroll(y, maxY, previousY);
+  }
+
+  /* Keep `y` as where the entry the page is on was left, unless the page only moved as the browser holds it. `previousY`: where the
+     page was before. A scroll up that ends at the very end of the page is the browser holding the position to a page that has just
      become shorter (the screen is changing), not the player scrolling: it is left out, and so is every scroll while the page is
      being put at a position (`isPlacing`). */
-  function noteScroll(y, maxY = Number.POSITIVE_INFINITY) {
+  function rememberScroll(y, maxY, previousY) {
     if (at === null || isPlacing()) return;
-    const before = scrollByEntry.get(at.id) ?? 0;
-    if (y < before && y >= maxY - 1) return;
+    if (y < previousY && y >= maxY - 1) return;
     scrollByEntry.set(at.id, y);
   }
 

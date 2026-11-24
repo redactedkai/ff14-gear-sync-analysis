@@ -280,6 +280,25 @@ test('a screen already complete when it is swapped in loses the hold before its 
   assert.equal(page.held, 0, 'let go in the first frame, before it is drawn');
 });
 
+test('a tab swapped in complete and shorter than the position loses the hold in the frame that places it, before it is drawn', () => {
+  const page = heldPage({ reachableWhenDrawn: 250 });
+  const clock = frames();
+  let pending = true;
+  focusScreenHeading({
+    scrollY: 400,
+    isPending: () => pending,
+    doc: docOf([panel(true, [])]),
+    raf: clock.raf,
+    naturalHeight: () => 1150, // the window got taller since the position was left: the screen no longer reaches it
+    ...page.options,
+  });
+  clock.step(); // a frame of the screen still on show
+  pending = false; // the tab was swapped in, in a task before the next frame
+  clock.step(); // the frame that places the position and is then drawn
+  assert.equal(page.held, 0, 'no frame is drawn with the blank space of the hold');
+  assert.deepEqual(page.log, ['release', 'hold 400', 'scroll 400', 'release']);
+});
+
 test('a screen that is still growing keeps its height held until it reaches the position', () => {
   const page = heldPage({ reachableWhenDrawn: 900 });
   const clock = frames();

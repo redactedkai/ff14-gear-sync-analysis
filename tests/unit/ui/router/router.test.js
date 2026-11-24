@@ -761,6 +761,38 @@ test('the screen the page leaves keeps the scroll position read as the next scre
   assert.deepEqual(focused, [400]);
 });
 
+test('the scroll events that follow a push, of the screen left and of the page getting shorter, are not a position of the new screen', () => {
+  // the Gear browser scrolled to 67 of 281, then the player opens a screen that cannot scroll: its scroll event is late, and the page
+  // is clamped on the way (42 of 42, then 0 of 0)
+  const scrolled = { y: 67, maxY: 281 };
+  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => scrolled });
+  sheets.openSheet('s_1');
+  clock.fire();
+  router.noteScroll(67, 281); // the same position as the screen was left at: the screen left's own, late event
+  router.noteScroll(42, 42); // clamped up to the end of the page while the screens are swapped
+  router.noteScroll(0, 0);
+  history.back();
+  history.deliver();
+  assert.equal(focused.at(-1), 67, 'the screen left keeps the position it had');
+  history.forward();
+  history.deliver();
+  assert.equal(focused.at(-1), 0, 'the new screen was never scrolled');
+});
+
+test('a scroll of the player on the new screen after a push is remembered, even to the position the screen was left at', () => {
+  const scrolled = { y: 100, maxY: 500 };
+  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => scrolled });
+  sheets.openSheet('s_1');
+  clock.fire();
+  router.noteScroll(250, 900); // the player scrolled the new screen
+  router.noteScroll(100, 900); // and back up to where the screen before it was left
+  history.back();
+  history.deliver();
+  history.forward();
+  history.deliver();
+  assert.equal(focused.at(-1), 100);
+});
+
 test('a link names the job, level and item level sync of the tab; what it leaves out is the default, not what the reader had', () => {
   const { app, hash } = setup('#/gear?job=SGE&level=90&il=123&slot=ring');
   assert.deepEqual([app.job, app.level, app.sync, app.cap], ['SGE', 90, true, 123]);

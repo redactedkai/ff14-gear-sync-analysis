@@ -1,5 +1,6 @@
 // Addresses: every screen has its own, and Back, Forward and reload move between them.
 
+import { SCROLL_KEY } from '../../../../src/ui/router/scroll-storage.js';
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
@@ -13,6 +14,9 @@ const hashOf = pg => pg.evaluate(() => location.hash);
  * (MAX_SCROLL_FRAMES in focus.js, 30), counted in frames and not in ms, so a busy machine, which draws fewer frames a second, is
  * watched for as many. */
 const STAY_FRAMES = 35;
+
+/** How much taller the window is made in the scroll check that shortens a screen below its saved position (px). */
+const TALLER_WINDOW_PX = 200;
 
 /** Resolves after `count` frames of the page have been drawn. */
 const framesPass = (pg, count) =>
@@ -449,6 +453,48 @@ export async function checkScrollOnBackToMath(pg) {
   );
 }
 
+/** A screen that cannot scroll, opened from a scrolled Gear browser, is noted as left at the top: the scroll events that come after
+ * the click (the Gear browser's own, a frame late, and the browser holding the position to the shorter page) are not where the new
+ * screen was left. Read from what the page keeps of the positions over a reload (written when the page is hidden), as an entry's
+ * position is not shown anywhere else; and Forward to the screen draws it at the top from its first frame. */
+export async function checkScrollOnForwardToUnscrolled(pg) {
+  await pg.setViewportSize({ width: 960, height: 700 });
+  await pg.click('[data-tab=browse]');
+  await expect(pg.locator('#b-q')).toBeVisible();
+  await afterFrames(pg);
+  const reach = await pg.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  check(reach > 150, `the Gear browser cannot be scrolled (${reach}), so the check below proves nothing`);
+
+  // scrolled, then the Math tab clicked: the click scrolls the tab into view first, and that scroll event comes after the new
+  // screen is pushed
+  await scrollPageTo(pg, 100);
+  await afterFrames(pg); // the scroll event is noted
+  await pg.click('[data-tab=math]');
+  await expect(pg.locator('#tab-piece')).toBeVisible();
+  await framesPass(pg, STAY_FRAMES);
+  const mathReach = await pg.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  check(mathReach <= 0, `Stat Allocation can be scrolled (${mathReach}), so the check below proves nothing`);
+  const notedAt = await pg.evaluate(key => {
+    dispatchEvent(new Event('pagehide')); // the page writes the positions it has noted
+    return JSON.parse(sessionStorage.getItem(key))[history.state.id] ?? 0;
+  }, SCROLL_KEY);
+  check(notedAt === 0, `Stat Allocation, which cannot scroll, is noted as left at ${notedAt}`);
+
+  await pg.goBack();
+  await expect(pg.locator('#b-q')).toBeVisible();
+  await framesPass(pg, STAY_FRAMES);
+  await startFrameRecorder(pg, '#tab-piece');
+  await pg.goForward();
+  await expect(pg.locator('#tab-piece')).toBeVisible();
+  await framesPass(pg, STAY_FRAMES);
+  const frames = await stopFrameRecorder(pg);
+  const strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
+  check(
+    frames.some(frame => frame.shown) && strays.length === 0,
+    `Forward drew Stat Allocation at ${strays.join(', ')} before 0, a position it was never scrolled to`,
+  );
+}
+
 /** The positions the recorder saw the screen at, in the frames that drew it (see startFrameRecorder). */
 const drawnPositions = frames => [...new Set(frames.filter(frame => frame.shown).map(frame => frame.y))];
 
@@ -543,6 +589,25 @@ export async function checkScrollOnBackToLeftPosition(pg) {
     `Back from the Gear browser drew the sheet page at ${strays.join(', ')} before ${sheetAt}`,
   );
 
+  // the window got taller meanwhile, so the sheet page no longer reaches the position it was left at: it is drawn at its own end
+  // from its first frame, not at the old position over blank space (the page is held tall for that position only until the screen
+  // shows it does not reach it)
+  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await expect(pg.locator('#b-q')).toBeVisible();
+  await pg.setViewportSize({ width: 1000, height: 600 + TALLER_WINDOW_PX });
+  await startFrameRecorder(pg, '#sh-sets');
+  await pg.goBack();
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await framesPass(pg, STAY_FRAMES);
+  frames = await stopFrameRecorder(pg);
+  const newEnd = await pg.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  const heldAt = await pg.evaluate(() => document.documentElement.style.minHeight);
+  check(newEnd < sheetAt - TALLER_WINDOW_PX / 2, `the taller window did not shorten the sheet page's reach (${sheetAt} to ${newEnd})`);
+  strays = drawnPositions(frames).filter(y => Math.abs(y - newEnd) > 1);
+  check(
+    frames.some(frame => frame.shown) && strays.length === 0 && heldAt === '',
+    `Back to a screen shorter than its saved position drew the sheet page at ${strays.join(', ')} before its end ${newEnd} (height held: '${heldAt}')`,
+  );
   await pg.setViewportSize({ width: 1000, height: 900 });
 }
 
