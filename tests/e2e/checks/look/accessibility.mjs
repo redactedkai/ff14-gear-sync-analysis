@@ -5,6 +5,8 @@ import { axeViolations, splitKnown } from '../../lib/axe.mjs';
 import { check, expect, stepRecord } from '../../lib/expect.mjs';
 import { seedSheets } from '../../lib/sheets.mjs';
 
+// TODO: each entry goes when the page is fixed: names for the drag handles, an h4 before the materia menu title, a <main> around
+// the page, and the visible text inside the two aria-labels.
 /** Findings the page has today (reported to the owner, not yet changed): printed as "KNOWN FAILURE" lines, they do not fail the
  * run, and a finding that stops happening fails it until it is removed here. `rule` is axe's rule id, `target` limits the entry
  * to one element's selector and `targetContains` to selectors holding that text (none of the two: any element), `note` says

@@ -216,6 +216,8 @@ input.lowered.flash {
   gap: 12px 16px;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
+/* TODO: the focus ring of a tab link is clipped by the bar's overflow-x: auto (as before the refactor). A bar that does not scroll
+   at 960 px and up, or an outline drawn inside the link, would show it whole. */
 .tabs {
   display: flex;
   gap: 2px;

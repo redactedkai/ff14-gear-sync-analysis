@@ -29,6 +29,8 @@ export function page() {
     tabHref(tab, mathTab = this.$store.app.mathTab) {
       return formatRoute(tab === 'math' ? { tab, mathTab } : { tab });
     },
+    /* TODO: Space on a tab link does not open it (a link takes Enter only; the tabs were buttons, which took Space too). A keydown
+       handler for Space on the tab links would bring it back. */
     /* A tab link's click (`event`): a plain click opens tab `tab`; a Ctrl, Cmd, Shift or Alt click is left to the browser
        (plain-click.js). Leaving the Sheets tab while its set page has something to settle (a manual draft,
        a running Auto-fill, an Auto-fill result waiting) asks first, with the set page's own question (sheets/store.js askLeave);
