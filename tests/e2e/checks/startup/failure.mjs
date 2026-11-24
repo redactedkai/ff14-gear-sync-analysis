@@ -194,6 +194,8 @@ export async function checkStartupReset(pg) {
     await expect(page.locator('#startfail-none')).toBeVisible(); // reloaded: nothing of the page's is left to reset
     const left = await keys();
     check(JSON.stringify(left) === JSON.stringify(Object.keys(FOREIGN).sort()), `keys left after Reset: ${JSON.stringify(left)}`);
+    const flag = await page.evaluate(key => localStorage.getItem(key), UNLOAD_GUARD_OFF_KEY);
+    check(flag === '1', `Reset removed the dev flag of the reload guard (now ${flag})`);
   } finally {
     await close();
   }

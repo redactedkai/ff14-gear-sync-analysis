@@ -287,8 +287,10 @@ test('built page: the startup script is first in head, before the style, and hol
 test('startupScript: the key comes from STORE_KEY, the code is ES5 with no literal color and no leftover marker', async () => {
   const { STORE_KEY } = await import('../../../src/ui/store-key.js');
   const code = startupScript();
+  const { UNLOAD_GUARD_OFF_KEY } = await import('../../../src/ui/router/unload-guard.js');
   assert.ok(code.includes(JSON.stringify(STORE_KEY)));
-  assert.ok(!code.includes('@STORE_KEY@'));
+  assert.ok(code.includes(JSON.stringify(UNLOAD_GUARD_OFF_KEY)), 'the dev flag is named, so the reset leaves it out');
+  assert.ok(!code.includes('@STORE_KEY@') && !code.includes('@UNLOAD_GUARD_OFF_KEY@'));
   esbuild.transformSync(code, { target: 'es5' }); // throws on syntax newer than ES5
   assert.deepEqual(code.match(/#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/gi), null, 'system colors only');
 });

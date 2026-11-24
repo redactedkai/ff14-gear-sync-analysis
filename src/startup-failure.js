@@ -17,6 +17,9 @@
   // The settings key; the sheets' keys are this plus a colon and more. The build writes the value of
   // src/ui/store-key.js over the marker, so the key is written once.
   var PREFIX = '@STORE_KEY@';
+  // The dev flag that turns the reload guard off (src/ui/router/unload-guard.js) is in that family but is not saved data: a person
+  // never sets it, and a reset leaves it. The build writes its key over the marker too.
+  var GUARD_FLAG = '@UNLOAD_GUARD_OFF_KEY@';
   var errors = [];
 
   // Until the check below has run, the page itself (the .wrap root) is not painted: a start that fails midway would
@@ -47,14 +50,15 @@
     })[0];
   document.documentElement.setAttribute('data-boot-tab', firstWord === 'gear' ? 'browse' : firstWord === 'math' ? 'math' : 'sheets');
 
-  // The page's saved-data keys (the settings key, and every key that starts with the key and a colon), or null when the
-  // browser does not let the page read its storage. Another page's key that only starts like ours is not one of them.
+  // The page's saved-data keys (the settings key, and every key that starts with the key and a colon, except the dev flag),
+  // or null when the browser does not let the page read its storage. Another page's key that only starts like ours is not
+  // one of them.
   function savedKeys() {
     try {
       var keys = [];
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
-        if (key === PREFIX || key.indexOf(PREFIX + ':') === 0) keys.push(key);
+        if (key !== GUARD_FLAG && (key === PREFIX || key.indexOf(PREFIX + ':') === 0)) keys.push(key);
       }
       return keys;
     } catch (e) {
