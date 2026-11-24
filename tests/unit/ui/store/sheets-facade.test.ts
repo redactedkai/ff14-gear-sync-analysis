@@ -1,5 +1,6 @@
 /* The sheets facade (src/ui/store/sheets-facade.ts), `$store.sheets` on the page: what the manager, a sheet's page and a gear set's
-   page read, each reading the revision of the `sheets` slice; the calls are the actions of sheets-actions.ts. */
+   page read, each getter reading the revision of the `sheets` slice (the gear set pages' getters, that of `setPages`); the calls are
+   the actions of sheets-actions.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createPageStore } from '../../../../src/ui/store/page-store.ts';
@@ -31,8 +32,8 @@ function stores() {
   return { ...page, reads };
 }
 
-test('the screen, the open sheet and set and the lists follow the actions, and each read is a read of the sheets revision', () => {
-  const { sheets, reads } = stores();
+test('the screen, the open sheet and set and the lists follow the actions', () => {
+  const { sheets } = stores();
   assert.deepEqual(
     [sheets.screen, sheets.sheetId, sheets.setId, sheets.currentSheet, sheets.currentSet],
     ['sheets', null, null, null, null],
@@ -49,23 +50,65 @@ test('the screen, the open sheet and set and the lists follow the actions, and e
   assert.equal(sheets.set('g_1')?.name, 'Set 1');
   assert.equal(sheets.sheet('nope'), null);
   assert.equal(sheets.href('s_1', 'g_2'), '#/sheets/s_1/sets/g_2');
-  reads.length = 0;
-  void [
-    sheets.screen,
-    sheets.sheetId,
-    sheets.setId,
-    sheets.missing,
-    sheets.saveMessage,
-    sheets.note,
-    sheets.noteSeq,
-    sheets.busy,
-    sheets.rev,
+});
+
+/* Every getter and reader of the facade, by name: a function of the facade that reads it. */
+const READERS: Record<string, (sheets: ReturnType<typeof stores>['sheets']) => unknown> = {
+  rev: sheets => sheets.rev,
+  screen: sheets => sheets.screen,
+  sheetId: sheets => sheets.sheetId,
+  setId: sheets => sheets.setId,
+  missing: sheets => sheets.missing,
+  saveMessage: sheets => sheets.saveMessage,
+  note: sheets => sheets.note,
+  noteSeq: sheets => sheets.noteSeq,
+  busy: sheets => sheets.busy,
+  'list()': sheets => sheets.list(),
+  "sheet('s_1')": sheets => sheets.sheet('s_1'),
+  currentSheet: sheets => sheets.currentSheet,
+  currentSet: sheets => sheets.currentSet,
+  "set('g_1')": sheets => sheets.set('g_1'),
+  "page('g_1')": sheets => sheets.page('g_1'),
+  'hasUnsettled()': sheets => sheets.hasUnsettled(),
+};
+/* What each of them reads: the revision of the slice that holds what it shows. */
+const SLICE_OF_READER: Record<string, string> = { "page('g_1')": 'setPages', 'hasUnsettled()': 'setPages' };
+
+test('each getter of the sheets facade reads the revision of the slice it shows, one by one', () => {
+  const { sheets, reads } = stores();
+  for (const [name, read] of Object.entries(READERS)) {
+    reads.length = 0;
+    read(sheets);
+    assert.deepEqual([...new Set(reads)], [SLICE_OF_READER[name] ?? 'sheets'], name);
+  }
+});
+
+test('a getter whose value changed after an action read the revision of a slice that action counted', () => {
+  const { sheets, store, reads } = stores();
+  const actions: [string, () => void][] = [
+    ['openSheet', () => sheets.openSheet('s_1')],
+    ['openSet', () => sheets.openSet('g_1')],
+    ['setNote', () => sheets.setNote('Copied.')],
+    ['setBusy', () => sheets.setBusy(true)],
+    ['openPage', () => sheets.pages.openPage('g_1')],
+    ['startFill', () => void sheets.pages.startFill('g_1')],
+    ['closeSet', () => sheets.closeSet()],
+    ['closePage', () => sheets.pages.closePage('g_1')],
   ];
-  sheets.list();
-  sheets.sheet('s_1');
-  sheets.set('g_1');
-  void [sheets.currentSheet, sheets.currentSet];
-  assert.deepEqual([...new Set(reads)], ['sheets']);
+  for (const [name, act] of actions) {
+    const before = Object.fromEntries(Object.entries(READERS).map(([key, read]) => [key, JSON.stringify(read(sheets) ?? null)]));
+    const revisions = { ...store.revs };
+    act();
+    for (const [key, read] of Object.entries(READERS)) {
+      reads.length = 0;
+      const after = JSON.stringify(read(sheets) ?? null);
+      if (after === before[key]) continue;
+      assert.ok(
+        reads.some(slice => store.revs[slice] !== revisions[slice]),
+        `${key} changed after ${name} and none of the revisions it read (${reads.join(', ')}) moved`,
+      );
+    }
+  }
 });
 
 test('a note, the lock and the revision: set by actions, counted even when the note is the same', () => {
