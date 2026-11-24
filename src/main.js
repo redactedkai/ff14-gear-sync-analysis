@@ -42,7 +42,7 @@ function pageScroll() {
   return { y: scrollY, maxY: document.documentElement.scrollHeight - innerHeight };
 }
 /* Where each history entry was scrolled is kept over a reload in the tab's sessionStorage (ui/router/scroll-storage.js). The router
-   places the scroll of every Back, Forward and reload after it has drawn the screen. The browser's own restore would show its
+   places the scroll of every Back, Forward and reload before the first frame of the screen. The browser's own restore would show its
    remembered position first, clamped to the screen still on show (a flicker), so it is off; set before the router starts. */
 const tabScrollStorage = tabStorage();
 history.scrollRestoration = 'manual';

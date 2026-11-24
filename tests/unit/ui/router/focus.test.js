@@ -18,7 +18,33 @@ const heading = visible => ({
 });
 /* A tab panel holding `headings`. */
 const panel = (visible, headings) => ({ ...(visible ? shown : hidden), querySelectorAll: () => headings });
-const docOf = panels => ({ querySelectorAll: () => panels, documentElement: { style: {} }, defaultView: { innerHeight: 900 } });
+/* The root element as the page has it: setting any style property adds a style attribute, and an empty one stays until it is
+   removed (as in the browsers). */
+function rootElement() {
+  const root = { hasStyleAttribute: false };
+  let minHeight = '';
+  root.style = {
+    get minHeight() {
+      return minHeight;
+    },
+    set minHeight(value) {
+      minHeight = value;
+      root.hasStyleAttribute = true;
+    },
+  };
+  root.getAttribute = name => (name === 'style' && root.hasStyleAttribute ? (minHeight ? `min-height: ${minHeight};` : '') : null);
+  root.removeAttribute = name => {
+    if (name === 'style') root.hasStyleAttribute = false;
+  };
+  return root;
+}
+/* A document with `panels`, a window 900 px high and a screen `bodyHeight` px tall (what the page's own content needs). */
+const docOf = (panels, bodyHeight = 900) => ({
+  querySelectorAll: () => panels,
+  documentElement: rootElement(),
+  body: { scrollHeight: bodyHeight },
+  defaultView: { innerHeight: 900 },
+});
 /* Frames that run when the test says so. */
 function frames() {
   const queue = [];
@@ -26,6 +52,9 @@ function frames() {
     raf: callback => queue.push(callback),
     run: () => {
       while (queue.length) queue.shift()();
+    },
+    step: () => {
+      for (const callback of queue.splice(0)) callback();
     },
   };
 }
@@ -213,27 +242,102 @@ test('a deep position is scrolled to in the call itself, with the height held, a
   assert.deepEqual(page.log, ['hold 400', 'scroll 400', 'release'], 'no second scroll, and the height is let go at the end');
 });
 
-test('a screen shorter than the position gets its height back and shows its own end', () => {
+test('a screen that stops growing short of the position gets its height back at once and shows its own end, not blank space', () => {
   const page = heldPage({ reachableWhenDrawn: 250 });
   const clock = frames();
-  focusScreenHeading({ scrollY: 400, doc: docOf([panel(true, [])]), raf: clock.raf, ...page.options });
+  const screenHeight = 1150; // the screen's own height: 250 px of scrolling in a 900 px window, short of the 400 asked for
+  focusScreenHeading({
+    scrollY: 400,
+    doc: docOf([panel(true, [])]),
+    raf: clock.raf,
+    naturalHeight: () => screenHeight,
+    ...page.options,
+  });
   page.drawn = true;
-  page.position = Math.min(page.position, 250); // the screen is drawn, and the browser clamps the held position
-  clock.run();
-  assert.equal(page.log.at(-1), 'release');
-  assert.equal(page.held, 0);
-  assert.equal(page.position, 250);
+  assert.equal(page.held, 400, 'held tall at first: the screen may still be growing');
+  clock.step(); // the first look at the screen: no growth seen yet
+  assert.equal(page.held, 400);
+  clock.step(); // the same height as a frame ago: it has stopped growing
+  assert.equal(page.held, 0, 'the hold is let go as soon as the height stops growing');
+  assert.equal(page.log.filter(entry => entry === 'release').length, 1);
 });
 
-test('position 0 and a tab still opening scroll nothing early and hold no height', () => {
+test('a screen already complete when it is swapped in loses the hold before its first frame is drawn', async () => {
+  const page = heldPage({ reachableWhenDrawn: 250 });
+  const clock = frames();
+  focusScreenHeading({
+    scrollY: 400,
+    doc: docOf([panel(true, [])]),
+    raf: clock.raf,
+    naturalHeight: () => 1150, // short of the position
+    ...page.options,
+  });
+  assert.equal(page.held, 400);
+  await Promise.resolve(); // the page's own update has run: the first look at the screen
+  assert.equal(page.held, 400);
+  page.drawn = true;
+  clock.step(); // the first frame: the height is the same as at the first look
+  assert.equal(page.held, 0, 'let go in the first frame, before it is drawn');
+});
+
+test('a screen that is still growing keeps its height held until it reaches the position', () => {
+  const page = heldPage({ reachableWhenDrawn: 900 });
+  const clock = frames();
+  let screenHeight = 1000;
+  focusScreenHeading({
+    scrollY: 400,
+    doc: docOf([panel(true, [])]),
+    raf: clock.raf,
+    naturalHeight: () => screenHeight,
+    ...page.options,
+  });
+  for (const height of [1100, 1200, 1250, 1290]) {
+    screenHeight = height; // the screen grew since the last frame
+    clock.step();
+    assert.equal(page.held, 400, `still held at ${height}`);
+  }
+  for (let frame = 0; frame < 6; frame += 1) clock.step(); // 450 px of scrolling now: the position is reached and has held
+  assert.equal(page.held, 0);
+  assert.equal(page.position, 400);
+});
+
+test('letting the height go removes the style attribute it made, and leaves one that holds other styles', () => {
+  const doc = docOf([panel(true, [])]);
+  const clock = frames();
+  focusScreenHeading({ scrollY: 300, doc, raf: clock.raf, scrollTo: () => {}, scrolledTo: () => 300 });
+  assert.equal(doc.documentElement.hasStyleAttribute, true, 'held');
+  clock.run();
+  assert.equal(doc.documentElement.style.minHeight, '');
+  assert.equal(doc.documentElement.hasStyleAttribute, false, 'no empty style attribute is left');
+
+  const styled = docOf([panel(true, [])]);
+  const original = styled.documentElement.getAttribute;
+  styled.documentElement.getAttribute = name => (name === 'style' ? 'color: red;' : original(name));
+  focusScreenHeading({ scrollY: 300, doc: styled, raf: clock.raf, scrollTo: () => {}, scrolledTo: () => 300 });
+  clock.run();
+  assert.equal(styled.documentElement.hasStyleAttribute, true, 'another style on the element keeps the attribute');
+});
+
+test('position 0 is placed in the call itself with no height held; a tab still opening is placed in the first frame after it opens', () => {
   const top = heldPage({ reachableWhenDrawn: 900 });
   const clock = frames();
   focusScreenHeading({ scrollY: 0, doc: docOf([panel(true, [])]), raf: clock.raf, ...top.options });
-  assert.deepEqual(top.log, ['release'], 'only the release of an earlier call');
+  assert.deepEqual(top.log, ['release', 'scroll 0'], 'the release of an earlier call, then the scroll to the top, before any frame');
 
+  let pending = true;
   const opening = heldPage({ reachableWhenDrawn: 900 });
-  focusScreenHeading({ scrollY: 300, isPending: () => true, doc: docOf([panel(true, [])]), raf: clock.raf, ...opening.options });
+  focusScreenHeading({ scrollY: 300, isPending: () => pending, doc: docOf([panel(true, [])]), raf: clock.raf, ...opening.options });
+  assert.deepEqual(opening.log, ['release'], 'the screen on show is not scrolled while the tab is opening');
+  clock.step();
+  clock.step();
   assert.deepEqual(opening.log, ['release']);
+  pending = false; // the tab was swapped in, in a task before this frame
+  clock.step();
+  assert.deepEqual(
+    opening.log.slice(0, 3),
+    ['release', 'hold 300', 'scroll 300'],
+    'placed in the first frame after the swap, not a frame later',
+  );
 });
 
 test('a newer move takes over: the older one stops scrolling and does not release the height the newer one holds', () => {

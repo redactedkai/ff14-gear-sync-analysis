@@ -81,6 +81,7 @@ import {
   checkRoutingAfterReload,
   checkRoutingGuard,
   checkScrollOnBack,
+  checkScrollOnBackToLeftPosition,
   checkScrollOnBackToMath,
   checkScrollOnForward,
   checkScrollOnReload,
@@ -137,7 +138,12 @@ export const GROUPS = [
   { steps: [step(checkUnloadGuard, 'app')] },
   { steps: [step(checkAddressSettings, 'app')] },
   {
-    steps: [step(checkScrollOnBack, 'app'), step(checkScrollOnForward, 'app'), step(checkScrollOnReload, 'app')],
+    steps: [
+      step(checkScrollOnBack, 'app'),
+      step(checkScrollOnForward, 'app'),
+      step(checkScrollOnReload, 'app'),
+      step(checkScrollOnBackToLeftPosition, 'app'),
+    ],
   },
   { fresh: true, steps: [step(checkScrollOnBackToMath, 'app')] },
   { steps: [step(checkSheets, 'sheets')] },

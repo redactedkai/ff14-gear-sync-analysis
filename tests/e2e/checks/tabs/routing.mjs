@@ -432,6 +432,92 @@ export async function checkScrollOnBackToMath(pg) {
   );
 }
 
+/** The positions the recorder saw the screen at, in the frames that drew it (see startFrameRecorder). */
+const drawnPositions = frames => [...new Set(frames.filter(frame => frame.shown).map(frame => frame.y))];
+
+/** Scrolls the page to `y` as far as it goes, from the page itself (a Playwright wheel or click would scroll on its own); returns
+ * where it is. */
+const scrollPageTo = (pg, y) =>
+  pg.evaluate(target => {
+    window.scrollTo(0, target);
+    return window.scrollY;
+  }, y);
+
+/** Clicks the link `selector` (the one with `text`) from the page itself: a Playwright click scrolls the page to the link first. */
+const clickFromPage = (pg, selector, text) =>
+  pg.evaluate(
+    ([css, wanted]) => [...document.querySelectorAll(css)].find(link => link.textContent.includes(wanted)).click(),
+    [selector, text],
+  );
+
+/** Back to a screen left at the top, or left scrolled, draws it at that position from its first frame, whichever screen it came
+ * from (a set page, the Gear browser); a quick Back, Forward, Back leaves the sheet page at the top. The browser clamps the old
+ * position to a screen shorter than it (the page end), and used to draw that for a frame before the router placed the screen. */
+export async function checkScrollOnBackToLeftPosition(pg) {
+  await pg.setViewportSize({ width: 1000, height: 600 });
+  await seedSheet(pg, FIVE_SETS_SHEET);
+  await pg.click('[data-tab=sheets]');
+  await clickFromPage(pg, '#sh-list a.sname', FIVE_SETS_SHEET.name);
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  const sheetHash = await hashOf(pg);
+  const sheetEnd = await pg.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  check(sheetEnd > 100, `the sheet page cannot be scrolled (${sheetEnd}), so the check below proves nothing`);
+
+  // a set page scrolled well past the end of the sheet page, then Back to the sheet page, left at the top
+  await clickFromPage(pg, '#sh-sets a.sname', 'Set 4');
+  await expect(pg.locator('#sh-gear')).toBeVisible();
+  const setHash = await hashOf(pg);
+  const leftAt = await scrollPageTo(pg, sheetEnd + 400);
+  check(leftAt > sheetEnd + 100, `the set page cannot be scrolled past the sheet page's end (${leftAt} of ${sheetEnd})`);
+  await pg.waitForTimeout(200); // the scroll event is noted
+  await startFrameRecorder(pg, '#sh-sets');
+  await pg.goBack();
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await pg.waitForFunction(() => Math.abs(window.scrollY) <= 1);
+  await pg.waitForTimeout(300); // frames after landing: it stays there
+  let frames = await stopFrameRecorder(pg);
+  let strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
+  check(
+    frames.some(frame => frame.shown) && strays.length === 0,
+    `Back drew the sheet page at ${strays.join(', ')} before 0 (its end is ${sheetEnd})`,
+  );
+
+  // a quick Back, Forward, Back: the sheet page is still left at the top
+  await pg.goForward();
+  await expectHash(pg, setHash, 'Forward to the set page');
+  await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
+  await pg.evaluate(() => {
+    history.back();
+    setTimeout(() => history.forward(), 20);
+    setTimeout(() => history.back(), 45);
+  });
+  await pg.waitForTimeout(500); // the three moves have settled
+  await expectHash(pg, sheetHash, 'the quick Back, Forward, Back');
+  const quickEnd = await pg.evaluate(() => window.scrollY);
+  check(Math.abs(quickEnd) <= 1, `after Back, Forward, Back in quick turn the sheet page is scrolled to ${quickEnd}, not left at 0`);
+
+  // the Gear browser (a tab swapped in after a frame) to the sheet page left scrolled
+  const sheetAt = await scrollPageTo(pg, sheetEnd);
+  check(sheetAt > 100, `the sheet page cannot be scrolled (${sheetAt})`);
+  await pg.waitForTimeout(200); // the scroll event is noted
+  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await expect(pg.locator('#b-q')).toBeVisible();
+  await scrollPageTo(pg, 100);
+  await pg.waitForTimeout(200);
+  await startFrameRecorder(pg, '#sh-sets');
+  await pg.goBack();
+  await expect(pg.locator('#sh-sets')).toBeVisible();
+  await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, sheetAt);
+  await pg.waitForTimeout(300);
+  frames = await stopFrameRecorder(pg);
+  strays = drawnPositions(frames).filter(y => Math.abs(y - sheetAt) > 1);
+  check(
+    frames.some(frame => frame.shown) && strays.length === 0,
+    `Back from the Gear browser drew the sheet page at ${strays.join(', ')} before ${sheetAt}`,
+  );
+  await pg.setViewportSize({ width: 1000, height: 900 });
+}
+
 /** A reload on a scrolled screen keeps its place, whether the browser or the router restores it. */
 export async function checkScrollOnReload(pg) {
   await seedSheet(pg, SET_SHEET);
