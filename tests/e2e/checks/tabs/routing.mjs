@@ -46,7 +46,7 @@ export async function checkRouting(pg) {
   const setTitle = await pg.title();
   check(setTitle !== listTitle && setTitle.includes('Mine') && setTitle.includes(SET_SHEET.name), `the set page's title is '${setTitle}'`);
 
-  // a tab button pushes the tab's address; Back returns to the set page where it was scrolled, then up the screens, and Forward
+  // a tab link pushes the tab's address; Back returns to the set page where it was scrolled, then up the screens, and Forward
   // comes down again (the button is clicked from the page: a Playwright click would scroll the tab bar into view first)
   const leftAt = await pg.evaluate(() => {
     window.scrollTo(0, 400);
@@ -86,7 +86,7 @@ export async function checkRouting(pg) {
   await expectHash(pg, /^#\/math\/piece(\?|$)/, 'Back to the piece view');
   await expect(pg.locator('[data-sub=piece]')).toHaveAttribute('aria-current', 'page');
 
-  // the Sheets tab button returns to the screen the tab was left on
+  // the Sheets tab link returns to the screen the tab was left on
   await pg.click('[data-tab=sheets]');
   await expectHash(pg, sheetHash, 'the Sheets tab returns to its last screen');
   await typeAddress(pg, '#/sheets');
@@ -114,7 +114,7 @@ export async function checkRouting(pg) {
   await expect(pg.locator('#sh-list')).toBeVisible();
 }
 
-/** The browser's Back asks before it leaves a set page that holds a draft (the question the tab buttons ask): Keep editing
+/** The browser's Back asks before it leaves a set page that holds a draft (the question the tab links ask): Keep editing
  * leaves the page and its address as they were, Discard and leave goes where Back was going. */
 export async function checkRoutingGuard(pg) {
   await seedSheet(pg, SET_SHEET);
@@ -175,9 +175,9 @@ export async function checkRoutingAfterReload(pg) {
   await expectHash(pg, sheetHash, 'the next Back after a refused typed address');
 }
 
-/** The reload and close guard: with the dev flag on its off value, a reload with no draft goes through, a reload with a draft
- * raises the browser's beforeunload question (Cancel keeps the page and the draft, Reload drops them), and with the flag
- * off (the smoke default) no question comes. */
+/** The reload and close guard, with the dev flag at 0 (the guard is on): a reload with no draft goes through, a reload with a
+ * draft raises the browser's beforeunload question (Cancel keeps the page and the draft, Reload drops them); with the flag at 1
+ * (the guard is off, the smoke default) no question comes. */
 export async function checkUnloadGuard(pg) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);

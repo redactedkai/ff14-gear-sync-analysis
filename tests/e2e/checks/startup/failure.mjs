@@ -221,7 +221,7 @@ export async function checkStartupBlockedStorage(pg) {
 }
 
 /** The boot shell's tabs, with what each shows: the address that opens the tab (the page does not save the open tab; a bare address is
- * the Sheets tab), the selected tab button's label and the loading line. */
+ * the Sheets tab), the selected tab link's label and the loading line. */
 const SHELL_TABS = [
   { tab: 'browse', hash: '#/gear', label: 'Gear browser', line: '"Loading the Gear browser…"' },
   { tab: 'sheets', hash: '', label: 'Sheets', line: '"Loading Sheets…"' },

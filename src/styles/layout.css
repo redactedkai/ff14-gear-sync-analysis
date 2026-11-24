@@ -223,14 +223,11 @@ input.lowered.flash {
   overflow-x: auto;
 }
 .tabs a {
-  font-size: 0.88rem; /* the size and weight a button has: the links look as the buttons did */
+  font-size: 0.88rem;
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  border: 0;
   border-bottom: 3px solid transparent;
-  border-radius: 0;
-  background: none;
   padding: 10px 14px;
   color: var(--muted);
   white-space: nowrap;
@@ -344,21 +341,18 @@ html[data-boot-tab="math"] .bootload::after {
   gap: 22px;
 }
 .subtabs a {
-  font-size: 0.88rem; /* the size a button has: the links look as the buttons did */
+  font-size: 0.88rem;
   text-decoration: none;
   cursor: pointer;
-  background: none;
-  border: 0;
   border-bottom: 3px solid transparent;
-  border-radius: 0;
   margin-bottom: -1px; /* the underline sits on the strip's own line */
   padding: 6px 2px 8px;
   color: var(--label, var(--muted)); /* the math bar's --label */
   font-weight: 500;
-  text-align: left; /* the text grows to the right inside the button's fixed width (below) */
+  text-align: left; /* the text grows to the right inside the link's fixed width (below) */
 }
-/* a button's width does not depend on which tab is open: a hidden copy of its label in the open tab's bold (data-label) sets it, so
-   the bold text fits inside it and no button after it moves */
+/* a sub-tab's width does not depend on which tab is open: a hidden copy of its label in the open tab's bold (data-label) sets it, so
+   the bold text fits inside it and no sub-tab after it moves */
 .subtabs a::after {
   content: attr(data-label);
   display: block;
@@ -394,7 +388,7 @@ html[data-boot-tab="math"] .bootload::after {
 }
 .boot,
 .boot a {
-  cursor: progress; /* its tab buttons do nothing until the page has started */
+  cursor: progress; /* its tabs do nothing until the page has started */
 }
 .boot .tabs a {
   opacity: 0.55; /* the tabs look unavailable: they do nothing until the page has started; the saved tab, selected, is full */

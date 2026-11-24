@@ -107,11 +107,11 @@ test('Reset to defaults: asks first, and resets only on yes', () => {
   assert.equal(asked.length, 2, 'asked on each request, before resetting');
 });
 
-/* A tab button (goTab): leaving the Sheets tab asks the set page first (sheets/store.js askLeave); the answer opens the
-   tab. Other tabs switch at once. */
 /* A plain click on a tab link (plain-click.js). */
 const plain = { button: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, preventDefault() {} };
 
+/* A tab link (goTab): leaving the Sheets tab asks the set page first (sheets/store.js askLeave); the answer opens the
+   tab. Other tabs switch at once. */
 test('goTab: leaving the Sheets tab with something to settle asks first; the answer opens the tab', async () => {
   const frames = globalThis.requestAnimationFrame;
   globalThis.requestAnimationFrame = fn => fn(); // the tab opens after one frame: here at once

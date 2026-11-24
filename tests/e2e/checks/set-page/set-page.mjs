@@ -6,7 +6,7 @@ import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { hasHScroll, waitReady, waitSaved, waitStateSaved } from '../../lib/nav.mjs';
 import { expectApplyCount, openSageSet, openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.mjs';
 
-/** Leaving the Sheets tab by a tab button while a set page has a draft asks first, with the set page's own dialog:
+/** Leaving the Sheets tab by a tab link while a set page has a draft asks first, with the set page's own dialog:
  * Keep editing stays on the set page, Discard and leave opens the tab asked for. */
 export async function checkTabGuard(pg) {
   await seedSheet(pg, SET_SHEET);

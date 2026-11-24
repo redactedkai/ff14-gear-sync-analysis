@@ -178,7 +178,7 @@ test('the page title names the screen, then the page', () => {
   assert.equal(titleOf({ tab: 'sheets', screen: 'set', sheetId: 'a', setId: 'b' }, { sheet: 'X' }), `Sheets · ${APP_TITLE}`);
 });
 
-test('the math view names are the sub-tab buttons of the math page', () => {
+test('the math view names are the sub-tabs of the math page', () => {
   const html = readFileSync(new URL('../../../../src/partials/math-page.html', import.meta.url), 'utf8');
   for (const view of MATH_TABS) {
     const button = new RegExp(`data-sub="${view}"[^>]*>([^<]*)<`).exec(html.replace(/\s+/g, ' '));

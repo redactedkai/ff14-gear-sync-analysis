@@ -12,7 +12,7 @@
   z-index: var(--z-bar);
   background: var(--bg);
   padding: 0 0 10px; /* no room above the sub-tabs: pinned, they sit flush at the window's top */
-  margin-top: -6px; /* the page's 18px gap under the tab bar is 12px here: the sub-tab buttons have 6px of padding of their own, so their text sits as far below the tab bar's rule as a box's top edge does on the other tabs */
+  margin-top: -6px; /* the page's 18px gap under the tab bar is 12px here: the sub-tabs have 6px of padding of their own, so their text sits as far below the tab bar's rule as a box's top edge does on the other tabs */
   border-bottom: 1px solid var(--line);
 }
 /* The controls row (Job, Piece, Sync, Item level group) is a container with three layouts made on purpose, by its own width:

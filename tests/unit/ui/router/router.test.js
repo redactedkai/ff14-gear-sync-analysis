@@ -175,7 +175,7 @@ test('opening screens pushes an entry for each; the address shows where the page
   assert.equal(history.entries.length, 4);
 });
 
-test('a tab button pushes the tab; the Sheets tab returns to the screen it was left on', () => {
+test('a tab link pushes the tab; the Sheets tab returns to the screen it was left on', () => {
   const { app, sheets, history, clock, hash } = setup('');
   sheets.openSheet('s_1');
   clock.fire();
@@ -479,7 +479,7 @@ test('a reload of an entry the router wrote keeps the saved settings and rewrite
   assert.equal(hash(), '#/gear?slot=ring&sort=dh');
 });
 
-test('a search text waiting for its pause goes into the entry when a tab button leaves it', t => {
+test('a search text waiting for its pause goes into the entry when a tab link leaves it', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { app, history, clock } = setup('#/gear');
   app.browse.q = 'Moon';
@@ -643,7 +643,7 @@ test('a change of the search text waits until typing pauses; another change writ
   assert.equal(hash(), '#/gear?q=Moon%20Staff&sort=det', 'the waiting write was dropped');
 });
 
-test('a tab button to the Gear browser pushes its address with the settings it holds', () => {
+test('a tab link to the Gear browser pushes its address with the settings it holds', () => {
   const { app, clock, hash, history } = setup('', page => {
     page.browse.sort = 'dh';
   });

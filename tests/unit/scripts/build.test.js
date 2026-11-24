@@ -73,7 +73,7 @@ test('page template: nothing paints before Alpine has built it', async () => {
     .trim();
   const shell = noComments.match(/^<div class="boot" id="boot"[\s\S]*?(?=<div class="wrap")/)?.[0] ?? '';
   assert.ok(shell, 'the boot shell comes first');
-  assert.ok(!/x-data|x-show|data-tab|role="tab"/.test(shell), 'the boot shell has no Alpine and no tab buttons of the page');
+  assert.ok(!/x-data|x-show|data-tab|role="tab"/.test(shell), 'the boot shell has no Alpine and no tab links of the page');
   assert.match(css, /\.boot\s*\{\s*display:\s*none;?\s*\}/, 'the boot shell is hidden unless the startup script shows it');
   const withoutShell = noComments.slice(shell.length);
   const root = withoutShell.match(/^<div class="wrap"[^>]*>/)?.[0];

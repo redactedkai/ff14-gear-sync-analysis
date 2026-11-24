@@ -424,7 +424,7 @@ const subTabGeometry = page =>
 /* The selector each sub-tab waits for. */
 const SUB_TAB_READY = { piece: '#p-slot', tiers: '#t-level', gcd: '#g-level' };
 
-/* Goes Stat Allocation, Substat tiers, GCD Scaling and back, and reports what moved: the sub-tab buttons stay put, the Job
+/* Goes Stat Allocation, Substat tiers, GCD Scaling and back, and reports what moved: the sub-tabs stay put, the Job
    box is where it was on Substat tiers and absent on GCD Scaling (it has no job), and the way back gives the layout it started with. */
 async function subTabsKeepPlace(page) {
   const found = [];
@@ -457,7 +457,7 @@ async function subTabsKeepPlace(page) {
       if (Math.abs(was[0] - box[0]) > 0.6 || Math.abs(was[1] - box[1]) > 0.6) {
         found.push({
           rule: 'tabs-keep-place',
-          detail: `sub-tab button ${index + 1} moves from ${was.slice(0, 2)} to ${box.slice(0, 2)} on ${sub}`,
+          detail: `sub-tab ${index + 1} moves from ${was.slice(0, 2)} to ${box.slice(0, 2)} on ${sub}`,
           where: 'math',
         });
       }

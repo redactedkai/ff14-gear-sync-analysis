@@ -143,7 +143,7 @@ export function samePath(a, b) {
 /* The page's name, the end of every title and the whole title before the router has run. */
 export const APP_TITLE = 'Gear Sync Analysis';
 
-/* The names of the math views on the page (the sub-tab buttons of partials/math-page.html), for the page title. */
+/* The names of the math views on the page (the sub-tabs of partials/math-page.html), for the page title. */
 export const MATH_TAB_LABEL = Object.freeze({ piece: 'Stat Allocation', gcd: 'GCD Scaling', tiers: 'Substat tiers' });
 
 /* The page title for the screen `route` (a route object) names: the screen's name first, then APP_TITLE, joined by " · ".

@@ -45,7 +45,7 @@ export function page() {
     goSub(sub, event) {
       followInPage(event, () => this.$store.app.showSub(sub));
     },
-    /* The loading line while a tab opens, or '' when none is (the tab buttons, store.openTab). */
+    /* The loading line while a tab opens, or '' when none is (the tab links, store.openTab). */
     get loadingText() {
       return LOADING_TEXT[this.$store.app.pendingTab] ?? '';
     },

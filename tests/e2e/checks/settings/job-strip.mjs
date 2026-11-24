@@ -11,7 +11,7 @@ const STRIP_GAP_UNDER_TABS = 18;
 /** Window height, in px, for the scroll check on How the math works: shorter than that page at any job and sync. */
 const SHORT_WINDOW_HEIGHT = 400;
 
-/** On How the math works the math bar sits this far under the tab bar's rule (its sub-tab buttons have 6 px of their own padding
+/** On How the math works the math bar sits this far under the tab bar's rule (its sub-tabs have 6 px of their own padding
  * above their text), and pinned it sits flush at the top of the window: the page has no strip there. */
 const MATH_BAR_GAP_UNDER_TABS = 12;
 

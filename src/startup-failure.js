@@ -38,7 +38,7 @@
     document.documentElement.removeAttribute('data-boot-tab');
   }
 
-  // The tab the page will open, for the shell: data-boot-tab on <html> picks the selected tab button and the loading line
+  // The tab the page will open, for the shell: data-boot-tab on <html> picks the selected tab link and the loading line
   // (styles/layout.css). The address names it (#/gear is the Gear browser, #/math and #/math/... How the math works); a bare or
   // other address leaves the Sheets tab. The words are ui/router/routes.js's.
   var firstWord = String(location.hash)

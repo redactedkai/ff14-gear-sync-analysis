@@ -101,7 +101,7 @@ export function createAppStore(initial) {
       this.followLevelSync();
     },
 
-    /* A tab button's action: marks tab `t` pending, waits for the frame that shows it, then opens the tab (showTab) and clears
+    /* A tab link's action: marks tab `t` pending, waits for the frame that shows it, then opens the tab (showTab) and clears
        the mark in the same step. Opening a tab can take a second on a slow machine (the first Gear browser open builds its
        whole table), and the page would otherwise look unchanged until it was done. A newer openTab replaces one still waiting
        (Back during the opening): the older tab is never shown, so no screen shows between the two. */

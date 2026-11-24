@@ -1,5 +1,5 @@
 // How the math works: the bar. Each of Stat Allocation and Substat tiers has its own Job box (GCD Scaling none), the Sync settings chip
-// and its popover, the three layouts of the controls row with their dividers, one height for every box, and sub-tab buttons that stay put.
+// and its popover, the three layouts of the controls row with their dividers, one height for every box, and sub-tabs that stay put.
 
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
 import { SYNC_CHIP_TEXT } from '../../../../src/ui/views/sync-explainer.js';
@@ -235,7 +235,7 @@ export async function checkMathBarLayouts(pg) {
 }
 
 /** Every box of the bar is as high as the Job box, at normal and larger text, and so are the Gear browser strip's boxes (a box is
- * 16 px and 1.5 rem tall); the sub-tab buttons keep their places whichever sub-tab is open. */
+ * 16 px and 1.5 rem tall); the sub-tabs keep their places whichever sub-tab is open. */
 export async function checkMathBarBoxes(pg) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   await showMath(pg, 'piece');
@@ -271,7 +271,7 @@ export async function checkMathBarBoxes(pg) {
     await showMath(pg, 'piece');
   }
   await pg.evaluate(() => (document.documentElement.style.fontSize = ''));
-  // the sub-tab buttons do not move when another sub-tab is chosen
+  // the sub-tabs do not move when another sub-tab is chosen
   const lefts = () =>
     pg.evaluate(() =>
       [...document.querySelectorAll('.subtabs a')].map(button => Math.round(button.getBoundingClientRect().left * 10) / 10),
@@ -281,7 +281,7 @@ export async function checkMathBarBoxes(pg) {
     await pg.click(`[data-sub=${sub}]`);
     await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
     const after = await lefts();
-    check(JSON.stringify(after) === JSON.stringify(before), `the sub-tab buttons moved when ${sub} opened: ${before} -> ${after}`);
+    check(JSON.stringify(after) === JSON.stringify(before), `the sub-tabs moved when ${sub} opened: ${before} -> ${after}`);
   }
   await pg.setViewportSize(DEFAULT_WINDOW);
   await setUpShared(pg);
