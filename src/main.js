@@ -7,7 +7,7 @@ import { createSheetStore } from './ui/sheets/store.js';
 import { defaultStorage } from './ui/sheets/storage.js';
 import { createRouter, windowPort } from './ui/router/router.js';
 import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.js';
-import { focusScreenHeading } from './ui/router/focus.js';
+import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.js';
 import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.js';
 import { installUnloadGuard } from './ui/router/unload-guard.js';
 import { storeNumberField } from './ui/number-field.js';
@@ -59,6 +59,7 @@ const router = createRouter({
   readScroll: pageScroll,
   savedScroll: readScrollPositions(tabScrollStorage),
   restoreScroll: scrollY => focusScreenHeading({ scrollY, focus: false, isPending: () => app.pendingTab !== null }),
+  isPlacing: isPlacingScroll,
 });
 router.start();
 addEventListener('pagehide', () => writeScrollPositions(tabScrollStorage, router.scrollPositions()));

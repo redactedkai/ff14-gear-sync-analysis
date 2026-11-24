@@ -95,6 +95,9 @@ const WRITE_COOLDOWN_MS = 100;
    the position it had however late the scroll event comes. The page lets the router place the scroll (history.scrollRestoration
    is 'manual'), so a reload would lose its place: `savedScroll` ({entry id: y}, from `scrollPositions()` of the page before the
    reload) seeds the positions, and `restoreScroll(y)` scrolls to the one of the entry the reload is on (no focus move).
+   `isPlacing()` says whether the page is still being put at a position (a Back, Forward or reload): the scroll events of that
+   time are the placement's own and the browser's clamp to a screen not yet drawn, never the player's, so `noteScroll` leaves them
+   out and an entry keeps the position it was left at however quickly the next move comes.
    Returns {start, noteScroll, scrollPositions, routeFromStores, applyRoute}: `start()` reads the address, opens its screen and
    begins following the stores and the browser; `scrollPositions()` gives {entry id: y} for every entry scrolled; `routeFromStores`
    and `applyRoute` are for tests. */
@@ -108,6 +111,7 @@ export function createRouter({
   readScroll = () => null,
   savedScroll = {},
   restoreScroll = () => {},
+  isPlacing = () => false,
 }) {
   // the entry the browser is on, and the entry whose screen the stores show (they differ while a held move is undone)
   let at = null;
@@ -468,9 +472,10 @@ export function createRouter({
 
   /* The page scrolled to `y` (`maxY`: the furthest it can scroll now): remembered for the entry the page is on, so Back and Forward
      return to it. A scroll up that ends at the very end of the page is the browser holding the position to a page that has just
-     become shorter (the screen is changing), not the player scrolling: it is left out. */
+     become shorter (the screen is changing), not the player scrolling: it is left out, and so is every scroll while the page is
+     being put at a position (`isPlacing`). */
   function noteScroll(y, maxY = Number.POSITIVE_INFINITY) {
-    if (at === null) return;
+    if (at === null || isPlacing()) return;
     const before = scrollByEntry.get(at.id) ?? 0;
     if (y < before && y >= maxY - 1) return;
     scrollByEntry.set(at.id, y);

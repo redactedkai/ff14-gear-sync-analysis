@@ -2,7 +2,7 @@
    visible tab panel gets the focus, and the page scrolls to the position asked for. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { focusScreenHeading } from '../../../../src/ui/router/focus.js';
+import { focusScreenHeading, isPlacingScroll } from '../../../../src/ui/router/focus.js';
 
 const shown = { getClientRects: () => [{}] };
 const hidden = { getClientRects: () => [] };
@@ -316,6 +316,26 @@ test('letting the height go removes the style attribute it made, and leaves one 
   focusScreenHeading({ scrollY: 300, doc: styled, raf: clock.raf, scrollTo: () => {}, scrolledTo: () => 300 });
   clock.run();
   assert.equal(styled.documentElement.hasStyleAttribute, true, 'another style on the element keeps the attribute');
+});
+
+test('the page counts as placing from the call until the position has held', () => {
+  const clock = frames();
+  assert.equal(isPlacingScroll(), false);
+  focusScreenHeading({ scrollY: 300, doc: docOf([panel(true, [])]), raf: clock.raf, scrollTo: () => {}, scrolledTo: () => 300 });
+  assert.equal(isPlacingScroll(), true);
+  clock.step();
+  clock.step();
+  assert.equal(isPlacingScroll(), true, 'not yet stable');
+  clock.run();
+  assert.equal(isPlacingScroll(), false);
+
+  // a newer call takes over: the older one's end does not say the page is placed
+  focusScreenHeading({ scrollY: 300, doc: docOf([panel(true, [])]), raf: clock.raf, scrollTo: () => {}, scrolledTo: () => 300 });
+  focusScreenHeading({ scrollY: 100, doc: docOf([panel(true, [])]), raf: clock.raf, scrollTo: () => {}, scrolledTo: () => 100 });
+  clock.step();
+  clock.step();
+  clock.step();
+  assert.equal(isPlacingScroll(), false);
 });
 
 test('position 0 is placed in the call itself with no height held; a tab still opening is placed in the first frame after it opens', () => {

@@ -571,6 +571,41 @@ test('a scroll the browser makes because the page got shorter is not remembered 
   assert.equal(focused.at(-1), 0);
 });
 
+test('the scroll events of a placement and of the browser clamping a page are not remembered as where an entry was left', () => {
+  let placing = false;
+  const placed = [];
+  const { sheets, history, clock, router } = setup('', undefined, {
+    isPlacing: () => placing,
+    focusScreen: scrollY => {
+      placed.push(scrollY);
+      placing = true; // the page starts to be put at the position
+    },
+  });
+  sheets.openSheet('s_1');
+  clock.fire();
+  router.noteScroll(393, 800); // the player scrolled the sheet page
+  history.back(); // to the list, left at the top
+  history.deliver();
+  assert.equal(placed.at(-1), 0);
+  router.noteScroll(214, 214); // the browser clamps the position to the end of the list: its scroll event comes after the move
+  history.forward(); // a quick second move, before the page is placed
+  history.deliver();
+  assert.equal(placed.at(-1), 393);
+  router.noteScroll(214, 214);
+  history.back();
+  history.deliver();
+  assert.equal(placed.at(-1), 0, 'the list is still left at the top, not where the browser clamped it');
+
+  // once the page is placed, the player's scrolling is remembered again
+  placing = false;
+  router.noteScroll(120, 214);
+  history.forward();
+  history.deliver();
+  history.back();
+  history.deliver();
+  assert.equal(placed.at(-1), 120);
+});
+
 /* ---- the settings an address names (query.js): applied when a link opens, written back as they change ---- */
 
 test('a link with a query applies its settings, takes the defaults for the names it leaves out, and is rewritten as the settings', () => {

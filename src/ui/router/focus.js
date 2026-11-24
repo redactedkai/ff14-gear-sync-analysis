@@ -18,6 +18,16 @@ const STABLE_FRAMES = 3;
    page's height alone, so two moves never pull the page in turn. */
 let latestCall = 0;
 
+/* Whether the latest call is still placing its position. */
+let placing = false;
+
+/* Whether the page is still being put at the position of a Back, Forward or reload (the latest call has not finished). The
+   scroll events of that time are the placement's own and the browser's clamp to a screen not yet drawn, not the player's, so the
+   router does not remember them as where an entry was left. */
+export function isPlacingScroll() {
+  return placing;
+}
+
 /* Focus the open screen's heading and put the page at `scrollY` (also 0) from the first frame of the screen. `doc`: the document,
    `raf`: requestAnimationFrame, `scrollTo(y)`: scrolls the page, `scrolledTo()`: where it is scrolled. The heading is made
    focusable (tabindex -1) and is left out of the Tab order; nothing is focused when the screen has no heading, and the scroll
@@ -60,6 +70,7 @@ export function focusScreenHeading({
   const MAX_FRAMES_WAITED = 120;
   const target = scrollY;
   const call = ++latestCall;
+  placing = true;
   let framesWaited = 0;
   let placed = false;
   let holding = false;
@@ -74,6 +85,7 @@ export function focusScreenHeading({
     if (call !== latestCall) return;
     if (holding) releaseHeight();
     holding = false;
+    placing = false;
   };
 
   /* Put the page at the target: hold the height up to it, then scroll. The screen is in the page by now (or about to be, in the
