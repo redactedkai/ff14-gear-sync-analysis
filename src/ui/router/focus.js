@@ -14,6 +14,11 @@ function screenHeading(doc) {
 const MAX_SCROLL_FRAMES = 30;
 const STABLE_FRAMES = 3;
 
+/* The most a page is held tall for a position the screen has not drawn yet: this many window heights, or the page's own scroll
+   range when that is larger. A saved position far beyond it (a damaged or stale one) scrolls as far as the hold reaches and is
+   tried again as the screen grows, so the page never turns millions of pixels tall. */
+const MAX_HELD_WINDOWS = 4;
+
 /* The latest call's number: a call that is no longer the latest (a newer Back or Forward started) stops scrolling and leaves the
    page's height alone, so two moves never pull the page in turn. */
 let latestCall = 0;
@@ -37,7 +42,7 @@ export function isPlacingScroll() {
    drawn at that position from its first frame, not where the browser clamps the old position to the new screen. While a tab is
    opening (`isPending()`: it is swapped in a later task, after a painted frame) the page is left as it is and the same placement
    runs in the first frame after the swap, still before it is painted. A position above 0 holds the page tall enough to scroll to it: `holdHeight(y)` sets a
-   minimum height of `y` plus a window on the root element, and
+   minimum height of `y` plus a window on the root element (at most MAX_HELD_WINDOWS windows more than the page's own range), and
    `releaseHeight()` clears it (the style attribute with it) once the position has held. While the screen is still being drawn it
    may grow to reach the position; `naturalHeight()` (the screen's own height, not the held one) tells: once the screen stops
    growing short of the position, the hold is let go and the page shows the screen's own end, not blank space.
@@ -59,7 +64,10 @@ export function focusScreenHeading({
     return () => observer.disconnect();
   },
   holdHeight = y => {
-    doc.documentElement.style.minHeight = `${y + viewportHeight()}px`;
+    const windowHeight = viewportHeight();
+    const ownRange = Math.max(0, naturalHeight() - windowHeight);
+    const held = Math.min(y, Math.max(ownRange, MAX_HELD_WINDOWS * windowHeight));
+    doc.documentElement.style.minHeight = `${held + windowHeight}px`;
   },
   releaseHeight = () => {
     const root = doc.documentElement;

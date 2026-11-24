@@ -301,6 +301,22 @@ test('a screen that is still growing keeps its height held until it reaches the 
   assert.equal(page.position, 400);
 });
 
+test('the height is held at most a few windows more than the page is tall, however far the saved position is', () => {
+  for (const [saved, want] of [
+    [1e12, '4500px'], // 4 windows of 900 px, and the window
+    [5000, '4500px'],
+    [700, '1600px'],
+  ]) {
+    const doc = docOf([panel(true, [])], 1300); // a page 400 px longer than the window
+    focusScreenHeading({ scrollY: saved, doc, raf: () => {}, scrollTo: () => {}, scrolledTo: () => 0 });
+    assert.equal(doc.documentElement.style.minHeight, want, `saved ${saved}`);
+  }
+  // a page of its own range beyond that holds as far as it reaches
+  const tall = docOf([panel(true, [])], 9000);
+  focusScreenHeading({ scrollY: 1e12, doc: tall, raf: () => {}, scrollTo: () => {}, scrolledTo: () => 0 });
+  assert.equal(tall.documentElement.style.minHeight, '9000px');
+});
+
 test('letting the height go removes the style attribute it made, and leaves one that holds other styles', () => {
   const doc = docOf([panel(true, [])]);
   const clock = frames();
