@@ -164,6 +164,65 @@ test('a storage that throws is ignored, and the next change tries again', async 
   assert.equal(JSON.parse(written[0]).browse.q, 'x');
 });
 
+test('a write that failed is tried again at a change of the screen, at a later write and at pagehide, until storage works', async () => {
+  let failing = true;
+  const attempts: string[] = [];
+  const written: string[] = [];
+  const { actions, clock, pageEvents } = setup(json => {
+    attempts.push(json);
+    if (failing) throw new DOMException('full', 'QuotaExceededError');
+    written.push(json);
+  });
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  assert.deepEqual([attempts.length, written.length], [1, 0], 'the first write failed');
+  clock.advance(10 * AUTOSAVE_DEBOUNCE_MS);
+  assert.equal(attempts.length, 1, 'nothing changed: no attempt of its own, and no timer left running');
+  assert.equal(clock.pending(), 0);
+
+  actions.editBrowse({ q: 'ring' }); // a settings change: written after the wait, and fails
+  await tick();
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  assert.equal(attempts.length, 2);
+  failing = false;
+  actions.showTab('math'); // not a settings change: the screen changed, and the failed settings are tried again
+  await tick();
+  assert.equal(written.length, 0, 'after the wait, not at once');
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  assert.equal(written.length, 1);
+  assert.equal(JSON.parse(written[0]).browse.q, 'ring', 'the last settings are the ones saved');
+  actions.showTab('browse');
+  await tick();
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  assert.equal(written.length, 1, 'saved: a later change of the screen writes nothing');
+
+  failing = true;
+  actions.editBrowse({ q: 'ringed' });
+  await tick();
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  failing = false;
+  pageEvents.fire('pagehide'); // the page goes away before another change: the failed settings are written at once
+  assert.equal(JSON.parse(written.at(-1) as string).browse.q, 'ringed');
+});
+
+test('a write that returns false counts as failed, like one that throws (the page writes through state.js save, which does not throw)', async () => {
+  let storageWorks = false;
+  const written: string[] = [];
+  const { actions, clock } = setup(json => {
+    if (storageWorks) written.push(json);
+    return storageWorks;
+  });
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  actions.editBrowse({ q: 'ring' });
+  await tick();
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  storageWorks = true;
+  actions.showTab('math');
+  await tick();
+  clock.advance(AUTOSAVE_DEBOUNCE_MS);
+  assert.equal(written.length, 1);
+  assert.equal(JSON.parse(written[0]).browse.q, 'ring');
+});
+
 test('stop removes the subscription and the listener, and writes what waits', async () => {
   const { actions, store, clock, pageEvents, writes, autosave } = setup();
   clock.advance(AUTOSAVE_DEBOUNCE_MS);

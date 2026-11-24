@@ -287,11 +287,13 @@ export function loadSaved() {
   }
 }
 
-/* Save the state (`json`, already serialized) under STORE_KEY; a storage that throws is ignored. */
+/* Save the state (`json`, already serialized) under STORE_KEY; a storage that throws is ignored. Returns whether it was stored,
+   so the caller can try again later. */
 export function save(json) {
   try {
     localStorage.setItem(STORE_KEY, json);
+    return true;
   } catch {
-    /* storage unavailable */
+    return false; // storage unavailable
   }
 }

@@ -1,6 +1,7 @@
 /* Saving the settings: one subscription to the store, a write a moment after the last change, and a write at once when the page
    is hidden or closed, so a link opened and the page reloaded within the moment loses nothing. localStorage is a convenience:
-   a write that throws is ignored (ui/state.js save does that). */
+   a write that throws is ignored (ui/state.js save does that), and the settings it could not write are tried again at the
+   next change of the store (a tab switch is one), at the next write and at 'pagehide', so they are saved once storage works. */
 import { save } from '../state.js';
 import { persisted } from './app-state.ts';
 import type { AppStore } from './app-state.ts';
@@ -14,15 +15,16 @@ export interface AutosaveTimers {
   clearTimeout(handle: unknown): void;
 }
 
-/* What autosave takes besides the store. write(json): store the serialized settings (state.js `save`); timers: as above;
-   pageEvents: where 'pagehide' is heard (the window; null for none). */
+/* What autosave takes besides the store. write(json): store the serialized settings (state.js `save`); it reports a failure by
+   returning false or by throwing; timers: as above; pageEvents: where 'pagehide' is heard (the window; null for none). */
 export interface AutosaveOptions {
-  write?: (json: string) => void;
+  write?: (json: string) => unknown;
   timers?: AutosaveTimers;
   pageEvents?: Pick<EventTarget, 'addEventListener' | 'removeEventListener'> | null;
 }
 
-/* What autosave gives back: flush() writes now if a change waits; stop() ends the saving (a waiting change is written first). */
+/* What autosave gives back: flush() writes now if a change waits, or a write failed; stop() ends the saving (a waiting change is
+   written first). */
 export interface Autosave {
   flush(): void;
   stop(): void;
@@ -53,12 +55,15 @@ export function startAutosave(store: AppStore, options: AutosaveOptions = {}): A
     const json = JSON.stringify(persisted(store.state));
     performance.measure('save', { start: started }); // read by scripts/perf/browser.mjs
     if (json === lastWritten) return;
+    let stored: unknown;
     try {
-      write(json);
-      lastWritten = json;
+      stored = write(json);
     } catch {
-      /* storage unavailable (the default write never throws; a stand-in may): the next change tries again */
+      stored = false;
     }
+    if (stored === false)
+      waiting = true; // storage unavailable: the settings stay waiting, so the next change of the store, the next write and 'pagehide' try again
+    else lastWritten = json;
   }
 
   /* Wait AUTOSAVE_DEBOUNCE_MS from now for the write, replacing a wait already running. */
@@ -76,7 +81,10 @@ export function startAutosave(store: AppStore, options: AutosaveOptions = {}): A
   }
 
   const unsubscribe = store.subscribe(() => {
-    if (store.revs.settings === seenRevision) return;
+    if (store.revs.settings === seenRevision) {
+      if (waiting && timer === null) schedule(); // a write failed: try again after this change of the store
+      return;
+    }
     seenRevision = store.revs.settings;
     schedule();
   });

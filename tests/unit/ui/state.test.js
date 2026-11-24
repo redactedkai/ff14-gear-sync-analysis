@@ -394,6 +394,7 @@ test('loadSaved and save: a throwing localStorage is ignored; a working one roun
   globalThis.localStorage = { getItem: blocked, setItem: blocked };
   assert.equal(loadSaved(), null);
   assert.doesNotThrow(() => save('{"job":"SGE"}'));
+  assert.equal(save('{}'), false, 'a write that did not happen says so');
   assert.deepEqual(restoreState(loadSaved()), restoreState(null));
 
   // the accessor itself throws (a sandboxed page)
@@ -407,7 +408,7 @@ test('loadSaved and save: a throwing localStorage is ignored; a working one roun
     writable: true,
     value: { getItem: key => kept.get(key) ?? null, setItem: (key, value) => kept.set(key, value) },
   });
-  save(JSON.stringify({ job: 'WAR' }));
+  assert.equal(save(JSON.stringify({ job: 'WAR' })), true);
   assert.deepEqual([...kept.keys()], [STORE_KEY]);
   assert.equal(restoreState(loadSaved()).job, 'WAR');
 });
