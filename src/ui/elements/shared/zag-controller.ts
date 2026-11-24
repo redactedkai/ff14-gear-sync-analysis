@@ -53,6 +53,17 @@ export interface ZagOptions<Schema extends MachineSchema, Api> {
 // the number in the next machine id
 let machineCount = 0;
 
+/* The attributes of a part without the style keys whose value is undefined. Zag's `spreadProps` removes the style property of a
+   key whose value is undefined, and the style Zag gives a positioner names `zIndex` as undefined (the popper writes the
+   z-index itself once it has placed the layer), so each redraw would strip the layer's z-index and a menu would drop behind
+   the page's sticky headers. A key that was defined at the last redraw and is undefined now is still removed: `spreadProps`
+   compares with the attributes of the last redraw. */
+function withoutUndefinedStyles(attrs: Attrs): Attrs {
+  const style = attrs.style;
+  if (typeof style !== 'object' || style === null) return attrs;
+  return { ...attrs, style: Object.fromEntries(Object.entries(style).filter(([, value]) => value != null)) };
+}
+
 /* A reactive controller that owns the Zag machine of one element; see the file header. `api` is the machine's api for the
    current state (after a disconnect, its last one), and `machine` is null while the element is disconnected. */
 export class ZagController<Schema extends MachineSchema, Api> implements ZagLifecycle {
@@ -137,7 +148,7 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
       seen.set(name, index + 1);
       const attrs = Array.isArray(wanted[name]) ? wanted[name][index] : wanted[name];
       if (!attrs) continue;
-      this.#spreads.set(node, spreadProps(node, attrs, this.id));
+      this.#spreads.set(node, spreadProps(node, withoutUndefinedStyles(attrs), this.id));
       spreadNow.add(node);
     }
     // a node Lit took out of the page: let go of its handlers

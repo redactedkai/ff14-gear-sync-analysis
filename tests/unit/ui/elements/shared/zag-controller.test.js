@@ -269,3 +269,44 @@ test('zag controller: reading the api before the first connection is an error', 
   const { controller } = makeController();
   assert.throws(() => controller.api, /before the element connected/);
 });
+
+/* A fake style object that keeps the properties set on it, like an element's `style`. */
+function fakeStyle() {
+  const properties = new Map();
+  return {
+    properties,
+    setProperty: (name, value) => properties.set(name, value),
+    removeProperty: name => properties.delete(name),
+  };
+}
+
+// Why this test exists: Zag's vanilla spreadProps removes the style property of a key whose value is undefined, and the style
+// Zag gives a positioner names zIndex as undefined (the popper writes the z-index itself after placing the layer). Without the
+// controller's filter every redraw stripped it and an open menu dropped behind the page's sticky table header. It stays as long
+// as a layer's style comes from Zag's positioner props through spreadProps.
+test('zag controller: a redraw keeps a style property the library wrote itself, and removes one it gave and then dropped', () => {
+  const host = fakeHost();
+  const positioner = fakeElement(host, { [PART_ATTRIBUTE]: 'positioner' });
+  positioner.style = fakeStyle();
+  let placed = false;
+  new ZagController(host, {
+    name: 'tiny',
+    machine: tinyMachine,
+    connect,
+    // like a positioner's style: a width until the layer is placed, and a z-index that is never given (undefined)
+    parts: () => ({ positioner: { style: { minWidth: 'max-content', pointerEvents: placed ? undefined : 'none', zIndex: undefined } } }),
+  });
+  host.connect();
+  host.update();
+  assert.equal(positioner.style.properties.get('min-width'), 'max-content');
+  assert.equal(positioner.style.properties.get('pointer-events'), 'none');
+
+  // the popper places the layer and writes its z-index; the next redraws give no pointer-events any more
+  positioner.style.setProperty('z-index', 'var(--z-index)');
+  placed = true;
+  host.update();
+  host.update();
+  assert.equal(positioner.style.properties.get('z-index'), 'var(--z-index)', 'the redraw stripped the z-index the popper wrote');
+  assert.equal(positioner.style.properties.has('pointer-events'), false, 'a property given before and not now is removed');
+  host.disconnect();
+});

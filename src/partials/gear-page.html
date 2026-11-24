@@ -5,44 +5,13 @@
     <div class="titleline">
       <h2 id="b-heading">Gear browser</h2>
       <div class="searchbar">
+        <!-- the Slot menu: a Lit element (an island), given the choices and the chosen slot by x-effect and telling the pick by an event;
+             x-ignore keeps Alpine out of the markup the element draws -->
         <div
-          class="slotpick"
-          x-data="menuScope('b-slot', 'slotBtn')"
-          @resize.window="filterMenuOpen && placeMenu($refs.slotMenu, $refs.slotBtn)"
-          @scroll.window.capture="isOwnScroll($event, $refs.slotMenu) || (filterMenuOpen && placeMenu($refs.slotMenu, $refs.slotBtn))">
-          <button
-            type="button"
-            class="multi-btn slot-btn"
-            id="b-slot"
-            x-ref="slotBtn"
-            aria-haspopup="true"
-            :aria-expanded="String(filterMenuOpen)"
-            :aria-label="'Slot: ' + (view ? view.slotLabel : 'Any slot')"
-            @click="toggleFilterMenu(); $nextTick(() => placeMenu($refs.slotMenu, $refs.slotBtn))"
-            @keydown.arrow-down.prevent="openFilterMenu(); $nextTick(() => placeMenu($refs.slotMenu, $refs.slotBtn))"
-            x-text="view ? view.slotLabel : 'Any slot'"></button>
-          <!-- the same rows as the menu, unseen: the Slot button is as wide as the menu needs for its longest slot and a count
-               of up to 99,999, so the open menu is exactly as wide as the button and neither changes with the choice or the numbers -->
-          <div class="multi-menu slot-sizer" aria-hidden="true">
-            <template x-for="p in (view ? view.slots : [])" :key="p.key"><span class="multi-opt"><span x-text="p.label"></span><span class="n">99,999</span></span></template>
-          </div>
-          <div
-            class="multi-menu slot-menu"
-            id="b-slots"
-            x-ref="slotMenu"
-            role="group"
-            aria-label="Slot"
-            x-show="filterMenuOpen"
-            x-cloak>
-            <template x-for="p in (view ? view.slots : [])" :key="p.key"><button
-              type="button"
-              class="multi-opt"
-              :data-slot="p.key"
-              :class="{ on: $store.app.browse.type === p.key }"
-              :aria-pressed="String($store.app.browse.type === p.key)"
-              :disabled="!p.count && $store.app.browse.type !== p.key"
-              @click="$store.app.editBrowse({ type: p.key }); closeFilterMenu(true)"><span x-text="p.label"></span><span class="n" x-text="p.countText"></span></button></template>
-          </div>
+          class="slot-island"
+          x-effect="$el.firstElementChild.choices = view ? view.slots : []; $el.firstElementChild.label = view?.slotLabel; $el.firstElementChild.value = $store.app.browse.type"
+          @slot-change="$store.app.editBrowse({ type: $event.detail })">
+          <gsa-slot-menu x-ignore></gsa-slot-menu>
         </div>
         <span class="menu-search big-search"><input
           type="text"

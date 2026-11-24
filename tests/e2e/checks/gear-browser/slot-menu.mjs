@@ -80,6 +80,30 @@ export async function checkSlotMenu(pg) {
     check(!(await hasHScroll(pg)), `the Gear browser scrolls sideways at ${width} px with the Slot menu open`);
     check(real.searchWidth >= 300, `the name search is only ${Math.round(real.searchWidth)} px wide at ${width} px`);
 
+    // the menu stays above the table under the pointer: moving over a row lights it, which draws the menu again, and every row, the
+    // ones over the table's sticky header included, is still the top element at its centre
+    await pg.hover('#b-slots [data-slot="head"]');
+    await expect(pg.locator('#b-slots [data-slot="head"]')).toHaveAttribute('data-highlighted', ''); // the menu has been drawn again
+    const covered = await pg.evaluate(() => {
+      const header = document.querySelector('#gear-table thead').getBoundingClientRect();
+      const rows = [...document.querySelectorAll('#b-slots .multi-opt')].map(row => row.getBoundingClientRect());
+      return {
+        overHeader: rows.filter(
+          row => row.top < header.bottom && row.bottom > header.top && row.left < header.right && row.right > header.left,
+        ).length,
+        behind: rows.filter(row => !document.elementFromPoint(row.left + row.width / 2, row.top + row.height / 2)?.closest('#b-slots'))
+          .length,
+      };
+    });
+    check(
+      covered.overHeader > 0,
+      `at ${width} px no row of the open Slot menu lies over the table's header, so the stacking check proves nothing`,
+    );
+    check(
+      covered.behind === 0,
+      `at ${width} px ${covered.behind} rows of the open Slot menu are behind the table after the pointer moved over a row`,
+    );
+
     // Escape closes it and gives the focus back to the button
     await pg.keyboard.press('Escape');
     await expect(pg.locator('#b-slots')).toBeHidden();
@@ -92,8 +116,8 @@ export async function checkSlotMenu(pg) {
   await expect(pg.locator('#b-slot')).toHaveText('Ring');
   await expect(pg.locator('#b-slots')).toBeHidden();
   check((await focusedId(pg)) === 'b-slot', 'a choice did not put the focus back on the Slot button');
-  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-checked', 'false');
 
   // a click outside closes it
   await pg.click('#b-slot');

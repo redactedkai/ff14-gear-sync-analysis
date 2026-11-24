@@ -17,6 +17,8 @@ import { notes } from './ui/messages.js';
 import { modalDirective } from './ui/native-dialog.js';
 import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
+// the Lit elements (each registers itself on import); the page's templates hold them as islands
+import './ui/elements/gear-browser/slot-menu.ts';
 import { menuScope } from './ui/components/overlay.js';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';

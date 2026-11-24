@@ -21,7 +21,7 @@ export async function checkRingCopies(pg) {
   // the Slot menu counts them (and the closed button names the slot); Reset filters shows while filters are set
   await expect(pg.locator('#b-slots [data-slot="ring"] .n')).toHaveText(want.count.toLocaleString('en-US'));
   await expect(pg.locator('#b-slot')).toHaveText('Ring');
-  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#b-slots [data-slot="ring"]')).toHaveAttribute('aria-checked', 'true');
   await expect(pg.locator('#b-reset')).toBeVisible();
   await expect(browserRows(pg)).toHaveCount(want.count);
   await expect(pg.locator('#gear-table .x2:visible')).toHaveCount(want.x2);
@@ -68,7 +68,7 @@ export async function checkRingCopies(pg) {
   await setNumber(pg, '#b-min', '999');
   await expect(pg.locator('#b-min')).toHaveValue('795');
   await pg.click('#b-reset');
-  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(pg.locator('#b-slots [data-slot="any"]')).toHaveAttribute('aria-checked', 'true');
   await expect(pg.locator('#b-q')).toHaveValue('');
   await expect(pg.locator('#b-min')).toHaveValue('');
   await expect(pg.locator('#b-reset')).toBeHidden();

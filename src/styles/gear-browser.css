@@ -273,12 +273,18 @@ td.defense {
   background: transparent;
   border-radius: 0 999px 999px 0;
 }
-.slotpick {
+/* The Slot menu is the element <gsa-slot-menu> (src/ui/elements/gear-browser/slot-menu.ts), drawn in light DOM: it is the bar's
+   first part, a grid whose one cell holds the button and the hidden copy of the rows. Its page wrapper (an Alpine island, which
+   passes it properties) takes no box of its own. */
+.slot-island {
+  display: contents;
+}
+gsa-slot-menu {
   position: relative;
   flex: none;
   display: grid;
 }
-.slotpick::after {
+gsa-slot-menu::after {
   content: "";
   position: absolute;
   top: 9px;
@@ -300,8 +306,23 @@ td.defense {
 .slot-btn[aria-expanded="true"] {
   background: var(--surface2);
 }
-/* the menu's rows in the Expansion menu's own style, as buttons: the slot at the left, its number of matches at the right
-   in mono type; a slot with no match is greyed out; the chosen one is bold */
+/* the menu's rows in the Expansion menu's own style: the slot at the left, its number of matches at the right in mono type;
+   the row under the pointer or the arrow keys is lit (Zag's data-highlighted); a slot with no match is greyed out; the chosen
+   one is bold. The menu sits in Zag's positioner, which places it under the button (a gutter in place of the margin). The
+   positioner is as wide as the button from the start (Zag sets a width only once it has placed it), and Zag hides the menu
+   with the hidden attribute, which the flex display would override. */
+gsa-slot-menu [data-part="positioner"] {
+  width: 100%;
+}
+.slot-menu {
+  margin-top: 0;
+}
+.slot-menu[hidden] {
+  display: none;
+}
+.slot-menu:focus {
+  outline: none;
+}
 .slot-menu .multi-opt {
   width: 100%;
   border: 0;
@@ -310,14 +331,14 @@ td.defense {
   text-align: left;
   justify-content: space-between;
 }
-.slot-menu .multi-opt:hover:not(:disabled),
-.slot-menu .multi-opt.on {
+.slot-menu .multi-opt[data-highlighted],
+.slot-menu .multi-opt[aria-checked="true"] {
   background: var(--surface2);
 }
-.slot-menu .multi-opt.on {
+.slot-menu .multi-opt[aria-checked="true"] {
   font-weight: 600;
 }
-.slot-menu .multi-opt:disabled {
+.slot-menu .multi-opt[aria-disabled="true"] {
   opacity: 0.45;
   cursor: default;
 }
