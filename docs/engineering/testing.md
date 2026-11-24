@@ -50,7 +50,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 5 | 13 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 13 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 40 | 42 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 41 | 42 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 21 | 0 |
 
