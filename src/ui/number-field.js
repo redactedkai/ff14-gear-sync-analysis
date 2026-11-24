@@ -24,7 +24,8 @@ const bound = b => (typeof b === 'function' ? b() : b);
    keystroke, and only an in-range value, so a value on the way ("9" of "90") is held back. Enter or leaving the field
    (change) commits at once, and an out-of-range value is moved to the nearest bound and shown in the box, so the box
    and the setting always agree (owner: "-5" in a filter becomes its lowest value, not "no limit"). While
-   the field has focus and already shows the stored value, the typed text is left alone ("2.40" stays as typed). A bound
+   the field has focus and already shows the stored value, the typed text is left alone ("2.40" stays as typed); so is it when
+   the binding runs again with the stored value unchanged ("60.7" typed for 61 stays after the box is left). A bound
    may be a function, read at each input, for a limit that changes while the field is bound (the job's level cap).
    Options:
    - snap: false keeps an out-of-range value out on change too, and a value with more digits than the box takes (1.5 in a
@@ -44,13 +45,23 @@ const bound = b => (typeof b === 'function' ? b() : b);
    held to its range while typing. */
 export function numberField(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty, snap = true } = {}) {
   let timer = null;
+  // the stored value the binding last showed (`has`: it has run), and whether the box has just written a value (until the page has
+  // updated: the setting may end as it was, a typed 500 lowered to the old 135, and the box then shows that, not the typed text)
+  let shown = { has: false, value: undefined };
+  let justWrote = false;
   /* commits `raw`; on the final commit (change) an out-of-range value moves to the nearest bound, and `input` shows it */
   const commitText = (raw, input = null) => {
     clearTimeout(timer);
     const result = commit(raw, { min: bound(lo), max: bound(hi), decimals, snap, exact: !snap, empty, final: input !== null });
     if (!result) return;
     if (result.clamped) input.value = result.value;
-    if (result.value !== get()) set(result.value);
+    if (result.value !== get()) {
+      set(result.value);
+      justWrote = true;
+      queueMicrotask(() => {
+        justWrote = false;
+      });
+    }
   };
   // the min and max attributes from the bounds: a function is read at each render, Infinity sets none
   const attribute = (name, b) => (typeof b === 'function' || Number.isFinite(b) ? { [name]: () => bound(b) } : {});
@@ -60,6 +71,12 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
     ':value'() {
       const v = get(),
         el = this.$el;
+      // the binding also runs when another setting read from the same part of the store changed (a Gear categories box changes
+      // the Gear browser's filters): the box then keeps what was typed ("60.7" for the stored 61), as it did when each setting
+      // was tracked alone; it shows the stored value when that changed
+      const unchanged = shown.has && Object.is(v, shown.value) && !justWrote;
+      shown = { has: true, value: v };
+      if (unchanged) return el.value;
       return el === document.activeElement && roundTo(+el.value, decimals) === v ? el.value : v;
     },
     '@input'(e) {

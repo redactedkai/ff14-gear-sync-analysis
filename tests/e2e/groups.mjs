@@ -12,7 +12,12 @@ import {
   checkBrowserFourDigits,
   checkBrowserPages,
 } from './checks/gear-browser/columns.mjs';
-import { checkExpansionFilter, checkPldOffhand, checkRingCopies } from './checks/gear-browser/filters.mjs';
+import {
+  checkExpansionFilter,
+  checkPldOffhand,
+  checkRingCopies,
+  checkTypedNumberStaysAfterOtherFilter,
+} from './checks/gear-browser/filters.mjs';
 import { checkGearFrom } from './checks/gear-browser/gear-from.mjs';
 import { checkGearFromCountsBrowser, checkGearFromCountsFill } from './checks/gear-browser/piece-counts.mjs';
 import { checkOffhandPills } from './checks/gear-browser/offhand-pills.mjs';
@@ -222,6 +227,7 @@ export const GROUPS = [
     ],
   },
   { slow: true, steps: [step(checkExpansionFilter, 'gear-browser'), step(checkReset, 'app')] },
+  { steps: [step(checkTypedNumberStaysAfterOtherFilter, 'gear-browser')] },
   { slow: true, steps: [step(checkReloadPersists, 'app')] },
   { slow: true, steps: [step(checkCorruptedStorage, 'app')] },
   { slow: true, steps: [step(checkLevelSync, 'app'), step(checkJobLevelCap, 'app')] },

@@ -3,7 +3,7 @@
 import { shot } from '../../lib/constants.mjs';
 import { coreRings } from '../../lib/core.mjs';
 import { check, expect } from '../../lib/expect.mjs';
-import { browserRows, fillBrowser, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.mjs';
+import { afterFrames, browserRows, fillBrowser, setJob, setNumber, showTab, waitSaved } from '../../lib/nav.mjs';
 import { setUpShared } from '../../lib/setup.mjs';
 
 // Gear browser rings window: [job, item level from, item level to, equip level up to].
@@ -112,6 +112,27 @@ export async function checkExpansionFilter(pg) {
   );
   await allExpansions(pg);
   await setUpShared(pg); // back to Sage for the next step
+}
+
+/** A number typed with more digits than the box keeps ("60.7" in Equip level, stored as 61) stays as typed after the box is left
+ * and another Gear browser filter changes: only a change of the box's own setting rewrites the box. */
+export async function checkTypedNumberStaysAfterOtherFilter(pg) {
+  await showTab(pg, 'browse');
+  const box = pg.locator('#b-lvl');
+  await box.fill('60.7');
+  await pg.waitForFunction(() => window.gsaDebug.app.browse.lvl === 61); // the typed value is committed, rounded
+  await pg.keyboard.press('Tab');
+  await pg.waitForFunction(() => document.activeElement?.id !== 'b-lvl');
+  await afterFrames(pg);
+  await (await expBoxes(pg)).first().uncheck(); // a change of another filter of the same group
+  await waitSaved(pg, 's => s.browse.expOff.length === 1');
+  await afterFrames(pg);
+  await expect(box).toHaveValue('60.7');
+  check((await pg.evaluate(() => window.gsaDebug.app.browse.lvl)) === 61, 'the setting in use is the rounded 61');
+  await allExpansions(pg);
+  await box.fill('');
+  await pg.keyboard.press('Tab');
+  await pg.waitForFunction(() => window.gsaDebug.app.browse.lvl === '');
 }
 
 /** PLD (1H weapon + shield) offers an Off-hand slot in the browser; two-handed jobs do not. */
