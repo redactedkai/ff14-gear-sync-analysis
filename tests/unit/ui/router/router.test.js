@@ -867,6 +867,45 @@ test('the address follows the panel: a job, a level and the item level sync swit
   assert.equal(history.entries.length, entries);
 });
 
+test('a screen the page opens by a click or its own navigation starts at the top; Back and Forward place the saved position instead', () => {
+  const placed = [];
+  const { sheets, app, history, clock, router, focused } = setup('', undefined, {
+    readScroll: () => ({ y: 400, maxY: 800 }),
+    startAtTop: () => placed.push(0),
+  });
+  sheets.openSheet('s_1'); // the list is scrolled to 400
+  clock.fire();
+  sheets.openSet('g_1');
+  clock.fire();
+  sheets.openSheet('s_1'); // the breadcrumb up
+  clock.fire();
+  app.showTab('browse'); // a tab link
+  clock.fire();
+  assert.deepEqual(placed, [0, 0, 0, 0], 'each new screen is put at the top, once');
+  assert.deepEqual(focused, [], 'a click leaves the focus where the player acted');
+  placed.length = 0;
+  router.noteScroll(0, 800); // the Gear browser's own scroll events
+  history.back();
+  history.deliver();
+  assert.deepEqual(placed, [], 'Back is placed at the saved position, not at the top');
+  assert.equal(focused.at(-1), 400);
+});
+
+test('the screen left by a click keeps the position its scroll events noted, when the page was already shortened as the screen was pushed', () => {
+  // the sheet page was scrolled to 500; by the time the router reads it the set page is in and the browser has clamped it to 127
+  const read = { y: 0, maxY: 900 };
+  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => read, startAtTop: () => {} });
+  sheets.openSheet('s_1');
+  clock.fire();
+  router.noteScroll(500, 900); // the scroll event of the sheet page
+  read.y = 127;
+  sheets.openSet('g_1');
+  clock.fire();
+  history.back();
+  history.deliver();
+  assert.equal(focused.at(-1), 500);
+});
+
 test('sync on with no cap yet is an empty il, and opens as sync on', () => {
   const first = setup('#/gear?job=SGE');
   first.app.editPanel({ sync: true });

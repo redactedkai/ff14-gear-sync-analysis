@@ -64,6 +64,7 @@ const router = createRouter({
   readScroll: pageScroll,
   savedScroll: readScrollPositions(tabScrollStorage),
   restoreScroll: scrollY => focusScreenHeading({ scrollY, focus: false, isPending: () => app.pendingTab !== null }),
+  startAtTop: () => focusScreenHeading({ focus: false, once: true, isPending: () => app.pendingTab !== null }),
   isPlacing: isPlacingScroll,
 });
 router.start();
