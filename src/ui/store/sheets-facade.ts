@@ -2,13 +2,15 @@
    over the store's `sheets` slice. A getter reads the slice's revision, so what shows a sheet is run again after any action on the
    Sheets tab, and hands out the state itself (plain data a reader may look at and nothing may change); a method calls an action
    (sheets-actions.ts: the rules, the saving, the edit lock, the leave guard). Nothing here can be assigned to. */
-import { currentSet, currentSheet, setOf, sheetById, sheetHref, sheetList } from './app-state.ts';
+import { currentSet, currentSheet, setOf, setPageOf, sheetById, sheetHref, sheetList, unsettled } from './app-state.ts';
 import type { AppStore } from './app-state.ts';
 import type { SliceRevisions } from './app-facade.ts';
+import type { SetPageActions } from './set-page-actions.ts';
 import type { SheetsActions } from './sheets-actions.ts';
 
-/* The facade of `store` and its `actions` (createSheetsActions); `revisions` as in app-facade.ts. */
-export function createSheetsFacade(store: AppStore, actions: SheetsActions, revisions: SliceRevisions) {
+/* The facade of `store`, its `actions` (createSheetsActions) and the gear set pages' `pageActions` (createSetPageActions);
+   `revisions` as in app-facade.ts. */
+export function createSheetsFacade(store: AppStore, actions: SheetsActions, revisions: SliceRevisions, pageActions: SetPageActions) {
   const { state } = store;
   return {
     ...actions,
@@ -57,6 +59,22 @@ export function createSheetsFacade(store: AppStore, actions: SheetsActions, revi
       void revisions.sheets;
       return state.sheets.busy;
     },
+
+    /* ---- the gear set pages (set-page-actions.ts) ---- */
+
+    /* The state of gear set `setId`'s page: its draft, suggestion, Auto-fill status and Gear to search answer. Frozen all
+       through, so a template engine reads it as it is; a page not open reads as one at rest. */
+    page(setId: string | null) {
+      void revisions.setPages;
+      return setPageOf(state, setId);
+    },
+    /* Whether any gear set page holds work a reload or a closed tab would lose (the `unsettled` selector). */
+    hasUnsettled(): boolean {
+      void revisions.setPages;
+      return unsettled(state);
+    },
+    /* The actions on a gear set page: openPage, closePage, setDraft, startFill, ... */
+    pages: pageActions,
 
     /* ---- reading the sheets ---- */
 

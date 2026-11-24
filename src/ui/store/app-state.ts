@@ -151,18 +151,39 @@ export interface SheetsState {
    'cancelled'. */
 export type FillStatus = 'idle' | 'running' | 'waiting' | 'failed' | 'cancelled';
 
-/* One open gear set page (an entry of the `setPages` slice, by set id). draft: its manual edits not yet applied, or null;
-   suggestion: the frozen object the solver returned, or null; fill: the Auto-fill's status; fillId: the running search's id;
-   countId: the id of the Gear to search count's request; gearToSearch: that count's answer; fillLine: the line the page shows
-   about the search. The shapes of the draft and of the count's answer are settled when the set page moves its state here. */
+/* A gear set's Auto-fill settings' answer from the solver (the Gear to search line): countText ("searching 1,939 of 1,999
+   pieces", or "count failed: ..."), searched (how many pieces Gear to search leaves in the pool; null until the first count has
+   landed), fromCounts (the pieces per "Gear categories" box, {box key: count}; null while they are not known), fromCountsFor (the
+   job and filters they were counted under, as text) and gcdLabel (the Target GCD label's parts, ui/solve.js gcdLabel). Frozen. */
+export interface GearToSearch {
+  countText: string;
+  searched: number | null;
+  fromCounts: Readonly<Record<string, number>> | null;
+  fromCountsFor: string | null;
+  gcdLabel: Readonly<{ name: string; range: string; haste: string | null; off: string | null; full: string }>;
+}
+
+/* An Auto-fill result waiting for Apply or Discard: suggested ({pieces, meal, bestMeals}, views/set-suggestion.js
+   suggestionOf), declined (the Take boxes switched off: {rows: row numbers, meal}). Frozen all through. */
+export interface Suggestion {
+  readonly suggested: Readonly<Record<string, unknown>>;
+  readonly declined: Readonly<{ rows: readonly number[]; meal: boolean }>;
+}
+
+/* One open gear set page (an entry of the `setPages` slice, by set id; set-page-actions.ts changes it, and the entry is
+   replaced on each change, never edited). draft: its manual edits not yet applied (a GearSet copy, frozen), or null;
+   suggestion: the Auto-fill result waiting, or null; fill: the Auto-fill's status; fillId: the running search's id (null when
+   none runs); countId: the id of the Gear to search count still on its way (null when none); gearToSearch: that count's
+   answer; fillLine: the line the page shows about the search ('' for none). The entry is frozen. A suggestion is there only
+   while fill is 'waiting', and a search runs only while fill is 'running'. */
 export interface SetPageState {
-  draft: object | null;
-  suggestion: object | null;
-  fill: FillStatus;
-  fillId: number | null;
-  countId: number | null;
-  gearToSearch: object | null;
-  fillLine: string;
+  readonly draft: Readonly<GearSet> | null;
+  readonly suggestion: Suggestion | null;
+  readonly fill: FillStatus;
+  readonly fillId: number | null;
+  readonly countId: number | null;
+  readonly gearToSearch: GearToSearch;
+  readonly fillLine: string;
 }
 
 /* The whole state: one key per slice. */
@@ -214,9 +235,26 @@ export function settingsOf(restored: RestoredState): SettingsState {
   };
 }
 
-/* A gear set page at rest: nothing drafted, no suggestion, no Auto-fill. */
+/* The Gear to search answer before a count has landed: no text, no count, no box counts, the Target GCD label's own name. Frozen. */
+export const NO_GEAR_TO_SEARCH: GearToSearch = Object.freeze({
+  countText: '',
+  searched: null,
+  fromCounts: null,
+  fromCountsFor: null,
+  gcdLabel: Object.freeze({ name: 'Target GCD', range: '', haste: null, off: null, full: 'Target GCD' }),
+});
+
+/* A gear set page at rest: nothing drafted, no suggestion, no Auto-fill, no count. Frozen, like every entry. */
 export function emptySetPage(): SetPageState {
-  return { draft: null, suggestion: null, fill: 'idle', fillId: null, countId: null, gearToSearch: null, fillLine: '' };
+  return Object.freeze({
+    draft: null,
+    suggestion: null,
+    fill: 'idle',
+    fillId: null,
+    countId: null,
+    gearToSearch: NO_GEAR_TO_SEARCH,
+    fillLine: '',
+  });
 }
 
 /* The one frozen page `setPageOf` hands out for a set with no page open, so reading never adds an entry and the same object
@@ -332,10 +370,19 @@ export function setPageOf(state: AppState, setId: string | null): SetPageState {
   return (setId !== null && state.setPages[setId]) || NO_SET_PAGE;
 }
 
+/* What `page` holds that leaving would lose: 'draft' (a manual draft), 'running' (an Auto-fill), 'result' (an Auto-fill result
+   waiting), or null for none. The leave question asks it of its own page. */
+export function unsettledKind(page: SetPageState): 'draft' | 'running' | 'result' | null {
+  if (page.draft !== null) return 'draft';
+  if (page.fill === 'running') return 'running';
+  return page.fill === 'waiting' ? 'result' : null;
+}
+
 /* Whether any gear set page holds work a reload, a closed tab or a move off the page would lose: a manual draft, a running
-   Auto-fill or a result waiting. */
+   Auto-fill or a result waiting. The leave guard and the reload and close guard (router/unload-guard.js) both ask it. A page is
+   in the state only while it is open, so a page left holds nothing. */
 export function unsettled(state: AppState): boolean {
-  return Object.values(state.setPages).some(page => page.draft !== null || page.fill === 'running' || page.fill === 'waiting');
+  return Object.values(state.setPages).some(page => unsettledKind(page) !== null);
 }
 
 /* The screen the stores show, as a route without the settings query (router/routes.js): the tab being opened counts as open, a

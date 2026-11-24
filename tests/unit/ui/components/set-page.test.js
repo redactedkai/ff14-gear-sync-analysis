@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { setPage } from '../../../../src/ui/components/set-page.js';
 
 test('the set page: its seven parts define no member twice', () => {
-  const component = setPage({ raw: value => value });
+  const component = setPage();
   for (const member of ['init', 'destroy', 'view', 'fill', 'applySuggestion', 'answerLeave', 'refreshCount']) {
     assert.ok(member in component, member);
   }

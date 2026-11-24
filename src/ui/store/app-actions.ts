@@ -4,8 +4,8 @@
 import { makeJobContext } from '../../core/job-context.js';
 import { holdLevelSyncCap } from '../job-sync-panel.js';
 import { MATH_TABS, TABS, resetForJob, restoreState } from '../state.js';
-import { PANEL_KEYS, emptySetPage, panelFields, settingsOf } from './app-state.ts';
-import type { AppState, AppStore, Panel, PanelTab, RestoredState, ScreenState, SetPageState } from './app-state.ts';
+import { PANEL_KEYS, panelFields, settingsOf } from './app-state.ts';
+import type { AppState, AppStore, Panel, PanelTab, RestoredState, ScreenState } from './app-state.ts';
 
 /* How the actions reach what is not state. frame(callback): run `callback` on the next animation frame (the default is the browser's
    requestAnimationFrame, read when it is called, so a test can replace it). */
@@ -232,19 +232,6 @@ export function createAppActions(store: AppStore, options: AppActionOptions = {}
       store.update('math/setTiersLevel', state => {
         state.math.tiersLevel = level;
       });
-    },
-
-    /* Change fields of gear set `setId`'s page, opening its entry (a page at rest) when it has none. */
-    patchSetPage(setId: string, fields: Partial<SetPageState>): void {
-      store.update('setPages/patchSetPage', state => {
-        state.setPages[setId] = { ...(state.setPages[setId] ?? emptySetPage()), ...fields };
-      });
-    },
-
-    /* Drop gear set `setId`'s page (it was closed or its set was deleted). */
-    dropSetPage(setId: string): void {
-      if (!(setId in store.state.setPages)) return;
-      store.update('setPages/dropSetPage', state => void delete state.setPages[setId]);
     },
   };
 }

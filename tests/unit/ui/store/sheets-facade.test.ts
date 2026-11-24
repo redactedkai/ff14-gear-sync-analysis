@@ -82,24 +82,25 @@ test('a note, the lock and the revision: set by actions, counted even when the n
   assert.equal(sheets.locked(), null);
 });
 
-test("the set page's guard and probe are kept by the actions: a move off the set page asks, an unsettled page says so", () => {
+test("the set page's guard is kept by the actions: a move off the set page asks; an unsettled page is the store's to say", () => {
   const { sheets } = stores();
   sheets.openSheet('s_1');
   sheets.openSet('g_1');
-  assert.equal(sheets.hasUnsettled(), false, 'no probe registered');
+  assert.equal(sheets.hasUnsettled(), false, 'no page holds anything');
   let held: (() => void) | null = null;
   sheets.setLeaveGuard(move => {
     held = move;
     return true;
   });
-  sheets.setUnsettledProbe(() => true);
+  sheets.pages.openPage('g_1');
+  sheets.pages.startFill('g_1');
   assert.equal(sheets.hasUnsettled(), true);
   sheets.closeSet();
   assert.equal(sheets.screen, 'set', 'the guard took the move over');
   sheets.setLeaveGuard(null);
   (held as unknown as () => void)();
   assert.equal(sheets.screen, 'sheet');
-  sheets.setUnsettledProbe(null);
+  sheets.pages.closePage('g_1');
   assert.equal(sheets.hasUnsettled(), false);
 });
 

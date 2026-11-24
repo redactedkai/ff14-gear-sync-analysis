@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { formatRoute, parseRoute } from '../../../../src/ui/router/routes.js';
 import { restoreState } from '../../../../src/ui/state.js';
 import { createAppActions } from '../../../../src/ui/store/app-actions.ts';
+import { createSetPageActions } from '../../../../src/ui/store/set-page-actions.ts';
 import {
   createAppStore,
   currentSheet,
@@ -16,6 +17,7 @@ import {
   sheetHref,
   syncSettingsOf,
   unsettled,
+  unsettledKind,
 } from '../../../../src/ui/store/app-state.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { createSheetsActions } from '../../../../src/ui/store/sheets-actions.ts';
@@ -37,26 +39,28 @@ test('each action bumps its own slice only', () => {
   const store = start();
   const actions = createAppActions(store);
   const sheets = createSheetsActions(store, { storage: null });
+  const pages = createSetPageActions(store);
   actions.editBrowse({ q: 'axe' });
   actions.showTab('math');
   actions.setTiersLevel(60);
   sheets.setNote('hello');
-  actions.patchSetPage('g_1', { fill: 'running' });
+  pages.openPage('g_1');
   assert.deepEqual({ ...store.revs }, { settings: 1, screen: 1, math: 1, sheets: 1, setPages: 1 });
-  assert.deepEqual(store.log, ['settings/editBrowse', 'screen/showTab', 'math/setTiersLevel', 'sheets/setNote', 'setPages/patchSetPage']);
+  assert.deepEqual(store.log, ['settings/editBrowse', 'screen/showTab', 'math/setTiersLevel', 'sheets/setNote', 'setPages/openPage']);
 });
 
 test('an action that changes nothing is not counted: the same tab, the same job, the same figures, a refused edit', () => {
   const store = start({ tab: 'browse' });
   const actions = createAppActions(store);
   const sheets = createSheetsActions(store, { storage: null });
+  const pages = createSetPageActions(store);
   actions.showTab('browse');
   actions.setJob('PLD');
   actions.setSheetFigures('effects');
   actions.setTiersLevel(null);
   actions.setTiersJob('PLD');
   actions.followLevelSync(); // the Gear browser is open: the math panel is not held
-  actions.dropSetPage('g_none');
+  pages.closePage('g_none'); // no such page
   sheets.setBusy(false);
   sheets.setBusy(true);
   assert.equal(sheets.createSheet({ name: 'x', job: 'SGE', level: 100, sync: { on: false, cap: 1 } }).ok, false, 'the lock refuses');
@@ -105,31 +109,40 @@ test('persisted is the old shape: the groups hold their panels, nothing else of 
   assert.deepEqual(persisted(again.state), saved);
 });
 
-test('gear set pages: a page at rest is one frozen object; a patch opens an entry; unsettled sees a draft, a running search and a waiting result', () => {
+test('gear set pages: a page not open is one frozen page at rest; unsettled sees a draft, a running search and a waiting result', () => {
   const store = start();
-  const actions = createAppActions(store);
+  const pages = createSetPageActions(store);
   assert.equal(setPageOf(store.state, 'g_1'), setPageOf(store.state, 'g_2'));
   assert.ok(Object.isFrozen(setPageOf(store.state, 'g_1')));
   assert.equal(unsettled(store.state), false);
-  actions.patchSetPage('g_1', { fill: 'running', fillId: 7 });
-  assert.deepEqual([setPageOf(store.state, 'g_1').fill, setPageOf(store.state, 'g_1').fillId], ['running', 7]);
+  pages.openPage('g_1');
+  assert.ok(Object.isFrozen(setPageOf(store.state, 'g_1')), 'an open page is frozen too');
+  assert.equal(unsettled(store.state), false, 'a page at rest holds nothing');
+  const id = pages.startFill('g_1');
+  assert.deepEqual([setPageOf(store.state, 'g_1').fill, setPageOf(store.state, 'g_1').fillId], ['running', id]);
   assert.equal(unsettled(store.state), true);
-  actions.patchSetPage('g_1', { fill: 'idle' });
+  assert.equal(unsettledKind(setPageOf(store.state, 'g_1')), 'running');
+  pages.endFill('g_1');
   assert.equal(unsettled(store.state), false);
-  actions.patchSetPage('g_1', { fill: 'waiting' });
+  pages.setSuggestion('g_1', Object.freeze({ suggested: Object.freeze({}), declined: Object.freeze({ rows: [], meal: false }) }));
   assert.equal(unsettled(store.state), true);
-  actions.patchSetPage('g_1', { fill: 'cancelled', draft: { pieces: [] } });
-  assert.equal(unsettled(store.state), true, 'a draft is held work');
-  actions.dropSetPage('g_1');
+  assert.equal(unsettledKind(setPageOf(store.state, 'g_1')), 'result');
+  pages.setDraft('g_1', Object.freeze({ id: 'g_1', name: 'Set 1' }));
+  assert.equal(unsettledKind(setPageOf(store.state, 'g_1')), 'draft', 'a draft comes first');
+  pages.closePage('g_1');
   assert.deepEqual(store.state.setPages, {});
   assert.equal(unsettled(store.state), false);
 });
 
 test('a suggestion goes in by reference: the frozen object the solver returned is the one stored', () => {
   const store = start();
-  const actions = createAppActions(store);
-  const suggestion = Object.freeze({ rows: Object.freeze(Array.from({ length: 100_000 }, (_, index) => Object.freeze({ index }))) });
-  actions.patchSetPage('g_1', { suggestion, fill: 'waiting' });
+  const pages = createSetPageActions(store);
+  pages.openPage('g_1');
+  const suggestion = Object.freeze({
+    suggested: Object.freeze({ rows: Object.freeze(Array.from({ length: 100_000 }, (_, index) => Object.freeze({ index }))) }),
+    declined: Object.freeze({ rows: Object.freeze([]), meal: false }),
+  });
+  pages.setSuggestion('g_1', suggestion);
   assert.equal(setPageOf(store.state, 'g_1').suggestion, suggestion);
   assert.equal(emptySetPage().suggestion, null);
 });

@@ -72,3 +72,22 @@ test('a Unique ring already worn is refused with no note; pins are saved at once
   c.toggleMealPin();
   assert.equal(sheets.currentSet.pinned.meal, true);
 });
+
+test('the draft is in the store: a frozen copy, one entry per page, gone with Apply, Discard and the page', () => {
+  const { c, store, sheets } = bind();
+  assert.deepEqual(Object.keys(store.state.setPages), [c.setId], 'the open page has its entry');
+  c.pick(HEAD, SAGE_IDS.head);
+  const held = store.state.setPages[c.setId].draft;
+  assert.equal(c.draft, held, 'the component reads the store, not a field of its own');
+  assert.equal(sheets.page(c.setId).draft, held);
+  assert.ok(Object.isFrozen(held) && Object.isFrozen(held.pieces) && Object.isFrozen(held.pieces[HEAD]), 'frozen all through');
+  assert.notEqual(held.pieces[0], sheets.currentSet.pieces[0], 'a copy: the saved set is not frozen with it');
+  assert.ok(!Object.isFrozen(sheets.currentSet.pieces));
+  c.togglePin(FEET);
+  assert.notEqual(c.draft, held, 'a pin replaces the draft with a new object');
+  c.discardDraft();
+  assert.equal(store.state.setPages[c.setId].draft, null);
+  c.pick(HEAD, SAGE_IDS.head);
+  c.destroy();
+  assert.deepEqual(store.state.setPages, {}, 'a page left takes its draft with it');
+});

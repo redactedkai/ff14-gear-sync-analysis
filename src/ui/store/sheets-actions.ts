@@ -12,7 +12,8 @@
    The edit lock: while `busy` is true (an Auto-fill runs: sheets.md, "The edit lock"; set by the set page) every edit action is
    refused and returns {ok: false, error: LOCKED_TEXT}. Opening and closing screens stays allowed.
 
-   Leaving a set page: the set page registers a function with `setLeaveGuard` while it is open. Every way off the set page that goes
+   Leaving a set page: the set page registers a function with `setLeaveGuard` while it is open (what it holds that a move would
+   lose is the `setPages` slice: set-page-actions.ts, and the `unsettled` selector). Every way off the set page that goes
    through the actions (openManager, openSheet, closeSet, openSet of another set, showMissing) asks it first, handing it the move as a
    function: when the page has something to settle (a manual draft, a running Auto-fill, an Auto-fill result waiting) the guard
    returns true, asks the player, and calls the move again once that is settled; otherwise it returns false and the move goes ahead.
@@ -104,9 +105,8 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
   const now = options.now ?? (() => Date.now());
   const makeId = options.makeId ?? randomId;
-  // the set page's functions, kept here because a function is not state: guard(move) asks before leaving, probe() says whether work is held
+  // the set page's function, kept here because a function is not state: guard(move) asks before leaving
   let leaveGuard: LeaveGuard | null = null;
-  let unsettledProbe: (() => boolean) | null = null;
 
   /* ---- inside an update: the steps the actions share, on the sheets slice ---- */
 
@@ -327,18 +327,7 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
       leaveGuard = guard;
     },
 
-    /* The set page's side-effect-free question "is work held?", or null for none: `probe()` says whether a draft, a running
-       Auto-fill or a waiting result would be lost (the reload and close guard asks it). */
-    setUnsettledProbe(probe: (() => boolean) | null): void {
-      unsettledProbe = probe;
-    },
-
     askLeave,
-
-    /* Whether the open set page holds work a reload or a closed tab would lose (the probe); false on any other screen. */
-    hasUnsettled(): boolean {
-      return store.state.sheets.screen === 'set' && typeof unsettledProbe === 'function' && unsettledProbe() === true;
-    },
 
     /* Whether an Auto-fill runs, so every edit is refused (set by the set page). */
     setBusy(busy: boolean): void {

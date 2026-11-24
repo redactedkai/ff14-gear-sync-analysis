@@ -131,12 +131,13 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/components/gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |
 | ui/components/meal-menu | the Food menu: pills, pinned meals, sort, a pick (note 11) |
 | ui/components/page | the Gear browser strip's job menu, the cap field's error and lowered note, Reset asking first |
-| ui/components/set-page/draft | a set page bound as Alpine binds it: edits by hand kept in a draft until Apply, pins saved at once |
+| ui/components/set-page/draft | a set page bound as Alpine binds it: edits by hand kept in a draft until Apply, pins saved at once; the draft is a frozen copy in the store, one entry per page |
 | ui/components/set-page | the set page put together from its parts: no member defined twice |
 | ui/components/set-page/menus | the piece picker's one click handler: which row was clicked, from the row's data |
 | ui/components/set-page/fill.best-meals | "Best for goal": the tied meals saved with an applied Auto-fill, the Food row and its switch |
 | ui/components/set-page/fill | a set page's Auto-fill: a real search and its suggestion, Take boxes, the edit lock, Cancel, a failing solver, late replies |
-| ui/components/set-page/leave | the question before leaving for a draft, a running Auto-fill and a waiting result |
+| ui/components/set-page/leave | the question before leaving for a draft, a running Auto-fill and a waiting result; the store's `unsettled` for each, and a page left holds nothing |
+| ui/components/set-page/no-alpine-raw | a search of the set page's sources: no `Alpine.raw`, no Alpine passed in, no assignment to what the store holds |
 | ui/components/set-page/auto-fill-settings | the Auto-fill settings popover: a change dropping a waiting result, the Gear to search line, the goal menus |
 | ui/components/set-page/view | a set page's view built once per change; the Food menu built only when read |
 | ui/components/compose | joining parts into a component: a clash is an error that names the member, getters stay getters |
@@ -191,7 +192,8 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/store/app-state.differential (`.test.ts`) | random action sequences (36 runs of 250 steps, fixed seeds) on the Alpine app store as it was (kept as the oracle in `tests/unit/helpers/old-app-store.js`) and the new one: the saved JSON, each panel, the open tab and the typed levels equal after every step |
 | ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the Alpine app store's tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
 | ui/store/sheets-actions, `.clan-party` | the sheets' store over a storage stand-in (note 15), run against the actions through the same adapter |
-| ui/store/app-facade, sheets-facade (`.test.ts`) | the facades the templates read (`$store.app`, `$store.sheets`): each getter reads the revision of its slice, an action writes it as it runs, every member of the old stores is there, nothing can be assigned to, the number boxes' `setField`, the set page's guard and probe, `commitSheet` |
+| ui/store/app-facade, sheets-facade (`.test.ts`) | the facades the templates read (`$store.app`, `$store.sheets`): each getter reads the revision of its slice, an action writes it as it runs, every member of the old stores is there, nothing can be assigned to, the number boxes' `setField`, the set page's guard, `unsettled` through `hasUnsettled`, `commitSheet` |
+| ui/store/set-page-actions (`.test.ts`) | the gear set pages' actions: the draft, the Auto-fill's status (idle, running, waiting, failed, cancelled), a stale answer ignored by its search id, the Gear to search count, `unsettled` over several pages, two pages open at once |
 | ui/store/no-direct-writes | a search of `src/` for any write to a facade that is not an action call: `x-model` on a store field, `app.<field> =`, `Object.assign(app...)`, `sheets.<field> =` |
 | styles/z-index-scale | every `z-index` is a `--z-*` token, the tokens keep their order (dialog and toast on one level), the rules a library positioner needs are in place |
 | styles/theme-tokens | colors only through the CSS tokens (note 19) |

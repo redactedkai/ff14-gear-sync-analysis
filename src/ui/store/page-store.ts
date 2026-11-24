@@ -9,6 +9,7 @@ import { createAppFacade } from './app-facade.ts';
 import type { SliceRevisions } from './app-facade.ts';
 import { initialState } from './app-state.ts';
 import type { RestoredState, SheetsData } from './app-state.ts';
+import { createSetPageActions } from './set-page-actions.ts';
 import { createSheetsActions } from './sheets-actions.ts';
 import type { SheetsActionOptions } from './sheets-actions.ts';
 import { createSheetsFacade } from './sheets-facade.ts';
@@ -26,7 +27,7 @@ export interface PageStoreOptions extends AppActionOptions, SheetsActionOptions 
   track?: (revisions: SliceRevisions) => SliceRevisions;
 }
 
-/* The page's store: {store, appActions, sheetsActions, app (the facade `$store.app`), sheets (the facade `$store.sheets`)}. */
+/* The page's store: {store, appActions, sheetsActions, setPageActions, app (the facade `$store.app`), sheets (the facade `$store.sheets`)}. */
 export function createPageStore(options: PageStoreOptions) {
   const storage = options.storage === undefined ? defaultStorage() : options.storage;
   const state = initialState(options.restored, storage ? (readSheets(storage) as SheetsData) : NO_SHEETS);
@@ -42,12 +43,14 @@ export function createPageStore(options: PageStoreOptions) {
   const revisions = tracked ?? store.revs;
   const appActions = createAppActions(store, options);
   const sheetsActions = createSheetsActions(store, { ...options, storage });
+  const setPageActions = createSetPageActions(store);
   return {
     store,
     appActions,
     sheetsActions,
+    setPageActions,
     app: createAppFacade(store, appActions, revisions),
-    sheets: createSheetsFacade(store, sheetsActions, revisions),
+    sheets: createSheetsFacade(store, sheetsActions, revisions, setPageActions),
   };
 }
 

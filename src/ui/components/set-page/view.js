@@ -45,8 +45,8 @@ function viewKey(rev, saved, draft, suggestion) {
   return `${rev}|${saved.id}|${objectNumber(draft)}|${objectNumber(suggestion)}`;
 }
 
-/* `raw`: Alpine.raw or a stand-in (components/set-page.js). Returns the part's members. */
-export function viewPart(raw) {
+/* Returns the part's members. */
+export function viewPart() {
   const cache = viewCache();
   const mealCache = viewCache();
   // the set the last built view shows and its evaluation (evaluateInSheet), for the Food menu; kept here, out of
@@ -82,8 +82,8 @@ export function viewPart(raw) {
     get view() {
       const sheet = this.sheet;
       const saved = this.saved;
-      const draft = raw(this.draft);
-      const suggestion = raw(this.suggestion);
+      const draft = this.draft;
+      const suggestion = this.suggestion;
       return cache.get(viewKey(this.$store.sheets.rev, saved, draft, suggestion), () =>
         deepFreeze(this.buildView(sheet, saved, draft, suggestion)),
       );

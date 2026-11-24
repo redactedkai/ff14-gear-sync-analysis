@@ -13,13 +13,13 @@ import { fillRecipe } from '../../sheets/fill-settings.js';
 import { evaluateInSheet } from '../../views/set-totals.js';
 import { RANK_NOTE_LAYER, SETTINGS_LAYER } from './menus.js';
 
-/* `solver`: ui/solver.js's; `page`: {el, refs} (frame.js). Returns the part's members. */
+/* `solver`: ui/solver.js's; `page`: {el, refs, setId} (frame.js). Returns the part's members. The Gear to search answer (the line,
+   the count, the pieces per "Gear categories" box, the Target GCD label) and the id of the count on its way are in the store
+   (page-state.js reads them; `pages` changes them). */
 export function settingsPart(solver, page) {
-  let countId = 0;
-  // the newest Gear to search count still on its way (resolved once it has landed or failed), and whether it is; not in the
-  // reactive state: a proxy around a Promise breaks its methods
+  // the newest Gear to search count still on its way (resolved once it has landed or failed); not in the store: a Promise is not
+  // state, and a proxy around one breaks its methods
   let countLanding = Promise.resolve();
-  let counting = false;
 
   return {
     // the Auto-fill settings popover is open; the "Spare points to tiebreaks" note in it
@@ -27,16 +27,6 @@ export function settingsPart(solver, page) {
     rankHelp: false,
     // after a goal pick moved another rank: "Tiebreak 1 changed to Mind (a stat holds one rank)."; any other edit clears it
     rankNote: '',
-    // the Auto-fill settings' Gear to search, from the solver: "searching 1,939 of 1,999 pieces", the count, the pieces per
-    // "Gear categories" box and the Target GCD label's parts (ui/solve.js gcdLabel: name, range, haste, off, full)
-    countText: '',
-    // how many pieces Gear to search leaves in the pool (null until the first count lands); 0 turns the Auto-fill button off
-    searchedCount: null,
-    // the pieces per "Gear categories" box ({box key: count}), null while they are not known: before the first count has landed
-    // and after a change of the job or the filters they depend on, until the new ones land (a ticked box does not change them)
-    fromCounts: null,
-    fromCountsFor: null,
-    gcdLabel: { name: 'Target GCD', range: '', haste: null, off: null, full: 'Target GCD' },
     targetGcdRange: TARGET_GCD_RANGE,
 
     /* ---- the Auto-fill settings popover (the gear button) ---- */
@@ -165,28 +155,20 @@ export function settingsPart(solver, page) {
       if (!saved) return;
       const context = evaluateInSheet(this.sheet, saved);
       const recipe = fillRecipe(this.fillSettings);
-      const id = ++countId;
       // the numbers of the "Gear categories" boxes are for the job and filters they were counted under: no old ones under others
+      // (the store drops them when this count starts)
       const countedFor = JSON.stringify([this.job.jobId, gearFilter(recipe)]);
-      if (this.fromCountsFor !== countedFor) this.fromCounts = this.fromCountsFor = null;
-      counting = true;
+      const id = this.pages.startCount(this.setId, countedFor);
       countLanding = solver
         .request(solverRequest('gearToSearch', { job: this.job, sync: context.sync, level: context.level, recipe }, { key: saved.id }))
         .then(
           ({ result }) => {
-            if (id !== countId) return;
-            counting = false;
-            this.countText = result.countText;
-            this.searchedCount = result.searched;
-            this.fromCounts = result.fromCounts;
-            this.fromCountsFor = countedFor;
-            this.gcdLabel = result.gcdLabel;
+            this.pages.countLanded(this.setId, id, countedFor, result);
           },
           error => {
-            if (id === countId) counting = false;
-            if (isCancelled(error) || id !== countId) return;
-            // the line says so, in its own place, instead of showing a count for other settings
-            this.countText = `count failed: ${String(error?.message || error).replace(/\.$/, '')}`;
+            // the line says so, in its own place, instead of showing a count for other settings; a newer count's answer is the one kept
+            const text = `count failed: ${String(error?.message || error).replace(/\.$/, '')}`;
+            this.pages.countFailed(this.setId, id, text, isCancelled(error));
           },
         );
     },
@@ -197,7 +179,7 @@ export function settingsPart(solver, page) {
     },
     // whether a count is still on its way (a press that finds none pending needs no wait)
     countPending() {
-      return counting;
+      return this.pageState.countId !== null;
     },
   };
 }

@@ -68,14 +68,19 @@ export const DOMAINS = {
     title: "A gear set's page: rows, hand edits, pins, menus, totals",
     src: [
       'src/ui/components/{set-page,meal-menu}.js',
-      'src/ui/components/set-page/{draft,frame,leave,menus,view}.js',
+      'src/ui/components/set-page/{draft,frame,leave,menus,page-state,view}.js',
+      'src/ui/store/set-page-actions.ts',
       'src/ui/sheets/{saved-set,set-edits}.js',
       'src/ui/views/{limit-rows,meal-menu,piece-menu,set-draft,set-meal-menu,set-rows,set-totals,stone-menu}.js',
       'src/ui/draw-in-steps.js',
       'src/partials/set-page.html',
       'src/styles/{set-page,pieces,fill-settings}.css',
     ],
-    tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,page-magics}.js'],
+    tests: [
+      'tests/e2e/checks/set-page/**',
+      'tests/unit/helpers/{set-page-bind,page-magics}.js',
+      'tests/unit/ui/components/set-page/no-alpine-raw.test.js',
+    ],
   },
   sheets: {
     title: 'The Sheets tab: manager, a sheet page, dialogs, saved sheets',

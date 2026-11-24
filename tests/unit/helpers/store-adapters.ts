@@ -169,9 +169,6 @@ export function createSheetStore(options: SheetsActionOptions = {}) {
     set leaveGuard(guard: LeaveGuard | null) {
       actions.setLeaveGuard(guard);
     },
-    set unsettled(probe: (() => boolean) | null) {
-      actions.setUnsettledProbe(probe);
-    },
     list: () => sheetList(store.state),
     sheet: (id: string) => sheetById(store.state, id),
     get currentSheet() {

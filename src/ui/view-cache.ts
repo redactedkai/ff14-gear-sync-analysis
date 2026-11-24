@@ -1,5 +1,6 @@
 /* How a component keeps its derived view (architecture.md, section 3): a cache keyed by the view's inputs, and the freeze
    that keeps Alpine from wrapping the view. Pure: no DOM, no Alpine. */
+import { clone } from './text.ts';
 
 /* The page's one way for a component to build a view (architecture.md, section 3): a getter reads the view's inputs
    from the store, which makes every binding that shows the view track them, and asks this cache for the view of their
@@ -30,4 +31,11 @@ export function deepFreeze<T>(value: T): T {
   Object.freeze(value);
   for (const inner of Object.values(value)) deepFreeze(inner);
   return value;
+}
+
+/* A deep copy of plain JSON-safe data (a gear set), frozen all through: what a set page puts in the store as its draft or its
+   suggestion. The copy shares nothing with the saved set it came from, so freezing it leaves that alone, and it drops Alpine's
+   reactive wrappers (text.ts clone). */
+export function frozenCopy<T>(value: T): T {
+  return deepFreeze(clone(value));
 }

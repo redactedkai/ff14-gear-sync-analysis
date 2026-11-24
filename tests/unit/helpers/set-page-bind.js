@@ -51,7 +51,7 @@ export function bind(gearSet = sageSet(), solver = pageThreadSolver(), sheetOpti
   const { store, sheets } = createStores(undefined, { storage });
   sheets.openSheet('s_1');
   sheets.openSet(gearSet.id);
-  const c = setPage({ raw: value => value }, solver);
+  const c = setPage(solver);
   const magics = pageMagics(SET_PAGE_REFS);
   // $watch records {getter, callback}; a test runs a callback by hand
   const watches = [];

@@ -1,12 +1,12 @@
-/* The frame of a set page: what runs when its element starts and goes away (the sticky header's height, the store's leave
-   guard, the Auto-fill still running), and `afterDraw` and `focusFill`, which move the focus once Alpine has drawn a change.
+/* The frame of a set page: what runs when its element starts and goes away (its entry in the store, the sticky header's
+   height, the store's leave guard, the Auto-fill still running), and `afterDraw` and `focusFill`, which move the focus once Alpine has drawn a change.
    A part of the setPage component (components/set-page.js composes the parts; `page` is the state they share). */
 
 import { overlays } from '../../overlays.js';
 import { afterDraw } from '../compose.js';
 import { RANK_NOTE_LAYER, SET_MENU_LAYER, SETTINGS_LAYER } from './menus.js';
 
-/* `page`: {el, refs}, the shared holder of the page's own element and its refs, kept from init: `this.$el` and `this.$refs`
+/* `page`: {el, refs, setId}, the shared holder of the page's own element, its refs and its set's id, kept from init: `this.$el` and `this.$refs`
    belong to the element a handler ran on, and a click can remove that element (Cancel, Apply, Discard), so after one
    `this.$el` is not in the page and `this.$refs` and `this.$root` are empty. Returns the part's members. */
 export function framePart(page) {
@@ -15,8 +15,9 @@ export function framePart(page) {
   return {
     init() {
       page.el = this.$el;
+      page.setId = this.saved.id;
+      this.pages.openPage(page.setId);
       this.$store.sheets.setLeaveGuard(move => this.guardLeave(move));
-      this.$store.sheets.setUnsettledProbe(() => this.unsettledKind() !== null);
       this.refreshCount();
       // the gear and its popover are in the bar only at rest: a draft, a result or a running Auto-fill closes the popover
       this.$watch(
@@ -41,7 +42,8 @@ export function framePart(page) {
       this.$nextTick(() => {
         page.refs = this.$refs; // after the page's elements have started, so their refs are in it
         const head = page.refs.head;
-        if (typeof ResizeObserver !== 'function') return;
+        // a page taken away before its first frame (a quick click on a tab) has no header left to watch
+        if (!head || typeof ResizeObserver !== 'function') return;
         const set = () => this.$root.style.setProperty('--sh', `${head.getBoundingClientRect().height}px`);
         set();
         headWatch = new ResizeObserver(set);
@@ -51,8 +53,9 @@ export function framePart(page) {
     destroy() {
       headWatch?.disconnect();
       this.$store.sheets.setLeaveGuard(null);
-      this.$store.sheets.setUnsettledProbe(null);
       if (this.running) this.stopFill();
+      // the page's draft and result go with it; an answer that comes later finds no page and is ignored
+      this.pages.closePage(this.setId);
     },
 
     /* Runs `callback` once Alpine has drawn the change just made, unless the page is gone by then (an Auto-fill cancelled or a

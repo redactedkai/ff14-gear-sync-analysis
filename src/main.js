@@ -2,6 +2,7 @@
 import Alpine from 'alpinejs';
 import 'styles:bundle'; // the stylesheet: src/styles/entry.css imports the files in cascade order
 import { restoreState, loadSaved } from './ui/state.js';
+import { unsettled } from './ui/store/app-state.ts';
 import { createPageStore } from './ui/store/page-store.ts';
 import { startAutosave } from './ui/store/autosave.ts';
 import { watch } from './ui/store/watch.ts';
@@ -109,7 +110,7 @@ function startSolverWorker() {
 // searches in the worker, off the page's thread; on the page's thread when the browser will not run the worker
 const solver = workerSolver(startSolverWorker, inProcessSolver);
 
-// the set page takes Alpine (raw) and the solver from here, so its module loads without a page (its unit test)
+// the set page takes the solver from here, so its module loads without a page (its unit test)
 Object.entries({
   page,
   settings,
@@ -123,7 +124,7 @@ Object.entries({
   gcdControls,
   tierControls,
   sheetsTab,
-  setPage: () => setPage(Alpine, solver),
+  setPage: () => setPage(solver),
 }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });
@@ -131,8 +132,8 @@ Object.entries({
 /* Save the settings 150 ms after the last change and when the page is hidden (ui/store/autosave.ts). */
 startAutosave(store);
 
-// a reload or a closed tab asks first while a gear set's page holds a draft, a running Auto-fill or a waiting result
-installUnloadGuard({ target: window, hasUnsettled: () => sheets.hasUnsettled(), storage: defaultStorage() });
+// a reload or a closed tab asks first while a gear set's page holds a draft, a running Auto-fill or a waiting result: the store says
+installUnloadGuard({ target: window, hasUnsettled: () => unsettled(store.state), storage: defaultStorage() });
 
 Alpine.start();
 

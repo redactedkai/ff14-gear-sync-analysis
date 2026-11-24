@@ -213,9 +213,14 @@ test("an Auto-fill and the Gear to search line share one solver session: the job
 test('no pieces to search: the chip, the button title and the spoken line share one flag, null until the count lands', () => {
   const { c } = bind(twoToFill());
   assert.equal(c.noPiecesFlag, null, 'no count yet');
-  c.searchedCount = 12;
+  // a count lands with the pool's size, through the store's actions as the solver's answer does
+  const landCount = searched => {
+    const id = c.pages.startCount(c.setId, 'test');
+    c.pages.countLanded(c.setId, id, 'test', { countText: '', searched, fromCounts: null, gcdLabel: c.gcdLabel });
+  };
+  landCount(12);
   assert.equal(c.noPiecesFlag, null, 'the pool holds pieces');
-  c.searchedCount = 0;
+  landCount(0);
   assert.deepEqual(c.noPiecesFlag, { short: NO_PIECES_SHORT, full: NO_PIECES_TEXT });
   assert.equal(c.fillButton.title, c.noPiecesFlag.full, 'the button and the chip say the same sentence');
   assert.equal(c.fillButton.disabled, true);

@@ -2,6 +2,7 @@
    lost, the moves that ask the same (Copy, New set), and the keys of the page (Escape, Tab inside a dialog).
    A part of the setPage component (components/set-page.js composes the parts). */
 import { overlays } from '../../overlays.js';
+import { unsettledKind } from '../../store/app-state.ts';
 import { RESULT_DISCARDED_TEXT } from './view.js';
 
 /* The question while an Auto-fill runs and the page is left. */
@@ -17,14 +18,10 @@ export function leavePart(page) {
 
     /* ---- leaving the page ---- */
 
-    /* What the page holds that leaving would lose: 'draft', 'running' (an Auto-fill), 'result' (a waiting Auto-fill result), or
-       null. Changes nothing; the leave question and the reload and close guard (store.unsettled) both ask it. */
-    unsettledKind() {
-      return this.draft ? 'draft' : this.running ? 'running' : this.suggestion ? 'result' : null;
-    },
-    /* The store's leave guard: with a draft, a running Auto-fill or a waiting result, ask first and hold `move` back. */
+    /* The store's leave guard: with a draft, a running Auto-fill or a waiting result (the store's unsettledKind of this page, the
+       same rule as the reload and close guard's `unsettled`), ask first and hold `move` back. */
     guardLeave(move) {
-      const kind = this.unsettledKind();
+      const kind = unsettledKind(this.pageState);
       if (!kind) return false;
       overlays.closeAll(); // no menu or popover stays open under the question
       this.leaveAsk = { kind, move };
@@ -49,7 +46,7 @@ export function leavePart(page) {
         else this.discardDraft();
       } else if (ask.kind === 'running') this.cancelFill();
       else {
-        this.suggestion = null;
+        this.pages.setSuggestion(this.setId, null);
         this.$store.sheets.setNote(RESULT_DISCARDED_TEXT);
       }
       ask.move();

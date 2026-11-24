@@ -29,8 +29,8 @@ function gearOf(job) {
   return gearByJob.get(job.jobId);
 }
 
-/* `raw`: Alpine.raw or a stand-in (components/set-page.js). Returns the part's members. */
-export function menusPart(raw) {
+/* Returns the part's members. */
+export function menusPart() {
   // the last whole piece picker view built, with what it was built from, and the last cut of it to pickRows rows (plain
   // variables: writing reactive state inside the view that reads it would run it again). The pieces keep their
   // objects from one cut to the next, so the rows already drawn are not drawn again when more are added.
@@ -133,7 +133,7 @@ export function menusPart(raw) {
        template reads it once per part of the menu, and it depends on the job, the pieces held (a Unique ring in the
        other ring row), the search and the rows drawn only. */
     picker(index) {
-      const gearSet = raw(this.draft) ?? this.saved;
+      const gearSet = this.draft ?? this.saved;
       const held = gearSet.pieces.map(row => row.gameId ?? '').join();
       const key = `${this.job.jobId}|${index}|${held}|${this.query}`;
       if (lastPicker?.key !== key) {
@@ -157,7 +157,7 @@ export function menusPart(raw) {
     },
     /* The open materia menu of row `index`, slot `slot` (materiaMenuView). */
     materia(index, slot) {
-      return materiaMenuView(this.job, raw(this.draft) ?? this.saved, index, slot, this.matAll);
+      return materiaMenuView(this.job, this.draft ?? this.saved, index, slot, this.matAll);
     },
     /* The meal menu's source for the shared Food menu (components/meal-menu.js): the menu and what a pick does. */
     get mealSource() {

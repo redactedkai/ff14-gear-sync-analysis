@@ -6,6 +6,7 @@ import { runningLeaveText } from '../../../../../src/ui/components/set-page/leav
 import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/ui/components/set-page/view.js';
 import { overlays } from '../../../../../src/ui/overlays.js';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';
+import { unsettledKind } from '../../../../../src/ui/store/app-state.ts';
 import { bind, heldSolver, tick, twoToFill } from '../../../helpers/set-page-bind.js';
 import { SAGE_IDS } from '../../../helpers/sheet-fixtures.js';
 
@@ -74,7 +75,7 @@ test('unsettled: the store asks the open set page, with no side effect, for a dr
   await answered;
   assert.ok(c.suggestion);
   assert.equal(sheets.hasUnsettled(), true); // waiting result
-  c.suggestion = null;
+  c.pages.setSuggestion(c.setId, null);
   assert.equal(sheets.hasUnsettled(), false);
 
   c.pick(HEAD, SAGE_IDS.head);
@@ -83,26 +84,30 @@ test('unsettled: the store asks the open set page, with no side effect, for a dr
   assert.equal(sheets.hasUnsettled(), false); // off the set page
 });
 
-test('unsettled: only the set page counts; the same draft shows on another screen as nothing to lose', () => {
-  const { c, store, sheets } = bind(twoToFill());
+test('unsettled: the store holds a page only while it is open; a page left holds nothing, and a late answer of it is ignored', async () => {
+  const solver = heldSolver();
+  const { c, sheets, store } = bind(twoToFill(), solver);
   c.pick(HEAD, SAGE_IDS.head);
-  assert.equal(c.unsettledKind(), 'draft');
+  assert.equal(unsettledKind(c.pageState), 'draft');
   assert.equal(sheets.hasUnsettled(), true);
-  // the open screen, set by hand: a move off the set page would ask the page first
-  const showScreen = screen =>
-    store.update('sheets/openManager', state => {
-      state.sheets.screen = screen;
-    });
-
-  // the draft is still held, but the open screen is no longer the set page
-  for (const screen of ['sheet', 'sheets']) {
-    showScreen(screen);
-    assert.equal(c.unsettledKind(), 'draft', `the draft is held on ${screen}`);
-    assert.equal(sheets.hasUnsettled(), false, `${screen} screen`);
-  }
-  showScreen('set');
-  assert.equal(sheets.hasUnsettled(), true);
+  c.discardDraft();
+  await tick();
+  const running = c.fill();
+  assert.equal(unsettledKind(c.pageState), 'running');
+  const setId = c.setId;
+  // the page is taken away with its search still running: the entry goes, the search is cancelled
+  c.destroy();
+  await running;
+  assert.equal(sheets.hasUnsettled(), false, 'the page left holds nothing');
+  assert.equal(unsettledKind(sheets.page(setId)), null);
+  assert.deepEqual(solver.cancelled, [['solve', setId]]);
+  assert.deepEqual(Object.keys(store.state.setPages), [], 'no entry is kept');
 });
+
+/* A result waiting, as the store keeps it (frozen): no piece taken or declined. */
+function waitingResult() {
+  return Object.freeze({ suggested: Object.freeze({}), declined: Object.freeze({ rows: Object.freeze([]), meal: false }) });
+}
 
 /* A key event as pageKey reads it. */
 function keyEvent(key, extra = {}) {
@@ -120,7 +125,7 @@ function keyEvent(key, extra = {}) {
 test('Escape on the set page: layers of the overlay manager take it first; with none open it discards a waiting result', () => {
   overlays.closeAll();
   const { c } = bind(twoToFill());
-  c.suggestion = { waiting: true };
+  c.pages.setSuggestion(c.setId, waitingResult());
   c.openSettings();
   const first = keyEvent('Escape');
   c.pageKey(first);
