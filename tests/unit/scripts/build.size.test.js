@@ -11,7 +11,7 @@ import { esbuildOptions, jsonParseData } from '../../../scripts/build/build.mjs'
 /* The budget: gzip bytes of the page's JavaScript with everything from src/data/ left out. It is the size at the time of the
    last deliberate raise plus a headroom of about 1 kB, so a growth beyond that fails and the owner decides: raise
    it on purpose (docs/engineering/testing.md, "Raising the size budget") or remove what grew. */
-const OWN_CODE_GZIP_BUDGET_BYTES = 138_800; // measured 137,849 without src/data/, plus 951 bytes
+const OWN_CODE_GZIP_BUDGET_BYTES = 139_900; // measured 138,923 without src/data/, plus 977 bytes; the router's scroll placement, tab links and unload guard added 1,074
 
 /* esbuild plugin placed before jsonParseData: every generated data file (src/data/*.json, plus the base64 job icons in
    src/data/job-icons.js) becomes an empty stub, so the bundle holds only our own code and libraries. Nothing runs the
