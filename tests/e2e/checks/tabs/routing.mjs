@@ -3,11 +3,28 @@
 import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js';
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
-import { waitSaved } from '../../lib/nav.mjs';
+import { afterFrames, waitSaved } from '../../lib/nav.mjs';
 import { expectApplyCount, openSageSet, seedSheet } from '../../lib/sheets.mjs';
 
 /** The address (its hash) of the page now. */
 const hashOf = pg => pg.evaluate(() => location.hash);
+
+/** How many frames a scroll position is watched after the page has landed on it: more than the router tries the scroll for
+ * (MAX_SCROLL_FRAMES in focus.js, 30), counted in frames and not in ms, so a busy machine, which draws fewer frames a second, is
+ * watched for as many. */
+const STAY_FRAMES = 35;
+
+/** Resolves after `count` frames of the page have been drawn. */
+const framesPass = (pg, count) =>
+  pg.evaluate(
+    total =>
+      new Promise(done => {
+        let left = total;
+        const frame = () => (--left > 0 ? requestAnimationFrame(frame) : done());
+        requestAnimationFrame(frame);
+      }),
+    count,
+  );
 
 /** Wait for the page's hash to be `expected` (a string, or a RegExp), and check it. */
 async function expectHash(pg, expected, what) {
@@ -327,7 +344,7 @@ export async function checkScrollOnBack(pg) {
   await pg.goBack();
   await expectHash(pg, setHash, 'Back to the set page');
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
-  await pg.waitForTimeout(300); // frames after landing: it stays there
+  await framesPass(pg, STAY_FRAMES); // it stays there
   const frames = await pg.evaluate(() => {
     cancelAnimationFrame(window.gsaScrollFrames.timer);
     return window.gsaScrollFrames.frames;
@@ -383,16 +400,16 @@ export async function checkScrollOnForward(pg) {
     return window.scrollY;
   }, SCROLLED_PX);
   check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the check below proves nothing`);
-  await pg.waitForTimeout(200); // the scroll event is noted
+  await afterFrames(pg); // the scroll event is noted
   await pg.goBack();
   await expect(pg.locator('#sh-sets')).toBeVisible();
-  await pg.waitForTimeout(300);
+  await framesPass(pg, STAY_FRAMES);
 
   await startFrameRecorder(pg, '#sh-gear');
   await pg.goForward();
   await expect(pg.locator('#sh-gear')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
-  await pg.waitForTimeout(300); // frames after landing: it stays there
+  await framesPass(pg, STAY_FRAMES); // it stays there
   const frames = (await stopFrameRecorder(pg)).filter(frame => frame.shown);
   const strays = [...new Set(frames.map(frame => frame.y))].filter(y => Math.abs(y - leftAt) > 1);
   check(
@@ -414,7 +431,7 @@ export async function checkScrollOnBackToMath(pg) {
     return window.scrollY;
   }, SCROLLED_PX / 2);
   check(leftAt > 50, `the GCD Scaling view cannot be scrolled (${leftAt}), so the check below proves nothing`);
-  await pg.waitForTimeout(200); // the scroll event is noted
+  await afterFrames(pg); // the scroll event is noted
   await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
   await expectHash(pg, /^#\/gear(\?|$)/, 'the Gear browser');
   await expect(pg.locator('#b-q')).toBeVisible();
@@ -423,7 +440,7 @@ export async function checkScrollOnBackToMath(pg) {
   await pg.goBack();
   await expect(pg.locator('#tab-gcd')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
-  await pg.waitForTimeout(300); // frames after landing: it stays there
+  await framesPass(pg, STAY_FRAMES); // it stays there
   const frames = (await stopFrameRecorder(pg)).filter(frame => frame.shown);
   const strays = [...new Set(frames.map(frame => frame.y))].filter(y => Math.abs(y - startAt) > 1 && Math.abs(y - leftAt) > 1);
   check(
@@ -469,12 +486,12 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   const setHash = await hashOf(pg);
   const leftAt = await scrollPageTo(pg, sheetEnd + 400);
   check(leftAt > sheetEnd + 100, `the set page cannot be scrolled past the sheet page's end (${leftAt} of ${sheetEnd})`);
-  await pg.waitForTimeout(200); // the scroll event is noted
+  await afterFrames(pg); // the scroll event is noted
   await startFrameRecorder(pg, '#sh-sets');
   await pg.goBack();
   await expect(pg.locator('#sh-sets')).toBeVisible();
   await pg.waitForFunction(() => Math.abs(window.scrollY) <= 1);
-  await pg.waitForTimeout(300); // frames after landing: it stays there
+  await framesPass(pg, STAY_FRAMES); // it stays there
   let frames = await stopFrameRecorder(pg);
   let strays = drawnPositions(frames).filter(y => Math.abs(y) > 1);
   check(
@@ -486,35 +503,46 @@ export async function checkScrollOnBackToLeftPosition(pg) {
   await pg.goForward();
   await expectHash(pg, setHash, 'Forward to the set page');
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
-  await pg.evaluate(() => {
-    history.back();
-    setTimeout(() => history.forward(), 20);
-    setTimeout(() => history.back(), 45);
-  });
-  await pg.waitForTimeout(500); // the three moves have settled
+  // each move is made in the task after the browser delivered the one before (a move made while the earlier one is still on its
+  // way is counted from where the page still is, so on a busy machine the three would end somewhere else), with no frame between
+  await pg.evaluate(
+    () =>
+      new Promise(done => {
+        const later = [() => history.forward(), () => history.back()];
+        const onMove = () => {
+          if (later.length) return setTimeout(later.shift());
+          removeEventListener('popstate', onMove);
+          done(); // the third move has arrived
+        };
+        addEventListener('popstate', onMove);
+        history.back();
+      }),
+  );
   await expectHash(pg, sheetHash, 'the quick Back, Forward, Back');
+  await framesPass(pg, STAY_FRAMES); // the moves have settled and the router has placed the page
   const quickEnd = await pg.evaluate(() => window.scrollY);
   check(Math.abs(quickEnd) <= 1, `after Back, Forward, Back in quick turn the sheet page is scrolled to ${quickEnd}, not left at 0`);
 
   // the Gear browser (a tab swapped in after a frame) to the sheet page left scrolled
   const sheetAt = await scrollPageTo(pg, sheetEnd);
   check(sheetAt > 100, `the sheet page cannot be scrolled (${sheetAt})`);
-  await pg.waitForTimeout(200); // the scroll event is noted
+  await afterFrames(pg); // the scroll event is noted
   await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
   await expect(pg.locator('#b-q')).toBeVisible();
   await scrollPageTo(pg, 100);
-  await pg.waitForTimeout(200);
+  await afterFrames(pg); // the scroll event is noted
   await startFrameRecorder(pg, '#sh-sets');
   await pg.goBack();
   await expect(pg.locator('#sh-sets')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, sheetAt);
-  await pg.waitForTimeout(300);
+  await framesPass(pg, STAY_FRAMES);
   frames = await stopFrameRecorder(pg);
   strays = drawnPositions(frames).filter(y => Math.abs(y - sheetAt) > 1);
   check(
     frames.some(frame => frame.shown) && strays.length === 0,
     `Back from the Gear browser drew the sheet page at ${strays.join(', ')} before ${sheetAt}`,
   );
+
   await pg.setViewportSize({ width: 1000, height: 900 });
 }
 
@@ -527,7 +555,7 @@ export async function checkScrollOnReload(pg) {
     return window.scrollY;
   }, SCROLLED_PX);
   check(leftAt > 100, `the set page cannot be scrolled (${leftAt}), so the check below proves nothing`);
-  await pg.waitForTimeout(200); // the scroll event is noted
+  await afterFrames(pg); // the scroll event is noted
   await pg.reload();
   await expect(pg.locator('#sh-gear')).toBeVisible();
   await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 2, leftAt);
