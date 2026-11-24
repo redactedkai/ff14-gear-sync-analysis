@@ -375,6 +375,17 @@ html[data-boot-tab="math"] .bootload::after {
   color: var(--accent);
   font-weight: 600;
 }
+/* forced colors (Windows high contrast) replace the accent colour and draw every link in the link colour, so the open tab and
+   sub-tab keep a distinct underline in the system highlight colour (and their bold weight) */
+@media (forced-colors: active) {
+  .tabs a[aria-current="page"],
+  .subtabs a[aria-current="page"],
+  html[data-boot-tab="sheets"] .boot [data-boot="sheets"],
+  html[data-boot-tab="browse"] .boot [data-boot="browse"],
+  html[data-boot-tab="math"] .boot [data-boot="math"] {
+    border-bottom-color: Highlight;
+  }
+}
 .tab {
   display: flex;
   flex-direction: column;

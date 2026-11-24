@@ -68,7 +68,7 @@ import {
   checkStartupShell,
 } from './checks/startup/failure.mjs';
 import { checkLevelSync } from './checks/tabs/level-sync.mjs';
-import { checkLinkClicks } from './checks/tabs/links.mjs';
+import { checkForcedColorsCurrentTab, checkLinkClicks } from './checks/tabs/links.mjs';
 import {
   checkHelpIsModal,
   checkNoteSurvivesTabChange,
@@ -131,6 +131,7 @@ export const GROUPS = [
   { steps: [step(checkTabPanels, 'app')] },
   { steps: [step(checkRouting, 'app')] },
   { steps: [step(checkLinkClicks, 'app')] },
+  { fresh: true, steps: [step(checkForcedColorsCurrentTab, 'app')] },
   { steps: [step(checkRoutingGuard, 'app')] },
   { steps: [step(checkRoutingAfterReload, 'app')] },
   { steps: [step(checkUnloadGuard, 'app')] },

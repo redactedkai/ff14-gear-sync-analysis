@@ -89,3 +89,18 @@ export async function checkLinkClicks(pg) {
   await expect(pg.locator('[data-sub=gcd]')).toHaveAttribute('aria-current', 'page');
   await expect(pg.locator('#tab-gcd')).toBeVisible();
 }
+
+/** In forced colors (high contrast) the open tab and the open sub-tab keep an underline that differs from the other tabs'. */
+export async function checkForcedColorsCurrentTab(pg) {
+  await pg.emulateMedia({ forcedColors: 'active' });
+  await showMath(pg, 'gcd');
+  const underline = selector => pg.locator(selector).evaluate(link => getComputedStyle(link).borderBottomColor);
+  for (const [open, other, what] of [
+    ['[data-tab=math]', '[data-tab=sheets]', 'tab'],
+    ['[data-sub=gcd]', '[data-sub=piece]', 'sub-tab'],
+  ]) {
+    const [openColor, otherColor] = [await underline(open), await underline(other)];
+    check(openColor !== otherColor, `in forced colors the open ${what} has the underline of the others (${openColor})`);
+  }
+  await pg.emulateMedia({ forcedColors: 'none' });
+}
