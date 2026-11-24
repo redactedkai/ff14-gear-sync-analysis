@@ -4,6 +4,7 @@ import { check, expect } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { showMath } from '../../lib/nav.mjs';
 import { seedSheet } from '../../lib/sheets.mjs';
+import { SHARED_SETUP } from '../../lib/setup.mjs';
 
 /* How long to wait for a page the browser may open for a modified click (it opens none in some builds). */
 const NEW_PAGE_WAIT_MS = 400;
@@ -80,6 +81,12 @@ export async function checkLinkClicks(pg) {
 
   // the math sub-tabs
   await showMath(pg, 'piece');
+  // opening the tab copies the Gear browser's Job and sync settings in, and the address names them a moment later (the router's
+  // write cooldown): the page is settled once the address carries them, and only then is it compared before and after a click
+  await pg.waitForFunction(
+    ([cap, level]) => location.hash.includes(`il=${cap}`) && location.hash.includes(`level=${level}`),
+    [SHARED_SETUP.cap, SHARED_SETUP.level],
+  );
   await checkHref(pg, '[data-sub=piece]', '#/math/piece', 'the Stat Allocation sub-tab');
   await checkHref(pg, '[data-sub=gcd]', '#/math/gcd', 'the GCD Scaling sub-tab');
   await checkHref(pg, '[data-sub=tiers]', '#/math/tiers', 'the Substat tiers sub-tab');
