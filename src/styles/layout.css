@@ -1,4 +1,9 @@
 /* ==== Layout: panels, the settings panel, fields, tabs ==== */
+/* The router places the scroll of every screen change itself (ui/router/focus.js). The browser's scroll anchoring would shift the
+   page on its own while a screen is swapped (the document grows and shrinks), so it is off for the page. */
+html {
+  overflow-anchor: none;
+}
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);

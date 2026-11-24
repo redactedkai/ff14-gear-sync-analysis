@@ -336,6 +336,62 @@ export async function checkScrollOnBack(pg) {
   check(strays.length === 0, `Back showed the scroll positions ${strays.join(', ')} (left from ${startAt}, back to ${leftAt})`);
 }
 
+/** Starts a recorder that notes, after each frame is drawn (a message posted from the frame's callback runs after its layout),
+ * where the page is scrolled and whether the element `marker` is drawn (it takes room on the page); kept in window.gsaScrollFrames. */
+const startFrameRecorder = (pg, marker) =>
+  pg.evaluate(selector => {
+    const frames = [];
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () =>
+      frames.push({ y: Math.round(window.scrollY), shown: (document.querySelector(selector)?.getClientRects().length ?? 0) > 0 });
+    const state = { frames, stopped: false };
+    const tick = () => {
+      if (state.stopped) return;
+      channel.port2.postMessage(0);
+      requestAnimationFrame(tick);
+    };
+    window.gsaScrollFrames = state;
+    tick();
+  }, marker);
+
+/** Stops the recorder and returns what it saw, one {y, shown} per frame. */
+const stopFrameRecorder = pg =>
+  pg.evaluate(() => {
+    window.gsaScrollFrames.stopped = true;
+    return window.gsaScrollFrames.frames;
+  });
+
+/** Back from the Gear browser to a scrolled math view shows no third position: from the frame the browser moves until the router has
+ * placed the view, the page is at the position it left or the one it returns to (the browser's own scroll anchoring, which moves the
+ * page while the screens are swapped, is off). */
+export async function checkScrollOnBackToMath(pg) {
+  await pg.setViewportSize({ width: 1280, height: 720 });
+  await pg.click('[data-tab=math]');
+  await pg.click('[data-sub=gcd]');
+  await expect(pg.locator('#tab-gcd')).toBeVisible();
+  const leftAt = await pg.evaluate(y => {
+    window.scrollTo(0, y);
+    return window.scrollY;
+  }, SCROLLED_PX / 2);
+  check(leftAt > 50, `the GCD Scaling view cannot be scrolled (${leftAt}), so the check below proves nothing`);
+  await pg.waitForTimeout(200); // the scroll event is noted
+  await pg.evaluate(() => document.querySelector('[data-tab=browse]').click());
+  await expectHash(pg, /^#\/gear(\?|$)/, 'the Gear browser');
+  await expect(pg.locator('#b-q')).toBeVisible();
+  const startAt = await pg.evaluate(() => window.scrollY);
+  await startFrameRecorder(pg, '#tab-gcd');
+  await pg.goBack();
+  await expect(pg.locator('#tab-gcd')).toBeVisible();
+  await pg.waitForFunction(y => Math.abs(window.scrollY - y) <= 1, leftAt);
+  await pg.waitForTimeout(300); // frames after landing: it stays there
+  const frames = (await stopFrameRecorder(pg)).filter(frame => frame.shown);
+  const strays = [...new Set(frames.map(frame => frame.y))].filter(y => Math.abs(y - startAt) > 1 && Math.abs(y - leftAt) > 1);
+  check(
+    frames.length > 0 && strays.length === 0,
+    `Back drew GCD Scaling at ${strays.join(', ')} (left from ${startAt}, back to ${leftAt})`,
+  );
+}
+
 /** A reload on a scrolled screen keeps its place, whether the browser or the router restores it. */
 export async function checkScrollOnReload(pg) {
   await seedSheet(pg, SET_SHEET);

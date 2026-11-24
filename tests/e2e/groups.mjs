@@ -81,6 +81,7 @@ import {
   checkRoutingAfterReload,
   checkRoutingGuard,
   checkScrollOnBack,
+  checkScrollOnBackToMath,
   checkScrollOnReload,
   checkUnloadGuard,
 } from './checks/tabs/routing.mjs';
@@ -134,6 +135,7 @@ export const GROUPS = [
   { steps: [step(checkUnloadGuard, 'app')] },
   { steps: [step(checkAddressSettings, 'app')] },
   { steps: [step(checkScrollOnBack, 'app'), step(checkScrollOnReload, 'app')] },
+  { fresh: true, steps: [step(checkScrollOnBackToMath, 'app')] },
   { steps: [step(checkSheets, 'sheets')] },
   { steps: [step(checkSheetForms, 'sheets')] },
   { steps: [step(checkDialogErrors, 'sheets')] },
