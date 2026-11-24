@@ -126,6 +126,21 @@ test.describe('<gsa-slot-menu>', () => {
     expect(await component.getByRole('button', { name: 'Slot: Ring' }).evaluate(width)).toBeCloseTo(closedWidth, 0);
   });
 
+  test('the open menu keeps its place above the page while the pointer lights the rows', async ({ mount, page }) => {
+    // a sticky table header stands for the page's own: it has a z-index of 1, and the menu's layer must stay above it
+    const component = await mount<typeof Default>(STORY);
+    await component.getByRole('button', { name: 'Slot: Any slot' }).click();
+    const menu = page.locator('#b-slots');
+    await expect(menu).toBeVisible();
+    const layerZIndex = () => menu.evaluate(element => getComputedStyle(element.parentElement as Element).zIndex);
+    expect(Number(await layerZIndex())).toBeGreaterThan(1);
+    await menu.getByRole('menuitemradio', { name: /^Head/ }).hover();
+    await expect(menu.getByRole('menuitemradio', { name: /^Head/ })).toHaveAttribute('data-highlighted', '');
+    await menu.getByRole('menuitemradio', { name: /^Ring/ }).hover();
+    await expect(menu.getByRole('menuitemradio', { name: /^Ring/ })).toHaveAttribute('data-highlighted', '');
+    expect(Number(await layerZIndex()), 'drawing the menu again took away its layer z-index').toBeGreaterThan(1);
+  });
+
   test('has no axe violations, closed and open', async ({ mount, page, axe }) => {
     const component = await mount<typeof Default>(STORY);
     expect(await axe()).toEqual([]);
