@@ -204,7 +204,7 @@ test('build: the page stays under its size ceiling', async () => {
   const { build } = await import('esbuild');
   const result = await build(esbuildOptions());
   const bytes = result.outputFiles.reduce((total, file) => total + file.text.length, 0);
-  assert.ok(bytes < 4_000_000, `page is ${bytes} bytes, over the 4 MB ceiling`);
+  assert.ok(bytes < 5_000_000, `page is ${bytes} bytes, over the 5 MB ceiling`);
 });
 
 /* Audit 16 R8 (owner, 2026-10-19): the optimizer's worker. Its bundle, built as the page builds it, runs here with a

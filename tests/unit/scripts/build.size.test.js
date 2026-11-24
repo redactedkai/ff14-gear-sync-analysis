@@ -1,6 +1,6 @@
-/* The size budget of the page's own code. The 4 MB page ceiling in build.test.js watches the whole
+/* The size budget of the page's own code. The 5 MB page ceiling in build.test.js watches the whole
    page, where the item database is most of the bytes; this test watches the code we write and the libraries we bundle
-   (JavaScript only, data left out), so a careless import shows up even when the page stays far below 4 MB. The method is
+   (JavaScript only, data left out), so a careless import shows up even when the page stays far below 5 MB. The method is
    Lit's check-size.js: bundle, gzip, compare with a number kept in the test. */
 import { test } from 'node:test';
 import * as esbuild from 'esbuild';
