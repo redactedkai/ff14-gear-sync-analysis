@@ -42,17 +42,17 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 
 | Domain | Covers | Unit files | Smoke steps |
 | --- | --- | ---: | ---: |
-| `model` | the game's number rules: item stats, sync, speed, tiers, food, materia | 21 | 0 |
-| `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 10 | 0 |
-| `solver` | the search for the best gear set, in the core (with the long sweep) | 21 | 0 |
-| `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 12 |
-| `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 17 | 10 |
-| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 13 | 7 |
-| `gear-browser` | the Gear browser tab and its filter menus | 5 | 11 |
+| `model` | the game's number rules: item stats, sync, speed, tiers, food, materia | 22 | 0 |
+| `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 11 | 0 |
+| `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
+| `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
+| `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 21 | 15 |
+| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
+| `gear-browser` | the Gear browser tab and its filter menus | 5 | 13 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 13 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 24 | 27 |
-| `look` | shared CSS: tokens, themes, layout at the five windows, radii | 1 | 7 |
-| `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 15 | 0 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 40 | 42 |
+| `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
+| `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 20 | 0 |
 
 Notes:
 
@@ -173,9 +173,9 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/sheets/storage.stat-keys | a v1 record read with the game's keys, and a record with the game's keys read as it is (note 14) |
 | ui/solve | the solver's answers: solveView by kind, an error as an answer, Gear to search |
 | ui/solver | the optimizer's solver (note 17) |
-| ui/router/focus | the focus and scroll after Back, Forward and a reload: the heading focused, a deep position scrolled to in the call itself with the page held tall and let go once it holds, a newer move taking over, a tab still opening waited for |
+| ui/router/focus | the focus and scroll after Back, Forward and a reload: the heading focused, a deep position scrolled to in the call itself with the page held tall and let go once it holds, a newer move taking over, a tab still opening waited for, a tab swapped in shorter than the position giving up the hold in the frame that places it |
 | ui/router/plain-click | which clicks on a link the page handles (a plain click) and which are the browser's (Ctrl, Cmd, Shift, Alt, a middle click) |
-| ui/router/router | the router over a stand-in history: opening each address, the not found screen, pushing and replacing entries, Back and Forward, and the leave guard holding a move back, undoing it and doing it again |
+| ui/router/router | the router over a stand-in history: opening each address, the not found screen, pushing and replacing entries, Back and Forward, and the leave guard holding a move back, undoing it and doing it again; the scroll events after a push (the late one of the screen left, the clamps to a shorter page) not noted as the new screen's position |
 | ui/router/routes | the address of each screen: parse and format round trip, junk addresses, percent-encoded ids, the page title |
 | ui/router/scroll-storage | the saved scroll positions: only finite numbers come back, damaged or hostile text, a refusing storage and a blocked `sessionStorage` read as none |
 | ui/router/unload-guard | the reload and close guard: asks only while work is held, and the dev flag turns it off |
@@ -204,7 +204,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | scripts/build.size | the size budget: the page's own JavaScript, gzipped with `src/data/` left out, stays within `OWN_CODE_GZIP_BUDGET_BYTES` (section 4.1) |
 | scripts/lint-lit | the ESLint config for the Lit elements reports a class field that shadows a property and an `<img>` without `alt` on fixture files |
 | scripts/visual | the screenshot baseline wrapper: runs only in the pinned image, skips with a message elsewhere or without baselines, and the image tag matches the workflow and the lock file |
-| scripts/test.domains | the domain guard: every file in one domain (a planted `.ts` stray is reported), smoke steps and `test:<domain>` scripts named |
+| scripts/test.domains | the domain guard: every file in one domain (a planted `.ts` stray is reported), smoke steps and `test:<domain>` scripts named, and the counts of the domains table in section 1.1 equal to the registry's |
 | ui/sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
 | ui/text (`.test.ts`) | en-US counts, the one-or-many text |
 | ui/tier-window | the rows a Substat tiers card draws: those in view, the margin, when to draw again, where to scroll to center a row |

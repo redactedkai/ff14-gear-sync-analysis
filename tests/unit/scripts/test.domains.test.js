@@ -102,6 +102,16 @@ test('domains: the domains together run every unit test file, each once', () => 
   assert.deepEqual([...perDomain].sort(), everyUnitFile);
 });
 
+test("domains: the domains table of docs/engineering/testing.md gives each domain's unit file and smoke step counts", () => {
+  const doc = readFileSync(`${ROOT}/docs/engineering/testing.md`, 'utf8');
+  const rows = [...doc.matchAll(/^\| `([\w-]+)` \|.*\| (\d+) \| (\d+) \|$/gm)];
+  const stepsPerDomain = new Map();
+  for (const step of GROUPS.flatMap(group => group.steps)) stepsPerDomain.set(step.domain, (stepsPerDomain.get(step.domain) ?? 0) + 1);
+  const documented = rows.map(([, name, unitFiles, smokeSteps]) => [name, Number(unitFiles), Number(smokeSteps)]);
+  const actual = DOMAIN_NAMES.map(name => [name, unitFilesOf([name]).length, stepsPerDomain.get(name) ?? 0]);
+  assert.deepEqual(documented, actual);
+});
+
 test('domains: an unknown or empty domain name is an error that lists the valid names', () => {
   assert.deepEqual(parseDomains('sheets, set-page'), ['sheets', 'set-page']);
   assert.throws(() => parseDomains('sheets,nope'), /unknown domain nope; the domains are model, data/);
