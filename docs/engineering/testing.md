@@ -24,7 +24,7 @@ What runs, on what, and how much of it?
 | Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,390 tests in 196 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
-| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 99 tests in 25 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
+| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 103 tests in 26 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
 | Smoke test (browser) | the built page in headless Chromium | one script (`tests/e2e/smoke.mjs`), its steps in groups listed in `tests/e2e/groups.mjs` |
 
 Notes:
@@ -199,9 +199,9 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the app store's first tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
 | ui/store/app-actions.parts (`.test.ts`) | every app action: the parts it counts are the parts that changed |
 | ui/store/sheets-actions, `.clan-party` | the sheets' store over a storage stand-in (note 15), run against the actions through the same adapter |
-| ui/store/app-facade, sheets-facade (`.test.ts`) | the two facades the elements read (`app`, `sheets`): each getter reads the revision of its slice, every member of the old stores is there, nothing can be assigned to, the number boxes' `setField`, the set page's guard, `unsettled` through `hasUnsettled`, `commitSheet` |
+| ui/store/app-facade, sheets-facade (`.test.ts`) | the two facades the elements read (`app`, `sheets`): each getter reads the revision of its slice, nothing can be assigned to, the number boxes' `setField`, the set page's guard, `unsettled` through `hasUnsettled`, `commitSheet` |
 | ui/store/set-page-actions (`.test.ts`) | the gear set pages' actions: the draft, the Auto-fill's status (idle, running, waiting, failed, cancelled), a stale answer ignored by its search id, the Gear to search count, `unsettled` over several pages, two pages open at once |
-| ui/store/no-direct-writes | a search of `src/` for any write to a facade that is not an action call: `x-model` on a store field, `app.<field> =`, `Object.assign(app...)`, `sheets.<field> =` |
+| ui/store/no-direct-writes | a search of `src/` for any write to a facade that is not an action call: `app.<field> =`, `Object.assign(app...)`, `sheets.<field> =` |
 | styles/z-index-scale | every `z-index` is a `--z-*` token, the tokens keep their order (dialog and toast on one level), the rules a library positioner needs are in place |
 | styles/theme-tokens | colors only through the CSS tokens (note 19) |
 | styles/layers | the stylesheet names its layers once, first, and every rule is inside one |
@@ -280,7 +280,7 @@ Notes on the longer rows:
 Notes:
 
 - **The long sweep** in `tests/sweep/` is flat, with no folders: `core-tier-rank.gcd-1` to `.gcd-4`, `core-tier-rank.no-gcd` and `core-tier-rank.pinned`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
-- **The components** are unit tested (the files in `tests/unit/ui/components/`): each test binds one to a plain store. A set page's logic is a plain session (`src/ui/elements/set-page/session.ts`), tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
+- **The elements' logic** is unit tested in Node (the files in `tests/unit/ui/elements/`, one folder per domain): each screen's logic is a plain model class (`sheets-screen-model.ts`, `app-root-model.ts`, ...) bound to a plain store, and a set page's logic is a plain session (`src/ui/elements/set-page/session.ts`) tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`:
   - the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1);
@@ -618,7 +618,7 @@ Where does a new test go?
 | --- | --- |
 | Formula, sync, speed, item query, optimizer | The module's unit test file (`core/<module>`) |
 | What a tab shows | Its view's unit test file (`ui/views/<view>`) |
-| A component's own logic (no page needed) | `ui/components/<component>` |
+| An element's own logic (no page needed) | `ui/elements/<domain>/<module>` |
 | Saved state shape or restore rules | `ui/state` |
 | A generator rule | The generator tests |
 | One Lit element's behaviour in a real browser (focus, keys, ARIA, CSS) | A story and a spec in `tests/stories/<domain>/` |

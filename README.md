@@ -45,7 +45,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run test:fast` | Every unit test except the 19 long files (`LONG` in `tests/domains.mjs`): about 12 s against about 40 s for `npm test`. For work in progress; `check` is still the bar for done |
 | `npm run test:changed` | The unit tests of the domains that own the files `git status` lists as changed (one line per path says why; `-- --list` shows the mapping only). For work in progress; `check` is still the bar for done |
 | `npm run test:<domain>` | The unit tests of one domain: `model`, `data` (with the Python tests), `solver`, `auto-fill`, `set-page`, `sheets`, `gear-browser`, `math-page`, `app`, `look`, `tooling`. Add `-- --fast` to leave out the long files, `-- --smoke` to build a private copy of the page and run that domain's browser checks. For work in progress; `check` is still the bar for done |
-| `npm run lint` | Biome (JavaScript, TypeScript, JSON, CSS): lint and format check, no file changes; a warning fails it; then `lint:lit` |
+| `npm run lint` | Biome (JavaScript, TypeScript, JSON, CSS and `src/index.html`): lint and format check, no file changes; a warning fails it; then `lint:lit` |
 | `npm run lint:lit` | ESLint with `eslint-plugin-lit` and `eslint-plugin-lit-a11y` on the Lit elements (`src/ui/elements/**`), the markup Biome cannot read |
 | `npm run typecheck` | `tsc --noEmit` over the `.ts` files (`tsconfig.json`: strict, erasable syntax only, `.js` files not checked); part of `check` |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
@@ -90,7 +90,7 @@ The full rules are in [CLAUDE.md](CLAUDE.md); start the docs at [docs/README.md]
 - **Code rules** (details in [architecture.md](docs/engineering/architecture.md)):
   - Core code takes a JobContext (`makeJobContext(jobId)`) and uses the game's stat keys (`str`, `dex`, `int`, `mind`, `vit`, `crit`, `det`, `dh`, `sks`, `sps`, `piety`, `ten`); shared logic never hard-codes a job-specific one but asks the job (`job.speedKey`, not `'sks'`).
   - Read item database rows through `ROW` (`row[ROW.ilvl]`), never by position.
-  - Keep big data (the item database, search results) out of reactive state; components build a `view` object and templates only display it.
+  - Keep big data (the item database, search results) out of the store or frozen in it; elements build a `view` object and templates only display it.
   - Write a rule once and share it; two copies drift.
   - `src/data/` is generated: change `scripts/data/` and regenerate, never edit it by hand.
 - **Tests.** Unit tests go in `tests/unit/<src folder>/<module>.test.js` (Node), generator tests in `tests/data/` (Python), page regressions in `tests/e2e/checks/` (run by `tests/e2e/smoke.mjs`). Some modules are tested from a file named after a concern (`level-sync`, `multi-slot`), so to find a module's tests, search for its path: `grep -rl "core/sync-target.js" tests/unit`. Each test belongs to one domain (`tests/domains.mjs`); `npm run test:<domain>` runs it. Expected values come from real items and published numbers, not from the tool's own output; see [testing.md](docs/engineering/testing.md).

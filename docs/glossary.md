@@ -166,7 +166,7 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Lexicographic order.** Ranking by the target first, then tiebreak 1, then tiebreak 2: a lower key only decides between gear sets that are equal on every higher one. The optimizer packs it into one integer score per item. See [optimizer.md, section 3](engineering/optimizer.md#3-turning-the-lexicographic-order-into-one-number).
 
-**Lit element.** A custom element written with the Lit library, drawn into the element itself (light DOM) so the page's CSS reaches it. The elements are in `src/ui/elements/`, one folder per domain; the first is the Gear browser's Slot menu. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Lit element.** A custom element written with the Lit library, drawn into the element itself (light DOM) so the page's CSS reaches it. The elements are in `src/ui/elements/`, one folder per domain: the page's root (`<gsa-app>`), the screens, the menus and popovers, and the shared dialog and drop-down. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Loadout.** Another name for a **gear set**; the docs write gear set. See Gear set.
 
@@ -195,6 +195,8 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 **Regain cut.** In tier ranking: a limit an earlier stage's proven most of its key puts on a later search. Each piece's regain is how much of that key a swap for a comparable piece could add; their sum may not pass the most minus the key's hold, which every gear set the later search can return meets. Exact. See [tier-ranking.md, section 4.4](engineering/tier-ranking.md#44-regain-cuts-from-the-stages-before).
 
 **Relaxation, bound.** A relaxation is an easier version of the remaining problem with some rules dropped (for example, ring copies or a stat minimum). Its best value is an upper **bound** on what the real problem can reach, so if even the bound cannot beat the incumbent, the branch is fathomed. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
+
+**Screen element, ports.** A screen element is the Lit element that draws one tab or page (`<gsa-sheets-screen>`, `<gsa-math-screen>`, `<gsa-gear-browser>`, `<gsa-set-page>`), inside the root element `<gsa-app>`. Its `ports` are the object it is given to reach the store and the actions (made once in `main.js`), so it reads no global. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Seed.** A gear set that already meets every limit of a search, given to it as a start: the search then only looks for a better one. Tier ranking passes each stage the stage before's set. See [tier-ranking.md, section 2](engineering/tier-ranking.md#2-the-stages).
 
@@ -230,7 +232,7 @@ See [math.md, section 4](mechanics/math.md#the-stat-factor-of-an-item) and [sect
 
 **Stat minimum.** A lower limit on a stat's total that the optimizer must meet, on any stat (the speed range is the speed case). Tier ranking holds each ranked stat with one. See [optimizer.md, section 5](engineering/optimizer.md#with-minimums-on-other-stats).
 
-**Store, view.** The page's UI pattern: one shared store holds the settings and the current job context; each page area derives a frozen view from it, and the template only displays the view. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
+**Store, view.** The page's UI pattern: one shared store holds the settings and the current job context; each element follows the parts of it that it shows (a `Select` controller or `store.subscribe`), derives a frozen view from them, and the template only displays the view. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
 
 **Substat share.** The fraction of the slot budget each substat on a piece gets, by rank: 100% for the highest, 70% for the second. Older healer gear also carries Direct Hit as a fixed 20% line outside this ranking. This is a pattern measured on real items, not a value stored in the game files; it reproduces 99.9% of real pieces exactly. Only Piece stats depends on it. The optimizer uses each real item's own stats. See [math.md, section 4](mechanics/math.md#substat-shares-empirical) and [validation.md](mechanics/validation.md). Status: whether it is verified, inferred or assumed: [validation.md, section 11](mechanics/validation.md#11-verified-and-assumed).
 

@@ -8,7 +8,7 @@ Related pages: [math.md](../mechanics/math.md), [optimizer.md](optimizer.md), [d
 
 **The question:** what runs where? The answer is short: the tool is a single web page with no server. Everything it needs, including the game data, is inside one HTML file that a browser opens straight from disk.
 
-![Four layers stacked top to bottom: generated game data, core logic, UI state, and components with the page template; each is used by the one below. A bundler joins all layers into one HTML file that a browser opens from disk. Generator tests check the data layer, unit tests check the core logic and UI state, and a smoke test checks the finished HTML file in a real browser.](../diagrams/architecture-layers.svg)
+![Four layers stacked top to bottom: generated game data, core logic, UI state, and elements under the page's root element; each is used by the one below. A bundler joins all layers into one HTML file that a browser opens from disk. Generator tests check the data layer, unit tests check the core logic and UI state, and a smoke test checks the finished HTML file in a real browser.](../diagrams/architecture-layers.svg)
 
 The code is split into four layers. Each layer depends only on the layers above it, so the dependency graph has no cycles and each layer can be tested without the ones below:
 
@@ -17,14 +17,14 @@ The code is split into four layers. Each layer depends only on the layers above 
 | 1. Generated game data | Budget tables, level data, item database, food table, job icons | nothing |
 | 2. Core logic | Formulas, sync, speed, item queries, pieces and sets, recipes and the solver session, optimizer, accuracy checks | data |
 | 3. UI state | Saved state, the shared store, the settings as plain inputs, the sheet model (`src/ui/sheets/`) and the solver (`src/ui/solver.js`, `src/ui/solve.js`) | core |
-| 4. Components and template | One Lit element per page area, under the page's root element `<gsa-app>`, and the pure view builders (`src/ui/views/`) they use | UI state, core |
+| 4. Elements | One Lit element per page area, under the page's root element `<gsa-app>`, and the pure view builders (`src/ui/views/`) they use | UI state, core |
 
 Notes:
 
 - **Data.** The item level budget table, per-level speed data, stat factor table, materia table, item database, food table and job icons. Produced by the data pipeline and never edited by hand. Row counts are in [data-pipeline.md, section 7](data-pipeline.md#7-facts-about-the-current-data).
 - **Core.** Plain functions with no page and no browser storage. The only shared mutable state is the counter that numbers new pool items and a few lookup caches keyed by their pure inputs. The job gear kept between solves is not module state: it lives in a solver session object that the caller creates and passes in ([section 8](#8-recipes-and-the-solver-session)). Because nothing in it touches the browser, the core runs unchanged in Node, which is how the unit tests use it.
 - **UI state.** The saved state (defaults, repair on load, browser storage), one shared store (the current settings, the current job context and the actions that change them), the sheet model (`src/ui/sheets/`: a sheet’s rules and its saved records, not a view) and the solver (`src/ui/solver.js`, `src/ui/solve.js`, the handler that runs in the worker). Two small pure modules sit under them: `job-sync-panel.js` turns the store’s fields into the plain inputs the core and the views take (each tab’s panel, the sync settings), and `ranks.js` holds the rule of the ranked stat menus. Neither imports another UI module, and the views import the sheet model and these modules, never the other way round, so no import goes back up the layers. The modules of the UI, and what each owns, are in [section 3](#the-uis-modules).
-- **Components.** Each page area is a Lit element (`src/ui/elements/`). It takes the plain inputs of its area from its parent element, hands them to a pure view builder (`src/ui/views/`) and keeps the ready-to-display "view" it returns; its template only displays that view. A screen element follows the store itself (a `Select` controller) and calls the store's actions; the page root hands each screen what it needs.
+- **Elements.** Each page area is a Lit element (`src/ui/elements/`). It takes the plain inputs of its area from its parent element, hands them to a pure view builder (`src/ui/views/`) and keeps the ready-to-display "view" it returns; its template only displays that view. A screen element follows the store itself (a `Select` controller) and calls the store's actions; the page root hands each screen what it needs.
 - **The optimizer's worker.** One part runs off the page's thread. A set page's Auto-fill and its Gear to search line go to a Web Worker with its own copy of the core logic, which parses the data texts the page hands it (`src/ui/solver.js`, `src/ui/solver-worker.js`; [section 9](#9-the-optimizers-worker)). If the browser will not run it, they run on the page's thread instead.
 
 The page's runtime libraries are Lit (the elements, the page's root among them), Zag (`@zag-js/*`: the machines of menus, popovers and dialogs) and floating-ui (placement). The build uses one tool, esbuild. Adding any other dependency is a decision for the owner (see `CLAUDE.md`).
@@ -84,7 +84,7 @@ The raw stats already carry the game's keys, so one function in the item module 
 
 The answer is a one-way data flow: one store, one derived view per page area, and a template that only displays views.
 
-![At page load the saved state is read from browser storage, repaired, and becomes the shared store. A change in the store re-runs each component effect that read it; the effect calls the core logic and derives a frozen view, which the template displays. User input calls store actions, which change the store again. The store is saved back to browser storage 150 ms after the last change.](../diagrams/architecture-ui-flow.svg)
+![At page load the saved state is read from browser storage, repaired, and becomes the shared store. A change in the store makes each element that reads that part draw again; the element calls the core logic and derives a frozen view, which its template displays. User input calls store actions, which change the store again. The store is saved back to browser storage 150 ms after the last change.](../diagrams/architecture-ui-flow.svg)
 
 ### The UI's modules
 
@@ -253,7 +253,7 @@ What the diagram shows, by outcome:
 
 **One panel per tab.** The Gear browser and How the math works (Stat Allocation) each have their own Job and sync settings (job, cap, sync, level), saved in `browse` and `piece`. The store's top-level `job`, `cap`, `sync`, `level` and `jobCtx` are the open tab's copy, which the open tab's controls edit (the Gear browser's strip, Stat Allocation's math bar); `showTab` keeps the leaving tab's copy in its group and loads the new tab's. Substat tiers has its own job, saved as `tiers: { job }` (`tiers.job`, default Paladin, repaired on restore): `panel('tiers')` returns that job with no cap, no sync and the job's level cap as the level, and `setJob(id, 'tiers')` calls `setTiersJob`. `mathJobOwner(mathTab)` names the owner of the open sub-tab's Job box (`'tiers'` on Substat tiers, `'math'` otherwise). GCD Scaling has no job box.
 
-- **Reading.** A component reads its own tab's panel through `store.panel(tab)` (`panelOf` in `job-sync-panel.js`), so a hidden tab never works with the open tab's job.
+- **Reading.** An element reads its own tab's panel through `store.panel(tab)` (`panelOf` in `job-sync-panel.js`), so a hidden tab never works with the open tab's job.
 - **Changing the job.** `setJob` resets only the open tab's selections (`resetForJob` takes the tabs to reset).
 - **Restoring.** `restoreState` takes each group through `splitPanelSettings`, restores it for its own job, and gives an older save's single panel to both tabs.
 - **The cap on Stat Allocation.** While IL Sync is off the cap holds the item level that level sync gives (`holdLevelSyncCap`: null at the job's level cap). It follows the level box, the job, Reset and a load (`followLevelSync`, called by those actions and by `setPanel`, `restoreState`), never a watcher; switching IL Sync on keeps it.
@@ -263,22 +263,22 @@ What the diagram shows, by outcome:
 
 ### Each area derives a view
 
-Every page area is a component that shows one **view** object. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it.
+Every page area is an element that shows one **view** object. The view holds everything the template shows: formatted numbers, table rows, CSS classes, labels. The template only displays it.
 
-The functions that build views are pure and live apart from the components, with no dependency on the UI framework. They take **plain inputs**, never the store:
+The functions that build views are pure and live apart from the elements, with no dependency on the UI framework. They take **plain inputs**, never the store:
 
 - the job context;
 - the sync settings (`syncSettings`);
 - the area's own settings (the browser's filters, Piece stats' piece, a set's Auto-fill recipe);
 - for an Auto-fill, a solver session.
 
-A component assembles those inputs from its store (`job-sync-panel.js` has the helpers, such as `syncSettings`). So the unit tests check what each tab shows directly. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
+An element assembles those inputs from its store (`job-sync-panel.js` has the helpers, such as `syncSettings`). So the unit tests check what each tab shows directly. The views carry their text too (sentences, headings, the readout's lines), so the template does not build text from several fields.
 
-**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The component has a getter, `view` (in an element, as `<gsa-piece-stats>`'s: `pieceStatsView` for the settings it is given and the chart's width), that reads the inputs from the store (an element: from its properties), makes a key of them, and asks a `viewCache` (`view-cache.ts`) for the view of that key. A new key builds the view; the same key returns the last one.
+**One pattern for derived views** (Gear browser, Piece stats, GCD, Substat tiers). The element has a getter, `view` (as `<gsa-piece-stats>`'s: `pieceStatsView` for the settings it is given and the chart's width), that reads the inputs from the store (an element: from its properties), makes a key of them, and asks a `viewCache` (`view-cache.ts`) for the view of that key. A new key builds the view; the same key returns the last one.
 
 - Reading the inputs inside the getter builds the view in the same render as the setting changes.
 - The template reads the view many times a render; the cache builds it once.
-- The cache lives in the component's closure, not in its reactive state.
+- The cache lives in the element, not in the store.
 
 The Gear browser's getter returns its last view while its tab is hidden, so the list is built only while it can be seen.
 
@@ -299,7 +299,7 @@ Each element gets the job through its own properties (a Job menu's `job`, a `pan
   - *Measured:* [perf-log.md, section 2.3](perf-log.md#23-the-gear-browser-as-one-lit-element-run-of-2026-11-25) (the clicks and the switch from Sheets, before and after the element).
   - *Rows by place:* the rows are drawn with `map` over `view.shown`, never `repeat`, so a row is the place on the page and not the item. A sort, a page, a slot, a filter or a job change keeps the 50 rows and only rebinds them, instead of removing 50 and building 50: about 30% less time for a click in the table at 4× CPU throttle ([perf-log.md](perf-log.md), section 2.2). The cost is that a kept row shows its old item until every binding has run, so every part of a row must come from the same item in one draw: the two marks (HQ, x2) are `hidden` bindings of the row's own template (`.hqg[hidden]` in `pieces.css` beats the font rule's `display`), not a deferred show. Nothing in a row may follow the place instead of the item: the smoke step `checkBrowserRowsMatchView` compares every row with `view.shown` before each drawn frame. The page line's buttons and the headings are the exception: they are `repeat`ed by key, so the focus stays on the page button pressed when the numbers move.
 - The database facts of a piece (`rowFacts` in `items.js`) are looked up through an index of rows by pool key, built on first use, and each key's facts are built when first asked for. The page's thread builds the index when it shows its first game piece (an Auto-fill's first result). Building every key's facts there blocked it for about 25 ms (150 ms at 4× CPU throttle).
-- The job's gear an Auto-fill searches is built once per job, frozen, and kept in the solver session, which lives in the page's Web Worker ([section 9](#9-the-optimizers-worker)), never in reactive state. Frozen means the list and each pool item with its stats (`mkItem` in `items.js`), so the worker and the page's thread hold the same frozen objects, and `deepFreeze` stops at them.
+- The job's gear an Auto-fill searches is built once per job, frozen, and kept in the solver session, which lives in the page's Web Worker ([section 9](#9-the-optimizers-worker)), never in the store. Frozen means the list and each pool item with its stats (`mkItem` in `items.js`), so the worker and the page's thread hold the same frozen objects, and `deepFreeze` stops at them.
 - The set page's draft and suggestion are frozen objects in the store; the worker is sent plain copies built for the request.
 
 ### Heavy work: debounced, only when visible, or on request
@@ -503,7 +503,7 @@ Notes:
 - **One worker for both kinds.** A worker runs one request at a time, so the Gear to search line waits behind a running search. A filter changed during a long search updates the line when the search ends (measured: 1,248 ms after the change, in a 1.45 s Warrior search). Cancel ends the wait at once. A second worker would parse the data again (about 50 ms) and keep a second copy of the job's gear.
 - **Cancel.** A set page's Cancel (`cancelFill`) returns the page to idle at once, with the set as it was and the line "Auto-fill cancelled.", and calls the solver's `cancel('solve', key)` with the set's id.
   - *The restart:* a worker cannot be interrupted mid-search, so when a search is in the worker, `workerSolver` terminates the worker and starts a fresh one at once. The new worker is handed the data texts again and parses them; its session builds the job's gear again.
-  - *The callers:* the cancelled search's caller, and any search waiting behind it, get a cancelled error (`isCancelled`), which the component ignores.
+  - *The callers:* the cancelled search's caller, and any search waiting behind it, get a cancelled error (`isCancelled`), which the element ignores.
   - *Gear to search:* requests not yet answered are posted to the new worker; with none, the last one is asked again, so the new worker builds the job's gear before the next search.
   - *When:* always when a search is in the worker. The restart costs about 0.2 to 0.5 s over a warm search, while letting the search finish can cost the rest of it, 1 to 3 s for a long Target GCD search.
   - *Measured* (Playwright): Warrior, level 100, Target GCD 2.30, food, two tiebreaks, cancelled at 0.3 s. The next quick search showed after 0.5 to 0.85 s instead of 1.25 to 1.6 s.
@@ -533,7 +533,7 @@ Notes:
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
 | Other core modules | `src/core/formulas.js`, `gear-groups.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `optimizer/` |
-| Entry point: restore, make the store and register its two facades and the components, start the router, autosave | `src/main.js` |
+| Entry point: restore, make the store and register its two facades and the elements, start the router, autosave | `src/main.js` |
 | Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`), `plain-click.js` (`plainClick`, `followInPage`), `scroll-storage.js` (`readScrollPositions`, `writeScrollPositions`), `unload-guard.js` (`installUnloadGuard`, `UNLOAD_GUARD_OFF_KEY`) |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
 | Saved sheets: the index and one record per sheet, read, write, order, delete, the full-storage and unavailable-storage results | `src/ui/sheets/storage.js` (`loadSheets`, `saveSheet`, `saveOrder`, `deleteSheet`, `parseSheet`, `storageAvailable`) |
@@ -548,7 +548,7 @@ Notes:
 | Text helpers the views share: counts, plurals, a deep copy | `src/ui/text.ts` (`fmtInt`, `plural`, `oneOrMany`, `clone`) |
 | The view pattern, frozen views | `src/ui/view-cache.ts` (`viewCache`, `deepFreeze`) |
 | Number-box behaviour, the flash of a lowered cap field | `src/ui/number-field.js` (`numberBox`, `flashLowered`, `TYPING_DEBOUNCE_MS`) |
-| The Expansion and "Gear categories" menus, where a floating menu opens (components only) | `src/ui/elements/gear-browser/filter-menu-model.ts` (`GEAR_FROM_SECTIONS`, `gearFromSummary`, `gearFromHint`, `excludeAfterToggle`) for the two menus |
+| The Expansion and "Gear categories" menus, where a floating menu opens (elements only) | `src/ui/elements/gear-browser/filter-menu-model.ts` (`GEAR_FROM_SECTIONS`, `gearFromSummary`, `gearFromHint`, `excludeAfterToggle`) for the two menus |
 | View builders (pure, unit-tested) | `src/ui/views/` (`piece.js`, `sync-explainer.js`, `math-bar.js`, `piece-stats.js`, `gear.js`, `tiers.js`, `meal-menu.js`; the set page's views (rows below) and the sheet views (notes below the table)) |
 | Charts | `src/ui/sync-charts.js` (SVG for `unsafeSVG` in the Stat Allocation and GCD Scaling elements; every name passed in goes through `escapeXml`) |
 | Gear browser rows a page, page numbers shown | `src/ui/views/gear.js` (`PAGE_SIZE`, `PAGE_SLOTS`) |

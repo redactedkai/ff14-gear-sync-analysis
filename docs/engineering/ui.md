@@ -355,7 +355,7 @@ Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-r
 
 | Concept | File |
 | --- | --- |
-| The page template (frame, the Gear browser's Job and sync strip, Sheets shell and dialogs, footer) | `src/index.html` |
+| The page's frame (title, tab bar, the Gear browser's Job and sync strip, notes, footer) | the root element `src/ui/elements/app/app-root.ts` (`<gsa-app>`); `src/index.html` holds only the boot shell and that one element |
 | The job menu of the strip and of the math bar | `src/ui/elements/app/job-menu.ts` (`<gsa-job-menu>`) and `job-menu-names.ts` |
 | The cap and level controls of the strip and of Stat Allocation's Sync settings (flag, lowering, errors) | `src/ui/elements/app/cap-field.ts`, `level-field.ts`, `cap-follow.ts`, `src/ui/views/cap-field.js`, `src/ui/level-cap.js` |
 | The Math tab, the Gear browser, the sheet manager and sheet page, a set's page | the page root `src/ui/elements/app/app-root.ts`, which draws the Gear browser element `src/ui/elements/gear-browser/gear-browser.ts`; the Math tab is the element `src/ui/elements/math-page/math-screen.ts`; the Sheets tab is the element `src/ui/elements/sheets/sheets-screen.ts`, which draws the sheet manager, sheet page and set page (the elements `sheet-manager.ts`, `sheet-page.ts` and `src/ui/elements/set-page/set-page.ts`) |
@@ -364,12 +364,12 @@ Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-r
 | Pieces and meals with the same result | `src/core/same-result.js` (`sameMeals`), `src/core/tiers.js` (`rankTierOf`), `src/core/items.js` (`searchMatches`) |
 | Relics left out | `src/core/items.js` (`allocatedRelic`) |
 | Gear browser: element and view (Reset, cells of lowered pieces, pages) | `src/ui/elements/gear-browser/gear-browser.ts`, `gear-browser-model.ts`, `src/ui/views/gear.js` (`browseFiltered`, `browseCell`, `pageList`) |
-| Sheets tab: component and store | `src/ui/elements/sheets/sheets-screen.ts` and `sheets-screen-model.ts` (the screens are elements beside them), `src/ui/store/sheets-actions.ts`, `sheets-facade.ts`; sheet and set operations in `src/ui/sheets/ops.js` |
+| Sheets tab: element and store | `src/ui/elements/sheets/sheets-screen.ts` and `sheets-screen-model.ts` (the screens are elements beside them), `src/ui/store/sheets-actions.ts`, `sheets-facade.ts`; sheet and set operations in `src/ui/sheets/ops.js` |
 | Sheets: view builders for the manager, a sheet's page, the dialogs, a set's table, a manual draft and an Auto-fill suggestion | `src/ui/views/sheet-manager.js`, `sheet-sets.js`, `sheet-forms.js`, `set-rows.js`, `set-totals.js`, `set-draft.js`, `set-suggestion.js`; the pins and the result put on the rows: `src/ui/sheets/fill.js` |
 | A set page: element, session and its own views | `src/ui/elements/set-page/` (`set-page.ts` and its session parts), `src/ui/views/set-page.js`, `src/ui/sheets/fill-settings.js`, `src/ui/sheets/set-edits.js`, `src/ui/views/piece-menu.js`, `stone-menu.js`, `set-meal-menu.js`; the grades a meld slot takes: `src/core/meld.js` (`slotGrades`) |
 | How the math works sub-tabs | `src/ui/elements/math-page/math-screen.ts`, `math-inputs.ts`, `math-bar.ts`, `piece-stats.ts`, `gcd-view.ts`, `gcd-controls.ts`, `tiers-view.ts`, `tiers-controls.ts`, `tier-rows.ts`; `src/ui/views/piece.js`, `sync-explainer.js`, `math-bar.js`, `piece-stats.js`, `gcd.js`, `tiers.js` |
 
 Notes on the table:
 
-- The Sheets tab component handles the screens and reordering and hosts the dialogs element (`<gsa-sheet-dialog>`, logic in `SheetDialogs`); its store holds the sheets, the open screen and the actions.
+- The Sheets tab element (`<gsa-sheets-screen>`) handles the screens and reordering and hosts the dialogs element (`<gsa-sheet-dialog>`, logic in `SheetDialogs`); its store holds the sheets, the open screen and the actions.
 - A set page's element (`<gsa-set-page>`) draws it and its session handles the draft, pins, Auto-fill and the question before leaving; its own views are the page's view, the Auto-fill settings, edits by hand, the piece picker, and the materia and meal menus.

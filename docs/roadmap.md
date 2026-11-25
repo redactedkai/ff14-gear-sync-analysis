@@ -89,11 +89,11 @@ Grouped by area. Within an area the rows are in build order (the owner's order);
 
 - **A22.** Built: `tsconfig.json` (strict, `noEmit`, `erasableSyntaxOnly`, `allowJs` with `checkJs` off), `npm run typecheck` inside `npm run check`, and Node 22.18+ (type stripping runs `.ts` unit tests). A `.ts` module is imported with its `.ts` extension; esbuild strips its types. Not done: the other files stay `.js` and unchecked; each converts when it is touched. The state of the typing:
   - `tsconfig.json` is strict with `checkJs` off, so a `.js` file is not checked; a `.ts` file that imports one reads its inferred types. It includes `src/**/*.ts` and `tests/**/*.ts`; `scripts/validate/xivgear/xg_sync_test.ts` is left out (it runs inside xivgear's checkout against their types).
-  - The `.ts` files are `src/ui/text.ts`, `src/ui/view-cache.ts`, the store `src/ui/store/*.ts` (it runs the page), every Lit element in `src/ui/elements/` (including the set page's session parts `session.ts`, `menus.ts`, `edits.ts`, `fill-run.ts`, `fill-settings-edit.ts` and `leave-guard.ts`), the story specs and fixtures in `tests/stories/` and the unit tests `tests/unit/ui/text.test.ts`, `view-cache.test.ts` and `tests/unit/ui/store/*.test.ts` (some are `.js`: the old stores' tests run against the new actions).
+  - The `.ts` files are `src/ui/text.ts`, `src/ui/view-cache.ts`, the store `src/ui/store/*.ts` (it runs the page), every Lit element in `src/ui/elements/` (including the set page's session parts `session.ts`, `menus.ts`, `edits.ts`, `fill-run.ts`, `fill-settings-edit.ts` and `leave-guard.ts`), the story specs and fixtures in `tests/stories/` and the unit tests `tests/unit/ui/text.test.ts`, `view-cache.test.ts` and `tests/unit/ui/store/*.test.ts` (some are `.js`).
   - `tsc --noEmit` is `npm run typecheck`, the second step of `npm run check` (after lint). esbuild strips types and checks none; Node's type stripping runs the `.ts` unit tests (no enums, imports with the `.ts` extension, `erasableSyntaxOnly`).
   - Lit properties are declared with `static properties` and constructor defaults, not decorators; `useDefineForClassFields` is off.
   - A `.js` file is renamed to `.ts` when it is touched.
-- **A99.** `src/ui/test-data.js` (marked TEMPORARY) and the 60 KB `src/ui/test-sheets.json` are imported by `components/page.js` with no build condition, and `build.mjs` adds the test data button, so the data is in the `dev` page and probably in the `main` build too (inferred; `main` was not built). The generator its comment names is in the gitignored scratchpad, so the JSON cannot be rebuilt from the repo. Kept on purpose for now; settle it before a release: build it only for `dev`, or remove the button, the module and the JSON.
+- **A99.** `src/ui/test-data.js` (marked TEMPORARY) and the 60 KB `src/ui/test-sheets.json` are imported by `src/ui/elements/app/app-root-model.ts` with no build condition, and `build.mjs` adds the test data button, so the data is in the `dev` page and probably in the `main` build too (inferred; `main` was not built). The generator its comment names is in the gitignored scratchpad, so the JSON cannot be rebuilt from the repo. Kept on purpose for now; settle it before a release: build it only for `dev`, or remove the button, the module and the JSON.
 
 ### Game accuracy (in-game recordings)
 
@@ -143,7 +143,7 @@ On `dev` at least; live once on `main`. Grouped by area.
 
 | ID | Idea | Details |
 | --- | --- | --- |
-| A13 | The page template split into partials | [architecture.md, section 5](engineering/architecture.md#5-build) |
+| A13 | The page template (once split into partials, now the boot shell and one root element) | [architecture.md, section 5](engineering/architecture.md#5-build) |
 | A16 | Stat keys that are the game's own stats | [architecture.md, section 2](engineering/architecture.md#2-the-job-context) |
 | A24 | A character's base stats in their own module | [architecture.md, "Where this lives"](engineering/architecture.md#where-this-lives) |
 

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 580" role="img" aria-labelledby="t d">
   <title id="t">Layers of the page and how they are tested and built</title>
-  <desc id="d">Four layers stacked from top to bottom: generated game data, pure core logic, UI state and the shared store, and the page components with their template. Each layer is used by the one below it. The bundler takes all layers, with styles and data, and writes one HTML file that a browser opens from disk. Python generator tests check the data pipeline, Node unit tests check the core logic and the saved-state repair, and a browser smoke test checks the finished HTML file.</desc>
+  <desc id="d">Four layers stacked from top to bottom: generated game data, pure core logic, UI state and the shared store, and the page elements, one root element with a screen element for each tab. Each layer is used by the one below it. The bundler takes all layers, with styles and data, and writes one HTML file that a browser opens from disk. Python generator tests check the data pipeline, Node unit tests check the core logic and the saved-state repair, and a browser smoke test checks the finished HTML file.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -56,11 +56,11 @@
   <text class="muted s" x="230" y="280" text-anchor="middle">one shared store: settings, current job context</text>
   <text class="muted s" x="230" y="296" text-anchor="middle">saved state restored and repaired at load</text>
 
-  <!-- Layer 4: components -->
+  <!-- Layer 4: elements -->
   <rect class="box" x="20" y="336" width="420" height="72" rx="4"/>
-  <text class="fg t" x="230" y="363" text-anchor="middle">4. Components and page template</text>
-  <text class="muted s" x="230" y="382" text-anchor="middle">one component per page area, each derives a view</text>
-  <text class="muted s" x="230" y="398" text-anchor="middle">the markup only displays views and calls store actions</text>
+  <text class="fg t" x="230" y="363" text-anchor="middle">4. Elements</text>
+  <text class="muted s" x="230" y="382" text-anchor="middle">a root element and one element per page area,</text>
+  <text class="muted s" x="230" y="398" text-anchor="middle">each derives a view; templates only display it</text>
 
   <line class="flow" x1="230" y1="102" x2="230" y2="130" marker-end="url(#arrow)"/>
   <line class="flow" x1="230" y1="204" x2="230" y2="232" marker-end="url(#arrow)"/>
@@ -79,7 +79,7 @@
   <rect class="box" x="260" y="476" width="200" height="72" rx="4"/>
   <text class="fg t" x="360" y="503" text-anchor="middle">One HTML file</text>
   <text class="muted s" x="360" y="522" text-anchor="middle">code, styles and data inlined,</text>
-  <text class="muted s" x="360" y="538" text-anchor="middle">about 2.1 MB</text>
+  <text class="muted s" x="360" y="538" text-anchor="middle">about 3.5 MB</text>
 
   <rect class="box" x="500" y="476" width="200" height="72" rx="4"/>
   <text class="fg t" x="600" y="503" text-anchor="middle">Browser</text>

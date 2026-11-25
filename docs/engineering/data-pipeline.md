@@ -693,10 +693,10 @@ The page bundle takes the page code, the stylesheet and the generated data files
 | job icons (generated file) | 218,387 bytes |
 | food (generated file) | 18,309 bytes |
 | most speed per level (generated file) | 676 bytes |
-| finished page, minified | 2,975,005 bytes (about 3.0 MB) |
-| the optimizer's Web Worker | about 83 kB more: 2,976,430 → 3,059,130 bytes on a `main` build (about 3.1 MB) |
+| finished page, minified, with Lit, Zag and floating-ui | 3,526,562 bytes (about 3.5 MB) on a `dev` build |
+| the optimizer's Web Worker | about 83 kB more (measured before the page's libraries changed: 2,976,430 → 3,059,130 bytes on a `main` build) |
 
-Measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build. The generated files hold one row per line (section 4.14); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 81% of the page; the icons are about 7%.
+The generated files' sizes were measured 2026-10-19 (after `f87daf6`) on datamining commit `d9582a6`, a `dev` build; the finished page's size is from the current build. The generated files hold one row per line (section 4.14); the bundler minifies them, so the line breaks do not reach the page, which was byte for byte the same before and after them. Without them the item database is 2,402,324 bytes, about 68% of the page; the icons are about 6%.
 
 **What the inlined database costs at page open.** The page's one script carries every data file as a `JSON.parse` call on one string. The build's `jsonParseData` plugin (`scripts/build/build.mjs`) loads each `src/data/*.json` import that way, compacted, instead of as the object literal esbuild writes for a JSON import. So the page loads data as data, as Node and the tests do, and browsers parse JSON faster than the same object as JavaScript (owner's decision).
 

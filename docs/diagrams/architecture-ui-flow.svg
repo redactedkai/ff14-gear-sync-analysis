@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" role="img" aria-labelledby="t d">
   <title id="t">How data moves through the page at run time</title>
-  <desc id="d">At page load the saved state is read from browser storage, checked and repaired, and becomes the shared store. When a store field changes, every component effect that read it runs again: it calls the core logic, which reads the item database outside reactive state, and derives a frozen view. The template displays the view. User input calls store actions, which change the store and start the cycle again. Separately, the store is saved back to browser storage 150 ms after the last change.</desc>
+  <desc id="d">At page load the saved state is read from browser storage, checked and repaired, and becomes the shared store. When a part of the store changes, every element that reads it draws again: it calls the core logic, which reads the item database kept outside the store, and derives a frozen view. The element's template displays the view. User input calls store actions, which change the store and start the cycle again. Separately, the store is saved back to browser storage 150 ms after the last change.</desc>
   <style>
     .bg { fill: #fffdf7; }
     .box { fill: #ece9dd; stroke: #1b2a2c; stroke-width: 1.5; }
@@ -40,7 +40,7 @@
   <rect class="box" x="520" y="30" width="180" height="72" rx="4"/>
   <text class="fg t" x="610" y="57" text-anchor="middle">Core logic</text>
   <text class="muted s" x="610" y="76" text-anchor="middle">item database kept</text>
-  <text class="muted s" x="610" y="92" text-anchor="middle">outside reactive state</text>
+  <text class="muted s" x="610" y="92" text-anchor="middle">outside the store</text>
 
   <!-- Row 2 -->
   <rect class="box" x="20" y="152" width="180" height="120" rx="4"/>
@@ -57,11 +57,11 @@
   <text class="muted s" x="360" y="244" text-anchor="middle">actions</text>
 
   <rect class="box" x="520" y="152" width="180" height="120" rx="4"/>
-  <text class="fg t" x="610" y="182" text-anchor="middle">Component effect</text>
-  <text class="muted s" x="610" y="204" text-anchor="middle">reads the fields it needs</text>
-  <text class="muted s" x="610" y="220" text-anchor="middle">and derives its view;</text>
-  <text class="muted s" x="610" y="236" text-anchor="middle">heavy work is debounced</text>
-  <text class="muted s" x="610" y="252" text-anchor="middle">and waits for its tab</text>
+  <text class="fg t" x="610" y="182" text-anchor="middle">Screen element</text>
+  <text class="muted s" x="610" y="204" text-anchor="middle">draws again when a store</text>
+  <text class="muted s" x="610" y="220" text-anchor="middle">part it reads changes;</text>
+  <text class="muted s" x="610" y="236" text-anchor="middle">derives its view; heavy</text>
+  <text class="muted s" x="610" y="252" text-anchor="middle">work waits for its tab</text>
 
   <!-- Row 3 -->
   <rect class="box" x="270" y="338" width="180" height="72" rx="4"/>
