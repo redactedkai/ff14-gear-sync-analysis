@@ -540,7 +540,11 @@ export async function checkFromMenu(pg, pre, outside) {
   await pg.click(tab(SECTIONS[2]));
   await pg.keyboard.press('Escape');
   await expect(pg.locator(menu)).toBeHidden();
-  check((await focusedId(pg)) === `${pre}-from`, `${pre} Gear categories menu: the focus is not on its button after Escape`);
+  // Zag gives the focus back a frame after the menu is hidden
+  await poll(`the focus on the ${pre} Gear categories button after Escape`, async () => {
+    const id = await focusedId(pg);
+    return { ok: id === `${pre}-from`, got: id };
+  });
   await openFrom(pg, pre);
   await expect(pg.locator(tab(SECTIONS[2]))).toHaveAttribute('aria-selected', 'true');
   await pg.click(tab(SECTIONS[0]));
