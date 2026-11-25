@@ -1,6 +1,6 @@
 /* Small helpers shared by the unit tests: seeded random numbers, item lookup by name, store-shaped state, values
    typed in from outside sources (slot shares, AkhMorning's level table), so tests stay independent of the code under
-   test, and a stand-in for Alpine's $watch. The brute-force reference and real-gear pools are in exhaustive.js. */
+   test. The brute-force reference and real-gear pools are in exhaustive.js. */
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.js';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
@@ -70,7 +70,7 @@ export function restoreOpen(saved) {
   return restoreState(rest, { tab, mathTab });
 }
 
-/* A store-shaped state object, as the Alpine store holds it: a save restored by restoreState, plus the job context
+/* A store-shaped state object, as the page's state holds it: a save restored by restoreState, plus the job context
    and the highest real item level, and `recipe`, a set's recipe at its Auto-fill settings' defaults for the job
    (sheets/fill-settings.js fillRecipe), then `patch` on top. */
 export function appState(saved, patch = {}) {
@@ -93,30 +93,6 @@ export const AKH_LEVEL = {
   90: [390, 400, 1900],
   100: [440, 420, 2780],
 };
-
-/* Runs the component's init() with a $watch that, like Alpine's, calls back when a watched property's value changes;
-   returns settle(), which delivers the changes made since the last call (Alpine does this after each change). */
-export function watched(c) {
-  const checks = [];
-  c.$watch = (prop, callback) => {
-    let last = c[prop];
-    checks.push(() => {
-      const now = c[prop];
-      if (now === last) {
-        return;
-      }
-      const before = last;
-      last = now;
-      callback(now, before);
-    });
-  };
-  c.init?.();
-  return () => {
-    for (const check of checks) {
-      check();
-    }
-  };
-}
 
 /* True when `text` holds the number `value` as a whole word (hasNumber('Auto-fill 12 slots', 12); 2 is not found in
    '12'). A test of a note or label asserts the numbers the text must reflect, not its sentence. */

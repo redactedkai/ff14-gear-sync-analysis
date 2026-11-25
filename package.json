@@ -58,13 +58,11 @@
     "@zag-js/select": "1.49.0",
     "@zag-js/tabs": "1.49.0",
     "@zag-js/vanilla": "1.49.0",
-    "alpinejs": "3.17.4",
     "lit": "3.3.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@types/node": "^22.20.5",
-    "@vue/reactivity": "3.5.43",
     "axe-core": "4.14.1",
     "esbuild": "0.28.2",
     "eslint": "10.15.0",

@@ -1,5 +1,5 @@
 /* The two facades as the page registers them (`sealFacade`, main.js): reading and calling them works, and nothing can be assigned,
-   defined, deleted or added from outside, so a console command cannot shadow or remove what a template reads. */
+   defined, deleted or added from outside, so a console command cannot shadow or remove what a screen reads. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createPageStore, sealFacade } from '../../../../src/ui/store/page-store.ts';
@@ -57,7 +57,7 @@ for (const name of ['app', 'sheets'] as const) {
   });
 }
 
-test('a sealed facade still reads, runs its actions and answers as the template engine uses it', () => {
+test('a sealed facade still reads and runs its actions', () => {
   const { app, sheets, store } = sealedFacades();
   assert.equal(app.tab, 'browse');
   const before = store.log.length;
@@ -65,10 +65,7 @@ test('a sealed facade still reads, runs its actions and answers as the template 
   assert.equal(app.browse.min, 700);
   assert.ok(store.log.length > before);
   assert.equal(sheets.screen, 'sheets');
-  // a getter reads the store through `this` on the facade itself, and an object that cannot be extended is what the engine leaves
-  // as it is (it makes a reactive wrapper only of an extensible object)
+  // a getter reads the store through `this` on the facade itself
   assert.equal(Object.isExtensible(app), false);
   assert.equal(Object.isExtensible(sheets), false);
-  // the engine's registration (Alpine.store) lists the members once to look for interceptors and an `init`: none is defined here
-  assert.equal(Object.hasOwn(app, 'init'), false);
 });

@@ -43,7 +43,7 @@ export const poolOf = (app, gear) => recipePool(app.jobCtx, app.recipe, gear ?? 
 /* {searched, left} under Gear to search (solve.js searchCount). */
 export const countOf = (app, gear) => searchCount(app.jobCtx, app.recipe, gear ?? gearOf(app.jobCtx));
 
-/* A store-shaped state object, as the Alpine store holds it, with a set's recipe; sync on at cap 123 unless `patch`
+/* A store-shaped state object, as the page's state holds it, with a set's recipe; sync on at cap 123 unless `patch`
    says otherwise. Rank by tier off: these tests check the plain ranking against brute force and the core; tier
    ranking has its own tests. */
 export const makeApp = (job = 'SGE', patch = {}) => {

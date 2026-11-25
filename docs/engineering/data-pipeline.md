@@ -712,7 +712,7 @@ Notes:
 
 - **Size:** the page grew by about 3.6 kB (the string's escaped quotes), 2,975,005 bytes on a `dev` build.
 - **The worker** ([architecture.md, section 9](architecture.md#9-the-optimizers-worker)) adds only its code: it gets the data as the page's own strings (each data module also exports its text) and parses them on its own thread, so the database is still in the page once. Its timings are in the [performance log, section 3.2](perf-log.md#32-the-inlined-database-at-page-open).
-- **The rest of the script** (Alpine, the page code and what runs when the script loads) still takes more than the database itself.
+- **The rest of the script** (the libraries, the page code and what runs when the script loads) still takes more than the database itself.
 - **Run it** with `npm run build && node scripts/perf/db-parse.mjs` (`--runs`, `--rates`); pages and results go to `scripts/perf/out/db-parse/` (gitignored).
 
 ## 9. Updating after a game patch

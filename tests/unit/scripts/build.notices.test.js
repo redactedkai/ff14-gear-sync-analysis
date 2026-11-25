@@ -1,5 +1,5 @@
 /* The licence notices of the bundled packages (scripts/build/build.mjs): the page's script must carry the notice of every
-   third-party package it bundles. Lit and Vue (inside Alpine) keep theirs in their code, which esbuild moves to the end; the
+   third-party package it bundles. Lit keeps its notice in its code, which esbuild moves to the end; the
    other groups are in NOTICE_PACKAGES, copied from their LICENSE files. To update when a package is added to the page: add
    its group to NOTICE_PACKAGES (or, if its code carries its own notice, to CARRIES_OWN_NOTICE below), and list it in the
    README's "Bundled" line and architecture.md's "Licence notices". */
@@ -11,10 +11,7 @@ import * as esbuild from 'esbuild';
 import { NOTICE_PACKAGES, ROOT, esbuildOptions } from '../../../scripts/build/build.mjs';
 
 /* The bundled packages whose code holds the notice that esbuild keeps, with the text that shows it in the output. */
-const CARRIES_OWN_NOTICE = [
-  { bundles: /^(lit|lit-html|lit-element|@lit\/.*)$/, shows: 'SPDX-License-Identifier: BSD-3-Clause' },
-  { bundles: /^alpinejs$/, shows: '@vue/reactivity' },
-];
+const CARRIES_OWN_NOTICE = [{ bundles: /^(lit|lit-html|lit-element|@lit\/.*)$/, shows: 'SPDX-License-Identifier: BSD-3-Clause' }];
 
 /* The holder each group's LICENSE must name, written here and not read from the file the group points at: a group that points
    at another project's LICENSE (Zag at Floating UI's) must fail. Update it when a group is added to NOTICE_PACKAGES. */

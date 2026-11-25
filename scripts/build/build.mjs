@@ -16,7 +16,6 @@ import { UNLOAD_GUARD_OFF_KEY } from '../../src/ui/router/unload-guard.js';
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const SRC = join(ROOT, 'src');
 export const DIST = join(ROOT, 'dist');
-export const PARTIALS = join(SRC, 'partials');
 
 /* The oldest browsers the page runs in: the Baseline 2024 floor, the first version of each core browser that has every
    feature that became Baseline newly available in 2024 (Chrome and Edge 130, Firefox 132, Safari 18.2; from the
@@ -133,7 +132,7 @@ export const pageStyles = {
 
 /* The bundled packages that carry no licence notice in their code, and the package whose LICENSE file holds the notice for
    each group (the packages of one group share it: `@zag-js/*` is one project, `@floating-ui/*` another). esbuild keeps the
-   notices that are in the code (Lit's and Vue's); the page's script ends with these as well. Alpine ships none of its own. */
+   notices that are in the code (Lit's); the page's script ends with these as well. */
 export const NOTICE_PACKAGES = [
   { name: 'Zag', licenseOf: '@zag-js/menu', bundles: /^@zag-js\// },
   { name: 'Floating UI', licenseOf: '@floating-ui/dom', bundles: /^@floating-ui\// },
@@ -196,46 +195,6 @@ export function buildMarks({ branch, commit }) {
   return { label: 'DEV', where: branch + (commit ? ` @ ${commit}` : '') };
 }
 
-/* The template with every `<!-- INCLUDE name.html key=value ... -->` line replaced by src/partials/name.html: each
-   {{key}} in the partial becomes its value, the partial's leading comment (what it is and its keys) is dropped, and its
-   lines take the marker's indentation. One copy of markup the page shows twice (the Expansion and "Gear categories" menus of
-   the optimizer and the browser). A partial may include other partials (at most MAX_INCLUDE_DEPTH levels deep; `parents`
-   is the chain of partials being expanded). Throws on a missing partial, a {{key}} the marker does not give, a partial
-   that includes itself, or nesting deeper than the limit. */
-const MAX_INCLUDE_DEPTH = 3;
-export function expandIncludes(template, readPartial = name => readFileSync(join(PARTIALS, name), 'utf8'), parents = []) {
-  return template.replace(/^([ \t]*)<!-- INCLUDE (\S+)((?: [\w-]+=\S+)*) -->\r?$/gm, (_, indent, name, args) => {
-    const chain = [...parents, name].join(' > ');
-    if (parents.includes(name)) {
-      throw new Error(`${name}: includes itself (${chain})`);
-    }
-    if (parents.length >= MAX_INCLUDE_DEPTH) {
-      throw new Error(`${name}: includes nest deeper than ${MAX_INCLUDE_DEPTH} (${chain})`);
-    }
-    const values = Object.fromEntries(
-      args
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map(arg => arg.split('=')),
-    );
-    const filled = readPartial(name)
-      .replace(/^<!--[\s\S]*?-->\r?\n/, '')
-      .replace(/\{\{(\w+)\}\}/g, (__, key) => {
-        if (!(key in values)) {
-          throw new Error(`${name}: no value for {{${key}}}`);
-        }
-        return values[key];
-      });
-    const body = expandIncludes(filled, readPartial, [...parents, name]);
-    return body
-      .replace(/\r?\n$/, '')
-      .split(/\r?\n/)
-      .map(line => (line ? indent + line : line))
-      .join('\n');
-  });
-}
-
 /* The "failed to start" script (src/startup-failure.js) as the page inlines it: the saved-data key and the dev flag's key written
    over its markers (src/ui/store-key.js and src/ui/router/unload-guard.js, the places the keys are spelled), minified to ES5. Throws if the result would end the
    inline script early or is not ES5. The page puts it first in <head> (writePage, the STARTUP marker). */
@@ -272,10 +231,7 @@ export function writePage(outputFiles, outFile = join(DIST, 'index.html')) {
   if (/<\/script/i.test(js)) {
     throw new Error('bundle contains "</script", which would end the inline script early');
   }
-  const template = expandIncludes(readFileSync(join(SRC, 'index.html'), 'utf8'));
-  if (template.includes('<!-- INCLUDE')) {
-    throw new Error('src/index.html has an INCLUDE marker the build cannot read');
-  }
+  const template = readFileSync(join(SRC, 'index.html'), 'utf8');
   for (const marker of ['<!-- STARTUP -->', '<!-- STYLES -->', '<!-- SCRIPT -->']) {
     if (!template.includes(marker)) {
       throw new Error(`src/index.html is missing the ${marker} marker`);

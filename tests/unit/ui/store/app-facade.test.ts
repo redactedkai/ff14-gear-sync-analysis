@@ -1,41 +1,38 @@
-/* The app facade (src/ui/store/app-facade.ts), `$store.app` on the page: each getter reads the revision of each part of the state it
-   shows and no other, so a template tracks it; each method is an action, counted as the action runs; nothing can be assigned to. A
-   recording stand-in for the template engine's tracked revisions tells which revisions a getter reads. */
+/* The app facade (src/ui/store/app-facade.ts), on the page: each getter reads the revision of each part of the state it
+   shows and no other, so a screen can tell when to read it again; each method is an action, counted as the action runs; nothing can be assigned to. A
+   recording stand-in for the revisions tells which revisions a getter reads. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.js';
 import { createPageStore } from '../../../../src/ui/store/page-store.ts';
-import type { SliceRevisions } from '../../../../src/ui/store/app-facade.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreOpen } from '../../helpers/common.js';
+import { withRecordedReads } from '../../helpers/revision-reads.ts';
 
-/* A page store over `saved` (state.js restoreState's input, with the open tab) whose revisions record every read and every write
-   in `trail`: 'read:<key>' and 'write:<key>:<revision>', a key being a slice ('settings') or a part ('settings.browse'). */
+/* A page store over `saved` (state.js restoreState's input, with the open tab) whose facade reports each revision key it reads
+   to `trail`, a key being a slice ('settings') or a part ('settings.browse'); `revisionsMoved(act)` runs `act` and lists the
+   revisions it moved as '<key>:<revision>', sorted. */
 function recorded(saved: object = { tab: 'browse' }) {
   const trail: string[] = [];
-  const stores = createPageStore({
-    restored: restoreOpen(saved) as unknown as RestoredState,
-    storage: null,
-    track: (revisions: SliceRevisions) =>
-      new Proxy(revisions, {
-        get(target, key: string) {
-          trail.push(`read:${key}`);
-          return target[key];
-        },
-        set(target, key: string, revision: number) {
-          trail.push(`write:${key}:${revision}`);
-          target[key] = revision;
-          return true;
-        },
-      }),
-  });
+  const stores = withRecordedReads(createPageStore({ restored: restoreOpen(saved) as unknown as RestoredState, storage: null }), key =>
+    trail.push(key),
+  );
   /* The revision keys the reads of `read` touched, once each, sorted. */
   const keysRead = (read: () => unknown) => {
     trail.length = 0;
     read();
-    return [...new Set(trail.filter(entry => entry.startsWith('read:')).map(entry => entry.slice(5)))].sort();
+    return [...new Set(trail)].sort();
   };
-  return { ...stores, trail, keysRead };
+  const revisionsMoved = (act: () => void) => {
+    const before = { ...stores.store.revs };
+    act();
+    const after: Record<string, number> = stores.store.revs;
+    return Object.keys(after)
+      .filter(key => after[key] !== before[key])
+      .map(key => `${key}:${after[key]}`)
+      .sort();
+  };
+  return { ...stores, keysRead, revisionsMoved };
 }
 
 test('each getter reads the revision of each part it shows, and no other', () => {
@@ -110,14 +107,19 @@ test('each getter reads the revision of each part it shows, and no other', () =>
   );
 });
 
-test('an action writes the revisions of its slice and of the parts it changed as it runs, so a template is run again without waiting for the tick', () => {
-  const { app, trail } = recorded();
-  trail.length = 0;
-  app.editBrowse({ q: 'ring' });
-  assert.deepEqual(trail, ['write:settings:1', 'write:settings.browse:1']);
-  app.editGcd({ speed: 400 });
-  app.showSub('gcd');
-  assert.deepEqual(trail.slice(2), ['write:math:1', 'write:math.gcd:1', 'write:screen:1', 'write:screen.mathTab:1']);
+test('an action counts the revisions of its slice and of the parts it changed as it runs, without waiting for the tick', () => {
+  const { app, revisionsMoved } = recorded();
+  assert.deepEqual(
+    revisionsMoved(() => app.editBrowse({ q: 'ring' })),
+    ['settings.browse:1', 'settings:1'],
+  );
+  assert.deepEqual(
+    revisionsMoved(() => {
+      app.editGcd({ speed: 400 });
+      app.showSub('gcd');
+    }),
+    ['math.gcd:1', 'math:1', 'screen.mathTab:1', 'screen:1'],
+  );
   assert.equal(app.browse.q, 'ring', 'the state is read at once, whatever the tick');
 });
 

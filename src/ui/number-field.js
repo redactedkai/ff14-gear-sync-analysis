@@ -1,4 +1,4 @@
-/* The page's one pattern for number boxes (numberBox, numberField, storeNumberField) and the flash of a lowered cap field: DOM code,
+/* The page's one pattern for number boxes (numberBox) and the flash of a lowered cap field: DOM code,
    used by the components only. */
 import { commit, roundTo } from './number-commit.js';
 
@@ -17,13 +17,14 @@ export function flashLowered(field) {
   field.classList.add('flash');
 }
 
-/* A bound of numberField: a number, or a function read at each input. */
+/* A bound of numberBox: a number, or a function read at each input. */
 const bound = b => (typeof b === 'function' ? b() : b);
 
-/** The behaviour of one number box bound to a setting: the page's one pattern for number boxes (as $num, storeNumberField),
-   in two shapes. `numberField` (below) puts it in an Alpine x-bind object; a Lit element uses it as it is (the `shownNumber`
-   directive of elements/shared/number-box.ts shows `shownValue`, the template gives `onInput` and `onChange`). Returns {onInput,
-   onChange, shownValue, justWrote}:
+/** The behaviour of one number box bound to a setting: the page's one pattern for number boxes. A Lit element uses it
+   as it is (the `shownNumber` directive of elements/shared/number-box.ts shows `shownValue`, the template gives `onInput` and
+   `onChange`). Boxes with another rule keep their own handlers: the GCD tab's level and speed correct what is typed and say so,
+   and Piece stats' item level and the tiers' substat boxes commit only on change, since a value on the way would be held to its
+   range while typing. Returns {onInput, onChange, shownValue, justWrote}:
    - onInput(event) and onChange(event): the box's `input` and `change` events (only `event.target` and `event.inputType` are read);
    - shownValue(input): what the box shows, given the input element: the stored value, or the typed text while it still means that value;
    - justWrote(): whether the box has just written a value (until the page has updated).
@@ -110,40 +111,4 @@ export function numberBox(get, set, lo, hi, { live = false, decimals = 0, empty,
       }
     },
   };
-}
-
-/* x-bind object for a number input bound to a setting (numberBox, for Alpine); options as for numberBox.
-   The box's `min` and `max` attributes (where the arrow keys stop) come from `lo` and `hi`, so the markup does not
-   write them again. A bound of Infinity sets no attribute: a filter that takes any number as typed keeps the `max`
-   its markup gives it, the end of the real range, for the arrow keys only.
-   Boxes with another rule keep their own handlers: the GCD tab's level and speed correct what is typed and say so,
-   and Piece stats' item level and the tiers' substat boxes commit only on change, since a value on the way would be
-   held to its range while typing. */
-export function numberField(get, set, lo, hi, options = {}) {
-  const box = numberBox(get, set, lo, hi, options);
-  // the min and max attributes from the bounds: a function is read at each render, Infinity sets none
-  const attribute = (name, b) => (typeof b === 'function' || Number.isFinite(b) ? { [name]: () => bound(b) } : {});
-  return {
-    ...attribute(':min', lo),
-    ...attribute(':max', hi),
-    ':value'() {
-      return box.shownValue(this.$el);
-    },
-    '@input': box.onInput,
-    '@change': box.onChange,
-  };
-}
-
-/* numberField bound to a dotted path in the store, e.g. storeNumberField(app, 'piece.ilvl', 1, 795); options as for
-   numberField. The value is read from the store along the path and written by `store.setField(path, value)`, the store's one
-   action for a number box (ui/store/app-facade.ts). Registered as the $num magic in main.js. */
-export function storeNumberField(store, path, lo, hi, options = {}) {
-  const keys = path.split('.');
-  return numberField(
-    () => keys.reduce((holder, key) => holder[key], store),
-    value => store.setField(path, value),
-    lo,
-    hi,
-    options,
-  );
 }

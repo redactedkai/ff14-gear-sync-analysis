@@ -222,7 +222,7 @@ export async function openView(page, view) {
   await view.steps(page);
 
   // the pointer off everything: a result drawn (or scrolled) under the pointer after Auto-fill can leave a table's
-  // hovered column set (the table's data-col, src/partials/gear-page.html) with no later mouse event to clear it
+  // hovered column set (the table's data-col) with no later mouse event to clear it
   if (!view.keepHover) {
     await page.mouse.move(0, 0);
     await settle(page);

@@ -3,7 +3,7 @@
    a failing solver and replies that arrive late. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fakeFrames } from '../../../helpers/page-magics.js';
+import { fakeFrames } from '../../../helpers/frames.js';
 import {
   FILL_CANCELLED_TEXT,
   LOCKED_TABLE_TEXT,

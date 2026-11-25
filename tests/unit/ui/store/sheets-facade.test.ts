@@ -1,14 +1,14 @@
-/* The sheets facade (src/ui/store/sheets-facade.ts), `$store.sheets` on the page: what the manager, a sheet's page and a gear set's
+/* The sheets facade (src/ui/store/sheets-facade.ts), on the page: what the manager, a sheet's page and a gear set's
    page read, each getter reading the revision of the `sheets` slice (the gear set pages' getters, that of `setPages`); the calls are
    the actions of sheets-actions.ts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createPageStore } from '../../../../src/ui/store/page-store.ts';
-import type { SliceRevisions } from '../../../../src/ui/store/app-facade.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreState } from '../../../../src/ui/state.js';
 import { saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.js';
 import { fakeStorage, sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
+import { withRecordedReads } from '../../helpers/revision-reads.ts';
 
 /* The state a page starts with when nothing is saved. */
 const DEFAULTS = restoreState(null) as unknown as RestoredState;
@@ -18,17 +18,7 @@ function stores() {
   const storage = fakeStorage() as unknown as Storage;
   saveSheet(sheetOf('SGE', [sageSet(), sageSet({ id: 'g_2', name: 'Set 2' })], { name: 'Sage 123' }), storage);
   const reads: string[] = [];
-  const page = createPageStore({
-    restored: DEFAULTS,
-    storage,
-    track: (revisions: SliceRevisions) =>
-      new Proxy(revisions, {
-        get(target, slice: string) {
-          reads.push(slice);
-          return target[slice];
-        },
-      }),
-  });
+  const page = withRecordedReads(createPageStore({ restored: DEFAULTS, storage }), key => reads.push(key));
   return { ...page, reads };
 }
 

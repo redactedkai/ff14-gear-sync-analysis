@@ -171,7 +171,7 @@ export function createAppFacade(store: AppStore, actions: AppActions, revisions:
     showSub: actions.showSub,
 
     /* Set the setting a number box names by its path ('level', 'cap', 'browse.min', 'piece.ilvl', 'gcd.speed', ...): the box's
-       one way to write (number-field.js storeNumberField). A path is a field of the open tab's panel, or of `browse`, `piece` or
+       one way to write (the number boxes, number-field.js). A path is a field of the open tab's panel, or of `browse`, `piece` or
        `gcd`. */
     setField(path: string, value: unknown): void {
       const [group, field] = path.includes('.') ? path.split('.') : ['panel', path];

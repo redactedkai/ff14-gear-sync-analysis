@@ -6,7 +6,7 @@ on small pages of its own, the time from a performance mark just before the scri
 the HTML parser reading the script's text and V8 parsing, compiling and running it:
   - literal: the item database as esbuild bundles a JSON import by itself, as JavaScript code (the page before);
   - JSON.parse: the item database bundled as the page bundles it (the build's plugin), the form V8 reads fastest;
-  - page script: the whole script of dist/index.html (Alpine, the page code and every data file), run up to its end.
+  - page script: the whole script of dist/index.html (the libraries, the page code and every data file), run up to its end.
 Each run is a fresh browser context with a comment that makes the script text unique, so V8's compilation cache never
 serves an earlier run. CPU throttle 1x (this machine), 4x and 6x (Chrome DevTools' slow-device emulation).
 

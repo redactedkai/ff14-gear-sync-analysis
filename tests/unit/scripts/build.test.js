@@ -1,11 +1,11 @@
-/* The build script (scripts/build/build.mjs): the DEV marks outside main, the page template and its partials, and the
+/* The build script (scripts/build/build.mjs): the DEV marks outside main, the page template, and the
    licence notices kept in the bundle. */
 import { test } from 'node:test';
 import * as esbuild from 'esbuild';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { readStyles } from '../../../scripts/build/styles.mjs';
-import { buildMarks, esbuildOptions, expandIncludes, SRC, startupScript } from '../../../scripts/build/build.mjs';
+import { buildMarks, esbuildOptions, SRC, startupScript } from '../../../scripts/build/build.mjs';
 
 /* esbuild reads a .ts module imported with its .ts extension (which Node's type stripping needs too), strips the types
    and bundles it; the page's own text.ts and view-cache.ts are built this way. */
@@ -68,7 +68,7 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
    can show half-built. checkFirstPaint (tests/e2e/checks/settings/first-paint.mjs) watches the frames themselves. */
 test('page template: the body is the boot shell and one empty page root, nothing else', async () => {
   const { readFile } = await import('node:fs/promises');
-  const html = expandIncludes(await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8'));
+  const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
   const css = readStyles();
   const body = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('<!-- SCRIPT -->'));
   // the <noscript> line (JavaScript off) and the boot shell (#boot: static, hidden by the stylesheet unless the startup script
@@ -122,45 +122,6 @@ test('build loads each data file as JSON.parse of its compacted text, equal to t
   files.forEach((name, i) => {
     assert.deepEqual(sandbox.__data[i], JSON.parse(readFileSync(join(dataDir, name), 'utf8')), name);
   });
-});
-
-/* Audit 02, finding 3: the Expansion and "Gear categories" menus were copied in index.html for the optimizer and the
-   browser. One partial each now, filled in at build time with the tab's id prefix and store part. */
-test('build includes: a partial is filled in, indented like its marker, its leading comment dropped', () => {
-  const partials = { 'm.html': '<!-- about m: {{id}} -->\n<div id="{{id}}-x">\n  <i x-text="$store.app.{{part}}.q"></i>\n</div>\n' };
-  const out = expandIncludes('<p>\n    <!-- INCLUDE m.html id=o part=opt -->\n</p>', name => partials[name]);
-  assert.equal(out, '<p>\n    <div id="o-x">\n      <i x-text="$store.app.opt.q"></i>\n    </div>\n</p>');
-  assert.throws(() => expandIncludes('<!-- INCLUDE m.html id=o -->', name => partials[name]), /no value for \{\{part\}\}/);
-});
-
-/* A13: a partial may include partials (the set page holds the two filter menus); a loop or a deep chain stops the build. */
-test('build includes: a partial can include another, keeping the indentation; a cycle or too deep a chain throws', () => {
-  const including = name => `<!-- a partial that includes ${name} -->\n<!-- INCLUDE ${name} -->\n`;
-  const partials = {
-    'outer.html': '<!-- outer -->\n<section>\n  <!-- INCLUDE inner.html id={{id}} -->\n</section>\n',
-    'inner.html': '<!-- inner -->\n<b id="{{id}}">\n  x\n</b>\n',
-    'a.html': including('b.html'),
-    'b.html': including('a.html'),
-    'd1.html': including('d2.html'),
-    'd2.html': including('d3.html'),
-    'd3.html': including('d4.html'),
-    'd4.html': including('leaf.html'),
-    'leaf.html': '<i></i>\n',
-  };
-  const read = name => partials[name];
-  assert.equal(
-    expandIncludes('<div>\n  <!-- INCLUDE outer.html id=q -->\n</div>', read),
-    '<div>\n  <section>\n    <b id="q">\n      x\n    </b>\n  </section>\n</div>',
-  );
-  assert.throws(() => expandIncludes('<!-- INCLUDE a.html -->', read), /includes itself/);
-  assert.throws(() => expandIncludes('<!-- INCLUDE d1.html -->', read), /nest deeper than 3/);
-  assert.equal(expandIncludes('<!-- INCLUDE d3.html -->', read), '<i></i>');
-});
-
-test('page template: every include is expanded', async () => {
-  const { readFile } = await import('node:fs/promises');
-  const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
-  assert.doesNotMatch(expandIncludes(html), /\{\{|INCLUDE/);
 });
 
 /* The page's bytes must not change between builds of the same source: the worker's data module lists its files in the

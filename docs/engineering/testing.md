@@ -50,7 +50,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 45 | 47 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 44 | 47 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 21 | 0 |
 
@@ -154,7 +154,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/level-cap | the cap lowered to what the level allows, the flag in a cap field's label line |
 | ui/level-cap.level-text | a level box's rules: which text is no level at Paladin's, Blue Mage's and Beastmaster's level caps, `LEVEL_TEXT` and the error flag |
 | ui/number-commit | the number-box rule as a table: which typed text commits, what the box shows and when the value was clamped, for each kind of box |
-| ui/number-field | number boxes (their min and max, the Target GCD's range), typing and committing |
+| ui/number-field | number boxes (the Target GCD's range), typing and committing |
 | ui/ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
 | ui/sheets/bonus-options | the Clan and Party bonus lists: 16 clans under 8 races, none to five roles, the sizing text |
 | ui/sheets/fill | Auto-fill plan and pins, the answer put on the open rows, the line for the pins dropped (`unpinnedText`: the rows named, a relic with its reason) and the conflict line, the pins dropped (a meal problem drops the meal pin) |
@@ -196,8 +196,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/store/watch (`.test.ts`) | `watch`: once per tick, previous value, `equals`, stop |
 | ui/store/autosave (`.test.ts`) | the save 150 ms after the last change on a fake clock, one write for 1,000 changes, `pagehide` flush, a throwing storage ignored |
 | ui/store/app-state (`.test.ts`) | the five slices, actions that change nothing are not counted, `panelOf`, `persisted` in the saved shape, gear set pages, `routeOf` against the router's routes |
-| ui/store/app-state.differential (`.test.ts`) | random action sequences (36 runs of 250 steps, fixed seeds) on the Alpine app store as it was (kept as the oracle in `tests/unit/helpers/old-app-store.js`) and the new one: the saved JSON, each panel, the open tab and the typed levels equal after every step |
-| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the Alpine app store's tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
+| ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the app store's first tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
 | ui/store/app-actions.parts (`.test.ts`) | every app action: the parts it counts are the parts that changed |
 | ui/store/sheets-actions, `.clan-party` | the sheets' store over a storage stand-in (note 15), run against the actions through the same adapter |
 | ui/store/app-facade, sheets-facade (`.test.ts`) | the two facades the elements read (`app`, `sheets`): each getter reads the revision of its slice, every member of the old stores is there, nothing can be assigned to, the number boxes' `setField`, the set page's guard, `unsettled` through `hasUnsettled`, `commitSheet` |
@@ -281,7 +280,7 @@ Notes on the longer rows:
 Notes:
 
 - **The long sweep** in `tests/sweep/` is flat, with no folders: `core-tier-rank.gcd-1` to `.gcd-4`, `core-tier-rank.no-gcd` and `core-tier-rank.pinned`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
-- **The components** are unit tested (the files in `tests/unit/ui/components/`): no component imports Alpine, so each test binds one to a plain store. A set page's logic is a plain session (`src/ui/elements/set-page/session.ts`), tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
+- **The components** are unit tested (the files in `tests/unit/ui/components/`): each test binds one to a plain store. A set page's logic is a plain session (`src/ui/elements/set-page/session.ts`), tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`:
   - the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1);

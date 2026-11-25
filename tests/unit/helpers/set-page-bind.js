@@ -8,7 +8,7 @@ import { placePiece } from '../../../src/ui/sheets/set-edits.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.js';
 import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.js';
-import { fakeFrames, stubElement } from './page-magics.js';
+import { fakeFrames, stubElement } from './frames.js';
 import { createStores } from './stores.js';
 
 /* The elements of the page the logic reaches by selector, by the name `calls` records them under; the frame callback runs at once in Node */

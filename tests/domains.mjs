@@ -76,7 +76,7 @@ export const DOMAINS = {
       'src/ui/draw-in-steps.js',
       'src/styles/{set-page,pieces,fill-settings}.css',
     ],
-    tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,page-magics}.js'],
+    tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,frames}.js'],
   },
   sheets: {
     title: 'The Sheets tab: manager, a sheet page, dialogs, saved sheets',
@@ -132,7 +132,7 @@ export const DOMAINS = {
       'tests/unit/ui/views/level-sync.test.js',
       'tests/unit/startup-failure.test.js',
       'tests/unit/helpers/{fuzz,views}.js',
-      'tests/unit/helpers/{store-adapters.ts,stores.js,old-app-store.js}',
+      'tests/unit/helpers/{store-adapters.ts,stores.js,revision-reads.ts}',
       'tests/unit/ui/store/no-direct-writes.test.js',
     ],
   },

@@ -1,5 +1,5 @@
-/* Stand-ins that give the page's store (src/ui/store/) the interface of the two Alpine stores it replaced (the app store,
-   kept in old-app-store.js, and the Sheets store), so the old stores' tests run against the actions unchanged: the
+/* Stand-ins that give the page's store (src/ui/store/) the interface of the app store and the Sheets store the tests were
+   written against, so those tests run against the actions unchanged: the
    fields a test reads and writes directly (`store.cap = 200`, `store.browse.q = 'x'`) go to the state, the methods to the
    actions. Test glue, not product code. */
 import { restoreState } from '../../../src/ui/state.js';

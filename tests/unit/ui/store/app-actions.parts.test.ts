@@ -11,24 +11,17 @@ import { STATE_PARTS } from '../../../../src/ui/store/app-state.ts';
 import type { AppState, RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { partKey } from '../../../../src/ui/store/store.ts';
 import { restoreOpen } from '../../helpers/common.js';
+import { withRecordedReads } from '../../helpers/revision-reads.ts';
 
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
 /* A page store over `saved` that records the revision keys each read touches (`reads`). The frame scheduler runs at once. */
 function recorded(saved: object) {
   const reads = new Set<string>();
-  const page = createPageStore({
-    restored: restoreOpen(saved) as unknown as RestoredState,
-    storage: null,
-    frame: callback => callback(),
-    track: revisions =>
-      new Proxy(revisions, {
-        get(target, key: string) {
-          reads.add(key);
-          return target[key];
-        },
-      }),
-  });
+  const page = withRecordedReads(
+    createPageStore({ restored: restoreOpen(saved) as unknown as RestoredState, storage: null, frame: callback => callback() }),
+    key => reads.add(key),
+  );
   return { ...page, reads };
 }
 
