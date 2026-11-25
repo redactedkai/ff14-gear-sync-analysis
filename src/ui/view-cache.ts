@@ -1,12 +1,11 @@
 /* How a component keeps its derived view (architecture.md, section 3): a cache keyed by the view's inputs, and the freeze
-   that keeps Alpine from wrapping the view. Pure: no DOM, no Alpine. */
+   that keeps a view from being changed. Pure: no DOM. */
 import { clone } from './text.ts';
 
 /* The page's one way for a component to build a view (architecture.md, section 3): a getter reads the view's inputs
-   from the store, which makes every binding that shows the view track them, and asks this cache for the view of their
+   from the store (or an element's properties) and asks this cache for the view of their
    key. A new key builds the view (a pure view builder in src/ui/views); the same key returns the last one, so a
-   template that reads the view many times a render builds it once. Kept in the component's closure, not its reactive
-   state. Returns {get(key, build): the view for `key` (a string), last(): the last view built, or null}. */
+   template that reads the view many times a render builds it once. Kept in the component's closure, not in the store. Returns {get(key, build): the view for `key` (a string), last(): the last view built, or null}. */
 export function viewCache<View>() {
   let key: string | null = null;
   let view: View | null = null;
@@ -22,10 +21,9 @@ export function viewCache<View>() {
   };
 }
 
-/* `value` frozen with every object and array inside it, and returned. For a view stored on a component: Alpine leaves a
-   frozen object as it is, but freezing only the top would still let x-for wrap each row it hands a template (and each
-   object read from a row) in a reactive proxy that tracks every read. An object already frozen is taken as frozen all
-   through and not walked again. */
+/* `value` frozen with every object and array inside it, and returned. For a view an element keeps: freezing only the
+   top would still leave each row (and each object inside a row) open to a change. An object already frozen is taken as
+   frozen all through and not walked again. */
 export function deepFreeze<T>(value: T): T {
   if (value === null || typeof value !== 'object' || Object.isFrozen(value)) {
     return value;
@@ -38,8 +36,7 @@ export function deepFreeze<T>(value: T): T {
 }
 
 /* A deep copy of plain JSON-safe data (a gear set), frozen all through: what a set page puts in the store as its draft or its
-   suggestion. The copy shares nothing with the saved set it came from, so freezing it leaves that alone, and it drops Alpine's
-   reactive wrappers (text.ts clone). */
+   suggestion. The copy shares nothing with the saved set it came from, so freezing it leaves that alone (text.ts clone). */
 export function frozenCopy<T>(value: T): T {
   return deepFreeze(clone(value));
 }

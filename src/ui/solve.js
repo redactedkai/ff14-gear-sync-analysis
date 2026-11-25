@@ -3,7 +3,7 @@
    (sheets/fill.js applyFill). Every builder takes plain inputs: the job (a JobContext), the sync settings ({cap, sync,
    level}: ui/job-sync-panel.js syncSettings), the character level, the recipe (sheets/fill-settings.js fillRecipe) and a solver
    session (core/session.js), never the store.
-   Pure view builders: no Alpine import, so Node can load and test them. */
+   Pure view builders, so Node can load and test them. */
 import { gcdRange, gearFromCounts, recipePool, runRecipe } from '../core/recipe.js';
 import { fmtInt } from './text.ts';
 import { badPinMessages } from './sheets/fill.js';

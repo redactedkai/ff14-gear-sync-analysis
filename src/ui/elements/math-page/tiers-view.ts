@@ -1,7 +1,7 @@
 /* The Substat tiers sub-tab as a Lit element in light DOM: a card per substat (its box for the value on the character panel,
-   the effects of that value, a scroll area with every tier, and what is spare), and each substat's "?" note. An island in the
-   Alpine-run math page (docs/engineering/architecture.md section 3):
-   - the page gives it the tab's settings from the section's `x-effect`: `job` (Substat tiers' own job id), `typedLevel` (the level
+   the effects of that value, a scroll area with every tier, and what is spare), and each substat's "?" note. A child of
+   <gsa-math-screen> (docs/engineering/architecture.md section 3):
+   - its parent gives it the tab's settings: `job` (Substat tiers' own job id), `typedLevel` (the level
      typed into the math bar's box, or null: the job's level cap) and `shown` (the sub-tab is open); the element reads no store;
    - the values typed or clicked are the element's own: each substat starts at its base, and a value is kept until the job or
      the level changes (views/tiers.js tierEdited), not saved;

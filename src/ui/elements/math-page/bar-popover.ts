@@ -1,6 +1,6 @@
 /* The math bar's popovers (the "?" help, the Substats & materia chip's and the Sync chip's) as one Lit element in light DOM,
    with a Zag popover for the open state, the Escape key, the press outside, the focus and the placement. The element draws
-   nothing: its parent holds its content (the math bar element draws all three), so it wraps markup instead of being an island
+   nothing: its parent holds its content (the math bar element draws all three), so it wraps markup
    (docs/engineering/architecture.md section 3). The markup marks the parts:
    - `data-zag-part="trigger"`: the button (the "?" or the chip); Zag gives it `aria-expanded`, `aria-controls` and the click;
    - `data-zag-part="positioner"` around `data-zag-part="content"`: the popover, hidden while closed;

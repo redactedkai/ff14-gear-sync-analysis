@@ -1,5 +1,5 @@
 /* The actions that change the settings, the screen, the math tab's unsaved settings and the open gear set pages. Each is one
-   `store.update('<slice>/<name>', ...)` (store.ts); the rules are those of the Alpine store the page had before, kept as they were.
+   `store.update('<slice>/<name>', ...)` (store.ts).
    What each slice holds: app-state.ts. */
 import { makeJobContext } from '../../core/job-context.js';
 import { holdLevelSyncCap } from '../job-sync-panel.js';

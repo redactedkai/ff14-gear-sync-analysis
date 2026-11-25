@@ -1,6 +1,5 @@
-/* The app store as the page's templates and components read it (`$store.app`): the members the old Alpine store had, over the
-   store's state. Each getter reads the revision of each part of the state it returns and no other (app-state.ts STATE_PARTS), so
-   a template or a getter that reads it is run again when an action changes that part, and not when it changes another. The plain
+/* The app store as the page's screens read it (`ports.app`), over the store's state. Each getter reads the revision of each part of the state it returns and no other (app-state.ts STATE_PARTS), so
+   a reader that reads it is run again when an action changes that part, and not when it changes another. The plain
    objects it hands out are frozen copies, made again only after their part changed, so nothing outside an action can change the
    state through them. Each method calls an action. Nothing here can be assigned to: every write is a call (`editPanel`,
    `editBrowse`, ...), so the store counts it, the page draws it and the settings are saved. What the state holds: app-state.ts. */
@@ -12,7 +11,7 @@ import type { AppStore, Panel } from './app-state.ts';
 import { partKey } from './store.ts';
 
 /* The revision of each slice and each of its parts (store.ts revs): what a getter reads so its reader is run again after a change
-   of what it shows. The page hands in an object its template engine tracks; a test hands in the store's own. */
+   of what it shows. The page hands in the store's own; a test may hand in a recording stand-in. */
 export type SliceRevisions = Record<string, number>;
 
 /* The tab whose Job and sync panel the top-level job, cap, sync and level show: the open tab's, and the Gear browser's while the

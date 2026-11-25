@@ -138,7 +138,7 @@ function rowHtml(row) {
 /* The rows of one substat of `job` at `level` (haste in percent): {key, kinds, names, rows, shell, rowsHtml}. Made once per job,
    substat, level and haste, then kept (ROWS_KEPT): a value typed or clicked only moves the highlighted row. rows:
    [{start, range, values (text per effect), marks (per effect: it changed at this tier, only for a stat with two
-   effects), to}], frozen so Alpine leaves them alone; key: what they were made from, for the page to tell new rows
+   effects), to}], frozen; key: what they were made from, for the page to tell new rows
    from the same ones; shell: the table without rows; rowsHtml: each row drawn, one string per row. */
 function rowsOf(job, stat, level, haste) {
   const key = `${job.jobId}|${stat}|${level}|${haste}`;

@@ -1,7 +1,7 @@
 /* A saved gear set's numbers, as a sheet shows them: the evaluation under the sheet's settings, the table's Total, Tier and
    Defense rows, the header's figures (main stat, GCD, Critical Hit, ...) and the delta lines between two sets' figures.
    Every builder takes plain data (a saved Sheet and GearSet: docs/engineering/sheets.md, "Saved data") and returns a
-   plain view object; the template only displays it. Pure: no Alpine, no store.
+   plain view object; the template only displays it. Pure: no store.
    The numbers are the character panel's (docs/mechanics/math.md): every stat is the gear's points plus the character's own
    base (statBase), with the meal's bonus when the set has one, and the main stat and Vitality with the clan and the party
    bonus when the sheet sets them. They all come from evaluateSet's `panel` and `panelGear` (one rule, core/clan-bonus.js). */

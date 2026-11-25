@@ -1,5 +1,5 @@
 /* Stories of <gsa-tiers-view> and <gsa-tiers-controls>: the Substat tiers sub-tab and the math bar's Level box. The page's part is
-   played by a listener that applies `tiers-level` to both elements, as the Alpine wrapper does with the store. */
+   played by a listener that applies `tiers-level` to both elements, as <gsa-math-screen> does with the store. */
 import { html } from 'lit';
 import '../../../src/ui/elements/math-page/tiers-controls.ts';
 import '../../../src/ui/elements/math-page/tiers-view.ts';

@@ -1,6 +1,6 @@
-/* The math bar's GCD controls as a Lit element in light DOM: Level, Haste and the speed row (slider, box, Reset). An island in the
-   Alpine-run math page (docs/engineering/architecture.md section 3):
-   - the page gives it the tab's settings from a wrapper's `x-effect`: `level` (the level typed into the Level box, or null),
+/* The math bar's GCD controls as a Lit element in light DOM: Level, Haste and the speed row (slider, box, Reset). A child of
+   <gsa-math-screen> (docs/engineering/architecture.md section 3):
+   - its parent gives it the tab's settings: `level` (the level typed into the Level box, or null),
      `syncedLevel` (Stat Allocation's, which the tab follows until a level is typed), `haste` (a haste job id, or '') and `speed`
      (the speed asked for, or null); the element reads no store;
    - an edit sends `gcd-edit` (`detail`: `{level}`, `{haste}` or `{speed}`); the page edits its settings and gives them back;

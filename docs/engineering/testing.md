@@ -148,7 +148,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/elements/sheets/row-reorder | Up and Down on a handle move a row and the focus follows, a drop goes above or below the row under the pointer, nothing moves while the list is locked |
 | ui/elements/math-page/math-inputs | the math screen's inputs and edits: the Job menu's owner per sub-tab, the IL Sync switch and the cap it stores, the settings the bar and Stat Allocation elements are given, and that every edit they read is in the store parts the screen follows |
 | ui/hq-font | the HQ glyph font and its fallback |
-| ui/no-alpine | nothing imports Alpine (`src/main.js` included), so every module of `src/ui` and `src/core` loads in Node |
+| ui/no-alpine | nothing in `src/` has an Alpine attribute, binding, magic or import, and the packages are not in `package.json` or the lock |
 | ui/overlays | the overlay manager: Escape closes the topmost layer, a press outside, Tab out, a layer a native list leaves alone |
 | ui/job-sync-panel.level-sync-cap | the item level level sync gives (`levelSyncCap`, none at the job's level cap), held as the cap while IL Sync is off (`holdLevelSyncCap`); `mathJobOwner`; `panelOf('tiers')` |
 | ui/level-cap | the cap lowered to what the level allows, the flag in a cap field's label line |

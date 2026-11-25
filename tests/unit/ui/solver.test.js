@@ -208,7 +208,7 @@ test('worker solver: a reply the page cannot read (messageerror) falls back like
 test('worker solver: a request that cannot be posted rejects, and the next one still goes', async () => {
   const worker = fakeWorker();
   const solver = workerSolver(() => worker);
-  const proxy = new Proxy({}, {}); // like Alpine's reactive proxies: not cloneable
+  const proxy = new Proxy({}, {}); // a Proxy: not cloneable
   await assert.rejects(solver.request({ kind: 'solve', recipe: proxy }), /could not be cloned/);
   const next = solver.request(request('solve', 2));
   worker.reply(0, { result: 'ok', ms: 1 });
@@ -506,7 +506,7 @@ test('worker solver keys: cancel of a key that only waits rejects it and leaves 
 test('worker solver: a waiting request that cannot be posted rejects, and the ones behind it still go', async () => {
   const worker = fakeWorker();
   const solver = workerSolver(() => worker);
-  const proxy = new Proxy({}, {}); // like Alpine's reactive proxies: not cloneable
+  const proxy = new Proxy({}, {}); // a Proxy: not cloneable
   const first = solver.request(keyed('solve', 'a', 'a1'));
   const broken = solver.request({ ...keyed('solve', 'b', 'b1'), recipe: proxy }); // waits, then fails to post
   const last = solver.request(keyed('solve', 'z', 'z1')); // waits behind it

@@ -1,4 +1,4 @@
-/* Short texts the sheet views share: a sheet's settings in a few words, and dates. Pure: no Alpine, no store. */
+/* Short texts the sheet views share: a sheet's settings in a few words, and dates. Pure: no store. */
 
 /* A time in milliseconds since 1970 (UTC, as saved) as a date in a time zone, "2026-11-09" (the manager's Created and
    Changed columns). `timeZone` is an IANA name; without one, the browser's own time zone. */

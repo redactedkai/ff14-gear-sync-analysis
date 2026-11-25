@@ -40,7 +40,7 @@ export async function checkWorkerFallback(pg) {
   const runs = await pg.evaluate("performance.getEntriesByName('fill').length");
   await pg.evaluate(async () => {
     document.querySelector('#sh-fill').click();
-    await Promise.resolve(); // Alpine draws Cancel in a microtask
+    await Promise.resolve(); // the set page draws Cancel in a microtask
     document.querySelector('#sh-cancel').click();
   });
   await expect(pg.locator('#sh-fill')).toBeEnabled();

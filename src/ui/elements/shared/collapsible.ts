@@ -1,7 +1,7 @@
 /* A panel that a button shows and hides, as a Lit element in light DOM, with a Zag collapsible for `aria-expanded`,
-   `aria-controls` and the hidden state. The page's template puts its own Alpine-run markup inside, so the element renders
+   `aria-controls` and the hidden state. The page's template puts its own markup inside, so the element renders
    nothing of its own; it marks the parts the machine styles:
-     <gsa-collapsible trigger-id="help" content-id="help-panel" :open="helpOpen" @open-change="helpOpen = $event.detail">
+     <gsa-collapsible trigger-id="help" content-id="help-panel" ?open=${helpOpen} @open-change=${onOpenChange}>
        <button data-zag-part="trigger">?</button>
        <div data-zag-part="content">...</div>
      </gsa-collapsible>

@@ -1,7 +1,7 @@
 /* The Job menu as a Lit element in light DOM, with a Zag menu (radio items) for the open state, the keys, the focus and the
    placement. It is the Job box of the Gear browser's strip and of the math bar's controls row (Stat Allocation and Substat
-   tiers, each with its own job), an island in the Alpine-run page (docs/engineering/architecture.md section 3):
-   - the page gives it the job as `job` (an id: 'SGE') from a wrapper's `x-effect` and listens for `job-change`, whose `detail` is
+   tiers, each with its own job), a child element (docs/engineering/architecture.md section 3):
+   - its parent gives it the job as `job` (an id: 'SGE') and listens for `job-change`, whose `detail` is
      the id picked; the page then switches the job (a switch resets the settings of the old job) and sets `job` again;
    - it draws the label, the button (the job's icon, name and code) and the menu: one row of 40 px icons for each role, the
      rows and icons are the app's job constants (core/constants.js), not read from the store;

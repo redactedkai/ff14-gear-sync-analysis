@@ -238,7 +238,7 @@ gsa-set-page {
   opacity: 0.6;
   cursor: not-allowed;
 }
-/* the lists of sheets and of gear sets (the header cells counted by type: an x-for's <template> is a child too) */
+/* the lists of sheets and of gear sets (the header cells counted by type) */
 table.sets {
   table-layout: fixed;
 }
@@ -296,7 +296,7 @@ table.sets.sheetlist th:nth-of-type(n + 5) {
 #tab-sheets table.sets td {
   padding: 7px 8px;
 }
-/* the column head sits over the names, after the 28 px drag handle and its 6 px gap (of-type: an x-for's <template> is a child too) */
+/* the column head sits over the names, after the 28 px drag handle and its 6 px gap (counted by type) */
 #tab-sheets table.sets th:first-of-type {
   padding-left: 34px;
 }

@@ -79,7 +79,7 @@ export async function pickJob(pg, job) {
   await pg.click(`${fields.jobMenu} [data-job-id="${job}"]`);
 }
 
-/** Alpine has rendered: the job picker has its buttons and the strip names the job. */
+/** The page has rendered: the job picker has its buttons and the strip names the job. */
 export async function waitReady(pg) {
   await expect(pg.locator('[data-job-id]').first()).toBeAttached();
   await expect(pg.locator('#job-name')).not.toHaveText('');

@@ -1,6 +1,6 @@
 /* The math bar's Stat Allocation controls: what the Slot menu, the Substats & materia chip and its three menus, and the Gear item
    level slider show, and the edits they make (the page's own rules, for the <gsa-math-bar> element). Pure view builder: no DOM,
-   no Alpine, so Node can load and test it. */
+   so Node can load and test it. */
 import { rankChoices } from '../ranks.js';
 import { MATH_TAB_LABEL } from '../router/routes.js';
 import { MATH_TABS } from '../state.js';

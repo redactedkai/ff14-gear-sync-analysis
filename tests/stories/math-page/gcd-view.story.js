@@ -1,5 +1,5 @@
 /* Stories of <gsa-gcd-view>: the GCD Scaling sub-tab. The page's part is played by a listener that applies `gcd-edit` to the
-   element's properties, as the Alpine wrapper does with the store. */
+   element's properties, as <gsa-math-screen> does with the store. */
 import { html } from 'lit';
 import '../../../src/ui/elements/math-page/gcd-view.ts';
 

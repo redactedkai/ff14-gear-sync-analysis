@@ -1,5 +1,5 @@
 /* Gear browser tab (src/ui/views/gear.js): the rows matching the filters with their synced stats, the Slot menu,
-   sorting, the name search and Reset filters; computed from store-shaped state without Alpine. */
+   sorting, the name search and Reset filters; computed from store-shaped state. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../../../src/core/constants.js';
@@ -248,7 +248,7 @@ test('gear browser pages: one page has no buttons; no matches reads "No matches"
   assert.deepEqual([none.countText, none.shown.length, none.pageCount, none.pageButtons.length], ['No matches', 0, 1, 1]);
 });
 
-/* A row's plain fields (what the template shows, each read once by x-text or a binding): the cells in the table's column
+/* A row's plain fields (what the template shows, each read once by the template): the cells in the table's column
    order, the search's marks, the HQ mark and the ring's "x2". The row's data is checked against the real pieces of the
    job (the item level 130 rows of a Sage, synced to 123, as in the first test). */
 test('gear view: a row has one cell per stat in column order, with plain fields for the template', () => {
@@ -311,7 +311,7 @@ test("gear view: a row's fields mark the search words, the HQ mark and the secon
   assert.ok(gearViewOf(app).shown.some(x => x.hq));
 });
 
-/* The template shows the name and slot with x-text, which sets text, never markup: the fields keep a name as it is. */
+/* The template shows the name and slot as text, never markup: the fields keep a name as it is. */
 test('gear view: markup in a name stays text in the name parts', () => {
   const name = '<img src=x onerror=alert(1)> & "Ring"';
   const parts = markWords(name, 'ring');

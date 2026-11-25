@@ -6,7 +6,7 @@
    it with `keyed(setId, ...)`), so nothing here outlives a set:
    - the screen gives it `ports` (the store, its Sheets facade, the solver and the highest real item level: SetPagePorts), `setId`,
      `header` (the page's top line, views/sheet-sets.js setHeaderView) and `dialogIsOpen` (a function: whether a dialog of the screen is
-     open); the element never reads `$store`. It follows the store itself: it draws again when the Sheets tab or the set pages change;
+     open); the element follows the store itself: it draws again when the Sheets tab or the set pages change;
    - what it does is the page's session (session.ts and the parts it makes: menus, edits, Auto-fill, settings, leaving); the element
      makes one when it has its ports and set, starts it, and stops it when it leaves the page (the Auto-fill still running is stopped,
      the page's draft and result go);

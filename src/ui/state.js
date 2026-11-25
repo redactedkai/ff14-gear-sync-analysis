@@ -138,7 +138,7 @@ const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 /** a finite number, rounded and clamped to [lo, hi] */
 const intIn = (v, lo, hi, fallback) => (isNum(v) ? clamp(Math.round(v), lo, hi) : fallback);
-/** like intIn, but '' (an empty filter field) is allowed, and so is a numeric string (number inputs bound with x-model) */
+/** like intIn, but '' (an empty filter field) is allowed, and so is a numeric string (an older save kept number boxes as text) */
 const optIntIn = (v, lo, hi, fallback) => {
   if (v === '') {
     return '';

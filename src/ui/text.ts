@@ -1,4 +1,4 @@
-/* Small text and data helpers the views and the components share: pure, no DOM, no Alpine. */
+/* Small text and data helpers the views and the components share: pure, no DOM. */
 
 /* A whole number with en-US thousands separators ("1,234"), whatever the browser's locale: in a German browser
    "1.234" would read like a decimal next to GCDs such as "2.48s". The Defense row formats the same way. One formatter
@@ -29,8 +29,8 @@ export function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-/* A deep copy of plain data (a saved sheet, a gear set, Auto-fill settings): the JSON round trip, which also drops Alpine's
-   reactive wrappers. Only for JSON-safe data: no functions, no undefined kept, no Map. */
+/* A deep copy of plain data (a saved sheet, a gear set, Auto-fill settings): the JSON round trip, which shares nothing with
+   the original. Only for JSON-safe data: no functions, no undefined kept, no Map. */
 export function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }

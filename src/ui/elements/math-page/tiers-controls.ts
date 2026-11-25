@@ -1,6 +1,6 @@
 /* The math bar's Substat tiers control as a Lit element in light DOM: the Level box (the Job box before it is the bar's own).
-   An island in the Alpine-run math page (docs/engineering/architecture.md section 3):
-   - the page gives it the sub-tab's settings from a wrapper's `x-effect`: `job` (Substat tiers' own job id) and `typedLevel` (the
+   A child of <gsa-math-screen> (docs/engineering/architecture.md section 3):
+   - its parent gives it the sub-tab's settings: `job` (Substat tiers' own job id) and `typedLevel` (the
      level typed into the box, or null: the job's level cap); the element reads no store;
    - a level typed sends `tiers-level` (`detail`: `{level}`, null for the level cap); the page stores it and gives it back;
    - the box is the page's number box (number-field.js numberBox, `live`): each valid level counts as it is typed, with no wait (owner),

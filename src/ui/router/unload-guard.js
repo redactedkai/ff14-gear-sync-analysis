@@ -1,6 +1,6 @@
 /* The reload and close guard: while a gear set's page holds work a reload or a closed tab would lose (a manual draft, a running
    Auto-fill, a waiting Auto-fill result), the browser asks before the page goes away (a `beforeunload` listener). The question
-   itself is the browser's: a page cannot set its text. Pure of Alpine: the caller passes the window-like `target`, the
+   itself is the browser's: a page cannot set its text. Pure: the caller passes the window-like `target`, the
    function that says whether work is held, and the storage that may hold the dev flag. */
 import { STORE_KEY } from '../store-key.js';
 

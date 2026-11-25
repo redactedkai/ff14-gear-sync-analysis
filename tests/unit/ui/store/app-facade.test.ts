@@ -139,7 +139,7 @@ test('the objects a getter hands out are frozen copies, the same one until their
   assert.ok(Object.isFrozen(app.gcd) && Object.isFrozen(app.piece) && Object.isFrozen(app.tiers));
 });
 
-test("the members of the old Alpine store are there, and the open tab's panel is the one they show", () => {
+test("the facade has the members the screens read, and the open tab's panel is the one they show", () => {
   const { app } = recorded({
     tab: 'browse',
     browse: { job: 'WAR', cap: 600, sync: true, level: 90 },

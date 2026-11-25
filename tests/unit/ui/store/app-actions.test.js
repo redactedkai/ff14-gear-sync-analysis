@@ -1,4 +1,4 @@
-/* The app state's actions (src/ui/store/app-actions.ts), driven from Node through the old store's interface (the scenarios of the Alpine store's tests). */
+/* The app state's actions (src/ui/store/app-actions.ts), driven from Node through the store interface the tests were first written for (store-adapters.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 

@@ -1,5 +1,5 @@
 /* The Auto-fill settings popover of a set page (the gear button and the box under the bar) as a Lit element in light DOM, with a Zag
-   popover for the open and close, Escape, a press outside, the focus and the place. It wraps the page's own Alpine-run markup, so
+   popover for the open and close, Escape, a press outside, the focus and the place. It wraps the set page's own markup, so
    the element renders nothing of its own (as `gsa-dialog` does); it marks the parts the machine styles:
      <gsa-settings-popover trigger-id="sh-settings" content-id="sh-settings-dialog" @settings-open="...">
        <button data-zag-part="trigger">...</button>

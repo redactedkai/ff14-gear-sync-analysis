@@ -1,8 +1,8 @@
 /* The piece picker of a set page's gear table (the menu a row's piece button opens: a search box over the job's pieces for that slot,
    grouped by expansion) as one Lit element in light DOM, with a Zag popover for the Escape key, the press outside, the close when the
-   focus leaves it, the focus back on the button and the placement. One element serves every row: it sits inside the table's box as
-   an island (docs/engineering/architecture.md section 3), as the materia menu does:
-   - the page gives it properties from a wrapper's `x-effect`: `menu` (the picker, see `PiecePicker`, or null), `anchor` (the row's
+   focus leaves it, the focus back on the button and the placement. One element serves every row: it sits inside the table's box
+   (docs/engineering/architecture.md section 3), as the materia menu does:
+   - the set page gives it properties: `menu` (the picker, see `PiecePicker`, or null), `anchor` (the row's
      button it hangs under, or null) and `query` (the search text), and listens for its events (piece-picker-names.ts); the element
      never reads a store. The page builds the picker and cuts its list to the rows drawn so far: a long list is drawn in steps (a
      window of rows first, then more each frame while the menu stays open: views/limit-rows.js, ui/draw-in-steps.js), so the menu

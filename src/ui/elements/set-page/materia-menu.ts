@@ -1,7 +1,7 @@
 /* The materia menu of a set page's gear table (the menu a materia chip opens) as one Lit element in light DOM, with a Zag
    popover for the Escape key, the press outside, the focus back on the chip and the placement. One element serves every chip: it
-   sits inside the table's box as an island (docs/engineering/architecture.md section 3):
-   - the page gives it properties from a wrapper's `x-effect`: `menu` (the grades by stat, see `MateriaMenu`, or null), `anchor`
+   sits inside the table's box (docs/engineering/architecture.md section 3):
+   - the set page gives it properties: `menu` (the grades by stat, see `MateriaMenu`, or null), `anchor`
      (the chip it hangs under, or null) and `all` (every grade shown), and listens for its events; the element never reads a store;
    - an `anchor` opens the menu under that chip (a second chip moves it); no anchor closes it. The chips are not part of the
      element, so the popover has no trigger of its own: it is placed by `getAnchorElement`, and a press on the anchor itself is not

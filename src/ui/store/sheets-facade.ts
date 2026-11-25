@@ -1,5 +1,4 @@
-/* The Sheets store as the page's templates and components read it (`$store.sheets`): the members the old Alpine Sheets store had,
-   over the store's `sheets` slice. A getter reads the slice's revision, so what shows a sheet is run again after any action on the
+/* The Sheets store as the page's screens read it (`ports.sheets`), over the store's `sheets` slice. A getter reads the slice's revision, so what shows a sheet is run again after any action on the
    Sheets tab, and hands out the state itself (plain data a reader may look at and nothing may change); a method calls an action
    (sheets-actions.ts: the rules, the saving, the edit lock, the leave guard). Nothing here can be assigned to. */
 import { currentSet, currentSheet, setOf, setPageOf, sheetById, sheetHref, sheetList, unsettled } from './app-state.ts';
@@ -63,7 +62,7 @@ export function createSheetsFacade(store: AppStore, actions: SheetsActions, revi
     /* ---- the gear set pages (set-page-actions.ts) ---- */
 
     /* The state of gear set `setId`'s page: its draft, suggestion, Auto-fill status and Gear to search answer. Frozen all
-       through, so a template engine reads it as it is; a page not open reads as one at rest. */
+       through, so a reader takes it as it is; a page not open reads as one at rest. */
     page(setId: string | null) {
       void revisions.setPages;
       return setPageOf(state, setId);

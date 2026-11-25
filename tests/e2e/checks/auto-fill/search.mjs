@@ -211,7 +211,7 @@ export async function checkFillCancel(pg) {
   pg.workers().forEach(watch);
   pg.on('worker', watch);
 
-  // Auto-fill and Cancel in one task (Alpine draws Cancel in a microtask)
+  // Auto-fill and Cancel in one task (the set page draws Cancel in a microtask)
   const runs = await pg.evaluate("performance.getEntriesByName('fill').length");
   await pg.evaluate(async () => {
     document.querySelector('#sh-fill').click();

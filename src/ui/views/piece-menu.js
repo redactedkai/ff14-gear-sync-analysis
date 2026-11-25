@@ -1,5 +1,5 @@
 /* The piece picker of a set page's gear table (the "Choose a piece" menu of a row): a search menu, as the Food menu is.
-   Takes plain data and returns plain data; the template only displays it. Pure: no Alpine, no store. */
+   Takes plain data and returns plain data; the template only displays it. Pure: no store. */
 import { EXPANSIONS, SLOT_LABEL } from '../../core/constants.js';
 import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.js';
 import { meldSlots } from '../../core/meld.js';

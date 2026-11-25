@@ -1,6 +1,6 @@
 /* The GCD Scaling sub-tab as a Lit element in light DOM: the facts for a speed, the chart of the speed one 0.01 s step takes at
-   every level, and the table of GCD steps. An island in the Alpine-run math page (docs/engineering/architecture.md section 3):
-   - the page gives it the tab's settings from the section's `x-effect`: `level` (the level typed into the tab's box, or null),
+   every level, and the table of GCD steps. A child of <gsa-math-screen> (docs/engineering/architecture.md section 3):
+   - its parent gives it the tab's settings: `level` (the level typed into the tab's box, or null),
      `syncedLevel` (Stat Allocation's), `haste` (a haste job id, or '') and `speed` (the speed asked for, or null); the element
      reads no store;
    - a click on a bar of the chart or on a row of the table sends `gcd-edit` (`detail`: `{level}` or `{speed}`); the page then

@@ -1,7 +1,7 @@
 /* A manual draft of a gear set: what differs between the set as saved and the set as edited (the rows and the meal), the
    header's Now and After figures with their delta lines, the Apply button's text and the notes. Nothing proposed is saved
    until Apply (docs/engineering/sheets.md, "Drafts and suggestions"), so the draft is a second GearSet in memory; these
-   builders take both (sheets.md, "Saved data") and return plain view objects. Pure: no Alpine, no store. */
+   builders take both (sheets.md, "Saved data") and return plain view objects. Pure: no store. */
 import { allMeals } from '../../core/food.js';
 import { ROMAN } from '../../core/meld.js';
 import { pieceName } from './set-rows.js';

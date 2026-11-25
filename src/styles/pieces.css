@@ -71,7 +71,7 @@ details.panel:not([open]) {
 .hqg::before {
   content: "(HQ)";
 }
-/* hidden by the :hidden binding (a row kept for another item switches it at once; x-show waits a frame): the font rule below sets display */
+/* hidden by the `hidden` attribute (a row kept for another item switches it at once): the font rule below sets display */
 .hqg[hidden],
 :root.hqfont .hqg[hidden] {
   display: none;

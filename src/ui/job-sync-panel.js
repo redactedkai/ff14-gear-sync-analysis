@@ -1,5 +1,5 @@
 /* The page's settings as the core and the views take them: plain values read from the store's fields, so a view never
-   needs the store itself (a sheet hands in its own). Pure: no Alpine import and no other UI module, so state.js,
+   needs the store itself (a sheet hands in its own). Pure: no import of another UI module, so state.js,
    level-cap.js, the views and the components can all use it without an import going back up. */
 import { ACTIVITIES } from '../core/constants.js';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';

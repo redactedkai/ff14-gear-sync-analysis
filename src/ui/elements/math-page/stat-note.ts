@@ -1,7 +1,7 @@
 /* The Substat tiers "?" note as a Lit element in light DOM, with a Zag popover for the Escape key, the press outside and the
-   placement. One element serves every card's "?": it sits inside the Alpine-run Substat tiers table as an island
+   placement. One element serves every card's "?": it sits inside the Substat tiers view
    (docs/engineering/architecture.md section 3):
-   - the page gives it properties from a wrapper's `x-effect`: `note` (what the note says, or null) and `anchor` (the "?"
+   - its parent gives it properties: `note` (what the note says, or null) and `anchor` (the "?"
      button it hangs under, or null) and listens for `note-close`; the element never reads a store;
    - an `anchor` opens the note under that button (a second button moves it: the note is placed again); no anchor closes it;
    - the buttons are not part of the element, so the popover has no trigger of its own: it is placed by `getAnchorElement`, and

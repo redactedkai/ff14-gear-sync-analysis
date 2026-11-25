@@ -226,7 +226,7 @@ test("the gear browser's gear filters: each falls back on its own", () => {
   const part = 'browse';
   assert.deepEqual([D[part].expOff, D[part].min, D[part].max, D[part].lvl], [[], '', '', 100]);
   expectFieldDefault(`${part}.min`, '', '');
-  expectFieldDefault(`${part}.min`, '120', 120); // number inputs bound with x-model save strings
+  expectFieldDefault(`${part}.min`, '120', 120); // an older save kept number boxes as text
   expectFieldDefault(`${part}.min`, 'abc', D[part].min);
   expectFieldDefault(`${part}.min`, -10, 0);
   expectFieldDefault(`${part}.max`, 5000, MAX_REAL);

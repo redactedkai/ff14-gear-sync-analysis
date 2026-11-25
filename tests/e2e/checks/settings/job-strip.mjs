@@ -38,7 +38,7 @@ export async function checkJobStrip(pg) {
 
   // the tab bar does not move between tabs; the strip sits the same distance under it; one row, no sideways scroll
   await pg.click('[data-tab=sheets]');
-  await expect(pg.locator('.jobstrip')).toBeHidden(); // Alpine hides the strip a tick after the click
+  await expect(pg.locator('.jobstrip')).toBeHidden(); // the page hides the strip a tick after the click
   const onSheets = await measureTabBar(pg);
   check(!onSheets.stripShown, 'the Sheets tab has no strip');
   await pg.click('[data-tab=browse]');

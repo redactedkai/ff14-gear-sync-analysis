@@ -1,6 +1,6 @@
 /* A set's Auto-fill settings (the settings popover behind the gear button of a set page): the defaults, the settings a set uses
    now, the recipe they make for the solver, and the goal as one line. Takes plain data and returns plain data; pure: no
-   Alpine, no store. The data format is in docs/engineering/sheets.md, "Saved data". */
+   store. The data format is in docs/engineering/sheets.md, "Saved data". */
 import { uniqueRanks } from '../ranks.js';
 import { DEFAULT_EXCLUDE } from '../job-sync-panel.js';
 

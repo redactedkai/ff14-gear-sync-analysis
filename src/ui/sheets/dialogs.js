@@ -1,8 +1,7 @@
 /* What the Sheets tab's main dialog button does, as plain code: the open dialog's fields go to the store call of its
    kind, and a refused form gets its error text and the field the text is about. A refused form is left as it is (a blank
    name stays blank; the dialog marks the box). The dialogs model (elements/sheets/sheet-dialogs-model.ts) keeps the dialog on screen and calls
-   these; the fields and the kinds are views/sheet-forms.js's and docs/engineering/sheets.md's. Pure: no Alpine, no
-   document. */
+   these; the fields and the kinds are views/sheet-forms.js's and docs/engineering/sheets.md's. Pure: no document. */
 import { defaultSheetName } from './ops.js';
 
 /* The name the box of dialog `dialog` shows: the New sheet form's default name until one is typed, else what is in it.

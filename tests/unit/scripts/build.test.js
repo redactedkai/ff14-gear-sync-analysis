@@ -43,11 +43,18 @@ test('build: a test build carries its marks in the page code, the live build non
   assert.doesNotMatch(await script({ branch: 'main', commit: 'abc1234' }), /abc1234/);
 });
 
+/* src/index.html as the tests below read it: Biome formats the file (it breaks a long tag over lines and may put a `>` on a line of its
+   own), so runs of white space become one space and a space before a `>` goes. The same text as the browser parses, for these checks. */
+async function readTemplate() {
+  const { readFile } = await import('node:fs/promises');
+  const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
+  return html.replace(/\s+/g, ' ').replace(/ >/g, '>');
+}
+
 /* Audit 13, finding 1: a render-blocking Google Fonts link held first paint until a stalled request gave up (8 s in a
    test). The link loads as print-only and switches to all once loaded; a <noscript> copy covers pages without JS. */
 test('page template: the Google Fonts stylesheet does not block first paint', async () => {
-  const { readFile } = await import('node:fs/promises');
-  const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
+  const html = await readTemplate();
   const head = html.slice(0, html.indexOf('</head>'));
   const links = [...head.matchAll(/<link[^>]*fonts\.googleapis\.com[^>]*>/g)].map(m => m[0]);
   const noscript = head.match(/<noscript>([\s\S]*?)<\/noscript>/)?.[1] ?? '';
@@ -67,8 +74,7 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
    which the startup script keeps unpainted until the check has run (the boot shell shows meanwhile), so nothing of the page
    can show half-built. checkFirstPaint (tests/e2e/checks/settings/first-paint.mjs) watches the frames themselves. */
 test('page template: the body is the boot shell and one empty page root, nothing else', async () => {
-  const { readFile } = await import('node:fs/promises');
-  const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
+  const html = await readTemplate();
   const css = readStyles();
   const body = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('<!-- SCRIPT -->'));
   // the <noscript> line (JavaScript off) and the boot shell (#boot: static, hidden by the stylesheet unless the startup script

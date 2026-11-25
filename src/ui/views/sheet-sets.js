@@ -1,7 +1,7 @@
 /* A sheet's page (the Sheets tab's second level): its name and description, its settings and the list of its gear sets,
    each with the header figures; and the breadcrumb and read-only settings line of a set page. Takes a saved Sheet
    (docs/engineering/sheets.md "Saved data") and builds plain view objects; the template only displays them. Pure: no
-   Alpine, no store. Rules: sheets.md "A sheet's level and sync" and "Where an action lands". */
+   store. Rules: sheets.md "A sheet's level and sync" and "Where an action lands". */
 import { makeJobContext } from '../../core/job-context.js';
 import { fillPlan } from '../sheets/fill.js';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-totals.js';

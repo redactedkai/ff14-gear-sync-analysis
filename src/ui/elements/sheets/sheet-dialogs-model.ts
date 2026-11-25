@@ -31,7 +31,7 @@ export interface LoweredCap {
   level: number | null;
 }
 
-/* The pieces of the sheets store the dialogs use (the page's `$store.sheets`, or a unit test's facade). */
+/* The pieces of the sheets store the dialogs use (the page's sheets facade, or a unit test's). */
 export type SheetsPort = SheetsFacade;
 type SavedSheet = NonNullable<ReturnType<SheetsPort['sheet']>>;
 type SavedSet = NonNullable<ReturnType<SheetsPort['set']>>;

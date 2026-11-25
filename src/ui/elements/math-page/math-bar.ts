@@ -1,7 +1,7 @@
 /* The math bar as a Lit element in light DOM: the sub-tab links, the "?" help, the Job menu, and the controls row of the open sub-tab
    (Stat Allocation's Slot menu, Substats & materia chip with its three menus, and Gear item level slider; the GCD and Substat
-   tiers controls elements). The sticky box around it (`.mathbar`) stays in the page's template. The element takes the math tab's
-   settings from a wrapper's `x-effect` (docs/engineering/architecture.md section 3) and reads no store:
+   tiers controls elements). The sticky box around it (`.mathbar`) is in <gsa-math-screen>'s template. The element takes the math tab's
+   settings from that screen (docs/engineering/architecture.md section 3) and reads no store:
    - `tab` (the open sub-tab: 'piece', 'gcd' or 'tiers'), `jobId` (the job the Job menu shows: the open sub-tab's own), `pieceJob`,
      `sync` and `piece` (Stat Allocation's job, sync settings and example piece), `gcd` and `tiers` (those sub-tabs' settings);
    - it sends `math-sub` (a plain click on a sub-tab link), `piece-edit` (a change of the example piece) and `job-change` (the Job

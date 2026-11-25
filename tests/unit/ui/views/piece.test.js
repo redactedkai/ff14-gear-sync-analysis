@@ -1,6 +1,5 @@
 /* How the math works, Piece stats' step by step (src/ui/views/piece.js): each stat of a piece against its ceiling,
-   with the sentences and arithmetic, the slot share slices and the ranked substats; computed from store-shaped state
-   without Alpine. */
+   with the sentences and arithmetic, the slot share slices and the ranked substats; computed from store-shaped state. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.js';

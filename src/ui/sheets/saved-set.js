@@ -1,7 +1,7 @@
 /* The rules of a saved gear set's rows that every set page builder shares, written once: the rows the job uses, a row's
    name, and when two rows hold the same thing. A gear set is the saved shape (docs/engineering/sheets.md, "Saved
    data"): `pieces` 12 rows in SLOT_TYPES order with 'ring' twice, each {slot, gameId, stones} or {slot} when empty.
-   Pure: no Alpine, no store. */
+   Pure: no store. */
 import { SLOT_LABEL } from '../../core/constants.js';
 
 /* Whether `job` (a JobContext) uses a row of slot `row.slot`: a row the job does not use (the off-hand of a two-handed

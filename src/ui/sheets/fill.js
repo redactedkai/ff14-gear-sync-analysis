@@ -1,5 +1,5 @@
 /* Partial fill for a saved gear set: which slots the optimizer must keep (the pinned ones), the button's label, and how a
-   solve's result goes back onto the set's rows. Pure view helpers over plain data: no Alpine, no store, so Node can test
+   solve's result goes back onto the set's rows. Pure view helpers over plain data: no store, so Node can test
    them. The solve itself is core/recipe.js runRecipe (its `pins`), reached through ui/solver.js.
 
    A gear set here is the saved shape (docs/engineering/sheets.md, "Saved data"): `pieces` 12 rows in SLOT_TYPES order

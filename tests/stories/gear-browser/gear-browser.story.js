@@ -1,5 +1,5 @@
-/* Stories of <gsa-gear-browser>: the Gear browser screen with a real job and the real item database. The page's part (the Alpine
-   wrapper with the store) is played by a listener that applies each `browse-edit` patch to the element's `browse`. Every patch is
+/* Stories of <gsa-gear-browser>: the Gear browser screen with a real job and the real item database. The page's part (the screen
+   with the store) is played by a listener that applies each `browse-edit` patch to the element's `browse`. Every patch is
    also appended to the `edits` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/gear-browser.ts';

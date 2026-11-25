@@ -35,7 +35,7 @@ export async function checkQuickClicks(pg) {
   await pg.locator('#sh-gear tr[data-row="6"] [data-pick]').click();
   await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
   await expectApplyCount(pg, 1);
-  // the click and the key arrive in one task, before Alpine has drawn the question
+  // the click and the key arrive in one task, before the page has drawn the question
   await pg.evaluate(() => {
     const crumb = document.querySelector('#sh-set .setcrumb a:nth-of-type(2)');
     crumb.click();

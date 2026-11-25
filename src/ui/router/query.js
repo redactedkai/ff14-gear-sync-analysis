@@ -1,5 +1,5 @@
-/* The settings an address names after its route (#/gear?sort=det&min=700), in both directions. Pure: no DOM, no Alpine and
-   no store, so Node can test it. The router (router.js) hands in the store's settings objects and reads back plain values.
+/* The settings an address names after its route (#/gear?sort=det&min=700), in both directions. Pure: no DOM and no store, so Node can
+   test it. The router (router.js) hands in the store's settings objects and reads back plain values.
 
    A view's query names that view's own settings and nothing else:
      gear   (#/gear)          q slot min max equip noexp skip market sort dir      the Gear browser's search, filters and sort

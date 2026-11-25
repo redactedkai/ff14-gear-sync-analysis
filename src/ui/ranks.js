@@ -1,6 +1,6 @@
 /* Ranked stat dropdowns: the optimizer's Maximize, Tiebreak 1 and Tiebreak 2, and Piece stats' 1st and 2nd substat.
    A stat holds at most one rank (owner): a dropdown hides the stats picked above it, and picking a stat a
-   later rank holds swaps the two, so a reorder takes one change and nothing is cleared. Pure: no Alpine import, so
+   later rank holds swaps the two, so a reorder takes one change and nothing is cleared. Pure, so
    Node can load and test it. */
 
 /* The stats rank i's dropdown offers: `choices` (stat keys, in order) less those picked in the ranks above it.

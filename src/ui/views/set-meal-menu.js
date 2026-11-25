@@ -1,5 +1,5 @@
 /* The Food row's menu of a set page: the shared Food menu (meal-menu.js) for the set shown. Takes plain data and returns
-   plain data; the template only displays it. Pure: no Alpine, no store. */
+   plain data; the template only displays it. Pure: no store. */
 import { allMeals } from '../../core/food.js';
 import { mealMenu } from './meal-menu.js';
 

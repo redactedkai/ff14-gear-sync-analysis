@@ -2,7 +2,7 @@
    with its loading line, the Job and sync strip of the Gear browser, the three tabs' sections (Sheets: `<gsa-sheets-screen>`, How the
    math works: `<gsa-math-screen>`, Gear browser: `<gsa-gear-browser>`), the notes (`<gsa-notes>`) and the footer. Nothing above it
    is a framework: it is the first element of the page, and what it shows and does is the model's (app-root-model.ts).
-   - main.js gives it `ports` (the store, the two facades and what a set page needs, AppRootPorts) once; it reads no `$store`;
+   - main.js gives it `ports` (the store, the two facades and what a set page needs, AppRootPorts) once, and reaches for no global store;
    - it follows the parts of the store it is made from (`appRootSelection`, app-root-model.ts) and draws again when one changes: a
      change of the Gear browser's filters, of a panel or of a note reaches it, a change inside a screen (a sheet edited) does not;
    - each screen's element is given its own `ports` (made once by the model) and follows the store itself; the Gear browser is given

@@ -1,5 +1,5 @@
 /* How the math works, Piece stats: what sync does to one piece, against the same piece at the cap with its melds. Pure
-   view builder: no Alpine import, so Node can load and test it.
+   view builder, so Node can load and test it.
    A "generic piece" here is a piece built from the budget table (buildPiece): the main stat, Vitality and the two
    chosen substats at their 100% / 70% shares, with 2 meld slots (meldInfo). Its melds are the optimizer's best stones
    (bestMeld) in those two substats, so the explainer and an Auto-fill meld alike. */

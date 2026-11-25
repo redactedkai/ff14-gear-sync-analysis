@@ -2,7 +2,7 @@
    menu and the controls of the open sub-tab) and the three sub-tabs, Stat Allocation (`<gsa-piece-stats>`), GCD Scaling
    (`<gsa-gcd-view>`) and Substat tiers (`<gsa-tiers-view>`). The tab's own section (`#tab-math`, its `hidden`) stays in the page's
    frame, and the element takes no box of its own (math-bar.css), so the bar and the sub-tabs are the section's flex items.
-   - the page gives it `ports` (the store, to follow, and the app facade, to read and to act) once, from main.js; it reads no `$store`;
+   - the page gives it `ports` (the store, to follow, and the app facade, to read and to act) once, from main.js, and reaches for no global store;
    - it follows the parts of the store that its children's inputs are made from (`mathSelection`, math-inputs.ts) and draws again when
      one changes; the inputs themselves are made by the plain functions of math-inputs.ts, new objects on each draw;
    - it takes the children's events and edits the store: a pick in the Job menu (edits the open sub-tab's job: mathJobOwner), a click on a

@@ -1,4 +1,4 @@
-/* The page's addresses: which screen a hash names, and the hash of a screen. Pure: no DOM, no Alpine and no store, so Node
+/* The page's addresses: which screen a hash names, and the hash of a screen. Pure: no DOM and no store, so Node
    can test it. The router (router.js) reads and writes the browser's address with these two functions.
 
    A route says where the page is, and on two screens how it is set up:

@@ -2,7 +2,7 @@
    the pieces the new job cannot wear cleared, names (trimmed, never empty, "<name> (1)" for a copy), and moving a row
    of a list. The shapes and the rules are docs/engineering/sheets.md.
    Every function returns new data and changes nothing it is handed. Ids and times come in from the caller (the sheet
-   store), so the tests can fix them. Pure: no Alpine, no storage, no document. */
+   store), so the tests can fix them. Pure: no storage, no document. */
 import { clamp } from '../../core/clamp.js';
 import { jobById } from '../../core/constants.js';
 import { piecesJobCannotWear } from '../../core/gear-groups.js';

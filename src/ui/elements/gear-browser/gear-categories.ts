@@ -1,7 +1,7 @@
 /* The "Gear categories" filter's menu as a Lit element in light DOM: a button (the count of boxes on and the market board glyph)
    and a Zag popover that holds the market board switch, All / None / Default and <gsa-gear-sections> (the tabs and their boxes);
-   filter-popover.ts has the keys, the focus and the place. It sits inside the Alpine-run Gear browser and Auto-fill settings as an
-   island (docs/engineering/architecture.md section 3): the page gives it `exclude`, `market` and `counts`; the element sends
+   filter-popover.ts has the keys, the focus and the place. It sits inside the Gear browser and Auto-fill settings
+   (docs/engineering/architecture.md section 3): its parent gives it `exclude`, `market` and `counts`; the element sends
    `categories-change` with `detail` the patch for the filter's settings ({exclude} or {market}). It reads no store.
    The head's buttons come last in the markup, so the Tab order is the switch, the tabs, the boxes, then All / None / Default;
    the CSS puts them in the head. */

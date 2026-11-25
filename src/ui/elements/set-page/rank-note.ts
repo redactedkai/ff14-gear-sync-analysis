@@ -1,5 +1,5 @@
 /* The "?" of "Spare points to tiebreaks" in the Auto-fill settings, with its note, as a Lit element in light DOM and a Zag popover
-   (gear-browser/filter-popover.ts has the keys, the focus and the place). It sits in the Alpine-run settings popover as an island
+   (gear-browser/filter-popover.ts has the keys, the focus and the place). It sits in the settings popover
    (docs/engineering/architecture.md section 3), takes no property and sends no event:
    - the note opens under the "?" with its right edge on the button's, and closes with Escape (the settings popover stays), a press
      outside it, the "?" again or the focus leaving it;

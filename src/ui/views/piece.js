@@ -1,5 +1,5 @@
 /* Piece stats: how one piece's stats come from its item level, line by line, and what sync does to them.
-   Pure view builder: no Alpine import, so Node can load and test it. */
+   Pure view builder, so Node can load and test it. */
 import { ACCESSORIES_LABEL, ACCESSORY_SLOTS, JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
 import { makeJobContext } from '../../core/job-context.js';
 import { capDerivation, clampIlvl, isOffhand, statDerivation } from '../../core/formulas.js';

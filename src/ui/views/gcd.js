@@ -1,6 +1,6 @@
 /* How the math works, GCD: how speed becomes the GCD at a level, on its own settings (a level, a haste and a speed;
    not the job, sync or optimizer). The facts for one speed, the speed one 0.01 s step takes at every level, and the GCD
-   steps around the speed. Pure: no Alpine, so Node can test it. */
+   steps around the speed. Pure, so Node can test it. */
 import { clamp } from '../../core/clamp.js';
 import { HASTE, jobById } from '../../core/constants.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';

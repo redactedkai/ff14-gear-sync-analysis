@@ -330,7 +330,7 @@ gsa-switch-menu {
   height: 24px;
   padding-top: 2px;
 }
-/* a rule under the figure names and between Now and After (~, not +: an x-for's <template> sits between the rows) */
+/* a rule under the figure names and between Now and After (general sibling `~`, not `+`) */
 .tb3 .crow ~ .crow {
   border-top: 1px solid var(--line);
 }

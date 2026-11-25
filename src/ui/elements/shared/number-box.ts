@@ -26,8 +26,7 @@ class ShownNumberDirective extends Directive {
 
   /* Writes the shown value into the input itself, and only when the input holds something else, and tells Lit nothing changed. Lit's
      own property part compares with the value it wrote last time, and would clear text that the input reports as empty (the "1e" of
-     "1e1" typed key by key, a lone ".") when the shown value is that empty text: the page's other number boxes (Alpine's `:value`)
-     compare with the input. */
+     "1e1" typed key by key, a lone ".") when the shown value is that empty text: this directive compares with the input, as a native input does. */
   override update(part: PropertyPart, [box]: [NumberBoxShape]): typeof noChange {
     const input = part.element as HTMLInputElement;
     const shown = String(box.shownValue(input) ?? '');

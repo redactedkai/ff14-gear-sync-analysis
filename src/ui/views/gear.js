@@ -1,7 +1,7 @@
 /* Gear browser: the item database rows the job can wear that match the filters, with their synced stats.
    Gear the browser's "Gear categories" filter leaves out (`browse.exclude` and `browse.market`, its own; the optimizer has
    `opt.exclude` and `opt.market`) is not listed.
-   Pure view builder: no Alpine import, so Node can load and test it. */
+   Pure view builder, so Node can load and test it. */
 import {
   allowedActivities,
   browseItems,

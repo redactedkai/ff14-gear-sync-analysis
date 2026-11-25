@@ -5,7 +5,7 @@
      `unsettled` selector) never see it. An action on a page that is not open does nothing and returns false (a search answer
      that arrives after its page was left).
    - An entry is frozen and replaced on each change. The draft and the suggestion go in frozen (the page copies and freezes
-     them, view-cache.ts frozenCopy) and are stored by reference, never copied: the template engine cannot wrap a frozen object,
+     them, view-cache.ts frozenCopy) and are stored by reference, never copied: a frozen object is read as it is,
      so the draft and the suggestion are read plain.
    - Auto-fill: fill is 'idle' -> 'running' (startFill) -> 'waiting' (a suggestion), 'failed' (no set, or the solver broke) or
      'idle' (a line only, e.g. a pin dropped); Cancel and leaving make it 'cancelled'. A suggestion is there only while fill is

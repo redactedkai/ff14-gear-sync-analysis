@@ -1,7 +1,7 @@
 /* The Stat Allocation sub-tab as a Lit element in light DOM: one example piece before and after sync (bars, materia, the two rows of
    the table), the chart of the same slot at every item level, and the step-by-step table; while no sync applies, the sentence that
-   says so in place of the two panels. An island in the Alpine-run math page (docs/engineering/architecture.md section 3):
-   - the page gives it the tab's settings from the section's `x-effect`: `job` (Stat Allocation's job id), `sync` (the sync settings,
+   says so in place of the two panels. A child of <gsa-math-screen> (docs/engineering/architecture.md section 3):
+   - its parent gives it the tab's settings: `job` (Stat Allocation's job id), `sync` (the sync settings,
      job-sync-panel.js syncSettings), `piece` (the example piece) and `switchOn` (the IL Sync switch); the element reads no store
      and sends no event (the controls that edit the piece are the math bar's);
    - the chart is drawn at its box's width (an `ElementWidthController`), so its text keeps the page's size; the markup comes from

@@ -1,6 +1,6 @@
 /* The Stat Allocation screen as one view (the <gsa-piece-stats> element): the two panels (one piece before and after sync, and the
-   same slot at every item level) and the step-by-step table, with the sentences the template shows. Pure view builder: no DOM, no
-   Alpine, so Node can load and test it. */
+   same slot at every item level) and the step-by-step table, with the sentences the template shows. Pure view builder: no DOM, so Node
+   can load and test it. */
 import { explainerItemLevel, explainerOffText, explainerView } from './sync-explainer.js';
 import { pieceView } from './piece.js';
 

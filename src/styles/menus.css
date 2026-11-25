@@ -627,7 +627,7 @@ gsa-food-menu [data-part="positioner"] > .same-menu {
   color: var(--muted);
 }
 /* ==== The list of a select (<gsa-select>, elements/shared/select.ts) ==== */
-/* The element and the wrapper the page puts round it are plain boxes as wide as their column, so the button fills the .sized cell the
+/* The element and the host the page puts round it are plain boxes as wide as their column, so the button fills the .sized cell the
    hidden copy of the texts makes. */
 gsa-select,
 .selhost {

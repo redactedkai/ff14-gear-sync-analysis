@@ -1,5 +1,5 @@
 /* The page's one state holder: a plain object tree changed in place by named actions, with a revision per top-level slice
-   (and per part of a slice, below) and one notification per tick. Pure: no DOM, no Lit, no Alpine (it runs in Node). Not a
+   (and per part of a slice, below) and one notification per tick. Pure: no DOM, no Lit (it runs in Node). Not a
    reactive proxy: the optimizer and the worker read the plain data (CLAUDE.md), so a change is announced by `update`, never
    noticed by a setter. */
 
@@ -16,8 +16,7 @@ export type Listener = () => void;
    another object), so a reader of one part is run again only when that part changed. Every key of a slice with parts must
    be covered by a part (the constructor throws on one that is not), so a field added to the state cannot be left out.
    onUpdate(key, revision): called inside `update`, as soon as the action has counted, with a revision key (a slice's name or a
-   part's 'slice.path') and its new revision; the page hands in a function that copies the revision into an object its template
-   engine tracks (the facades read that copy), so a template re-runs without waiting for the tick's notification. */
+   part's 'slice.path') and its new revision; a reader that cannot wait for the tick's notification can hear it at once. */
 export interface StoreOptions {
   parts?: Readonly<Record<string, readonly string[]>>;
   onUpdate?: (key: string, revision: number) => void;
@@ -82,7 +81,7 @@ function requireCovered(slice: string, value: object, paths: readonly string[]):
 
 /* The state and who changed it. `State` is an object whose top-level keys are the slices (settings, screen, ...): each slice
    has a revision that counts the actions that named it, so a reader of one slice can skip a change of another (a Select
-   compares what it selected; the revisions are for readers that cannot compare, such as Alpine's tracking in the facade). A
+   compares what it selected; the revisions are for readers that cannot compare, such as the facades' getters). A
    slice may also be split into parts (StoreOptions.parts), each with a revision that counts only the actions that changed it.
    The store finds that out by comparing each part before and after the action, so an action names nothing but its slice and a
    new action cannot forget a part. */

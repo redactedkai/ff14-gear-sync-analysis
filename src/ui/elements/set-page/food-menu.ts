@@ -1,7 +1,7 @@
 /* The set page's Food menu as a Lit element in light DOM, with a Zag popover (filter-popover.ts) for Escape, a press outside, a close
-   when the focus leaves it, the focus back on the button and the place. It sits inside the Alpine-run set page as an island
+   when the focus leaves it, the focus back on the button and the place. It sits inside the set page
    (docs/engineering/architecture.md section 3):
-   - the page gives it properties (`label`, `empty`, `disabled` for the button, and `menu`, the meals) from a wrapper's `x-effect`; the
+   - the set page gives it properties (`label`, `empty`, `disabled` for the button, and `menu`, the meals); the
      element sends `food-open` (whether the menu is open: the page builds `menu` only while it is, since it is a big list) and
      `meal-pick` (the key of the meal picked, or null for No food); it never reads a store;
    - the menu holds a search box, the stat pills, the "Best for goal" switch (while some meal is tagged), a Sort row (while a pill is on)

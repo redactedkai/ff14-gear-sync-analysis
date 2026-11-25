@@ -3,7 +3,7 @@
    are no suggestion (a pin the solve cannot keep, no set found). Nothing proposed is saved until Apply
    (docs/engineering/sheets.md, "Drafts and suggestions"): the suggestion is held in memory as the pieces and meal fill.js
    applyFill gives, plus the rows the player declined. Takes plain data (a saved Sheet and GearSet: sheets.md, "Saved
-   data") and returns plain view objects. Pure: no Alpine, no store. */
+   data") and returns plain view objects. Pure: no store. */
 import { makeJobContext } from '../../core/job-context.js';
 import { equipLevel, jobGear, poolItemById, slotInfo } from '../../core/items.js';
 import { applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../sheets/fill.js';

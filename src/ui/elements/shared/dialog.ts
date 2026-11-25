@@ -1,7 +1,7 @@
 /* A modal dialog as a Lit element in light DOM, with a Zag dialog for the focus trap, the page behind (hidden from assistive
-   technology, with the pointer blocked and its scroll locked) and the press outside. It sits in an Alpine screen as a wrapper:
-   the page's template draws it (an `x-if` adds it while a dialog is open and removes it when it closes) and puts its own
-   Alpine-run markup inside, so the element renders nothing of its own; it marks the parts the machine styles:
+   technology, with the pointer blocked and its scroll locked) and the press outside. It wraps the page's own markup:
+   the screen's template draws it only while a dialog is open (so closing removes it) and puts its own
+   markup inside, so the element renders nothing of its own; it marks the parts the machine styles:
      <gsa-dialog content-id="sh-dialog" title-id="sh-dlg-title" initial-focus="#first" @dialog-close="..." @dialog-escape="...">
        <div data-zag-part="backdrop"></div>
        <div data-zag-part="positioner">

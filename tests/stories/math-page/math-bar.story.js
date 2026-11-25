@@ -1,5 +1,5 @@
 /* Stories of <gsa-math-bar> and <gsa-piece-stats>: the math bar and the Stat Allocation screen under it. The page's part is played by
-   listeners that apply `piece-edit` and `math-sub` to both elements, as the Alpine wrapper does with the store. The Sync settings chip
+   listeners that apply `piece-edit` and `math-sub` to both elements, as <gsa-math-screen> does with the store. The Sync settings chip
    shows the settings below; its fields' edits are not applied here (the strip's story plays them). */
 import { html } from 'lit';
 import '../../../src/ui/elements/math-page/math-bar.ts';

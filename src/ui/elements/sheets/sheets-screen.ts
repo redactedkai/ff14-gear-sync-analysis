@@ -2,7 +2,7 @@
    which also draws the "not found" screen), a sheet's page (`<gsa-sheet-page>`), a gear set's page (`<gsa-set-page>`) and the dialogs
    (`<gsa-sheet-dialog>`). The tab's own section (`#tab-sheets`, its `hidden`) stays in the page's frame, and the element takes no box
    of its own (sheets.css), so the screen's `.sheetsview` column is the section's child.
-   - the page gives it `ports` (the two facades and what a set page needs, SheetsScreenPorts) once, from main.js; it reads no `$store`;
+   - the page gives it `ports` (the two facades and what a set page needs, SheetsScreenPorts) once, from main.js, and reaches for no global store;
    - it follows the parts of the store the screens are made from (`sheetsSelection`, sheets-screen-model.ts) and draws again when one
      changes, or when the open dialog changes; what it shows and does is the model's (sheets-screen-model.ts);
    - each of the three screens' elements is given its view while its own screen is open and null otherwise, so it draws nothing;

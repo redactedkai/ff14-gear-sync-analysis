@@ -1,6 +1,6 @@
 /* The Gear browser's Slot menu as a Lit element in light DOM, with a Zag menu (radio items) for the keyboard, the focus and
-   the placement. It sits inside the Alpine-run Gear browser as an island (docs/engineering/architecture.md section 3):
-   - the page gives it properties (`choices`, `value`, `label`) from a wrapper's `x-effect` and listens for `slot-change`; the element
+   the placement. It sits inside the Gear browser (docs/engineering/architecture.md section 3):
+   - its parent gives it properties (`choices`, `value`, `label`) and listens for `slot-change`; the element
      never reads a store;
    - the button is as wide as the longest row: a hidden copy of the rows (`.slot-sizer`, with the widest count the list can
      show) shares the button's grid cell, so the button, and the open menu, which is as wide as the button (the CSS gives

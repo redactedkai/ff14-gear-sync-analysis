@@ -1,6 +1,5 @@
 /* The words and small helpers the Sheets tab's store shares with the page's other store (ui/store/sheets-actions.ts): the
-   reasons an action is refused, the notes after a copy or a delete, and the one way the saved sheets are read. Pure: no
-   Alpine, no DOM. */
+   reasons an action is refused, the notes after a copy or a delete, and the one way the saved sheets are read. Pure: no DOM. */
 import { loadSheets } from './storage.js';
 import { repairSheet } from './ops.js';
 

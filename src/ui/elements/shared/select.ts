@@ -1,8 +1,8 @@
 /* A drop-down choice of one option, as a Lit element in light DOM with a Zag select machine: a button that shows the chosen
    option and a list of options. It stands in for the page's native `<select>`s (the Slot, substat, Materia slots, Haste, Goal,
    Race / Clan and Party bonus boxes), whose list the browser draws and the page cannot place, size or test the same in every
-   engine. It sits in the Alpine-run page as an island (docs/engineering/architecture.md section 3): a wrapper's `x-effect` gives it
-   properties and the wrapper listens for `change`; the element reads no store.
+   engine. Its parent (docs/engineering/architecture.md section 3) gives it
+   properties and listens for `change`; the element reads no store.
    Properties:
    - `options`: the choices in order, `{ value, label, group? }` (the page's `[value, label]` lists made into objects); a run of
      options with the same `group` sits under that heading; `value` may be '' (an option that means none);

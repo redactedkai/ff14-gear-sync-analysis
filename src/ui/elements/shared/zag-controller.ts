@@ -1,7 +1,7 @@
 /* Runs one Zag machine (through @zag-js/vanilla, the only adapter used here) for a Lit element, as a reactive controller.
    The element creates it in its constructor, draws its markup from `controller.api`, and marks the parts Zag styles with
    `data-zag-part="<name>"` (for example the trigger, the positioner and the content of a popover). The controller:
-   - starts the machine when the element connects and stops it when it disconnects, so an element that Alpine's `x-if` adds
+   - starts the machine when the element connects and stops it when it disconnects, so an element that a template adds
      and removes leaves no machine, listener or effect behind (a new connection starts a new machine);
    - asks the element to draw again when the machine changes, and puts the attributes and handlers of every part on it after
      each draw (`updated()`), because Lit may have made the part's node new;

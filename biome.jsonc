@@ -34,8 +34,8 @@
       "trailingCommas": "all"
     }
   },
-  // src/index.html (the Alpine templates) is neither linted nor formatted: Biome's HTML support is new and reads
-  // Alpine's attributes (x-for, :selected, @click) as errors. The smoke test (tests/e2e/smoke.mjs) covers the templates.
+  // HTML is off except src/index.html (the boot shell and the one page element; see the overrides): the docs' diagrams are .svg
+  // files that Biome would also read as HTML, and they keep their own layout (docs/diagrams/STYLE.md).
   "html": {
     "formatter": { "enabled": false },
     "linter": { "enabled": false }
@@ -75,6 +75,12 @@
       // console is for src/ only: scripts and tests print on purpose (noConsole is off everywhere else)
       "includes": ["src/**/*.js", "src/**/*.ts"],
       "linter": { "rules": { "suspicious": { "noConsole": "error" } } }
+    },
+    {
+      // the boot shell's tab names are <a> with no href on purpose: they are not links, only a stand-in drawn until the page starts
+      "includes": ["src/index.html"],
+      "html": { "formatter": { "enabled": true }, "linter": { "enabled": true } },
+      "linter": { "rules": { "a11y": { "useValidAnchor": "off" } } }
     },
     {
       "includes": ["scripts/validate/xivgear/xg_sync_test.ts"],

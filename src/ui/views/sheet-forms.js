@@ -1,7 +1,7 @@
 /* The Sheets tab's dialogs as plain view objects: New sheet, Copy sheet (with the list of pieces the new job cannot wear
    and the box that accepts clearing them), "Edit sheet" and "Edit gear set", and the Delete questions.
-   The component keeps each form's fields; these builders turn them into what the dialog shows. Pure: no Alpine, no
-   store. Rules: docs/engineering/sheets.md ("Names", "Copy sheet", "Where an action lands"). */
+   The component keeps each form's fields; these builders turn them into what the dialog shows. Pure: no store.
+   Rules: docs/engineering/sheets.md ("Names", "Copy sheet", "Where an action lands"). */
 import { SLOT_LABEL, jobById } from '../../core/constants.js';
 import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.js';
 import { oneOrMany, plural } from '../text.ts';

@@ -1,8 +1,8 @@
 /* The caret menus of the Sheets screens as one Lit element in light DOM, with a Zag popover for the focus, Escape, the press
    outside and the placement: the sheet switcher (after the sheet's name) and the gear set switcher (after the set's name).
-   It sits inside the Alpine-run page as an island (docs/engineering/architecture.md section 3):
-   - the page gives it properties (`items`, `allLabel`, `allHref`, `newLabel`, `newDisabled`, `disabled`) from a wrapper's
-     `x-effect` and listens for `switch-pick`; the element never reads a store;
+   It sits inside the Sheets screen (docs/engineering/architecture.md section 3):
+   - the screen gives it properties (`items`, `allLabel`, `allHref`, `newLabel`, `newDisabled`, `disabled`)
+     and listens for `switch-pick`; the element never reads a store;
    - the list is plain links (no `role=menu`): the first row goes to the parent screen, one row per sheet or set (the current one
      marked), and a button at the end makes a new one. A plain click on a link is a pick; any other click is left to the browser
      (a new tab);

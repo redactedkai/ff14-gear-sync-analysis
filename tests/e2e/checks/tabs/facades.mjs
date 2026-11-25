@@ -1,10 +1,10 @@
-// The page's two stores (`$store.app`, `$store.sheets`, shown as window.gsaDebug.app and .sheets) cannot be changed from outside.
+// The page's two stores (the app and sheets facades, shown as window.gsaDebug.app and .sheets) cannot be changed from outside.
 
 import { check, expect } from '../../lib/expect.mjs';
 import { showTab } from '../../lib/nav.mjs';
 
 /** A console command that defines, deletes or adds a member of a store is refused and leaves the page working: the open tab's
- * screens still draw, and a tab opens as before. (The page's own use of the stores, in every other step, shows Alpine accepts them.) */
+ * screens still draw, and a tab opens as before. (The page's own use of the stores, in every other step, shows the screens accept them.) */
 export async function checkStoresSealed(pg) {
   const results = await pg.evaluate(() => {
     // Reflect says true when the change was made, whatever the strictness of the code that asks

@@ -1,6 +1,6 @@
 /* The Expansion filter's menu as a Lit element in light DOM: a button that says which expansions are on and a Zag popover of
-   native checkboxes (filter-popover.ts has the keys, the focus and the place). It sits inside the Alpine-run Gear browser and
-   Auto-fill settings as an island (docs/engineering/architecture.md section 3): the page gives it `off` and nothing else;
+   native checkboxes (filter-popover.ts has the keys, the focus and the place). It sits inside the Gear browser and
+   Auto-fill settings (docs/engineering/architecture.md section 3): its parent gives it `off` and nothing else;
    the element sends `expansion-change` with the new list of switched-off expansions as `detail`. It reads no store. */
 import { LitElement, html } from 'lit';
 import { live } from 'lit/directives/live.js';

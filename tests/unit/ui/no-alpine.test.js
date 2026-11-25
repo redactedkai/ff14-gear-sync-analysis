@@ -1,44 +1,85 @@
-/* Nothing imports Alpine any more: the page's root is a Lit element. Audit 07, finding 5: three components imported it when their
-   module loaded, so Node could not load them for a unit test. Every module under src/ui and src/core must stay loadable
-   in Node, so none may import 'alpinejs'. TODO: R42-2 widens this scan to every Alpine attribute and call and removes the package. */
+/* Nothing of Alpine is left or comes back: the page is Lit elements over our own store. This test pins the code's shape: it reads
+   every .html, .js and .ts file under src/ (not src/data) for what Alpine code looks like, and checks that package.json does
+   not list the packages. To update it: a new Alpine-looking pattern goes in ATTRIBUTE, TEMPLATE_BINDING or SCRIPT_USE, below,
+   with a line in the self-test that it finds. A match that is legitimate (a word that only looks like one) is not added to an
+   allow list: change the wording of the file that holds it. Lit templates in .ts files use `@click=`, `.prop=` and `?attr=`, so
+   TEMPLATE_BINDING looks only in .html files, where Alpine's `:attr` and `@event` were the only way to bind. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 
-/* Every .js and .ts file under `dir` (a URL ending in /), as paths relative to it. */
-function jsFilesUnder(dir) {
-  return readdirSync(dir, { recursive: true })
+const ROOT = join(import.meta.dirname, '..', '..', '..');
+
+/* An Alpine directive written as an attribute (`x-text="..."`, `x-on:click`, `x-data`), in any file. */
+const ATTRIBUTE = /\sx-(?:data|show|if|for|text|bind|model|effect|ignore|cloak|ref|init|on)\b/;
+
+/* Alpine's bindings in markup: `:class="..."` and `@click="..."`, looked for in .html files only. */
+const TEMPLATE_BINDING = /\s(?::[\w-]+|@[\w.:-]+)=/;
+
+/* Alpine's magics and API in code or comments: `$store`, `$watch`, `$refs`, `Alpine.<member>`, the package name. */
+const SCRIPT_USE = /\$store|\$watch|\$refs|\bAlpine\.\w|alpinejs/;
+
+/* The files under `dir` that hold Alpine code, as 'relative/path:line: text' strings (empty when there are none). `dir` is the
+   src folder, or a stand-in for the self-test; a folder named `data` at the top is generated game data and is left out. */
+function alpineUses(dir) {
+  const found = [];
+  const files = readdirSync(dir, { recursive: true })
     .map(file => file.replaceAll('\\', '/'))
-    .filter(file => /\.(js|ts)$/.test(file));
+    .filter(file => /\.(?:html|js|ts)$/.test(file) && !file.startsWith('data/'));
+  for (const file of files) {
+    const patterns = file.endsWith('.html') ? [ATTRIBUTE, TEMPLATE_BINDING, SCRIPT_USE] : [ATTRIBUTE, SCRIPT_USE];
+    readFileSync(join(dir, file), 'utf8')
+      .split(/\r?\n/)
+      .forEach((line, index) => {
+        if (patterns.some(pattern => pattern.test(line))) {
+          found.push(`${file}:${index + 1}: ${line.trim().slice(0, 100)}`);
+        }
+      });
+  }
+  return found;
 }
 
-const ALPINE_IMPORT = /from\s+['"]alpinejs['"]|import\s+['"]alpinejs['"]/;
-
-test('no module under src/ui or src/core, nor main.js, imports Alpine', () => {
-  for (const folder of ['../../../src/ui/', '../../../src/core/']) {
-    const dir = new URL(folder, import.meta.url);
-    const files = jsFilesUnder(dir);
-    assert.ok(files.length > 10, `${folder} has files to check`);
-    for (const file of files) {
-      assert.doesNotMatch(readFileSync(new URL(file, dir), 'utf8'), ALPINE_IMPORT, folder + file);
-    }
-  }
-  assert.doesNotMatch(readFileSync(new URL('../../../src/main.js', import.meta.url), 'utf8'), ALPINE_IMPORT, 'main.js');
+test('src holds no Alpine attribute, binding, magic or import', () => {
+  assert.deepEqual(alpineUses(join(ROOT, 'src')), []);
 });
 
-/* the scan lists .ts files. A planted .ts file that imports Alpine is listed, and the pattern matches its import. */
-test('the scan sees a .ts file that imports Alpine', () => {
-  const base = mkdtempSync(join(tmpdir(), 'no-alpine-ts-'));
+test('package.json and the lock do not list Alpine or its reactivity package', () => {
+  const manifest = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const lock = JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8'));
+  const declared = { ...manifest.dependencies, ...manifest.devDependencies };
+  for (const name of ['alpinejs', '@vue/reactivity']) {
+    assert.ok(!(name in declared), `package.json lists ${name}`);
+    assert.ok(!(`node_modules/${name}` in lock.packages), `package-lock.json lists ${name}`);
+  }
+});
+
+test('the scan finds Alpine code in a planted file and passes a clean one', () => {
+  const base = mkdtempSync(join(tmpdir(), 'no-alpine-'));
   try {
-    mkdirSync(join(base, 'sub'));
-    writeFileSync(join(base, 'sub', 'stray.ts'), "import Alpine from 'alpinejs';\nexport const x: number = 1;\n");
-    const dir = new URL(`${pathToFileURL(base).href}/`);
-    const files = jsFilesUnder(dir);
-    assert.deepEqual(files, ['sub/stray.ts']);
-    assert.match(readFileSync(new URL(files[0], dir), 'utf8'), ALPINE_IMPORT);
+    mkdirSync(join(base, 'data'));
+    mkdirSync(join(base, 'ui'));
+    // a clean Lit element and page: Lit's own `@click=`, `.prop=` and `?attr=` syntax in a .ts file are fine
+    writeFileSync(join(base, 'ui', 'clean.ts'), `export const t = html\`<button @click=\${go} .value=\${v} ?hidden=\${h}>x</button>\`;\n`);
+    writeFileSync(join(base, 'index.html'), '<body>\n  <gsa-app class="wrap"></gsa-app>\n</body>\n');
+    writeFileSync(join(base, 'data', 'items.js'), 'x-text $store\n'); // generated data is left out
+    assert.deepEqual(alpineUses(base), []);
+
+    const planted = [
+      ['ui/attribute.ts', 'const t = html`<i x-text="name"></i>`;\n'],
+      ['ui/magic.js', 'const app = this.$store.app;\n'],
+      ['ui/watch.js', 'this.$watch("x", f);\n'],
+      ['ui/refs.js', 'this.$refs.box.focus();\n'],
+      ['ui/api.js', 'Alpine.store("app", {});\n'],
+      ['ui/import.ts', "import Alpine from 'alpinejs';\n"],
+      ['page.html', '<button @click="go()" :class="open">x</button>\n'],
+    ];
+    for (const [file, text] of planted) {
+      writeFileSync(join(base, file), text);
+    }
+    const found = alpineUses(base).map(entry => entry.split(':')[0]);
+    assert.deepEqual(found.sort(), planted.map(([file]) => file).sort());
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
