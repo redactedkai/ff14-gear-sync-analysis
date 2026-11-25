@@ -27,6 +27,7 @@ export const NESTED_LAYER_LISTENERS = {
   animationFrame: true,
 };
 
+/* The attribute that marks the element a controller's machine belongs to: it finds its parts under that element only. */
 export const HOST_ATTRIBUTE = 'data-zag-host';
 /* The attribute that names a part in the markup: `data-zag-part="trigger"`. */
 export const PART_ATTRIBUTE = 'data-zag-part';

@@ -18,6 +18,7 @@ function frozenSuggestion(suggested, declined) {
   return frozenCopy({ suggested, declined });
 }
 
+/* The page's Auto-fill (`session.fill`): running it, Cancel, the suggestion with its Take boxes, Apply and Discard. */
 export class PageFill {
   /* `session`: the page's session (session.js). */
   constructor(session) {
@@ -184,29 +185,32 @@ export class PageFill {
   /* A Take box of the suggestion: row `index` (or the meal, index null) taken or declined. */
   setTake(index, taken) {
     const { session } = this;
-    const s = session.suggestion;
-    if (!s) {
+    const { suggestion } = session;
+    if (!suggestion) {
       return;
     }
     const declined =
       index == null
-        ? { ...s.declined, meal: !taken }
-        : { ...s.declined, rows: taken ? s.declined.rows.filter(i => i !== index) : [...s.declined.rows, index] };
-    session.pages.setSuggestion(session.setId, frozenSuggestion(s.suggested, declined));
+        ? { ...suggestion.declined, meal: !taken }
+        : {
+            ...suggestion.declined,
+            rows: taken ? suggestion.declined.rows.filter(i => i !== index) : [...suggestion.declined.rows, index],
+          };
+    session.pages.setSuggestion(session.setId, frozenSuggestion(suggestion.suggested, declined));
   }
 
   /* Apply the suggestion as taken: final (no undo); the pins stay. */
   applySuggestion() {
     const { session } = this;
-    const s = session.suggestion;
-    if (!s) {
+    const { suggestion } = session;
+    if (!suggestion) {
       return;
     }
-    const view = suggestionView(session.sheet, session.saved, s.suggested, s.declined);
+    const view = suggestionView(session.sheet, session.saved, suggestion.suggested, suggestion.declined);
     if (view.applyDisabled) {
       return;
     }
-    session.sheets.updateSet(session.saved.id, appliedFields(session.saved, s.suggested, s.declined, session.job));
+    session.sheets.updateSet(session.saved.id, appliedFields(session.saved, suggestion.suggested, suggestion.declined, session.job));
     session.pages.setSuggestion(session.setId, null);
     session.sheets.setNote(view.appliedNote);
     session.focusFill();

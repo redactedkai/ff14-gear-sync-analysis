@@ -11,6 +11,7 @@ import { isCancelled, solverRequest } from '../../solver.js';
 import { fillRecipe } from '../../sheets/fill-settings.js';
 import { evaluateInSheet } from '../../views/set-totals.js';
 
+/* The page's Auto-fill settings edits (`session.settings`): the goal, Target GCD and Gear to search boxes, and the Gear to search count. */
 export class PageFillSettings {
   /* `session`: the page's session (session.js). */
   constructor(session) {

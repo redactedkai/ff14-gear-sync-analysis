@@ -370,11 +370,6 @@ export function currentSet(state: AppState) {
   return state.sheets.screen === 'set' ? setOf(state, state.sheets.setId) : null;
 }
 
-/* The note after the last action ('' when none): the page clears it after a few seconds. */
-export function noteOf(state: AppState): string {
-  return state.sheets.noteText;
-}
-
 /* The address (a hash) of the Sheets screen of `sheetId` and `setId`: the list with neither, the sheet's page with a sheet, the
    gear set's page with both. For the links of the lists and the breadcrumb. */
 export function sheetHref(sheetId: string | null = null, setId: string | null = null): string {

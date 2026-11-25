@@ -1,5 +1,5 @@
 /* The actions of the gear set pages on the store: what a set page holds that is not saved (the `setPages` slice, one entry per
-   open page: app-state.ts SetPageState). The page itself (components/set-page/) decides what an edit or an answer is; these
+   open page: app-state.ts SetPageState). The page itself (elements/set-page/) decides what an edit or an answer is; these
    keep the state and its rules:
    - An entry exists from `openPage` to `closePage`: a page left holds nothing, so the leave and the reload guards (the
      `unsettled` selector) never see it. An action on a page that is not open does nothing and returns false (a search answer

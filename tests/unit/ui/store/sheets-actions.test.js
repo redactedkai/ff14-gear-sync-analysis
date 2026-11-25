@@ -321,7 +321,7 @@ test('no storage at all: sheets live in memory; a record that cannot be read is 
   assert.equal(storage.getItem(sheetKey('s_bad')), null);
 });
 
-/* The set page holds a move off it back while it has something unsaved or running (components/set-page.js guardLeave):
+/* The set page holds a move off it back while it has something unsaved or running (elements/set-page/leave-guard.js guardLeave):
    the store asks its leave guard first, on a set page only, and the move runs again once answered. */
 test('leaving a set page asks its leave guard first; other screens never ask', () => {
   const store = makeStore();

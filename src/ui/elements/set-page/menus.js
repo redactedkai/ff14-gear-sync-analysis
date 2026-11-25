@@ -27,6 +27,7 @@ function gearOf(job) {
   return gearByJob.get(job.jobId);
 }
 
+/* The page's open menus (`session.menus`): which piece picker, materia menu or Food menu is open and where it sits. */
 export class PageMenus {
   /* `session`: the page's session (session.js). */
   constructor(session) {

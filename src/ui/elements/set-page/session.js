@@ -23,6 +23,8 @@ import { PageFillSettings } from './fill-settings-edit.js';
 import { PageLeave } from './leave-guard.js';
 import { PageMenus } from './menus.js';
 
+/* The state and the parts of one open set page: `ports` (the store, the Sheets facade, the solver), the set's id, the element as `host`, and
+   the five parts (`menus`, `edits`, `fill`, `settings`, `leave`) that reach one another through it. It holds no DOM and no Lit. */
 export class PageSession {
   /* A session for the page of gear set `setId`, kept from the page's start: the store's open set follows the screen, which can move
      on before the page is taken away. */

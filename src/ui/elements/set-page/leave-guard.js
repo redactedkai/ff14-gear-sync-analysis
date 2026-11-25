@@ -9,6 +9,7 @@ export function runningLeaveText(name) {
   return `An Auto-fill is still running for “${name}”. Leaving cancels it, and the set stays as it is.`;
 }
 
+/* The page's leave guard and its question (`session.leave`): `ask` is the question being asked (`{kind, move}`) or null. */
 export class PageLeave {
   /* `session`: the page's session (session.js). */
   constructor(session) {

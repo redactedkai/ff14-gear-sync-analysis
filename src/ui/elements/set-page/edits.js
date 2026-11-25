@@ -5,6 +5,7 @@ import { frozenCopy } from '../../view-cache.ts';
 import { draftNote, draftView, samePieces } from '../../views/set-draft.js';
 import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../sheets/set-edits.js';
 
+/* The page's edits by hand and pins (`session.edits`): the manual draft and the pins, with the methods the page's template calls. */
 export class PageEdits {
   /* `session`: the page's session (session.js). */
   constructor(session) {

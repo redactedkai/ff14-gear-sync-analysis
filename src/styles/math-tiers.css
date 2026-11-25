@@ -72,9 +72,6 @@
   --ladder-cols: 96px repeat(2, minmax(0, 1fr));
   font-size: 0.8rem;
 }
-.ladder.cols2 {
-  --ladder-cols: 96px minmax(0, 1fr);
-}
 .ladder .lhead,
 .ladder .lrow {
   display: grid;

@@ -15,7 +15,7 @@ export function createSheetsFacade(store: AppStore, actions: SheetsActions, revi
   return {
     ...actions,
 
-    /* How many actions have changed the Sheets tab: a view that caches by it (set-page/view.js) is built again after each. */
+    /* How many actions have changed the Sheets tab: a view that caches by it (views/set-page.js) is built again after each. */
     get rev() {
       return revisions.sheets;
     },

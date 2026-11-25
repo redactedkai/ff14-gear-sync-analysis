@@ -1,7 +1,7 @@
 /* The open overlays (menus, popovers and notes opened by a button): one stack and one listener each for Escape, a press
    outside and the focus moving away, instead of each overlay wiring its own. The modal dialogs are not here: they are
    <gsa-dialog> elements (elements/shared/dialog.ts).
-   An overlay registers a layer when it opens (components/overlay.js does it for a component) and the manager closes it:
+   An overlay registers a layer when it opens and the manager closes it:
    - Escape closes the topmost layer and puts the focus back on its opener;
    - a press outside a layer and its opener closes it, the focus staying where the press put it;
    - the focus moving outside a layer (Tab out) closes it when the layer has `tabOut`; the focus stays where it went;
