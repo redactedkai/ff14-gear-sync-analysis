@@ -313,31 +313,12 @@ test('the set page header is built once per change of the sheets, and frozen', (
   );
 });
 
-test('a delete question opens with the focus on Cancel, so a stray Enter does not delete', () => {
+test('a delete question opens with the focus on Cancel, so a stray Enter does not delete; a form opens on its first field', () => {
   const { c } = bind();
-  const asked = [];
-  c.$refs.dialog.querySelector = selector => {
-    asked.push(selector);
-    return { focus() {} };
-  };
-  c.openDialog({ kind: 'delete', what: 'sheet', id: 's_1', target: { name: 'X' } });
-  assert.deepEqual(asked, ['#sh-dlg-cancel']);
-});
-
-test('a dialog opens with the focus in its first field; nothing runs once the component is gone', () => {
-  const { c } = bind();
-  const field = {
-    focus() {
-      field.focused = true;
-    },
-  };
-  c.$refs.dialog.querySelector = () => field;
-  c.openNewSheet();
-  assert.equal(field.focused, true);
-  field.focused = false;
-  c.$el.isConnected = false;
-  c.openNewSheet();
-  assert.equal(field.focused, false, 'the draw callback is skipped for a page that was left');
+  assert.equal(c.firstFocus('delete'), '#sh-dlg-cancel');
+  for (const kind of ['new', 'copy', 'edit-sheet', 'edit-set']) {
+    assert.match(c.firstFocus(kind), /^input:not\(\[disabled\]\)/, kind);
+  }
 });
 
 test('the component: its six parts define every member the templates use, getters as getters', () => {
@@ -384,6 +365,7 @@ test('the component: its six parts define every member the templates use, getter
       'dragStart',
       'drop',
       'dropMark',
+      'firstFocus',
       'formCapFlag',
       'formField',
       'goCrumb',

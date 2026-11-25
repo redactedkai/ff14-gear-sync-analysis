@@ -20,6 +20,8 @@ import { enableHqFont } from './ui/hq-font.js';
 // the Lit elements (each registers itself on import); the page's templates hold them as islands
 import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/stat-note.ts';
+import './ui/elements/shared/dialog.ts';
+import './ui/elements/shared/collapsible.ts';
 import { menuScope } from './ui/components/overlay.js';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';

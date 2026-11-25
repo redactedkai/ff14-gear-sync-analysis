@@ -42,6 +42,13 @@ export async function checkSheetForms(pg) {
     const got = await focusedId(pg);
     return { ok: got === 'sh-dlg-name', got };
   });
+  // the "?" panel: Escape closes it first, and the dialog on the next press
+  await pg.click('#sh-dlg-help');
+  await expect(pg.locator('#sh-dlg-help-panel')).toBeVisible();
+  await expect(pg.locator('#sh-dlg-help')).toHaveAttribute('aria-expanded', 'true');
+  await pg.keyboard.press('Escape');
+  await expect(pg.locator('#sh-dlg-help-panel')).toBeHidden();
+  await expect(pg.locator('#sh-dialog')).toBeVisible();
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#sh-dialog')).toHaveCount(0);
   await poll('focus back on Copy sheet after Escape', async () => {

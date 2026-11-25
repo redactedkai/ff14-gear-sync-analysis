@@ -547,9 +547,24 @@ table.sets .jobcell {
   font-size: 0.84rem;
   color: var(--muted);
 }
-/* the dialogs: native <dialog> elements opened with showModal(), so the browser draws the backdrop, keeps Tab and clicks
-   inside, makes the page behind inert and puts the box above everything else (top layer: no z-index). The browser's own
-   box is reset here: margin auto (with its inset of 0) centres the box, and its width and height limits give way to ours. */
+/* the dialogs: the Sheets dialogs are a <gsa-dialog> (a Zag dialog: it traps Tab, hides and blocks the page behind and locks its
+   scroll); the backdrop and the positioner fill the window at --z-dialog and the box sits in the middle of the positioner.
+   TODO: the leave question is still a native <dialog> opened with showModal() (top layer, its own ::backdrop, `[open]`, which the
+   rules below keep for it); R31 makes it a gsa-dialog and takes those rules out. The browser's own box is reset here: margin
+   auto (with its inset of 0) centres the box, and its width and height limits give way to ours. */
+.dlg-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--backdrop);
+}
+.dlg-positioner {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  overflow: auto;
+}
 .dlg {
   margin: auto;
   max-width: none;
@@ -563,8 +578,14 @@ table.sets .jobcell {
   border: 1px solid var(--line);
   box-shadow: 0 12px 48px var(--dialog-shadow);
 }
+/* the X sits at the box's top right */
+.dlg-positioner > .dlg {
+  position: relative;
+  outline: none;
+}
 /* a closed <dialog> stays display: none (the browser's rule); only an open one is a flex column */
-.dlg[open] {
+.dlg[open],
+.dlg[data-state="open"] {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -867,6 +888,7 @@ table.sets .jobcell {
   height: 18px;
   margin: 0;
 }
-html:has(.dlg[open], .dlg[data-state="open"]) {
+/* TODO: only the leave question (a native <dialog>) needs this; a Zag dialog locks the scroll itself. R31 takes it out. */
+html:has(.dlg[open]) {
   overflow: hidden;
 }

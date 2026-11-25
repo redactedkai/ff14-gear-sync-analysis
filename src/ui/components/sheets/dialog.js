@@ -13,6 +13,11 @@ import { copySheetFormView, deleteQuestionView, editFormView, newSheetFormView }
 /* The job picker of the New sheet form: rows by role, each job with its name and icon (the Job and sync panel's). */
 const JOB_PICKER = JOB_ROWS.map(([label, ids]) => ({ label, jobs: ids.map(id => ({ id, name: jobById(id).name, icon: JOB_ICONS[id] })) }));
 
+/* The control of a dialog that takes the focus when it opens (a selector for `<gsa-dialog initial-focus>`): the first box of a form
+   or its main button; a delete question puts it on Cancel, so a stray Enter cancels instead of deleting. */
+const FORM_FIRST_FOCUS = 'input:not([disabled]), textarea, button.primary';
+const QUESTION_FIRST_FOCUS = '#sh-dlg-cancel';
+
 /* Returns the part's members. */
 export function dialogPart() {
   // the element that had the focus when a dialog opened, focused again when it closes
@@ -40,18 +45,19 @@ export function dialogPart() {
       }
       return editFormView(d.kind, d);
     },
-    /* Open `dialog` (the page draws a native <dialog> for it, opened as a modal by x-modal) and remember `opener`, the
+    /* The selector of the control that takes the focus when a dialog of `kind` opens (firstFocus above). */
+    firstFocus(kind) {
+      return kind === 'delete' ? QUESTION_FIRST_FOCUS : FORM_FIRST_FOCUS;
+    },
+    /* Open `dialog` (the page draws a <gsa-dialog> for it, which takes the focus into it) and remember `opener`, the
        button that asked, to focus again on close (the active element is only the fallback: Safari does not focus a
-       clicked button); the first field (or the main button) takes the focus. A delete question puts it on Cancel, so a stray Enter cancels instead
-       of deleting. */
+       clicked button). */
     openDialog(dialog, opener = null) {
       if (this.sheets.busy) {
         return;
       }
       returnFocus = opener ?? globalThis.document?.activeElement ?? null;
       this.dialog = { error: '', errorField: '', ...dialog };
-      const first = dialog.kind === 'delete' ? '#sh-dlg-cancel' : 'input:not([disabled]), textarea, button.primary';
-      this.afterDraw(() => this.$refs.dialog?.querySelector(first)?.focus());
     },
     /* An edit in the open dialog (a name typed, a job picked, a number, the switch, the tick box, the description) clears the
        reason a refused press left; pressing the main button again may bring it back. */
@@ -62,7 +68,7 @@ export function dialogPart() {
       this.dialog.error = '';
       this.dialog.errorField = '';
     },
-    /* Close the dialog (the page removes its <dialog>) and, unless `refocus` is false (a change of page: the router owns the
+    /* Close the dialog (the page removes its <gsa-dialog>) and, unless `refocus` is false (a change of page: the router owns the
        focus then), focus the opener again. Every way out comes here: Cancel, the X, the backdrop, Escape (cancelDialog), a
        change of page and a successful main button. */
     closeDialog(refocus = true) {
@@ -73,7 +79,7 @@ export function dialogPart() {
         this.afterDraw(() => (back?.isConnected ? back.focus() : null));
       }
     },
-    /* Escape (the dialog's cancel event, which the browser would otherwise handle itself, wherever the focus is): the "?"
+    /* Escape (the dialog's `dialog-escape` event, wherever the focus is): the "?"
        panel of Copy sheet closes first, then the dialog. */
     cancelDialog() {
       if (this.dialog?.helpOpen) {
@@ -228,8 +234,8 @@ export function dialogPart() {
         Object.assign(d, { error, errorField: field });
       }
     },
-    /* Keys inside a dialog: Enter in a one-line box presses the main button. Escape is the dialog's cancel event
-       (cancelDialog) and Tab is kept inside by x-modal. */
+    /* Keys inside a dialog: Enter in a one-line box presses the main button. Escape is the dialog's `dialog-escape` event
+       (cancelDialog) and Tab is kept inside by the Zag dialog. */
     dialogKey(event) {
       if (event.key === 'Enter' && event.target.matches?.('input[type=text], input[type=number]')) {
         event.preventDefault();
