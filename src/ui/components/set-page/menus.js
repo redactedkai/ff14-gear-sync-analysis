@@ -126,18 +126,22 @@ export function menusPart() {
         this.open = null;
       }
     },
+    /* The window's line (px from its top) that menus stay under: the bottom of the pinned header and, in the table, of the stuck
+       column names. The Food menu (<gsa-food-menu>) takes it as its boundary. */
+    viewTop() {
+      const names = this.$refs.table.querySelector('thead th');
+      return Math.max(this.$refs.head.getBoundingClientRect().bottom, names ? names.getBoundingClientRect().bottom : 0);
+    },
     /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the
        pinned header and, for a menu in the table, the stuck column names); `anchorTop` the top of the box its button is in
        (the menu hangs under it: .same and .pop in the table), which the page keeps under that line too, so the button stays in
        sight; and `room` the height left for the menu from there to the window's bottom. */
     menuRoom(menu) {
-      const head = this.$refs.head;
-      let top = head.getBoundingClientRect().bottom;
+      const top = this.viewTop();
       let anchorTop = menu.getBoundingClientRect().top;
       let buttonGap = 0; // how far under `top` the page keeps the button: the room of a menu in the table starts there
       const names = this.$refs.table.querySelector('thead th');
       if (names) {
-        top = Math.max(top, names.getBoundingClientRect().bottom);
         anchorTop = menu.offsetParent?.getBoundingClientRect().top ?? anchorTop;
         buttonGap = MENU_BUTTON_MARGIN_PX;
       }
@@ -215,10 +219,6 @@ export function menusPart() {
     /* The open materia menu of row `index`, slot `slot` (materiaMenuView). */
     materia(index, slot) {
       return materiaMenuView(this.job, this.draft ?? this.saved, index, slot, this.matAll);
-    },
-    /* The meal menu's source for the shared Food menu (components/meal-menu.js): the menu and what a pick does. */
-    get mealSource() {
-      return { menu: self => self.mealMenuView, pick: (self, key) => self.setMeal(key), watch: 'open' };
     },
   };
 }

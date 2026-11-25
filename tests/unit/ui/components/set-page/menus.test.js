@@ -71,6 +71,7 @@ function pageWith({ buttonTop, menuHeight }) {
       table: { querySelector: () => ({ getBoundingClientRect: () => ({ bottom: NAMES_BOTTOM }) }) },
     },
     menuRoom: part.menuRoom,
+    viewTop: part.viewTop,
   };
   const saved = { innerHeight: globalThis.innerHeight, scrollBy: globalThis.scrollBy };
   globalThis.innerHeight = WINDOW_HEIGHT;

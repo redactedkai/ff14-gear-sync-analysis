@@ -326,54 +326,14 @@
           d="M13.8273 1.69L22.3126 10.1753L20.8984 11.5895L20.1913 10.8824L15.9486 15.125L15.2415 18.6606L13.8273 20.0748L9.58466 15.8321L4.63492 20.7819L3.2207 19.3677L8.17045 14.4179L3.92781 10.1753L5.34202 8.76107L8.87756 8.05396L13.1202 3.81132L12.4131 3.10422L13.8273 1.69ZM14.5344 5.22554L9.86358 9.89637L7.0417 10.4607L13.5418 16.9609L14.1062 14.139L18.7771 9.46818L14.5344 5.22554Z"
         /></svg></button></template><template x-if="view.rows.food.empty"><span class="pinspacer"></span></template><span x-text="view.rows.food.label"></span></td>
         <td class="item">
-          <div class="mealline"><div
-            class="same"
-            x-data="mealMenu(mealSource)">
-            <button
-              type="button"
-              class="same-btn"
-              id="sh-meal-btn"
-              x-ref="mealBtn"
-              :data-empty="String(view.rows.food.empty)"
-              :class="{ 'choose-empty': view.rows.food.empty }"
-              :aria-expanded="String(mealOpen)"
-              :disabled="locked"
-              @click="toggleMealMenu()"><span><span x-text="view.rows.food.empty ? view.rows.food.emptyText : view.rows.food.name"></span><template x-if="!view.rows.food.empty"><span class="hqg" role="img" aria-label="High quality"></span></template></span><template x-if="view.rows.food.best.count"></template></button>
-            <template x-if="mealOpen"><div class="same-menu search-menu meal-menu" id="sh-meal-menu">
-              <div class="menu-tools">
-                <span class="menu-search"><input
-                  type="text"
-                  x-ref="mealQuery"
-                  placeholder="Search meals"
-                  autocomplete="off"
-                  aria-label="Search meals"
-                  x-model="mealQuery"></span>
-                <div class="meal-pills" role="group" aria-label="Meal stats"><template x-for="p in mealPills" :key="p.stat"><button
-                  type="button"
-                  class="meal-pill"
-                  :class="{ on: mealStats.includes(p.stat) }"
-                  :aria-pressed="String(mealStats.includes(p.stat))"
-                  :disabled="mealPillOff(p.stat)"
-                  :title="p.label"
-                  @click="toggleMealStat(p.stat)"
-                  x-text="p.short"></button></template></div>
-                <template x-if="mealMenuView.hasBest"><label class="toggle"><input
-                  type="checkbox"
-                  role="switch"
-                  class="switch"
-                  :checked="mealBestOnly"
-                  @change="setMealBest($event.target.checked)"><span><span class="star" aria-hidden="true"></span>Best for goal</span></label></template>
-              </div>
-              <template x-if="mealView.sorts.length"><div class="meal-sort"><span id="sh-meal-sort-label">Sort</span><div class="seg" role="radiogroup" aria-labelledby="sh-meal-sort-label"><template x-for="o in mealView.sorts" :key="o.key"><label><input type="radio" name="sh-meal-sort" :value="o.key" :checked="mealSortBy === o.key" @change="mealSortBy = o.key"><span x-text="o.label"></span></label></template></div></div></template>
-              <div class="menu-list" x-ref="mealList" @click="mealClick($event)">
-                <template x-if="mealMenuView.hasMeal"><button type="button" class="same-item" data-meal=""><span>No food</span><span class="same-lvl"></span></button></template>
-                <template x-for="g in mealView.groups" :key="g.key"><div :data-group="g.key"><template x-if="g.label"><div class="same-head" x-text="g.label"></div></template>
-                  <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item meal-item" :class="x.rowClass" :data-meal="x.key"><span class="meal-lead"><span class="meal-ilvl" x-text="x.ilvlText"></span><span class="meal-name" x-text="x.name"></span></span><span class="same-lvl meal-line"><span :class="x.line[0].cls" x-text="x.line[0].text"></span><span :class="x.line[1].cls" x-text="x.line[1].text"></span><span :class="x.line[2]?.cls" x-text="x.line[2]?.text" x-show="x.line[2]"></span></span></button></template>
-                </div></template>
-                <template x-if="mealView.empty"><div class="menu-empty"><span x-text="mealView.empty.text"></span> <button type="button" class="linkbtn" @click="mealQuery = ''">Clear search</button></div></template>
-              </div>
-            </div></template>
-          </div><span class="small" x-show="view.rows.food.best.note"><span class="star" role="img" :aria-label="view.rows.food.best.note"></span></span></div>
+          <div class="mealline"><!-- the Food menu: a Lit element (an island), given its button and, while open, its meals by x-effect; it tells
+               when it opens or closes and the meal picked by events; x-ignore keeps Alpine out of the markup the element draws -->
+          <span
+            class="food-island"
+            x-data="{ foodOpen: false }"
+            x-effect="Object.assign($el.firstElementChild, { label: view.rows.food.empty ? view.rows.food.emptyText : view.rows.food.name, empty: view.rows.food.empty, disabled: locked, viewTop: () => viewTop(), menu: foodOpen ? mealMenuView : null })"
+            @food-open="foodOpen = $event.detail"
+            @meal-pick="setMeal($event.detail)"><gsa-food-menu class="same" x-ignore></gsa-food-menu></span><span class="small" x-show="view.rows.food.best.note"><span class="star" role="img" :aria-label="view.rows.food.best.note"></span></span></div>
           <template x-if="view.rows.food.take"><label class="takebox"><input type="checkbox" :checked="view.rows.food.take.taken" @change="setTake(null, $event.target.checked)"><span>Take <span class="dim" x-text="view.rows.food.take.text"></span></span></label></template>
         </td>
         <td class="n" data-col="ilvl" x-text="view.rows.food.ilvl ?? ''"></td>

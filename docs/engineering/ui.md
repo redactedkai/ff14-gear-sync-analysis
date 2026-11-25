@@ -96,7 +96,7 @@ Roadmap A9. Under sync many pieces reach the same caps: for Sage at level 50, ca
 
 ### The Food row's menu
 
-The Food row's meal on a set page is a menu (`components/meal-menu.js`, `views/meal-menu.js`), with "No food" first while the set has a meal.
+The Food row's meal on a set page is a menu (the element `<gsa-food-menu>`, `elements/set-page/food-menu.ts`, with its state in `food-menu-model.ts`; the lists come from `views/meal-menu.js`), with "No food" first while the set has a meal.
 
 - **The menu** lists every meal the job can use (`allMeals`; 182 for Astrologian), by expansion, newest first, one line each. The set's meal is lit. A line holds:
   - its item level first ("i580", as players write it);

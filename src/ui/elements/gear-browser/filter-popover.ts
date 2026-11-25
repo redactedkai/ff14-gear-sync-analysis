@@ -25,8 +25,18 @@ export interface FilterPopoverOptions {
   contentId: () => string;
   /* `bottom-start` (the panel's left edge on the button's) or `bottom-end` (right edge on the button's). */
   placement: 'bottom-start' | 'bottom-end';
-  /* The name of the panel (its `aria-labelledby`: the id of the label over the button). */
-  labelId: () => string;
+  /* The name of the panel: `labelId` (its `aria-labelledby`: the id of the label over the button) or, when the markup has no visible
+     label, `name` (its `aria-label`). */
+  labelId?: () => string;
+  name?: string;
+  /* The window's line the panel must stay under (px from the window's top; the page's pinned headers end there), read at each placement;
+     none: the window's top. */
+  viewTop?: () => number;
+}
+
+/* The part of the window under the line `top` (px from the window's top), as the area a panel must stay in. */
+function windowBelow(top: number) {
+  return { x: 0, y: top, width: innerWidth, height: innerHeight - top };
 }
 
 /* The id of the overlay layer `element` is inside (the Auto-fill settings popover's), or null on the page. */
@@ -37,7 +47,7 @@ function parentLayerOf(element: Element): string | null {
 /* Returns the Zag popover controller and the overlay bridge of one menu element; the element draws `data-zag-part` "trigger",
    "positioner" and "content" and calls `bridge.sync()` after each draw and `bridge.release()` when it leaves the page. */
 export function createFilterPopover(options: FilterPopoverOptions) {
-  const { element, triggerId, contentId, placement, labelId } = options;
+  const { element, triggerId, contentId, placement, labelId, name, viewTop } = options;
   const zag = new ZagController(element, {
     name: 'popover',
     machine: popover.machine,
@@ -50,6 +60,8 @@ export function createFilterPopover(options: FilterPopoverOptions) {
         placement,
         gutter: PANEL_GAP_PX,
         strategy: parentLayerOf(element) ? ('fixed' as const) : ('absolute' as const),
+        // the window under the pinned parts of the page: the panel flips and is no taller than the room there
+        ...(viewTop ? { boundary: () => windowBelow(viewTop()) } : {}),
       },
       onEscapeKeyDown: event => bridge.guardEscape(event),
     }),
@@ -68,7 +80,7 @@ export function createFilterPopover(options: FilterPopoverOptions) {
       // panel ends over the label too
       anchor: api.getAnchorProps(),
       positioner: api.getPositionerProps(),
-      content: { ...api.getContentProps(), 'aria-labelledby': labelId() },
+      content: { ...api.getContentProps(), ...(labelId ? { 'aria-labelledby': labelId() } : { 'aria-label': name }) },
     }),
   });
   const bridge = createOverlayBridge({

@@ -67,7 +67,8 @@ export const DOMAINS = {
   'set-page': {
     title: "A gear set's page: rows, hand edits, pins, menus, totals",
     src: [
-      'src/ui/components/{set-page,meal-menu}.js',
+      'src/ui/components/set-page.js',
+      'src/ui/elements/set-page/**',
       'src/ui/components/set-page/{draft,frame,leave,menus,page-state,view}.js',
       'src/ui/store/set-page-actions.ts',
       'src/ui/sheets/{saved-set,set-edits}.js',

@@ -4,8 +4,8 @@
    box and Food off drop it. Real Sage gear at level 100 and at level 50, item level sync 123. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mealMenu as mealMenuComponent } from '../../../../../src/ui/components/meal-menu.js';
-import { fakeFrames, pageMagics } from '../../../helpers/page-magics.js';
+import { FoodMenuModel } from '../../../../../src/ui/elements/set-page/food-menu-model.ts';
+import { fakeFrames } from '../../../helpers/page-magics.js';
 import { bind, twoToFill } from '../../../helpers/set-page-bind.js';
 import { SAGE_IDS } from '../../../helpers/sheet-fixtures.js';
 import { createSheetsFacade } from '../../../helpers/stores.js';
@@ -158,41 +158,31 @@ test('a set that is already what Auto-fill makes gets its list from an Auto-fill
   assert.ok(c.view.rows.food.best.note.length > 0, 'the meal is tagged again');
 });
 
-test('the menu component: the switch is on at first and stays as left, turning it on clears the pills, and off lists every meal', async () => {
+test('the Food menu: the switch is on at first and stays as left, turning it on clears the pills, and off lists every meal', async () => {
   const { c } = await filled();
   c.applySuggestion();
-  const source = { menu: () => c.mealMenuView, pick: () => {}, watch: 'open' };
-  const m = Object.assign(mealMenuComponent(source), {
-    keepMenuInView: () => {},
-    $watch: () => {},
-    ...pageMagics(['mealQuery', 'mealList']),
-  });
-  m.init();
-  m.toggleMealMenu();
+  const m = new FoodMenuModel();
+  m.menu = c.mealMenuView;
+  m.startOpen();
   const tied = mealsOf(c.mealMenuView).filter(x => x.best);
-  assert.equal(m.mealBestOnly, true);
+  assert.equal(m.bestOnly, true);
   assert.deepEqual(
-    mealsOf(m.fullMealView)
+    mealsOf(m.list)
       .map(x => x.key)
       .sort(),
     tied.map(x => x.key).sort(),
   );
-  m.setMealBest(false);
-  const everyMeal = mealsOf(m.fullMealView);
+  m.setBestOnly(false);
+  const everyMeal = mealsOf(m.list);
   assert.ok(everyMeal.length > tied.length);
   assert.equal(everyMeal.filter(x => x.rowClass.includes('best')).length, tied.length);
   // a pill with the switch off, then the switch on again: the pills clear
-  m.toggleMealStat(m.mealPills[0].stat);
-  assert.equal(m.mealStats.length, 1);
-  m.setMealBest(true);
-  assert.deepEqual([m.mealStats, m.mealSortBy], [[], 'ilvl']);
-  // closed and opened again: as left (off stays off, on stays on)
-  m.setMealBest(false);
-  m.toggleMealMenu();
-  m.toggleMealMenu();
-  assert.equal(m.mealBestOnly, false);
-  m.setMealBest(true);
-  m.toggleMealMenu();
-  m.toggleMealMenu();
-  assert.equal(m.mealBestOnly, true);
+  m.toggleStat(m.pills[0].stat);
+  assert.equal(m.stats.length, 1);
+  m.setBestOnly(true);
+  assert.deepEqual([m.stats, m.sortBy], [[], 'ilvl']);
+  // opened again: as left (off stays off)
+  m.setBestOnly(false);
+  m.startOpen();
+  assert.equal(m.bestOnly, false);
 });

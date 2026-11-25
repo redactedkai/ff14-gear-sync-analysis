@@ -55,7 +55,7 @@ export async function checkMenuSteps(pg) {
         });
         observer.observe({ type: 'longtask' });
         document.querySelector(buttonSelector).click();
-        while (!document.querySelector(menuSelector)) {
+        while (!document.querySelector(`${menuSelector} .same-item`)) {
           await frame();
         }
         await frame();
@@ -111,7 +111,7 @@ export async function checkMenuSteps(pg) {
   const close = async () => {
     await pg.keyboard.press('Escape');
     await pg.evaluate(() => document.body.click());
-    await expect(pg.locator('.same-menu')).toHaveCount(0);
+    await expect(pg.locator('.same-menu:visible')).toHaveCount(0); // the Food menu stays in the page, hidden
   };
 
   // the head piece menu (a long list): a window first, then every piece
@@ -203,11 +203,11 @@ export async function checkMenuClicks(pg) {
   const meal = mealMenu.locator('.same-item[data-meal]:not([data-meal=""])').first();
   const mealKey = await meal.getAttribute('data-meal');
   await meal.click();
-  await expect(mealMenu).toHaveCount(0);
+  await expect(mealMenu).toBeHidden();
   await expect(food).toContainText(mealKey);
   await food.click();
   await mealMenu.locator('.same-item[data-meal=""]').click();
-  await expect(mealMenu).toHaveCount(0);
+  await expect(mealMenu).toBeHidden();
   await expectMealEmpty(pg);
 
   await pg.click('#sh-discard');
