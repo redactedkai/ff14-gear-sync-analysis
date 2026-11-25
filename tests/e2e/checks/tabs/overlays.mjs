@@ -107,7 +107,8 @@ export async function checkHelpIsModal(pg) {
   await focusIsOn(pg, 'm-help', 'the help: the focus back on its "?" after Escape');
 }
 
-/** A note set while the Sheets tab is left is still seen: the toast is outside the tabs (deleting a sheet says so). */
+/** A note set while the Sheets tab is left is still seen: the toast is outside the tabs (deleting a sheet says so). A failed save's
+ * message shows until a save works. */
 export async function checkNoteSurvivesTabChange(pg) {
   await seedSheet(pg, SET_SHEET);
   await showTab(pg, 'sheets');
@@ -117,4 +118,26 @@ export async function checkNoteSurvivesTabChange(pg) {
   await showTab(pg, 'math');
   await expect(pg.locator('#sh-toast')).toBeVisible();
   await expect(pg.locator('#sh-toast')).toHaveCount(1);
+
+  // the message of a failed save is pinned (not timed) until a save works
+  await seedSheet(pg, SET_SHEET);
+  await pg.evaluate(id => {
+    location.hash = `#/sheets/${id}`;
+  }, SET_SHEET.id);
+  await expect(pg.locator('#sh-level')).toBeVisible();
+  await pg.evaluate(() => {
+    window.realSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => {
+      throw new Error('storage is full');
+    };
+  });
+  await pg.fill('#sh-level', '51');
+  await pg.locator('#sh-level').blur();
+  await expect(pg.locator('#sh-save-error')).toBeVisible();
+  await pg.evaluate(() => {
+    Storage.prototype.setItem = window.realSetItem;
+  });
+  await pg.fill('#sh-level', '52');
+  await pg.locator('#sh-level').blur();
+  await expect(pg.locator('#sh-save-error')).toBeHidden();
 }

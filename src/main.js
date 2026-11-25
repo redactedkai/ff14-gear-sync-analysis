@@ -13,7 +13,6 @@ import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.js';
 import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.js';
 import { installUnloadGuard } from './ui/router/unload-guard.js';
 import { storeNumberField } from './ui/number-field.js';
-import { notes } from './ui/messages.js';
 import { modalDirective } from './ui/native-dialog.js';
 import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
@@ -22,6 +21,7 @@ import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/collapsible.ts';
+import './ui/elements/app/notes.ts';
 import { menuScope } from './ui/components/overlay.js';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
@@ -121,7 +121,6 @@ Object.entries({
   page,
   settings,
   menuScope,
-  notes,
   syncExplainer,
   gear,
   mealMenu,

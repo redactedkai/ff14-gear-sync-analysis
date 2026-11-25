@@ -284,11 +284,14 @@
 <!-- GEAR BROWSER -->
 <!-- INCLUDE gear-page.html -->
 
-<!-- THE NOTES (ui/messages.js): the note after an action and the message of a failed save, at the window's bottom on every tab. Both
-     are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. -->
-<div class="notes" x-data="notes">
-  <p class="toast floating" id="sh-toast" role="status" x-text="text"></p>
-  <p class="toast floating saveerror" id="sh-save-error" role="alert" x-text="saveMessage"></p>
+<!-- THE NOTES (a <gsa-notes>, ui/elements/app/notes.ts): the note after an action and the message of a failed save, at the window's bottom on every tab. Both
+     are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. The wrapper gives the
+     element the sheets slice's text and clears the note when the element says its time is up. -->
+<div
+  class="notes"
+  x-effect="$el.firstElementChild.note = $store.sheets.note; $el.firstElementChild.noteSeq = $store.sheets.noteSeq; $el.firstElementChild.saveMessage = $store.sheets.saveMessage"
+  @note-expire="$store.sheets.setNote('')">
+  <gsa-notes x-ignore></gsa-notes>
 </div>
 
 <footer>

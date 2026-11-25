@@ -403,7 +403,7 @@
 .sorigin.setnotes {
   white-space: nowrap;
 }
-/* the notes (ui/messages.js) float at the window's bottom on every tab, one over the other: they never move the page. The note after
+/* the notes (<gsa-notes>, ui/elements/app/notes.ts) float at the window's bottom on every tab, one over the other: they never move the page. The note after
    an action (a sheet or a gear set deleted, a copy made, ...) and the message of a failed save, which stays until a save succeeds */
 .notes {
   position: fixed;
@@ -418,6 +418,9 @@
   width: max-content; /* with left: 50% the box would otherwise stop growing at half the window, and max-width never applies */
   max-width: calc(100vw - 32px);
   pointer-events: none; /* only the notes take the pointer, not the strip around them */
+}
+gsa-notes {
+  display: contents; /* the two paragraphs are the flex items of .notes */
 }
 .toast.floating {
   align-self: center;
