@@ -50,10 +50,6 @@ export function page() {
         app.openTab(tab);
       });
     },
-    /* A math sub-tab link's click (`event`): a plain click shows sub-tab `sub`; any other click is the browser's. */
-    goSub(sub, event) {
-      followInPage(event, () => this.$store.app.showSub(sub));
-    },
     /* The loading line while a tab opens, or '' when none is (the tab links, store.openTab). */
     get loadingText() {
       return LOADING_TEXT[this.$store.app.pendingTab] ?? '';

@@ -1,5 +1,10 @@
 /* ==== How the math works: the bar, charts and legends ==== */
-/* How the math works: the sync explainer (components/sync-explainer.js) */
+/* How the math works: the bar element (elements/math-page/math-bar.ts) and the Stat Allocation element (piece-stats.ts) take no box of their
+   own: the bar's and the screen's markup lay out as if it sat in the page */
+gsa-math-bar,
+gsa-piece-stats {
+  display: contents;
+}
 /* its sticky bar: sub-tabs, the Job menu and the open sub-tab's controls, the item level slider and the help button */
 .mathbar {
   --label: color-mix(in srgb, var(--fg) 82%, var(--muted)); /* labels, inactive tabs and slider numbers: a step under the menus' own text */
@@ -68,6 +73,10 @@
   flex: 0 0 100%;
   height: 0;
   margin-top: -10px; /* the row gap on both sides of the break would be 20px: one is enough */
+}
+/* the parts of the controls row the open sub-tab does not use (the element sets `hidden`) */
+.mathbar .barrow :is(.jobctl, .piecesec, .barbreak, .ilgroup)[hidden] {
+  display: none;
 }
 @container (width < 78rem) {
   .mathbar .barbreak.after-sync {

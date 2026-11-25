@@ -5,7 +5,7 @@
      reads no store;
    - a click on a bar of the chart or on a row of the table sends `gcd-edit` (`detail`: `{level}` or `{speed}`); the page then
      edits its settings and gives them back (a row past the most any job can have does nothing);
-   - the chart is drawn at its box's width (a `ResizeObserver`), so its text keeps the page's size; the markup comes from
+   - the chart is drawn at its box's width (an `ElementWidthController`), so its text keeps the page's size; the markup comes from
      `speedStepChartSvg` (sync-charts.js), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
    - the view is built again only when a setting or the chart's width changes (`viewCache`). */
 import { LitElement, html } from 'lit';
@@ -13,6 +13,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { gcdTabLevel, gcdView } from '../../views/gcd.js';
 import { viewCache } from '../../view-cache.ts';
+import { ElementWidthController } from '../shared/element-width.ts';
 import { GCD_EDIT_EVENT } from './gcd-names.ts';
 
 /* What the tab shows (the shape `gcdView` in views/gcd.js builds). */
@@ -29,17 +30,15 @@ export class GsaGcdView extends LitElement {
     syncedLevel: { attribute: false },
     haste: { attribute: false },
     speed: { attribute: false },
-    width: { state: true },
   };
 
   declare level: number | null;
   declare syncedLevel: number;
   declare haste: string;
   declare speed: number | null;
-  // the chart's box width in px (0 until it has a width: the page's tab is hidden until opened)
-  declare width: number;
   private readonly views = viewCache<GcdTabView>();
-  private observer: ResizeObserver | null = null;
+  // follows the chart's box width in px (0 until it has a width: the page's tab is hidden until opened)
+  private readonly chartWidth = new ElementWidthController(this, () => this.querySelector('#g-chart'));
 
   constructor() {
     super();
@@ -47,7 +46,6 @@ export class GsaGcdView extends LitElement {
     this.syncedLevel = 1;
     this.haste = '';
     this.speed = null;
-    this.width = 0;
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -55,37 +53,18 @@ export class GsaGcdView extends LitElement {
     return this;
   }
 
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.observer?.disconnect();
-    this.observer = null;
-  }
-
-  /* After the first draw the chart's box exists: follow its width. */
+  /* After the first draw the chart's box exists: a click on a bar of the chart picks its level. */
   protected override firstUpdated(): void {
-    const chartBox = this.querySelector('#g-chart');
-    if (!chartBox) {
-      return;
-    }
-    this.observer = new ResizeObserver(([entry]) => {
-      const width = Math.round(entry.contentRect.width);
-      if (width && width !== this.width) {
-        // drawn in the next frame, not in this delivery: a chart that changes its box in the same delivery makes WebKit report a loop
-        requestAnimationFrame(() => {
-          this.width = width;
-        });
-      }
-    });
-    this.observer.observe(chartBox);
     // a pointer shortcut only: the Level box beside the chart is the keyboard way to the same setting, so the box has no key handler
-    chartBox.addEventListener('click', event => this.pickLevel(event));
+    this.querySelector('#g-chart')?.addEventListener('click', event => this.pickLevel(event));
   }
 
   /* The tab's view (views/gcd.js gcdView) for the settings and the chart's width. */
   private get view(): GcdTabView {
     const level = gcdTabLevel(this.level, this.syncedLevel);
-    const key = [level, this.haste, this.speed, this.width].join('|');
-    return this.views.get(key, () => gcdView(level, this.haste, this.speed, this.width));
+    const width = this.chartWidth.width;
+    const key = [level, this.haste, this.speed, width].join('|');
+    return this.views.get(key, () => gcdView(level, this.haste, this.speed, width));
   }
 
   private edit(patch: { level: number } | { speed: number }): void {

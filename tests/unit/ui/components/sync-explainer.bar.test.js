@@ -1,11 +1,11 @@
-/* The math bar's controls in the Stat Allocation component (src/ui/components/sync-explainer.js), bound to a plain store as Alpine binds them: the Job menu edits the open sub-tab's own job, the
-   Level box and the IL Sync switch keep the stored cap at level sync's item level while IL Sync is off, the two chips
-   say the current settings. Item levels are the game's ParamGrow.ItemLevelSync: level
+/* The math tab's component (src/ui/components/sync-explainer.js), bound to a plain store as Alpine binds them: the Job menu edits the open sub-tab's own job, the
+   Level box and the IL Sync switch keep the stored cap at level sync's item level while IL Sync is off, the Sync chip
+   says the current settings, and the settings the two elements of the tab are given. Item levels are the game's ParamGrow.ItemLevelSync: level
    85 gives 536, level 80 gives 530. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { syncExplainer } from '../../../../src/ui/components/sync-explainer.js';
-import { SYNC_CHIP_TEXT, pieceChipView, syncChipView } from '../../../../src/ui/views/sync-explainer.js';
+import { SYNC_CHIP_TEXT, syncChipView } from '../../../../src/ui/views/sync-explainer.js';
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
 import { overlays } from '../../../../src/ui/overlays.js';
 import { restoreOpen } from '../../helpers/common.js';
@@ -52,11 +52,6 @@ test("Sync chip: it says the store's settings", () => {
   // IL Sync on with no item level: the missing-item-level text
   app.editPanel({ cap: null });
   assert.equal(c.syncChip.parts.at(-1).text, SYNC_CHIP_TEXT.needCap);
-});
-
-test("Substats & materia chip: it says the piece's substats and slots", () => {
-  const { app, c } = bound();
-  assert.deepEqual(c.pieceChip, pieceChipView(app.jobCtx, app.piece));
 });
 
 test('IL Sync switch: off stores the item level level sync gives (536 at level 85); on keeps the stored cap', () => {
@@ -131,4 +126,16 @@ test('Level box: a bad level does not change the stored cap while IL Sync is off
   c.onLevelInput('101');
   assert.equal(app.cap, 530);
   assert.equal(c.levelError !== '', true);
+});
+
+test("the elements' settings: the Job menu shows the open sub-tab's job, the controls Stat Allocation's piece and sync, each as new objects", () => {
+  const { app, c } = bound({ tiers: { job: 'WAR' } });
+  const first = c.barInput;
+  assert.deepEqual([first.tab, first.jobId, first.pieceJob], ['piece', 'SGE', 'SGE']);
+  assert.deepEqual(first.sync, { cap: 123, sync: true, level: 85 });
+  assert.deepEqual(first.piece, { ilvl: app.piece.ilvl, slot: app.piece.slot, subs: [...app.piece.subs], slots: app.piece.slots });
+  assert.notEqual(first.piece, c.pieceInput.piece, 'each element is given its own copy, so a change shows as a new object');
+  assert.deepEqual(c.pieceInput, { job: 'SGE', sync: first.sync, piece: first.piece, switchOn: true });
+  app.showSub('tiers');
+  assert.deepEqual([c.barInput.tab, c.barInput.jobId, c.barInput.pieceJob, c.barInput.tiers.job], ['tiers', 'WAR', 'SGE', 'WAR']);
 });

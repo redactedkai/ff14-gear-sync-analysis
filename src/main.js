@@ -23,6 +23,8 @@ import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/gcd-controls.ts';
 import './ui/elements/math-page/gcd-view.ts';
+import './ui/elements/math-page/math-bar.ts';
+import './ui/elements/math-page/piece-stats.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/math-page/tiers-controls.ts';
 import './ui/elements/math-page/tiers-view.ts';

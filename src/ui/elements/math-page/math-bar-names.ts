@@ -1,0 +1,40 @@
+/* The events the math bar element sends and the shapes it takes, written once. A `.ts` module with no import, so Node tests can read
+   it. The page's template listens with `@math-sub` and `@piece-edit`, which cannot import these constants. */
+
+/* The `math-sub` event: a plain click on a sub-tab link. `detail` is the sub-tab's id ('piece', 'gcd' or 'tiers'); the page shows it
+   (any other click on the link is the browser's: a new tab, copy link). */
+export const SUB_TAB_EVENT = 'math-sub';
+
+/* The `piece-edit` event: a Stat Allocation control changed the example piece. `detail` is the patch for the page's `editPiece`: any
+   of `{slot, slots, subs, ilvl}` (`slots` or `ilvl` null: back to the slot's usual total, or to the cap). */
+export const PIECE_EDIT_EVENT = 'piece-edit';
+
+/* The example piece, as the page gives it to the elements: the item level (null: the cap), the slot, the two substats (null for none)
+   and the materia slots chosen (null: the slot's usual total). */
+export interface ExamplePiece {
+  ilvl: number | null;
+  slot: string;
+  subs: (string | null)[];
+  slots: number | null;
+}
+
+/* The sync settings of the math tab (job-sync-panel.js syncSettings). */
+export interface SyncSettings {
+  cap: number | null;
+  sync: boolean;
+  level: number | null;
+}
+
+/* The GCD Scaling sub-tab's settings, with Stat Allocation's synced level (`syncedLevel`) that the tab follows until a level is typed. */
+export interface GcdState {
+  level: number | null;
+  haste: string;
+  speed: number | null;
+  syncedLevel: number;
+}
+
+/* Substat tiers' own job (an id) and the level typed into its box (null: the job's level cap). */
+export interface TiersState {
+  job: string;
+  level: number | null;
+}

@@ -1,5 +1,7 @@
-<!-- The Math tab (`syncExplainer`, and the GCD and Substat tiers elements): the sticky bar and the three sub-tabs, Stat
-     Allocation, GCD Scaling and Substat tiers. Included once, from index.html's job template. No keys. -->
+<!-- The Math tab: the sticky bar (`<gsa-math-bar>`: the sub-tab links, the "?" help, the Job menu and the controls of the open sub-tab),
+     and the three sub-tabs, Stat Allocation (`<gsa-piece-stats>`), GCD Scaling and Substat tiers (`<gsa-gcd-view>`, `<gsa-tiers-view>`).
+     The Sync settings chip is the one part still run by Alpine (`syncExplainer`): it is a child of the bar element, which places it
+     in the controls row. Included once, from index.html's job template. No keys. -->
 <section
   class="tab"
   id="tab-math"
@@ -8,147 +10,25 @@
   :hidden="$store.app.tab !== 'math'"
   x-data="syncExplainer">
 <div class="mathbar" id="m-bar">
-  <nav class="subtabs" aria-label="Math views">
-    <a
-      data-sub="piece"
-      data-label="Stat Allocation"
-      :href="tabHref('math', 'piece')"
-      :aria-current="$store.app.mathTab === 'piece' ? 'page' : null"
-      @click="goSub('piece', $event)">Stat Allocation</a>
-    <a
-      data-sub="gcd"
-      data-label="GCD Scaling"
-      :href="tabHref('math', 'gcd')"
-      :aria-current="$store.app.mathTab === 'gcd' ? 'page' : null"
-      @click="goSub('gcd', $event)">GCD Scaling</a>
-    <a
-      data-sub="tiers"
-      data-label="Substat tiers"
-      :href="tabHref('math', 'tiers')"
-      :aria-current="$store.app.mathTab === 'tiers' ? 'page' : null"
-      @click="goSub('tiers', $event)">Substat tiers</a>
-  </nav>
-  <!-- the ? button sits at the right end of the sub-tabs row (css), so it comes right after them in the tab order -->
-  <gsa-bar-popover
-    class="helpwrap"
-    trigger-id="m-help"
-    content-id="m-help-pop"
-    placement="bottom-end"
-    gap="8"
-    modal
-    x-show="$store.app.mathTab === 'piece'">
-    <button type="button" class="help" data-zag-part="trigger">?</button>
-    <div class="backdrop" data-zag-part="backdrop" hidden></div>
-    <div data-zag-part="positioner">
-    <div class="popover" data-zag-part="content" aria-label="Gear stats and syncing" hidden>
-      <h3>How gear stats work</h3>
-      <ul class="facts">
-        <li>The item level and slot set a budget for each piece’s stats: the main stat (like Strength or Mind), Vitality, and sub-stats (like Critical Hit or Tenacity).</li>
-        <li>The main stat and Vitality generally hold 100% of their budget, except Vitality on magical ranged and healer gear (90%).</li>
-        <li>Primary sub-stats can hold 100% of that budget, and secondary sub-stats can hold 70%.</li>
-        <li>Notable exceptions:
-          <ul>
-            <li>Some all-job earrings / rings have their main stat and Vitality capped at 90% when synced.</li>
-            <li>Some level 50 healer gear has a tertiary Direct Hit substat accounting for 20-25% of that budget (remapped from Accuracy back in 4.0).</li>
-          </ul>
-        </li>
-      </ul>
-      <h3>How stat syncing works</h3>
-      <ul class="facts">
-        <li>Level sync lowers your character’s level, and item level sync caps your gear’s item level.</li>
-        <li>A synced piece’s stats are clamped to a maximum based on its slot and synced item level. Stats below the limit are unaffected.</li>
-        <li>Pieces synced down lose their materia, while pieces at or below the item level limit are unaffected.</li>
-        <li>Level sync alone syncs pieces made for a higher level to a set item level (level 80: item level 530).</li>
-        <li>When both level and item level sync are active, the item level cap decides.</li>
-        <li>Gear that scales with the wearer’s level (such as Menphina’s Earring) always syncs to the duty’s level.</li>
-      </ul>
-      <p class="small dim">Sources: FFXIV Wiki, <a href="https://ffxiv.consolegameswiki.com/wiki/Item_Level" target="_blank" rel="noopener">Item Level</a> and <a href="https://ffxiv.consolegameswiki.com/wiki/Level_Sync" target="_blank" rel="noopener">Level Sync</a>; game data from <a href="https://github.com/xivapi/ffxiv-datamining" target="_blank" rel="noopener">ffxiv-datamining</a>.</p>
-    </div>
-    </div>
-  </gsa-bar-popover>
-  <!-- The controls row: a container for the breakpoints (math-bar.css), in sections (.divided ones have a rule before them that only shows
-       when the section is not first on its line). Stat Allocation: Job | Piece (Slot, Substats and materia) and Sync, with no rule between them | Item level.
-       Substat tiers: Job | Level. GCD Scaling has one section and no rule. -->
-  <div class="barrow">
-  <!-- The Job menu, the first control of the controls row of Stat Allocation and of Substat tiers, each with its own job (GCD Scaling uses
-       no job, so it shows none): its label on top like the other controls', the strip's Job box (icon, name, code) in one width (a
-       hidden copy of the widest job gives it), and the menu of job icons under it. It edits the open sub-tab's job (mathJobOwner,
-       setJob). It sits after the ? in the tab order, as the ? sits at the right end of the first row. -->
-  <div
-    class="mctl jobctl"
-    x-show="$store.app.mathTab !== 'gcd'"
-    id="m-job-wrap"
-    x-effect="$el.firstElementChild.job = mathJob"
-    @job-change="setMathJob($event.detail)">
-    <gsa-job-menu x-ignore sized prefix="m-job" button-id="m-job-btn" menu-id="m-job-menu"></gsa-job-menu>
-  </div>
-  <div class="barsec divided afterjob piecesec" x-show="$store.app.mathTab === 'piece'">
-  <div class="mctl menu">
-    <label for="p-slot">Slot</label>
-    <span class="sized"><span
-      class="selhost"
-      x-effect="$el.firstElementChild.options = slotOptions; $el.firstElementChild.value = slotValue"
-      @change="setSlot($event.detail)"><gsa-select x-ignore button-id="p-slot" label="Slot"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="slotSizer"></span></span>
-  </div>
-  <!-- The Piece chip: the 1st and 2nd substat and the Materia slots in one control (a few words); it opens a popover under the bar
-       with the three menus (the same store fields as before). The chip is as wide as its longest possible text, hidden in the same
-       cell, so no pick or job changes it. -->
-  <gsa-bar-popover
-    class="mctl piecewrap"
-    id="p-piece-wrap"
-    trigger-id="p-piece-chip"
-    content-id="p-piece-pop"
-    focus-in="#p-s1"
-    align-bar>
-    <span id="p-piece-label" x-text="pieceText.label"></span>
-    <button
-      type="button"
-      class="multi-btn piecechip"
-      data-zag-part="trigger"
-      :aria-label="pieceChip.name"><span class="sized">
-        <span id="p-piece-text" x-text="pieceChip.text"></span>
-        <template x-for="t in pieceChipSizers"><span class="sizertext" aria-hidden="true" x-text="t"></span></template>
-        <span class="sizertext labelsizer" aria-hidden="true" x-text="pieceText.label"></span>
-      </span></button>
-    <div data-zag-part="positioner">
-    <div
-      class="popover piecepop"
-      data-zag-part="content"
-      :aria-label="pieceText.label"
-      hidden>
-      <div class="mctl">
-        <label for="p-s1" x-text="pieceText.first"></label>
-        <span class="sized"><span
-          class="selhost"
-          x-effect="$el.firstElementChild.options = substatOptions; $el.firstElementChild.value = $store.app.piece.subs[0]; $el.firstElementChild.label = pieceText.first"
-          @change="setSub(0, $event.detail)"><gsa-select x-ignore button-id="p-s1"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
-      </div>
-      <div class="mctl">
-        <label for="p-s2" x-text="pieceText.second"></label>
-        <span class="sized"><span
-          class="selhost"
-          x-effect="$el.firstElementChild.options = substat2Options; $el.firstElementChild.value = $store.app.piece.subs[1] || ''; $el.firstElementChild.label = pieceText.second"
-          @change="setSub(1, $event.detail)"><gsa-select x-ignore button-id="p-s2"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
-      </div>
-      <div class="mctl">
-        <label for="p-slots" x-text="pieceText.slots"></label>
-        <span
-          class="selhost"
-          x-effect="$el.firstElementChild.options = slotCounts.map(n => ({ value: String(n), label: String(n) })); $el.firstElementChild.value = String(slotsShown); $el.firstElementChild.label = pieceText.slots"
-          @change="$store.app.editPiece({ slots: Number($event.detail) })"><gsa-select x-ignore button-id="p-slots"></gsa-select></span>
-      </div>
-    </div>
-    </div>
-  </gsa-bar-popover>
-  </div>
-  <!-- the forced line break of the narrow layout (math-bar.css): Job and Piece above it, Sync and Item level below -->
-  <span class="barbreak after-piece" aria-hidden="true" x-show="$store.app.mathTab === 'piece'"></span>
+  <!-- The bar element takes its settings from `barInput` (sync-explainer.js) and sends the edits: a pick in the Job menu (edits the open
+       sub-tab's job: mathJobOwner, setJob), a click on a sub-tab link, a change of the example piece, and the GCD and Substat tiers
+       controls' own events. The controls row is a container for the breakpoints (math-bar.css), in sections (.divided ones have a rule
+       before them that only shows when the section is not first on its line). Stat Allocation: Job | Piece (Slot, Substats and
+       materia) and Sync, with no rule between them | Item level. Substat tiers: Job | Level. GCD Scaling has one section and no rule. -->
+  <gsa-math-bar
+    x-effect="Object.assign($el, barInput)"
+    @job-change="setMathJob($event.detail)"
+    @math-sub="$store.app.showSub($event.detail)"
+    @piece-edit="$store.app.editPiece($event.detail)"
+    @gcd-edit="$store.app.editGcd($event.detail)"
+    @tiers-level="$store.app.setTiersLevel($event.detail.level)">
   <!-- The Sync chip: the synced level, the synced item level and whether IL Sync is on, in a few words (a hidden copy of its widest
        texts gives it one width); it opens a popover under the chip with Level, Synced IL and the IL Sync switch, the same store
        fields as the Gear browser's strip (level, cap, sync). -->
   <gsa-bar-popover
     class="mctl syncwrap"
     id="p-sync-wrap"
+    data-bar-slot="sync"
     trigger-id="p-sync-chip"
     content-id="p-sync-pop"
     focus-in="#p-level"
@@ -229,142 +109,16 @@
     </div>
     </div>
   </gsa-bar-popover>
-  <!-- the forced line break of the middle layout (math-bar.css): Job, Piece and Sync above it, the Item level control alone below -->
-  <span class="barbreak after-sync" aria-hidden="true" x-show="$store.app.mathTab === 'piece'"></span>
-  <!-- The Gear item level control: its label on top like the other controls', the slider with its bounds, the number box and Reset
-       on the controls' line. It takes the width the chips leave. -->
-  <div
-    class="mctl ilgroup divided"
-    id="p-ilgroup"
-    x-show="$store.app.mathTab === 'piece'">
-    <label for="p-range" x-text="ilText.label"></label>
-    <div class="ilrow small">
-      <span class="bound" x-text="ilvlRange[0]"></span>
-      <input
-        type="range"
-        id="p-range"
-        :aria-label="ilText.label"
-        :min="ilvlRange[0]"
-        :max="ilvlRange[1]"
-        step="1"
-        :value="il"
-        :style="`--fill: ${ilvlFill}%`"
-        @input="setIlvl($event.target.value)">
-      <span class="bound" x-text="ilvlRange[1]"></span>
-      <span class="sized ilnum">
-        <input
-          type="number"
-          id="p-ilvl"
-          :min="ilvlRange[0]"
-          :max="ilvlRange[1]"
-          step="1"
-          inputmode="numeric"
-          :value="il"
-          :aria-label="ilText.label"
-          @change="setIlvl($event.target.value)">
-        <span class="sizertext" aria-hidden="true" x-text="ilBoxSizer"></span>
-      </span>
-      <button type="button" class="chip" id="p-ilvl-reset" @click="resetIlvl()">Reset</button>
-    </div>
-  </div>
-  <!-- GCD: its own level, haste and speed ($store.app.gcd); no job, so no Job box before them -->
-  <template x-if="$store.app.mathTab === 'gcd'"><div
-    style="display:contents"
-    x-effect="const g = $store.app.gcd, el = $el.firstElementChild; el.level = g.level; el.haste = g.haste; el.speed = g.speed; el.syncedLevel = $store.app.panel('math').level"
-    @gcd-edit="$store.app.editGcd($event.detail)"><gsa-gcd-controls x-ignore></gsa-gcd-controls></div></template>
-  <!-- TIERS: its own job (the Job box before it) and level ($store.app.tiers) -->
-  <template x-if="$store.app.mathTab === 'tiers'"><div
-    style="display:contents"
-    x-effect="const el = $el.firstElementChild; el.job = $store.app.panel('tiers').job; el.typedLevel = $store.app.tiers.level"
-    @tiers-level="$store.app.setTiersLevel($event.detail.level)"><gsa-tiers-controls x-ignore></gsa-tiers-controls></div></template>
-  </div>
+  </gsa-math-bar>
 </div>
 
-<p class="panel empty" id="m-off" x-show="!explainer && $store.app.mathTab === 'piece'" x-text="offText"></p>
-
-<!-- PIECE STATS: one piece before and after sync, and the same slot at every item level -->
-<section class="subtab" id="tab-piece" :hidden="$store.app.mathTab !== 'piece'">
-<template x-if="explainer"><div class="twopanel">
-  <div class="panel" id="p-piece">
-    <h2 x-text="`An example IL ${il} piece, before and after sync`"></h2>
-    <p class="small" id="p-lead" x-text="explainer.lead"></p>
-    <div class="bars" id="p-bars">
-      <template x-for="b in explainer.bars" :key="b.label">
-        <div style="display:contents">
-          <div class="small" x-text="b.label"></div>
-          <div class="bar"><div class="keep" :style="`width:${b.keep}`"></div><div class="rise" :style="`left:${b.riseLeft};width:${b.rise}`"></div><div class="cut" :style="`left:${b.cutLeft};width:${b.cut}`"></div><div class="meld" x-show="b.melds" :style="`left:${b.meldLeft};width:${b.meldWidth}`"></div><div class="capmark" :style="`left:${b.capAt}`"></div></div>
-          <div class="num"><span x-text="b.raw"></span> → <b x-text="b.total"></b><span class="gold" x-show="b.extra" x-text="` +${b.extra}`"></span><span class="meldtxt" x-show="b.melds" x-text="` +${b.melds}`"></span></div>
-        </div>
-      </template>
-      <div class="small">Materia</div>
-      <div class="chips" id="p-materia">
-        <template x-for="(c, i) in explainer.stoneChips" :key="i"><span class="meldchip on" x-text="c"></span></template>
-        <span class="meldchip" style="visibility: hidden" aria-hidden="true" x-show="!explainer.stoneChips.length">+0</span>
-        <span class="small dim meldnote"><span x-text="explainer.meldNote"></span> <span class="emptynote" x-show="explainer.emptyNote" x-text="explainer.emptyNote"></span></span>
-      </div>
-    </div>
-    <div class="legend">
-      <span><i class="box" style="background:var(--accent)"></i>Kept</span>
-      <span x-show="explainer.bars.some(b => b.melds)"><i class="box meldbox"></i>Materia</span>
-      <span><i class="hatch"></i>Cut by sync</span>
-      <span><i class="box" style="background:var(--gold)"></i><span x-text="`More than an IL ${explainer.cap} piece has`"></span></span>
-    </div>
-    <div class="versus flat" id="p-vs">
-      <div class="tablewrap"><table class="compact">
-        <colgroup><col class="c-il"><col><col class="c-pts"></colgroup>
-        <thead><tr><th>Item level</th><th>Materia</th><th class="n">In the duty</th></tr></thead>
-        <tbody>
-          <template x-for="r in explainer.vsRows" :key="r.il"><tr :class="{ solo: explainer.vsRows.length < 2 }" :data-kind="r.kind"><td><span x-text="r.il"></span><div class="dim small" x-text="r.tag || ' '"></div></td><td><span x-text="r.materia"></span><div class="dim small" x-text="r.materiaNote || ' '"></div></td><td class="n" x-text="r.points"></td></tr></template>
-          <tr class="spacer" aria-hidden="true" x-show="explainer.vsRows.length < 2"><td>&nbsp;<div class="small">&nbsp;</div></td><td><span x-text="explainer.vsRows[0].materia"></span><div class="small" x-text="explainer.vsRows[0].materiaNote || ' '"></div></td><td></td></tr>
-        </tbody>
-      </table></div>
-      <p class="small"><b x-text="explainer.verdict || ' '"></b></p>
-    </div>
-  </div>
-  <div class="panel" id="p-curve">
-    <h2>Overgeared or melded: which has more?</h2>
-    <div class="legend" id="p-curve-legend">
-      <template x-for="b in explainer.curveBands" :key="b.label"><span><i :style="`background:${b.fill};opacity:${b.opacity}`"></i><span x-text="b.label"></span></span></template>
-      <span><i class="dash"></i><span x-text="`Synced item level ${explainer.cap}`"></span></span>
-      <span class="ownline"><i style="background:var(--fg);opacity:.12"></i>Overgeared ≥ melded</span>
-    </div>
-    <div class="chartbox" id="p-curve-chart" x-ref="pieceChart" x-init="observeChart($el)" x-html="explainer.curveChartSvg"></div>
-    <p class="callout small" id="p-curve-note" x-show="explainer.curveNote" x-text="explainer.curveNote"></p>
-  </div>
-</div></template>
-
-<details class="panel" id="p-steps">
-  <summary>Stat budget analysis, step by step</summary>
-  <div id="p-out" class="steps">
-    <p class="steps-sum" x-text="steps.summary"></p>
-    <p class="small" x-show="steps.byLevel" x-text="steps.byLevelText"></p>
-    <div>
-      <p class="small"><b>Where the numbers come from.</b> Every item level has a budget for each stat, and each slot takes a fixed share of it; with both rings the shares add up to the whole budget. <span x-text="steps.shareText"></span>; its best substat gets all of that (<b>100%</b>), the second <b>70%</b> of it.<span x-show="steps.healerNote"> Older healer gear (item level 135 and below) also carries a small Direct Hit line at 20%, outside these two.</span></p>
-      <div class="slices" id="p-slices" role="img" aria-label="Each slot's share of the budget">
-        <template x-for="(s, i) in steps.slices" :key="i"><span :class="{ on: s.on }" :style="`flex:${s.width}`"><b x-text="s.label"></b><i x-text="s.share"></i></span></template>
-      </div>
-    </div>
-    <p class="steps-rule" x-show="steps.status !== 'off'"><b>In the duty, each stat is the lower of two numbers:</b> <span x-text="steps.ruleText"></span></p>
-    <div class="tablewrap"><table class="compact steps-table">
-      <thead><tr>
-        <th>Stat</th>
-        <th x-text="steps.ownHead"></th>
-        <th x-show="steps.status !== 'off'" x-text="steps.capHead"></th>
-        <th class="n" x-show="steps.status !== 'off'">In the duty</th>
-      </tr></thead>
-      <tbody>
-        <template x-for="r in steps.rows" :key="r.stat">
-          <tr>
-            <td><b x-text="r.label"></b><div class="dim small" x-text="r.w + '%'"></div></td>
-            <td><span class="num big" :class="{ dim: !r.ownKept }" x-text="r.raw"></span> <span class="small why" x-text="r.ownText"></span><div class="formula" x-text="r.ownFormula"></div></td>
-            <td x-show="steps.status !== 'off'"><span class="num big" :class="{ dim: r.ownKept }" x-text="r.cap"></span> <span class="small why" x-text="r.capText"></span><div class="formula" x-text="r.capFormula"></div></td>
-            <td class="n" x-show="steps.status !== 'off'"><span class="big" :class="{ clamp: r.lost }" x-text="r.syn"></span><template x-if="r.lost"><div class="small clamp" x-text="`−${r.lost}`"></div></template></td>
-          </tr>
-        </template>
-      </tbody>
-    </table></div>
-  </div>
-</details>
+<!-- PIECE STATS: one piece before and after sync, and the same slot at every item level (views/piece-stats.js) -->
+<section
+  class="subtab"
+  id="tab-piece"
+  :hidden="$store.app.mathTab !== 'piece'"
+  x-effect="Object.assign($el.firstElementChild, pieceInput)">
+<gsa-piece-stats x-ignore></gsa-piece-stats>
 </section>
 
 <!-- GCD: how speed becomes the GCD at a level, on its own settings (views/gcd.js) -->

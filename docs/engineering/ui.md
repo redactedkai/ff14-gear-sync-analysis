@@ -366,7 +366,7 @@ Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-r
 | Sheets tab: component and store | `src/ui/components/sheets.js` (its parts in `components/sheets/`; the screens are elements in `elements/sheets/`), `src/ui/store/sheets-actions.ts`, `sheets-facade.ts`; sheet and set operations in `src/ui/sheets/ops.js` |
 | Sheets: view builders for the manager, a sheet's page, the dialogs, a set's table, a manual draft and an Auto-fill suggestion | `src/ui/views/sheet-manager.js`, `sheet-sets.js`, `sheet-forms.js`, `set-rows.js`, `set-totals.js`, `set-draft.js`, `set-suggestion.js`; the pins and the result put on the rows: `src/ui/sheets/fill.js` |
 | A set page: component and its own views | `src/ui/components/set-page.js` and its parts in `src/ui/components/set-page/`, `src/ui/sheets/fill-settings.js`, `src/ui/sheets/set-edits.js`, `src/ui/views/piece-menu.js`, `stone-menu.js`, `set-meal-menu.js`; the grades a meld slot takes: `src/core/meld.js` (`slotGrades`) |
-| How the math works sub-tabs | `src/ui/components/sync-explainer.js`; `src/ui/elements/math-page/gcd-view.ts`, `gcd-controls.ts`, `tiers-view.ts`, `tiers-controls.ts`, `tier-rows.ts`; `src/ui/views/piece.js`, `sync-explainer.js`, `gcd.js`, `tiers.js` |
+| How the math works sub-tabs | `src/ui/components/sync-explainer.js`; `src/ui/elements/math-page/math-bar.ts`, `piece-stats.ts`, `gcd-view.ts`, `gcd-controls.ts`, `tiers-view.ts`, `tiers-controls.ts`, `tier-rows.ts`; `src/ui/views/piece.js`, `sync-explainer.js`, `math-bar.js`, `piece-stats.js`, `gcd.js`, `tiers.js` |
 
 Notes on the table:
 

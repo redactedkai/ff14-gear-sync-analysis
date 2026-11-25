@@ -24,7 +24,7 @@ What runs, on what, and how much of it?
 | Unit tests (Node) | core logic, view builders, saved state, real game data | 1,413 tests in 197 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
-| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 89 tests in 21 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
+| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 91 tests in 22 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
 | Smoke test (browser) | the built page in headless Chromium | one script (`tests/e2e/smoke.mjs`), its steps in groups listed in `tests/e2e/groups.mjs` |
 
 Notes:
@@ -49,8 +49,8 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 22 | 15 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 20 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
-| `math-page` | How the math works: Piece stats, Substat tiers, GCD | 11 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 44 | 47 |
+| `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 45 | 47 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 21 | 0 |
 
@@ -142,8 +142,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/components/sheets | the Sheets tab with a real sheets' store (note 12); the answers to the two elements' events; its members, by kind, against a fixed list |
 | ui/elements/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
 | ui/elements/sheets/row-reorder | Up and Down on a handle move a row and the focus follows, a drop goes above or below the row under the pointer, nothing moves while the list is locked |
-| ui/components/sync-explainer | Piece stats: its views built once per change, the item level box, the substat menus, the chart's width |
-| ui/components/sync-explainer.bar | the math bar: the Job menu's owner per sub-tab, the Sync settings and Substats & materia popovers (one open at a time, focus, Escape), the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level |
+| ui/components/sync-explainer.bar | the math tab's component: the Job menu's owner per sub-tab, the Sync settings chip's words, the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level, the settings the bar and Stat Allocation elements are given |
 | ui/hq-font | the HQ glyph font and its fallback |
 | ui/no-alpine | only `src/main.js` imports Alpine, so every module of `src/ui` and `src/core` loads in Node |
 | ui/job-sync-panel.level-sync-cap | the item level level sync gives (`levelSyncCap`, none at the job's level cap), held as the cap while IL Sync is off (`holdLevelSyncCap`); `mathJobOwner`; `panelOf('tiers')` |
@@ -207,6 +206,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
 | ui/elements/gear-browser/slot-menu-names | the Slot menu's words and keys written once, and the Gear browser template's `@slot-change` wired to the same event name |
 | ui/elements/set-page/food-menu-model | the Food menu's state: pills kept or reset on opening, the sort and its fallback, the click on a row, the page's event names |
+| ui/elements/shared/element-width | the width controller with a fake host and observer: the width follows the box in the next frame, a hidden box keeps the last width, a box that comes and goes is followed again, a disconnected host stops watching |
 | ui/elements/shared/overlay-bridge | the bridge between a Zag layer and the overlay manager, on the real manager and a fake document: an open layer is registered once and dropped when it closes, the manager closes the machine without moving the focus, a layer inside a manager layer leaves it open, a manager layer above takes the Escape first, the manager alone never closes a Zag layer on Escape |
 | ui/elements/shared/zag-controller | the Zag controller with a fake element and a tiny machine: the machine runs from connect to disconnect, 1,000 connect and disconnect cycles leave no effect running, a change asks for a draw and drawing does not, ids start with `zg-`, parts are spread only within their own `data-zag-host`, array parts in order, a part Lit removed is let go |
 | ui/text (`.test.ts`) | en-US counts, the one-or-many text |
@@ -230,6 +230,8 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/views/sheet-forms | the Sheets tab's dialogs (note 22) |
 | ui/views/sheet-manager | the sheet manager: rows, unreadable records, the empty state, text helpers |
 | ui/views/stone-menu | a set page's materia menu: the grades an item level takes, the room under the cap, overmeld odds |
+| ui/views/math-bar | the math bar's Stat Allocation controls: the Slot menu's groups, the substat and Materia slots menus, a slot change, a substat swap, the item level box held to the slider, the slider's fill |
+| ui/views/piece-stats | Stat Allocation as one view: the chart as wide as its box, the sentences, the number lines' gold and materia texts, the empty state |
 | ui/views/sync-explainer.chips | the Substats & materia and Sync settings chips: their words and names in every state, the weapon guess, the widest forms (read from the constants) |
 | ui/views/sync-explainer | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps, the bars at synced levels 1 to 4 |
 | ui/views/tiers | Substat tiers: the ladder's columns, every tier as a range (a one-point tier, the open last tier, Tenacity's uneven tiers), the rows kept per job and level; typed values; the sub-tab's own level; the values kept until the job or level changes; the Level box's rules |

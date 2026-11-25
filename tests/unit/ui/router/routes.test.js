@@ -4,7 +4,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MATH_TABS, TABS } from '../../../../src/ui/state.js';
-import { readFileSync } from 'node:fs';
 import {
   APP_TITLE,
   DEFAULT_ROUTE,
@@ -189,14 +188,6 @@ test('the page title names the screen, then the page', () => {
   assert.equal(titleOf({ tab: 'sheets', screen: 'sheet', sheetId: 'a' }, { missing: true }), `Not found · ${APP_TITLE}`);
   // a sheet or set with no saved name falls back to the list's title
   assert.equal(titleOf({ tab: 'sheets', screen: 'set', sheetId: 'a', setId: 'b' }, { sheet: 'X' }), `Sheets · ${APP_TITLE}`);
-});
-
-test('the math view names are the sub-tabs of the math page', () => {
-  const html = readFileSync(new URL('../../../../src/partials/math-page.html', import.meta.url), 'utf8');
-  for (const view of MATH_TABS) {
-    const button = new RegExp(`data-sub="${view}"[^>]*>([^<]*)<`).exec(html.replace(/\s+/g, ' '));
-    assert.equal(button?.[1], MATH_TAB_LABEL[view], view);
-  }
 });
 
 test('half of a character never stops an address from being built: a lone surrogate becomes the replacement character', () => {

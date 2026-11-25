@@ -1,7 +1,8 @@
 /* The math bar's popovers (the "?" help, the Substats & materia chip's and the Sync chip's) as one Lit element in light DOM,
    with a Zag popover for the open state, the Escape key, the press outside, the focus and the placement. The element draws
-   nothing: the page's template holds its content, which Alpine still runs (the Level and Synced IL boxes read the store), so
-   it wraps markup instead of being an island (docs/engineering/architecture.md section 3). The template marks the parts:
+   nothing: its parent holds its content (the math bar element draws the "?" help's and the Substats & materia chip's; the Sync
+   chip's is the page's own markup, which Alpine still runs: the Level and Synced IL boxes read the store), so it wraps markup
+   instead of being an island (docs/engineering/architecture.md section 3). The markup marks the parts:
    - `data-zag-part="trigger"`: the button (the "?" or the chip); Zag gives it `aria-expanded`, `aria-controls` and the click;
    - `data-zag-part="positioner"` around `data-zag-part="content"`: the popover, hidden while closed;
    - `data-zag-part="backdrop"` (optional): the dimmed page behind a modal popover, shown while it is open.
