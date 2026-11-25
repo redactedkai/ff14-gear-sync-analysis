@@ -262,11 +262,12 @@ export async function checkViewports(pg) {
     await alignRowUnderHeader(pg, '#sh-gear tr[data-row="6"]');
     await pg.locator('#sh-gear tr[data-row="6"] [data-pick]').click();
     await expect(pg.locator('.pick-menu')).toBeVisible();
+    await placedByZag(pg, '.pick-menu');
     await checkMenuFits(pg, vp, 'the piece menu', '.pick-menu', seen);
     await checkWidths(pg, vp, 'the piece menu');
     await pg.screenshot({ path: shot(`viewport-${slug}-piece-menu.png`) });
     await pg.keyboard.press('Escape');
-    await expect(pg.locator('.pick-menu')).toHaveCount(0);
+    await expect(pg.locator('.pick-menu')).toBeHidden();
 
     // scrolled to the bottom: the header and the column names stay on top and in place
     await pg.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));

@@ -90,7 +90,7 @@ export async function checkTwoHandedPick(pg) {
   await expect(control).toHaveAttribute('aria-disabled', 'true');
   await expect(offhand.locator('.shield-note')).toBeVisible();
   await control.click({ force: true }); // Playwright treats aria-disabled as not enabled
-  check((await pg.locator('.pick-menu').count()) === 0, 'the covered Off-hand control opened a menu');
+  check(!(await pg.locator('.pick-menu').isVisible()), 'the covered Off-hand control opened a menu');
 
   await pg.click('#sh-discard');
   await expect(weapon.locator('td.item')).toContainText('Tidal Wave Wand');
@@ -117,7 +117,7 @@ export async function checkCloakPick(pg) {
   const control = head.locator('[data-pick]');
   await expect(control).toHaveAttribute('aria-disabled', 'true');
   await control.click({ force: true });
-  check((await pg.locator('.pick-menu').count()) === 0, 'the covered Head control opened a menu');
+  check(!(await pg.locator('.pick-menu').isVisible()), 'the covered Head control opened a menu');
 
   await pg.click('#sh-discard');
   await expect(head.locator('td.item')).toContainText('Rainbow Cap of Healing');

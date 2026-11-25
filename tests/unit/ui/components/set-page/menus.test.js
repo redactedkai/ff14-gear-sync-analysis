@@ -1,39 +1,7 @@
-/* The piece picker's one click handler on a set page (src/ui/components/set-page/menus.js pickClick): the rows carry
-   their data (data-game-id) and the handler reads which row was clicked. The rows are stand-ins for
-   the buttons of the page. */
+/* The page's menu placement (src/ui/components/set-page/menus.js): where the window's line for menus is. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { menusPart } from '../../../../../src/ui/components/set-page/menus.js';
-
-/* A click on `clicked` (or on nothing in the list: clicked null), as the list's @click handler gets it. */
-const clickOn = clicked => ({ target: { closest: selector => (selector === '.same-item' ? clicked : null) } });
-/* A row stand-in: its attributes as the page gives them, `disabled` when the button is. */
-const row = ({ gameId, disabled = false }) => ({
-  disabled,
-  dataset: gameId === undefined ? {} : { gameId: String(gameId) },
-});
-
-/* The handler with a pick that records what it is given. */
-function handler() {
-  const picks = [];
-  const part = menusPart(value => value);
-  const owner = { pick: (index, gameId) => picks.push([index, gameId]) };
-  return { click: (event, index) => part.pickClick.call(owner, event, index), picks };
-}
-
-test('piece picker click: a piece row picks its gameId (a number) for the menu row', () => {
-  const { click, picks } = handler();
-  click(clickOn(row({ gameId: 49579 })), 10);
-  assert.deepEqual(picks, [[10, 49579]]);
-});
-
-test('piece picker click: a disabled row (a Unique ring in the other ring row) and a click off any row do nothing', () => {
-  const { click, picks } = handler();
-  click(clickOn(row({ gameId: 49579, disabled: true })), 10);
-  click(clickOn(null), 10);
-  click(clickOn(row({})), 10); // a row with no gameId
-  assert.deepEqual(picks, []);
-});
 
 /* keepMenuInView: the page scrolls to show an opened table menu and keeps its button below the pinned header and the stuck
    column names. Stand-ins for the window (innerHeight, scrollBy) and the page's boxes, in px of the window. */

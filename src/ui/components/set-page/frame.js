@@ -4,7 +4,7 @@
 
 import { overlays } from '../../overlays.js';
 import { afterDraw } from '../compose.js';
-import { RANK_NOTE_LAYER, SET_MENU_LAYER, SETTINGS_LAYER } from './menus.js';
+import { RANK_NOTE_LAYER, SETTINGS_LAYER } from './menus.js';
 
 /* `page`: {el, refs, setId}, the shared holder of the page's own element, its refs and its set's id, kept from init: `this.$el` and `this.$refs`
    belong to the element a handler ran on, and a click can remove that element (Cancel, Apply, Discard), so after one
@@ -28,10 +28,8 @@ export function framePart(page) {
           }
         },
       );
-      // a menu or popover the page closes itself (a pick, Apply, Auto-fill) is taken off the overlay manager too, so it no longer
-      // answers Escape
+      // a popover the page closes itself (Apply, Auto-fill) is taken off the overlay manager too, so it no longer answers Escape
       for (const [flag, layer] of [
-        ['open', SET_MENU_LAYER],
         ['settingsOpen', SETTINGS_LAYER],
         ['rankHelp', RANK_NOTE_LAYER],
       ]) {

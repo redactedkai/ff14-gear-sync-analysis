@@ -152,6 +152,9 @@ export class GsaMateriaMenu extends LitElement {
         this.focusPending = true;
       }
       this.wasOpen = api.open;
+      if (!api.open) {
+        this.zag.clearPlacement();
+      }
       if (!this.anchor) {
         this.openedFor = null;
         if (api.open) {

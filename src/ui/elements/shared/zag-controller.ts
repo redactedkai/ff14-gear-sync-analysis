@@ -111,6 +111,18 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
     this.#machine?.send({ type: 'CLOSE', restoreFocus: false });
   }
 
+  /* Forgets where this element's popover was placed: removes `--x` and `--y` from its positioner. Zag's `reposition` (which an element
+     calls after each draw of an open menu) never takes its values back, so a closed menu keeps the place of its last opening, and
+     the next opening looks placed (`--x` is set) a frame before Zag has placed it. An element calls this while its menu is closed. */
+  clearPlacement(): void {
+    for (const node of this.#host.querySelectorAll(`[${PART_ATTRIBUTE}="positioner"]`)) {
+      if (Object.is(node.closest(`[${HOST_ATTRIBUTE}]`), this.#host) && node instanceof HTMLElement) {
+        node.style.removeProperty('--x');
+        node.style.removeProperty('--y');
+      }
+    }
+  }
+
   /* Starts a new machine. */
   hostConnected(): void {
     const props = () => ({ ...this.#options.getProps?.(), id: this.id }) as Partial<Schema['props']>;

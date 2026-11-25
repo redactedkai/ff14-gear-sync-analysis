@@ -486,6 +486,12 @@ gsa-notes {
   font-size: 0.78rem;
   color: var(--muted);
 }
+/* the piece picker is the element <gsa-piece-picker> (src/ui/elements/set-page/piece-picker.ts), drawn in light DOM at the end of the
+   table's box and placed by Zag's positioner under the button that opened it (the menu is the positioner's content, so it is not
+   absolute itself: the rule at the end of this file); the page scrolls it into the window (keepMenuInView). */
+gsa-piece-picker {
+  display: block;
+}
 /* the piece picker */
 .pick-menu {
   width: min(480px, 80vw);

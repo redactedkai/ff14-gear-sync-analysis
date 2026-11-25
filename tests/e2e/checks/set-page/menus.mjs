@@ -178,23 +178,25 @@ export async function checkMenuClicks(pg) {
   const piece = menu.locator('.same-item[data-game-id]:not([disabled])').first();
   const pieceName = (await piece.locator('span span').first().innerText()).trim();
   await piece.click();
-  await expect(menu).toHaveCount(0);
+  await expect(menu).toBeHidden(); // the one menu element stays, hidden
   await expect(ring).toContainText(pieceName);
   await expectApplyCount(pg, 1);
 
   // Empty this slot empties the row: a button in the search row, named in full, not a row of the list
   await ring.click();
+  await expect(menu).toBeVisible();
   await expect(menu.locator('.menu-list [data-empty-slot]')).toHaveCount(0);
   await expect(menu.locator('.menu-tools [data-empty-slot]')).toHaveAttribute('aria-label', 'Empty this slot');
   await expect(menu.locator('.menu-tools [data-empty-slot]')).toHaveText('Empty');
   await menu.locator('.menu-tools [data-empty-slot]').click();
-  await expect(menu).toHaveCount(0);
+  await expect(menu).toBeHidden(); // the one menu element stays, hidden
   await expectPieceEmpty(pg, 10);
   // a row that holds no piece has nothing to empty: no button
   await ring.click();
+  await expect(menu).toBeVisible();
   await expect(menu.locator('[data-empty-slot]')).toHaveCount(0);
   await pg.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
+  await expect(menu).toBeHidden(); // the one menu element stays, hidden
 
   // the Food menu: a meal row picks its meal, No food clears it
   const food = pg.locator('#sh-meal-btn');
@@ -248,7 +250,7 @@ export async function checkPickMenu(pg) {
   });
   await pg.screenshot({ path: shot('pick-menu.png') });
   await pg.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
+  await expect(menu).toBeHidden(); // the one menu element stays, hidden
 
   // scrolled under the sticky headings, the row's menu button stays below the pinned header and the column names
   const covered = await pg.evaluate(() => {
@@ -288,7 +290,7 @@ export async function checkPickMenu(pg) {
   const other = pieces.first();
   const name = (await other.locator('span span').first().innerText()).trim();
   await other.click();
-  await expect(menu).toHaveCount(0);
+  await expect(menu).toBeHidden(); // the one menu element stays, hidden
   await expect(button).toContainText(name);
   await expectApplyCount(pg, 1);
   await checkNoBadText(pg, 'the piece menu');

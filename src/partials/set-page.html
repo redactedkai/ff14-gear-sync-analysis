@@ -255,22 +255,12 @@
               :class="{ 'choose-empty': r.empty && !r.covered, covered: r.covered }"
               :data-pick="r.index"
               :data-empty="String(r.empty)"
-              :aria-expanded="String(open === `pick:${r.index}`)"
+              :aria-expanded="String(pickOpen === r.index)"
               :aria-disabled="r.covered ? 'true' : null"
               :aria-describedby="r.shieldNote ? `shield-note-${r.index}` : null"
               :title="r.shieldNote || r.coveredTitle"
               :disabled="locked"
-              @click="r.covered || toggleMenu(`pick:${r.index}`, $el.parentElement)"><span><span x-text="r.empty ? r.emptyText : r.name"></span><template x-if="r.hq"><span class="hqg" role="img" aria-label="High quality"></span></template></span></button>
-            <template x-if="open === `pick:${r.index}`"><div class="same-menu search-menu pick-menu" x-data="{ get pk() { return picker(r.index) } }">
-              <div class="menu-tools"><span class="menu-search"><input type="text" autocomplete="off" aria-label="Search pieces" :placeholder="pk.placeholder" x-model="query"></span><template x-if="pk.canEmpty"><button type="button" class="menu-clear" data-empty-slot aria-label="Empty this slot" @click="pick(r.index, null)"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 10.5858L16.9497 5.63604L18.364 7.05025L13.4142 12L18.364 16.9497L16.9497 18.364L12 13.4142L7.05025 18.364L5.63604 16.9497L10.5858 12L5.63604 7.05025L7.05025 5.63604L12 10.5858Z"/></svg>Empty</button></template></div>
-              <div class="menu-list" @click="pickClick($event, r.index)">
-                <template x-for="g in pk.groups" :key="g.label"><div><div class="same-head" x-text="g.label"></div>
-                  <template x-for="x in g.items" :key="x.key"><button type="button" class="same-item" :class="x.onClass" :data-game-id="x.key" :disabled="x.taken"><span><span x-text="x.name"></span><template x-if="x.hq"><span class="hqg" role="img" aria-label="High quality"></span></template><span :class="x.pillClass" x-text="x.pillLabel"></span><template x-if="x.unique"><span class="same-lvl" x-text="x.uniqueText"></span></template><span class="pick-subs" x-text="x.line"></span></span><span class="same-lvl" x-text="x.levels"></span></button></template>
-                </div></template>
-                <template x-if="pk.emptyText"><div class="menu-empty"><span x-text="pk.emptyText"></span> <template x-if="query.trim()"><button type="button" class="linkbtn" @click="query = ''">Clear search</button></template></div></template>
-              </div>
-              <div class="same-foot" x-text="pk.footText"></div>
-            </div></template>
+              @click="r.covered || togglePicker(r.index, $el)"><span><span x-text="r.empty ? r.emptyText : r.name"></span><template x-if="r.hq"><span class="hqg" role="img" aria-label="High quality"></span></template></span></button>
           </div>
           <template x-if="r.shieldNote"><div class="shield-note" :id="`shield-note-${r.index}`" x-text="r.shieldNote"></div></template>
           <template x-if="r.take"><label class="takebox" :class="{ locked: r.take.locked }" :title="r.take.locked ? 'Follows the weapon' : null"><input type="checkbox" :checked="r.take.taken" :disabled="!!r.take.locked" @change="setTake(r.index, $event.target.checked)"><span>Take <span class="dim" x-text="r.take.text"></span></span></label></template>
@@ -330,6 +320,16 @@
       <tr class="tier" id="sh-defense"><td x-text="view.totals.defense.label"></td><td class="defense" :colspan="view.rows.headers.length + 2"><span x-text="view.totals.defense.phys.label"></span> <b x-text="view.totals.defense.phys.valueText"></b> <em><span class="defdot">·</span><span x-text="view.totals.defense.phys.pctText"></span></em> <span class="defsep">/</span> <span x-text="view.totals.defense.mag.label"></span> <b x-text="view.totals.defense.mag.valueText"></b> <em><span class="defdot">·</span><span x-text="view.totals.defense.mag.pctText"></span></em></td></tr>
     </tbody>
   </table>
+  <!-- the piece picker: one Lit element (an island) for every row's piece button, given the picker by x-effect and telling the
+       choice by events; x-ignore keeps Alpine out of the markup the element draws -->
+  <div
+    x-effect="Object.assign($el.firstElementChild, pickerPanel)"
+    @picker-shown="pickAnchor && keepMenuInView($event.detail, pickAnchor)"
+    @picker-close="closePicker()"
+    @picker-query="query = $event.detail"
+    @piece-pick="pick(pickOpen, $event.detail)">
+    <gsa-piece-picker x-ignore></gsa-piece-picker>
+  </div>
   <!-- the materia menu: one Lit element (an island) for every chip, given the grades by x-effect and telling the choice by events;
        x-ignore keeps Alpine out of the markup the element draws -->
   <div

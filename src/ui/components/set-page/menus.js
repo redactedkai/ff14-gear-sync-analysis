@@ -1,10 +1,10 @@
-/* The open menus of a set page (a piece picker, a materia menu, the Food menu): which one is open, the
-   keys it takes, where it sits in the window, and the views of the picker and the materia menu.
+/* The open menus of a set page (a piece picker, a materia menu, the Food menu): which one is open, where it sits in the
+   window, and the views of the picker and the materia menu. The picker and the materia menu are Lit elements (islands); the page
+   names the button they hang under and gives them their view.
    A part of the setPage component (components/set-page.js composes the parts). */
 import { jobGear } from '../../../core/items.js';
 import { drawInSteps } from '../../draw-in-steps.js';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.js';
-import { overlays } from '../../overlays.js';
 import { piecePickerView } from '../../views/piece-menu.js';
 import { materiaMenuView } from '../../views/stone-menu.js';
 
@@ -15,9 +15,8 @@ const MENU_BUTTON_MARGIN_PX = 8;
 /* The lowest a menu that does not fit is made before it scrolls inside (px). */
 const MENU_MIN_PX = 160;
 
-/* The ids of the set page's layers in the overlay manager (overlays.js): the one open menu (a picker, a materia menu, the Food
-   menu), the Auto-fill settings popover and its "Spare points" note. */
-export const SET_MENU_LAYER = 'setMenu';
+/* The ids of the set page's layers in the overlay manager (overlays.js) that the page itself opens: the Auto-fill settings popover
+   and its "Spare points" note. (The menus of the table are Zag layers their elements register.) */
 export const SETTINGS_LAYER = 'settings';
 export const RANK_NOTE_LAYER = 'rankNote';
 
@@ -39,8 +38,10 @@ export function menusPart() {
   let lastPicker = null;
   let lastCut = null;
   return {
-    // the open menu: 'pick:<row>', 'meal', or null; the picker's search text
-    open: null,
+    // the piece picker (<gsa-piece-picker>, an island): the row it is open for (its index) and the button it hangs under, or null;
+    // the picker's search text
+    pickOpen: null,
+    pickAnchor: null,
     query: '',
     // the materia menu (<gsa-materia-menu>, an island): the slot it is open for as {row, slot} and the chip it hangs under, or null;
     // every menu shows every grade while matAll is on
@@ -86,50 +87,33 @@ export function menusPart() {
 
     /* ---- menus ---- */
 
-    /* Open or close menu `id` (`box`: the element the menu opens in, whose first button opens it); an opened menu is a layer of
-       the overlay manager (Escape, a press outside and Tab out close it, and the focus goes back to its button after Escape) and
-       is scrolled into the window, below the pinned header. */
-    toggleMenu(id, box) {
+    /* The piece button of row `index` (`button`) opens its picker, or closes it when it is open: the search starts empty and the
+       list is drawn in steps. An open picker is a layer of the overlay manager (its element registers it: Escape, a press outside
+       and a focus that leaves it close it, and the focus goes back to the button after Escape and a pick); it is scrolled into the
+       window, below the pinned header, once it is placed (`picker-shown`, keepMenuInView). */
+    togglePicker(index, button) {
       if (this.locked) {
         return;
       }
       this.query = '';
-      if (this.open === id) {
-        return this.closeOpenMenu();
-      }
-      overlays.open({
-        id: SET_MENU_LAYER,
-        root: () => box,
-        opener: () => box?.querySelector('button'),
-        tabOut: true,
-        close: () => {
-          this.open = null;
-        },
-      });
-      this.open = id;
-      if (id.startsWith('pick:')) {
-        this.drawPickerInSteps(Number(id.slice(5)));
-      }
-      this.$nextTick(() =>
-        requestAnimationFrame(() => {
-          const menu = box?.querySelector('.same-menu');
-          (menu?.querySelector('input[type=text]') ?? menu?.querySelector('.on, .cur, button:not(:disabled)'))?.focus({
-            preventScroll: true,
-          });
-          this.keepMenuInView(menu);
-        }),
-      );
-    },
-    /* Close the open menu (a pick, the button again); the focus goes back to the menu's button unless `restoreFocus` is false. */
-    closeOpenMenu(restoreFocus = true) {
-      // the materia menu closes itself (its element) once the page lets go of its chip
-      this.closeMateria();
-      if (this.open === null) {
+      if (this.pickOpen === index) {
+        this.closePicker();
         return;
       }
-      if (!overlays.close(SET_MENU_LAYER, { restoreFocus })) {
-        this.open = null;
-      }
+      this.pickOpen = index;
+      this.pickAnchor = button;
+      this.drawPickerInSteps(index);
+    },
+    /* The page lets go of the picker (its element closes it; the element's `picker-close` event ends here too). */
+    closePicker() {
+      this.pickOpen = null;
+      this.pickAnchor = null;
+    },
+    /* Close the open menu (a pick, an Apply or Discard, the button again): the elements put the focus back on a button after a
+       choice of their own; for a close the page asks for, it stays where it is. */
+    closeOpenMenu() {
+      this.closeMateria();
+      this.closePicker();
     },
     /* The window's line (px from its top) that menus stay under: the bottom of the pinned header and, in the table, of the stuck
        column names. The Food menu (<gsa-food-menu>) takes it as its boundary. */
@@ -140,8 +124,9 @@ export function menusPart() {
     /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the
        pinned header and, for a menu in the table, the stuck column names); `anchorTop` the top of the box its button is in
        (the menu hangs under it: .same and .pop in the table), which the page keeps under that line too, so the button stays in
-       sight; and `room` the height left for the menu from there to the window's bottom. A menu a library places (the materia
-       menu) hangs under the chip `anchor`, whose top is `anchorTop` (the menu's offset parent is then the library's positioner). */
+       sight; and `room` the height left for the menu from there to the window's bottom. A menu a library places (the piece picker,
+       the materia menu) hangs under its button `anchor`, whose top is `anchorTop` (the menu's offset parent is then the library's
+       positioner). */
     menuRoom(menu, anchor = null) {
       const top = this.viewTop();
       let anchorTop = menu.getBoundingClientRect().top;
@@ -180,12 +165,12 @@ export function menusPart() {
       }
     },
     /* Draw the pieces of the piece picker of row `index` in steps: the first ones at once, the rest one step per frame
-       while the picker stays open. */
+       while the picker stays open. TODO: the page keeps the picker's search text, its cut to `pickRows` and this stepping while
+       the set page is an Alpine component; they move to the set page's Lit screen (R40). */
     drawPickerInSteps(index) {
-      const id = `pick:${index}`;
       this.pickRows = FIRST_ROWS;
       drawInSteps(() => {
-        if (this.open !== id) {
+        if (this.pickOpen !== index) {
           return false;
         }
         this.pickRows += ROWS_PER_STEP;
@@ -193,7 +178,7 @@ export function menusPart() {
       });
     },
     /* The open piece picker of row `index` (piecePickerView), as many pieces as pickRows. Kept for the next read: the
-       template reads it once per part of the menu, and it depends on the job, the pieces held (a Unique ring in the
+       page's effect reads it again at every redraw, and it depends on the job, the pieces held (a Unique ring in the
        other ring row), the search and the rows drawn only. */
     picker(index) {
       const gearSet = this.draft ?? this.saved;
@@ -210,17 +195,10 @@ export function menusPart() {
       }
       return lastCut.view;
     },
-    /* A click inside the open piece picker of row `index`: one handler on the list instead of one per row. The row clicked
-       carries its piece's gameId (data-game-id); a disabled row (a Unique
-       ring worn in the other ring row), the search box and the Clear search button do nothing here. */
-    pickClick(event, index) {
-      const row = event.target.closest?.('.same-item');
-      if (!row || row.disabled) {
-        return;
-      }
-      if (row.dataset.gameId !== undefined) {
-        this.pick(index, Number(row.dataset.gameId));
-      }
+    /* What the piece picker element shows: {menu, anchor, query}; `menu` is the open row's picker (see `picker`) or null. */
+    get pickerPanel() {
+      const index = this.pickOpen;
+      return { menu: index === null ? null : this.picker(index), anchor: this.pickAnchor, query: this.query };
     },
     /* The chip of slot `slot` of row `index` (`button`) opens its materia menu, or closes it when it is open. A menu of the table (the
        piece picker, the Food menu) that is open closes when the materia menu registers with the overlay manager. */

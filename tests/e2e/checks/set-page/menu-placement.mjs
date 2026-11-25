@@ -25,7 +25,7 @@ async function openDraftSet(pg) {
 async function pickFirstPiece(pg, row) {
   await pg.click(`#sh-gear tr[data-row="${row}"] [data-pick]`);
   await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
-  await expect(pg.locator('.pick-menu')).toHaveCount(0);
+  await expect(pg.locator('.pick-menu')).toBeHidden(); // the one menu element stays, hidden
 }
 
 /** The pinned parts of the page the menu must stay under: the sticky header and the column names. What each is, drawn
@@ -72,7 +72,7 @@ function scrollButtonUnderHeading(pg, buttonSel, depth) {
 export async function checkTableMenusUnderHeading(pg) {
   await openDraftSet(pg);
   const menus = [
-    ['the Weapon row piece menu', '#sh-gear tr[data-row="0"] [data-pick]', '#sh-gear tr[data-row="0"] .pick-menu'],
+    ['the Weapon row piece menu', '#sh-gear tr[data-row="0"] [data-pick]', '.pick-menu'],
     ['the Hands row materia menu', '[data-chip="4:0"]', '.matpop'],
   ];
   for (const [what, buttonSel, menuSel] of menus) {

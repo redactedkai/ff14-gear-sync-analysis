@@ -74,7 +74,7 @@ export function draftPart() {
         return;
       }
       this.pages.setDraft(this.setId, null);
-      this.closeOpenMenu(false);
+      this.closeOpenMenu();
       if (changes.count) {
         this.$store.sheets.setNote(draftNote('Applied', changes));
       }
@@ -88,7 +88,7 @@ export function draftPart() {
       }
       const changes = draftView(this.sheet, this.saved, draft).changes;
       this.pages.setDraft(this.setId, null);
-      this.closeOpenMenu(false);
+      this.closeOpenMenu();
       this.$store.sheets.setNote(draftNote('Discarded', changes));
       this.focusFill();
     },
