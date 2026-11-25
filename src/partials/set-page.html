@@ -283,25 +283,11 @@
             <button
               type="button"
               class="mchip"
-              :class="{ over: c.over, empty: c.empty, on: open === `mat:${r.index}:${c.index}`, 'cap-none': c.fit === 'none', removed: !!c.removed }"
+              :class="{ over: c.over, empty: c.empty, on: chipOpen(r.index, c.index), 'cap-none': c.fit === 'none', removed: !!c.removed }"
               :data-chip="`${r.index}:${c.index}`"
               :disabled="locked || c.locked"
-              @click="toggleMenu(`mat:${r.index}:${c.index}`, $el.parentElement)"
+              @click="toggleMateria(r.index, c.index, $el)"
               x-text="c.text"></button>
-            <template x-if="open === `mat:${r.index}:${c.index}`"><div class="matpop" :class="{ all: matAll }" x-data="{ get m() { return materia(r.index, c.index) } }">
-              <h5><span x-text="m.title"></span></h5>
-              <template x-for="b in m.bands" :key="b.key"><div class="matgrid" :style="`grid-template-columns: 36px repeat(${m.columns}, 1fr)`"><span></span><template x-for="col in b.columns" :key="col.grade"><span class="h" :class="{ na: !col.ok }"><span x-text="col.roman"></span> <i x-text="`(${col.grade})`"></i></span></template><template x-if="m.showOdds"><span style="display:contents"><span class="s">odds</span><template x-for="col in b.columns" :key="col.grade"><span class="pc" :class="{ na: !col.ok }" x-text="col.odds"></span></template></span></template><template x-for="row in b.rows" :key="row.stat"><span style="display:contents"><span class="s" x-text="row.short"></span><template x-for="cell in row.cells" :key="cell.grade"><button
-                type="button"
-                :class="{ on: cell.on, na: !cell.ok, 'cap-none': cell.fit === 'none', 'cap-part': cell.fit === 'part' }"
-                :data-stone="`${row.stat}:${cell.grade}`"
-                :disabled="!cell.ok"
-                @click="setStone(r.index, c.index, row.stat, cell.grade)"
-                x-text="cell.ok ? cell.text : '–'"></button></template></span></template></div></template>
-              <template x-if="m.highNote"><p class="rmnote" x-text="m.highNote"></p></template>
-              <template x-if="m.nqNote"><p class="rmnote" x-text="m.nqNote"></p></template>
-              <div class="matfoot"><span><template x-if="m.hasStone"><button type="button" class="linkish" :disabled="!m.canRemove" @click="removeStone(r.index, c.index)">Remove</button></template></span><button type="button" class="linkish" @click="matAll = !matAll" x-text="m.allText"></button><button type="button" class="linkish" @click="open = null">Close</button></div>
-              <template x-if="m.removeNote"><p class="rmnote" x-text="m.removeNote"></p></template>
-            </div></template>
           </span></template></div></template>
           <template x-if="!r.empty && !r.chips.length"><div class="small dim" x-text="r.noChipsText"></div></template>
         </td>
@@ -343,7 +329,18 @@
       <tr class="tier" id="sh-tier"><td x-text="view.totals.tier.label"></td><td class="small dim" x-text="view.totals.tier.caption"></td><td class="n"></td><template x-for="(c, k) in view.totals.tier.cells" :key="k"><td class="n small" :class="{ dim: c && c.zero }" x-text="c ? c.text : ''"></td></template></tr>
       <tr class="tier" id="sh-defense"><td x-text="view.totals.defense.label"></td><td class="defense" :colspan="view.rows.headers.length + 2"><span x-text="view.totals.defense.phys.label"></span> <b x-text="view.totals.defense.phys.valueText"></b> <em><span class="defdot">·</span><span x-text="view.totals.defense.phys.pctText"></span></em> <span class="defsep">/</span> <span x-text="view.totals.defense.mag.label"></span> <b x-text="view.totals.defense.mag.valueText"></b> <em><span class="defdot">·</span><span x-text="view.totals.defense.mag.pctText"></span></em></td></tr>
     </tbody>
-  </table></div>
+  </table>
+  <!-- the materia menu: one Lit element (an island) for every chip, given the grades by x-effect and telling the choice by events;
+       x-ignore keeps Alpine out of the markup the element draws -->
+  <div
+    x-effect="Object.assign($el.firstElementChild, materiaPanel)"
+    @materia-shown="keepMenuInView($event.detail, matAnchor)"
+    @materia-close="closeMateria()"
+    @stone-pick="pickStone($event.detail)"
+    @stone-remove="dropStone()"
+    @grades-toggle="matAll = !matAll">
+    <gsa-materia-menu x-ignore></gsa-materia-menu>
+  </div></div>
   <template x-if="view.rows.anyAtCap"><p class="small dim" id="sh-cap-key"><span class="atcap">48</span> <span x-text="view.rows.capKeyText"></span></p></template>
   <template x-if="view.bonusNote"><p class="small dim" id="sh-set-bonus-note" x-text="view.bonusNote"></p></template>
 

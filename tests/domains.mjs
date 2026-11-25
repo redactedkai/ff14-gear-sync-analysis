@@ -70,6 +70,8 @@ export const DOMAINS = {
       'src/ui/components/set-page.js',
       'src/ui/elements/set-page/**',
       'src/ui/components/set-page/{draft,frame,leave,menus,page-state,view}.js',
+      // the materia menu, a Lit element (an island in the set page's table)
+      'src/ui/elements/set-page/**',
       'src/ui/store/set-page-actions.ts',
       'src/ui/sheets/{saved-set,set-edits}.js',
       'src/ui/views/{limit-rows,meal-menu,piece-menu,set-draft,set-meal-menu,set-rows,set-totals,stone-menu}.js',

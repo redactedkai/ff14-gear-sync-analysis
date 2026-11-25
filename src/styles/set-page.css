@@ -594,6 +594,12 @@ gsa-notes {
   box-shadow: var(--pop-shadow);
   white-space: normal;
 }
+/* the materia menu is the element <gsa-materia-menu> (src/ui/elements/set-page/materia-menu.ts), drawn in light DOM at the end of the
+   table's box and placed by Zag's positioner under the chip that opened it (the menu is the positioner's content, so it is not
+   absolute itself: the rule at the end of this file); the page scrolls it into the window (keepMenuInView). */
+gsa-materia-menu {
+  display: block;
+}
 /* a menu of the table (a piece menu, a materia menu) is drawn over the table's cells and under the pinned parts: the column names (4)
    and the sticky header (8, with the Apply bar and the stat block), so a menu scrolled up under them never covers them.
    The Food menu is in the table's Food row, so it is one of them. */

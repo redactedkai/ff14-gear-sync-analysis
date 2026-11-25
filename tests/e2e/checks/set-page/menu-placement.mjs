@@ -86,7 +86,7 @@ export async function checkTableMenusUnderHeading(pg) {
       return { ok: over.length === 0, got: `drawn over the ${over.join(' and ')}` };
     });
     await pg.keyboard.press('Escape');
-    await expect(pg.locator(menuSel)).toHaveCount(0);
+    await expect(pg.locator(menuSel)).toBeHidden();
     await pg.evaluate(() => scrollTo(0, 0));
   }
   await pg.click('#sh-discard');

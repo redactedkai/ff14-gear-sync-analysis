@@ -257,7 +257,7 @@ export async function checkViewports(pg) {
     await checkWidths(pg, vp, 'the materia menu');
     await pg.screenshot({ path: shot(`viewport-${slug}-stone-menu.png`) });
     await pg.keyboard.press('Escape');
-    await expect(pg.locator('.matpop')).toHaveCount(0);
+    await expect(pg.locator('.matpop')).toBeHidden();
     await alignRowUnderHeader(pg, '#sh-gear tr[data-row="6"]');
     await pg.locator('#sh-gear tr[data-row="6"] [data-pick]').click();
     await expect(pg.locator('.pick-menu')).toBeVisible();

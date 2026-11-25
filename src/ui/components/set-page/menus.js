@@ -39,10 +39,13 @@ export function menusPart() {
   let lastPicker = null;
   let lastCut = null;
   return {
-    // the open menu: 'pick:<row>', 'meal', 'mat:<row>:<slot>', or null; the picker's search text
+    // the open menu: 'pick:<row>', 'meal', or null; the picker's search text
     open: null,
     query: '',
-    // the materia menu shows every grade
+    // the materia menu (<gsa-materia-menu>, an island): the slot it is open for as {row, slot} and the chip it hangs under, or null;
+    // every menu shows every grade while matAll is on
+    matOpen: null,
+    matAnchor: null,
     matAll: false,
     // how many pieces the open piece picker draws (it draws a long list in steps: views/limit-rows.js)
     pickRows: Infinity,
@@ -109,7 +112,7 @@ export function menusPart() {
       }
       this.$nextTick(() =>
         requestAnimationFrame(() => {
-          const menu = box?.querySelector('.same-menu, .matpop');
+          const menu = box?.querySelector('.same-menu');
           (menu?.querySelector('input[type=text]') ?? menu?.querySelector('.on, .cur, button:not(:disabled)'))?.focus({
             preventScroll: true,
           });
@@ -119,6 +122,8 @@ export function menusPart() {
     },
     /* Close the open menu (a pick, the button again); the focus goes back to the menu's button unless `restoreFocus` is false. */
     closeOpenMenu(restoreFocus = true) {
+      // the materia menu closes itself (its element) once the page lets go of its chip
+      this.closeMateria();
       if (this.open === null) {
         return;
       }
@@ -135,14 +140,15 @@ export function menusPart() {
     /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the
        pinned header and, for a menu in the table, the stuck column names); `anchorTop` the top of the box its button is in
        (the menu hangs under it: .same and .pop in the table), which the page keeps under that line too, so the button stays in
-       sight; and `room` the height left for the menu from there to the window's bottom. */
-    menuRoom(menu) {
+       sight; and `room` the height left for the menu from there to the window's bottom. A menu a library places (the materia
+       menu) hangs under the chip `anchor`, whose top is `anchorTop` (the menu's offset parent is then the library's positioner). */
+    menuRoom(menu, anchor = null) {
       const top = this.viewTop();
       let anchorTop = menu.getBoundingClientRect().top;
       let buttonGap = 0; // how far under `top` the page keeps the button: the room of a menu in the table starts there
       const names = this.$refs.table.querySelector('thead th');
       if (names) {
-        anchorTop = menu.offsetParent?.getBoundingClientRect().top ?? anchorTop;
+        anchorTop = (anchor ?? menu.offsetParent)?.getBoundingClientRect().top ?? anchorTop;
         buttonGap = MENU_BUTTON_MARGIN_PX;
       }
       // the menu opens `offset` px under its anchor's top (the button's height and the gap): that much of the room is the button's
@@ -152,19 +158,19 @@ export function menusPart() {
     /* Scroll the page so an opened menu and its button sit between the pinned header and the window's bottom; a menu taller
        than the room gets a height that fits and scrolls inside. The button is what stays below the pinned parts (the page
        never scrolls it under them to show more of the menu). */
-    keepMenuInView(menu) {
+    keepMenuInView(menu, anchor = null) {
       if (!menu) {
         return;
       }
       const list = menu.querySelector('.menu-list') ?? menu;
       list.style.maxHeight = '';
-      const { room } = this.menuRoom(menu);
+      const { room } = this.menuRoom(menu, anchor);
       // the search box and the footer stay; the list takes what is left (their height is measured, not guessed)
       const whole = menu.getBoundingClientRect().height;
       if (whole > room) {
         list.style.maxHeight = `${Math.max(MENU_MIN_PX, room - (whole - list.getBoundingClientRect().height))}px`;
       }
-      const { top, room: left, anchorTop } = this.menuRoom(menu);
+      const { top, room: left, anchorTop } = this.menuRoom(menu, anchor);
       const box = menu.getBoundingClientRect();
       const under = anchorTop - top - MENU_BUTTON_MARGIN_PX; // negative: the button is under the pinned header
       const past = box.bottom - innerHeight + MENU_MARGIN_PX; // positive: the menu's bottom is past the window
@@ -216,9 +222,47 @@ export function menusPart() {
         this.pick(index, Number(row.dataset.gameId));
       }
     },
-    /* The open materia menu of row `index`, slot `slot` (materiaMenuView). */
-    materia(index, slot) {
-      return materiaMenuView(this.job, this.draft ?? this.saved, index, slot, this.matAll);
+    /* The chip of slot `slot` of row `index` (`button`) opens its materia menu, or closes it when it is open. A menu of the table (the
+       piece picker, the Food menu) that is open closes when the materia menu registers with the overlay manager. */
+    toggleMateria(index, slot, button) {
+      if (this.locked) {
+        return;
+      }
+      if (this.chipOpen(index, slot)) {
+        this.closeMateria();
+        return;
+      }
+      this.matOpen = { row: index, slot };
+      this.matAnchor = button;
+    },
+    /* Whether the materia menu is open for slot `slot` of row `index`. */
+    chipOpen(index, slot) {
+      return this.matOpen?.row === index && this.matOpen.slot === slot;
+    },
+    /* The page lets go of the materia menu: its element closes it (the element's `materia-close` event ends here too). */
+    closeMateria() {
+      this.matOpen = null;
+      this.matAnchor = null;
+    },
+    /* What the materia menu element shows: {menu, anchor, all}; `menu` is the open slot's view (materiaMenuView) or null. */
+    get materiaPanel() {
+      const open = this.matOpen;
+      const menu = open ? materiaMenuView(this.job, this.draft ?? this.saved, open.row, open.slot, this.matAll) : null;
+      return { menu, anchor: this.matAnchor, all: this.matAll };
+    },
+    /* A stone chosen in the materia menu (`pick`: {stat, grade}, the element's stone-pick event) for the slot it is open for. */
+    pickStone(pick) {
+      const open = this.matOpen;
+      if (open) {
+        this.setStone(open.row, open.slot, pick.stat, pick.grade);
+      }
+    },
+    /* "Remove" in the materia menu: the stone of the slot it is open for goes. */
+    dropStone() {
+      const open = this.matOpen;
+      if (open) {
+        this.removeStone(open.row, open.slot);
+      }
     },
   };
 }

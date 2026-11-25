@@ -44,7 +44,7 @@ export async function checkOvermeldOdds(pg) {
   );
   await pg.screenshot({ path: shot('overmeld-odds-all.png') });
   await pg.keyboard.press('Escape');
-  await expect(popup).toHaveCount(0);
+  await expect(popup).toBeHidden(); // the one menu element stays, hidden
   await pg.click('[data-chip="7:0"]');
   await expect(popup.locator('h5')).toHaveTextParts(['Earring', 1]);
   await expect(popup.locator('.matfoot button').first()).toHaveText('Remove');
