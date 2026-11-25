@@ -139,7 +139,9 @@ export async function checkSheetCap(pg) {
     window.__noteHidden = 0;
     const note = document.querySelector('#sh-cap-lowered');
     new MutationObserver(() => {
-      if (note.style.display === 'none') window.__noteHidden++;
+      if (note.style.display === 'none') {
+        window.__noteHidden++;
+      }
     }).observe(note, { attributes: true, attributeFilter: ['style'] });
   });
   await pg.locator('#sh-cap').focus();

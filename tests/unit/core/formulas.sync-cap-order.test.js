@@ -78,7 +78,9 @@ test('with a factor of 1 the cap order equals the item-stat order at every item 
     const job = makeJobContext(id);
     for (const s of job.stats) {
       const f = s === 'vit' ? job.vitFactor : 1;
-      if (f !== 1) continue;
+      if (f !== 1) {
+        continue;
+      }
       for (const [type, pct] of shares) {
         for (let il = 1; il <= MAX_REAL; il++) {
           assert.equal(

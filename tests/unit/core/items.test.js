@@ -100,7 +100,9 @@ test("main and secondary attribute: Azeyma's Earrings give each job its own main
     const rows = browseItems(job, { q: "azeyma's earrings" });
     assert.equal(rows.length, 1, `${id} sees the earrings`);
     const st = poolItemFromRow(job, rows[0]).stats;
-    for (const [k, v] of Object.entries(want)) assert.equal(st[k], v, `${id} ${k}`);
+    for (const [k, v] of Object.entries(want)) {
+      assert.equal(st[k], v, `${id} ${k}`);
+    }
     // a stat the job does not have is no key at all: Secondary Attribute went to its own secondary stat, nowhere else
     assert.deepEqual(Object.keys(st).sort(), [...job.stats].sort(), id);
   }
@@ -420,7 +422,12 @@ test('database rows that share a pool key agree on every fact but their routes',
   const first = new Map();
   for (const row of ITEMS) {
     const key = poolKey({ name: row[ROW.name], type: DB_SLOT_TYPE[row[ROW.slotCode]], ilvl: row[ROW.ilvl] });
-    if (!first.has(key)) first.set(key, row);
-    else for (const fact of FACTS) assert.equal(row[ROW[fact]], first.get(key)[ROW[fact]], `${key}: ${fact}`);
+    if (!first.has(key)) {
+      first.set(key, row);
+    } else {
+      for (const fact of FACTS) {
+        assert.equal(row[ROW[fact]], first.get(key)[ROW[fact]], `${key}: ${fact}`);
+      }
+    }
   }
 });

@@ -31,17 +31,23 @@ export async function settle(page) {
    fonts}: `errors` fills with the page's script errors, `fonts` says whether the page's own fonts were loaded. */
 export async function openPage(browser, { file, width, height, fixture, failWrites = false, setup }) {
   const context = await browser.newContext({ viewport: { width, height }, colorScheme: 'dark' });
-  if (setup?.blockFonts) await context.route(/fonts\.(googleapis|gstatic)\.com/, route => route.abort());
+  if (setup?.blockFonts) {
+    await context.route(/fonts\.(googleapis|gstatic)\.com/, route => route.abort());
+  }
   await context.addInitScript(seedStorage, seedArgument(fixture, failWrites));
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => {
-    if (!BENIGN_ERRORS.test(error.message)) errors.push(error.message);
+    if (!BENIGN_ERRORS.test(error.message)) {
+      errors.push(error.message);
+    }
   });
   await page.goto(pathToFileURL(file).href, { timeout: START_TIMEOUT_MS });
   await page.waitForSelector('.wrap:not([x-cloak])', { timeout: START_TIMEOUT_MS });
   await page.addStyleTag({ content: NO_MOTION + (setup?.css ?? '') });
-  if (!setup?.blockFonts && fontsReachable !== false) fontsReachable = await waitForPageFonts(page);
+  if (!setup?.blockFonts && fontsReachable !== false) {
+    fontsReachable = await waitForPageFonts(page);
+  }
   await settle(page);
   return { context, page, errors, fonts: !setup?.blockFonts && fontsReachable === true };
 }

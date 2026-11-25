@@ -38,7 +38,9 @@ const figureNumber = text => Number.parseFloat(text.replace(/[^0-9.-]/g, ''));
 /* What a click on a heading of the gear sets list starts with: names A to Z, the GCD lowest first (the best first), every
    other figure highest first. `key`: 'name' or a figure's key (setFigures; a stat's key in the stat points view). */
 export function firstSortDir(key, mode) {
-  if (key === 'name') return 'asc';
+  if (key === 'name') {
+    return 'asc';
+  }
   return key === 'gcd' && mode === 'effects' ? 'asc' : 'desc';
 }
 
@@ -47,15 +49,21 @@ export function firstSortDir(key, mode) {
    order. Returns {key, dir}. */
 export function nextListSort(current, key, mode) {
   const first = firstSortDir(key, mode);
-  if (current.key !== key) return { key, dir: first };
-  if (current.dir === first) return { key, dir: first === 'asc' ? 'desc' : 'asc' };
+  if (current.key !== key) {
+    return { key, dir: first };
+  }
+  if (current.dir === first) {
+    return { key, dir: first === 'asc' ? 'desc' : 'asc' };
+  }
   return { key: '', dir: '' };
 }
 
 /* `rows` (the page's set rows) sorted by `sort` ({key, dir}) in the view `mode` ('effects' or 'points'): a copy, the
    rows with equal figures keep their saved order; with no key the saved order. */
 export function sortSetRows(rows, sort, mode) {
-  if (!sort.key) return rows;
+  if (!sort.key) {
+    return rows;
+  }
   const sign = sort.dir === 'asc' ? 1 : -1;
   const figureOf = row => (mode === 'points' ? row.points : row.figures).find(f => f.key === sort.key);
   const figureValue = row => {

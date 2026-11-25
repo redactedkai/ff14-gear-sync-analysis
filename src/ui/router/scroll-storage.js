@@ -20,10 +20,14 @@ export function tabStorage() {
 export function readScrollPositions(storage) {
   try {
     const saved = JSON.parse(storage?.getItem(SCROLL_KEY) ?? '{}');
-    if (saved === null || typeof saved !== 'object' || Array.isArray(saved)) return {};
+    if (saved === null || typeof saved !== 'object' || Array.isArray(saved)) {
+      return {};
+    }
     const positions = {};
     for (const [entry, y] of Object.entries(saved)) {
-      if (typeof y === 'number' && Number.isFinite(y)) positions[entry] = y;
+      if (typeof y === 'number' && Number.isFinite(y)) {
+        positions[entry] = y;
+      }
     }
     return positions;
   } catch {

@@ -22,7 +22,9 @@ export function leavePart(page) {
        same rule as the reload and close guard's `unsettled`), ask first and hold `move` back. */
     guardLeave(move) {
       const kind = unsettledKind(this.pageState);
-      if (!kind) return false;
+      if (!kind) {
+        return false;
+      }
       overlays.closeAll(); // no menu or popover stays open under the question
       this.leaveAsk = { kind, move };
       this.afterDraw(() => page.refs.leaveKeep?.focus()); // gone when Escape came first
@@ -31,21 +33,33 @@ export function leavePart(page) {
     /* The question's text. */
     get leaveQuestion() {
       const ask = this.leaveAsk;
-      if (!ask) return '';
-      if (ask.kind === 'running') return runningLeaveText(this.saved.name);
+      if (!ask) {
+        return '';
+      }
+      if (ask.kind === 'running') {
+        return runningLeaveText(this.saved.name);
+      }
       return this.view.leaveText;
     },
     /* A button of the question: 'apply' or 'discard' (a draft), 'leave' (cancel the Auto-fill, or discard the result), 'keep'. */
     answerLeave(choice) {
       const ask = this.leaveAsk;
-      if (!ask) return;
+      if (!ask) {
+        return;
+      }
       this.leaveAsk = null;
-      if (choice === 'keep') return this.afterDraw(() => page.refs.setsButton?.focus());
+      if (choice === 'keep') {
+        return this.afterDraw(() => page.refs.setsButton?.focus());
+      }
       if (ask.kind === 'draft') {
-        if (choice === 'apply') this.applyDraft();
-        else this.discardDraft();
-      } else if (ask.kind === 'running') this.cancelFill();
-      else {
+        if (choice === 'apply') {
+          this.applyDraft();
+        } else {
+          this.discardDraft();
+        }
+      } else if (ask.kind === 'running') {
+        this.cancelFill();
+      } else {
         this.pages.setSuggestion(this.setId, null);
         this.$store.sheets.setNote(RESULT_DISCARDED_TEXT);
       }
@@ -53,20 +67,28 @@ export function leavePart(page) {
     },
     /* A move off the page that the store does not guard (a copy, a new set): asked first like the others. */
     leave(move) {
-      if (!this.guardLeave(move)) move();
+      if (!this.guardLeave(move)) {
+        move();
+      }
     },
     /* Copy from a set page: the copy goes next to the set and the sheet's list shows (sheets.md, "Where an action
        lands"). */
     copySet() {
-      if (this.$store.sheets.busy) return;
+      if (this.$store.sheets.busy) {
+        return;
+      }
       const id = this.saved.id;
       this.leave(() => {
         const store = this.$store.sheets;
-        if (store.copySet(id).ok) store.closeSet();
+        if (store.copySet(id).ok) {
+          store.closeSet();
+        }
       });
     },
     newSet() {
-      if (this.$store.sheets.busy) return;
+      if (this.$store.sheets.busy) {
+        return;
+      }
       this.closeOpenMenu(false);
       this.leave(() => this.$store.sheets.newSet());
     },
@@ -75,11 +97,18 @@ export function leavePart(page) {
        that also answers Escape as its own cancel event (when the focus is outside it); a key that comes before Alpine has drawn
        it is answered here. Tab is kept inside by x-modal. */
     pageKey(event) {
-      if (event.key !== 'Escape') return;
-      if (this.leaveAsk) this.answerLeave('keep');
-      else if (overlays.openIds.length) return;
-      else if (this.suggestion && !this.dialog) this.discardSuggestion();
-      else return;
+      if (event.key !== 'Escape') {
+        return;
+      }
+      if (this.leaveAsk) {
+        this.answerLeave('keep');
+      } else if (overlays.openIds.length) {
+        return;
+      } else if (this.suggestion && !this.dialog) {
+        this.discardSuggestion();
+      } else {
+        return;
+      }
       event.preventDefault();
     },
   };

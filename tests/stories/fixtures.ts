@@ -48,7 +48,9 @@ export const test = base.extend<Fixtures>({
   ],
   axe: async ({ page }, use) => {
     await use(async () => {
-      if (!(await page.evaluate(() => 'axe' in globalThis))) await page.addScriptTag({ content: AXE_SOURCE });
+      if (!(await page.evaluate(() => 'axe' in globalThis))) {
+        await page.addScriptTag({ content: AXE_SOURCE });
+      }
       return page.evaluate(async () => {
         const result: AxeResult = await (globalThis as unknown as { axe: AxeApi }).axe.run(document.getElementById('root'), {
           resultTypes: ['violations'],

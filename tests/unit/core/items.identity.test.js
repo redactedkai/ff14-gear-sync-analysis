@@ -16,7 +16,9 @@ test('every database row has its own gameId, and itemById finds each row by it',
   const ids = ITEMS.map(r => r[ROW.gameId]);
   assert.ok(ids.every(Number.isInteger), 'every gameId is an integer');
   assert.equal(new Set(ids).size, ITEMS.length, 'no two rows share a gameId');
-  for (const r of ITEMS) assert.equal(itemById(r[ROW.gameId]), r);
+  for (const r of ITEMS) {
+    assert.equal(itemById(r[ROW.gameId]), r);
+  }
 });
 
 test('itemById: a real item by its game id; null for an id no row has', () => {

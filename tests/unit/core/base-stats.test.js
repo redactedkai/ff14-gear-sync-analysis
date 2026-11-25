@@ -15,7 +15,9 @@ test('LEVEL_MAIN: 100 levels, equal to xivgear at 50, 60, ..., 100, never fallin
   assert.equal(LEVEL_MAIN.length, 100);
   // xivgear LEVEL_STATS baseMainStat (packages/xivmath/src/xivconstants.ts, commit 6c3c878)
   const xivgear = { 50: 202, 60: 218, 70: 292, 80: 340, 90: 390, 100: 440 };
-  for (const [lv, v] of Object.entries(xivgear)) assert.equal(LEVEL_MAIN[lv - 1], v, `level ${lv}`);
+  for (const [lv, v] of Object.entries(xivgear)) {
+    assert.equal(LEVEL_MAIN[lv - 1], v, `level ${lv}`);
+  }
   assert.ok(LEVEL_MAIN.every((v, i) => i === 0 || v >= LEVEL_MAIN[i - 1]));
 });
 
@@ -23,7 +25,9 @@ test('base: Determination and Piety from the main stat base, the other substats 
   assert.equal(statBase(SGE, 'det', 50), 202);
   assert.equal(statBase(SGE, 'piety', 50), 202); // Piety
   assert.equal(statBase(WAR, 'ten', 50), PG[49][0]); // Tenacity
-  for (const s of ['crit', 'dh', 'sps']) assert.equal(statBase(SGE, s, 100), 420);
+  for (const s of ['crit', 'dh', 'sps']) {
+    assert.equal(statBase(SGE, s, 100), 420);
+  }
   assert.equal(statBase(SGE, 'crit', 100), PG[99][0]);
 });
 

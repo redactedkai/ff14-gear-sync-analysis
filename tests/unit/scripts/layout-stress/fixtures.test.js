@@ -48,15 +48,18 @@ test('the extreme fixture has all 23 jobs, the longest names, 40 gear sets on on
   const fixture = extremeFixture(testSheets, jobIds, longest);
   assertReadable(fixture);
   assert.equal(jobIds.length, 23);
-  for (const job of jobIds)
+  for (const job of jobIds) {
     assert.ok(
       fixture.sheets.some(sheet => sheet.job === job),
       job,
     );
+  }
   for (const sheet of fixture.sheets) {
     assert.ok(sheet.name.length <= NAME_MAX, sheet.name);
     assert.ok(sheet.description.length <= DESCRIPTION_MAX);
-    for (const set of sheet.sets) assert.ok(set.name.length <= NAME_MAX && set.description.length <= DESCRIPTION_MAX, set.name);
+    for (const set of sheet.sets) {
+      assert.ok(set.name.length <= NAME_MAX && set.description.length <= DESCRIPTION_MAX, set.name);
+    }
   }
   const wide = fixture.sheets.find(sheet => sheet.id === fixture.open.sheetId);
   assert.equal(wide.sets.length, MANY_SETS);

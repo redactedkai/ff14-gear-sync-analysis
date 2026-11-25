@@ -23,12 +23,16 @@ test('level box: out of range is corrected, with a note for its hover text; othe
   assert.deepEqual(gcdLevelInput('50'), { level: 50 });
   assert.deepEqual(gcdLevelInput('150'), { level: 100 });
   assert.deepEqual(gcdLevelInput('0'), { level: 1 });
-  for (const text of ['', '7.5', 'x']) assert.equal(gcdLevelInput(text), null, text);
+  for (const text of ['', '7.5', 'x']) {
+    assert.equal(gcdLevelInput(text), null, text);
+  }
 });
 
 test('the stored most speed: one value per level, at least the base, and level 50 as the searches give it', () => {
   assert.equal(MAX_SPEED.length, MAX_LEVEL);
-  for (const [i, v] of MAX_SPEED.entries()) assert.ok(v >= levelParams(i + 1).sub, `level ${i + 1}`);
+  for (const [i, v] of MAX_SPEED.entries()) {
+    assert.ok(v >= levelParams(i + 1).sub, `level ${i + 1}`);
+  }
   // level 50: 341 base + 387 gear (level 100 gear synced to the 135 cap, melds) + 72 food
   assert.equal(MAX_SPEED[49], 800);
   const groups = jobGroups();
@@ -113,7 +117,9 @@ test('haste menu: None, then each haste job and its source by name, with no perc
     HASTE_OPTIONS.slice(1).map(o => o.value),
     Object.keys(HASTE),
   );
-  for (const o of HASTE_OPTIONS) assert.ok(!/[%/]|\d/.test(o.label), o.label);
+  for (const o of HASTE_OPTIONS) {
+    assert.ok(!/[%/]|\d/.test(o.label), o.label);
+  }
 });
 
 test('haste: the percent the level has is in the facts and the chart, so the menu needs none', () => {

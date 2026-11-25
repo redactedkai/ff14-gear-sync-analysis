@@ -41,9 +41,12 @@ export async function checkFillGoal(pg) {
     ['Target GCD', tier.totals.sps, gcd.totals.sps],
   ];
   let usable = gcd.status === 'ok' && gcdMin.status === 'ok';
-  for (const [name, a, b] of moves)
+  for (const [name, a, b] of moves) {
     usable = check(a !== b, `${name} does not change the answer for Sage at level 100; pick another case`) && usable;
-  if (!usable) return;
+  }
+  if (!usable) {
+    return;
+  }
 
   await seedSheet(pg, DIALOG_SHEET);
   await openSet(pg, DIALOG_SHEET.name, 'Empty');

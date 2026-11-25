@@ -25,11 +25,19 @@ function regainOf(piece, proof, swaps, speedKey) {
   const own = piece.eff[proof.stat] || 0;
   let regain = 0;
   for (const other of swaps) {
-    if (other === piece) continue;
-    if (speedMinimum && (other.eff[speedKey] || 0) < (piece.eff[speedKey] || 0)) continue;
-    if (proof.minStats.some(s => (other.eff[s] || 0) < (piece.eff[s] || 0))) continue;
+    if (other === piece) {
+      continue;
+    }
+    if (speedMinimum && (other.eff[speedKey] || 0) < (piece.eff[speedKey] || 0)) {
+      continue;
+    }
+    if (proof.minStats.some(s => (other.eff[s] || 0) < (piece.eff[s] || 0))) {
+      continue;
+    }
     const gain = (other.eff[proof.stat] || 0) - own;
-    if (gain > regain) regain = gain;
+    if (gain > regain) {
+      regain = gain;
+    }
   }
   return regain;
 }
@@ -47,10 +55,14 @@ function swapsFor(piece, fullList, isRing, buckets, sameSpeed, speedKey) {
   let bucket = buckets.get(key);
   if (!bucket) {
     bucket = fullList.filter(b => b.blocks.join() === blocks && (!sameSpeed || (b.eff[speedKey] || 0) === speed));
-    if (isRing) bucket = bucket.filter(b => b.copies >= 2);
+    if (isRing) {
+      bucket = bucket.filter(b => b.copies >= 2);
+    }
     buckets.set(key, bucket);
   }
-  if (!isRing) return bucket;
+  if (!isRing) {
+    return bucket;
+  }
   const ownVersions = (piece.versions || [piece]).filter(b => !sameSpeed || (b.eff[speedKey] || 0) === speed);
   return [...ownVersions, ...bucket.filter(b => b.item !== piece.item)];
 }
@@ -74,15 +86,21 @@ export function addRegainCuts({ slotList, posList, fullLists, dims, limits, prov
   const cuts = [];
   proven.forEach((proof, j) => {
     const held = limits.find(l => l.stat === proof.stat)?.min || 0;
-    if (proof.most - held >= 0) cuts.push({ ...proof, key: `regain${j}`, room: proof.most - held });
+    if (proof.most - held >= 0) {
+      cuts.push({ ...proof, key: `regain${j}`, room: proof.most - held });
+    }
   });
-  if (!cuts.length) return { posList, dims, limits };
+  if (!cuts.length) {
+    return { posList, dims, limits };
+  }
   const sameSpeed = cuts.some(c => c.speed === 'band');
 
   // each list once (the ring slots share theirs): every candidate with its regain per cut, those past a room dropped
   const done = new Map();
   const cutLists = posList.map((list, i) => {
-    if (done.has(list)) return done.get(list);
+    if (done.has(list)) {
+      return done.get(list);
+    }
     const isRing = slotList[i] === 'ring';
     const buckets = new Map();
     const kept = [];
@@ -97,7 +115,9 @@ export function addRegainCuts({ slotList, posList, fullLists, dims, limits, prov
           break;
         }
       }
-      if (fits) kept.push({ ...piece, eff, original: piece });
+      if (fits) {
+        kept.push({ ...piece, eff, original: piece });
+      }
     }
     done.set(list, kept);
     return kept;

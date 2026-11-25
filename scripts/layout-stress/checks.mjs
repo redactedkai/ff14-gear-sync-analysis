@@ -24,7 +24,9 @@ const MAX_FOCUS_STOPS = 70;
 export async function pinHeader(page, selector = '.shead') {
   await page.evaluate(header => {
     const element = document.querySelector(header);
-    if (element) scrollTo(0, element.getBoundingClientRect().top + scrollY);
+    if (element) {
+      scrollTo(0, element.getBoundingClientRect().top + scrollY);
+    }
   }, selector);
   await settle(page);
 }
@@ -32,15 +34,21 @@ export async function pinHeader(page, selector = '.shead') {
 /* Reaches `view` on `page` and measures it (with the widest numbers typed in when `widest`: the stress build). Returns the probe (rules.mjs shape). Waits for the page to be still. */
 export async function reachAndMeasure(page, view, open, widest = false) {
   await view.reach(page, open);
-  if (widest && view.widest) await view.widest(page);
+  if (widest && view.widest) {
+    await view.widest(page);
+  }
   await settle(page);
-  if (view.pinned) await pinHeader(page);
+  if (view.pinned) {
+    await pinHeader(page);
+  }
   return page.evaluate(measureView, probeConfig(view));
 }
 
 /* Measures `view` again where the page is (after a resize), pinned again when the view is. */
 export async function measureAgain(page, view) {
-  if (view.pinned) await pinHeader(page);
+  if (view.pinned) {
+    await pinHeader(page);
+  }
   return page.evaluate(measureView, probeConfig(view));
 }
 
@@ -48,17 +56,25 @@ export async function measureAgain(page, view) {
    `where` names the view. Returns a list of {rule, severity, detail, where}. */
 export function judgeProbe(probe, where) {
   const found = makeFindings();
-  if (probe.hscroll) found.add('no-sideways-scroll', `the page is wider than the window (${probe.width} px)`, where);
-  for (const text of probe.past.slice(0, 3)) found.add('nothing-past-window', text, where);
-  if (probe.clipped.length)
+  if (probe.hscroll) {
+    found.add('no-sideways-scroll', `the page is wider than the window (${probe.width} px)`, where);
+  }
+  for (const text of probe.past.slice(0, 3)) {
+    found.add('nothing-past-window', text, where);
+  }
+  if (probe.clipped.length) {
     found.add('no-clipped-cells', `${probe.clipped.length} element(s): ${probe.clipped.slice(0, 3).join(', ')}`, where);
+  }
   const wrapped = findWrappedLabels(probe.wrapped);
-  if (wrapped.length) found.add('label-one-line', `${wrapped.length} label(s) wrap: ${wrapped.slice(0, 3).join(', ')}`, where);
-  if (probe.nameLines?.over)
+  if (wrapped.length) {
+    found.add('label-one-line', `${wrapped.length} label(s) wrap: ${wrapped.slice(0, 3).join(', ')}`, where);
+  }
+  if (probe.nameLines?.over) {
     found.add('names-max-lines', `${probe.nameLines.over} name(s) over 2 lines (most ${probe.nameLines.max})`, where);
+  }
   for (const [name, scope] of Object.entries(probe.scopes)) {
     const outside = findOutside(scope.controls, scope.containers);
-    if (outside.length)
+    if (outside.length) {
       found.add(
         'control-in-container',
         `${outside.length} control(s) past their box: ${outside
@@ -67,8 +83,9 @@ export function judgeProbe(probe, where) {
           .join(', ')}`,
         `${where}/${name}`,
       );
+    }
     const overlaps = findOverlaps(scope.controls);
-    if (overlaps.length)
+    if (overlaps.length) {
       found.add(
         'no-overlap',
         `${overlaps.length} pair(s): ${overlaps
@@ -77,24 +94,32 @@ export function judgeProbe(probe, where) {
           .join(', ')}`,
         `${where}/${name}`,
       );
-    for (const problem of findBoxRowProblems(scope.boxes))
+    }
+    for (const problem of findBoxRowProblems(scope.boxes)) {
       found.add(
         'boxes-equal-height',
         `boxes in a row differ in ${problem.kind} by ${problem.spread}px: ${problem.ids.slice(0, 4).join(', ')}`,
         `${where}/${name}`,
       );
+    }
   }
-  if (probe.rows)
-    for (const item of judgeRowsVisible({ visible: probe.rows.visible, stack: probe.pinned?.stack ?? 0, windowHeight: probe.height }))
+  if (probe.rows) {
+    for (const item of judgeRowsVisible({ visible: probe.rows.visible, stack: probe.pinned?.stack ?? 0, windowHeight: probe.height })) {
       found.add(item.rule, item.detail, where, item.severity);
-  else if (probe.pinned?.stack)
-    for (const item of judgeRowsVisible({ visible: Infinity, stack: probe.pinned.stack, windowHeight: probe.height }))
+    }
+  } else if (probe.pinned?.stack) {
+    for (const item of judgeRowsVisible({ visible: Infinity, stack: probe.pinned.stack, windowHeight: probe.height })) {
       found.add(item.rule, item.detail, where, item.severity);
-  for (const item of judgeMathBar(probe.mathBar)) found.add(item.rule, item.detail, where);
+    }
+  }
+  for (const item of judgeMathBar(probe.mathBar)) {
+    found.add(item.rule, item.detail, where);
+  }
   const barHeight = probe.scopes.mathbar?.height ?? 0;
   const barPercent = Math.round((100 * barHeight) / probe.height);
-  if (barPercent > THRESHOLDS.maxBarPercent)
+  if (barPercent > THRESHOLDS.maxBarPercent) {
     found.add('sticky-bar-share', `the bar takes ${barPercent}% of the window (${barHeight} of ${probe.height} px)`, where);
+  }
   return found.list;
 }
 
@@ -111,15 +136,22 @@ async function checkMenus(page, view, probe, found) {
       await settle(page);
       await page.waitForTimeout(120);
       const box = await page.evaluate(measureMenu, menu.selector);
-      if (!box) found.add('check-completed', `${menu.id} did not open`, where);
-      else
+      if (!box) {
+        found.add('check-completed', `${menu.id} did not open`, where);
+      } else {
         for (const item of judgeMenu({ ...box, stack: menu.inPinnedHeader ? 0 : (probe.pinned?.stack ?? 0) })) {
-          if (menu.popup && item.rule === 'menu-inside-window') found.add('popup-inside-window', item.detail, where);
-          else found.add(item.rule, item.detail, where);
+          if (menu.popup && item.rule === 'menu-inside-window') {
+            found.add('popup-inside-window', item.detail, where);
+          } else {
+            found.add(item.rule, item.detail, where);
+          }
         }
+      }
       const open = await page.evaluate(measureView, probeConfig(view));
       const moved = compareProbes(probe, open, stableScopes(view), undefined, true);
-      if (moved.length) found.add('menu-keeps-layout', `opening it: ${moved.slice(0, 3).join('; ')}`, where);
+      if (moved.length) {
+        found.add('menu-keeps-layout', `opening it: ${moved.slice(0, 3).join('; ')}`, where);
+      }
       await page.keyboard.press('Escape');
       await hideOr(page, menu.selector, () => page.mouse.click(2, 2));
       await settle(page);
@@ -138,10 +170,14 @@ async function checkStates(page, view, baseProbe, found) {
     await settle(page);
     const probe = await page.evaluate(measureView, probeConfig(view));
     for (const item of judgeProbe(probe, `${view.id} (${state.id})`)) {
-      if (!reported.has(`${item.rule}|${item.detail}`)) found.list.push(item);
+      if (!reported.has(`${item.rule}|${item.detail}`)) {
+        found.list.push(item);
+      }
     }
     const differences = compareProbes(baseProbe, probe, stableScopes(view));
-    if (differences.length) found.add('content-independent', `${state.id}: ${differences.slice(0, 3).join('; ')}`, `${view.id}/states`);
+    if (differences.length) {
+      found.add('content-independent', `${state.id}: ${differences.slice(0, 3).join('; ')}`, `${view.id}/states`);
+    }
   }
 }
 
@@ -149,7 +185,9 @@ async function checkStates(page, view, baseProbe, found) {
    same places. A page too short to scroll is not checked. */
 async function checkPinnedBar(page, view, baseProbe, found) {
   const scrollable = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 200);
-  if (!scrollable) return;
+  if (!scrollable) {
+    return;
+  }
   await page.evaluate(() => scrollTo(0, 500));
   await settle(page);
   const top = await page.evaluate(
@@ -157,9 +195,13 @@ async function checkPinnedBar(page, view, baseProbe, found) {
     view.pinnedBar,
   );
   const probe = await page.evaluate(measureView, probeConfig(view));
-  if (Math.abs(top) > 0.5) found.add('pinned-bar-at-top', `the bar is ${top} px from the top of the window after scrolling`, view.id);
+  if (Math.abs(top) > 0.5) {
+    found.add('pinned-bar-at-top', `the bar is ${top} px from the top of the window after scrolling`, view.id);
+  }
   const moved = compareProbes(baseProbe, probe, stableScopes(view));
-  if (moved.length) found.add('pinned-bar-at-top', `scrolling moves its controls: ${moved.slice(0, 3).join('; ')}`, view.id);
+  if (moved.length) {
+    found.add('pinned-bar-at-top', `scrolling moves its controls: ${moved.slice(0, 3).join('; ')}`, view.id);
+  }
   await page.evaluate(() => scrollTo(0, 0));
   await settle(page);
 }
@@ -193,7 +235,9 @@ async function checkFocusRings(page, view, found) {
   for (let stop = 0; stop < MAX_FOCUS_STOPS; stop++) {
     await page.keyboard.press('Tab');
     const ring = await page.evaluate(measureFocusRing);
-    if (!ring) break;
+    if (!ring) {
+      break;
+    }
     if (ring.clippedBy && !reported.has(ring.id)) {
       reported.add(ring.id);
       found.add('focus-ring-clipped', `${ring.id}'s focus ring is cut off by ${ring.clippedBy}`, view.id);
@@ -213,13 +257,17 @@ async function checkJobs(page, view, jobIds, baseProbe, found) {
     await settle(page);
     const probe = await page.evaluate(measureView, probeConfig(view));
     for (const item of judgeProbe(probe, `${view.id} (${jobId})`)) {
-      if (jobRules.includes(item.rule) && !reported.has(`${item.rule}|${item.detail}`)) found.list.push(item);
+      if (jobRules.includes(item.rule) && !reported.has(`${item.rule}|${item.detail}`)) {
+        found.list.push(item);
+      }
     }
-    if (!first) first = { jobId, probe };
-    else {
+    if (!first) {
+      first = { jobId, probe };
+    } else {
       const differences = compareProbes(first.probe, probe, [view.jobs.scope]);
-      if (differences.length)
+      if (differences.length) {
         found.add('content-independent', `${jobId} against ${first.jobId}: ${differences.slice(0, 3).join('; ')}`, `${view.id}/jobs`);
+      }
     }
   }
 }
@@ -255,27 +303,45 @@ export async function checkScreenInWindow({
           found.list.push(...judgeProbe(probe, view.id).map(item => ({ ...item, view: view.id })));
           if (view.dialog) {
             const box = await page.evaluate(measureDialog, view.dialog);
-            if (box) for (const item of judgeDialog(box)) found.add(item.rule, item.detail, view.id);
+            if (box) {
+              for (const item of judgeDialog(box)) {
+                found.add(item.rule, item.detail, view.id);
+              }
+            }
           }
           await checkMenus(page, view, probe, found);
-          if (view.jobs) await checkJobs(page, view, jobIds, probe, found);
-          if (view.states) await checkStates(page, view, probe, found);
-          if (view.pinnedBar) await checkPinnedBar(page, view, probe, found);
-          if (view.focusWalk && walkFocus) await checkFocusRings(page, view, found);
-          if (view.dialog) await closeDialog(page, view.dialog);
+          if (view.jobs) {
+            await checkJobs(page, view, jobIds, probe, found);
+          }
+          if (view.states) {
+            await checkStates(page, view, probe, found);
+          }
+          if (view.pinnedBar) {
+            await checkPinnedBar(page, view, probe, found);
+          }
+          if (view.focusWalk && walkFocus) {
+            await checkFocusRings(page, view, found);
+          }
+          if (view.dialog) {
+            await closeDialog(page, view.dialog);
+          }
         } catch (error) {
           found.add('check-completed', `${view.id}: ${error.message.split('\n')[0]}`, view.id);
         }
       }
       if (screen.crossCheck && fixtureName === screen.crossFixture) {
         try {
-          for (const item of await screen.crossCheck(page)) found.add(item.rule, item.detail, item.where);
+          for (const item of await screen.crossCheck(page)) {
+            found.add(item.rule, item.detail, item.where);
+          }
         } catch (error) {
           found.add('check-completed', `${screen.id} cross check: ${error.message.split('\n')[0]}`, screen.id);
         }
       }
     } finally {
-      if (errors.length) found.add('no-page-errors', errors[0], fixtureName);
+      if (errors.length) {
+        found.add('no-page-errors', errors[0], fixtureName);
+      }
       await context.close();
     }
   }
@@ -283,9 +349,13 @@ export async function checkScreenInWindow({
   for (const view of screen.views.filter(item => item.twin)) {
     const twin = probes[view.twin];
     const own = probes[view.id];
-    if (!twin || !own) continue;
+    if (!twin || !own) {
+      continue;
+    }
     const differences = compareProbes(twin, own, view.stable ?? []);
-    if (differences.length) found.add('content-independent', `${differences.slice(0, 4).join('; ')}`, `${view.id} against ${view.twin}`);
+    if (differences.length) {
+      found.add('content-independent', `${differences.slice(0, 4).join('; ')}`, `${view.id} against ${view.twin}`);
+    }
   }
   const findings = found.list.map(item => ({ ...item, view: item.view ?? item.where.split(/[/ ]/)[0] }));
   return { findings, probes, fonts: fontsLoaded };

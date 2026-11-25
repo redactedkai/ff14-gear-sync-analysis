@@ -22,11 +22,14 @@ export function tabStops(dialog) {
 /* A Tab keydown in `dialog`: from the last control it goes to the first, with Shift from the first to the last (the stops are
    read now: the form changes as it is used). */
 export function wrapTab(event, dialog) {
-  if (event.key !== 'Tab') return;
+  if (event.key !== 'Tab') {
+    return;
+  }
   const stops = tabStops(dialog);
   const at = stops.indexOf(globalThis.document.activeElement);
-  if (!stops.length) event.preventDefault();
-  else if (event.shiftKey ? at <= 0 : at === stops.length - 1) {
+  if (!stops.length) {
+    event.preventDefault();
+  } else if (event.shiftKey ? at <= 0 : at === stops.length - 1) {
     event.preventDefault();
     stops[event.shiftKey ? stops.length - 1 : 0].focus();
   }
@@ -34,7 +37,9 @@ export function wrapTab(event, dialog) {
 
 /* Whether a mouse event was on the dialog's backdrop: its target is `dialog` and the point lies outside the dialog's box. */
 export function onBackdrop(event, dialog) {
-  if (event.target !== dialog) return false;
+  if (event.target !== dialog) {
+    return false;
+  }
   const box = dialog.getBoundingClientRect();
   return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
 }
@@ -47,16 +52,24 @@ export function modalDirective(dialog, { expression }, { evaluateLater, cleanup 
     pressedOnBackdrop = onBackdrop(event, dialog);
   });
   dialog.addEventListener('click', event => {
-    if (pressedOnBackdrop && onBackdrop(event, dialog)) close();
+    if (pressedOnBackdrop && onBackdrop(event, dialog)) {
+      close();
+    }
     pressedOnBackdrop = false;
   });
   dialog.addEventListener('keydown', event => wrapTab(event, dialog));
   // the browser closed it itself: a removed (closed by us) dialog is not in the page by the time this event comes
   dialog.addEventListener('close', () => {
-    if (dialog.isConnected) close();
+    if (dialog.isConnected) {
+      close();
+    }
   });
-  if (!dialog.open) dialog.showModal();
+  if (!dialog.open) {
+    dialog.showModal();
+  }
   cleanup(() => {
-    if (dialog.open) dialog.close();
+    if (dialog.open) {
+      dialog.close();
+    }
   });
 }

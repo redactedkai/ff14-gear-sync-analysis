@@ -38,7 +38,9 @@ test('no bonuses: the panel is base + gear (+ meal) and nothing else changes', (
   }
   const meal = allMeals(war).at(-1).key;
   const fed = evaluateSet(war, coreSet(war, warSet(), meal), NO_SYNC, 100);
-  for (const stat of war.stats) assert.equal(fed.panel[stat], fed.base[stat] + fed.withFood[stat], stat);
+  for (const stat of war.stats) {
+    assert.equal(fed.panel[stat], fed.base[stat] + fed.withFood[stat], stat);
+  }
   // an unknown clan and a missing field count as none
   const odd = evaluateSet(war, coreSet(war, warSet(), meal), NO_SYNC, 100, { clan: 'Nobody', partyRoles: undefined });
   assert.deepEqual(odd.bonuses, { clan: null, partyRoles: 0 });

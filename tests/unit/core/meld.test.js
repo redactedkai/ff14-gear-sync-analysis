@@ -156,13 +156,17 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
     const objectives = [['crit'], [job.speedKey, 'det'], ['det', 'crit', 'dh'], [job.substats.at(-1), 'crit']];
     for (const it of pool) {
       const info = meldInfo(it);
-      if (!info?.slots) continue;
+      if (!info?.slots) {
+        continue;
+      }
       const highSlots = info.overmeld ? info.slots + 1 : info.slots; // guaranteed slots and the first overmeld slot
       const total = info.overmeld ? 5 : info.slots;
       const caps = meldCaps(job, it);
       for (const keys of objectives) {
         const m = bestMeld(job, it, keys);
-        if (!m) continue;
+        if (!m) {
+          continue;
+        }
         const seq = m.stones.flatMap(x => Array(x.n).fill(x));
         const label = `${job.jobId} ${it.name} ${keys}`;
         assert.equal(seq.length + m.free, total, label);
@@ -172,7 +176,9 @@ test('every meld is a legal order of slots, for every meldable piece', () => {
           // no stone in a substat the objective doesn't score: those slots stay empty (owner's decision 2026-10-15)
           assert.ok(keys.includes(x.stat), `${label}: a stone in ${x.stat}`);
           assert.ok(MATERIA.gate[x.grade - 1] <= it.ilvl, `${label}: grade ${x.grade} below its gate`);
-          if (i >= highSlots) assert.ok(!MATERIA.high.includes(x.grade), `${label}: grade ${x.grade} in slot ${i + 1}`);
+          if (i >= highSlots) {
+            assert.ok(!MATERIA.high.includes(x.grade), `${label}: grade ${x.grade} in slot ${i + 1}`);
+          }
           sum[x.stat] = (sum[x.stat] || 0) + MATERIA.values[x.grade - 1];
         });
         for (const [s, g] of Object.entries(m.gain)) {
@@ -195,11 +201,12 @@ test('meld versions: with a speed maximum, versions with less speed are kept', (
   const gains = vs => vs.map(m => [m?.gain.det || 0, m?.gain.sks || 0]);
   const min = gains(meldVersions(war, it, ['det', 'sks']));
   const exact = gains(meldVersions(war, it, ['det', 'sks'], { exactSpd: true }));
-  for (const v of min)
+  for (const v of min) {
     assert.ok(
       exact.some(w => w[0] === v[0] && w[1] === v[1]),
       `${v} kept with a maximum`,
     );
+  }
   assert.ok(exact.length > min.length);
   assert.ok(
     exact.some(([det, spd]) => det === 33 && spd === 0),
@@ -208,11 +215,21 @@ test('meld versions: with a speed maximum, versions with less speed are kept', (
   assert.ok(!min.some(([det, spd]) => det === 33 && spd === 0), 'beaten by more speed without a maximum');
   // no version beats another on both stats at the same speed (exact) or at all (min)
   const beats = (a, b) => a[0] >= b[0] && a[1] >= b[1] && (a[0] > b[0] || a[1] > b[1]);
-  for (const a of min) for (const b of min) assert.ok(!beats(a, b), `${a} beats ${b}`);
-  for (const a of exact) for (const b of exact) assert.ok(a[1] !== b[1] || !beats(a, b), `${a} beats ${b}`);
+  for (const a of min) {
+    for (const b of min) {
+      assert.ok(!beats(a, b), `${a} beats ${b}`);
+    }
+  }
+  for (const a of exact) {
+    for (const b of exact) {
+      assert.ok(a[1] !== b[1] || !beats(a, b), `${a} beats ${b}`);
+    }
+  }
   // every gain stays within the cap and comes from legal stones
   for (const m of meldVersions(war, it, ['det', 'sks'], { exactSpd: true })) {
-    if (!m) continue;
+    if (!m) {
+      continue;
+    }
     assert.ok((m.gain.det || 0) <= 33);
     assert.ok((m.gain.sks || 0) <= 110);
   }
@@ -228,16 +245,22 @@ test('meld versions show the same stones as bestMeld for the same gains', () => 
   for (const job of [sge, war]) {
     const pool = browseItems(job, {}).map(r => poolItemFromRow(job, r));
     for (const it of pool) {
-      if (!meldInfo(it)?.slots) continue;
+      if (!meldInfo(it)?.slots) {
+        continue;
+      }
       for (const keys of [
         ['crit', job.speedKey],
         [job.speedKey, 'det'],
         ['det', 'dh', job.speedKey],
       ]) {
         const best = bestMeld(job, it, keys);
-        if (!best) continue;
+        if (!best) {
+          continue;
+        }
         const same = meldVersions(job, it, keys).find(v => JSON.stringify(v.gain) === JSON.stringify(best.gain));
-        if (!same) continue; // a speed minimum keeps only versions no other beats; the best one is always among them
+        if (!same) {
+          continue; // a speed minimum keeps only versions no other beats; the best one is always among them
+        }
         assert.deepEqual(same.stones, best.stones, `${job.jobId} ${it.name} ${keys}`);
         assert.equal(same.free, best.free);
         checked++;
@@ -254,7 +277,9 @@ test('meld versions: with a speed maximum, no lower grade in a guaranteed slot',
   const it = piece(war, "Kirin's Osode of Fending");
   const spds = meldVersions(war, it, ['det', 'sks'], { exactSpd: true }).map(m => m?.gain.sks || 0);
   assert.ok(spds.includes(16) && spds.includes(80));
-  for (const spd of spds) assert.equal(spd % 16, 0, `speed ${spd}`);
+  for (const spd of spds) {
+    assert.equal(spd % 16, 0, `speed ${spd}`);
+  }
 });
 
 /* Odd grades on ties. Courtly Lover's Longcoat of Healing (item level 770, 2 guaranteed + overmeld: 3 big and 2 small

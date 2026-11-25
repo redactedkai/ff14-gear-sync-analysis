@@ -62,8 +62,12 @@ test('the game has no gear at item level 123, so the 123 caps are derived, not r
 test('ItemLevel rows 120, 123, 125: one value for all main stats and one for all substats', () => {
   const subs = ['piety', 'ten', 'dh', 'crit', 'det', 'sks', 'sps'];
   for (const L of [120, 123, 125]) {
-    for (const k of ['dex', 'int', 'mind']) assert.equal(IL[k][L], IL.str[L], `${k} ${L}`);
-    for (const k of subs) assert.equal(IL[k][L], IL.crit[L], `${k} ${L}`);
+    for (const k of ['dex', 'int', 'mind']) {
+      assert.equal(IL[k][L], IL.str[L], `${k} ${L}`);
+    }
+    for (const k of subs) {
+      assert.equal(IL[k][L], IL.crit[L], `${k} ${L}`);
+    }
   }
   assert.deepEqual([IL.str[123], IL.crit[123]], [355, 346]);
 });
@@ -74,7 +78,9 @@ test('real pieces at 120 and 125 carry round(row x slot percent) as main stat an
       const pieces = realPieces(L, slot);
       assert.ok(pieces.length > 0, `${slot} ${L}: real pieces`);
       const want = derived(L, slot);
-      for (const st of pieces) assert.equal(Math.max(...st.slice(0, 4)), want.main, `${slot} ${L}: main stat`);
+      for (const st of pieces) {
+        assert.equal(Math.max(...st.slice(0, 4)), want.main, `${slot} ${L}: main stat`);
+      }
       const top = Math.max(...pieces.map(st => Math.max(...st.slice(5))));
       // the two item level 120 shields carry Tenacity 13: 2H 47 - 1H 34 (the plain 40 share would give 14)
       assert.equal(top, want.sub, `${slot} ${L}: largest substat`);
@@ -105,7 +111,9 @@ test('the caps the page uses at 123 equal the derived caps, for a healer and a S
     for (const slot of [...ARMOR, 'weapon2h']) {
       const c = capsFor(job, slot === 'weapon2h' ? 'weapon' : slot, 123);
       assert.equal(c[job.mainKey], CAPS_123[slot].main, `${id} ${slot} main`);
-      for (const k of job.substats) assert.equal(c[k], CAPS_123[slot].sub, `${id} ${slot} ${k}`);
+      for (const k of job.substats) {
+        assert.equal(c[k], CAPS_123[slot].sub, `${id} ${slot} ${k}`);
+      }
     }
   }
   const pld = makeJobContext('PLD');

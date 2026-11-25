@@ -45,5 +45,7 @@ test('an entry that matched nothing is stale: the listed finding stopped happeni
 });
 
 test('every entry in the repo names a rule, a screen and a note', () => {
-  for (const entry of KNOWN_FAILURES) assert.ok(entry.rule && entry.screen && entry.note, JSON.stringify(entry));
+  for (const entry of KNOWN_FAILURES) {
+    assert.ok(entry.rule && entry.screen && entry.note, JSON.stringify(entry));
+  }
 });

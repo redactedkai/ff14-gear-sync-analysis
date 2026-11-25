@@ -97,7 +97,9 @@ for (const [jobId, filter, keep, what] of POOLS) {
         // a blocked slot is empty and names its blocker; nothing sits in a slot a pick blocks
         const blocked = r.picks.flatMap(p => (p.item ? slotInfo(job, p.item).blocks : []));
         for (const p of r.picks) {
-          if (blocked.includes(p.type)) assert.ok(!p.item && p.blockedBy, `${label}: ${p.type} should be covered`);
+          if (blocked.includes(p.type)) {
+            assert.ok(!p.item && p.blockedBy, `${label}: ${p.type} should be covered`);
+          }
         }
       }
     }
@@ -175,8 +177,12 @@ test('WAR item level 44-70 (Herklaedi, Flanchards or a plain body, legs and feet
       );
       const blocked = r.picks.flatMap(p => (p.item ? slotInfo(war, p.item).blocks : []));
       for (const p of r.picks) {
-        if (blocked.includes(p.type)) assert.ok(!p.item && p.blockedBy, `${label}: ${p.type} should be covered`);
-        if (p.item && slotInfo(war, p.item).blocks.length) covered.add(p.item.name);
+        if (blocked.includes(p.type)) {
+          assert.ok(!p.item && p.blockedBy, `${label}: ${p.type} should be covered`);
+        }
+        if (p.item && slotInfo(war, p.item).blocks.length) {
+          covered.add(p.item.name);
+        }
       }
     }
   }

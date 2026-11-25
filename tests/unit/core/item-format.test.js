@@ -90,7 +90,9 @@ test('every item row has the documented shape', () => {
     assert.ok(Number.isInteger(r[ROW.gameId]) && r[ROW.gameId] > 0, 'game id ' + where);
     assert.ok(r[ROW.scales] === 0 || r[ROW.scales] === 1, 'level-scaled flag ' + where);
     assert.ok(Number.isInteger(r[ROW.category]) && r[ROW.category] >= 0 && r[ROW.category] < GEAR_CATEGORIES.length, 'category ' + where);
-    for (const k of DAMAGE_DEFENSE_KEYS) assert.ok(Number.isInteger(r[ROW[k]]) && r[ROW[k]] >= 0, `${k} ${where}`);
+    for (const k of DAMAGE_DEFENSE_KEYS) {
+      assert.ok(Number.isInteger(r[ROW[k]]) && r[ROW[k]] >= 0, `${k} ${where}`);
+    }
   }
   assert.equal(new Set(ITEMS.map(r => r[ROW.gameId])).size, ITEMS.length, 'game ids are unique');
 });
@@ -181,7 +183,9 @@ test('job picker: every job appears exactly once, each with an embedded 64 x 64 
 test('ROW agrees with itemRow.fields and the sections that name a rowField', () => {
   const fields = ITEM_FORMAT.itemRow.fields;
   assert.deepEqual(Object.keys(ROW), fields);
-  for (const [name, position] of Object.entries(ROW)) assert.equal(fields[position], name);
+  for (const [name, position] of Object.entries(ROW)) {
+    assert.equal(fields[position], name);
+  }
   const sectionFields = {
     ...ITEM_FORMAT.materia.rowFields,
     rarity: ITEM_FORMAT.rarity.rowField,
@@ -190,6 +194,8 @@ test('ROW agrees with itemRow.fields and the sections that name a rowField', () 
     category: ITEM_FORMAT.category.rowField,
     ...Object.fromEntries(ITEM_FORMAT.damageDefense.entries.map(e => [e.key, e.rowField])),
   };
-  for (const [name, position] of Object.entries(sectionFields)) assert.equal(ROW[name], position, name);
+  for (const [name, position] of Object.entries(sectionFields)) {
+    assert.equal(ROW[name], position, name);
+  }
   assert.equal(ITEMS[0].length, fields.length);
 });

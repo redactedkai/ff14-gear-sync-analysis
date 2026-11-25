@@ -26,7 +26,9 @@ export const MEAL_ROW_LABEL = 'Food';
 /* A saved row's name as the table labels it: the slot's name, the two ring rows "Ring 1" and "Ring 2". */
 export function rowLabel(gearSet, index) {
   const slot = gearSet.pieces[index].slot;
-  if (slot !== 'ring') return SLOT_LABEL[slot];
+  if (slot !== 'ring') {
+    return SLOT_LABEL[slot];
+  }
   return `Ring ${gearSet.pieces.slice(0, index + 1).filter(row => row.slot === 'ring').length}`;
 }
 
@@ -34,7 +36,9 @@ export function rowLabel(gearSet, index) {
    nothing ([null, null] is []), since a stone's place is its slot. */
 function stonesKey(stones) {
   const list = [...(stones ?? [])];
-  while (list.length && !list.at(-1)) list.pop();
+  while (list.length && !list.at(-1)) {
+    list.pop();
+  }
   return JSON.stringify(list.map(stone => (stone ? [stone.stat, stone.grade] : null)));
 }
 

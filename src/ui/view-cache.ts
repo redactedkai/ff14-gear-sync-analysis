@@ -27,9 +27,13 @@ export function viewCache<View>() {
    object read from a row) in a reactive proxy that tracks every read. An object already frozen is taken as frozen all
    through and not walked again. */
 export function deepFreeze<T>(value: T): T {
-  if (value === null || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  if (value === null || typeof value !== 'object' || Object.isFrozen(value)) {
+    return value;
+  }
   Object.freeze(value);
-  for (const inner of Object.values(value)) deepFreeze(inner);
+  for (const inner of Object.values(value)) {
+    deepFreeze(inner);
+  }
   return value;
 }
 

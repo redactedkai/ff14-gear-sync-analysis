@@ -39,11 +39,13 @@ test('from every goal, every option offered leaves a goal with no repeat, Maximi
   for (const { id: jobId } of JOBS) {
     const stats = makeJobContext(jobId).stats;
     const none = ['', ...stats];
-    for (const target of stats)
-      for (const tb of none)
+    for (const target of stats) {
+      for (const tb of none) {
         for (const tb2 of none) {
           const goal = [target, tb, tb2];
-          if (uniqueRanks(goal).some((r, i) => (r ?? '') !== goal[i])) continue; // not a reachable goal
+          if (uniqueRanks(goal).some((r, i) => (r ?? '') !== goal[i])) {
+            continue; // not a reachable goal
+          }
           for (let i = 0; i < 3; i++) {
             const offered = i === 0 ? stats : ['', ...rankChoices(goal, i, stats)];
             for (const value of offered) {
@@ -57,6 +59,8 @@ test('from every goal, every option offered leaves a goal with no repeat, Maximi
             }
           }
         }
+      }
+    }
   }
   assert.ok(walked > 10000, `walked ${walked}`);
 });

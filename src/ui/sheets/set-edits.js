@@ -21,8 +21,11 @@ export function editableCopy(gearSet) {
 /* `gearSet` with row `index` pinned or not (`on`); new data. */
 export function withPin(gearSet, index, on) {
   const rows = new Set(gearSet.pinned?.pieces ?? []);
-  if (on) rows.add(index);
-  else rows.delete(index);
+  if (on) {
+    rows.add(index);
+  } else {
+    rows.delete(index);
+  }
   return { ...gearSet, pinned: { meal: !!gearSet.pinned?.meal, pieces: [...rows].sort((a, b) => a - b) } };
 }
 
@@ -34,7 +37,9 @@ export function withMealPin(gearSet, on) {
 /* Whether the other ring row of `gearSet` already holds the Unique ring `gameId` (a Unique ring is worn once). */
 export function uniqueTaken(job, gearSet, index, gameId) {
   const item = poolItemById(job, gameId);
-  if (item?.type !== 'ring' || item.copies !== 1) return false;
+  if (item?.type !== 'ring' || item.copies !== 1) {
+    return false;
+  }
   return gearSet.pieces.some((row, i) => i !== index && row.slot === 'ring' && row.gameId === gameId);
 }
 
@@ -48,7 +53,9 @@ export function removedNote(names, cause = 'two-handed weapon') {
    Off-hand, a cloak the head) and the job uses that row. */
 function coveredByWorn(job, gearSet, index, slot) {
   return gearSet.pieces.some((row, i) => {
-    if (i === index || row.gameId == null || !isUsed(job, row)) return false;
+    if (i === index || row.gameId == null || !isUsed(job, row)) {
+      return false;
+    }
     const worn = poolItemById(job, row.gameId);
     return !!worn && slotInfo(job, worn).blocks.includes(slot);
   });
@@ -71,10 +78,14 @@ export function placePiece(job, gearSet, index, gameId) {
     return { ok: true, gearSet: withPin({ ...gearSet, pieces }, index, false), note: `${label}: emptied`, removedNote: '' };
   }
   const item = poolItemById(job, gameId);
-  if (uniqueTaken(job, gearSet, index, gameId)) return { ok: false };
+  if (uniqueTaken(job, gearSet, index, gameId)) {
+    return { ok: false };
+  }
   // a piece for a row a worn piece covers (a shield under a two-handed weapon, a head under a cloak): refused (the row's
   // control is disabled; Auto-fill never picks one)
-  if (coveredByWorn(job, gearSet, index, item.type)) return { ok: false };
+  if (coveredByWorn(job, gearSet, index, item.type)) {
+    return { ok: false };
+  }
   const { big, small } = meldSlots(item);
 
   // the rows the piece covers (a 2H weapon the Off-hand, a cloak the head) that the job uses and that hold a piece: emptied and unpinned
@@ -84,11 +95,15 @@ export function placePiece(job, gearSet, index, gameId) {
   );
   const removedNames = removedRows.map(i => poolItemById(job, gearSet.pieces[i].gameId)?.name ?? `item ${gearSet.pieces[i].gameId}`);
   const pieces = gearSet.pieces.map((row, i) => {
-    if (i === index) return { slot: row.slot, gameId, stones: Array.from({ length: big + small }, () => null) };
+    if (i === index) {
+      return { slot: row.slot, gameId, stones: Array.from({ length: big + small }, () => null) };
+    }
     return removedRows.includes(i) ? { slot: row.slot } : row;
   });
   let next = withPin({ ...gearSet, pieces }, index, true);
-  for (const i of removedRows) next = withPin(next, i, false);
+  for (const i of removedRows) {
+    next = withPin(next, i, false);
+  }
   return {
     ok: true,
     gearSet: next,
@@ -125,7 +140,9 @@ export function withoutStone(job, gearSet, index, slot) {
   const row = gearSet.pieces[index];
   const item = poolItemById(job, row.gameId);
   const stones = paddedStones(item, row.stones);
-  if (slot !== lastStone(stones)) return gearSet;
+  if (slot !== lastStone(stones)) {
+    return gearSet;
+  }
   stones[slot] = null;
   const pieces = gearSet.pieces.map((r, i) => (i === index ? { ...r, stones } : r));
   return withPin({ ...gearSet, pieces }, index, true);
@@ -133,7 +150,11 @@ export function withoutStone(job, gearSet, index, slot) {
 
 /* The index of the last stone in `stones`, -1 for none. */
 export function lastStone(stones) {
-  for (let i = stones.length - 1; i >= 0; i--) if (stones[i]) return i;
+  for (let i = stones.length - 1; i >= 0; i--) {
+    if (stones[i]) {
+      return i;
+    }
+  }
   return -1;
 }
 

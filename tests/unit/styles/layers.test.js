@@ -12,11 +12,15 @@ function topLevel(css) {
   for (let at = 0; at < css.length; at++) {
     const char = css[at];
     if (char === '{') {
-      if (depth === 0) found.push({ head: css.slice(start, at).trim(), hasBlock: true });
+      if (depth === 0) {
+        found.push({ head: css.slice(start, at).trim(), hasBlock: true });
+      }
       depth++;
     } else if (char === '}') {
       depth--;
-      if (depth === 0) start = at + 1;
+      if (depth === 0) {
+        start = at + 1;
+      }
     } else if (char === ';' && depth === 0) {
       found.push({ head: css.slice(start, at).trim(), hasBlock: false });
       start = at + 1;

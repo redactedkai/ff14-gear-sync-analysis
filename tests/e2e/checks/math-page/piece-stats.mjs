@@ -5,7 +5,9 @@ import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.mj
 
 /** Opens Piece stats' "Stat budget analysis, step by step" if it is closed. */
 async function openSteps(pg) {
-  if (!(await pg.locator('#p-steps').evaluate(d => d.open))) await pg.click('#p-steps > summary');
+  if (!(await pg.locator('#p-steps').evaluate(d => d.open))) {
+    await pg.click('#p-steps > summary');
+  }
 }
 
 /** A closed details panel ("Stat budget analysis, step by step") is only its summary plus padding: the flex gap of the panel must
@@ -13,7 +15,9 @@ async function openSteps(pg) {
 
 export async function checkClosedPanel(pg) {
   await showMath(pg, 'piece');
-  if (await pg.locator('#p-steps').evaluate(d => d.open)) await pg.click('#p-steps > summary');
+  if (await pg.locator('#p-steps').evaluate(d => d.open)) {
+    await pg.click('#p-steps > summary');
+  }
   const extra = await pg.locator('#p-steps').evaluate(d => {
     const cs = getComputedStyle(d);
     const frame = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((n, k) => n + parseFloat(cs[k]), 0);
@@ -41,7 +45,9 @@ export async function checkPieceBarSteady(pg) {
   for (const menu of ['#p-slot', '#p-s1', '#p-s2']) {
     const values = await pg.locator(`${menu} option`).evaluateAll(options => options.map(option => option.value));
     for (const value of values) {
-      if (menu !== '#p-slot') await openPieceMenus(pg); // the substat menus are in the chip's popover
+      if (menu !== '#p-slot') {
+        await openPieceMenus(pg); // the substat menus are in the chip's popover
+      }
       await pg.selectOption(menu, value);
       await expect(pg.locator(menu)).toHaveValue(value);
       await pg.keyboard.press('Escape'); // the popover closes; the chip says the new choice

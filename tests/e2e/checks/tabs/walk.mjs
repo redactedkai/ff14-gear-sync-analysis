@@ -53,7 +53,9 @@ async function checkWalkSet(pg, job) {
   await expect(pg.locator('#sh-defense td.defense')).toHaveText(/\d[\d,]*\D+−\d+%\D+\d[\d,]*\D+−\d+%/);
   await checkNoBadText(pg, `${job}/set page`);
   check(!(await hasHScroll(pg)), `${job}: the set page scrolls sideways at ${NARROW.width} px`);
-  if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow-set.png'), fullPage: true });
+  if (job === JOBS.at(-1)) {
+    await pg.screenshot({ path: shot('narrow-set.png'), fullPage: true });
+  }
   await pg.click('[data-tab=browse]');
 }
 
@@ -78,6 +80,8 @@ export const walkJob = job => async pg => {
   await expect(pg.locator('#t-table .lrow.cur').first()).toBeVisible();
   await checkNoBadText(pg, `${job}/math:tiers`);
   check(!(await hasHScroll(pg)), `${job}: horizontal page scroll at ${NARROW.width} px`);
-  if (job === JOBS.at(-1)) await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
+  if (job === JOBS.at(-1)) {
+    await pg.screenshot({ path: shot('narrow.png'), fullPage: true });
+  }
   await checkWalkSet(pg, job);
 };

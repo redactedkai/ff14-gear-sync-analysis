@@ -46,7 +46,9 @@ test('melds off: the best item per slot equals optimize() on every job, over the
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const pool = jobGear(job);
-    for (const sync of SYNCS) assertSame(job, pool, sync, false, rand);
+    for (const sync of SYNCS) {
+      assertSame(job, pool, sync, false, rand);
+    }
   }
 });
 
@@ -61,8 +63,12 @@ test('melds on: the same on a reduced pool (the top 14 of each slot type by item
       const items = full.filter(item => item.type === type).sort((a, b) => b.ilvl - a.ilvl);
       pool.push(...items.slice(0, 14));
       const rest = items.slice(14);
-      for (let n = 0; n < 4 && rest.length; n++) pool.push(rest.splice(Math.floor(rand() * rest.length), 1)[0]);
+      for (let n = 0; n < 4 && rest.length; n++) {
+        pool.push(rest.splice(Math.floor(rand() * rest.length), 1)[0]);
+      }
     }
-    for (const sync of syncs) assertSame(job, pool, sync, true, rand);
+    for (const sync of syncs) {
+      assertSame(job, pool, sync, true, rand);
+    }
   }
 });

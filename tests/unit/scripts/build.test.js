@@ -50,7 +50,9 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
   assert.match(outside[0], /onload="this\.media='all'"/);
   assert.match(noscript, /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com/);
   // audit 12, finding 7: no referrer, so Google is not told which page loaded the fonts
-  for (const link of links) assert.match(link, /referrerpolicy="no-referrer"/);
+  for (const link of links) {
+    assert.match(link, /referrerpolicy="no-referrer"/);
+  }
 });
 
 /* The page painted half-built for a moment on every load (owner's report): the script is the last thing in the file, and
@@ -84,7 +86,9 @@ test('page template: nothing paints before Alpine has built it', async () => {
   let depth = 0;
   for (const tag of withoutShell.matchAll(/<(\/?)div\b/g)) {
     depth += tag[1] ? -1 : 1;
-    if (depth === 0) assert.equal(tag.index + '</div>'.length, withoutShell.length, 'the page root closes before the end of the body');
+    if (depth === 0) {
+      assert.equal(tag.index + '</div>'.length, withoutShell.length, 'the page root closes before the end of the body');
+    }
   }
   // the tab-dependent bindings are all inside it (the Gear browser's Job and sync strip among them)
   assert.ok(body.includes(`x-show="$store.app.tab === 'browse'"`));
@@ -170,7 +174,9 @@ test('page template: the browser and a set page take their filter menus from the
   const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
   const page = expandIncludes(html);
   for (const id of ['b', 's']) {
-    for (const el of [`${id}-exp-menu`, `${id}-from-menu`, `${id}-market`]) assert.match(page, new RegExp(`id="${el}"`));
+    for (const el of [`${id}-exp-menu`, `${id}-from-menu`, `${id}-market`]) {
+      assert.match(page, new RegExp(`id="${el}"`));
+    }
   }
   // the market switch goes through the component's own accessor (components/filter-menus.js gearFromToggles), never the store directly
   assert.match(page, /@change="setMarket\(\$event\.target\.checked\)"/);

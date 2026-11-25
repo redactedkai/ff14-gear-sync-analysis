@@ -80,7 +80,9 @@ async function checkCapValidation(pg) {
     window.__noteHidden = 0;
     const note = document.querySelector('#cap-lowered');
     new MutationObserver(() => {
-      if (note.style.display === 'none') window.__noteHidden++;
+      if (note.style.display === 'none') {
+        window.__noteHidden++;
+      }
     }).observe(note, { attributes: true, attributeFilter: ['style'] });
   });
   await pg.locator('#cap').focus();

@@ -26,7 +26,9 @@ async function panelFields(pg) {
 
 /** Open math sub-tab `sub` ('piece', 'gcd' or 'tiers') if another one is open. */
 async function openSub(pg, sub) {
-  if ((await pg.locator(`[data-sub=${sub}]`).getAttribute('aria-current')) === 'page') return;
+  if ((await pg.locator(`[data-sub=${sub}]`).getAttribute('aria-current')) === 'page') {
+    return;
+  }
   await pg.click(`[data-sub=${sub}]`);
   await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
 }
@@ -35,10 +37,14 @@ async function openSub(pg, sub) {
  * Substat tiers' own: GCD Scaling has none, so Stat Allocation is opened then). With `piece`, Stat Allocation's own panel is wanted
  * (its Job box and Sync settings), so that sub-tab is opened. Returns the tab's fields. The Sheets tab has none. */
 async function openSettings(pg, { piece = false } = {}) {
-  if (await pg.locator('[data-tab=sheets][aria-current="page"]').count()) return STRIP_FIELDS;
+  if (await pg.locator('[data-tab=sheets][aria-current="page"]').count()) {
+    return STRIP_FIELDS;
+  }
   const fields = await panelFields(pg);
   if (fields === MATH_FIELDS) {
-    if (piece || (await pg.locator('[data-sub=gcd]').getAttribute('aria-current')) === 'page') await openSub(pg, 'piece');
+    if (piece || (await pg.locator('[data-sub=gcd]').getAttribute('aria-current')) === 'page') {
+      await openSub(pg, 'piece');
+    }
   }
   await expect(pg.locator(fields.jobButton)).toBeVisible();
   return fields;
@@ -66,7 +72,9 @@ export async function openPieceMenus(pg) {
 /** Open the open tab's job menu (if it is shut) and click a job tile. */
 export async function pickJob(pg, job) {
   const fields = await openSettings(pg);
-  if (!(await pg.locator(fields.jobMenu).isVisible())) await pg.click(fields.jobButton);
+  if (!(await pg.locator(fields.jobMenu).isVisible())) {
+    await pg.click(fields.jobButton);
+  }
   await pg.click(`${fields.jobMenu} [data-job-id="${job}"]`);
 }
 
@@ -86,8 +94,12 @@ export async function currentJob(pg) {
 /** An input's value; '#job' means the job picker's selection, '#level' and '#cap' the open tab's own boxes (the Gear browser's strip,
  * or Stat Allocation's Sync settings popover: read where they are, shut or not). */
 export async function fieldValue(pg, sel) {
-  if (sel === '#job') return await currentJob(pg);
-  if (sel === '#level' || sel === '#cap') return await pg.inputValue((await panelFields(pg))[sel.slice(1)]);
+  if (sel === '#job') {
+    return await currentJob(pg);
+  }
+  if (sel === '#level' || sel === '#cap') {
+    return await pg.inputValue((await panelFields(pg))[sel.slice(1)]);
+  }
   return await pg.inputValue(sel);
 }
 
@@ -118,14 +130,21 @@ export async function readPanel(pg) {
 async function applyPanel(pg, want) {
   const now = await readPanel(pg);
   // a panel that starts as its strip (also with no job) is opened to change it
-  if ((want.job && now.job !== want.job) || now.level !== want.level || now.sync !== want.sync || now.cap !== want.cap)
+  if ((want.job && now.job !== want.job) || now.level !== want.level || now.sync !== want.sync || now.cap !== want.cap) {
     await openSettings(pg);
-  if (want.job && now.job !== want.job) await setJob(pg, want.job);
-  if (now.level !== want.level) await setNumber(pg, '#level', want.level);
+  }
+  if (want.job && now.job !== want.job) {
+    await setJob(pg, want.job);
+  }
+  if (now.level !== want.level) {
+    await setNumber(pg, '#level', want.level);
+  }
   if (now.sync !== want.sync || now.cap !== want.cap) {
     const fields = await openSync(pg);
     await pg.locator(fields.sync).setChecked(true);
-    if (want.cap !== '') await setNumber(pg, '#cap', want.cap);
+    if (want.cap !== '') {
+      await setNumber(pg, '#cap', want.cap);
+    }
     await pg.locator(fields.sync).setChecked(want.sync);
   }
 }
@@ -136,7 +155,9 @@ export async function showTab(pg, tab, own = false) {
   await pg.click(`[data-tab=${tab}]`);
   // the tab opens a few frames after the click (the loading layer's wait), and the panel to fill is the one on screen
   await expect(pg.locator(`#tab-${tab}`)).toBeVisible();
-  if (!own) await applyPanel(pg, left);
+  if (!own) {
+    await applyPanel(pg, left);
+  }
 }
 
 export async function showMath(pg, sub) {
@@ -168,7 +189,9 @@ export const afterFrames = pg =>
  * and a reload before that opens the page as it was. */
 export async function waitStateSaved(pg) {
   const tab = await pg.locator('[data-tab][aria-current="page"]').getAttribute('data-tab');
-  if (tab === 'sheets') return waitSaved(pg, "s => s.tab === 'sheets'");
+  if (tab === 'sheets') {
+    return waitSaved(pg, "s => s.tab === 'sheets'");
+  }
   const panel = await readPanel(pg);
   const cap = JSON.stringify(panel.cap);
   await waitSaved(
@@ -193,7 +216,9 @@ export async function tableRows(pg, selector) {
 /** Type `value` into the number box `sel` and commit it. '#level' and '#cap' mean the open tab's own boxes (the Gear browser's strip,
  * or Stat Allocation's Sync settings popover, opened first). */
 export async function setNumber(pg, sel, value) {
-  if (['#level', '#cap'].includes(sel)) sel = (await openSync(pg))[sel.slice(1)];
+  if (['#level', '#cap'].includes(sel)) {
+    sel = (await openSync(pg))[sel.slice(1)];
+  }
   await pg.fill(sel, value);
   await pg.locator(sel).dispatchEvent('change');
 }
@@ -201,7 +226,9 @@ export async function setNumber(pg, sel, value) {
 /** Turn item level sync on (the cap field is disabled while it is off) and set the cap. */
 export async function setCap(pg, value) {
   const fields = await openSync(pg);
-  if (!(await pg.locator(fields.sync).isChecked())) await pg.locator(fields.sync).check();
+  if (!(await pg.locator(fields.sync).isChecked())) {
+    await pg.locator(fields.sync).check();
+  }
   await setNumber(pg, '#cap', value);
 }
 
@@ -229,7 +256,9 @@ export async function ticked(pg, pre) {
 
 /** Open the "Gear categories" menu of `pre` if it is closed. */
 export async function openFrom(pg, pre) {
-  if ((await pg.getAttribute(`#${pre}-from`, 'aria-expanded')) !== 'true') await pg.click(`#${pre}-from`);
+  if ((await pg.getAttribute(`#${pre}-from`, 'aria-expanded')) !== 'true') {
+    await pg.click(`#${pre}-from`);
+  }
   await expect(pg.locator(`#${pre}-from-menu`)).toBeVisible();
 }
 
@@ -251,7 +280,9 @@ export async function showFromTabOf(pg, pre, key) {
 /** Tick or untick one "Gear categories" box (or the market board switch, key 'market'), then close the menu. */
 export async function setFrom(pg, pre, key, on) {
   await openFrom(pg, pre);
-  if (key !== 'market') await showFromTabOf(pg, pre, key);
+  if (key !== 'market') {
+    await showFromTabOf(pg, pre, key);
+  }
   const box = key === 'market' ? pg.locator(`#${pre}-market`) : pg.locator(`#${pre}-from-menu input[data-activity="${key}"]`);
   await (on ? box.check() : box.uncheck());
   await closeFrom(pg, pre);
@@ -271,7 +302,9 @@ const ROW_BY_ROW = SECTIONS.at(-1);
  * before its Legacy one (the pairs Extreme and Savage, then Ultimate). */
 function readingOrder(title) {
   const keys = ACTIVITY_KEYS_BY_SECTION[title];
-  if (title !== ROW_BY_ROW) return keys;
+  if (title !== ROW_BY_ROW) {
+    return keys;
+  }
   const kind = key => key.replace(/_(current|legacy)$/, '');
   const kinds = [...new Set(keys.map(kind))];
   return [...keys].sort(
@@ -327,7 +360,9 @@ export async function checkFromMenu(pg, pre, outside) {
       const keys = ACTIVITY_KEYS_BY_SECTION[title];
       return `${title}${startTicked.filter(key => keys.includes(key)).length}/${keys.length}`;
     });
-  for (const [index, [title]] of FROM_TABS.entries()) await expect(pg.locator(tab(title))).toHaveText(counts()[index]);
+  for (const [index, [title]] of FROM_TABS.entries()) {
+    await expect(pg.locator(tab(title))).toHaveText(counts()[index]);
+  }
 
   // the head: the switch (its label and nothing else) at the left, All / None / Default at the right on its line, over the tabs
   await expect(pg.locator(`${menu} .from-switch`)).toBeVisible();
@@ -394,11 +429,12 @@ export async function checkFromMenu(pg, pre, outside) {
       };
     }, panel(title));
     check(boxes.visible && boxes.others === 0, `the ${pre} "${title}" tab's panel is not the only one shown: ${JSON.stringify(boxes)}`);
-    for (const [index, box] of boxes.boxes.entries())
+    for (const [index, box] of boxes.boxes.entries()) {
       check(
         box.hintText > 0 && box.hintUnderName && box.hintLines <= FROM_HINT_MAX_LINES + 0.05,
         `the ${pre} "${title}" box ${names[index]} has no text under its name or more than ${FROM_HINT_MAX_LINES} lines: ${JSON.stringify(box)}`,
       );
+    }
     // the reading order: Hard content across (two to a row, the right cell of the last row empty), the others down two columns
     const at = boxes.boxes;
     const rowsDown = Math.ceil(names.length / 2);
@@ -489,10 +525,14 @@ export async function checkFromMenu(pg, pre, outside) {
   // All, None, Default: the tabs' counts and the field's text follow, and Default gives back the starting boxes
   const link = action => pg.locator(`${menu} .from-acts [data-action="${action}"]`);
   await link('none').click();
-  for (const [title, names] of FROM_TABS) await expect(pg.locator(tab(title))).toHaveText(`${title}0/${names.length}`);
+  for (const [title, names] of FROM_TABS) {
+    await expect(pg.locator(tab(title))).toHaveText(`${title}0/${names.length}`);
+  }
   await expect(pg.locator(`#${pre}-from`)).toContainText('None');
   await link('all').click();
-  for (const [title, names] of FROM_TABS) await expect(pg.locator(tab(title))).toHaveText(`${title}${names.length}/${names.length}`);
+  for (const [title, names] of FROM_TABS) {
+    await expect(pg.locator(tab(title))).toHaveText(`${title}${names.length}/${names.length}`);
+  }
   await expect(pg.locator(`#${pre}-from`)).toContainText('All');
   await link('default').click();
   await expect(pg.locator(`#${pre}-from`)).toHaveText(startSummary);

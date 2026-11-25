@@ -40,7 +40,9 @@ test('removing pieces the search did not choose keeps the totals; removing a cho
     const dropped = new Set();
     while (dropped.size < 3) {
       const item = pickFrom(rand, pool);
-      if (!chosen.has(item)) dropped.add(item);
+      if (!chosen.has(item)) {
+        dropped.add(item);
+      }
     }
     const without = solve(
       job,
@@ -97,7 +99,9 @@ test('a looser speed maximum or minimum never lowers the goal and never turns a 
       [tightMax, looseMax, 'maximum'],
       [tightMin, looseMin, 'minimum'],
     ]) {
-      if (!tight.ok) continue;
+      if (!tight.ok) {
+        continue;
+      }
       assert.ok(loose.ok, `${label}: a looser speed ${what} found no set`);
       assert.ok(lexCompare(rankOf(loose, goal), rankOf(tight, goal)) >= 0, `${label}: a looser speed ${what} lowered the goal`);
     }
@@ -111,7 +115,11 @@ test('jobs of one gear group reach the same totals on the pieces all of them wea
     const common = new Set(pools.get(groupJobs[0].jobId).map(item => item.gameId));
     for (const job of groupJobs) {
       const ids = new Set(pools.get(job.jobId).map(item => item.gameId));
-      for (const id of [...common]) if (!ids.has(id)) common.delete(id);
+      for (const id of [...common]) {
+        if (!ids.has(id)) {
+          common.delete(id);
+        }
+      }
     }
     const poolOf = job => pools.get(job.jobId).filter(item => common.has(item.gameId));
     for (const sync of SYNCS.slice(0, 2)) {
@@ -128,7 +136,9 @@ test('jobs of one gear group reach the same totals on the pieces all of them wea
         const totalsOf = r => [r.result.totals.wd, r.result.totals[r.key], r.result.totals.crit];
         for (const run of runs.slice(1)) {
           const reference = runs.find(candidate => candidate.job.weaponMode === run.job.weaponMode) ?? runs[0];
-          if (reference === run) continue;
+          if (reference === run) {
+            continue;
+          }
           assert.deepEqual(
             totalsOf(run),
             totalsOf(reference),

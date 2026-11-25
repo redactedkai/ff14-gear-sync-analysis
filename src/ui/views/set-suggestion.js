@@ -40,19 +40,29 @@ export function suggestionOf(sheet, saved, result, bestMeals = null) {
    without it the Take boxes stay as they are. */
 function takeStateOf(job, saved, suggested, declined) {
   const off = new Set(declined.rows);
-  if (!job) return { off, locked: null };
+  if (!job) {
+    return { off, locked: null };
+  }
   const weapon = saved.pieces.findIndex(row => row.slot === 'weapon');
   const offhand = saved.pieces.findIndex(row => row.slot === 'offhand');
-  if (weapon < 0 || offhand < 0) return { off, locked: null };
+  if (weapon < 0 || offhand < 0) {
+    return { off, locked: null };
+  }
   const keptWeapon = off.has(weapon) ? saved.pieces[weapon] : suggested.pieces[weapon];
   const item = keptWeapon.gameId == null ? null : poolItemById(job, keptWeapon.gameId);
-  if (!item || !slotInfo(job, item).blocks.includes('offhand')) return { off, locked: null };
+  if (!item || !slotInfo(job, item).blocks.includes('offhand')) {
+    return { off, locked: null };
+  }
   const savedOffhand = saved.pieces[offhand].gameId ?? null;
   const suggestedOffhand = suggested.pieces[offhand].gameId ?? null;
   // the covered Off-hand holds nothing: the suggested row when empty, else the saved one when empty
-  if (suggestedOffhand == null) off.delete(offhand);
-  else if (savedOffhand == null) off.add(offhand);
-  else return { off, locked: null };
+  if (suggestedOffhand == null) {
+    off.delete(offhand);
+  } else if (savedOffhand == null) {
+    off.add(offhand);
+  } else {
+    return { off, locked: null };
+  }
   return { off, locked: savedOffhand === suggestedOffhand ? null : offhand };
 }
 
@@ -112,7 +122,9 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
   const diff = draftChanges(job, saved, { ...saved, pieces: suggested.pieces, meal: suggested.meal ?? null });
   const takes = {};
   for (const change of diff.rows) {
-    if (!rows.includes(change.index)) continue;
+    if (!rows.includes(change.index)) {
+      continue;
+    }
     const isTaken = !off.has(change.index);
     const text = change.meldsOnly
       ? `melds ${change.beforeStones} → ${change.afterStones}`
@@ -129,13 +141,16 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
   const emptySet = !holdsPiece(job, saved);
   const against = figuresAgainst(nowFigures, afterFigures);
   let header;
-  if (emptySet) header = [{ label: 'Suggested · set is empty', after: false, figures: plainFigures(afterFigures) }];
-  else if (!total) header = [{ label: 'Now · no changes', after: false, figures: plainFigures(nowFigures) }];
-  else
+  if (emptySet) {
+    header = [{ label: 'Suggested · set is empty', after: false, figures: plainFigures(afterFigures) }];
+  } else if (!total) {
+    header = [{ label: 'Now · no changes', after: false, figures: plainFigures(nowFigures) }];
+  } else {
     header = [
       { label: 'Now', after: false, figures: plainFigures(nowFigures) },
       { label: `After · ${taken} of ${total} taken`, after: true, moved: against.some(figure => figure.change), figures: against },
     ];
+  }
 
   return {
     shown,
@@ -184,15 +199,21 @@ const FAILURE_TEXT = {
    as the page shows it, `saved` the saved set whose settings the Auto-fill used. */
 function emptySlotNote(job, saved, shown) {
   const limit = fillSettingsOf(job, saved).searchCriteria.lvl;
-  if (limit === '' || limit == null) return '';
+  if (limit === '' || limit == null) {
+    return '';
+  }
   const gear = jobGear(job);
   const notes = usedRows(job, shown)
     .filter(({ row }) => row.gameId == null)
     .flatMap(({ index, row }) => {
       const levels = gear.filter(item => item.type === row.slot).map(item => equipLevel(item) ?? 0);
-      if (!levels.length) return [];
+      if (!levels.length) {
+        return [];
+      }
       const lowest = Math.min(...levels);
-      if (lowest <= limit) return [];
+      if (lowest <= limit) {
+        return [];
+      }
       return [`${rowLabel(shown, index)}: no ${job.jobName} piece up to equip level ${limit}, the lowest needs level ${lowest}.`];
     });
   return notes.join(' ');
@@ -208,11 +229,15 @@ function emptySlotNote(job, saved, shown) {
    - {kind: 'failed', text}: no set, with the reason (an error's own message after "Auto-fill failed: "). */
 export function fillAnswerView(sheet, saved, answer) {
   const job = makeJobContext(sheet.job);
-  if (answer.kind === 'ok') return { kind: 'suggestion', suggested: suggestionOf(sheet, saved, answer.set, answer.bestMeals) };
+  if (answer.kind === 'ok') {
+    return { kind: 'suggestion', suggested: suggestionOf(sheet, saved, answer.set, answer.bestMeals) };
+  }
   if (answer.kind === 'badpin') {
     const { pieces, dropped, relicRows, mealDropped } = dropBadPins(job, saved, answer.badPins);
     const names = dropped.filter(index => !relicRows.includes(index)).map(index => rowLabel(saved, index));
-    if (mealDropped) names.push(MEAL_ROW_LABEL);
+    if (mealDropped) {
+      names.push(MEAL_ROW_LABEL);
+    }
     return {
       kind: 'badpin',
       messages: answer.messages ?? badPinMessages(answer.badPins),
@@ -225,6 +250,8 @@ export function fillAnswerView(sheet, saved, answer) {
       ),
     };
   }
-  if (answer.kind === 'error') return { kind: 'failed', text: failedText(answer.message) };
+  if (answer.kind === 'error') {
+    return { kind: 'failed', text: failedText(answer.message) };
+  }
   return { kind: 'failed', text: FAILURE_TEXT[answer.kind] ?? `Auto-fill found no set (${answer.kind}).` };
 }

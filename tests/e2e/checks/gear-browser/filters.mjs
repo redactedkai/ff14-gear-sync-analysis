@@ -13,8 +13,9 @@ const RINGS_WINDOW = ['SGE', 140, 150, 60];
 export async function checkRingCopies(pg) {
   const [job, lo, hi, lvl] = RINGS_WINDOW;
   const want = await coreRings(job, lo, hi, lvl);
-  if (!check(want.x2 > 0 && want.x2 < want.count, `${job} rings ${lo}-${hi}: no mix of Unique and non-Unique rings; pick another window`))
+  if (!check(want.x2 > 0 && want.x2 < want.count, `${job} rings ${lo}-${hi}: no mix of Unique and non-Unique rings; pick another window`)) {
     return;
+  }
   await setJob(pg, job);
   await fillBrowser(pg, lo, hi, lvl, 'ring');
   await expect(pg.locator('#b-count')).toHaveText(`${want.count} matches`);
@@ -77,13 +78,19 @@ export async function checkRingCopies(pg) {
 
 /** The Expansion dropdown's checkboxes, with the dropdown opened. */
 async function expBoxes(pg) {
-  if ((await pg.locator('#b-exp').getAttribute('aria-expanded')) !== 'true') await pg.click('#b-exp');
+  if ((await pg.locator('#b-exp').getAttribute('aria-expanded')) !== 'true') {
+    await pg.click('#b-exp');
+  }
   return pg.locator('#b-exp-menu input');
 }
 
 /** Tick every expansion in the gear browser again, then close the dropdown. */
 export async function allExpansions(pg) {
-  for (const box of await (await expBoxes(pg)).all()) if (!(await box.isChecked())) await box.check();
+  for (const box of await (await expBoxes(pg)).all()) {
+    if (!(await box.isChecked())) {
+      await box.check();
+    }
+  }
   await pg.keyboard.press('Escape');
 }
 
@@ -98,9 +105,15 @@ export async function checkExpansionFilter(pg) {
   const boxes = await expBoxes(pg);
   const all = await boxes.all();
   let allTicked = true;
-  for (const b of all) allTicked = allTicked && (await b.isChecked());
+  for (const b of all) {
+    allTicked = allTicked && (await b.isChecked());
+  }
   check(all.length === 6 && allTicked, 'every expansion is ticked by default');
-  for (const b of all) if ((await b.getAttribute('data-exp')) !== 'EW') await b.uncheck();
+  for (const b of all) {
+    if ((await b.getAttribute('data-exp')) !== 'EW') {
+      await b.uncheck();
+    }
+  }
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#b-exp-menu')).toBeHidden();
   await expect(pg.locator('#b-exp')).toHaveText('Endwalker');

@@ -31,7 +31,9 @@ function rowsOf(set) {
   const queue = [...set.pieces];
   return SLOT_OF_ROW.map(slot => {
     const index = queue.findIndex(p => p.slot === slot);
-    if (index < 0) return { slot };
+    if (index < 0) {
+      return { slot };
+    }
     const { gameId, stones } = queue.splice(index, 1)[0];
     return gameId == null ? { slot } : { slot, gameId, stones };
   });

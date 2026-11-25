@@ -7,6 +7,8 @@ import EXAMPLE_SHEETS from './test-sheets.json' with { type: 'json' };
 /* Puts the example sheets into `sheetStore` (the sheets facade: commitSheet), saved like any edit: a sheet with the same id is replaced,
    the others stay; new ones go to the top in the file's order. Returns the number of sheets loaded. */
 export function loadExampleSheets(sheetStore) {
-  for (const sheet of [...EXAMPLE_SHEETS].reverse()) sheetStore.commitSheet(structuredClone(sheet), { touch: false });
+  for (const sheet of [...EXAMPLE_SHEETS].reverse()) {
+    sheetStore.commitSheet(structuredClone(sheet), { touch: false });
+  }
   return EXAMPLE_SHEETS.length;
 }

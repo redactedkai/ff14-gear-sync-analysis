@@ -172,9 +172,13 @@ test('with melds, the optimizer matches exhaustive search on random real pools',
       const of = all.filter(i => i.type === ty);
       const n = ty === 'ring' ? 1 + int(3) : int(3);
       // distinct pieces: the same object twice would be one Unique ring the reference could pair with itself
-      for (let i = 0; i < n && of.length; i++) pool.push(of.splice(int(of.length), 1)[0]);
+      for (let i = 0; i < n && of.length; i++) {
+        pool.push(of.splice(int(of.length), 1)[0]);
+      }
     }
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const ilvls = pool.map(i => i.ilvl).sort((a, b) => a - b);
     const sync = rand() < 0.5 ? NO_SYNC : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
     const subs = job.substats;
@@ -189,7 +193,9 @@ test('with melds, the optimizer matches exhaustive search on random real pools',
       want,
       label,
     );
-    if (r.picks.some(p => p.meld)) melded++;
+    if (r.picks.some(p => p.meld)) {
+      melded++;
+    }
   }
   assert.ok(melded >= 20, `${melded} runs used melds`); // the test exercises melds, not just plain pools
 });

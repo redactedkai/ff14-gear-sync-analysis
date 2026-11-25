@@ -187,7 +187,9 @@ async function tabTo(pg, id, limit = 60) {
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return { id: el.id, shown: !!hit && el.contains(hit) };
     });
-    if (at.id === id) return at.shown ? 'reached' : 'hidden under another element';
+    if (at.id === id) {
+      return at.shown ? 'reached' : 'hidden under another element';
+    }
   }
   return `not reached in ${limit} presses`;
 }
@@ -370,7 +372,9 @@ export async function checkFillMenus(pg) {
         return { ok, got };
       });
       // Escape closes the pop-up and keeps the dialog; focus goes back to the pop-up's button (the note's ? takes none)
-      if (buttonId !== 'sh-rank-help') await pg.locator(`${menuSel} input`).first().focus(); // the keyboard is inside the menu
+      if (buttonId !== 'sh-rank-help') {
+        await pg.locator(`${menuSel} input`).first().focus(); // the keyboard is inside the menu
+      }
       await pg.keyboard.press('Escape');
       await expect(pg.locator(menuSel)).toBeHidden();
       await expect(pg.locator('#sh-settings-dialog')).toBeVisible();

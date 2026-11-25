@@ -241,7 +241,9 @@ test('two pages open at once keep their own draft, result and status; unsettled 
 
 test('unsettled over several pages: any one with a draft, a running search or a waiting result', () => {
   const { store, pages } = start();
-  for (const id of ['g_1', 'g_2', 'g_3']) pages.openPage(id);
+  for (const id of ['g_1', 'g_2', 'g_3']) {
+    pages.openPage(id);
+  }
   assert.equal(unsettled(store.state), false);
   pages.setDraft('g_3', draftOf('g_3'));
   assert.equal(unsettled(store.state), true);

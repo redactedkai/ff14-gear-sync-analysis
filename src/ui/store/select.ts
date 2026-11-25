@@ -19,11 +19,19 @@ export const sameValue = Object.is;
 /* Whether `a` and `b` are equal one level deep: the same keys (or array items) holding values that are the same by
    `Object.is`. For a selector that builds a small object or array each time it runs (`panelOf` does). */
 export function shallowEq<Value>(a: Value, b: Value): boolean {
-  if (Object.is(a, b)) return true;
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Object.is(a, b)) {
+    return true;
+  }
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) {
+    return false;
+  }
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return false;
+  }
   const keysOfA = Object.keys(a);
-  if (keysOfA.length !== Object.keys(b).length) return false;
+  if (keysOfA.length !== Object.keys(b).length) {
+    return false;
+  }
   return keysOfA.every(key => Object.hasOwn(b, key) && Object.is((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
 }
 
@@ -60,14 +68,18 @@ export class Select<State extends Record<string, object>, Value> {
   /* Lit calls it when the host is connected: read the value and follow the store. A host that was disconnected while the
      value changed renders again at once, since nothing told it. */
   hostConnected(): void {
-    if (this.#connected) return;
+    if (this.#connected) {
+      return;
+    }
     const before = this.#value as Value;
     this.#value = this.#select(this.#store.state);
     this.#unsubscribe = this.#store.subscribe(() => this.#follow());
     const changedWhileAway = this.#hasBeenConnected && !this.#equals(before, this.#value);
     this.#connected = true;
     this.#hasBeenConnected = true;
-    if (changedWhileAway) this.#host.requestUpdate();
+    if (changedWhileAway) {
+      this.#host.requestUpdate();
+    }
   }
 
   /* Lit calls it when the host is removed: stop following the store. */
@@ -80,7 +92,9 @@ export class Select<State extends Record<string, object>, Value> {
   /* After a store change: keep the new value and render the host again when it differs from the one kept. */
   #follow(): void {
     const next = this.#select(this.#store.state);
-    if (this.#equals(next, this.#value as Value)) return;
+    if (this.#equals(next, this.#value as Value)) {
+      return;
+    }
     this.#value = next;
     this.#host.requestUpdate();
   }

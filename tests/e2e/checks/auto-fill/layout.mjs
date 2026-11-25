@@ -120,11 +120,15 @@ export async function checkGcdLabel(pg) {
     await pg.setViewportSize({ width, height: 900 });
     for (const labelCase of [...LABEL_CASES, OFF_CASE]) {
       const where = `${labelCase.job}${labelCase.off ? ' (goal is speed)' : ''} at ${width} px`;
-      if (await pg.locator('#sh-set').isVisible()) await pg.click('#sh-set .setcrumb a'); // back to the sheet list
+      if (await pg.locator('#sh-set').isVisible()) {
+        await pg.click('#sh-set .setcrumb a'); // back to the sheet list
+      }
       await openSet(pg, labelCase.sheet ?? `Label ${labelCase.job}`, 'Empty');
       await pg.click('#sh-settings');
       await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
-      if (labelCase.off) await pg.selectOption('#s-target', 'sks');
+      if (labelCase.off) {
+        await pg.selectOption('#s-target', 'sks');
+      }
       const sentence = pg.locator('label[for="s-gcd"] .sr-only');
       const figures = labelCase.off ? 0 : 2; // the range's two GCD figures, none while the goal is speed
       await poll(`${where}: the label's range and haste`, async () => {
@@ -135,8 +139,11 @@ export async function checkGcdLabel(pg) {
       const name = /^- '?spinbutton "(.*?)"/m.exec(await pg.locator('#s-gcd').ariaSnapshot())?.[1] ?? '';
       check(name === spoken, `${where}: the Target GCD box's accessible name is "${name}", not its label "${spoken}"`);
       const got = await measureGcdField(pg);
-      if (labelCase.off) check(got.leftText === 'Target GCD', `${where}: the left part reads "${got.leftText}"`);
-      else check(/^Target GCD · \d\.\d\d–\d\.\d\d$/.test(got.leftText), `${where}: the left part reads "${got.leftText}"`);
+      if (labelCase.off) {
+        check(got.leftText === 'Target GCD', `${where}: the left part reads "${got.leftText}"`);
+      } else {
+        check(/^Target GCD · \d\.\d\d–\d\.\d\d$/.test(got.leftText), `${where}: the left part reads "${got.leftText}"`);
+      }
       const wantHaste = labelCase.haste;
       const hasteOk =
         wantHaste === null
@@ -145,8 +152,9 @@ export async function checkGcdLabel(pg) {
             ? wantHaste.test(got.sideText ?? '')
             : got.sideText === wantHaste;
       check(hasteOk, `${where}: the right part reads ${JSON.stringify(got.sideText)}`);
-      if (got.sideText && !labelCase.off)
+      if (got.sideText && !labelCase.off) {
         check(got.sideTitle === got.sideText, `${where}: the haste's title is ${JSON.stringify(got.sideTitle)}`);
+      }
       check(!got.sideCut, `${where}: the right part is cut`);
       check(got.oneLine, `${where}: the label line wraps`);
       check(got.leftInside && got.sideInside, `${where}: the label's parts overlap or leave the line`);

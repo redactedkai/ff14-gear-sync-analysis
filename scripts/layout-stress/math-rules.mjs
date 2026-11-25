@@ -26,27 +26,39 @@ const BOX_HEIGHT_TOLERANCE = 0.5;
    box (`piecesec`), the Substats chip (`piece`), the Sync settings chip (`sync`) and the Item level control (`il`). null when the
    Item level control is not shown (the other sub-tabs). */
 export function barLayout(tops) {
-  if (tops.il === null || tops.il === undefined) return null;
+  if (tops.il === null || tops.il === undefined) {
+    return null;
+  }
   const same = (a, b) => Math.abs(tops[a] - tops[b]) < 3;
   const sorted = [tops.job, tops.piecesec, tops.piece, tops.sync, tops.il].sort((a, b) => a - b);
   const rows = 1 + sorted.slice(1).filter((top, index) => top - sorted[index] >= 3).length;
-  if (rows === 1) return 'one-row';
-  if (same('job', 'piece') && same('piece', 'sync') && !same('sync', 'il')) return 'job+piece+sync/il';
-  if (same('job', 'piece') && !same('piece', 'sync') && same('sync', 'il')) return 'job+piece/sync+il';
+  if (rows === 1) {
+    return 'one-row';
+  }
+  if (same('job', 'piece') && same('piece', 'sync') && !same('sync', 'il')) {
+    return 'job+piece+sync/il';
+  }
+  if (same('job', 'piece') && !same('piece', 'sync') && same('sync', 'il')) {
+    return 'job+piece/sync+il';
+  }
   return `other(${rows} rows)`;
 }
 
 /* The layout the breakpoints give for a row `rowWidth` px wide at root font size `rem` px. */
 export function expectedBarLayout(rowWidth, rem) {
   const rems = rowWidth / rem;
-  if (rems >= ONE_ROW_REM) return 'one-row';
+  if (rems >= ONE_ROW_REM) {
+    return 'one-row';
+  }
   return rems >= THREE_ACROSS_REM ? 'job+piece+sync/il' : 'job+piece/sync+il';
 }
 
 /* Which dividers show, as text ("afterjob:1,ilgroup:0"), and the layout: the state of the bar that changes at a breakpoint.
    '' when the measure has no bar. */
 export function mathBarState(mathBar) {
-  if (!mathBar) return '';
+  if (!mathBar) {
+    return '';
+  }
   const dividers = mathBar.sections
     .map(section => (section.kind === 'job' ? 'job' : `${section.id}:${section.ruleShown ? 1 : 0}`))
     .join(',');
@@ -57,16 +69,21 @@ export function mathBarState(mathBar) {
    [{rule, detail}] with the rules bar-dividers, bar-breakpoints, bar-box-height and bar-slider-track. */
 export function judgeMathBar(mathBar) {
   const out = [];
-  if (!mathBar) return out;
+  if (!mathBar) {
+    return out;
+  }
 
   // the row cuts the dividers that land outside it (overflow-x: clip)
-  if (mathBar.overflowX !== 'clip')
+  if (mathBar.overflowX !== 'clip') {
     out.push({ rule: 'bar-dividers', detail: `the bar's row has overflow-x ${mathBar.overflowX}, not clip` });
+  }
 
   // each divider shows exactly when its section is not the first on its line, in the middle of the gap, as high as the section
   mathBar.sections.forEach((section, index) => {
     if (section.kind === 'job') {
-      if (section.hasRule) out.push({ rule: 'bar-dividers', detail: 'the Job section has a divider' });
+      if (section.hasRule) {
+        out.push({ rule: 'bar-dividers', detail: 'the Job section has a divider' });
+      }
       return;
     }
     if (!section.hasRule) {
@@ -83,7 +100,9 @@ export function judgeMathBar(mathBar) {
         detail: `${section.id}'s divider is ${Math.round(section.ruleHeight)} px high, its section ${Math.round(section.height)} px`,
       });
     }
-    if (section.ruleClear) out.push({ rule: 'bar-dividers', detail: `${section.id}'s divider has no colour` });
+    if (section.ruleClear) {
+      out.push({ rule: 'bar-dividers', detail: `${section.id}'s divider has no colour` });
+    }
     if (section.ruleShown === section.startsLine) {
       out.push({
         rule: 'bar-dividers',
@@ -92,7 +111,9 @@ export function judgeMathBar(mathBar) {
     }
     // the Sync chip sits inside the Piece section but is its own place on the line when the bar wraps (Sync | Item level)
     const topsBefore = mathBar.sections.slice(0, index).map(other => other.top);
-    if (section.id === 'p-ilgroup' && typeof mathBar.tops.sync === 'number') topsBefore.push(mathBar.tops.sync);
+    if (section.id === 'p-ilgroup' && typeof mathBar.tops.sync === 'number') {
+      topsBefore.push(mathBar.tops.sync);
+    }
     if (section.ruleShown && !topsBefore.some(top => Math.abs(top - section.top) < 3)) {
       out.push({ rule: 'bar-dividers', detail: `${section.id}'s divider is shown with no section before it on the line` });
     }
@@ -119,7 +140,8 @@ export function judgeMathBar(mathBar) {
       });
     }
   }
-  if (mathBar.track !== null && mathBar.track < MIN_TRACK_PX)
+  if (mathBar.track !== null && mathBar.track < MIN_TRACK_PX) {
     out.push({ rule: 'bar-slider-track', detail: `the slider track is ${Math.round(mathBar.track)} px wide` });
+  }
   return out;
 }

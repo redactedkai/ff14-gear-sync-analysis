@@ -12,7 +12,9 @@ export function plainClick(event) {
 /* The handler of an in-page link's click: on a plain click, cancels the browser's navigation and runs `move`, and returns true;
    on any other click, does nothing, so the browser opens the link its own way, and returns false. `event` is the click. */
 export function followInPage(event, move) {
-  if (!plainClick(event)) return false;
+  if (!plainClick(event)) {
+    return false;
+  }
   event.preventDefault();
   move();
   return true;

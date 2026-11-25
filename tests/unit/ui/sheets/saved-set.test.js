@@ -41,8 +41,12 @@ test('the draft count and an Auto-fill suggestion agree: an empty stone list aga
     ...saved,
     pieces: saved.pieces.map(row => {
       const copy = { slot: row.slot };
-      if (row.gameId != null) copy.gameId = row.gameId;
-      if (row.stones?.some(Boolean)) copy.stones = row.stones;
+      if (row.gameId != null) {
+        copy.gameId = row.gameId;
+      }
+      if (row.stones?.some(Boolean)) {
+        copy.stones = row.stones;
+      }
       return copy;
     }),
   };

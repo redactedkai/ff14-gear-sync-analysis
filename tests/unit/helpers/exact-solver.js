@@ -11,7 +11,11 @@ import { meldVectors } from './exhaustive.js';
 
 /* Compares two equal-length number lists like words in a dictionary: negative, 0 or positive. */
 export const lexCompare = (a, b) => {
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return a[i] - b[i];
+    }
+  }
   return 0;
 };
 const addLists = (a, b) => a.map((x, i) => x + b[i]);
@@ -36,18 +40,26 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
   const choicesByType = new Map();
   for (const type of SLOT_TYPES) {
     const items = pool.filter(item => item.type === type);
-    if (!items.length) continue;
+    if (!items.length) {
+      continue;
+    }
     if (type === 'ring') {
       // the best pair: a pair is worth the sum of its two rings, so it is among the top few rings (the same ring twice only with two copies)
       const scored = items.map(item => ({ item, vector: bestVector(item) })).sort((a, b) => lexCompare(b.vector, a.vector));
       let pair = null;
       for (let x = 0; x < scored.length; x++) {
         for (let y = x; y < scored.length; y++) {
-          if (x === y && (scored[x].item.copies || 1) < 2) continue;
+          if (x === y && (scored[x].item.copies || 1) < 2) {
+            continue;
+          }
           const vector = addLists(scored[x].vector, scored[y].vector);
-          if (!pair || lexCompare(vector, pair) > 0) pair = vector;
+          if (!pair || lexCompare(vector, pair) > 0) {
+            pair = vector;
+          }
         }
-        if (x > 3) break;
+        if (x > 3) {
+          break;
+        }
       }
       choicesByType.set('ring', [{ vector: pair ?? scored[0].vector, blocks: [] }]);
       continue;
@@ -58,7 +70,9 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
       const blocks = slotInfo(job, item).blocks;
       const vector = bestVector(item);
       const kind = blocks.join();
-      if (!bestByBlocks.has(kind) || lexCompare(vector, bestByBlocks.get(kind).vector) > 0) bestByBlocks.set(kind, { vector, blocks });
+      if (!bestByBlocks.has(kind) || lexCompare(vector, bestByBlocks.get(kind).vector) > 0) {
+        bestByBlocks.set(kind, { vector, blocks });
+      }
     }
     choicesByType.set(type, [...bestByBlocks.values()]);
   }
@@ -71,13 +85,19 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
   const search = depth => {
     if (depth === types.length) {
       const blocked = new Set(picked.flatMap(choice => choice.blocks));
-      if (picked.some((choice, i) => !!choice.empty !== blocked.has(types[i]))) return;
+      if (picked.some((choice, i) => !!choice.empty !== blocked.has(types[i]))) {
+        return;
+      }
       const total = picked.reduce((sum, choice) => addLists(sum, choice.vector), zero);
-      if (!best || lexCompare(total, best) > 0) best = total;
+      if (!best || lexCompare(total, best) > 0) {
+        best = total;
+      }
       return;
     }
     const choices = [...choicesByType.get(types[depth])];
-    if (blockable.has(types[depth])) choices.push({ vector: zero, blocks: [], empty: true });
+    if (blockable.has(types[depth])) {
+      choices.push({ vector: zero, blocks: [], empty: true });
+    }
     for (const choice of choices) {
       picked.push(choice);
       search(depth + 1);

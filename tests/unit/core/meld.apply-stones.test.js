@@ -128,7 +128,9 @@ test("the optimizer's melds as stones give its gains back: bestMeld and every me
         const r = applyStones(job, item, meldStones(item, meld), NO_SYNC);
         assert.deepEqual(r.removed, [], item.name);
         assert.deepEqual(r.meld, meld, `${item.name} ${keys}`);
-        for (const s of job.stats) assert.equal(r.stats[s], item.stats[s] + (meld?.gain[s] || 0), `${item.name} ${s}`);
+        for (const s of job.stats) {
+          assert.equal(r.stats[s], item.stats[s] + (meld?.gain[s] || 0), `${item.name} ${s}`);
+        }
       }
     }
   }

@@ -45,7 +45,9 @@ const sizeList = sizes => (sizes.length === 1 ? String(sizes[0]) : `${sizes.slic
 /* The sub-tab's level for `job` (a JobContext): `typed` (a level typed into its box, or null) held to 1 and the job's
    level cap, else `syncedLevel` (the job's level cap: Substat tiers has no synced level of its own). */
 export function tierLevel(job, syncedLevel, typed) {
-  if (typed == null) return syncedLevel;
+  if (typed == null) {
+    return syncedLevel;
+  }
   return clamp(typed, 1, job.maxLevel);
 }
 
@@ -73,17 +75,20 @@ function helpOf(job, stat, level, haste) {
   const affects = AFFECTS[stat];
   let size;
   // a stat with two effects that step apart (Tenacity) gives each its own size
-  if (statEffectKinds(stat).includes('dmgTaken'))
+  if (statEffectKinds(stat).includes('dmgTaken')) {
     size = `At level ${level}, Dmg & heal steps every ${sizeList(tierSizes(job, stat, level, 0, 'dmgHeal'))} points and Dmg taken every ${sizeList(tierSizes(job, stat, level, 0, 'dmgTaken'))}.`;
-  else
+  } else {
     size = `At level ${level}, each ${stat === job.speedKey ? '0.01 s step' : 'tier'} is ${sizeList(tierSizes(job, stat, level, haste))} points.`;
+  }
   return { title: job.label[stat], affects, size };
 }
 
 /* A row's range of panel values: "341–342" for a tier from 341 up to 342, "343" for one value, "365+" for the last
    tier. `next` is the first value of the tier after it, null for the last. */
 function rangeText(start, next) {
-  if (next == null) return `${fmtInt(start)}+`;
+  if (next == null) {
+    return `${fmtInt(start)}+`;
+  }
   return next - start === 1 ? fmtInt(start) : `${fmtInt(start)}–${fmtInt(next - 1)}`;
 }
 
@@ -112,7 +117,9 @@ function rowHtml(row) {
 function rowsOf(job, stat, level, haste) {
   const key = `${job.jobId}|${stat}|${level}|${haste}`;
   const kept = rowsKept.get(key);
-  if (kept) return kept;
+  if (kept) {
+    return kept;
+  }
 
   // 1. every tier of the substat from its base to its most
   const ladder = tierLadder(job, stat, level, 0, Infinity, haste, tierMost(job, stat, level));
@@ -131,7 +138,9 @@ function rowsOf(job, stat, level, haste) {
   const names = [POINTS_COLUMN, ...ladder.kinds.map(kind => COLUMN[kind])];
   const made = deepFreeze({ key, kinds: ladder.kinds, names, rows, shell: ladderShell(names), rowsHtml: rows.map(rowHtml) });
   rowsKept.set(key, made);
-  if (rowsKept.size > ROWS_KEPT) rowsKept.delete(rowsKept.keys().next().value);
+  if (rowsKept.size > ROWS_KEPT) {
+    rowsKept.delete(rowsKept.keys().next().value);
+  }
   return made;
 }
 
@@ -142,7 +151,9 @@ function rowsOf(job, stat, level, haste) {
    rows (every tier, see rowsOf), rowsKey, rowsShell and rowsHtml (the rows' key, the table without rows and each
    row drawn: what the page draws the rows from), cur (the index of the value's tier in rows), foot: {spare, toNext}}. Each row's `to` is 'stat:start', what a click on it sets the value to. */
 export function tiersView(job, values, level) {
-  if (!job) return null;
+  if (!job) {
+    return null;
+  }
   const haste = hasteFor(job.jobId, level);
   const cards = job.substats.map(stat => {
     // 1. the substat's tiers, and the value's place in them

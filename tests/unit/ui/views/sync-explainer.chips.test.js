@@ -82,9 +82,12 @@ test('Sync chip: a cap the page lowered shows in the lowered style', () => {
 });
 
 test("Sync chip: the weapon guess names the slot kinds whose level sync target is inferred, and only while it is level sync's", () => {
-  for (const slot of ['weapon', 'offhand'])
+  for (const slot of ['weapon', 'offhand']) {
     assert.equal(chip({ cap: 530, sync: false, level: 80 }, slot).guess, WEAPON_LEVEL_SYNC_GUESS, slot);
-  for (const slot of ['head', 'body', 'ring', 'ear']) assert.equal(chip({ cap: 530, sync: false, level: 80 }, slot).guess, '', slot);
+  }
+  for (const slot of ['head', 'body', 'ring', 'ear']) {
+    assert.equal(chip({ cap: 530, sync: false, level: 80 }, slot).guess, '', slot);
+  }
   // with IL Sync on at that cap the number is the user's, not a guess
   assert.equal(chip({ cap: 270, sync: true, level: 85 }, 'weapon').guess, '');
   assert.equal(capGuessText(sage, syncSettings({ cap: 270, sync: true, level: 85 }), 'weapon'), '');
@@ -129,8 +132,11 @@ test('the chip and menu sizers cover every text of every job', () => {
     }
   }
   const substatLines = SUBSTAT_SIZER.split('\n');
-  for (const { id } of JOBS)
-    for (const stat of makeJobContext(id).substats) assert.ok(substatLines.includes(makeJobContext(id).label[stat]), `${id} ${stat}`);
+  for (const { id } of JOBS) {
+    for (const stat of makeJobContext(id).substats) {
+      assert.ok(substatLines.includes(makeJobContext(id).label[stat]), `${id} ${stat}`);
+    }
+  }
   assert.ok(substatLines.includes(NO_SUBSTAT_LABEL));
   // the Slot menu's texts: every job's groups, the longest among them
   const slotLines = SLOT_SIZER.split('\n');
@@ -142,5 +148,7 @@ test('Stat Allocation: the empty-state sentence is one for IL Sync on and one fo
   assert.equal(explainerOffText(true), OFF_TEXT.needCap);
   assert.equal(explainerOffText(false), OFF_TEXT.off);
   assert.notEqual(OFF_TEXT.needCap, OFF_TEXT.off);
-  for (const text of Object.values(OFF_TEXT)) assert.ok(!/\b(top|above|here)\b/.test(text), text);
+  for (const text of Object.values(OFF_TEXT)) {
+    assert.ok(!/\b(top|above|here)\b/.test(text), text);
+  }
 });

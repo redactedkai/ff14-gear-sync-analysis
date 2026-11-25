@@ -45,11 +45,12 @@ test('bestMeld equals the best stone placement on real pieces, and its stones ap
     assert.deepEqual(tupleOf(melded), best, `${label}: bestMeld against the best placement`);
 
     // the stone list applied back
-    if (meld)
+    if (meld) {
       assert.deepEqual(
         tupleOf(applyStones(job, item, meldStones(item, meld), NO_SYNC).stats),
         tupleOf(melded),
         `${label}: applying its stones`,
       );
+    }
   }
 });

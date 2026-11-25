@@ -14,8 +14,12 @@ const pinnedPartsUnderNote = pg =>
       const right = Math.min(note.right, part.right);
       const top = Math.max(note.top, part.top, 0);
       const bottom = Math.min(note.bottom, part.bottom);
-      if (right - left < 8 || bottom - top < 8) continue;
-      if (document.elementFromPoint((left + right) / 2, (top + bottom) / 2)?.closest('#t-pop')) over.push(name);
+      if (right - left < 8 || bottom - top < 8) {
+        continue;
+      }
+      if (document.elementFromPoint((left + right) / 2, (top + bottom) / 2)?.closest('#t-pop')) {
+        over.push(name);
+      }
     }
     return over;
   });

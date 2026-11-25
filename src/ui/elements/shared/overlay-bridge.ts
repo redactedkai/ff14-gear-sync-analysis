@@ -81,7 +81,9 @@ export function createOverlayBridge(options: OverlayBridgeOptions): OverlayBridg
           parent: (typeof parent === 'function' ? parent() : parent) ?? null,
           ignoreEscape: () => true, // Zag's machine owns this layer's Escape
           close: () => {
-            if (api().open) closeWithoutFocus();
+            if (api().open) {
+              closeWithoutFocus();
+            }
           },
         });
       } else if (!open && manager.isOpen(id)) {
@@ -92,7 +94,9 @@ export function createOverlayBridge(options: OverlayBridgeOptions): OverlayBridg
       manager.close(id);
     },
     guardEscape(event) {
-      if (manager.openIds.at(-1) === id) return; // this layer is on top: the machine closes it
+      if (manager.openIds.at(-1) === id) {
+        return; // this layer is on top: the machine closes it
+      }
       manager.pressEscape(event); // a manager layer is above it: that one closes, and the machine does not
       event.preventDefault();
     },

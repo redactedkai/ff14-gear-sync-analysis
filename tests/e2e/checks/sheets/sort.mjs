@@ -29,11 +29,15 @@ async function columnValues(pg, key) {
   const texts = await pg.evaluate(sortKey => {
     const head = document.querySelector(`#sh-sets thead th:has([data-sort="${sortKey}"])`);
     const rows = [...document.querySelectorAll('#sh-sets tbody tr')];
-    if (!head.classList.contains('n')) return rows.map(row => row.querySelector('a.sname').textContent);
+    if (!head.classList.contains('n')) {
+      return rows.map(row => row.querySelector('a.sname').textContent);
+    }
     const at = [...document.querySelectorAll('#sh-sets thead th.n')].indexOf(head);
     return rows.map(row => row.querySelectorAll('td.n')[at].textContent);
   }, key);
-  if (key === 'name') return texts;
+  if (key === 'name') {
+    return texts;
+  }
   return texts.map(text => Number(text.replace('−', '-').replace(/[^0-9.-]/g, '')));
 }
 
@@ -83,7 +87,9 @@ export async function checkSetListSort(pg) {
       await click();
       const where = `${view}, heading ${key}`;
       check(same(await namesNow(), saved), `${where}: the saved order after the third click: ${await namesNow()}`);
-      if (new Set(first).size < 2) continue;
+      if (new Set(first).size < 2) {
+        continue;
+      }
       moving++;
       const oneWay = (rising(first) && falling(second)) || (falling(first) && rising(second));
       check(oneWay, `${where}: after one click ${first}, after two ${second}: expected the column in order, then in the other order`);

@@ -16,9 +16,13 @@ export const PATCHES = Object.freeze(PATCHES_FILE.PATCHES.map(entry => Object.fr
    one day (2.1 and 2.1b) give the last of them. `patches`: a table in the shape of PATCHES. This is a guess in one
    respect: a data commit made before a patch's release day (a pre-release extraction) names the patch before it. */
 export function patchOnDay(day, patches = PATCHES) {
-  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return '';
+  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    return '';
+  }
   for (let index = patches.length - 1; index >= 0; index--) {
-    if (patches[index][1] <= day) return patches[index][0];
+    if (patches[index][1] <= day) {
+      return patches[index][0];
+    }
   }
   return '';
 }

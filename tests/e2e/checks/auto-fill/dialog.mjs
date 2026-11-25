@@ -22,7 +22,9 @@ export const searchLine = (searched, all) => {
 
 /** Open the Auto-fill settings popover of the open set page if it is closed. */
 export async function openFillSettings(pg) {
-  if (!(await pg.locator('#sh-settings-dialog').isVisible())) await pg.click('#sh-settings');
+  if (!(await pg.locator('#sh-settings-dialog').isVisible())) {
+    await pg.click('#sh-settings');
+  }
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
 }
 
@@ -43,7 +45,9 @@ export async function checkFilled(pg, what, want, more = null) {
   await openFillSettings(pg);
   await runFill(pg);
   await checkTotals(pg, what, want.totals);
-  if (more) await more();
+  if (more) {
+    await more();
+  }
   await pg.click('#sh-discard');
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
 }
@@ -52,7 +56,10 @@ export async function checkFilled(pg, what, want, more = null) {
 export async function expectDialog(pg, want) {
   for (const [id, value] of Object.entries(want)) {
     const box = pg.locator(`#${id}`);
-    if (typeof value === 'boolean') check((await box.isChecked()) === value, `#${id} is ${!value}, expected ${value}`);
-    else await expect(box).toHaveValue(value);
+    if (typeof value === 'boolean') {
+      check((await box.isChecked()) === value, `#${id} is ${!value}, expected ${value}`);
+    } else {
+      await expect(box).toHaveValue(value);
+    }
   }
 }

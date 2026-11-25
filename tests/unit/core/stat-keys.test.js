@@ -34,8 +34,9 @@ test("currentStatKey: an old position key is the job's stat at that position; ev
   // a job with no special substat has nothing at that position: the value stays, and every reader drops it
   assert.equal(currentStatKey(blm, 'spec'), 'spec');
   // the game's own keys, other stats and non-keys come back as they are
-  for (const k of ['mind', 'str', 'sps', 'piety', 'crit', 'det', 'dh', 'vit', '', 'x', undefined, null, 7])
+  for (const k of ['mind', 'str', 'sps', 'piety', 'crit', 'det', 'dh', 'vit', '', 'x', undefined, null, 7]) {
     assert.equal(currentStatKey(sge, k), k);
+  }
   // inherited object keys are no position keys
   assert.equal(currentStatKey(sge, 'constructor'), 'constructor');
   assert.equal(currentStatKey(sge, 'toString'), 'toString');
@@ -51,7 +52,9 @@ test('remapStatKey: the same position on the other job; stats with no position, 
   assert.equal(remapStatKey(war, sge, 'ten'), 'piety');
   // Piety on a job with no special substat stays Piety (the Auto-fill settings drop a stat the job lacks)
   assert.equal(remapStatKey(sge, blm, 'piety'), 'piety');
-  for (const k of ['crit', 'det', 'dh', 'vit', '', 'x']) assert.equal(remapStatKey(sge, war, k), k);
+  for (const k of ['crit', 'det', 'dh', 'vit', '', 'x']) {
+    assert.equal(remapStatKey(sge, war, k), k);
+  }
   // a stat of another job is no position of this one
   assert.equal(remapStatKey(sge, war, 'str'), 'str');
 });
@@ -75,7 +78,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 function sourceFiles(dir, base = root) {
   return readdirSync(path.join(base, dir)).flatMap(name => {
     const rel = `${dir}/${name}`;
-    if (statSync(path.join(base, rel)).isDirectory()) return sourceFiles(rel, base);
+    if (statSync(path.join(base, rel)).isDirectory()) {
+      return sourceFiles(rel, base);
+    }
     return /\.(js|ts)$/.test(rel) ? [rel] : [];
   });
 }
@@ -90,11 +95,15 @@ function codeOf(rel, base = root) {
 function keyHits(base = root) {
   const hits = [];
   for (const rel of [...sourceFiles('src/core', base), ...sourceFiles('src/ui/views', base)]) {
-    if (ALLOWED.has(rel)) continue;
+    if (ALLOWED.has(rel)) {
+      continue;
+    }
     codeOf(rel, base)
       .split('\n')
       .forEach((line, i) => {
-        if (KEY_USE.test(line)) hits.push(`${rel}:${i + 1}: ${line.trim()}`);
+        if (KEY_USE.test(line)) {
+          hits.push(`${rel}:${i + 1}: ${line.trim()}`);
+        }
       });
   }
   return hits;
@@ -120,8 +129,10 @@ test('the scan sees a .ts stray in src/core and src/ui/views (and still a .js on
 });
 
 test('the guard sees a stray key (it would fail on one)', () => {
-  for (const line of ["if (stat === 'sks') x();", 'const t = { mind: 1 };', 'return totals.piety;', 'f("ten")'])
+  for (const line of ["if (stat === 'sks') x();", 'const t = { mind: 1 };', 'return totals.piety;', 'f("ten")']) {
     assert.ok(KEY_USE.test(line), line);
-  for (const line of ['job.mainKey', "'minder'", 'const intent = 1;', 'Number.parseInt(x)', 'strict: true'])
+  }
+  for (const line of ['job.mainKey', "'minder'", 'const intent = 1;', 'Number.parseInt(x)', 'strict: true']) {
     assert.ok(!KEY_USE.test(line), line);
+  }
 });

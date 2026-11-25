@@ -252,7 +252,9 @@ test.describe('<gsa-slot-menu>', () => {
     const rows = page.locator('#b-slots').getByRole('menuitemradio');
     const from = await rows.first().boundingBox();
     const to = await rows.last().boundingBox();
-    if (!from || !to) throw new Error('the rows have no box');
+    if (!from || !to) {
+      throw new Error('the rows have no box');
+    }
     await page.mouse.move(from.x + 4, from.y + from.height / 2);
     await page.mouse.down();
     await page.mouse.move(to.x + to.width - 4, to.y + to.height / 2, { steps: 6 });

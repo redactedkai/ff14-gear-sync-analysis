@@ -36,10 +36,14 @@ export function createPageStore(options: PageStoreOptions) {
   const store = new Store(state, {
     parts: STATE_PARTS,
     onUpdate: (key, revision) => {
-      if (tracked) tracked[key] = revision;
+      if (tracked) {
+        tracked[key] = revision;
+      }
     },
   });
-  if (options.track) tracked = options.track({ ...store.revs });
+  if (options.track) {
+    tracked = options.track({ ...store.revs });
+  }
   const revisions = tracked ?? store.revs;
   const appActions = createAppActions(store, options);
   const sheetsActions = createSheetsActions(store, { ...options, storage });

@@ -148,8 +148,12 @@ const only = onlyArg ? new RegExp(onlyArg) : null;
 const browser = await chromium.launch();
 const jobs = [];
 for (const [id, v] of Object.entries(VIEWS)) {
-  if (only && !only.test(id)) continue;
-  for (const width of [1440, 960]) jobs.push({ id, v, width });
+  if (only && !only.test(id)) {
+    continue;
+  }
+  for (const width of [1440, 960]) {
+    jobs.push({ id, v, width });
+  }
 }
 const errors = [];
 async function one({ id, v, width }) {
@@ -174,11 +178,15 @@ async function one({ id, v, width }) {
   await pg.mouse.move(width - 2, 2);
   await pg.evaluate(() => {
     const t = document.querySelector('#o-time');
-    if (t) t.textContent = 'Solved in 120 ms.';
+    if (t) {
+      t.textContent = 'Solved in 120 ms.';
+    }
   });
   await settle(pg);
   const sw = await pg.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  if (sw > 0) errors.push(`${id} ${width}: sideways scroll ${sw}px`);
+  if (sw > 0) {
+    errors.push(`${id} ${width}: sideways scroll ${sw}px`);
+  }
   const file = resolve(outDir, `${id}-${tag}-${width}.png`);
   if (full) {
     await pg.screenshot({ path: file, fullPage: true, animations: 'disabled', caret: 'hide' });
@@ -188,15 +196,18 @@ async function one({ id, v, width }) {
         bottom = -Infinity,
         left = Infinity,
         right = -Infinity;
-      for (const s of sels)
+      for (const s of sels) {
         for (const el of document.querySelectorAll(s)) {
           const r = el.getBoundingClientRect();
-          if (!r.width || !r.height) continue;
+          if (!r.width || !r.height) {
+            continue;
+          }
           top = Math.min(top, r.top + scrollY);
           bottom = Math.max(bottom, r.bottom + scrollY);
           left = Math.min(left, r.left + scrollX);
           right = Math.max(right, r.right + scrollX);
         }
+      }
       return top === Infinity ? null : { top, bottom, left, right };
     }, v.clip);
     if (!box) {
@@ -220,9 +231,13 @@ const POOL = 4;
 let next = 0;
 await Promise.all(
   Array.from({ length: POOL }, async () => {
-    while (next < jobs.length) await one(jobs[next++]);
+    while (next < jobs.length) {
+      await one(jobs[next++]);
+    }
   }),
 );
 await browser.close();
 console.log(`${jobs.length} shots`);
-if (errors.length) console.log(errors.join('\n'));
+if (errors.length) {
+  console.log(errors.join('\n'));
+}

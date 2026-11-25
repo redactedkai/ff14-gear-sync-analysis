@@ -42,13 +42,17 @@ function valueAt(value: unknown, path: string): unknown {
 /* A part's value as it is now, for comparing later: an object or array is copied one level deep (an action changes it in
    place); anything else is itself. */
 function snapshot(value: unknown): unknown {
-  if (Array.isArray(value)) return [...value];
+  if (Array.isArray(value)) {
+    return [...value];
+  }
   return value !== null && typeof value === 'object' ? { ...value } : value;
 }
 
 /* Whether a part holds what its snapshot held: the same fields, each the same by `Object.is`. */
 function sameAsSnapshot(now: unknown, before: unknown): boolean {
-  if (typeof now !== 'object' || now === null || typeof before !== 'object' || before === null) return Object.is(now, before);
+  if (typeof now !== 'object' || now === null || typeof before !== 'object' || before === null) {
+    return Object.is(now, before);
+  }
   const nowFields = now as Record<string, unknown>;
   const beforeFields = before as Record<string, unknown>;
   const keys = Object.keys(nowFields);
@@ -58,15 +62,22 @@ function sameAsSnapshot(now: unknown, before: unknown): boolean {
 /* Whether the value inside the slice at `prefix` ('' for the slice itself) is covered by `paths`: it is a part, or every field
    of it is covered ('panels' with 'panels.browse' and 'panels.math'). */
 function isCovered(value: unknown, prefix: string, paths: readonly string[]): boolean {
-  if (prefix !== '' && paths.includes(prefix)) return true;
-  if (value === null || typeof value !== 'object' || !paths.some(path => path.startsWith(`${prefix}.`) || prefix === '')) return false;
+  if (prefix !== '' && paths.includes(prefix)) {
+    return true;
+  }
+  if (value === null || typeof value !== 'object' || !paths.some(path => path.startsWith(`${prefix}.`) || prefix === '')) {
+    return false;
+  }
   return Object.entries(value).every(([key, inside]) => isCovered(inside, prefix === '' ? key : `${prefix}.${key}`, paths));
 }
 
 /* Throw unless every key of the slice's object `value` is in a part. */
 function requireCovered(slice: string, value: object, paths: readonly string[]): void {
-  for (const [key, inside] of Object.entries(value))
-    if (!isCovered(inside, key, paths)) throw new Error(`The state's ${slice}.${key} is in no part of its slice`);
+  for (const [key, inside] of Object.entries(value)) {
+    if (!isCovered(inside, key, paths)) {
+      throw new Error(`The state's ${slice}.${key} is in no part of its slice`);
+    }
+  }
 }
 
 /* The state and who changed it. `State` is an object whose top-level keys are the slices (settings, screen, ...): each slice
@@ -95,7 +106,9 @@ export class Store<State extends Record<string, object>> {
     this.state = state;
     this.#onUpdate = options.onUpdate;
     this.#parts = options.parts ?? {};
-    for (const [slice, paths] of Object.entries(this.#parts)) requireCovered(slice, state[slice], paths);
+    for (const [slice, paths] of Object.entries(this.#parts)) {
+      requireCovered(slice, state[slice], paths);
+    }
     this.revs = Object.fromEntries(this.revisionKeys().map(key => [key, 0])) as typeof this.revs;
   }
 
@@ -112,7 +125,9 @@ export class Store<State extends Record<string, object>> {
      (it may have changed part of the state before it did). */
   update<Result = void>(name: string, change: (state: State) => Result): Result {
     const slice = sliceOf(name);
-    if (!(slice in this.state)) throw new Error(`Action "${name}" names no slice of the state`);
+    if (!(slice in this.state)) {
+      throw new Error(`Action "${name}" names no slice of the state`);
+    }
     const paths = this.#parts[slice] ?? [];
     const before = paths.map(path => snapshot(valueAt(this.state[slice], path)));
     try {
@@ -120,11 +135,15 @@ export class Store<State extends Record<string, object>> {
     } finally {
       this.#count(slice);
       paths.forEach((path, index) => {
-        if (!sameAsSnapshot(valueAt(this.state[slice], path), before[index])) this.#count(partKey(slice, path));
+        if (!sameAsSnapshot(valueAt(this.state[slice], path), before[index])) {
+          this.#count(partKey(slice, path));
+        }
       });
       this.rev += 1;
       this.log.push(name);
-      if (this.log.length > ACTION_LOG_LIMIT) this.log.splice(0, this.log.length - ACTION_LOG_LIMIT);
+      if (this.log.length > ACTION_LOG_LIMIT) {
+        this.log.splice(0, this.log.length - ACTION_LOG_LIMIT);
+      }
       this.#queueNotification();
     }
   }
@@ -151,7 +170,9 @@ export class Store<State extends Record<string, object>> {
 
   /* Schedule the one notification of this tick, unless one is already waiting. */
   #queueNotification(): void {
-    if (this.#notifyQueued) return;
+    if (this.#notifyQueued) {
+      return;
+    }
     this.#notifyQueued = true;
     queueMicrotask(() => {
       this.#notifyQueued = false;
@@ -165,14 +186,20 @@ export class Store<State extends Record<string, object>> {
     let firstError: unknown;
     let failed = false;
     for (const listener of [...this.#listeners]) {
-      if (!this.#listeners.has(listener)) continue;
+      if (!this.#listeners.has(listener)) {
+        continue;
+      }
       try {
         listener();
       } catch (error) {
-        if (!failed) firstError = error;
+        if (!failed) {
+          firstError = error;
+        }
         failed = true;
       }
     }
-    if (failed) throw firstError;
+    if (failed) {
+      throw firstError;
+    }
   }
 }

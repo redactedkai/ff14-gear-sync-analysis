@@ -238,7 +238,9 @@ test('worker solver: cancel stops a running search: the worker is terminated, it
   assert.equal(solver.cancel('solve'), true);
   assert.equal(old.terminated, true);
   assert.equal(workers.made.length, 2, 'a fresh worker is started at once');
-  for (const reply of [running, waiting]) await assert.rejects(reply, wasCancelled);
+  for (const reply of [running, waiting]) {
+    await assert.rejects(reply, wasCancelled);
+  }
   assert.equal(solver.blocksPage, false);
   // the next search goes to the new worker at once, not behind the cancelled one
   const next = solver.request(request('solve', 3));
@@ -336,7 +338,9 @@ test('worker solver: cancel when the new worker cannot be made: the other reques
   const first = fakeWorker();
   const solver = workerSolver(
     () => {
-      if (calls++) throw new Error('workers are blocked');
+      if (calls++) {
+        throw new Error('workers are blocked');
+      }
       return first;
     },
     () => ({ blocksPage: true, request: r => Promise.resolve({ result: `local ${r.mark}`, ms: 1 }) }),
@@ -397,8 +401,12 @@ test('worker solver keys: a newer request supersedes the waiting one of the same
   assert.deepEqual(marks(worker), ['a1', 'a3', 'b2']);
   worker.reply(2, { result: 'for b2', ms: 2 });
   assert.equal((await running).result, 'for a1');
-  for (const reply of [b1, b2]) assert.equal((await reply).result, 'for b2');
-  for (const reply of [a2, a3]) assert.equal((await reply).result, 'for a3');
+  for (const reply of [b1, b2]) {
+    assert.equal((await reply).result, 'for b2');
+  }
+  for (const reply of [a2, a3]) {
+    assert.equal((await reply).result, 'for a3');
+  }
 });
 
 test('worker solver keys: requests without a key behave as before (one caller)', async () => {
@@ -411,7 +419,9 @@ test('worker solver keys: requests without a key behave as before (one caller)',
   assert.deepEqual(marks(worker), [1, 3]);
   worker.reply(1, { result: 'three', ms: 1 });
   assert.equal((await first).result, 'one');
-  for (const reply of [second, third]) assert.equal((await reply).result, 'three');
+  for (const reply of [second, third]) {
+    assert.equal((await reply).result, 'three');
+  }
 });
 
 test('worker solver keys: a timeout rejects the stuck key, the other key is asked of the new worker', async t => {
@@ -422,7 +432,9 @@ test('worker solver keys: a timeout rejects the stuck key, the other key is aske
   const stuckLater = solver.request(keyed('solve', 'a', 'a2'));
   const other = solver.request(keyed('solve', 'b', 'b1'));
   t.mock.timers.tick(1000);
-  for (const reply of [stuck, stuckLater]) await assert.rejects(reply, error => error.message === 'no answer after 1 s');
+  for (const reply of [stuck, stuckLater]) {
+    await assert.rejects(reply, error => error.message === 'no answer after 1 s');
+  }
   assert.equal(workers.made.length, 2);
   assert.deepEqual(marks(workers.made[1]), ['b1']);
   workers.made[1].reply(0, { result: 'for b1', ms: 4 });
@@ -444,7 +456,9 @@ test('worker solver keys: cancel with a key stops that key only; without one, ev
   const c = solver.request(keyed('solve', 'c', 'c1'));
   const d = solver.request(keyed('solve', 'd', 'd1'));
   assert.equal(solver.cancel('solve'), true);
-  for (const reply of [c, d]) await assert.rejects(reply, wasCancelled);
+  for (const reply of [c, d]) {
+    await assert.rejects(reply, wasCancelled);
+  }
 });
 
 test('worker solver keys: when the worker fails, each key is answered by the fallback with its own request', async () => {
@@ -466,7 +480,9 @@ test('worker solver keys: when the worker fails, each key is answered by the fal
   worker.fail();
   assert.deepEqual(asked.sort(), ['a2', 'b1']);
   assert.equal((await b1).result, 'local b1');
-  for (const reply of [a1, a2]) assert.equal((await reply).result, 'local a2');
+  for (const reply of [a1, a2]) {
+    assert.equal((await reply).result, 'local a2');
+  }
 });
 
 test('worker solver keys: cancel of a key that only waits rejects it and leaves the worker running', async () => {

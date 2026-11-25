@@ -33,14 +33,19 @@ export function settingsPart(solver, page) {
 
     /* The gear button: opens the popover, or closes it when it is open. */
     toggleSettings() {
-      if (this.settingsOpen) this.closeSettings();
-      else this.openSettings();
+      if (this.settingsOpen) {
+        this.closeSettings();
+      } else {
+        this.openSettings();
+      }
     },
     /* Open the popover and move the focus into it (its first box). Not while an Auto-fill runs. It is a layer of the overlay
        manager (Escape and a press outside close it; Tab out does not, as it is not modal); its menus and note are layers inside
        it. */
     openSettings() {
-      if (this.$store.sheets.busy) return;
+      if (this.$store.sheets.busy) {
+        return;
+      }
       overlays.open({
         id: SETTINGS_LAYER,
         root: () => page.refs.gearWrap,
@@ -58,8 +63,12 @@ export function settingsPart(solver, page) {
     /* Close the popover (the gear button, its X; Escape and a press outside it close it through the manager). `refocus`: put the
        focus back on the gear button; false where the focus goes elsewhere (the page left the rest state). */
     closeSettings(refocus = true) {
-      if (!this.settingsOpen) return;
-      if (overlays.close(SETTINGS_LAYER, { restoreFocus: refocus })) return;
+      if (!this.settingsOpen) {
+        return;
+      }
+      if (overlays.close(SETTINGS_LAYER, { restoreFocus: refocus })) {
+        return;
+      }
       this.settingsOpen = false;
       this.rankHelp = false;
       this.rankNote = '';
@@ -68,7 +77,9 @@ export function settingsPart(solver, page) {
        popover stays), a press outside it or the button again. */
     toggleRankHelp() {
       if (this.rankHelp) {
-        if (!overlays.close(RANK_NOTE_LAYER, { restoreFocus: true })) this.rankHelp = false;
+        if (!overlays.close(RANK_NOTE_LAYER, { restoreFocus: true })) {
+          this.rankHelp = false;
+        }
         return;
       }
       overlays.open({
@@ -88,13 +99,17 @@ export function settingsPart(solver, page) {
        the result was made for the settings it was run with, and the settings popover is not drawn then (the bar shows Apply
        and Discard), so no edit can arrive; this keeps it so if a way to one is ever added. */
     editFill(change) {
-      if (this.$store.sheets.busy || this.suggestion) return;
+      if (this.$store.sheets.busy || this.suggestion) {
+        return;
+      }
       this.rankNote = '';
       const next = clone(this.fillSettings);
       change(next);
       // the tied best meals were found for the old settings: they go with them
       const done = this.$store.sheets.updateSet(this.saved.id, { fillSettings: next, bestMeals: null });
-      if (done.ok === false && done.error) return;
+      if (done.ok === false && done.error) {
+        return;
+      }
       this.refreshCount();
     },
     setGoalField(key, value) {
@@ -132,8 +147,11 @@ export function settingsPart(solver, page) {
         () => (criteria ? this.fillSettings.searchCriteria[key] : this.fillSettings.goal.gcd),
         value =>
           this.editFill(s => {
-            if (criteria) s.searchCriteria[key] = value;
-            else s.goal.gcd = value;
+            if (criteria) {
+              s.searchCriteria[key] = value;
+            } else {
+              s.goal.gcd = value;
+            }
           }),
         criteria ? 1 : TARGET_GCD_RANGE[0],
         criteria ? (key === 'lvl' ? () => this.job.maxLevel : () => this.$store.app.maxReal) : TARGET_GCD_RANGE[1],
@@ -152,7 +170,9 @@ export function settingsPart(solver, page) {
     /* The Gear to search line for the set's Auto-fill settings, from the solver (in the set's own lane). */
     refreshCount() {
       const saved = this.saved;
-      if (!saved) return;
+      if (!saved) {
+        return;
+      }
       const context = evaluateInSheet(this.sheet, saved);
       const recipe = fillRecipe(this.fillSettings);
       // the numbers of the "Gear categories" boxes are for the job and filters they were counted under: no old ones under others

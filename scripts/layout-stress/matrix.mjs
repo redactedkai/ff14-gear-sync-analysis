@@ -58,7 +58,9 @@ export function buildMatrix(screens = SCREENS, scales = SCALES, chrome = CHROME,
   const windows = new Map();
   for (const setup of setups.filter(item => item.supported)) {
     const key = `${setup.width}x${setup.height}`;
-    if (!windows.has(key)) windows.set(key, []);
+    if (!windows.has(key)) {
+      windows.set(key, []);
+    }
     windows.get(key).push(setup);
   }
   return { setups, windows };
@@ -73,8 +75,12 @@ export function parseWindow(key) {
 /* The widths of the sweep's coarse pass: from `from` to `to` (inclusive) every `step` px, and `to` itself when the step skips it. */
 export function coarseWidths(from = SWEEP_FROM, to = SWEEP_TO, step = SWEEP_STEP) {
   const widths = [];
-  for (let width = from; width <= to; width += step) widths.push(width);
-  if (widths.at(-1) !== to) widths.push(to);
+  for (let width = from; width <= to; width += step) {
+    widths.push(width);
+  }
+  if (widths.at(-1) !== to) {
+    widths.push(to);
+  }
   return widths;
 }
 
@@ -118,6 +124,8 @@ export const FONT_SETUP_WINDOWS = Object.freeze([
 /* The window keys one setup is visited in: the quick run's windows in a quick run; the page's own fonts visit every window
    `allKeys`; every other setup visits FONT_SETUP_WINDOWS. */
 export function windowsForSetup(allKeys, setupId, quick) {
-  if (quick) return QUICK_WINDOWS;
+  if (quick) {
+    return QUICK_WINDOWS;
+  }
   return setupId === 'page' ? allKeys : FONT_SETUP_WINDOWS.filter(key => allKeys.includes(key));
 }

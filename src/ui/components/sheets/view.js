@@ -31,14 +31,18 @@ export function viewPart() {
     /* The open sheet's page (sheetPageView), or null. */
     get page() {
       const sheet = this.sheets.currentSheet;
-      if (!sheet) return null;
+      if (!sheet) {
+        return null;
+      }
       return pageCache.get(`${this.sheets.rev}:${sheet.id}`, () => deepFreeze(sheetPageView(sheet)));
     },
     /* The set page's line: breadcrumb and the sheet's settings, read-only (setHeaderView), built once per change of the sheets, or null. */
     get setHeader() {
       const sheet = this.sheets.currentSheet;
       const gearSet = this.sheets.currentSet;
-      if (!sheet || !gearSet) return null;
+      if (!sheet || !gearSet) {
+        return null;
+      }
       return headerCache.get(`${this.sheets.rev}:${sheet.id}:${gearSet.id}`, () => deepFreeze(setHeaderView(sheet, gearSet)));
     },
 
@@ -47,7 +51,9 @@ export function viewPart() {
     get activeSort() {
       const page = this.page;
       const key = this.listSort.key;
-      if (!page || !key) return { key: '', dir: '' };
+      if (!page || !key) {
+        return { key: '', dir: '' };
+      }
       const keys = this.$store.app.sheetFigures === 'points' ? page.pointKeys : page.columnKeys;
       return key === 'name' || keys.includes(key) ? this.listSort : { key: '', dir: '' };
     },
@@ -62,7 +68,9 @@ export function viewPart() {
     /* a heading's aria-sort: 'descending', 'ascending' or 'none' */
     listSortState(key) {
       const sort = this.activeSort;
-      if (sort.key !== key) return 'none';
+      if (sort.key !== key) {
+        return 'none';
+      }
       return sort.dir === 'desc' ? 'descending' : 'ascending';
     },
   };

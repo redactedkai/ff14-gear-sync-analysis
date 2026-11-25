@@ -52,7 +52,9 @@ export function mealMenu(job, level, gearTotals, shown, bestKeys = []) {
    damaged value (not a list of keys) counts as none: []. */
 export function mealBestKeys(gearSet) {
   const keys = gearSet?.bestMeals;
-  if (!Array.isArray(keys) || !keys.every(key => typeof key === 'string')) return [];
+  if (!Array.isArray(keys) || !keys.every(key => typeof key === 'string')) {
+    return [];
+  }
   return keys;
 }
 
@@ -85,7 +87,9 @@ export function mealLine(adds, stats) {
    other picked stat (`stats`), then newest first. A stat that is not picked sorts as 'ilvl' (its pill was turned off).
    Returns a new array. */
 export function sortMeals(items, by, stats) {
-  if (by === 'ilvl' || !stats.includes(by)) return [...items];
+  if (by === 'ilvl' || !stats.includes(by)) {
+    return [...items];
+  }
   const points = (x, stat) => x.adds.find(a => a.stat === stat)?.value ?? 0;
   const keys = [by, ...stats.filter(s => s !== by)];
   // Array.prototype.sort is stable: ties keep the newest first
@@ -126,7 +130,9 @@ export function mealList(menu, { stats, query, sortBy, bestOnly = false }) {
         },
       ]
     : menu.groups.map(g => ({ key: g.label, label: g.label, items: g.items.filter(x => passing.has(x) && x !== pick).map(withLine) }));
-  if (pick) groups.unshift({ key: 'pick', label: 'Your pick', items: [withLine(pick)] });
+  if (pick) {
+    groups.unshift({ key: 'pick', label: 'Your pick', items: [withLine(pick)] });
+  }
   const pickedPills = menu.pills.filter(p => stats.includes(p.stat));
   return {
     sorts: pickedPills.length ? [{ key: 'ilvl', label: 'ILVL' }, ...pickedPills.map(p => ({ key: p.stat, label: p.short }))] : [],
@@ -139,8 +145,12 @@ export function mealList(menu, { stats, query, sortBy, bestOnly = false }) {
    most) or when picking it would leave the list (`items`) empty under the other filters (the switch's included).
    `filters` as for mealsPassing. */
 export function mealPillOff(items, stat, filters) {
-  if (filters.stats.includes(stat)) return false;
-  if (filters.stats.length >= 2) return true;
+  if (filters.stats.includes(stat)) {
+    return false;
+  }
+  if (filters.stats.length >= 2) {
+    return true;
+  }
   return mealsPassing(items, { ...filters, stats: [...filters.stats, stat] }).length === 0;
 }
 
@@ -149,8 +159,12 @@ export function mealPillOff(items, stat, filters) {
    removing a pill only adds meals (a test walks every state the menu can reach). Null also when nothing would come
    back without the search (no meal at all): there is nothing to offer. */
 export function mealEmptyReason(items, filters) {
-  if (mealsPassing(items, filters).length) return null;
+  if (mealsPassing(items, filters).length) {
+    return null;
+  }
   const query = filters.query.trim();
-  if (query && mealsPassing(items, { ...filters, query: '' }).length) return { text: `No meal matches "${query}".`, action: 'query' };
+  if (query && mealsPassing(items, { ...filters, query: '' }).length) {
+    return { text: `No meal matches "${query}".`, action: 'query' };
+  }
   return null;
 }

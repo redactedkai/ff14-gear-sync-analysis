@@ -9,7 +9,9 @@ const css = readStyles().replace(/\/\*[\s\S]*?\*\//g, '');
 /* The value of each --z-* token, from the first :root block that defines it, as {name: number}. */
 function zTokens() {
   const tokens = {};
-  for (const [, name, value] of css.matchAll(/(--z-[a-z0-9-]+):\s*(\d+)\s*;/g)) tokens[name] ??= Number(value);
+  for (const [, name, value] of css.matchAll(/(--z-[a-z0-9-]+):\s*(\d+)\s*;/g)) {
+    tokens[name] ??= Number(value);
+  }
   return tokens;
 }
 
@@ -33,7 +35,9 @@ test('every --z-* token a rule uses is defined', () => {
 test('the scale keeps its order: row, bar, popover, menu, dialog, toast (a tie is allowed)', () => {
   const tokens = zTokens();
   const scale = ['--z-row', '--z-bar', '--z-popover', '--z-menu', '--z-dialog', '--z-toast'];
-  for (const name of scale) assert.ok(name in tokens, `${name} is missing`);
+  for (const name of scale) {
+    assert.ok(name in tokens, `${name} is missing`);
+  }
   const values = scale.map(name => tokens[name]);
   assert.deepEqual(
     values,

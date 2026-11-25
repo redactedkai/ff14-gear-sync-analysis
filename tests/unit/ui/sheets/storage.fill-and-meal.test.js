@@ -14,12 +14,16 @@ test('a meal that is a key or null reads, even a key the game data lacks; any ot
   assert.ok(read({ meal: null }).sheet);
   assert.ok(read({ meal: 'A meal from an older patch' }).sheet);
   assert.equal(read({ meal: 'f1' }).sheet.sets[0].meal, 'f1');
-  for (const meal of [7, true, ['f1'], { key: 'f1' }]) assert.match(read({ meal }).cause, /meal/, JSON.stringify(meal));
+  for (const meal of [7, true, ['f1'], { key: 'f1' }]) {
+    assert.match(read({ meal }).cause, /meal/, JSON.stringify(meal));
+  }
 });
 
 test('the meal pin must be a boolean', () => {
   assert.ok(read({ pinned: { pieces: [], meal: true } }).sheet);
-  for (const meal of ['yes', 1, null]) assert.match(read({ pinned: { pieces: [], meal } }).cause, /pin/, String(meal));
+  for (const meal of ['yes', 1, null]) {
+    assert.match(read({ pinned: { pieces: [], meal } }).cause, /pin/, String(meal));
+  }
 });
 
 test('the Auto-fill settings switches (Food, Materia, Spare points) must be booleans when present', () => {

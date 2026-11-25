@@ -32,17 +32,27 @@ export function bandAccuracy(items = ITEMS) {
   const out = ACCURACY_BANDS.map(band => ({ label: band.label, n: 0, exact: 0, within1: 0 }));
   for (const row of items) {
     const il = row[ROW.ilvl];
-    if (il < ACCURACY_MIN_ILVL) continue;
+    if (il < ACCURACY_MIN_ILVL) {
+      continue;
+    }
     const stats = rowStats(row);
-    if (RAW_SUBSTAT_IDX.filter(i => stats[i]).length < 2) continue;
+    if (RAW_SUBSTAT_IDX.filter(i => stats[i]).length < 2) {
+      continue;
+    }
     const predicted = predictRaw(il, row[ROW.slotCode], stats, row[ROW.kind], rowItem(row));
-    if (!predicted) continue;
+    if (!predicted) {
+      continue;
+    }
     const counts = out[ACCURACY_BANDS.findIndex(band => il <= band.max)];
     // the largest difference between a predicted and a stored stat
     const worst = Math.max(...predicted.map((value, i) => Math.abs(value - stats[i])));
     counts.n++;
-    if (worst === 0) counts.exact++;
-    if (worst <= 1) counts.within1++;
+    if (worst === 0) {
+      counts.exact++;
+    }
+    if (worst <= 1) {
+      counts.within1++;
+    }
   }
   return out;
 }

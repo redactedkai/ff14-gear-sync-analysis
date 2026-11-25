@@ -33,7 +33,9 @@ export function groupFindings(findings) {
       detail: item.detail,
       windows: [],
     };
-    if (!group.windows.includes(item.window)) group.windows.push(item.window);
+    if (!group.windows.includes(item.window)) {
+      group.windows.push(item.window);
+    }
     groups.set(key, group);
   }
   return [...groups.values()].sort((a, b) => (a.severity === b.severity ? a.rule.localeCompare(b.rule) : a.severity === 'fail' ? -1 : 1));
@@ -104,21 +106,27 @@ export function renderReport(run) {
   html.push(
     '<li>The focus-ring walk runs in the page-fonts and stress setups only; the sweeps change the window by resizing one page, then load a page fresh at the change points and every eighth coarse width and compare.</li>',
   );
-  for (const screen of waiting)
+  for (const screen of waiting) {
     html.push(`<li>${escapeHtml(screen.label)} (${escapeHtml(screen.id)}): ${escapeHtml(screen.waiting)}.</li>`);
-  for (const note of browserNotes) html.push(`<li>${escapeHtml(note.browser)} did not start: ${escapeHtml(note.error)}</li>`);
+  }
+  for (const note of browserNotes) {
+    html.push(`<li>${escapeHtml(note.browser)} did not start: ${escapeHtml(note.error)}</li>`);
+  }
   html.push('</ul>');
 
   if (knownLines.length || staleLines.length) {
     html.push('<h2>Known failures</h2><ul>');
-    for (const line of [...knownLines, ...staleLines]) html.push(`<li>${escapeHtml(line)}</li>`);
+    for (const line of [...knownLines, ...staleLines]) {
+      html.push(`<li>${escapeHtml(line)}</li>`);
+    }
     html.push('</ul>');
   }
 
   html.push(`<h2>Findings</h2>`);
   const groups = groupFindings(findings);
-  if (!groups.length) html.push('<p class="n">none</p>');
-  else {
+  if (!groups.length) {
+    html.push('<p class="n">none</p>');
+  } else {
     html.push(
       '<table><tr><th>Severity</th><th>Rule</th><th>Screen / view</th><th>Setup</th><th>Browser</th><th>Window or width</th><th>Where and what</th></tr>',
     );
@@ -135,14 +143,17 @@ export function renderReport(run) {
     for (const screen of run.screens.filter(item => !item.waiting)) {
       for (const setup of setups) {
         const rows = windowRows(windowResults, { browser, screen: screen.id, setup: setup.id });
-        if (!rows.length) continue;
+        if (!rows.length) {
+          continue;
+        }
         html.push(
           `<h3>${escapeHtml(browser)}, ${escapeHtml(screen.label)}, ${escapeHtml(setup.label)}</h3><table><tr><th>Window</th><th>Screens it stands for</th><th>Failures</th><th>Warnings</th><th>Rules</th></tr>`,
         );
-        for (const row of rows)
+        for (const row of rows) {
           html.push(
             `<tr class="${row.fails ? 'fail' : row.warns ? 'warn' : 'pass'}"><td>${row.window}</td><td class="n">${escapeHtml(row.covers || 'quick set')}</td><td>${row.fails}</td><td>${row.warns}</td><td>${escapeHtml(row.rules.join(', '))}</td></tr>`,
           );
+        }
         html.push('</table>');
       }
     }
@@ -155,18 +166,21 @@ export function renderReport(run) {
     html.push(
       `<h3>${escapeHtml(item.browser)}, ${escapeHtml(item.screen)} / ${escapeHtml(item.view)}, ${escapeHtml(item.setup)}, ${item.height} px high <span class="n">(${item.measured} widths measured)</span></h3>`,
     );
-    if (!item.changes.length) html.push('<p class="n">no change: one layout across the range</p>');
-    else {
+    if (!item.changes.length) {
+      html.push('<p class="n">no change: one layout across the range</p>');
+    } else {
       html.push('<table><tr><th>At width</th><th>What changes</th></tr>');
-      for (const change of item.changes)
+      for (const change of item.changes) {
         html.push(`<tr><td><b>${change.at} px</b></td><td>${change.changes.map(escapeHtml).join('<br>')}</td></tr>`);
+      }
       html.push('</table>');
     }
   }
 
   html.push('<h2>Rules</h2><table><tr><th>Rule</th><th>Severity</th><th>What it checks</th></tr>');
-  for (const [id, [severity, text]] of Object.entries(RULES))
+  for (const [id, [severity, text]] of Object.entries(RULES)) {
     html.push(`<tr><td>${id}</td><td>${severity}</td><td>${escapeHtml(text)}</td></tr>`);
+  }
   html.push('</table>');
   return html.join('\n');
 }

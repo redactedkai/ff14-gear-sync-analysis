@@ -119,8 +119,11 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
   /* Keep track of a save's result `saved` for `what` (a sheet's id, or ORDER_MARK for the order of the sheets): which edits
      live only in memory (reload keeps them), and the message of the last failed save, cleared once every edit is saved. */
   function noteSaveIn(sheets: SheetsState, what: string, saved: SheetResult): void {
-    if (saved.ok) sheets.unsaved.delete(what);
-    else sheets.unsaved.add(what);
+    if (saved.ok) {
+      sheets.unsaved.delete(what);
+    } else {
+      sheets.unsaved.add(what);
+    }
     sheets.saveMessage = saved.ok ? (sheets.unsaved.size ? sheets.saveMessage : '') : (saved.message ?? '');
   }
 
@@ -131,7 +134,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     const at = sheets.data.sheets.findIndex(existing => existing.id === next.id);
     const list = at < 0 ? [next, ...sheets.data.sheets] : sheets.data.sheets.map((existing, index) => (index === at ? next : existing));
     sheets.data = { ...sheets.data, sheets: list };
-    if (!sheets.data.available) return { ok: true };
+    if (!sheets.data.available) {
+      return { ok: true };
+    }
     const saved = saveSheet(next, storage) as SheetResult;
     noteSaveIn(sheets, next.id, saved);
     return saved;
@@ -140,7 +145,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
   /* The order of the sheets, `list` (first is top), saved. */
   function commitOrderIn(sheets: SheetsState, list: Sheet[]): SheetResult {
     sheets.data = { ...sheets.data, sheets: list };
-    if (!sheets.data.available) return { ok: true };
+    if (!sheets.data.available) {
+      return { ok: true };
+    }
     const saved = saveOrder(
       list.map(sheet => sheet.id),
       storage,
@@ -152,8 +159,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
   /* A set id no set of `sheet` has. */
   function newSetId(sheet: Sheet): string {
     let id: string;
-    do id = makeId('g_');
-    while (sheet.sets.some(gearSet => gearSet.id === id));
+    do {
+      id = makeId('g_');
+    } while (sheet.sets.some(gearSet => gearSet.id === id));
     return id;
   }
 
@@ -166,9 +174,13 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
   /* The keyboard reorder of one list: the move. Returns the row's index after it. */
   function stepIn(listLength: number, from: number, step: number, move: (from: number, to: number) => void): number {
-    if (store.state.sheets.busy) return from;
+    if (store.state.sheets.busy) {
+      return from;
+    }
     const to = from + step;
-    if (to < 0 || to >= listLength) return from;
+    if (to < 0 || to >= listLength) {
+      return from;
+    }
     move(from, to);
     return to;
   }
@@ -179,11 +191,17 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
      nothing changed: the same too-high cap typed again), or a refusal. */
   function editSettings(change: (sheet: Sheet) => { level: unknown; sync: { on: boolean; cap: unknown } }): SheetResult {
     const refused = lockedRefusal(store.state.sheets);
-    if (refused) return refused;
+    if (refused) {
+      return refused;
+    }
     const sheet = currentSheet(store.state);
-    if (!sheet) return { ok: false, error: NO_SHEET_OPEN_TEXT };
+    if (!sheet) {
+      return { ok: false, error: NO_SHEET_OPEN_TEXT };
+    }
     const { lowered, ...fields } = sheetSettings(sheet.job, change(sheet), { level: sheet.level, cap: sheet.sync.cap });
-    if (Object.entries(fields).every(([key, value]) => JSON.stringify(sheet[key]) === JSON.stringify(value))) return { ok: true, lowered };
+    if (Object.entries(fields).every(([key, value]) => JSON.stringify(sheet[key]) === JSON.stringify(value))) {
+      return { ok: true, lowered };
+    }
     // the tied best meals of its sets were found for the old level and sync: they go
     const sets = sheet.sets.map(gearSet => (gearSet.bestMeals ? { ...gearSet, bestMeals: null } : gearSet));
     const saved = store.update('sheets/editSettings', state => commitIn(state.sheets, { ...sheet, ...fields, sets }));
@@ -194,12 +212,18 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
      leaves the sets' tagged best meals alone: the bonuses are not part of the search. */
   function editBonus(fields: { clan?: string | null; partyRoles?: number }): SheetResult {
     const refused = lockedRefusal(store.state.sheets);
-    if (refused) return refused;
+    if (refused) {
+      return refused;
+    }
     const sheet = currentSheet(store.state);
-    if (!sheet) return { ok: false, error: NO_SHEET_OPEN_TEXT };
+    if (!sheet) {
+      return { ok: false, error: NO_SHEET_OPEN_TEXT };
+    }
     // a sheet saved before the bonuses has neither field: that is none
     const current: Record<string, unknown> = { clan: sheet.clan ?? null, partyRoles: sheet.partyRoles ?? 0 };
-    if (Object.entries(fields).every(([key, value]) => current[key] === value)) return { ok: true };
+    if (Object.entries(fields).every(([key, value]) => current[key] === value)) {
+      return { ok: true };
+    }
     return store.update('sheets/editBonus', state => commitIn(state.sheets, { ...sheet, ...fields }));
   }
 
@@ -207,9 +231,13 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
      saved, its updatedAt and the sheet's stamped: the set page's one way to save a set (Apply). */
   function updateSet(id: string, fields: Partial<GearSet>): SheetResult {
     const refused = lockedRefusal(store.state.sheets);
-    if (refused) return refused;
+    if (refused) {
+      return refused;
+    }
     const sheet = currentSheet(store.state);
-    if (!sheet?.sets.some(gearSet => gearSet.id === id)) return { ok: false, error: SET_GONE_TEXT };
+    if (!sheet?.sets.some(gearSet => gearSet.id === id)) {
+      return { ok: false, error: SET_GONE_TEXT };
+    }
     const stamp = now();
     const sets = sheet.sets.map(gearSet => (gearSet.id === id ? { ...gearSet, ...fields, updatedAt: stamp } : gearSet));
     return store.update('sheets/updateSet', state => commitIn(state.sheets, { ...sheet, sets }));
@@ -218,17 +246,25 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
   /* The sheet with `id` moved from index `from` to `to` in the list (a drop). Returns {ok}. */
   function moveSheet(from: number, to: number): SheetResult {
     const refused = lockedRefusal(store.state.sheets);
-    if (refused) return refused;
-    if (from === to) return { ok: true };
+    if (refused) {
+      return refused;
+    }
+    if (from === to) {
+      return { ok: true };
+    }
     return store.update('sheets/moveSheet', state => commitOrderIn(state.sheets, moveItem(state.sheets.data.sheets, from, to)));
   }
 
   /* The open sheet's gear set at `from` moved to `to` (a drop). */
   function moveSet(from: number, to: number): SheetResult {
     const refused = lockedRefusal(store.state.sheets);
-    if (refused) return refused;
+    if (refused) {
+      return refused;
+    }
     const sheet = currentSheet(store.state);
-    if (!sheet || from === to) return { ok: true };
+    if (!sheet || from === to) {
+      return { ok: true };
+    }
     return store.update('sheets/moveSet', state => commitIn(state.sheets, { ...sheet, sets: moveItem(sheet.sets, from, to) }));
   }
 
@@ -236,14 +272,22 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
      the order's save failed (sheets read fresh that memory lacks go at the end). With storage unavailable the sheets in memory
      are all there is, so they stay. */
   function reload(): void {
-    if (!store.state.sheets.data.available) return;
+    if (!store.state.sheets.data.available) {
+      return;
+    }
     const fresh = readSheets(storage) as typeof store.state.sheets.data;
-    if (!fresh.available) return;
+    if (!fresh.available) {
+      return;
+    }
     store.update('sheets/reload', state => {
       const { data, unsaved } = state.sheets;
       const kept = data.sheets.filter(sheet => unsaved.has(sheet.id));
       let sheets = fresh.sheets.map(sheet => kept.find(keptSheet => keptSheet.id === sheet.id) ?? sheet);
-      for (const sheet of kept) if (!sheets.some(other => other.id === sheet.id)) sheets.unshift(sheet);
+      for (const sheet of kept) {
+        if (!sheets.some(other => other.id === sheet.id)) {
+          sheets.unshift(sheet);
+        }
+      }
       if (unsaved.has(ORDER_MARK)) {
         const place = (id: string) => {
           const at = data.sheets.findIndex(sheet => sheet.id === id);
@@ -257,7 +301,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
   /* The sheet manager, read fresh. Asks the leave guard first. */
   function openManager(): void {
-    if (askLeave(openManager)) return;
+    if (askLeave(openManager)) {
+      return;
+    }
     reload();
     store.update(
       'sheets/openManager',
@@ -267,7 +313,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
   /* The page of the sheet with `id`, read fresh; the manager when it is gone. Asks the leave guard first. */
   function openSheet(id: string): void {
-    if (askLeave(() => openSheet(id))) return;
+    if (askLeave(() => openSheet(id))) {
+      return;
+    }
     reload();
     if (!sheetById(store.state, id)) {
       openManager();
@@ -282,15 +330,21 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
   /* The page of the open sheet's gear set with `id` (the set page; from another set page it asks first). */
   function openSet(id: string): void {
     const sheet = sheetById(store.state, store.state.sheets.sheetId);
-    if (!sheet?.sets.some(gearSet => gearSet.id === id)) return;
-    if (id !== store.state.sheets.setId && askLeave(() => openSet(id))) return;
+    if (!sheet?.sets.some(gearSet => gearSet.id === id)) {
+      return;
+    }
+    if (id !== store.state.sheets.setId && askLeave(() => openSet(id))) {
+      return;
+    }
     store.update('sheets/openSet', state => void Object.assign(state.sheets, { screen: 'set', setId: id, missing: null }));
   }
 
   /* The "not found" screen for the sheet `sheetId` (or its gear set `setId`) an address named that is not saved. It asks the
      leave guard first, like every move off a set page. The sheet and set open are left as they are. */
   function showMissing(sheetId: string, setId: string | null = null): void {
-    if (askLeave(() => showMissing(sheetId, setId))) return;
+    if (askLeave(() => showMissing(sheetId, setId))) {
+      return;
+    }
     store.update('sheets/showMissing', state => {
       state.sheets.missing = { sheetId, setId };
     });
@@ -298,8 +352,12 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
   /* Back from a set page to its sheet's list of gear sets. */
   function closeSet(): void {
-    if (askLeave(closeSet)) return;
-    if (store.state.sheets.screen !== 'set') return;
+    if (askLeave(closeSet)) {
+      return;
+    }
+    if (store.state.sheets.screen !== 'set') {
+      return;
+    }
     store.update('sheets/closeSet', state => void Object.assign(state.sheets, { screen: 'sheet', setId: null, missing: null }));
   }
 
@@ -331,7 +389,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
     /* Whether an Auto-fill runs, so every edit is refused (set by the set page). */
     setBusy(busy: boolean): void {
-      if (store.state.sheets.busy === !!busy) return;
+      if (store.state.sheets.busy === !!busy) {
+        return;
+      }
       store.update('sheets/setBusy', state => {
         state.sheets.busy = !!busy;
       });
@@ -351,10 +411,16 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
        that is not empty after trimming), put at the top of the list, saved and opened. Returns {ok, id} or {ok: false, error}. */
     createSheet(fields: SheetFormFields): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
-      if (!fields.job) return refuse(JOB_REQUIRED_TEXT, FORM_FIELD.job);
+      if (refused) {
+        return refused;
+      }
+      if (!fields.job) {
+        return refuse(JOB_REQUIRED_TEXT, FORM_FIELD.job);
+      }
       const name = cleanName(fields.name);
-      if (!name) return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      if (!name) {
+        return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      }
       const job = makeJobContext(fields.job);
       const { level, sync } = sheetSettings(job.jobId, fields);
       const sheet = newSheet(
@@ -373,11 +439,17 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
        sheet keeps its old one. */
     editSheet(id: string, { name, description }: { name: string; description?: string }): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const sheet = sheetById(store.state, id);
-      if (!sheet) return refuse(SHEET_GONE_TEXT);
+      if (!sheet) {
+        return refuse(SHEET_GONE_TEXT);
+      }
       const clean = cleanName(name);
-      if (!clean) return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      if (!clean) {
+        return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      }
       store.update(
         'sheets/editSheet',
         state => void commitIn(state.sheets, { ...sheet, name: clean, description: cleanDescription(description) }),
@@ -391,13 +463,21 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
        form asks first. Returns {ok, id} or {ok: false, error}. */
     copySheet(id: string, fields: SheetFormFields, acknowledged = false): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const sheet = sheetById(store.state, id);
-      if (!sheet) return refuse(SHEET_GONE_TEXT);
+      if (!sheet) {
+        return refuse(SHEET_GONE_TEXT);
+      }
       const name = cleanName(fields.name);
-      if (!name) return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      if (!name) {
+        return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      }
       const cleared = piecesToClear(sheet, fields.job);
-      if (cleared.length && !acknowledged) return refuse(ACK_REQUIRED_TEXT, FORM_FIELD.ack);
+      if (cleared.length && !acknowledged) {
+        return refuse(ACK_REQUIRED_TEXT, FORM_FIELD.ack);
+      }
       const job = makeJobContext(fields.job);
       const { level, sync } = sheetSettings(job.jobId, fields, { level: sheet.level, cap: sheet.sync.cap });
       const copy = copySheet(sheet, { name, job: job.jobId, level, sync }, makeId('s_'), now(), () => makeId('g_')) as Sheet;
@@ -413,15 +493,23 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
        pages the manager shows; from the manager it stays (sheets.md, "Where an action lands"). */
     deleteSheet(id: string): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const sheet = sheetById(store.state, id);
-      if (!sheet) return refuse(SHEET_GONE_TEXT);
+      if (!sheet) {
+        return refuse(SHEET_GONE_TEXT);
+      }
       store.update('sheets/deleteSheet', state => {
         const { sheets } = state;
         sheets.data = { ...sheets.data, sheets: sheets.data.sheets.filter(other => other.id !== id) };
         sheets.unsaved.delete(id);
-        if (sheets.data.available) noteSaveIn(sheets, id, removeRecord(id, storage) as SheetResult);
-        if (sheets.sheetId === id) Object.assign(sheets, { screen: 'sheets', sheetId: null, setId: null, missing: null });
+        if (sheets.data.available) {
+          noteSaveIn(sheets, id, removeRecord(id, storage) as SheetResult);
+        }
+        if (sheets.sheetId === id) {
+          Object.assign(sheets, { screen: 'sheets', sheetId: null, setId: null, missing: null });
+        }
         setNoteIn(sheets, deletedSheetNote(sheet.name));
       });
       return { ok: true };
@@ -430,7 +518,9 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     /* Delete a record the manager could not read (its "Could not be read" list; the page asked first). */
     deleteUnreadable(id: string): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       return store.update('sheets/deleteUnreadable', state => {
         const { sheets } = state;
         const saved = removeRecord(id, storage) as SheetResult;
@@ -478,9 +568,13 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     /* A new, empty gear set at the end of the open sheet's list, named "Set N", and its page opened. Returns {ok, id}. */
     newSet(): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const sheet = currentSheet(store.state);
-      if (!sheet) return { ok: false, error: NO_SHEET_OPEN_TEXT };
+      if (!sheet) {
+        return { ok: false, error: NO_SHEET_OPEN_TEXT };
+      }
       const gearSet = newGearSet(defaultSetName(sheet), newSetId(sheet), now()) as GearSet;
       store.update('sheets/newSet', state => {
         commitIn(state.sheets, { ...sheet, sets: [...sheet.sets, gearSet] });
@@ -492,10 +586,14 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     /* A copy of the open sheet's gear set `id`, next to it, named "<name> (1)"; the list stays. */
     copySet(id: string): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const sheet = currentSheet(store.state);
       const at = sheet?.sets.findIndex(gearSet => gearSet.id === id) ?? -1;
-      if (!sheet || at < 0) return { ok: false, error: SET_GONE_TEXT };
+      if (!sheet || at < 0) {
+        return { ok: false, error: SET_GONE_TEXT };
+      }
       const original = sheet.sets[at];
       const name = copyName(
         original.name,
@@ -513,13 +611,19 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
        stays. */
     deleteSet(id: string): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const sheet = currentSheet(store.state);
       const gearSet = setOf(store.state, id);
-      if (!sheet || !gearSet) return { ok: false, error: SET_GONE_TEXT };
+      if (!sheet || !gearSet) {
+        return { ok: false, error: SET_GONE_TEXT };
+      }
       store.update('sheets/deleteSet', state => {
         commitIn(state.sheets, { ...sheet, sets: sheet.sets.filter(other => other.id !== id) });
-        if (state.sheets.setId === id) Object.assign(state.sheets, { screen: 'sheet', setId: null, missing: null });
+        if (state.sheets.setId === id) {
+          Object.assign(state.sheets, { screen: 'sheet', setId: null, missing: null });
+        }
         setNoteIn(state.sheets, deletedSetNote(gearSet.name));
       });
       return { ok: true };
@@ -528,9 +632,13 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     /* The name and description of the open sheet's gear set `id` (the "Edit gear set" dialog). */
     editSet(id: string, { name, description }: { name: string; description?: string }): SheetResult {
       const refused = lockedRefusal(store.state.sheets);
-      if (refused) return refused;
+      if (refused) {
+        return refused;
+      }
       const clean = cleanName(name);
-      if (!clean) return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      if (!clean) {
+        return refuse(EMPTY_NAME_TEXT, FORM_FIELD.name);
+      }
       return updateSet(id, { name: clean, description: cleanDescription(description) });
     },
 

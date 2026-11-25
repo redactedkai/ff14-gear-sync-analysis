@@ -27,7 +27,9 @@ const clone = o => JSON.parse(JSON.stringify(o));
 /* Defaults for `job`, or for the default job (null; DEFAULT_JOB, Paladin). */
 const fresh = job => {
   const s = defaultState();
-  for (const target of [s, s.piece, s.browse]) target.job = job ?? DEFAULT_JOB;
+  for (const target of [s, s.piece, s.browse]) {
+    target.job = job ?? DEFAULT_JOB;
+  }
   resetForJob(s, makeJobContext(job ?? DEFAULT_JOB));
   return s;
 };
@@ -79,7 +81,9 @@ function expectFieldDefault(path, value, expected) {
   const last = keys.pop();
   if (keys.length === 0 && PANEL_KEYS.includes(last)) {
     // the save is the older one panel: a panel field is every tab's
-    for (const group of PANEL_FIELDS) (group ? want[group] : want)[last] = expected;
+    for (const group of PANEL_FIELDS) {
+      (group ? want[group] : want)[last] = expected;
+    }
   }
   keys.reduce((o, k) => o[k], want)[last] = expected;
   assert.deepEqual(got, want, `${path} = ${JSON.stringify(value)}`);
@@ -385,7 +389,9 @@ test('loadSaved and save: a throwing localStorage is ignored; a working one roun
   const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   t.after(() => {
     delete globalThis.localStorage;
-    if (original) Object.defineProperty(globalThis, 'localStorage', original);
+    if (original) {
+      Object.defineProperty(globalThis, 'localStorage', original);
+    }
   });
   delete globalThis.localStorage;
   const blocked = () => {

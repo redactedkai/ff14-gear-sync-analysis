@@ -24,7 +24,9 @@ export function stubElement(calls = [], name = 'element') {
 export function pageMagics(refNames, elements = {}) {
   const calls = [];
   const $refs = {};
-  for (const name of refNames) $refs[name] = elements[name] ?? stubElement(calls, name);
+  for (const name of refNames) {
+    $refs[name] = elements[name] ?? stubElement(calls, name);
+  }
   return {
     $nextTick: callback => callback(),
     $refs,
@@ -42,12 +44,17 @@ export function fakeFrames({ immediate = false } = {}) {
     pending: [],
     step() {
       const run = frames.pending.splice(0);
-      for (const callback of run) callback();
+      for (const callback of run) {
+        callback();
+      }
       return run.length;
     },
     restore() {
-      if (before === undefined) delete globalThis.requestAnimationFrame;
-      else globalThis.requestAnimationFrame = before;
+      if (before === undefined) {
+        delete globalThis.requestAnimationFrame;
+      } else {
+        globalThis.requestAnimationFrame = before;
+      }
     },
   };
   globalThis.requestAnimationFrame = callback => (immediate ? callback() : frames.pending.push(callback));

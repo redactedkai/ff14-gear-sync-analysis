@@ -62,7 +62,9 @@ test('the sheet list: the Stat points tab counts the bonuses and the note names 
   const points = Object.fromEntries(page.rows[0].points.map(p => [p.key, p.text]));
   assert.deepEqual([points.str, points.vit], ['846', '882']);
   // the note's parts, not its sentence: the two stats, the clan and the party percent
-  for (const part of ['STR', 'VIT', 'Midlander', '5%']) assert.ok(page.bonusNote.includes(part), `${part} in: ${page.bonusNote}`);
+  for (const part of ['STR', 'VIT', 'Midlander', '5%']) {
+    assert.ok(page.bonusNote.includes(part), `${part} in: ${page.bonusNote}`);
+  }
   const plain = sheetPageView(warSheet({}, [warSet()]));
   assert.equal(plain.bonusNote, '');
   assert.equal(plain.rows[0].points.find(p => p.key === 'str').text, String(462 + 342));

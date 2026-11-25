@@ -89,7 +89,9 @@ test('token reader: the light, system-dark and forced-dark blocks of styles.css,
   // the file's own rule ("the two lists must match")
   assert.deepEqual(tokens.darkSetting, tokens.darkForced);
   // every dark token overrides a light one
-  for (const name of Object.keys(tokens.darkForced)) assert.ok(name in tokens.light, `${name} has no light value`);
+  for (const name of Object.keys(tokens.darkForced)) {
+    assert.ok(name in tokens.light, `${name} has no light value`);
+  }
   assert.equal(tokensFor(readStyles(), 'dark')['--serif'], tokens.light['--serif']); // an unchanged token carries over
   assert.notEqual(tokensFor(readStyles(), 'dark')['--surface'], tokensFor(readStyles(), 'light')['--surface']);
 });

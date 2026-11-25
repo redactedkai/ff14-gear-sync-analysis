@@ -205,8 +205,9 @@ export async function main(argv) {
                 fonts: result.fonts,
                 findings: result.findings,
               });
-              for (const item of result.findings)
+              for (const item of result.findings) {
                 findings.push({ ...item, screen: screen.id, setup: setup.id, browser: browserName, window: window.key });
+              }
             });
           }
         }
@@ -229,7 +230,7 @@ export async function main(argv) {
                   changes: result.changes,
                   measured: result.measured,
                 });
-                for (const item of result.findings)
+                for (const item of result.findings) {
                   findings.push({
                     ...item,
                     screen: screen.id,
@@ -237,6 +238,7 @@ export async function main(argv) {
                     browser: browserName,
                     window: item.widths ? `${item.widths[0]}-${item.widths[1]} px at ${height} px high` : `sweep at ${height} px high`,
                   });
+                }
               });
             }
           }
@@ -252,7 +254,9 @@ export async function main(argv) {
     if (!options.keep) {
       real.remove();
       stress?.remove();
-    } else console.log(`kept ${real.dir}${stress ? ` and ${stress.dir}` : ''}`);
+    } else {
+      console.log(`kept ${real.dir}${stress ? ` and ${stress.dir}` : ''}`);
+    }
   }
 
   // known failures: only the ones for screens and browsers this run visited, and (stale ones) only on a full run
@@ -302,8 +306,12 @@ export async function main(argv) {
       `${group.severity.toUpperCase()} ${group.rule} [${group.browser} ${group.setup} ${group.screen}/${group.view}] ${group.where}: ${group.detail} (${shortList(group.windows, 3)})`,
     );
   }
-  for (const line of knownLines) console.log(line);
-  for (const line of staleLines) console.log(line);
+  for (const line of knownLines) {
+    console.log(line);
+  }
+  for (const line of staleLines) {
+    console.log(line);
+  }
   console.log(`${fails.length} fail finding(s), ${warns.length} warning(s), ${knownLines.length} known failure(s), in ${seconds} s`);
   console.log(`report: ${reportPath}`);
   return fails.length || staleLines.length ? 1 : 0;

@@ -46,7 +46,9 @@ test('the pinned image carries the Playwright version of the lock file and is th
   const workflow = read('.github/workflows/visual.yml');
   const images = [...workflow.matchAll(/image: (\S+)/g)].map(match => match[1]);
   assert.ok(images.length >= 2, 'both jobs run in a container');
-  for (const image of images) assert.equal(image, PINNED_IMAGE);
+  for (const image of images) {
+    assert.equal(image, PINNED_IMAGE);
+  }
   const tags = [...workflow.matchAll(new RegExp(`${IMAGE_ENV}: (\\S+)`, 'g'))].map(match => match[1]);
   assert.deepEqual(
     tags,

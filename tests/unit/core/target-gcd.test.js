@@ -66,9 +66,13 @@ test('"Best for the goal" is the best of each meal on its own', () => {
     let top = null;
     for (const meal of foodChoices(sam)) {
       const r = optimizeGcd(sam, samPool, NO_SYNC, { ...goal, gcd: 2.12, mode, food: meal });
-      if (!r.ok) continue;
+      if (!r.ok) {
+        continue;
+      }
       const v = [r.withFood.crit, r.withFood.det];
-      if (!top || v[0] > top[0] || (v[0] === top[0] && v[1] > top[1])) top = v;
+      if (!top || v[0] > top[0] || (v[0] === top[0] && v[1] > top[1])) {
+        top = v;
+      }
     }
     assert.ok(best.ok, mode);
     assert.deepEqual([best.withFood.crit, best.withFood.det], top, mode);

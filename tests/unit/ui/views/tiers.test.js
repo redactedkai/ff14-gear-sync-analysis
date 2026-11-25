@@ -15,7 +15,9 @@ const app = id => makeJobContext(id);
 /* A row's range text as [first, last] panel values (last null for "N+", equal to the first for a one-point tier). */
 function bounds(range) {
   const number = text => Number(text.replaceAll(',', ''));
-  if (range.endsWith('+')) return [number(range.slice(0, -1)), null];
+  if (range.endsWith('+')) {
+    return [number(range.slice(0, -1)), null];
+  }
   const [first, last = first] = range.split('–');
   return [number(first), number(last)];
 }
@@ -78,8 +80,9 @@ test('rows: every tier from the base to the most a box takes, each a range of pa
       c.stat,
     );
     // the rows follow each other: a row ends the value before the next one starts, the last one stays open
-    for (let i = 1; i < c.rows.length; i++)
+    for (let i = 1; i < c.rows.length; i++) {
       assert.equal(bounds(c.rows[i - 1].range)[1] + 1, bounds(c.rows[i].range)[0], `${c.stat} row ${i}`);
+    }
     assert.equal(bounds(c.rows.at(-1).range)[1], null, c.stat);
   }
   // the value's tier: Critical Hit 3022 is gear 2602, tier floor(200 x 2602 / 2780) = 187, the 188th row
@@ -154,7 +157,9 @@ test('Paladin: Tenacity has Dmg & heal and Dmg taken, the one that changes at a 
   // 1617 is gear 1197: the tier from 1,616 to 1,629, where only Dmg taken changed
   const row = ten.rows[ten.cur];
   assert.deepEqual([row.range, row.values, row.marks], ['1,616–1,629', ['+4.8%', '−8.6%'], [false, true]]);
-  for (const number of [24, 25, 13, 14]) assert.ok(hasNumber(ten.help.size, number), `${number} in: ${ten.help.size}`);
+  for (const number of [24, 25, 13, 14]) {
+    assert.ok(hasNumber(ten.help.size, number), `${number} in: ${ten.help.size}`);
+  }
 });
 
 test('Monk and Samurai: the speed card names the haste the GCD counts at the level', () => {

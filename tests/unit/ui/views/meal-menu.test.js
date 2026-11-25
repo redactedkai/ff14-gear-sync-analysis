@@ -39,7 +39,9 @@ test("Food menu on a Sage set: what each meal adds on the set's gear, chips and 
     [shown.name],
     "the set's meal is marked",
   );
-  for (const name of ['Popoto Potage', 'Mollete']) assert.equal(all.find(x => x.name === name).adds[0].text, 'CRT +133', name);
+  for (const name of ['Popoto Potage', 'Mollete']) {
+    assert.equal(all.find(x => x.name === name).adds[0].text, 'CRT +133', name);
+  }
   const popcorn = all.find(x => x.name === 'Caramel Popcorn');
   assert.deepEqual(
     popcorn.adds.map(a => a.stat),
@@ -222,7 +224,9 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
   for (const { id: jobId } of JOBS) {
     const job = makeJobContext(jobId);
     const items = allMeals(job).map(m => ({ key: m.key, name: m.name, stats: m.stats.map(x => x.stat) }));
-    if (!items.length) continue;
+    if (!items.length) {
+      continue;
+    }
     const pills = job.substats.filter(s => items.some(x => x.stats.includes(s)));
     const words = [items[0], items[items.length >> 1], items.at(-1)].map(x => x.name.split(' ')[0].toLowerCase());
     const queries = ['', 'zzzz', ...words];
@@ -232,7 +236,9 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
     while (queue.length) {
       const f = queue.pop();
       const k = key(f);
-      if (seen.has(k)) continue;
+      if (seen.has(k)) {
+        continue;
+      }
       seen.add(k);
       states++;
       const where = `${jobId} at ${k}`;
@@ -240,13 +246,20 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
       const passing = mealsPassing(items, f).length;
       const reason = mealEmptyReason(items, f);
       assert.equal(!!reason, passing === 0, `an empty list with no line, or a line over meals: ${where}`);
-      if (reason) assert.equal(reason.action, 'query', where);
+      if (reason) {
+        assert.equal(reason.action, 'query', where);
+      }
       // every move the menu allows
       for (const p of pills) {
-        if (f.stats.includes(p)) queue.push({ ...f, stats: f.stats.filter(s => s !== p) });
-        else if (!mealPillOff(items, p, f)) queue.push({ ...f, stats: [...f.stats, p] });
+        if (f.stats.includes(p)) {
+          queue.push({ ...f, stats: f.stats.filter(s => s !== p) });
+        } else if (!mealPillOff(items, p, f)) {
+          queue.push({ ...f, stats: [...f.stats, p] });
+        }
       }
-      for (const q of queries) queue.push({ ...f, query: q });
+      for (const q of queries) {
+        queue.push({ ...f, query: q });
+      }
     }
   }
   assert.ok(states > 500, `${states} states walked`);
@@ -278,7 +291,9 @@ test('every meal of every job has two or three stat lines, the most the template
     const totals = Object.fromEntries(job.stats.map(s => [s, 0]));
     const items = mealMenu(job, 100, totals, null).groups.flatMap(g => g.items);
     assert.ok(items.length > 0, id);
-    for (const x of items) assert.ok(x.adds.length >= 2 && x.adds.length <= 3, `${id} ${x.name}: ${x.adds.length} lines`);
+    for (const x of items) {
+      assert.ok(x.adds.length >= 2 && x.adds.length <= 3, `${id} ${x.name}: ${x.adds.length} lines`);
+    }
   }
 });
 
@@ -324,7 +339,9 @@ test('"best for goal": the saved tie list tags the meal of the set; the menu off
   const all = menu.groups.flatMap(g => g.items);
   const taggedStats = new Set(all.filter(x => x.best).flatMap(x => x.stats));
   const lacking = menu.pills.find(p => !taggedStats.has(p.stat));
-  if (lacking) assert.equal(mealPillOff(all, lacking.stat, { stats: [], query: '', bestOnly: true }), true);
+  if (lacking) {
+    assert.equal(mealPillOff(all, lacking.stat, { stats: [], query: '', bestOnly: true }), true);
+  }
   const other = all.find(x => !x.best);
   assert.deepEqual(mealEmptyReason(all, { stats: [], query: other.name, bestOnly: true }), {
     text: `No meal matches "${other.name}".`,
@@ -374,5 +391,7 @@ test('mealBestKeys: the saved list, whatever meal the set holds; a damaged value
   assert.deepEqual(mealBestKeys({ meal: 'b', bestMeals: ['a', 'b'] }), ['a', 'b']);
   assert.deepEqual(mealBestKeys({ meal: 'z', bestMeals: ['a', 'b'] }), ['a', 'b'], 'a meal picked by hand: the list stays');
   assert.deepEqual(mealBestKeys({ meal: null, bestMeals: ['a'] }), ['a'], 'no food chosen');
-  for (const bestMeals of [undefined, null, 'a', [1], { a: 1 }]) assert.deepEqual(mealBestKeys({ meal: 'a', bestMeals }), []);
+  for (const bestMeals of [undefined, null, 'a', [1], { a: 1 }]) {
+    assert.deepEqual(mealBestKeys({ meal: 'a', bestMeals }), []);
+  }
 });

@@ -16,7 +16,8 @@ test('the Gear browser tints the pointed-at and the sorted column for lvl, ilvl 
       `#gear-table[data-hot="${key}"] td[data-col="${key}"]`,
       `#gear-table[data-hot="${key}"] th[data-col="${key}"]`,
       `#gear-table[data-sorted="${key}"] td[data-col="${key}"]`,
-    ])
+    ]) {
       assert.ok(css.includes(selector), `no rule for ${selector}`);
+    }
   }
 });

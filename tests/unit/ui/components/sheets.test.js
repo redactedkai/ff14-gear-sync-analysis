@@ -151,7 +151,9 @@ test('Escape cancels a dialog; nothing opens while an Auto-fill runs', () => {
 
 test('reordering: Up and Down arrow on a handle move the row; a drop moves it above or below the row under it', () => {
   const { c, sheets } = bind();
-  for (const name of ['C', 'B', 'A']) sheets.createSheet({ name, job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
+  for (const name of ['C', 'B', 'A']) {
+    sheets.createSheet({ name, job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
+  }
   sheets.openManager();
   const names = () => c.manager.rows.map(r => r.name);
   assert.deepEqual(names(), ['A', 'B', 'C']);
@@ -181,7 +183,9 @@ test('New sheet: a number typed just before Create does not commit into the clos
   const { c, sheets } = bind();
   c.openNewSheet();
   c.chooseJob('BLU');
-  for (const value of ['7', '75']) c.formField('level')['@input']({ target: { value }, inputType: 'insertText' });
+  for (const value of ['7', '75']) {
+    c.formField('level')['@input']({ target: { value }, inputType: 'insertText' });
+  }
   c.formField('level')['@change']({ target: { value: '75', classList: { add() {}, remove() {} } } });
   c.formField('cap')['@input']({ target: { value: '300' }, inputType: 'insertText' });
   c.submitDialog();
@@ -404,6 +408,8 @@ test('the component: its six parts define every member the templates use, getter
     field: ['capLowered', 'capTypedBad', 'dialog', 'dragging', 'dropAt', 'jobIcons', 'jobPicker', 'listSort', 'sheetMenu'],
   };
   const actual = { getter: [], method: [], field: [] };
-  for (const name of Object.keys(descriptors).sort()) actual[kind(name)].push(name);
+  for (const name of Object.keys(descriptors).sort()) {
+    actual[kind(name)].push(name);
+  }
   assert.deepEqual(actual, expected);
 });

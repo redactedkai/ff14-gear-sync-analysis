@@ -14,9 +14,12 @@ test("the job's level caps used here are the game's: Paladin 100, Blue Mage 80, 
 test("levelTextBad: a whole number from 1 to the job's level cap is a level, anything else is not", () => {
   for (const jobId of ['PLD', 'BLU', 'BST']) {
     const max = maxLevelOf(jobId);
-    for (const text of ['1', '2', String(max - 1), String(max)]) assert.equal(levelTextBad(text, max), false, `${text} at ${jobId}`);
-    for (const text of ['0', String(max + 1), '-5', '-1', '12.5', '1.5', '', 'abc', '1e', '--', ' ', '1,5'])
+    for (const text of ['1', '2', String(max - 1), String(max)]) {
+      assert.equal(levelTextBad(text, max), false, `${text} at ${jobId}`);
+    }
+    for (const text of ['0', String(max + 1), '-5', '-1', '12.5', '1.5', '', 'abc', '1e', '--', ' ', '1,5']) {
       assert.equal(levelTextBad(text, max), true, `'${text}' at ${jobId}`);
+    }
   }
 });
 

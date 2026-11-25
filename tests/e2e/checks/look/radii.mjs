@@ -82,7 +82,9 @@ const RADII = {
 const radiiAt = (pg, selector) =>
   pg.evaluate(sel => {
     const el = document.querySelector(sel);
-    if (!el) return 'not found';
+    if (!el) {
+      return 'not found';
+    }
     const cs = getComputedStyle(el);
     return [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius].join(' ');
   }, selector);
@@ -179,7 +181,9 @@ export async function checkRadii(pg) {
       // every style rule, also those inside a cascade layer block (the page's rules are all in one)
       const styleRules = rules =>
         [...rules].flatMap(rule => {
-          if (rule.selectorText !== undefined) return [rule];
+          if (rule.selectorText !== undefined) {
+            return [rule];
+          }
           return rule.cssRules ? styleRules(rule.cssRules) : [];
         });
       return [...document.styleSheets]
@@ -225,13 +229,16 @@ export async function checkRadii(pg) {
     ]) {
       const png = await page.screenshot({ clip: { x: x0, y: y0, width: 4, height: 4 } }); // 8 x 8 device pixels
       const points = [];
-      for (let i = 0; i < 8; i++)
+      for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
           const cx = (i + 0.5) / 2; // the pixel centre in css px, from the clip's left edge
           const dx = flip ? cx : 4 - cx; // its distance from the arc's centre: 4 css px in from the edge, 4 down
           const dy = 4 - (j + 0.5) / 2;
-          if (Math.hypot(dx, dy) > 4.5) points.push([i, j]);
+          if (Math.hypot(dx, dy) > 4.5) {
+            points.push([i, j]);
+          }
         }
+      }
       const colours = await pixelsOf(reader, png, points);
       const off = colours.filter(c => c.some((v, k) => Math.abs(v - head.page[k]) > 3));
       check(

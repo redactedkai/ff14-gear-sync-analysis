@@ -30,9 +30,13 @@ export function capControls(ownTab) {
         this.capLowered = null;
       });
       this.$watch('$store.app.cap', cap => {
-        if (!open()) return;
+        if (!open()) {
+          return;
+        }
         this.capTypedBad = false; // changed from elsewhere (reset, or a valid entry)
-        if (cap === this.capLowered?.to) return; // the page's own lowering
+        if (cap === this.capLowered?.to) {
+          return; // the page's own lowering
+        }
         this.lowerCap(); // a cap entered above what the level allows (the field commits once typing settles)
       });
       this.$watch('$store.app.sync', () => open() && this.lowerCap());
@@ -50,9 +54,13 @@ export function capControls(ownTab) {
       const app = this.$store.app;
       // limitCapToLevel lowers the cap of the object it is given: a copy of the panel's fields, then the store gets the new cap
       const lowered = limitCapToLevel({ cap: app.cap, sync: app.sync, level: app.level });
-      if (lowered) app.editPanel({ cap: lowered.to });
+      if (lowered) {
+        app.editPanel({ cap: lowered.to });
+      }
       this.capLowered = lowered;
-      if (lowered) flashLowered(this.$refs.cap);
+      if (lowered) {
+        flashLowered(this.$refs.cap);
+      }
     },
     /* under the cap field after the page lowered it (capLoweredText): "Lowered to 135, max for level 50." */
     get capLoweredNote() {
@@ -63,7 +71,9 @@ export function capControls(ownTab) {
       return capFlag({ error: this.capError, missing: this.capMissing, note: this.capLoweredNote, lowered: this.capLowered, range });
     },
     onCapInput(text) {
-      if (text === '') this.$store.app.editPanel({ cap: null }); // an empty field means no cap
+      if (text === '') {
+        this.$store.app.editPanel({ cap: null }); // an empty field means no cap
+      }
       this.capTypedBad = capTextBad(text);
     },
     /* sync is on, the field is empty and holds no text that is no cap (that error comes first) */
@@ -73,8 +83,12 @@ export function capControls(ownTab) {
     },
     /* shown under the cap field while sync is on */
     get capError() {
-      if (!this.$store.app.sync) return '';
-      if (this.capTypedBad) return CAP_TYPED_BAD_TEXT;
+      if (!this.$store.app.sync) {
+        return '';
+      }
+      if (this.capTypedBad) {
+        return CAP_TYPED_BAD_TEXT;
+      }
       return this.capMissing ? CAP_MISSING_TEXT : '';
     },
   };
@@ -94,7 +108,9 @@ export function levelControls() {
       // stored level back in the box
       const clear = () => {
         this.levelTypedBad = false;
-        if (this.$refs.level) this.$refs.level.value = this.$store.app.level ?? '';
+        if (this.$refs.level) {
+          this.$refs.level.value = this.$store.app.level ?? '';
+        }
       };
       this.$watch('$store.app.level', () => (this.levelTypedBad = false));
       this.$watch('$store.app.job', clear);

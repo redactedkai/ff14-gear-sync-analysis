@@ -34,9 +34,14 @@ export function columnsDiffer(before, now) {
   if (!near(now.edges.flat(), before.edges.flat())) {
     return `the column edges moved (${JSON.stringify(now.edges.map(e => e.map(Math.round)))} vs ${JSON.stringify(before.edges.map(e => e.map(Math.round)))})`;
   }
-  if (!near(now.rowHeights, before.rowHeights)) return `a row's height changed (${now.rowHeights} vs ${before.rowHeights})`;
-  if (now.overflowing.length)
+  if (!near(now.rowHeights, before.rowHeights)) {
+    return `a row's height changed (${now.rowHeights} vs ${before.rowHeights})`;
+  }
+  if (now.overflowing.length) {
     return `${now.overflowing.length} number cells hold text wider than the cell (${[...new Set(now.overflowing)].slice(0, 4).join(', ')})`;
-  if (now.sideways) return 'the table or the page scrolls sideways';
+  }
+  if (now.sideways) {
+    return 'the table or the page scrolls sideways';
+  }
   return '';
 }

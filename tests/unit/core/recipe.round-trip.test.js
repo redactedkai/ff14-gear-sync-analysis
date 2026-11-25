@@ -76,7 +76,9 @@ test('Auto-fill is repeatable and survives pinning and picking its own result', 
     const label = `${job.jobId} ${JSON.stringify(sync)} ${JSON.stringify(recipe)}`;
 
     const first = runRecipe(job, sync, level, recipe, session);
-    if (first.status !== 'ok') continue; // an infeasible Target GCD has no set to round-trip
+    if (first.status !== 'ok') {
+      continue; // an infeasible Target GCD has no set to round-trip
+    }
     solved++;
 
     // the same input twice

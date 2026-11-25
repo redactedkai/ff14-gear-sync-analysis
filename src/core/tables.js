@@ -50,7 +50,9 @@ export const MATERIA = Object.freeze({
 
 /* Short footer text naming the game-data source, or '' when unknown. */
 export function dataSourceLabel(src = DATA_SOURCE) {
-  if (!src?.commit) return '';
+  if (!src?.commit) {
+    return '';
+  }
   const date = /^\d{4}-\d{2}-\d{2}/.exec(src.date ?? '')?.[0];
   return `Game data: ffxiv-datamining ${src.commit.slice(0, 7)}` + (date ? `, ${date}` : '');
 }

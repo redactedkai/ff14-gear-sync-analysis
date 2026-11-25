@@ -42,9 +42,13 @@ function pinnedPartsUnderMenu(pg, menuSel) {
       const right = Math.min(menu.right, part.right);
       const top = Math.max(menu.top, part.top, 0);
       const bottom = Math.min(menu.bottom, part.bottom);
-      if (right - left < 8 || bottom - top < 8) continue;
+      if (right - left < 8 || bottom - top < 8) {
+        continue;
+      }
       const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2);
-      if (hit?.closest(menuSel)) over.push(name);
+      if (hit?.closest(menuSel)) {
+        over.push(name);
+      }
     }
     return over;
   }, menuSel);

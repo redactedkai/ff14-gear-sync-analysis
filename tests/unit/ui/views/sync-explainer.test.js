@@ -136,7 +136,9 @@ test('the overgeared chart: the substats named, a band each and the melds, and w
     v.curveBands.map(b => b.label),
     ['Critical Hit (100%)', 'Spell Speed (70%)', 'Spell Speed (Melds)'],
   );
-  for (const number of [61, 148, 18, 149, 19, 62]) assert.ok(hasNumber(v.curveNote, number), `${number} in: ${v.curveNote}`);
+  for (const number of [61, 148, 18, 149, 19, 62]) {
+    assert.ok(hasNumber(v.curveNote, number), `${number} in: ${v.curveNote}`);
+  }
   assert.equal((v.curveChartSvg.match(/<polygon /g) || []).length, 3);
   // Critical Hit is at its 31 cap from 129 (below the cap 130: the curve is flat there), Spell Speed (70%) from 149
   assert.ok(labelled(v.curveChartSvg, 31, 129) && labelled(v.curveChartSvg, 31, 149));
@@ -206,16 +208,22 @@ test('one piece: at or below the cap the table rows say below the cap and at the
    169 reaches the melded 74 from item level 289, but the chart shaded nothing and the note said no earring has more). */
 test('overgeared chart: an overgeared piece with as much as the melded one is shaded and named', () => {
   const v = explainerViewOf(app('SGE', { level: 100, cap: 169, slot: 'ear', ilvl: 291, subs: ['dh', 'crit'] }));
-  for (const number of [74, 289, 120]) assert.ok(hasNumber(v.curveNote, number), `${number} in: ${v.curveNote}`);
+  for (const number of [74, 289, 120]) {
+    assert.ok(hasNumber(v.curveNote, number), `${number} in: ${v.curveNote}`);
+  }
   assert.ok(v.curveNote.includes('earring'), v.curveNote);
   assert.match(v.curveChartSvg, /data-shade="289-309"/);
   // the synced item level's line is named in the page's legend, not inside the chart (owner, 2026-10-18)
   assert.doesNotMatch(v.curveChartSvg, /Synced item level/);
   // as much, then more; and never as much
   const passes = explainerViewOf(app('RPR', { level: 80, ilvl: 590 })).curveNote;
-  for (const number of [388, 620, 90, 624, 94, 400]) assert.ok(hasNumber(passes, number), `${number} in: ${passes}`);
+  for (const number of [388, 620, 90, 624, 94, 400]) {
+    assert.ok(hasNumber(passes, number), `${number} in: ${passes}`);
+  }
   const never = explainerViewOf(app('SGE', { level: 100, cap: 790, slot: 'head', ilvl: 795 })).curveNote;
-  for (const number of [538, 459]) assert.ok(hasNumber(never, number), `${number} in: ${never}`);
+  for (const number of [538, 459]) {
+    assert.ok(hasNumber(never, number), `${number} in: ${never}`);
+  }
   assert.ok(never.includes('head'), never);
   assert.equal(new Set([passes, never, v.curveNote]).size, 3, 'matches, passes and never reaches read differently');
 });

@@ -22,10 +22,14 @@ test("the job's own factor equals the game files' factor on every piece of its o
     const job = makeJobContext(id);
     let n = 0;
     for (const r of ITEMS) {
-      if (!(r[ROW.jobMask] & (1 << job.jobIndex)) || r[ROW.ilvl] < MODEL_MIN_ILVL) continue;
+      if (!(r[ROW.jobMask] & (1 << job.jobIndex)) || r[ROW.ilvl] < MODEL_MIN_ILVL) {
+        continue;
+      }
       const st = rowStats(r);
       const mains = RAW_MAIN_IDX.filter(i => st[i]).map(i => ITEM_STAT_ORDER[i]);
-      if (mains.length !== 1 || mains[0] !== job.mainKey) continue;
+      if (mains.length !== 1 || mains[0] !== job.mainKey) {
+        continue;
+      }
       n++;
       assert.equal(MP[job.mainKey][r[ROW.kind]], 100, `${id} ${r[ROW.name]}`);
       assert.equal(MP.vit[r[ROW.kind]] / 100, jobFactor(job, 'vit'), `${id} ${r[ROW.name]}`);
@@ -40,7 +44,9 @@ test('the only pieces whose factors differ from the job rule are kind 0: the fou
     const job = makeJobContext(id);
     for (const p of browseItems(job, { ilvlMin: MODEL_MIN_ILVL })) {
       const f = kindFactors(job, p.kind);
-      if (f[job.mainKey] !== 1 || f.vit !== jobFactor(job, 'vit')) odd.add(p.name);
+      if (f[job.mainKey] !== 1 || f.vit !== jobFactor(job, 'vit')) {
+        odd.add(p.name);
+      }
     }
   }
   const fourMain = [...odd].filter(name => RAW_MAIN_IDX.every(i => rowStats(itemRow(name))[i]));
@@ -51,7 +57,9 @@ test('the only pieces whose factors differ from the job rule are kind 0: the fou
   // pieces is the factor table's (core/formulas.model-accuracy.test.js checks it against the data)
   assert.deepEqual(attr.sort(), Object.keys(ALL_JOBS_ACCESSORY_FACTORS).sort());
   assert.equal(odd.size, fourMain.length + attr.length);
-  for (const name of odd) assert.equal(itemRow(name)[ROW.kind], 0, name);
+  for (const name of odd) {
+    assert.equal(itemRow(name)[ROW.kind], 0, name);
+  }
 });
 
 test('pieces with all four main stats: every main stat and Vitality at the full value x 0.9', () => {
@@ -62,7 +70,9 @@ test('pieces with all four main stats: every main stat and Vitality at the full 
   assert.deepEqual(rowStats(coat).slice(0, 5), [54, 54, 54, 54, 54]);
   const four = ITEMS.filter(r => r[ROW.ilvl] >= MODEL_MIN_ILVL && RAW_MAIN_IDX.every(i => rowStats(r)[i]));
   assert.equal(four.length, 13);
-  for (const r of four) assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], rowStats(r), r[ROW.kind]), rowStats(r), r[ROW.name]);
+  for (const r of four) {
+    assert.deepEqual(predictRaw(r[ROW.ilvl], r[ROW.slotCode], rowStats(r), r[ROW.kind]), rowStats(r), r[ROW.name]);
+  }
 });
 
 test('Occult accessories at 745: "of Magic" Vitality 307 (x 0.9), "of Blood" 341 (full), from the item, not a job', () => {

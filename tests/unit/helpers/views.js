@@ -48,7 +48,9 @@ export const countOf = (app, gear) => searchCount(app.jobCtx, app.recipe, gear ?
    ranking has its own tests. */
 export const makeApp = (job = 'SGE', patch = {}) => {
   const app = appState({ job, sync: true, cap: 123 }, patch);
-  if (!('recipe' in patch)) app.recipe.byTier = false;
+  if (!('recipe' in patch)) {
+    app.recipe.byTier = false;
+  }
   return app;
 };
 

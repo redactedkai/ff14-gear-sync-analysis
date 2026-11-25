@@ -37,17 +37,25 @@ export function fillPart(solver, page) {
     async fill() {
       const store = this.$store.sheets;
       const saved = this.saved;
-      if (!saved || this.draft || store.busy || this.suggestion) return;
+      if (!saved || this.draft || store.busy || this.suggestion) {
+        return;
+      }
       // the button is off with no piece to search, but only once the count is in: wait for it, then ask again
       if (this.countPending()) {
         await this.countLanded();
-        if (this.searchedCount === 0 || this.saved !== saved || this.draft || store.busy || this.suggestion) return;
+        if (this.searchedCount === 0 || this.saved !== saved || this.draft || store.busy || this.suggestion) {
+          return;
+        }
       }
       const job = this.job;
       const plan = fillPlan(job, saved);
-      if (plan.disabled) return;
+      if (plan.disabled) {
+        return;
+      }
       const settings = this.fillSettings;
-      if (!saved.fillSettings) store.updateSet(saved.id, { fillSettings: settings });
+      if (!saved.fillSettings) {
+        store.updateSet(saved.id, { fillSettings: settings });
+      }
       overlays.closeAll();
 
       // the request: plain data only (a worker cannot be sent a proxy)
@@ -64,22 +72,36 @@ export function fillPart(solver, page) {
       store.setBusy(true);
       // Cancel has the focus unless the Auto-fill is already over (answered, or cancelled) by the time it is drawn
       this.afterDraw(() => {
-        if (this.running) page.refs.cancel.focus();
+        if (this.running) {
+          page.refs.cancel.focus();
+        }
       });
       // on the page's thread the solve holds it: paint "Solving…" first. Two frames: the first lays the button out, the
       // second paints it; the solve starts in a task after that frame (setTimeout), not in its callback, which runs
       // before the frame is painted
-      if (solver.blocksPage) await new Promise(painted => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(painted))));
+      if (solver.blocksPage) {
+        await new Promise(painted => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(painted))));
+      }
       try {
-        if (!this.searchIs(id)) return;
+        if (!this.searchIs(id)) {
+          return;
+        }
         const { result, ms } = await solver.request(request);
         // the search's own time, not the wait for the worker's reply; read by scripts/perf/browser.mjs
-        if (Number.isFinite(ms)) performance.measure('fill', { start: performance.now() - ms, duration: ms });
-        if (this.searchIs(id)) this.finishFill(id, result);
+        if (Number.isFinite(ms)) {
+          performance.measure('fill', { start: performance.now() - ms, duration: ms });
+        }
+        if (this.searchIs(id)) {
+          this.finishFill(id, result);
+        }
       } catch (error) {
-        if (!isCancelled(error)) this.pages.fillEnded(this.setId, id, { line: failedText(error?.message || error), failed: true });
+        if (!isCancelled(error)) {
+          this.pages.fillEnded(this.setId, id, { line: failedText(error?.message || error), failed: true });
+        }
       } finally {
-        if (this.searchIs(id)) this.endFill();
+        if (this.searchIs(id)) {
+          this.endFill();
+        }
       }
     },
     /* Whether search `id` is the one this page runs (an answer of a cancelled search, or of a page left, is not). */
@@ -91,15 +113,20 @@ export function fillPart(solver, page) {
       const answer = fillAnswerView(this.sheet, this.saved, result);
       if (answer.kind === 'suggestion') {
         const suggestion = frozenSuggestion(answer.suggested, { rows: [], meal: false });
-        if (!this.pages.fillSuggested(this.setId, id, suggestion)) return;
+        if (!this.pages.fillSuggested(this.setId, id, suggestion)) {
+          return;
+        }
         // nothing to change: the set is already what Auto-fill makes, so it keeps the meals tagged "best for goal" (Apply is off);
         // saved by endFill, once the sheet is no longer busy
         const bestMeals = suggestion.suggested.bestMeals;
-        if (bestMeals && !suggestionView(this.sheet, this.saved, suggestion.suggested, suggestion.declined).total)
+        if (bestMeals && !suggestionView(this.sheet, this.saved, suggestion.suggested, suggestion.declined).total) {
           bestMealsAfterFill = bestMeals;
+        }
         this.afterDraw(() =>
           requestAnimationFrame(() => {
-            if (!page.el.isConnected) return;
+            if (!page.el.isConnected) {
+              return;
+            }
             page.el.querySelector('tr.changed')?.scrollIntoView({ block: 'nearest' });
             const { apply, discard } = page.refs;
             (apply?.disabled ? discard : apply)?.focus({ preventScroll: true });
@@ -108,8 +135,9 @@ export function fillPart(solver, page) {
         return;
       }
       if (answer.kind === 'badpin') {
-        if (answer.droppedRows.length || answer.mealDropped)
+        if (answer.droppedRows.length || answer.mealDropped) {
           pinsAfterFill = { pieces: answer.pinnedRows, meal: !!this.saved.pinned?.meal && !answer.mealDropped };
+        }
         this.pages.fillEnded(this.setId, id, { line: [...answer.messages, answer.droppedText].filter(Boolean).join(' ') });
         return;
       }
@@ -119,14 +147,20 @@ export function fillPart(solver, page) {
     endFill() {
       this.pages.endFill(this.setId);
       this.$store.sheets.setBusy(false);
-      if (bestMealsAfterFill) this.$store.sheets.updateSet(this.saved.id, { bestMeals: bestMealsAfterFill });
+      if (bestMealsAfterFill) {
+        this.$store.sheets.updateSet(this.saved.id, { bestMeals: bestMealsAfterFill });
+      }
       bestMealsAfterFill = null;
-      if (pinsAfterFill) this.$store.sheets.updateSet(this.saved.id, { pinned: { ...this.saved.pinned, ...pinsAfterFill } });
+      if (pinsAfterFill) {
+        this.$store.sheets.updateSet(this.saved.id, { pinned: { ...this.saved.pinned, ...pinsAfterFill } });
+      }
       pinsAfterFill = null;
     },
     /* Cancel: the Auto-fill stops (the worker is replaced, ui/solver.js), the set stays as it is. */
     cancelFill() {
-      if (!this.running) return;
+      if (!this.running) {
+        return;
+      }
       this.stopFill();
       this.$store.sheets.setNote(FILL_CANCELLED_TEXT);
       this.focusFill();
@@ -139,7 +173,9 @@ export function fillPart(solver, page) {
     /* A Take box of the suggestion: row `index` (or the meal, index null) taken or declined. */
     setTake(index, taken) {
       const s = this.suggestion;
-      if (!s) return;
+      if (!s) {
+        return;
+      }
       const declined =
         index == null
           ? { ...s.declined, meal: !taken }
@@ -149,23 +185,31 @@ export function fillPart(solver, page) {
     /* Apply the suggestion as taken: final (no undo); the pins stay. */
     applySuggestion() {
       const s = this.suggestion;
-      if (!s) return;
+      if (!s) {
+        return;
+      }
       const view = suggestionView(this.sheet, this.saved, s.suggested, s.declined);
-      if (view.applyDisabled) return;
+      if (view.applyDisabled) {
+        return;
+      }
       this.$store.sheets.updateSet(this.saved.id, appliedFields(this.saved, s.suggested, s.declined, this.job));
       this.pages.setSuggestion(this.setId, null);
       this.$store.sheets.setNote(view.appliedNote);
       this.focusFill();
     },
     discardSuggestion() {
-      if (!this.suggestion) return;
+      if (!this.suggestion) {
+        return;
+      }
       this.pages.setSuggestion(this.setId, null);
       this.$store.sheets.setNote(RESULT_DISCARDED_TEXT);
       this.focusFill();
     },
     /* A click on the table while an Auto-fill result waits: say why nothing happens, as a toast. */
     tableClick(event) {
-      if (this.suggestion && !event.target.closest?.('.takebox')) this.$store.sheets.setNote(LOCKED_TABLE_TEXT);
+      if (this.suggestion && !event.target.closest?.('.takebox')) {
+        this.$store.sheets.setNote(LOCKED_TABLE_TEXT);
+      }
     },
   };
 }

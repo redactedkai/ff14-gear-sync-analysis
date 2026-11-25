@@ -31,16 +31,24 @@ export function formatNumber(value, decimals = 0) {
    - final: the box is being left or Enter pressed, not typed into.
    Text that is no finite number commits nothing. */
 export function commit(text, { min = -Infinity, max = Infinity, decimals = 0, snap = true, exact = false, empty, final = false } = {}) {
-  if (text === '') return empty === undefined ? null : { value: empty, shown: '', clamped: false };
+  if (text === '') {
+    return empty === undefined ? null : { value: empty, shown: '', clamped: false };
+  }
 
   const typed = Number(text);
-  if (!Number.isFinite(typed)) return null;
-  if (exact && roundTo(typed, decimals) !== typed) return null;
+  if (!Number.isFinite(typed)) {
+    return null;
+  }
+  if (exact && roundTo(typed, decimals) !== typed) {
+    return null;
+  }
 
   let value = typed,
     clamped = false;
   if (value < min || value > max) {
-    if (!final || !snap) return null;
+    if (!final || !snap) {
+      return null;
+    }
     value = clamp(value, min, max);
     clamped = true;
   }

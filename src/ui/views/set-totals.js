@@ -24,8 +24,12 @@ const FIGURE_LABEL = { gcd: 'GCD', critDmg: 'Crit dmg', dot: 'DoT' };
 const HASTE_GCD_LABEL = 'GCD (with Haste)';
 /* The job's stat behind a figure id: the stat key for a stat figure, null for a derived one or a job without it. */
 function figureStat(job, id) {
-  if (id === 'main') return job.mainKey;
-  if (id === 'spec') return job.specKey;
+  if (id === 'main') {
+    return job.mainKey;
+  }
+  if (id === 'spec') {
+    return job.specKey;
+  }
   return job.stats.includes(id) ? id : null;
 }
 
@@ -51,7 +55,9 @@ export function evaluateInSheet(sheet, gearSet) {
 export function bonusNote(sheet) {
   const clan = isClan(sheet.clan) ? sheet.clan : null;
   const roles = partyRoles(sheet.partyRoles);
-  if (!clan && !roles) return '';
+  if (!clan && !roles) {
+    return '';
+  }
   const job = makeJobContext(sheet.job);
   const [mainOffset, vitOffset] = bonusStats(job).map(stat => clanOffset(clan, stat));
   const clanName = clan?.replace(/^The /, ''); // "The Lost" reads "the Lost clan"
@@ -176,7 +182,9 @@ export function figureColumns(figures) {
    when the two texts are the same. text is the signed difference with the figure's unit and as many decimals as the
    figures have; up is whether the number rose. */
 export function figureChange(before, after) {
-  if (before === after) return null;
+  if (before === after) {
+    return null;
+  }
   const number = t => Number.parseFloat(t.replace(/[^0-9.-]/g, ''));
   const decimals = t => (t.replace(/[^0-9.]/g, '').split('.')[1] || '').length;
   const diff = number(after) - number(before);

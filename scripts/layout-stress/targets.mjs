@@ -71,13 +71,17 @@ const setHash = open => `#/sheets/${open.sheetId}/sets/${open.setId}`;
 async function clickUntilVisible(page, button, menu) {
   for (const timeout of [4000, 8000]) {
     await page.locator(button).first().scrollIntoViewIfNeeded();
-    if (await page.locator(menu).first().isVisible()) return;
+    if (await page.locator(menu).first().isVisible()) {
+      return;
+    }
     await page.locator(button).first().click();
     const shown = await page
       .waitForSelector(menu, { state: 'visible', timeout })
       .then(() => true)
       .catch(() => false);
-    if (shown) return;
+    if (shown) {
+      return;
+    }
   }
   throw new Error(`${menu} did not open after clicking ${button}`);
 }
@@ -315,7 +319,9 @@ const gear = {
       jobs: {
         scope: 'strip',
         open: async page => {
-          if (!(await page.locator('#job-menu').isVisible())) await page.click('#job-menu-btn');
+          if (!(await page.locator('#job-menu').isVisible())) {
+            await page.click('#job-menu-btn');
+          }
           await page.waitForSelector('#job-menu', { state: 'visible', timeout: 5000 });
         },
         pick: (page, jobId) => page.click(`#job-menu [data-job-id="${jobId}"]`),
@@ -405,7 +411,9 @@ const subTabGeometry = page =>
   page.evaluate(() => {
     const box = selector => {
       const element = document.querySelector(selector);
-      if (!element?.offsetWidth) return null;
+      if (!element?.offsetWidth) {
+        return null;
+      }
       const rect = element.getBoundingClientRect();
       return [
         Math.round(rect.left * 10) / 10,
@@ -453,7 +461,9 @@ async function subTabsStartAtTop(page) {
     await page.waitForSelector(SUB_TAB_READY[sub], { state: 'visible', timeout: 10000 });
     await settle(page);
     const top = await page.evaluate(() => window.scrollY);
-    if (checked && top !== 0) found.push({ rule: 'tabs-start-at-top', detail: `${sub} opens at ${top} px, not at the top`, where: 'math' });
+    if (checked && top !== 0) {
+      found.push({ rule: 'tabs-start-at-top', detail: `${sub} opens at ${top} px, not at the top`, where: 'math' });
+    }
   };
   const config = probeConfig(MATH_VIEWS[0]);
   const openSub = await page.evaluate(() => document.querySelector('[data-sub][aria-current="page"]')?.dataset.sub ?? null);
@@ -478,7 +488,9 @@ async function subTabsStartAtTop(page) {
       where: 'math',
     });
   }
-  if (geometry.gcd.job) found.push({ rule: 'tabs-start-at-top', detail: 'the Job box shows on GCD Scaling', where: 'math' });
+  if (geometry.gcd.job) {
+    found.push({ rule: 'tabs-start-at-top', detail: 'the Job box shows on GCD Scaling', where: 'math' });
+  }
   for (const sub of ['tiers', 'gcd']) {
     geometry[sub].tabs.forEach((box, index) => {
       const was = geometry.piece.tabs[index];
@@ -492,8 +504,9 @@ async function subTabsStartAtTop(page) {
     });
   }
   const moved = compareProbes(start, end, ['top', 'subtabs', 'bar']);
-  if (moved.length)
+  if (moved.length) {
     found.push({ rule: 'tabs-start-at-top', detail: `a round trip changes the layout: ${moved.slice(0, 3).join('; ')}`, where: 'math' });
+  }
   return found;
 }
 

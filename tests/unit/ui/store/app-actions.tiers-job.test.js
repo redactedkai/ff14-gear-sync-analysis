@@ -55,7 +55,9 @@ test("setJob for Substat tiers with the same job changes nothing; a typed level 
 test("a tab change never changes either tab's job; the tiers job survives switching tabs and sub-tabs", () => {
   const store = createAppStore(restoreOpen(SAVE));
   store.setTiersJob('MNK');
-  for (const t of ['browse', 'piece', 'tiers', 'gcd', 'sheets', 'tiers']) store.showTab(t);
+  for (const t of ['browse', 'piece', 'tiers', 'gcd', 'sheets', 'tiers']) {
+    store.showTab(t);
+  }
   assert.deepEqual([store.panel('tiers').job, store.panel('math').job, store.panel('browse').job], ['MNK', 'BLM', 'WAR']);
 });
 

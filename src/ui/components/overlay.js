@@ -12,8 +12,11 @@ const capital = name => name[0].toUpperCase() + name.slice(1);
    focus moved any sooner would find it still hidden (WebKit then leaves the focus on the page). */
 function afterDrawn(component, run) {
   component.$nextTick(() => {
-    if (globalThis.requestAnimationFrame) globalThis.requestAnimationFrame(run);
-    else run();
+    if (globalThis.requestAnimationFrame) {
+      globalThis.requestAnimationFrame(run);
+    } else {
+      run();
+    }
   });
 }
 
@@ -36,7 +39,9 @@ export function overlay(
   return {
     [flag]: false,
     [`open${Name}`](...args) {
-      if (this[flag]) return;
+      if (this[flag]) {
+        return;
+      }
       manager.open({
         id,
         root: () => root.call(this),
@@ -54,19 +59,26 @@ export function overlay(
       // not when it was closed before it was drawn (a quick Escape): the focus would land on a hidden element and be lost
       if (focusIn) {
         afterDrawn(this, () => {
-          if (this[flag]) focusIn.call(this)?.focus();
+          if (this[flag]) {
+            focusIn.call(this)?.focus();
+          }
         });
       }
     },
     [`close${Name}`](restoreFocus = false) {
-      if (manager.close(id, { restoreFocus }) || !this[flag]) return;
+      if (manager.close(id, { restoreFocus }) || !this[flag]) {
+        return;
+      }
       // the flag was set without opening (the manager holds no layer): clear it and its state all the same
       this[flag] = false;
       onClose?.call(this);
     },
     [`toggle${Name}`](...args) {
-      if (this[flag]) this[`close${Name}`](true);
-      else this[`open${Name}`](...args);
+      if (this[flag]) {
+        this[`close${Name}`](true);
+      } else {
+        this[`open${Name}`](...args);
+      }
     },
   };
 }

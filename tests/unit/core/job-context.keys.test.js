@@ -78,7 +78,9 @@ test('labels and short names are one table by key, and a job has an entry for ea
     const job = makeJobContext(id);
     assert.deepEqual(Object.keys(job.label), job.stats, id);
     assert.deepEqual(Object.keys(job.short), job.stats, id);
-    for (const s of job.stats) assert.deepEqual([job.label[s], job.short[s]], [STAT_LABEL[s], STAT_SHORT[s]], `${id} ${s}`);
+    for (const s of job.stats) {
+      assert.deepEqual([job.label[s], job.short[s]], [STAT_LABEL[s], STAT_SHORT[s]], `${id} ${s}`);
+    }
   }
   // the names the page shows for a Sage, a Warrior and a Black Mage
   assert.deepEqual(Object.values(makeJobContext('SGE').label), [

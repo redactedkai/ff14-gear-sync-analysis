@@ -47,14 +47,18 @@ function fakeWindow() {
   const listeners = new Map<string, Set<() => void>>();
   return {
     addEventListener(type: string, listener: () => void) {
-      if (!listeners.has(type)) listeners.set(type, new Set());
+      if (!listeners.has(type)) {
+        listeners.set(type, new Set());
+      }
       listeners.get(type)?.add(listener);
     },
     removeEventListener(type: string, listener: () => void) {
       listeners.get(type)?.delete(listener);
     },
     fire(type: string) {
-      for (const listener of listeners.get(type) ?? []) listener();
+      for (const listener of listeners.get(type) ?? []) {
+        listener();
+      }
     },
     count: (type: string) => listeners.get(type)?.size ?? 0,
   };
@@ -84,7 +88,9 @@ test('1,000 changes in a tick are one write, made 150 ms after the last, holding
   const { actions, clock, writes } = setup();
   clock.advance(AUTOSAVE_DEBOUNCE_MS);
   writes.length = 0;
-  for (let i = 1; i <= 1000; i++) actions.editBrowse({ q: `axe ${i}` });
+  for (let i = 1; i <= 1000; i++) {
+    actions.editBrowse({ q: `axe ${i}` });
+  }
   await tick();
   assert.equal(clock.pending(), 1);
   clock.advance(AUTOSAVE_DEBOUNCE_MS - 1);
@@ -152,7 +158,9 @@ test('a storage that throws is ignored, and the next change tries again', async 
   let failing = true;
   const written: string[] = [];
   const { actions, clock } = setup(json => {
-    if (failing) throw new DOMException('full', 'QuotaExceededError');
+    if (failing) {
+      throw new DOMException('full', 'QuotaExceededError');
+    }
     written.push(json);
   });
   clock.advance(AUTOSAVE_DEBOUNCE_MS);
@@ -170,7 +178,9 @@ test('a write that failed is tried again at a change of the screen, at a later w
   const written: string[] = [];
   const { actions, clock, pageEvents } = setup(json => {
     attempts.push(json);
-    if (failing) throw new DOMException('full', 'QuotaExceededError');
+    if (failing) {
+      throw new DOMException('full', 'QuotaExceededError');
+    }
     written.push(json);
   });
   clock.advance(AUTOSAVE_DEBOUNCE_MS);
@@ -208,7 +218,9 @@ test('a write that returns false counts as failed, like one that throws (the pag
   let storageWorks = false;
   const written: string[] = [];
   const { actions, clock } = setup(json => {
-    if (storageWorks) written.push(json);
+    if (storageWorks) {
+      written.push(json);
+    }
     return storageWorks;
   });
   clock.advance(AUTOSAVE_DEBOUNCE_MS);

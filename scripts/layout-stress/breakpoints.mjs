@@ -13,22 +13,30 @@
 export async function findChangePoints({ from, to, step, measure, keyOf, describe }) {
   const cache = new Map();
   const at = async width => {
-    if (!cache.has(width)) cache.set(width, await measure(width));
+    if (!cache.has(width)) {
+      cache.set(width, await measure(width));
+    }
     return cache.get(width);
   };
 
   // the coarse pass
   const coarse = [];
-  for (let width = from; width < to; width += step) coarse.push(width);
+  for (let width = from; width < to; width += step) {
+    coarse.push(width);
+  }
   coarse.push(to);
-  for (const width of coarse) await at(width);
+  for (const width of coarse) {
+    await at(width);
+  }
 
   // every step whose ends differ is split in halves until two neighbours differ by 1 px
   const changes = [];
   const refine = async (low, high) => {
     const lowResult = await at(low);
     const highResult = await at(high);
-    if (keyOf(lowResult) === keyOf(highResult)) return;
+    if (keyOf(lowResult) === keyOf(highResult)) {
+      return;
+    }
     if (high - low <= 1) {
       changes.push({ at: high, changes: describe(lowResult, highResult) });
       return;
@@ -37,7 +45,9 @@ export async function findChangePoints({ from, to, step, measure, keyOf, describ
     await refine(low, middle);
     await refine(middle, high);
   };
-  for (let index = 1; index < coarse.length; index++) await refine(coarse[index - 1], coarse[index]);
+  for (let index = 1; index < coarse.length; index++) {
+    await refine(coarse[index - 1], coarse[index]);
+  }
 
   changes.sort((a, b) => a.at - b.at);
   const series = [...cache.entries()].sort((a, b) => a[0] - b[0]).map(([width, result]) => ({ width, result }));

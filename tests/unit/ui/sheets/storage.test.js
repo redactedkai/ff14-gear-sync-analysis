@@ -36,7 +36,9 @@ function fakeStorage({ failWith = null } = {}) {
     key: i => [...data.keys()][i] ?? null,
     getItem: k => (data.has(k) ? data.get(k) : null),
     setItem(k, v) {
-      if (failWith) throw failWith;
+      if (failWith) {
+        throw failWith;
+      }
       data.set(k, String(v));
     },
     removeItem: k => data.delete(k),
@@ -117,7 +119,9 @@ test('the saved data has no text limit: a long name and long notes are read back
 
 test('the index lists the ids; a new sheet goes to the top and a changed one keeps its place', () => {
   const storage = fakeStorage();
-  for (const id of ['s_a', 's_b', 's_c']) saveSheet(makeSheet(id), storage);
+  for (const id of ['s_a', 's_b', 's_c']) {
+    saveSheet(makeSheet(id), storage);
+  }
   assert.deepEqual(JSON.parse(storage.getItem(SHEETS_KEY)), { v: 1, order: ['s_c', 's_b', 's_a'] });
   saveSheet({ ...makeSheet('s_b'), name: 'Renamed' }, storage);
   assert.deepEqual(
@@ -142,7 +146,9 @@ test('a save writes only its own record (and the index when the sheet is new)', 
 
 test('saveOrder reorders; an id with no record is skipped; a record the index lacks is added at the end', () => {
   const storage = fakeStorage();
-  for (const id of ['s_a', 's_b', 's_c']) saveSheet(makeSheet(id), storage);
+  for (const id of ['s_a', 's_b', 's_c']) {
+    saveSheet(makeSheet(id), storage);
+  }
   saveOrder(['s_a', 's_gone', 's_c', 's_a'], storage);
   assert.deepEqual(
     loadSheets(storage).sheets.map(s => s.id),
@@ -169,7 +175,9 @@ test('a record that cannot be read is listed with its cause and left alone', () 
     s_desc_type: JSON.stringify(withSet('s_desc_type', { description: 5 })),
     s_null: 'null',
   };
-  for (const [id, text] of Object.entries(broken)) storage.setItem(sheetKey(id), text);
+  for (const [id, text] of Object.entries(broken)) {
+    storage.setItem(sheetKey(id), text);
+  }
   const before = new Map(storage.data);
   const read = loadSheets(storage);
   assert.deepEqual(
@@ -194,7 +202,9 @@ test('a record that cannot be read is listed with its cause and left alone', () 
 
 test('deleteSheet removes a record and its id; it also removes an unreadable record', () => {
   const storage = fakeStorage();
-  for (const id of ['s_a', 's_b']) saveSheet(makeSheet(id), storage);
+  for (const id of ['s_a', 's_b']) {
+    saveSheet(makeSheet(id), storage);
+  }
   storage.setItem(sheetKey('s_bad'), 'not json');
   saveOrder(['s_bad', 's_b', 's_a'], storage);
   assert.equal(loadSheets(storage).unreadable.length, 1);
@@ -292,7 +302,9 @@ test('a damaged row, meal, pin, Auto-fill setting or date makes the record unrea
     s_sheet_desc: [{ ...makeSheet('s_sheet_desc'), description: ['notes'] }, 'a damaged description'],
   };
   const storage = fakeStorage();
-  for (const [id, [sheet]] of Object.entries(damaged)) storage.setItem(sheetKey(id), JSON.stringify(sheet));
+  for (const [id, [sheet]] of Object.entries(damaged)) {
+    storage.setItem(sheetKey(id), JSON.stringify(sheet));
+  }
   const read = loadSheets(storage);
   assert.deepEqual(read.sheets, []);
   assert.deepEqual(
@@ -319,7 +331,9 @@ test('a time at the end of the Date range is readable; one past it, or not finit
     assert.ok(read(ok).sheet, String(ok));
     assert.doesNotThrow(() => localDate(ok, 'UTC'), String(ok));
   }
-  for (const bad of [8.64e15 + 2000, -8.64e15 - 2000, 1e300]) assert.equal(read(bad).cause, 'no dates', String(bad));
+  for (const bad of [8.64e15 + 2000, -8.64e15 - 2000, 1e300]) {
+    assert.equal(read(bad).cause, 'no dates', String(bad));
+  }
 });
 
 /* The store lists such a record as unreadable and opens the page with the readable ones: no view meets it. */

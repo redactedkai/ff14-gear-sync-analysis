@@ -56,14 +56,18 @@ async function runGroup(browser, group) {
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 } });
   // every group starts with the reload and close guard off, so its reloads are not held (checkUnloadGuard turns it on)
   await ctx.addInitScript(NO_UNLOAD_GUARD, UNLOAD_GUARD_OFF_KEY);
-  if (group.initScript) await ctx.addInitScript(group.initScript);
+  if (group.initScript) {
+    await ctx.addInitScript(group.initScript);
+  }
   try {
     await stepRecord.run(rec, async () => {
       const pg = await newPage(ctx);
       pg.on('pageerror', e => rec.errors.push(`page error: ${e.message ?? e}`));
       // ERR_* console errors are network failures (Google Fonts offline), not page bugs
       pg.on('console', m => {
-        if (m.type() === 'error' && !m.text().includes('ERR_')) rec.errors.push(`console error: ${m.text()}`);
+        if (m.type() === 'error' && !m.text().includes('ERR_')) {
+          rec.errors.push(`console error: ${m.text()}`);
+        }
       });
       const fail = async (name, e) => {
         rec.failures.push(`${name}: ${String(e.message ?? e).split('\n')[0]}`);
@@ -72,7 +76,9 @@ async function runGroup(browser, group) {
       try {
         await pg.goto(PAGE);
         await waitReady(pg);
-        if (!group.fresh) await setUpShared(pg);
+        if (!group.fresh) {
+          await setUpShared(pg);
+        }
       } catch (e) {
         await fail(`${rec.name} (setup)`, e);
         return;
@@ -115,7 +121,11 @@ export async function main() {
   }
   mkdirSync(OUT, { recursive: true });
   // screenshots of failures from earlier runs would make a passing run look failed
-  for (const file of readdirSync(OUT)) if (/^fail-.*\.png$/.test(file)) rmSync(resolve(OUT, file));
+  for (const file of readdirSync(OUT)) {
+    if (/^fail-.*\.png$/.test(file)) {
+      rmSync(resolve(OUT, file));
+    }
+  }
   writeFileSync(resolve(OUT, 'blank.html'), '<!doctype html><title>blank</title>', 'utf-8'); // for checkCorruptedStorage
 
   // SMOKE_ONLY: a pattern on step names; only the groups with a matching step run (for working on one step)
@@ -124,8 +134,11 @@ export async function main() {
   let domains = null;
   try {
     const flagAt = process.argv.indexOf('--domain');
-    if (flagAt >= 0) domains = parseDomains(process.argv[flagAt + 1] ?? '');
-    else if (process.env.SMOKE_DOMAIN) domains = parseDomains(process.env.SMOKE_DOMAIN);
+    if (flagAt >= 0) {
+      domains = parseDomains(process.argv[flagAt + 1] ?? '');
+    } else if (process.env.SMOKE_DOMAIN) {
+      domains = parseDomains(process.env.SMOKE_DOMAIN);
+    }
   } catch (e) {
     console.log(e.message);
     return 2;
@@ -141,7 +154,9 @@ export async function main() {
     // a pool of workers takes the steps in order; the output below is in step order whichever finishes first
     const queue = groups.map((_, i) => i).sort((a, b) => Number(!!groups[b].slow) - Number(!!groups[a].slow)); // slow ones first
     const worker = async () => {
-      for (let i = queue.shift(); i !== undefined; i = queue.shift()) records[i] = await runGroup(browser, groups[i]);
+      for (let i = queue.shift(); i !== undefined; i = queue.shift()) {
+        records[i] = await runGroup(browser, groups[i]);
+      }
     };
     await Promise.all(Array.from({ length: Math.min(WORKERS, groups.length) }, worker));
   } finally {
@@ -150,11 +165,19 @@ export async function main() {
   }
 
   if (process.env.SMOKE_TRACE) {
-    for (const r of records) for (const [name, ms] of r.steps) console.error(`${String(ms).padStart(6)} ms  ${name}`);
+    for (const r of records) {
+      for (const [name, ms] of r.steps) {
+        console.error(`${String(ms).padStart(6)} ms  ${name}`);
+      }
+    }
     console.error(`${String(Date.now() - t0).padStart(6)} ms  total`);
   }
   // known failures (KNOWN_LOW_CONTRAST, KNOWN_MENU_OVERFLOW): printed by name, never hidden, and they do not fail the run
-  for (const r of records) for (const line of r.known.values()) console.log(line);
+  for (const r of records) {
+    for (const line of r.known.values()) {
+      console.log(line);
+    }
+  }
   const problems = records.flatMap(r => [...r.errors, ...r.failures]);
   // the bare 'no errors' means the whole smoke test passed (npm run check and the docs rely on it); a filtered run says so
   const partial = groups.length < GROUPS.length ? ` (partial: ${groups.length} of ${GROUPS.length} groups)` : '';

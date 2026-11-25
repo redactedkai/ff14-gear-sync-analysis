@@ -42,7 +42,9 @@ test('a covered Off-hand follows the weapon: Take box shown taken, and the mirro
   const rowsOf = (weaponId, offhandId) => {
     const pieces = SET_ROW_SLOTS.map(slot => ({ slot }));
     pieces[0] = piece('weapon', weaponId);
-    if (offhandId) pieces[1] = piece('offhand', offhandId);
+    if (offhandId) {
+      pieces[1] = piece('offhand', offhandId);
+    }
     return { id: 'g_1', name: 'Set 1', description: '', pieces, meal: null, pinned: { pieces: [], meal: false }, fillSettings: null };
   };
 

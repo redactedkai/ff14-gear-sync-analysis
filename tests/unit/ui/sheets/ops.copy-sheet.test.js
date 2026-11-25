@@ -33,7 +33,9 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
     const sets = Array.from({ length: 1 + int(3) }, (_, k) => {
       const pieces = SET_ROW_SLOTS.map(slot => {
         const items = gear.filter(item => item.type === slot);
-        if (!items.length || rand() < 0.2) return { slot };
+        if (!items.length || rand() < 0.2) {
+          return { slot };
+        }
         const stones = Array.from({ length: int(6) }, () => (rand() < 0.2 ? null : { stat: pick(job.substats), grade: 1 + int(12) }));
         return { slot, gameId: pick(items).gameId, stones };
       });
@@ -86,20 +88,27 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
       copy.sets.forEach((set, setIndex) => {
         set.pieces.forEach((row, index) => {
           const before = sheet.sets[setIndex].pieces[index];
-          if (row.gameId != null)
+          if (row.gameId != null) {
             assert.ok(itemById(row.gameId)[ROW.jobMask] & jobBit, `${label}: kept ${row.gameId}, which ${to} cannot wear`);
+          }
           const wasCleared = cleared.some(entry => entry.setId === sheet.sets[setIndex].id && entry.index === index);
           assert.equal(
             wasCleared,
             before.gameId != null && row.gameId == null,
             `${label}: row ${index} cleared or kept against piecesToClear`,
           );
-          for (const stone of row.stones ?? [])
-            if (stone) assert.ok(newJob.substats.includes(stone.stat), `${label}: stone of ${stone.stat}`);
+          for (const stone of row.stones ?? []) {
+            if (stone) {
+              assert.ok(newJob.substats.includes(stone.stat), `${label}: stone of ${stone.stat}`);
+            }
+          }
         });
         const goal = set.fillSettings?.goal;
-        for (const key of ['target', 'tb', 'tb2'])
-          if (goal?.[key]) assert.ok(newJob.stats.includes(goal[key]), `${label}: goal ${key} ${goal[key]}`);
+        for (const key of ['target', 'tb', 'tb2']) {
+          if (goal?.[key]) {
+            assert.ok(newJob.stats.includes(goal[key]), `${label}: goal ${key} ${goal[key]}`);
+          }
+        }
         for (const index of set.pinned.pieces) {
           assert.ok(
             set.pieces[index].gameId != null || sheet.sets[setIndex].pieces[index].gameId == null,
@@ -112,7 +121,9 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
       // the copy's sets evaluate to finite totals
       for (const set of copy.sets) {
         const { evaluated } = evaluateInSheet(read.sheet, set);
-        for (const total of Object.values(evaluated.withFood)) assert.ok(Number.isFinite(total) && total >= 0, `${label}: total ${total}`);
+        for (const total of Object.values(evaluated.withFood)) {
+          assert.ok(Number.isFinite(total) && total >= 0, `${label}: total ${total}`);
+        }
       }
 
       // nothing cleared: copying back gives the goal and the stones' stats it started with
@@ -123,7 +134,9 @@ test('Copy sheet keeps what the new job can wear, moves the goal and stones to i
           const goalBefore = started.fillSettings.goal;
           const goalAfter = set.fillSettings.goal;
           assert.equal(goalAfter.target, goalBefore.target, `${label}: goal after copying back`);
-          if (goalBefore.tb) assert.equal(goalAfter.tb, goalBefore.tb, `${label}: tiebreak after copying back`);
+          if (goalBefore.tb) {
+            assert.equal(goalAfter.tb, goalBefore.tb, `${label}: tiebreak after copying back`);
+          }
           set.pieces.forEach((row, index) => {
             const statsOf = piece => (piece.stones ?? []).map(stone => stone?.stat ?? null);
             assert.deepEqual(statsOf(row), statsOf(started.pieces[index]), `${label}: stones of row ${index} after copying back`);

@@ -47,8 +47,13 @@ export function createAppFacade(store: AppStore, actions: AppActions, revisions:
   };
   /* Read the revision of every field of tab `tab`'s panel ('tiers' has only its job). */
   const readPanel = (tab: string) => {
-    if (tab === 'tiers') void revisions[partKey('settings', 'tiers')];
-    else for (const field of PANEL_KEYS) void revisions[partKey('settings', `panels.${tab}.${field}`)];
+    if (tab === 'tiers') {
+      void revisions[partKey('settings', 'tiers')];
+    } else {
+      for (const field of PANEL_KEYS) {
+        void revisions[partKey('settings', `panels.${tab}.${field}`)];
+      }
+    }
   };
   const browseView = frozenView(() => state.settings.browse);
   const pieceView = frozenView(() => state.settings.piece);
@@ -170,11 +175,17 @@ export function createAppFacade(store: AppStore, actions: AppActions, revisions:
        `gcd`. */
     setField(path: string, value: unknown): void {
       const [group, field] = path.includes('.') ? path.split('.') : ['panel', path];
-      if (group === 'panel') actions.editPanel({ [field]: value });
-      else if (group === 'browse') actions.editBrowse({ [field]: value });
-      else if (group === 'piece') actions.editPiece({ [field]: value });
-      else if (group === 'gcd') actions.editGcd({ [field]: value });
-      else throw new Error(`No setting at "${path}"`);
+      if (group === 'panel') {
+        actions.editPanel({ [field]: value });
+      } else if (group === 'browse') {
+        actions.editBrowse({ [field]: value });
+      } else if (group === 'piece') {
+        actions.editPiece({ [field]: value });
+      } else if (group === 'gcd') {
+        actions.editGcd({ [field]: value });
+      } else {
+        throw new Error(`No setting at "${path}"`);
+      }
     },
   };
 }

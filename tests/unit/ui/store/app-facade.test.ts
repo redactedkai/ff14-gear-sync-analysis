@@ -53,19 +53,21 @@ test('each getter reads the revision of each part it shows, and no other', () =>
     ['screen.pendingTab'],
   );
   const panelFieldOf = { job: 'job', jobCtx: 'job', cap: 'cap', sync: 'sync', level: 'level' } as const;
-  for (const [getter, field] of Object.entries(panelFieldOf))
+  for (const [getter, field] of Object.entries(panelFieldOf)) {
     assert.deepEqual(
       keysRead(() => app[getter as keyof typeof panelFieldOf]),
       ['screen.tab', `settings.panels.browse.${field}`],
       `${getter}: the open tab's panel field`,
     );
+  }
   app.showTab('math');
-  for (const [getter, field] of Object.entries(panelFieldOf))
+  for (const [getter, field] of Object.entries(panelFieldOf)) {
     assert.deepEqual(
       keysRead(() => app[getter as keyof typeof panelFieldOf]),
       ['screen.tab', `settings.panels.math.${field}`],
       `${getter}: the math tab's panel once it is open`,
     );
+  }
   assert.deepEqual(
     keysRead(() => app.browse),
     ['settings.browse'],
@@ -191,8 +193,9 @@ test('nothing is assigned to a facade: a write is an action call, so it is count
     'gcd',
     'tiers',
     'sheetFigures',
-  ])
+  ]) {
     assert.throws(assign(app, field), TypeError, field);
+  }
   for (const field of [
     'screen',
     'sheetId',
@@ -205,8 +208,9 @@ test('nothing is assigned to a facade: a write is an action call, so it is count
     'currentSheet',
     'currentSet',
     'rev',
-  ])
+  ]) {
     assert.throws(assign(sheets, field), TypeError, field);
+  }
 });
 
 test('an edit that changes nothing is not an action: no revision, so the page does not draw again', () => {

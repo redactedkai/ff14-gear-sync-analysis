@@ -36,7 +36,9 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   const mode = opts.mode === 'min' ? 'min' : 'exact';
   const base = { asked: opts.gcd, mode, haste, level };
   const band = speedForGcd(opts.gcd, level, mode, pct);
-  if (!band) return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
+  if (!band) {
+    return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
+  }
 
   const meals = mealsFor(job, opts.food);
   prep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode, fixed: opts.fixed });
@@ -44,12 +46,18 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   const entries = []; // {meal, totals, r, band} per meal with a loadout, for pickMeal
   for (const meal of meals) {
     const gear = gearBand(job, meal, band, level);
-    if (!gear) continue;
+    if (!gear) {
+      continue;
+    }
     const { gearMin, gearMax } = gear;
     const key = `${gearMin},${gearMax}`;
-    if (!runs.has(key)) runs.set(key, solve(prep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
+    if (!runs.has(key)) {
+      runs.set(key, solve(prep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
+    }
     const r = runs.get(key);
-    if (r.ok) entries.push({ meal, totals: r.totals, r, band: { gearMin, gearMax } });
+    if (r.ok) {
+      entries.push({ meal, totals: r.totals, r, band: { gearMin, gearMax } });
+    }
   }
   const best = pickMeal(job, entries, keys, level);
   const truncated = [...runs.values()].some(r => r.truncated);
@@ -108,7 +116,9 @@ export function foodFields(job, best, level, hastePct) {
 export function gearBand(job, meal, band, level) {
   const gearMin = gearNeeded(job, meal, job.speedKey, band.min, level);
   const gearMax = band.max == null ? null : gearNeeded(job, meal, job.speedKey, band.max + 1, level) - 1;
-  if (gearMax != null && gearMax < gearMin) return null;
+  if (gearMax != null && gearMax < gearMin) {
+    return null;
+  }
   return { gearMin, gearMax };
 }
 
@@ -121,9 +131,13 @@ export function fastestGcd(job, pool, sync, opts) {
   const r = solve(prepare(job, pool, sync, { target: job.speedKey, melds: opts.melds, weaponFirst: false, fixed: opts.fixed }), {
     nodeLimit: opts.nodeLimit,
   });
-  if (!r.ok) return null;
+  if (!r.ok) {
+    return null;
+  }
   const meals = mealsFor(job, opts.food);
   let spd = r.totals[job.speedKey] || 0;
-  for (const meal of meals) spd = Math.max(spd, mealTotals(job, meal, r.totals, level).withFood[job.speedKey] || 0);
+  for (const meal of meals) {
+    spd = Math.max(spd, mealTotals(job, meal, r.totals, level).withFood[job.speedKey] || 0);
+  }
   return gcdFor(spd, level, BASE_GCD_MS, pct);
 }

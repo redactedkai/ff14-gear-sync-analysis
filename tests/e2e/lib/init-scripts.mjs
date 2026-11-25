@@ -25,7 +25,9 @@ export const HOLD_SOLVE = () => {
   window.__holdSolve = true;
   window.Worker = class extends RealWorker {
     postMessage(message, ...rest) {
-      if (window.__holdSolve && message?.kind === 'solve') return;
+      if (window.__holdSolve && message?.kind === 'solve') {
+        return;
+      }
       super.postMessage(message, ...rest);
     }
   };
@@ -39,8 +41,11 @@ export const SLOW_COUNT = () => {
   const RealWorker = window.Worker;
   window.Worker = class extends RealWorker {
     postMessage(message, ...rest) {
-      if (message?.kind === 'gearToSearch') setTimeout(() => super.postMessage(message, ...rest), 300);
-      else super.postMessage(message, ...rest);
+      if (message?.kind === 'gearToSearch') {
+        setTimeout(() => super.postMessage(message, ...rest), 300);
+      } else {
+        super.postMessage(message, ...rest);
+      }
     }
   };
 };

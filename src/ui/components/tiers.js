@@ -53,9 +53,13 @@ function drawRows(state, from, to) {
 
 /* Draws the rows around the ones in view of `area` when the rows drawn no longer cover them (the area is scrolled). */
 function redrawIfNeeded(area, state) {
-  if (area.clientHeight === 0) return;
+  if (area.clientHeight === 0) {
+    return;
+  }
   const view = rowsInView(area.scrollTop, area.clientHeight, state.rowHeight, state.rows.length);
-  if (!viewLeavesDrawn(state, view, state.rows.length)) return;
+  if (!viewLeavesDrawn(state, view, state.rows.length)) {
+    return;
+  }
   const { from, to } = rowsToDraw(view, state.rows.length);
   drawRows(state, from, to);
 }
@@ -63,7 +67,9 @@ function redrawIfNeeded(area, state) {
 /* Scrolls `area` so the value's row is in the middle, and draws the rows there. Does nothing while the area is hidden
    (it has no height then); returns whether it scrolled. */
 function centerCurrent(area, state) {
-  if (area.clientHeight === 0) return false;
+  if (area.clientHeight === 0) {
+    return false;
+  }
   area.scrollTop = scrollTopToCenter(state.cur, area.clientHeight, state.namesHeight, state.rowHeight);
   redrawIfNeeded(area, state);
   return true;
@@ -116,7 +122,9 @@ export function tierTable() {
       /* the cards (views/tiers.js tiersView), or null with no job; built again only when the job, the level or the edits
        change */
       get view() {
-        if (!this.panel.job) return null;
+        if (!this.panel.job) {
+          return null;
+        }
         const job = this.panel.jobCtx,
           level = this.level,
           edits = this.liveEdits;
@@ -135,7 +143,9 @@ export function tierTable() {
       /* a value typed into a substat's box (Enter or leaving the box); the box shows the value kept */
       type(stat, el) {
         const value = tierInput(this.panel.jobCtx, stat, el.value, this.level);
-        if (value == null) return;
+        if (value == null) {
+          return;
+        }
         this.setEdit(stat, value);
         this.typed = { ...this.typed, [stat]: (this.typed[stat] ?? 0) + 1 };
         el.value = value;
@@ -148,7 +158,9 @@ export function tierTable() {
       /* a click in a card's scroll area: on a row, pick it */
       pickRow(event) {
         const row = event.target.closest('.lrow');
-        if (row) this.pick(row.dataset.to);
+        if (row) {
+          this.pick(row.dataset.to);
+        }
       },
       /* Draws a card's rows in its scroll area `area` and highlights the value's row, for x-effect (the effect runs again
        when the card's view, the typed count or the open sub-tab changes). Only the rows around the value's (and later
@@ -183,21 +195,29 @@ export function tierTable() {
         markCurrent(state);
 
         // 3. bring it to the middle, once the area is on screen
-        if (state.pending && shown && centerCurrent(area, state)) state.pending = false;
-        else if (state.pending && shown)
+        if (state.pending && shown && centerCurrent(area, state)) {
+          state.pending = false;
+        } else if (state.pending && shown) {
           this.$nextTick(() => {
-            if (centerCurrent(area, state)) state.pending = false;
+            if (centerCurrent(area, state)) {
+              state.pending = false;
+            }
           });
+        }
       },
       /* a card's scroll area scrolled: draw the rows now in view */
       scrolled(area) {
         const state = drawn.get(area);
-        if (state) redrawIfNeeded(area, state);
+        if (state) {
+          redrawIfNeeded(area, state);
+        }
       },
       /* a substat's ? button: open its note under the button and inside the panel, or close it; a press on another substat's
        button changes the note (the manager closed the open one on the press) */
       toggleHelp(stat, button) {
-        if (this.statNoteOpen && this.helpFor === stat) return this.closeStatNote(true);
+        if (this.statNoteOpen && this.helpFor === stat) {
+          return this.closeStatNote(true);
+        }
         helpButton = button;
         const panel = this.$refs.panel.getBoundingClientRect(),
           r = button.getBoundingClientRect();

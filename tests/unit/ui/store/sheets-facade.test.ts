@@ -102,7 +102,9 @@ test('a getter whose value changed after an action read the revision of a slice 
     for (const [key, read] of Object.entries(READERS)) {
       reads.length = 0;
       const after = JSON.stringify(read(sheets) ?? null);
-      if (after === before[key]) continue;
+      if (after === before[key]) {
+        continue;
+      }
       assert.ok(
         reads.some(slice => store.revs[slice] !== revisions[slice]),
         `${key} changed after ${name} and none of the revisions it read (${reads.join(', ')}) moved`,

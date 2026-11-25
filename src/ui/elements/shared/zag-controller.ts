@@ -60,7 +60,9 @@ let machineCount = 0;
    compares with the attributes of the last redraw. */
 function withoutUndefinedStyles(attrs: Attrs): Attrs {
   const style = attrs.style;
-  if (typeof style !== 'object' || style === null) return attrs;
+  if (typeof style !== 'object' || style === null) {
+    return attrs;
+  }
   return { ...attrs, style: Object.fromEntries(Object.entries(style).filter(([, value]) => value != null)) };
 }
 
@@ -93,8 +95,12 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
 
   /* The api of the machine for its current state; throws before the element has ever connected. */
   get api(): Api {
-    if (this.#machine && this.#api === null) this.#api = this.#options.connect(this.#machine.service, normalizeProps);
-    if (this.#api === null) throw new Error(`${this.id}: the api is read before the element connected`);
+    if (this.#machine && this.#api === null) {
+      this.#api = this.#options.connect(this.#machine.service, normalizeProps);
+    }
+    if (this.#api === null) {
+      throw new Error(`${this.id}: the api is read before the element connected`);
+    }
     return this.#api;
   }
 
@@ -112,7 +118,9 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
     this.#host.setAttribute(HOST_ATTRIBUTE, this.id);
     this.#unsubscribe = this.#machine.subscribe(() => {
       this.#api = null;
-      if (!this.#syncing) this.#host.requestUpdate();
+      if (!this.#syncing) {
+        this.#host.requestUpdate();
+      }
     });
     this.#machine.start();
     this.#api = null;
@@ -124,7 +132,9 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
     this.#unsubscribe?.();
     this.#machine?.stop();
     this.#machine = null;
-    for (const cleanUp of this.#spreads.values()) cleanUp();
+    for (const cleanUp of this.#spreads.values()) {
+      cleanUp();
+    }
     this.#spreads.clear();
   }
 
@@ -137,23 +147,31 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
 
   /* After a draw: puts the attributes and handlers of each part of this element on its node. */
   hostUpdated(): void {
-    if (!this.#machine) return;
+    if (!this.#machine) {
+      return;
+    }
     const wanted = this.#options.parts(this.api);
     const seen = new Map<string, number>();
     const spreadNow = new Set<Element>();
     for (const node of this.#host.querySelectorAll(`[${PART_ATTRIBUTE}]`)) {
-      if (!Object.is(node.closest(`[${HOST_ATTRIBUTE}]`), this.#host)) continue; // a part of a machine nested inside this element
+      if (!Object.is(node.closest(`[${HOST_ATTRIBUTE}]`), this.#host)) {
+        continue; // a part of a machine nested inside this element
+      }
       const name = node.getAttribute(PART_ATTRIBUTE) ?? '';
       const index = seen.get(name) ?? 0;
       seen.set(name, index + 1);
       const attrs = Array.isArray(wanted[name]) ? wanted[name][index] : wanted[name];
-      if (!attrs) continue;
+      if (!attrs) {
+        continue;
+      }
       this.#spreads.set(node, spreadProps(node, withoutUndefinedStyles(attrs), this.id));
       spreadNow.add(node);
     }
     // a node Lit took out of the page: let go of its handlers
     for (const [node, cleanUp] of this.#spreads) {
-      if (spreadNow.has(node)) continue;
+      if (spreadNow.has(node)) {
+        continue;
+      }
       cleanUp();
       this.#spreads.delete(node);
     }

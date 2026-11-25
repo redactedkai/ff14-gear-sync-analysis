@@ -52,7 +52,10 @@ test('scroll positions: a refusing or missing storage is ignored on write; a ses
   try {
     assert.equal(tabStorage(), null);
   } finally {
-    if (original) Object.defineProperty(globalThis, 'sessionStorage', original);
-    else delete globalThis.sessionStorage;
+    if (original) {
+      Object.defineProperty(globalThis, 'sessionStorage', original);
+    } else {
+      delete globalThis.sessionStorage;
+    }
   }
 });

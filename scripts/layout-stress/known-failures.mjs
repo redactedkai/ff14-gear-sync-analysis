@@ -27,8 +27,11 @@ export function applyKnownFailures(findings, known = KNOWN_FAILURES) {
   const fresh = [];
   for (const finding of findings) {
     const at = known.findIndex(entry => matches(entry, finding));
-    if (at < 0) fresh.push(finding);
-    else counts[at]++;
+    if (at < 0) {
+      fresh.push(finding);
+    } else {
+      counts[at]++;
+    }
   }
   const knownLines = known
     .map((entry, at) => ({ entry, count: counts[at] }))

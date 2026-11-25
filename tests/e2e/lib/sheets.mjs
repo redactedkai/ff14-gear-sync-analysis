@@ -16,8 +16,12 @@ export async function seedSheets(pg, sheets, broken = {}) {
   await waitStateSaved(pg);
   await pg.evaluate(
     ([key, list, bad]) => {
-      for (const s of list) localStorage.setItem(`${key}:sheet:${s.id}`, JSON.stringify(s));
-      for (const [id, text] of Object.entries(bad)) localStorage.setItem(`${key}:sheet:${id}`, text);
+      for (const s of list) {
+        localStorage.setItem(`${key}:sheet:${s.id}`, JSON.stringify(s));
+      }
+      for (const [id, text] of Object.entries(bad)) {
+        localStorage.setItem(`${key}:sheet:${id}`, text);
+      }
       localStorage.setItem(`${key}:sheets`, JSON.stringify({ v: 1, order: [...list.map(s => s.id), ...Object.keys(bad)] }));
     },
     [STORE_KEY, sheets, broken],

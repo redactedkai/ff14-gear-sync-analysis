@@ -24,7 +24,9 @@ export function unloadGuardDisabled(storage) {
    its own question (preventDefault, and returnValue for older browsers) and does nothing otherwise. */
 export function installUnloadGuard({ target, hasUnsettled, storage }) {
   const listener = event => {
-    if (unloadGuardDisabled(storage) || !hasUnsettled()) return;
+    if (unloadGuardDisabled(storage) || !hasUnsettled()) {
+      return;
+    }
     event.preventDefault();
     event.returnValue = '';
   };

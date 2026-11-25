@@ -47,8 +47,16 @@
       "complexity": {
         "noImportantStyles": "off"
       },
+      "correctness": {
+        "noUnusedVariables": "error"
+      },
       "style": {
-        "useTemplate": "off"
+        "useTemplate": "off",
+        "useBlockStatements": "error",
+        "useConst": "error"
+      },
+      "suspicious": {
+        "noVar": "error"
       }
     }
   },
@@ -56,17 +64,24 @@
   // it there), so its loose `any` types and import style stay as they are; it is still format-checked.
   "overrides": [
     {
+      // console is for src/ only: scripts and tests print on purpose (noConsole is off everywhere else)
+      "includes": ["src/**/*.js", "src/**/*.ts"],
+      "linter": { "rules": { "suspicious": { "noConsole": "error" } } }
+    },
+    {
       "includes": ["scripts/validate/xivgear/xg_sync_test.ts"],
       "linter": { "enabled": false }
     },
     {
       // the startup-failure script is a classic ES5 script (it must run in a browser too old for the rest): function
-      // expressions, var, a catch variable and no optional chaining are the point, not style slips
+      // expressions, var, a catch variable and no optional chaining are the point, not style slips: it is ES5 on
+      // purpose, see the file header
       "includes": ["src/startup-failure.js"],
       "linter": {
         "rules": {
           "complexity": { "useArrowFunction": "off", "useOptionalChain": "off" },
-          "correctness": { "noInnerDeclarations": "off", "noUnusedVariables": "off" }
+          "correctness": { "noInnerDeclarations": "off", "noUnusedVariables": "off" },
+          "suspicious": { "noVar": "off" }
         }
       }
     }

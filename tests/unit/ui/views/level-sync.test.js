@@ -37,7 +37,9 @@ test('views: the gear browser and an Auto-fill apply level sync per piece', () =
   const g = gearViewOf(app);
   const lv100 = g.shown.filter(x => x.lvl === 100);
   assert.ok(lv100.length >= 2);
-  for (const x of lv100) assert.ok(x.eff.mind === 248 && x.raw.mind > 248, x.name);
+  for (const x of lv100) {
+    assert.ok(x.eff.mind === 248 && x.raw.mind > 248, x.name);
+  }
   const pool = gamePool(sge, LEVEL_SYNC_WINDOW);
   Object.assign(app.recipe, { target: 'sps', tb: 'mind', tb2: 'vit', melds: true, byTier: false });
   const sync = { cap: null, sync: false, level: 90 };

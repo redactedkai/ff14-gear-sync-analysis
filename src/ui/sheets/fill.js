@@ -35,8 +35,11 @@ export function fillPlan(job, gearSet) {
   const pinnedRows = [];
   const openRows = [];
   for (const { index, row } of usedRows(job, gearSet)) {
-    if (flagged.has(index) && row.gameId != null) pinnedRows.push(index);
-    else openRows.push(index);
+    if (flagged.has(index) && row.gameId != null) {
+      pinnedRows.push(index);
+    } else {
+      openRows.push(index);
+    }
   }
   const meal = pinnedMealOf(gearSet);
   const mealOpen = !meal;
@@ -68,7 +71,9 @@ export function applyFill(job, gearSet, result) {
   const pinned = new Set(plan.pinnedRows);
   const open = new Set(plan.openRows);
   const resultByType = new Map();
-  for (const piece of result.pieces) resultByType.set(piece.slot, [...(resultByType.get(piece.slot) ?? []), piece]);
+  for (const piece of result.pieces) {
+    resultByType.set(piece.slot, [...(resultByType.get(piece.slot) ?? []), piece]);
+  }
 
   // 1. per slot type, the result's pieces left for the open rows once the pinned rows of that type have had theirs
   const free = new Map();
@@ -79,9 +84,13 @@ export function applyFill(job, gearSet, result) {
 
   // 2. the rows: open ones take the next free result piece of their type
   const pieces = gearSet.pieces.map((row, index) => {
-    if (pinned.has(index) || !open.has(index)) return row;
+    if (pinned.has(index) || !open.has(index)) {
+      return row;
+    }
     const next = free.get(row.slot)?.shift();
-    if (!next || next.gameId == null) return { slot: row.slot };
+    if (!next || next.gameId == null) {
+      return { slot: row.slot };
+    }
     return { slot: row.slot, gameId: next.gameId, stones: next.stones.map(s => s && { ...s }) };
   });
   const meal = pinnedMealOf(gearSet) ?? result.meal ?? null;
@@ -99,8 +108,12 @@ export const PINS_CONFLICT_TEXT = 'The pinned pieces cannot be worn together.';
    rows are open again, so Auto-fill can fill them. Returns '' when nothing was unpinned. */
 export function unpinnedText(names, relicNames) {
   const lines = [];
-  if (names.length) lines.push(`${joinNames(names)} unpinned. Auto-fill again to fill ${oneOrMany(names.length, 'it', 'them')}.`);
-  if (relicNames.length) lines.push(`${joinNames(relicNames)} unpinned: Auto-fill can't count a relic's substats.`);
+  if (names.length) {
+    lines.push(`${joinNames(names)} unpinned. Auto-fill again to fill ${oneOrMany(names.length, 'it', 'them')}.`);
+  }
+  if (relicNames.length) {
+    lines.push(`${joinNames(relicNames)} unpinned: Auto-fill can't count a relic's substats.`);
+  }
   return lines.join(' ');
 }
 

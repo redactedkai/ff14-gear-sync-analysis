@@ -166,7 +166,9 @@ test('number box typing: one commit after the keys stop, of the last value; a li
     100,
     { live: true },
   );
-  for (const text of ['9', '90', '900']) level['@input']({ target: { value: text } });
+  for (const text of ['9', '90', '900']) {
+    level['@input']({ target: { value: text } });
+  }
   assert.deepEqual(live, [9, 90]); // 900 is out of range
 });
 

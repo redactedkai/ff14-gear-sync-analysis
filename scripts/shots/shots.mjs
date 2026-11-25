@@ -51,15 +51,18 @@ const onlyPattern = option('only') ? new RegExp(option('only')) : null;
 const workerCount = numberOption('workers', 4);
 const webFonts = flag('web-fonts');
 
-if (readFileSync(pagePath, 'utf8').includes('class="build-badge"'))
+if (readFileSync(pagePath, 'utf8').includes('class="build-badge"')) {
   console.warn('warning: the page carries the DEV badge; build it with GITHUB_REF_NAME=main to compare across branches');
+}
 
 const errors = [];
 
 /* One shot: a fresh context at `width` in `scheme`, the view's saved state, its steps, then the PNG. */
 async function shoot(browser, { name, view, width, scheme }) {
   const context = await browser.newContext({ viewport: { width, height: VIEWPORT_HEIGHT }, colorScheme: scheme, reducedMotion: 'reduce' });
-  if (!webFonts) await context.route(/fonts\.(googleapis|gstatic)\.com/, route => route.abort());
+  if (!webFonts) {
+    await context.route(/fonts\.(googleapis|gstatic)\.com/, route => route.abort());
+  }
   await prepareContext(context, view);
   try {
     await shootInContext(context, { name, view, width, scheme });
@@ -76,15 +79,23 @@ async function shootInContext(context, { name, view, width, scheme }) {
   await openView(page, view);
 
   const sideways = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  if (sideways > 0) errors.push(`${name} ${width} ${scheme}: sideways scroll of ${sideways} px`);
+  if (sideways > 0) {
+    errors.push(`${name} ${width} ${scheme}: sideways scroll of ${sideways} px`);
+  }
   await page.screenshot({ path: resolve(outDir, `${name}-${width}-${scheme}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
 }
 
 // every view at every width and scheme, shot by a few workers in parallel
 const shots = [];
 for (const [name, view] of Object.entries(VIEWS)) {
-  if (onlyPattern && !onlyPattern.test(name)) continue;
-  for (const width of WIDTHS) for (const scheme of SCHEMES) shots.push({ name, view, width, scheme });
+  if (onlyPattern && !onlyPattern.test(name)) {
+    continue;
+  }
+  for (const width of WIDTHS) {
+    for (const scheme of SCHEMES) {
+      shots.push({ name, view, width, scheme });
+    }
+  }
 }
 mkdirSync(outDir, { recursive: true });
 const browser = await chromium.launch();

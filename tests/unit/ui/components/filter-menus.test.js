@@ -25,7 +25,9 @@ test('Gear categories button text: All, None, All but N up to five left out, the
   const total = keys.length;
   assert.equal(gearFromSummary([]), 'All');
   assert.equal(gearFromSummary(keys), 'None');
-  for (let n = 1; n <= 5; n++) assert.equal(gearFromSummary(keys.slice(0, n)), `All but ${n}`);
+  for (let n = 1; n <= 5; n++) {
+    assert.equal(gearFromSummary(keys.slice(0, n)), `All but ${n}`);
+  }
   assert.equal(gearFromSummary(keys.slice(0, 6)), `${total - 6} of ${total}`);
   assert.equal(gearFromSummary(DEFAULT_EXCLUDE), `${total - DEFAULT_EXCLUDE.length} of ${total}`);
   assert.equal(gearFromSummary([]), 'All');
@@ -37,7 +39,9 @@ test('Gear categories menu: every box once, in its tab; each hint filled in', ()
   assert.deepEqual(laidOut.map(box => box.key).sort(), ACTIVITIES.map(a => a.key).sort());
   assert.ok(Object.isFrozen(GEAR_FROM_SECTIONS));
   // the placeholders: the current tomestones from the data, the level cap's patch series (7.x at level 100)
-  for (const a of ACTIVITIES) assert.doesNotMatch(gearFromHint(a), /[{}]/, a.key);
+  for (const a of ACTIVITIES) {
+    assert.doesNotMatch(gearFromHint(a), /[{}]/, a.key);
+  }
   const byKey = key => gearFromHint(ACTIVITIES.find(a => a.key === key));
   assert.ok(hasParts(byKey('tomes_current'), ...CURRENT_TOMES), byKey('tomes_current')); // the tomestones from the data
   assert.ok(byKey('savage_current').includes(`${EXPANSIONS.findIndex(e => e.levelCap === MAX_LEVEL) + 2}.x`), byKey('savage_current')); // the patch series
@@ -148,7 +152,9 @@ test('Gear categories tabs: Everyday, Side content and Hard content, with the re
   );
   const hardKeys = ACTIVITIES.filter(a => a.section === 'Hard content').map(a => a.key);
   assert.deepEqual(GEAR_FROM_SECTIONS[2].boxes.map(box => box.key).sort(), hardKeys.sort());
-  for (const box of GEAR_FROM_SECTIONS.flatMap(tab => tab.boxes)) assert.ok(box.hint.length > 0 && !/[{}]/.test(box.hint), box.key);
+  for (const box of GEAR_FROM_SECTIONS.flatMap(tab => tab.boxes)) {
+    assert.ok(box.hint.length > 0 && !/[{}]/.test(box.hint), box.key);
+  }
   // the labels and hints come from ACTIVITIES (item-format.json), not from the menu
   assert.deepEqual(
     GEAR_FROM_SECTIONS[0].boxes.slice(0, 2).map(box => box.key),
@@ -183,7 +189,9 @@ test('fromTabAfterKey: the arrows move and wrap, Home and End jump, other keys s
   assert.equal(fromTabAfterKey('ArrowLeft', 0, 5), 4);
   assert.equal(fromTabAfterKey('Home', 3, 5), 0);
   assert.equal(fromTabAfterKey('End', 1, 5), 4);
-  for (const key of ['Tab', 'Enter', ' ', 'ArrowDown', 'a']) assert.equal(fromTabAfterKey(key, 2, 5), -1, key);
+  for (const key of ['Tab', 'Enter', ' ', 'ArrowDown', 'a']) {
+    assert.equal(fromTabAfterKey(key, 2, 5), -1, key);
+  }
 });
 
 test('Gear categories tab row: a key selects and focuses the tab and keeps the key from the page; other keys are left alone', () => {
@@ -231,8 +239,9 @@ test('placeBelowOrAbove, a tall menu (485 px, button 555 to 597): flips up where
   const natural = 485;
   // below the button there are 287 px at 900 high (900 - 601 - 12), 107 at 720, 87 at 700, 155 at 768, 467 at 1080: too few;
   // above it 543 (555 - 4 - 8): the menu opens over the button, its own height, ending 4 px over the button's top (555 - 4 - 485 = 66)
-  for (const windowHeight of [900, 720, 700, 768, 1080])
+  for (const windowHeight of [900, 720, 700, 768, 1080]) {
     assert.deepEqual(placeBelowOrAbove(button, natural, windowHeight), { top: 66, maxHeight: 485, flipped: true }, `${windowHeight}`);
+  }
   // at 1440 high it fits below: 827 px (1440 - 601 - 12)
   assert.deepEqual(placeBelowOrAbove(button, natural, 1440), { top: 601, maxHeight: 827, flipped: false });
   // exactly enough room below stays below (1098 - 601 - 12 = 485)
@@ -260,7 +269,11 @@ test("Expansion filter: the button's text, and a box on or off keeping the oldes
   assert.deepEqual(store.opt.expOff, ['ARR', 'SB']);
   assert.equal(opt.expShown('SB'), false);
   assert.ok(hasNumber(opt.expSummary(), EXPANSIONS.length - 2) && opt.expSummary() !== allShown, opt.expSummary());
-  for (const { short } of EXPANSIONS) if (short !== 'DT') opt.setExpShown(short, false);
+  for (const { short } of EXPANSIONS) {
+    if (short !== 'DT') {
+      opt.setExpShown(short, false);
+    }
+  }
   assert.ok(opt.expSummary().includes('Dawntrail'), opt.expSummary()); // a single expansion is named
   opt.setExpShown('DT', false);
   assert.ok(opt.expSummary().length > 0 && opt.expSummary() !== allShown);
@@ -292,8 +305,12 @@ function menuAt({ inPopover, menuWidth, menuHeight = 200, button, popover = fals
     style: {},
     classList: { add: name => classes.add(name), remove: name => classes.delete(name), contains: name => popover && name === 'popover' },
     closest: selector => {
-      if (inPopover && selector === '.setpop') return { getBoundingClientRect: () => ({ right: popoverRight }) };
-      if (selector === '.wrap') return { getBoundingClientRect: () => ({ right: contentRight }) };
+      if (inPopover && selector === '.setpop') {
+        return { getBoundingClientRect: () => ({ right: popoverRight }) };
+      }
+      if (selector === '.wrap') {
+        return { getBoundingClientRect: () => ({ right: contentRight }) };
+      }
       return null;
     },
     getBoundingClientRect: () => ({

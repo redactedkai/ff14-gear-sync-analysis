@@ -53,7 +53,9 @@ export function parseArguments(args) {
   };
   const separator = args.indexOf('--');
   const own = separator < 0 ? args : args.slice(0, separator);
-  if (separator >= 0) options.nodeFlags = args.slice(separator + 1);
+  if (separator >= 0) {
+    options.nodeFlags = args.slice(separator + 1);
+  }
   for (let i = 0; i < own.length; i++) {
     const arg = own[i];
     if (arg === '--domain') {
@@ -64,13 +66,18 @@ export function parseArguments(args) {
       }
       options.domainsGiven = true;
     } else if (BOOLEAN_OPTIONS.includes(arg)) {
-      if (arg === '--full') Object.assign(options, { py: true, sweep: true, smoke: true });
-      else options[arg.slice(2)] = true;
+      if (arg === '--full') {
+        Object.assign(options, { py: true, sweep: true, smoke: true });
+      } else {
+        options[arg.slice(2)] = true;
+      }
     } else {
       return { error: `unknown option ${arg}; options: --domain <names>, ${BOOLEAN_OPTIONS.join(', ')}, -- <node --test flags>` };
     }
   }
-  if (options.changed && options.domainsGiven) return { error: '--changed picks the domains itself; leave out --domain' };
+  if (options.changed && options.domainsGiven) {
+    return { error: '--changed picks the domains itself; leave out --domain' };
+  }
   return options;
 }
 
@@ -114,9 +121,13 @@ export function domainsOfChange({ path, deleted = false }) {
     domains = domainsOfSource(path);
     reason = 'source file';
   }
-  if (domains.length) return { path, domains, reason: `${reason}, owned by ${domains.join(' and ')}` };
+  if (domains.length) {
+    return { path, domains, reason: `${reason}, owned by ${domains.join(' and ')}` };
+  }
   // a deleted file is no longer in the registry's patterns: not worth a warning
-  if (deleted) return { path, domains: [], reason: 'deleted, no domain to run' };
+  if (deleted) {
+    return { path, domains: [], reason: 'deleted, no domain to run' };
+  }
   return { path, domains: [], reason: 'no domain owns this path', unowned: true };
 }
 
@@ -135,10 +146,14 @@ export function domainsOfChanges(changes) {
 // Reads `git status` and prints which domains the changed files select. Returns { domains } or { error }.
 function pickChangedDomains() {
   const result = spawnSync('git', ['status', '--porcelain', '-uall'], { cwd: ROOT, encoding: 'utf8' });
-  if (result.status !== 0) return { error: `git status failed: ${result.stderr || result.error}` };
+  if (result.status !== 0) {
+    return { error: `git status failed: ${result.stderr || result.error}` };
+  }
   const picked = domainsOfChanges(changedPathsOf(result.stdout));
   console.log(picked.lines.join('\n') || 'no changed files');
-  if (picked.unowned.length) console.warn(`warning: ${picked.unowned.length} changed path(s) are in no domain (see tests/domains.mjs)`);
+  if (picked.unowned.length) {
+    console.warn(`warning: ${picked.unowned.length} changed path(s) are in no domain (see tests/domains.mjs)`);
+  }
   return { domains: picked.domains };
 }
 
@@ -161,7 +176,9 @@ async function listSelection(options) {
       ['sweep', sweepFilesOf([name])],
       ['python', pythonFilesOf([name])],
     ]) {
-      if (files.length) console.log(`  ${kind}: ${files.length} files\n${files.map(file => `    ${file}`).join('\n')}`);
+      if (files.length) {
+        console.log(`  ${kind}: ${files.length} files\n${files.map(file => `    ${file}`).join('\n')}`);
+      }
     }
   }
 }
@@ -206,7 +223,9 @@ export async function main(args) {
     console.log(`changed: ${picked.domains.join(', ')}`);
   }
   if (options.list) {
-    if (!options.changed) await listSelection(options);
+    if (!options.changed) {
+      await listSelection(options);
+    }
     return 0;
   }
   const label = options.domainsGiven ? options.domains.join(', ') : 'all domains';
@@ -218,22 +237,27 @@ export async function main(args) {
   if (!code && options.sweep) {
     const sweepFiles = sweepFilesOf(options.domains);
     console.log(`sweep: ${sweepFiles.length} files (${label})`);
-    if (sweepFiles.length) code = run(process.execPath, ['--test', ...options.nodeFlags, ...sweepFiles]);
+    if (sweepFiles.length) {
+      code = run(process.execPath, ['--test', ...options.nodeFlags, ...sweepFiles]);
+    }
   }
 
   if (!code && options.py) {
     const pythonFiles = pythonFilesOf(options.domains);
     console.log(`python: ${pythonFiles.length} files (${label})`);
     // every generator test is in `data`, so a run that includes it runs the whole folder, as `npm run test:py` does
-    if (pythonFiles.length)
+    if (pythonFiles.length) {
       code = run(process.execPath, ['scripts/py.mjs', '-m', 'unittest', 'discover', '-s', 'tests/data', '-p', 'test_*.py']);
+    }
   }
 
   if (!code && options.smoke) {
     console.log(`smoke: ${label}`);
     code = await runSmoke(options);
   }
-  if (options.changed) console.log('A partial run is a hint only: `npm run check` is still the full gate.');
+  if (options.changed) {
+    console.log('A partial run is a hint only: `npm run check` is still the full gate.');
+  }
   return code;
 }
 

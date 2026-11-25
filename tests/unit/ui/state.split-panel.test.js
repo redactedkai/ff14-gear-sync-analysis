@@ -35,5 +35,7 @@ test('a group that already has its own panel keeps it', () => {
 test('a save with no panel or no groups gets empty groups; a non-object comes back as it is', () => {
   assert.deepEqual(splitPanelSettings({ tab: 'math' }), { tab: 'math', piece: {}, browse: {} });
   assert.deepEqual(splitPanelSettings({ job: null, cap: null }).browse, { job: null, cap: null });
-  for (const bad of [null, undefined, 7, 'x', []]) assert.equal(splitPanelSettings(bad), bad);
+  for (const bad of [null, undefined, 7, 'x', []]) {
+    assert.equal(splitPanelSettings(bad), bad);
+  }
 });

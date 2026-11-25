@@ -33,7 +33,9 @@ const cut = keep => html => html.slice(0, keep(html));
  * first in every page. Returns {page, close}. */
 async function openPage(pg, init) {
   const context = init ? await pg.context().browser().newContext() : pg.context();
-  if (init) await context.addInitScript(init);
+  if (init) {
+    await context.addInitScript(init);
+  }
   const page = await newPage(context);
   return { page, close: () => (init ? context.close() : page.close()) };
 }
@@ -75,7 +77,9 @@ export async function checkStartupFailures(pg) {
 
     // an error inside Alpine, in a known spot: the Job strip's element gets an x-init that calls a function nobody defines
     const partUrl = variantUrl('part', html => {
-      if (!html.includes('x-data="settings"')) throw new Error('the page has no x-data="settings"');
+      if (!html.includes('x-data="settings"')) {
+        throw new Error('the page has no x-data="settings"');
+      }
       return html.replace('x-data="settings"', 'x-data="settings" x-init="settingsMissing()"');
     });
     const part = await failedStart(page, partUrl);
@@ -90,7 +94,9 @@ export async function checkStartupFailures(pg) {
       const watch = () => {
         const root = document.querySelector('.wrap');
         const painted = root && getComputedStyle(root).display !== 'none';
-        if (painted && !document.querySelector('#startfail')) window.__brokenFrame = true;
+        if (painted && !document.querySelector('#startfail')) {
+          window.__brokenFrame = true;
+        }
         requestAnimationFrame(watch);
       };
       requestAnimationFrame(watch);
@@ -123,7 +129,9 @@ const STARTED_MARKER = 'document.documentElement.dataset.started="";';
 /** The copy without the line that marks the page as started: every script runs and throws nothing, but the page never
  * says it finished. */
 const withoutStartMarker = html => {
-  if (!html.includes(STARTED_MARKER)) throw new Error('the page has no started-marker line to remove');
+  if (!html.includes(STARTED_MARKER)) {
+    throw new Error('the page has no started-marker line to remove');
+  }
   return html.replace(STARTED_MARKER, '');
 };
 
@@ -175,7 +183,9 @@ export async function checkStartupReset(pg) {
     await page.goto(variantUrl('reset', throwing));
     await page.evaluate(
       seed => {
-        for (const [key, value] of Object.entries(seed)) localStorage.setItem(key, value);
+        for (const [key, value] of Object.entries(seed)) {
+          localStorage.setItem(key, value);
+        }
       },
       { ...SEEDED, ...FOREIGN },
     );
@@ -254,9 +264,13 @@ export async function checkStartupShell(pg) {
         window.__shell.bar = rectOf(shell.querySelector('nav.tabs'));
         // anything of the page itself painted beside the shell
         const root = document.querySelector('.wrap');
-        if (root && getComputedStyle(root).display !== 'none') window.__shell.leaked = 'the page root';
+        if (root && getComputedStyle(root).display !== 'none') {
+          window.__shell.leaked = 'the page root';
+        }
         const panel = [...document.querySelectorAll('.tab')].find(tab => tab.getClientRects().length > 0);
-        if (panel) window.__shell.leaked = `the ${panel.id} panel`;
+        if (panel) {
+          window.__shell.leaked = `the ${panel.id} panel`;
+        }
       }
       requestAnimationFrame(watch);
     };

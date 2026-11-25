@@ -28,7 +28,9 @@ export function makeSession({ gear = jobGear, size = SESSION_SIZE } = {}) {
       }
       const items = gear(job);
       kept.set(job.jobId, items);
-      if (kept.size > size) kept.delete(kept.keys().next().value);
+      if (kept.size > size) {
+        kept.delete(kept.keys().next().value);
+      }
       return items;
     },
   });

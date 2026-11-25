@@ -54,7 +54,9 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   let band = null;
   if (gcdMode) {
     band = speedForGcd(opts.gcd, level, gcdMode, pct);
-    if (!band) return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
+    if (!band) {
+      return { ok: false, reason: 'unreachable', ...base, fastest: fastestGcd(job, pool, sync, { ...opts, level }) };
+    }
     base.band = band;
   }
 
@@ -62,7 +64,9 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   let meals = [];
   for (const meal of mealsFor(job, opts.food)) {
     const gear = band ? gearBand(job, meal, band, level) : null;
-    if (band && !gear) continue; // the meal jumps over the band
+    if (band && !gear) {
+      continue; // the meal jumps over the band
+    }
     meals.push({ meal, gear, mins: {}, held: [], last: null, proven: [] });
   }
 
@@ -114,7 +118,9 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
       // sets strong in the held keys first and finds one meeting their minimums early (with Direct Hit alone the
       // order said nothing about the minimums: White Mage at level 100 ran 700,000 nodes and found none)
       const r = search(state, stat, keys.slice(0, keys.indexOf(stat)));
-      if (!r.ok) continue;
+      if (!r.ok) {
+        continue;
+      }
       const most = mealTotals(job, state.meal, r.totals, level).withFood[stat] || 0;
       // a search that finished proves the most gear points of `stat` under its limits (its score ranks `stat` first):
       // a regain cut for every later search, whose limits include these (the same band, minimums that only rise). One
@@ -122,7 +128,9 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
       const proven = r.truncated ? state.proven : [...state.proven, provenMost(state, stat, r)];
       reached.push({ state: { ...state, last: r, proven }, most, tier: tierOf ? tierOf(most) : most });
     }
-    if (!reached.length) return none();
+    if (!reached.length) {
+      return none();
+    }
     const bestTier = Math.max(...reached.map(x => x.tier));
     meals = reached
       .filter(x => x.tier === bestTier)
@@ -142,10 +150,14 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   const entries = []; // {meal, totals, r, state} per meal with a loadout, for pickMeal
   for (const state of meals) {
     const r = search(state, keys[0], keys.slice(1));
-    if (r.ok) entries.push({ meal: state.meal, totals: r.totals, r, state });
+    if (r.ok) {
+      entries.push({ meal: state.meal, totals: r.totals, r, state });
+    }
   }
   const best = pickMeal(job, entries, keys, level);
-  if (!best) return none();
+  if (!best) {
+    return none();
+  }
   const food = foodFields(job, best, level, pct);
   return {
     ...best.entry.r,

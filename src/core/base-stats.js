@@ -26,8 +26,12 @@ export const LEVEL_MAIN = Object.freeze([
 export function statBase(job, stat, level) {
   const lv = clampLevel(level);
   // the main stat and Vitality: the job's share of the main stat base
-  if (stat === job.mainKey || stat === 'vit') return Math.floor((LEVEL_MAIN[lv - 1] * job.attributeMods[stat]) / 100);
+  if (stat === job.mainKey || stat === 'vit') {
+    return Math.floor((LEVEL_MAIN[lv - 1] * job.attributeMods[stat]) / 100);
+  }
   // Determination and Piety start from the main stat base, the other substats from the speed base
-  if (MAIN_BASED_SUBSTATS.includes(stat)) return LEVEL_MAIN[lv - 1];
+  if (MAIN_BASED_SUBSTATS.includes(stat)) {
+    return LEVEL_MAIN[lv - 1];
+  }
   return levelParams(lv).sub;
 }

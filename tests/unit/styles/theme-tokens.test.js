@@ -46,13 +46,18 @@ test('the page HTML paints no literal color: no style attribute or fill/stroke/c
   for (const file of files) {
     const html = readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
     for (const [, style] of html.matchAll(/\sstyle="([^"]*)"/g)) {
-      for (const declaration of findLiteralColors(`.x{${style};}`))
+      for (const declaration of findLiteralColors(`.x{${style};}`)) {
         found.push(`${file}: style ${declaration.property}: ${declaration.value}`);
+      }
     }
     for (const [, name, value] of html.matchAll(/\s(fill|stroke|color|bgcolor|stop-color|flood-color)="([^"]*)"/gi)) {
-      if (findLiteralColors(`.x{${name}:${value};}`).length) found.push(`${file}: ${name}="${value}"`);
+      if (findLiteralColors(`.x{${name}:${value};}`).length) {
+        found.push(`${file}: ${name}="${value}"`);
+      }
     }
-    for (const [block] of html.matchAll(/<style[\s\S]*?<\/style>/g)) found.push(`${file}: a <style> block (${block.slice(0, 30)})`);
+    for (const [block] of html.matchAll(/<style[\s\S]*?<\/style>/g)) {
+      found.push(`${file}: a <style> block (${block.slice(0, 30)})`);
+    }
   }
   assert.deepEqual(found, []);
 });
@@ -62,7 +67,9 @@ function quotedColors(dir) {
   const found = [];
   for (const file of walk(dir).filter(f => /\.(js|ts)$/.test(f))) {
     const code = readFileSync(file, 'utf8');
-    for (const [match] of code.matchAll(/['"`]\s*(#[0-9a-f]{3,8}|(?:rgba?|hsla?)\([^'"`)]*\))\s*['"`]/gi)) found.push(`${file}: ${match}`);
+    for (const [match] of code.matchAll(/['"`]\s*(#[0-9a-f]{3,8}|(?:rgba?|hsla?)\([^'"`)]*\))\s*['"`]/gi)) {
+      found.push(`${file}: ${match}`);
+    }
   }
   return found;
 }
@@ -88,8 +95,11 @@ test('the light and the dark token lists name the same tokens; the system-dark a
   assert.deepEqual(tokens.darkSetting, tokens.darkForced);
   const changed = Object.keys(tokens.darkForced);
   assert.ok(changed.length >= 20, `only ${changed.length} dark tokens`);
-  for (const name of changed) assert.ok(name in tokens.light, `${name} is dark only`);
+  for (const name of changed) {
+    assert.ok(name in tokens.light, `${name} is dark only`);
+  }
   // the colors that must differ between the schemes for the page to have a dark mode
-  for (const name of ['--bg', '--surface', '--fg', '--muted', '--line', '--accent'])
+  for (const name of ['--bg', '--surface', '--fg', '--muted', '--line', '--accent']) {
     assert.notEqual(tokens.light[name], tokens.darkForced[name], name);
+  }
 });

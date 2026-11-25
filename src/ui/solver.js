@@ -26,8 +26,12 @@ import { gearToSearchView, solveView } from './solve.js';
    the worker throws. */
 export function solverRequest(kind, { job, sync, level, recipe }, { key, pins = null } = {}) {
   const request = { kind, jobId: job.jobId, sync, level, recipe };
-  if (pins) request.pins = pins;
-  if (key !== undefined) request.key = key;
+  if (pins) {
+    request.pins = pins;
+  }
+  if (key !== undefined) {
+    request.key = key;
+  }
   return request;
 }
 
@@ -129,10 +133,14 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   const answer = (callers, reply) =>
     reply.then(
       value => {
-        for (const c of callers) c.resolve(value);
+        for (const c of callers) {
+          c.resolve(value);
+        }
       },
       error => {
-        for (const c of callers) c.reject(error);
+        for (const c of callers) {
+          c.reject(error);
+        }
       },
     );
 
@@ -141,7 +149,9 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   const takePending = lane => {
     const byKey = new Map();
     for (const entry of [lane.flight, ...lane.waiting.values()]) {
-      if (!entry) continue;
+      if (!entry) {
+        continue;
+      }
       const older = byKey.get(entry.key);
       byKey.set(entry.key, older ? { ...entry, callers: [...older.callers, ...entry.callers] } : entry);
     }
@@ -152,8 +162,12 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
 
   // the worker stopped, its handlers off first (a reply already on its way is not taken), its requests' timers cleared
   const stopWorker = () => {
-    if (!worker) return;
-    for (const lane of Object.values(lanes)) clearTimeout(lane.flight?.timer);
+    if (!worker) {
+      return;
+    }
+    for (const lane of Object.values(lanes)) {
+      clearTimeout(lane.flight?.timer);
+    }
     worker.onmessage = worker.onerror = worker.onmessageerror = null;
     worker.terminate();
     worker = null;
@@ -161,11 +175,15 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
 
   // 1. the fallback: every caller still waiting is answered by it, with the newest request of its kind and key
   const fallBack = () => {
-    if (backup) return;
+    if (backup) {
+      return;
+    }
     backup = fallback();
     stopWorker();
     for (const lane of Object.values(lanes)) {
-      for (const pending of takePending(lane)) answer(pending.callers, backup.request(pending.request));
+      for (const pending of takePending(lane)) {
+        answer(pending.callers, backup.request(pending.request));
+      }
     }
   };
 
@@ -189,7 +207,9 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   // the oldest request waiting in a lane, posted (none waiting: nothing happens)
   const postNext = lane => {
     const next = lane.waiting.values().next().value;
-    if (!next) return;
+    if (!next) {
+      return;
+    }
     lane.waiting.delete(next.key);
     post(lane, next);
   };
@@ -209,7 +229,9 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   // 3. a reply from the worker: to the callers of the request with its id; then the next waiting request of that kind
   const onReply = ({ data }) => {
     const lane = Object.values(lanes).find(l => l.flight?.id === data.id);
-    if (!lane) return;
+    if (!lane) {
+      return;
+    }
     const { callers, timer } = lane.flight;
     clearTimeout(timer);
     lane.flight = null;
@@ -240,26 +262,41 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
   // of the queue and rejected, and the worker is left as it is.
   const restart = (kind, error, key) => {
     const lane = lanes[kind];
-    if (!worker || !lane) return false;
+    if (!worker || !lane) {
+      return false;
+    }
     if (key !== undefined && lane.flight?.key !== key) {
       const waiting = lane.waiting.get(key);
-      if (!waiting) return false;
+      if (!waiting) {
+        return false;
+      }
       lane.waiting.delete(key);
-      for (const caller of waiting.callers) caller.reject(error);
+      for (const caller of waiting.callers) {
+        caller.reject(error);
+      }
       return true;
     }
-    if (!lane.flight) return false;
+    if (!lane.flight) {
+      return false;
+    }
     const stopped = takePending(lane);
     stopWorker();
     const kept = [];
     for (const pending of stopped) {
-      if (key === undefined || pending.key === key) for (const caller of pending.callers) caller.reject(error);
-      else kept.push(pending);
+      if (key === undefined || pending.key === key) {
+        for (const caller of pending.callers) {
+          caller.reject(error);
+        }
+      } else {
+        kept.push(pending);
+      }
     }
     start();
     if (backup) {
       // the new worker could not be made: fallBack has asked the page's thread for the other lanes
-      for (const pending of kept) answer(pending.callers, backup.request(pending.request));
+      for (const pending of kept) {
+        answer(pending.callers, backup.request(pending.request));
+      }
       return true;
     }
     let resent = false;
@@ -268,7 +305,9 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
       resent = true;
     }
     for (const other of Object.values(lanes)) {
-      if (other === lane) continue;
+      if (other === lane) {
+        continue;
+      }
       for (const pending of takePending(other)) {
         enqueue(other, pending);
         resent = true;
@@ -286,12 +325,20 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
     },
     cancel: (kind, key) => restart(kind, cancelledError(), key === undefined ? undefined : (key ?? null)),
     request(request) {
-      if (!worker && !backup) start();
-      if (backup) return backup.request(request);
-      if (request.kind === 'gearToSearch') lastGearToSearch = request;
+      if (!worker && !backup) {
+        start();
+      }
+      if (backup) {
+        return backup.request(request);
+      }
+      if (request.kind === 'gearToSearch') {
+        lastGearToSearch = request;
+      }
       return new Promise((resolve, reject) => {
         const lane = lanes[request.kind];
-        if (!lane) throw new Error(`unknown solver request kind: ${request.kind}`);
+        if (!lane) {
+          throw new Error(`unknown solver request kind: ${request.kind}`);
+        }
         enqueue(lane, { id: ++nextId, key: request.key ?? null, request, callers: [{ resolve, reject }] });
       });
     },

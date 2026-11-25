@@ -14,8 +14,12 @@ function sourceFiles(folder, found = []) {
   for (const name of readdirSync(folder)) {
     const path = join(folder, name);
     if (statSync(path).isDirectory()) {
-      if (relative(ROOT, path).replaceAll('\\', '/') !== 'src/ui/store') sourceFiles(path, found);
-    } else if (/\.(js|html)$/.test(name)) found.push(path);
+      if (relative(ROOT, path).replaceAll('\\', '/') !== 'src/ui/store') {
+        sourceFiles(path, found);
+      }
+    } else if (/\.(js|html)$/.test(name)) {
+      found.push(path);
+    }
   }
   return found;
 }
@@ -57,8 +61,11 @@ test('no template or component writes to the app or sheets facade: every write i
     const lines = readFileSync(file, 'utf8').split(/\r?\n/);
     lines.forEach((line, index) => {
       const code = line.replace(/\/\/.*$/, '');
-      for (const { name, pattern } of WRITES)
-        if (pattern.test(code)) found.push(`${relative(ROOT, file).replaceAll('\\', '/')}:${index + 1}: ${name}: ${line.trim()}`);
+      for (const { name, pattern } of WRITES) {
+        if (pattern.test(code)) {
+          found.push(`${relative(ROOT, file).replaceAll('\\', '/')}:${index + 1}: ${name}: ${line.trim()}`);
+        }
+      }
     });
   }
   assert.deepEqual(found, []);

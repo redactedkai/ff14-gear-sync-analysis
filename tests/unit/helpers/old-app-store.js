@@ -52,9 +52,13 @@ export function createAppStore(initial) {
        resets that owner's job-specific selections the new job cannot use (resetForJob); every other tab and sub-tab keeps
        its own job. A user action only (the job menu's tile), never a watcher. */
     setJob(id, owner = this.tab) {
-      if (owner === 'tiers') return this.setTiersJob(id);
+      if (owner === 'tiers') {
+        return this.setTiersJob(id);
+      }
       const job = makeJobContext(id);
-      if (job.jobId === this.job) return;
+      if (job.jobId === this.job) {
+        return;
+      }
       const from = this.job ? this.jobCtx : null;
       this.jobCtx = job;
       this.job = job.jobId;
@@ -65,16 +69,22 @@ export function createAppStore(initial) {
     /* Substat tiers' own job: the level typed into its box stays only if the new job's level cap allows it. */
     setTiersJob(id) {
       const job = makeJobContext(id);
-      if (job.jobId === this.tiers.job) return;
+      if (job.jobId === this.tiers.job) {
+        return;
+      }
       this.tiers.job = job.jobId;
-      if (this.tiers.level != null && this.tiers.level >= job.maxLevel) this.tiers.level = null;
+      if (this.tiers.level != null && this.tiers.level >= job.maxLevel) {
+        this.tiers.level = null;
+      }
     },
 
     /* While the math tab is open and its IL Sync is off, its panel holds level sync's item level as its cap
        (job-sync-panel.js holdLevelSyncCap). Called from the user actions that change its inputs (job change, Reset, the
        level box), never from a watcher: a tab change swaps the panel and must leave both tabs' fields as they were. */
     followLevelSync() {
-      if (this.tab === 'math') holdLevelSyncCap(this);
+      if (this.tab === 'math') {
+        holdLevelSyncCap(this);
+      }
     },
 
     /* Set tab `tab`'s ('browse' or 'math') Job and sync panel to `panel` ({job, cap, sync, level}, already checked: state.js
@@ -87,19 +97,26 @@ export function createAppStore(initial) {
       const from = target.job ? panelOf(this, tab).jobCtx : null;
       const changed = target.job !== panel.job;
       Object.assign(target, fields);
-      if (tab === 'math') holdLevelSyncCap(target); // with IL Sync off, the cap is level sync's
-      if (target === this) this.jobCtx = makeJobContext(panel.job);
+      if (tab === 'math') {
+        holdLevelSyncCap(target); // with IL Sync off, the cap is level sync's
+      }
+      if (target === this) {
+        this.jobCtx = makeJobContext(panel.job);
+      }
       // resetForJob reads the level and the tab's own settings from the object it is given: this tab's
-      if (changed)
+      if (changed) {
         resetForJob({ level: panel.level, piece: this.piece, browse: this.browse }, makeJobContext(panel.job), from, [
           tab === 'browse' ? 'browse' : 'math',
         ]);
+      }
     },
 
     /* The open tab's settings back to their defaults (Paladin, level 100, sync off): its Job and sync strip and its own fields (the piece, or
        the browser's filters). The other tabs stay. */
     resetAll() {
-      if (!PANEL_GROUP[this.tab]) return; // the Sheets tab has no panel and no settings of its own here
+      if (!PANEL_GROUP[this.tab]) {
+        return; // the Sheets tab has no panel and no settings of its own here
+      }
       const d = restoreState(null);
       const own = { browse: { browse: d.browse }, math: { piece: d.piece } }[this.tab];
       Object.assign(this, own, { job: d.job, cap: d.cap, sync: d.sync, level: d.level });
@@ -117,7 +134,9 @@ export function createAppStore(initial) {
       const request = this.openingTabRequest;
       requestAnimationFrame(() =>
         setTimeout(() => {
-          if (request !== this.openingTabRequest) return;
+          if (request !== this.openingTabRequest) {
+            return;
+          }
           this.showTab(t);
           this.pendingTab = null;
         }, 0),
@@ -132,18 +151,26 @@ export function createAppStore(initial) {
         t = 'math';
       }
       const next = TABS.includes(t) ? t : TABS[0];
-      if (next === this.tab) return;
+      if (next === this.tab) {
+        return;
+      }
       this.keepPanel();
       this.tab = next;
       const own = this[PANEL_GROUP[next]];
-      if (!own) return;
+      if (!own) {
+        return;
+      }
       Object.assign(this, Object.fromEntries(PANEL_KEYS.map(key => [key, own[key]])));
       this.jobCtx = makeJobContext(own.job);
     },
     /* The open tab's panel copied into its group (none for the Sheets tab). */
     keepPanel() {
       const own = this[PANEL_GROUP[this.tab]];
-      if (own) for (const key of PANEL_KEYS) own[key] = this[key];
+      if (own) {
+        for (const key of PANEL_KEYS) {
+          own[key] = this[key];
+        }
+      }
     },
     showSub(s) {
       this.mathTab = MATH_TABS.includes(s) ? s : 'piece';
@@ -156,7 +183,9 @@ export function createAppStore(initial) {
         o[k] = this[k];
       });
       const group = PANEL_GROUP[this.tab];
-      if (group) o[group] = { ...o[group], ...Object.fromEntries(PANEL_KEYS.map(key => [key, this[key]])) };
+      if (group) {
+        o[group] = { ...o[group], ...Object.fromEntries(PANEL_KEYS.map(key => [key, this[key]])) };
+      }
       o.tiers = Object.fromEntries(TIERS_SAVED_KEYS.map(key => [key, this.tiers[key]]));
       return o;
     },

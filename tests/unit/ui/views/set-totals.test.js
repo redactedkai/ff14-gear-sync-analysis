@@ -74,9 +74,12 @@ test('a job with an always-on haste says its Tier row counts the hasted speed; o
       .tier.caption;
   const plain = caption('SGE');
   assert.ok(plain.length > 0);
-  for (const jobId of ['MNK', 'NIN', 'SAM', 'VPR'])
+  for (const jobId of ['MNK', 'NIN', 'SAM', 'VPR']) {
     assert.ok(caption(jobId).length > 0 && caption(jobId) !== plain, `${jobId}: the hasted caption differs`);
-  for (const jobId of ['WAR', 'DRG']) assert.equal(caption(jobId), plain, jobId);
+  }
+  for (const jobId of ['WAR', 'DRG']) {
+    assert.equal(caption(jobId), plain, jobId);
+  }
 });
 
 test('Sage: the Tier row is the spare points and the points to the next tier of the gear total', () => {

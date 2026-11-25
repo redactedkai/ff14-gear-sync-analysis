@@ -120,7 +120,9 @@ export function createAppStore(restored: unknown) {
     showTab: actions.showTab,
     showSub: actions.showSub,
   };
-  for (const key of PANEL_KEYS) Object.defineProperty(adapter, key, panelField(key));
+  for (const key of PANEL_KEYS) {
+    Object.defineProperty(adapter, key, panelField(key));
+  }
   return adapter as typeof adapter & Record<(typeof PANEL_KEYS)[number], unknown>;
 }
 

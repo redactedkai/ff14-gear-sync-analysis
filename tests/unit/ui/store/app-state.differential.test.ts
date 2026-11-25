@@ -228,7 +228,9 @@ for (const [startIndex, start] of STARTS.entries()) {
 test('the generator reaches every tab, a job change on each panel owner and a reset (the run is not trivially equal)', () => {
   const pick = rngInt(99);
   const labels = new Set<string>();
-  for (let i = 0; i < 400; i++) labels.add(randomStep(pick).label.split('(')[0].split(' ')[0]);
+  for (let i = 0; i < 400; i++) {
+    labels.add(randomStep(pick).label.split('(')[0].split(' ')[0]);
+  }
   for (const name of [
     'showTab',
     'showSub',
@@ -241,6 +243,7 @@ test('the generator reaches every tab, a job change on each panel owner and a re
     'tiers',
     'gcd',
     'sheetFigures',
-  ])
+  ]) {
     assert.ok(labels.has(name), name);
+  }
 });

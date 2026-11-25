@@ -51,7 +51,9 @@ test('start and next bound the step exactly, at every level', () => {
         const label = `${job.jobId} ${stat} ${g} at ${level}`;
         assert.ok(t.start <= g && (t.next == null || g < t.next), label);
         assert.equal(effect(t.start), t.effect, label);
-        if (t.start > 0) assert.notEqual(effect(t.start - 1), t.effect, label);
+        if (t.start > 0) {
+          assert.notEqual(effect(t.start - 1), t.effect, label);
+        }
         // the GCD's last step is the game's 1.50 s floor: nothing comes after it
         if (t.next == null) {
           assert.equal(t.effect, '1.50s', label);
@@ -214,7 +216,9 @@ test("Monk's haste skips some 0.01 s GCD steps, so a few speed tiers are longer"
   assert.ok(sizes.includes(85) && sizes.some(s => s > 100), JSON.stringify(sizes));
   const l = tierLadder(mnk, 'sks', 100, 875, 3, 20);
   const gcds = l.rows.map(r => Number(r.values[0].slice(0, -1)));
-  for (let i = 1; i < gcds.length; i++) assert.ok([1, 2].includes(Math.round((gcds[i - 1] - gcds[i]) * 100)), JSON.stringify(gcds));
+  for (let i = 1; i < gcds.length; i++) {
+    assert.ok([1, 2].includes(Math.round((gcds[i - 1] - gcds[i]) * 100)), JSON.stringify(gcds));
+  }
 });
 
 test('no ladder for main stat, Vitality or a missing special substat', () => {
@@ -226,7 +230,9 @@ test('no ladder for main stat, Vitality or a missing special substat', () => {
    key has its own effects (tiers.js). */
 test('specKey: Piety for healers (MP), Tenacity for tanks (damage done and taken), none for the rest', () => {
   const keys = {};
-  for (const { id, profile } of JOBS) keys[profile] = [...(keys[profile] ?? []), makeJobContext(id).specKey];
+  for (const { id, profile } of JOBS) {
+    keys[profile] = [...(keys[profile] ?? []), makeJobContext(id).specKey];
+  }
   assert.deepEqual(new Set(keys.healer), new Set(['piety']));
   assert.deepEqual(new Set(keys.tank), new Set(['ten']));
   for (const role of Object.keys(keys).filter(r => r !== 'healer' && r !== 'tank')) {

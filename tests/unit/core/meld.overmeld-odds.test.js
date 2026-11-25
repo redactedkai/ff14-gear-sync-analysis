@@ -52,12 +52,13 @@ test('a piece that cannot be HQ uses the NQ rates', () => {
 
 test('the high grades have no chance past the first overmeld slot, and the table agrees with MATERIA.high', () => {
   for (const grade of MATERIA.high) {
-    for (const item of [earrings, axe])
+    for (const item of [earrings, axe]) {
       assert.deepEqual(
         [2, 3, 4].map(n => overmeldChance(item, grade, n)),
         [0, 0, 0],
         `grade ${grade}`,
       );
+    }
   }
   assert.equal(overmeldChance(earrings, 0, 1), null);
   assert.equal(overmeldChance(earrings, 13, 1), null);

@@ -14,7 +14,9 @@ export function limitRows(groups, limit) {
   let room = limit;
   const kept = [];
   for (const group of groups) {
-    if (room <= 0) break;
+    if (room <= 0) {
+      break;
+    }
     kept.push(group.items.length <= room ? group : { ...group, items: group.items.slice(0, room) });
     room -= group.items.length;
   }

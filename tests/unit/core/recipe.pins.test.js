@@ -155,7 +155,9 @@ test('one ring pinned: the other ring is searched, a Unique pinned ring is no ch
   assert.equal(rings[0].p.item.gameId, pinnedRing.gameId);
   assert.equal(rings[0].p.meld, null, 'pinned with no stones');
   assert.notEqual(rings[1].p.item.gameId, pinnedRing.gameId);
-  for (const option of run.found.options[rings[1].i]) assert.notEqual(option.item.gameId, pinnedRing.gameId);
+  for (const option of run.found.options[rings[1].i]) {
+    assert.notEqual(option.item.gameId, pinnedRing.gameId);
+  }
   assert.deepEqual(
     run.found.options[rings[0].i].map(c => c.item.gameId),
     [pinnedRing.gameId],
@@ -177,7 +179,9 @@ test('pinProblem: a Unique ring pinned on both ring rows is a conflict; two diff
   assert.deepEqual(resolve([ringPin(uniqueRing), ringPin(otherRing)]).problems, []);
   // a ring that is not Unique can be worn twice, if the data has one for Sage
   const plainRing = GEAR.find(i => i.type === 'ring' && i.copies === 2);
-  if (plainRing) assert.deepEqual(resolve([ringPin(plainRing), ringPin(plainRing)]).problems, []);
+  if (plainRing) {
+    assert.deepEqual(resolve([ringPin(plainRing), ringPin(plainRing)]).problems, []);
+  }
   // the solve answers badpin
   const run = runRecipe(sge, SYNC, 100, recipe(), makeSession(), {}, { pieces: [ringPin(uniqueRing), ringPin(uniqueRing)], meal: null });
   assert.equal(run.status, 'badpin');

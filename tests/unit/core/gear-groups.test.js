@@ -29,7 +29,9 @@ test('the groups are the nine measured ones and hold every job once', () => {
 });
 
 test('a group never mixes level caps', () => {
-  for (const group of GEAR_GROUPS) assert.equal(new Set(group.map(id => JOB_LEVEL_CAPS[id] ?? null)).size, 1);
+  for (const group of GEAR_GROUPS) {
+    assert.equal(new Set(group.map(id => JOB_LEVEL_CAPS[id] ?? null)).size, 1);
+  }
 });
 
 test('copyTargets lists the other jobs of the group; Blue Mage, Beastmaster and unknown ids have none', () => {

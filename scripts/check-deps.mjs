@@ -14,8 +14,12 @@ const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
 function installedVersion(name) {
   for (let dir = ROOT; ; dir = dirname(dir)) {
     const manifest = resolve(dir, 'node_modules', name, 'package.json');
-    if (existsSync(manifest)) return readJson(manifest).version;
-    if (dirname(dir) === dir) return null;
+    if (existsSync(manifest)) {
+      return readJson(manifest).version;
+    }
+    if (dirname(dir) === dir) {
+      return null;
+    }
   }
 }
 
@@ -26,7 +30,9 @@ const mismatches = [];
 for (const name of names) {
   const locked = lock.packages[`node_modules/${name}`]?.version;
   const installed = installedVersion(name);
-  if (installed !== locked) mismatches.push(`${name}: installed ${installed ?? 'none'}, lock ${locked}`);
+  if (installed !== locked) {
+    mismatches.push(`${name}: installed ${installed ?? 'none'}, lock ${locked}`);
+  }
 }
 if (mismatches.length) {
   console.warn(`warning: installed packages differ from package-lock.json; run \`npm ci\`:\n  ${mismatches.join('\n  ')}`);

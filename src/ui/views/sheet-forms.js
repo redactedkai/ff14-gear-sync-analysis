@@ -13,7 +13,9 @@ import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, 
    the others, so a template only displays them. */
 export function errorPlaces({ error = '', errorField = '' }) {
   const places = { name: '', job: '', ack: '', title: '' };
-  if (error) places[Object.values(FORM_FIELD).includes(errorField) ? errorField : 'title'] = error;
+  if (error) {
+    places[Object.values(FORM_FIELD).includes(errorField) ? errorField : 'title'] = error;
+  }
   return { error, errors: places };
 }
 
@@ -132,7 +134,10 @@ export function deleteQuestionView(kind, target, form) {
   if (kind === 'sheet') {
     const count = target.sets.length;
     question = `Delete the sheet “${target.name}” ${count ? `and its ${plural(count, 'gear set')}` : '(it has no gear sets)'}?`;
-  } else if (kind === 'set') question = `Delete the gear set “${target.name}”?`;
-  else question = `Delete the saved sheet that could not be read (${target.cause})?`;
+  } else if (kind === 'set') {
+    question = `Delete the gear set “${target.name}”?`;
+  } else {
+    question = `Delete the saved sheet that could not be read (${target.cause})?`;
+  }
   return { question, buttonText: 'Delete', error: form.error ?? '' };
 }

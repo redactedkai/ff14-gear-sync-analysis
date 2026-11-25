@@ -38,7 +38,9 @@ test('damaged sheet records never throw in the readers or the views built from t
       storage.setItem(`ilvl-stat-lab-v4:sheet:${original.id}`, JSON.stringify(raw));
       sheetManagerView(loadSheets(storage));
     }, label);
-    if (!parsed.sheet) continue;
+    if (!parsed.sheet) {
+      continue;
+    }
     readable++;
 
     // a readable record repaired, evaluated and planned for Auto-fill
@@ -53,7 +55,9 @@ test('damaged sheet records never throw in the readers or the views built from t
           evaluated.defense?.phys,
           evaluated.defense?.mag,
         ];
-        for (const total of totals) assert.ok(total === undefined || isTotal(total), `total ${total}: ${label}`);
+        for (const total of totals) {
+          assert.ok(total === undefined || isTotal(total), `total ${total}: ${label}`);
+        }
         fillPlan(job, set);
         fillRecipe(fillSettingsOf(job, set));
       }

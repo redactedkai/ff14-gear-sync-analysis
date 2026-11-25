@@ -180,7 +180,9 @@ const NO_MOTION_CSS =
 /* The localStorage entries (pairs of key and JSON text) that make a page open in `state`, a view's saved state: the
    settings, then each sheet record and the sheet order. Empty for no saved state. */
 function seedRecords(state) {
-  if (!state) return [];
+  if (!state) {
+    return [];
+  }
   const { sheets = [], ...settings } = state;
   return [
     [STORE_KEY, JSON.stringify(settings)],
@@ -203,7 +205,9 @@ export async function prepareContext(context, view) {
   if (records.length) {
     await context.addInitScript(records => {
       if (!sessionStorage.getItem('shots-seeded')) {
-        for (const [key, value] of records) localStorage.setItem(key, value);
+        for (const [key, value] of records) {
+          localStorage.setItem(key, value);
+        }
         sessionStorage.setItem('shots-seeded', '1');
       }
     }, records);
@@ -224,7 +228,9 @@ export async function openView(page, view) {
     await settle(page);
     await page.mouse.move(1, 1);
     await page.evaluate(() => {
-      for (const table of document.querySelectorAll('table[data-col]')) table.dataset.col = '';
+      for (const table of document.querySelectorAll('table[data-col]')) {
+        table.dataset.col = '';
+      }
     });
   }
   await page.evaluate(() => document.fonts.ready);
@@ -235,7 +241,11 @@ export async function openView(page, view) {
    opens Sheets whatever tab the saved state names). */
 export function viewUrl(pageUrl, view) {
   const { tab, mathTab = 'piece' } = view.state ?? {};
-  if (tab === 'browse') return `${pageUrl}#/gear`;
-  if (tab === 'math') return `${pageUrl}#/math/${mathTab}`;
+  if (tab === 'browse') {
+    return `${pageUrl}#/gear`;
+  }
+  if (tab === 'math') {
+    return `${pageUrl}#/math/${mathTab}`;
+  }
   return pageUrl;
 }

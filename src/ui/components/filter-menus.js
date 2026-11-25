@@ -47,10 +47,18 @@ export const GEAR_FROM_SECTIONS = Object.freeze(
    one (both wrap round), Home the first and End the last. Returns the new index, or -1 for any other key.
    `key`: the key event's `key`; `index`: the current tab's index; `count`: how many tabs there are. */
 export function fromTabAfterKey(key, index, count) {
-  if (key === 'ArrowRight') return (index + 1) % count;
-  if (key === 'ArrowLeft') return (index + count - 1) % count;
-  if (key === 'Home') return 0;
-  if (key === 'End') return count - 1;
+  if (key === 'ArrowRight') {
+    return (index + 1) % count;
+  }
+  if (key === 'ArrowLeft') {
+    return (index + count - 1) % count;
+  }
+  if (key === 'Home') {
+    return 0;
+  }
+  if (key === 'End') {
+    return count - 1;
+  }
   return -1;
 }
 
@@ -72,8 +80,12 @@ export function gearFromCountText(count) {
    under the current filters.", "1 piece in ...", or "No pieces in this category for this job and filters." for 0; '' before a
    count has landed (null). `count`: the pieces in the box. */
 export function gearFromCountWords(count) {
-  if (count == null) return '';
-  if (count === 0) return 'No pieces in this category for this job and filters.';
+  if (count == null) {
+    return '';
+  }
+  if (count === 0) {
+    return 'No pieces in this category for this job and filters.';
+  }
   return `${fmtInt(count)} ${count === 1 ? 'piece' : 'pieces'} in this category under the current filters.`;
 }
 
@@ -84,7 +96,9 @@ const WRITE_ACTION = { browse: 'editBrowse' };
    its action (editBrowse); or an accessor {read(component) → the settings, write(component, patch)} for settings kept
    elsewhere (a gear set's Auto-fill settings, changed through the sheet store). Returns the accessor. */
 function filterAccess(part) {
-  if (typeof part !== 'string') return part;
+  if (typeof part !== 'string') {
+    return part;
+  }
   return { read: self => self.$store.app[part], write: (self, patch) => self.$store.app[WRITE_ACTION[part]](patch) };
 }
 
@@ -140,14 +154,18 @@ const menuFloat = {
      the button) the menu must not cover when it opens upward: it then ends 4 px over that element's top instead of the
      button's. */
   placeMenu(menu, anchor, coverTop) {
-    if (!menu || !anchor) return;
+    if (!menu || !anchor) {
+      return;
+    }
     const windowWidth = document.documentElement.clientWidth;
     const popover = menu.closest('.setpop');
     if (!popover) {
       menu.classList.remove('to-left');
       // the page's content column (.wrap: the body without its padding, 1,280 px at most), not the body, which is as wide as the window
       const contentRight = menu.closest('.wrap').getBoundingClientRect().right;
-      if (menu.getBoundingClientRect().right > Math.min(windowWidth - MENU_EDGE_PX, contentRight)) menu.classList.add('to-left');
+      if (menu.getBoundingClientRect().right > Math.min(windowWidth - MENU_EDGE_PX, contentRight)) {
+        menu.classList.add('to-left');
+      }
       return;
     }
     menu.classList.remove('to-left');
@@ -170,7 +188,9 @@ const menuFloat = {
     // a menu opens rightwards, and leftwards only when it would pass the popover's right edge or the window's
     const rightLimit = Math.min(windowWidth - MENU_EDGE_PX, popover.getBoundingClientRect().right);
     const rightEdgeOnButton = menu.classList.contains('popover') || button.left + width > rightLimit;
-    if (rightEdgeOnButton) box.left = `${Math.max(MENU_EDGE_PX, button.right - width)}px`;
+    if (rightEdgeOnButton) {
+      box.left = `${Math.max(MENU_EDGE_PX, button.right - width)}px`;
+    }
   },
 };
 
@@ -239,7 +259,9 @@ export function gearFromToggles(part) {
     fromTabKey(state, event, tablist) {
       const current = GEAR_FROM_SECTIONS.findIndex(tab => tab.key === state.tab);
       const next = fromTabAfterKey(event.key, current, GEAR_FROM_SECTIONS.length);
-      if (next < 0) return;
+      if (next < 0) {
+        return;
+      }
       event.preventDefault();
       state.tab = GEAR_FROM_SECTIONS[next].key;
       tablist.querySelectorAll('[role="tab"]')[next]?.focus();
@@ -257,8 +279,12 @@ export function expansionToggles(part) {
     expansions: EXPANSIONS,
     expSummary() {
       const on = EXPANSIONS.filter(e => this.expShown(e.short));
-      if (on.length === EXPANSIONS.length) return 'All expansions';
-      if (!on.length) return 'None';
+      if (on.length === EXPANSIONS.length) {
+        return 'All expansions';
+      }
+      if (!on.length) {
+        return 'None';
+      }
       return on.length === 1 ? on[0].name : `${on.length} expansions`;
     },
     expShown(short) {

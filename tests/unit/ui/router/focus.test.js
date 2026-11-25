@@ -34,7 +34,9 @@ function rootElement() {
   };
   root.getAttribute = name => (name === 'style' && root.hasStyleAttribute ? (minHeight ? `min-height: ${minHeight};` : '') : null);
   root.removeAttribute = name => {
-    if (name === 'style') root.hasStyleAttribute = false;
+    if (name === 'style') {
+      root.hasStyleAttribute = false;
+    }
   };
   return root;
 }
@@ -51,10 +53,14 @@ function frames() {
   return {
     raf: callback => queue.push(callback),
     run: () => {
-      while (queue.length) queue.shift()();
+      while (queue.length) {
+        queue.shift()();
+      }
     },
     step: () => {
-      for (const callback of queue.splice(0)) callback();
+      for (const callback of queue.splice(0)) {
+        callback();
+      }
     },
   };
 }
@@ -105,7 +111,9 @@ test('it waits for a tab that is still opening, then focuses; a tab that never o
     scrollTo: y => scrolled.push(y),
     scrolledTo: () => scrolled.at(-1),
   });
-  for (let frame = 0; frame < 10; frame += 1) step();
+  for (let frame = 0; frame < 10; frame += 1) {
+    step();
+  }
   assert.equal(h.focused, null, 'nothing while the tab is opening');
   assert.deepEqual(scrolled, []);
   pending = false;
@@ -124,10 +132,11 @@ test('it waits for a tab that is still opening, then focuses; a tab that never o
     scrollTo: () => {},
     scrolledTo: () => 0,
   });
-  for (let frame = 0; frame < 200 && stuck.focused === null; frame += 1)
+  for (let frame = 0; frame < 200 && stuck.focused === null; frame += 1) {
     stuckQueue.splice(0).forEach(callback => {
       callback();
     });
+  }
   assert.deepEqual(stuck.focused, { preventScroll: true });
 });
 
@@ -135,7 +144,9 @@ test('a screen still too short to scroll to the position is tried again on the n
   const queue = [];
   const raf = callback => queue.push(callback);
   const step = () => {
-    for (const callback of queue.splice(0)) callback();
+    for (const callback of queue.splice(0)) {
+      callback();
+    }
   };
   let reachable = 0; // the page is still being drawn: it can scroll only this far
   let at = 0;
@@ -180,13 +191,21 @@ test('a scroll the browser clamps a frame later is scrolled again once the page 
     scrolledTo: () => position,
   });
   const frame = () => {
-    if (undrawn) position = Math.min(position, reachable);
+    if (undrawn) {
+      position = Math.min(position, reachable);
+    }
     undrawn = false;
-    for (const callback of queue.splice(0)) callback();
+    for (const callback of queue.splice(0)) {
+      callback();
+    }
   };
-  for (let count = 0; count < 4; count += 1) frame(); // asked for 400 and reported as 400 at once, but drawn at 300
+  for (let count = 0; count < 4; count += 1) {
+    frame(); // asked for 400 and reported as 400 at once, but drawn at 300
+  }
   reachable = 900;
-  for (let count = 0; count < 8; count += 1) frame();
+  for (let count = 0; count < 8; count += 1) {
+    frame();
+  }
   assert.equal(position, 400);
   assert.ok(wanted.length >= 2, 'it asked again after the page was drawn too short');
 });
@@ -315,7 +334,9 @@ test('a screen that is still growing keeps its height held until it reaches the 
     clock.step();
     assert.equal(page.held, 400, `still held at ${height}`);
   }
-  for (let frame = 0; frame < 6; frame += 1) clock.step(); // 450 px of scrolling now: the position is reached and has held
+  for (let frame = 0; frame < 6; frame += 1) {
+    clock.step(); // 450 px of scrolling now: the position is reached and has held
+  }
   assert.equal(page.held, 0);
   assert.equal(page.position, 400);
 });
@@ -456,7 +477,9 @@ test('a screen opened at the top does not watch the page size: a layout change t
   });
   clock.run();
   at = 90; // the player scrolls, then the screen changes height
-  for (const onResize of watchers) onResize();
+  for (const onResize of watchers) {
+    onResize();
+  }
   assert.deepEqual(scrolled, [0], 'the page is placed once and never moved by a size change');
 });
 

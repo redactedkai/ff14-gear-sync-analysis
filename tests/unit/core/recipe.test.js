@@ -25,7 +25,9 @@ test('runRecipe: the set by gameId, the record with the goal as asked, and no se
   for (const [i, piece] of run.set.pieces.entries()) {
     const pick = run.found.picks[i];
     assert.equal(piece.gameId, pick.item?.gameId, `row ${i}`);
-    if (pick.item) assert.equal(piece.name, undefined);
+    if (pick.item) {
+      assert.equal(piece.name, undefined);
+    }
   }
   assert.equal(run.set.meal, run.found.food.shown.key);
   // the record is a frozen copy: a later change to the recipe handed in does not reach it
@@ -49,10 +51,16 @@ test('runRecipe: a piece picked by gameId is shown where it gives the same resul
   for (const [row, options] of run.found.options.entries()) {
     for (const c of options.filter(o => o.item !== run.found.picks[row].item)) {
       const picked = runRecipe(sge, SYNC, 100, asked, session, { pieces: { [row]: c.item.gameId } });
-      if (picked.set.pieces[row].gameId === c.item.gameId) shown = { row, picked };
-      if (shown) break;
+      if (picked.set.pieces[row].gameId === c.item.gameId) {
+        shown = { row, picked };
+      }
+      if (shown) {
+        break;
+      }
     }
-    if (shown) break;
+    if (shown) {
+      break;
+    }
   }
   assert.ok(shown, 'some row shows a picked piece');
   assert.equal(shown.picked.status, 'ok');

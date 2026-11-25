@@ -16,7 +16,9 @@ export function watch<State extends Record<string, object>, Value>(
   let previous = select(store.state);
   return store.subscribe(() => {
     const next = select(store.state);
-    if (equals(next, previous)) return;
+    if (equals(next, previous)) {
+      return;
+    }
     const before = previous;
     previous = next;
     callback(next, before);

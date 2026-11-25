@@ -12,7 +12,9 @@ const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve('axe-core
  * critical), `help` a short sentence naming the rule, `targets` the CSS selectors of the elements that break it.
  * Rules that cannot decide ("incomplete") are not returned. */
 export async function axeViolations(pg) {
-  if (!(await pg.evaluate(() => typeof globalThis.axe !== 'undefined'))) await pg.addScriptTag({ content: AXE_SOURCE });
+  if (!(await pg.evaluate(() => typeof globalThis.axe !== 'undefined'))) {
+    await pg.addScriptTag({ content: AXE_SOURCE });
+  }
   return pg.evaluate(async () => {
     const result = await globalThis.axe.run(document, { resultTypes: ['violations'] });
     return result.violations.map(v => ({
@@ -40,10 +42,14 @@ export function splitKnown(violations, known) {
           (k.target === undefined || k.target === target) &&
           (k.targetContains === undefined || target.includes(k.targetContains)),
       );
-      if (entry) matched.add(entry);
+      if (entry) {
+        matched.add(entry);
+      }
       return !entry;
     });
-    if (unknownTargets.length) fresh.push({ ...violation, targets: unknownTargets });
+    if (unknownTargets.length) {
+      fresh.push({ ...violation, targets: unknownTargets });
+    }
   }
   return { fresh, matched };
 }

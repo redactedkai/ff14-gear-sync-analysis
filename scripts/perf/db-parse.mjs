@@ -39,7 +39,9 @@ const AFTER = `<script>performance.mark('after'); performance.measure('script', 
 
 /* A page with `script` between two marks; the measure 'script' spans them. */
 function timedPage(script) {
-  if (/<\/script/i.test(script)) throw new Error('the script contains "</script", which would end it early');
+  if (/<\/script/i.test(script)) {
+    throw new Error('the script contains "</script", which would end it early');
+  }
   return `<!doctype html><meta charset="utf-8"><title>db parse</title>\n${BEFORE}<script>${RUN_MARK}${script}</script>${AFTER}`;
 }
 
@@ -64,7 +66,9 @@ async function dbScript(plugins = []) {
 function pageWithMarks() {
   const html = readFileSync(PAGE, 'utf8');
   const at = html.indexOf('<script>\n');
-  if (at < 0) throw new Error('no bundle script in dist/index.html; run npm run build');
+  if (at < 0) {
+    throw new Error('no bundle script in dist/index.html; run npm run build');
+  }
   const end = html.indexOf('</script>', at) + '</script>'.length;
   const script = html.slice(at + '<script>'.length, end);
   return `${html.slice(0, at)}${BEFORE}<script>${RUN_MARK}${script}${AFTER}${html.slice(end)}`;
@@ -101,7 +105,9 @@ async function main() {
       console.log(`\nCPU ${rate}x${rate === 1 ? ' (this machine)' : ' slower'}`);
       for (const [name, html] of variants) {
         const times = [];
-        for (let i = 0; i < runs; i++) times.push(await timeOnce(browser, html, rate, run++));
+        for (let i = 0; i < runs; i++) {
+          times.push(await timeOnce(browser, html, rate, run++));
+        }
         const [lo, hi] = [Math.min(...times), Math.max(...times)];
         console.log(`  ${name}: median ${median(times).toFixed(0)} ms (${lo.toFixed(0)} to ${hi.toFixed(0)})`);
         results.push({ rate, variant: name, ms: times });

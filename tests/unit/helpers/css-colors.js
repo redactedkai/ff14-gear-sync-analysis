@@ -12,8 +12,12 @@ const COLOR_PROPERTIES =
 function block(css, open) {
   let depth = 0;
   for (let i = open; i < css.length; i++) {
-    if (css[i] === '{') depth++;
-    if (css[i] === '}' && --depth === 0) return { body: css.slice(open + 1, i), end: i + 1 };
+    if (css[i] === '{') {
+      depth++;
+    }
+    if (css[i] === '}' && --depth === 0) {
+      return { body: css.slice(open + 1, i), end: i + 1 };
+    }
   }
   throw new Error('unclosed block');
 }
@@ -47,7 +51,9 @@ function declarationsOutsideTokens(css) {
       // the token blocks, and the dialogs' backdrop fallback of each (sheets.css: a ::backdrop does not inherit them in older browsers;
       // tests/unit/styles/sheets.backdrop-fallback.test.js holds those values equal to the tokens)
       const isToken = /^:root(\[data-theme="dark"\]|:not\(\[data-theme="light"\]\))?( \.dlg::backdrop)?$|^\.dlg::backdrop$/.test(selector);
-      if (!isToken) walk(body, selector);
+      if (!isToken) {
+        walk(body, selector);
+      }
       at = end;
     }
   };
@@ -61,7 +67,9 @@ function declarationsOutsideTokens(css) {
 export function findLiteralColors(css) {
   return declarationsOutsideTokens(css).filter(({ property, value }) => {
     const bare = value.replace(/"[^"]*"|'[^']*'/g, '').replace(/var\(--[\w-]+\)/g, '');
-    if (COLOR_FUNCTION.test(bare)) return true;
+    if (COLOR_FUNCTION.test(bare)) {
+      return true;
+    }
     return COLOR_PROPERTIES.test(property) && COLOR_NAMES.test(bare);
   });
 }

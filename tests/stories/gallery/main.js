@@ -23,7 +23,9 @@ async function findStory(storyId) {
 
 window.mount = async ({ story, props }) => {
   const makeTemplate = await findStory(story);
-  if (!makeTemplate) throw new Error(`Unknown story: ${story}`);
+  if (!makeTemplate) {
+    throw new Error(`Unknown story: ${story}`);
+  }
   // render() reuses the root's part, so a second call with the same template updates in place (the fixture's update())
   render(await makeTemplate(props ?? {}), root);
 };

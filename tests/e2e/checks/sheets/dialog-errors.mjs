@@ -46,8 +46,11 @@ async function checkAtField(pg, what, { message, row, label, field, marked, desc
   );
   check(msg.left >= labelBox.right, `${what}: the reason is not at the right of the label text`);
   // a reason in a label row is above its field; the tick box's line is inside the warning block that is marked
-  if (inField) check(msg.top >= fieldBox.top && msg.bottom <= fieldBox.bottom, `${what}: the reason is outside the marked block`);
-  else check(msg.bottom <= fieldBox.top + 1, `${what}: the reason is not above the field`);
+  if (inField) {
+    check(msg.top >= fieldBox.top && msg.bottom <= fieldBox.bottom, `${what}: the reason is outside the marked block`);
+  } else {
+    check(msg.bottom <= fieldBox.top + 1, `${what}: the reason is not above the field`);
+  }
   check(msg.left >= fieldBox.left - 1 && msg.right <= fieldBox.right + 1, `${what}: the reason is wider than the field`);
   await expect(pg.locator(marked)).toBeVisible();
   if (describes) {

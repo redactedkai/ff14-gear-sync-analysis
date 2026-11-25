@@ -12,8 +12,12 @@ const pythonArgs = process.argv.slice(2);
 for (const pythonName of PYTHON_NAMES) {
   const result = spawnSync(pythonName, pythonArgs, { stdio: 'inherit' });
   // not installed under this name: try the next one
-  if (result.error?.code === 'ENOENT') continue;
-  if (result.error) throw result.error;
+  if (result.error?.code === 'ENOENT') {
+    continue;
+  }
+  if (result.error) {
+    throw result.error;
+  }
   // killed by a signal: status is null, so report a failure
   process.exit(result.status ?? 1);
 }

@@ -6,7 +6,9 @@ import { optimize } from '../../src/core/optimizer/index.js';
 import { listOption } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesFull, SYNCS } from './workloads.mjs';
 
-if (!global.gc) throw new Error('run with node --expose-gc');
+if (!global.gc) {
+  throw new Error('run with node --expose-gc');
+}
 const jobIds = listOption('jobs', JOB_IDS);
 const syncs = SYNCS.filter(s => ['off', 'cap 123', 'cap 660', 'lvl 90 cap 635'].includes(s.label));
 const heap = () => {
@@ -19,7 +21,9 @@ const sweep = () => {
   for (const id of jobIds) {
     const job = ctx(id);
     for (const sync of syncs) {
-      for (const o of objectivesFull(job)) optimize(job, pools.get(id), sync, { ...o, melds: true });
+      for (const o of objectivesFull(job)) {
+        optimize(job, pools.get(id), sync, { ...o, melds: true });
+      }
     }
   }
 };
@@ -58,9 +62,19 @@ for (let k = 0; k < 10 && freed < registered; k++) {
 console.log(`dropped pool: ${freed} of ${registered} items freed`);
 
 const fails = [];
-if (m2.memo !== m1.memo) fails.push('second sweep added memo entries');
-if (h2 - h1 > 1) fails.push('second sweep grew the heap by more than 1 MB');
-if (m1.memo > 200000) fails.push('memo above 200k entries');
-if (freed < registered) fails.push('a dropped pool was not freed');
+if (m2.memo !== m1.memo) {
+  fails.push('second sweep added memo entries');
+}
+if (h2 - h1 > 1) {
+  fails.push('second sweep grew the heap by more than 1 MB');
+}
+if (m1.memo > 200000) {
+  fails.push('memo above 200k entries');
+}
+if (freed < registered) {
+  fails.push('a dropped pool was not freed');
+}
 console.log(fails.length ? `MISSES: ${fails.join('; ')}` : 'memory budgets met');
-if (fails.length) process.exit(1);
+if (fails.length) {
+  process.exit(1);
+}

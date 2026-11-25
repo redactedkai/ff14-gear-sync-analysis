@@ -17,7 +17,9 @@ test('an Auto-fill result builds the page view once, however often it is read; t
   await c.fill();
   builds = 0;
   const first = c.view;
-  for (let i = 0; i < 70; i++) assert.equal(c.view, first);
+  for (let i = 0; i < 70; i++) {
+    assert.equal(c.view, first);
+  }
   assert.equal(builds, 1, 'one build for the result');
   assert.equal('mealMenu' in first, false, 'the Food menu is not part of the view');
   const menu = c.mealMenuView;
@@ -26,7 +28,9 @@ test('an Auto-fill result builds the page view once, however often it is read; t
 
   // a Take box is a new suggestion: one more build, and the Food menu is built again for it
   c.setTake(FEET, false);
-  for (let i = 0; i < 70; i++) c.view;
+  for (let i = 0; i < 70; i++) {
+    c.view;
+  }
   assert.equal(builds, 2);
   assert.notEqual(c.mealMenuView, menu);
 });

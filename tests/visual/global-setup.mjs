@@ -13,7 +13,9 @@ export const PAGE_ENV = 'GSA_VISUAL_PAGE';
 /* Playwright's global setup: returns a teardown-free setup; sets PAGE_ENV to the built page, unless it is already set
    (a page built elsewhere is shot as it is). */
 export default async function globalSetup() {
-  if (process.env[PAGE_ENV]) return;
+  if (process.env[PAGE_ENV]) {
+    return;
+  }
   const folder = mkdtempSync(join(tmpdir(), 'gsa-visual-'));
   const pagePath = join(folder, 'page.html');
   await buildReleasePage(pagePath);

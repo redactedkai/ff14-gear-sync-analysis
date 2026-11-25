@@ -42,7 +42,9 @@ export function makeSet(pieces, meal = null) {
 export function setFromPicks(picks, meal = null) {
   return makeSet(
     picks.map(p => {
-      if (!p.item) return { slot: p.type };
+      if (!p.item) {
+        return { slot: p.type };
+      }
       const stones = meldStones(p.item, p.meld ?? null);
       return p.item.gameId != null ? { slot: p.type, gameId: p.item.gameId, stones } : { slot: p.type, custom: p.item, stones };
     }),
@@ -53,8 +55,12 @@ export function setFromPicks(picks, meal = null) {
 /* The pool item a set's piece stands for, for `job`: its custom item, the database piece of its game id
    (poolItemById), or null for an empty slot or a game id no database row has. */
 function pieceItem(job, piece) {
-  if (piece.custom) return piece.custom;
-  if (piece.gameId != null) return poolItemById(job, piece.gameId);
+  if (piece.custom) {
+    return piece.custom;
+  }
+  if (piece.gameId != null) {
+    return poolItemById(job, piece.gameId);
+  }
   return null;
 }
 
@@ -132,7 +138,9 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
         blockedBy: cover?.item.name ?? '',
       };
     }
-    if (w.piece.slot !== 'ring') label = slotLabel(w.piece.slot, slotInfo(job, w.item).blocks);
+    if (w.piece.slot !== 'ring') {
+      label = slotLabel(w.piece.slot, slotInfo(job, w.item).blocks);
+    }
     const lvl = equipLevel(w.item);
     return {
       slot: w.piece.slot,
@@ -157,7 +165,9 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
     const value = totals[s];
     const g = s === job.speedKey && hastePct ? gcdTierAt(value || 0, level, BASE_GCD_MS, hastePct) : null;
     const tier = g ? { effect: `${g.gcd.toFixed(2)}s`, start: g.start, next: g.next } : statTier(job, s, value, level);
-    if (!tier) return null;
+    if (!tier) {
+      return null;
+    }
     return {
       effect: tier.effect,
       start: tier.start,
@@ -230,6 +240,8 @@ export function averageItemLevel(job, rows) {
   // 3. nothing worn in the counted slots: no average
   const isHandSlot = row => row.slot === 'weapon' || row.slot === 'offhand';
   const worn = used.filter(row => row.item && (job.damageKey || !isHandSlot(row))).length;
-  if (!worn) return null;
+  if (!worn) {
+    return null;
+  }
   return { value: values.reduce((sum, level) => sum + level, 0) / values.length, slots: values.length, worn };
 }

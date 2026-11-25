@@ -41,7 +41,13 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   // each candidate's blocked slots, and every slot some candidate can block, as position masks
   const positions = slotPositions(slotList);
   const blocksOf = new Map();
-  for (const list of posList) for (const cand of list) if (!blocksOf.has(cand)) blocksOf.set(cand, positionMask(cand.blocks, positions));
+  for (const list of posList) {
+    for (const cand of list) {
+      if (!blocksOf.has(cand)) {
+        blocksOf.set(cand, positionMask(cand.blocks, positions));
+      }
+    }
+  }
   const blockable = positionMask([...blockableTypes(posList)], positions);
   // a limited total as entries compare it: capped at the minimum unless the stat has a maximum
   const capOf = limits.map(l => (l.max == null ? (l.min > 0 ? l.min : 0) : Infinity));
@@ -50,7 +56,9 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   // regain.js), the rest more is better. A second band is not supported: the caller then searches
   const isBand = limits.map(l => l.max != null && l.min > 0);
   const exactK = isBand.indexOf(true);
-  if (isBand.lastIndexOf(true) !== exactK) return null;
+  if (isBand.lastIndexOf(true) !== exactK) {
+    return null;
+  }
   const compare = limits.map((l, k) => (k === exactK || l.cut ? 0 : l.max != null ? -1 : 1));
 
   // stages from the last slot back: one per slot, the two ring slots as one; each stage's choices as
@@ -61,15 +69,21 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
       // the pairs alone would pass FRONT_TRIES (and building millions of them overflowed the stack below: Scholar at
       // level 100, a Target GCD, about 2,000 ring candidates): give up before building them
       const rings = posList[i - 1].length;
-      if ((rings * (rings + 1)) / 2 > FRONT_TRIES) return null;
+      if ((rings * (rings + 1)) / 2 > FRONT_TRIES) {
+        return null;
+      }
       stages.push({ from: i - 1, choices: ringChoices(posList[i - 1]) });
       i--;
       continue;
     }
     const list = posList[i];
     const choices = list.map(a => ({ cands: [a] }));
-    if (!list.length) choices.push({ cands: [null], unfilled: true });
-    if (blockable & (1 << i)) choices.push({ cands: [null], emptyBit: 1 << i });
+    if (!list.length) {
+      choices.push({ cands: [null], unfilled: true });
+    }
+    if (blockable & (1 << i)) {
+      choices.push({ cands: [null], emptyBit: 1 << i });
+    }
     stages.push({ from: i, choices });
   }
   for (const st of stages) {
@@ -78,9 +92,13 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
       c.vals = new Float64Array(nL);
       c.blocks = 0;
       for (const a of c.cands) {
-        if (!a) continue;
+        if (!a) {
+          continue;
+        }
         c.score += a.score;
-        for (let k = 0; k < nL; k++) c.vals[k] += a.eff[limits[k].stat] || 0;
+        for (let k = 0; k < nL; k++) {
+          c.vals[k] += a.eff[limits[k].stat] || 0;
+        }
         c.blocks |= blocksOf.get(a);
       }
     }
@@ -93,11 +111,19 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     const acc = { score: before[s + 1].score, vals: Float64Array.from(before[s + 1].vals) };
     // loops, not Math.max(...list): a long list as arguments overflows the stack
     let top = 0;
-    for (const c of st.choices) if (c.score > top) top = c.score;
+    for (const c of st.choices) {
+      if (c.score > top) {
+        top = c.score;
+      }
+    }
     acc.score += top;
     for (let k = 0; k < nL; k++) {
       let most = 0;
-      for (const c of st.choices) if (c.vals[k] > most) most = c.vals[k];
+      for (const c of st.choices) {
+        if (c.vals[k] > most) {
+          most = c.vals[k];
+        }
+      }
       acc.vals[k] += most;
     }
     before[s] = acc;
@@ -109,7 +135,9 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   const sizes = [];
   const work = { compares: 0 }; // entry comparisons in paretoFilter, over all stages
   stages.forEach((st, s) => {
-    if (!front) return;
+    if (!front) {
+      return;
+    }
     tries += front.length * st.choices.length;
     if (tries > FRONT_TRIES) {
       front = null;
@@ -120,34 +148,53 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     for (const e of front) {
       for (const c of st.choices) {
         const score = e.score + c.score;
-        if (score + room.score <= known) continue;
+        if (score + room.score <= known) {
+          continue;
+        }
         const vals = new Float64Array(nL);
         let ok = true;
         for (let k = 0; k < nL && ok; k++) {
           const total = e.vals[k] + c.vals[k];
           const l = limits[k];
-          if (l.max != null && total > l.max) ok = false;
-          else if (l.min > 0 && total + room.vals[k] < l.min) ok = false;
+          if (l.max != null && total > l.max) {
+            ok = false;
+          } else if (l.min > 0 && total + room.vals[k] < l.min) {
+            ok = false;
+          }
           vals[k] = Math.min(capOf[k], total);
         }
-        if (!ok) continue;
+        if (!ok) {
+          continue;
+        }
         out.push({ score, vals, empty: e.empty | (c.emptyBit || 0), blocked: e.blocked | c.blocks, choice: c, next: e });
       }
     }
     entries += out.length;
     front = paretoFilter(out, exactK, compare, work);
-    if (front) sizes.push(front.length);
+    if (front) {
+      sizes.push(front.length);
+    }
   });
-  if (!front) return null;
+  if (!front) {
+    return null;
+  }
 
   // the best full loadout: empty slots exactly the blocked ones, every minimum met
   let best = null;
   for (const e of front) {
-    if (e.empty !== (e.blocked & blockable)) continue;
-    if (limits.some((l, k) => l.min > 0 && e.vals[k] < Math.min(capOf[k], l.min))) continue;
-    if (e.score > known && (!best || e.score > best.score)) best = e;
+    if (e.empty !== (e.blocked & blockable)) {
+      continue;
+    }
+    if (limits.some((l, k) => l.min > 0 && e.vals[k] < Math.min(capOf[k], l.min))) {
+      continue;
+    }
+    if (e.score > known && (!best || e.score > best.score)) {
+      best = e;
+    }
   }
-  if (!best) return { best: null, entries, sizes };
+  if (!best) {
+    return { best: null, entries, sizes };
+  }
 
   // back to slots: follow the entries, each stage's choice filling its positions
   const slots = new Array(n).fill(null);
@@ -156,14 +203,20 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
     const st = stages[s];
     e.choice.cands.forEach((a, j) => {
       slots[st.from + j] = a ? { cand: a, rank: -1 } : { cand: null, rank: -1 };
-      if (a) chosen.push(a);
+      if (a) {
+        chosen.push(a);
+      }
     });
   }
   // the piece that blocks each empty slot
   slots.forEach((slot, i) => {
-    if (slot.cand) return;
+    if (slot.cand) {
+      return;
+    }
     const by = chosen.find(a => blocksOf.get(a) & (1 << i));
-    if (by) slot.blockedBy = by;
+    if (by) {
+      slot.blockedBy = by;
+    }
   });
   return { best: { slots, score: best.score }, entries, sizes };
 }
@@ -177,12 +230,18 @@ function ringChoices(list) {
     for (let y = x; y < list.length; y++) {
       const a = list[x],
         b = list[y];
-      if (a.item === b.item && a.copies < 2) continue;
+      if (a.item === b.item && a.copies < 2) {
+        continue;
+      }
       pairs.push({ cands: [a, b] });
     }
   }
-  if (pairs.length) return pairs;
-  if (list.length) return list.map(a => ({ cands: [a, null] }));
+  if (pairs.length) {
+    return pairs;
+  }
+  if (list.length) {
+    return list.map(a => ({ cands: [a, null] }));
+  }
   return [{ cands: [null, null] }];
 }
 
@@ -211,16 +270,24 @@ function paretoFilter(entries, exactK, compare, work) {
     }
     if (compared.length <= 2) {
       work.compares++;
-      if (beatenOnStairs(group.stairs, comparedValue(e, 0), comparedValue(e, 1))) continue;
+      if (beatenOnStairs(group.stairs, comparedValue(e, 0), comparedValue(e, 1))) {
+        continue;
+      }
     } else {
       work.compares += group.values.length;
-      if (work.compares > FRONT_COMPARES) return null;
+      if (work.compares > FRONT_COMPARES) {
+        return null;
+      }
       const values = compared.map((_, j) => comparedValue(e, j));
-      if (group.values.some(other => other.every((v, j) => v >= values[j]))) continue;
+      if (group.values.some(other => other.every((v, j) => v >= values[j]))) {
+        continue;
+      }
       group.values.push(values);
     }
     kept.push(e);
-    if (kept.length > FRONT_MOST) return null;
+    if (kept.length > FRONT_MOST) {
+      return null;
+    }
   }
   return kept;
 }
@@ -236,12 +303,19 @@ function beatenOnStairs(stairs, x, y) {
     hi = stairs.length;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
-    if (stairs[mid].x >= x) lo = mid + 1;
-    else hi = mid;
+    if (stairs[mid].x >= x) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
   }
-  if (lo > 0 && stairs[lo - 1].y >= y) return true;
+  if (lo > 0 && stairs[lo - 1].y >= y) {
+    return true;
+  }
   let end = lo;
-  while (end < stairs.length && stairs[end].y <= y) end++;
+  while (end < stairs.length && stairs[end].y <= y) {
+    end++;
+  }
   stairs.splice(lo, end - lo, { x, y });
   return false;
 }

@@ -23,7 +23,9 @@ export function framePart(page) {
       this.$watch(
         () => this.view.mode !== 'rest' || this.running,
         away => {
-          if (away) this.closeSettings(false);
+          if (away) {
+            this.closeSettings(false);
+          }
         },
       );
       // a menu or popover the page closes itself (a pick, Apply, Auto-fill) is taken off the overlay manager too, so it no longer
@@ -34,7 +36,9 @@ export function framePart(page) {
         ['rankHelp', RANK_NOTE_LAYER],
       ]) {
         this.$watch(flag, value => {
-          if (!value) overlays.close(layer);
+          if (!value) {
+            overlays.close(layer);
+          }
         });
       }
       // the sticky header's height, for the column names that stick under it (--sh); its exact height, not offsetHeight's
@@ -43,7 +47,9 @@ export function framePart(page) {
         page.refs = this.$refs; // after the page's elements have started, so their refs are in it
         const head = page.refs.head;
         // a page taken away before its first frame (a quick click on a tab) has no header left to watch
-        if (!head || typeof ResizeObserver !== 'function') return;
+        if (!head || typeof ResizeObserver !== 'function') {
+          return;
+        }
         const set = () => this.$root.style.setProperty('--sh', `${head.getBoundingClientRect().height}px`);
         set();
         headWatch = new ResizeObserver(set);
@@ -53,7 +59,9 @@ export function framePart(page) {
     destroy() {
       headWatch?.disconnect();
       this.$store.sheets.setLeaveGuard(null);
-      if (this.running) this.stopFill();
+      if (this.running) {
+        this.stopFill();
+      }
       // the page's draft and result go with it; an answer that comes later finds no page and is ignored
       this.pages.closePage(this.setId);
     },

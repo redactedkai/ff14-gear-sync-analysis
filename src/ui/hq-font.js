@@ -11,7 +11,9 @@ export function enableHqFont(fonts, root) {
   try {
     return Promise.resolve(fonts.load(`16px ${HQ_FONT_FAMILY}`, HQ_GLYPH)).then(
       loaded => {
-        if (loaded.length) root.classList.add(HQ_FONT_CLASS);
+        if (loaded.length) {
+          root.classList.add(HQ_FONT_CLASS);
+        }
       },
       () => {},
     );

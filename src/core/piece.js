@@ -33,7 +33,9 @@ export function keepsMelds(item, sync) {
    slot share and stat factors. */
 export function effStats(job, item, sync) {
   const target = itemSyncIlvl(item, sync);
-  if (target == null) return item.stats;
+  if (target == null) {
+    return item.stats;
+  }
   const s = slotInfo(job, item);
   return syncStats(job, item.stats, item.type, target, item.ilvl, s.pct, s.factors);
 }
@@ -62,7 +64,9 @@ export function meldCaps(job, item) {
    is synced to, or, when it is untouched, its own cap (meldCaps). For the page's "at cap" marks. */
 export function itemCaps(job, item, sync) {
   const target = itemSyncIlvl(item, sync);
-  if (target == null) return meldCaps(job, item);
+  if (target == null) {
+    return meldCaps(job, item);
+  }
   const s = slotInfo(job, item);
   return capsFor(job, item.type, target, s.pct, s.factors);
 }

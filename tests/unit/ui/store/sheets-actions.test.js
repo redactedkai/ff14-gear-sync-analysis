@@ -197,7 +197,9 @@ test('deleting a sheet: from its page goes to the manager; from the manager stay
 test('reordering: a drop moves the row and saves the order; the keyboard says where it went', () => {
   const storage = fakeStorage();
   const store = makeStore(storage);
-  for (const name of ['C', 'B', 'A']) store.createSheet({ ...FIELDS, name });
+  for (const name of ['C', 'B', 'A']) {
+    store.createSheet({ ...FIELDS, name });
+  }
   store.openManager();
   store.moveSheet(0, 2);
   assert.deepEqual(
@@ -336,7 +338,9 @@ test('leaving a set page asks its leave guard first; other screens never ask', (
   store.newSet();
   const setId = store.setId;
   assert.equal(store.screen, 'set');
-  for (const leave of [() => store.closeSet(), () => store.openManager(), () => store.openSheet(id)]) leave();
+  for (const leave of [() => store.closeSet(), () => store.openManager(), () => store.openSheet(id)]) {
+    leave();
+  }
   assert.deepEqual([asked.length, store.screen, store.setId], [3, 'set', setId], 'every way off is held');
   store.openSet(setId);
   assert.equal(asked.length, 3, 'the set already open is no move');

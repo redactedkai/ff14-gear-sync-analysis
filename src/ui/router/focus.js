@@ -5,7 +5,9 @@
 /* The first heading of the open screen that is on the page (the first visible h2 in the open tab's panel), or null. */
 function screenHeading(doc) {
   const panel = [...doc.querySelectorAll('.tab')].find(tab => tab.getClientRects().length > 0);
-  if (!panel) return null;
+  if (!panel) {
+    return null;
+  }
   return [...panel.querySelectorAll('h2')].find(heading => heading.getClientRects().length > 0) ?? null;
 }
 
@@ -63,7 +65,9 @@ export function focusScreenHeading({
   viewportHeight = () => doc.defaultView.innerHeight,
   naturalHeight = () => doc.body.scrollHeight,
   watchSize = onResize => {
-    if (typeof ResizeObserver === 'undefined') return () => {};
+    if (typeof ResizeObserver === 'undefined') {
+      return () => {};
+    }
     const observer = new ResizeObserver(onResize);
     observer.observe(doc.body);
     return () => observer.disconnect();
@@ -77,7 +81,9 @@ export function focusScreenHeading({
   releaseHeight = () => {
     const root = doc.documentElement;
     root.style.minHeight = '';
-    if (!root.getAttribute('style')) root.removeAttribute('style');
+    if (!root.getAttribute('style')) {
+      root.removeAttribute('style');
+    }
   },
 } = {}) {
   const MAX_FRAMES_WAITED = 120;
@@ -95,8 +101,12 @@ export function focusScreenHeading({
   let stopWatching = () => {};
   const finish = () => {
     stopWatching();
-    if (call !== latestCall) return;
-    if (holding) releaseHeight();
+    if (call !== latestCall) {
+      return;
+    }
+    if (holding) {
+      releaseHeight();
+    }
     holding = false;
     placing = false;
   };
@@ -112,12 +122,17 @@ export function focusScreenHeading({
       releaseHeight(); // the height an earlier call held, which this call replaces
     }
     scrollTo(target);
-    if (once) return;
+    if (once) {
+      return;
+    }
     // the page's own update may still change the screen after this (a part of it hides a moment later) and the browser moves the
     // position with it: whenever the layout changes, the position is put back before the frame is drawn, not on the next one
     stopWatching = watchSize(() => {
-      if (call !== latestCall) stopWatching();
-      else if (Math.abs(scrolledTo() - target) > 1) scrollTo(target);
+      if (call !== latestCall) {
+        stopWatching();
+      } else if (Math.abs(scrolledTo() - target) > 1) {
+        scrollTo(target);
+      }
     });
   };
 
@@ -125,7 +140,9 @@ export function focusScreenHeading({
      growing short of it (it is shorter than when the position was left), so the page shows the screen's own end and no blank
      space. */
   const releaseWhenNotGrowing = () => {
-    if (!holding || call !== latestCall) return;
+    if (!holding || call !== latestCall) {
+      return;
+    }
     const reach = naturalHeight() - viewportHeight();
     const growing = reach > lastReach;
     lastReach = reach;

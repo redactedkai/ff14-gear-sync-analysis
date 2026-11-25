@@ -21,7 +21,9 @@ const SHEET_ID = 's_mh3k2x9a1b2c3d';
 const SET_ID = 'g_mh3k4p0q9r8s7t';
 
 test('a bare address, # and #/ are the Sheets list', () => {
-  for (const hash of ['', '#', '#/', '/', undefined, null]) assert.deepEqual(parseRoute(hash), DEFAULT_ROUTE, String(hash));
+  for (const hash of ['', '#', '#/', '/', undefined, null]) {
+    assert.deepEqual(parseRoute(hash), DEFAULT_ROUTE, String(hash));
+  }
 });
 
 test('each screen parses to its route', () => {
@@ -29,7 +31,9 @@ test('each screen parses to its route', () => {
   assert.deepEqual(parseRoute(`#/sheets/${SHEET_ID}`), { tab: 'sheets', screen: 'sheet', sheetId: SHEET_ID });
   assert.deepEqual(parseRoute(`#/sheets/${SHEET_ID}/sets/${SET_ID}`), { tab: 'sheets', screen: 'set', sheetId: SHEET_ID, setId: SET_ID });
   assert.deepEqual(parseRoute('#/gear'), { tab: 'browse' });
-  for (const view of MATH_TABS) assert.deepEqual(parseRoute(`#/math/${view}`), { tab: 'math', mathTab: view });
+  for (const view of MATH_TABS) {
+    assert.deepEqual(parseRoute(`#/math/${view}`), { tab: 'math', mathTab: view });
+  }
 });
 
 test('#/math alone opens the first math view', () => {
@@ -48,11 +52,15 @@ test('format and parse round trip for every screen', () => {
     { tab: 'browse' },
     ...MATH_TABS.map(mathTab => ({ tab: 'math', mathTab })),
   ];
-  for (const route of routes) assert.deepEqual(parseRoute(formatRoute(route)), route, formatRoute(route));
+  for (const route of routes) {
+    assert.deepEqual(parseRoute(formatRoute(route)), route, formatRoute(route));
+  }
 });
 
 test('every tab has an address', () => {
-  for (const tab of TABS) assert.notEqual(parseRoute(formatRoute({ tab, mathTab: MATH_TABS[0] })), null, tab);
+  for (const tab of TABS) {
+    assert.notEqual(parseRoute(formatRoute({ tab, mathTab: MATH_TABS[0] })), null, tab);
+  }
 });
 
 test('the address words', () => {
@@ -137,7 +145,9 @@ test('an address that names nothing the page has is null', () => {
     '#/sheets/%E0%A4%A',
     `#/sheets/${SHEET_ID}/sets/%`,
   ];
-  for (const hash of unknown) assert.equal(parseRoute(hash), null, hash);
+  for (const hash of unknown) {
+    assert.equal(parseRoute(hash), null, hash);
+  }
 });
 
 test('ids are percent-encoded and decoded', () => {
@@ -148,8 +158,9 @@ test('ids are percent-encoded and decoded', () => {
 });
 
 test('a route that is not a screen formats as the Sheets list', () => {
-  for (const route of [null, undefined, {}, { tab: 'nope' }, { tab: 'sheets', screen: 'sheet' }])
+  for (const route of [null, undefined, {}, { tab: 'nope' }, { tab: 'sheets', screen: 'sheet' }]) {
     assert.equal(formatRoute(route), '#/sheets');
+  }
 });
 
 test('a math route with no known view formats as the first view', () => {
@@ -167,7 +178,9 @@ test('sameRoute compares by screen', () => {
 test('the page title names the screen, then the page', () => {
   assert.equal(titleOf(DEFAULT_ROUTE), `Sheets · ${APP_TITLE}`);
   assert.equal(titleOf({ tab: 'browse' }), `Gear browser · ${APP_TITLE}`);
-  for (const view of MATH_TABS) assert.equal(titleOf({ tab: 'math', mathTab: view }), `${MATH_TAB_LABEL[view]} · ${APP_TITLE}`);
+  for (const view of MATH_TABS) {
+    assert.equal(titleOf({ tab: 'math', mathTab: view }), `${MATH_TAB_LABEL[view]} · ${APP_TITLE}`);
+  }
   assert.equal(titleOf({ tab: 'sheets', screen: 'sheet', sheetId: 'a' }, { sheet: 'Sage 123' }), `Sage 123 · ${APP_TITLE}`);
   assert.equal(
     titleOf({ tab: 'sheets', screen: 'set', sheetId: 'a', setId: 'b' }, { sheet: 'Sage 123', set: 'Set 1' }),

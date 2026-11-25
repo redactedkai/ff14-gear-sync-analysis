@@ -58,7 +58,9 @@ export function gearToSearchView(job, sync, level, recipe, session) {
 export function solveView(job, sync, level, recipe, session, pins = null) {
   try {
     const run = runRecipe(job, sync, level, recipe, session, {}, pins);
-    if (run.status === 'badpin') return { kind: 'badpin', messages: badPinMessages(run.found.badPins), badPins: run.found.badPins };
+    if (run.status === 'badpin') {
+      return { kind: 'badpin', messages: badPinMessages(run.found.badPins), badPins: run.found.badPins };
+    }
     if (run.status === 'ok') {
       const bestMeals = run.found.food ? run.found.food.tagged.map(meal => meal.key) : null;
       return { kind: 'ok', set: run.set, bestMeals, recipe, truncated: !!run.found.truncated };

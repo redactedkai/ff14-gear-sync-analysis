@@ -36,7 +36,11 @@ async function inkRightOfHaste(pg, width) {
     context.drawImage(bitmap, 0, 0);
     const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
     let ink = 0;
-    for (let at = 4; at < data.length; at += 4) if (data[at] !== data[0] || data[at + 1] !== data[1] || data[at + 2] !== data[2]) ink++;
+    for (let at = 4; at < data.length; at += 4) {
+      if (data[at] !== data[0] || data[at + 1] !== data[1] || data[at + 2] !== data[2]) {
+        ink++;
+      }
+    }
     return ink;
   }, png.toString('base64'));
 }
@@ -48,7 +52,9 @@ export async function checkHasteSelectFits(pg) {
   await showMath(pg, 'gcd');
   const options = await pg.locator('#g-haste option').evaluateAll(list => list.map(o => ({ value: o.value, text: o.text })));
   check(options.length > 1, 'the Haste menu has no job options');
-  for (const o of options) check(!/[%/]/.test(o.text), `the Haste option "${o.text}" shows a percent or a list of them`);
+  for (const o of options) {
+    check(!/[%/]/.test(o.text), `the Haste option "${o.text}" shows a percent or a list of them`);
+  }
   const longest = options.reduce((a, b) => (b.text.length > a.text.length ? b : a));
   for (const [width, font] of [
     [NARROW.width, null],
@@ -84,7 +90,9 @@ export async function checkHasteSelectFits(pg) {
     }
     check(widths.size === 1, `the Haste select's width changes with the pick (${[...widths].join(', ')} px) ${where}`);
     await pg.selectOption('#g-haste', longest.value);
-    if (width === NARROW.width && !font) await pg.screenshot({ path: shot('haste-select.png') });
+    if (width === NARROW.width && !font) {
+      await pg.screenshot({ path: shot('haste-select.png') });
+    }
   }
 
   // a box narrower than the text: it is cut at the box, nothing is drawn beside it

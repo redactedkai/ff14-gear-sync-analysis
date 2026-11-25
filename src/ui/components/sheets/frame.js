@@ -23,7 +23,9 @@ export function framePart() {
       // (Back and Forward also close it, through the dialog's own popstate listener); the router owns the focus then
       for (const key of ['$store.app.tab', '$store.sheets.sheetId', '$store.sheets.setId']) {
         this.$watch(key, () => {
-          if (this.dialog) this.closeDialog(false);
+          if (this.dialog) {
+            this.closeDialog(false);
+          }
         });
       }
       // another sheet's page: its cap field starts with no error
@@ -41,16 +43,25 @@ export function framePart() {
        sheet or set's, or the manager when it is gone (another browser tab deleted it). */
     get screen() {
       const store = this.sheets;
-      if (store.missing) return 'missing';
-      if (store.screen === 'set' && store.currentSet) return 'set';
-      if (store.screen !== 'sheets' && store.currentSheet) return 'sheet';
+      if (store.missing) {
+        return 'missing';
+      }
+      if (store.screen === 'set' && store.currentSet) {
+        return 'set';
+      }
+      if (store.screen !== 'sheets' && store.currentSheet) {
+        return 'sheet';
+      }
       return 'sheets';
     },
     /* The not found screen's button: up to the sheet when only its gear set is missing, else the manager. */
     goMissing() {
       const missing = this.sheets.missing;
-      if (missing?.setId && this.sheets.sheet(missing.sheetId)) this.sheets.openSheet(missing.sheetId);
-      else this.sheets.openManager();
+      if (missing?.setId && this.sheets.sheet(missing.sheetId)) {
+        this.sheets.openSheet(missing.sheetId);
+      } else {
+        this.sheets.openManager();
+      }
     },
     /* TODO: after a click on a sheet name, a set name or a breadcrumb the focus ends on the page body, because the link is gone with
        its screen (as before the refactor). Moving the focus to the new screen's heading, as Back and Forward do, would remove this. */
@@ -58,8 +69,11 @@ export function framePart() {
        inside the page; any other click is left to the browser (plain-click.js). */
     goCrumb(to, event) {
       followInPage(event, () => {
-        if (to === 'sheets') this.sheets.openManager();
-        else this.sheets.closeSet();
+        if (to === 'sheets') {
+          this.sheets.openManager();
+        } else {
+          this.sheets.closeSet();
+        }
       });
     },
     /* A name link of a list (`event` its click): a plain click runs `move` (open that sheet or gear set); any other click is

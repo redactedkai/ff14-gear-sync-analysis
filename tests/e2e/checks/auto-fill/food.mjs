@@ -21,7 +21,9 @@ export async function checkFillFood(pg) {
     check(food.totals.crit > noFood.totals.crit, 'Food does not raise Critical Hit; pick another case'),
     check(withGcd.meal && withGcd.bonus.sps > 0, 'Sage level 100: the meal for a GCD of 2.40 adds no speed; pick another case'),
   ].every(Boolean);
-  if (!usable) return;
+  if (!usable) {
+    return;
+  }
   // the gear's totals alone, on the same base
   const without = want => Object.fromEntries(Object.keys(want.totals).map(stat => [stat, want.totals[stat] - want.bonus[stat]]));
   const takeBoxes = pg.locator('#sh-gear .takebox input');
@@ -123,8 +125,11 @@ async function bestMealCase(pg, sheet, several) {
   await expect(count).toHaveCount(0);
   await poll('the tie list saved with the set', async () => ({ ok: !!(await savedList()), got: await savedList() }));
   const tied = (await savedList()).length;
-  if (several) check(tied >= 2, `an Auto-fill on Sage level 100 for Critical Hit with sync 123 ties ${tied} meals, expected several`);
-  else check(tied === 1, `an Auto-fill with sync off ties ${tied} meals, expected one`);
+  if (several) {
+    check(tied >= 2, `an Auto-fill on Sage level 100 for Critical Hit with sync 123 ties ${tied} meals, expected several`);
+  } else {
+    check(tied === 1, `an Auto-fill with sync off ties ${tied} meals, expected one`);
+  }
 
   // 2. the layout against B17 (proto-b17-settings: .mealline, .pill)
   const layout = await pg.evaluate(() => {

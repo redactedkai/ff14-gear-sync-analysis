@@ -22,7 +22,9 @@ export function measureView(config) {
     return element.tagName.toLowerCase() + (first ? `.${first}` : '');
   };
   const visible = element => {
-    if (element.checkVisibility && !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+    if (element.checkVisibility && !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) {
+      return false;
+    }
     const rect = element.getBoundingClientRect();
     return rect.width >= 2 && rect.height >= 2;
   };
@@ -62,25 +64,40 @@ export function measureView(config) {
   // elements past the window's right edge, unless a box around them that ends inside the window cuts them off
   const limit = document.documentElement.clientWidth + 1;
   for (const element of document.body.querySelectorAll('*')) {
-    if (out.past.length >= 4) break;
+    if (out.past.length >= 4) {
+      break;
+    }
     const style = getComputedStyle(element);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.position === 'fixed') continue;
+    if (style.display === 'none' || style.visibility === 'hidden' || style.position === 'fixed') {
+      continue;
+    }
     const rect = element.getBoundingClientRect();
-    if (rect.width < 2 || rect.height < 2 || rect.right <= limit) continue;
+    if (rect.width < 2 || rect.height < 2 || rect.right <= limit) {
+      continue;
+    }
     let cut = false;
     for (let up = element.parentElement; up && up !== document.body; up = up.parentElement) {
-      if (getComputedStyle(up).overflowX !== 'visible' && up.getBoundingClientRect().right <= limit) cut = true;
+      if (getComputedStyle(up).overflowX !== 'visible' && up.getBoundingClientRect().right <= limit) {
+        cut = true;
+      }
     }
-    if (!cut) out.past.push(`${element.id ? `#${element.id}` : classOf(element)} +${Math.round(rect.right - limit + 1)}px`);
+    if (!cut) {
+      out.past.push(`${element.id ? `#${element.id}` : classOf(element)} +${Math.round(rect.right - limit + 1)}px`);
+    }
   }
 
   // text wider than its box
   for (const element of document.querySelectorAll(config.clipped)) {
-    if (!visible(element)) continue;
+    if (!visible(element)) {
+      continue;
+    }
     const style = getComputedStyle(element);
-    if (style.textOverflow === 'ellipsis' || scrollsByItself(element)) continue;
-    if (element.scrollWidth > element.clientWidth + 1)
+    if (style.textOverflow === 'ellipsis' || scrollsByItself(element)) {
+      continue;
+    }
+    if (element.scrollWidth > element.clientWidth + 1) {
       out.clipped.push(`${element.id ? `#${element.id}` : classOf(element)} ${element.scrollWidth}>${element.clientWidth}`);
+    }
   }
 
   // labels on one line: the lines their text takes (the distinct tops of its text rectangles)
@@ -88,22 +105,31 @@ export function measureView(config) {
     const tops = [];
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      if (!node.textContent.trim()) continue;
+      if (!node.textContent.trim()) {
+        continue;
+      }
       const range = document.createRange();
       range.selectNodeContents(node);
-      for (const rect of range.getClientRects()) if (rect.width > 0 && !tops.some(top => Math.abs(top - rect.top) < 4)) tops.push(rect.top);
+      for (const rect of range.getClientRects()) {
+        if (rect.width > 0 && !tops.some(top => Math.abs(top - rect.top) < 4)) {
+          tops.push(rect.top);
+        }
+      }
     }
     return tops.length;
   };
   for (const selector of config.labels) {
     for (const element of document.querySelectorAll(selector)) {
-      if (!visible(element)) continue;
+      if (!visible(element)) {
+        continue;
+      }
       const lines = linesOf(element);
-      if (lines > 1)
+      if (lines > 1) {
         out.wrapped.push({
           id: `${element.id ? `#${element.id}` : classOf(element)} "${(element.textContent || '').trim().slice(0, 24)}"`,
           lines,
         });
+      }
     }
   }
 
@@ -139,7 +165,9 @@ export function measureView(config) {
   // each scope: its controls (with their container and the control around them), its boxes
   for (const [name, selector] of Object.entries(config.scopes)) {
     const root = document.querySelector(selector);
-    if (!root || !visible(root)) continue;
+    if (!root || !visible(root)) {
+      continue;
+    }
     const scope = { rect: boxOf(root), height: round(root.getBoundingClientRect().height), controls: [], containers: [], boxes: [] };
     const elements = [...root.querySelectorAll(config.controls)].filter(visible);
     const containerIndex = new Map();
@@ -154,7 +182,9 @@ export function measureView(config) {
     for (const element of elements) {
       // the container: the nearest box around it, outside the control itself
       let container = element.parentElement;
-      while (container && container !== document.body && !isBox(container)) container = container.parentElement;
+      while (container && container !== document.body && !isBox(container)) {
+        container = container.parentElement;
+      }
       let c = -1;
       if (container && container !== document.body) {
         if (!containerIndex.has(container)) {
@@ -191,7 +221,9 @@ export function measureView(config) {
     const boxSeen = new Map();
     for (const selector of config.boxes) {
       for (const element of root.querySelectorAll(selector)) {
-        if (!visible(element) || !isDrawn(element)) continue; // a box has a border or a background of its own
+        if (!visible(element) || !isDrawn(element)) {
+          continue; // a box has a border or a background of its own
+        }
         const base = element.id ? `#${element.id}` : classOf(element);
         const count = (boxSeen.get(base) ?? 0) + 1;
         boxSeen.set(base, count);
@@ -269,7 +301,9 @@ export function measureMenu(selector) {
   const element = [...document.querySelectorAll(selector)].find(
     item => item.getBoundingClientRect().height > 0 && getComputedStyle(item).visibility !== 'hidden',
   );
-  if (!element) return null;
+  if (!element) {
+    return null;
+  }
   const rect = element.getBoundingClientRect();
   let coveredPoints = 0;
   for (const [x, y] of [
@@ -278,9 +312,13 @@ export function measureMenu(selector) {
     [rect.left + 4, rect.bottom - 4],
     [rect.right - 4, rect.bottom - 4],
   ]) {
-    if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
+    if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) {
+      continue;
+    }
     const hit = document.elementFromPoint(x, y);
-    if (hit && !element.contains(hit) && !hit.contains(element)) coveredPoints++;
+    if (hit && !element.contains(hit) && !hit.contains(element)) {
+      coveredPoints++;
+    }
   }
   const style = getComputedStyle(element);
   return {
@@ -300,7 +338,9 @@ export function measureMenu(selector) {
    clips, or by the window's side edges. Returns null when nothing but the body has the focus. */
 export function measureFocusRing() {
   const element = document.activeElement;
-  if (!element || element === document.body) return null;
+  if (!element || element === document.body) {
+    return null;
+  }
   const style = getComputedStyle(element);
   const grow = style.outlineStyle === 'none' ? 0 : parseFloat(style.outlineWidth) + Math.max(0, parseFloat(style.outlineOffset));
   const rect = element.getBoundingClientRect();
@@ -308,7 +348,9 @@ export function measureFocusRing() {
   let clippedBy = '';
   for (let up = element.parentElement; up && up !== document.documentElement; up = up.parentElement) {
     const around = getComputedStyle(up);
-    if (around.overflowX === 'visible' && around.overflowY === 'visible') continue;
+    if (around.overflowX === 'visible' && around.overflowY === 'visible') {
+      continue;
+    }
     const box = up.getBoundingClientRect();
     const sidesCut = around.overflowX !== 'visible' && (ring.l < box.left - 0.5 || ring.r > box.right + 0.5);
     const topBottomCut = around.overflowY !== 'visible' && (ring.t < box.top - 0.5 || ring.b > box.bottom + 0.5);
@@ -321,7 +363,9 @@ export function measureFocusRing() {
       break;
     }
   }
-  if (!clippedBy && (ring.l < -0.5 || ring.r > document.documentElement.clientWidth + 0.5)) clippedBy = 'the window edge';
+  if (!clippedBy && (ring.l < -0.5 || ring.r > document.documentElement.clientWidth + 0.5)) {
+    clippedBy = 'the window edge';
+  }
   return {
     id: element.id
       ? `#${element.id}`
@@ -335,7 +379,9 @@ export function measureFocusRing() {
 /* The size of the open dialog: its box, the window, and whether it scrolls inside itself. null when none is open. */
 export function measureDialog(selector) {
   const element = document.querySelector(selector);
-  if (!element) return null;
+  if (!element) {
+    return null;
+  }
   const rect = element.getBoundingClientRect();
   const style = getComputedStyle(element);
   return {

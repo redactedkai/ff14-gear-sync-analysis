@@ -25,7 +25,9 @@ export const RANK_NOTE_LAYER = 'rankNote';
    (big data: CLAUDE.md). */
 const gearByJob = new Map();
 function gearOf(job) {
-  if (!gearByJob.has(job.jobId)) gearByJob.set(job.jobId, jobGear(job));
+  if (!gearByJob.has(job.jobId)) {
+    gearByJob.set(job.jobId, jobGear(job));
+  }
   return gearByJob.get(job.jobId);
 }
 
@@ -51,9 +53,13 @@ export function menusPart() {
        the overlay manager (Escape, a press outside and Tab out close it, and the focus goes back to its button after Escape) and
        is scrolled into the window, below the pinned header. */
     toggleMenu(id, box) {
-      if (id !== 'sets' && this.locked) return;
+      if (id !== 'sets' && this.locked) {
+        return;
+      }
       this.query = '';
-      if (this.open === id) return this.closeOpenMenu();
+      if (this.open === id) {
+        return this.closeOpenMenu();
+      }
       overlays.open({
         id: SET_MENU_LAYER,
         root: () => box,
@@ -64,7 +70,9 @@ export function menusPart() {
         },
       });
       this.open = id;
-      if (id.startsWith('pick:')) this.drawPickerInSteps(Number(id.slice(5)));
+      if (id.startsWith('pick:')) {
+        this.drawPickerInSteps(Number(id.slice(5)));
+      }
       this.$nextTick(() =>
         requestAnimationFrame(() => {
           const menu = box?.querySelector('.same-menu, .matpop, .setmenu');
@@ -77,8 +85,12 @@ export function menusPart() {
     },
     /* Close the open menu (a pick, the button again); the focus goes back to the menu's button unless `restoreFocus` is false. */
     closeOpenMenu(restoreFocus = true) {
-      if (this.open === null) return;
-      if (!overlays.close(SET_MENU_LAYER, { restoreFocus })) this.open = null;
+      if (this.open === null) {
+        return;
+      }
+      if (!overlays.close(SET_MENU_LAYER, { restoreFocus })) {
+        this.open = null;
+      }
     },
     /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the
        pinned header and, for a menu in the table, the stuck column names); `anchorTop` the top of the box its button is in
@@ -104,19 +116,25 @@ export function menusPart() {
        than the room gets a height that fits and scrolls inside. The button is what stays below the pinned parts (the page
        never scrolls it under them to show more of the menu). */
     keepMenuInView(menu) {
-      if (!menu) return;
+      if (!menu) {
+        return;
+      }
       const list = menu.querySelector('.menu-list') ?? menu;
       list.style.maxHeight = '';
       const { room } = this.menuRoom(menu);
       // the search box and the footer stay; the list takes what is left (their height is measured, not guessed)
       const whole = menu.getBoundingClientRect().height;
-      if (whole > room) list.style.maxHeight = `${Math.max(MENU_MIN_PX, room - (whole - list.getBoundingClientRect().height))}px`;
+      if (whole > room) {
+        list.style.maxHeight = `${Math.max(MENU_MIN_PX, room - (whole - list.getBoundingClientRect().height))}px`;
+      }
       const { top, room: left, anchorTop } = this.menuRoom(menu);
       const box = menu.getBoundingClientRect();
       const under = anchorTop - top - MENU_BUTTON_MARGIN_PX; // negative: the button is under the pinned header
       const past = box.bottom - innerHeight + MENU_MARGIN_PX; // positive: the menu's bottom is past the window
       const dy = box.height > left || under < 0 ? under : Math.min(past, under);
-      if (dy > 0 || under < 0) scrollBy({ top: dy });
+      if (dy > 0 || under < 0) {
+        scrollBy({ top: dy });
+      }
     },
     /* Draw the pieces of the piece picker of row `index` in steps: the first ones at once, the rest one step per frame
        while the picker stays open. */
@@ -124,7 +142,9 @@ export function menusPart() {
       const id = `pick:${index}`;
       this.pickRows = FIRST_ROWS;
       drawInSteps(() => {
-        if (this.open !== id) return false;
+        if (this.open !== id) {
+          return false;
+        }
         this.pickRows += ROWS_PER_STEP;
         return this.pickRows < this.picker(index).count;
       });
@@ -152,8 +172,12 @@ export function menusPart() {
        ring worn in the other ring row), the search box and the Clear search button do nothing here. */
     pickClick(event, index) {
       const row = event.target.closest?.('.same-item');
-      if (!row || row.disabled) return;
-      if (row.dataset.gameId !== undefined) this.pick(index, Number(row.dataset.gameId));
+      if (!row || row.disabled) {
+        return;
+      }
+      if (row.dataset.gameId !== undefined) {
+        this.pick(index, Number(row.dataset.gameId));
+      }
     },
     /* The open materia menu of row `index`, slot `slot` (materiaMenuView). */
     materia(index, slot) {

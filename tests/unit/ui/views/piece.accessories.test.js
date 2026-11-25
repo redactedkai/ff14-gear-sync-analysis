@@ -16,7 +16,9 @@ const ITEM_LEVELS = [123, 275, 475, 640, 790];
 /* A view as text with the slot's own name replaced, so the four slots' views can be compared. */
 function withoutSlotName(view) {
   let text = JSON.stringify(view);
-  for (const type of ACCESSORY_SLOTS) text = text.split(SLOT_LABEL[type].toLowerCase()).join('SLOT');
+  for (const type of ACCESSORY_SLOTS) {
+    text = text.split(SLOT_LABEL[type].toLowerCase()).join('SLOT');
+  }
   return text;
 }
 
@@ -36,7 +38,9 @@ test('the four accessory slots have the same share, and the Wiki caps at item le
     for (const type of ACCESSORY_SLOTS) {
       const caps = capsFor(job, type, 123);
       assert.equal(caps[job.mainKey], 24, `${jobId} ${type}`);
-      for (const sub of job.substats) assert.equal(caps[sub], 23, `${jobId} ${type} ${sub}`);
+      for (const sub of job.substats) {
+        assert.equal(caps[sub], 23, `${jobId} ${type} ${sub}`);
+      }
     }
   }
 });
@@ -53,7 +57,9 @@ test('Stat Allocation: the four accessory slots give the same stats, ceilings, t
             app.piece = { ilvl, slot, subs };
             return withoutSlotName({ steps: pieceViewOf(app, ilvl), chart: explainerViewOf(app, { piece: 900 }) });
           });
-          for (const view of views.slice(1)) assert.equal(view, views[0], `${jobId} item level ${ilvl} cap ${cap} ${subs}`);
+          for (const view of views.slice(1)) {
+            assert.equal(view, views[0], `${jobId} item level ${ilvl} cap ${cap} ${subs}`);
+          }
         }
       }
     }

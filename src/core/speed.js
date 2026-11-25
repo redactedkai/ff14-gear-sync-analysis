@@ -13,11 +13,16 @@ const SPEED_STEP = 130;
 /* The haste a job counts in its Target GCD at `level` (HASTE in constants.js): {name, pct}, or null for none. */
 export function hasteFor(jobId, level) {
   const haste = HASTE[jobId];
-  if (!haste) return null;
+  if (!haste) {
+    return null;
+  }
   // steps are in level order: the last one the level has reached applies
   let reached = null;
-  for (const step of haste.steps)
-    if (level >= step.level) reached = { name: haste.name, pct: step.pct, level: step.level, source: step.source };
+  for (const step of haste.steps) {
+    if (level >= step.level) {
+      reached = { name: haste.name, pct: step.pct, level: step.level, source: step.source };
+    }
+  }
   return reached;
 }
 
@@ -69,8 +74,11 @@ export function gcdTierAt(gearSpd, level, baseMs, haste = 0) {
 function lowest(lo, hi, pred) {
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (pred(mid)) hi = mid;
-    else lo = mid + 1;
+    if (pred(mid)) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
   }
   return lo;
 }
@@ -87,12 +95,18 @@ export function speedForGcd(gcd, level, mode, haste = 0) {
   const gcdAt = s => gcdFor(s, level, BASE_GCD_MS, haste);
   const target = Math.round(gcd * 100) / 100; // to hundredths, as the GCD is
   // even the most speed cannot reach it
-  if (gcdAt(SPEED_SEARCH_LIMIT) > target) return null;
+  if (gcdAt(SPEED_SEARCH_LIMIT) > target) {
+    return null;
+  }
   const min = lowest(0, SPEED_SEARCH_LIMIT, s => gcdAt(s) <= target);
-  if (mode !== 'exact') return { min, max: null };
+  if (mode !== 'exact') {
+    return { min, max: null };
+  }
   // exact: the lowest speed must land on the target itself (a target above the no-speed GCD lands on nothing), and the
   // band ends one below the first speed that is faster still
-  if (gcdAt(min) !== target) return null;
+  if (gcdAt(min) !== target) {
+    return null;
+  }
   const next = gcdAt(SPEED_SEARCH_LIMIT) < target ? lowest(min, SPEED_SEARCH_LIMIT, s => gcdAt(s) < target) : null;
   return { min, max: next == null ? SPEED_SEARCH_LIMIT : next - 1 };
 }

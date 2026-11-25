@@ -31,8 +31,9 @@ test("a bad tiers.job is repaired to the math panel's job, whatever else the sav
     const s = restoreOpen({ tab: 'math', piece: { job: 'NIN' }, tiers: { job: bad } });
     assert.equal(s.tiers.job, 'NIN', JSON.stringify(bad));
   }
-  for (const bad of ['x', null, 5, []])
+  for (const bad of ['x', null, 5, []]) {
     assert.equal(restoreOpen({ piece: { job: 'NIN' }, tiers: bad }).tiers.job, 'NIN', JSON.stringify(bad));
+  }
   // the math panel's own job is itself repaired first: an unknown one is the default job
   assert.equal(restoreOpen({ piece: { job: 'XYZ' }, tiers: { job: 'nope' } }).tiers.job, DEFAULT_JOB);
 });

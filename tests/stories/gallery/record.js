@@ -7,6 +7,8 @@ export function recordEvents(testId) {
   return event => {
     seen.push(event.detail);
     const output = document.querySelector(`[data-testid="${testId}"]`);
-    if (output) output.textContent = JSON.stringify(seen);
+    if (output) {
+      output.textContent = JSON.stringify(seen);
+    }
   };
 }

@@ -17,7 +17,9 @@ test('every generated data file names the same source commit', () => {
   for (const name of ['item-level.json', 'items.json', 'food.json', 'max-speed.json', 'summary.json']) {
     const doc = JSON.parse(readFileSync(new URL(`../../../src/data/${name}`, import.meta.url), 'utf8'));
     assert.deepEqual(doc.source, DATA_SOURCE, `${name} source`);
-    if (name !== 'max-speed.json') assert.ok(doc._generated.includes(DATA_SOURCE.commit), `${name} notice names ${DATA_SOURCE.commit}`);
+    if (name !== 'max-speed.json') {
+      assert.ok(doc._generated.includes(DATA_SOURCE.commit), `${name} notice names ${DATA_SOURCE.commit}`);
+    }
   }
 });
 

@@ -92,9 +92,13 @@ export function defaultSubs(job) {
 /* The synced level (`s.level`, the open tab's panel) and, when `parts` has the Gear browser ('browse'), its "Equip
    level" filter held to the job's level cap (resetForJob). */
 function clampLevels(s, job, parts = ['browse']) {
-  if (s.level > job.maxLevel) s.level = job.maxLevel;
+  if (s.level > job.maxLevel) {
+    s.level = job.maxLevel;
+  }
   const filter = s.browse;
-  if (parts.includes('browse') && filter.lvl !== '' && filter.lvl > job.maxLevel) filter.lvl = job.maxLevel;
+  if (parts.includes('browse') && filter.lvl !== '' && filter.lvl > job.maxLevel) {
+    filter.lvl = job.maxLevel;
+  }
 }
 
 /* On a job change from `from` (a JobContext, or null with no job chosen before) to `job`: the levels are held to the
@@ -109,13 +113,19 @@ export function resetForJob(s, job, from = null, parts = ['math', 'browse']) {
   if (parts.includes('math')) {
     // Piece stats' two substats stay as a pair (the second may be none), else both go back
     const [sub1, sub2] = s.piece.subs;
-    if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) s.piece.subs = defaultSubs(job);
-    if (!job.activeSlotTypes.includes(s.piece.slot)) s.piece.slot = 'head';
+    if (!(keeps(sub1) && (sub2 == null || keeps(sub2)))) {
+      s.piece.subs = defaultSubs(job);
+    }
+    if (!job.activeSlotTypes.includes(s.piece.slot)) {
+      s.piece.slot = 'head';
+    }
   }
   if (parts.includes('browse')) {
     // the browser's slot and sort: a slot the job wears and a sort by name, level, item level or a kept stat stay
     const browse = defaultBrowse(job);
-    if (!from || ![ANY_SLOT_KEY, ...job.activeSlotTypes].includes(s.browse.type)) s.browse.type = browse.type;
+    if (!from || ![ANY_SLOT_KEY, ...job.activeSlotTypes].includes(s.browse.type)) {
+      s.browse.type = browse.type;
+    }
     if (!from || !(['name', 'lvl', 'ilvl'].includes(s.browse.sort) || keeps(s.browse.sort))) {
       s.browse.sort = browse.sort;
       s.browse.dir = browse.dir;
@@ -130,8 +140,12 @@ const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const intIn = (v, lo, hi, fallback) => (isNum(v) ? clamp(Math.round(v), lo, hi) : fallback);
 /** like intIn, but '' (an empty filter field) is allowed, and so is a numeric string (number inputs bound with x-model) */
 const optIntIn = (v, lo, hi, fallback) => {
-  if (v === '') return '';
-  if (typeof v === 'string' && v.trim() !== '') v = Number(v);
+  if (v === '') {
+    return '';
+  }
+  if (typeof v === 'string' && v.trim() !== '') {
+    v = Number(v);
+  }
   return intIn(v, lo, hi, fallback);
 };
 const bool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
@@ -153,10 +167,14 @@ function restoreGearFilter(f, raw, job) {
    (`spd`, `spec`): currentStatKey reads them as the job's own. */
 function restorePieceSubs(raw, job) {
   const ds = defaultSubs(job);
-  if (!Array.isArray(raw)) return ds;
+  if (!Array.isArray(raw)) {
+    return ds;
+  }
   const saved = raw.map(key => currentStatKey(job, key));
   const subs = [0, 1].map(i => (job.substats.includes(saved[i]) ? saved[i] : i === 0 ? ds[0] : null));
-  if (subs[1] === subs[0]) subs[1] = null;
+  if (subs[1] === subs[0]) {
+    subs[1] = null;
+  }
   return subs;
 }
 
@@ -164,7 +182,9 @@ function restorePieceSubs(raw, job) {
    too (every box ticked); a missing one gets the fallback, and so does one from before the boxes were activities (any
    key that is not a box, such as the old gear groups 'tomestone' or 'savage'). */
 function restoreExclude(raw, fallback) {
-  if (!Array.isArray(raw) || raw.some(k => !ACTIVITIES.some(a => a.key === k))) return fallback;
+  if (!Array.isArray(raw) || raw.some(k => !ACTIVITIES.some(a => a.key === k))) {
+    return fallback;
+  }
   return ACTIVITIES.map(a => a.key).filter(k => raw.includes(k));
 }
 
@@ -206,15 +226,23 @@ export function restoreBrowseFields(raw, job, base) {
    validates nothing: the restore of each group checks the values, as it does for every field. restoreState starts
    from it. */
 export function splitPanelSettings(raw) {
-  if (!isObj(raw)) return raw;
+  if (!isObj(raw)) {
+    return raw;
+  }
   const { opt: _opt, optPanel: _optPanel, ...rest } = raw;
   const split = { ...rest };
   for (const group of ['piece', 'browse']) {
     const own = isObj(raw[group]) ? raw[group] : {};
     split[group] = { ...own };
-    for (const key of PANEL_KEYS) if (key in raw && !(key in own)) split[group][key] = raw[key];
+    for (const key of PANEL_KEYS) {
+      if (key in raw && !(key in own)) {
+        split[group][key] = raw[key];
+      }
+    }
   }
-  for (const key of PANEL_KEYS) delete split[key];
+  for (const key of PANEL_KEYS) {
+    delete split[key];
+  }
   return split;
 }
 
@@ -231,7 +259,9 @@ export function restorePanel(own) {
   panel.sync = bool(saved.sync, panel.sync);
   panel.level = intIn(saved.level, 1, jobCtx.maxLevel, Math.min(panel.level, jobCtx.maxLevel));
   const lowered = limitCapToLevel({ ...panel, jobCtx });
-  if (lowered) panel.cap = lowered.to;
+  if (lowered) {
+    panel.cap = lowered.to;
+  }
   return { ...panel, jobCtx };
 }
 

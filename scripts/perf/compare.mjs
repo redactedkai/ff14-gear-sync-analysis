@@ -14,10 +14,13 @@ import { flag, option } from './args.mjs';
 import { fullPool, JOB_IDS, job as ctx, objectivesLite, SYNCS } from './workloads.mjs';
 
 const base = option('baseline');
-if (!base) throw new Error('--baseline <dir> is required');
+if (!base) {
+  throw new Error('--baseline <dir> is required');
+}
 const sha = p => createHash('sha256').update(readFileSync(p)).digest('hex');
-if (sha(`${base}/src/data/items.json`) !== sha('src/data/items.json'))
+if (sha(`${base}/src/data/items.json`) !== sha('src/data/items.json')) {
   throw new Error('the baseline item data differs; compare against a baseline of the same data');
+}
 
 const imp = p => import(pathToFileURL(resolve(base, 'src', p)).href);
 const B = {
@@ -54,9 +57,13 @@ for (const id of jobIds) {
         runs++;
         if (JSON.stringify(shape(a)) !== JSON.stringify(shape(b))) {
           diffs++;
-          if (diffs <= 5) console.log(`DIFF ${id} ${sync.label} ${[o.target, ...o.tiebreak].join('>')} melds ${melds}`);
+          if (diffs <= 5) {
+            console.log(`DIFF ${id} ${sync.label} ${[o.target, ...o.tiebreak].join('>')} melds ${melds}`);
+          }
         }
-        if (a.nodes !== b.nodes) nodeDiffs++;
+        if (a.nodes !== b.nodes) {
+          nodeDiffs++;
+        }
       }
       // sorted (kept-only) pruning equals the plain pairwise pruning, on every slot list of one objective per sync
       const o = { target: job.substats[0], tiebreak: [job.substats[1]] };
@@ -78,4 +85,6 @@ for (const id of jobIds) {
   console.log(`${id}: ${runs} runs so far, ${diffs} differences`);
 }
 console.log(`\n${runs} runs, ${pruneChecks} pruning checks: ${diffs} differences; nodes differ in ${nodeDiffs} runs`);
-if (diffs || (!nodesMayDiffer && nodeDiffs)) process.exit(1);
+if (diffs || (!nodesMayDiffer && nodeDiffs)) {
+  process.exit(1);
+}

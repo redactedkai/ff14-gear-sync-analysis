@@ -35,11 +35,13 @@ function recorded(saved: object) {
 /* What each part of the state holds now, as JSON: {revision key: text}. */
 function contents(state: AppState): Record<string, string> {
   const held: Record<string, string> = {};
-  for (const [slice, paths] of Object.entries(STATE_PARTS))
-    for (const path of paths)
+  for (const [slice, paths] of Object.entries(STATE_PARTS)) {
+    for (const path of paths) {
       held[partKey(slice, path)] = JSON.stringify(
         path.split('.').reduce<unknown>((inside, key) => (inside as Record<string, unknown>)[key], state[slice]),
       );
+    }
+  }
   return held;
 }
 
@@ -173,7 +175,9 @@ for (const [action, cases] of Object.entries(CASES)) {
       for (const [name, getter] of Object.entries(GETTERS)) {
         page.reads.clear();
         const after = JSON.stringify(getter(page) ?? null);
-        if (after === valuesBefore[name]) continue;
+        if (after === valuesBefore[name]) {
+          continue;
+        }
         const keysRead = [...page.reads];
         const moved = keysRead.some(key => page.store.revs[key] !== revisionsBefore[key]);
         assert.ok(moved, `${name} changed after ${action} but none of its revisions (${keysRead.join(', ')}) moved`);

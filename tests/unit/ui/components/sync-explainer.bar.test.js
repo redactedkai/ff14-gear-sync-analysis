@@ -19,8 +19,9 @@ function bound(saved = {}) {
   const app = createAppFacade(restoreOpen({ tab: 'math', piece: { job: 'SGE', cap: 123, sync: true, level: 85 }, ...saved }));
   const focused = [];
   const refs = {};
-  for (const name of ['jobButton', 'level', 'cap', 'syncChip', 'pieceChip', 'pieceFirst'])
+  for (const name of ['jobButton', 'level', 'cap', 'syncChip', 'pieceChip', 'pieceFirst']) {
     refs[name] = { focus: () => focused.push(name), value: '' };
+  }
   const watchers = {};
   const c = Object.assign(syncExplainer(), {
     $store: { app },
@@ -147,7 +148,9 @@ test('Level box: text that is no level is flagged and not stored; the flag clear
   const max = app.jobCtx.maxLevel; // Paladin's 100
   const range = LEVEL_TEXT.range(max);
   const fire = fns => {
-    for (const fn of fns) fn();
+    for (const fn of fns) {
+      fn();
+    }
   };
   assert.deepEqual(c.levelFlag(range), { kind: '', short: '', full: '' });
   for (const text of ['0', '101', '-5', '12.5', '', 'abc']) {

@@ -54,35 +54,47 @@ export function startAutosave(store: AppStore, options: AutosaveOptions = {}): A
     const started = performance.now();
     const json = JSON.stringify(persisted(store.state));
     performance.measure('save', { start: started }); // read by scripts/perf/browser.mjs
-    if (json === lastWritten) return;
+    if (json === lastWritten) {
+      return;
+    }
     let stored: unknown;
     try {
       stored = write(json);
     } catch {
       stored = false;
     }
-    if (stored === false)
+    if (stored === false) {
       waiting = true; // storage unavailable: the settings stay waiting, so the next change of the store, the next write and 'pagehide' try again
-    else lastWritten = json;
+    } else {
+      lastWritten = json;
+    }
   }
 
   /* Wait AUTOSAVE_DEBOUNCE_MS from now for the write, replacing a wait already running. */
   function schedule(): void {
-    if (timer !== null) timers.clearTimeout(timer);
+    if (timer !== null) {
+      timers.clearTimeout(timer);
+    }
     waiting = true;
     timer = timers.setTimeout(writeNow, AUTOSAVE_DEBOUNCE_MS);
   }
 
   /* Write now what waits (the page is going away). */
   function flush(): void {
-    if (!waiting) return;
-    if (timer !== null) timers.clearTimeout(timer);
+    if (!waiting) {
+      return;
+    }
+    if (timer !== null) {
+      timers.clearTimeout(timer);
+    }
     writeNow();
   }
 
   const unsubscribe = store.subscribe(() => {
     if (store.revs.settings === seenRevision) {
-      if (waiting && timer === null) schedule(); // a write failed: try again after this change of the store
+      if (waiting && timer === null) {
+        schedule(); // a write failed: try again after this change of the store
+      }
       return;
     }
     seenRevision = store.revs.settings;

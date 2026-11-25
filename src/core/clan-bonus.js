@@ -22,8 +22,11 @@ export function clanGroups() {
   const groups = [];
   for (const { race, clan } of CLANS) {
     const last = groups.at(-1);
-    if (last?.race === race) last.clans.push(clan);
-    else groups.push({ race, clans: [clan] });
+    if (last?.race === race) {
+      last.clans.push(clan);
+    } else {
+      groups.push({ race, clans: [clan] });
+    }
   }
   return groups;
 }
@@ -63,6 +66,8 @@ export function bonusStats(job) {
    stat is base + gear + meal. `meal` must be the meal's bonus on base + clan + gear (food.js foodBonus), not on the
    party-boosted value. */
 export function characterStat(job, stat, { base, gear, meal = 0, clan = null, roles = 0 }) {
-  if (!bonusStats(job).includes(stat)) return base + gear + meal;
+  if (!bonusStats(job).includes(stat)) {
+    return base + gear + meal;
+  }
   return withPartyBonus(base + clanOffset(clan, stat) + gear, roles) + meal;
 }

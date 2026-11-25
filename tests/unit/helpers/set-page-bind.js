@@ -32,12 +32,16 @@ export function heldSolver() {
     cancelled,
     blocksPage: false,
     request(request) {
-      if (request.kind !== 'solve') return inner.request(request);
+      if (request.kind !== 'solve') {
+        return inner.request(request);
+      }
       return new Promise((resolve, reject) => held.push({ request, resolve, reject }));
     },
     cancel(kind, key) {
       cancelled.push([kind, key]);
-      for (const h of held.splice(0)) h.reject(Object.assign(new Error('cancelled'), { cancelled: true }));
+      for (const h of held.splice(0)) {
+        h.reject(Object.assign(new Error('cancelled'), { cancelled: true }));
+      }
       return true;
     },
   };
@@ -63,7 +67,9 @@ export function bind(gearSet = sageSet(), solver = pageThreadSolver(), sheetOpti
    an empty row keeps nothing), the hands, the feet and the meal to fill. */
 export function twoToFill() {
   let set = sageSet({ pinned: { pieces: [0, 1, 2, 3, 5, 7, 8, 9, 10, 11], meal: false } });
-  for (const row of [HANDS, FEET]) set = placePiece(SGE, set, row, null).gearSet;
+  for (const row of [HANDS, FEET]) {
+    set = placePiece(SGE, set, row, null).gearSet;
+  }
   return set;
 }
 
@@ -77,7 +83,9 @@ export function refusingSolver(failing, { blocksPage = false } = {}) {
     started,
     request(request) {
       started.push(request.kind);
-      if (failing.includes(request.kind)) return Promise.reject(new Error('worker crashed.'));
+      if (failing.includes(request.kind)) {
+        return Promise.reject(new Error('worker crashed.'));
+      }
       return inner.request(request);
     },
     cancel: () => false,
@@ -97,7 +105,9 @@ export function lateSolver(kinds = ['solve']) {
     cancelled,
     blocksPage: false,
     request(request) {
-      if (!kinds.includes(request.kind)) return inner.request(request);
+      if (!kinds.includes(request.kind)) {
+        return inner.request(request);
+      }
       return new Promise(resolve => held.push({ request, answer: async () => resolve(await inner.request(request)) }));
     },
     cancel(kind, key) {

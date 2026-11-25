@@ -164,7 +164,9 @@ const JOB_INFO = {
    item database: bit i = JOBS[i]. */
 export const JOBS = Object.freeze(
   ITEM_FORMAT.jobs.map(id => {
-    if (!JOB_INFO[id]) throw new Error(`item-format.json lists job ${id}, which has no entry in JOB_INFO`);
+    if (!JOB_INFO[id]) {
+      throw new Error(`item-format.json lists job ${id}, which has no entry in JOB_INFO`);
+    }
     const [name, profile] = JOB_INFO[id];
     return Object.freeze({ id, name, profile });
   }),

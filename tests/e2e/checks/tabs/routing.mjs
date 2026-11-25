@@ -378,7 +378,9 @@ const startFrameRecorder = (pg, marker) =>
       frames.push({ y: Math.round(window.scrollY), shown: (document.querySelector(selector)?.getClientRects().length ?? 0) > 0 });
     const state = { frames, stopped: false };
     const tick = () => {
-      if (state.stopped) return;
+      if (state.stopped) {
+        return;
+      }
       channel.port2.postMessage(0);
       requestAnimationFrame(tick);
     };
@@ -559,7 +561,9 @@ export async function checkScrollOnBackToLeftPosition(pg) {
       new Promise(done => {
         const later = [() => history.forward(), () => history.back()];
         const onMove = () => {
-          if (later.length) return setTimeout(later.shift());
+          if (later.length) {
+            return setTimeout(later.shift());
+          }
           removeEventListener('popstate', onMove);
           done(); // the third move has arrived
         };

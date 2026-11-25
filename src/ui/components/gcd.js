@@ -24,7 +24,9 @@ export function gcdTab() {
     init() {
       const observer = new ResizeObserver(([e]) => {
         const w = Math.round(e.contentRect.width);
-        if (w && w !== this.width) this.width = w;
+        if (w && w !== this.width) {
+          this.width = w;
+        }
       });
       this.$nextTick(() => observer.observe(this.$refs.chart));
     },
@@ -37,11 +39,15 @@ export function gcdTab() {
     /* a bar of the chart: its level */
     pickLevel(e) {
       const bar = e.target.closest('[data-level]');
-      if (bar) this.$store.app.editGcd({ level: Number(bar.dataset.level) });
+      if (bar) {
+        this.$store.app.editGcd({ level: Number(bar.dataset.level) });
+      }
     },
     /* a step of the table: its speed (none past the most any job can have) */
     pickSpeed(row) {
-      if (!row.out) this.$store.app.editGcd({ speed: row.speed });
+      if (!row.out) {
+        this.$store.app.editGcd({ speed: row.speed });
+      }
     },
   };
 }
@@ -108,7 +114,9 @@ export function gcdControls() {
       }
       // a whole number, not held to the range here: the `speed` getter holds it, and the box shows that
       const typed = commit(el.value, { final: true });
-      if (typed) this.$store.app.editGcd({ speed: typed.value });
+      if (typed) {
+        this.$store.app.editGcd({ speed: typed.value });
+      }
       el.value = this.speed;
     },
     slide(value) {

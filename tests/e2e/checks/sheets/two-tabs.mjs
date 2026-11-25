@@ -26,7 +26,9 @@ const storedSheets = page =>
     const records = {};
     for (let i = 0; i < localStorage.length; i++) {
       const name = localStorage.key(i);
-      if (name.startsWith(`${key}:sheet:`)) records[name.slice(`${key}:sheet:`.length)] = localStorage.getItem(name);
+      if (name.startsWith(`${key}:sheet:`)) {
+        records[name.slice(`${key}:sheet:`.length)] = localStorage.getItem(name);
+      }
     }
     return { index: JSON.parse(localStorage.getItem(`${key}:sheets`) ?? 'null'), records };
   }, STORE_KEY);
@@ -46,7 +48,9 @@ export async function checkTwoTabs(pg) {
   const other = await newPage(pg.context());
   other.on('pageerror', e => rec.errors.push(`page error (second tab): ${e.message ?? e}`));
   other.on('console', m => {
-    if (m.type() === 'error' && !m.text().includes('ERR_')) rec.errors.push(`console error (second tab): ${m.text()}`);
+    if (m.type() === 'error' && !m.text().includes('ERR_')) {
+      rec.errors.push(`console error (second tab): ${m.text()}`);
+    }
   });
   const names = (page, table = '#sh-list') => sheetNames(page, table);
   const manager = async page => {
@@ -55,8 +59,12 @@ export async function checkTwoTabs(pg) {
   };
   const renameSheet = async (page, name, description) => {
     await page.click('#sh-edit');
-    if (name !== null) await page.fill('#sh-dlg-name', name);
-    if (description !== null) await page.fill('#sh-dlg-description', description);
+    if (name !== null) {
+      await page.fill('#sh-dlg-name', name);
+    }
+    if (description !== null) {
+      await page.fill('#sh-dlg-description', description);
+    }
     await page.click('#sh-dlg-ok');
     await expect(page.locator('#sh-dialog')).toHaveCount(0);
   };

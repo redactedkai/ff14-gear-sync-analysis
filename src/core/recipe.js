@@ -60,7 +60,9 @@ export function gearFromCounts(job, recipe, gear) {
 /* The Target GCD asked for, in seconds, or null for none: the box is empty, or the goal is speed itself (the box is
    disabled then: maximizing speed already gives the fastest GCD). */
 function askedGcd(job, recipe) {
-  if (recipe.target === job.speedKey || recipe.gcd === '' || recipe.gcd == null) return null;
+  if (recipe.target === job.speedKey || recipe.gcd === '' || recipe.gcd == null) {
+    return null;
+  }
   const g = Number(recipe.gcd);
   return Number.isFinite(g) && g > 0 ? Math.round(g * 100) / 100 : null;
 }
@@ -74,7 +76,9 @@ function pickedMeal(job, recipe, mealKey) {
 /* Each game id's piece in `gear` (a session's gear for the job), kept per gear list. */
 const gearIndexes = new WeakMap();
 function gearById(gear) {
-  if (!gearIndexes.has(gear)) gearIndexes.set(gear, new Map(gear.map(item => [item.gameId, item])));
+  if (!gearIndexes.has(gear)) {
+    gearIndexes.set(gear, new Map(gear.map(item => [item.gameId, item])));
+  }
   return gearIndexes.get(gear);
 }
 
@@ -97,15 +101,26 @@ export function resolvePins(job, sync, pins, gear) {
   (pins?.pieces ?? []).forEach((piece, index) => {
     const item = byId.get(piece.gameId) ?? null;
     let reason = null;
-    if (!item) reason = poolItemById(job, piece.gameId) ? 'wearable' : 'missing';
-    else if (item.type !== piece.slot) reason = 'slot';
-    else if (allocatedRelic(job, item)) reason = 'relic';
-    if (reason) problems.push({ index, reason });
-    else fixed.push(fixedCandidate(job, item, piece.stones ?? [], sync));
+    if (!item) {
+      reason = poolItemById(job, piece.gameId) ? 'wearable' : 'missing';
+    } else if (item.type !== piece.slot) {
+      reason = 'slot';
+    } else if (allocatedRelic(job, item)) {
+      reason = 'relic';
+    }
+    if (reason) {
+      problems.push({ index, reason });
+    } else {
+      fixed.push(fixedCandidate(job, item, piece.stones ?? [], sync));
+    }
   });
-  if (!problems.length && pinProblem(fixed)) problems.push({ index: null, reason: 'conflict' });
+  if (!problems.length && pinProblem(fixed)) {
+    problems.push({ index: null, reason: 'conflict' });
+  }
   const meal = pins?.meal ? (allMeals(job).find(m => m.key === pins.meal) ?? null) : null;
-  if (pins?.meal && !meal) problems.push({ index: null, reason: 'meal' });
+  if (pins?.meal && !meal) {
+    problems.push({ index: null, reason: 'meal' });
+  }
   return { fixed, meal, problems };
 }
 
@@ -123,7 +138,9 @@ function usesFood(recipe, pinnedMeal) {
 /* The meal Target GCD and tier ranking search with: none with Food off (`foodOn` false), the player's pick (`picked`, an
    allMeals entry), or every choice ('best'). */
 function searchMeal(foodOn, picked) {
-  if (!foodOn) return null;
+  if (!foodOn) {
+    return null;
+  }
   return picked ?? 'best';
 }
 
@@ -203,12 +220,16 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
       record,
       found: { truncated: r?.truncated, gcd: r && asked != null ? gcdFacts(r) : null, badPins: status === 'badpin' ? pinned.problems : [] },
     });
-  if (pinned.problems.length) return fail('badpin');
+  if (pinned.problems.length) {
+    return fail('badpin');
+  }
 
   // 1. the gear to search, the meal (pinned, else the player's pick) and the Target GCD asked for
   const gear = session.gear(job);
   const pool = recipePool(job, recipe, gear);
-  if (!pool.length && !pinned.fixed.length) return fail('excluded');
+  if (!pool.length && !pinned.fixed.length) {
+    return fail('excluded');
+  }
   const picked = pinned.meal ?? pickedMeal(job, recipe, choices.meal);
   const foodOn = usesFood(recipe, pinned.meal);
   const fixed = pinned.fixed;
@@ -231,7 +252,9 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
       gcd: asked ?? undefined,
       mode: recipe.gcdMode,
     });
-    if (!res.ok) return failed(res);
+    if (!res.ok) {
+      return failed(res);
+    }
     food = res.food;
   } else if (asked != null) {
     res = optimizeGcd(job, pool, sync, {
@@ -242,11 +265,15 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
       nodeLimit: NODE_LIMIT,
       level,
     });
-    if (!res.ok) return failed(res);
+    if (!res.ok) {
+      return failed(res);
+    }
     food = res.food;
   } else {
     res = optimize(job, pool, sync, { ...goal, nodeLimit: NODE_LIMIT });
-    if (!res.ok) return failed(res);
+    if (!res.ok) {
+      return failed(res);
+    }
     food = foodOn ? (picked ?? bestFood(job, foodChoices(job), res.totals, level, [recipe.target, recipe.tb, recipe.tb2])) : null;
   }
 

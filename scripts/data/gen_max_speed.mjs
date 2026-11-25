@@ -75,8 +75,11 @@ export function jobGroups() {
     const key = createHash('sha1')
       .update(JSON.stringify([job.maxLevel, pool.map(i => [i.name, i.ilvl, i.type, i.stats]), meals.map(m => m.key)]))
       .digest('hex');
-    if (groups.has(key)) groups.get(key).jobs.push(id);
-    else groups.set(key, { jobs: [id], job, pool, meals });
+    if (groups.has(key)) {
+      groups.get(key).jobs.push(id);
+    } else {
+      groups.set(key, { jobs: [id], job, pool, meals });
+    }
   }
   return [...groups.values()];
 }
@@ -84,7 +87,9 @@ export function jobGroups() {
 /* The most total speed a group can have at `level`, or null above its jobs' level cap. Each search that stopped at
    NODE_LIMIT is added to `truncated` as {jobs, level, case} (case: 'native', 'level sync' or 'cap'). */
 export function groupMaxSpeed({ jobs, job, pool, meals }, level, truncated = []) {
-  if (level > job.maxLevel) return null;
+  if (level > job.maxLevel) {
+    return null;
+  }
   const native = pool.filter(i => (equipLevel(i) ?? 0) <= level);
   const cases = [
     ['native', native, { cap: null, sync: false, level }],
@@ -93,7 +98,9 @@ export function groupMaxSpeed({ jobs, job, pool, meals }, level, truncated = [])
   ];
   const runs = cases.map(([name, items, sync]) => {
     const run = optimize(job, items, sync, { target: job.speedKey, melds: true, weaponFirst: false, nodeLimit: NODE_LIMIT });
-    if (run.truncated) truncated.push({ jobs: jobs ?? [job.jobId], level, case: name });
+    if (run.truncated) {
+      truncated.push({ jobs: jobs ?? [job.jobId], level, case: name });
+    }
     return run;
   });
   const best = runs.filter(r => r.ok).reduce((a, r) => (r.totals[job.speedKey] > (a?.totals[job.speedKey] ?? -1) ? r : a), null);

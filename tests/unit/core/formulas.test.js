@@ -21,5 +21,7 @@ test('item level 130 healer hood from the formula (its fixed Direct Hit 6 is a r
 test('level caps: Blue Mage 80, Beastmaster 50 (Lodestone patch notes 6.45 and 7.56), every other job 100', () => {
   assert.equal(makeJobContext('BLU').maxLevel, 80);
   assert.equal(makeJobContext('BST').maxLevel, 50);
-  for (const id of ['PLD', 'SGE', 'MNK', 'VPR', 'PCT']) assert.equal(makeJobContext(id).maxLevel, 100, id);
+  for (const id of ['PLD', 'SGE', 'MNK', 'VPR', 'PCT']) {
+    assert.equal(makeJobContext(id).maxLevel, 100, id);
+  }
 });

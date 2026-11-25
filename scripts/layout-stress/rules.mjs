@@ -69,7 +69,9 @@ export const RULES = Object.freeze({
 
 /* The severity of rule `rule` ('fail' or 'warn'); throws for a rule that does not exist, so a typo cannot hide a finding. */
 export function severityOf(rule) {
-  if (!RULES[rule]) throw new Error(`unknown rule "${rule}"`);
+  if (!RULES[rule]) {
+    throw new Error(`unknown rule "${rule}"`);
+  }
   return RULES[rule][0];
 }
 
@@ -97,8 +99,11 @@ export function groupRows(items, gap = THRESHOLDS.rowGap) {
   const rows = [];
   for (const item of [...items].sort((a, b) => a.t - b.t || (a.l ?? 0) - (b.l ?? 0))) {
     const row = rows.find(candidate => Math.abs(candidate.top - item.t) <= gap);
-    if (row) row.items.push(item);
-    else rows.push({ top: item.t, items: [item] });
+    if (row) {
+      row.items.push(item);
+    } else {
+      rows.push({ top: item.t, items: [item] });
+    }
   }
   return rows.map(row => row.items.sort((a, b) => (a.l ?? 0) - (b.l ?? 0)));
 }
@@ -114,9 +119,13 @@ export function findOutside(controls, containers, tolerance = THRESHOLDS.outside
   const found = [];
   for (const control of controls) {
     const container = containers[control.c];
-    if (!container || container.scrolls) continue;
+    if (!container || container.scrolls) {
+      continue;
+    }
     const by = Math.max(container.l - control.l, control.r - container.r, container.t - control.t, control.b - container.b);
-    if (by > tolerance) found.push({ id: control.id, container: container.id, by: Math.round(by) });
+    if (by > tolerance) {
+      found.push({ id: control.id, container: container.id, by: Math.round(by) });
+    }
   }
   return found;
 }
@@ -124,7 +133,11 @@ export function findOutside(controls, containers, tolerance = THRESHOLDS.outside
 /* Whether control `index` has control `other` among the controls around it (one holds the other: a button with a label
    inside, a field with its box). */
 function isAround(controls, index, other) {
-  for (let at = controls[index].up; at !== undefined && at >= 0; at = controls[at].up) if (at === other) return true;
+  for (let at = controls[index].up; at !== undefined && at >= 0; at = controls[at].up) {
+    if (at === other) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -137,9 +150,15 @@ export function findOverlaps(controls, tolerance = THRESHOLDS.overlapTolerance) 
       const b = controls[second];
       const across = Math.min(a.r, b.r) - Math.max(a.l, b.l);
       const down = Math.min(a.b, b.b) - Math.max(a.t, b.t);
-      if (across <= tolerance || down <= tolerance) continue;
-      if (a.overlay || b.overlay) continue; // a control placed over another on purpose (a clear button inside its field)
-      if (isAround(controls, first, second) || isAround(controls, second, first)) continue;
+      if (across <= tolerance || down <= tolerance) {
+        continue;
+      }
+      if (a.overlay || b.overlay) {
+        continue; // a control placed over another on purpose (a clear button inside its field)
+      }
+      if (isAround(controls, first, second) || isAround(controls, second, first)) {
+        continue;
+      }
       pairs.push([a.id, b.id]);
     }
   }
@@ -160,8 +179,11 @@ export function findBoxRowProblems(boxes, heightTolerance = THRESHOLDS.boxHeight
     const row = rows.find(candidate =>
       candidate.some(other => Math.min(box.b, other.b) - Math.max(box.t, other.t) >= Math.min(box.b - box.t, other.b - other.t) / 2),
     );
-    if (row) row.push(box);
-    else rows.push([box]);
+    if (row) {
+      row.push(box);
+    } else {
+      rows.push([box]);
+    }
   }
   const problems = [];
   for (const row of rows.filter(items => items.length > 1)) {
@@ -170,8 +192,12 @@ export function findBoxRowProblems(boxes, heightTolerance = THRESHOLDS.boxHeight
     const heightSpread = Math.max(...heights) - Math.min(...heights);
     const topSpread = Math.max(...tops) - Math.min(...tops);
     const ids = row.map(box => box.id);
-    if (heightSpread > heightTolerance) problems.push({ ids, kind: 'height', spread: Math.round(heightSpread * 10) / 10 });
-    if (topSpread > topTolerance) problems.push({ ids, kind: 'top', spread: Math.round(topSpread * 10) / 10 });
+    if (heightSpread > heightTolerance) {
+      problems.push({ ids, kind: 'height', spread: Math.round(heightSpread * 10) / 10 });
+    }
+    if (topSpread > topTolerance) {
+      problems.push({ ids, kind: 'top', spread: Math.round(topSpread * 10) / 10 });
+    }
   }
   return problems;
 }
@@ -225,11 +251,16 @@ export function compareScopes(first, second, tolerance = THRESHOLDS.moveToleranc
   const byId = new Map(secondControls.map(control => [control.id, control]));
   for (const a of firstControls) {
     const b = byId.get(a.id);
-    if (!b) continue;
+    if (!b) {
+      continue;
+    }
     const moved = Math.max(Math.abs(a.l - b.l), Math.abs(a.t - firstTop - (b.t - secondTop)));
     const resized = Math.max(Math.abs(a.r - a.l - (b.r - b.l)), Math.abs(a.b - a.t - (b.b - b.t)));
-    if (moved > tolerance) differences.push(`${a.id} moved ${Math.round(moved)} px`);
-    else if (resized > tolerance) differences.push(`${a.id} resized ${Math.round(resized)} px`);
+    if (moved > tolerance) {
+      differences.push(`${a.id} moved ${Math.round(moved)} px`);
+    } else if (resized > tolerance) {
+      differences.push(`${a.id} resized ${Math.round(resized)} px`);
+    }
   }
   return differences;
 }
@@ -237,8 +268,9 @@ export function compareScopes(first, second, tolerance = THRESHOLDS.moveToleranc
 /* The differences between two whole probes' scopes ({name: scope}), as texts that name the scope. */
 export function compareProbes(first, second, scopeNames, tolerance = THRESHOLDS.moveTolerance, commonOnly = false) {
   return scopeNames.flatMap(name => {
-    if (!first.scopes[name] || !second.scopes[name])
+    if (!first.scopes[name] || !second.scopes[name]) {
       return first.scopes[name] || second.scopes[name] ? [`${name} is not on both pages`] : [];
+    }
     return compareScopes(first.scopes[name], second.scopes[name], tolerance, commonOnly).map(text => `${name}: ${text}`);
   });
 }
@@ -267,11 +299,15 @@ export function describeKeyChange(before, after) {
   const b = JSON.parse(layoutKey(after));
   const changes = [];
   a.shapes.forEach((shape, at) => {
-    if (shape !== b.shapes[at])
+    if (shape !== b.shapes[at]) {
       changes.push(`${shape.split('=')[0]}: ${shape.split('=').slice(1).join('=')} -> ${b.shapes[at].split('=').slice(1).join('=')}`);
+    }
   });
-  for (const key of ['hscroll', 'wraps', 'clipped', 'lines', 'bar'])
-    if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) changes.push(`${key}: ${asText(a[key])} -> ${asText(b[key])}`);
+  for (const key of ['hscroll', 'wraps', 'clipped', 'lines', 'bar']) {
+    if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) {
+      changes.push(`${key}: ${asText(a[key])} -> ${asText(b[key])}`);
+    }
+  }
   return changes;
 }
 
@@ -284,17 +320,19 @@ export function rowCounts(probe) {
    `windowHeight` px. Returns [{rule, severity, detail}]. */
 export function judgeRowsVisible({ visible, stack, windowHeight }) {
   const out = [];
-  if (visible < THRESHOLDS.minRowsFail)
+  if (visible < THRESHOLDS.minRowsFail) {
     out.push({
       rule: 'rows-visible',
       severity: 'fail',
       detail: `only ${visible} row(s) fully visible (${stack} px of ${windowHeight} px pinned)`,
     });
-  else if (visible < THRESHOLDS.minRowsWarn)
+  } else if (visible < THRESHOLDS.minRowsWarn) {
     out.push({ rule: 'rows-visible', severity: 'warn', detail: `${visible} rows visible (${stack} px of ${windowHeight} px pinned)` });
+  }
   const percent = Math.round((100 * stack) / windowHeight);
-  if (percent > THRESHOLDS.maxPinnedPercent)
+  if (percent > THRESHOLDS.maxPinnedPercent) {
     out.push({ rule: 'pinned-share', severity: 'warn', detail: `${percent}% of the window pinned (${stack} of ${windowHeight} px)` });
+  }
   return out;
 }
 
@@ -303,22 +341,28 @@ export function judgeRowsVisible({ visible, stack, windowHeight }) {
    Returns [{rule, detail}]. */
 export function judgeMenu({ top, bottom, left, right, windowWidth, windowHeight, stack = 0, coveredPoints = 0 }) {
   const out = [];
-  if (bottom > windowHeight + 1)
+  if (bottom > windowHeight + 1) {
     out.push({ rule: 'menu-inside-window', detail: `ends ${Math.round(bottom - windowHeight)} px below the window` });
-  if (left < -1 || right > windowWidth + 1)
+  }
+  if (left < -1 || right > windowWidth + 1) {
     out.push({
       rule: 'menu-inside-window',
       detail: `sticks out at the side (${Math.round(left)} to ${Math.round(right)} of ${windowWidth} px)`,
     });
-  if (stack && top < stack - 1)
+  }
+  if (stack && top < stack - 1) {
     out.push({ rule: 'menu-below-pinned-header', detail: `starts ${Math.round(stack - top)} px under the pinned header` });
-  if (coveredPoints > 0) out.push({ rule: 'menu-not-clipped', detail: `${coveredPoints} corner(s) covered by another box` });
+  }
+  if (coveredPoints > 0) {
+    out.push({ rule: 'menu-not-clipped', detail: `${coveredPoints} corner(s) covered by another box` });
+  }
   return out;
 }
 
 /* The verdict on a dialog's box and whether it scrolls inside itself. Returns [{rule, detail}]. */
 export function judgeDialog({ top, bottom, height, windowHeight, scrolls }) {
-  if ((top < 0 || bottom > windowHeight + 1) && !scrolls)
+  if ((top < 0 || bottom > windowHeight + 1) && !scrolls) {
     return [{ rule: 'dialog-fits', detail: `${Math.round(height)} px dialog in a ${windowHeight} px window, not scrolling` }];
+  }
   return [];
 }

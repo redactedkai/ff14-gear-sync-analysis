@@ -18,11 +18,15 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'
 /* A meld as the page shows it ("CRT XII ×2, DET XI, 2 slots empty") as one entry per slot: {stat, grade} or null;
    '' is no melds ([]). */
 function stonesOf(job, text) {
-  if (!text) return [];
+  if (!text) {
+    return [];
+  }
   const statOf = short => job.stats.find(s => job.short[s] === short);
   return text.split(', ').flatMap(part => {
     const empty = part.match(/^(\d+) slots? empty$/);
-    if (empty) return Array(+empty[1]).fill(null);
+    if (empty) {
+      return Array(+empty[1]).fill(null);
+    }
     const [, short, roman, n] = part.match(/^(\S+) (\S+?)(?: ×(\d+))?$/);
     return Array(+(n || 1)).fill({ stat: statOf(short), grade: ROMAN.indexOf(roman) + 1 });
   });
@@ -87,7 +91,9 @@ test('evaluateSet shows what the optimizer view showed for 14 real results, numb
         want.bonus,
         at('Food row'),
       );
-    } else assert.deepEqual([set.meal, set.bonus, set.withFood], [null, {}, set.gear], at('no meal'));
+    } else {
+      assert.deepEqual([set.meal, set.bonus, set.withFood], [null, {}, set.gear], at('no meal'));
+    }
     assert.deepEqual(
       set.tiers.map(t => t && [t.effect, t.spare, t.toNext]),
       want.tiers,
@@ -118,14 +124,18 @@ test("evaluateSet of an optimizer result's picks: the optimizer's own totals, ac
       const res = optimize(job, pool, sync, { target: job.substats[0], tiebreak: [job.substats[1]], melds: true });
       assert.ok(res.ok, id);
       const set = evaluateSet(job, setFromPicks(res.picks), sync, Math.min(sync.level, job.maxLevel));
-      for (const s of job.stats) assert.equal(set.gear[s], res.totals[s], `${id} ${JSON.stringify(sync)} ${s}`);
+      for (const s of job.stats) {
+        assert.equal(set.gear[s], res.totals[s], `${id} ${JSON.stringify(sync)} ${s}`);
+      }
       // each row: the pick's stats and melds
       res.picks.forEach((p, i) => {
         if (!p.item) {
           assert.equal(set.rows[i].item, null);
           return;
         }
-        for (const s of job.stats) assert.equal(set.rows[i].stats[s], p.eff[s], `${id} ${p.item.name} ${s}`);
+        for (const s of job.stats) {
+          assert.equal(set.rows[i].stats[s], p.eff[s], `${id} ${p.item.name} ${s}`);
+        }
         assert.equal(set.rows[i].meldText, meldText(job, p.meld), p.item.name);
       });
     }

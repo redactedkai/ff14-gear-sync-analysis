@@ -62,7 +62,9 @@ export const SLOT_PERMILLE = {
 /* A saved state restored for the screen it names: a test's save may hold `tab` and `mathTab` (the page no longer saves them; the
    address names the open tab, so restoreState takes them apart from the save). Returns restoreState's state. */
 export function restoreOpen(saved) {
-  if (saved === null || typeof saved !== 'object') return restoreState(saved);
+  if (saved === null || typeof saved !== 'object') {
+    return restoreState(saved);
+  }
   const { tab, mathTab, ...rest } = saved;
   return restoreState(rest, { tab, mathTab });
 }
@@ -99,7 +101,9 @@ export function watched(c) {
     let last = c[prop];
     checks.push(() => {
       const now = c[prop];
-      if (now === last) return;
+      if (now === last) {
+        return;
+      }
       const before = last;
       last = now;
       callback(now, before);
@@ -107,7 +111,9 @@ export function watched(c) {
   };
   c.init?.();
   return () => {
-    for (const check of checks) check();
+    for (const check of checks) {
+      check();
+    }
   };
 }
 

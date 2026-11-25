@@ -49,11 +49,15 @@ export async function checkMenuSteps(pg) {
         const rows = () => document.querySelectorAll(`${menuSel} .same-item`).length;
         let longest = 0;
         const observer = new PerformanceObserver(list => {
-          for (const entry of list.getEntries()) longest = Math.max(longest, entry.duration);
+          for (const entry of list.getEntries()) {
+            longest = Math.max(longest, entry.duration);
+          }
         });
         observer.observe({ type: 'longtask' });
         document.querySelector(buttonSel).click();
-        while (!document.querySelector(menuSel)) await frame();
+        while (!document.querySelector(menuSel)) {
+          await frame();
+        }
         await frame();
         const first = rows();
         let last = first;
@@ -76,7 +80,9 @@ export async function checkMenuSteps(pg) {
         let sink = 0; // the sum is kept so the loop is not optimized away
         for (let run = 0; run < runs; run++) {
           const start = performance.now();
-          for (let pass = 0; pass < passes; pass++) sink += pass % 7;
+          for (let pass = 0; pass < passes; pass++) {
+            sink += pass % 7;
+          }
           shortest = Math.min(shortest, performance.now() - start);
         }
         return sink >= 0 ? shortest : 0;
@@ -90,10 +96,14 @@ export async function checkMenuSteps(pg) {
     let best;
     let calibrationMs = await calibrate();
     for (let run = 0; run < MENU_RUNS; run++) {
-      if (run) await close();
+      if (run) {
+        await close();
+      }
       const got = await open(buttonSel, menuSel);
       assert.ok(got.last > got.first, `${menuSel} draws its rows in steps: ${got.first} then ${got.last}`);
-      if (!best || got.longest < best.longest) best = got;
+      if (!best || got.longest < best.longest) {
+        best = got;
+      }
     }
     calibrationMs = Math.min(calibrationMs, await calibrate());
     return { ...best, limit: menuLimit(calibrationMs), calibrationMs };
@@ -249,8 +259,12 @@ export async function checkPickMenu(pg) {
     const box = row.getBoundingClientRect();
     const hit = y => document.elementFromPoint(box.left + 10, y);
     const bad = [];
-    if (!hit((head.top + head.bottom) / 2)?.closest('.shead')) bad.push('pinned header');
-    if (!hit((names.top + names.bottom) / 2)?.closest('th')) bad.push('column names');
+    if (!hit((head.top + head.bottom) / 2)?.closest('.shead')) {
+      bad.push('pinned header');
+    }
+    if (!hit((names.top + names.bottom) / 2)?.closest('th')) {
+      bad.push('column names');
+    }
     return bad.join(' and ');
   });
   check(!covered, `a row's menu button draws over the ${covered}`);

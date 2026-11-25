@@ -51,12 +51,16 @@ test('resultOf: points within a tier give the same result, a tier lost or a main
 test('resultOf: speed keeps its GCD; its DoT/HoT tick scaling may drop a step (owner, 2026-10-16)', () => {
   // the first speed above 400 whose DoT/HoT scaling is one step up while its GCD is the same as one point less
   let spd = 400;
-  while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) spd++;
+  while (gcdFor(spd, 100) !== gcdFor(spd - 1, 100) || dotMult(spd, 100) === dotMult(spd - 1, 100)) {
+    spd++;
+  }
   const at = points => resultOf(sge, { mind: 300, sps: points }, CTX);
   assert.deepEqual(at(spd - 1), at(spd));
   // a GCD step lost is a different result
   let step = 400;
-  while (gcdFor(step, 100) === gcdFor(step - 1, 100)) step++;
+  while (gcdFor(step, 100) === gcdFor(step - 1, 100)) {
+    step++;
+  }
   assert.notDeepEqual(at(step - 1), at(step));
 });
 
@@ -67,9 +71,13 @@ test('resultOf: Tenacity keeps its mitigation step (200); its damage step (112) 
   const mit = rankTierOf(war, 'ten', 100);
   const dmg = p => statTier(war, 'ten', p, 100).effect;
   let a = 400;
-  while (mit(a) === mit(a - 1) || dmg(a) !== dmg(a - 1)) a++;
+  while (mit(a) === mit(a - 1) || dmg(a) !== dmg(a - 1)) {
+    a++;
+  }
   let b = 400;
-  while (dmg(b) === dmg(b - 1) || mit(b) !== mit(b - 1)) b++;
+  while (dmg(b) === dmg(b - 1) || mit(b) !== mit(b - 1)) {
+    b++;
+  }
   assert.ok(!at(a, a - 1), 'a mitigation step lost');
   assert.ok(at(b, b - 1), 'a damage step lost, the mitigation step kept');
 });

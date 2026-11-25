@@ -27,8 +27,12 @@ export function settingsPart() {
     /* The sheet page's caret menu: open or close it; opened, it is a layer of the overlay manager (Escape, a press outside and Tab
        out close it) and the current sheet takes the focus. Off while an Auto-fill runs. */
     toggleSheetMenu(box) {
-      if (this.sheets.busy) return;
-      if (this.sheetMenu) return this.closeSheetMenu(true);
+      if (this.sheets.busy) {
+        return;
+      }
+      if (this.sheetMenu) {
+        return this.closeSheetMenu(true);
+      }
       overlays.open({
         id: SHEET_MENU_LAYER,
         root: () => box,
@@ -43,7 +47,9 @@ export function settingsPart() {
     },
     /* Close the caret menu (a choice, the caret again); the focus goes back to its caret when `restoreFocus`. */
     closeSheetMenu(restoreFocus = false) {
-      if (!overlays.close(SHEET_MENU_LAYER, { restoreFocus })) this.sheetMenu = false;
+      if (!overlays.close(SHEET_MENU_LAYER, { restoreFocus })) {
+        this.sheetMenu = false;
+      }
     },
 
     /* The level box. Typed digits commit once typing settles (numberField), so the cap follows the level typed, not
@@ -97,23 +103,33 @@ export function settingsPart() {
     /* The Clan box changed: `name` is a clan's name, '' for "Select Race/Clan". The sets' totals follow (the sheet's
        page view is rebuilt from the saved sheet). A refused edit (an Auto-fill runs) puts the box back to the saved clan. */
     pickClan(name, select) {
-      if (!this.sheets.setClan(name || null).ok) select.value = this.sheetClan ?? '';
+      if (!this.sheets.setClan(name || null).ok) {
+        select.value = this.sheetClan ?? '';
+      }
     },
     /* The Party bonus box changed: `value` is the number of unique roles as text. A refused edit puts the box back. */
     pickPartyRoles(value, select) {
-      if (!this.sheets.setPartyRoles(value).ok) select.value = String(this.sheetPartyRoles);
+      if (!this.sheets.setPartyRoles(value).ok) {
+        select.value = String(this.sheetPartyRoles);
+      }
     },
     /* Keep what an edit of the open sheet lowered (`result`: the store's {ok, lowered}) for the note, and flash the
        cap field; a refused edit (an Auto-fill runs) leaves the note as it was. A lowered cap is put in the field too: typed
        again over a cap already at the limit (or the up arrow there), the sheet does not change, so its binding does
        not run again and the field would keep the text typed. */
     noteLowered(result) {
-      if (!result?.ok) return;
+      if (!result?.ok) {
+        return;
+      }
       const lowered = result.lowered;
       this.capLowered = lowered ? { ...lowered, sheetId: this.sheets.sheetId } : null;
-      if (!lowered) return;
+      if (!lowered) {
+        return;
+      }
       const field = this.$refs.sheetCap;
-      if (field) field.value = String(lowered.to);
+      if (field) {
+        field.value = String(lowered.to);
+      }
       flashLowered(field);
     },
     /* Under the sheet page's cap field after it was lowered (level-cap.js capLoweredText, the Job and sync panel's
@@ -122,7 +138,9 @@ export function settingsPart() {
     get capLoweredNote() {
       const lowered = this.capLowered;
       const sheet = this.sheets.currentSheet;
-      if (!lowered || !sheet?.sync.on || lowered.sheetId !== sheet.id || this.capError) return '';
+      if (!lowered || !sheet?.sync.on || lowered.sheetId !== sheet.id || this.capError) {
+        return '';
+      }
       return capLoweredText(lowered);
     },
     /* The sheet page's cap field's flag in its label line (level-cap.js capFlag); `range` is the range text, "1–795". */

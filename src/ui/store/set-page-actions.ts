@@ -45,7 +45,9 @@ export function createSetPageActions(store: AppStore) {
   /* `setId`'s entry replaced by itself with `fields` (the action `name`); false when no page is open for it. */
   function replace(name: string, setId: string, fields: Partial<SetPageState>): boolean {
     const page = entry(setId);
-    if (!page) return false;
+    if (!page) {
+      return false;
+    }
     store.update(name, state => {
       state.setPages[setId] = Object.freeze({ ...page, ...fields });
     });
@@ -54,13 +56,17 @@ export function createSetPageActions(store: AppStore) {
 
   /* Throw unless `value` is frozen or null: a draft or a suggestion goes in frozen, so nothing can change it after. */
   function requireFrozen(value: object | null, what: string): void {
-    if (value !== null && !Object.isFrozen(value)) throw new Error(`The ${what} must be frozen before it is stored`);
+    if (value !== null && !Object.isFrozen(value)) {
+      throw new Error(`The ${what} must be frozen before it is stored`);
+    }
   }
 
   return {
     /* Open the page of gear set `setId` at rest (it stays as it is when open already). */
     openPage(setId: string): void {
-      if (entry(setId)) return;
+      if (entry(setId)) {
+        return;
+      }
       store.update('setPages/openPage', state => {
         state.setPages[setId] = emptySetPage();
       });
@@ -68,7 +74,9 @@ export function createSetPageActions(store: AppStore) {
 
     /* Close the page of gear set `setId` (it was left, or its set was deleted): its entry goes, with any draft and result. */
     closePage(setId: string): void {
-      if (!entry(setId)) return;
+      if (!entry(setId)) {
+        return;
+      }
       store.update('setPages/closePage', state => void delete state.setPages[setId]);
     },
 
@@ -76,7 +84,9 @@ export function createSetPageActions(store: AppStore) {
     setDraft(setId: string, draft: Readonly<GearSet> | null): boolean {
       requireFrozen(draft, 'draft');
       const page = entry(setId);
-      if (page && page.draft === draft) return true;
+      if (page && page.draft === draft) {
+        return true;
+      }
       return replace('setPages/setDraft', setId, { draft });
     },
 
@@ -91,28 +101,36 @@ export function createSetPageActions(store: AppStore) {
        nothing changes, when the answer is stale (the search was cancelled, or the page left). */
     fillSuggested(setId: string, id: number, suggestion: Suggestion): boolean {
       requireFrozen(suggestion, 'suggestion');
-      if (entry(setId)?.fillId !== id) return false;
+      if (entry(setId)?.fillId !== id) {
+        return false;
+      }
       return replace('setPages/fillSuggested', setId, { suggestion, fill: 'waiting', fillLine: '' });
     },
 
     /* The search `id` ended without a suggestion: the page shows `result.line`, and the status is 'failed' when `result.failed`,
        else 'idle'. False when the answer is stale. */
     fillEnded(setId: string, id: number, result: FillLine): boolean {
-      if (entry(setId)?.fillId !== id) return false;
+      if (entry(setId)?.fillId !== id) {
+        return false;
+      }
       return replace('setPages/fillEnded', setId, { fill: result.failed ? 'failed' : 'idle', fillLine: result.line });
     },
 
     /* The run is over (answered, failed or stopped): no search id is kept, and a status still 'running' becomes 'idle'. */
     endFill(setId: string): void {
       const page = entry(setId);
-      if (!page || (page.fillId === null && page.fill !== 'running')) return;
+      if (!page || (page.fillId === null && page.fill !== 'running')) {
+        return;
+      }
       replace('setPages/endFill', setId, { fillId: null, fill: page.fill === 'running' ? 'idle' : page.fill });
     },
 
     /* Cancel a running Auto-fill (Cancel, or leaving the page): the status is 'cancelled' and the search id is dropped, so its
        answer, if it still comes, is ignored. False when none runs. */
     cancelFill(setId: string): boolean {
-      if (entry(setId)?.fill !== 'running') return false;
+      if (entry(setId)?.fill !== 'running') {
+        return false;
+      }
       return replace('setPages/cancelFill', setId, { fill: 'cancelled', fillId: null });
     },
 
@@ -121,8 +139,12 @@ export function createSetPageActions(store: AppStore) {
     setSuggestion(setId: string, suggestion: Suggestion | null): boolean {
       requireFrozen(suggestion, 'suggestion');
       const page = entry(setId);
-      if (!page) return false;
-      if (page.suggestion === suggestion) return true;
+      if (!page) {
+        return false;
+      }
+      if (page.suggestion === suggestion) {
+        return true;
+      }
       const fill = suggestion ? 'waiting' : page.fill === 'waiting' ? 'idle' : page.fill;
       return replace('setPages/setSuggestion', setId, { suggestion, fill });
     },
@@ -131,7 +153,9 @@ export function createSetPageActions(store: AppStore) {
        open for `setId`. The box counts of other filters are dropped now; the line and the count stay until the new ones land. */
     startCount(setId: string, countedFor: string): number | null {
       const page = entry(setId);
-      if (!page) return null;
+      if (!page) {
+        return null;
+      }
       const id = ++lastCountId;
       const gearToSearch =
         page.gearToSearch.fromCountsFor === countedFor
@@ -144,7 +168,9 @@ export function createSetPageActions(store: AppStore) {
     /* The count `id`, made for `countedFor`, answered with `answer`. False, and nothing changes, when it is not the newest count
        or its page was left. */
     countLanded(setId: string, id: number, countedFor: string, answer: GearToSearchAnswer): boolean {
-      if (entry(setId)?.countId !== id) return false;
+      if (entry(setId)?.countId !== id) {
+        return false;
+      }
       const gearToSearch: GearToSearch = Object.freeze({
         countText: answer.countText,
         searched: answer.searched,
@@ -159,7 +185,9 @@ export function createSetPageActions(store: AppStore) {
        not the newest count. */
     countFailed(setId: string, id: number, text: string, cancelled: boolean): boolean {
       const page = entry(setId);
-      if (!page || page.countId !== id) return false;
+      if (!page || page.countId !== id) {
+        return false;
+      }
       const gearToSearch = cancelled ? page.gearToSearch : Object.freeze({ ...page.gearToSearch, countText: text });
       return replace('setPages/countFailed', setId, { countId: null, gearToSearch });
     },

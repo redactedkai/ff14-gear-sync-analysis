@@ -59,5 +59,7 @@ test('White Mage and Black Mage hold a real wand and shield at every level; Sage
     assert.equal(shieldRow[ROW.slotCode], SLOT_SHIELD, `${id} shield`);
     assert.ok(wandRow[ROW.jobMask] & bit && shieldRow[ROW.jobMask] & bit, `${id} can wear both`);
   }
-  for (const id of ['SGE', 'SCH', 'SMN', 'BLU']) assert.equal(makeJobContext(id).activeSlotTypes.includes('offhand'), false, id);
+  for (const id of ['SGE', 'SCH', 'SMN', 'BLU']) {
+    assert.equal(makeJobContext(id).activeSlotTypes.includes('offhand'), false, id);
+  }
 });

@@ -19,7 +19,9 @@ export function oneOrMany<T>(count: number, one: T, many: T): T {
 
 /* Names as one phrase, in order: "Head", "Head and Food", "Head, Ring 2 and Food" ('' for none). */
 export function joinNames(names: string[]): string {
-  if (names.length < 2) return names.join('');
+  if (names.length < 2) {
+    return names.join('');
+  }
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 

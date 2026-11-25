@@ -85,7 +85,9 @@ export function syncExplainer() {
       onSyncSwitch(on) {
         const app = this.$store.app;
         this.capTypedBad = false;
-        if (!on) app.editPanel({ cap: levelSyncCap(app.jobCtx, app.level) });
+        if (!on) {
+          app.editPanel({ cap: levelSyncCap(app.jobCtx, app.level) });
+        }
       },
       /* Piece stats' views for the settings now, built again only when they change: {pick (the slider's range and item
          level, explainerItemLevel), explainer, steps}. Read through the getters below. */
@@ -173,7 +175,9 @@ export function syncExplainer() {
          resized. */
       placePieceMenu() {
         const { pieceChip, pieceMenu } = this.$refs;
-        if (!pieceMenu || !this.pieceMenuOpen) return;
+        if (!pieceMenu || !this.pieceMenuOpen) {
+          return;
+        }
         const barRight = pieceChip.closest('.mathbar').getBoundingClientRect().right;
         this.pieceMenuToLeft = pieceChip.getBoundingClientRect().left + pieceMenu.offsetWidth > barRight;
       },
@@ -200,14 +204,20 @@ export function syncExplainer() {
         this.capTypedBad = false;
         this.$nextTick(() => {
           const app = this.$store.app;
-          if (this.$refs.level) this.$refs.level.value = app.level ?? '';
-          if (this.$refs.cap) this.$refs.cap.value = app.cap ?? '';
+          if (this.$refs.level) {
+            this.$refs.level.value = app.level ?? '';
+          }
+          if (this.$refs.cap) {
+            this.$refs.cap.value = app.cap ?? '';
+          }
         });
       },
       /* which edge of the popover lines up with the chip's: as placePieceMenu */
       placeSyncMenu() {
         const { syncChip, syncMenu } = this.$refs;
-        if (!syncMenu || !this.syncMenuOpen) return;
+        if (!syncMenu || !this.syncMenuOpen) {
+          return;
+        }
         const barRight = syncChip.closest('.mathbar').getBoundingClientRect().right;
         this.syncMenuToLeft = syncChip.getBoundingClientRect().left + syncMenu.offsetWidth > barRight;
       },
@@ -228,7 +238,9 @@ export function syncExplainer() {
         observer ??= new ResizeObserver(entries => {
           for (const e of entries) {
             const w = Math.round(e.contentRect.width);
-            if (w && w !== this.widths.piece) this.widths.piece = w;
+            if (w && w !== this.widths.piece) {
+              this.widths.piece = w;
+            }
           }
         });
         observer.observe(el);
@@ -239,7 +251,9 @@ export function syncExplainer() {
       },
       setIlvl(value) {
         const v = Math.round(Number(value));
-        if (Number.isFinite(v)) this.$store.app.editPiece({ ilvl: Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v)) });
+        if (Number.isFinite(v)) {
+          this.$store.app.editPiece({ ilvl: Math.max(this.ilvlRange[0], Math.min(this.ilvlRange[1], v)) });
+        }
       },
       /* how far along its range the slider's thumb is (percent): the track is drawn filled up to it */
       get ilvlFill() {

@@ -37,7 +37,9 @@ test('the target is null or a whole item level in range, for every piece, level 
       for (let cap = 0; cap <= MAX_ILVL; cap++) {
         const target = targetOf(piece, level, cap === 0 ? null : cap);
         const inRange = target === null || (Number.isInteger(target) && target >= 1 && target <= MAX_ILVL);
-        if (!inRange) assert.fail(`${piece} level ${level} cap ${cap}: ${target}`);
+        if (!inRange) {
+          assert.fail(`${piece} level ${level} cap ${cap}: ${target}`);
+        }
       }
     }
   }
@@ -50,12 +52,17 @@ test('level sync alone never takes a piece below the level item level or above i
       const target = targetOf(piece, level, null);
       const label = `${piece} level ${level}`;
       assert.ok(effectiveOf(piece, level, null) <= itemLevel, `${label}: raised above the piece`);
-      if (target !== null)
+      if (target !== null) {
         assert.ok(Math.min(itemLevel, target) >= Math.min(itemLevel, levelSyncIlvl(level)), `${label}: below the level's item level`);
+      }
       // a piece the level can wear, that does not scale, and no cap: untouched
-      if (!scales && equipLevel <= level) assert.equal(target, null, `${label}: synced with nothing to sync`);
+      if (!scales && equipLevel <= level) {
+        assert.equal(target, null, `${label}: synced with nothing to sync`);
+      }
       // a cap at or above the piece's item level adds nothing to level sync
-      if (!scales) assert.equal(targetOf(piece, level, itemLevel), target, `${label}: a cap at the piece's item level changed the target`);
+      if (!scales) {
+        assert.equal(targetOf(piece, level, itemLevel), target, `${label}: a cap at the piece's item level changed the target`);
+      }
     }
   }
 });
@@ -63,8 +70,12 @@ test('level sync alone never takes a piece below the level item level or above i
 test('for a fixed level and cap a duty can have, a higher item level never ends lower (one equip level, not scaling)', () => {
   const byEquipLevel = new Map();
   for (const piece of pieces) {
-    if (piece[2]) continue;
-    if (!byEquipLevel.has(piece[1])) byEquipLevel.set(piece[1], []);
+    if (piece[2]) {
+      continue;
+    }
+    if (!byEquipLevel.has(piece[1])) {
+      byEquipLevel.set(piece[1], []);
+    }
     byEquipLevel.get(piece[1]).push(piece);
   }
   for (const [equipLevel, list] of byEquipLevel) {

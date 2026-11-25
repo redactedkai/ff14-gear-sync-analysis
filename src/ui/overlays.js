@@ -26,7 +26,9 @@ export function createOverlays(getDocument = () => globalThis.document) {
   /* The layer `id` and the ones it is part of (by `parent`), as a set of ids. */
   function familyOf(id) {
     const family = new Set();
-    for (let next = id; next && !family.has(next); next = stack.find(layer => layer.id === next)?.parent) family.add(next);
+    for (let next = id; next && !family.has(next); next = stack.find(layer => layer.id === next)?.parent) {
+      family.add(next);
+    }
     return family;
   }
 
@@ -38,41 +40,55 @@ export function createOverlays(getDocument = () => globalThis.document) {
   /* Takes `layer` off the stack and clears its state; the focus goes to its opener when `restoreFocus`. */
   function closeLayer(layer, restoreFocus = false) {
     const at = stack.indexOf(layer);
-    if (at >= 0) stack.splice(at, 1);
+    if (at >= 0) {
+      stack.splice(at, 1);
+    }
     layer.close();
-    if (restoreFocus) layer.opener?.()?.focus?.();
+    if (restoreFocus) {
+      layer.opener?.()?.focus?.();
+    }
   }
 
   /* An Escape (`event`: the key event): closes the topmost layer with the focus back on its opener, unless the layer leaves
      this Escape to something else. Returns whether it closed one. */
   function pressEscape(event) {
     const layer = stack.at(-1);
-    if (!layer || layer.ignoreEscape?.(event)) return false;
+    if (!layer || layer.ignoreEscape?.(event)) {
+      return false;
+    }
     closeLayer(layer, true);
     return true;
   }
 
   function onKeydown(event) {
-    if (event.key === 'Escape' && !event.defaultPrevented) pressEscape(event);
+    if (event.key === 'Escape' && !event.defaultPrevented) {
+      pressEscape(event);
+    }
   }
 
   function onPointerdown(event) {
     for (const layer of [...stack].reverse()) {
-      if (reaches(layer, event.target)) return; // a press inside a layer leaves the layers under it open
+      if (reaches(layer, event.target)) {
+        return; // a press inside a layer leaves the layers under it open
+      }
       closeLayer(layer);
     }
   }
 
   function onFocusin(event) {
     for (const layer of [...stack].reverse()) {
-      if (layer.tabOut && !reaches(layer, event.target)) closeLayer(layer);
+      if (layer.tabOut && !reaches(layer, event.target)) {
+        closeLayer(layer);
+      }
     }
   }
 
   /* The listeners go on the document once, with the first layer. */
   function listen() {
     const doc = getDocument();
-    if (listening || !doc) return;
+    if (listening || !doc) {
+      return;
+    }
     doc.addEventListener('keydown', onKeydown);
     doc.addEventListener('pointerdown', onPointerdown);
     doc.addEventListener('focusin', onFocusin);
@@ -84,7 +100,9 @@ export function createOverlays(getDocument = () => globalThis.document) {
     open(layer) {
       const family = familyOf(layer.parent);
       for (const other of [...stack]) {
-        if (other.id === layer.id || !family.has(other.id)) closeLayer(other);
+        if (other.id === layer.id || !family.has(other.id)) {
+          closeLayer(other);
+        }
       }
       stack.push({ parent: null, tabOut: false, ...layer });
       listen();
@@ -92,12 +110,16 @@ export function createOverlays(getDocument = () => globalThis.document) {
     /* Closes the layer `id` if it is open; the focus goes to its opener when `restoreFocus`. Returns whether it was open. */
     close(id, { restoreFocus = false } = {}) {
       const layer = stack.find(entry => entry.id === id);
-      if (layer) closeLayer(layer, restoreFocus);
+      if (layer) {
+        closeLayer(layer, restoreFocus);
+      }
       return Boolean(layer);
     },
     /* Closes every layer, without moving the focus: for a change of screen. */
     closeAll() {
-      for (const layer of [...stack].reverse()) closeLayer(layer);
+      for (const layer of [...stack].reverse()) {
+        closeLayer(layer);
+      }
     },
     pressEscape,
     isOpen: id => stack.some(layer => layer.id === id),

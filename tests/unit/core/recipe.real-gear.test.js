@@ -210,7 +210,9 @@ test('a Target GCD equals the core, with haste and food, in character panel numb
     assert.equal(free.run.found.gcd, null, 'an empty box: no Target GCD facts');
     const freeGcd = free.set.gcd.gcd;
     assert.equal(freeGcd, gcdFor(free.set.gcd.spd, 100, 2500, pct));
-    if (pct) assert.equal(free.set.gcd.unhasted, gcdFor(free.set.gcd.spd, 100));
+    if (pct) {
+      assert.equal(free.set.gcd.unhasted, gcdFor(free.set.gcd.spd, 100));
+    }
     // the Tier row's speed cell is the same GCD, haste included
     assert.equal(free.set.tiers[job.stats.indexOf(job.speedKey)].effect, `${freeGcd.toFixed(2)}s`);
     // one tier slower than the free result (the drift case, which "exactly" must meet with less speed), or faster when
@@ -228,7 +230,9 @@ test('a Target GCD equals the core, with haste and food, in character panel numb
         { target: 'crit', tiebreak: ['det', ''], melds: true, gcd: asked, mode, food: food ? 'best' : null, level: 100 },
       );
       assert.equal(solved.run.status, r.ok ? 'ok' : 'nogcd', `${jobId} ${mode}`);
-      if (!r.ok) continue;
+      if (!r.ok) {
+        continue;
+      }
       met++;
       assert.deepEqual(
         job.stats.map(s => solved.gearPanel(s)),
@@ -236,9 +240,13 @@ test('a Target GCD equals the core, with haste and food, in character panel numb
         `${jobId} ${mode}: the core's gear, in panel numbers`,
       );
       assert.equal(solved.set.gcd.gcd.toFixed(2), r.gcd.toFixed(2));
-      if (mode === 'exact') assert.equal(solved.set.gcd.gcd.toFixed(2), asked.toFixed(2));
+      if (mode === 'exact') {
+        assert.equal(solved.set.gcd.gcd.toFixed(2), asked.toFixed(2));
+      }
       assert.equal(solved.run.found.gcd.faster, r.faster);
-      if (food) assert.equal(solved.run.found.food?.shown?.name ?? null, r.food?.name ?? null, 'the meal chosen with the gear');
+      if (food) {
+        assert.equal(solved.run.found.food?.shown?.name ?? null, r.food?.name ?? null, 'the meal chosen with the gear');
+      }
     }
     assert.equal(met, 2, `${jobId}: both modes find a set`);
     app.recipe.gcd = '';
@@ -372,7 +380,9 @@ test('allocated relics: left out of the search and counted; other relics and sta
   assert.equal(allocatedRelic(sge, mandervillous), true);
   assert.equal(allocatedRelic(sge, eclipticum), false, 'a relic with substats');
   const ai = gearOf(makeJobContext('WAR')).find(i => i.name.startsWith('Ai Apaec'));
-  if (ai) assert.equal(allocatedRelic(makeJobContext('WAR'), ai), false, 'Gold Saucer gear with no substat');
+  if (ai) {
+    assert.equal(allocatedRelic(makeJobContext('WAR'), ai), false, 'Gold Saucer gear with no substat');
+  }
   const app = makeApp('SGE', { sync: false, cap: null, level: 100 });
   app.recipe.target = 'crit';
   // by name: jobGear keeps one job's gear at a time, so the Warrior lookup above rebuilt Sage's

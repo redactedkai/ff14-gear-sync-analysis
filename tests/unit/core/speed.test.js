@@ -54,12 +54,16 @@ for (const [level, rows] of Object.entries(AKH)) {
 }
 
 test('zero gear speed is the 2.50 s base at every level', () => {
-  for (const level of [50, 90, 100]) assert.equal(gcdFor(0, level), 2.5);
+  for (const level of [50, 90, 100]) {
+    assert.equal(gcdFor(0, level), 2.5);
+  }
 });
 
 test('gcdTiers at level 50 lists the AkhMorning tier starts', () => {
   const tiers = new Map(gcdTiers(50, 2500).map(x => [x.spd, x.gcd]));
-  for (const [spd, gcd] of AKH[50]) assert.equal(tiers.get(spd), gcd, `tier at ${spd}`);
+  for (const [spd, gcd] of AKH[50]) {
+    assert.equal(tiers.get(spd), gcd, `tier at ${spd}`);
+  }
 });
 
 test("expansion boundaries are the game's own sync item level at each level cap (ParamGrow)", () => {
@@ -173,7 +177,9 @@ test('speed for a target GCD: the band ends give the GCD, one point outside does
         assert.ok(b, `${g} at ${level} haste ${haste}`);
         assert.equal(at(b.min), g);
         assert.equal(at(b.max), g);
-        if (b.min > 0) assert.ok(at(b.min - 1) > g);
+        if (b.min > 0) {
+          assert.ok(at(b.min - 1) > g);
+        }
         assert.ok(at(b.max + 1) < g);
         assert.equal(speedForGcd(g, level, 'min', haste).min, b.min);
       }
@@ -194,14 +200,18 @@ test('gcdTierAt agrees with a step-by-step scan at every level', () => {
       const spd = rand(3000);
       const t = gcdTierAt(spd, level);
       let start = spd;
-      while (start > 0 && gcdFor(start - 1, level) === t.gcd) start--;
+      while (start > 0 && gcdFor(start - 1, level) === t.gcd) {
+        start--;
+      }
       // at the 1.50 s floor no speed shortens it: no next step
       if (t.gcd === 1.5) {
         assert.deepEqual([t.start, t.next, t.nextGcd], [start, null, null], `level ${level}, speed ${spd} (floor)`);
         continue;
       }
       let next = spd + 1;
-      while (gcdFor(next, level) === t.gcd) next++;
+      while (gcdFor(next, level) === t.gcd) {
+        next++;
+      }
       assert.deepEqual([t.start, t.next, t.nextGcd], [start, next, gcdFor(next, level)], `level ${level}, speed ${spd}`);
     }
   }

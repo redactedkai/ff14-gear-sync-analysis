@@ -81,7 +81,9 @@ export function coreRecipe(jobId, sync, fields) {
   const job = makeJobContext(jobId);
   const level = sync.level ?? 100;
   const run = runRecipe(job, sync, level, { ...DEFAULT_RECIPE, target: job.mainKey, ...fields }, makeSession());
-  if (run.status !== 'ok') return { status: run.status };
+  if (run.status !== 'ok') {
+    return { status: run.status };
+  }
   const evaluated = evaluateSet(job, run.set, sync, level);
   const totals = Object.fromEntries(job.stats.map(s => [s, evaluated.withFood[s] + evaluated.base[s]]));
   const bonus = Object.fromEntries(job.stats.map(s => [s, evaluated.bonus[s]?.bonus ?? 0]));

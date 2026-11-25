@@ -34,7 +34,9 @@ test('pinned search equals the brute-force reference on 300 random hand-made poo
         pool.push(mkItem(`${ty}${i}`, ty, 90 + int(60), { sps: int(30), crit: int(30), det: int(30), mind: int(5) }, { copies }));
       }
     }
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const sync = rand() < 0.5 ? NO_SYNC : { cap: 110, sync: true };
     const wear = pickPins(sge, pool, sync, rand, 1 + int(4), false);
     pinnedRings += wear.filter(([w]) => w.type === 'ring').length;
@@ -70,12 +72,13 @@ test('pinned search equals the brute-force reference on 300 random hand-made poo
       wear.map(([w]) => w).sort((a, b) => a.id.localeCompare(b.id)),
       label,
     );
-    for (const stat of sge.stats)
+    for (const stat of sge.stats) {
       assert.equal(
         got.totals[stat],
         got.picks.reduce((n, p) => n + (p.item ? p.eff[stat] : 0), 0),
         `${label} ${stat}`,
       );
+    }
   }
   assert.ok(
     pinnedRings > 100 && infeasible < 150,
@@ -97,17 +100,25 @@ test('pinned search equals the reference on real Paladin pools with pieces that 
     for (const type of ['weapon', 'offhand', 'head', 'body', 'legs', 'feet', 'ring']) {
       const of = all.filter(i => i.type === type);
       const count = Math.min(of.length, type === 'ring' ? 2 + int(3) : 1 + int(3));
-      for (let k = 0; k < count; k++) pool.push(of.splice(int(of.length), 1)[0]);
+      for (let k = 0; k < count; k++) {
+        pool.push(of.splice(int(of.length), 1)[0]);
+      }
     }
     for (const type of ['body', 'legs']) {
       const cover = covering.filter(i => i.type === type);
-      if (!pool.some(i => cover.includes(i))) pool.push(cover[int(cover.length)]);
+      if (!pool.some(i => cover.includes(i))) {
+        pool.push(cover[int(cover.length)]);
+      }
     }
-    if (loadoutCount(pld, pool) > 60000) continue;
+    if (loadoutCount(pld, pool) > 60000) {
+      continue;
+    }
     const melds = rand() < 0.6;
     const sync = rand() < 0.3 ? { cap: 70, sync: true, level: 100 } : NO_SYNC;
     const wear = pickPins(pld, pool, sync, rand, 1 + int(3), true);
-    if (!pinsCoexist(pld, wear)) continue;
+    if (!pinsCoexist(pld, wear)) {
+      continue;
+    }
     coveringPinned += wear.filter(([w]) => slotInfo(pld, w).blocks.length).length;
     const { fixed, oracle } = pinsOf(pld, sync, wear);
     const goal = { target: ['str', 'crit', 'det'][int(3)], tiebreak: [rand() < 0.5 ? 'dh' : ''] };
@@ -136,14 +147,20 @@ test('pinned search equals the reference on real Sage pools under sync, with mel
   let runs = 0;
   for (let t = 0; t < 40; t++) {
     const pool = smallPool(sge, rand, ['weapon', 'head', 'body', 'ring'], 2, 1);
-    if (!pool.length || loadoutCount(sge, pool) > 40000) continue;
+    if (!pool.length || loadoutCount(sge, pool) > 40000) {
+      continue;
+    }
     const sync = t % 3 === 0 ? { cap: 123, sync: true, level: 100 } : { cap: 999, sync: false };
     const melds = t % 2 === 0;
     const wear = pickPins(sge, pool, sync, rand, 1 + int(3), true);
-    if (!pinsCoexist(sge, wear)) continue;
+    if (!pinsCoexist(sge, wear)) {
+      continue;
+    }
     const { fixed, oracle } = pinsOf(sge, sync, wear);
     const free = exhaustive(sge, pool, sync, { target: 'sps', melds, fixed: oracle });
-    if (!free) continue;
+    if (!free) {
+      continue;
+    }
     const spdMin = free[0] - int(40);
     const opts = { target: 'crit', tiebreak: ['det'], spdMin, spdMax: t % 4 === 0 ? spdMin + int(30) : null, melds };
     const want = exhaustive(sge, pool, sync, { ...opts, fixed: oracle });

@@ -64,8 +64,12 @@ async function bundle() {
 async function serve(directory) {
   const server = createServer((req, res) => {
     let path = normalize(join(directory, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
-    if (!path.startsWith(directory + sep) && path !== directory) path = join(directory, 'index.html');
-    if (existsSync(path) && statSync(path).isDirectory()) path = join(path, 'index.html');
+    if (!path.startsWith(directory + sep) && path !== directory) {
+      path = join(directory, 'index.html');
+    }
+    if (existsSync(path) && statSync(path).isDirectory()) {
+      path = join(path, 'index.html');
+    }
     if (!existsSync(path)) {
       res.writeHead(404).end();
       return;
@@ -84,7 +88,9 @@ async function openPage(browser, url) {
   await pg.goto(url);
   await pg.waitForFunction('window.store !== undefined && window.game !== undefined', null, { timeout: TIMEOUT });
   const version = await pg.evaluate(`document.body.innerText.includes('${DATA_VERSION}')`);
-  if (!version) throw new Error(`${url}: the page does not show data version ${DATA_VERSION}; re-pin fetch.py and DATA_VERSION`);
+  if (!version) {
+    throw new Error(`${url}: the page does not show data version ${DATA_VERSION}; re-pin fetch.py and DATA_VERSION`);
+  }
   await pg.addScriptTag({ path: BUNDLE });
   return { pg, errors };
 }
@@ -98,7 +104,9 @@ async function runJob(browser, url, job) {
     results.push(await pg.evaluate(([job, l, c]) => OURS.compare(window.store, job, l, c), [job, level, cap]));
   }
   await pg.close();
-  if (errors.length) throw new Error(`${job}: page errors: ${JSON.stringify(errors.slice(0, 3))}`);
+  if (errors.length) {
+    throw new Error(`${job}: page errors: ${JSON.stringify(errors.slice(0, 3))}`);
+  }
   return { ...counts, settings: results };
 }
 
@@ -110,7 +118,9 @@ function summarize(report) {
   let bonus = 0;
   for (const job of Object.values(report.jobs)) {
     for (const s of job.settings) {
-      for (const [k, v] of Object.entries(s.tags)) tags[k] = (tags[k] ?? 0) + v;
+      for (const [k, v] of Object.entries(s.tags)) {
+        tags[k] = (tags[k] ?? 0) + v;
+      }
       stats += s.stats;
       equal += s.equal;
       pieces += s.pieces;
@@ -123,14 +133,23 @@ function summarize(report) {
 const n = v => v.toLocaleString('en-US');
 /** A JSON value as Python prints it (the output of this script is the same as run.py's was). */
 function py(v) {
-  if (v === null) return 'None';
-  if (typeof v === 'boolean') return v ? 'True' : 'False';
-  if (typeof v === 'string') return `'${v}'`;
-  if (Array.isArray(v)) return `[${v.map(py).join(', ')}]`;
-  if (typeof v === 'object')
+  if (v === null) {
+    return 'None';
+  }
+  if (typeof v === 'boolean') {
+    return v ? 'True' : 'False';
+  }
+  if (typeof v === 'string') {
+    return `'${v}'`;
+  }
+  if (Array.isArray(v)) {
+    return `[${v.map(py).join(', ')}]`;
+  }
+  if (typeof v === 'object') {
     return `{${Object.entries(v)
       .map(([k, x]) => `${py(k)}: ${py(x)}`)
       .join(', ')}}`;
+  }
   return String(v);
 }
 const dictRepr = o => (Object.keys(o).length ? py(o) : 'none');
@@ -139,7 +158,9 @@ async function main() {
   const { values } = parseArgs({
     options: { site: { type: 'string', default: 'local' }, jobs: { type: 'string', default: JOBS.join(',') } },
   });
-  if (!['local', 'live'].includes(values.site)) throw new Error('--site must be local or live');
+  if (!['local', 'live'].includes(values.site)) {
+    throw new Error('--site must be local or live');
+  }
   const jobs = values.jobs.split(',');
   await bundle();
   let server = null;
@@ -168,7 +189,11 @@ async function main() {
       const r = await runJob(browser, url, job);
       report.jobs[job] = r;
       const t = {};
-      for (const s of r.settings) for (const [k, v] of Object.entries(s.tags)) t[k] = (t[k] ?? 0) + v;
+      for (const s of r.settings) {
+        for (const [k, v] of Object.entries(s.tags)) {
+          t[k] = (t[k] ?? 0) + v;
+        }
+      }
       console.log(
         `${job}: ${r.ours} pieces (${r.theirs} in their data, ${r.notWearable} not wearable there), ` +
           `${r.settings.length} settings, differences ${dictRepr(t)}`,
@@ -183,7 +208,9 @@ async function main() {
   const { tags, stats, equal, pieces, bonus } = summarize(report);
   console.log(`\n${n(pieces)} piece checks, ${n(stats)} stats compared, ${n(equal)} equal (${((equal / stats) * 100).toFixed(4)}%)`);
   console.log(`  their Crucible / Occult bonus taken off before comparing (D6): ${n(bonus)} stats`);
-  for (const k of Object.keys(tags).sort()) console.log(`  ${k}: ${n(tags[k])}`);
+  for (const k of Object.keys(tags).sort()) {
+    console.log(`  ${k}: ${n(tags[k])}`);
+  }
   const bad = Object.fromEntries(Object.entries(tags).filter(([k]) => !PASS_TAGS.has(k)));
   console.log(Object.keys(bad).length ? `FAIL: ${py(bad)}` : 'PASS: every difference has a known cause');
   const otherName = `gearing-${values.site === 'live' ? 'local' : 'live'}.json`;

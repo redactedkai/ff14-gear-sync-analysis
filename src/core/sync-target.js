@@ -30,7 +30,9 @@ export function capCeiling(level) {
   if (!ceilings) {
     ceilings = [];
     for (const row of ITEMS) {
-      if (row[ROW.scales]) continue;
+      if (row[ROW.scales]) {
+        continue;
+      }
       const lvl = row[ROW.equipLevel];
       ceilings[lvl] = Math.max(ceilings[lvl] ?? 0, row[ROW.ilvl]);
     }
@@ -56,11 +58,17 @@ export function syncTarget({ itemLevel, equipLevel, scales, syncOn, cap, syncedL
   // gear that scales with the wearer follows the synced level whatever its equip level; the cap can only lower it more
   if (scales && syncedLevel != null) {
     const levelIlvl = levelSyncIlvl(syncedLevel);
-    if (levelIlvl < itemLevel) return overCap ? Math.min(cap, levelIlvl) : levelIlvl;
+    if (levelIlvl < itemLevel) {
+      return overCap ? Math.min(cap, levelIlvl) : levelIlvl;
+    }
   }
   const aboveLevel = equipLevel != null && syncedLevel != null && equipLevel > syncedLevel;
   // the item level cap wins over level sync, even where it is the higher of the two, but no higher than the level allows
-  if (overCap) return aboveLevel ? Math.min(cap, capCeiling(syncedLevel)) : cap;
-  if (aboveLevel) return levelSyncIlvl(syncedLevel);
+  if (overCap) {
+    return aboveLevel ? Math.min(cap, capCeiling(syncedLevel)) : cap;
+  }
+  if (aboveLevel) {
+    return levelSyncIlvl(syncedLevel);
+  }
   return null;
 }

@@ -20,9 +20,13 @@ const STEP = { crit: 200, det: 140, dh: 550, ten: 200, piety: 150 };
 /* The reference tier of `stat` for total `total` (gear plus food) at `level` with `haste`, or null for main stat and
    Vitality (their totals rank as they are). */
 export function refTier(job, stat, total, level, haste) {
-  if (stat === job.speedKey) return -Math.round(gcdFor(total, level, 2500, haste) * 100);
+  if (stat === job.speedKey) {
+    return -Math.round(gcdFor(total, level, 2500, haste) * 100);
+  }
   const step = STEP[stat];
-  if (!step) return null;
+  if (!step) {
+    return null;
+  }
   return Math.floor((step * total) / levelParams(level).div);
 }
 
@@ -39,7 +43,9 @@ export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd 
   forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: gcd != null && mode === 'exact', fixed }, get => {
     const v = stats.map(get);
     const id = v.join();
-    if (seen.has(id)) return;
+    if (seen.has(id)) {
+      return;
+    }
     seen.add(id);
     loadouts.push(Object.fromEntries(stats.map((s, i) => [s, v[i]])));
   });
@@ -54,7 +60,9 @@ export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd 
         return mode === 'exact' ? at === want : at <= want;
       });
     }
-    if (!left.length) continue;
+    if (!left.length) {
+      continue;
+    }
     const tiers = [];
     for (const k of keys) {
       const most = left.reduce((m, x) => Math.max(m, total(x, k)), Number.NEGATIVE_INFINITY);
@@ -62,7 +70,9 @@ export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd 
       let hold = most;
       if (tier != null) {
         let start = most;
-        while (start > 0 && refTier(job, k, start - 1, level, haste) === tier) start--;
+        while (start > 0 && refTier(job, k, start - 1, level, haste) === tier) {
+          start--;
+        }
         hold = start;
       }
       tiers.push(tier ?? most);
@@ -71,10 +81,14 @@ export function tierLex(job, pool, sync, { keys: goal, melds, meals, level, gcd 
     let totals = null;
     for (const x of left) {
       const t = keys.map(k => total(x, k));
-      if (!totals || lexGreater(t, totals)) totals = t;
+      if (!totals || lexGreater(t, totals)) {
+        totals = t;
+      }
     }
     const v = [...tiers, ...totals];
-    if (!best || lexGreater(v, best)) best = v;
+    if (!best || lexGreater(v, best)) {
+      best = v;
+    }
   }
   return best;
 }
@@ -110,7 +124,9 @@ export function checkNoGcd(seed, count) {
     // every other case without weapons: with two, weapon damage (the first key) often leaves one, and the raw and
     // tier orders then rarely differ on the rest
     const pool = smallPool(job, rand, t % 2 ? ['weapon', 'head', 'body', 'ring'] : ['head', 'body', 'neck', 'ring'], 2);
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const melds = rand() < 0.7;
     const subs = [...job.substats].sort(() => rand() - 0.5);
     const three = rand() < 0.35;
@@ -125,7 +141,9 @@ export function checkNoGcd(seed, count) {
     assert.ok(r.ok && !r.truncated, label);
     assert.deepEqual(asVector(job, r, keys, level), want, label);
     const raw = optimize(job, pool, sync, { target: keys[0], tiebreak: keys.slice(1), melds });
-    if (keys.some(k => raw.totals[k] !== r.totals[k])) differs++;
+    if (keys.some(k => raw.totals[k] !== r.totals[k])) {
+      differs++;
+    }
   }
   return { runs, differs };
 }
@@ -144,7 +162,9 @@ export function checkGcd(seed, count, threeKeys = false, from = 0) {
     const level = 100;
     const sync = { cap: null, sync: false, level };
     const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const subs = job.substats.filter(s => s !== job.speedKey).sort(() => rand() - 0.5);
     const keys = subs.slice(0, threeKeys && t % 3 !== 0 ? 3 : 2);
     const choices = foodChoices(job);
@@ -153,7 +173,9 @@ export function checkGcd(seed, count, threeKeys = false, from = 0) {
     // a GCD near the free result's: its own, or one step either side (drawn before the skip, so every case keeps its
     // draws whatever `from` is)
     const step = [-1, 0, 1][int(3)];
-    if (t < from) continue;
+    if (t < from) {
+      continue;
+    }
     const haste = hasteFor(job.jobId, level)?.pct ?? 0;
     const free = optimize(job, pool, sync, { target: keys[0], melds: true }).totals[job.speedKey];
     const gcd = Math.round(gcdFor(free, level, 2500, haste) * 100 + step) / 100;
@@ -185,10 +207,14 @@ export function checkPinned(seed, count) {
     const level = 100;
     const sync = { cap: null, sync: false, level };
     const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2, 1);
-    if (!pool.length || loadoutCount(job, pool) > 20000) continue;
+    if (!pool.length || loadoutCount(job, pool) > 20000) {
+      continue;
+    }
     const melds = t % 3 !== 0;
     const wear = pickPins(job, pool, sync, rand, 1 + int(2), true);
-    if (!pinsCoexist(job, wear)) continue;
+    if (!pinsCoexist(job, wear)) {
+      continue;
+    }
     const { fixed, oracle } = pinsOf(job, sync, wear);
     const subs = job.substats.filter(s => s !== job.speedKey).sort(() => rand() - 0.5);
     const keys = subs.slice(0, 2);
@@ -202,7 +228,9 @@ export function checkPinned(seed, count) {
     let gcd = null;
     if (mode) {
       const free = rankByTier(job, pool, sync, { target: keys[0], tiebreak: keys.slice(1), melds, food, level, fixed });
-      if (!free.ok) continue;
+      if (!free.ok) {
+        continue;
+      }
       gcd = free.gcd;
     }
     const want = tierLex(job, pool, sync, { ...base, gcd, mode });

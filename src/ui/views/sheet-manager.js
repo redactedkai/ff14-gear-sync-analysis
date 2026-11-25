@@ -12,7 +12,9 @@ const MANAGER_COLUMNS = Object.freeze(['Sheet', 'Job', 'Level / IL', 'Sets', 'Cr
 /* The hover text of a sheet's Patch cell for its `gameData` ({commit, date}, either may be missing or empty): "Game data
    d9582a6, 2026-09-30", "Game data 2026-09-30" with no commit, '' with no date. */
 function dataTitle(gameData) {
-  if (!gameData?.date) return '';
+  if (!gameData?.date) {
+    return '';
+  }
   return `Game data ${gameData.commit ? `${gameData.commit}, ` : ''}${gameData.date}`;
 }
 

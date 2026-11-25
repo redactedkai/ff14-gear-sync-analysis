@@ -34,11 +34,15 @@ const mealCache = new Map();
    joined by '+', primary first ('det+crit'). Only meals whose every stat the job has: 182 for Astrologian. The result's
    Food menu lists them all; foodChoices keeps the few the searches need. Cached per job. */
 export function allMeals(job) {
-  if (mealCache.has(job.jobId)) return mealCache.get(job.jobId);
+  if (mealCache.has(job.jobId)) {
+    return mealCache.get(job.jobId);
+  }
   const out = [];
   for (const [name, ilvl, stats, vitality] of FOODS) {
     const mapped = stats.map(([raw, pct, max]) => Object.freeze({ stat: statKeyOf(job, raw), pct, max }));
-    if (mapped.some(s => s.stat == null)) continue;
+    if (mapped.some(s => s.stat == null)) {
+      continue;
+    }
     const vit = vitality ? Object.freeze({ stat: 'vit', pct: vitality[0], max: vitality[1] }) : null;
     out.push(Object.freeze({ key: name, name, ilvl, pair: mapped.map(s => s.stat).join('+'), stats: Object.freeze(mapped), vit }));
   }
@@ -57,10 +61,14 @@ const choiceCache = new Map();
    never give more: an old Critical Hit + Determination meal next to a new Determination + Critical Hit one, a one-stat
    meal next to a newer pair with that stat. So the best of these is the best of every meal (allMeals). Cached per job. */
 export function foodChoices(job) {
-  if (choiceCache.has(job.jobId)) return choiceCache.get(job.jobId);
+  if (choiceCache.has(job.jobId)) {
+    return choiceCache.get(job.jobId);
+  }
   // allMeals is oldest first, so a later meal with the same stats replaces an older one
   const byKey = new Map();
-  for (const { name, ilvl, pair, stats, vit } of allMeals(job)) byKey.set(pair, { name, ilvl, stats, vit });
+  for (const { name, ilvl, pair, stats, vit } of allMeals(job)) {
+    byKey.set(pair, { name, ilvl, stats, vit });
+  }
   const all = [...byKey].map(([key, f]) => ({ key, ...f }));
   // drop a choice another one covers; of two that cover each other, the later one goes
   const kept = all.filter((c, i) => !all.some((d, j) => j !== i && covers(d, c) && !(covers(c, d) && j > i)));
@@ -99,7 +107,9 @@ export function foodBonus(job, food, totals, level, extraBase = {}) {
 /* Gear totals plus a foodBonus result. */
 export function withFood(totals, bonus) {
   const t = { ...totals };
-  for (const [stat, b] of Object.entries(bonus)) t[stat] = (t[stat] || 0) + b.bonus;
+  for (const [stat, b] of Object.entries(bonus)) {
+    t[stat] = (t[stat] || 0) + b.bonus;
+  }
   return t;
 }
 
@@ -113,7 +123,9 @@ export function mealRank(keys, totalsWithFood, bonus) {
 /* True when rank vector `a` beats `b`: higher at the first position where they differ (equal vectors: false, so the
    earlier choice keeps a tie). `b` null: always true. */
 function betterRank(a, b) {
-  if (!b) return true;
+  if (!b) {
+    return true;
+  }
   const i = a.findIndex((v, j) => v !== b[j]);
   return i >= 0 && a[i] > b[i];
 }
@@ -162,15 +174,20 @@ export function bestFood(job, choices, totals, level, keys) {
 export function gearNeeded(job, food, stat, total, level) {
   const line = food && foodLines(food).find(x => x.stat === stat);
   // no food for this stat: the gear has to bring the whole total
-  if (!line || total <= 0) return Math.max(0, total);
+  if (!line || total <= 0) {
+    return Math.max(0, total);
+  }
   const reachesTotal = g => g + foodBonus(job, { stats: [line] }, { [stat]: g }, level)[stat].bonus >= total;
   // binary search for the fewest gear points that reach it (gear alone always does at g = total)
   let lo = 0,
     hi = total;
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (reachesTotal(mid)) hi = mid;
-    else lo = mid + 1;
+    if (reachesTotal(mid)) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
   }
   return lo;
 }

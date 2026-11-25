@@ -11,9 +11,13 @@ import { syncSettings } from './job-sync-panel.js';
    `panel`: {cap, sync, level}, changed in place (a copy of a panel's fields, or a sheet's settings: the store is told after).
    Returns {from, to, level} when it lowered the cap (the note under the field), else null. */
 export function limitCapToLevel(panel) {
-  if (!syncSettings(panel).sync) return null;
+  if (!syncSettings(panel).sync) {
+    return null;
+  }
   const top = panel.level == null ? MAX_REAL : capCeiling(panel.level);
-  if (panel.cap <= top) return null;
+  if (panel.cap <= top) {
+    return null;
+  }
   const lowered = { from: panel.cap, to: top, level: panel.level ?? null };
   panel.cap = top;
   return lowered;
@@ -22,7 +26,9 @@ export function limitCapToLevel(panel) {
 /* The note under a cap field after limitCapToLevel lowered it (`lowered` its {from, to, level}, or null: ''), on the Job
    and sync panel and on a sheet's page and forms: "Lowered to 135, max for level 50." */
 export function capLoweredText(lowered) {
-  if (!lowered) return '';
+  if (!lowered) {
+    return '';
+  }
   return `Lowered to ${lowered.to}, max ${lowered.level == null ? 'item level' : `for level ${lowered.level}`}.`;
 }
 
@@ -34,8 +40,12 @@ export function capLoweredText(lowered) {
    note (capLoweredText, '' for none), `lowered` its {to}, `range` the range text ("1-795"). An error wins over the lowered
    note. */
 export function capFlag({ error, missing = false, note, lowered, range }) {
-  if (error) return { kind: 'error', short: missing ? CAP_MISSING_FLAG : rangeOnly(range), full: error };
-  if (note && lowered) return { kind: 'lowered', short: `Max ${lowered.to}`, full: note };
+  if (error) {
+    return { kind: 'error', short: missing ? CAP_MISSING_FLAG : rangeOnly(range), full: error };
+  }
+  if (note && lowered) {
+    return { kind: 'lowered', short: `Max ${lowered.to}`, full: note };
+  }
   return { kind: '', short: '', full: '' };
 }
 

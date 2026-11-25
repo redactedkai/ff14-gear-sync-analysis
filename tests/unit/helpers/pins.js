@@ -19,7 +19,9 @@ export function pinsOf(job, sync, wear) {
    the piece's item level allows (none for a synced piece or one with no slots). */
 export function randomStones(job, item, sync, rand) {
   const info = meldInfo(item);
-  if (!info || itemSyncIlvl(item, sync) != null) return [];
+  if (!info || itemSyncIlvl(item, sync) != null) {
+    return [];
+  }
   const grades = MATERIA.gate.flatMap((gate, k) => (gate <= item.ilvl && !MATERIA.high.includes(k + 1) ? [k + 1] : []));
   const count = Math.floor(rand() * (info.slots + 1));
   return Array.from({ length: count }, () => ({
@@ -40,7 +42,9 @@ export function pickPins(job, pool, sync, rand, most, stonesOn) {
     const items = pool.filter(i => i.type === type);
     const item = items[int(items.length)];
     const rings = wear.filter(([w]) => w.type === 'ring');
-    if (type === 'ring' ? rings.length >= 2 || (rings.some(([w]) => w === item) && (item.copies || 1) < 2) : used.has(type)) continue;
+    if (type === 'ring' ? rings.length >= 2 || (rings.some(([w]) => w === item) && (item.copies || 1) < 2) : used.has(type)) {
+      continue;
+    }
     used.add(type);
     wear.push([item, stonesOn ? randomStones(job, item, sync, rand) : []]);
   }

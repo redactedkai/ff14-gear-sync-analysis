@@ -34,7 +34,9 @@ export async function checkReloadPersists(pg) {
 
   await setCap(pg, '130');
   await setNumber(pg, '#level', '60');
-  if (await pg.locator('#sync').isChecked()) await pg.locator('#sync').uncheck();
+  if (await pg.locator('#sync').isChecked()) {
+    await pg.locator('#sync').uncheck();
+  }
   await expect(pg.locator('#cap')).toBeDisabled(); // no sync, so no cap to set
   // level sync to item level 270: the explainer's item level is held to its range (240 and up). With IL Sync off Stat Allocation
   // holds that item level as its cap (the Gear browser keeps the 130 typed above)
@@ -119,7 +121,9 @@ export async function checkCorruptedStorage(pg) {
     const usable = what === 'an old save with a broken pool'; // only that case stores a valid job
     const wantJob = usable ? 'SGE' : DEFAULT_JOB;
     const defaults = { '#job': wantJob, '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL };
-    if (usable) Object.assign(defaults, { '#b-min': '', '#b-lvl': '100' });
+    if (usable) {
+      Object.assign(defaults, { '#b-min': '', '#b-lvl': '100' });
+    }
     const errors = stepRecord.getStore().errors;
     const nErrors = errors.length;
     await pg.goto(pathToFileURL(blank).href);
@@ -129,7 +133,9 @@ export async function checkCorruptedStorage(pg) {
     await expect(pg.locator('#tab-sheets')).toBeVisible(); // the page opens the first tab: a saved tab is not read
     await pg.click('[data-tab=browse]');
     await expect(pg.locator('#job-menu-btn')).toBeVisible();
-    if (usable) await expect(browserRows(pg).first()).toBeVisible();
+    if (usable) {
+      await expect(browserRows(pg).first()).toBeVisible();
+    }
     for (const [sel, v] of Object.entries(defaults)) {
       const got = await fieldValue(pg, sel);
       check(got === v, `stored ${what}: ${sel} is '${got}', expected the default '${v}'`);

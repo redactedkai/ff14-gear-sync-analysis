@@ -188,7 +188,9 @@ const escapeHtml = s => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
    as it always has); on any other branch a "DEV" badge with the branch and commit in the footer, so a test build is
    never mistaken for the live one. */
 export function buildMarks({ branch, commit }) {
-  if (!branch || branch === 'main') return { badge: '', footer: '' };
+  if (!branch || branch === 'main') {
+    return { badge: '', footer: '' };
+  }
   const label = 'DEV';
   const where = escapeHtml(branch) + (commit ? ` @ ${escapeHtml(commit)}` : '');
   return {
@@ -209,8 +211,12 @@ const MAX_INCLUDE_DEPTH = 3;
 export function expandIncludes(template, readPartial = name => readFileSync(join(PARTIALS, name), 'utf8'), parents = []) {
   return template.replace(/^([ \t]*)<!-- INCLUDE (\S+)((?: [\w-]+=\S+)*) -->\r?$/gm, (_, indent, name, args) => {
     const chain = [...parents, name].join(' > ');
-    if (parents.includes(name)) throw new Error(`${name}: includes itself (${chain})`);
-    if (parents.length >= MAX_INCLUDE_DEPTH) throw new Error(`${name}: includes nest deeper than ${MAX_INCLUDE_DEPTH} (${chain})`);
+    if (parents.includes(name)) {
+      throw new Error(`${name}: includes itself (${chain})`);
+    }
+    if (parents.length >= MAX_INCLUDE_DEPTH) {
+      throw new Error(`${name}: includes nest deeper than ${MAX_INCLUDE_DEPTH} (${chain})`);
+    }
     const values = Object.fromEntries(
       args
         .trim()
@@ -221,7 +227,9 @@ export function expandIncludes(template, readPartial = name => readFileSync(join
     const filled = readPartial(name)
       .replace(/^<!--[\s\S]*?-->\r?\n/, '')
       .replace(/\{\{(\w+)\}\}/g, (__, key) => {
-        if (!(key in values)) throw new Error(`${name}: no value for {{${key}}}`);
+        if (!(key in values)) {
+          throw new Error(`${name}: no value for {{${key}}}`);
+        }
         return values[key];
       });
     const body = expandIncludes(filled, readPartial, [...parents, name]);
@@ -239,13 +247,17 @@ export function expandIncludes(template, readPartial = name => readFileSync(join
 export function startupScript() {
   const source = readFileSync(join(SRC, 'startup-failure.js'), 'utf8');
   for (const marker of ['@STORE_KEY@', '@UNLOAD_GUARD_OFF_KEY@']) {
-    if (!source.includes(marker)) throw new Error(`src/startup-failure.js has no ${marker} marker`);
+    if (!source.includes(marker)) {
+      throw new Error(`src/startup-failure.js has no ${marker} marker`);
+    }
   }
   const code = esbuild.transformSync(
     source.replace('@STORE_KEY@', () => STORE_KEY).replace('@UNLOAD_GUARD_OFF_KEY@', () => UNLOAD_GUARD_OFF_KEY),
     { minify: true, target: 'es5', charset: 'utf8' },
   ).code;
-  if (/<\/script/i.test(code)) throw new Error('the startup script contains "</script", which would end the inline script early');
+  if (/<\/script/i.test(code)) {
+    throw new Error('the startup script contains "</script", which would end the inline script early');
+  }
   return code;
 }
 
@@ -259,12 +271,20 @@ export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 
       .join('\n');
   const js = pick('.js'),
     css = pick('.css');
-  if (!js) throw new Error('esbuild produced no JavaScript output');
-  if (/<\/script/i.test(js)) throw new Error('bundle contains "</script", which would end the inline script early');
+  if (!js) {
+    throw new Error('esbuild produced no JavaScript output');
+  }
+  if (/<\/script/i.test(js)) {
+    throw new Error('bundle contains "</script", which would end the inline script early');
+  }
   const template = expandIncludes(readFileSync(join(SRC, 'index.html'), 'utf8'));
-  if (template.includes('<!-- INCLUDE')) throw new Error('src/index.html has an INCLUDE marker the build cannot read');
+  if (template.includes('<!-- INCLUDE')) {
+    throw new Error('src/index.html has an INCLUDE marker the build cannot read');
+  }
   for (const marker of ['<!-- STARTUP -->', '<!-- STYLES -->', '<!-- SCRIPT -->', '<!-- BUILD_BADGE -->', '<!-- BUILD_INFO -->']) {
-    if (!template.includes(marker)) throw new Error(`src/index.html is missing the ${marker} marker`);
+    if (!template.includes(marker)) {
+      throw new Error(`src/index.html is missing the ${marker} marker`);
+    }
   }
   // function replacements, so "$&"-style sequences in the bundle are not treated as patterns
   const marks = buildMarks(info);

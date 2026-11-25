@@ -9,7 +9,9 @@ import { uniqueTaken } from '../sheets/set-edits.js';
 /* "2 slots" or "2+3 slots" (guaranteed + overmeld), "no materia slots", for a picker line. */
 function slotsText(item) {
   const info = meldInfo(item);
-  if (!info?.slots) return 'no materia slots';
+  if (!info?.slots) {
+    return 'no materia slots';
+  }
   const { big, small } = meldSlots(item);
   return info.overmeld ? `${info.slots}+${big + small - info.slots} slots` : plural(info.slots, 'slot');
 }

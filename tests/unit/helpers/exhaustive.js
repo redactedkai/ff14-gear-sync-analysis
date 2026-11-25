@@ -33,7 +33,9 @@ export function smallPool(job, rand, types, n, least = 0, window = null) {
   for (const ty of types) {
     const of = all.filter(i => i.type === ty);
     const m = ty === 'ring' ? 1 + int(n) : least + int(n + 1 - least);
-    for (let i = 0; i < m && of.length; i++) pool.push(of.splice(int(of.length), 1)[0]);
+    for (let i = 0; i < m && of.length; i++) {
+      pool.push(of.splice(int(of.length), 1)[0]);
+    }
   }
   return pool;
 }
@@ -54,13 +56,21 @@ function blockableTypes(job, pool) {
    single ring from the items with a copy left; with two, none. */
 function choicesFor(pool, t, pinnedRings = []) {
   const items = pool.filter(i => i.type === t);
-  if (t !== 'ring') return items.map(i => [i]);
-  if (pinnedRings.length === 2) return [];
-  if (pinnedRings.length === 1) return items.filter(i => (i.copies || 1) > (i === pinnedRings[0] ? 1 : 0)).map(i => [i]);
+  if (t !== 'ring') {
+    return items.map(i => [i]);
+  }
+  if (pinnedRings.length === 2) {
+    return [];
+  }
+  if (pinnedRings.length === 1) {
+    return items.filter(i => (i.copies || 1) > (i === pinnedRings[0] ? 1 : 0)).map(i => [i]);
+  }
   const pairs = [];
   items.forEach((a, x) => {
     items.forEach((b, y) => {
-      if (y < x || (x === y && (a.copies || 1) < 2)) return;
+      if (y < x || (x === y && (a.copies || 1) < 2)) {
+        return;
+      }
       pairs.push([a, b]);
     });
   });
@@ -74,15 +84,21 @@ function choicesFor(pool, t, pinnedRings = []) {
    in order); the caller gives only stones the piece takes. */
 export function pinnedVector(job, item, sync, stones) {
   const v = { ...effWithWd(job, item, sync) };
-  if (itemSyncIlvl(item, sync) != null) return v;
+  if (itemSyncIlvl(item, sync) != null) {
+    return v;
+  }
   const s = slotInfo(job, item);
   const caps = capsFor(job, item.type, item.ilvl, s.pct, s.factors);
   const added = {};
   for (const stone of stones) {
-    if (!stone) break;
+    if (!stone) {
+      break;
+    }
     added[stone.stat] = (added[stone.stat] || 0) + MATERIA.values[stone.grade - 1];
   }
-  for (const [stat, points] of Object.entries(added)) v[stat] = Math.max(v[stat] || 0, Math.min((v[stat] || 0) + points, caps[stat]));
+  for (const [stat, points] of Object.entries(added)) {
+    v[stat] = Math.max(v[stat] || 0, Math.min((v[stat] || 0) + points, caps[stat]));
+  }
   return v;
 }
 
@@ -103,7 +119,9 @@ export function meldVectors(job, item, sync, keys, { exactSpd = false } = {}) {
     byKey = new Map();
     vectorCache.set(item, byKey);
   }
-  if (!byKey.has(ck)) byKey.set(ck, enumerateVectors(job, item, sync, keys, exactSpd));
+  if (!byKey.has(ck)) {
+    byKey.set(ck, enumerateVectors(job, item, sync, keys, exactSpd));
+  }
   return byKey.get(ck);
 }
 
@@ -111,18 +129,24 @@ export function meldVectors(job, item, sync, keys, { exactSpd = false } = {}) {
    (weaponDamage, checked against real weapons in core/damage-defense.test.js). */
 function effWithWd(job, item, sync) {
   const v = { ...effStats(job, item, sync) };
-  if (job.damageKey) v.wd = weaponDamage(job, item, itemSyncIlvl(item, sync));
+  if (job.damageKey) {
+    v.wd = weaponDamage(job, item, itemSyncIlvl(item, sync));
+  }
   return v;
 }
 
 function enumerateVectors(job, item, sync, keys, exactSpd) {
   const base = effWithWd(job, item, sync);
   const info = meldInfo(item);
-  if (itemSyncIlvl(item, sync) != null || !info || !info.slots) return [base];
+  if (itemSyncIlvl(item, sync) != null || !info || !info.slots) {
+    return [base];
+  }
   const best = high => {
     let v = 0;
     MATERIA.values.forEach((x, i) => {
-      if (MATERIA.gate[i] <= item.ilvl && (high || !MATERIA.high.includes(i + 1))) v = Math.max(v, x);
+      if (MATERIA.gate[i] <= item.ilvl && (high || !MATERIA.high.includes(i + 1))) {
+        v = Math.max(v, x);
+      }
     });
     return v;
   };
@@ -138,7 +162,9 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
       const v = { ...base };
       for (const st of job.substats) {
         const stones = add.reduce((n, a, k) => n + (a === st ? slotValue[k] : 0), 0);
-        if (stones) v[st] = Math.max(base[st] || 0, Math.min((base[st] || 0) + stones, caps[st]));
+        if (stones) {
+          v[st] = Math.max(base[st] || 0, Math.min((base[st] || 0) + stones, caps[st]));
+        }
       }
       out.push(v);
       return;
@@ -158,7 +184,9 @@ function enumerateVectors(job, item, sync, keys, exactSpd) {
   const firstOf = new Map();
   ks.forEach((k, i) => {
     const id = k.join();
-    if (!firstOf.has(id)) firstOf.set(id, i);
+    if (!firstOf.has(id)) {
+      firstOf.set(id, i);
+    }
   });
   const firsts = [...firstOf.values()];
   return firsts.filter(i => !firsts.some(j => beaten(ks[i], ks[j]))).map(i => out[i]);
@@ -195,11 +223,19 @@ export function exhaustive(job, pool, sync, { target, tiebreak = [], spdMin = nu
   const meldKeys = [...new Set([...keys, ...(ranged ? [job.speedKey] : []), ...minStats])];
   let best = null;
   forEachLoadout(job, pool, sync, { melds, meldKeys, exactSpd: spdMax != null, fixed }, get => {
-    if (spdMin != null && get(job.speedKey) < spdMin) return;
-    if (spdMax != null && get(job.speedKey) > spdMax) return;
-    if (minStats.some(s => get(s) < mins[s])) return;
+    if (spdMin != null && get(job.speedKey) < spdMin) {
+      return;
+    }
+    if (spdMax != null && get(job.speedKey) > spdMax) {
+      return;
+    }
+    if (minStats.some(s => get(s) < mins[s])) {
+      return;
+    }
     const v = ranked.map(get);
-    if (!best || lexGreater(v, best)) best = v;
+    if (!best || lexGreater(v, best)) {
+      best = v;
+    }
   });
   return best === null ? null : best.slice(ranked.length - keys.length);
 }
@@ -233,13 +269,17 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
         });
         return sums.map(v => ({ v, blocks, empty: false }));
       });
-    if (blockable.has(t)) list.push({ v: stats.map(() => 0), blocks: [], empty: true });
+    if (blockable.has(t)) {
+      list.push({ v: stats.map(() => 0), blocks: [], empty: true });
+    }
     // one of each identical choice: two rings' meld vectors often add up to the same totals in several ways (about 7
     // in 8 ring pair choices on a pool with overmelded rings), and every copy multiplies the loadouts to visit
     const seen = new Set();
     return list.filter(c => {
       const id = `${c.empty}|${c.blocks.join()}|${c.v.join()}`;
-      if (seen.has(id)) return false;
+      if (seen.has(id)) {
+        return false;
+      }
       seen.add(id);
       return true;
     });
@@ -250,7 +290,9 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
   const rec = k => {
     if (k === choices.length) {
       const blocked = new Set([...picked.flatMap(c => c.blocks), ...covered]);
-      if (picked.some((c, i) => c.empty !== blocked.has(slots[i]))) return;
+      if (picked.some((c, i) => c.empty !== blocked.has(slots[i]))) {
+        return;
+      }
       visit(get);
       return;
     }
@@ -273,7 +315,9 @@ export function forEachLoadout(job, pool, sync, { melds = false, meldKeys = [], 
    level's main stat base for Determination and Piety (statBase, checked in core/food.test.js). */
 export function foodAdd(job, meal, stat, gear, level) {
   const s = stat === 'vit' ? meal?.vit : meal?.stats.find(x => x.stat === stat);
-  if (!s) return 0;
+  if (!s) {
+    return 0;
+  }
   return Math.min(s.max, Math.floor((s.pct * (statBase(job, stat, level) + gear)) / 100));
 }
 

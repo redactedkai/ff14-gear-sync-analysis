@@ -21,7 +21,9 @@ test('a primary-button click with no modifier key is plain', () => {
 });
 
 test('Ctrl, Cmd, Shift and Alt each make a click not plain', () => {
-  for (const key of ['ctrlKey', 'metaKey', 'shiftKey', 'altKey']) assert.equal(plainClick(click({ [key]: true })), false, key);
+  for (const key of ['ctrlKey', 'metaKey', 'shiftKey', 'altKey']) {
+    assert.equal(plainClick(click({ [key]: true })), false, key);
+  }
 });
 
 test('a middle or secondary button is not plain', () => {

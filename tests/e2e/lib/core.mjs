@@ -13,11 +13,16 @@ export function startCore() {
   coreWorker = new Worker(new URL('./core-worker.mjs', import.meta.url));
   coreWorker.on('message', ({ id, result, error }) => {
     const call = coreCalls.get(id);
-    if (error) call.reject(new Error(error));
-    else call.resolve(result);
+    if (error) {
+      call.reject(new Error(error));
+    } else {
+      call.resolve(result);
+    }
   });
   coreWorker.on('error', e => {
-    for (const c of coreCalls.values()) c.reject?.(e);
+    for (const c of coreCalls.values()) {
+      c.reject?.(e);
+    }
   });
 }
 

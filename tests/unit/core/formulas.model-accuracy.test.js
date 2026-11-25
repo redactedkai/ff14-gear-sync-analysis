@@ -20,7 +20,9 @@ import { rowStats } from '../../../src/core/items.js';
 import { itemRow } from '../helpers/common.js';
 
 test('formula reproduces the Wiki sync caps at item level 475', () => {
-  for (const c of wikiChecks()) assert.equal(c.computed, c.published, c.label);
+  for (const c of wikiChecks()) {
+    assert.equal(c.computed, c.published, c.label);
+  }
 });
 
 test('formula accuracy against every real piece, by item level band', t => {
@@ -83,10 +85,14 @@ test('every piece with three substats is Mind-only gear whose lowest line is Dir
     dh = ITEM_STAT_ORDER.indexOf('dh');
   let n = 0;
   for (const r of ITEMS) {
-    if (r[ROW.ilvl] < MODEL_MIN_ILVL) continue;
+    if (r[ROW.ilvl] < MODEL_MIN_ILVL) {
+      continue;
+    }
     const st = rowStats(r);
     const subs = RAW_SUBSTAT_IDX.filter(i => st[i]).sort((a, b) => st[b] - st[a]);
-    if (subs.length < 3) continue;
+    if (subs.length < 3) {
+      continue;
+    }
     n++;
     assert.equal(subs.length, 3, r[ROW.name]);
     assert.deepEqual(
@@ -160,7 +166,9 @@ test('reduced-stat dungeon pieces: the list matches the data, each within 1, all
     const st = rowStats(r);
     const d = Math.max(...predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)).map((x, i) => Math.abs(x - st[i])));
     assert.ok(d <= 1, r[ROW.name]);
-    if (d === 0) exact++;
+    if (d === 0) {
+      exact++;
+    }
   }
   assert.equal(exact, rows.length - 1);
 });
@@ -172,7 +180,9 @@ test('every piece below item level 100 is predicted within 1, except the item le
   const replicas = ITEMS.filter(r => r[ROW.ilvl] === 1 && r[ROW.equipLevel] > 1 && DB_SLOT_TYPE[r[ROW.slotCode]] === 'offhand');
   assert.equal(replicas.length, REPLICA_SHIELD_COUNT);
   const off = ITEMS.filter(r => {
-    if (r[ROW.ilvl] >= MODEL_MIN_ILVL || replicas.includes(r)) return false;
+    if (r[ROW.ilvl] >= MODEL_MIN_ILVL || replicas.includes(r)) {
+      return false;
+    }
     const st = rowStats(r);
     return predictRaw(r[ROW.ilvl], r[ROW.slotCode], st, r[ROW.kind], rowItem(r)).some((x, i) => Math.abs(x - st[i]) > 1);
   });

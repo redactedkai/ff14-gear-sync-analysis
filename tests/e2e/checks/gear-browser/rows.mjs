@@ -16,7 +16,9 @@ function installRowsCheck() {
   window.__rowsMismatch = () => {
     const shown = component().view?.shown ?? [];
     const rows = [...document.querySelectorAll('#gear-table tbody tr[data-key]')];
-    if (rows.length !== shown.length) return `${rows.length} rows in the table, ${shown.length} in the view`;
+    if (rows.length !== shown.length) {
+      return `${rows.length} rows in the table, ${shown.length} in the view`;
+    }
     for (const [place, row] of rows.entries()) {
       const item = shown[place];
       const where = `row ${place} (${item.name})`;
@@ -38,7 +40,9 @@ function installRowsCheck() {
       ];
       for (const [index, cell] of item.cells.entries()) {
         const td = statCells[index];
-        if (!td) break;
+        if (!td) {
+          break;
+        }
         stats.push(
           [td.dataset.col, cell.col, `column ${index}`],
           [td.textContent, cell.text, `${cell.col} text`],
@@ -46,8 +50,11 @@ function installRowsCheck() {
           [td.getAttribute('data-was'), cell.was ?? null, `${cell.col} data-was`],
         );
       }
-      for (const [got, want, what] of stats)
-        if (got !== want) return `${where}: ${what} is ${JSON.stringify(got)}, the view has ${JSON.stringify(want)}`;
+      for (const [got, want, what] of stats) {
+        if (got !== want) {
+          return `${where}: ${what} is ${JSON.stringify(got)}, the view has ${JSON.stringify(want)}`;
+        }
+      }
     }
     return '';
   };
@@ -56,7 +63,9 @@ function installRowsCheck() {
     if (on) {
       watching = { frames: 0, bad: '' };
       const frame = () => {
-        if (!watching) return;
+        if (!watching) {
+          return;
+        }
         watching.frames++;
         watching.bad ||= window.__rowsMismatch();
         requestAnimationFrame(frame);
@@ -117,6 +126,8 @@ export async function checkBrowserRowsMatchView(pg) {
   await watched('job change back', () => setJob(pg, SHARED_SETUP.job));
   // the sort back to the default (item level, high first)
   const ilvlHead = pg.locator('#gear-table th:has([data-sort="ilvl"])');
-  if ((await ilvlHead.getAttribute('aria-sort')) !== 'descending') await pg.click('#gear-table [data-sort="ilvl"]');
+  if ((await ilvlHead.getAttribute('aria-sort')) !== 'descending') {
+    await pg.click('#gear-table [data-sort="ilvl"]');
+  }
   await expect(ilvlHead).toHaveAttribute('aria-sort', 'descending');
 }

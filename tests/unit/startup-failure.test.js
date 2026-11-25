@@ -61,11 +61,17 @@ function runStartupScript(keys) {
   };
   vm.runInNewContext(startupScript(), sandbox);
   listeners.error({ error: new Error('injected failure') });
-  for (const onReady of timers) onReady();
+  for (const onReady of timers) {
+    onReady();
+  }
   const ids = [];
   const collect = node => {
-    if (node.id) ids.push(node.id);
-    for (const child of node.children ?? []) collect(child);
+    if (node.id) {
+      ids.push(node.id);
+    }
+    for (const child of node.children ?? []) {
+      collect(child);
+    }
   };
   collect(body);
   return ids;

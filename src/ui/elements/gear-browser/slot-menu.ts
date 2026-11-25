@@ -55,7 +55,9 @@ function touchFriendly(trigger: Record<string, unknown>): Record<string, unknown
   return {
     ...trigger,
     onpointerdown(event: PointerEvent) {
-      if (event.pointerType === 'mouse') zagOnPointerDown?.(event);
+      if (event.pointerType === 'mouse') {
+        zagOnPointerDown?.(event);
+      }
     },
   };
 }
@@ -74,7 +76,9 @@ function makeZag(host: GsaSlotMenu) {
       // Zag's `--available-height`) and scrolls inside
       positioning: { placement: 'bottom-start' as const, gutter: MENU_GAP_PX },
       onOpenChange: ({ open }) => {
-        if (open) host.lightChosenSlotAfterOpening();
+        if (open) {
+          host.lightChosenSlotAfterOpening();
+        }
       },
       // TODO: a click by assistive technology on another layer closes this menu with the focus left on <body>: a close by the layer
       // manager looks the same as a press outside, so the focus cannot be given back without stealing it from the layer that was

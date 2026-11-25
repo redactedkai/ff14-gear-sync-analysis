@@ -98,7 +98,9 @@ export function offhandParts(valueAt) {
    factor (a fraction; a real item's, see kindFactors in items.js); null for the job's (jobFactor). */
 export function pieceValue(job, stat, ilvl, type, weight, pct, factor = null) {
   // a shield: the two-handed weapon's value minus the one-handed weapon's (isOffhand)
-  if (isOffhand(type, pct)) return offhandParts(share => pieceValue(job, stat, ilvl, 'weapon', weight, share, factor)).value;
+  if (isOffhand(type, pct)) {
+    return offhandParts(share => pieceValue(job, stat, ilvl, 'weapon', weight, share, factor)).value;
+  }
   const base = IL[stat][clampIlvl(ilvl)]; // the ItemLevel table's budget for this stat
   return statLine(base, pct ?? job.slotPct[type], factor ?? jobFactor(job, stat), weight).value;
 }
@@ -110,7 +112,9 @@ export function buildPiece(job, ilvl, type, subs) {
   stats.vit = pieceValue(job, 'vit', ilvl, type, 100);
   // subs[0] at the first share (100%), subs[1] at the second (70%); an empty rank adds nothing
   subs.forEach((stat, rank) => {
-    if (stat) stats[stat] = pieceValue(job, stat, ilvl, type, SUB_WEIGHTS[rank]);
+    if (stat) {
+      stats[stat] = pieceValue(job, stat, ilvl, type, SUB_WEIGHTS[rank]);
+    }
   });
   return stats;
 }
@@ -159,7 +163,9 @@ export function capsFor(job, type, capIlvl, pct, factors = null) {
 
 /* Stats after sync. Pieces at or below the cap are untouched; above it every stat is clamped to capsFor. */
 export function syncStats(job, stats, type, capIlvl, itemIlvl, pct, factors = null) {
-  if (itemIlvl != null && itemIlvl <= capIlvl) return Object.assign({}, stats);
+  if (itemIlvl != null && itemIlvl <= capIlvl) {
+    return Object.assign({}, stats);
+  }
   const caps = capsFor(job, type, capIlvl, pct, factors);
   // sync only lowers: a stat already under its cap keeps its value (substats never scale up)
   return Object.fromEntries(job.stats.map(s => [s, Math.min(stats[s] || 0, caps[s])]));
@@ -184,10 +190,14 @@ const RAW_DH_IDX = ITEM_STAT_ORDER.indexOf('dh');
    patch 4.0), or at GREEN_CRAFTED_DIRECT_HIT_SHARE on a green HQ-able piece with three substats (`item`: {hq, rarity}). */
 function fixedDirectHitShare(raw, item) {
   const onlyMind = raw[RAW_MIND_IDX] && RAW_MAIN_IDX.every(i => i === RAW_MIND_IDX || !raw[i]);
-  if (!onlyMind || !raw[RAW_DH_IDX]) return 0;
+  if (!onlyMind || !raw[RAW_DH_IDX]) {
+    return 0;
+  }
   // a fixed line is always the piece's smallest substat; a Direct Hit line above another substat is ranked like any
   // substat (Wolf Ringbands, PvP item level 55)
-  if (RAW_SUBSTAT_IDX.some(i => raw[i] && raw[i] < raw[RAW_DH_IDX])) return 0;
+  if (RAW_SUBSTAT_IDX.some(i => raw[i] && raw[i] < raw[RAW_DH_IDX])) {
+    return 0;
+  }
   const hasThreeSubs = RAW_SUBSTAT_IDX.filter(i => raw[i]).length === 3;
   return hasThreeSubs && item.hq && item.rarity === RARITY_GREEN ? GREEN_CRAFTED_DIRECT_HIT_SHARE : MIND_DIRECT_HIT_SHARE;
 }
@@ -203,7 +213,9 @@ function fixedDirectHitShare(raw, item) {
    end (REDUCED_STAT_PIECES). */
 export function predictRaw(il, slotCode, raw, kind, item = {}) {
   // named exceptions first: the Atma weapons carry an older item level's stats, the all-jobs accessories their own factors
-  if (item.name?.endsWith(ATMA_NAME_SUFFIX)) il = ATMA_STAT_ILVL;
+  if (item.name?.endsWith(ATMA_NAME_SUFFIX)) {
+    il = ATMA_STAT_ILVL;
+  }
   const accessoryFactors = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '') ? ALL_JOBS_ACCESSORY_FACTORS[item.name] : {};
 
   // one stat line at a slot share (per mille), the item's stat factor (MP and the accessory factors are percents, so
@@ -218,13 +230,19 @@ export function predictRaw(il, slotCode, raw, kind, item = {}) {
 
   // every main stat the piece carries, and Vitality, at the full share
   const mainIdx = [...RAW_MAIN_IDX, RAW_MAIN_ATTR_IDX].filter(i => raw[i]);
-  for (const i of mainIdx) out[i] = value(ITEM_STAT_ORDER[i], 100);
-  if (raw[RAW_VIT_IDX]) out[RAW_VIT_IDX] = value('vit', 100);
+  for (const i of mainIdx) {
+    out[i] = value(ITEM_STAT_ORDER[i], 100);
+  }
+  if (raw[RAW_VIT_IDX]) {
+    out[RAW_VIT_IDX] = value('vit', 100);
+  }
 
   // a fixed Direct Hit line on Mind-only gear, outside the ranking below
   const dhShare = fixedDirectHitShare(raw, item);
   const fixedDhIdx = dhShare ? RAW_DH_IDX : -1;
-  if (dhShare) out[RAW_DH_IDX] = value('dh', dhShare);
+  if (dhShare) {
+    out[RAW_DH_IDX] = value('dh', dhShare);
+  }
 
   // the other substats, largest first, at the ranked shares (100, 70). Ties share a rank and the next value skips past
   // them (a, a, b: ranks 0, 0, 2), so a substat past the last share counts only when it ties with the one before
@@ -232,8 +250,12 @@ export function predictRaw(il, slotCode, raw, kind, item = {}) {
   const subs = RAW_SUBSTAT_IDX.filter(i => raw[i] && i !== fixedDhIdx).sort((a, b) => raw[b] - raw[a]);
   let rank = 0;
   for (const [pos, i] of subs.entries()) {
-    if (pos > 0 && raw[i] !== raw[subs[pos - 1]]) rank = pos;
-    if (rank >= SUB_WEIGHTS.length) break;
+    if (pos > 0 && raw[i] !== raw[subs[pos - 1]]) {
+      rank = pos;
+    }
+    if (rank >= SUB_WEIGHTS.length) {
+      break;
+    }
     out[i] = value(ITEM_STAT_ORDER[i], SUB_WEIGHTS[rank]);
   }
 

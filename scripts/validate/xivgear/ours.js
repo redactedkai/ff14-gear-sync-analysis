@@ -60,10 +60,14 @@ function job(jobId) {
     const bit = 1 << ctx.jobIndex;
     const pieces = new Map();
     for (const r of ITEMS) {
-      if (!(r[ROW.jobMask] & bit)) continue;
+      if (!(r[ROW.jobMask] & bit)) {
+        continue;
+      }
       const row = parseRow(r);
       const item = poolItemFromRow(ctx, row);
-      if (wearable(ctx, item)) pieces.set(row.gameId, { row, item });
+      if (wearable(ctx, item)) {
+        pieces.set(row.gameId, { row, item });
+      }
     }
     j = { ctx, map, pieces };
     jobs.set(jobId, j);
@@ -101,7 +105,9 @@ export function startSetting(jobId, level, cap) {
    is above the synced level, else none. Only pieces that are compared (ours, wearable by the job) are corrected. */
 export function fixTarget(res, gameId, ilvl, equipLvl, theirTarget) {
   const row = job(res.job).pieces.get(gameId)?.row;
-  if (!row) return undefined;
+  if (!row) {
+    return undefined;
+  }
   const { level, cap } = res;
   const lv = levelSyncIlvl(level);
   let target = null,
@@ -109,12 +115,15 @@ export function fixTarget(res, gameId, ilvl, equipLvl, theirTarget) {
   if (row.scales && lv < ilvl) {
     target = cap != null && cap < ilvl ? Math.min(cap, lv) : lv;
     fix = 'X2';
-  } else if (cap != null && cap < ilvl) target = cap;
-  else if (level < equipLvl) {
+  } else if (cap != null && cap < ilvl) {
+    target = cap;
+  } else if (level < equipLvl) {
     target = lv;
     fix = 'X1';
   }
-  if (!fix || target === theirTarget) return undefined;
+  if (!fix || target === theirTarget) {
+    return undefined;
+  }
   res.corrected[fix] = (res.corrected[fix] || 0) + 1;
   return target;
 }
@@ -123,15 +132,25 @@ function tag(j, p, s, ours, theirs, ourTarget, theirTarget, level) {
   const lowered = t => (t != null && t < p.row.ilvl ? t : null);
   if (lowered(ourTarget) !== lowered(theirTarget)) {
     // both synced by level only, to their level item level vs ours (checked first: scaling gear can hit it too)
-    if (ourTarget === levelSyncIlvl(level) && theirTarget != null && p.row.lvl > level) return 'X1';
-    if (p.row.scales) return 'X2';
+    if (ourTarget === levelSyncIlvl(level) && theirTarget != null && p.row.lvl > level) {
+      return 'X1';
+    }
+    if (p.row.scales) {
+      return 'X2';
+    }
     return 'target';
   }
   if (Math.abs(ours - theirs) === 1) {
-    if (theirTarget === p.row.ilvl) return 'X3';
-    if (p.row.slotCode === 2) return 'D2';
+    if (theirTarget === p.row.ilvl) {
+      return 'X3';
+    }
+    if (p.row.slotCode === 2) {
+      return 'D2';
+    }
     const factor = kindFactors(j.ctx, p.row.kind)?.[s] ?? 1;
-    if (factor < 1) return 'D1';
+    if (factor < 1) {
+      return 'D1';
+    }
   }
   return 'unexplained';
 }
@@ -158,12 +177,16 @@ export function compareItem(res, gameId, theirStats, theirTarget) {
       res.equal++;
       continue;
     }
-    if (ourTarget === undefined) ourTarget = itemSyncIlvl(p.item, sync);
+    if (ourTarget === undefined) {
+      ourTarget = itemSyncIlvl(p.item, sync);
+    }
     const k2 = tag(j, p, s, o, t, ourTarget, theirTarget, res.level);
     res.tags[k2] = (res.tags[k2] || 0) + 1;
     const gap = Math.abs(o - t);
     const b = OFF_BUCKETS.find(([max]) => gap <= max)[1];
-    if (!res.offBy[k2]) res.offBy[k2] = {};
+    if (!res.offBy[k2]) {
+      res.offBy[k2] = {};
+    }
     res.offBy[k2][b] = (res.offBy[k2][b] || 0) + 1;
     res.maxOff[k2] = Math.max(res.maxOff[k2] || 0, gap);
     const kept = res.examples.filter(e => e.tag === k2).length;
@@ -194,9 +217,13 @@ export function finishSetting(res) {
   let oursOnly = 0;
   const oursOnlyExamples = [];
   for (const [id, p] of j.pieces) {
-    if (res.seen.has(id)) continue;
+    if (res.seen.has(id)) {
+      continue;
+    }
     oursOnly++;
-    if (oursOnlyExamples.length < 5) oursOnlyExamples.push(`${p.row.name} (${id}, item level ${p.row.ilvl})`);
+    if (oursOnlyExamples.length < 5) {
+      oursOnlyExamples.push(`${p.row.name} (${id}, item level ${p.row.ilvl})`);
+    }
   }
   const { seen, ...out } = res;
   return { ...out, oursOnly, oursOnlyExamples };

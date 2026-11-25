@@ -40,14 +40,18 @@ export function mealMenu(source) {
       });
       // a menu closed by the page itself is taken off the overlay manager too
       this.$watch('mealOpen', open => {
-        if (!open) overlays.close(MEAL_LAYER);
+        if (!open) {
+          overlays.close(MEAL_LAYER);
+        }
       });
     },
     /* Open or close the Food menu; opened, it is a layer of the overlay manager (Escape, a press outside and Tab out close it),
        the search box takes the keys and the list starts at the shown meal. */
     toggleMealMenu() {
       if (this.mealOpen) {
-        if (!overlays.close(MEAL_LAYER, { restoreFocus: true })) this.mealOpen = false;
+        if (!overlays.close(MEAL_LAYER, { restoreFocus: true })) {
+          this.mealOpen = false;
+        }
         return;
       }
       overlays.open({
@@ -73,7 +77,9 @@ export function mealMenu(source) {
           this.$refs.mealQuery?.focus();
           const list = this.$refs.mealList,
             on = list.querySelector('.on');
-          if (on) list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - SHOWN_MEAL_OFFSET_PX;
+          if (on) {
+            list.scrollTop += on.getBoundingClientRect().top - list.getBoundingClientRect().top - SHOWN_MEAL_OFFSET_PX;
+          }
           // the owner keeps an opened menu inside the window (the set page's keepMenuInView)
           this.keepMenuInView(list.closest('.same-menu'));
         }),
@@ -85,7 +91,9 @@ export function mealMenu(source) {
       const meals = this.fullMealView.groups.flatMap(g => g.items);
       this.mealRows = Math.max(FIRST_ROWS, meals.findIndex(x => x.on) + 1 + ROWS_BELOW_SHOWN);
       drawInSteps(() => {
-        if (!this.mealOpen) return false;
+        if (!this.mealOpen) {
+          return false;
+        }
         this.mealRows += ROWS_PER_STEP;
         return this.mealRows < meals.length;
       });
@@ -95,8 +103,12 @@ export function mealMenu(source) {
     toggleMealStat(stat) {
       if (this.mealStats.includes(stat)) {
         this.mealStats = this.mealStats.filter(s => s !== stat);
-        if (this.mealSortBy === stat) this.mealSortBy = 'ilvl';
-      } else if (!this.mealPillOff(stat)) this.mealStats = [...this.mealStats, stat];
+        if (this.mealSortBy === stat) {
+          this.mealSortBy = 'ilvl';
+        }
+      } else if (!this.mealPillOff(stat)) {
+        this.mealStats = [...this.mealStats, stat];
+      }
     },
     /* The "Best for goal" switch turned on or off. On, it clears the pills (the list is the tagged meals; a pill picks
        among them only through the switch being off). */
@@ -131,7 +143,9 @@ export function mealMenu(source) {
        are added); the owner's view is frozen (deepFreeze), so Alpine wraps none of it. */
     get fullMealView() {
       const menu = this.mealSourceMenu;
-      if (!menu) return { sorts: [], groups: [], empty: null };
+      if (!menu) {
+        return { sorts: [], groups: [], empty: null };
+      }
       const filters = this.mealFilters;
       const key = `${this.mealStats.join()}|${this.mealQuery}|${this.mealSortBy}|${filters.bestOnly}`;
       if (lastWhole?.menu !== menu || lastWhole.key !== key) {
@@ -152,12 +166,16 @@ export function mealMenu(source) {
        meal's key (data-meal) or is the No food row (data-meal=""); the Clear search button does nothing here. */
     mealClick(event) {
       const row = event.target.closest?.('.same-item');
-      if (!row || row.dataset.meal === undefined) return;
+      if (!row || row.dataset.meal === undefined) {
+        return;
+      }
       this.chooseMeal(row.dataset.meal === '' ? null : row.dataset.meal);
     },
     /* A meal picked from the list: the menu closes and the owner takes it (source.pick). */
     chooseMeal(key) {
-      if (!overlays.close(MEAL_LAYER, { restoreFocus: true })) this.mealOpen = false;
+      if (!overlays.close(MEAL_LAYER, { restoreFocus: true })) {
+        this.mealOpen = false;
+      }
       source.pick(this, key);
     },
   };

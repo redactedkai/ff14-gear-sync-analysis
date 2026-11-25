@@ -26,7 +26,9 @@ test('an older save with one panel gives both tabs that panel, and loses no othe
     opt: { target: 'crit', food: true, min: 100 },
   };
   const s = restoreOpen(old);
-  for (const group of [null, 'piece', 'browse']) assert.deepEqual(panelOf(s, group), ['SGE', 123, true, 100], String(group));
+  for (const group of [null, 'piece', 'browse']) {
+    assert.deepEqual(panelOf(s, group), ['SGE', 123, true, 100], String(group));
+  }
   assert.deepEqual([s.piece.ilvl, s.piece.slot, s.piece.subs], [150, 'ring', ['crit', 'det']]);
   assert.deepEqual([s.browse.q, s.browse.sort], ['staff', 'det']);
   assert.deepEqual([s.tab, s.mathTab], ['math', 'tiers']);
@@ -85,7 +87,9 @@ test("each panel is repaired on its own: an unknown job, a level over the job's 
 test('no saved state, or none usable, gives every tab the default job and the defaults', () => {
   for (const raw of [null, undefined, 'x', 7, [], {}]) {
     const s = restoreOpen(raw);
-    for (const group of [null, 'piece', 'browse']) assert.deepEqual(panelOf(s, group), ['PLD', null, false, 100], String(group));
+    for (const group of [null, 'piece', 'browse']) {
+      assert.deepEqual(panelOf(s, group), ['PLD', null, false, 100], String(group));
+    }
   }
 });
 

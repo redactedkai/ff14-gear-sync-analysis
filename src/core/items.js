@@ -33,7 +33,11 @@ function newId() {
    the worker alike, so nothing may change one after it is made. A piece that changes is a new item. */
 export function mkItem(name, type, ilvl, stats, extra) {
   const item = Object.assign({ id: newId(), name, type, ilvl, stats: { ...stats }, copies: 1, src: 'custom' }, extra || {});
-  for (const value of Object.values(item)) if (value && typeof value === 'object') Object.freeze(value);
+  for (const value of Object.values(item)) {
+    if (value && typeof value === 'object') {
+      Object.freeze(value);
+    }
+  }
   return Object.freeze(item);
 }
 
@@ -43,7 +47,9 @@ export function genericItems(job, ilvl, subsAllowed, types) {
   types.forEach(t => {
     subsAllowed.forEach(a => {
       subsAllowed.forEach(b => {
-        if (a === b) return;
+        if (a === b) {
+          return;
+        }
         const st = buildPiece(job, ilvl, t, [a, b]);
         const nm = SLOT_LABEL[t] + ' ilvl ' + ilvl + ' · ' + job.short[a] + '/' + job.short[b];
         items.push(mkItem(nm, t, ilvl, st, { src: 'generated', copies: 2 }));
@@ -83,7 +89,9 @@ const kindCache = new Map();
    the generic Main Attribute still takes its kind's factor for the job's main stat under sync: Azeyma's Earrings
    (kind 0) synced to item level 430 show main 71 in game (xivgear's test notes), the 0.9 cap, not the full 78. */
 export function kindFactors(job, kind) {
-  if (kind == null || MP.vit[kind] == null) return null;
+  if (kind == null || MP.vit[kind] == null) {
+    return null;
+  }
   const key = job.jobId + '|' + kind;
   let factors = kindCache.get(key);
   if (!factors) {
@@ -168,15 +176,31 @@ export function browseItems(job, f) {
   for (let k = 0; k < ITEMS.length; k++) {
     const r = ITEMS[k];
     // cheap checks on the raw row first; parseRow (which splits the stats) runs only for rows that pass
-    if (!(r[ROW.jobMask] & bit)) continue;
-    if (f.type && f.type !== 'any' && DB_SLOT_TYPE[r[ROW.slotCode]] !== f.type) continue;
-    if (f.expOff?.length && f.expOff.includes(expansionOf(r[ROW.equipLevel], r[ROW.ilvl]))) continue;
-    if (f.ilvlMin && r[ROW.ilvl] < f.ilvlMin) continue;
-    if (f.ilvlMax && r[ROW.ilvl] > f.ilvlMax) continue;
-    if (r[ROW.equipLevel] > job.maxLevel || (f.lvlMax && r[ROW.equipLevel] > f.lvlMax)) continue;
-    if (q && !searchMatches(r[ROW.name], q)) continue;
+    if (!(r[ROW.jobMask] & bit)) {
+      continue;
+    }
+    if (f.type && f.type !== 'any' && DB_SLOT_TYPE[r[ROW.slotCode]] !== f.type) {
+      continue;
+    }
+    if (f.expOff?.length && f.expOff.includes(expansionOf(r[ROW.equipLevel], r[ROW.ilvl]))) {
+      continue;
+    }
+    if (f.ilvlMin && r[ROW.ilvl] < f.ilvlMin) {
+      continue;
+    }
+    if (f.ilvlMax && r[ROW.ilvl] > f.ilvlMax) {
+      continue;
+    }
+    if (r[ROW.equipLevel] > job.maxLevel || (f.lvlMax && r[ROW.equipLevel] > f.lvlMax)) {
+      continue;
+    }
+    if (q && !searchMatches(r[ROW.name], q)) {
+      continue;
+    }
     const p = parseRow(r);
-    if (!p.st[mainIdx] && !p.st[attrIdx]) continue; // must carry this job's main stat, or Main Attribute
+    if (!p.st[mainIdx] && !p.st[attrIdx]) {
+      continue; // must carry this job's main stat, or Main Attribute
+    }
     out.push(p);
   }
   return out;
@@ -197,18 +221,25 @@ const factsByKey = new Map();
    damageDefense}), looked up by its pool key, so saved pools need no repair when a fact is added. The same object for
    the same key. Null for items not from the database (hand-made, generated) and for a key no row has. */
 function rowFacts(item) {
-  if (item.src !== 'game') return null;
+  if (item.src !== 'game') {
+    return null;
+  }
   if (!rowsByKey) {
     rowsByKey = new Map();
     for (const r of ITEMS) {
       const key = poolKey({ name: r[ROW.name], type: DB_SLOT_TYPE[r[ROW.slotCode]], ilvl: r[ROW.ilvl] });
       const rows = rowsByKey.get(key);
-      if (rows) rows.push(r);
-      else rowsByKey.set(key, [r]);
+      if (rows) {
+        rows.push(r);
+      } else {
+        rowsByKey.set(key, [r]);
+      }
     }
   }
   const key = poolKey(item);
-  if (!factsByKey.has(key)) factsByKey.set(key, factsOfRows(rowsByKey.get(key)));
+  if (!factsByKey.has(key)) {
+    factsByKey.set(key, factsOfRows(rowsByKey.get(key)));
+  }
   return factsByKey.get(key);
 }
 
@@ -217,7 +248,9 @@ function rowFacts(item) {
    first row, so rows sharing a key must agree on those facts (tests/unit/core/items.identity.test.js checks it; today no two rows share a
    key). */
 function factsOfRows(rows) {
-  if (!rows) return null;
+  if (!rows) {
+    return null;
+  }
   const first = rows[0];
   return {
     routes: rows.length > 1 ? [...new Set(rows.flatMap(r => r[ROW.routes]))] : first[ROW.routes],
@@ -239,7 +272,9 @@ let idIndex = null;
 export function itemById(gameId) {
   if (!idIndex) {
     idIndex = new Map();
-    for (const r of ITEMS) idIndex.set(r[ROW.gameId], r);
+    for (const r of ITEMS) {
+      idIndex.set(r[ROW.gameId], r);
+    }
   }
   return idIndex.get(gameId) ?? null;
 }
@@ -311,7 +346,9 @@ export function wearable(job, item) {
    not from the database (hand-made, generated) and saved items no database row matches any more. A hand-made piece
    may carry its own `meld` ({slots, overmeld}): the sync explainer's generic pieces take 2 slots, as most gear does. */
 export function meldInfo(item) {
-  if (item.meld) return item.meld;
+  if (item.meld) {
+    return item.meld;
+  }
   const f = rowFacts(item);
   return f ? { slots: f.slots, overmeld: f.overmeld } : null;
 }
@@ -321,7 +358,9 @@ export function meldInfo(item) {
    on a two-handed job (weaponMode '2h') blocks the off-hand, and factors null means the job's own (jobFactor in formulas.js). */
 export function slotInfo(job, item) {
   const f = rowFacts(item);
-  if (f) return { pct: DB_SLOT_PCT[f.slotCode], blocks: DB_SLOT_BLOCKS[f.slotCode], factors: kindFactors(job, f.kind) };
+  if (f) {
+    return { pct: DB_SLOT_PCT[f.slotCode], blocks: DB_SLOT_BLOCKS[f.slotCode], factors: kindFactors(job, f.kind) };
+  }
   return {
     pct: job.slotPct[item.type],
     // a hand-made weapon on a two-handed job is a two-handed weapon, which blocks the off-hand; on a 'mixed' job it is
@@ -357,8 +396,14 @@ export function activityCounts(routeLists) {
   const counts = Object.fromEntries(ACTIVITIES.map(a => [a.key, 0]));
   for (const routes of routeLists) {
     let reached = 0;
-    for (const route of routes) reached |= route;
-    for (const a of ACTIVITIES) if (reached & a.bit) counts[a.key]++;
+    for (const route of routes) {
+      reached |= route;
+    }
+    for (const a of ACTIVITIES) {
+      if (reached & a.bit) {
+        counts[a.key]++;
+      }
+    }
   }
   return counts;
 }
@@ -374,11 +419,17 @@ export function gearFilter(f) {
    takes its expansion from its item level. */
 export function filterGear(pool, f) {
   const expOff = f.expOff?.length ? f.expOff : null;
-  if (!expOff && !f.ilvlMin && !f.ilvlMax && !f.lvlMax) return pool;
+  if (!expOff && !f.ilvlMin && !f.ilvlMax && !f.lvlMax) {
+    return pool;
+  }
   return pool.filter(i => {
-    if ((f.ilvlMin && i.ilvl < f.ilvlMin) || (f.ilvlMax && i.ilvl > f.ilvlMax)) return false;
+    if ((f.ilvlMin && i.ilvl < f.ilvlMin) || (f.ilvlMax && i.ilvl > f.ilvlMax)) {
+      return false;
+    }
     const lvl = equipLevel(i);
-    if (f.lvlMax && lvl != null && lvl > f.lvlMax) return false;
+    if (f.lvlMax && lvl != null && lvl > f.lvlMax) {
+      return false;
+    }
     return !expOff?.includes(expansionOf(lvl ?? 0, i.ilvl));
   });
 }

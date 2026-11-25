@@ -14,10 +14,14 @@ export function draftPart() {
     /* An edit by hand: `change(set)` gives the GearSet after it (or {ok: false, note} when refused). The first edit opens
        the draft, a copy of the saved set. */
     edit(change) {
-      if (this.locked) return false;
+      if (this.locked) {
+        return false;
+      }
       const base = this.draft ?? editableCopy(this.saved);
       const next = change(base);
-      if (!next) return false;
+      if (!next) {
+        return false;
+      }
       this.pages.setDraft(this.setId, frozenCopy(next));
       return true;
     },
@@ -26,11 +30,15 @@ export function draftPart() {
       let toast = '';
       this.edit(set => {
         const done = placePiece(this.job, set, index, gameId);
-        if (done.ok) toast = done.removedNote;
+        if (done.ok) {
+          toast = done.removedNote;
+        }
         return done.ok ? done.gearSet : null;
       });
       // a pick that took a piece off (a 2H weapon, a shield) says so; a refused one (the picker does not offer it) does nothing
-      if (toast) this.$store.sheets.setNote(toast);
+      if (toast) {
+        this.$store.sheets.setNote(toast);
+      }
       this.closeOpenMenu();
     },
     setStone(index, slot, stat, grade) {
@@ -50,7 +58,9 @@ export function draftPart() {
        (it would only say "no changes"), and the pins it holds are saved as before. */
     applyDraft() {
       const draft = this.draft;
-      if (!draft) return;
+      if (!draft) {
+        return;
+      }
       const changes = draftView(this.sheet, this.saved, draft).changes;
       // a change of a piece or a stone by hand ends "best for goal" (the set is no longer as Auto-fill made it); a meal or a pin
       // alone keeps it
@@ -60,16 +70,22 @@ export function draftPart() {
         pinned: draft.pinned,
         bestMeals: samePieces(this.saved, draft) ? this.saved.bestMeals : null,
       });
-      if (saved.ok === false && saved.error) return;
+      if (saved.ok === false && saved.error) {
+        return;
+      }
       this.pages.setDraft(this.setId, null);
       this.closeOpenMenu(false);
-      if (changes.count) this.$store.sheets.setNote(draftNote('Applied', changes));
+      if (changes.count) {
+        this.$store.sheets.setNote(draftNote('Applied', changes));
+      }
       this.focusFill();
     },
     /* Discard on a draft: back as the set is saved. */
     discardDraft() {
       const draft = this.draft;
-      if (!draft) return;
+      if (!draft) {
+        return;
+      }
       const changes = draftView(this.sheet, this.saved, draft).changes;
       this.pages.setDraft(this.setId, null);
       this.closeOpenMenu(false);
@@ -81,17 +97,25 @@ export function draftPart() {
 
     /* Row `index` pinned or unpinned, as the table shows it now. */
     togglePin(index) {
-      if (this.locked) return;
+      if (this.locked) {
+        return;
+      }
       const shown = this.draft ?? this.saved;
       const on = !(shown.pinned?.pieces ?? []).includes(index);
       this.$store.sheets.updateSet(this.saved.id, { pinned: withPin(this.saved, index, on).pinned });
-      if (this.draft) this.pages.setDraft(this.setId, frozenCopy(withPin(this.draft, index, on)));
+      if (this.draft) {
+        this.pages.setDraft(this.setId, frozenCopy(withPin(this.draft, index, on)));
+      }
     },
     toggleMealPin() {
-      if (this.locked) return;
+      if (this.locked) {
+        return;
+      }
       const on = !(this.draft ?? this.saved).pinned?.meal;
       this.$store.sheets.updateSet(this.saved.id, { pinned: withMealPin(this.saved, on).pinned });
-      if (this.draft) this.pages.setDraft(this.setId, frozenCopy(withMealPin(this.draft, on)));
+      if (this.draft) {
+        this.pages.setDraft(this.setId, frozenCopy(withMealPin(this.draft, on)));
+      }
     },
   };
 }

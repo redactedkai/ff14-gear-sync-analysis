@@ -18,7 +18,9 @@ const OUT_DIR = join(STORIES_DIR, 'out');
 function listFiles(folder) {
   return readdirSync(folder).flatMap(name => {
     const path = join(folder, name);
-    if (statSync(path).isDirectory()) return name === 'out' ? [] : listFiles(path);
+    if (statSync(path).isDirectory()) {
+      return name === 'out' ? [] : listFiles(path);
+    }
     return [path.replaceAll('\\', '/')];
   });
 }

@@ -43,9 +43,13 @@ function byOrder(sort, dir) {
   const sign = dir === 'asc' ? -1 : 1;
   return (x, y) => {
     let d = 0;
-    if (sort === 'name') d = y.name.localeCompare(x.name);
-    else if (sort === 'lvl') d = y.lvl - x.lvl;
-    else if (sort !== 'ilvl') d = (y.eff[sort] || 0) - (x.eff[sort] || 0);
+    if (sort === 'name') {
+      d = y.name.localeCompare(x.name);
+    } else if (sort === 'lvl') {
+      d = y.lvl - x.lvl;
+    } else if (sort !== 'ilvl') {
+      d = (y.eff[sort] || 0) - (x.eff[sort] || 0);
+    }
     return sign * d || sign * (y.ilvl - x.ilvl) || x.name.localeCompare(y.name);
   };
 }
@@ -55,12 +59,18 @@ function byOrder(sort, dir) {
 export function markWords(name, query) {
   const lower = name.toLowerCase(),
     hit = new Array(name.length).fill(false);
-  for (const w of query.toLowerCase().split(/\s+/).filter(Boolean))
-    for (let i = lower.indexOf(w); i >= 0; i = lower.indexOf(w, i + 1)) hit.fill(true, i, i + w.length);
+  for (const w of query.toLowerCase().split(/\s+/).filter(Boolean)) {
+    for (let i = lower.indexOf(w); i >= 0; i = lower.indexOf(w, i + 1)) {
+      hit.fill(true, i, i + w.length);
+    }
+  }
   const parts = [];
   for (let i = 0; i < name.length; i++) {
-    if (parts.length && parts.at(-1).hit === hit[i]) parts.at(-1).text += name[i];
-    else parts.push({ text: name[i], hit: hit[i] });
+    if (parts.length && parts.at(-1).hit === hit[i]) {
+      parts.at(-1).text += name[i];
+    } else {
+      parts.push({ text: name[i], hit: hit[i] });
+    }
   }
   return parts;
 }
@@ -93,7 +103,9 @@ export function browseFiltered(job, b) {
 export function browseCell(raw, synced, col = '') {
   raw = raw || 0;
   synced = synced || 0;
-  if (synced < raw) return { text: String(synced), cls: 'n cut', col, was: String(raw) };
+  if (synced < raw) {
+    return { text: String(synced), cls: 'n cut', col, was: String(raw) };
+  }
   return { text: String(raw), cls: raw ? 'n' : 'n dim', col, was: null };
 }
 
@@ -102,7 +114,9 @@ export function browseCell(raw, synced, col = '') {
    column's width; the template keeps the break (white-space: pre-line). */
 export function slotCellText(label) {
   const parts = label.split(' + ');
-  if (parts.length < 3) return label;
+  if (parts.length < 3) {
+    return label;
+  }
   const half = Math.ceil(parts.length / 2);
   return `${parts.slice(0, half).join(' + ')}\n${parts.slice(half).join(' + ')}`;
 }
@@ -115,7 +129,9 @@ const matchCount = n => `${fmtInt(n)} ${n === 1 ? 'match' : 'matches'}`;
    page, and a gap between them where pages are skipped. Near an end, the pages run on from that end instead
    (1 2 3 4 5 … 22), so a gap never stands for a single page. One page gives [1]. */
 export function pageList(current, count) {
-  if (count <= PAGE_SLOTS) return Array.from({ length: count }, (_, i) => i + 1);
+  if (count <= PAGE_SLOTS) {
+    return Array.from({ length: count }, (_, i) => i + 1);
+  }
 
   // the run of pages between the first and the last: the current page and one each side; moved to touch an end
   // (and one longer) when a gap there would stand for one page only
@@ -131,9 +147,15 @@ export function pageList(current, count) {
 
   // first page, gap, the run, gap, last page (no gap on the side the run touches)
   const list = [1];
-  if (from > 2) list.push(null);
-  for (let p = from; p <= to; p++) list.push(p);
-  if (to < count - 1) list.push(null);
+  if (from > 2) {
+    list.push(null);
+  }
+  for (let p = from; p <= to; p++) {
+    list.push(p);
+  }
+  if (to < count - 1) {
+    list.push(null);
+  }
   list.push(count);
   return list;
 }
@@ -203,14 +225,17 @@ export function gearView(job, sync, browse, page = 1) {
 
   // the Slot menu's choices: how many matches each slot has under the other filters
   const counts = {};
-  for (const r of listed) counts[r.type] = (counts[r.type] || 0) + 1;
+  for (const r of listed) {
+    counts[r.type] = (counts[r.type] || 0) + 1;
+  }
   const slots = [{ key: ANY_SLOT_KEY, label: ANY_SLOT_LABEL, count: listed.length, countText: fmtInt(listed.length), group: 0 }];
   SLOT_GROUPS.forEach((group, g) => {
-    for (const t of group)
+    for (const t of group) {
       if (job.activeSlotTypes.includes(t)) {
         const count = counts[t] || 0;
         slots.push({ key: t, label: SLOT_LABEL[t], count, countText: fmtInt(count), group: g + 1 });
       }
+    }
   });
   // the closed Slot button's text: the chosen slot's label ('Any slot' when the chosen one is not one of the job's)
   const chosenSlotLabel = (slots.find(p => p.key === browse.type) ?? slots[0]).label;

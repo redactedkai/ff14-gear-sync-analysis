@@ -60,7 +60,9 @@ test('gear browser: a heading sorts high first (names A to Z), again flips; Rese
   assert.equal(c.filtered, true);
   c.resetBrowseFilters();
   const { sort, dir, ...filters } = defaultBrowse(app.jobCtx);
-  for (const [field, value] of Object.entries(filters)) assert.deepEqual(app.browse[field], value, field);
+  for (const [field, value] of Object.entries(filters)) {
+    assert.deepEqual(app.browse[field], value, field);
+  }
   assert.deepEqual([app.browse.sort, app.browse.dir], ['name', 'asc']);
   assert.equal(c.filtered, false);
 });

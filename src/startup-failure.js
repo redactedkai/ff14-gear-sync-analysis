@@ -32,9 +32,13 @@
   hold.textContent = '.wrap{display:none!important}#boot{display:block}';
   document.head.appendChild(hold);
   function release() {
-    if (hold.parentNode) hold.parentNode.removeChild(hold);
+    if (hold.parentNode) {
+      hold.parentNode.removeChild(hold);
+    }
     var shell = document.getElementById('boot');
-    if (shell && shell.parentNode) shell.parentNode.removeChild(shell);
+    if (shell && shell.parentNode) {
+      shell.parentNode.removeChild(shell);
+    }
     document.documentElement.removeAttribute('data-boot-tab');
   }
 
@@ -58,7 +62,9 @@
       var keys = [];
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
-        if (key !== GUARD_FLAG && (key === PREFIX || key.indexOf(PREFIX + ':') === 0)) keys.push(key);
+        if (key !== GUARD_FLAG && (key === PREFIX || key.indexOf(PREFIX + ':') === 0)) {
+          keys.push(key);
+        }
       }
       return keys;
     } catch (e) {
@@ -69,7 +75,9 @@
   // The error as one line of text: "Name: message".
   function errorText(event) {
     var error = 'reason' in event ? event.reason : event.error;
-    if (error && error.message) return (error.name || 'Error') + ': ' + error.message;
+    if (error && error.message) {
+      return (error.name || 'Error') + ': ' + error.message;
+    }
     return String(event.message || error || 'Unknown error');
   }
   function onError(event) {
@@ -81,8 +89,12 @@
   function make(tag, style, text, idSuffix) {
     var node = document.createElement(tag);
     node.style.cssText = style;
-    if (text) node.textContent = text;
-    if (idSuffix) node.id = 'startfail' + idSuffix;
+    if (text) {
+      node.textContent = text;
+    }
+    if (idSuffix) {
+      node.id = 'startfail' + idSuffix;
+    }
     return node;
   }
 
@@ -164,7 +176,9 @@
       remove.onclick = function () {
         try {
           var all = savedKeys() || [];
-          for (var i = 0; i < all.length; i++) localStorage.removeItem(all[i]);
+          for (var i = 0; i < all.length; i++) {
+            localStorage.removeItem(all[i]);
+          }
         } catch (e) {
           // the reload shows the message again
         }
@@ -195,7 +209,9 @@
         release(); // the page started
         return;
       }
-      if (!errors.length) errors.push('The page was not built: its script did not run, or did not finish. The file may be incomplete.');
+      if (!errors.length) {
+        errors.push('The page was not built: its script did not run, or did not finish. The file may be incomplete.');
+      }
       show();
       release();
     }, 0);

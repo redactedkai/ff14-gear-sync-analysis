@@ -53,9 +53,15 @@ export function stoneValues(ilvl) {
     small = null;
   MATERIA.values.forEach((value, i) => {
     const grade = i + 1;
-    if (!gradeFits(grade, ilvl)) return;
-    if (!big || value > big.value) big = { grade, value };
-    if (!highGrade(grade) && (!small || value > small.value)) small = { grade, value };
+    if (!gradeFits(grade, ilvl)) {
+      return;
+    }
+    if (!big || value > big.value) {
+      big = { grade, value };
+    }
+    if (!highGrade(grade) && (!small || value > small.value)) {
+      small = { grade, value };
+    }
   });
   return { big, small };
 }
@@ -63,8 +69,12 @@ export function stoneValues(ilvl) {
 /* How many big and small stones a piece takes: {big, small}. Pieces with no slot data (hand-made, generated) take none. */
 export function meldSlots(item) {
   const m = meldInfo(item);
-  if (!m?.slots) return { big: 0, small: 0 };
-  if (!m.overmeld) return { big: m.slots, small: 0 };
+  if (!m?.slots) {
+    return { big: 0, small: 0 };
+  }
+  if (!m.overmeld) {
+    return { big: m.slots, small: 0 };
+  }
   // with overmelding: the guaranteed slots and the first overmeld slot take big stones, the rest of the 5 small ones
   const big = Math.min(5, m.slots + 1);
   return { big, small: 5 - big };
@@ -93,7 +103,9 @@ export function usesNqOvermeldRates(item) {
    guaranteed ones, up to 4. 0 for a guaranteed slot, a slot the piece does not have, or a piece that cannot overmeld. */
 export function overmeldNumber(item, slot) {
   const m = meldInfo(item);
-  if (!m?.slots || !m.overmeld || !Number.isInteger(slot)) return 0;
+  if (!m?.slots || !m.overmeld || !Number.isInteger(slot)) {
+    return 0;
+  }
   const number = slot - m.slots + 1;
   return number >= 1 && slot < 5 ? number : 0;
 }
@@ -112,12 +124,17 @@ const compositionCache = new Map();
 function compositions(n, k) {
   const key = n * 10 + k;
   let out = compositionCache.get(key);
-  if (out) return out;
-  if (k === 1) out = [[n]];
-  else {
+  if (out) {
+    return out;
+  }
+  if (k === 1) {
+    out = [[n]];
+  } else {
     out = [];
     for (let first = n; first >= 0; first--) {
-      for (const rest of compositions(n - first, k - 1)) out.push([first, ...rest]);
+      for (const rest of compositions(n - first, k - 1)) {
+        out.push([first, ...rest]);
+      }
     }
   }
   compositionCache.set(key, out);
@@ -137,11 +154,17 @@ export function meldCacheStats() {
    each one's cap, clamped to what every stone together can add (more changes nothing, and more pieces share a memo). */
 function meldSetup(job, item, keys) {
   const { big: nBig, small: nSmall } = meldSlots(item);
-  if (!nBig) return null;
+  if (!nBig) {
+    return null;
+  }
   const meldable = [...new Set(keys)].filter(k => meldableStat(job, k));
-  if (!meldable.length) return null;
+  if (!meldable.length) {
+    return null;
+  }
   const { big: hi, small: lo } = stoneValues(item.ilvl);
-  if (!hi) return null;
+  if (!hi) {
+    return null;
+  }
 
   // below item level 290 the best grade is not a high one, so one grade fills every slot
   const oneGrade = !lo || lo.grade === hi.grade;
@@ -180,13 +203,19 @@ const tieOrder = (a, b) => a.stones - b.stones || a.hiCount - b.hiCount;
 function bestPlacement(m) {
   const key = `${m.nBig},${m.nSmall},${m.hi.grade},${m.lo.grade},${m.headroom.join(',')}`;
   const hit = bestMemo.get(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   let best = null;
   forEachPlacement(m, p => {
     if (best) {
       let cmp = 0;
-      for (let j = 0; j < p.gain.length && !cmp; j++) cmp = p.gain[j] - best.gain[j];
-      if (cmp < 0 || (cmp === 0 && tieOrder(p, best) >= 0)) return;
+      for (let j = 0; j < p.gain.length && !cmp; j++) {
+        cmp = p.gain[j] - best.gain[j];
+      }
+      if (cmp < 0 || (cmp === 0 && tieOrder(p, best) >= 0)) {
+        return;
+      }
     }
     best = p;
   });
@@ -202,7 +231,9 @@ function bestPlacement(m) {
    first overmeld slot) first, then the lo stones. */
 export function bestMeld(job, item, keys) {
   const m = meldSetup(job, item, keys);
-  if (!m) return null;
+  if (!m) {
+    return null;
+  }
   return meldFromPlacement(m, bestPlacement(m));
 }
 
@@ -220,7 +251,9 @@ const versionMemo = new Map();
    still be the placement shown for a vector. A piece that takes no stones has one version, no melds: [null]. */
 export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
   const m = meldSetup(job, item, keys);
-  if (!m) return [null];
+  if (!m) {
+    return [null];
+  }
   const spdPos = m.meldable.indexOf(job.speedKey);
   const key = `${m.nBig},${m.nSmall},${m.hi.grade},${m.lo.grade},${m.headroom.join(',')},${spdPos},${exactSpd ? 1 : 0}`;
   let kept = versionMemo.get(key);
@@ -230,9 +263,13 @@ export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
     const reachable = new Set();
     forEachPlacement(m, p => {
       const g = p.gain.join(',');
-      if (p.stones - p.hiCount <= m.nSmall) reachable.add(g);
+      if (p.stones - p.hiCount <= m.nSmall) {
+        reachable.add(g);
+      }
       const cur = byGain.get(g);
-      if (!cur || tieOrder(p, cur) < 0) byGain.set(g, p);
+      if (!cur || tieOrder(p, cur) < 0) {
+        byGain.set(g, p);
+      }
     });
 
     // keep the gain vectors no other beats on every stat (with exactSpd, only one with the same speed can beat it);
@@ -245,7 +282,9 @@ export function meldVersions(job, item, keys, { exactSpd = false } = {}) {
       const beaten = kept.some(
         h => (!exactSpd || spdPos < 0 || h.gain[spdPos] === g.gain[spdPos]) && h.gain.every((x, j) => x >= g.gain[j]),
       );
-      if (!beaten) kept.push(g);
+      if (!beaten) {
+        kept.push(g);
+      }
     }
     versionMemo.set(key, kept);
   }
@@ -258,9 +297,15 @@ function meldFromPlacement(m, p) {
   const hiStones = [],
     loStones = [];
   m.meldable.forEach((s, j) => {
-    if (p.gain[j]) gain[s] = p.gain[j];
-    if (p.hi[j]) hiStones.push({ stat: s, grade: m.hi.grade, n: p.hi[j] });
-    if (p.lo[j]) loStones.push({ stat: s, grade: m.lo.grade, n: p.lo[j] });
+    if (p.gain[j]) {
+      gain[s] = p.gain[j];
+    }
+    if (p.hi[j]) {
+      hiStones.push({ stat: s, grade: m.hi.grade, n: p.hi[j] });
+    }
+    if (p.lo[j]) {
+      loStones.push({ stat: s, grade: m.lo.grade, n: p.lo[j] });
+    }
   });
   // hi stones first: they fit only the first slots
   return { gain, stones: [...hiStones, ...loStones], free: m.nBig + m.nSmall - p.stones };
@@ -269,10 +314,14 @@ function meldFromPlacement(m, p) {
 /* A bestMeld result as one entry per meld slot of `item`, in slot order: {stat, grade} for a stone, null for an empty
    slot; [] for no melds (meld null), as a set's pieces keep them (set.js). applyStones of the list gives the meld back. */
 export function meldStones(item, meld) {
-  if (!meld) return [];
+  if (!meld) {
+    return [];
+  }
   const { big, small } = meldSlots(item);
   const out = meld.stones.flatMap(x => Array.from({ length: x.n }, () => ({ stat: x.stat, grade: x.grade })));
-  while (out.length < big + small) out.push(null);
+  while (out.length < big + small) {
+    out.push(null);
+  }
   return out;
 }
 
@@ -305,28 +354,43 @@ export function applyStones(job, item, stones, sync) {
       return;
     }
     let reason = null;
-    if (!keeps) reason = 'sync';
-    else if (slot >= big + small) reason = 'slot';
-    else if (!meldableStat(job, stone.stat)) reason = 'stat';
-    else if (!gradeFits(stone.grade, item.ilvl)) reason = 'gate';
-    else if (highGrade(stone.grade) && slot >= big) reason = 'high';
-    else if (gap) reason = 'order';
+    if (!keeps) {
+      reason = 'sync';
+    } else if (slot >= big + small) {
+      reason = 'slot';
+    } else if (!meldableStat(job, stone.stat)) {
+      reason = 'stat';
+    } else if (!gradeFits(stone.grade, item.ilvl)) {
+      reason = 'gate';
+    } else if (highGrade(stone.grade) && slot >= big) {
+      reason = 'high';
+    } else if (gap) {
+      reason = 'order';
+    }
     if (reason) {
       removed.push({ slot, stone, reason });
       gap = true;
-    } else kept.push(stone);
+    } else {
+      kept.push(stone);
+    }
   });
 
   // 2. each stat gains its stones' value, cut at its room under the piece's cap
   const added = {};
-  for (const x of kept) added[x.stat] = (added[x.stat] || 0) + MATERIA.values[x.grade - 1];
+  for (const x of kept) {
+    added[x.stat] = (added[x.stat] || 0) + MATERIA.values[x.grade - 1];
+  }
   const caps = meldCaps(job, item);
   const gain = {},
     lost = {};
   for (const [stat, value] of Object.entries(added)) {
     const room = roomUnderCap(caps, item, stat);
-    if (Math.min(room, value)) gain[stat] = Math.min(room, value);
-    if (value > room) lost[stat] = value - room;
+    if (Math.min(room, value)) {
+      gain[stat] = Math.min(room, value);
+    }
+    if (value > room) {
+      lost[stat] = value - room;
+    }
   }
   const stats = Object.fromEntries(job.stats.map(s => [s, (synced[s] || 0) + (gain[s] || 0)]));
 
@@ -336,8 +400,11 @@ export function applyStones(job, item, stones, sync) {
     const groups = [];
     for (const x of kept) {
       const last = groups.at(-1);
-      if (last && last.stat === x.stat && last.grade === x.grade) last.n++;
-      else groups.push({ stat: x.stat, grade: x.grade, n: 1 });
+      if (last && last.stat === x.stat && last.grade === x.grade) {
+        last.n++;
+      } else {
+        groups.push({ stat: x.stat, grade: x.grade, n: 1 });
+      }
     }
     meld = { gain, stones: groups, free: big + small - kept.length };
   }
@@ -348,6 +415,8 @@ export function applyStones(job, item, stones, sync) {
    to the goal, `meld.free`) are not named: "2 slots empty" under a piece read like a bug when the goal takes no
    materia (audit 11 #8). */
 export function meldText(job, meld) {
-  if (!meld) return '';
+  if (!meld) {
+    return '';
+  }
   return meld.stones.map(x => `${job.short[x.stat]} ${ROMAN[x.grade - 1]}${x.n > 1 ? ` ×${x.n}` : ''}`).join(', ');
 }

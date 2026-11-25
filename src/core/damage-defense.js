@@ -38,14 +38,18 @@ export function syncedValue(item, key, target) {
     return target == null ? own : Math.min(own, damageDefenseCap(key, f.slotCode, target, f.kind));
   }
   const code = DB_SLOT_TYPE.findIndex((type, c) => type === item.type && SHARES[key][c] > 0);
-  if (code < 0) return 0;
+  if (code < 0) {
+    return 0;
+  }
   return Math.floor((IL[key][clampIlvl(target ?? item.ilvl)] * SHARES[key][code]) / 1000);
 }
 
 /* The weapon damage the optimizer ranks for a pool item: the job's weapon damage (job.damageKey) after sync, on a
    main-hand weapon; 0 on anything else and for a job with no damageKey (Blue Mage). `target` as for syncedValue. */
 export function weaponDamage(job, item, target) {
-  if (!job.damageKey || item.type !== 'weapon') return 0;
+  if (!job.damageKey || item.type !== 'weapon') {
+    return 0;
+  }
   return syncedValue(item, job.damageKey, target);
 }
 

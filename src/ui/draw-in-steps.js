@@ -5,7 +5,9 @@ export function drawInSteps(grow) {
   const next = () =>
     requestAnimationFrame(() =>
       setTimeout(() => {
-        if (grow()) next();
+        if (grow()) {
+          next();
+        }
       }, 0),
     );
   next();

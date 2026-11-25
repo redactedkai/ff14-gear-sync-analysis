@@ -72,7 +72,9 @@ function failure(error) {
 /* Whether `storage` can be written to and read back (a probe key, removed at once). False for null and for a storage
    that throws. Reading alone is not enough: some private modes read fine and refuse every write. */
 export function storageAvailable(storage = defaultStorage()) {
-  if (!storage) return false;
+  if (!storage) {
+    return false;
+  }
   try {
     const probe = `${STORE_KEY}:probe`;
     storage.setItem(probe, '1');
@@ -103,18 +105,30 @@ const isStone = stone =>
 /* Why row `index` of a gear set's pieces is damaged, or null: it must be {slot} with the slot of SET_ROW_SLOTS there,
    and, holding a piece, a whole-number game id and a list of stones. */
 function rowProblem(row, index) {
-  if (!isObject(row) || row.slot !== SET_ROW_SLOTS[index]) return `row ${index + 1} is not a ${SET_ROW_SLOTS[index]} row`;
-  if (row.gameId == null) return null;
-  if (!Number.isInteger(row.gameId)) return `row ${index + 1} has a damaged game id`;
-  if (!optional(row.stones, stones => Array.isArray(stones) && stones.every(isStone))) return `row ${index + 1} has damaged stones`;
+  if (!isObject(row) || row.slot !== SET_ROW_SLOTS[index]) {
+    return `row ${index + 1} is not a ${SET_ROW_SLOTS[index]} row`;
+  }
+  if (row.gameId == null) {
+    return null;
+  }
+  if (!Number.isInteger(row.gameId)) {
+    return `row ${index + 1} has a damaged game id`;
+  }
+  if (!optional(row.stones, stones => Array.isArray(stones) && stones.every(isStone))) {
+    return `row ${index + 1} has damaged stones`;
+  }
   return null;
 }
 
 /* Auto-fill settings ({goal, searchCriteria}, each optional, each field optional) with every field of the type the page
    reads; null and missing are none. */
 function fillSettingsOk(settings) {
-  if (settings == null) return true;
-  if (!isObject(settings)) return false;
+  if (settings == null) {
+    return true;
+  }
+  if (!isObject(settings)) {
+    return false;
+  }
   const { goal, searchCriteria } = settings;
   const text = v => typeof v === 'string';
   const flag = v => typeof v === 'boolean';
@@ -138,24 +152,39 @@ function fillSettingsOk(settings) {
    (not checked), the pins (row numbers 0
    to 11 and a boolean), the Auto-fill settings and the times. */
 function setProblem(set) {
-  if (!isObject(set) || typeof set.id !== 'string' || typeof set.name !== 'string' || !Array.isArray(set.pieces))
+  if (!isObject(set) || typeof set.id !== 'string' || typeof set.name !== 'string' || !Array.isArray(set.pieces)) {
     return 'a damaged gear set';
-  if (!optional(set.description, d => typeof d === 'string')) return 'a gear set with a damaged description';
-  if (set.pieces.length !== SET_ROW_SLOTS.length) return `a gear set with ${set.pieces.length} of its ${SET_ROW_SLOTS.length} rows`;
+  }
+  if (!optional(set.description, d => typeof d === 'string')) {
+    return 'a gear set with a damaged description';
+  }
+  if (set.pieces.length !== SET_ROW_SLOTS.length) {
+    return `a gear set with ${set.pieces.length} of its ${SET_ROW_SLOTS.length} rows`;
+  }
   for (const [index, row] of set.pieces.entries()) {
     const problem = rowProblem(row, index);
-    if (problem) return `a gear set whose ${problem}`;
+    if (problem) {
+      return `a gear set whose ${problem}`;
+    }
   }
-  if (!optional(set.meal, meal => meal === null || typeof meal === 'string')) return 'a gear set with a damaged meal';
+  if (!optional(set.meal, meal => meal === null || typeof meal === 'string')) {
+    return 'a gear set with a damaged meal';
+  }
   // `bestMeals` (the meals tagged "best for goal") is a hint: a damaged one does not make the set unreadable; the reader
   // ignores it and sheets/ops.js repairSheet drops it
   const pinsOk = pinned =>
     isObject(pinned) &&
     optional(pinned.pieces, rows => Array.isArray(rows) && rows.every(i => Number.isInteger(i) && i >= 0 && i < SET_ROW_SLOTS.length)) &&
     optional(pinned.meal, meal => typeof meal === 'boolean');
-  if (!optional(set.pinned, pinsOk)) return 'a gear set with damaged pins';
-  if (!fillSettingsOk(set.fillSettings)) return 'a gear set with damaged Auto-fill settings';
-  if (!optional(set.createdAt, isTime) || !optional(set.updatedAt, isTime)) return 'a gear set with a damaged time';
+  if (!optional(set.pinned, pinsOk)) {
+    return 'a gear set with damaged pins';
+  }
+  if (!fillSettingsOk(set.fillSettings)) {
+    return 'a gear set with damaged Auto-fill settings';
+  }
+  if (!optional(set.createdAt, isTime) || !optional(set.updatedAt, isTime)) {
+    return 'a gear set with a damaged time';
+  }
   return null;
 }
 
@@ -164,26 +193,49 @@ function setProblem(set) {
    unreadable rather than breaking a view; it repairs nothing and does not look at the game data, so a game id the
    database lacks is shown later as "missing item <id>". */
 function sheetProblem(value, id) {
-  if (!isObject(value)) return 'not a sheet';
+  if (!isObject(value)) {
+    return 'not a sheet';
+  }
   if (value.v !== SHEET_VERSION) {
     return typeof value.v === 'number' && value.v > SHEET_VERSION
       ? `written by a newer version of the page (v${value.v})`
       : 'unknown version';
   }
-  if (value.id !== id) return 'its id does not match its key';
-  if (typeof value.name !== 'string') return 'no name';
-  if (!optional(value.description, d => typeof d === 'string')) return 'a damaged description';
-  if (!jobById(value.job)) return `unknown job ${JSON.stringify(value.job)}`;
-  if (!optional(value.clan, clan => clan === null || typeof clan === 'string')) return 'a damaged clan';
-  if (!optional(value.partyRoles, roles => Number.isInteger(roles) && roles >= 0 && roles <= PARTY_ROLES_MAX))
+  if (value.id !== id) {
+    return 'its id does not match its key';
+  }
+  if (typeof value.name !== 'string') {
+    return 'no name';
+  }
+  if (!optional(value.description, d => typeof d === 'string')) {
+    return 'a damaged description';
+  }
+  if (!jobById(value.job)) {
+    return `unknown job ${JSON.stringify(value.job)}`;
+  }
+  if (!optional(value.clan, clan => clan === null || typeof clan === 'string')) {
+    return 'a damaged clan';
+  }
+  if (!optional(value.partyRoles, roles => Number.isInteger(roles) && roles >= 0 && roles <= PARTY_ROLES_MAX)) {
     return 'a damaged party bonus';
-  if (!Number.isInteger(value.level)) return 'no level';
-  if (!isObject(value.sync) || typeof value.sync.on !== 'boolean' || !Number.isFinite(value.sync.cap)) return 'no IL Sync';
-  if (!isTime(value.createdAt) || !isTime(value.updatedAt)) return 'no dates';
-  if (!Array.isArray(value.sets)) return 'no list of sets';
+  }
+  if (!Number.isInteger(value.level)) {
+    return 'no level';
+  }
+  if (!isObject(value.sync) || typeof value.sync.on !== 'boolean' || !Number.isFinite(value.sync.cap)) {
+    return 'no IL Sync';
+  }
+  if (!isTime(value.createdAt) || !isTime(value.updatedAt)) {
+    return 'no dates';
+  }
+  if (!Array.isArray(value.sets)) {
+    return 'no list of sets';
+  }
   for (const set of value.sets) {
     const problem = setProblem(set);
-    if (problem) return problem;
+    if (problem) {
+      return problem;
+    }
   }
   return null;
 }
@@ -251,10 +303,14 @@ function readIndex(storage) {
   } catch {
     return { order: [], problem: 'storage unreadable' };
   }
-  if (text === null) return { order: [], problem: null };
+  if (text === null) {
+    return { order: [], problem: null };
+  }
   try {
     const value = JSON.parse(text);
-    if (!isObject(value) || value.v !== SHEET_VERSION || !Array.isArray(value.order)) return { order: [], problem: 'index not readable' };
+    if (!isObject(value) || value.v !== SHEET_VERSION || !Array.isArray(value.order)) {
+      return { order: [], problem: 'index not readable' };
+    }
     return { order: [...new Set(value.order.filter(id => typeof id === 'string'))], problem: null };
   } catch {
     return { order: [], problem: 'index not readable' };
@@ -266,7 +322,9 @@ function recordIds(storage) {
   const ids = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
-    if (key?.startsWith(SHEET_KEY_PREFIX)) ids.push(key.slice(SHEET_KEY_PREFIX.length));
+    if (key?.startsWith(SHEET_KEY_PREFIX)) {
+      ids.push(key.slice(SHEET_KEY_PREFIX.length));
+    }
   }
   return ids.sort();
 }
@@ -279,7 +337,9 @@ function recordIds(storage) {
      list; delete one with deleteSheet(id)
    - indexProblem: why the index could not be read, or null (the order then falls back to the ids' order) */
 export function loadSheets(storage = defaultStorage()) {
-  if (!storage) return { available: false, sheets: [], unreadable: [], indexProblem: null };
+  if (!storage) {
+    return { available: false, sheets: [], unreadable: [], indexProblem: null };
+  }
   try {
     const { order, problem } = readIndex(storage);
     const stored = new Set(recordIds(storage));
@@ -291,8 +351,11 @@ export function loadSheets(storage = defaultStorage()) {
     for (const id of ids) {
       const key = sheetKey(id);
       const read = parseSheet(storage.getItem(key), id);
-      if (read.sheet) sheets.push(read.sheet);
-      else unreadable.push({ id, key, cause: read.cause });
+      if (read.sheet) {
+        sheets.push(read.sheet);
+      } else {
+        unreadable.push({ id, key, cause: read.cause });
+      }
     }
     return { available: true, sheets, unreadable, indexProblem: problem };
   } catch {
@@ -302,7 +365,9 @@ export function loadSheets(storage = defaultStorage()) {
 
 /* The index written with `order` (ids, first is top). Returns {ok: true}, or a failed result (see saveSheet). */
 export function saveOrder(order, storage = defaultStorage()) {
-  if (!storage) return failure(null);
+  if (!storage) {
+    return failure(null);
+  }
   try {
     storage.setItem(SHEETS_KEY, JSON.stringify({ v: SHEET_VERSION, order: [...new Set(order)] }));
     return { ok: true };
@@ -316,7 +381,9 @@ export function saveOrder(order, storage = defaultStorage()) {
    changed either way, so a failed save leaves the edit in memory. Storage that throws on the index after the record was
    written is reported as failed too; the record is then added at the end of the order on the next read. */
 export function saveSheet(sheet, storage = defaultStorage()) {
-  if (!storage) return failure(null);
+  if (!storage) {
+    return failure(null);
+  }
   try {
     storage.setItem(sheetKey(sheet.id), JSON.stringify(sheet));
   } catch (error) {
@@ -330,7 +397,9 @@ export function saveSheet(sheet, storage = defaultStorage()) {
    record (loadSheets' `unreadable`) deleted from its list. Returns {ok: true}, or a failed result (see saveSheet).
    Deleting an id with no record is not an error. */
 export function deleteSheet(id, storage = defaultStorage()) {
-  if (!storage) return failure(null);
+  if (!storage) {
+    return failure(null);
+  }
   try {
     storage.removeItem(sheetKey(id));
     const { order } = readIndex(storage);

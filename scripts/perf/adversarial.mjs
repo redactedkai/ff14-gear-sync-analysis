@@ -49,7 +49,9 @@ function forcedStall(jobId, seed) {
   return { jobId, pool: pool.length, ms: performance.now() - t0, nodes: res.nodes, truncated: res.truncated, ok: res.ok };
 }
 const stall = [];
-for (const id of ['PLD', 'SGE']) stall.push({ first: forcedStall(id, 3), second: forcedStall(id, 3) });
+for (const id of ['PLD', 'SGE']) {
+  stall.push({ first: forcedStall(id, 3), second: forcedStall(id, 3) });
+}
 
 // part 1: hostile pools
 const JOBS = ['PLD', 'SGE', 'WAR', 'BLM', 'DNC'].map(id => {
@@ -57,7 +59,9 @@ const JOBS = ['PLD', 'SGE', 'WAR', 'BLM', 'DNC'].map(id => {
   const pool = fullPool(job);
   const byType = {};
   pool.forEach(it => {
-    if (!byType[it.type]) byType[it.type] = [];
+    if (!byType[it.type]) {
+      byType[it.type] = [];
+    }
     byType[it.type].push(it);
   });
   return { job, byType };
@@ -69,7 +73,9 @@ function clone(job, it, spread, unique) {
   job.stats.forEach(s => {
     stats[s] = Math.max(0, 100 + int(-spread, spread));
   });
-  if (r() < 0.3) stats[pick(job.substats)] = 0; // some pieces lack a substat
+  if (r() < 0.3) {
+    stats[pick(job.substats)] = 0; // some pieces lack a substat
+  }
   const copies = it.type === 'ring' && !unique ? 2 : 1;
   return mkItem(it.name, it.type, it.ilvl, stats, { src: 'game', copies });
 }
@@ -82,7 +88,9 @@ function randomPool(J) {
     const n = type === 'ring' ? int(5, 200) : int(1, 40);
     // favour pieces that block slots (cloaks, two-handed weapons), where the search has the most choices to weigh
     const blockers = items.filter(it => it.name && /cloak|coat|robe/i.test(it.name));
-    for (let k = 0; k < n; k++) pool.push(clone(J.job, blockers.length && r() < 0.3 ? pick(blockers) : pick(items), spread, ringsUnique));
+    for (let k = 0; k < n; k++) {
+      pool.push(clone(J.job, blockers.length && r() < 0.3 ? pick(blockers) : pick(items), spread, ringsUnique));
+    }
   }
   return pool;
 }
@@ -108,8 +116,12 @@ for (let i = 0; i < nPools; i++) {
   const melds = r() < 0.5;
   const res = run(J, pool, o, melds);
   all.push(res.nodes);
-  if (res.truncated) huntTruncated++;
-  if (!worst || res.nodes > worst.res.nodes) worst = { J, pool, o, melds, res };
+  if (res.truncated) {
+    huntTruncated++;
+  }
+  if (!worst || res.nodes > worst.res.nodes) {
+    worst = { J, pool, o, melds, res };
+  }
 }
 
 // hill climb: mutate the worst pool (re-roll some pieces' stats, add or drop pieces) and keep any change that grows it
@@ -120,13 +132,21 @@ for (let i = 0; i < nClimb; i++) {
     const at = int(0, pool.length - 1);
     const roll = r();
     const src = pool[at];
-    if (roll < 0.6) pool[at] = clone(J.job, src, pick([0, 1, 2, 5]), src.copies === 1);
-    else if (roll < 0.8) pool.push(clone(J.job, src, pick([0, 1, 2]), src.copies === 1));
-    else if (pool.length > 20) pool.splice(at, 1);
+    if (roll < 0.6) {
+      pool[at] = clone(J.job, src, pick([0, 1, 2, 5]), src.copies === 1);
+    } else if (roll < 0.8) {
+      pool.push(clone(J.job, src, pick([0, 1, 2]), src.copies === 1));
+    } else if (pool.length > 20) {
+      pool.splice(at, 1);
+    }
   }
   const res = run(J, pool, o, melds);
-  if (res.truncated) huntTruncated++;
-  if (res.nodes > worst.res.nodes) worst = { J, pool, o, melds, res };
+  if (res.truncated) {
+    huntTruncated++;
+  }
+  if (res.nodes > worst.res.nodes) {
+    worst = { J, pool, o, melds, res };
+  }
 }
 
 all.sort((a, b) => a - b);

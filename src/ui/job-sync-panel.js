@@ -68,7 +68,9 @@ export function panelOf(app, tab) {
     const jobCtx = makeJobContext(app.tiers.job);
     return { job: jobCtx.jobId, jobCtx, cap: null, sync: false, level: jobCtx.maxLevel };
   }
-  if (tab === app.tab) return { job: app.job, jobCtx: app.jobCtx, cap: app.cap, sync: app.sync, level: app.level };
+  if (tab === app.tab) {
+    return { job: app.job, jobCtx: app.jobCtx, cap: app.cap, sync: app.sync, level: app.level };
+  }
   const { job, cap, sync, level } = app[PANEL_GROUP[tab]];
   return { job, jobCtx: makeJobContext(job), cap, sync, level };
 }
@@ -104,8 +106,12 @@ function levelSyncOn(job, level) {
    {cap, level, byLevel} */
 export function shownSync(job, sync) {
   const byLevel = levelSyncOn(job, sync.level);
-  if (sync.sync && (!byLevel || sync.cap <= capCeiling(sync.level))) return { cap: sync.cap, level: sync.level, byLevel: false };
-  if (byLevel) return { cap: levelSyncIlvl(sync.level), level: sync.level, byLevel: true };
+  if (sync.sync && (!byLevel || sync.cap <= capCeiling(sync.level))) {
+    return { cap: sync.cap, level: sync.level, byLevel: false };
+  }
+  if (byLevel) {
+    return { cap: levelSyncIlvl(sync.level), level: sync.level, byLevel: true };
+  }
   return null;
 }
 
@@ -122,5 +128,7 @@ export function levelSyncCap(job, level) {
    that change the inputs (level, job, Reset) and at load: never by a watcher, so a tab change leaves both tabs' fields as
    they were. */
 export function holdLevelSyncCap(panel) {
-  if (!panel.sync) panel.cap = levelSyncCap(makeJobContext(panel.job), panel.level);
+  if (!panel.sync) {
+    panel.cap = levelSyncCap(makeJobContext(panel.job), panel.level);
+  }
 }

@@ -63,11 +63,21 @@ const pct = n => `${(n / 10).toFixed(1)}%`;
 /* An effect's display text from its tier floor(step x g / div) (for gcd: the GCD in seconds): "19.3%" (rate),
    "+54.3%" (onCrit, dmgHeal), "−8.6%" (dmgTaken), "+52" (mp), "2.47s" (gcd). */
 function effectText(kind, stat, tier) {
-  if (kind === 'gcd') return `${tier.toFixed(2)}s`;
-  if (kind === 'rate') return pct(tier + (stat === 'crit' ? 50 : 0)); // the critical hit rate starts at 5% (50 per mille)
-  if (kind === 'onCrit') return `+${pct(tier + 400)}`; // a critical hit adds 40% before any Critical Hit
-  if (kind === 'dmgTaken') return `−${pct(tier)}`;
-  if (kind === 'mp') return `+${tier}`;
+  if (kind === 'gcd') {
+    return `${tier.toFixed(2)}s`;
+  }
+  if (kind === 'rate') {
+    return pct(tier + (stat === 'crit' ? 50 : 0)); // the critical hit rate starts at 5% (50 per mille)
+  }
+  if (kind === 'onCrit') {
+    return `+${pct(tier + 400)}`; // a critical hit adds 40% before any Critical Hit
+  }
+  if (kind === 'dmgTaken') {
+    return `−${pct(tier)}`;
+  }
+  if (kind === 'mp') {
+    return `+${tier}`;
+  }
   return `+${pct(tier)}`; // dmgHeal
 }
 
@@ -83,7 +93,9 @@ export function statTier(job, stat, points, level) {
     return { effect: effectText('gcd', stat, t.gcd), start: t.start, next: t.next };
   }
   const effects = effectsOf(job, stat);
-  if (effects == null) return null;
+  if (effects == null) {
+    return null;
+  }
   const { kind, step } = effects[0];
   const { div } = levelParams(level);
   // the effect in per mille (MP for Piety), and the fewest points that give it and the next one: the smallest g with
@@ -120,8 +132,11 @@ export function rowIndexAt(rows, value) {
     high = rows.length - 1;
   while (low < high) {
     const middle = Math.ceil((low + high) / 2);
-    if (rows[middle].start <= value) low = middle;
-    else high = middle - 1;
+    if (rows[middle].start <= value) {
+      low = middle;
+    } else {
+      high = middle - 1;
+    }
   }
   return low;
 }
@@ -145,7 +160,9 @@ export function rowIndexAt(rows, value) {
    A tier ends where any of the stat's effects changes, so Tenacity's two effects make tiers of uneven size. */
 export function tierLadder(job, stat, level, total, near, haste = 0, most = null) {
   const effects = effectsOf(job, stat);
-  if (effects == null) return null;
+  if (effects == null) {
+    return null;
+  }
   const base = statBase(job, stat, level);
   const { div } = levelParams(level);
   const valuesAt = g =>
@@ -161,11 +178,21 @@ export function tierLadder(job, stat, level, total, near, haste = 0, most = null
   const lower = () => tiers.unshift(tierAt(effects, tiers[0].start - 1, level, haste));
   const canHigher = () => tiers.at(-1).next != null && tiers.at(-1).next <= gearMost;
   const higher = () => tiers.push(tierAt(effects, tiers.at(-1).next, level, haste));
-  for (let k = 0; k < near && tiers[0].start > 0; k++) lower();
-  for (let k = 0; k < near && canHigher(); k++) higher();
-  while (tiers.length < 2 * near + 1 && canHigher()) higher();
-  while (tiers.length < 2 * near + 1 && tiers[0].start > 0) lower();
-  if (gearMost !== Infinity && tiers.at(-1).next != null && tiers.at(-1).next > gearMost) tiers.at(-1).next = null;
+  for (let k = 0; k < near && tiers[0].start > 0; k++) {
+    lower();
+  }
+  for (let k = 0; k < near && canHigher(); k++) {
+    higher();
+  }
+  while (tiers.length < 2 * near + 1 && canHigher()) {
+    higher();
+  }
+  while (tiers.length < 2 * near + 1 && tiers[0].start > 0) {
+    lower();
+  }
+  if (gearMost !== Infinity && tiers.at(-1).next != null && tiers.at(-1).next > gearMost) {
+    tiers.at(-1).next = null;
+  }
 
   // 2. each tier on the panel scale, with its values and which of them changed at its start
   const row = t => {
@@ -200,12 +227,16 @@ export function tierLadder(job, stat, level, total, near, haste = 0, most = null
    without tiers. */
 export function tierSizes(job, stat, level, haste = 0, kind = null, count = 60) {
   const all = effectsOf(job, stat);
-  if (all == null) return null;
+  if (all == null) {
+    return null;
+  }
   const effects = kind == null ? all : all.filter(effect => effect.kind === kind);
   const sizes = new Set();
   let t = tierAt(effects, 0, level, haste);
   for (let k = 0; k < count && t.next != null; k++) {
-    if (k > 0 || effects[0].kind !== 'gcd') sizes.add(t.next - t.start);
+    if (k > 0 || effects[0].kind !== 'gcd') {
+      sizes.add(t.next - t.start);
+    }
     t = tierAt(effects, t.next, level, haste);
   }
   return [...sizes].sort((a, b) => a - b);
@@ -216,9 +247,13 @@ export function tierSizes(job, stat, level, haste = 0, kind = null, count = 60) 
    point counts). Speed's tier is its GCD with the job's `haste` (percent), in hundredths, negated so that faster is
    higher; Tenacity's is its mitigation step (RANK_STEP); the others as statTier. */
 export function rankTierOf(job, stat, level, haste = 0) {
-  if (stat === job.speedKey) return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
+  if (stat === job.speedKey) {
+    return total => -Math.round(gcdFor(Math.max(0, total), level, BASE_GCD_MS, haste) * 100);
+  }
   const step = effectsOf(job, stat) ? (RANK_STEP[stat] ?? stepOf(job, stat)) : null;
-  if (step == null) return null;
+  if (step == null) {
+    return null;
+  }
   const { div } = levelParams(level);
   return total => Math.floor((step * Math.max(0, total)) / div);
 }
@@ -231,8 +266,11 @@ export function tierStart(tierOf, total) {
     hi = total;
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (tierOf(mid) >= tier) hi = mid;
-    else lo = mid + 1;
+    if (tierOf(mid) >= tier) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
   }
   return lo;
 }

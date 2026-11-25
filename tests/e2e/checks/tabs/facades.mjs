@@ -22,11 +22,12 @@ export async function checkStoresSealed(pg) {
     }
     return tries;
   });
-  for (const [name, list] of Object.entries(results))
+  for (const [name, list] of Object.entries(results)) {
     check(
       list.every(done => done === false),
       `the ${name} store accepted a console change (define, define, delete, add, prototype): ${list}`,
     );
+  }
   await showTab(pg, 'browse');
   await expect(pg.locator('#b-q')).toBeVisible();
   await showTab(pg, 'sheets');

@@ -6,8 +6,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkNoGcd } from '../unit/helpers/tier-reference.js';
 
-for (const seed of [11707, 22707])
+for (const seed of [11707, 22707]) {
   test(`rank by tier, 120 cases with no Target GCD, seed ${seed}`, () => {
     const { runs } = checkNoGcd(seed, 120);
     assert.ok(runs >= 100, `${runs} runs`);
   });
+}

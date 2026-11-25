@@ -56,8 +56,9 @@ export const STRESS_PATCHES = Object.freeze([
 
 /* `text` with `patch` applied; throws when the patch's text is not in it. */
 export function applyPatch(text, patch) {
-  if (!text.includes(patch.from))
+  if (!text.includes(patch.from)) {
     throw new Error(`stress patch for ${patch.file} does not apply: "${patch.from}" is not in the source any more`);
+  }
   return patch.all ? text.replaceAll(patch.from, patch.to) : text.replace(patch.from, () => patch.to);
 }
 
@@ -69,7 +70,9 @@ const COPIED = ['src', join('scripts', 'build'), 'package.json'];
    DEV badge and its test data button, `branch`). Returns {dir, page} (the built page's path) and `remove()`, which deletes the folder. */
 export function buildPrivate({ patches = [], branch = 'dev', root = REPO_ROOT } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'ff14-stress-'));
-  for (const name of COPIED) cpSync(join(root, name), join(dir, name), { recursive: true });
+  for (const name of COPIED) {
+    cpSync(join(root, name), join(dir, name), { recursive: true });
+  }
   symlinkSync(join(root, 'node_modules'), join(dir, 'node_modules'), 'junction');
   for (const patch of patches) {
     const path = join(dir, patch.file);
@@ -81,6 +84,8 @@ export function buildPrivate({ patches = [], branch = 'dev', root = REPO_ROOT } 
     env: { ...process.env, GITHUB_REF_NAME: branch, GITHUB_SHA: '' },
   });
   const page = join(dir, 'dist', 'index.html');
-  if (!existsSync(page)) throw new Error(`the private build wrote no page at ${page}`);
+  if (!existsSync(page)) {
+    throw new Error(`the private build wrote no page at ${page}`);
+  }
   return { dir, page, remove: () => rmSync(dir, { recursive: true, force: true }) };
 }

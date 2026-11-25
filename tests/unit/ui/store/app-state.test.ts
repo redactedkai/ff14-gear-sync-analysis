@@ -86,7 +86,9 @@ test('1,000 actions in a tick are one notification', async () => {
   store.subscribe(() => {
     notified += 1;
   });
-  for (let i = 0; i < 1000; i++) actions.editBrowse({ q: `axe ${i}` });
+  for (let i = 0; i < 1000; i++) {
+    actions.editBrowse({ q: `axe ${i}` });
+  }
   await new Promise(resolve => setTimeout(resolve, 0));
   assert.equal(notified, 1);
   assert.equal(store.revs.settings, 1000);

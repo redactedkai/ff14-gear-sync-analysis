@@ -40,7 +40,9 @@ export function cleanDescription(text) {
    '' with no job chosen. `fields`: {job, level, sync: {on, cap}}. */
 export function defaultSheetName({ job, level, sync }) {
   const known = jobById(job);
-  if (!known) return '';
+  if (!known) {
+    return '';
+  }
   return `${known.name} Lv ${level}${sync?.on ? ` ilvl ${sync.cap}` : ''}`;
 }
 
@@ -52,13 +54,19 @@ export function copyName(name, names) {
   for (let n = 1; ; n++) {
     const tail = ` (${n})`;
     const candidate = base.slice(0, Math.max(1, NAME_MAX_LENGTH - tail.length)).trimEnd() + tail;
-    if (!names.includes(candidate)) return candidate;
+    if (!names.includes(candidate)) {
+      return candidate;
+    }
   }
 }
 
 /* A new gear set's default name: the smallest "Set N" no set of `sheet` uses. */
 export function defaultSetName(sheet) {
-  for (let n = 1; ; n++) if (!sheet.sets.some(set => set.name === `Set ${n}`)) return `Set ${n}`;
+  for (let n = 1; ; n++) {
+    if (!sheet.sets.some(set => set.name === `Set ${n}`)) {
+      return `Set ${n}`;
+    }
+  }
 }
 
 /* A number as typed, rounded to a whole number; `fallback` for no number. */
@@ -120,7 +128,9 @@ export function repairSheet(sheet) {
     gearSet.bestMeals === undefined || isBestMeals(gearSet.bestMeals) ? gearSet : { ...gearSet, bestMeals: null },
   );
   const setsChanged = sets.some((gearSet, index) => gearSet !== sheet.sets[index]);
-  if (level === sheet.level && sync.on === sheet.sync.on && sync.cap === sheet.sync.cap && !setsChanged) return sheet;
+  if (level === sheet.level && sync.on === sheet.sync.on && sync.cap === sheet.sync.cap && !setsChanged) {
+    return sheet;
+  }
   return { ...sheet, level, sync: { ...sheet.sync, ...sync }, sets };
 }
 
@@ -176,7 +186,9 @@ export function copyGearSet(gearSet, name, id, at) {
    saved row, the off-hand row of a two-handed job included, since the copy keeps it. Returns [{setId, setName, index (the
    row), slot, name}], set by set in row order; [] when the job is the sheet's own. */
 export function piecesToClear(sheet, jobId) {
-  if (jobId === sheet.job) return [];
+  if (jobId === sheet.job) {
+    return [];
+  }
   const job = makeJobContext(jobId);
   return sheet.sets.flatMap(gearSet =>
     piecesJobCannotWear(job, gearSet.pieces).map(({ index, slot, name }) => ({
@@ -194,8 +206,18 @@ export function piecesToClear(sheet, jobId) {
 function remapStats(set, from, to) {
   const move = stat => remapStatKey(from, to, stat);
   const goal = set.fillSettings?.goal;
-  if (goal) for (const k of ['target', 'tb', 'tb2']) if (typeof goal[k] === 'string') goal[k] = move(goal[k]);
-  for (const row of set.pieces) if (row.stones) row.stones = row.stones.map(stone => stone && { ...stone, stat: move(stone.stat) });
+  if (goal) {
+    for (const k of ['target', 'tb', 'tb2']) {
+      if (typeof goal[k] === 'string') {
+        goal[k] = move(goal[k]);
+      }
+    }
+  }
+  for (const row of set.pieces) {
+    if (row.stones) {
+      row.stones = row.stones.map(stone => stone && { ...stone, stat: move(stone.stat) });
+    }
+  }
 }
 
 /* The copy of `sheet` for `fields` ({name, job, level, sync}): a new sheet (its own id, the current game data, times
@@ -220,8 +242,12 @@ export function copySheet(sheet, fields, id, at, setId) {
     const set = copyGearSet(gearSet, gearSet.name, setId(), at);
     set.pieces = set.pieces.map((row, index) => (rows.has(index) ? { slot: row.slot } : row));
     set.pinned = { ...set.pinned, pieces: (set.pinned?.pieces ?? []).filter(index => !rows.has(index)) };
-    if (!sameSettings) set.bestMeals = null;
-    if (fields.job !== sheet.job) remapStats(set, makeJobContext(sheet.job), makeJobContext(fields.job));
+    if (!sameSettings) {
+      set.bestMeals = null;
+    }
+    if (fields.job !== sheet.job) {
+      remapStats(set, makeJobContext(sheet.job), makeJobContext(fields.job));
+    }
     return set;
   });
   return copy;
@@ -231,7 +257,9 @@ export function copySheet(sheet, fields, id, at, setId) {
    the list as it is (copied). */
 export function moveItem(list, from, to) {
   const out = [...list];
-  if (from < 0 || from >= out.length || to < 0 || to >= out.length || from === to) return out;
+  if (from < 0 || from >= out.length || to < 0 || to >= out.length || from === to) {
+    return out;
+  }
   out.splice(to, 0, out.splice(from, 1)[0]);
   return out;
 }

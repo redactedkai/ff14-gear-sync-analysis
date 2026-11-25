@@ -64,13 +64,17 @@ async function setup(store, game, jobId) {
   // math also reads the field, but it is not compared here.
   const schema = game.jobSchemas[jobId];
   const mainStatFixed = schema.mainStat === 'VIT';
-  if (mainStatFixed) schema.mainStat = 'STR';
+  if (mainStatFixed) {
+    schema.mainStat = 'STR';
+  }
   store.setMode('edit');
   store.setJob(jobId);
   store.minLevel = 1; // load every item level group
   store.maxLevel = 9999;
   await sleep(50);
-  while (store.loadingStatus !== 'ready') await sleep(100);
+  while (store.loadingStatus !== 'ready') {
+    await sleep(100);
+  }
   store.setMode('view');
   store.equippedGears.clear();
   store.gears.clear();
@@ -79,10 +83,14 @@ async function setup(store, game, jobId) {
   let notWearable = 0;
   const notWearableExamples = {};
   for (const r of ITEMS) {
-    if (!(r[ROW.jobMask] & bit)) continue;
+    if (!(r[ROW.jobMask] & bit)) {
+      continue;
+    }
     const row = parseRow(r);
     const item = poolItemFromRow(job, row);
-    if (!wearable(job, item)) continue;
+    if (!wearable(job, item)) {
+      continue;
+    }
     store.gears.put({ id: row.gameId });
     const g = store.gears.get(String(row.gameId));
     list.push({ row, item, g });
@@ -96,8 +104,12 @@ async function setup(store, game, jobId) {
       if (!p.g.jobs[jobId]) {
         notWearable++;
         const k = 'category ' + p.g.data.jobCategory;
-        if (!notWearableExamples[k]) notWearableExamples[k] = [];
-        if (notWearableExamples[k].length < 3) notWearableExamples[k].push(`${p.row.name} (${p.row.gameId})`);
+        if (!notWearableExamples[k]) {
+          notWearableExamples[k] = [];
+        }
+        if (notWearableExamples[k].length < 3) {
+          notWearableExamples[k].push(`${p.row.name} (${p.row.gameId})`);
+        }
       }
     } catch {
       p.g = null;
@@ -113,20 +125,30 @@ function settings(game, jobId) {
   const job = makeJobContext(jobId);
   const out = [];
   for (const level of game.jobLevels) {
-    if (level > job.maxLevel) continue;
+    if (level > job.maxLevel) {
+      continue;
+    }
     out.push([level, null]);
-    for (const s of game.syncLevels[level]) out.push([level, s]);
+    for (const s of game.syncLevels[level]) {
+      out.push([level, s]);
+    }
   }
   return out;
 }
 
 function tag(job, p, s, ours, theirs, ourTarget, theirTarget, level) {
-  if (p.row.slotCode === 2) return 'D2';
+  if (p.row.slotCode === 2) {
+    return 'D2';
+  }
   // a target at or above the piece's own item level lowers nothing (theirs still caps there, which is D1 territory)
   const lowered = t => (t != null && t < p.row.ilvl ? t : null);
-  if (lowered(ourTarget) !== lowered(theirTarget)) return level === 100 ? 'D5' : 'target';
+  if (lowered(ourTarget) !== lowered(theirTarget)) {
+    return level === 100 ? 'D5' : 'target';
+  }
   const factor = kindFactors(job, p.row.kind)?.[s] ?? 1;
-  if (Math.abs(ours - theirs) === 1 && factor < 1) return 'D1';
+  if (Math.abs(ours - theirs) === 1 && factor < 1) {
+    return 'D1';
+  }
   return 'unexplained';
 }
 
@@ -136,7 +158,9 @@ function tag(job, p, s, ours, theirs, ourTarget, theirTarget, level) {
 function theirBonus(g) {
   const d = g.data;
   const out = {};
-  if (!d.bonusStats || !(d.bonusType === 11 || (d.bonusType === 9 && g.syncedLevel === 700))) return out;
+  if (!d.bonusStats || !(d.bonusType === 11 || (d.bonusType === 9 && g.syncedLevel === 700))) {
+    return out;
+  }
   for (const [stat, value] of Object.entries(d.bonusStats)) {
     const k = g.concretizeStat(stat);
     out[k] = (out[k] || 0) + value;
@@ -155,7 +179,9 @@ function compare(store, jobId, level, cap) {
   const res = { level, cap, pieces: 0, stats: 0, equal: 0, bonus: 0, tags: {}, onScaling: {}, offBy: {}, maxOff: {}, examples: [] };
   const kept = {};
   for (const p of prepared.get(jobId)) {
-    if (!p.g) continue;
+    if (!p.g) {
+      continue;
+    }
     res.pieces++;
     const theirs = p.g.stats;
     const extra = theirBonus(p.g);
@@ -163,10 +189,14 @@ function compare(store, jobId, level, cap) {
     let ourTarget = null;
     let theirTarget;
     for (const s of job.stats) {
-      if (!map[s]) continue;
+      if (!map[s]) {
+        continue;
+      }
       res.stats++;
       const o = ours[s] || 0;
-      if (extra[map[s]]) res.bonus++;
+      if (extra[map[s]]) {
+        res.bonus++;
+      }
       const t = (theirs[map[s]] || 0) - (extra[map[s]] || 0);
       if (o === t) {
         res.equal++;
@@ -178,10 +208,14 @@ function compare(store, jobId, level, cap) {
       }
       const k = tag(job, p, s, o, t, ourTarget, theirTarget, level);
       res.tags[k] = (res.tags[k] || 0) + 1;
-      if (p.row.scales) res.onScaling[k] = (res.onScaling[k] || 0) + 1;
+      if (p.row.scales) {
+        res.onScaling[k] = (res.onScaling[k] || 0) + 1;
+      }
       const gap = Math.abs(o - t);
       const b = OFF_BUCKETS.find(([max]) => gap <= max)[1];
-      if (!res.offBy[k]) res.offBy[k] = {};
+      if (!res.offBy[k]) {
+        res.offBy[k] = {};
+      }
       res.offBy[k][b] = (res.offBy[k][b] || 0) + 1;
       res.maxOff[k] = Math.max(res.maxOff[k] || 0, gap);
       kept[k] = (kept[k] || 0) + 1;
@@ -228,7 +262,9 @@ function capsSweep(game) {
     for (let code = 0; code < THEIR_SLOT.length; code++) {
       for (let kind = 0; kind < 13; kind++) {
         const caps = game.getCaps({ level: ilvl, slot: THEIR_SLOT[code], role: kind }, ilvl);
-        if (Number.isNaN(caps.VIT)) continue; // an item level their data does not define
+        if (Number.isNaN(caps.VIT)) {
+          continue; // an item level their data does not define
+        }
         seen.add(ilvl);
         for (const [jobId, stats] of CAP_JOBS) {
           const job = makeJobContext(jobId);
@@ -238,7 +274,9 @@ function capsSweep(game) {
             const ours = capValue(job, st, ilvl, DB_SLOT_TYPE[code], DB_SLOT_PCT[code], f[st]);
             const theirs = caps[map[st]];
             const g = `${f[st] < 1 ? 'factor<100' : 'factor 100'}, ${code === 2 ? 'off-hand' : 'other'}`;
-            if (!res.byGroup[g]) res.byGroup[g] = [0, 0];
+            if (!res.byGroup[g]) {
+              res.byGroup[g] = [0, 0];
+            }
             const b = res.byGroup[g];
             b[0]++;
             res.compared++;
@@ -247,10 +285,14 @@ function capsSweep(game) {
               continue;
             }
             b[1]++;
-            if (Math.abs(ours - theirs) === 1) res.off1++;
-            else res.more++;
-            if (res.examples.length < 40 && (code !== 2 || Math.abs(ours - theirs) > 1))
+            if (Math.abs(ours - theirs) === 1) {
+              res.off1++;
+            } else {
+              res.more++;
+            }
+            if (res.examples.length < 40 && (code !== 2 || Math.abs(ours - theirs) > 1)) {
               res.examples.push({ ilvl, code, kind, job: jobId, stat: st, ours, theirs });
+            }
           }
         }
       }

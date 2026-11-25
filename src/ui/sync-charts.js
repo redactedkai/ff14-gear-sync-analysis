@@ -25,8 +25,9 @@ function niceStep(span) {
 function xAxis(x0, x1, X, H, B, caption) {
   const every = x1 - x0 > 80 ? 20 : 10;
   let g = '';
-  for (let v = Math.ceil(x0 / every) * every; v <= x1; v += every)
+  for (let v = Math.ceil(x0 / every) * every; v <= x1; v += every) {
     g += `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`;
+  }
   return g + `<text x="${(X(x0) + X(x1)) / 2}" y="${H - 4}" text-anchor="middle">${escapeXml(caption)}</text>`;
 }
 
@@ -36,10 +37,12 @@ const LABEL_HALF_WIDTH = 24;
 /* The cap line (unlabelled: the legend names it), the item level marker of the chosen piece or set (its label above the plot, on top of the marker line), and the shaded range `more` (item levels, in order). */
 function marks({ x0, x1, X, T, H, B, W, cap, il, more, markerY }) {
   let g = '';
-  if (more.length)
+  if (more.length) {
     g += `<rect data-shade="${more[0]}-${more[more.length - 1]}" x="${X(more[0])}" y="${T}" width="${Math.max(1, X(more[more.length - 1]) - X(more[0]))}" height="${H - T - B}" fill="var(--fg)" opacity=".07"/>`;
-  if (cap >= x0 && cap <= x1)
+  }
+  if (cap >= x0 && cap <= x1) {
     g += `<line x1="${X(cap)}" x2="${X(cap)}" y1="${T}" y2="${H - B}" stroke="var(--bad)" stroke-dasharray="4 3"/>`; // named in the page's legend
+  }
   g += `<line x1="${X(il)}" x2="${X(il)}" y1="${T}" y2="${H - B}" stroke="var(--fg)" opacity=".5"/>`;
   g += `<circle cx="${X(il)}" cy="${markerY}" r="6" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
   // the label is centred on the line, kept inside the chart at either end
@@ -60,7 +63,9 @@ export const OVERGEAR_BANDS = Object.freeze([
    substat's name and its cap at the synced item level. Drawn as stacked bands (the substats, then the melds), so the top
    edge is the piece's points and each band shows where its substat reaches its ceiling. */
 export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = [], width }) {
-  if (!curve.length) return '';
+  if (!curve.length) {
+    return '';
+  }
   const W = Math.max(MIN_WIDTH, Math.round(width || DEFAULT_WIDTH)),
     H = 300,
     L = 58, // room for the y-axis caption left of the tick numbers
@@ -77,8 +82,9 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
     Y = v => T + (1 - v / ymax) * (H - T - B);
 
   let g = '';
-  for (let v = 0; v <= ymax; v += step)
+  for (let v = 0; v <= ymax; v += step) {
     g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+  }
   g += xAxis(x0, x1, X, H, B, 'Item Level');
   g += `<text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})">Stat points</text>`;
 
@@ -105,16 +111,19 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
     last = curve[curve.length - 1];
   labels.forEach((name, i) => {
     const mid = p => Y(below(p, i) + p.parts[i] / 2) + 4;
-    if (Y(below(first, i)) - Y(below(first, i) + first.parts[i]) >= 16)
+    if (Y(below(first, i)) - Y(below(first, i) + first.parts[i]) >= 16) {
       g += `<text class="lbl" x="${X(first.il) + 4}" y="${mid(first)}">${escapeXml(name)}</text>`;
+    }
     const capped = curve.find(p => p.parts[i] >= ceilings[i]);
-    if (capped && Y(below(last, i)) - Y(below(last, i) + last.parts[i]) >= 16)
+    if (capped && Y(below(last, i)) - Y(below(last, i) + last.parts[i]) >= 16) {
       g += `<text class="lbl" x="${X(x1) - 4}" text-anchor="end" y="${mid(last)}">${ceilings[i]}: at the cap from ${capped.il}</text>`;
+    }
   });
   // the melds' label like the substats', inside its band at the left, or over the line when the band is thin
   const melds = layers.length - 1;
-  if (first.melds)
+  if (first.melds) {
     g += `<text class="lbl" x="${X(first.il) + 4}" y="${Y(below(first, melds)) - Y(first.points) >= 16 ? Y(below(first, melds) + first.melds / 2) + 4 : Y(first.points) - 6}">Melds</text>`;
+  }
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Substat points in the duty by item level, by substat and melds">${g}</svg>`;
 }
 
@@ -122,7 +131,9 @@ export function overgearChartSvg({ curve, cap, il, ref, labels = [], ceilings = 
    highlight and label; marks: [{level, pct}], a dotted line where a haste starts or grows. A click on a bar is read from
    its data-level. */
 export function speedStepChartSvg({ bars, level, marks: hasteMarks = [], width }) {
-  if (!bars.length) return '';
+  if (!bars.length) {
+    return '';
+  }
   const W = Math.max(MIN_WIDTH, Math.round(width || DEFAULT_WIDTH)),
     H = 250,
     L = 40,
@@ -135,21 +146,25 @@ export function speedStepChartSvg({ bars, level, marks: hasteMarks = [], width }
     Y = v => H - B - (v / top) * (H - T - B);
 
   let g = '';
-  for (const f of [0, 0.5, 1])
+  for (const f of [0, 0.5, 1]) {
     g += `<line x1="${L}" x2="${W - R}" y1="${Y(top * f)}" y2="${Y(top * f)}" stroke="var(--line)"/><text x="${L - 6}" y="${Y(top * f) + 4}" text-anchor="end">${Math.round(top * f)}</text>`;
-  for (const b of bars)
+  }
+  for (const b of bars) {
     g += `<rect class="stepbar${b.level === level ? ' on' : ''}" data-level="${b.level}" x="${(X(b.level) + 1).toFixed(1)}" y="${Y(b.speed).toFixed(1)}" width="${Math.max(1, slot - 2).toFixed(1)}" height="${Math.max(1, H - B - Y(b.speed)).toFixed(1)}"></rect>`;
+  }
   // a dotted line where the haste starts or grows, labelled at the top (on its left side near the right edge)
   for (const m of hasteMarks) {
     const x = X(m.level),
       end = x > W - 90;
     g += `<line class="hasteline" x1="${x}" x2="${x}" y1="${T - 18}" y2="${H - B}"/><text x="${end ? x - 4 : x + 4}" y="${T - 22}" text-anchor="${end ? 'end' : 'start'}">${m.pct}% at ${m.level}</text>`;
   }
-  for (const lv of [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+  for (const lv of [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]) {
     g += `<text x="${X(lv) + slot / 2}" y="${H - B + 16}" text-anchor="middle">${lv}</text>`;
+  }
   g += `<text x="${(W + L) / 2}" y="${H - 2}" text-anchor="middle">Level</text>`;
   const at = bars.find(b => b.level === level);
-  if (at)
+  if (at) {
     g += `<text class="lbl" x="${Math.min(X(level) + slot + 4, W - 110)}" y="${Math.max(Y(at.speed) - 6, T + 10)}">level ${level}: ~${Math.round(at.speed)}</text>`;
+  }
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Speed per 0.01 s GCD step by level">${g}</svg>`;
 }

@@ -18,7 +18,9 @@ import { roundHalfUp } from '../helpers/common.js';
 function capOf(stat, kind, slotCode, cap, jobFactor) {
   const factor = kind != null && MP.vit[kind] != null ? MP[stat][kind] : jobFactor;
   const share = percent => roundHalfUp(Math.floor((Math.floor((IL[stat][cap] * factor) / 100) * percent) / 100) / 10);
-  if (DB_SLOT_TYPE[slotCode] === 'offhand' && DB_SLOT_PCT[slotCode] === 40) return share(140) - share(100);
+  if (DB_SLOT_TYPE[slotCode] === 'offhand' && DB_SLOT_PCT[slotCode] === 40) {
+    return share(140) - share(100);
+  }
   return share(DB_SLOT_PCT[slotCode]);
 }
 const isShield = slotCode => DB_SLOT_TYPE[slotCode] === 'offhand';
@@ -26,7 +28,9 @@ const isShield = slotCode => DB_SLOT_TYPE[slotCode] === 'offhand';
 test('a slot cap never falls as the item level rises (shields left out)', () => {
   const stats = ['vit', 'mind', 'str', 'dex', 'int', 'crit', 'det', 'dh', 'sks', 'sps', 'piety', 'ten'].filter(stat => MP[stat]);
   for (let slotCode = 0; slotCode < DB_SLOT_TYPE.length; slotCode++) {
-    if (isShield(slotCode)) continue;
+    if (isShield(slotCode)) {
+      continue;
+    }
     for (let kind = 0; kind < MP.vit.length; kind++) {
       for (const stat of stats) {
         let previous = -1;
@@ -83,8 +87,9 @@ test('effStats equals the cap formula for every piece of every job over a grid o
           const label = `${job.jobId} ${view.name} (item level ${view.ilvl}) ${stat} at cap ${cap}`;
           assert.equal(effective[stat], expected, label);
           assert.ok(effective[stat] <= own, `${label}: above the piece's own value`);
-          if (previous && !isShield(slotCode))
+          if (previous && !isShield(slotCode)) {
             assert.ok(effective[stat] >= previous[stat], `${label}: fell from ${previous[stat]} as the cap rose`);
+          }
         }
         previous = effective;
       }

@@ -43,7 +43,9 @@ export function gear() {
        (null until the tab is first opened) */
     get view() {
       const app = this.$store.app;
-      if (app.tab !== 'browse') return views.last();
+      if (app.tab !== 'browse') {
+        return views.last();
+      }
       const panel = app.panel('browse'),
         job = panel.jobCtx,
         sync = syncSettings(panel),
@@ -56,7 +58,9 @@ export function gear() {
     goPage(page) {
       this.page = page;
       this.pageFor = this.listKey;
-      if (this.$refs.rows) this.$refs.rows.scrollTop = 0;
+      if (this.$refs.rows) {
+        this.$refs.rows.scrollTop = 0;
+      }
     },
     /* the name search box's text: what it shows is the filter's text, and typing it (after the box's wait) sets the filter by its action */
     get search() {
@@ -84,13 +88,18 @@ export function gear() {
     sortBy(key) {
       const app = this.$store.app;
       const b = app.browse;
-      if (b.sort === key) app.editBrowse({ dir: b.dir === 'desc' ? 'asc' : 'desc' });
-      else app.editBrowse({ sort: key, dir: key === 'name' ? 'asc' : 'desc' });
+      if (b.sort === key) {
+        app.editBrowse({ dir: b.dir === 'desc' ? 'asc' : 'desc' });
+      } else {
+        app.editBrowse({ sort: key, dir: key === 'name' ? 'asc' : 'desc' });
+      }
     },
     /* a heading's aria-sort: 'descending', 'ascending' or 'none' */
     sortState(key) {
       const b = this.$store.app.browse;
-      if (b.sort !== key) return 'none';
+      if (b.sort !== key) {
+        return 'none';
+      }
       return b.dir === 'desc' ? 'descending' : 'ascending';
     },
     /* some filter is off its default: Reset filters shows (views browseFiltered) */
@@ -104,8 +113,12 @@ export function gear() {
     },
     /* "/" anywhere on the tab but in a box jumps to the name search, as on many sites */
     slashToSearch(event) {
-      if (event.key !== '/' || this.$store.app.tab !== 'browse') return;
-      if (event.target.closest('input, select, textarea, [contenteditable]')) return;
+      if (event.key !== '/' || this.$store.app.tab !== 'browse') {
+        return;
+      }
+      if (event.target.closest('input, select, textarea, [contenteditable]')) {
+        return;
+      }
       event.preventDefault();
       this.$refs.search?.focus();
     },

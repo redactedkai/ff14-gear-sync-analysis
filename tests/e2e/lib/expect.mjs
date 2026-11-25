@@ -9,7 +9,9 @@ import { BAD_WORDS, TIMEOUT } from './constants.mjs';
 export const stepRecord = new AsyncLocalStorage();
 
 export function check(cond, msg) {
-  if (!cond) stepRecord.getStore().failures.push(msg);
+  if (!cond) {
+    stepRecord.getStore().failures.push(msg);
+  }
   return cond;
 }
 
@@ -28,12 +30,16 @@ export async function poll(what, fn) {
   for (;;) {
     try {
       const r = await fn();
-      if (r.ok) return;
+      if (r.ok) {
+        return;
+      }
       last = r.got;
     } catch (e) {
       last = String(e.message).split('\n')[0];
     }
-    if (Date.now() > end) throw new assert.AssertionError({ message: `expect ${what}: last seen ${JSON.stringify(last)}` });
+    if (Date.now() > end) {
+      throw new assert.AssertionError({ message: `expect ${what}: last seen ${JSON.stringify(last)}` });
+    }
     await sleep(50);
   }
 }
@@ -113,5 +119,7 @@ export function expect(loc) {
 
 export async function checkNoBadText(pg, where) {
   const txt = await pg.innerText('body');
-  for (const bad of BAD_WORDS) check(!txt.includes(bad), `"${bad}" visible in ${where}`);
+  for (const bad of BAD_WORDS) {
+    check(!txt.includes(bad), `"${bad}" visible in ${where}`);
+  }
 }

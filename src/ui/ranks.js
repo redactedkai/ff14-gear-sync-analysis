@@ -17,9 +17,13 @@ export function withRank(ranks, i, value, choices) {
   const out = ranks.map(r => r || null);
   const picked = value || null;
   const j = picked == null ? -1 : out.indexOf(picked);
-  if (j >= 0 && j !== i) out[j] = out[i];
+  if (j >= 0 && j !== i) {
+    out[j] = out[i];
+  }
   out[i] = picked;
-  if (out[0] == null) out[0] = choices.find(s => !out.includes(s)) ?? null;
+  if (out[0] == null) {
+    out[0] = choices.find(s => !out.includes(s)) ?? null;
+  }
   return out;
 }
 
@@ -31,7 +35,9 @@ const RANK_NAMES = ['Maximize', 'Tiebreak 1', 'Tiebreak 2'];
    `after`: withRank's result; `labelOf(stat)`: a stat key's name. Wording as the prototype's. */
 export function rankSwapNote(ranks, i, value, after, labelOf) {
   const j = value ? ranks.map(r => r || null).indexOf(value) : -1;
-  if (j < 0 || j === i) return '';
+  if (j < 0 || j === i) {
+    return '';
+  }
   return `${RANK_NAMES[j]} changed to ${after[j] ? labelOf(after[j]) : 'none'} (a stat holds one rank).`;
 }
 

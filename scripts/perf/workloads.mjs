@@ -44,7 +44,9 @@ export function objectivesLite(job, seed = 7) {
   const subs = job.substats;
   subs.forEach(a => {
     subs.forEach(b => {
-      if (a !== b) out.push({ target: a, tiebreak: [b] });
+      if (a !== b) {
+        out.push({ target: a, tiebreak: [b] });
+      }
     });
   });
   const r = rng(seed);
@@ -84,8 +86,12 @@ export function excludeMasks() {
     { off: [...DEFAULT_EXCLUDE], market: true },
     { off: [...DEFAULT_EXCLUDE], market: false },
   ];
-  for (const k of DEFAULT_EXCLUDE) out.push({ off: DEFAULT_EXCLUDE.filter(x => x !== k), market: true });
-  for (const k of ['crafted', 'normal_duties', 'tomes_legacy', 'relics']) out.push({ off: [...DEFAULT_EXCLUDE, k], market: false });
+  for (const k of DEFAULT_EXCLUDE) {
+    out.push({ off: DEFAULT_EXCLUDE.filter(x => x !== k), market: true });
+  }
+  for (const k of ['crafted', 'normal_duties', 'tomes_legacy', 'relics']) {
+    out.push({ off: [...DEFAULT_EXCLUDE, k], market: false });
+  }
   out.push({ off: keys, market: true }); // the market board only
   return out;
 }

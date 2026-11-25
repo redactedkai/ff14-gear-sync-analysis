@@ -48,7 +48,9 @@ export function speedPerStep(level, haste = 0) {
   let at = 0;
   for (let k = 0; k < STEPS_AVERAGED; k++) {
     const next = gcdTierAt(at, level, BASE_GCD_MS, haste).next;
-    if (next == null) break;
+    if (next == null) {
+      break;
+    }
     at = next;
   }
   return at / STEPS_AVERAGED;
@@ -66,10 +68,18 @@ function stepWindow(level, haste, gear) {
   const steps = [tierAt(gear)];
   const lower = () => steps.unshift(tierAt(steps[0].start - 1));
   const higher = () => steps.push(tierAt(steps.at(-1).next));
-  for (let k = 0; k < GCD_STEPS_NEAR && steps[0].start > 0; k++) lower();
-  for (let k = 0; k < GCD_STEPS_NEAR && steps.at(-1).next != null; k++) higher();
-  while (steps.length < ROWS && steps.at(-1).next != null) higher();
-  while (steps.length < ROWS && steps[0].start > 0) lower();
+  for (let k = 0; k < GCD_STEPS_NEAR && steps[0].start > 0; k++) {
+    lower();
+  }
+  for (let k = 0; k < GCD_STEPS_NEAR && steps.at(-1).next != null; k++) {
+    higher();
+  }
+  while (steps.length < ROWS && steps.at(-1).next != null) {
+    higher();
+  }
+  while (steps.length < ROWS && steps[0].start > 0) {
+    lower();
+  }
   return steps.map(st => ({ gear: st.start, gcd: st.gcd, cur: st.start <= gear && (st.next == null || gear < st.next) }));
 }
 
@@ -101,8 +111,11 @@ export function gcdView(level, hasteJob, speed, width) {
     { value: cutText(recastMult(gear, level, pct)), label: `cast and recast times${pct ? `, with ${pct}% haste` : ''}` },
     { value: `${tick > 1 ? '+' : ''}${((tick - 1) * 100).toFixed(1)}%`, label: 'DoT, HoT and auto-attacks' },
   ];
-  if (haste) facts.push({ value: `${pct}%`, label: `haste (${haste.name})` });
-  else if (hasteJob) facts.push({ value: '0%', label: `${HASTE[hasteJob].name} starts at level ${HASTE[hasteJob].steps[0].level}` });
+  if (haste) {
+    facts.push({ value: `${pct}%`, label: `haste (${haste.name})` });
+  } else if (hasteJob) {
+    facts.push({ value: '0%', label: `${HASTE[hasteJob].name} starts at level ${HASTE[hasteJob].steps[0].level}` });
+  }
 
   // 2. the steps around the speed
   const steps = stepWindow(level, pct, gear).map(st => ({
@@ -115,8 +128,9 @@ export function gcdView(level, hasteJob, speed, width) {
 
   // 3. the speed per step at every level, with the haste each level has
   const bars = [];
-  for (let lv = 1; lv <= GCD_LEVELS; lv++)
+  for (let lv = 1; lv <= GCD_LEVELS; lv++) {
     bars.push({ level: lv, speed: speedPerStep(lv, hasteJob ? (hasteFor(hasteJob, lv)?.pct ?? 0) : 0) });
+  }
   const marks = hasteJob ? HASTE[hasteJob].steps.map(st => ({ level: st.level, pct: st.pct })) : [];
 
   return {

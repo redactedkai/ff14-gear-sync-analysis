@@ -10,7 +10,9 @@ const writeOnEnd = {
   name: 'write-page',
   setup(build) {
     build.onEnd(result => {
-      if (result.errors.length) return;
+      if (result.errors.length) {
+        return;
+      }
       const size = writePage(result.outputFiles);
       console.log(`[${new Date().toLocaleTimeString()}] dist/index.html ${size.toLocaleString('en-US')} bytes`);
     });

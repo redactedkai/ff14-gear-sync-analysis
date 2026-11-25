@@ -70,7 +70,11 @@ function fakeElement(parent = null, attributes = {}) {
     addEventListener: (type, fn) => element.listeners.set(type, fn),
     removeEventListener: type => element.listeners.delete(type),
     closest: selector => {
-      for (let node = element; node; node = node.parent) if (attributeOf(selector) in node.attributes) return node;
+      for (let node = element; node; node = node.parent) {
+        if (attributeOf(selector) in node.attributes) {
+          return node;
+        }
+      }
       return null;
     },
     // every descendant that has the attribute, which is what a real querySelectorAll finds
@@ -95,14 +99,22 @@ function fakeHost(parent = null) {
     host.updateRequests += 1;
   };
   host.connect = () => {
-    for (const controller of controllers) controller.hostConnected?.();
+    for (const controller of controllers) {
+      controller.hostConnected?.();
+    }
   };
   host.disconnect = () => {
-    for (const controller of controllers) controller.hostDisconnected?.();
+    for (const controller of controllers) {
+      controller.hostDisconnected?.();
+    }
   };
   host.update = () => {
-    for (const controller of controllers) controller.hostUpdate?.();
-    for (const controller of controllers) controller.hostUpdated?.();
+    for (const controller of controllers) {
+      controller.hostUpdate?.();
+    }
+    for (const controller of controllers) {
+      controller.hostUpdated?.();
+    }
   };
   return host;
 }

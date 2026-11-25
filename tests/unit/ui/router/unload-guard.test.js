@@ -17,7 +17,9 @@ function fakeWindow() {
           this.prevented = true;
         },
       };
-      for (const fn of listeners) fn(event);
+      for (const fn of listeners) {
+        fn(event);
+      }
       return event;
     },
   };

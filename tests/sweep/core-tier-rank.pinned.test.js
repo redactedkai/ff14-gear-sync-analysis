@@ -6,8 +6,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkPinned } from '../unit/helpers/tier-reference.js';
 
-for (const seed of [31415, 27182])
+for (const seed of [31415, 27182]) {
   test(`rank by tier with pinned pieces, 120 cases, seed ${seed}`, () => {
     const { runs } = checkPinned(seed, 120);
     assert.ok(runs >= 60, `${runs} runs`);
   });
+}

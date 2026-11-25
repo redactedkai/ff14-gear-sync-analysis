@@ -66,11 +66,14 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
   // the pieces that fit row i while the other rows show what they show now, one candidate per piece
   const fitting = i => {
     const p = picks[i];
-    if (!p.item) return [];
-    if (p.pinned)
+    if (!p.item) {
+      return [];
+    }
+    if (p.pinned) {
       return [
         { item: p.item, eff: p.eff, meld: p.meld ?? null, blocks: slotInfo(job, p.item).blocks, copies: p.item.copies || 1, fixed: true },
       ];
+    }
     const others = shown.filter((_, j) => j !== i);
     const rest = sumOf(job, others);
     // the main stat has no tiers and food never raises it: a piece must bring exactly what the set is missing (a
@@ -79,12 +82,22 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
     const out = [];
     const seen = new Set();
     for (const c of cands[p.type] || []) {
-      if (seen.has(c.item) || (c.eff[job.mainKey] || 0) !== mainNeeded) continue;
-      if (blocksKey(c.blocks) !== pickBlocks[i]) continue;
-      if ((c.copies || 1) === 1 && others.some(o => o.item === c.item)) continue;
+      if (seen.has(c.item) || (c.eff[job.mainKey] || 0) !== mainNeeded) {
+        continue;
+      }
+      if (blocksKey(c.blocks) !== pickBlocks[i]) {
+        continue;
+      }
+      if ((c.copies || 1) === 1 && others.some(o => o.item === c.item)) {
+        continue;
+      }
       const totals = { ...rest };
-      for (const s of vectorDims(job)) totals[s] = (totals[s] || 0) + (c.eff[s] || 0);
-      if (!sameOutcome(resultOf(job, totals, ctx), target)) continue;
+      for (const s of vectorDims(job)) {
+        totals[s] = (totals[s] || 0) + (c.eff[s] || 0);
+      }
+      if (!sameOutcome(resultOf(job, totals, ctx), target)) {
+        continue;
+      }
       seen.add(c.item);
       out.push(c);
     }
@@ -95,16 +108,22 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
   // 1. the player's picks, where they still fit
   for (const [i, gameId] of Object.entries(chosen)) {
     const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(+i).find(x => x.item.gameId === gameId);
-    if (c) shown[i] = asPick(picks[i].type, c);
+    if (c) {
+      shown[i] = asPick(picks[i].type, c);
+    }
   }
   // 2. every other row: the easiest piece that fits; the optimizer's pick stays on a tie (the sort is stable and the
   // pick is listed first)
   picks.forEach((p, i) => {
-    if (!p.item || p.pinned || i in chosen) return;
+    if (!p.item || p.pinned || i in chosen) {
+      return;
+    }
     const fits = fitting(i);
     const own = fits.find(c => c.item === shown[i].item);
     const best = [own, ...fits.filter(c => c !== own)].filter(Boolean).sort(easiest)[0];
-    if (best && best.item !== shown[i].item) shown[i] = asPick(p.type, best);
+    if (best && best.item !== shown[i].item) {
+      shown[i] = asPick(p.type, best);
+    }
   });
   // 3. each row's menu, against the rows as now shown
   return shown.map((pick, i) => ({ pick, options: fitting(i) }));
@@ -135,8 +154,16 @@ export function sameMeals(job, gearTotals, meal, meals, ctx, keys) {
 function sumOf(job, picks) {
   const dims = vectorDims(job);
   const t = {};
-  for (const s of dims) t[s] = 0;
-  for (const p of picks) if (p.item) for (const s of dims) t[s] += p.eff[s] || 0;
+  for (const s of dims) {
+    t[s] = 0;
+  }
+  for (const p of picks) {
+    if (p.item) {
+      for (const s of dims) {
+        t[s] += p.eff[s] || 0;
+      }
+    }
+  }
   return t;
 }
 

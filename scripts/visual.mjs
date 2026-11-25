@@ -79,4 +79,6 @@ function main() {
   return spawnSync(process.execPath, args, { stdio: 'inherit', cwd: root }).status ?? 1;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exit(main());
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exit(main());
+}

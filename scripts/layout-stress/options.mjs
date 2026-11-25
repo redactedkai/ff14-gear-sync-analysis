@@ -33,21 +33,31 @@ export function parseArgs(argv) {
   };
   for (const argument of argv) {
     const [name, value] = argument.startsWith('--') ? argument.slice(2).split(/=(.*)/s, 2) : [argument, undefined];
-    if (name === 'fonts') options.fonts = true;
-    else if (name === 'quick') options.quick = true;
-    else if (name === 'keep') options.keep = true;
-    else if (name === 'rules') options.rules = true;
-    else if (name === 'no-stress') options.stress = false;
-    else if (name === 'report' && value) options.report = value;
-    else if (name === 'workers' && /^\d+$/.test(value ?? '') && Number(value) > 0) options.workers = Number(value);
-    else if ((name === 'screens' || name === 'browsers') && value) {
+    if (name === 'fonts') {
+      options.fonts = true;
+    } else if (name === 'quick') {
+      options.quick = true;
+    } else if (name === 'keep') {
+      options.keep = true;
+    } else if (name === 'rules') {
+      options.rules = true;
+    } else if (name === 'no-stress') {
+      options.stress = false;
+    } else if (name === 'report' && value) {
+      options.report = value;
+    } else if (name === 'workers' && /^\d+$/.test(value ?? '') && Number(value) > 0) {
+      options.workers = Number(value);
+    } else if ((name === 'screens' || name === 'browsers') && value) {
       const names = value.split(',').filter(Boolean);
       const known = name === 'screens' ? SCREENS.map(screen => screen.id) : BROWSER_NAMES;
       const unknown = names.filter(item => !known.includes(item));
-      if (unknown.length)
+      if (unknown.length) {
         return { error: `unknown ${name === 'screens' ? 'screen' : 'browser'} ${unknown.join(', ')}; the choices are ${known.join(', ')}` };
+      }
       options[name] = names;
-    } else return { error: `unknown option ${argument}` };
+    } else {
+      return { error: `unknown option ${argument}` };
+    }
   }
   return options;
 }

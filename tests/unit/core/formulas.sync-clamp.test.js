@@ -54,9 +54,13 @@ test('one item level above the cap clamps every stat (head at cap 123: substats 
   const out = syncStats(sge, hood, 'head', 123, 124);
   assert.equal(out.sps, 29);
   assert.equal(out.mind, 30);
-  for (const k of sge.substats) assert.equal(out[k], Math.min(hood[k], HEAD_CAP_123.sub), k); // lower ones untouched
+  for (const k of sge.substats) {
+    assert.equal(out[k], Math.min(hood[k], HEAD_CAP_123.sub), k); // lower ones untouched
+  }
   const c = healerHeadCaps(123);
-  for (const k of Object.keys(out)) assert.equal(out[k], Math.min(hood[k], c[k]), k);
+  for (const k of Object.keys(out)) {
+    assert.equal(out[k], Math.min(hood[k], c[k]), k);
+  }
 });
 
 test('the head piece one item level below its own: capped at the 129 values (from the raw table, not capsFor)', () => {
@@ -65,7 +69,9 @@ test('the head piece one item level below its own: capped at the 129 values (fro
   const c = healerHeadCaps(129);
   assert.deepEqual([c.mind, c.vit, c.sps], [32, 31, 31]);
   const out = syncStats(sge, hood, 'head', 129, 130);
-  for (const k of Object.keys(hood)) assert.equal(out[k], Math.min(hood[k], c[k]), k);
+  for (const k of Object.keys(hood)) {
+    assert.equal(out[k], Math.min(hood[k], c[k]), k);
+  }
 });
 
 test('item level unknown (null) is treated as above the cap', () => {

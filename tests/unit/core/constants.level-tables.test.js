@@ -16,14 +16,17 @@ test('the level cap is read from the items', () => {
 
 test('LEVEL_MAIN has a main stat base for every level up to MAX_LEVEL', () => {
   assert.ok(LEVEL_MAIN.length >= MAX_LEVEL, `LEVEL_MAIN ends at level ${LEVEL_MAIN.length}: add the new levels in constants.js`);
-  for (let level = 1; level <= MAX_LEVEL; level++) assert.ok(LEVEL_MAIN[level - 1] > 0, `level ${level}`);
+  for (let level = 1; level <= MAX_LEVEL; level++) {
+    assert.ok(LEVEL_MAIN[level - 1] > 0, `level ${level}`);
+  }
 });
 
 test('the last of EXPANSIONS reaches MAX_LEVEL', () => {
   const { short, levelCap } = EXPANSIONS.at(-1);
   assert.ok(levelCap >= MAX_LEVEL, `${short} caps at ${levelCap}: add the new expansion to EXPANSIONS in constants.js`);
-  for (const [a, b] of EXPANSIONS.slice(1).map((e, i) => [EXPANSIONS[i], e]))
+  for (const [a, b] of EXPANSIONS.slice(1).map((e, i) => [EXPANSIONS[i], e])) {
     assert.ok(a.levelCap < b.levelCap, `${a.short} before ${b.short}`);
+  }
 });
 
 test('HASTE steps are in level order, within 1 to MAX_LEVEL, and give a percent at every level from the first step', () => {
@@ -58,5 +61,7 @@ test('the generated level data (PG) and most-speed table (MAX_SPEED) reach MAX_L
 });
 
 test('limited jobs cap at or below MAX_LEVEL', () => {
-  for (const [jobId, cap] of Object.entries(JOB_LEVEL_CAPS)) assert.ok(cap <= MAX_LEVEL, `${jobId} ${cap}`);
+  for (const [jobId, cap] of Object.entries(JOB_LEVEL_CAPS)) {
+    assert.ok(cap <= MAX_LEVEL, `${jobId} ${cap}`);
+  }
 });

@@ -36,18 +36,24 @@ const seenIds = new Set();
 // Shot paths: JSON-relative in, page-relative (forward slashes) out.
 function pageRelative(shotPath) {
   const onDisk = isAbsolute(shotPath) ? shotPath : resolve(jsonDir, shotPath);
-  if (!existsSync(onDisk)) missingShots.push(shotPath);
+  if (!existsSync(onDisk)) {
+    missingShots.push(shotPath);
+  }
   return relative(pageDir, onDisk).split('\\').join('/');
 }
 
 // A shots object maps a view name ("1440 light") to a path; keep its order.
 function checkShots(shots, where) {
-  if (shots === undefined) return {};
+  if (shots === undefined) {
+    return {};
+  }
   need(shots && typeof shots === 'object' && !Array.isArray(shots), `${where}.shots: an object of view name to path`);
   const out = {};
   for (const [view, shotPath] of Object.entries(shots || {})) {
     need(typeof shotPath === 'string', `${where}.shots["${view}"]: a path`);
-    if (typeof shotPath === 'string') out[view] = pageRelative(shotPath);
+    if (typeof shotPath === 'string') {
+      out[view] = pageRelative(shotPath);
+    }
   }
   return out;
 }
@@ -105,7 +111,9 @@ const page = template()
   .replace('%%DATA%%', () => dataJson);
 writeFileSync(pagePath, page);
 console.log(`${pagePath}: ${cards.length} cards`);
-if (missingShots.length) console.warn(`missing shots:\n  ${missingShots.join('\n  ')}`);
+if (missingShots.length) {
+  console.warn(`missing shots:\n  ${missingShots.join('\n  ')}`);
+}
 
 /* The page. Colors only through the tokens on :root, with dark mode for the OS setting and for data-theme. The
    shots of every card follow one view switch at the top (1440 light, 960 dark, ...), so a card with three options

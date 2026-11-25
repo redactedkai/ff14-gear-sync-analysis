@@ -125,8 +125,11 @@ async function inEveryTheme(pg, screenName, seen) {
     const where = `${screenName}, system ${system}${forced ? `, data-theme ${forced}` : ''}`;
     await pg.emulateMedia({ colorScheme: system });
     await pg.evaluate(theme => {
-      if (theme) document.documentElement.setAttribute('data-theme', theme);
-      else document.documentElement.removeAttribute('data-theme');
+      if (theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
     }, forced);
 
     // the tokens, and the body and surfaces painted with them
@@ -182,7 +185,9 @@ async function inEveryTheme(pg, screenName, seen) {
         .join('; ')}`,
     );
 
-    if (!forced) await pg.screenshot({ path: shot(`theme-${screenName}-${system}.png`), fullPage: screenName !== 'newSheetDialog' });
+    if (!forced) {
+      await pg.screenshot({ path: shot(`theme-${screenName}-${system}.png`), fullPage: screenName !== 'newSheetDialog' });
+    }
   }
   await pg.emulateMedia({ colorScheme: null });
   await pg.evaluate(() => document.documentElement.removeAttribute('data-theme'));

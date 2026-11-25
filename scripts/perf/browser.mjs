@@ -101,8 +101,11 @@ function sheetFor(job) {
 /** Open the set with `setId` of the only sheet, from wherever the Sheets tab is. */
 async function openSet(pg, sheet, setId) {
   await pg.click('[data-tab=sheets]');
-  if (await pg.locator('#sh-manager').isVisible()) await pg.locator('#sh-list a.sname').first().click();
-  else if (await pg.locator('#sh-set').isVisible()) await pg.locator('#sh-set .setcrumb a:nth-of-type(2)').click();
+  if (await pg.locator('#sh-manager').isVisible()) {
+    await pg.locator('#sh-list a.sname').first().click();
+  } else if (await pg.locator('#sh-set').isVisible()) {
+    await pg.locator('#sh-set .setcrumb a:nth-of-type(2)').click();
+  }
   const name = sheet.sets.find(s => s.id === setId).name;
   await pg.locator('#sh-sets a.sname', { hasText: name }).click();
   await pg.locator('#sh-fill').waitFor({ state: 'visible' });
@@ -155,7 +158,9 @@ async function coldAndWarm(browser, job, rate, warm) {
     await cdp.send('HeapProfiler.collectGarbage');
     const h0 = await pg.evaluate('performance.memory.usedJSHeapSize');
     for (let i = 0; i < 100; i++) {
-      if (i % 20 === 0) await openSet(pg, sheet, sheet.sets[(i / 20) % sheet.sets.length].id);
+      if (i % 20 === 0) {
+        await openSet(pg, sheet, sheet.sets[(i / 20) % sheet.sets.length].id);
+      }
       await fill(pg);
       await pg.click('#sh-discard');
     }
@@ -185,7 +190,9 @@ async function main() {
       console.log(`\nCPU ${rate}x${rate === 1 ? ' (this machine)' : ' slower'}`);
       for (const job of jobs) {
         const runs = [];
-        for (let i = 0; i < runsN; i++) runs.push(await coldAndWarm(browser, job, rate, i === 0));
+        for (let i = 0; i < runsN; i++) {
+          runs.push(await coldAndWarm(browser, job, rate, i === 0));
+        }
         const w = runs[0];
         console.log(
           `  ${job}: cold Auto-fill ${fmt(runs.map(r => r.cold_ms))} ms; page open to result ${fmt(runs.map(r => r.load_to_result_ms))} ms`,

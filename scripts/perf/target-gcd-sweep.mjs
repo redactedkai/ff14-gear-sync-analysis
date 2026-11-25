@@ -27,8 +27,14 @@ if (isMainThread) {
   const outFile = new URL('./out/target-gcd-sweep.jsonl', import.meta.url);
   const all = [];
   if (flag('resume') && existsSync(outFile)) {
-    for (const l of readFileSync(outFile, 'utf8').split('\n')) if (l) all.push(JSON.parse(l));
-  } else writeFileSync(outFile, '');
+    for (const l of readFileSync(outFile, 'utf8').split('\n')) {
+      if (l) {
+        all.push(JSON.parse(l));
+      }
+    }
+  } else {
+    writeFileSync(outFile, '');
+  }
   const taskKey = (id, s) => `${id}|${s.level}|${s.cap}|${s.sync}`;
   const have = new Set(all.map(r => taskKey(r.id, r)));
   // cap 795 is the highest real item level, so it syncs nothing: every run repeats sync off
@@ -59,7 +65,9 @@ if (isMainThread) {
             `[${done}/${tasks.length}] ${m.task.id} sync#${m.task.si}: ${m.rows.length} rows; worst ${worst.toFixed(0)} ms, mismatches ${bad}; ${el.toFixed(0)} s, eta ${((el / done) * (tasks.length - done)).toFixed(0)} s`,
           );
         }
-        if (m.ready || m.rows) feed();
+        if (m.ready || m.rows) {
+          feed();
+        }
       });
       worker.on('error', e => console.log('worker error', e));
       worker.on('exit', () => --alive === 0 && resolve());
@@ -78,7 +86,9 @@ if (isMainThread) {
   const score = (r, keys) => (r?.ok ? keys.map(k => r.totals[k] || 0) : null);
   let k = 0;
   parentPort.on('message', task => {
-    if (!task) return process.exit(0);
+    if (!task) {
+      return process.exit(0);
+    }
     const job = ctx(task.id);
     const s = SYNCS[task.si];
     const sync = { cap: s.cap, sync: s.sync, level: s.level };
@@ -149,7 +159,9 @@ if (isMainThread) {
       const small = [];
       for (const ty of ['head', 'body', 'neck', 'ring']) {
         const of = pool.filter(i => i.type === ty);
-        for (let i = 0; i < (ty === 'ring' ? 2 : 1) && of.length; i++) small.push(of.splice(int(of.length), 1)[0]);
+        for (let i = 0; i < (ty === 'ring' ? 2 : 1) && of.length; i++) {
+          small.push(of.splice(int(of.length), 1)[0]);
+        }
       }
       const target = subs[int(subs.length)];
       const free = gcdFor(optimize(job, small, sync, { target, melds: true }).totals[job.speedKey], level, 2500, haste);
@@ -161,7 +173,9 @@ if (isMainThread) {
       if (band) {
         const want = exhaustive(job, small, sync, { target, melds: true, spdMin: band.min || null, spdMax: band.max });
         row.mismatch = JSON.stringify(want) !== JSON.stringify(score(r, [target]));
-      } else row.mismatch = r.reason !== 'unreachable';
+      } else {
+        row.mismatch = r.reason !== 'unreachable';
+      }
       rows.push(row);
     }
     parentPort.postMessage({ task, rows });

@@ -27,7 +27,11 @@ export async function checkEditLock(pg) {
   ];
   const stateOf = async () => {
     const off = [];
-    for (const sel of locked) if (await pg.locator(sel).isDisabled()) off.push(sel);
+    for (const sel of locked) {
+      if (await pg.locator(sel).isDisabled()) {
+        off.push(sel);
+      }
+    }
     return off;
   };
   check((await stateOf()).length === 0, `at rest, controls are off: ${await stateOf()}`);
@@ -216,7 +220,9 @@ export async function checkSetPageFocus(pg) {
   await pg.locator('#sh-gear tr[data-row="4"] [data-pick]').click();
   await pg.locator('.pick-menu .same-item[data-game-id]').first().click();
   await expect(pg.locator('#sh-apply')).toBeVisible();
-  for (const gone of ['#sh-fill', '#sh-settings', '#sh-goal']) await expect(pg.locator(gone)).toHaveCount(0);
+  for (const gone of ['#sh-fill', '#sh-settings', '#sh-goal']) {
+    await expect(pg.locator(gone)).toHaveCount(0);
+  }
   await pg.click('#sh-discard');
   await expect(pg.locator('#sh-fill')).toBeVisible();
   await expect(pg.locator('#sh-goal')).toBeVisible();

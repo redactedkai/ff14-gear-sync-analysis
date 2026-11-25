@@ -47,8 +47,12 @@ export function makeScorer(keys, slotVectors) {
           hi = 0;
         vs.forEach(v => {
           const x = v[k] || 0;
-          if (x < lo) lo = x;
-          if (x > hi) hi = x;
+          if (x < lo) {
+            lo = x;
+          }
+          if (x > hi) {
+            hi = x;
+          }
         });
         return { span: acc.span + hi - lo, abs: acc.abs + Math.max(hi, -lo) };
       },
@@ -61,7 +65,9 @@ export function makeScorer(keys, slotVectors) {
   for (let i = ranked.length - 2; i >= 0; i--) {
     // W_i = (span of everything below key i, in score units) + 1
     let below = 0;
-    for (let j = i + 1; j < ranked.length; j++) below += spans[j].span * weights[j];
+    for (let j = i + 1; j < ranked.length; j++) {
+      below += spans[j].span * weights[j];
+    }
     weights[i] = below + 1;
   }
   const maxAbs = spans.reduce((a, span, i) => a + span.abs * weights[i], 0);
@@ -70,7 +76,9 @@ export function makeScorer(keys, slotVectors) {
   }
   return v => {
     let score = 0;
-    for (let i = 0; i < ranked.length; i++) score += (v[ranked[i]] || 0) * weights[i];
+    for (let i = 0; i < ranked.length; i++) {
+      score += (v[ranked[i]] || 0) * weights[i];
+    }
     return score;
   };
 }
@@ -106,7 +114,9 @@ function withMeld(job, item, synced, meld, target) {
   job.stats.forEach(s => {
     v[s] = (synced[s] || 0) + (meld?.gain[s] || 0);
   });
-  if (job.damageKey) v[WD_KEY] = weaponDamage(job, item, target);
+  if (job.damageKey) {
+    v[WD_KEY] = weaponDamage(job, item, target);
+  }
   return { item, eff: v, copies: item.copies || 1, blocks: slotInfo(job, item).blocks, meld };
 }
 
@@ -130,19 +140,27 @@ function itemVersions(job, item, sync, keys, exactSpd, versionCache) {
   const build = () => {
     const target = itemSyncIlvl(item, sync);
     const synced = effStats(job, item, sync);
-    if (!keepsMelds(item, sync)) return [withMeld(job, item, synced, null, target)];
+    if (!keepsMelds(item, sync)) {
+      return [withMeld(job, item, synced, null, target)];
+    }
     const versions = meldVersions(job, item, keys, { exactSpd }).map(meld => withMeld(job, item, synced, meld, null));
-    for (const v of versions) v.versions = versions;
+    for (const v of versions) {
+      v.versions = versions;
+    }
     return versions;
   };
-  if (!versionCache) return build();
+  if (!versionCache) {
+    return build();
+  }
   const key = `${job.jobId}|${sync.cap}|${sync.sync}|${sync.level}|${keys.join()}|${exactSpd}`;
   let byKey = versionCache.get(item);
   if (!byKey) {
     byKey = new Map();
     versionCache.set(item, byKey);
   }
-  if (!byKey.has(key)) byKey.set(key, build());
+  if (!byKey.has(key)) {
+    byKey.set(key, build());
+  }
   return byKey.get(key).map(v => ({ ...v }));
 }
 
@@ -166,9 +184,15 @@ export function pruneDominated(arr, dims, slotsOfType, sorted = false) {
     const rivals = sorted ? keep : arr;
     for (let j = 0; j < rivals.length && copies < slotsOfType; j++) {
       const rival = rivals[j];
-      if (rival === cand) continue;
-      if (counted.has(rival.item)) continue;
-      if (!rival.blocks.every(t => cand.blocks.includes(t))) continue;
+      if (rival === cand) {
+        continue;
+      }
+      if (counted.has(rival.item)) {
+        continue;
+      }
+      if (!rival.blocks.every(t => cand.blocks.includes(t))) {
+        continue;
+      }
       let allGe = true,
         anyGt = false;
       for (const d of dims) {
@@ -176,7 +200,9 @@ export function pruneDominated(arr, dims, slotsOfType, sorted = false) {
           allGe = false;
           break;
         }
-        if (rival.eff[d] > cand.eff[d]) anyGt = true;
+        if (rival.eff[d] > cand.eff[d]) {
+          anyGt = true;
+        }
       }
       // an exact tie counts only for the earlier of the two; sorted, every rival is an earlier, kept candidate
       if (allGe && (anyGt || sorted || j < i)) {
@@ -184,7 +210,9 @@ export function pruneDominated(arr, dims, slotsOfType, sorted = false) {
         counted.add(rival.item);
       }
     }
-    if (copies < slotsOfType) keep.push(cand);
+    if (copies < slotsOfType) {
+      keep.push(cand);
+    }
   }
   return keep;
 }
@@ -204,11 +232,17 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpeedKey = null) {
     const bySpd = new Map();
     for (const a of arr) {
       const s = a.eff[exactSpeedKey] || 0;
-      if (!bySpd.has(s)) bySpd.set(s, []);
+      if (!bySpd.has(s)) {
+        bySpd.set(s, []);
+      }
       bySpd.get(s).push(a);
     }
     const kept = new Set();
-    for (const group of bySpd.values()) for (const a of pruneForLimits(group, slotsOfType, stats)) kept.add(a);
+    for (const group of bySpd.values()) {
+      for (const a of pruneForLimits(group, slotsOfType, stats)) {
+        kept.add(a);
+      }
+    }
     return arr.filter(a => kept.has(a));
   }
   // blocked slots as a bit mask (typeMask), so the inner loop does no allocation
@@ -224,7 +258,9 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpeedKey = null) {
     const counted = new Set();
     for (let j = 0; j < keep.length && copies < slotsOfType; j++) {
       // the rival needs at least the score and every limited value, and must leave empty no slot that cand fills
-      if (keptScore[j] < cand.score || (keptMask[j] & candMask) !== keptMask[j]) continue;
+      if (keptScore[j] < cand.score || (keptMask[j] & candMask) !== keptMask[j]) {
+        continue;
+      }
       let allGe = true;
       for (let k = 0; k < stats.length; k++) {
         if (keptValues[k][j] < candValues[k]) {
@@ -232,16 +268,22 @@ export function pruneForLimits(arr, slotsOfType, stats, exactSpeedKey = null) {
           break;
         }
       }
-      if (!allGe) continue;
+      if (!allGe) {
+        continue;
+      }
       const rival = keep[j];
-      if (counted.has(rival.item)) continue;
+      if (counted.has(rival.item)) {
+        continue;
+      }
       copies += rival.copies;
       counted.add(rival.item);
     }
     if (copies < slotsOfType) {
       keep.push(cand);
       keptScore.push(cand.score);
-      for (let k = 0; k < stats.length; k++) keptValues[k].push(candValues[k]);
+      for (let k = 0; k < stats.length; k++) {
+        keptValues[k].push(candValues[k]);
+      }
       keptMask.push(candMask);
     }
   }
@@ -312,9 +354,13 @@ export function buildCandidates(
   const order = [...slotNames.filter(t => !blockable.has(t)), ...slotNames.filter(t => blockable.has(t))];
   const slotList = [];
   order.forEach(t => {
-    if (!candsByType[t].length) return;
+    if (!candsByType[t].length) {
+      return;
+    }
     slotList.push(t);
-    if (t === 'ring') slotList.push('ring');
+    if (t === 'ring') {
+      slotList.push('ring');
+    }
   });
   const score = makeScorer(
     ranked,
@@ -322,7 +368,9 @@ export function buildCandidates(
   );
   const prunedByType = {};
   slotList.forEach(t => {
-    if (prunedByType[t]) return;
+    if (prunedByType[t]) {
+      return;
+    }
     const arr = candsByType[t];
     arr.forEach(a => {
       a.score = score(a.eff);
@@ -339,10 +387,14 @@ export function buildCandidates(
       // a beater has at least the score and every limited value, so at least their sum
       const limitedSum = a => limitStats.reduce((x, s) => x + (a.eff[s] || 0), 0);
       arr.sort((a, b) => b.score - a.score || limitedSum(b) - limitedSum(a) || b.sum - a.sum);
-      if (prune) keep = pruneForLimits(arr, slotsOfType, limitStats, speed === 'exact' ? job.speedKey : null);
+      if (prune) {
+        keep = pruneForLimits(arr, slotsOfType, limitStats, speed === 'exact' ? job.speedKey : null);
+      }
     } else {
       arr.sort((a, b) => b.score - a.score || b.sum - a.sum);
-      if (prune) keep = pruneDominated(arr, dims, slotsOfType, true);
+      if (prune) {
+        keep = pruneDominated(arr, dims, slotsOfType, true);
+      }
     }
     prunedByType[t] = keep;
   });
@@ -351,7 +403,9 @@ export function buildCandidates(
   const fixedBlocked = fixed.length
     ? SLOT_TYPES.flatMap((t, k) => {
         const hasPieces = pool.some(i => i.type === t);
-        if (pinned.covered.has(t)) return hasPieces ? [{ type: t, blockedBy: pinned.coveredBy.get(t) }] : [];
+        if (pinned.covered.has(t)) {
+          return hasPieces ? [{ type: t, blockedBy: pinned.coveredBy.get(t) }] : [];
+        }
         const open = t === 'ring' ? pinned.rings < 2 : !pinned.filled.has(t);
         return open && hasPieces && !candsByType[slotNames[k]].length ? [{ type: t, blockedBy: null }] : [];
       })
@@ -371,10 +425,14 @@ function pinnedSlots(fixed) {
   for (const cand of fixed) {
     const type = cand.item.type;
     if (type === 'ring') {
-      if (++rings > 2) throw new Error('Optimizer: more than two pinned rings');
+      if (++rings > 2) {
+        throw new Error('Optimizer: more than two pinned rings');
+      }
       // the search's own copy rule: a Unique ring has one copy, so pinning it on both ring rows cannot be worn
       const worn = (ringCopies.get(cand.item.id) || 0) + 1;
-      if (worn > cand.copies) throw new Error(`Optimizer: ${worn} pinned copies of a ring with ${cand.copies}`);
+      if (worn > cand.copies) {
+        throw new Error(`Optimizer: ${worn} pinned copies of a ring with ${cand.copies}`);
+      }
       ringCopies.set(cand.item.id, worn);
     } else if (filled.has(type)) {
       throw new Error(`Optimizer: two pinned pieces in the ${type} slot`);
@@ -385,7 +443,11 @@ function pinnedSlots(fixed) {
       coveredBy.set(blocked, cand.item);
     }
   }
-  for (const type of covered) if (filled.has(type)) throw new Error(`Optimizer: a pinned piece covers the pinned ${type} slot`);
+  for (const type of covered) {
+    if (filled.has(type)) {
+      throw new Error(`Optimizer: a pinned piece covers the pinned ${type} slot`);
+    }
+  }
   return { filled, rings, ringCopies, covered, coveredBy };
 }
 

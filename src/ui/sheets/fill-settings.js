@@ -21,12 +21,16 @@ export function defaultFillSettings(job) {
 export function fillSettingsOf(job, gearSet) {
   const base = defaultFillSettings(job);
   const own = gearSet.fillSettings;
-  if (!own) return base;
+  if (!own) {
+    return base;
+  }
   const goal = { ...base.goal, ...own.goal };
   const ranks = [goal.target, goal.tb, goal.tb2].map((k, i) => (k && job.stats.includes(k) ? k : i === 0 ? job.mainKey : ''));
   [goal.target, goal.tb, goal.tb2] = uniqueRanks(ranks).map(r => r ?? '');
   const searchCriteria = { ...base.searchCriteria, ...own.searchCriteria };
-  if (searchCriteria.lvl !== '' && searchCriteria.lvl > job.maxLevel) searchCriteria.lvl = job.maxLevel;
+  if (searchCriteria.lvl !== '' && searchCriteria.lvl > job.maxLevel) {
+    searchCriteria.lvl = job.maxLevel;
+  }
   return { goal, searchCriteria };
 }
 

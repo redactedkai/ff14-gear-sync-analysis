@@ -155,7 +155,9 @@ export function createRouter({
     settling = false;
     clearTimeout(settleTimer);
     if (canonicalAfter !== null) {
-      if (port.read() !== canonicalAfter) port.replace(canonicalAfter, at);
+      if (port.read() !== canonicalAfter) {
+        port.replace(canonicalAfter, at);
+      }
       canonicalAfter = null;
     }
     if (leaveWhenSettled) {
@@ -174,8 +176,12 @@ export function createRouter({
      with its level; GCD Scaling has no job. */
   function paramsFor(route) {
     const view = queryViewOf(route);
-    if (view === 'tiers') return writeQuery(view, app.tiers, app.panel('tiers').jobCtx);
-    if (view === 'gcd') return writeQuery(view, app.gcd, null);
+    if (view === 'tiers') {
+      return writeQuery(view, app.tiers, app.panel('tiers').jobCtx);
+    }
+    if (view === 'gcd') {
+      return writeQuery(view, app.gcd, null);
+    }
     const panel = app.panel(route.tab);
     return { ...writePanelQuery(panel), ...writeQuery(view, settingsOf(route), panel.jobCtx) };
   }
@@ -197,8 +203,11 @@ export function createRouter({
       const panel = readPanelQuery(route.params, app.panel(route.tab).cap);
       const settings = readQuery(view, route.params, panel.jobCtx, panel.level);
       app.setPanel(route.tab, panel);
-      if (view === 'gear') app.editBrowse(settings);
-      else app.editPiece(settings);
+      if (view === 'gear') {
+        app.editBrowse(settings);
+      } else {
+        app.editPiece(settings);
+      }
     }
   }
 
@@ -215,15 +224,24 @@ export function createRouter({
      Gear browser's and the math views' routes carry the settings the stores hold, as a query. */
   function routeFromStores() {
     const tab = app.pendingTab ?? app.tab;
-    if (tab === 'browse') return { tab, params: paramsFor({ tab }) };
-    if (tab === 'math') return { tab, mathTab: app.mathTab, params: paramsFor({ tab, mathTab: app.mathTab }) };
+    if (tab === 'browse') {
+      return { tab, params: paramsFor({ tab }) };
+    }
+    if (tab === 'math') {
+      return { tab, mathTab: app.mathTab, params: paramsFor({ tab, mathTab: app.mathTab }) };
+    }
     const { screen, sheetId, setId, missing } = sheets;
-    if (missing)
+    if (missing) {
       return missing.setId
         ? { tab, screen: 'set', sheetId: missing.sheetId, setId: missing.setId }
         : { tab, screen: 'sheet', sheetId: missing.sheetId };
-    if (screen === 'set') return { tab, screen, sheetId, setId };
-    if (screen === 'sheet') return { tab, screen, sheetId };
+    }
+    if (screen === 'set') {
+      return { tab, screen, sheetId, setId };
+    }
+    if (screen === 'sheet') {
+      return { tab, screen, sheetId };
+    }
     return { ...DEFAULT_ROUTE };
   }
 
@@ -237,9 +255,13 @@ export function createRouter({
 
   /* Whether `route` names a sheet or set that is not saved (a "dead" address): the next move away from it replaces it. */
   function isDead(route) {
-    if (route.tab !== 'sheets' || (route.screen !== 'sheet' && route.screen !== 'set')) return false;
+    if (route.tab !== 'sheets' || (route.screen !== 'sheet' && route.screen !== 'set')) {
+      return false;
+    }
     const sheet = sheets.sheet(route.sheetId);
-    if (!sheet) return true;
+    if (!sheet) {
+      return true;
+    }
     return route.screen === 'set' && !sheet.sets.some(gearSet => gearSet.id === route.setId);
   }
 
@@ -249,9 +271,15 @@ export function createRouter({
   function openSheetsRoute(route) {
     sheets.reload();
     const sheet = sheets.sheet(route.sheetId);
-    if (!sheet) return sheets.showMissing(route.sheetId, null);
-    if (route.screen === 'sheet') return sheets.openSheet(route.sheetId);
-    if (!sheet.sets.some(gearSet => gearSet.id === route.setId)) return sheets.showMissing(route.sheetId, route.setId);
+    if (!sheet) {
+      return sheets.showMissing(route.sheetId, null);
+    }
+    if (route.screen === 'sheet') {
+      return sheets.openSheet(route.sheetId);
+    }
+    if (!sheet.sets.some(gearSet => gearSet.id === route.setId)) {
+      return sheets.showMissing(route.sheetId, route.setId);
+    }
     sheets.openSheet(route.sheetId);
     return sheets.openSet(route.setId);
   }
@@ -261,15 +289,23 @@ export function createRouter({
      instead of after a painted frame. */
   function applyRoute(route, { atStart = false, withParams = true } = {}) {
     if (route.tab === 'sheets') {
-      if (route.screen === 'sheets') sheets.openManager();
-      else openSheetsRoute(route);
+      if (route.screen === 'sheets') {
+        sheets.openManager();
+      } else {
+        openSheetsRoute(route);
+      }
     } else if (route.tab === 'math') {
       app.showSub(route.mathTab);
     }
-    if (withParams && route.params) applyParams(route);
+    if (withParams && route.params) {
+      applyParams(route);
+    }
     if (route.tab !== (app.pendingTab ?? app.tab)) {
-      if (atStart) app.showTab(route.tab);
-      else app.openTab(route.tab);
+      if (atStart) {
+        app.showTab(route.tab);
+      } else {
+        app.openTab(route.tab);
+      }
     }
   }
 
@@ -278,7 +314,9 @@ export function createRouter({
   /* A change of the stores' screen or settings: write its address. A new screen pushes an entry; a dead address is replaced;
      new settings on the same screen replace the entry's query (a change of settings never adds an entry). */
   function onStoresChanged() {
-    if (settling) return;
+    if (settling) {
+      return;
+    }
     const route = routeFromStores();
     const hash = formatRoute(route);
     const here = parseRoute(port.read());
@@ -337,7 +375,9 @@ export function createRouter({
     }
     const latest = routeFromStores();
     const here = parseRoute(port.read());
-    if (here && samePath(here, latest)) port.replace(formatRoute(latest), at);
+    if (here && samePath(here, latest)) {
+      port.replace(formatRoute(latest), at);
+    }
     coolTimer = setTimeout(() => {
       coolTimer = null;
       if (dirty) {
@@ -358,7 +398,9 @@ export function createRouter({
   /* Write what is waiting (a search text, a change in the cooldown) to the entry the browser is on, now. Returns the address
      written, or null when nothing waited. */
   function flushWrites() {
-    if (pauseTimer === null && !dirty) return null;
+    if (pauseTimer === null && !dirty) {
+      return null;
+    }
     const hash = formatRoute(pendingRoute);
     dropWrites();
     port.replace(hash, at);
@@ -406,9 +448,13 @@ export function createRouter({
     // The address takes the form of the settings
     if (samePath(route, routeFromStores())) {
       pending = null;
-      if (!own && route.params) applyParams(route);
+      if (!own && route.params) {
+        applyParams(route);
+      }
       const canonical = formatRoute(canonicalOf(route, { follow: own }));
-      if (hash !== canonical) port.replace(canonical, entry);
+      if (hash !== canonical) {
+        port.replace(canonical, entry);
+      }
       shown = entry;
       return;
     }
@@ -428,14 +474,18 @@ export function createRouter({
   function openEntry({ entry, route, hash, own }) {
     applyRoute(route, { withParams: !own });
     const canonical = formatRoute(canonicalOf(route, { follow: own }));
-    if (hash !== canonical) port.replace(canonical, entry);
+    if (hash !== canonical) {
+      port.replace(canonical, entry);
+    }
     shown = entry;
     placeScreen(entry);
   }
 
   /* The player answered "leave": open the screen of the held move, then move the browser to its entry. */
   function leave() {
-    if (!pending) return;
+    if (!pending) {
+      return;
+    }
     if (settling) {
       leaveWhenSettled = true;
       return;
@@ -448,7 +498,9 @@ export function createRouter({
     placeScreen(entry);
     const distance = entry.pos - at.pos;
     if (distance === 0) {
-      if (hash !== canonical) port.replace(canonical, at);
+      if (hash !== canonical) {
+        port.replace(canonical, at);
+      }
       return;
     }
     canonicalAfter = canonical;
@@ -515,7 +567,9 @@ export function createRouter({
   function noteScroll(y, maxY = Number.POSITIVE_INFINITY) {
     const previousY = lastScrollY;
     lastScrollY = y;
-    if (y !== previousY) rememberScroll(y, maxY, previousY);
+    if (y !== previousY) {
+      rememberScroll(y, maxY, previousY);
+    }
   }
 
   /* Keep `y` as where the entry the page is on was left, unless the page only moved as the browser holds it. `previousY`: where the
@@ -523,8 +577,12 @@ export function createRouter({
      become shorter (the screen is changing), not the player scrolling: it is left out, and so is every scroll while the page is
      being put at a position (`isPlacing`). */
   function rememberScroll(y, maxY, previousY) {
-    if (at === null || isPlacing()) return;
-    if (y < previousY && y >= maxY - 1) return;
+    if (at === null || isPlacing()) {
+      return;
+    }
+    if (y < previousY && y >= maxY - 1) {
+      return;
+    }
     scrollByEntry.set(at.id, y);
   }
 

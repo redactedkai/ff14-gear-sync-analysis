@@ -41,7 +41,9 @@ async function wheelToLastRow(pg, boxSel, rowSel, where) {
   // wheel on to the end, a tick at a time (more ticks would scroll the page behind, which moves the pop-up with its button)
   for (let tick = 0; tick < 30; tick++) {
     const got = await sizes();
-    if (got.scrollTop + got.clientHeight >= got.scrollHeight - 1) break;
+    if (got.scrollTop + got.clientHeight >= got.scrollHeight - 1) {
+      break;
+    }
     await pg.mouse.wheel(0, 60);
     await poll(`${where}: the wheel tick scrolled the pop-up`, async () => {
       const now = await sizes();

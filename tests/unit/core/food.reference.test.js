@@ -80,7 +80,9 @@ test('gearNeeded is the least gear that reaches the total with the meal', () => 
       const line = meal.stats[int(meal.stats.length)];
       const target = int(5000);
       let least = 0;
-      while (least + foodBonus(job, { stats: [line] }, { [line.stat]: least }, level)[line.stat].bonus < target) least++;
+      while (least + foodBonus(job, { stats: [line] }, { [line.stat]: least }, level)[line.stat].bonus < target) {
+        least++;
+      }
       assert.equal(
         gearNeeded(job, meal, line.stat, target, level),
         least,

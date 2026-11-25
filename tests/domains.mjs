@@ -217,10 +217,15 @@ export function listFiles(folder, root = ROOT) {
   const found = [];
   const visit = current => {
     for (const name of readdirSync(current)) {
-      if (SKIPPED_FOLDERS.has(name)) continue;
+      if (SKIPPED_FOLDERS.has(name)) {
+        continue;
+      }
       const path = join(current, name);
-      if (statSync(path).isDirectory()) visit(path);
-      else found.push(relative(root, path).replaceAll('\\', '/'));
+      if (statSync(path).isDirectory()) {
+        visit(path);
+      } else {
+        found.push(relative(root, path).replaceAll('\\', '/'));
+      }
     }
   };
   visit(join(root, folder));
@@ -230,7 +235,9 @@ export function listFiles(folder, root = ROOT) {
 // A pattern with its `{a,b}` choices written out: 'x/{a,b}.js' gives ['x/a.js', 'x/b.js'].
 function expandChoices(pattern) {
   const choice = pattern.match(/\{([^}]+)\}/);
-  if (!choice) return [pattern];
+  if (!choice) {
+    return [pattern];
+  }
   return choice[1].split(',').flatMap(option => expandChoices(pattern.replace(choice[0], option)));
 }
 
@@ -253,7 +260,9 @@ export function domainsOfSource(file) {
 // dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.js).
 export function mirroredModule(testFile, sourceFiles) {
   const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.(?:js|ts)$/);
-  if (!parts) return null;
+  if (!parts) {
+    return null;
+  }
   return ['js', 'ts', 'json'].map(ext => `src/${parts[1]}/${parts[2]}.${ext}`).find(path => sourceFiles.has(path)) ?? null;
 }
 
@@ -263,7 +272,9 @@ const SOURCE_FILES = new Set(listFiles('src'));
 // One name for a correct registry; none or several are guard failures.
 export function domainsOfTest(file) {
   const listed = domainsListing(file, 'tests');
-  if (listed.length) return listed;
+  if (listed.length) {
+    return listed;
+  }
   const module = mirroredModule(file, SOURCE_FILES);
   return module ? domainsOfSource(module) : [];
 }

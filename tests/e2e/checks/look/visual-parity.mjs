@@ -21,10 +21,16 @@ const lookAt = (pg, spec) =>
         return colour;
       }
       const els = args.slice(0, kind === 'gap' ? 2 : 1).map(find);
-      if (els.some(el => !el)) return 'not found';
+      if (els.some(el => !el)) {
+        return 'not found';
+      }
       const tenth = px => Math.round(px * 10) / 10;
-      if (kind === 'below') return tenth(els[0].getBoundingClientRect().top - find('nav.tabs').getBoundingClientRect().bottom);
-      if (kind === 'gap') return tenth(els[1].getBoundingClientRect().top - els[0].getBoundingClientRect().bottom);
+      if (kind === 'below') {
+        return tenth(els[0].getBoundingClientRect().top - find('nav.tabs').getBoundingClientRect().bottom);
+      }
+      if (kind === 'gap') {
+        return tenth(els[1].getBoundingClientRect().top - els[0].getBoundingClientRect().bottom);
+      }
       const cs = getComputedStyle(els[0]);
       return args
         .slice(1)
@@ -83,7 +89,9 @@ export async function checkVisualParity(pg) {
   // an empty slot behind another empty one waits (slots fill in order): dimmed by colour as in B17, at full opacity
   const waiting = await pg.evaluate(() => {
     const chip = document.querySelector('#sh-gear .mchip.empty:disabled');
-    if (!chip) return null;
+    if (!chip) {
+      return null;
+    }
     const style = getComputedStyle(chip);
     const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
     const probe = Object.assign(document.createElement('i'), { style: `color:${muted}` });
@@ -146,7 +154,9 @@ export async function checkVisualParity(pg) {
   is(settings.close.split(' ').slice(0, 4).join(' '), '28px 28px 10px 10px', 'the settings close button is the dialogs X (size and place)');
   is(settings.menu, 'fixed', 'an open settings menu, position (fixed to the window, so the popover does not cut it)');
   await pg.keyboard.press('Escape'); // the menu may take the key; a second press closes the popover
-  if (await pg.locator('#sh-settings-dialog').isVisible()) await pg.keyboard.press('Escape');
+  if (await pg.locator('#sh-settings-dialog').isVisible()) {
+    await pg.keyboard.press('Escape');
+  }
   await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
 
   // a piece menu: its footer is a surface-coloured strip at the normal line height
@@ -199,7 +209,9 @@ export async function checkVisualParity(pg) {
     `look: the --tint token is "${locked.tint}", not the text colour at 22 % (light) or 20 % (dark)`,
   );
   await pg.evaluate(() => {
-    for (const id of ['#v-take', '#v-lock', '#v-rk']) document.querySelector(id)?.remove();
+    for (const id of ['#v-take', '#v-lock', '#v-rk']) {
+      document.querySelector(id)?.remove();
+    }
   });
 
   // a question (delete a set): 520 px wide; 16 px from the question to the buttons

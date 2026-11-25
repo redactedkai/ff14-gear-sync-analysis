@@ -30,7 +30,9 @@ function randomLists(rand, size = 4) {
 
 /* Every way to pick one candidate per list from position `pos` on: [{score, sks, det, picks}]. */
 function completions(posList, pos = 0) {
-  if (pos === posList.length) return [{ score: 0, sks: 0, det: 0, picks: [] }];
+  if (pos === posList.length) {
+    return [{ score: 0, sks: 0, det: 0, picks: [] }];
+  }
   return posList[pos].flatMap(c =>
     completions(posList, pos + 1).map(rest => ({
       score: rest.score + c.score,
@@ -109,7 +111,9 @@ test('lagrangeBound and fixByReducedCost: the bound is at least the best set mee
     ];
     const meets = s => s.sks >= limits[0].min && s.sks <= limits[0].max && s.det >= limits[1].min;
     const feasible = sets.filter(meets).sort((x, y) => y.score - x.score);
-    if (feasible.length < 2) continue;
+    if (feasible.length < 2) {
+      continue;
+    }
     const best = feasible[0];
     const known = feasible.find(s => s.score < best.score)?.score ?? best.score; // the next best set in hand
     const lagr = lagrangeBound(posList, limits, known);
@@ -119,7 +123,9 @@ test('lagrangeBound and fixByReducedCost: the bound is at least the best set mee
     assert.ok(root <= separable + 1e-6, `#${t}: bound ${root} above the separable ${separable}`);
     posList.forEach((list, pos) => {
       const kept = fixByReducedCost(list, lagr, pos, known);
-      if (best.score > known) assert.ok(kept.includes(best.picks[pos]), `#${t}: the best set's piece in slot ${pos} fixed`);
+      if (best.score > known) {
+        assert.ok(kept.includes(best.picks[pos]), `#${t}: the best set's piece in slot ${pos} fixed`);
+      }
       fixed += list.length - kept.length;
       // nothing beats a known score at the bound itself
       assert.equal(fixByReducedCost(list, lagr, pos, root + 10).length, 0);

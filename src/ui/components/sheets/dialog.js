@@ -26,10 +26,18 @@ export function dialogPart() {
     /* What the open dialog shows (views/sheet-forms.js), or null. */
     get dialogView() {
       const d = this.dialog;
-      if (!d) return null;
-      if (d.kind === 'new') return newSheetFormView(d);
-      if (d.kind === 'copy') return copySheetFormView(this.sheets.sheet(d.id), d);
-      if (d.kind === 'delete') return deleteQuestionView(d.what, d.target, d);
+      if (!d) {
+        return null;
+      }
+      if (d.kind === 'new') {
+        return newSheetFormView(d);
+      }
+      if (d.kind === 'copy') {
+        return copySheetFormView(this.sheets.sheet(d.id), d);
+      }
+      if (d.kind === 'delete') {
+        return deleteQuestionView(d.what, d.target, d);
+      }
       return editFormView(d.kind, d);
     },
     /* Open `dialog` (the page draws a native <dialog> for it, opened as a modal by x-modal) and remember `opener`, the
@@ -37,7 +45,9 @@ export function dialogPart() {
        clicked button); the first field (or the main button) takes the focus. A delete question puts it on Cancel, so a stray Enter cancels instead
        of deleting. */
     openDialog(dialog, opener = null) {
-      if (this.sheets.busy) return;
+      if (this.sheets.busy) {
+        return;
+      }
       returnFocus = opener ?? globalThis.document?.activeElement ?? null;
       this.dialog = { error: '', errorField: '', ...dialog };
       const first = dialog.kind === 'delete' ? '#sh-dlg-cancel' : 'input:not([disabled]), textarea, button.primary';
@@ -46,7 +56,9 @@ export function dialogPart() {
     /* An edit in the open dialog (a name typed, a job picked, a number, the switch, the tick box, the description) clears the
        reason a refused press left; pressing the main button again may bring it back. */
     clearDialogError() {
-      if (!this.dialog) return;
+      if (!this.dialog) {
+        return;
+      }
       this.dialog.error = '';
       this.dialog.errorField = '';
     },
@@ -57,13 +69,18 @@ export function dialogPart() {
       this.dialog = null;
       const back = returnFocus;
       returnFocus = null;
-      if (refocus) this.afterDraw(() => (back?.isConnected ? back.focus() : null));
+      if (refocus) {
+        this.afterDraw(() => (back?.isConnected ? back.focus() : null));
+      }
     },
     /* Escape (the dialog's cancel event, which the browser would otherwise handle itself, wherever the focus is): the "?"
        panel of Copy sheet closes first, then the dialog. */
     cancelDialog() {
-      if (this.dialog?.helpOpen) this.dialog.helpOpen = false;
-      else this.closeDialog();
+      if (this.dialog?.helpOpen) {
+        this.dialog.helpOpen = false;
+      } else {
+        this.closeDialog();
+      }
     },
     /* New sheet: no job chosen; the name follows the job, level and sync until one is typed. */
     openNewSheet(opener) {
@@ -83,7 +100,9 @@ export function dialogPart() {
     },
     openCopy(id, opener) {
       const sheet = this.sheets.sheet(id);
-      if (!sheet) return;
+      if (!sheet) {
+        return;
+      }
       const names = this.sheets.list().sheets.map(s => s.name);
       this.openDialog(
         {
@@ -102,17 +121,23 @@ export function dialogPart() {
     },
     openEditSheet(id, opener) {
       const sheet = this.sheets.sheet(id);
-      if (sheet) this.openDialog({ kind: 'edit-sheet', id, name: sheet.name, description: sheet.description ?? '' }, opener);
+      if (sheet) {
+        this.openDialog({ kind: 'edit-sheet', id, name: sheet.name, description: sheet.description ?? '' }, opener);
+      }
     },
     openEditSet(id, opener) {
       const gearSet = this.sheets.set(id);
-      if (gearSet) this.openDialog({ kind: 'edit-set', id, name: gearSet.name, description: gearSet.description ?? '' }, opener);
+      if (gearSet) {
+        this.openDialog({ kind: 'edit-set', id, name: gearSet.name, description: gearSet.description ?? '' }, opener);
+      }
     },
     /* Delete asks first: `what` 'sheet', 'set' or 'unreadable', `id` the thing's id. */
     askDelete(what, id, opener) {
       const store = this.sheets;
       const target = what === 'sheet' ? store.sheet(id) : what === 'set' ? store.set(id) : store.list().unreadable.find(r => r.id === id);
-      if (target) this.openDialog({ kind: 'delete', what, id, target }, opener);
+      if (target) {
+        this.openDialog({ kind: 'delete', what, id, target }, opener);
+      }
     },
 
     /* A job picked in the New sheet or Copy sheet form: the level is held to its cap, and the cap follows. */
@@ -137,7 +162,9 @@ export function dialogPart() {
       const { sync, lowered } = sheetSettings(d.job || null, d, { level: d.level, cap: d.sync.cap });
       d.sync.cap = sync.cap;
       d.capLowered = lowered;
-      if (lowered) flashLowered(this.$refs.dialog?.querySelector('#sh-dlg-cap'));
+      if (lowered) {
+        flashLowered(this.$refs.dialog?.querySelector('#sh-dlg-cap'));
+      }
     },
     /* Under the form's cap field after it was lowered (level-cap.js capLoweredText); '' while sync is off. */
     get formCapNote() {
@@ -165,9 +192,14 @@ export function dialogPart() {
         () => (key === 'level' ? this.dialog?.level : this.dialog?.sync.cap),
         value => {
           // typed digits commit after a pause: the dialog may have closed (Create pressed) in the meantime
-          if (!this.dialog) return;
-          if (key === 'level') this.dialog.level = value;
-          else this.dialog.sync.cap = value;
+          if (!this.dialog) {
+            return;
+          }
+          if (key === 'level') {
+            this.dialog.level = value;
+          } else {
+            this.dialog.sync.cap = value;
+          }
           this.clearDialogError();
           this.limitFormCap();
         },
@@ -179,10 +211,15 @@ export function dialogPart() {
     /* The dialog's main button (sheets/dialogs.js): a refused form stays open with the reason. */
     submitDialog() {
       const d = this.dialog;
-      if (!d) return;
+      if (!d) {
+        return;
+      }
       const { ok, error, field } = submitDialog(this.sheets, d);
-      if (ok) this.closeDialog();
-      else Object.assign(d, { error, errorField: field });
+      if (ok) {
+        this.closeDialog();
+      } else {
+        Object.assign(d, { error, errorField: field });
+      }
     },
     /* Keys inside a dialog: Enter in a one-line box presses the main button. Escape is the dialog's cancel event
        (cancelDialog) and Tab is kept inside by x-modal. */

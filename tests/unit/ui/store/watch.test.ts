@@ -90,10 +90,11 @@ test('a change the callback makes is seen at the next tick', async () => {
     state => state.screen.tab,
     tab => {
       tabs.push(tab);
-      if (tab === 'browse')
+      if (tab === 'browse') {
         store.update('screen/showTab', state => {
           state.screen.tab = 'math';
         });
+      }
     },
   );
   store.update('screen/showTab', state => {

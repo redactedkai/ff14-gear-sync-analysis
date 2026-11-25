@@ -91,9 +91,13 @@ export async function checkHelpIsModal(pg) {
   await pg.click('#m-help');
   await expect(pg.locator('#m-help-pop')).toBeVisible();
   await focusIsOn(pg, 'm-help-pop', 'the help: the focus moves into it when it opens');
-  for (let i = 0; i < 8; i++) await pg.keyboard.press('Tab');
+  for (let i = 0; i < 8; i++) {
+    await pg.keyboard.press('Tab');
+  }
   check(await pg.evaluate(() => !!document.activeElement?.closest('#m-help-pop')), 'the help: Tab left it for the page behind');
-  for (let i = 0; i < 8; i++) await pg.keyboard.press('Shift+Tab');
+  for (let i = 0; i < 8; i++) {
+    await pg.keyboard.press('Shift+Tab');
+  }
   check(await pg.evaluate(() => !!document.activeElement?.closest('#m-help-pop')), 'the help: Shift+Tab left it for the page behind');
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#m-help-pop')).toBeHidden();

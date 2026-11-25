@@ -11,7 +11,9 @@ test('the screens are the Sheets, set page and Gear browser screens and the thre
     ['sheets', 'set', 'gear', 'math-piece', 'math-gcd', 'math-tiers'],
   );
   assert.deepEqual(defaultScreenIds(), ['sheets', 'set', 'gear', 'math-piece', 'math-gcd', 'math-tiers']);
-  for (const screen of SCREENS.filter(item => item.waiting)) assert.deepEqual(screen.views, [], screen.id); // a waiting screen is not visited
+  for (const screen of SCREENS.filter(item => item.waiting)) {
+    assert.deepEqual(screen.views, [], screen.id); // a waiting screen is not visited
+  }
 });
 
 test('every view has a known fixture, a reach function and scopes; ids are unique in a screen', () => {
@@ -42,7 +44,9 @@ test("a view's twin is a view of the same screen, and its stable scopes exist in
 test("a view's menus and job picker are complete", () => {
   for (const screen of SCREENS.filter(item => !item.waiting)) {
     for (const view of screen.views) {
-      for (const menu of view.menus ?? []) assert.ok(menu.id && menu.selector && typeof menu.open === 'function', `${view.id}/${menu.id}`);
+      for (const menu of view.menus ?? []) {
+        assert.ok(menu.id && menu.selector && typeof menu.open === 'function', `${view.id}/${menu.id}`);
+      }
       if (view.jobs) {
         assert.ok(view.jobs.scope in view.measure.scopes, `${view.id}: jobs scope`);
         assert.equal(typeof view.jobs.open, 'function');

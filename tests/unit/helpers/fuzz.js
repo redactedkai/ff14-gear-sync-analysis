@@ -55,7 +55,9 @@ export const clone = value => {
 /* Every path (list of keys and indexes) to a value inside `value`. */
 function pathsIn(value, at = []) {
   const own = at.length ? [at] : [];
-  if (value === null || typeof value !== 'object') return own;
+  if (value === null || typeof value !== 'object') {
+    return own;
+  }
   return [...own, ...Object.keys(value).flatMap(key => pathsIn(value[key], [...at, Array.isArray(value) ? Number(key) : key]))];
 }
 
@@ -77,14 +79,22 @@ export function damage(good, count, rand) {
       }
       parent = parent[key];
     }
-    if (parent == null || typeof parent !== 'object') continue;
+    if (parent == null || typeof parent !== 'object') {
+      continue;
+    }
     const last = path.at(-1);
     const how = int(6);
     if (how === 0) {
-      if (Array.isArray(parent)) parent.splice(last, 1);
-      else delete parent[last];
-    } else if (how === 1) parent[last] = clone(pick(all.map(valueAt).filter(value => value !== undefined)) ?? null);
-    else parent[last] = clone(pick(WRONG));
+      if (Array.isArray(parent)) {
+        parent.splice(last, 1);
+      } else {
+        delete parent[last];
+      }
+    } else if (how === 1) {
+      parent[last] = clone(pick(all.map(valueAt).filter(value => value !== undefined)) ?? null);
+    } else {
+      parent[last] = clone(pick(WRONG));
+    }
   }
   return copy;
 }

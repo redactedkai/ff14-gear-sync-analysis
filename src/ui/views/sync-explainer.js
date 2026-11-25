@@ -47,7 +47,9 @@ function pieceAt(job, type, il, cap, subs, keys, slots) {
   const key = `${job.jobId}|${type}|${il}|${cap}|${subs.join(',')}|${keys.join(',')}|${slots}`;
   let hit = pieceMemo.get(key);
   if (!hit) {
-    if (pieceMemo.size >= PIECE_MEMO_MAX) pieceMemo.clear();
+    if (pieceMemo.size >= PIECE_MEMO_MAX) {
+      pieceMemo.clear();
+    }
     hit = buildPieceAt(job, type, il, cap, subs, keys, slots);
     pieceMemo.set(key, hit);
   }
@@ -71,7 +73,9 @@ const rangeMemo = new Map();
 /* explainerRange(job, cap, subs): that range, memoized by job, cap and substats. */
 function explainerRange(job, cap, subs) {
   const key = `${job.jobId}|${cap}|${subs.join(',')}`;
-  if (!rangeMemo.has(key)) rangeMemo.set(key, computeRange(job, cap, subs));
+  if (!rangeMemo.has(key)) {
+    rangeMemo.set(key, computeRange(job, cap, subs));
+  }
   return rangeMemo.get(key);
 }
 function computeRange(job, cap, subs) {
@@ -85,7 +89,9 @@ function computeRange(job, cap, subs) {
       const s = syncStats(job, buildPiece(job, il, t, subs), t, cap, il);
       sum += subs.reduce((a, k) => a + (k ? s[k] : 0), 0);
     }
-    if (prev != null && sum !== prev) last = il;
+    if (prev != null && sum !== prev) {
+      last = il;
+    }
     prev = sum;
   }
   const hi = Math.min(top, Math.max(cap + RANGE_MIN_OVER, last + RANGE_PAST_LAST));
@@ -111,7 +117,9 @@ export function explainerItemLevel(job, sync, piece) {
 /* A piece's melds in words, in two parts: {stones: "2 × Grade X Skill Speed (+54 each)", afterCap: "+90 after the cap"
    when the piece's cap cuts the stones, else ''}. */
 function meldParts(job, meld) {
-  if (!meld?.stones.length) return { stones: 'none', afterCap: '' };
+  if (!meld?.stones.length) {
+    return { stones: 'none', afterCap: '' };
+  }
   const parts = meld.stones.map(s => `${s.n} × Grade ${ROMAN[s.grade - 1]} ${job.label[s.stat]} (+${MATERIA.values[s.grade - 1]} each)`);
   const full = meld.stones.reduce((a, s) => a + s.n * MATERIA.values[s.grade - 1], 0);
   const gain = Object.values(meld.gain).reduce((a, b) => a + b, 0);
@@ -249,7 +257,9 @@ export const SYNC_CHIP_SIZERS = Object.freeze([
    between them. `chip` is {level, il, warn}. */
 function chipParts({ level = '', il, warn = '' }) {
   const parts = [];
-  if (level) parts.push({ text: level, cls: 'lv' }, { text: SYNC_CHIP_TEXT.separator, cls: 'dot' });
+  if (level) {
+    parts.push({ text: level, cls: 'lv' }, { text: SYNC_CHIP_TEXT.separator, cls: 'dot' });
+  }
   parts.push({ text: il, cls: `il ${warn}`.trim() });
   return parts;
 }
@@ -267,7 +277,9 @@ export function syncChipView(job, sync, slot, { switchOn, loweredFrom = null, ca
     return { parts: chipParts({ level: levelText, il: T.needCap, warn: 'error' }), name: T.name.needCap(T.label, level), guess: '' };
   }
   const shown = shownSync(job, sync);
-  if (!shown) return { parts: chipParts({ il: T.notSynced }), name: T.name.notSynced(T.label), guess: '' };
+  if (!shown) {
+    return { parts: chipParts({ il: T.notSynced }), name: T.name.notSynced(T.label), guess: '' };
+  }
   const lowered = !shown.byLevel && loweredFrom != null && loweredFrom > shown.cap;
   const guess = capGuessText(job, sync, slot);
   const off = !switchOn;
@@ -313,7 +325,9 @@ export function capGuessText(job, sync, slot) {
    chart is drawn at its own size and its text stays at the page's size. */
 export function explainerView(job, sync, settings, widths = {}) {
   const shown = shownSync(job, sync);
-  if (!shown) return null;
+  if (!shown) {
+    return null;
+  }
   const cap = shown.cap,
     level = shown.level ?? sync.level,
     type = settings.slot,
@@ -425,10 +439,15 @@ export function explainerView(job, sync, settings, widths = {}) {
   const at = p => `item level ${p.il} (+${p.il - cap})`,
     melded = `the melded ${slotName} (${ref})`;
   let curveNote = ''; // empty when no item level of the range is above the cap
-  if (over.length && !asMuch) curveNote = `Overgeared never reaches ${melded}: at most ${peak}.`;
-  else if (asMuch && !more) curveNote = `Overgeared matches ${melded} at ${at(asMuch)}, never more.`;
-  else if (more && more === asMuch) curveNote = `Overgeared passes ${melded} at ${at(more)}, up to ${peak}.`;
-  else if (more) curveNote = `Overgeared matches ${melded} at ${at(asMuch)} and passes it at ${at(more)}, up to ${peak}.`;
+  if (over.length && !asMuch) {
+    curveNote = `Overgeared never reaches ${melded}: at most ${peak}.`;
+  } else if (asMuch && !more) {
+    curveNote = `Overgeared matches ${melded} at ${at(asMuch)}, never more.`;
+  } else if (more && more === asMuch) {
+    curveNote = `Overgeared passes ${melded} at ${at(more)}, up to ${peak}.`;
+  } else if (more) {
+    curveNote = `Overgeared matches ${melded} at ${at(asMuch)} and passes it at ${at(more)}, up to ${peak}.`;
+  }
 
   return {
     cap,

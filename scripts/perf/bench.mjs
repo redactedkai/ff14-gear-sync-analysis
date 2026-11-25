@@ -118,7 +118,9 @@ writeFileSync(`scripts/perf/out/${workload}.jsonl`, rows.map(r => JSON.stringify
 
 const fmt = x => x.toFixed(1);
 const summary = (label, rs) => {
-  if (!rs.length) return null;
+  if (!rs.length) {
+    return null;
+  }
   const w = rs.map(r => r.warm),
     f = rs.map(r => r.first);
   const out = {
@@ -161,15 +163,21 @@ worst.forEach(r => {
 // and a run over MAX_NODES means the pruning got weaker. Both are counts, the same on every PC.
 const gateFails = [];
 const nodesMax = Math.max(...rows.map(r => r.nodes));
-if (nodesMax > MAX_NODES) gateFails.push(`a run took more than ${MAX_NODES.toLocaleString()} nodes (${nodesMax})`);
+if (nodesMax > MAX_NODES) {
+  gateFails.push(`a run took more than ${MAX_NODES.toLocaleString()} nodes (${nodesMax})`);
+}
 const truncatedRuns = rows.filter(r => r.truncated).length;
-if (truncatedRuns) gateFails.push(`${truncatedRuns} run(s) truncated at the node limit`);
+if (truncatedRuns) {
+  gateFails.push(`${truncatedRuns} run(s) truncated at the node limit`);
+}
 
 // Timing budgets (optimizer.md, section 8, "What the perf scripts measure"), information only: they depend on the PC,
 // and timing matters only above about 1 s. --strict makes a miss exit 1. "first" stands in for the cold budget.
 const timingMisses = [];
 const check = (ok, msg) => {
-  if (!ok) timingMisses.push(msg);
+  if (!ok) {
+    timingMisses.push(msg);
+  }
 };
 if (on) {
   check(on.p50 <= 35, `melds on p50 ${fmt(on.p50)} > 35 ms`);
@@ -177,7 +185,9 @@ if (on) {
   check(on.max <= 80, `melds on max ${fmt(on.max)} > 80 ms`);
   check(on.firstMax <= 60, `melds on first-call max ${fmt(on.firstMax)} > 60 ms`);
 }
-if (off) check(off.p95 <= 30, `melds off p95 ${fmt(off.p95)} > 30 ms`);
+if (off) {
+  check(off.p95 <= 30, `melds off p95 ${fmt(off.p95)} > 30 ms`);
+}
 console.log(
   timingMisses.length
     ? `\ntiming budget misses (information only; timing matters above about 1 s):\n  ${timingMisses.join('\n  ')}`

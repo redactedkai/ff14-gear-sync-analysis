@@ -101,7 +101,9 @@ test('openTab: a newer request replaces one still waiting, so the older tab is n
     store.openTab('browse');
     store.openTab('sheets'); // the player went Back before the first frame
     assert.equal(store.pendingTab, 'sheets');
-    for (const frame of frames.splice(0)) frame();
+    for (const frame of frames.splice(0)) {
+      frame();
+    }
     await new Promise(resolve => setTimeout(resolve, 10));
     // the older request never showed its tab: one tab was shown, by the newer request
     assert.deepEqual(

@@ -49,7 +49,9 @@ test('the matrix has every screen at every scale and checks a window two setups 
     ['1920x1080', '3840x2160'].sort(),
   );
   // every window is at least the floor less the scrollbar
-  for (const key of windows.keys()) assert.ok(parseWindow(key).width >= 945, key);
+  for (const key of windows.keys()) {
+    assert.ok(parseWindow(key).width >= 945, key);
+  }
 });
 
 test('the coarse widths run from the first to the last, ending on the last when the step skips it', () => {
@@ -60,7 +62,9 @@ test('the coarse widths run from the first to the last, ending on the last when 
 });
 
 test('the quick windows are valid window keys, and the setups are the page fonts alone unless all are asked for', () => {
-  for (const key of QUICK_WINDOWS) assert.match(key, /^\d+x\d+$/);
+  for (const key of QUICK_WINDOWS) {
+    assert.match(key, /^\d+x\d+$/);
+  }
   assert.deepEqual(
     chooseSetups(false).map(setup => setup.id),
     ['page'],
@@ -86,6 +90,8 @@ test('the page fonts visit every window, every other setup a chosen few that are
   assert.deepEqual(windowsForSetup(all, 'page', false), all);
   assert.deepEqual(windowsForSetup(all, 'stress', false), FONT_SETUP_WINDOWS);
   assert.deepEqual(windowsForSetup(all, 'text200', false), FONT_SETUP_WINDOWS);
-  for (const key of FONT_SETUP_WINDOWS) assert.ok(windows.has(key), key);
+  for (const key of FONT_SETUP_WINDOWS) {
+    assert.ok(windows.has(key), key);
+  }
   assert.deepEqual(windowsForSetup(all, 'verdana', true), QUICK_WINDOWS);
 });

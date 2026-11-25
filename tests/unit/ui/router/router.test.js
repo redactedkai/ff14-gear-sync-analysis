@@ -31,7 +31,9 @@ function fakeHistory(startHash = '', startState = null) {
       history.entries[history.at] = { hash, state: entry };
     },
     go(distance) {
-      if (distance === 0) throw new Error('history.go(0) reloads the page');
+      if (distance === 0) {
+        throw new Error('history.go(0) reloads the page');
+      }
       history.queue.push(distance);
     },
     onPop(callback) {
@@ -52,7 +54,9 @@ function fakeHistory(startHash = '', startState = null) {
         const move = history.queue.shift();
         if (move !== 'typed') {
           const target = history.at + move;
-          if (target < 0 || target >= history.entries.length) continue;
+          if (target < 0 || target >= history.entries.length) {
+            continue;
+          }
           history.at = target;
         }
         const { hash, state } = history.entries[history.at];

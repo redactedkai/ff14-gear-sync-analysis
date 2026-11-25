@@ -17,13 +17,17 @@ test('session: gear is built once per job and kept for the last SESSION_SIZE job
   assert.equal(SESSION_SIZE, 4);
   const jobs = ['SGE', 'WHM', 'PLD', 'WAR', 'BLM'].map(makeJobContext);
   const [sge, whm, pld, war, blm] = jobs;
-  for (const job of [sge, whm, pld, war]) session.gear(job);
+  for (const job of [sge, whm, pld, war]) {
+    session.gear(job);
+  }
   assert.equal(builds, 4);
   // using SGE again makes WHM the oldest, so BLM drops WHM
   assert.equal(session.gear(sge), session.gear(sge));
   session.gear(blm);
   assert.equal(builds, 5);
-  for (const job of [sge, pld, war, blm]) session.gear(job);
+  for (const job of [sge, pld, war, blm]) {
+    session.gear(job);
+  }
   assert.equal(builds, 5, 'SGE, PLD, WAR and BLM are kept');
   session.gear(whm);
   assert.equal(builds, 6, 'WHM was dropped');

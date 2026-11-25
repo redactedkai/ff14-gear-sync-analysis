@@ -50,11 +50,15 @@ function decodeSegment(text) {
    names and values percent-decoded ('+' is a space). An empty query, and a pair with no name, give no entries. */
 function parseQuery(text) {
   const at = text.indexOf('?');
-  if (at < 0) return {};
+  if (at < 0) {
+    return {};
+  }
   const entries = [];
   const seen = new Set();
   for (const [name, value] of new URLSearchParams(text.slice(at + 1))) {
-    if (name === '' || seen.has(name)) continue;
+    if (name === '' || seen.has(name)) {
+      continue;
+    }
     seen.add(name);
     entries.push([name, value]);
   }
@@ -74,14 +78,22 @@ export function parseRoute(hash) {
   const withoutHash = String(hash ?? '').replace(/^#/, '');
   const path = withoutHash.split('?')[0];
   const words = path.split('/').filter(word => word !== '');
-  if (words.length === 0) return { ...DEFAULT_ROUTE };
+  if (words.length === 0) {
+    return { ...DEFAULT_ROUTE };
+  }
 
   const [head, ...rest] = words;
   const params = parseQuery(withoutHash);
-  if (head === SHEETS_WORD) return parseSheetsRoute(rest);
-  if (head === GEAR_WORD) return rest.length === 0 ? withParams({ tab: 'browse' }, params) : null;
+  if (head === SHEETS_WORD) {
+    return parseSheetsRoute(rest);
+  }
+  if (head === GEAR_WORD) {
+    return rest.length === 0 ? withParams({ tab: 'browse' }, params) : null;
+  }
   if (head === MATH_WORD) {
-    if (rest.length === 0) return withParams({ tab: 'math', mathTab: DEFAULT_MATH_TAB }, params);
+    if (rest.length === 0) {
+      return withParams({ tab: 'math', mathTab: DEFAULT_MATH_TAB }, params);
+    }
     return rest.length === 1 && MATH_TABS.includes(rest[0]) ? withParams({ tab: 'math', mathTab: rest[0] }, params) : null;
   }
   return null;
@@ -89,10 +101,16 @@ export function parseRoute(hash) {
 
 /* The route of the words after `sheets` in an address: none (the list), a sheet id, or a sheet id, `sets` and a set id. */
 function parseSheetsRoute(words) {
-  if (words.length === 0) return { ...DEFAULT_ROUTE };
+  if (words.length === 0) {
+    return { ...DEFAULT_ROUTE };
+  }
   const sheetId = decodeSegment(words[0]);
-  if (sheetId === null) return null;
-  if (words.length === 1) return { tab: 'sheets', screen: 'sheet', sheetId };
+  if (sheetId === null) {
+    return null;
+  }
+  if (words.length === 1) {
+    return { tab: 'sheets', screen: 'sheet', sheetId };
+  }
   if (words.length === 3 && words[1] === SETS_WORD) {
     const setId = decodeSegment(words[2]);
     return setId === null ? null : { tab: 'sheets', screen: 'set', sheetId, setId };
@@ -103,14 +121,18 @@ function parseSheetsRoute(words) {
 /* The hash of `route` without its query: '#/gear', '#/math/gcd', '#/sheets/s_1'. A route that is not one of the page's
    screens comes out as the home address. Ids are percent-encoded. */
 export function formatPath(route) {
-  if (route?.tab === 'browse') return `#/${GEAR_WORD}`;
+  if (route?.tab === 'browse') {
+    return `#/${GEAR_WORD}`;
+  }
   if (route?.tab === 'math') {
     const view = MATH_TABS.includes(route.mathTab) ? route.mathTab : DEFAULT_MATH_TAB;
     return `#/${MATH_WORD}/${view}`;
   }
   if (route?.tab === 'sheets' && route.sheetId) {
     const sheet = `#/${SHEETS_WORD}/${encodeText(route.sheetId)}`;
-    if (route.screen === 'set' && route.setId) return `${sheet}/${SETS_WORD}/${encodeText(route.setId)}`;
+    if (route.screen === 'set' && route.setId) {
+      return `${sheet}/${SETS_WORD}/${encodeText(route.setId)}`;
+    }
     return sheet;
   }
   return `#/${SHEETS_WORD}`;
@@ -151,10 +173,16 @@ export const MATH_TAB_LABEL = Object.freeze({ piece: 'Stat Allocation', gcd: 'GC
    whether the "not found" screen is showing. The names are the player's own text: the caller sets the title as text. */
 export function titleOf(route, { sheet = null, set = null, missing = false } = {}) {
   let parts = ['Sheets'];
-  if (missing) parts = ['Not found'];
-  else if (route?.tab === 'browse') parts = ['Gear browser'];
-  else if (route?.tab === 'math') parts = [MATH_TAB_LABEL[route.mathTab] ?? 'How the math works'];
-  else if (route?.screen === 'sheet' && sheet) parts = [sheet];
-  else if (route?.screen === 'set' && sheet && set) parts = [set, sheet];
+  if (missing) {
+    parts = ['Not found'];
+  } else if (route?.tab === 'browse') {
+    parts = ['Gear browser'];
+  } else if (route?.tab === 'math') {
+    parts = [MATH_TAB_LABEL[route.mathTab] ?? 'How the math works'];
+  } else if (route?.screen === 'sheet' && sheet) {
+    parts = [sheet];
+  } else if (route?.screen === 'set' && sheet && set) {
+    parts = [set, sheet];
+  }
   return [...parts, APP_TITLE].join(' · ');
 }

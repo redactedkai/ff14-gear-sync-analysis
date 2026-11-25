@@ -105,7 +105,9 @@ test('Piece stats: each stat against its ceiling, with the sentences and the ari
     ],
   );
   // the numbers and names the summary must show: the cap, the item level, the points kept and of, the stat losing most
-  for (const number of [130, 170, 62, 80]) assert.ok(hasNumber(v.summary, number), `${number} in: ${v.summary}`);
+  for (const number of [130, 170, 62, 80]) {
+    assert.ok(hasNumber(v.summary, number), `${number} in: ${v.summary}`);
+  }
   assert.ok(hasParts(v.summary, 'head', 'Critical Hit', '−16'), v.summary);
   const vit = v.rows[1],
     spd = v.rows[3];
@@ -194,16 +196,22 @@ test('substat ranks: an older three-rank list is cut to two', () => {
 
 test('substat ranks: no substat ever appears twice', () => {
   const opts = ['', ...healer];
-  for (const a of healer)
+  for (const a of healer) {
     for (const b of [null, ...healer]) {
-      if (a === b) continue;
-      for (let i = 0; i < 2; i++)
+      if (a === b) {
+        continue;
+      }
+      for (let i = 0; i < 2; i++) {
         for (const v of opts) {
-          if (i === 0 && v === '') continue; // rank 1 offers no "none"
+          if (i === 0 && v === '') {
+            continue; // rank 1 offers no "none"
+          }
           const out = withSub([a, b], i, v, healer).filter(Boolean);
           assert.equal(new Set(out).size, out.length, JSON.stringify([[a, b], i, v]));
         }
+      }
     }
+  }
 });
 
 test('Slot menu: slots with the same budget share are one choice; a shield job has its own weapon and off-hand', () => {

@@ -54,7 +54,9 @@ export function shownColors(sample) {
   const base = firstOpaque < 0 ? [255, 255, 255] : sample.layers[firstOpaque].slice(0, 3);
   const above = firstOpaque < 0 ? sample.layers : sample.layers.slice(0, firstOpaque);
   let background = base;
-  for (const layer of [...above].reverse()) background = blend(layer, background);
+  for (const layer of [...above].reverse()) {
+    background = blend(layer, background);
+  }
   const [r, g, b, alpha] = sample.color;
   return { text: blend([r, g, b, alpha * sample.opacity], background), background, guessed: sample.gradient || firstOpaque < 0 };
 }
@@ -72,12 +74,18 @@ export function judge(sample) {
 /** The text of the `{ ... }` block that follows the first occurrence of `header` in `css` (comments already removed). */
 function blockAfter(css, header) {
   const at = css.indexOf(header);
-  if (at < 0) throw new Error(`styles.css has no "${header}" block`);
+  if (at < 0) {
+    throw new Error(`styles.css has no "${header}" block`);
+  }
   const open = css.indexOf('{', at);
   let depth = 0;
   for (let i = open; i < css.length; i++) {
-    if (css[i] === '{') depth++;
-    if (css[i] === '}' && --depth === 0) return css.slice(open + 1, i);
+    if (css[i] === '{') {
+      depth++;
+    }
+    if (css[i] === '}' && --depth === 0) {
+      return css.slice(open + 1, i);
+    }
   }
   throw new Error(`styles.css: the "${header}" block is not closed`);
 }
@@ -85,7 +93,9 @@ function blockAfter(css, header) {
 /** The custom properties declared in a block's text, as { '--name': 'value' } (spaces inside a value squeezed). */
 function declarations(block) {
   const out = {};
-  for (const [, name, value] of block.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) out[name] = value.trim().replace(/\s+/g, ' ');
+  for (const [, name, value] of block.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+    out[name] = value.trim().replace(/\s+/g, ' ');
+  }
   return out;
 }
 
@@ -111,7 +121,9 @@ export function tokensFor(css, scheme) {
 /** An opaque or translucent token value (`#rrggbb`, `rgb(...)`, `rgba(...)`) as `[r, g, b, alpha]`; null for anything else. */
 export function tokenColor(value) {
   const hex = /^#([0-9a-f]{6})$/i.exec(value);
-  if (hex) return [0, 2, 4].map(i => Number.parseInt(hex[1].slice(i, i + 2), 16)).concat(1);
+  if (hex) {
+    return [0, 2, 4].map(i => Number.parseInt(hex[1].slice(i, i + 2), 16)).concat(1);
+  }
   const fn = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(value);
   return fn ? [Number(fn[1]), Number(fn[2]), Number(fn[3]), fn[4] === undefined ? 1 : Number(fn[4])] : null;
 }
@@ -164,7 +176,9 @@ export function probeText(spec) {
     for (let up = el; up; up = up.parentElement) {
       const upStyle = getComputedStyle(up);
       layers.push(toRgba(upStyle.backgroundColor));
-      if (upStyle.backgroundImage !== 'none') gradient = true;
+      if (upStyle.backgroundImage !== 'none') {
+        gradient = true;
+      }
       opacity *= Number(upStyle.opacity);
     }
     return {
@@ -187,9 +201,13 @@ export function probeText(spec) {
     const walker = document.createTreeWalker(document.querySelector(spec.root), NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const el = node.parentElement;
-      if (!node.textContent.trim() || seen.has(el) || !visible(el)) continue;
+      if (!node.textContent.trim() || seen.has(el) || !visible(el)) {
+        continue;
+      }
       seen.add(el);
-      if (el.closest(':disabled, [aria-disabled="true"], [aria-hidden="true"], .sr-only, option, script, style')) continue;
+      if (el.closest(':disabled, [aria-disabled="true"], [aria-hidden="true"], .sr-only, option, script, style')) {
+        continue;
+      }
       samples.push(sample(el));
     }
   }

@@ -34,8 +34,12 @@ export const NO_PIECES_SHORT = 'No pieces to search';
 const objectNumbers = new WeakMap();
 let nextObjectNumber = 1;
 function objectNumber(value) {
-  if (value == null) return 0;
-  if (!objectNumbers.has(value)) objectNumbers.set(value, nextObjectNumber++);
+  if (value == null) {
+    return 0;
+  }
+  if (!objectNumbers.has(value)) {
+    objectNumbers.set(value, nextObjectNumber++);
+  }
   return objectNumbers.get(value);
 }
 
@@ -126,7 +130,9 @@ export function viewPart() {
         mode = 'draft';
         draftV = draftView(sheet, saved, draft);
         shown = draft;
-        if (!samePieces(saved, draft)) bestKeys = [];
+        if (!samePieces(saved, draft)) {
+          bestKeys = [];
+        }
         options = { goal, bestKeys, changedRows: draftV.changedRows, mealChanged: draftV.mealChanged };
         headRows = draftV.header;
         apply = { text: draftV.applyText, disabled: draftV.applyDisabled };

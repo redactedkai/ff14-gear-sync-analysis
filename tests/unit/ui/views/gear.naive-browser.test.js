@@ -29,16 +29,34 @@ function naiveRows(job, browse) {
   const statAt = key => STAT_ORDER.indexOf(key);
   const rows = [];
   for (const row of ITEMS) {
-    if ((row[ROW.jobMask] & jobBit) === 0) continue;
-    if (browse.type !== 'any' && DB_SLOT_TYPE[row[ROW.slotCode]] !== browse.type) continue;
-    if (row[ROW.equipLevel] > job.maxLevel || (equipLevelMax && row[ROW.equipLevel] > equipLevelMax)) continue;
-    if (ilvlMin && row[ROW.ilvl] < ilvlMin) continue;
-    if (ilvlMax && row[ROW.ilvl] > ilvlMax) continue;
-    if (browse.expOff.includes(expansionOf(row[ROW.equipLevel], row[ROW.ilvl]))) continue;
-    if (!words.every(word => row[ROW.name].toLowerCase().includes(word))) continue;
+    if ((row[ROW.jobMask] & jobBit) === 0) {
+      continue;
+    }
+    if (browse.type !== 'any' && DB_SLOT_TYPE[row[ROW.slotCode]] !== browse.type) {
+      continue;
+    }
+    if (row[ROW.equipLevel] > job.maxLevel || (equipLevelMax && row[ROW.equipLevel] > equipLevelMax)) {
+      continue;
+    }
+    if (ilvlMin && row[ROW.ilvl] < ilvlMin) {
+      continue;
+    }
+    if (ilvlMax && row[ROW.ilvl] > ilvlMax) {
+      continue;
+    }
+    if (browse.expOff.includes(expansionOf(row[ROW.equipLevel], row[ROW.ilvl]))) {
+      continue;
+    }
+    if (!words.every(word => row[ROW.name].toLowerCase().includes(word))) {
+      continue;
+    }
     const raw = rowStats(row);
-    if (!raw[statAt(job.mainKey)] && !raw[statAt('mainAttr')]) continue;
-    if (!row[ROW.routes].some(route => (route & ~allowedRoutes) === 0)) continue;
+    if (!raw[statAt(job.mainKey)] && !raw[statAt('mainAttr')]) {
+      continue;
+    }
+    if (!row[ROW.routes].some(route => (route & ~allowedRoutes) === 0)) {
+      continue;
+    }
     rows.push({
       name: row[ROW.name],
       type: DB_SLOT_TYPE[row[ROW.slotCode]],
@@ -82,7 +100,9 @@ test('the Gear browser lists the rows, order and slot counts of a naive filter a
 
     // the rows over all pages
     const shown = [];
-    for (let page = 1; page <= first.pageCount; page++) shown.push(...gearView(job, sync, browse, page).shown);
+    for (let page = 1; page <= first.pageCount; page++) {
+      shown.push(...gearView(job, sync, browse, page).shown);
+    }
     assert.deepEqual(shown.map(id).sort(), want.map(id).sort(), `${label}: rows`);
 
     // the order: by the sort key, then the view's ties; ascending reverses the key (a stat is its synced value)

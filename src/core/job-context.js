@@ -33,9 +33,13 @@ const CASTER_MAIN_KEYS = Object.freeze(['int', 'mind']);
  *  mode is '2h'; slotPct.weapon is the 1H share for the two modes with a shield (what a hand-made weapon takes). */
 export function makeJobContext(jobId) {
   let jobIndex = JOBS.findIndex(j => j.id === jobId);
-  if (jobIndex < 0) jobIndex = JOBS.findIndex(j => j.id === DEFAULT_JOB);
+  if (jobIndex < 0) {
+    jobIndex = JOBS.findIndex(j => j.id === DEFAULT_JOB);
+  }
   const { id, name: jobName, profile: profileId } = JOBS[jobIndex];
-  if (cache.has(id)) return cache.get(id);
+  if (cache.has(id)) {
+    return cache.get(id);
+  }
 
   const { mainKey, speedKey, specKey } = PROFILES[profileId];
   const substats = [...SHARED_SUBSTATS, speedKey, ...(specKey ? [specKey] : [])];
@@ -78,7 +82,9 @@ export function makeJobContext(jobId) {
 
 function deepFreeze(o) {
   Object.values(o).forEach(v => {
-    if (v && typeof v === 'object' && !Object.isFrozen(v)) deepFreeze(v);
+    if (v && typeof v === 'object' && !Object.isFrozen(v)) {
+      deepFreeze(v);
+    }
   });
   return Object.freeze(o);
 }

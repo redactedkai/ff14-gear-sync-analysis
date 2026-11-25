@@ -24,8 +24,12 @@ function runStoreCall(store, dialog) {
     case 'edit-set':
       return store.editSet(dialog.id, dialog);
     default:
-      if (dialog.what === 'sheet') return store.deleteSheet(dialog.id);
-      if (dialog.what === 'set') return store.deleteSet(dialog.id);
+      if (dialog.what === 'sheet') {
+        return store.deleteSheet(dialog.id);
+      }
+      if (dialog.what === 'set') {
+        return store.deleteSet(dialog.id);
+      }
       return store.deleteUnreadable(dialog.id);
   }
 }
@@ -35,6 +39,8 @@ function runStoreCall(store, dialog) {
    ops.js FORM_FIELD value; '' for a reason about the sheet or the page, which shows in the title row). */
 export function submitDialog(store, dialog) {
   const result = runStoreCall(store, dialog);
-  if (result.ok) return { ok: true, error: '', field: '' };
+  if (result.ok) {
+    return { ok: true, error: '', field: '' };
+  }
   return { ok: false, error: result.error ?? result.message ?? '', field: result.field ?? '' };
 }

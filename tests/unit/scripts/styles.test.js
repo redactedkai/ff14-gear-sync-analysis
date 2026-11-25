@@ -29,9 +29,15 @@ const FILES_IN_ORDER = [
 
 /* The layer each file is imported into (src/styles/entry.css). */
 const LAYER_OF = name => {
-  if (['tokens', 'base', 'controls', 'fallbacks'].includes(name)) return name;
-  if (name === 'fill-settings') return 'components.menus';
-  if (name.startsWith('math-')) return 'views.math';
+  if (['tokens', 'base', 'controls', 'fallbacks'].includes(name)) {
+    return name;
+  }
+  if (name === 'fill-settings') {
+    return 'components.menus';
+  }
+  if (name.startsWith('math-')) {
+    return 'views.math';
+  }
   return ['layout', 'pieces', 'menus'].includes(name) ? `components.${name}` : `views.${name}`;
 };
 

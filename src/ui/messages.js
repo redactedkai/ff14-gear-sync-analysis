@@ -15,7 +15,9 @@ export function notes() {
       // a note clears itself NOTE_MS after it was last said (a second, identical note restarts the wait: each set counts in noteSeq)
       this.$watch('$store.sheets.noteSeq', () => {
         clearTimeout(timer);
-        if (this.$store.sheets.note) timer = setTimeout(() => this.$store.sheets.setNote(''), NOTE_MS);
+        if (this.$store.sheets.note) {
+          timer = setTimeout(() => this.$store.sheets.setNote(''), NOTE_MS);
+        }
       });
     },
     get text() {

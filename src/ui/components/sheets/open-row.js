@@ -21,10 +21,17 @@ export function openRowPart() {
     openRow(kind, id, event) {
       const row = event.currentTarget;
       const control = event.target.closest(OWN_CLICK);
-      if (control && row.contains(control)) return;
-      if (hasSelectionIn(row)) return;
-      if (kind === 'sheet') this.sheets.openSheet(id);
-      else this.sheets.openSet(id);
+      if (control && row.contains(control)) {
+        return;
+      }
+      if (hasSelectionIn(row)) {
+        return;
+      }
+      if (kind === 'sheet') {
+        this.sheets.openSheet(id);
+      } else {
+        this.sheets.openSet(id);
+      }
     },
   };
 }

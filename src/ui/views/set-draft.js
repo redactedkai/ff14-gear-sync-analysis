@@ -12,26 +12,35 @@ import { rowLabel, sameRow, usedRows } from '../sheets/saved-set.js';
 /* A piece's stones with equal ones grouped, "CRT XII ×2, DET XI" ("none" without stones). */
 function stonesText(job, piece) {
   const stones = (piece.stones ?? []).filter(Boolean);
-  if (!stones.length) return 'none';
+  if (!stones.length) {
+    return 'none';
+  }
   const groups = [];
   for (const stone of stones) {
     const text = `${job.short[stone.stat]} ${ROMAN[stone.grade - 1]}`;
     const last = groups.at(-1);
-    if (last?.text === text) last.count++;
-    else groups.push({ text, count: 1 });
+    if (last?.text === text) {
+      last.count++;
+    } else {
+      groups.push({ text, count: 1 });
+    }
   }
   return groups.map(group => (group.count > 1 ? `${group.text} ×${group.count}` : group.text)).join(', ');
 }
 
 /* "2 slots and meal", "the meal", "3 slots": what changes, from the number of rows and whether the meal. */
 export function changeText(slots, meal) {
-  if (!meal) return plural(slots, 'slot');
+  if (!meal) {
+    return plural(slots, 'slot');
+  }
   return slots ? `${plural(slots, 'slot')} and meal` : 'the meal';
 }
 
 /* The name of a saved meal key, "none" for no meal; a key no meal has any more is named by its key. */
 function mealName(job, key) {
-  if (key == null) return 'none';
+  if (key == null) {
+    return 'none';
+  }
   return allMeals(job).find(meal => meal.key === key)?.name ?? `missing meal ${key}`;
 }
 
@@ -45,7 +54,9 @@ export function draftChanges(job, saved, draft) {
   const rows = [];
   for (const { index, row: piece } of usedRows(job, draft)) {
     const before = saved.pieces[index];
-    if (sameRow(before, piece)) continue;
+    if (sameRow(before, piece)) {
+      continue;
+    }
     rows.push({
       index,
       slot: piece.slot,
@@ -112,7 +123,9 @@ export function draftView(sheet, saved, draft) {
    meal changed.", "Discarded: 1 slot reverted.", "Discarded: no changes." (Apply is never asked for a draft with no changes: the
    draft closes with no note) */
 export function draftNote(verb, changes) {
-  if (!changes.count) return `${verb}: no changes.`;
+  if (!changes.count) {
+    return `${verb}: no changes.`;
+  }
   const what = changeText(changes.rows.length, !!changes.meal);
   return verb === 'Applied' ? `Applied: ${what} changed.` : `Discarded: ${what} reverted.`;
 }

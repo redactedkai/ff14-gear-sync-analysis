@@ -20,7 +20,9 @@ export function copyTargets(jobId) {
    alone in its group, Blue Mage and Beastmaster, takes no name). */
 export function gearGroupName(jobId) {
   const group = GEAR_GROUPS.find(g => g.includes(jobId));
-  if (!group || group.length < 2) return null;
+  if (!group || group.length < 2) {
+    return null;
+  }
   const row = JOB_ROWS.find(([, jobs]) => group.every(id => jobs.includes(id)));
   return row ? row[0] : null;
 }
@@ -34,7 +36,9 @@ export function piecesJobCannotWear(job, pieces) {
   const out = [];
   pieces.forEach((piece, index) => {
     const row = piece.gameId == null ? null : itemById(piece.gameId);
-    if (row && !(row[ROW.jobMask] & bit)) out.push({ index, slot: piece.slot, gameId: piece.gameId, name: row[ROW.name] });
+    if (row && !(row[ROW.jobMask] & bit)) {
+      out.push({ index, slot: piece.slot, gameId: piece.gameId, name: row[ROW.name] });
+    }
   });
   return out;
 }

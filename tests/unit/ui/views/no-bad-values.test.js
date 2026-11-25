@@ -15,13 +15,23 @@ const BAD_TEXT = /NaN|Infinity|undefined|\[object|\bnull\b/;
 
 /* The path and value of the first bad number, text or undefined in a view, or null when it has none. */
 function firstBad(value, path = '') {
-  if (typeof value === 'number') return Number.isFinite(value) ? null : `${path} = ${value}`;
-  if (typeof value === 'string') return BAD_TEXT.test(value) ? `${path} = "${value.slice(0, 60)}"` : null;
-  if (value === undefined) return `${path} undefined`;
-  if (value === null || typeof value !== 'object') return null;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? null : `${path} = ${value}`;
+  }
+  if (typeof value === 'string') {
+    return BAD_TEXT.test(value) ? `${path} = "${value.slice(0, 60)}"` : null;
+  }
+  if (value === undefined) {
+    return `${path} undefined`;
+  }
+  if (value === null || typeof value !== 'object') {
+    return null;
+  }
   for (const key of Object.keys(value)) {
     const found = firstBad(value[key], `${path}.${key}`);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return null;
 }
@@ -54,7 +64,9 @@ test('Piece stats, Substat tiers and GCD hold no bad value for every job over it
       assert.equal(firstBad(explainerView(job, sync, settings, { piece: pick([300, 640, 1100]) })), null, `Piece stats: ${label}`);
 
       const values = tierValues(job, level);
-      for (const substat of job.substats) values[substat] += int(400);
+      for (const substat of job.substats) {
+        values[substat] += int(400);
+      }
       assert.equal(firstBad(tiersView(job, values, level)), null, `Substat tiers: ${label}`);
 
       const speed = pick([null, 0, 1, 400, 1500, 99999, -5]);

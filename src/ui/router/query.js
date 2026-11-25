@@ -28,8 +28,12 @@ const MOST_SPEED = Math.max(...MAX_SPEED);
 /* The view of `route` (a route object, routes.js): 'gear' for the Gear browser, the math view's name ('piece', 'gcd' or
    'tiers') for a math screen, or null for a screen with no query (the Sheets screens). */
 export function queryViewOf(route) {
-  if (route?.tab === 'browse') return 'gear';
-  if (route?.tab === 'math') return route.mathTab;
+  if (route?.tab === 'browse') {
+    return 'gear';
+  }
+  if (route?.tab === 'math') {
+    return route.mathTab;
+  }
   return null;
 }
 
@@ -58,8 +62,12 @@ function wholeNumberOrNull(text) {
 
 /* `on` and `off` for a switch's text: true for '1' or 'true', false for '0' or 'false', undefined for anything else. */
 function switchOf(text) {
-  if (text === '1' || text === 'true') return true;
-  if (text === '0' || text === 'false') return false;
+  if (text === '1' || text === 'true') {
+    return true;
+  }
+  if (text === '0' || text === 'false') {
+    return false;
+  }
   return undefined;
 }
 
@@ -86,9 +94,15 @@ export function readJobQuery(params) {
 export function writePanelQuery(panel) {
   const defaults = restorePanel({ job: panel.job });
   const query = {};
-  if (panel.job !== DEFAULT_JOB) query.job = panel.job;
-  if (panel.level !== defaults.level) query.level = String(panel.level);
-  if (panel.sync) query.il = panel.cap == null ? '' : String(panel.cap);
+  if (panel.job !== DEFAULT_JOB) {
+    query.job = panel.job;
+  }
+  if (panel.level !== defaults.level) {
+    query.level = String(panel.level);
+  }
+  if (panel.sync) {
+    query.il = panel.cap == null ? '' : String(panel.cap);
+  }
   return query;
 }
 
@@ -99,10 +113,18 @@ export function writePanelQuery(panel) {
    Substat tiers that is the synced level is kept as null (follow the synced level), as the boxes do. null for a view with no
    query. */
 export function readQuery(view, params, job, syncedLevel) {
-  if (view === 'gear') return readGear(params, job);
-  if (view === 'piece') return readPiece(params, job);
-  if (view === 'gcd') return readGcd(params, syncedLevel);
-  if (view === 'tiers') return readTiers(params, job, syncedLevel);
+  if (view === 'gear') {
+    return readGear(params, job);
+  }
+  if (view === 'piece') {
+    return readPiece(params, job);
+  }
+  if (view === 'gcd') {
+    return readGcd(params, syncedLevel);
+  }
+  if (view === 'tiers') {
+    return readTiers(params, job, syncedLevel);
+  }
   return null;
 }
 
@@ -162,10 +184,18 @@ function readTiers(params, job, syncedLevel) {
 /* The query of `view` for `settings` (the view's settings object, as readQuery returns it) for `job`: {name: text} for the
    settings that differ from the defaults, in QUERY_NAMES order. An object with no entry is the defaults. */
 export function writeQuery(view, settings, job) {
-  if (view === 'gear') return writeGear(settings, job);
-  if (view === 'piece') return writePiece(settings, job);
-  if (view === 'gcd') return writeGcd(settings);
-  if (view === 'tiers') return writeTiers(settings);
+  if (view === 'gear') {
+    return writeGear(settings, job);
+  }
+  if (view === 'piece') {
+    return writePiece(settings, job);
+  }
+  if (view === 'gcd') {
+    return writeGcd(settings);
+  }
+  if (view === 'tiers') {
+    return writeTiers(settings);
+  }
   return {};
 }
 
@@ -175,48 +205,83 @@ const sameItems = (a, b) => a.length === b.length && a.every(item => b.includes(
 function writeGear(browse, job) {
   const defaults = defaultBrowse(job);
   const query = {};
-  if (browse.q !== defaults.q) query.q = browse.q;
-  if (browse.type !== defaults.type) query.slot = browse.type;
-  if (browse.min !== defaults.min) query.min = String(browse.min);
-  if (browse.max !== defaults.max) query.max = String(browse.max);
-  if (browse.lvl !== defaults.lvl) query.equip = String(browse.lvl);
-  if (browse.expOff.length > 0)
+  if (browse.q !== defaults.q) {
+    query.q = browse.q;
+  }
+  if (browse.type !== defaults.type) {
+    query.slot = browse.type;
+  }
+  if (browse.min !== defaults.min) {
+    query.min = String(browse.min);
+  }
+  if (browse.max !== defaults.max) {
+    query.max = String(browse.max);
+  }
+  if (browse.lvl !== defaults.lvl) {
+    query.equip = String(browse.lvl);
+  }
+  if (browse.expOff.length > 0) {
     query.noexp = EXPANSIONS.map(expansion => expansion.short)
       .filter(key => browse.expOff.includes(key))
       .join(',');
+  }
   if (!sameItems(browse.exclude, DEFAULT_EXCLUDE)) {
     query.skip = ACTIVITIES.map(activity => activity.key)
       .filter(key => browse.exclude.includes(key))
       .join(',');
   }
-  if (browse.market !== defaults.market) query.market = browse.market ? '1' : '0';
-  if (browse.sort !== defaults.sort) query.sort = browse.sort;
-  if (browse.dir !== defaults.dir) query.dir = browse.dir;
+  if (browse.market !== defaults.market) {
+    query.market = browse.market ? '1' : '0';
+  }
+  if (browse.sort !== defaults.sort) {
+    query.sort = browse.sort;
+  }
+  if (browse.dir !== defaults.dir) {
+    query.dir = browse.dir;
+  }
   return query;
 }
 
 function writePiece(piece, job) {
   const query = {};
-  if (piece.slot !== 'head') query.slot = piece.slot;
-  if (piece.ilvl !== null) query.item = String(piece.ilvl);
+  if (piece.slot !== 'head') {
+    query.slot = piece.slot;
+  }
+  if (piece.ilvl !== null) {
+    query.item = String(piece.ilvl);
+  }
   const subs = piece.subs.filter(Boolean).join(',');
-  if (subs !== defaultSubs(job).filter(Boolean).join(',')) query.subs = subs;
-  if (piece.slots !== null && meldSlotChoices(piece.slot).includes(piece.slots)) query.meld = String(piece.slots);
+  if (subs !== defaultSubs(job).filter(Boolean).join(',')) {
+    query.subs = subs;
+  }
+  if (piece.slots !== null && meldSlotChoices(piece.slot).includes(piece.slots)) {
+    query.meld = String(piece.slots);
+  }
   return query;
 }
 
 /* Substat tiers' query: its job when it is not the default one, and the level typed into its box. */
 function writeTiers(tiers) {
   const query = {};
-  if (tiers.job !== DEFAULT_JOB) query.job = tiers.job;
-  if (tiers.level != null) query.tierlevel = String(tiers.level);
+  if (tiers.job !== DEFAULT_JOB) {
+    query.job = tiers.job;
+  }
+  if (tiers.level != null) {
+    query.tierlevel = String(tiers.level);
+  }
   return query;
 }
 
 function writeGcd(gcd) {
   const query = {};
-  if (gcd.level != null) query.gcdlevel = String(clamp(gcd.level, 1, GCD_LEVELS));
-  if (gcd.haste) query.haste = gcd.haste;
-  if (gcd.speed != null) query.speed = String(gcd.speed);
+  if (gcd.level != null) {
+    query.gcdlevel = String(clamp(gcd.level, 1, GCD_LEVELS));
+  }
+  if (gcd.haste) {
+    query.haste = gcd.haste;
+  }
+  if (gcd.speed != null) {
+    query.speed = String(gcd.speed);
+  }
   return query;
 }

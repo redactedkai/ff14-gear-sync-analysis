@@ -101,8 +101,11 @@ test('Reset to defaults: asks first, and resets only on yes', () => {
     assert.equal(app.job, 'PLD', 'back to the default job, Paladin');
     assert.equal(app.cap, restoreOpen(null).cap);
   } finally {
-    if (had) Object.defineProperty(globalThis, 'window', had);
-    else delete globalThis.window;
+    if (had) {
+      Object.defineProperty(globalThis, 'window', had);
+    } else {
+      delete globalThis.window;
+    }
   }
   assert.equal(asked.length, 2, 'asked on each request, before resetting');
 });
@@ -121,7 +124,9 @@ test('goTab: leaving the Sheets tab with something to settle asks first; the ans
   let settle = true;
   const sheets = {
     askLeave: move => {
-      if (!settle) return false;
+      if (!settle) {
+        return false;
+      }
       pending = move;
       return true;
     },

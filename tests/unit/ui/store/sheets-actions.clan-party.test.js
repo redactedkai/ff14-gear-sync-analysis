@@ -69,7 +69,9 @@ test('a full storage keeps the edit in memory and says so, like the other settin
   const { store, storage, id } = openStore();
   // the same records in a storage that refuses every write
   const full = fakeStorage({ failWith: quotaError() });
-  for (const [key, text] of storage.data) full.data.set(key, text);
+  for (const [key, text] of storage.data) {
+    full.data.set(key, text);
+  }
   const failing = createSheetStore({ storage: full });
   failing.openSheet(id);
   const result = failing.setPartyRoles(4);

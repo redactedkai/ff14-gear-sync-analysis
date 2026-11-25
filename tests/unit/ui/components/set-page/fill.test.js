@@ -182,7 +182,9 @@ test("Cancel before an Auto-fill on the page's thread has started its search dro
     await tick();
     const running = c.fill();
     c.cancelFill();
-    while (frames.step()) await tick();
+    while (frames.step()) {
+      await tick();
+    }
     await running;
     assert.equal(solver.started.filter(kind => kind === 'solve').length, 0, 'the search never started');
     assert.deepEqual([c.running, sheets.busy, c.suggestion], [false, false, null]);

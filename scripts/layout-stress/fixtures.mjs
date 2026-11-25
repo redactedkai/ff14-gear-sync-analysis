@@ -168,8 +168,12 @@ export function seedStorage({ indexKey, recordKeyPrefix, sheets, failWrites }) {
   const SEEDED_KEY = 'layout-stress:seeded'; // not under the page's own key, so the page never reads it as its data
   try {
     if (!localStorage.getItem(SEEDED_KEY)) {
-      for (const sheet of sheets) localStorage.setItem(`${recordKeyPrefix}${sheet.id}`, JSON.stringify(sheet));
-      if (sheets.length) localStorage.setItem(indexKey, JSON.stringify({ v: 1, order: sheets.map(sheet => sheet.id) }));
+      for (const sheet of sheets) {
+        localStorage.setItem(`${recordKeyPrefix}${sheet.id}`, JSON.stringify(sheet));
+      }
+      if (sheets.length) {
+        localStorage.setItem(indexKey, JSON.stringify({ v: 1, order: sheets.map(sheet => sheet.id) }));
+      }
       localStorage.setItem(SEEDED_KEY, '1');
     }
   } catch {
@@ -195,7 +199,9 @@ export async function longestPieces(root = REPO_ROOT) {
   const { makeJobContext } = await import(url('src/core/job-context.js'));
   const longest = {};
   for (const item of jobGear(makeJobContext('SGE'))) {
-    if (!longest[item.type] || item.name.length > longest[item.type].name.length) longest[item.type] = item;
+    if (!longest[item.type] || item.name.length > longest[item.type].name.length) {
+      longest[item.type] = item;
+    }
   }
   return Object.fromEntries(Object.entries(longest).map(([slot, item]) => [slot, item.gameId]));
 }

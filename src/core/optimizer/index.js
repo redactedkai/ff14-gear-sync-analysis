@@ -77,7 +77,9 @@ function limitsFor(prep, opts) {
   }
   const limits = kind ? [{ stat: prep.speedKey, min: spdMin > 0 ? spdMin : null, max: spdMax }] : [];
   for (const [stat, min] of Object.entries(mins)) {
-    if (!(min > 0)) continue;
+    if (!(min > 0)) {
+      continue;
+    }
     if (!prep.minStats?.includes(stat)) {
       throw new Error(`Optimizer: candidates prepared without a minimum on ${stat} cannot be searched with one`);
     }
@@ -89,7 +91,11 @@ function limitsFor(prep, opts) {
 /* The pinned pieces' totals over the dims, {dim: points}: what the search's own slots start from. */
 function fixedTotalsOf(fixed, dims) {
   const totals = Object.fromEntries(dims.map(d => [d, 0]));
-  for (const cand of fixed) for (const d of dims) totals[d] += cand.eff[d] || 0;
+  for (const cand of fixed) {
+    for (const d of dims) {
+      totals[d] += cand.eff[d] || 0;
+    }
+  }
   return totals;
 }
 
@@ -102,8 +108,12 @@ function limitsWithoutFixed(limits, fixedTotals) {
     const held = fixedTotals[limit.stat] || 0;
     const min = limit.min > 0 && limit.min - held > 0 ? limit.min - held : null;
     const max = limit.max != null ? limit.max - held : null;
-    if (max != null && max < 0) return null;
-    if (min != null || max != null) out.push({ ...limit, min, max });
+    if (max != null && max < 0) {
+      return null;
+    }
+    if (min != null || max != null) {
+      out.push({ ...limit, min, max });
+    }
   }
   return out;
 }
@@ -125,13 +135,17 @@ function meetsLimits(picks, limits) {
 export function seedStart(prep, picks) {
   const byType = new Map();
   for (const p of picks) {
-    if (!byType.has(p.type)) byType.set(p.type, []);
+    if (!byType.has(p.type)) {
+      byType.set(p.type, []);
+    }
     byType.get(p.type).push(p);
   }
   let score = 0;
   const best = prep.slotList.map(type => {
     const p = byType.get(realSlotType(type))?.shift();
-    if (!p?.item) return { cand: null, rank: -1, blockedBy: p?.blockedBy ? { item: p.blockedBy } : undefined };
+    if (!p?.item) {
+      return { cand: null, rank: -1, blockedBy: p?.blockedBy ? { item: p.blockedBy } : undefined };
+    }
     const cand = { item: p.item, eff: p.eff, meld: p.meld, score: prep.score(p.eff) };
     score += cand.score;
     return { cand, rank: -1 };
@@ -168,7 +182,9 @@ export function solve(prep, opts) {
   const limits = fixed.length ? limitsWithoutFixed(wholeLimits, fixedTotals) : wholeLimits;
   const proven = fixed.length ? opts.proven?.map(p => ({ ...p, most: p.most - (fixedTotals[p.stat] || 0) })) : opts.proven;
   const seedPicks = fixed.length ? opts.seed?.filter(p => !p.pinned) : opts.seed;
-  if (!limits) return { ok: false, truncated: false, nodes: 0, noMeldData, method: 'search', kept: 0 };
+  if (!limits) {
+    return { ok: false, truncated: false, nodes: 0, noMeldData, method: 'search', kept: 0 };
+  }
   const start = seedPicks && meetsLimits(seedPicks, limits) ? seedStart(prep, seedPicks) : null;
 
   // 2. the search; pinned pieces alone fill every slot when the search has none
@@ -187,13 +203,19 @@ export function solve(prep, opts) {
           speedKey,
         })
       : { best: limits.some(l => l.min > 0) ? null : [], nodes: 0, truncated: false, method: 'search', kept: 0 };
-  if (!best) return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
+  if (!best) {
+    return { ok: false, truncated, nodes, noMeldData, method, kept, frontSizes };
+  }
 
   // 3. the picks: pinned pieces first (a pinned ring before the free one), the slots they cover empty, then the search's
   const picks = [];
   const totals = { ...fixedTotals };
-  for (const cand of fixed) picks.push({ type: cand.item.type, item: cand.item, eff: cand.eff, meld: cand.meld, pinned: true });
-  for (const { type, blockedBy } of fixedBlocked) picks.push({ type, item: null, blockedBy: blockedBy ?? null });
+  for (const cand of fixed) {
+    picks.push({ type: cand.item.type, item: cand.item, eff: cand.eff, meld: cand.meld, pinned: true });
+  }
+  for (const { type, blockedBy } of fixedBlocked) {
+    picks.push({ type, item: null, blockedBy: blockedBy ?? null });
+  }
   best.forEach((slot, i) => {
     const type = realSlotType(slotList[i]);
     if (!slot?.cand) {

@@ -127,9 +127,13 @@ export function rawGear(jobId, pieces) {
   const job = makeJobContext(jobId);
   const sum = Object.fromEntries(job.stats.map(s => [s, 0]));
   for (const p of pieces) {
-    if (p.gameId == null || !job.activeSlotTypes.includes(p.slot)) continue;
+    if (p.gameId == null || !job.activeSlotTypes.includes(p.slot)) {
+      continue;
+    }
     const item = poolItemById(job, p.gameId);
-    for (const s of job.stats) sum[s] += item.stats[s] || 0;
+    for (const s of job.stats) {
+      sum[s] += item.stats[s] || 0;
+    }
   }
   return sum;
 }
@@ -147,7 +151,9 @@ export function fakeStorage({ failWith = null } = {}) {
     key: i => [...data.keys()][i] ?? null,
     getItem: k => (data.has(k) ? data.get(k) : null),
     setItem(k, v) {
-      if (this.failWith) throw this.failWith;
+      if (this.failWith) {
+        throw this.failWith;
+      }
       data.set(k, String(v));
     },
     removeItem: k => data.delete(k),

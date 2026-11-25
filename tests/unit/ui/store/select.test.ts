@@ -23,10 +23,14 @@ class FakeHost implements SelectHost {
     this.renders += 1;
   }
   connect(): void {
-    for (const controller of this.controllers) controller.hostConnected?.();
+    for (const controller of this.controllers) {
+      controller.hostConnected?.();
+    }
   }
   disconnect(): void {
-    for (const controller of this.controllers) controller.hostDisconnected?.();
+    for (const controller of this.controllers) {
+      controller.hostDisconnected?.();
+    }
   }
 }
 
@@ -41,10 +45,11 @@ test('the host renders once for a change of what it selected, and not for a chan
   });
   await tick();
   assert.equal(host.renders, 0);
-  for (let i = 1; i <= 1000; i++)
+  for (let i = 1; i <= 1000; i++) {
     store.update('settings/count', state => {
       state.settings.count = i;
     });
+  }
   await tick();
   assert.equal(host.renders, 1, '1,000 changes in a tick are one render');
   assert.equal(count.value, 1000);

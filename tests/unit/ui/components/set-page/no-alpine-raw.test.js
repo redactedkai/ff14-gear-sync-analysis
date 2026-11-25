@@ -29,7 +29,9 @@ test('no Alpine.raw in the set page: no raw(), no .raw, no Alpine passed in', ()
   for (const file of FILES) {
     const code = codeOf(file);
     for (const pattern of [/\braw\s*\(/, /\.raw\b/, /\braw\s*[,:)]/, /\balpine\b/i]) {
-      if (pattern.test(code)) found.push(`${file}: ${pattern}`);
+      if (pattern.test(code)) {
+        found.push(`${file}: ${pattern}`);
+      }
     }
   }
   assert.deepEqual(found, []);
@@ -41,8 +43,9 @@ test('the set page does not assign what the store holds: no this.draft =, this.s
     codeOf(file)
       .split('\n')
       .forEach((line, index) => {
-        if (/\bthis\.(draft|suggestion|running|fillLine|countText|searchedCount|fromCounts|fromCountsFor|gcdLabel)\s*=(?!=)/.test(line))
+        if (/\bthis\.(draft|suggestion|running|fillLine|countText|searchedCount|fromCounts|fromCountsFor|gcdLabel)\s*=(?!=)/.test(line)) {
           found.push(`${file}:${index + 1}: ${line.trim()}`);
+        }
       });
   }
   assert.deepEqual(found, []);

@@ -19,7 +19,9 @@ function missingItemText(gameId) {
 /* The name of the piece a saved row holds: the item data's name, "missing item <id>" for a game id the data lacks, or
    null for an empty row. */
 export function pieceName(job, piece) {
-  if (piece.gameId == null) return null;
+  if (piece.gameId == null) {
+    return null;
+  }
   return poolItemById(job, piece.gameId)?.name ?? missingItemText(piece.gameId);
 }
 
@@ -28,7 +30,9 @@ export function pieceName(job, piece) {
 export function rankBadges(job, goal) {
   const ranks = {};
   [goal?.target, goal?.tb, goal?.tb2].forEach((stat, i) => {
-    if (stat && job.stats.includes(stat) && !(stat in ranks)) ranks[stat] = i + 1;
+    if (stat && job.stats.includes(stat) && !(stat in ranks)) {
+      ranks[stat] = i + 1;
+    }
   });
   return ranks;
 }

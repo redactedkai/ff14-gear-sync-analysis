@@ -10,7 +10,9 @@ export const TYPING_DEBOUNCE_MS = 300;
    dropping the class, letting the browser see it gone, and adding it back. Used by the Job and sync panel (page.js
    lowerCap) and a sheet's page (components/sheets.js). `field`: the input, or nothing (no flash). */
 export function flashLowered(field) {
-  if (!field?.classList) return;
+  if (!field?.classList) {
+    return;
+  }
   field.classList.remove('flash');
   void field.offsetWidth;
   field.classList.add('flash');
@@ -53,8 +55,12 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
   const commitText = (raw, input = null) => {
     clearTimeout(timer);
     const result = commit(raw, { min: bound(lo), max: bound(hi), decimals, snap, exact: !snap, empty, final: input !== null });
-    if (!result) return;
-    if (result.clamped) input.value = result.value;
+    if (!result) {
+      return;
+    }
+    if (result.clamped) {
+      input.value = result.value;
+    }
     if (result.value !== get()) {
       set(result.value);
       justWrote = true;
@@ -76,7 +82,9 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
       // only when that changed
       const unchanged = shown.has && Object.is(v, shown.value) && !justWrote;
       shown = { has: true, value: v };
-      if (unchanged) return el.value;
+      if (unchanged) {
+        return el.value;
+      }
       return el === document.activeElement && roundTo(+el.value, decimals) === v ? el.value : v;
     },
     '@input'(e) {
@@ -84,12 +92,17 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
       clearTimeout(timer);
       // a step (mouse wheel, arrow keys, the spinner) is no InputEvent with an inputType: commit it at once, so the
       // page follows the value as it scrolls; typed digits wait, so "9" on the way to "90" is held back
-      if (live || !e.inputType) commitText(raw);
-      else timer = setTimeout(() => commitText(raw), TYPING_DEBOUNCE_MS);
+      if (live || !e.inputType) {
+        commitText(raw);
+      } else {
+        timer = setTimeout(() => commitText(raw), TYPING_DEBOUNCE_MS);
+      }
     },
     '@change'(e) {
       commitText(e.target.value, e.target);
-      if (e.target.value === '' && onEmpty) onEmpty(e.target);
+      if (e.target.value === '' && onEmpty) {
+        onEmpty(e.target);
+      }
     },
   };
 }

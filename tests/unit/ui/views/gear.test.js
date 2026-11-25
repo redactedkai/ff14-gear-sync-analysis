@@ -147,8 +147,9 @@ test('gear browser Reset filters: shown once any filter is off its default, not 
     { expOff: ['ARR'] },
     { market: false },
     { exclude: [] },
-  ])
+  ]) {
     assert.equal(browseFiltered(app.jobCtx, { ...b, ...change }), true, JSON.stringify(change));
+  }
   // the default boxes in another order are still the default
   assert.equal(browseFiltered(app.jobCtx, { ...b, exclude: [...b.exclude].reverse() }), false);
 });
@@ -161,7 +162,9 @@ test('gear browser view: the Slot menu names its first choice "Any slot", prints
     [0, ...v.slots.slice(1).map(p => p.group)],
   );
   assert.equal(v.slots[0].label, ANY_SLOT_LABEL);
-  for (const p of v.slots) assert.equal(p.countText, p.count.toLocaleString('en-US'), p.key);
+  for (const p of v.slots) {
+    assert.equal(p.countText, p.count.toLocaleString('en-US'), p.key);
+  }
   assert.ok(v.slots[0].count >= 1000 && v.slots[0].countText.includes(','), 'the whole list has four digits, so its count has a separator');
   // the closed button: the chosen slot's label, and "Any slot" for a slot the job does not have
   assert.equal(v.slotLabel, ANY_SLOT_LABEL);
@@ -188,7 +191,7 @@ test('gear browser pages: every page up to 7; above, the first, the last and one
   assert.deepEqual(pageList(19, 22), [1, null, 18, 19, 20, 21, 22]);
   assert.deepEqual(pageList(22, 22), [1, null, 18, 19, 20, 21, 22]);
   // always 7 entries, the current page among them, in order
-  for (let count = 8; count <= 30; count++)
+  for (let count = 8; count <= 30; count++) {
     for (let current = 1; current <= count; current++) {
       const list = pageList(current, count);
       assert.equal(list.length, PAGE_SLOTS, `${current} of ${count}`);
@@ -199,6 +202,7 @@ test('gear browser pages: every page up to 7; above, the first, the last and one
         [...pages].sort((a, b) => a - b),
       );
     }
+  }
 });
 
 /* Sage at level 100 with sync off and the default filters: 2,193 matches, so 44
@@ -264,8 +268,11 @@ test('gear view: a row has one cell per stat in column order, with plain fields 
       const cut = c.was !== null;
       assert.equal(c.cls.includes('cut'), cut);
       assert.equal(c.cls.includes('dim'), c.text === '0' && !cut);
-      if (cut) assert.ok(Number(c.text) < Number(c.was));
-      else assert.equal(c.text.includes('.'), false);
+      if (cut) {
+        assert.ok(Number(c.text) < Number(c.was));
+      } else {
+        assert.equal(c.text.includes('.'), false);
+      }
     }
     assert.ok(raws.has(x.name));
   }

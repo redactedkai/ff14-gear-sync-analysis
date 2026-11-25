@@ -49,14 +49,16 @@ test('rank by tier with Vitality as a key and food matches the reference', () =>
     ['main', 'vit'],
     ['crit', 'vit'],
     ['vit', 'det'],
-  ].entries())
+  ].entries()) {
     for (const jobId of ['AST', 'WAR']) {
       const job = makeJobContext(jobId);
       const keys = names.map(k => (k === 'main' ? job.mainKey : k));
       const level = t % 2 ? 100 : 50;
       const sync = { cap: null, sync: false, level };
       const pool = smallPool(job, rand, ['weapon', 'head', 'body', 'ring'], 2);
-      if (!pool.length) continue;
+      if (!pool.length) {
+        continue;
+      }
       const meals = foodChoices(job);
       const want = tierLex(job, pool, sync, { keys, melds: true, meals, level });
       const r = rankByTier(job, pool, sync, { target: keys[0], tiebreak: keys.slice(1), melds: true, food: 'best', level });
@@ -65,6 +67,7 @@ test('rank by tier with Vitality as a key and food matches the reference', () =>
       assert.ok(r.ok && !r.truncated, label);
       assert.deepEqual(asVector(job, r, keys, level), want, label);
     }
+  }
   assert.ok(runs >= 6, `${runs} runs`);
 });
 
@@ -80,7 +83,9 @@ test('rank by tier: only raw keys give the raw optimizer; a key is held at its t
   const t = rankByTier(job, pool, sync, { target: 'crit', tiebreak: ['det', 'piety'], melds: true, level: 100 });
   for (const h of t.held) {
     assert.ok(t.withFood[h.stat] >= h.hold, h.stat);
-    if (h.tier != null) assert.equal(h.hold, tierStart(rankTierOf(job, h.stat, 100), h.hold), `${h.stat}: the hold is a tier start`);
+    if (h.tier != null) {
+      assert.equal(h.hold, tierStart(rankTierOf(job, h.stat, 100), h.hold), `${h.stat}: the hold is a tier start`);
+    }
   }
 });
 
@@ -106,8 +111,12 @@ test('rank by tier: a stage stopped at its node limit gives none or a held set, 
   let stoppedWithSet = 0;
   for (const nodeLimit of [10, 30, 100]) {
     const r = rankByTier(job, pool, sync, { ...opts, nodeLimit });
-    if (!r.ok || !r.truncated) continue;
-    for (const h of r.held) assert.ok(r.withFood[h.stat] >= h.hold, `${nodeLimit}: ${h.stat} held`);
+    if (!r.ok || !r.truncated) {
+      continue;
+    }
+    for (const h of r.held) {
+      assert.ok(r.withFood[h.stat] >= h.hold, `${nodeLimit}: ${h.stat} held`);
+    }
     const [mine, best] = [lex(r), lex(full)];
     const firstDiff = mine.findIndex((v, i) => v !== best[i]);
     assert.ok(firstDiff < 0 || mine[firstDiff] < best[firstDiff], `${nodeLimit}: ${mine} beats ${best}`);

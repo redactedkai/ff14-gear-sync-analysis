@@ -54,12 +54,13 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
 
     // widening never adds rows
     const rowFindings = rowsIncreaseWhenWidening(result.series.map(({ width, result: probe }) => ({ width, rows: rowCounts(probe) })));
-    for (const item of rowFindings)
+    for (const item of rowFindings) {
       found.add(
         'widening-adds-rows',
         `${item.scope}: ${item.from.rows} rows at ${item.from.width} px, ${item.to.rows} at ${item.to.width} px`,
         view.id,
       );
+    }
 
     // the downward pass over the coarse widths: the same layout as going up
     const byWidth = new Map(result.series.map(({ width, result: probe }) => [width, probe]));
@@ -67,20 +68,24 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
     const downDifferences = [];
     for (const width of [...coarse].reverse()) {
       const down = await measureAt(page, view, width, height);
-      if (layoutKey(down) !== layoutKey(byWidth.get(width)))
+      if (layoutKey(down) !== layoutKey(byWidth.get(width))) {
         downDifferences.push(`${width} px: ${describeKeyChange(byWidth.get(width), down).join('; ')}`);
+      }
     }
-    if (downDifferences.length)
+    if (downDifferences.length) {
       found.add(
         'resize-equals-fresh',
         `narrowing gives another layout than widening at ${downDifferences.length} width(s): ${downDifferences.slice(0, 3).join(' | ')}`,
         view.id,
       );
+    }
 
     // a page loaded at the width against the resized page: the change points, the width below each, and every few coarse widths
     const freshWidths = new Set(result.changes.flatMap(change => [change.at - 1, change.at]));
     coarse.forEach((width, index) => {
-      if (index % FRESH_EVERY === 0) freshWidths.add(width);
+      if (index % FRESH_EVERY === 0) {
+        freshWidths.add(width);
+      }
     });
     const scopeNames = Object.keys(result.series[0].result.scopes);
     const freshDifferences = [];
@@ -90,22 +95,26 @@ export async function sweepView({ browser, file, view, fixtures, setup, height, 
         const freshProbe = await reachAndMeasure(fresh.page, view, fixture.open);
         const resized = await measureAt(page, view, width, height);
         const differences = compareProbes(resized, freshProbe, scopeNames);
-        if (layoutKey(resized) !== layoutKey(freshProbe) || differences.length)
+        if (layoutKey(resized) !== layoutKey(freshProbe) || differences.length) {
           freshDifferences.push(
             `${width} px: ${(differences.length ? differences : describeKeyChange(resized, freshProbe)).slice(0, 2).join('; ')}`,
           );
+        }
       } finally {
         await fresh.context.close();
       }
     }
-    if (freshDifferences.length)
+    if (freshDifferences.length) {
       found.add(
         'resize-equals-fresh',
         `${freshDifferences.length} width(s) lay out differently resized than loaded: ${freshDifferences.slice(0, 3).join(' | ')}`,
         view.id,
       );
+    }
 
-    if (errors.length) found.add('no-page-errors', errors[0], view.id);
+    if (errors.length) {
+      found.add('no-page-errors', errors[0], view.id);
+    }
     return {
       changes: result.changes,
       measured: result.measured,

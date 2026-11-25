@@ -45,13 +45,23 @@ test('domains: every file of tests/ is in exactly one domain', () => {
 test('domains: every registry pattern matches a file, and every LONG entry is a unit test file', () => {
   const unmatched = [];
   for (const [name, domain] of Object.entries(DOMAINS)) {
-    for (const pattern of domain.src)
-      if (!SOURCE_FILES.some(file => matchesPattern(file, pattern))) unmatched.push(`${name} src: ${pattern}`);
-    for (const pattern of domain.tests)
-      if (!TEST_FILES.some(file => matchesPattern(file, pattern))) unmatched.push(`${name} tests: ${pattern}`);
+    for (const pattern of domain.src) {
+      if (!SOURCE_FILES.some(file => matchesPattern(file, pattern))) {
+        unmatched.push(`${name} src: ${pattern}`);
+      }
+    }
+    for (const pattern of domain.tests) {
+      if (!TEST_FILES.some(file => matchesPattern(file, pattern))) {
+        unmatched.push(`${name} tests: ${pattern}`);
+      }
+    }
   }
   const unitFiles = new Set(unitFilesOf(DOMAIN_NAMES));
-  for (const file of LONG) if (!unitFiles.has(file)) unmatched.push(`LONG: ${file}`);
+  for (const file of LONG) {
+    if (!unitFiles.has(file)) {
+      unmatched.push(`LONG: ${file}`);
+    }
+  }
   assert.deepEqual(unmatched, []);
 });
 
@@ -66,17 +76,21 @@ test("domains: a smoke step's file is in the folder of its step's domain (the do
   // each check function's file, from the import lines of groups.mjs, then each `step(checkX, 'domain')` call
   const source = readFileSync(`${ROOT}/tests/e2e/groups.mjs`, 'utf8');
   const fileOf = new Map();
-  for (const [, names, path] of source.matchAll(/import \{([^}]+)\} from '\.\/(checks\/[^']+)'/g))
+  for (const [, names, path] of source.matchAll(/import \{([^}]+)\} from '\.\/(checks\/[^']+)'/g)) {
     for (const name of names
       .split(',')
       .map(text => text.trim())
-      .filter(Boolean))
+      .filter(Boolean)) {
       fileOf.set(name, `tests/e2e/${path}`);
+    }
+  }
   const calls = [...source.matchAll(/step\((\w+), '([\w-]+)'\)/g)];
   assert.ok(calls.length > 40, `only ${calls.length} step calls found in groups.mjs`);
   const problems = calls.flatMap(([, name, domain]) => {
     const file = fileOf.get(name);
-    if (!file) return [`${name}: not imported from tests/e2e/checks/`];
+    if (!file) {
+      return [`${name}: not imported from tests/e2e/checks/`];
+    }
     return domainsOfTest(file).includes(domain)
       ? []
       : [`${name} (${domain}) is in ${file}, which is in ${domainsOfTest(file).join(' and ') || 'no domain'}`];
@@ -106,7 +120,9 @@ test("domains: the domains table of docs/engineering/testing.md gives each domai
   const doc = readFileSync(`${ROOT}/docs/engineering/testing.md`, 'utf8');
   const rows = [...doc.matchAll(/^\| `([\w-]+)` \|.*\| (\d+) \| (\d+) \|$/gm)];
   const stepsPerDomain = new Map();
-  for (const step of GROUPS.flatMap(group => group.steps)) stepsPerDomain.set(step.domain, (stepsPerDomain.get(step.domain) ?? 0) + 1);
+  for (const step of GROUPS.flatMap(group => group.steps)) {
+    stepsPerDomain.set(step.domain, (stepsPerDomain.get(step.domain) ?? 0) + 1);
+  }
   const documented = rows.map(([, name, unitFiles, smokeSteps]) => [name, Number(unitFiles), Number(smokeSteps)]);
   const actual = DOMAIN_NAMES.map(name => [name, unitFilesOf([name]).length, stepsPerDomain.get(name) ?? 0]);
   assert.deepEqual(documented, actual);

@@ -315,7 +315,9 @@ export function panelOf(state: AppState, tab: string) {
     return { job: jobCtx.jobId as string, jobCtx, cap: null, sync: false, level: jobCtx.maxLevel as number };
   }
   const panel = state.settings.panels[tab as PanelTab];
-  if (!panel) throw new Error(`The ${tab} tab has no Job and sync panel`);
+  if (!panel) {
+    throw new Error(`The ${tab} tab has no Job and sync panel`);
+  }
   return { ...panelFields(panel), jobCtx: makeJobContext(panel.job) };
 }
 
@@ -376,7 +378,9 @@ export function noteOf(state: AppState): string {
 /* The address (a hash) of the Sheets screen of `sheetId` and `setId`: the list with neither, the sheet's page with a sheet, the
    gear set's page with both. For the links of the lists and the breadcrumb. */
 export function sheetHref(sheetId: string | null = null, setId: string | null = null): string {
-  if (!sheetId) return formatRoute({ tab: 'sheets', screen: 'sheets' });
+  if (!sheetId) {
+    return formatRoute({ tab: 'sheets', screen: 'sheets' });
+  }
   return formatRoute(setId ? { tab: 'sheets', screen: 'set', sheetId, setId } : { tab: 'sheets', screen: 'sheet', sheetId });
 }
 
@@ -388,8 +392,12 @@ export function setPageOf(state: AppState, setId: string | null): SetPageState {
 /* What `page` holds that leaving would lose: 'draft' (a manual draft), 'running' (an Auto-fill), 'result' (an Auto-fill result
    waiting), or null for none. The leave question asks it of its own page. */
 export function unsettledKind(page: SetPageState): 'draft' | 'running' | 'result' | null {
-  if (page.draft !== null) return 'draft';
-  if (page.fill === 'running') return 'running';
+  if (page.draft !== null) {
+    return 'draft';
+  }
+  if (page.fill === 'running') {
+    return 'running';
+  }
   return page.fill === 'waiting' ? 'result' : null;
 }
 
@@ -406,14 +414,23 @@ export function unsettled(state: AppState): boolean {
 export function routeOf(state: AppState) {
   const { screen, sheets } = state;
   const tab = screen.pendingTab ?? screen.tab;
-  if (tab === 'browse') return { tab };
-  if (tab === 'math') return { tab, mathTab: screen.mathTab };
+  if (tab === 'browse') {
+    return { tab };
+  }
+  if (tab === 'math') {
+    return { tab, mathTab: screen.mathTab };
+  }
   const { missing } = sheets;
-  if (missing)
+  if (missing) {
     return missing.setId
       ? { tab, screen: 'set', sheetId: missing.sheetId, setId: missing.setId }
       : { tab, screen: 'sheet', sheetId: missing.sheetId };
-  if (sheets.screen === 'set') return { tab, screen: 'set', sheetId: sheets.sheetId, setId: sheets.setId };
-  if (sheets.screen === 'sheet') return { tab, screen: 'sheet', sheetId: sheets.sheetId };
+  }
+  if (sheets.screen === 'set') {
+    return { tab, screen: 'set', sheetId: sheets.sheetId, setId: sheets.setId };
+  }
+  if (sheets.screen === 'sheet') {
+    return { tab, screen: 'sheet', sheetId: sheets.sheetId };
+  }
   return { ...DEFAULT_ROUTE };
 }

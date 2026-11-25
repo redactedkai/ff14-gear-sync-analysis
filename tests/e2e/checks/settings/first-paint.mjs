@@ -11,14 +11,17 @@ const FIRST_PAINT_PROBE = () => {
   window.__firstPaint = frames;
   const shown = el => !!el && el.getClientRects().length > 0;
   const record = () => {
-    if (document.body)
+    if (document.body) {
       frames.push({
         page: shown(document.querySelector('.wrap')),
         panel: shown(document.querySelector('section[aria-label="Job and sync settings"]')),
         job: document.getElementById('job-name')?.textContent ?? '',
         tabs: ['sheets', 'browse', 'math'].filter(tab => shown(document.getElementById(`tab-${tab}`))),
       });
-    if (frames.length < 600) requestAnimationFrame(record);
+    }
+    if (frames.length < 600) {
+      requestAnimationFrame(record);
+    }
   };
   requestAnimationFrame(record);
 };
@@ -36,7 +39,9 @@ export async function checkFirstPaint(pg) {
     await pg.evaluate(
       ([key, state, address]) => {
         localStorage.clear();
-        if (state) localStorage.setItem(key, JSON.stringify(state));
+        if (state) {
+          localStorage.setItem(key, JSON.stringify(state));
+        }
         history.replaceState(null, '', address); // the address names the open tab
       },
       [STORE_KEY, saved, hash],

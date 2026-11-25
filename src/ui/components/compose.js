@@ -8,7 +8,9 @@ export function compose(...parts) {
   for (const part of parts) {
     const members = Object.getOwnPropertyDescriptors(part);
     for (const name of Reflect.ownKeys(members)) {
-      if (name in component) throw new Error(`Two parts both define "${String(name)}"`);
+      if (name in component) {
+        throw new Error(`Two parts both define "${String(name)}"`);
+      }
     }
     Object.defineProperties(component, members);
   }
@@ -20,6 +22,8 @@ export function compose(...parts) {
    went with it. `element` is read when the draw is done, so pass a function: `() => the element`. */
 export function afterDraw(component, getElement, callback) {
   component.$nextTick(() => {
-    if (getElement().isConnected) callback();
+    if (getElement().isConnected) {
+      callback();
+    }
   });
 }

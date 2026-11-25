@@ -41,7 +41,9 @@ test('both modes with melds match exhaustive search, on tiers slower and faster 
   for (let t = 0; t < 30; t++) {
     const job = makeJobContext(['SGE', 'WAR', 'BLM', 'SAM', 'PLD'][int(5)]);
     const pool = smallPool(job, rand, types, 2);
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const ilvls = pool.map(i => i.ilvl).sort((a, b) => a - b);
     const sync = rand() < 0.5 ? { cap: null, sync: false, level: 100 } : { cap: ilvls[int(ilvls.length)], sync: true, level: 100 };
     const subs = job.substats.filter(s => s !== job.speedKey);
@@ -56,7 +58,9 @@ test('both modes with melds match exhaustive search, on tiers slower and faster 
         const r = optimize(job, pool, sync, opts);
         const label = `${job.jobId} pool #${t} ${mode} ${JSON.stringify(opts)} ${JSON.stringify(sync)} free ${free}`;
         runs++;
-        if (start < free) slower++;
+        if (start < free) {
+          slower++;
+        }
         if (!want) {
           infeasible++;
           assert.equal(r.ok, false, label);
@@ -69,7 +73,9 @@ test('both modes with melds match exhaustive search, on tiers slower and faster 
           label,
         );
         assert.ok(r.totals[job.speedKey] >= start, label);
-        if (opts.spdMax != null) assert.ok(r.totals[job.speedKey] <= opts.spdMax, label);
+        if (opts.spdMax != null) {
+          assert.ok(r.totals[job.speedKey] <= opts.spdMax, label);
+        }
       }
     }
   }
@@ -85,7 +91,9 @@ test('2H weapons, shields and blocked slots with a speed band match exhaustive s
   for (let t = 0; t < 16; t++) {
     const job = makeJobContext(['PLD', 'SGE'][t % 2]);
     const pool = smallPool(job, rand, ['weapon', 'offhand', 'body', 'ring'], 2);
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const target = job.substats.filter(s => s !== job.speedKey)[int(3)];
     const free = optimize(job, pool, { cap: null, sync: false, level: 100 }, { target, melds: true }).totals[job.speedKey];
     for (const start of tiersAround(free, 100).slice(0, 3)) {
@@ -97,8 +105,11 @@ test('2H weapons, shields and blocked slots with a speed band match exhaustive s
         const r = optimize(job, pool, sync, opts);
         const label = `${job.jobId} #${t} ${JSON.stringify(opts)}`;
         runs++;
-        if (!want) assert.equal(r.ok, false, label);
-        else assert.deepEqual([r.totals[target]], want, label);
+        if (!want) {
+          assert.equal(r.ok, false, label);
+        } else {
+          assert.deepEqual([r.totals[target]], want, label);
+        }
       }
     }
   }
@@ -124,11 +135,15 @@ test('speed tables for blocked slots (built from the first node) match exhaustiv
     ][t % 4];
     const job = makeJobContext(id);
     const pool = smallPool(job, rand, ['weapon', 'offhand', 'head', 'body', 'ring'], 2, 1, window);
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const sync = { cap: null, sync: false, level: 100 };
     const target = job.substats.filter(s => s !== job.speedKey)[int(3)];
     const prep = prepare(job, pool, sync, { target, melds: true, speed: 'exact' });
-    if (prep.posList.some(l => l.some(a => a.blocks.some(b => prep.posList[prep.slotList.indexOf(b)]?.length)))) blocking++;
+    if (prep.posList.some(l => l.some(a => a.blocks.some(b => prep.posList[prep.slotList.indexOf(b)]?.length)))) {
+      blocking++;
+    }
     const free = optimize(job, pool, sync, { target, melds: true }).totals[job.speedKey];
     for (const start of tiersAround(free, 100).slice(0, 3)) {
       const next = gcdTierAt(start, 100).next;
@@ -138,8 +153,11 @@ test('speed tables for blocked slots (built from the first node) match exhaustiv
         const r = solve(prep, { ...opts, lazyTables: 0 });
         const label = `${job.jobId} #${t} ${JSON.stringify(opts)}`;
         runs++;
-        if (!want) assert.equal(r.ok, false, label);
-        else assert.deepEqual([r.totals[target]], want, label);
+        if (!want) {
+          assert.equal(r.ok, false, label);
+        } else {
+          assert.deepEqual([r.totals[target]], want, label);
+        }
       }
     }
   }
@@ -156,7 +174,9 @@ function gearBand(job, meal, gcd, mode, level, haste) {
     const at = gcdFor(g + foodAdd(job, meal, job.speedKey, g, level), level, 2500, haste);
     const ok = mode === 'exact' ? at === gcd : at <= gcd;
     if (ok) {
-      if (lo == null) lo = g;
+      if (lo == null) {
+        lo = g;
+      }
       assert.ok(hi == null || hi === g - 1, 'one band');
       hi = g;
     }
@@ -171,7 +191,9 @@ test('Target GCD with food and haste matches exhaustive search over every meal',
   for (let t = 0; t < 10; t++) {
     const job = makeJobContext(['SAM', 'SGE'][t % 2]);
     const pool = smallPool(job, rand, ['head', 'neck', 'ring'], 2);
-    if (!pool.length) continue;
+    if (!pool.length) {
+      continue;
+    }
     const sync = { cap: null, sync: false, level: 100 };
     const haste = hasteFor(job.jobId, 100)?.pct ?? 0;
     const subs = job.substats.filter(s => s !== job.speedKey);
@@ -184,11 +206,17 @@ test('Target GCD with food and haste matches exhaustive search over every meal',
         let want = null;
         for (const meal of foodChoices(job)) {
           const band = gearBand(job, meal, gcd, mode, 100, haste);
-          if (!band) continue;
+          if (!band) {
+            continue;
+          }
           const best = exhaustive(job, pool, sync, { target, melds: true, spdMin: band.min || null, spdMax: band.max });
-          if (!best) continue;
+          if (!best) {
+            continue;
+          }
           const withFood = [best[0] + foodAdd(job, meal, target, best[0], 100)];
-          if (!want || withFood[0] > want[0]) want = withFood;
+          if (!want || withFood[0] > want[0]) {
+            want = withFood;
+          }
         }
         const r = optimizeGcd(job, pool, sync, { target, melds: true, gcd, mode, food: 'best' });
         const label = `${job.jobId} #${t} ${target} ${mode} ${gcd} free ${free}`;
@@ -233,8 +261,11 @@ test('pieces covering several slots, with a speed band, match exhaustive search'
         const r = optimize(war, pool, sync, opts);
         const label = `#${t} ${JSON.stringify(opts)} ${pool.map(i => i.name).join(', ')}`;
         runs++;
-        if (!want) assert.equal(r.ok, false, label);
-        else assert.deepEqual([r.totals[target]], want, label);
+        if (!want) {
+          assert.equal(r.ok, false, label);
+        } else {
+          assert.deepEqual([r.totals[target]], want, label);
+        }
       }
     }
   }

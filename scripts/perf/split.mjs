@@ -20,7 +20,9 @@ const target = option('target', job.speedKey);
 const tiebreak = listOption('tb', []);
 const melds = flag('melds');
 const repeats = numberOption('repeats', 20);
-if (!sync) throw new Error(`unknown sync; one of: ${SYNCS.map(s => s.label).join(', ')}`);
+if (!sync) {
+  throw new Error(`unknown sync; one of: ${SYNCS.map(s => s.label).join(', ')}`);
+}
 
 const pool = fullPool(job);
 const t = {};
@@ -56,7 +58,9 @@ function replica() {
         job.stats.forEach(s => {
           v[s] = (e[s] || 0) + (m?.gain[s] || 0);
         });
-        if (job.damageKey) v[WD_KEY] = weaponDamage(job, it, itemSyncIlvl(it, sync));
+        if (job.damageKey) {
+          v[WD_KEY] = weaponDamage(job, it, itemSyncIlvl(it, sync));
+        }
         return { item: it, eff: v, copies: it.copies || 1, blocks: slotInfo(job, it).blocks, meld: m };
       });
   });
@@ -65,9 +69,13 @@ function replica() {
   const order = [...SLOT_TYPES.filter(ty => !blockable.has(ty)), ...SLOT_TYPES.filter(ty => blockable.has(ty))];
   const slotList = [];
   order.forEach(ty => {
-    if (!all[ty].length) return;
+    if (!all[ty].length) {
+      return;
+    }
     slotList.push(ty);
-    if (ty === 'ring') slotList.push('ring');
+    if (ty === 'ring') {
+      slotList.push('ring');
+    }
   });
   const score = makeScorer(
     rankedKeys(job, target, tiebreak),
@@ -77,7 +85,9 @@ function replica() {
   const cand = {};
   const sorted = {};
   slotList.forEach(ty => {
-    if (sorted[ty]) return;
+    if (sorted[ty]) {
+      return;
+    }
     const arr = all[ty];
     arr.forEach(a => {
       a.score = score(a.eff);
@@ -88,7 +98,9 @@ function replica() {
   });
   t0 = lap('score+sort', t0);
   slotList.forEach(ty => {
-    if (cand[ty]) return;
+    if (cand[ty]) {
+      return;
+    }
     cand[ty] = pruneDominated(sorted[ty], dims, slotList.filter(x => x === ty).length, true);
   });
   t0 = lap('prune', t0);
@@ -107,13 +119,18 @@ if (real.slotList.join() !== mine.slotList.join() || sig(real) !== sig(mine)) {
   process.exit(1);
 }
 
-for (const k of Object.keys(t)) delete t[k];
+for (const k of Object.keys(t)) {
+  delete t[k];
+}
 let nodes = 0;
-for (let i = 0; i < repeats; i++) nodes = replica().nodes;
+for (let i = 0; i < repeats; i++) {
+  nodes = replica().nodes;
+}
 const total = Object.values(t).reduce((a, b) => a + b, 0);
 console.log(
   `${job.jobId} pool ${pool.length}, ${sync.label}, ${[target, ...tiebreak].join('>')}, melds ${melds}: ${(total / repeats).toFixed(2)} ms per run, ${nodes} nodes`,
 );
 console.log(`candidates kept: ${mine.posList.map((l, i) => `${mine.slotList[i]} ${l.length}`).join(', ')}`);
-for (const [k, v] of Object.entries(t))
+for (const [k, v] of Object.entries(t)) {
   console.log(`  ${k.padEnd(11)} ${(v / repeats).toFixed(2).padStart(7)} ms  ${((100 * v) / total).toFixed(0).padStart(3)}%`);
+}

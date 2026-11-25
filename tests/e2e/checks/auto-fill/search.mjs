@@ -53,7 +53,9 @@ export async function checkFillSearch(pg) {
     check(noMarket.without < noMarket.on, 'leaving crafted gear out does not lower Critical Hit; pick another case'),
     check(crafted > 0 && low.searched < full.searched, 'a box or the equip level leaves no piece out; pick another case'),
   ].every(Boolean);
-  if (!usable) return;
+  if (!usable) {
+    return;
+  }
   const line = result => searchLine(result.searched, result.all);
 
   await seedSheet(pg, DIALOG_SHEET);
@@ -66,7 +68,9 @@ export async function checkFillSearch(pg) {
   // 1. Expansion and Item level: the count and the answer follow the browser's own filters; the menu closes by its button
   await pg.click('#s-exp');
   for (const box of await pg.locator('#s-exp-menu input').all()) {
-    if (filter.expOff.includes(await box.getAttribute('data-exp'))) await box.uncheck();
+    if (filter.expOff.includes(await box.getAttribute('data-exp'))) {
+      await box.uncheck();
+    }
   }
   await pg.click('#s-exp');
   await expect(pg.locator('#s-exp')).toHaveNumber(2);
@@ -93,7 +97,9 @@ export async function checkFillSearch(pg) {
   await setNumber(pg, '#s-min', '');
   await setNumber(pg, '#s-max', '');
   await pg.click('#s-exp');
-  for (const box of await pg.locator('#s-exp-menu input').all()) await box.check();
+  for (const box of await pg.locator('#s-exp-menu input').all()) {
+    await box.check();
+  }
   await pg.click('#s-exp');
   await expect(pg.locator('#s-exp')).toHaveText('All expansions');
   await expect(pg.locator('#s-count')).toHaveText(line(full));

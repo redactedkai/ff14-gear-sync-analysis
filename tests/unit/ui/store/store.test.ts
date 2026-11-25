@@ -18,10 +18,11 @@ test('1,000 updates in one tick notify the listener once', async () => {
   store.subscribe(() => {
     notified += 1;
   });
-  for (let i = 0; i < 1000; i++)
+  for (let i = 0; i < 1000; i++) {
     store.update('settings/count', state => {
       state.settings.count = i;
     });
+  }
   assert.equal(notified, 0, 'nothing is announced inside the tick');
   await tick();
   assert.equal(notified, 1);
@@ -100,7 +101,9 @@ test('update hands back what the change returns; an action that throws is still 
 
 test(`the log keeps the last ${ACTION_LOG_LIMIT} action names, newest last`, () => {
   const store = demoStore();
-  for (let i = 0; i < 120; i++) store.update(`settings/step${i}`, () => {});
+  for (let i = 0; i < 120; i++) {
+    store.update(`settings/step${i}`, () => {});
+  }
   assert.equal(store.log.length, ACTION_LOG_LIMIT);
   assert.equal(store.log[0], 'settings/step70');
   assert.equal(store.log.at(-1), 'settings/step119');
@@ -147,7 +150,9 @@ test('a listener that throws does not stop the others', async () => {
     await tick();
   } finally {
     process.off('uncaughtException', onUncaught);
-    for (const handler of handlers) process.on('uncaughtException', handler);
+    for (const handler of handlers) {
+      process.on('uncaughtException', handler);
+    }
   }
   assert.deepEqual(seen, ['second']);
   assert.equal(uncaught.length, 1);

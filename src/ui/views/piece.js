@@ -31,9 +31,15 @@ const sharePct = perMille => `${perMille / 10}%`;
 function formulaText(steps) {
   return steps
     .map(s => {
-      if (s.kind === 'offhand') return `two-handed ${s.two} − one-handed ${s.one} = ${s.value}`;
-      if (s.kind === 'slot') return `${s.base} × ${sharePct(s.pct)} = ${s.exact.toFixed(1)} → ${s.value}`;
-      if (s.kind === 'factor') return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
+      if (s.kind === 'offhand') {
+        return `two-handed ${s.two} − one-handed ${s.one} = ${s.value}`;
+      }
+      if (s.kind === 'slot') {
+        return `${s.base} × ${sharePct(s.pct)} = ${s.exact.toFixed(1)} → ${s.value}`;
+      }
+      if (s.kind === 'factor') {
+        return `× ${s.factor} = ${s.exact.toFixed(1)} → ${s.value}`;
+      }
       return `× ${s.weight}% = ${s.exact.toFixed(1)} → ${s.value}`;
     })
     .join('; ');
@@ -42,7 +48,9 @@ function formulaText(steps) {
 /* "363 × 8.5% = 30.8 → 31", or with a stat factor "414 × 90% = 372; × 8.5% = 31.6 → 32": a cap's derivation
    (capDerivation), in the order the cap is computed. */
 function capFormulaText(d) {
-  if (d.offhand) return `two-handed ${d.offhand.two} − one-handed ${d.offhand.one} = ${d.value}`;
+  if (d.offhand) {
+    return `two-handed ${d.offhand.two} − one-handed ${d.offhand.one} = ${d.value}`;
+  }
   const head = d.factorPct !== 100 ? `${d.base} × ${d.factorPct}% = ${d.afterFactor}; × ` : `${d.base} × `;
   return `${head}${sharePct(d.pct)} = ${d.exact.toFixed(1)} → ${d.value}`;
 }
@@ -51,11 +59,17 @@ function capFormulaText(d) {
    name, for the Vitality factor. */
 function ownSentence(steps, il, main) {
   const first = steps[0];
-  if (first.kind === 'offhand') return `The two-handed weapon's ${first.two} minus the one-handed weapon's ${first.one}.`;
+  if (first.kind === 'offhand') {
+    return `The two-handed weapon's ${first.two} minus the one-handed weapon's ${first.one}.`;
+  }
   let text = `${sharePct(first.pct)} of the item level ${il} budget (${first.base})`;
   for (const s of steps.slice(1)) {
-    if (s.kind === 'factor') text += `, then ${Math.round(s.factor * 100)}% on ${main} gear`;
-    if (s.kind === 'share') text += `, then ${s.weight}% for the 2nd substat`;
+    if (s.kind === 'factor') {
+      text += `, then ${Math.round(s.factor * 100)}% on ${main} gear`;
+    }
+    if (s.kind === 'share') {
+      text += `, then ${s.weight}% for the 2nd substat`;
+    }
   }
   return `${text}.`;
 }
@@ -63,9 +77,13 @@ function ownSentence(steps, il, main) {
 /* One sentence for where a stat's ceiling comes from (capDerivation), worded like
    ownSentence's; `main`: the job's main stat name. */
 function capSentence(d, cap, main) {
-  if (d.offhand) return `Most allowed: the two-handed ceiling ${d.offhand.two} minus the one-handed ceiling ${d.offhand.one}.`;
+  if (d.offhand) {
+    return `Most allowed: the two-handed ceiling ${d.offhand.two} minus the one-handed ceiling ${d.offhand.one}.`;
+  }
   let text = `Most allowed: ${sharePct(d.pct)} of the item level ${cap} budget (${d.base})`;
-  if (d.factorPct !== 100) text += `, with ${d.factorPct}% on ${main} gear`;
+  if (d.factorPct !== 100) {
+    text += `, with ${d.factorPct}% on ${main} gear`;
+  }
   return `${text}.`;
 }
 
@@ -105,7 +123,9 @@ export function pieceView(job, sync, piece, ilvl) {
     { stat: 'vit', w: 100 },
   ];
   p.subs.forEach((s, i) => {
-    if (s && job.substats.includes(s)) lines.push({ stat: s, w: SUB_WEIGHTS[i], sub: true });
+    if (s && job.substats.includes(s)) {
+      lines.push({ stat: s, w: SUB_WEIGHTS[i], sub: true });
+    }
   });
   const rows = lines.map(({ stat, w, sub }) => {
     const d = statDerivation(job, stat, il, t, w);
@@ -136,12 +156,15 @@ export function pieceView(job, sync, piece, ilvl) {
     subKept = subs.reduce((a, r) => a + r.syn, 0);
   const most = subs.reduce((a, r) => (r.lost > (a?.lost ?? 0) ? r : a), null);
   let summary;
-  if (status === 'off') summary = `No sync applies: these are the ${slotName}'s stats as they are.`;
-  else if (status === 'below')
+  if (status === 'off') {
+    summary = `No sync applies: these are the ${slotName}'s stats as they are.`;
+  } else if (status === 'below') {
     summary = `At item level ${il} this ${slotName} is at or below the cap (${cap}): sync leaves every stat as it is.`;
-  else if (!most) summary = `Synced to ${cap}, this item level ${il} ${slotName} keeps all ${subRaw} of its substat points.`;
-  else
+  } else if (!most) {
+    summary = `Synced to ${cap}, this item level ${il} ${slotName} keeps all ${subRaw} of its substat points.`;
+  } else {
     summary = `Synced to ${cap}, this item level ${il} ${slotName} keeps ${subKept} of its ${subRaw} substat points. ${most.label}, its ${most.w}% stat, loses the most (−${most.lost}).`;
+  }
 
   return {
     il,
@@ -177,6 +200,8 @@ export function pieceView(job, sync, piece, ilvl) {
    (ui/ranks.js withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
 export function withSub(subs, i, value, substats) {
   const two = subs.slice(0, 2);
-  while (two.length < 2) two.push(null);
+  while (two.length < 2) {
+    two.push(null);
+  }
   return withRank(two, i, value, substats);
 }

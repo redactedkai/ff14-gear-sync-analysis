@@ -70,8 +70,9 @@ export async function checkBrowserColumnsStay(pg) {
         return [box.left, box.right];
       });
       const rowHeights = { plain: new Set(), cut: new Set() };
-      for (const row of table.querySelectorAll('tbody tr[data-key]'))
+      for (const row of table.querySelectorAll('tbody tr[data-key]')) {
         rowHeights[row.querySelector('td.cut') ? 'cut' : 'plain'].add(row.getBoundingClientRect().height);
+      }
       return {
         edges,
         headHeight: table.querySelector('thead').getBoundingClientRect().height,
@@ -103,12 +104,14 @@ export async function checkBrowserColumnsStay(pg) {
           Math.abs(now.headHeight - first.headHeight) <= 0.5,
           `${where}: the heading row's height changed (${now.headHeight} vs ${first.headHeight})`,
         );
-        for (const kind of ['plain', 'cut'])
-          for (const h of now.rowHeights[kind])
+        for (const kind of ['plain', 'cut']) {
+          for (const h of now.rowHeights[kind]) {
             check(
               first.rowHeights[kind].length === 0 || first.rowHeights[kind].some(f => Math.abs(f - h) <= 0.5),
               `${where}: a ${kind} row is ${h} px high, not ${first.rowHeights[kind]}`,
             );
+          }
+        }
         check(
           await pg.evaluate(() => {
             const box = document.querySelector('#tab-browse .tablewrap');
@@ -137,11 +140,14 @@ export async function checkBrowserColumnHover(pg) {
         columns[key] ??= { head: '', cells: [] };
         return columns[key];
       };
-      for (const [i, th] of [...table.querySelectorAll('thead th')].entries())
+      for (const [i, th] of [...table.querySelectorAll('thead th')].entries()) {
         column(th.dataset.col ?? `#${i}`).head = getComputedStyle(th).color;
-      for (const tr of table.querySelectorAll('tbody tr[data-key]'))
-        for (const [i, td] of [...tr.children].entries())
+      }
+      for (const tr of table.querySelectorAll('tbody tr[data-key]')) {
+        for (const [i, td] of [...tr.children].entries()) {
           column(td.dataset.col ?? `#${i}`).cells.push(getComputedStyle(td).backgroundColor);
+        }
+      }
       return columns;
     });
   for (const scheme of ['dark', 'light']) {

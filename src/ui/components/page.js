@@ -19,7 +19,9 @@ export function page() {
     /* TEMPORARY (the "test data" button of a DEV build, ui/test-data.js): load the example sheets and show the manager. */
     loadTestData() {
       const sheets = this.$store.sheets;
-      if (sheets.askLeave(() => this.loadTestData())) return;
+      if (sheets.askLeave(() => this.loadTestData())) {
+        return;
+      }
       loadExampleSheets(sheets);
       this.$store.app.showTab('sheets');
       sheets.openManager();
@@ -40,8 +42,12 @@ export function page() {
     goTab(tab, event) {
       followInPage(event, () => {
         const app = this.$store.app;
-        if (tab === (app.pendingTab ?? app.tab)) return;
-        if (app.tab === 'sheets' && tab !== 'sheets' && this.$store.sheets.askLeave(() => app.openTab(tab))) return;
+        if (tab === (app.pendingTab ?? app.tab)) {
+          return;
+        }
+        if (app.tab === 'sheets' && tab !== 'sheets' && this.$store.sheets.askLeave(() => app.openTab(tab))) {
+          return;
+        }
         app.openTab(tab);
       });
     },
@@ -73,7 +79,9 @@ export function settings() {
       },
       /* the open tab's settings back to their defaults, after the browser's own confirmation dialog */
       requestReset() {
-        if (window.confirm(RESET_QUESTION)) this.$store.app.resetAll();
+        if (window.confirm(RESET_QUESTION)) {
+          this.$store.app.resetAll();
+        }
       },
     },
     jobMenu(),
