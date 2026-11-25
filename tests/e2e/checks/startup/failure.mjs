@@ -75,16 +75,16 @@ export async function checkStartupFailures(pg) {
     check(blank.error === 'Error: injected failure (smoke test)', `blank case error text: '${blank.error}'`);
     check(await page.locator('#startfail-reload').isVisible(), 'no Reload button');
 
-    // an error inside Alpine, in a known spot: the math tab's component gets an x-init that calls a function nobody defines
+    // an error inside Alpine, in a known spot: the Sheets tab's component gets an x-init that calls a function nobody defines
     const partUrl = variantUrl('part', html => {
-      if (!html.includes('x-data="syncExplainer"')) {
-        throw new Error('the page has no x-data="syncExplainer"');
+      if (!html.includes('x-data="sheetsTab"')) {
+        throw new Error('the page has no x-data="sheetsTab"');
       }
-      return html.replace('x-data="syncExplainer"', 'x-data="syncExplainer" x-init="mathMissing()"');
+      return html.replace('x-data="sheetsTab"', 'x-data="sheetsTab" x-init="sheetsMissing()"');
     });
     const part = await failedStart(page, partUrl);
     check(part.heading.length > 0, 'partly built: no heading');
-    check(part.error.includes('mathMissing'), `partly built error text: '${part.error}'`);
+    check(part.error.includes('sheetsMissing'), `partly built error text: '${part.error}'`);
     check(!(await page.locator('[data-tab=sheets]').isVisible()), 'a partly built page hides the rest of the page');
 
     // the half-built page is never painted before the message hides it: a frame loop (from before the page's own scripts)

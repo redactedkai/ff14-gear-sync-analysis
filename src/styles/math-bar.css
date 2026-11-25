@@ -1,7 +1,8 @@
 /* ==== How the math works: the bar, charts and legends ==== */
-/* How the math works: the bar element (elements/math-page/math-bar.ts) and the Stat Allocation element (piece-stats.ts) take no box of their
+/* How the math works: the screen element (elements/math-page/math-screen.ts), the bar element (math-bar.ts) and the Stat Allocation element (piece-stats.ts) take no box of their
    own: the bar's and the screen's markup lay out as if it sat in the page */
 gsa-math-bar,
+gsa-math-screen,
 gsa-piece-stats {
   display: contents;
 }

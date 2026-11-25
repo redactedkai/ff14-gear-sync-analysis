@@ -146,7 +146,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/components/sheets | the Sheets tab with a real sheets' store (note 12); the answers to the two elements' events; its members, by kind, against a fixed list |
 | ui/elements/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
 | ui/elements/sheets/row-reorder | Up and Down on a handle move a row and the focus follows, a drop goes above or below the row under the pointer, nothing moves while the list is locked |
-| ui/components/sync-explainer.bar | the math tab's component: the Job menu's owner per sub-tab, the Sync settings chip's words, the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level, the settings the bar and Stat Allocation elements are given |
+| ui/elements/math-page/math-inputs | the math screen's inputs and edits: the Job menu's owner per sub-tab, the IL Sync switch and the cap it stores, the settings the bar and Stat Allocation elements are given, and that every edit they read is in the store parts the screen follows |
 | ui/hq-font | the HQ glyph font and its fallback |
 | ui/no-alpine | only `src/main.js` imports Alpine, so every module of `src/ui` and `src/core` loads in Node |
 | ui/overlays | the overlay manager: Escape closes the topmost layer, a press outside, Tab out, a layer a native list leaves alone |

@@ -234,7 +234,9 @@
 
 <!-- THE MATH: what sync does to one piece (Piece stats) and to a full set's GCD (GCD), and the substats' tiers (Substat tiers);
      controls in a sticky bar, each shown on the sub-tabs it applies to -->
-<!-- INCLUDE math-page.html -->
+<section class="tab" id="tab-math" aria-labelledby="tablink-math" hidden :hidden="$store.app.tab !== 'math'">
+  <gsa-math-screen x-ignore></gsa-math-screen>
+</section>
 
 <!-- GEAR BROWSER -->
 <!-- INCLUDE gear-page.html -->

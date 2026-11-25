@@ -24,6 +24,7 @@ import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/gcd-controls.ts';
 import './ui/elements/math-page/gcd-view.ts';
 import './ui/elements/math-page/math-bar.ts';
+import './ui/elements/math-page/math-screen.ts';
 import './ui/elements/math-page/piece-stats.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/math-page/tiers-controls.ts';
@@ -46,7 +47,6 @@ import './ui/elements/set-page/rank-note.ts';
 import './ui/elements/set-page/set-page.ts';
 import './ui/elements/set-page/settings-popover.ts';
 import { page } from './ui/components/page.js';
-import { syncExplainer } from './ui/components/sync-explainer.js';
 import { sheetsTab } from './ui/components/sheets.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
@@ -64,6 +64,8 @@ Alpine.store('app', sealFacade(pageStore.app));
 Alpine.store('sheets', sealFacade(pageStore.sheets));
 const app = Alpine.store('app');
 const sheets = Alpine.store('sheets');
+// the math screen (a Lit element) follows the store and reads the facade itself
+document.querySelector('gsa-math-screen').ports = { store, app };
 /* Where the page is scrolled: {y, maxY (the furthest it can scroll now)}. */
 function pageScroll() {
   return { y: scrollY, maxY: document.documentElement.scrollHeight - innerHeight };
@@ -146,7 +148,6 @@ const setPagePorts = Object.freeze({
 
 Object.entries({
   page,
-  syncExplainer,
   sheetsTab: () => sheetsTab(setPagePorts),
 }).forEach(([name, factory]) => {
   Alpine.data(name, factory);

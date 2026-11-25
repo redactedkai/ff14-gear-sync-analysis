@@ -1,5 +1,5 @@
 /* The rules that belong to the math bar of How the math works (the sticky bar above Stat Allocation, GCD Scaling and Substat
-   tiers; src/partials/math-page.html, src/styles/math-bar.css and math-controls.css): its dividers, its row breakpoints and its box heights. They judge
+   tiers; src/ui/elements/math-page/math-screen.ts, src/styles/math-bar.css and math-controls.css): its dividers, its row breakpoints and its box heights. They judge
    what `measureView` returns as `mathBar` when a view asks for it (probe.mjs). Pure: plain data in, a list of
    {rule, detail} out. Ported from the Stat Allocation stress script of the math bar port (the probe of j3-stress.mjs). */
 
