@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 1,386 tests in 196 files, about 30 to 45 s |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,390 tests in 196 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
 | Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 99 tests in 25 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
@@ -249,7 +249,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/views/piece-stats | Stat Allocation as one view: the chart as wide as its box, the sentences, the number lines' gold and materia texts, the empty state |
 | ui/views/sync-explainer.chips | the Substats & materia and Sync settings chips: their words and names in every state, the weapon guess, the widest forms (read from the constants) |
 | ui/views/sync-explainer | How the math works, Piece stats: a piece against the melded cap, the item level range, melds from the Goal, the special substat caps, the bars at synced levels 1 to 4 |
-| ui/views/tiers | Substat tiers: the ladder's columns, every tier as a range (a one-point tier, the open last tier, Tenacity's uneven tiers), the rows kept per job and level; typed values; the sub-tab's own level; the values kept until the job or level changes; the Level box's rules |
+| ui/views/tiers | Substat tiers: the ladder's columns, every tier as a range (a one-point tier, the open last tier, Tenacity's uneven tiers), the rows kept per job and level; typed values; the sub-tab's own level; the values kept until the job or level changes |
 | ui/views/level-sync | level sync across the views, and a cap far above the synced level |
 | ui/views/no-bad-values | Piece stats, Substat tiers and GCD over every job and level: no NaN, Infinity, undefined or null |
 

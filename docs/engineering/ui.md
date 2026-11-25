@@ -204,7 +204,8 @@ The rule the level and cap follow is that a cap above the highest gear made for 
   - once the level field settles (typing 80 passes through 8);
   - when a cap is entered;
   - when item level sync is switched on;
-  - on loading a saved state.
+  - on loading a saved state;
+  - when the screen that shows the field opens again (a change made while it was hidden is checked then).
 
   The job does not matter: a job at its own level cap (Beastmaster at 50, Blue Mage at 80) is limited the same way.
 - **The field.** It takes any whole number of 1 or more, so 999 is lowered the same way, with a flag in the label line and a gold flash of the field. The flag is a triangle icon and "Max 135" in gold, in the place of the range ("1–795"); the whole sentence ("Lowered to 135, max for level 50.") is the field's tooltip and a live region for screen readers. The flag stays until the next change, and stays put when the up arrow is pressed at the limit. Other text (0, 12.5) is an error flag in the same place, a circle icon and "1–795 only" in red, with "Enter a whole item level from 1 to 795" as its tooltip and live region, and the cap stays as it was; the error replaces a lowered flag. On the Job and sync strip, an empty cap with sync on is its own error: a circle icon and "Enter a cap" in red (no range in it), with "Enter a sync cap" as its tooltip and live region. The field shows the cap that applies. The Job and sync strip, Stat Allocation's Sync settings popover, the sheet page and the New sheet and Copy sheet forms (which show no error) all use it (`<gsa-cap-field>`, which draws the flag of `capFlag` in `src/ui/level-cap.js`); Stat Allocation's Level box uses the same flag (`<gsa-level-field>`, `LEVEL_TEXT` and `levelTextBad` in `level-cap.js`). The Level and Item level boxes of a sheet's page and of the forms are 160 px wide, wide enough for "Item level" and the longest flag, so the settings row is one line at 960 px.
