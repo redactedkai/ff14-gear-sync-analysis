@@ -27,11 +27,17 @@ export async function checkSparePointsNoteFollowsButton(pg) {
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   await pg.click('#sh-settings');
+  await placedByZag(pg, '#sh-settings-dialog'); // the note is placed under its button, so the popover holding the button is placed first
   await pg.click('#sh-settings-dialog [aria-controls="s-rank-pop"]');
   await expect(pg.locator('#s-rank-pop')).toBeVisible();
   await placedByZag(pg, '#s-rank-pop');
+  // the first placement can come a frame before the popover that holds the button has settled; the nested layer follows its anchor
+  // every frame while open, so the note is under its button within a frame or two
+  await poll('the note to open under its button', async () => {
+    const got = await noteAndButton(pg);
+    return { ok: got.gap >= 0 && got.gap <= 12, got: JSON.stringify(got) };
+  });
   const start = await noteAndButton(pg);
-  check(start.gap >= 0 && start.gap <= 12, `the note opens under its button: ${JSON.stringify(start)}`);
 
   // the page scrolls: the note goes with its button
   const scrolled = await pg.evaluate(() => {
