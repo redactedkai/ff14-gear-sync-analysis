@@ -146,6 +146,15 @@ test('zag controller: the machine runs from connect to disconnect and the api fo
   host.disconnect();
 });
 
+test('zag controller: an element that leaves the page before anything read the api after a change can still draw its last state', async () => {
+  const { host, controller } = makeController();
+  host.connect();
+  controller.api.send({ type: 'OPEN' });
+  await settle(); // the change dropped the api; nothing reads it before the element goes
+  host.disconnect();
+  assert.equal(controller.api.open, true);
+});
+
 test('zag controller: closeWithoutFocus closes the machine with restoreFocus false, and does nothing when disconnected', async () => {
   const { host, controller } = makeController();
   controller.closeWithoutFocus();

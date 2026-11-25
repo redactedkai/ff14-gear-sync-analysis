@@ -1,7 +1,6 @@
-/* The frame of the Sheets tab: start (the note that clears itself, a sheet's page opening clean), the screen to draw,
-   the breadcrumb links, and running a step after Alpine has drawn.
-   A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: capTypedBad (settings.js) and
-   listSort (view.js), which a change of sheet and the Effects / Stat points switch reset. */
+/* The frame of the Sheets tab: start (a dialog left open closing), the screen to draw, the breadcrumb links of the set page, and
+   running a step after Alpine has drawn.
+   A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: dialog and closeDialog (dialog.js). */
 
 import { followInPage } from '../../router/plain-click.js';
 import { afterDraw } from '../compose.js';
@@ -15,10 +14,6 @@ export function framePart() {
   return {
     init() {
       tabEl = this.$el;
-      // the Effects / Stat points switch: the list goes back to the saved order, the sort of one view is not carried to the other
-      this.$watch('$store.app.sheetFigures', () => {
-        this.listSort = { key: '', dir: '' };
-      });
       // a dialog left open by a change of tab, sheet or gear set would stay in the way (and its page behind inert): it closes
       // (Back and Forward also close it, through the dialog's own popstate listener); the router owns the focus then
       for (const key of ['$store.app.tab', '$store.sheets.sheetId', '$store.sheets.setId']) {
@@ -28,11 +23,6 @@ export function framePart() {
           }
         });
       }
-      // another sheet's page: its cap field starts with no error
-      this.$watch('$store.sheets.sheetId', () => {
-        this.capTypedBad = false;
-        this.listSort = { key: '', dir: '' };
-      });
     },
 
     get sheets() {
@@ -76,12 +66,6 @@ export function framePart() {
         }
       });
     },
-    /* A name link of a list (`event` its click): a plain click runs `move` (open that sheet or gear set); any other click is
-       left to the browser. */
-    openFromLink(event, move) {
-      followInPage(event, move);
-    },
-
     /* Runs `callback` once Alpine has drawn the change just made, unless the component's element is gone by then (as the
        set page's afterDraw). */
     afterDraw(callback) {

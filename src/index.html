@@ -115,13 +115,21 @@
   <span class="jobstrip-gap"></span>
   <div class="f"><span aria-hidden="true">&nbsp;</span><span class="stripctl"><button class="chip" id="reset" type="button" @click="requestReset()">Reset</button></span></div>
 </section>
-<!-- SHEETS: the sheet manager, a sheet's page, the frame of a set page and their dialogs (components/sheets.js; the store
+<!-- SHEETS: the sheet manager and a sheet's page (elements), the frame of a set page and the dialogs (components/sheets.js; the store
      $store.sheets is ui/store/sheets-facade.ts). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
 <section class="tab" id="tab-sheets" aria-labelledby="tablink-sheets" hidden :hidden="$store.app.tab !== 'sheets'" x-data="sheetsTab">
 <div class="sheetsview">
   <p class="callout small" id="sh-unavailable" x-show="manager.unavailableText" x-text="manager.unavailableText"></p>
 
-  <!-- INCLUDE sheet-pages.html -->
+  <!-- THE SHEET MANAGER and a sheet's page: Lit elements (ui/elements/sheets/), islands. A wrapper's x-effect gives the element its properties
+       (`managerProps`, `pageProps`: the view while its screen is open, else null, so the element draws nothing); the wrapper listens for
+       the element's `sheet-action` events (`onSheetAction`) and the sheet switcher's pick. The "not found" screen is the manager's. -->
+  <div class="sheets-island" x-effect="Object.assign($el.firstElementChild, managerProps)" @sheet-action="onSheetAction($event.detail)">
+    <gsa-sheet-manager x-ignore></gsa-sheet-manager>
+  </div>
+  <div class="sheets-island" x-effect="Object.assign($el.firstElementChild, pageProps)" @sheet-action="onSheetAction($event.detail)" @switch-pick="pickSheet($event.detail)">
+    <gsa-sheet-page x-ignore></gsa-sheet-page>
+  </div>
 
   <!-- INCLUDE set-page.html -->
 

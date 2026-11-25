@@ -7,7 +7,16 @@ import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.js';
 import { UNAVAILABLE_MESSAGE } from '../../../../src/ui/sheets/storage.js';
 import { sheetManagerView } from '../../../../src/ui/views/sheet-manager.js';
-import { firstSortDir, nextListSort, setHeaderView, sheetPageView, sortSetRows } from '../../../../src/ui/views/sheet-sets.js';
+import {
+  firstSortDir,
+  nextListSort,
+  setHeaderView,
+  sheetCapView,
+  sheetListView,
+  sheetPageView,
+  sheetSwitcherView,
+  sortSetRows,
+} from '../../../../src/ui/views/sheet-sets.js';
 import { plural } from '../../../../src/ui/text.ts';
 import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.js';
 import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
@@ -26,6 +35,7 @@ test('the manager: one row per sheet in the given order, with job, settings, set
   assert.deepEqual(v.columns, ['Sheet', 'Job', 'Level / IL', 'Sets', 'Created', 'Changed', 'Patch']);
   assert.deepEqual(v.rows[0], {
     id: 's_a',
+    href: '#/sheets/s_a',
     name: 'Bahamut T13 Healer',
     descriptionLine: 'Savage Bahamut, week 1',
     hasDescription: true,
@@ -89,9 +99,10 @@ test('the sheet page: settings fields with their ranges, the job fixed, a one-li
   const sheet = sheetOf('SGE', [sageSet()], { name: 'Bahamut T13 Healer', description: '' });
   const v = sheetPageView(sheet);
   assert.deepEqual(v.crumbs, [
-    { text: 'Sheets', to: 'sheets' },
+    { text: 'Sheets', to: 'sheets', href: '#/sheets' },
     { text: 'Bahamut T13 Healer', here: true },
   ]);
+  assert.equal(v.id, sheet.id);
   assert.equal(v.description.empty, true);
   assert.ok(v.description.text.length > 0, 'a dim placeholder shows');
   assert.deepEqual(v.job, { id: 'SGE', name: 'Sage' });
@@ -234,4 +245,59 @@ test('the sheet page: sorting the set rows by the numbers in their figures; ties
   const main = r => Number(r.figures[0].text);
   const sorted = sortSetRows(v.rows, { key: 'main', dir: 'desc' }, 'effects');
   assert.ok(main(sorted[0]) >= main(sorted[1]));
+});
+
+test('the sheet page: the list draws the figures of the mode in the sort in force; a sort whose column is not on the page is dropped', () => {
+  const page = sheetPageView(sheetOf('SGE', [sageSet(), warSet()]));
+  const none = { key: '', dir: '' };
+  const effects = sheetListView(page, none, 'effects');
+  assert.deepEqual(
+    effects.columns.map(column => column.key),
+    page.columnKeys,
+  );
+  assert.deepEqual(
+    effects.rows.map(row => row.cells[0].text),
+    page.rows.map(row => row.figures[0].shown ?? row.figures[0].text),
+  );
+  assert.deepEqual(
+    [effects.orderLocked, effects.nameAriaSort, effects.rows[0].href],
+    [false, 'none', `#/sheets/${page.id}/sets/${page.rows[0].id}`],
+  );
+  // a sort by a heading: its aria-sort says so, and the list cannot be reordered by hand
+  const byName = sheetListView(page, { key: 'name', dir: 'desc' }, 'effects');
+  assert.deepEqual([byName.nameAriaSort, byName.orderLocked], ['descending', true]);
+  assert.deepEqual(
+    byName.rows.map(row => row.name),
+    page.rows.map(row => row.name).sort((a, b) => b.localeCompare(a)),
+  );
+  // the stat points have other columns than the effects: the GCD heading's sort does not carry over
+  const points = sheetListView(page, { key: 'gcd', dir: 'asc' }, 'points');
+  assert.deepEqual([points.sort, points.orderLocked, points.columns.length], [none, false, page.pointKeys.length]);
+});
+
+test("the sheet page's item level field: a bad text is an error with sync on; a lowering is a note on its own sheet only; an error takes its place", () => {
+  const sync = { on: true, cap: 405, max: MAX_REAL, rangeText: `1–${MAX_REAL}` };
+  const lowered = { from: 500, to: 405, level: 70, sheetId: 's_a' };
+  assert.deepEqual(sheetCapView(sync, false, null, 's_a'), { error: '', note: '', flag: { kind: '', short: '', full: '' } });
+  const note = sheetCapView(sync, false, lowered, 's_a');
+  assert.deepEqual([note.error, note.flag.kind, note.flag.short], ['', 'lowered', 'Max 405']);
+  assert.ok(note.note.includes('405') && note.note.includes('70'), note.note);
+  assert.equal(sheetCapView(sync, false, lowered, 's_b').note, '', 'the note belongs to the sheet it was made on');
+  assert.equal(sheetCapView({ ...sync, on: false }, false, lowered, 's_a').note, '', 'no note while sync is off');
+  const bad = sheetCapView(sync, true, lowered, 's_a');
+  assert.deepEqual([bad.error === '', bad.note, bad.flag.kind], [false, '', 'error']);
+  assert.equal(sheetCapView({ ...sync, on: false }, true, null, 's_a').error, '', 'no error while sync is off');
+});
+
+test('the sheet switcher: a link to the manager, one row per sheet with the open one marked, off while an Auto-fill runs', () => {
+  const view = sheetManagerView(loaded([sheetOf('SGE', [], { id: 's_a', name: 'A' }), sheetOf('WAR', [], { id: 's_b', name: 'B' })]));
+  const switcher = sheetSwitcherView(view.rows, 's_b', true);
+  assert.deepEqual(
+    switcher.items.map(item => [item.id, item.current, item.href]),
+    [
+      ['s_a', false, '#/sheets/s_a'],
+      ['s_b', true, '#/sheets/s_b'],
+    ],
+  );
+  assert.deepEqual([switcher.allHref, switcher.disabled, switcher.allLabel.includes('2')], ['#/sheets', true, true]);
 });

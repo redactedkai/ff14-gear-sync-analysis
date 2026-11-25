@@ -8,8 +8,10 @@ import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-tot
 import { plural } from '../text.ts';
 import { ranges } from '../sheets/ops.js';
 import { settingsLine } from './sheet-text.js';
+import { sheetHref } from '../store/app-state.ts';
+import { CAP_TYPED_BAD_TEXT, capFlag, capLoweredText } from '../level-cap.js';
 
-/* One gear set of a sheet for the list: {id, name, description, descriptionLine, originText, figures, points}. descriptionLine
+/* One gear set of a sheet for the list: {id, href (its address), name, description, descriptionLine, originText, figures, points}. descriptionLine
    is the first line of the set's notes, '' without; originText counts the rows Auto-fill keeps and changes ("5
    pinned, 6 unpinned", owner: counts only, no goal text), with "2 slots empty" after it while the set has
    rows with no piece; figures are the header's figures (setFigures) under the sheet's settings; points the stat points the
@@ -23,6 +25,7 @@ function setListRow(sheet, gearSet) {
   const description = gearSet.description ?? '';
   return {
     id: gearSet.id,
+    href: sheetHref(sheet.id, gearSet.id),
     name: gearSet.name,
     description,
     descriptionLine: description.split('\n')[0],
@@ -81,8 +84,8 @@ export function sortSetRows(rows, sort, mode) {
 }
 
 /* The page of `sheet` (a saved Sheet). Returns:
-   - crumbs: [{text, to}, {text, here: true}], "Sheets / <sheet>" (`to` names the screen a link opens);
-   - name; description {text, empty} ("No description" in muted text when empty);
+   - crumbs: [{text, to, href}, {text, here: true}], "Sheets / <sheet>" (`to` names the screen a link opens, `href` is its address);
+   - id, name; description {text, empty} ("No description" in muted text when empty);
    - job {id, name} (fixed once the sheet exists); level {value, max (the job's level cap), rangeText "1–100"};
      sync {on, cap, max (the highest real item level), rangeText "1–795"};
    - setCount; columns: the list's column headers (the figures' labels, first set's job), pointColumns the same for the stat points, columnKeys and pointKeys their figures' keys (what a heading sorts by), wideColumns (per column: true for a figure with a longer text, the GCD of a job with haste), set rows (setListRow);
@@ -95,9 +98,10 @@ export function sheetPageView(sheet) {
   const description = sheet.description ?? '';
   return {
     crumbs: [
-      { text: 'Sheets', to: 'sheets' },
+      { text: 'Sheets', to: 'sheets', href: sheetHref() },
       { text: sheet.name, here: true },
     ],
+    id: sheet.id,
     name: sheet.name,
     description: { text: description || 'No description', empty: !description },
     job: { id: job.jobId, name: job.jobName },
@@ -135,5 +139,70 @@ export function setHeaderView(sheet, gearSet) {
     jobId: job.jobId,
     settingsText: settingsLine(sheet, job.jobName),
     notes: { text: gearSet.description || 'No description', empty: !gearSet.description },
+  };
+}
+
+/* What the gear sets list of a sheet's page draws, for the page view `page` (sheetPageView), the list's `sort` ({key, dir},
+   key '' for the saved order) and the figures `mode` ('effects' or 'points'). Returns:
+   - sort: the sort in force: `sort` while its column is on the page (the stat points view has other columns than the effects),
+     else the saved order;
+   - columns: the headings after the Set column, [{key, label, wide (a figure with a longer text), ariaSort}], and nameAriaSort,
+     the Set heading's own; an aria-sort is 'descending', 'ascending' or 'none';
+   - rows: the set rows in the sort in force, each {id, href, name, description, descriptionLine, originText, cells:
+     [{key, text}] (the figures of the mode)};
+   - orderLocked: the list is sorted, so its rows have no order of their own to drag or step in. */
+export function sheetListView(page, sort, mode) {
+  const keys = mode === 'points' ? page.pointKeys : page.columnKeys;
+  const labels = mode === 'points' ? page.pointColumns : page.columns;
+  const inForce = sort.key && (sort.key === 'name' || keys.includes(sort.key)) ? sort : { key: '', dir: '' };
+  const ariaSort = key => {
+    if (inForce.key !== key) {
+      return 'none';
+    }
+    return inForce.dir === 'desc' ? 'descending' : 'ascending';
+  };
+  return {
+    sort: inForce,
+    nameAriaSort: ariaSort('name'),
+    columns: keys.map((key, index) => ({
+      key,
+      label: labels[index],
+      wide: mode === 'effects' && page.wideColumns[index],
+      ariaSort: ariaSort(key),
+    })),
+    rows: sortSetRows(page.rows, inForce, mode).map(row => ({
+      id: row.id,
+      href: row.href,
+      name: row.name,
+      description: row.description,
+      descriptionLine: row.descriptionLine,
+      originText: row.originText,
+      cells: (mode === 'points' ? row.points : row.figures).map(figure => ({ key: figure.key, text: figure.shown ?? figure.text })),
+    })),
+    orderLocked: Boolean(inForce.key),
+  };
+}
+
+/* What the sheet page's item level field shows besides its box, for the page's `sync` ({on, cap, max, rangeText}), the field's
+   state `typedBad` (its text is no whole item level) and `lowered` (the cap the page last lowered, {sheetId, from, to, level},
+   or null) and the open sheet's id. Returns {error (CAP_TYPED_BAD_TEXT while sync is on and the text is bad, else ''), note
+   (capLoweredText after a lowering; '' on another sheet, with sync off, or while there is an error, which takes its place), flag
+   (capFlag of both, for the label line)}. */
+export function sheetCapView(sync, typedBad, lowered, sheetId) {
+  const error = typedBad && sync.on ? CAP_TYPED_BAD_TEXT : '';
+  const note = lowered && sync.on && lowered.sheetId === sheetId && !error ? capLoweredText(lowered) : '';
+  return { error, note, flag: capFlag({ error, note, lowered, range: sync.rangeText }) };
+}
+
+/* What the caret menu after the sheet's name shows (<gsa-switch-menu>): `rows` (the manager's rows), `currentId` (the open sheet's
+   id) and `busy` (an Auto-fill runs: the menu is off). Returns {items: [{id, name, href, current}], allLabel, allHref, newLabel,
+   disabled}: a link to the manager, one per saved sheet (the open one marked) and "+ New sheet". */
+export function sheetSwitcherView(rows, currentId, busy) {
+  return {
+    items: rows.map(row => ({ id: row.id, name: row.name, href: row.href, current: row.id === currentId })),
+    allLabel: `All sheets (${rows.length})`,
+    allHref: sheetHref(),
+    newLabel: '+ New sheet',
+    disabled: busy,
   };
 }

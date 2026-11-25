@@ -90,13 +90,13 @@ export const DOMAINS = {
     src: [
       'src/ui/components/sheets.js',
       'src/ui/components/sheets/**',
-      // the caret menus that switch sheet or gear set (a Lit element, an island in the sheet and set pages)
+      // the Lit elements of the Sheets screens: the sheet manager, a sheet's page and the caret menus that switch sheet or gear set
       'src/ui/elements/sheets/**',
       'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.js',
       'src/ui/store/{sheets-actions,sheets-facade}.ts',
       'src/ui/views/{sheet-forms,sheet-manager,sheet-sets,sheet-text}.js',
       'src/ui/{test-data.js,test-sheets.json}',
-      'src/partials/{sheet-pages,cap-flag,dialog-error}.html',
+      'src/partials/{cap-flag,dialog-error}.html',
       'src/styles/sheets.css',
     ],
     tests: ['tests/e2e/checks/sheets/**', 'tests/e2e/lib/{sheets,fixtures}.mjs', 'tests/unit/helpers/sheet-fixtures.js'],

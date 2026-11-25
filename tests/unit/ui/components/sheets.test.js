@@ -1,6 +1,6 @@
 /* The Sheets tab's component (src/ui/components/sheets.js) bound to a real sheet store over a stand-in storage, as
-   Alpine binds it: the screens it draws, the dialogs (New sheet with its default name, Copy sheet, Name and
-   description, Delete), refused names left empty with their error, keyboard and drag reordering, and the note that clears itself. */
+   Alpine binds it: the screen to draw, the dialogs (New sheet with its default name, Copy sheet, Name and
+   description, Delete), refused names left empty with their error, and the answers to the two island elements' events. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.js';
@@ -26,8 +26,9 @@ function bind() {
   let next = 0;
   const sheets = createSheetsFacade({ storage: fakeStorage(), makeId: prefix => `${prefix}${++next}` });
   const watchers = {};
+  const app = { sheetFigures: 'effects', setSheetFigures: mode => (app.sheetFigures = mode) };
   const c = Object.assign(sheetsTab(), {
-    $store: { sheets },
+    $store: { sheets, app },
     ...pageMagics(['dialog']),
     $watch: (path, fn) => {
       watchers[path] = fn;
@@ -36,9 +37,6 @@ function bind() {
   c.init();
   return { c, sheets, watchers, magics: { calls: c.calls } };
 }
-/* A key event on a handle in row `index` of a list, as the browser hands it. */
-const key = (k, extra = {}) => ({ key: k, preventDefault() {}, target: { closest: () => null }, ...extra });
-
 test('New sheet: the name follows the job until typed; Create opens the new, empty sheet', () => {
   const { c, sheets } = bind();
   assert.equal(c.screen, 'sheets');
@@ -149,35 +147,6 @@ test('Escape cancels a dialog; nothing opens while an Auto-fill runs', () => {
   assert.equal(c.dialog, null);
 });
 
-test('reordering: Up and Down arrow on a handle move the row; a drop moves it above or below the row under it', () => {
-  const { c, sheets } = bind();
-  for (const name of ['C', 'B', 'A']) {
-    sheets.createSheet({ name, job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
-  }
-  sheets.openManager();
-  const names = () => c.manager.rows.map(r => r.name);
-  assert.deepEqual(names(), ['A', 'B', 'C']);
-  c.handleKey('sheet', 0, key('ArrowDown'));
-  assert.deepEqual(names(), ['B', 'A', 'C']);
-  c.handleKey('sheet', 0, key('Enter'));
-  assert.deepEqual(names(), ['B', 'A', 'C'], 'other keys do nothing');
-
-  // drag C (row 2) and drop it on the upper half of row 0: it goes first
-  const transfer = { setData() {}, setDragImage() {} };
-  c.dragStart('sheet', 2, { dataTransfer: transfer, target: { closest: () => null }, preventDefault() {} });
-  const over = { clientY: 10, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 40 }) }, preventDefault() {} };
-  c.dragOver('sheet', 0, over);
-  assert.equal(c.dropMark('sheet', 0), 'before');
-  assert.equal(c.dropMark('set', 0), '', 'only rows of the same list');
-  c.drop('sheet', 0, over);
-  assert.deepEqual(names(), ['C', 'B', 'A']);
-  assert.equal(c.dragging, null);
-  // drag B (row 1) onto the lower half of row 2: after it, last
-  c.dragStart('sheet', 1, { dataTransfer: transfer, target: { closest: () => null }, preventDefault() {} });
-  c.drop('sheet', 2, { ...over, clientY: 30 });
-  assert.deepEqual(names(), ['C', 'A', 'B']);
-});
-
 test('New sheet: a number typed just before Create does not commit into the closed dialog', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { c, sheets } = bind();
@@ -197,31 +166,6 @@ test('New sheet: a number typed just before Create does not commit into the clos
 
 /* A number field's commit as the browser hands it: the change event of a box showing `value`. */
 const change = (field, value) => field['@change']({ target: { value: String(value), classList: { add() {}, remove() {} } } });
-
-/* The sheet page's cap follows its level with the Job and sync panel's note (owner's report, 2026-11-10). Level 70
-   allows item level 405 at most, level 50 allows 135. */
-test("a sheet's page: a cap above what the level allows is lowered, with the panel's note", () => {
-  const { c, sheets } = bind();
-  sheets.createSheet({ name: 'Heal', job: 'SGE', level: 70, sync: { on: true, cap: 300 } });
-  assert.equal(c.capLoweredNote, '');
-  change(c.capField, 500);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [405, loweredNote(405, 70)]);
-  change(c.levelField, 50);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [135, loweredNote(135, 50)]);
-  change(c.capField, 100);
-  assert.equal(c.capLoweredNote, '', 'a cap the level allows clears the note');
-  change(c.levelField, 100);
-  change(c.capField, 900);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [795, loweredNote(795, 100)]);
-  c.toggleSync(false);
-  assert.equal(c.capLoweredNote, '', 'no note while sync is off');
-  change(c.levelField, 70);
-  c.toggleSync(true);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [405, loweredNote(405, 70)]);
-  // the note belongs to the sheet it was made on
-  sheets.createSheet({ name: 'Other', job: 'SGE', level: 70, sync: { on: true, cap: 300 } });
-  assert.equal(c.capLoweredNote, '');
-});
 
 test('New sheet and Copy sheet forms: the cap follows the level, the job and the sync switch, with the note', () => {
   const { c, sheets } = bind();
@@ -250,55 +194,6 @@ test('New sheet and Copy sheet forms: the cap follows the level, the job and the
   assert.deepEqual(sheets.list().sheets[0].sync, { on: false, cap: 135 });
 });
 
-/* The Job and sync panel's cap field tests (ui/components/page.test.js) on a sheet's page. */
-test("a sheet's cap field: text that is no whole item level is an error and the sheet keeps its cap; the field flashes", () => {
-  const { c, sheets, watchers } = bind();
-  const classes = new Set();
-  c.$refs.sheetCap = { classList: { add: k => classes.add(k), remove: k => classes.delete(k) }, offsetWidth: 0 };
-  sheets.createSheet({ name: 'Heal', job: 'SGE', level: 50, sync: { on: true, cap: 123 } });
-  assert.equal(c.capError, '');
-  for (const text of ['0', '12.5', '-3']) {
-    c.onCapInput(text);
-    assert.equal(c.capError, `Enter a whole item level from 1 to ${MAX_REAL}`, text);
-  }
-  change(c.capField, '0');
-  assert.equal(sheets.currentSheet.sync.cap, 123, 'the sheet keeps its last cap');
-  // a whole number above the highest real item level is a cap too: lowered, with the note and a flash
-  c.onCapInput(`${MAX_REAL + 100}`);
-  assert.equal(c.capError, '');
-  change(c.capField, MAX_REAL + 100);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [135, loweredNote(135, 50)]);
-  assert.ok(classes.has('flash'));
-  // typed again over a cap already at the limit: the sheet does not change, and the field is put back to 135
-  c.$refs.sheetCap.value = '999';
-  change(c.capField, 999);
-  assert.deepEqual([c.$refs.sheetCap.value, c.capLoweredNote], ['135', loweredNote(135, 50)]);
-  // an error under the field takes the note's place
-  c.onCapInput('0');
-  assert.equal(c.capLoweredNote, '');
-  // level 40 lowers 123 to 43 (the best gear made for level 40); back at level 50 it stays 43, and the note goes
-  c.onCapInput('123');
-  change(c.capField, 123);
-  change(c.levelField, 40);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [43, loweredNote(43, 40)]);
-  change(c.levelField, 50);
-  assert.deepEqual([sheets.currentSheet.sync.cap, c.capLoweredNote], [43, '']);
-  // no error while sync is off, and another sheet's page starts with none
-  c.onCapInput('0');
-  c.toggleSync(false);
-  assert.equal(c.capError, '');
-  c.toggleSync(true);
-  watchers['$store.sheets.sheetId']();
-  assert.equal(c.capError, '');
-});
-
-test('the list sort goes back to the saved order when the Effects / Stat points switch changes', () => {
-  const { c, watchers } = bind();
-  c.listSort = { key: 'crit', dir: 'desc' };
-  watchers['$store.app.sheetFigures']();
-  assert.deepEqual(c.listSort, { key: '', dir: '' });
-});
-
 test('the set page header is built once per change of the sheets, and frozen', () => {
   const { c, sheets } = bind();
   sheets.createSheet({ name: 'S', job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
@@ -321,7 +216,61 @@ test('a delete question opens with the focus on Cancel, so a stray Enter does no
   }
 });
 
-test('the component: its six parts define every member the templates use, getters as getters', () => {
+test('the island elements: each action of their `sheet-action` event reaches the store or dialog it names, and a step or an edit hands back the answer', () => {
+  const { c, sheets } = bind();
+  for (const name of ['C', 'B', 'A']) {
+    sheets.createSheet({ name, job: 'SGE', level: 70, sync: { on: true, cap: 300 } });
+  }
+  sheets.openManager();
+  const names = () => c.manager.rows.map(r => r.name);
+  assert.deepEqual(names(), ['A', 'B', 'C']);
+  const step = { action: 'step', kind: 'sheet', index: 0, step: 1, result: 0 };
+  c.onSheetAction(step);
+  assert.deepEqual([step.result, names()], [1, ['B', 'A', 'C']], 'the row moved one place, and the element is told where it is now');
+  c.onSheetAction({ action: 'move', kind: 'sheet', from: 2, to: 0 });
+  assert.deepEqual(names(), ['C', 'B', 'A']);
+  // a dialog opens with the button that asked as the opener of its focus
+  const opener = { isConnected: true, focus() {} };
+  c.onSheetAction({ action: 'new', kind: 'sheet', opener });
+  assert.equal(c.dialog.kind, 'new');
+  c.cancelDialog();
+  c.onSheetAction({ action: 'delete', kind: 'sheet', id: c.manager.rows[0].id, opener });
+  assert.deepEqual([c.dialog.kind, c.dialog.what], ['delete', 'sheet']);
+  c.cancelDialog();
+  // a sheet's page: its edits answer with the store's result, and open the sheet first
+  c.onSheetAction({ action: 'open', kind: 'sheet', id: c.manager.rows[1].id });
+  assert.equal(c.screen, 'sheet');
+  const level = { action: 'level', value: 50, result: null };
+  c.onSheetAction(level);
+  assert.deepEqual([level.result.ok, sheets.currentSheet.level, sheets.currentSheet.sync.cap], [true, 50, 135]);
+  assert.deepEqual(level.result.lowered, { from: 300, to: 135, level: 50 });
+  c.onSheetAction({ action: 'clan', name: '' });
+  c.onSheetAction({ action: 'party', value: '2' });
+  assert.deepEqual([sheets.currentSheet.clan ?? null, sheets.currentSheet.partyRoles], [null, 2]);
+  c.onSheetAction({ action: 'figures', mode: 'points' });
+  assert.equal(c.$store.app.sheetFigures, 'points');
+  c.onSheetAction({ action: 'to-manager' });
+  assert.equal(c.screen, 'sheets');
+});
+
+test('the island elements are given their view while their screen is open and null otherwise, with a locked page while a dialog is open', () => {
+  const { c, sheets } = bind();
+  assert.deepEqual([c.managerProps.view === c.manager, c.pageProps.view, c.managerProps.dialogOpen], [true, null, false]);
+  sheets.createSheet({ name: 'S', job: 'SGE', level: 100, sync: { on: false, cap: 795 } });
+  assert.deepEqual([c.managerProps.view, c.pageProps.view === c.page, c.pageProps.sheetId], [null, true, sheets.sheetId]);
+  c.openEditSheet(sheets.sheetId);
+  assert.equal(c.pageProps.dialogOpen, true);
+  assert.deepEqual(
+    c.pageProps.switcher.items.map(item => [item.name, item.current]),
+    [['S', true]],
+  );
+  sheets.openManager();
+  assert.deepEqual(c.managerProps.notFound, null);
+});
+
+// A new member of the component that no template reads, or one that two parts define, shows up here: update the lists when a
+// part gains or loses a member (compose throws on a double definition, but a rename passes it silently).
+test('the component: its parts define every member the templates use, getters as getters', () => {
   const descriptors = Object.getOwnPropertyDescriptors(sheetsTab());
   const kind = name => {
     if (descriptors[name].get) {
@@ -331,68 +280,45 @@ test('the component: its six parts define every member the templates use, getter
   };
   const expected = {
     getter: [
-      'activeSort',
-      'bonusLists',
-      'capError',
-      'capField',
-      'capLoweredNote',
       'dialogName',
       'dialogView',
       'formCapNote',
-      'levelField',
-      'listRows',
       'manager',
+      'managerProps',
       'notFound',
       'page',
+      'pageProps',
       'screen',
       'setHeader',
-      'sheetClan',
-      'sheetPartyRoles',
-      'sheetSwitcher',
       'sheets',
     ],
     method: [
       'afterDraw',
       'askDelete',
       'cancelDialog',
-      'capFlag',
       'chooseJob',
       'clearDialogError',
       'closeDialog',
       'dialogKey',
-      'dragEnd',
-      'dragOver',
-      'dragStart',
-      'drop',
-      'dropMark',
       'firstFocus',
       'formCapFlag',
       'formField',
       'goCrumb',
       'goMissing',
-      'handleKey',
       'init',
       'limitFormCap',
-      'listSortState',
-      'noteLowered',
-      'onCapInput',
+      'onSheetAction',
       'openCopy',
       'openDialog',
       'openEditSet',
       'openEditSheet',
-      'openFromLink',
       'openNewSheet',
-      'openRow',
-      'pickClan',
-      'pickPartyRoles',
       'pickSheet',
       'setFormSync',
-      'sortList',
       'submitDialog',
-      'toggleSync',
       'typeName',
     ],
-    field: ['capLowered', 'capTypedBad', 'dialog', 'dragging', 'dropAt', 'jobIcons', 'jobPicker', 'listSort'],
+    field: ['dialog', 'jobIcons', 'jobPicker'],
   };
   const actual = { getter: [], method: [], field: [] };
   for (const name of Object.keys(descriptors).sort()) {

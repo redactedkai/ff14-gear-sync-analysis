@@ -79,6 +79,18 @@ test('overlay bridge: an open Zag layer is registered with the manager, and a cl
   assert.equal(api.quietCloses, 0, 'the machine closed itself: nothing to ask of it');
 });
 
+test('overlay bridge: a draw queued before the element left the page does not register its open layer again', () => {
+  const left = { isConnected: true };
+  const { manager, api, bridge } = setup({ root: () => left });
+  api.open = true;
+  bridge.sync();
+  assert.deepEqual(manager.openIds, ['zag-layer']);
+  bridge.release();
+  left.isConnected = false;
+  bridge.sync(); // the element's queued update runs; the machine still says open
+  assert.deepEqual(manager.openIds, []);
+});
+
 test('overlay bridge: the manager closing the layer (a change of screen, another layer) closes the machine without moving the focus', () => {
   const { manager, api, bridge } = setup();
   api.open = true;

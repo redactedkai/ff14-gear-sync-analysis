@@ -24,7 +24,7 @@ What runs, on what, and how much of it?
 | Unit tests (Node) | core logic, view builders, saved state, real game data | 1,413 tests in 197 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
-| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 56 tests in 6 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
+| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 82 tests in 18 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
 | Smoke test (browser) | the built page in headless Chromium | one script (`tests/e2e/smoke.mjs`), its steps in groups listed in `tests/e2e/groups.mjs` |
 
 Notes:
@@ -47,7 +47,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 22 | 15 |
-| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 19 | 12 |
+| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 20 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 11 | 15 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 44 | 47 |
@@ -139,8 +139,9 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/components/set-page/auto-fill-settings | the Auto-fill settings popover: a change dropping a waiting result, the Gear to search line, the goal menus |
 | ui/components/set-page/view | a set page's view built once per change; the Food menu built only when read |
 | ui/components/compose | joining parts into a component: a clash is an error that names the member, getters stay getters |
-| ui/components/sheets | the Sheets tab with a real sheets' store (note 12); its members, by kind, against a fixed list |
-| ui/components/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
+| ui/components/sheets | the Sheets tab with a real sheets' store (note 12); the answers to the two elements' events; its members, by kind, against a fixed list |
+| ui/elements/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
+| ui/elements/sheets/row-reorder | Up and Down on a handle move a row and the focus follows, a drop goes above or below the row under the pointer, nothing moves while the list is locked |
 | ui/components/sync-explainer | Piece stats: its views built once per change, the item level box, the substat menus, the chart's width |
 | ui/components/sync-explainer.bar | the math bar: the Job menu's owner per sub-tab, the Sync settings and Substats & materia popovers (one open at a time, focus, Escape), the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level |
 | ui/hq-font | the HQ glyph font and its fallback |
@@ -248,7 +249,7 @@ Notes on the longer rows:
 9. `core/tier-rank`: the reference tries every gear set and meal, with the stage rule written out. The cases are 20 of three keys and a Target GCD, a stage stopped at its node limit, an infeasible Target GCD, and 360 more random cases in `tests/sweep/`.
 10. `scripts/build`: the DEV badge outside `main`, the page template and its partials, the licence notices (`scripts/build.notices`: the LICENSE texts of Zag, Floating UI and proxy-compare in the script, and a notice for every other bundled package), two builds of one tree giving the same page, the page's 5 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread.
 11. `ui/elements/set-page/food-menu-model`: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to ILVL, a pick.
-12. `ui/components/sheets`: the screens, New sheet's default name, refused names left empty with their reason, Copy and Delete through their dialogs, set notes, Escape, nothing opening while an Auto-fill runs, keyboard and drag reordering, the note that clears itself.
+12. `ui/components/sheets`: the screens, New sheet's default name, refused names left empty with their reason, Copy and Delete through their dialogs, set notes, Escape, nothing opening while an Auto-fill runs, the answers to the sheet manager's and sheet page's events (a step, a move, an edit of the level).
 13. `ui/sheets/storage`: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage, and a saved time outside the range of a `Date` (1e300) making the record unreadable instead of breaking the Sheets tab.
 14. `ui/sheets/storage.stat-keys`: the v1 record has position keys (`main`, `spd`, `spec`) per stat profile.
 15. `ui/store/sheets-actions`: making, editing, copying (the White Mage cane cleared after the question), deleting and reordering sheets and gear sets. Also the screen each action leaves open, the level and cap held to their ranges, the edit lock while an Auto-fill runs, a full storage keeping the edit, no storage, unreadable records deleted, and a second store reading back what was saved.

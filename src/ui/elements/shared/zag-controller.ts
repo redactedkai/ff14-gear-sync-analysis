@@ -168,6 +168,11 @@ export class ZagController<Schema extends MachineSchema, Api> implements ZagLife
 
   /* Stops the machine and lets go of the parts. */
   hostDisconnected(): void {
+    // a change nulls the api until something reads it: build it before the machine goes, so the element's last state can still be
+    // read (an update that was already queued runs after the element left the page)
+    if (this.#machine && this.#api === null) {
+      this.#api = this.#options.connect(this.#machine.service, normalizeProps);
+    }
     this.#unsubscribe?.();
     this.#machine?.stop();
     this.#machine = null;

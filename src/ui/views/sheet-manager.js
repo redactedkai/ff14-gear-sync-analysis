@@ -4,6 +4,7 @@
 import { jobById } from '../../core/constants.js';
 import { patchOnDay } from '../../core/patches.js';
 import { UNAVAILABLE_MESSAGE } from '../sheets/storage.js';
+import { sheetHref } from '../store/app-state.ts';
 import { localDate, syncShort } from './sheet-text.js';
 
 /* The manager's column names, in the order of a row's cells. */
@@ -22,7 +23,7 @@ function dataTitle(gameData) {
    - unavailableText: UNAVAILABLE_MESSAGE when storage cannot be used, else '';
    - empty: no readable sheet; emptyCard {title, text, buttonText} is the "No sheets yet" card (the header's New sheet
      button shows only with sheets: showNewButton);
-   - columns: MANAGER_COLUMNS; rows: one per sheet in the user's order, {id, name (the full name, also the hover text),
+   - columns: MANAGER_COLUMNS; rows: one per sheet in the user's order, {id, href (its address), name (the full name, also the hover text),
      descriptionLine (its first line, or "No description"), hasDescription, jobId, jobName, settingsText ("Lv 100 / IL
      123"), setCount, created, changed ("2026-11-09"), patch (the game patch of the data it was made with, "7.56": the
      newest patch released on or before the data's date, patchOnDay; '' when the sheet names no data date), patchTitle
@@ -34,6 +35,7 @@ export function sheetManagerView(loaded) {
     const descriptionLine = (sheet.description ?? '').split('\n')[0];
     return {
       id: sheet.id,
+      href: sheetHref(sheet.id),
       name: sheet.name,
       descriptionLine: descriptionLine || 'No description',
       hasDescription: Boolean(descriptionLine),

@@ -71,7 +71,9 @@ export function createOverlayBridge(options: OverlayBridgeOptions): OverlayBridg
   const { id, api, closeWithoutFocus, root, opener, parent, manager = overlays as LayerManager } = options;
   return {
     sync() {
-      const open = api().open;
+      // an update that was already queued when the element left the page runs after `release()`: its layer is not open any more
+      const left = root()?.isConnected === false;
+      const open = api().open && !left;
       if (open && !manager.isOpen(id)) {
         manager.open({
           id,
