@@ -101,7 +101,7 @@ The settings row of the sheet page has two more boxes, "Race / Clan" and "Party 
 
 - `store.setClan(name)` and `store.setPartyRoles(value)` (both through `editBonus`) save the open sheet like any setting: refused while an Auto-fill runs (`LOCKED_TEXT`), nothing written when the value is the one held, a failed save keeps the edit in memory. A clan that is not a clan's name is no clan; party roles are held to a whole number 0 to 5.
 - Copy sheet copies both, whatever job the copy is for: they belong to the player, not the job.
-- The entries of the two lists are built once by `src/ui/sheets/bonus-options.js`; the sheet component has `pickClan` and `pickPartyRoles`, which put the box back to the saved value when a change is refused.
+- The entries of the two lists are built once by `src/ui/sheets/bonus-options.js`; the boxes are `<gsa-select>`s in `<gsa-sheet-page>`, which send a `sheet-action` event (`clan`, `party`) and never change their own value, so a change the store refuses leaves the saved value shown.
 
 ## Names
 

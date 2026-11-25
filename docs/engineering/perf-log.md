@@ -35,7 +35,7 @@ Which number answers "how long does it take?", and what do the words in the tabl
 
 The sections run from the newest date to the oldest; each says which page it belongs to.
 
-## 2. Runs of 2026-11-10
+## 2. Runs of 2026-11-25 and 2026-11-10
 
 ### 2.1 The set page after an Auto-fill
 
@@ -56,6 +56,8 @@ The fix kept each row's pin, source line and stat cells in the row and hid them 
 | A later Auto-fill's result task, 4x (best of three) | 243 ms | 172 ms |
 
 One "after" pass ran at 64% CPU load from other work and is left out.
+
+- **Earlier figures, from the Alpine page** (menus built hidden on every row and `x-if` blocks, before the set page's menus became elements that draw only while open): such menus were about four fifths of a result's elements and most of the time to draw it, and the longest blocked main thread after a slow result went from about 90 to 25 ms, and from about 550 to 140 ms at 4x CPU throttle. A view frozen only at its top still had each row, and each cell read from a row, wrapped in a proxy by `x-for`; frozen all through (`deepFreeze`), none was. Building a row's pin, source line and stat cells with `x-if` made about 700 elements in one task for an Auto-fill that fills every empty row; kept in the row and hidden, about 300.
 
 - Opening an empty set at 4x got slower (160 to 283 ms before, 213 to 333 ms after), because empty rows now carry the hidden parts.
 - Opening a filled set is the same (about 310 to 390 ms).
@@ -109,6 +111,7 @@ The Gear browser's screen moved from Alpine bindings to one Lit element (`<gsa-g
 - Every click is faster, about half at 4x. The Expansion box went from about 400 to about 120 ms at 4x (the cause was not isolated).
 - The click's own Event Timing entry for the screen switch is the same (48 and 40 ms at 4x): the screen draws in the tasks after the click.
 - The run's other numbers, `npm run perf` and Auto-fill, are not touched by this change and were not run.
+- **Earlier figures, from the Alpine page** (4x CPU throttle on a busy machine, so +-15%): switching from Sheets to the Gear browser blocked the main thread for about 1.6 s at best, with 4,060 elements and 373 templates. The first per-part templates took 1.6 to 1.8 s; one `x-html` string per row took 0.7 s. Fewer templates, `x-show` instead of `x-if`, frozen rows, `x-bind` objects, unkeyed or indexed `x-for` and unrolled cells did not change the time; only fewer bindings per cell did.
 
 ## 3. Runs of 2026-10-19
 

@@ -21,10 +21,10 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 1,413 tests in 197 files, about 30 to 45 s |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 1,386 tests in 196 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
-| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 97 tests in 24 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
+| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 99 tests in 25 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
 | Smoke test (browser) | the built page in headless Chromium | one script (`tests/e2e/smoke.mjs`), its steps in groups listed in `tests/e2e/groups.mjs` |
 
 Notes:
@@ -50,7 +50,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 20 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
-| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 47 | 47 |
+| `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 46 | 47 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
 | `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 21 | 0 |
 
@@ -113,6 +113,9 @@ Which file tests what? One line per file; the file itself says the rest.
 | core/piece.sync-cap-grid | every real piece of every job over a grid of caps against the cap formula; the cap and the stats never fall as it rises (shields left out) |
 | core/session | the solver session: the gear of the last four jobs, least recently used dropped first; a job's gear built once |
 | core/set | a gear set and what it adds up to (note 7) |
+| core/set.average-item-level | a set's average item level: the weapon counted twice when two-handed, once with a shield, an empty set has none |
+| core/set.bonuses | a set's panel numbers with a clan and a party bonus: each alone, together, and a meal's Vitality worked out after the party bonus |
+| core/clan-bonus | the 16 clans in 8 races, a clan's offsets, the party bonus (1% a role, up to 5), roles held to a whole number |
 | core/stat-keys | old position keys read as a job's own, a key moved to another job, and a guard on hard-coded keys (note 8) |
 | core/speed | GCD tiers, DoT scalars, the cast and recast multiplier, haste, tier lookup |
 | core/sync-target | level sync, its triggers, the optimizer under it |
@@ -125,10 +128,14 @@ Which file tests what? One line per file; the file itself says the rest.
 | core/tier-rank.hold-at-start | tier ranking holds a key at the start of the tier it reached, with no spare point (a Dark Knight case) |
 | core/tiers | substat tiers; the Substat tiers sub-tab's ladder (every tier up to a most, the last cut at it) and tier sizes |
 | scripts/build | the build script and the optimizer's worker bundle (note 10) |
+| scripts/gen-max-speed.inputs | the files the max-speed generator hashes: code and JSON under `src/core`, the data files and the generator, in order |
 | startup-failure | the failed-to-start script run against a stand-in page: the settings key and the sheets keys are saved data to reset, the reload guard's dev flag and other pages' keys are not |
 | ui/elements/gear-browser/filter-menu-model | the Expansion and "Gear categories" menus' data: the tabs (Everyday, Side content and Hard content with the real boxes, hints and Hard content's reading order), the button texts, the piece counts and their words, the lists after a tick, All, None and Default, and the partials' event names |
 | ui/elements/gear-browser/gear-browser-model | the Gear browser element's rules with no DOM: its view built once per change and only while its tab is open, the page line going back to page 1, sorting, Reset filters, the / key |
 | ui/components/page | the Gear browser strip's job menu, the cap field's error and lowered note, Reset asking first |
+| ui/elements/app/cap-follow | when a cap field lowers its cap or drops its typed text (a stored cap, IL Sync, the level settling, a hidden panel) |
+| ui/elements/app/note-timer | a note expires after `NOTE_MS`, and the same note said again restarts the wait |
+| ui/views/cap-field | what the item level and level fields show: the error, the lowered note with its flag, the range |
 | ui/elements/set-page/edits | a set page's session bound to a real sheet store: edits by hand kept in a draft until Apply, pins saved at once; the draft is a frozen copy in the store, one entry per page |
 | ui/elements/set-page/menus | the window's line that the page's menus stay under: the page scrolls to show an opened menu, keeps its button under the pinned header and cuts a menu that does not fit |
 | ui/elements/set-page/fill-run.best-meals | "Best for goal": the tied meals saved with an applied Auto-fill, the Food row and its switch |
@@ -142,18 +149,21 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/components/sync-explainer.bar | the math tab's component: the Job menu's owner per sub-tab, the Sync settings chip's words, the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level, the settings the bar and Stat Allocation elements are given |
 | ui/hq-font | the HQ glyph font and its fallback |
 | ui/no-alpine | only `src/main.js` imports Alpine, so every module of `src/ui` and `src/core` loads in Node |
+| ui/overlays | the overlay manager: Escape closes the topmost layer, a press outside, Tab out, a layer a native list leaves alone |
 | ui/job-sync-panel.level-sync-cap | the item level level sync gives (`levelSyncCap`, none at the job's level cap), held as the cap while IL Sync is off (`holdLevelSyncCap`); `mathJobOwner`; `panelOf('tiers')` |
 | ui/level-cap | the cap lowered to what the level allows, the flag in a cap field's label line |
 | ui/level-cap.level-text | a level box's rules: which text is no level at Paladin's, Blue Mage's and Beastmaster's level caps, `LEVEL_TEXT` and the error flag |
 | ui/number-commit | the number-box rule as a table: which typed text commits, what the box shows and when the value was clamped, for each kind of box |
 | ui/number-field | number boxes (their min and max, the Target GCD's range), typing and committing |
 | ui/ranks | the ranked stat menus (Goal, tiebreaks, Piece stats substats): one rank per stat, swaps |
+| ui/sheets/bonus-options | the Clan and Party bonus lists: 16 clans under 8 races, none to five roles, the sizing text |
 | ui/sheets/fill | Auto-fill plan and pins, the answer put on the open rows, the line for the pins dropped (`unpinnedText`: the rows named, a relic with its reason) and the conflict line, the pins dropped (a meal problem drops the meal pin) |
 | ui/sheets/fill.mixed-weapon | a White Mage's Auto-fill keeps the shield the search picks, and never leaves a 2H cane with a shield |
 | ui/sheets/fill-settings | a set's Auto-fill settings: the defaults, a stat the job lacks, the recipe (every setting reaches the request) and the goal line |
 | ui/sheets/fill-settings.recipe | the recipe an Auto-fill sends: every Auto-fill setting reaches the request, nothing else does |
 | ui/sheets/ops | sheets and gear sets as plain data (note 16) |
 | ui/sheets/ops.best-meals | the tied best meals a set saves: shape, old records, damaged values, Copy set and Copy sheet |
+| ui/sheets/ops.clan-party | a new sheet has no clan or party bonus; Copy sheet keeps them, and a sheet from before them gets none |
 | ui/sheets/dialogs | the sheet dialogs over a real store: fields reach the store call, a refused form gets the reason and its field and is left as it is (a blank name stays blank) |
 | ui/sheets/ops.copy-sheet | Copy sheet on random sheets of real pieces: pieces kept and cleared, stats moved, source untouched, round trip |
 | ui/sheets/ops.stat-keys | Copy sheet moving the goal and the stones to the new job by position |
@@ -162,6 +172,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/sheets/set-edits.covering | a cloak picked over a held head empties and unpins the Head row, names the head and the cloak, refuses a head under a cloak, and leaves the saved set for Discard |
 | ui/sheets/set-edits.two-handed | a 2H weapon picked over a held shield empties and unpins the Off-hand row, names the shield, and leaves the saved set for Discard |
 | ui/sheets/storage | the saved sheets (index and one record per sheet) through a storage stand-in (note 13) |
+| ui/sheets/storage.clan-party | the clan and party bonus saved and read back, an unknown clan read as none, damaged values make the record unreadable |
 | ui/sheets/storage.fill-and-meal | the Food-related fields of a saved set: the meal and the Auto-fill food, materia and tier switches, and a wrong type |
 | ui/sheets/storage.fuzz | saved sheet records damaged in several fields through every reader and view |
 | ui/sheets/storage.stat-keys | a v1 record read with the game's keys, and a record with the game's keys read as it is (note 14) |
@@ -169,6 +180,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/solver | the optimizer's solver (note 17) |
 | ui/router/focus | the focus and scroll after Back, Forward and a reload: the heading focused, a deep position scrolled to in the call itself with the page held tall and let go once it holds, a newer move taking over, a tab still opening waited for, a tab swapped in shorter than the position giving up the hold in the frame that places it, a screen opened at the top placed once and not pulled back |
 | ui/router/plain-click | which clicks on a link the page handles (a plain click) and which are the browser's (Ctrl, Cmd, Shift, Alt, a middle click) |
+| ui/router/query | the settings in an address: each view's names, the defaults, a value that is no good, a name the page lacks |
 | ui/router/router | the router over a stand-in history: opening each address, the not found screen, pushing and replacing entries, Back and Forward, and the leave guard holding a move back, undoing it and doing it again; the scroll events after a push (the late one of the screen left, the clamps to a shorter page) not noted as the new screen's position, the screen left keeping the deeper of its noted and read position, a screen left by Back or Forward keeping the position read as the browser moves (a wheel scroll whose event has not come), a new screen put at the top and Back and Forward not |
 | ui/router/routes | the address of each screen: parse and format round trip, junk addresses, percent-encoded ids, the page title |
 | ui/router/scroll-storage | the saved scroll positions: only finite numbers come back, damaged or hostile text, a refusing storage and a blocked `sessionStorage` read as none |
@@ -186,23 +198,27 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/store/app-state (`.test.ts`) | the five slices, actions that change nothing are not counted, `panelOf`, `persisted` in the saved shape, gear set pages, `routeOf` against the router's routes |
 | ui/store/app-state.differential (`.test.ts`) | random action sequences (36 runs of 250 steps, fixed seeds) on the Alpine app store as it was (kept as the oracle in `tests/unit/helpers/old-app-store.js`) and the new one: the saved JSON, each panel, the open tab and the typed levels equal after every step |
 | ui/store/app-actions, `.panels`, `.sheets-tab`, `.tiers-job` | the scenarios of the Alpine app store's tests (job switch and reset, the two panels, the Sheets tab has no panel, Substat tiers' own job) run against the actions through `tests/unit/helpers/store-adapters.ts` |
+| ui/store/app-actions.parts (`.test.ts`) | every app action: the parts it counts are the parts that changed |
 | ui/store/sheets-actions, `.clan-party` | the sheets' store over a storage stand-in (note 15), run against the actions through the same adapter |
 | ui/store/app-facade, sheets-facade (`.test.ts`) | the facades the templates read (`$store.app`, `$store.sheets`): each getter reads the revision of its slice, an action writes it as it runs, every member of the old stores is there, nothing can be assigned to, the number boxes' `setField`, the set page's guard, `unsettled` through `hasUnsettled`, `commitSheet` |
 | ui/store/set-page-actions (`.test.ts`) | the gear set pages' actions: the draft, the Auto-fill's status (idle, running, waiting, failed, cancelled), a stale answer ignored by its search id, the Gear to search count, `unsettled` over several pages, two pages open at once |
 | ui/store/no-direct-writes | a search of `src/` for any write to a facade that is not an action call: `x-model` on a store field, `app.<field> =`, `Object.assign(app...)`, `sheets.<field> =` |
 | styles/z-index-scale | every `z-index` is a `--z-*` token, the tokens keep their order (dialog and toast on one level), the rules a library positioner needs are in place |
 | styles/theme-tokens | colors only through the CSS tokens (note 19) |
+| styles/layers | the stylesheet names its layers once, first, and every rule is inside one |
 | styles/gear-column-tint | the Gear browser CSS tints the column of every stat the table can sort or hover |
 | smoke-helpers/axe | the smoke test's (`tests/e2e/lib/axe.mjs`) split of axe-core findings into new and known ones: an entry for a rule, for one element, for the elements whose selector holds a text, another rule's entry, an entry that matched nothing |
 | smoke-helpers/visual | the smoke test's (`tests/e2e/lib/visual.mjs`) contrast arithmetic and token reader against the WCAG's published values (21:1, #767676 and #777777 on white), large text, translucent layers |
 | scripts/test | the test wrapper: its options, the unit files a domain selects, and which domains a changed path points to (`--changed`) |
 | scripts/build.notices | the licence notices: every third-party package the page bundles has its notice in the page script, and the LICENSE each group is copied from names that group's own holder (Chakra UI, Floating UI contributors, Daishi Kato) |
 | scripts/lint-lit | the ESLint config for the Lit elements reports a class field that shadows a property and an `<img>` without `alt` on fixture files |
+| scripts/styles | `readStyles` and `expandStyles`: the cascade order, an import replaced by its file, `entry.css` importing every file once |
 | scripts/visual | the screenshot baseline wrapper: runs only in the pinned image, skips with a message elsewhere or without baselines, and the image tag matches the workflow and the lock file |
 | scripts/test.domains | the domain guard: every file in one domain (a planted `.ts` stray is reported), smoke steps and `test:<domain>` scripts named, and the counts of the domains table in section 1.1 equal to the registry's |
 | ui/sync-charts | the math tab's SVG charts: escaping, bands, shading, widths, bars |
 | ui/elements/gear-browser/slot-menu-names | the Slot menu's words and keys written once, and the Gear browser template's `@slot-change` wired to the same event name |
 | ui/elements/set-page/food-menu-model | the Food menu's state: pills kept or reset on opening, the sort and its fallback, the click on a row, the page's event names |
+| ui/elements/set-page/piece-picker-names | the piece picker's click rule (a piece row picks its game id, a disabled row picks nothing) and the template's event names |
 | ui/elements/shared/element-width | the width controller with a fake host and observer: the width follows the box in the next frame, a hidden box keeps the last width, a box that comes and goes is followed again, a disconnected host stops watching |
 | ui/elements/shared/overlay-bridge | the bridge between a Zag layer and the overlay manager, on the real manager and a fake document: an open layer is registered once and dropped when it closes, the manager closes the machine without moving the focus, a layer inside a manager layer leaves it open, a manager layer above takes the Escape first, the manager alone never closes a Zag layer on Escape |
 | ui/elements/shared/zag-controller | the Zag controller with a fake element and a tiny machine: the machine runs from connect to disconnect, 1,000 connect and disconnect cycles leave no effect running, a change asks for a draw and drawing does not, ids start with `zg-`, parts are spread only within their own `data-zag-host`, array parts in order, a part Lit removed is let go |
@@ -225,6 +241,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/views/set-suggestion.best-meals | what Apply saves of the tied best meals, and what the Food row shows |
 | ui/views/set-suggestion.two-handed-shield | a suggestion taken partly never saves a two-handed weapon beside a shield (White Mage, Black Mage) |
 | ui/views/set-totals | a set's totals, tiers and defense |
+| ui/views/set-totals.bonuses | a set's totals and header figures with a clan and a party bonus, and the sheet list's note naming them |
 | ui/views/sheet-forms | the Sheets tab's dialogs (note 22) |
 | ui/views/sheet-manager | the sheet manager: rows, unreadable records, the empty state, text helpers |
 | ui/views/stone-menu | a set page's materia menu: the grades an item level takes, the room under the cap, overmeld odds |
