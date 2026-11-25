@@ -173,5 +173,5 @@ Notes: HQ (high quality) and NQ (normal quality) are the two versions of a craft
 | A piece's own caps; sync removing melds | `src/core/piece.js` (`meldCaps`, `keepsMelds`) |
 | Materia table, slot count and overmeld flag per item | `scripts/data/gen_items.py`, `src/core/items.js` (`meldInfo`), `src/core/tables.js` (`MATERIA`) |
 | Melds in the candidate lists; meld versions under a speed range | `src/core/optimizer/candidates.js` (`itemCandidate`, `itemVersions`), `src/core/meld.js` (`meldVersions`) |
-| The Materia switch and the materia menu | `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/views/stone-menu.js` (`materiaMenuView`), `src/partials/set-page.html` (`#s-melds`) |
+| The Materia switch and the materia menu | `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/views/stone-menu.js` (`materiaMenuView`), `src/ui/elements/set-page/set-page.ts` (`#s-melds`) |
 | Tests | `tests/unit/core/meld.test.js`, `tests/unit/helpers/exhaustive.js` (`meldVectors`), `tests/unit/core/optimizer/index.exhaustive.test.js` |

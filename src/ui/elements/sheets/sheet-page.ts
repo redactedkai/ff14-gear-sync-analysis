@@ -1,9 +1,9 @@
 /* A sheet's page (the Sheets tab's second level) as one Lit element in light DOM: the breadcrumb with the sheet switcher, the sheet's
    name, description and buttons, its settings (level, item level, IL Sync, Race / Clan, Party bonus), and the list of its gear sets
    with the Effects / Stat points switch and sortable headings.
-   It sits inside the Alpine-run Sheets tab as an island (docs/engineering/architecture.md section 3):
-   - the page gives it properties from a wrapper's `x-effect` (`view`, `figures`, `sheetId`, `clan`, `partyRoles`, `switcher`, `busy`,
-     `dialogOpen`) and listens for `sheet-action` (sheet-action.ts) and the switcher's `switch-pick`; the element never reads a store;
+   It sits inside the Sheets screen (sheets-screen.ts):
+   - the screen gives it properties (`view`, `figures`, `sheetId`, `clan`, `partyRoles`, `switcher`, `busy`, `dialogOpen`) and listens
+     for `sheet-action` (sheet-action.ts) and the switcher's `switch-pick`; the element never reads a store;
    - it draws nothing while `view` is null (another screen is open) and keeps its own state while it is: the list's sort (back to
      the saved order when the Effects / Stat points switch or the open sheet changes) and the cap the page last lowered (for the note
      under the item level box);

@@ -1,5 +1,5 @@
 // The "Page failed to start" message (src/startup-failure.js): none on a healthy load; shown on a page that fails in
-// each way (a throw in the app script, an error inside Alpine, a file cut short, the start marker missing); its Reset button; no Reset button
+// each way (a throw in the app script, an error while the page is built, a file cut short, the start marker missing); its Reset button; no Reset button
 // when the browser blocks storage. The broken pages are copies of the built page written to the output folder.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -19,6 +19,21 @@ function variantUrl(name, edit) {
   writeFileSync(file, edit(readFileSync(PAGE_PATH, 'utf8')), 'utf8');
   return pathToFileURL(file).href;
 }
+
+/** A script text, put first in the app's script, that makes the render of `<gsa-sheets-screen>` throw a ReferenceError (no bundle code is edited). */
+const BROKEN_SHEETS_SCREEN = `{
+  const define = customElements.define.bind(customElements);
+  customElements.define = (name, constructor, options) => {
+    if (name === 'gsa-sheets-screen') {
+      const render = constructor.prototype.render;
+      constructor.prototype.render = function () {
+        sheetsMissing();
+        return render.call(this);
+      };
+    }
+    define(name, constructor, options);
+  };
+}`;
 
 /** The copy with a top-level throw first in the app's script: nothing of the app runs. */
 const throwing = html => {
@@ -75,12 +90,11 @@ export async function checkStartupFailures(pg) {
     check(blank.error === 'Error: injected failure (smoke test)', `blank case error text: '${blank.error}'`);
     check(await page.locator('#startfail-reload').isVisible(), 'no Reload button');
 
-    // an error inside Alpine, in a known spot: the Sheets tab's component gets an x-init that calls a function nobody defines
+    // an error while the page is built, in a known spot: the Sheets screen's element (a Lit element, drawn in a microtask after the app's
+    // script) gets a render that first calls a function nobody defines; the patch of customElements.define runs ahead of the bundle
     const partUrl = variantUrl('part', html => {
-      if (!html.includes('x-data="sheetsTab"')) {
-        throw new Error('the page has no x-data="sheetsTab"');
-      }
-      return html.replace('x-data="sheetsTab"', 'x-data="sheetsTab" x-init="sheetsMissing()"');
+      const at = APP_SCRIPT_START(html);
+      return `${html.slice(0, at)}${BROKEN_SHEETS_SCREEN}${html.slice(at)}`;
     });
     const part = await failedStart(page, partUrl);
     check(part.heading.length > 0, 'partly built: no heading');

@@ -41,6 +41,7 @@ import './ui/elements/set-page/food-menu.ts';
 import './ui/elements/sheets/sheet-dialog.ts';
 import './ui/elements/sheets/sheet-manager.ts';
 import './ui/elements/sheets/sheet-page.ts';
+import './ui/elements/sheets/sheets-screen.ts';
 import './ui/elements/sheets/switch-menu.ts';
 import './ui/elements/set-page/materia-menu.ts';
 import './ui/elements/set-page/piece-picker.ts';
@@ -48,7 +49,6 @@ import './ui/elements/set-page/rank-note.ts';
 import './ui/elements/set-page/set-page.ts';
 import './ui/elements/set-page/settings-popover.ts';
 import { page } from './ui/components/page.js';
-import { sheetsTab } from './ui/components/sheets.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
@@ -135,9 +135,8 @@ function startSolverWorker() {
 // searches in the worker, off the page's thread; on the page's thread when the browser will not run the worker
 const solver = workerSolver(startSolverWorker, inProcessSolver);
 
-/* What a set page (<gsa-set-page>, made by the Sheets tab's template) needs: the store, its Sheets facade, the solver and the highest
-   real item level. Frozen, so Alpine hands it on as it is, never wrapped. The solver comes from here, so the page's module loads without
-   a page (its unit test). */
+/* What a set page (<gsa-set-page>, drawn by the Sheets screen) needs: the store, its Sheets facade, the solver and the highest
+   real item level. Frozen. The solver comes from here, so the page's module loads without a page (its unit test). */
 const setPagePorts = Object.freeze({
   store,
   sheets,
@@ -147,12 +146,9 @@ const setPagePorts = Object.freeze({
   },
 });
 
-Object.entries({
-  page,
-  sheetsTab: () => sheetsTab(setPagePorts),
-}).forEach(([name, factory]) => {
-  Alpine.data(name, factory);
-});
+Alpine.data('page', page);
+// the Sheets screen (a Lit element) follows the store and reads the facades itself
+document.querySelector('gsa-sheets-screen').ports = { store, app, sheets, setPagePorts };
 
 /* Save the settings 150 ms after the last change and when the page is hidden (ui/store/autosave.ts). */
 startAutosave(store);

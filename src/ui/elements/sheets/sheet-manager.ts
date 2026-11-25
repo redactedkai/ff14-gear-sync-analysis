@@ -1,8 +1,8 @@
 /* The sheet manager (the Sheets tab's first level) as one Lit element in light DOM: every saved sheet as a row, the records that
    could not be read, the empty card, and the "not found" screen for an address that names a sheet or gear set that is not saved.
-   It sits inside the Alpine-run Sheets tab as an island (docs/engineering/architecture.md section 3):
-   - the page gives it properties from a wrapper's `x-effect` (`view`, `notFound`, `busy`, `dialogOpen`) and listens for
-     `sheet-action` (sheet-action.ts); the element never reads a store;
+   It sits inside the Sheets screen (sheets-screen.ts):
+   - the screen gives it properties (`view`, `notFound`, `busy`, `dialogOpen`) and listens for `sheet-action` (sheet-action.ts); the
+     element never reads a store;
    - it draws nothing while `view` and `notFound` are both null (another screen is open);
    - a click anywhere on a row opens it (open-row.ts); the name link is the keyboard and screen-reader way in and a real link
      (a Ctrl or Cmd click opens it in a new tab);

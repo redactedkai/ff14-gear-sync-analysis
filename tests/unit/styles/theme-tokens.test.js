@@ -41,7 +41,7 @@ test('src/styles/*.css: every color outside the token blocks is a var(--token)',
 
 test('the page HTML paints no literal color: no style attribute or fill/stroke/color attribute with one', () => {
   const files = [join(new URL('.', SRC).pathname.slice(1), 'index.html'), ...walk(new URL('partials/', SRC).pathname.slice(1))];
-  assert.ok(files.length >= 3);
+  assert.ok(files.length >= 2);
   const found = [];
   for (const file of files) {
     const html = readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');

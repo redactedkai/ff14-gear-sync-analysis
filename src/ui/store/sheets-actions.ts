@@ -66,7 +66,7 @@ export interface SheetResult {
   reason?: string;
   message?: string;
   id?: string;
-  lowered?: unknown;
+  lowered?: { from: number; to: number; level: number | null } | null;
 }
 
 /* The fields of the New sheet and Copy sheet forms: name, description, job, level and sync {on, cap}, as typed. */

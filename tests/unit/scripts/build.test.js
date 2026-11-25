@@ -169,12 +169,12 @@ test('build includes: a partial can include another, keeping the indentation; a 
   assert.equal(expandIncludes('<!-- INCLUDE d3.html -->', read), '<i></i>');
 });
 
-test('page template: the screens are elements (the Gear browser, the set page), and every include is expanded', async () => {
+test('page template: the screens are elements (the Gear browser, the Sheets screen), and every include is expanded', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
   const page = expandIncludes(html);
   assert.match(page, /<gsa-gear-browser class="panel" x-ignore>/);
-  assert.match(page, /<gsa-set-page x-ignore>/);
+  assert.match(page, /<gsa-sheets-screen x-ignore>/);
   assert.doesNotMatch(page, /\{\{|INCLUDE/);
 });
 

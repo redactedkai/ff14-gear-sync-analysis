@@ -1,8 +1,8 @@
 /* The Sheets tab's dialogs as one Lit element in light DOM: New sheet, Copy sheet (with its "?" panel), Edit sheet, Edit gear set and
    the Delete question, each a `<gsa-dialog>` (a Zag dialog) drawn only while one is open, with the form as its content.
-   It sits inside the Alpine-run Sheets tab as an island (docs/engineering/architecture.md section 3):
-   - the page gives it `view` (sheet-dialogs-model.ts SheetDialogView: what the open dialog shows, null while none is open, so the
-     element draws nothing) from a wrapper's `x-effect`; the element never reads a store;
+   It sits inside the Sheets screen (sheets-screen.ts):
+   - the screen gives it `view` (sheet-dialogs-model.ts SheetDialogView: what the open dialog shows, null while none is open, so the
+     element draws nothing); the element never reads a store;
    - it tells the page what the user did with one `dialog-action` event whose `detail` is a DialogAction (a key typed, a job picked,
      the main button, the X, Escape); the model (sheet-dialogs-model.ts) changes its fields and gives a new `view`;
    - it sends `dialog-closed` once the closed dialog's box has been removed, when the page may give the focus back to the control that

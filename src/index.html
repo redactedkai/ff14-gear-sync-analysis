@@ -85,31 +85,10 @@
   @strip-reset="$store.app.resetAll()">
   <gsa-job-strip x-ignore></gsa-job-strip>
 </section>
-<!-- SHEETS: the sheet manager and a sheet's page (elements), the frame of a set page and the dialogs (components/sheets.js; the store
-     $store.sheets is ui/store/sheets-facade.ts). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
-<section class="tab" id="tab-sheets" aria-labelledby="tablink-sheets" hidden :hidden="$store.app.tab !== 'sheets'" x-data="sheetsTab">
-<div class="sheetsview">
-  <p class="callout small" id="sh-unavailable" x-show="manager.unavailableText" x-text="manager.unavailableText"></p>
-
-  <!-- THE SHEET MANAGER and a sheet's page: Lit elements (ui/elements/sheets/), islands. A wrapper's x-effect gives the element its properties
-       (`managerProps`, `pageProps`: the view while its screen is open, else null, so the element draws nothing); the wrapper listens for
-       the element's `sheet-action` events (`onSheetAction`) and the sheet switcher's pick. The "not found" screen is the manager's. -->
-  <div class="sheets-island" x-effect="Object.assign($el.firstElementChild, managerProps)" @sheet-action="onSheetAction($event.detail)">
-    <gsa-sheet-manager x-ignore></gsa-sheet-manager>
-  </div>
-  <div class="sheets-island" x-effect="Object.assign($el.firstElementChild, pageProps)" @sheet-action="onSheetAction($event.detail)" @switch-pick="pickSheet($event.detail)">
-    <gsa-sheet-page x-ignore></gsa-sheet-page>
-  </div>
-
-  <!-- INCLUDE set-page.html -->
-
-  <!-- THE DIALOGS: <gsa-sheet-dialog> (ui/elements/sheets/sheet-dialog.ts), an island that draws the open dialog from `dialogProps` (a Zag dialog while
-       one is open: it traps Tab, hides and blocks the page behind, and answers the X, a press outside and Escape through its `dialog-action` event); the
-       wrapper answers it (`onDialogAction`), gives the focus back once its box is gone (`afterDialogClosed`) and closes the dialog on a Back or Forward -->
-  <div class="sheets-island" x-effect="Object.assign($el.firstElementChild, dialogProps)" @dialog-action="onDialogAction($event.detail)" @dialog-closed="afterDialogClosed()" @popstate.window="closeDialog(false)">
-    <gsa-sheet-dialog x-ignore></gsa-sheet-dialog>
-  </div>
-</div>
+<!-- SHEETS: <gsa-sheets-screen> (ui/elements/sheets/sheets-screen.ts) draws the sheet manager, a sheet's page, a gear set's page and the dialogs; main.js
+     gives it its ports. No Job and sync panel on this tab: each sheet holds its own job, level and sync. The tab's section and its `hidden` stay here. -->
+<section class="tab" id="tab-sheets" aria-labelledby="tablink-sheets" hidden :hidden="$store.app.tab !== 'sheets'">
+  <gsa-sheets-screen x-ignore></gsa-sheets-screen>
 </section>
 
 

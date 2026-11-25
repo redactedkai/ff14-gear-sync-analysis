@@ -1,6 +1,6 @@
 /* What the Sheets screens' elements (<gsa-sheet-manager>, <gsa-sheet-page>) tell the page: one `sheet-action` event whose `detail` is
-   a SheetAction. The element never reads a store; the page's wrapper listens and calls the store (components/sheets/actions.js).
-   An action the page answers with a result (a step, a settings edit) has a `result` field the wrapper fills in before the event
+   a SheetAction. The element never reads a store; the Sheets screen listens and calls the store (sheet-answers.ts).
+   An action the page answers with a result (a step, a settings edit) has a `result` field the screen fills in before the event
    returns; the element reads it right after `dispatchEvent`. */
 
 /* The event's name. */

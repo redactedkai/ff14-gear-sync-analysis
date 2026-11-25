@@ -13,10 +13,10 @@ button.danger:hover {
   flex-direction: column;
   min-width: 0;
 }
-/* The sheet manager, a sheet's page, a set's page and the dialogs are the elements <gsa-sheet-manager>, <gsa-sheet-page>, <gsa-set-page> and
-   <gsa-sheet-dialog> (src/ui/elements/), drawn in light DOM inside a wrapper: none takes a box, so the screen's own `.sheetsview` is the
-   column's child, as it was before. */
-.sheets-island,
+/* The Sheets screen, the sheet manager, a sheet's page, a set's page and the dialogs are the elements <gsa-sheets-screen>, <gsa-sheet-manager>,
+   <gsa-sheet-page>, <gsa-set-page> and <gsa-sheet-dialog> (src/ui/elements/), drawn in light DOM: none takes a box, so the screen's own
+   `.sheetsview` is the tab section's child. */
+gsa-sheets-screen,
 gsa-sheet-manager,
 gsa-sheet-dialog,
 gsa-sheet-page,

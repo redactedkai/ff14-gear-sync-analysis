@@ -2,17 +2,17 @@
    sheet's settings read-only, the set's name, notes and Edit, Copy and Delete buttons, the set bar with Auto-fill, the goal and the gear
    icon, and the stat block), the gear table with its piece pickers, materia and meal menus and pins, the Auto-fill settings popover, an
    Auto-fill suggestion with its Take boxes, a manual draft, and the question before leaving.
-   It sits inside the Alpine-run Sheets tab as an island (docs/engineering/architecture.md section 3), made again for each set it shows
-   (the tab's template keys it by the set's id), so nothing here outlives a set:
-   - the tab's wrapper gives it `ports` (the store, its Sheets facade, the solver and the highest real item level: SetPagePorts), `setId`,
-     `header` (the page's top line, views/sheet-sets.js setHeaderView) and `dialogOpen`, from an `x-effect`; the element never reads
-     `$store`. It follows the store itself: it draws again when the Sheets tab or the set pages change;
+   It sits inside the Sheets screen (`<gsa-sheets-screen>`, sheets/sheets-screen.ts), made again for each set it shows (the screen draws
+   it with `keyed(setId, ...)`), so nothing here outlives a set:
+   - the screen gives it `ports` (the store, its Sheets facade, the solver and the highest real item level: SetPagePorts), `setId`,
+     `header` (the page's top line, views/sheet-sets.js setHeaderView) and `dialogIsOpen` (a function: whether a dialog of the screen is
+     open); the element never reads `$store`. It follows the store itself: it draws again when the Sheets tab or the set pages change;
    - what it does is the page's session (session.ts and the parts it makes: menus, edits, Auto-fill, settings, leaving); the element
      makes one when it has its ports and set, starts it, and stops it when it leaves the page (the Auto-fill still running is stopped,
      the page's draft and result go);
    - what it draws is views/set-page.js's view, built once per change of the sheets, the set, the draft or the result (never in reactive
      state); the template only displays it;
-   - Edit and Delete are asked of the Sheets tab, which owns those dialogs, with a `sheet-action` event (sheets/sheet-action.ts).
+   - Edit and Delete are asked of the Sheets screen, which owns those dialogs, with a `sheet-action` event (sheets/sheet-action.ts).
    Everything a menu, a popover or the question needs is an element of its own (the piece picker, the materia menu, the Food menu, the
    Auto-fill settings popover and the question's dialog), placed in this template. */
 import { LitElement, type PropertyValues, type TemplateResult, html, nothing } from 'lit';
@@ -79,13 +79,13 @@ export class GsaSetPage extends LitElement {
     ports: { attribute: false },
     setId: { type: String, attribute: 'set-id' },
     header: { attribute: false },
-    dialogOpen: { type: Boolean },
+    dialogIsOpen: { attribute: false },
   };
 
   declare ports: SetPagePorts | null;
   declare setId: string | null;
   declare header: SetPageHeader | null;
-  declare dialogOpen: boolean;
+  declare dialogIsOpen: () => boolean;
   // the page's logic (session.ts), made when the element has its ports and set; the views of the set it shows
   private session: PageSession | null = null;
   private readonly views = setPageViews();
@@ -102,7 +102,7 @@ export class GsaSetPage extends LitElement {
     this.ports = null;
     this.setId = null;
     this.header = null;
-    this.dialogOpen = false;
+    this.dialogIsOpen = () => false;
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -138,7 +138,7 @@ export class GsaSetPage extends LitElement {
         return element.isConnected;
       },
       get dialogOpen() {
-        return element.dialogOpen;
+        return element.dialogIsOpen();
       },
       query: (selector: string) => element.querySelector<HTMLElement>(selector),
       requestUpdate: () => element.requestUpdate(),

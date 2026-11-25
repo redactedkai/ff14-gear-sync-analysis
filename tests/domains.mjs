@@ -74,7 +74,6 @@ export const DOMAINS = {
       'src/ui/sheets/{saved-set,set-edits}.js',
       'src/ui/views/{limit-rows,meal-menu,piece-menu,set-draft,set-meal-menu,set-page,set-rows,set-totals,stone-menu}.js',
       'src/ui/draw-in-steps.js',
-      'src/partials/set-page.html',
       'src/styles/{set-page,pieces,fill-settings}.css',
     ],
     tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,page-magics}.js'],
@@ -82,8 +81,6 @@ export const DOMAINS = {
   sheets: {
     title: 'The Sheets tab: manager, a sheet page, dialogs, saved sheets',
     src: [
-      'src/ui/components/sheets.js',
-      'src/ui/components/sheets/**',
       // the Lit elements of the Sheets screens: the sheet manager, a sheet's page and the caret menus that switch sheet or gear set
       'src/ui/elements/sheets/**',
       'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.js',
@@ -124,7 +121,7 @@ export const DOMAINS = {
       // what every element uses: the Zag controller and the bridge to the overlay manager
       'src/ui/elements/{app,shared}/**',
       'src/ui/router/**',
-      'src/ui/components/{page,compose}.js',
+      'src/ui/components/page.js',
       'src/ui/{state,store-key,job-sync-panel,level-cap,number-commit,number-field,overlays,ranks,hq-font}.js',
       'src/ui/{text,view-cache}.ts',
       'src/ui/views/cap-field.js',
