@@ -29,26 +29,18 @@
       @click="goSub('tiers', $event)">Substat tiers</a>
   </nav>
   <!-- the ? button sits at the right end of the sub-tabs row (css), so it comes right after them in the tab order -->
-  <div class="helpwrap" x-ref="helpWrap" x-show="$store.app.mathTab === 'piece'">
-    <button
-      type="button"
-      class="help"
-      id="m-help"
-      x-ref="helpButton"
-      :aria-expanded="String(helpPanelOpen)"
-      aria-controls="m-help-pop"
-      @click="toggleHelpPanel()">?</button>
-    <div class="backdrop" x-show="helpPanelOpen" @click="closeHelpPanel(true)"></div>
-    <div
-      class="popover"
-      id="m-help-pop"
-      x-ref="helpPop"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Gear stats and syncing"
-      tabindex="-1"
-      x-show="helpPanelOpen"
-      @keydown="wrapHelpTab($event)">
+  <gsa-bar-popover
+    class="helpwrap"
+    trigger-id="m-help"
+    content-id="m-help-pop"
+    placement="bottom-end"
+    gap="8"
+    modal
+    x-show="$store.app.mathTab === 'piece'">
+    <button type="button" class="help" data-zag-part="trigger">?</button>
+    <div class="backdrop" data-zag-part="backdrop" hidden></div>
+    <div data-zag-part="positioner">
+    <div class="popover" data-zag-part="content" aria-label="Gear stats and syncing" hidden>
       <h3>How gear stats work</h3>
       <ul class="facts">
         <li>The item level and slot set a budget for each piece’s stats: the main stat (like Strength or Mind), Vitality, and sub-stats (like Critical Hit or Tenacity).</li>
@@ -72,7 +64,8 @@
       </ul>
       <p class="small dim">Sources: FFXIV Wiki, <a href="https://ffxiv.consolegameswiki.com/wiki/Item_Level" target="_blank" rel="noopener">Item Level</a> and <a href="https://ffxiv.consolegameswiki.com/wiki/Level_Sync" target="_blank" rel="noopener">Level Sync</a>; game data from <a href="https://github.com/xivapi/ffxiv-datamining" target="_blank" rel="noopener">ffxiv-datamining</a>.</p>
     </div>
-  </div>
+    </div>
+  </gsa-bar-popover>
   <!-- The controls row: a container for the breakpoints (math-bar.css), in sections (.divided ones have a rule before them that only shows
        when the section is not first on its line). Stat Allocation: Job | Piece (Slot, Substats and materia) and Sync, with no rule between them | Item level.
        Substat tiers: Job | Level. GCD Scaling has one section and no rule. -->
@@ -111,39 +104,32 @@
   <!-- The Piece chip: the 1st and 2nd substat and the Materia slots in one control (a few words); it opens a popover under the bar
        with the three menus (the same store fields as before). The chip is as wide as its longest possible text, hidden in the same
        cell, so no pick or job changes it. -->
-  <div
+  <gsa-bar-popover
     class="mctl piecewrap"
     id="p-piece-wrap"
-    x-ref="pieceWrap"
-    @resize.window="placePieceMenu()">
+    trigger-id="p-piece-chip"
+    content-id="p-piece-pop"
+    focus-in="#p-s1"
+    align-bar>
     <span id="p-piece-label" x-text="pieceText.label"></span>
     <button
       type="button"
       class="multi-btn piecechip"
-      id="p-piece-chip"
-      x-ref="pieceChip"
-      aria-haspopup="dialog"
-      aria-controls="p-piece-pop"
-      :aria-expanded="String(pieceMenuOpen)"
-      :aria-label="pieceChip.name"
-      @click="togglePieceMenu()"
-      @keydown.arrow-down.prevent="openPieceMenu()"><span class="sized">
+      data-zag-part="trigger"
+      :aria-label="pieceChip.name"><span class="sized">
         <span id="p-piece-text" x-text="pieceChip.text"></span>
         <template x-for="t in pieceChipSizers"><span class="sizertext" aria-hidden="true" x-text="t"></span></template>
         <span class="sizertext labelsizer" aria-hidden="true" x-text="pieceText.label"></span>
       </span></button>
+    <div data-zag-part="positioner">
     <div
       class="popover piecepop"
-      id="p-piece-pop"
-      x-ref="pieceMenu"
-      role="dialog"
+      data-zag-part="content"
       :aria-label="pieceText.label"
-      :class="{ 'to-left': pieceMenuToLeft }"
-      x-show="pieceMenuOpen"
-      x-cloak>
+      hidden>
       <div class="mctl">
         <label for="p-s1" x-text="pieceText.first"></label>
-        <span class="sized"><select id="p-s1" x-ref="pieceFirst" @change="setSub(0, $event.target.value)">
+        <span class="sized"><select id="p-s1" @change="setSub(0, $event.target.value)">
           <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.subs[0]"></option></template>
         </select><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
       </div>
@@ -160,48 +146,43 @@
         </select>
       </div>
     </div>
-  </div>
+    </div>
+  </gsa-bar-popover>
   </div>
   <!-- the forced line break of the narrow layout (math-bar.css): Job and Piece above it, Sync and Item level below -->
   <span class="barbreak after-piece" aria-hidden="true" x-show="$store.app.mathTab === 'piece'"></span>
   <!-- The Sync chip: the synced level, the synced item level and whether IL Sync is on, in a few words (a hidden copy of its widest
        texts gives it one width); it opens a popover under the chip with Level, Synced IL and the IL Sync switch, the same store
        fields as the Gear browser's strip (level, cap, sync). -->
-  <div
+  <gsa-bar-popover
     class="mctl syncwrap"
     id="p-sync-wrap"
-    x-ref="syncWrap"
+    trigger-id="p-sync-chip"
+    content-id="p-sync-pop"
+    focus-in="#p-level"
+    align-bar
     x-show="$store.app.mathTab === 'piece'"
-    @resize.window="placeSyncMenu()">
+    @popover-close="clearTypedErrors()">
     <span id="p-sync-label"><span x-text="syncText.label"></span><span class="guess" id="p-sync-guess-mark" x-show="syncChip.guess" :title="syncChip.guess" aria-hidden="true" x-text="syncText.guess"></span></span>
     <span class="sr-only" id="p-sync-guess" x-show="syncChip.guess" x-text="syncChip.guess"></span>
     <button
       type="button"
       class="multi-btn syncchip"
       :class="{ error: !!levelError }"
-      id="p-sync-chip"
-      x-ref="syncChip"
-      aria-haspopup="dialog"
-      aria-controls="p-sync-pop"
-      :aria-expanded="String(syncMenuOpen)"
+      data-zag-part="trigger"
       :aria-label="syncChip.name"
       :aria-describedby="syncChip.guess ? 'p-sync-guess' : null"
-      :title="syncChip.name"
-      @click="toggleSyncMenu()"
-      @keydown.arrow-down.prevent="openSyncMenu()"><span class="sized">
+      :title="syncChip.name"><span class="sized">
         <span id="p-sync-text"><template x-for="(part, k) in syncChip.parts" :key="k"><span :class="part.cls" x-text="part.text"></span></template></span>
         <template x-for="(parts, n) in syncChipSizers" :key="n"><span class="sizertext" aria-hidden="true"><template x-for="(part, k) in parts" :key="k"><span :class="part.cls" x-text="part.text"></span></template></span></template>
         <span class="sizertext labelsizer" aria-hidden="true"><span x-text="syncText.label"></span><span class="guess" x-text="syncText.guess"></span></span>
       </span></button>
+    <div data-zag-part="positioner">
     <div
       class="popover syncpop"
-      id="p-sync-pop"
-      x-ref="syncMenu"
-      role="dialog"
+      data-zag-part="content"
       :aria-label="syncText.label"
-      :class="{ 'to-left': syncMenuToLeft }"
-      x-show="syncMenuOpen"
-      x-cloak>
+      hidden>
       <div class="syncpair">
         <!-- hidden copy of the widest label rows (the flag row, the range row): both boxes take its width, whatever the font -->
         <span class="mctl sizer" aria-hidden="true">
@@ -254,7 +235,8 @@
         <span class="toggle"><input type="checkbox" role="switch" class="switch" id="p-sync" :checked="$store.app.sync" @change="$store.app.editPanel({ sync: $event.target.checked }); onSyncSwitch($event.target.checked)"></span>
       </label>
     </div>
-  </div>
+    </div>
+  </gsa-bar-popover>
   <!-- the forced line break of the middle layout (math-bar.css): Job, Piece and Sync above it, the Item level control alone below -->
   <span class="barbreak after-sync" aria-hidden="true" x-show="$store.app.mathTab === 'piece'"></span>
   <!-- The Gear item level control: its label on top like the other controls', the slider with its bounds, the number box and Reset

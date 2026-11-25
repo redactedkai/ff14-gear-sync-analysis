@@ -18,6 +18,7 @@ import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
 // the Lit elements (each registers itself on import); the page's templates hold them as islands
 import './ui/elements/gear-browser/slot-menu.ts';
+import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/collapsible.ts';

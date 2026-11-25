@@ -18,14 +18,12 @@
   padding: 0;
   font: inherit;
 }
-/* The popover hangs just under the chip, its left edge the chip's (its right edge the chip's when it would run past the bar's
-   right end: .to-left), over what is below the bar's row: the item level slider and a little of the line under the bar. The
-   three menus sit side by side, each with its label on top as in the bar (the .mctl rules), the substat menus as wide as the
-   widest substat text of any job. It is the ? popover's surface at the width of its content, with the neutral line. */
+/* The popover is placed by Zag's positioner (<gsa-bar-popover>) just under the chip, its left edge the chip's (its right edge the
+   chip's when it would run past the bar's right end), over what is below the bar's row: the item level slider and a little of
+   the line under the bar. The three menus sit side by side, each with its label on top as in the bar (the .mctl rules), the
+   substat menus as wide as the widest substat text of any job. It is the ? popover's surface at the width of its content, with
+   the neutral line. */
 .popover.piecepop {
-  right: auto;
-  left: 0;
-  top: calc(100% + 4px); /* the chip's wrapper (position: relative) is its containing block */
   width: max-content;
   max-width: calc(100vw - 32px);
   padding: 10px;
@@ -34,9 +32,8 @@
   gap: 12px;
   border-color: var(--pop-line);
 }
-.popover.piecepop.to-left {
-  left: auto;
-  right: 0;
+.popover:is(.piecepop, .syncpop)[hidden] {
+  display: none; /* the two chips' popovers set display: flex, which would show them while closed */
 }
 .piecepop .mctl > select {
   width: 0; /* a menu adds nothing to its field's width: it takes the width of the label above or of the widest text */
@@ -87,13 +84,11 @@
 .mathbar .syncchip.error :is(.lv, .il) {
   color: var(--bad);
 }
-/* The popover hangs just under the chip, its left edge the chip's (its right edge the chip's when it would run past the bar's right
-   end: .to-left), over what is below the bar's row. Level, Synced IL and the IL Sync switch sit in one row, each with its label on
-   top as in the bar (the .mctl rules). It is the ? popover's surface at the width of its content, with the neutral line. */
+/* The popover is placed by Zag's positioner (<gsa-bar-popover>) just under the chip, its left edge the chip's (its right edge the
+   chip's when it would run past the bar's right end), over what is below the bar's row. Level, Synced IL and the IL Sync switch
+   sit in one row, each with its label on top as in the bar (the .mctl rules). It is the ? popover's surface at the width of its
+   content, with the neutral line. */
 .popover.syncpop {
-  right: auto;
-  left: 0;
-  top: calc(100% + 4px);
   width: max-content;
   max-width: calc(100vw - 32px);
   padding: 10px;
@@ -103,10 +98,6 @@
   border-color: var(--pop-line);
   white-space: normal;
   font-variant-numeric: tabular-nums;
-}
-.popover.syncpop.to-left {
-  left: auto;
-  right: 0;
 }
 
 /* The label over a chip is never wider than the chip: a hidden copy of the label, in the label's own size (.mctl), sits in the

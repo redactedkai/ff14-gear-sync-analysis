@@ -3,7 +3,7 @@
 
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
 import { SYNC_CHIP_TEXT } from '../../../../src/ui/views/sync-explainer.js';
-import { check, expect } from '../../lib/expect.mjs';
+import { check, expect, poll } from '../../lib/expect.mjs';
 import { afterFrames, hasHScroll, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';
 import { setUpShared } from '../../lib/setup.mjs';
 
@@ -73,7 +73,11 @@ export async function checkSyncChip(pg) {
   check(await pg.locator('#p-sync').isChecked(), 'IL Sync is off after the shared setup');
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#p-sync-pop')).toBeHidden();
-  check((await pg.evaluate(() => document.activeElement?.id)) === 'p-sync-chip', 'Escape leaves the focus on the Sync settings chip');
+  // the popover gives the focus back a frame after it closes
+  await poll('Escape leaves the focus on the Sync settings chip', async () => {
+    const got = await pg.evaluate(() => document.activeElement?.id);
+    return { ok: got === 'p-sync-chip', got: `the focus is on '${got}'` };
+  });
 
   // IL Sync off at level 50: the cap is level sync's item level, 130 (ParamGrow.ItemLevelSync); the box is greyed
   await pg.click('#p-sync-chip');

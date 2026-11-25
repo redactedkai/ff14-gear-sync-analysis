@@ -363,7 +363,10 @@ th.n[aria-sort="ascending"] .sortbtn::before {
 .popover a {
   color: var(--accent);
 }
+/* The dimmed page behind a modal popover: Zag's modal popover blocks the pointer on the page, so the backdrop takes it back and
+   a press on it is a press outside the popover, which closes it. */
 .backdrop {
+  pointer-events: auto;
   position: fixed;
   inset: 0;
   z-index: var(--z-backdrop);

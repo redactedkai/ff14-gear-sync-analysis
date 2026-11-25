@@ -1,7 +1,7 @@
-/* One overlay as a part of a component (compose.js): `overlay('pieceMenu', {...})` gives the members `pieceMenuOpen`,
-   `openPieceMenu(...)`, `closePieceMenu(restoreFocus)` and `togglePieceMenu(...)`, and registers the layer with the page's
+/* One overlay as a part of a component (compose.js): `overlay('filterMenu', {...})` gives the members `filterMenuOpen`,
+   `openFilterMenu(...)`, `closeFilterMenu(restoreFocus)` and `toggleFilterMenu(...)`, and registers the layer with the page's
    manager (ui/overlays.js), which does Escape, a press outside, Tab out and "one at a time". The template only reads
-   `pieceMenuOpen` and calls the three actions; it never sets the flag itself. */
+   `filterMenuOpen` and calls the three actions; it never sets the flag itself. */
 import { overlays } from '../overlays.js';
 import { compose } from './compose.js';
 

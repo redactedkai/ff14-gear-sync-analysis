@@ -27,8 +27,6 @@ import { capControls, levelControls } from './cap-controls.js';
 import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
 import { compose } from './compose.js';
 import { jobMenu } from './job-menu.js';
-import { wrapTab } from '../native-dialog.js';
-import { overlay } from './overlay.js';
 
 /* The math tab's component (x-data on the whole tab): Piece stats' views, and the bar's Job menu and Stat Allocation's
    controls (its two chips and the item level slider). */
@@ -119,10 +117,6 @@ export function syncExplainer() {
       get il() {
         return this.pieceViews.pick.il;
       },
-      /* A key press in the "?" help: Tab stays inside it (it is modal: the page behind is dimmed and out of reach) */
-      wrapHelpTab(event) {
-        wrapTab(event, this.$refs.helpPop);
-      },
       /* the job chosen in the math tab's own Job and sync panel (JobContext) */
       get jobCtx() {
         return this.$store.app.panel('math').jobCtx;
@@ -162,33 +156,20 @@ export function syncExplainer() {
       /* The Substats & materia chip: one control in the bar that says the 1st and 2nd substat and the Materia slots in a few
          words (views pieceChipView) and opens a popover under the chip with the three menus. The texts, and the widest of its
          words for the hidden copies that give the chip one width (views PIECE_CHIP_TEXT, PIECE_CHIP_SIZERS). The popover is
-         an overlay (below, overlays.js): opening puts the focus on the 1st substat menu; Escape and the chip close it with the
-         focus back on the chip; a click outside or Tab out of it closes it where the focus went. */
+         a <gsa-bar-popover> (elements/math-page/bar-popover.ts): opening puts the focus on the 1st substat menu; Escape and the
+         chip close it with the focus back on the chip; a click outside or Tab out of it closes it where the focus went. */
       pieceText: PIECE_CHIP_TEXT,
       pieceChipSizers: PIECE_CHIP_SIZERS,
-      pieceMenuToLeft: false, // the popover's right edge is the chip's, not its left (see placePieceMenu)
       get pieceChip() {
         return pieceChipView(this.jobCtx, this.$store.app.piece);
       },
-      /* Which edge of the popover lines up with the chip's: the left one (it hangs under the chip, to the right), or the right
-         one (class to-left) when it would run past the bar's right edge. Measured each time it opens and when the window is
-         resized. */
-      placePieceMenu() {
-        const { pieceChip, pieceMenu } = this.$refs;
-        if (!pieceMenu || !this.pieceMenuOpen) {
-          return;
-        }
-        const barRight = pieceChip.closest('.mathbar').getBoundingClientRect().right;
-        this.pieceMenuToLeft = pieceChip.getBoundingClientRect().left + pieceMenu.offsetWidth > barRight;
-      },
       /* The Sync settings chip: one control in the bar that says the synced level, the synced item level and whether IL Sync
          is on, in a few words (views syncChipView), and opens a popover under the chip with Level, Synced IL and the IL Sync
-         switch (the store's level, cap and sync, as the Gear browser's strip edits them). An overlay too (below): opening puts
-         the focus on the Level box; Escape and the chip close it with the focus back on the chip; a click outside or Tab out
+         switch (the store's level, cap and sync, as the Gear browser's strip edits them). A <gsa-bar-popover> too: opening puts
+         the focus on the Level box (closing it drops text that is no level or cap: clearTypedErrors); Escape and the chip close it with the focus back on the chip; a click outside or Tab out
          of it closes it where the focus went. */
       syncText: SYNC_CHIP_TEXT,
       syncChipSizers: SYNC_CHIP_SIZERS,
-      syncMenuToLeft: false, // the popover's right edge is the chip's, not its left (see placeSyncMenu)
       get syncChip() {
         const panel = this.$store.app.panel('math');
         const loweredFrom = this.capLowered && this.capLowered.to === panel.cap ? this.capLowered.from : null;
@@ -211,15 +192,6 @@ export function syncExplainer() {
             this.$refs.cap.value = app.cap ?? '';
           }
         });
-      },
-      /* which edge of the popover lines up with the chip's: as placePieceMenu */
-      placeSyncMenu() {
-        const { syncChip, syncMenu } = this.$refs;
-        if (!syncMenu || !this.syncMenuOpen) {
-          return;
-        }
-        const barRight = syncChip.closest('.mathbar').getBoundingClientRect().right;
-        this.syncMenuToLeft = syncChip.getBoundingClientRect().left + syncMenu.offsetWidth > barRight;
       },
       /* every text of the two substat menus, one per line: their width (views SUBSTAT_SIZER) */
       substatSizer: SUBSTAT_SIZER,
@@ -266,58 +238,6 @@ export function syncExplainer() {
     },
     capControls('math'),
     levelControls(),
-    // the "?" help is modal: the focus goes into it, Tab stays inside and a press on the dimmed page closes it (its backdrop)
-    overlay('helpPanel', {
-      root() {
-        return this.$refs.helpWrap;
-      },
-      opener() {
-        return this.$refs.helpButton;
-      },
-      focusIn() {
-        return this.$refs.helpPop;
-      },
-      tabOut: false,
-    }),
-    // the bar's two chips' popovers (the Job menu's overlay is jobMenu's)
-    overlay('pieceMenu', {
-      root() {
-        return this.$refs.pieceWrap;
-      },
-      opener() {
-        return this.$refs.pieceChip;
-      },
-      focusIn() {
-        return this.$refs.pieceFirst;
-      },
-      // a native menu's open list takes the first Escape: it closes only the list
-      ignoreEscape(event) {
-        return Boolean(event.target.closest?.('option'));
-      },
-      onOpen() {
-        this.$nextTick(() => this.placePieceMenu());
-      },
-    }),
-    overlay('syncMenu', {
-      root() {
-        return this.$refs.syncWrap;
-      },
-      opener() {
-        return this.$refs.syncChip;
-      },
-      focusIn() {
-        return this.$refs.level;
-      },
-      ignoreEscape(event) {
-        return Boolean(event.target.closest?.('option'));
-      },
-      onOpen() {
-        this.$nextTick(() => this.placeSyncMenu());
-      },
-      onClose() {
-        this.clearTypedErrors(); // text that is no level or cap does not stay behind a closed popover
-      },
-    }),
     // the Job menu: it edits the open sub-tab's own job (Stat Allocation's or Substat tiers')
     jobMenu({
       focusOnOpen: true,

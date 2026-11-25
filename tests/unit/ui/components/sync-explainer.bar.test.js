@@ -1,7 +1,7 @@
 /* The math bar's controls in the Stat Allocation component (src/ui/components/sync-explainer.js) and the shared Job menu
    (components/job-menu.js), bound to a plain store as Alpine binds them: the Job menu edits the open sub-tab's own job, the
    Level box and the IL Sync switch keep the stored cap at level sync's item level while IL Sync is off, the two chips
-   say the current settings, and one popover is open at a time. Item levels are the game's ParamGrow.ItemLevelSync: level
+   say the current settings. Item levels are the game's ParamGrow.ItemLevelSync: level
    85 gives 536, level 80 gives 530. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -62,27 +62,8 @@ test('Job menu: the Job button opens it with the focus on the chosen job; a tile
   assert.deepEqual([c.jobMenuOpen, focused.at(-1)], [false, 'jobButton']);
 });
 
-test('one popover of the bar is open at a time, and closeAll (a change of screen) closes them', () => {
-  const { c } = bound();
-  c.$refs.pieceMenu = c.$refs.syncMenu = null;
-  c.openJobMenu();
-  c.toggleSyncMenu();
-  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [false, false, true]);
-  c.togglePieceMenu();
-  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [false, true, false]);
-  c.openJobMenu();
-  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [true, false, false]);
-  c.toggleSyncMenu();
-  overlays.closeAll();
-  assert.deepEqual([c.jobMenuOpen, c.pieceMenuOpen, c.syncMenuOpen], [false, false, false]);
-});
-
-test("Sync chip: opening puts the focus on the Level box, closing on the chip; the chip says the store's settings", () => {
-  const { app, c, focused } = bound();
-  c.toggleSyncMenu();
-  assert.deepEqual(focused, ['level']);
-  c.closeSyncMenu(true);
-  assert.equal(focused.at(-1), 'syncChip');
+test("Sync chip: it says the store's settings", () => {
+  const { app, c } = bound();
   const expected = syncChipView(app.jobCtx, { cap: 123, sync: true, level: 85 }, app.piece.slot, { switchOn: true });
   assert.deepEqual(c.syncChip, expected);
   assert.equal(c.syncText, SYNC_CHIP_TEXT);
@@ -91,13 +72,9 @@ test("Sync chip: opening puts the focus on the Level box, closing on the chip; t
   assert.equal(c.syncChip.parts.at(-1).text, SYNC_CHIP_TEXT.needCap);
 });
 
-test("Substats & materia chip: it says the piece's substats and slots; opening puts the focus on the 1st substat menu", () => {
-  const { app, c, focused } = bound();
+test("Substats & materia chip: it says the piece's substats and slots", () => {
+  const { app, c } = bound();
   assert.deepEqual(c.pieceChip, pieceChipView(app.jobCtx, app.piece));
-  c.togglePieceMenu();
-  assert.deepEqual([c.pieceMenuOpen, focused], [true, ['pieceFirst']]);
-  c.togglePieceMenu();
-  assert.deepEqual([c.pieceMenuOpen, focused.at(-1)], [false, 'pieceChip']);
 });
 
 test('IL Sync switch: off stores the item level level sync gives (536 at level 85); on keeps the stored cap', () => {
@@ -167,8 +144,7 @@ test('Level box: text that is no level is flagged and not stored; the flag clear
   fire(watchers['$store.app.level']);
   assert.equal(c.levelError, '');
   // the error also ends with a job change, a tab change and closing the popover; the box shows the stored level again
-  for (const end of [() => fire(watchers['$store.app.job']), () => fire(watchers['$store.app.tab']), () => c.closeSyncMenu()]) {
-    c.syncMenuOpen = true;
+  for (const end of [() => fire(watchers['$store.app.job']), () => fire(watchers['$store.app.tab']), () => c.clearTypedErrors()]) {
     c.onLevelInput('0');
     c.$refs.level.value = '0';
     end();
