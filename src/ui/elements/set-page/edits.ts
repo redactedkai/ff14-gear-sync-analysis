@@ -1,20 +1,24 @@
 /* A set page's edits by hand: the manual draft (a second GearSet in memory from the first edit to Apply or Discard) and the pins, which
-   are saved at once and kept in an open draft. Part of the page's session (session.js). The draft (a GearSet in memory from the first
+   are saved at once and kept in an open draft. Part of the page's session (session.ts). The draft (a GearSet in memory from the first
    edit by hand to Apply or Discard, null without one) is in the store: `session.draft` reads it, `pages.setDraft` changes it. */
 import { frozenCopy } from '../../view-cache.ts';
 import { draftNote, draftView, samePieces } from '../../views/set-draft.js';
 import { editableCopy, placePiece, withMeal, withMealPin, withPin, withStone, withoutStone } from '../../sheets/set-edits.js';
+import type { PageSession } from './session.ts';
+import type { PageGearSet } from './session-types.ts';
 
 /* The page's edits by hand and pins (`session.edits`): the manual draft and the pins, with the methods the page's template calls. */
 export class PageEdits {
-  /* `session`: the page's session (session.js). */
-  constructor(session) {
+  private readonly session: PageSession;
+
+  /* `session`: the page's session (session.ts). */
+  constructor(session: PageSession) {
     this.session = session;
   }
 
-  /* An edit by hand: `change(set)` gives the GearSet after it (or {ok: false, note} when refused). The first edit opens the draft, a
-     copy of the saved set. */
-  edit(change) {
+  /* An edit by hand: `change(set)` gives the GearSet after it (or null when refused). The first edit opens the draft, a
+     copy of the saved set. Returns whether the draft changed. */
+  edit(change: (set: PageGearSet) => PageGearSet | null): boolean {
     const { session } = this;
     if (session.locked) {
       return false;
@@ -29,13 +33,13 @@ export class PageEdits {
   }
 
   /* A piece picked for row `index` (null: Empty this slot). */
-  pick(index, gameId) {
+  pick(index: number, gameId: number | null): void {
     const { session } = this;
     let toast = '';
     this.edit(set => {
       const done = placePiece(session.job, set, index, gameId);
       if (done.ok) {
-        toast = done.removedNote;
+        toast = done.removedNote ?? '';
       }
       return done.ok ? done.gearSet : null;
     });
@@ -46,19 +50,19 @@ export class PageEdits {
     session.menus.closeOpenMenu();
   }
 
-  setStone(index, slot, stat, grade) {
+  setStone(index: number, slot: number, stat: string, grade: number): void {
     const { session } = this;
     this.edit(set => withStone(session.job, set, index, slot, { stat, grade }));
     session.menus.closeOpenMenu();
   }
 
-  removeStone(index, slot) {
+  removeStone(index: number, slot: number): void {
     const { session } = this;
     this.edit(set => withoutStone(session.job, set, index, slot));
     session.menus.closeOpenMenu();
   }
 
-  setMeal(key) {
+  setMeal(key: string | null | undefined): void {
     this.edit(set => withMeal(set, key ?? null));
     this.session.menus.closeOpenMenu();
   }
@@ -66,7 +70,7 @@ export class PageEdits {
   /* Apply on a draft: the set takes it (pieces, stones, meal, pins), and a note says what changed. The Apply button is off at 0
      changes, but the leave question's "Apply and leave" is not: a draft that equals the saved set closes with no note (it would only
      say "no changes"), and the pins it holds are saved as before. */
-  applyDraft() {
+  applyDraft(): void {
     const { session } = this;
     const draft = session.draft;
     if (!draft) {
@@ -93,7 +97,7 @@ export class PageEdits {
   }
 
   /* Discard on a draft: back as the set is saved. */
-  discardDraft() {
+  discardDraft(): void {
     const { session } = this;
     const draft = session.draft;
     if (!draft) {
@@ -109,7 +113,7 @@ export class PageEdits {
   /* ---- pins: saved at once (and kept in an open draft) ---- */
 
   /* Row `index` pinned or unpinned, as the table shows it now. */
-  togglePin(index) {
+  togglePin(index: number): void {
     const { session } = this;
     if (session.locked) {
       return;
@@ -122,7 +126,7 @@ export class PageEdits {
     }
   }
 
-  toggleMealPin() {
+  toggleMealPin(): void {
     const { session } = this;
     if (session.locked) {
       return;

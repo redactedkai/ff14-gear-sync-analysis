@@ -1,4 +1,4 @@
-/* A set page's Auto-fill (src/ui/elements/set-page/fill-run.js) bound to a real sheet store: a real Auto-fill on the
+/* A set page's Auto-fill (src/ui/elements/set-page/fill-run.ts) bound to a real sheet store: a real Auto-fill on the
    page's thread with its suggestion (Take boxes, Apply, Discard), the edit lock while it runs or its result waits, Cancel,
    a failing solver and replies that arrive late. */
 import { test } from 'node:test';
@@ -287,5 +287,17 @@ test('a bad meal pin: the meal is unpinned and the unpin is saved, so Auto-fill 
   assert.ok(session.fillLine.includes(MEAL_ROW_LABEL), session.fillLine);
   assert.equal(sheets.currentSet.pinned.meal, false, 'the meal is no longer pinned in the saved set');
   assert.deepEqual(sheets.currentSet.pinned.pieces, [2], 'the pinned piece stays');
+  assert.equal(sheets.busy, false);
+});
+
+test('a page that was left asks the solver for nothing and leaves the sheet unlocked', async () => {
+  const solver = refusingSolver([]);
+  const { session, sheets } = bind(twoToFill(), solver);
+  await tick(); // the first piece count lands
+  solver.started.length = 0;
+  session.pages.closePage(session.setId); // the page's entry goes, as when its element leaves the page
+  session.settings.refreshCount();
+  await session.fill.fill();
+  assert.deepEqual(solver.started, []);
   assert.equal(sheets.busy, false);
 });

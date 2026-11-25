@@ -34,3 +34,9 @@ export function joinNames(names: string[]): string {
 export function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }
+
+/* What a thrown value says: its `message` when it has one, else the value itself (a rejected request's error, or whatever was thrown).
+   The caller turns it into text. */
+export function messageOf(error: unknown): unknown {
+  return (error as { message?: unknown } | null | undefined)?.message || error;
+}

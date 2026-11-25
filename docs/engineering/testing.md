@@ -281,7 +281,7 @@ Notes on the longer rows:
 Notes:
 
 - **The long sweep** in `tests/sweep/` is flat, with no folders: `core-tier-rank.gcd-1` to `.gcd-4`, `core-tier-rank.no-gcd` and `core-tier-rank.pinned`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
-- **The components** are unit tested (the files in `tests/unit/ui/components/`): no component imports Alpine, so each test binds one to a plain store. A set page's logic is a plain session (`src/ui/elements/set-page/session.js`), tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
+- **The components** are unit tested (the files in `tests/unit/ui/components/`): no component imports Alpine, so each test binds one to a plain store. A set page's logic is a plain session (`src/ui/elements/set-page/session.ts`), tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`:
   - the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1);

@@ -1,7 +1,7 @@
-/* The page's menu placement (src/ui/elements/set-page/menus.js): where the window's line for menus is. */
+/* The page's menu placement (src/ui/elements/set-page/menus.ts): where the window's line for menus is. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PageMenus } from '../../../../../src/ui/elements/set-page/menus.js';
+import { PageMenus } from '../../../../../src/ui/elements/set-page/menus.ts';
 
 /* keepMenuInView: the page scrolls to show an opened table menu and keeps its button below the pinned header and the stuck
    column names. Stand-ins for the window (innerHeight, scrollBy) and the page's boxes, in px of the window. */

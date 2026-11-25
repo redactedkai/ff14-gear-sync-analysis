@@ -58,7 +58,7 @@ export const DOMAINS = {
     src: [
       'src/ui/{solve,solver,solver-worker}.js',
       'src/ui/sheets/{fill,fill-settings}.js',
-      'src/ui/elements/set-page/{fill-run,fill-settings-edit}.js',
+      'src/ui/elements/set-page/{fill-run,fill-settings-edit}.ts',
       'src/ui/views/set-suggestion.js',
       'scripts/perf/browser.mjs',
     ],
@@ -68,7 +68,7 @@ export const DOMAINS = {
     title: "A gear set's page: rows, hand edits, pins, menus, totals",
     src: [
       // the set page's element, its session and parts (the Auto-fill's are in auto-fill), and the menus and popovers it holds (Lit elements)
-      'src/ui/elements/set-page/{edits,leave-guard,menus,session}.js',
+      'src/ui/elements/set-page/{edits,leave-guard,menus,session,session-types}.ts',
       'src/ui/elements/set-page/{food-menu,food-menu-model,materia-menu,piece-picker,piece-picker-names,rank-note,set-page,set-page-types,settings-popover}.ts',
       'src/ui/store/set-page-actions.ts',
       'src/ui/sheets/{saved-set,set-edits}.js',

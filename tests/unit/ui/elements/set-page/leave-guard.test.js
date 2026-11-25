@@ -1,8 +1,8 @@
-/* Leaving a set page (src/ui/elements/set-page/leave-guard.js) bound to a real sheet store: the question
+/* Leaving a set page (src/ui/elements/set-page/leave-guard.ts) bound to a real sheet store: the question
    before leaving for each kind of unsaved or running work. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runningLeaveText } from '../../../../../src/ui/elements/set-page/leave-guard.js';
+import { runningLeaveText } from '../../../../../src/ui/elements/set-page/leave-guard.ts';
 import { FILL_CANCELLED_TEXT, RESULT_DISCARDED_TEXT } from '../../../../../src/ui/views/set-page.js';
 import { overlays } from '../../../../../src/ui/overlays.js';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';

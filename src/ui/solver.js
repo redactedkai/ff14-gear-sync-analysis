@@ -17,13 +17,17 @@ import { makeJobContext } from '../core/job-context.js';
 import { makeSession } from '../core/session.js';
 import { gearToSearchView, solveView } from './solve.js';
 
-/* A solver request from a component's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
+/** A solver request from a component's inputs: `kind` 'solve' (an Auto-fill's answer) or 'gearToSearch' (the line under Gear
    to search); `inputs` {job: a JobContext, sync (job-sync-panel.js syncSettings), level, recipe (sheets/fill-settings.js
    fillRecipe)}; options: `key` (a string or number) names the caller, so that workerSolver keeps its requests apart
    from other callers' (a gear set's id); `pins` (sheets/fill.js fillPlan's {pieces, meal}) the slots an Auto-fill keeps, sent
    only when there are some. The JobContext goes as its id, rebuilt by the handler (makeJobContext is cached and pure).
    The other inputs must be plain data, not Alpine's reactive proxies (read them through Alpine.raw), or posting them to
-   the worker throws. */
+   the worker throws.
+   @param {string} kind
+   @param {{ job: { jobId: string }, sync: unknown, level: unknown, recipe: unknown }} inputs
+   @param {{ key?: string | number, pins?: unknown }} [options]
+   @returns {import('./elements/set-page/session-types.ts').SolverRequest} */
 export function solverRequest(kind, { job, sync, level, recipe }, { key, pins = null } = {}) {
   const request = { kind, jobId: job.jobId, sync, level, recipe };
   if (pins) {

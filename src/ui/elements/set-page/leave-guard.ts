@@ -1,26 +1,42 @@
 /* Leaving a set page: the store's leave guard, the question asked when a draft, a running Auto-fill or a waiting result would be lost,
-   the moves that ask the same (Copy, New set), and the key of the page (Escape). Part of the page's session (session.js). */
+   the moves that ask the same (Copy, New set), and the key of the page (Escape). Part of the page's session (session.ts). */
 import { overlays } from '../../overlays.js';
 import { unsettledKind } from '../../store/app-state.ts';
 import { RESULT_DISCARDED_TEXT } from '../../views/set-page.js';
+import type { LeaveMove } from '../../store/sheets-actions.ts';
+import type { PageSession } from './session.ts';
+import type { PageView } from './set-page-types.ts';
+
+/* A button of the question before leaving (answerLeave): 'apply' or 'discard' a draft, 'leave' (cancel the Auto-fill, or discard the
+   result), 'keep'. */
+export type LeaveChoice = 'apply' | 'discard' | 'leave' | 'keep';
+
+/* The question being asked: what would be lost (the store's unsettledKind) and the move held back until it is answered. */
+interface LeaveQuestion {
+  kind: 'draft' | 'running' | 'result';
+  move: LeaveMove;
+}
 
 /* The question while an Auto-fill runs and the page is left. */
-export function runningLeaveText(name) {
+export function runningLeaveText(name: string): string {
   return `An Auto-fill is still running for “${name}”. Leaving cancels it, and the set stays as it is.`;
 }
 
 /* The page's leave guard and its question (`session.leave`): `ask` is the question being asked (`{kind, move}`) or null. */
 export class PageLeave {
-  /* `session`: the page's session (session.js). */
-  constructor(session) {
+  private readonly session: PageSession;
+  // the question before leaving: {kind: 'draft' | 'running' | 'result', move}, or null
+  ask: LeaveQuestion | null;
+
+  /* `session`: the page's session (session.ts). */
+  constructor(session: PageSession) {
     this.session = session;
-    // the question before leaving: {kind: 'draft' | 'running' | 'result', move}, or null
     this.ask = null;
   }
 
   /* The store's leave guard: with a draft, a running Auto-fill or a waiting result (the store's unsettledKind of this page, the same
      rule as the reload and close guard's `unsettled`), ask first and hold `move` back. */
-  guardLeave(move) {
+  guardLeave(move: LeaveMove): boolean {
     const kind = unsettledKind(this.session.pageState);
     if (!kind) {
       return false;
@@ -32,7 +48,7 @@ export class PageLeave {
   }
 
   /* The question's text, '' while none is asked. `view`: the page's view (its leaveText). */
-  questionText(view) {
+  questionText(view: Pick<PageView, 'leaveText'>): string {
     const ask = this.ask;
     if (!ask) {
       return '';
@@ -44,7 +60,7 @@ export class PageLeave {
   }
 
   /* A button of the question: 'apply' or 'discard' (a draft), 'leave' (cancel the Auto-fill, or discard the result), 'keep'. */
-  answerLeave(choice) {
+  answerLeave(choice: LeaveChoice): void {
     const { session } = this;
     const ask = this.ask;
     if (!ask) {
@@ -72,14 +88,14 @@ export class PageLeave {
   }
 
   /* A move off the page that the store does not guard (a copy, a new set): asked first like the others. */
-  leave(move) {
+  leave(move: LeaveMove): void {
     if (!this.guardLeave(move)) {
       move();
     }
   }
 
   /* Copy from a set page: the copy goes next to the set and the sheet's list shows (sheets.md, "Where an action lands"). */
-  copySet() {
+  copySet(): void {
     const { sheets, saved } = this.session;
     if (sheets.busy) {
       return;
@@ -92,7 +108,7 @@ export class PageLeave {
     });
   }
 
-  newSet() {
+  newSet(): void {
     const { sheets } = this.session;
     if (sheets.busy) {
       return;
@@ -104,7 +120,7 @@ export class PageLeave {
      overlay manager, which closes the topmost one on this same key), a waiting Auto-fill result is discarded. The question is a
      <gsa-dialog> whose own Escape (`dialog-escape`) answers Keep and marks the key as handled (defaultPrevented); a key that comes
      before the page has drawn the question is answered here. Tab is kept inside by the dialog. */
-  pageKey(event) {
+  pageKey(event: KeyboardEvent): void {
     const { session } = this;
     if (event.key !== 'Escape' || event.defaultPrevented) {
       return;

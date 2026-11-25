@@ -1,4 +1,4 @@
-/* A set page's Auto-fill settings popover (src/ui/elements/set-page/fill-settings-edit.js) bound to a real sheet store:
+/* A set page's Auto-fill settings popover (src/ui/elements/set-page/fill-settings-edit.ts) bound to a real sheet store:
    edits refused while a result waits, the Gear to search line (with a failing or late solver) and the goal menus. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

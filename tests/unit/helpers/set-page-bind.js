@@ -1,8 +1,8 @@
-/* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.js): its session (elements/set-page/session.js) bound to
+/* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.js): its session (elements/set-page/session.ts) bound to
    a real sheet store over a stand-in storage, with a stand-in for the element it serves, and solver stand-ins (held, refused, late
    replies). */
 import { saveSheet } from '../../../src/ui/sheets/storage.js';
-import { PageSession } from '../../../src/ui/elements/set-page/session.js';
+import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
 import { inProcessSolver } from '../../../src/ui/solver.js';
 import { placePiece } from '../../../src/ui/sheets/set-edits.js';
 import { makeJobContext } from '../../../src/core/job-context.js';

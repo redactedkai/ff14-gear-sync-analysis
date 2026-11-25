@@ -1,7 +1,7 @@
 /* Browser timing of a set page's Auto-fill (docs/engineering/optimizer.md, section 8).
 
 Loads dist/index.html from file:// in Chromium (Playwright) and reads the page's User Timing measures: 'fill' (one Auto-fill's
-search, as the solver reports it: src/ui/elements/set-page/fill-run.js) and 'save' (serializing the saved state: src/main.js).
+search, as the solver reports it: src/ui/elements/set-page/fill-run.ts) and 'save' (serializing the saved state: src/main.js).
 
 Each job gets one sheet, written to localStorage before the page loads: level 100, no sync, five gear sets with every
 row empty and unpinned, each set's Auto-fill settings with another goal (FILL_TARGETS), the other settings at their defaults.

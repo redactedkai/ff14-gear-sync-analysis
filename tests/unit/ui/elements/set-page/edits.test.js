@@ -1,4 +1,4 @@
-/* A set page's edits by hand (src/ui/elements/set-page/edits.js) bound to a real sheet store: the
+/* A set page's edits by hand (src/ui/elements/set-page/edits.ts) bound to a real sheet store: the
    manual draft (Apply, Discard) and pins saved at once. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

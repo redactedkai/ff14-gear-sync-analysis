@@ -66,10 +66,11 @@ function takeStateOf(job, saved, suggested, declined) {
   return { off, locked: savedOffhand === suggestedOffhand ? null : offhand };
 }
 
-/* The set the player would keep: the suggested rows and meal where taken, the saved ones where declined. `declined`:
+/** The set the player would keep: the suggested rows and meal where taken, the saved ones where declined. `declined`:
    {rows: saved row numbers whose Take box is off, meal: the meal's Take box is off}. `job` (a JobContext) lets a covered
    Off-hand follow the weapon (takeStateOf). Returns a GearSet (a copy of `saved` with the pieces and meal replaced), the
-   set Apply saves. */
+   set Apply saves.
+   @param {{ rows: readonly number[], meal: boolean }} [declined] */
 export function takenSet(saved, suggested, declined = { rows: [], meal: false }, job = null) {
   const { off } = takeStateOf(job, saved, suggested, declined);
   return {
@@ -79,16 +80,17 @@ export function takenSet(saved, suggested, declined = { rows: [], meal: false },
   };
 }
 
-/* The fields Apply saves for a suggestion taken as `declined` says ({rows, meal}, as for takenSet): {pieces, meal,
+/** The fields Apply saves for a suggestion taken as `declined` says ({rows, meal}, as for takenSet): {pieces, meal,
    bestMeals}. The set is as Auto-fill made it only when nothing is declined, so only then does it keep the tied best meals
-   (suggested.bestMeals, null with Food off) that tag its meal "best for goal"; otherwise bestMeals is null. */
+   (suggested.bestMeals, null with Food off) that tag its meal "best for goal"; otherwise bestMeals is null.
+   @param {{ rows: readonly number[], meal: boolean }} [declined] */
 export function appliedFields(saved, suggested, declined = { rows: [], meal: false }, job = null) {
   const { pieces, meal } = takenSet(saved, suggested, declined, job);
   const asFillMadeIt = !declined.rows.length && !declined.meal;
   return { pieces, meal, bestMeals: asFillMadeIt ? (suggested.bestMeals ?? null) : null };
 }
 
-/* A suggestion as the set page shows it, for `saved` (the GearSet as saved), `suggested` ({pieces, meal}: suggestionOf)
+/** A suggestion as the set page shows it, for `saved` (the GearSet as saved), `suggested` ({pieces, meal}: suggestionOf)
    and `declined` ({rows, meal}: the Take boxes the player turned off; none by default). Returns:
    - shown: the GearSet the table draws (the suggested rows where taken, the saved ones where declined: takenSet);
    - takes: {row number: {taken, text, locked?}} for each row the suggestion changes, the Take box under its piece. locked (true, only
@@ -104,7 +106,8 @@ export function appliedFields(saved, suggested, declined = { rows: [], meal: fal
      level 60."), '' for none;
    - applyText ("Apply 3 changes", "Nothing taken", "Nothing to change"), applyDisabled, discardText, leaveText;
    - appliedNote: the plain note after Apply ("Applied: 2 slots and meal changed."), '' when nothing is taken (Apply is off then,
-     and applySuggestion returns before it reads the note). */
+     and applySuggestion returns before it reads the note).
+   @param {{ rows: readonly number[], meal: boolean }} [declined] */
 export function suggestionView(sheet, saved, suggested, declined = { rows: [], meal: false }) {
   const job = makeJobContext(sheet.job);
   const { off, locked } = takeStateOf(job, saved, suggested, declined);

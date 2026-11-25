@@ -67,7 +67,7 @@ A **piece row** is `{ slot, gameId, stones }`; an empty row is `{ slot }`. The g
 - Saved: Apply on an Auto-fill result saves it (`views/set-suggestion.js` `appliedFields`: `found.food.tagged` of `core/recipe.js` `runRecipe`, null with Food off) only when nothing is declined. A declined Take box means the set is not as Auto-fill made it.
 - Kept: it stays whichever meal the set holds (`views/meal-menu.js` `mealBestKeys`). Pin changes keep it. Copy set keeps it, and Copy sheet keeps it only for the same job, level and sync. An Apply on a manual draft of the meal or the pins alone keeps it.
 - Dropped (set to null): by Apply on a manual draft that changes a piece or a stone, by any change of the set's Auto-fill settings, and by a change of the sheet's level or sync.
-- An Auto-fill with nothing to change saves it as soon as the Auto-fill ends. Apply is off, so nothing else is saved (`elements/set-page/fill-run.js` `endFill`).
+- An Auto-fill with nothing to change saves it as soon as the Auto-fill ends. Apply is off, so nothing else is saved (`elements/set-page/fill-run.ts` `endFill`).
 - Reading: it is not checked when read. A damaged value is read as none and dropped (`sheets/ops.js` `repairSheet`); a record from before the field has none.
 
 Never saved: totals, tiers, defense and the GCD (always `evaluateSet` with the sheet's job, level and sync), an Auto-fill suggestion, a manual draft, open menus, and the solver's session.

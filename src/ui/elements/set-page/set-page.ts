@@ -7,7 +7,7 @@
    - the tab's wrapper gives it `ports` (the store, its Sheets facade, the solver and the highest real item level: SetPagePorts), `setId`,
      `header` (the page's top line, views/sheet-sets.js setHeaderView) and `dialogOpen`, from an `x-effect`; the element never reads
      `$store`. It follows the store itself: it draws again when the Sheets tab or the set pages change;
-   - what it does is the page's session (session.js and the parts it makes: menus, edits, Auto-fill, settings, leaving); the element
+   - what it does is the page's session (session.ts and the parts it makes: menus, edits, Auto-fill, settings, leaving); the element
      makes one when it has its ports and set, starts it, and stops it when it leaves the page (the Auto-fill still running is stopped,
      the page's draft and result go);
    - what it draws is views/set-page.js's view, built once per change of the sheets, the set, the draft or the result (never in reactive
@@ -21,8 +21,6 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
 import { followInPage } from '../../router/plain-click.js';
-import type { AppStore } from '../../store/app-state.ts';
-import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../views/set-page.js';
 import '../gear-browser/expansion-menu.ts';
 import '../gear-browser/gear-categories.ts';
@@ -36,21 +34,14 @@ import './food-menu.ts';
 import './materia-menu.ts';
 import './piece-picker.ts';
 import './rank-note.ts';
-import { PageSession } from './session.js';
+import type { LeaveChoice } from './leave-guard.ts';
+import { PageSession } from './session.ts';
+import type { SetPagePorts } from './session-types.ts';
 import './settings-popover.ts';
 import type { PageView, RowView } from './set-page-types.ts';
 
 /* The framed job icons by job id (src/data/job-icons.js). */
 const ICONS: Record<string, string> = JOB_ICONS;
-
-/* What the page needs of the rest of the page: the store (to follow), its Sheets facade (to read and to act), the solver for Auto-fill
-   and Gear to search (ui/solver.js's), and the highest real item level (the Auto-fill settings' item level range). */
-export interface SetPagePorts {
-  store: AppStore;
-  sheets: SheetsFacade;
-  solver: unknown;
-  maxReal: number;
-}
 
 /* The page's top line (views/sheet-sets.js setHeaderView). */
 export interface SetPageHeader {
@@ -95,7 +86,7 @@ export class GsaSetPage extends LitElement {
   declare setId: string | null;
   declare header: SetPageHeader | null;
   declare dialogOpen: boolean;
-  // the page's logic (session.js), made when the element has its ports and set; the views of the set it shows
+  // the page's logic (session.ts), made when the element has its ports and set; the views of the set it shows
   private session: PageSession | null = null;
   private readonly views = setPageViews();
   private unfollow: (() => void) | null = null;
@@ -139,7 +130,7 @@ export class GsaSetPage extends LitElement {
     this.watchedHead = null;
   }
 
-  /* What the session needs of this element (session.js). */
+  /* What the session needs of this element (session-types.ts SessionHost). */
   private sessionHost() {
     const element = this;
     return {
@@ -544,7 +535,7 @@ export class GsaSetPage extends LitElement {
         }}
         @picker-close=${() => menus.closePicker()}
         @picker-query=${(event: CustomEvent<string>) => menus.setQuery(event.detail)}
-        @piece-pick=${(event: CustomEvent<string | null>) => session.edits.pick(menus.pickOpen, event.detail)}></gsa-piece-picker>
+        @piece-pick=${(event: CustomEvent<number | null>) => menus.pickPiece(event.detail)}></gsa-piece-picker>
     </div>
     <div>
       <gsa-materia-menu
@@ -688,7 +679,7 @@ export class GsaSetPage extends LitElement {
     if (!ask) {
       return nothing;
     }
-    const answer = (choice: string) => () => leave.answerLeave(choice);
+    const answer = (choice: LeaveChoice) => () => leave.answerLeave(choice);
     let buttons: TemplateResult;
     if (ask.kind === 'draft') {
       buttons = html`<button type="button" class="primary" id="sh-leave-apply" @click=${answer('apply')}>Apply and leave</button><button type="button" id="sh-leave-discard" @click=${answer('discard')}>Discard and leave</button><button type="button" id="sh-leave-keep" @click=${answer('keep')}>Keep editing</button>`;

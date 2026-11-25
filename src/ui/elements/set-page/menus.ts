@@ -1,11 +1,17 @@
 /* The open menus of a set page (a piece picker, a materia menu, the Food menu): which one is open, where it sits in the window, and the
    views of the picker and the materia menu. The picker, the materia menu and the Food menu are Lit elements; the page names the button
-   they hang under and gives them their view. Part of the page's session (session.js). */
+   they hang under and gives them their view. Part of the page's session (session.ts). */
 import { jobGear } from '../../../core/items.js';
 import { drawInSteps } from '../../draw-in-steps.js';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.js';
 import { piecePickerView } from '../../views/piece-menu.js';
 import { materiaMenuView } from '../../views/stone-menu.js';
+import type { SwitchPick } from '../sheets/switch-menu.ts';
+import type { PageSession } from './session.ts';
+import type { JobContext } from './session-types.ts';
+
+/* The piece picker's view as the views build it (views/piece-menu.js piecePickerView), whole or cut to the rows drawn so far. */
+type PickerView = ReturnType<typeof piecePickerView>;
 
 /* A menu's gap to the window's bottom edge and to the pinned header (px). */
 const MENU_MARGIN_PX = 12;
@@ -19,35 +25,49 @@ const TABLE_SELECTOR = '.settable';
 
 /* The job's wearable pieces (items.js jobGear) for the piece picker, built once per job and kept out of reactive state
    (big data: CLAUDE.md). */
-const gearByJob = new Map();
-function gearOf(job) {
-  if (!gearByJob.has(job.jobId)) {
-    gearByJob.set(job.jobId, jobGear(job));
+const gearByJob = new Map<string, ReturnType<typeof jobGear>>();
+function gearOf(job: JobContext) {
+  let gear = gearByJob.get(job.jobId);
+  if (!gear) {
+    gear = jobGear(job);
+    gearByJob.set(job.jobId, gear);
   }
-  return gearByJob.get(job.jobId);
+  return gear;
 }
 
 /* The page's open menus (`session.menus`): which piece picker, materia menu or Food menu is open and where it sits. */
 export class PageMenus {
-  /* `session`: the page's session (session.js). */
-  constructor(session) {
+  private readonly session: PageSession;
+  // the piece picker (<gsa-piece-picker>): the row it is open for (its index) and the button it hangs under, or null; the picker's
+  // search text
+  pickOpen: number | null;
+  pickAnchor: HTMLElement | null;
+  query: string;
+  // the materia menu (<gsa-materia-menu>): the slot it is open for as {row, slot} and the chip it hangs under, or null; every menu
+  // shows every grade while matAll is on
+  matOpen: { row: number; slot: number } | null;
+  matAnchor: HTMLElement | null;
+  matAll: boolean;
+  // the Food menu (<gsa-food-menu>) is open: the page builds its meals only then
+  foodOpen: boolean;
+  // how many pieces the open piece picker draws (it draws a long list in steps: views/limit-rows.js)
+  private pickRows: number;
+  // the last whole piece picker view built, with what it was built from, and the last cut of it to pickRows rows (the pieces keep
+  // their objects from one cut to the next, so the rows already drawn are not drawn again when more are added)
+  private lastPicker: { key: string; view: PickerView } | null;
+  private lastCut: { rows: number; whole: PickerView; view: PickerView } | null;
+
+  /* `session`: the page's session (session.ts). */
+  constructor(session: PageSession) {
     this.session = session;
-    // the piece picker (<gsa-piece-picker>): the row it is open for (its index) and the button it hangs under, or null; the picker's
-    // search text
     this.pickOpen = null;
     this.pickAnchor = null;
     this.query = '';
-    // the materia menu (<gsa-materia-menu>): the slot it is open for as {row, slot} and the chip it hangs under, or null; every menu
-    // shows every grade while matAll is on
     this.matOpen = null;
     this.matAnchor = null;
     this.matAll = false;
-    // the Food menu (<gsa-food-menu>) is open: the page builds its meals only then
     this.foodOpen = false;
-    // how many pieces the open piece picker draws (it draws a long list in steps: views/limit-rows.js)
     this.pickRows = Infinity;
-    // the last whole piece picker view built, with what it was built from, and the last cut of it to pickRows rows (the pieces keep
-    // their objects from one cut to the next, so the rows already drawn are not drawn again when more are added)
     this.lastPicker = null;
     this.lastCut = null;
   }
@@ -58,7 +78,7 @@ export class PageMenus {
      drawn in steps. An open picker is a layer of the overlay manager (its element registers it: Escape, a press outside and a focus that
      leaves it close it, and the focus goes back to the button after Escape and a pick); it is scrolled into the window, below the
      pinned header, once it is placed (`picker-shown`, keepMenuInView). */
-  togglePicker(index, button) {
+  togglePicker(index: number, button: HTMLElement): void {
     if (this.session.locked) {
       return;
     }
@@ -73,22 +93,30 @@ export class PageMenus {
     this.session.changed();
   }
 
+  /* A piece chosen in the picker (the element's `piece-pick` event; `gameId` null: Empty this slot) for the row it is open for. */
+  pickPiece(gameId: number | null): void {
+    const open = this.pickOpen;
+    if (open !== null) {
+      this.session.edits.pick(open, gameId);
+    }
+  }
+
   /* The page lets go of the picker (its element closes it; the element's `picker-close` event ends here too). */
-  closePicker() {
+  closePicker(): void {
     this.pickOpen = null;
     this.pickAnchor = null;
     this.session.changed();
   }
 
   /* The picker's search text changed (the element's `picker-query` event). */
-  setQuery(text) {
+  setQuery(text: string): void {
     this.query = text;
     this.session.changed();
   }
 
   /* Draw the pieces of the piece picker of row `index` in steps: the first ones at once, the rest one step per frame while the picker
      stays open. */
-  drawPickerInSteps(index) {
+  drawPickerInSteps(index: number): void {
     this.pickRows = FIRST_ROWS;
     drawInSteps(() => {
       if (this.pickOpen !== index) {
@@ -102,7 +130,7 @@ export class PageMenus {
 
   /* The open piece picker of row `index` (piecePickerView), as many pieces as pickRows. Kept for the next read: the page reads it at
      every draw, and it depends on the job, the pieces held (a Unique ring in the other ring row), the search and the rows drawn only. */
-  picker(index) {
+  picker(index: number): PickerView {
     const { session } = this;
     const gearSet = session.draft ?? session.saved;
     const held = gearSet.pieces.map(row => row.gameId ?? '').join();
@@ -120,7 +148,7 @@ export class PageMenus {
   }
 
   /* The open row's picker (see `picker`), or null while none is open: what the piece picker element shows as `menu`. */
-  get pickerMenu() {
+  get pickerMenu(): PickerView | null {
     return this.pickOpen === null ? null : this.picker(this.pickOpen);
   }
 
@@ -128,7 +156,7 @@ export class PageMenus {
 
   /* The chip of slot `slot` of row `index` (`button`) opens its materia menu, or closes it when it is open. A menu of the table (the
      piece picker, the Food menu) that is open closes when the materia menu registers with the overlay manager. */
-  toggleMateria(index, slot, button) {
+  toggleMateria(index: number, slot: number, button: HTMLElement): void {
     if (this.session.locked) {
       return;
     }
@@ -142,19 +170,19 @@ export class PageMenus {
   }
 
   /* Whether the materia menu is open for slot `slot` of row `index`. */
-  chipOpen(index, slot) {
+  chipOpen(index: number, slot: number): boolean {
     return this.matOpen?.row === index && this.matOpen.slot === slot;
   }
 
   /* The page lets go of the materia menu: its element closes it (the element's `materia-close` event ends here too). */
-  closeMateria() {
+  closeMateria(): void {
     this.matOpen = null;
     this.matAnchor = null;
     this.session.changed();
   }
 
   /* Every grade shown or the best ones only (the element's `grades-toggle` event). */
-  toggleAllGrades() {
+  toggleAllGrades(): void {
     this.matAll = !this.matAll;
     this.session.changed();
   }
@@ -167,7 +195,7 @@ export class PageMenus {
   }
 
   /* A stone chosen in the materia menu (`pick`: {stat, grade}, the element's stone-pick event) for the slot it is open for. */
-  pickStone(pick) {
+  pickStone(pick: { stat: string; grade: number }): void {
     const open = this.matOpen;
     if (open) {
       this.session.edits.setStone(open.row, open.slot, pick.stat, pick.grade);
@@ -175,7 +203,7 @@ export class PageMenus {
   }
 
   /* "Remove" in the materia menu: the stone of the slot it is open for goes. */
-  dropStone() {
+  dropStone(): void {
     const open = this.matOpen;
     if (open) {
       this.session.edits.removeStone(open.row, open.slot);
@@ -185,7 +213,7 @@ export class PageMenus {
   /* ---- the Food menu ---- */
 
   /* The Food menu opened or closed (the element's `food-open` event). */
-  setFoodOpen(open) {
+  setFoodOpen(open: boolean): void {
     this.foodOpen = open;
     this.session.changed();
   }
@@ -194,19 +222,18 @@ export class PageMenus {
 
   /* Close the open menu (a pick, an Apply or Discard, the button again): the elements put the focus back on a button after a choice of
      their own; for a close the page asks for, it stays where it is. */
-  closeOpenMenu() {
+  closeOpenMenu(): void {
     this.closeMateria();
     this.closePicker();
   }
 
   /* The window's line (px from its top) that menus stay under: the bottom of the pinned header and, in the table, of the stuck column
      names. The Food menu (<gsa-food-menu>) takes it as its boundary. */
-  viewTop() {
+  viewTop(): number {
     const names = this.session.host.query(`${TABLE_SELECTOR} thead th`);
-    return Math.max(
-      this.session.host.query(HEADER_SELECTOR).getBoundingClientRect().bottom,
-      names ? names.getBoundingClientRect().bottom : 0,
-    );
+    // the pinned header is in the page's own markup while the page is drawn; 0 is the window's top, for a page not drawn yet
+    const header = this.session.host.query(HEADER_SELECTOR);
+    return Math.max(header ? header.getBoundingClientRect().bottom : 0, names ? names.getBoundingClientRect().bottom : 0);
   }
 
   /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the pinned
@@ -214,7 +241,7 @@ export class PageMenus {
      it: .same and .pop in the table), which the page keeps under that line too, so the button stays in sight; and `room` the height
      left for the menu from there to the window's bottom. A menu a library places (the piece picker, the materia menu) hangs under its
      button `anchor`, whose top is `anchorTop` (the menu's offset parent is then the library's positioner). */
-  menuRoom(menu, anchor = null) {
+  menuRoom(menu: HTMLElement, anchor: HTMLElement | null = null): { top: number; room: number; anchorTop: number } {
     const top = this.viewTop();
     let anchorTop = menu.getBoundingClientRect().top;
     let buttonGap = 0; // how far under `top` the page keeps the button: the room of a menu in the table starts there
@@ -231,11 +258,11 @@ export class PageMenus {
   /* Scroll the page so an opened menu and its button sit between the pinned header and the window's bottom; a menu taller than the
      room gets a height that fits and scrolls inside. The button is what stays below the pinned parts (the page never scrolls it under
      them to show more of the menu). */
-  keepMenuInView(menu, anchor = null) {
+  keepMenuInView(menu: HTMLElement | null, anchor: HTMLElement | null = null): void {
     if (!menu) {
       return;
     }
-    const list = menu.querySelector('.menu-list') ?? menu;
+    const list = menu.querySelector<HTMLElement>('.menu-list') ?? menu;
     list.style.maxHeight = '';
     const { room } = this.menuRoom(menu, anchor);
     // the search box and the footer stay; the list takes what is left (their height is measured, not guessed)
@@ -275,12 +302,12 @@ export class PageMenus {
 
   /* A pick in the caret menu (`pick`: {kind, id, opener}, the element's switch-pick event): the sheet's page, another gear set (the
      store asks first when this one has a draft or an Auto-fill running), or a new set. */
-  pickSet(pick) {
+  pickSet(pick: SwitchPick): void {
     const { sheets, saved, leave } = this.session;
     if (pick.kind === 'all') {
       sheets.closeSet();
     } else if (pick.kind === 'item') {
-      if (pick.id !== saved.id) {
+      if (pick.id !== null && pick.id !== saved.id) {
         sheets.openSet(pick.id);
       }
     } else {

@@ -1,7 +1,7 @@
 /* The logic of one set page, with no DOM of its own: what the page reads from the store (the saved set, its sheet, the draft, the
-   Auto-fill result and status), and the five parts that change it (each a class in its own file, made here): menus.js (the open
-   menu), edits.js (edits by hand and pins), fill-run.js (Auto-fill and its suggestion), fill-settings-edit.js (the Auto-fill settings
-   popover and the Gear to search count) and leave-guard.js (the question before leaving, the page's key). The element
+   Auto-fill result and status), and the five parts that change it (each a class in its own file, made here): menus.ts (the open
+   menu), edits.ts (edits by hand and pins), fill-run.ts (Auto-fill and its suggestion), fill-settings-edit.ts (the Auto-fill settings
+   popover and the Gear to search count) and leave-guard.ts (the question before leaving, the page's key). The element
    (set-page.ts) makes one session when it has its ports and its set's id, and stops it when it leaves the page; the parts reach one
    another through the session.
 
@@ -10,29 +10,43 @@
    Auto-fill settings are saved as soon as they change. While an Auto-fill runs, `sheets.busy` locks every edit on the Sheets tab
    (sheets.md, "The edit lock"); Cancel stays.
 
-   `ports`: {sheets (the store's Sheets facade, ui/store/sheets-facade.ts), solver (ui/solver.js's), maxReal (the highest real item
-   level)}. `host`, what the session needs of the element it serves: {isConnected, query(selector) (an element of the page, or null),
-   afterDraw(callback) (runs `callback` once the page has drawn the change just made, unless the page is gone by then),
+   `ports`: {store, sheets (the store's Sheets facade, ui/store/sheets-facade.ts), solver (ui/solver.js's), maxReal (the highest real
+   item level)}. `host`, what the session needs of the element it serves: {isConnected, query(selector) (an element of the page, or
+   null), afterDraw(callback) (runs `callback` once the page has drawn the change just made, unless the page is gone by then),
    requestUpdate() (the page draws again: called after a change of what the parts keep, as the open menu), dialogOpen (a dialog of the
-   Sheets tab is open)}. */
+   Sheets tab is open)}. Both are typed in session-types.ts. */
 import { makeJobContext } from '../../../core/job-context.js';
+import type { Sheet, Suggestion } from '../../store/app-state.ts';
+import type { SheetsFacade } from '../../store/sheets-facade.ts';
+import type { SetPageActions } from '../../store/set-page-actions.ts';
 import { fillSettingsOf } from '../../sheets/fill-settings.js';
-import { PageEdits } from './edits.js';
-import { PageFill } from './fill-run.js';
-import { PageFillSettings } from './fill-settings-edit.js';
-import { PageLeave } from './leave-guard.js';
-import { PageMenus } from './menus.js';
+import { PageEdits } from './edits.ts';
+import { PageFill } from './fill-run.ts';
+import { PageFillSettings } from './fill-settings-edit.ts';
+import { PageLeave } from './leave-guard.ts';
+import { PageMenus } from './menus.ts';
+import type { FillSettings, JobContext, PageGearSet, SessionHost, SetPagePorts, Solver } from './session-types.ts';
 
 /* The state and the parts of one open set page: `ports` (the store, the Sheets facade, the solver), the set's id, the element as `host`, and
    the five parts (`menus`, `edits`, `fill`, `settings`, `leave`) that reach one another through it. It holds no DOM and no Lit. */
 export class PageSession {
+  readonly ports: SetPagePorts;
+  readonly setId: string;
+  readonly host: SessionHost;
+  // the set and job the last Auto-fill settings were made for, and them (fillSettings)
+  private settingsMade: { saved: PageGearSet; job: JobContext; value: FillSettings } | null;
+  readonly menus: PageMenus;
+  readonly edits: PageEdits;
+  readonly fill: PageFill;
+  readonly settings: PageFillSettings;
+  readonly leave: PageLeave;
+
   /* A session for the page of gear set `setId`, kept from the page's start: the store's open set follows the screen, which can move
      on before the page is taken away. */
-  constructor(ports, setId, host) {
+  constructor(ports: SetPagePorts, setId: string, host: SessionHost) {
     this.ports = ports;
     this.setId = setId;
     this.host = host;
-    // the set and job the last Auto-fill settings were made for, and them (fillSettings)
     this.settingsMade = null;
     this.menus = new PageMenus(this);
     this.edits = new PageEdits(this);
@@ -42,7 +56,7 @@ export class PageSession {
   }
 
   /* The page starts: its entry in the store, the leave guard, the first Gear to search count. */
-  start() {
+  start(): void {
     this.pages.openPage(this.setId);
     this.sheets.setLeaveGuard(move => this.leave.guardLeave(move));
     this.settings.refreshCount();
@@ -50,7 +64,7 @@ export class PageSession {
 
   /* The page goes away: the leave guard, the Auto-fill still running, the page's entry in the store (its draft and result go with it;
      an answer that comes later finds no page and is ignored). */
-  stop() {
+  stop(): void {
     this.sheets.setLeaveGuard(null);
     if (this.running) {
       this.fill.stopFill();
@@ -59,27 +73,27 @@ export class PageSession {
   }
 
   /* What the parts keep has changed (an open menu, the question): the page draws again. */
-  changed() {
+  changed(): void {
     this.host.requestUpdate();
   }
 
   /* ---- what the page reads ---- */
 
-  get sheets() {
+  get sheets(): SheetsFacade {
     return this.ports.sheets;
   }
-  get solver() {
+  get solver(): Solver {
     return this.ports.solver;
   }
   /* The sheet of the open set. */
-  get sheet() {
-    return this.sheets.currentSheet;
+  get sheet(): Sheet {
+    return this.sheets.currentSheet as Sheet;
   }
   /* The saved gear set the page shows. */
-  get saved() {
-    return this.sheets.currentSet;
+  get saved(): PageGearSet {
+    return this.sheets.currentSet as PageGearSet;
   }
-  get job() {
+  get job(): JobContext {
     return makeJobContext(this.sheet.job);
   }
   /* The page's entry in the store; a page not open reads as one at rest. */
@@ -87,40 +101,40 @@ export class PageSession {
     return this.sheets.page(this.setId);
   }
   /* The store's actions on this page: each takes the set's id first. */
-  get pages() {
+  get pages(): SetPageActions {
     return this.sheets.pages;
   }
   /* The manual draft (a frozen GearSet in memory from the first edit by hand to Apply or Discard), or null. */
-  get draft() {
-    return this.pageState.draft;
+  get draft(): Readonly<PageGearSet> | null {
+    return this.pageState.draft as Readonly<PageGearSet> | null;
   }
   /* The Auto-fill result waiting for Apply or Discard, {suggested ({pieces, meal}), declined: {rows, meal}}, or null. */
-  get suggestion() {
+  get suggestion(): Suggestion | null {
     return this.pageState.suggestion;
   }
   /* This page's Auto-fill is running. */
-  get running() {
+  get running(): boolean {
     return this.pageState.fill === 'running';
   }
   /* The line after an Auto-fill that gave no suggestion (no set found, a pin dropped), '' for none. */
-  get fillLine() {
+  get fillLine(): string {
     return this.pageState.fillLine;
   }
   /* How many pieces Gear to search leaves in the pool (null until the first count lands); 0 turns the Auto-fill button off. */
-  get searchedCount() {
+  get searchedCount(): number | null {
     return this.pageState.gearToSearch.searched;
   }
   /* Every edit is off: an Auto-fill runs (anywhere on the tab) or its result waits. */
-  get locked() {
+  get locked(): boolean {
     return this.sheets.busy || Boolean(this.suggestion);
   }
   /* The set's Auto-fill settings (fillSettingsOf: its own or the defaults). The same object until the set or the job changes, so what
      the popover hands its elements (the filters' lists) is not new at every draw. */
-  get fillSettings() {
+  get fillSettings(): FillSettings {
     const saved = this.saved;
     const job = this.job;
     if (this.settingsMade?.saved !== saved || this.settingsMade.job !== job) {
-      this.settingsMade = { saved, job, value: fillSettingsOf(job, saved) };
+      this.settingsMade = { saved, job, value: fillSettingsOf(job, saved) as FillSettings };
     }
     return this.settingsMade.value;
   }
@@ -129,14 +143,14 @@ export class PageSession {
 
   /* Runs `callback` once the page has drawn the change just made, unless the page is gone by then (an Auto-fill cancelled or a result
      discarded by leaving the page): its elements are gone with it. */
-  afterDraw(callback) {
+  afterDraw(callback: () => void): void {
     this.host.afterDraw(callback);
   }
   /* The focus goes to the Auto-fill button (or the gear when it is off) once the bar is drawn: after Apply, Discard and Cancel. */
-  focusFill() {
+  focusFill(): void {
     this.afterDraw(() => {
       // a click made right after the one that asked can already have changed the bar again
-      const fill = this.host.query('#sh-fill');
+      const fill = this.host.query('#sh-fill') as HTMLButtonElement | null;
       const gear = this.host.query('.gearbtn');
       (fill?.disabled ? gear : fill)?.focus({ preventScroll: true });
     });

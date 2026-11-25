@@ -16,7 +16,7 @@ import { framePart } from './sheets/frame.js';
 import { viewPart } from './sheets/view.js';
 
 /* The component. Reads $store.sheets (the sheets and the screen) and nothing of the Job and sync panel. `setPagePorts`: what a set
-   page's element needs (elements/set-page/set-page.ts SetPagePorts), frozen; main.js makes it. */
+   page's element needs (elements/set-page/session-types.ts SetPagePorts), frozen; main.js makes it. */
 export function sheetsTab(setPagePorts = null) {
   return compose(framePart(), viewPart(setPagePorts), actionsPart(), dialogPart());
 }
