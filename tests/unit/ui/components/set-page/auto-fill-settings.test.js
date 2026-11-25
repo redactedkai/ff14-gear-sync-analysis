@@ -91,13 +91,11 @@ test('Gear categories piece counts: none before the first count lands, replaced 
   };
   // the request is out: no number yet (not 0)
   assert.equal(c.fromCounts, null);
-  assert.equal(c.fromCount('crafted'), null);
   await solver.held[0].answer();
   await tick();
   const first = countsFor();
   assert.deepEqual(c.fromCounts, first);
   assert.ok(first.crafted > 0 && first.gold_saucer === 0);
-  assert.equal(c.fromCountText('crafted'), first.crafted.toLocaleString('en-US'));
   // a filter changes: the old numbers are for other settings, so none show until the new ones land
   c.editFill(s => {
     s.searchCriteria.min = 700;
@@ -109,8 +107,7 @@ test('Gear categories piece counts: none before the first count lands, replaced 
   assert.ok(c.fromCounts.crafted < first.crafted, 'fewer pieces at item level 700 and up');
   // a box ticked or the market board switched: the numbers do not change, so they stay while the new answer is out
   const landed = c.fromCounts;
-  c.setFromOn('crafted', false);
-  c.setMarket(false);
+  c.setFilters({ exclude: [...c.filters.exclude, 'crafted'], market: false });
   assert.equal(c.fromCounts, landed);
   // a late answer of an older request does not put its numbers back
   c.editFill(s => {

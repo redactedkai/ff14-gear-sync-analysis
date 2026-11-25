@@ -21,13 +21,11 @@ test('gear browser: the view is the list for the settings now, built once per ch
   // not built before the tab is first opened
   assert.equal(c.view, null);
   assert.equal(c.fromCounts, null, 'no piece counts for the Gear categories boxes before the list is built');
-  assert.equal(c.fromCount('crafted'), null);
   app.showTab('browse');
   const first = c.view;
   assert.deepEqual(first, gearView(app.jobCtx, syncSettings(app), app.browse));
   assert.equal(c.view, first, 'the same settings: the same view, not built again');
   assert.equal(c.fromCounts, first.fromCounts);
-  assert.equal(c.fromCount('crafted'), first.fromCounts.crafted);
   // a filter changes: a new list
   app.editBrowse({ q: 'ring' });
   const ring = c.view;

@@ -656,4 +656,4 @@ Notes on the table:
    - the views `solveView` (with an Auto-fill's `pins` and its `badpin` answer) and `gearToSearchView` in `src/ui/solve.js`;
    - a saved set's pins, count and result mapping in `src/ui/sheets/fill.js`;
    - the filter `withActivities` and relics with allocated substats `allocatedRelic` in `src/core/items.js`;
-   - the menu `gearFromToggles` in `src/ui/components/filter-menus.js`.
+   - the menu `<gsa-gear-categories>` in `src/ui/elements/gear-browser/` (its data in `filter-menu-model.ts`).

@@ -4,7 +4,7 @@
 import { numberField } from '../../number-field.js';
 import { overlays } from '../../overlays.js';
 import { clone } from '../../text.ts';
-import { expansionToggles, gearFromToggles } from '../filter-menus.js';
+import { menuFloat } from '../filter-menus.js';
 import { gearFilter } from '../../../core/items.js';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.js';
 import { TARGET_GCD_RANGE } from '../../job-sync-panel.js';
@@ -22,6 +22,8 @@ export function settingsPart(solver, page) {
   let countLanding = Promise.resolve();
 
   return {
+    // where the Spare points note opens (placeMenu, isOwnScroll)
+    ...menuFloat,
     // the Auto-fill settings popover is open; the "Spare points to tiebreaks" note in it
     settingsOpen: false,
     rankHelp: false,
@@ -159,15 +161,15 @@ export function settingsPart(solver, page) {
         { empty: '', ...(criteria ? {} : { decimals: 2 }) },
       );
     },
-    /* the filters under Gear to search, read from and written to the set's Auto-fill settings */
-    ...expansionToggles({
-      read: self => self.fillSettings.searchCriteria,
-      write: (self, patch) => self.editFill(s => Object.assign(s.searchCriteria, patch)),
-    }),
-    ...gearFromToggles({
-      read: self => self.fillSettings.searchCriteria,
-      write: (self, patch) => self.editFill(s => Object.assign(s.searchCriteria, patch)),
-    }),
+    /* the filters under Gear to search (the Expansion and Gear categories menus, Lit elements: partials/expansion-menu.html,
+       gear-from-menu.html), read from and written to the set's Auto-fill settings */
+    get filters() {
+      return this.fillSettings.searchCriteria;
+    },
+    /* a menu sent `patch` (a part of the filters' settings): the set's Auto-fill settings take it */
+    setFilters(patch) {
+      this.editFill(s => Object.assign(s.searchCriteria, patch));
+    },
     /* The Gear to search line for the set's Auto-fill settings, from the solver (in the set's own lane). */
     refreshCount() {
       const saved = this.saved;

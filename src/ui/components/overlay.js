@@ -3,7 +3,6 @@
    manager (ui/overlays.js), which does Escape, a press outside, Tab out and "one at a time". The template only reads
    `filterMenuOpen` and calls the three actions; it never sets the flag itself. */
 import { overlays } from '../overlays.js';
-import { compose } from './compose.js';
 
 /* "pieceMenu" -> "PieceMenu" */
 const capital = name => name[0].toUpperCase() + name.slice(1);
@@ -81,25 +80,4 @@ export function overlay(
       }
     },
   };
-}
-
-/* A menu in a template of its own (the partials of the Gear browser's and the Auto-fill settings' filters), as `x-data` of the
-   menu's wrapper: `x-data="menuScope('b-exp', 'expBtn', null)"`. It has `filterMenuOpen`, `openFilterMenu()`, `closeFilterMenu(restoreFocus)` and
-   `toggleFilterMenu()` (overlay above), and the members of `extra` (such as a selected tab).
-   `id`: the layer's id (one per menu on the page); `button`: the name of the `x-ref` button that opens it; `parent`: the id of
-   the overlay the menu is inside (the Auto-fill settings' 'settings'), or null; `extra`: more members. */
-export function menuScope(id, button, parent = null, extra = {}) {
-  return compose(
-    { ...extra },
-    overlay('filterMenu', {
-      id,
-      parent,
-      root() {
-        return this.$root;
-      },
-      opener() {
-        return this.$refs[button];
-      },
-    }),
-  );
 }

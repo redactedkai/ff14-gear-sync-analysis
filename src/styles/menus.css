@@ -14,6 +14,36 @@
   box-shadow: var(--pop-shadow);
   border-radius: 4px;
 }
+/* The menus are Lit elements with a Zag popover: the positioner, which Zag places, holds the menu, and Zag hides a closed menu with the
+   hidden attribute, which the display of the menu would override. The Expansion menu is as wide as its button at the least (Zag's
+   --reference-width); both are no taller than the room on its side of the button (Zag's --available-height, a few rows at the least) and
+   scrolls inside. The elements and the tab row draw no box of their own. */
+.multi-menu[hidden] {
+  display: none;
+}
+gsa-expansion-menu [data-part="positioner"] > .multi-menu,
+gsa-gear-categories [data-part="positioner"] > .multi-menu {
+  margin-top: 0;
+  max-height: max(var(--available-height, 100vh), 10rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+gsa-expansion-menu [data-part="positioner"] > .multi-menu {
+  min-width: var(--reference-width, 0);
+}
+/* the label and the button of the Gear categories control: what its menu is placed against, so a menu that opens upward ends over the
+   label too. It lays them out as the control's own column does. */
+.from-anchor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.filter-island,
+gsa-gear-sections,
+.from-sections {
+  display: contents;
+}
 .multi-opt {
   display: flex;
   align-items: center;
@@ -77,10 +107,6 @@
   font-size: 0.92rem;
   font-weight: 400;
   color: var(--fg);
-}
-.from-menu.to-left {
-  left: auto;
-  right: 0;
 }
 /* the market board switch: the switch, then its label, with no text of its own under it */
 .from-switch {
@@ -204,7 +230,9 @@
   grid-template-rows: none;
   grid-template-columns: 1fr 1fr;
 }
-.from-panel.is-off {
+/* Zag's tabs hide the panels not selected with the hidden attribute, which the grid display above overrides: they stay in their cell,
+   invisible, so the menu keeps the size of the tallest tab */
+.from-panel[hidden] {
   visibility: hidden;
 }
 /* a box: the checkbox, its title line (the name in bold, the number of pieces at the right end) and what it covers in muted text
@@ -284,6 +312,11 @@
 .from-slash {
   stroke: currentColor;
   stroke-width: 2;
+}
+/* the slash is only there while market board gear is left out */
+.from-market.on .from-slash-gap,
+.from-market.on .from-slash {
+  display: none;
 }
 .from-hint {
   grid-column: 2;

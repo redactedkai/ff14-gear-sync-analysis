@@ -6,7 +6,6 @@ import { SEARCH_MAX_LENGTH, defaultBrowse } from '../state.js';
 import { syncSettings } from '../job-sync-panel.js';
 import { browseFiltered, gearView } from '../views/gear.js';
 import { viewCache } from '../view-cache.ts';
-import { expansionToggles, gearFromToggles } from './filter-menus.js';
 
 /* The browser's component: its view (gearView, rebuilt while the tab is open), its page, its two filter menus, the sort
    and Reset filters. */
@@ -75,10 +74,16 @@ export function gear() {
     get jobCtx() {
       return this.$store.app.panel('browse').jobCtx;
     },
-    /* the Expansion filter, browse.expOff (the optimizer has its own, opt.expOff) */
-    ...expansionToggles('browse'),
-    /* the "Gear categories" filter: the browser's own boxes and market board switch (browse.exclude, browse.market) */
-    ...gearFromToggles('browse'),
+    /* the settings of the two filter menus (Expansion, Gear categories): the browser's own, browse.expOff, browse.exclude and
+       browse.market (the optimizer has its own); the menus are Lit elements that take them as properties and send the change as an
+       event (partials/expansion-menu.html, gear-from-menu.html) */
+    get filters() {
+      return this.$store.app.browse;
+    },
+    /* a menu sent `patch` (a part of the filters' settings): the browser's filters take it by their action */
+    setFilters(patch) {
+      this.$store.app.editBrowse(patch);
+    },
     /* how many pieces each "Gear categories" box holds for the list now ({box key: count}), or null before the list is built */
     get fromCounts() {
       return this.view?.fromCounts ?? null;

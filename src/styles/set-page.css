@@ -758,23 +758,15 @@ i.rk {
 .setpop .part h3 {
   font-size: 1.05rem;
 }
-/* the menus and the Spare points note float over the popover, fixed to the window (placeMenu in ui/components/filter-menus.js sets their top,
-   left and size), so the popover's scroll box does not cut them; the popover has no transform, so they stay fixed to the window */
-.setpop .multi-menu,
+/* the Spare points note floats over the popover, fixed to the window (placeMenu in ui/components/filter-menus.js sets its top, left and
+   size), so the popover's scroll box does not cut it; the popover has no transform, so it stays fixed to the window. The Expansion and
+   Gear categories menus are placed by Zag, fixed to the window the same way (filter-popover.ts), and only need the layer above the popover. */
 .setpop .popover {
   position: fixed;
 }
-.setpop .multi-menu {
-  z-index: var(--z-nested);
-  max-height: 50vh;
-  overflow: auto;
-}
+.setpop .multi-menu,
 .setpop .popover {
   z-index: var(--z-nested);
-}
-/* the Gear categories menu has one height whatever the tab, so no 50vh cut; placeMenu still cuts it to a window too short for it */
-.setpop .from-menu {
-  max-height: none;
 }
 
 /* The column under the pointer, in the gear browser's table: its cells tinted as the substat tiers table tints a tier, its

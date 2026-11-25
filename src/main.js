@@ -17,13 +17,14 @@ import { modalDirective } from './ui/native-dialog.js';
 import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
 // the Lit elements (each registers itself on import); the page's templates hold them as islands
+import './ui/elements/gear-browser/expansion-menu.ts';
+import './ui/elements/gear-browser/gear-categories.ts';
 import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/collapsible.ts';
 import './ui/elements/app/notes.ts';
-import { menuScope } from './ui/components/overlay.js';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';
@@ -121,7 +122,6 @@ const solver = workerSolver(startSolverWorker, inProcessSolver);
 Object.entries({
   page,
   settings,
-  menuScope,
   syncExplainer,
   gear,
   mealMenu,

@@ -169,21 +169,18 @@ test('build includes: a partial can include another, keeping the indentation; a 
   assert.equal(expandIncludes('<!-- INCLUDE d3.html -->', read), '<i></i>');
 });
 
-test('page template: the browser and a set page take their filter menus from the partials', async () => {
+test('page template: the browser and a set page each hold the Expansion and Gear categories menu elements', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
   const page = expandIncludes(html);
   for (const id of ['b', 's']) {
-    for (const el of [`${id}-exp-menu`, `${id}-from-menu`, `${id}-market`]) {
-      assert.match(page, new RegExp(`id="${el}"`));
+    for (const element of ['gsa-expansion-menu', 'gsa-gear-categories']) {
+      assert.match(page, new RegExp(`<${element} class="f multi" id-prefix="${id}"`));
     }
   }
-  // the market switch goes through the component's own accessor (components/filter-menus.js gearFromToggles), never the store directly
-  assert.match(page, /@change="setMarket\(\$event\.target\.checked\)"/);
+  // the menus write through the component's own setter, never the store directly
   assert.doesNotMatch(page, /\$store\.app\.\w+\.market = /);
   assert.doesNotMatch(page, /\{\{|INCLUDE/);
-  // one surface: the Gear categories control has no (i) button or info panel
-  assert.doesNotMatch(page, /from-info/);
 });
 
 /* The page's bytes must not change between builds of the same source: the worker's data module lists its files in the
