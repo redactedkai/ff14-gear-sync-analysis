@@ -1,7 +1,7 @@
-// The "?" note of the Auto-fill settings' Spare points switch: it is fixed to the window (placed by placeMenu), so it follows
-// its button when the page scrolls or the window is resized.
+// The "?" note of the Auto-fill settings' Spare points switch: it is fixed to the window (a Zag popover, <gsa-rank-note>), so it
+// follows its button when the page scrolls or the window is resized.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { openSageSet, seedSheet } from '../../lib/sheets.mjs';
 
@@ -29,6 +29,7 @@ export async function checkSparePointsNoteFollowsButton(pg) {
   await pg.click('#sh-settings');
   await pg.click('#sh-settings-dialog [aria-controls="s-rank-pop"]');
   await expect(pg.locator('#s-rank-pop')).toBeVisible();
+  await placedByZag(pg, '#s-rank-pop');
   const start = await noteAndButton(pg);
   check(start.gap >= 0 && start.gap <= 12, `the note opens under its button: ${JSON.stringify(start)}`);
 

@@ -2,7 +2,7 @@
 
 import { ACTIVITY_KEYS, STORE_KEY } from '../../lib/constants.mjs';
 import { DEFAULT_EXCLUDE } from '../../lib/core-worker.mjs';
-import { check, expect, poll } from '../../lib/expect.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { FILL_SHEET } from '../../lib/fixtures.mjs';
 import { runFill } from '../../lib/nav.mjs';
 import { checkTotals } from '../../lib/shared-checks.mjs';
@@ -26,6 +26,7 @@ export async function openFillSettings(pg) {
     await pg.click('#sh-settings');
   }
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
+  await placedByZag(pg, '#sh-settings-dialog');
 }
 
 /** Wait until the Auto-fill settings saved on the sheet's first set satisfy `test` (the set page saves a change at once). */

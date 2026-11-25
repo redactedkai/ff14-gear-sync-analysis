@@ -41,8 +41,9 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-.rankwrap .popover.statpop {
-  right: 0;
+/* the "?" and its note (<gsa-rank-note>): the element takes no box, so the button is a flex item of the switch's row */
+gsa-rank-note {
+  display: contents;
 }
 button.run {
   min-width: 120px;

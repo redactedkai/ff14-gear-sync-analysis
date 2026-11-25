@@ -1,6 +1,6 @@
 // The Auto-fill settings popover's layout: the Goal part's controls sit on the columns of the Gear to search part's.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { openSageSet, openSet, seedSheet, seedSheets } from '../../lib/sheets.mjs';
 
@@ -19,6 +19,7 @@ export async function checkSettingsAlignment(pg) {
     await pg.setViewportSize({ width, height: 900 });
     await pg.click('#sh-settings');
     await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
+    await placedByZag(pg, '#sh-settings-dialog');
     const edges = await pg.evaluate(() => {
       const box = selector => document.querySelector(`#sh-settings-dialog ${selector}`).getBoundingClientRect();
       return {
@@ -44,7 +45,7 @@ export async function checkSettingsAlignment(pg) {
     near('Spare points to tiebreaks switch left edge', edges.switchLeft, edges.pairLeft);
     check(!edges.pageScrolls, `at ${width} px the page scrolls sideways`);
     await pg.keyboard.press('Escape');
-    await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+    await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   }
   await pg.setViewportSize({ width: 1000, height: 900 });
   await pg.click('[data-tab=browse]');
@@ -126,6 +127,7 @@ export async function checkGcdLabel(pg) {
       await openSet(pg, labelCase.sheet ?? `Label ${labelCase.job}`, 'Empty');
       await pg.click('#sh-settings');
       await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
+      await placedByZag(pg, '#sh-settings-dialog');
       if (labelCase.off) {
         await pg.selectOption('#s-target', 'sks');
       }
@@ -167,7 +169,7 @@ export async function checkGcdLabel(pg) {
         );
       }
       await pg.keyboard.press('Escape');
-      await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+      await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
     }
     base = null;
   }

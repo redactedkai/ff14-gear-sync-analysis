@@ -1,6 +1,6 @@
 // A short window: the "Gear categories" menu (in the Auto-fill settings) scrolls with the wheel and shows its last row.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { showTab } from '../../lib/nav.mjs';
 import { openSageSet, seedSheet } from '../../lib/sheets.mjs';
@@ -67,10 +67,11 @@ export async function checkPopoverScroll(pg) {
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
   await pg.click('#s-from');
   await expect(pg.locator('#s-from-menu')).toBeVisible();
+  await placedByZag(pg, '#s-from-menu');
   await wheelToLastRow(pg, '#s-from-menu', '#s-from-menu .multi-opt', 'Auto-fill settings Gear categories menu');
   await pg.keyboard.press('Escape');
   await pg.keyboard.press('Escape');
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   await pg.setViewportSize({ width: 1000, height: 900 });
   await pg.click('[data-tab=browse]');
 }

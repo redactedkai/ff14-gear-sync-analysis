@@ -48,7 +48,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 22 | 15 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 19 | 12 |
-| `gear-browser` | the Gear browser tab and its filter menus | 7 | 16 |
+| `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 13 | 15 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 44 | 47 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
@@ -126,7 +126,6 @@ Which file tests what? One line per file; the file itself says the rest.
 | core/tiers | substat tiers; the Substat tiers sub-tab's ladder (every tier up to a most, the last cut at it) and tier sizes |
 | scripts/build | the build script and the optimizer's worker bundle (note 10) |
 | startup-failure | the failed-to-start script run against a stand-in page: the settings key and the sheets keys are saved data to reset, the reload guard's dev flag and other pages' keys are not |
-| ui/components/filter-menus | where the Spare points note opens (`placeBelowOrAbove` at the window sizes of A25, `placeKeepingScroll` keeping the scroll position); goes with the note's move to a Zag popover |
 | ui/elements/gear-browser/filter-menu-model | the Expansion and "Gear categories" menus' data: the tabs (Everyday, Side content and Hard content with the real boxes, hints and Hard content's reading order), the button texts, the piece counts and their words, the lists after a tick, All, None and Default, and the partials' event names |
 | ui/components/gcd | How the math works, GCD's controls: the level and speed boxes, the slider, the chart and step clicks |
 | ui/components/gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |

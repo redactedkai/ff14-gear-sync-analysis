@@ -15,11 +15,6 @@ const MENU_BUTTON_MARGIN_PX = 8;
 /* The lowest a menu that does not fit is made before it scrolls inside (px). */
 const MENU_MIN_PX = 160;
 
-/* The ids of the set page's layers in the overlay manager (overlays.js) that the page itself opens: the Auto-fill settings popover
-   and its "Spare points" note. (The menus of the table are Zag layers their elements register.) */
-export const SETTINGS_LAYER = 'settings';
-export const RANK_NOTE_LAYER = 'rankNote';
-
 /* The job's wearable pieces (items.js jobGear) for the piece picker, built once per job and kept out of reactive state
    (big data: CLAUDE.md). */
 const gearByJob = new Map();

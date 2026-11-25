@@ -1,101 +1,38 @@
-/* A set page's Auto-fill settings popover (the gear button in the bar): opening and closing it, the goal, the Target GCD and
+/* A set page's Auto-fill settings popover (the gear button in the bar; <gsa-settings-popover> opens and closes it): the goal, the Target GCD and
    Gear to search boxes that edit the set's saved Auto-fill settings, and the Gear to search count from the solver.
    A part of the setPage component (components/set-page.js composes the parts). */
 import { numberField } from '../../number-field.js';
-import { overlays } from '../../overlays.js';
 import { clone } from '../../text.ts';
-import { menuFloat } from '../filter-menus.js';
 import { gearFilter } from '../../../core/items.js';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.js';
 import { TARGET_GCD_RANGE } from '../../job-sync-panel.js';
 import { isCancelled, solverRequest } from '../../solver.js';
 import { fillRecipe } from '../../sheets/fill-settings.js';
 import { evaluateInSheet } from '../../views/set-totals.js';
-import { RANK_NOTE_LAYER, SETTINGS_LAYER } from './menus.js';
 
-/* `solver`: ui/solver.js's; `page`: {el, refs, setId} (frame.js). Returns the part's members. The Gear to search answer (the line,
+/* `solver`: ui/solver.js's. Returns the part's members. The Gear to search answer (the line,
    the count, the pieces per "Gear categories" box, the Target GCD label) and the id of the count on its way are in the store
    (page-state.js reads them; `pages` changes them). */
-export function settingsPart(solver, page) {
+export function settingsPart(solver) {
   // the newest Gear to search count still on its way (resolved once it has landed or failed); not in the store: a Promise is not
   // state, and a proxy around one breaks its methods
   let countLanding = Promise.resolve();
 
   return {
-    // where the Spare points note opens (placeMenu, isOwnScroll)
-    ...menuFloat,
-    // the Auto-fill settings popover is open; the "Spare points to tiebreaks" note in it
-    settingsOpen: false,
-    rankHelp: false,
     // after a goal pick moved another rank: "Tiebreak 1 changed to Mind (a stat holds one rank)."; any other edit clears it
     rankNote: '',
     targetGcdRange: TARGET_GCD_RANGE,
 
-    /* ---- the Auto-fill settings popover (the gear button) ---- */
+    /* ---- the Auto-fill settings popover (the gear button: <gsa-settings-popover>, which opens and closes itself) ---- */
 
-    /* The gear button: opens the popover, or closes it when it is open. */
-    toggleSettings() {
-      if (this.settingsOpen) {
-        this.closeSettings();
+    /* The popover opened or closed (`open`): an opening counts the pieces to search for the set's settings, and a closing drops the
+       line about a moved rank. The gear is off while an Auto-fill runs, and the bar does not draw it then. */
+    settingsToggled(open) {
+      if (open) {
+        this.refreshCount();
       } else {
-        this.openSettings();
+        this.rankNote = '';
       }
-    },
-    /* Open the popover and move the focus into it (its first box). Not while an Auto-fill runs. It is a layer of the overlay
-       manager (Escape and a press outside close it; Tab out does not, as it is not modal); its menus and note are layers inside
-       it. */
-    openSettings() {
-      if (this.$store.sheets.busy) {
-        return;
-      }
-      overlays.open({
-        id: SETTINGS_LAYER,
-        root: () => page.refs.gearWrap,
-        opener: () => page.refs.gear,
-        close: () => {
-          this.settingsOpen = false;
-          this.rankHelp = false;
-          this.rankNote = '';
-        },
-      });
-      this.settingsOpen = true;
-      this.refreshCount();
-      this.afterDraw(() => page.refs.settings?.querySelector('select')?.focus());
-    },
-    /* Close the popover (the gear button, its X; Escape and a press outside it close it through the manager). `refocus`: put the
-       focus back on the gear button; false where the focus goes elsewhere (the page left the rest state). */
-    closeSettings(refocus = true) {
-      if (!this.settingsOpen) {
-        return;
-      }
-      if (overlays.close(SETTINGS_LAYER, { restoreFocus: refocus })) {
-        return;
-      }
-      this.settingsOpen = false;
-      this.rankHelp = false;
-      this.rankNote = '';
-    },
-    /* The "?" of Spare points to tiebreaks: its note opens under the button, inside the popover, and closes with Escape (the
-       popover stays), a press outside it or the button again. */
-    toggleRankHelp() {
-      if (this.rankHelp) {
-        if (!overlays.close(RANK_NOTE_LAYER, { restoreFocus: true })) {
-          this.rankHelp = false;
-        }
-        return;
-      }
-      overlays.open({
-        id: RANK_NOTE_LAYER,
-        parent: SETTINGS_LAYER,
-        root: () => page.refs.rankWrap,
-        opener: () => page.refs.rankBtn,
-        tabOut: true,
-        close: () => {
-          this.rankHelp = false;
-        },
-      });
-      this.rankHelp = true;
-      this.$nextTick(() => this.placeMenu(page.refs.rankPop, page.refs.rankBtn));
     },
     /* The set's Auto-fill settings with `change(settings)` applied, saved. Refused while an Auto-fill runs or a result waits:
        the result was made for the settings it was run with, and the settings popover is not drawn then (the bar shows Apply

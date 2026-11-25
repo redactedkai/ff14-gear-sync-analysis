@@ -37,7 +37,7 @@ export function setPage(solver = inProcessSolver()) {
     menusPart(),
     draftPart(),
     fillPart(solver, page),
-    settingsPart(solver, page),
+    settingsPart(solver),
     leavePart(page),
   );
 }

@@ -10,7 +10,7 @@ import { fakeFrames, pageMagics } from './page-magics.js';
 import { createStores } from './stores.js';
 
 /* the page's refs (x-ref names in src/partials/set-page.html); the frame callback runs at once in Node */
-const SET_PAGE_REFS = ['head', 'table', 'cancel', 'apply', 'discard', 'fill', 'gear', 'settings', 'leave', 'leaveKeep'];
+const SET_PAGE_REFS = ['head', 'table', 'cancel', 'apply', 'discard', 'fill', 'gear', 'leave', 'leaveKeep'];
 fakeFrames({ immediate: true });
 
 const SGE = makeJobContext('SGE');

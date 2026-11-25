@@ -2,7 +2,6 @@
    edits refused while a result waits, the Gear to search line (with a failing or late solver) and the goal menus. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { overlays } from '../../../../../src/ui/overlays.js';
 import { inProcessSolver } from '../../../../../src/ui/solver.js';
 import { fillRecipe } from '../../../../../src/ui/sheets/fill-settings.js';
 import { evaluateInSheet } from '../../../../../src/ui/views/set-totals.js';
@@ -163,51 +162,16 @@ test('a goal pick that moves another rank shows the swap note; any other edit cl
   assert.equal(c.rankNote, '');
 });
 
-test('the settings popover: the gear button opens and closes it, a close puts the focus on the gear unless a click outside closed it', () => {
-  const { c, calls } = bind(sageSet());
-  assert.equal(c.settingsOpen, false);
-  c.toggleSettings();
-  assert.equal(c.settingsOpen, true);
-  c.toggleSettings();
-  assert.equal(c.settingsOpen, false);
-  assert.deepEqual(
-    calls.filter(call => call[0] === 'gear').map(call => call[1]),
-    ['focus'],
-  );
-
-  // a click outside: closed, and the focus is not pulled back to the gear
-  c.openSettings();
-  c.rankHelp = true;
-  calls.length = 0;
-  c.closeSettings(false);
-  assert.equal(c.settingsOpen, false);
-  assert.equal(c.rankHelp, false);
-  assert.equal(calls.filter(call => call[0] === 'gear').length, 0);
-});
-
-test('the settings popover: Escape closes it (after the note), and a draft or a result closes it', () => {
-  overlays.closeAll();
-  const { c, watches } = bind(sageSet());
-  c.openSettings();
-  c.toggleRankHelp();
-  overlays.pressEscape({});
-  assert.deepEqual([c.rankHelp, c.settingsOpen], [false, true], 'the first Escape closes the note only');
-  overlays.pressEscape({});
-  assert.equal(c.settingsOpen, false);
-
-  // the bar loses the gear with a draft, a result or a running Auto-fill: its watcher closes the popover
-  c.openSettings();
-  const away = watches.find(w => w.getter.toString().includes('mode'));
-  away.callback(true);
-  assert.equal(c.settingsOpen, false);
-});
-
-test('the settings popover is not modal: Tab on its last box is left alone', () => {
-  const { c } = bind(sageSet());
-  c.openSettings();
-  let prevented = false;
-  c.pageKey({ key: 'Tab', shiftKey: false, target: {}, preventDefault: () => (prevented = true) });
-  assert.equal(prevented, false);
+test('the settings popover opening counts the pieces again, and its closing drops the note about a moved rank', async () => {
+  const solver = lateSolver(['gearToSearch']);
+  const { c } = bind(sageSet(), solver);
+  const asked = solver.held.length;
+  c.settingsToggled(true);
+  assert.equal(solver.held.length, asked + 1, 'an opening asks for the count');
+  c.rankNote = 'Tiebreak 1 changed to Mind';
+  c.settingsToggled(false);
+  assert.equal(c.rankNote, '');
+  assert.equal(solver.held.length, asked + 1, 'a closing asks for nothing');
 });
 
 test('Gear to search boxes: Equip level is held to the job level cap, the Item level boxes to the highest real item level', () => {

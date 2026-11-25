@@ -2,9 +2,7 @@
    height, the store's leave guard, the Auto-fill still running), and `afterDraw` and `focusFill`, which move the focus once Alpine has drawn a change.
    A part of the setPage component (components/set-page.js composes the parts; `page` is the state they share). */
 
-import { overlays } from '../../overlays.js';
 import { afterDraw } from '../compose.js';
-import { RANK_NOTE_LAYER, SETTINGS_LAYER } from './menus.js';
 
 /* `page`: {el, refs, setId}, the shared holder of the page's own element, its refs and its set's id, kept from init: `this.$el` and `this.$refs`
    belong to the element a handler ran on, and a click can remove that element (Cancel, Apply, Discard), so after one
@@ -19,26 +17,6 @@ export function framePart(page) {
       this.pages.openPage(page.setId);
       this.$store.sheets.setLeaveGuard(move => this.guardLeave(move));
       this.refreshCount();
-      // the gear and its popover are in the bar only at rest: a draft, a result or a running Auto-fill closes the popover
-      this.$watch(
-        () => this.view.mode !== 'rest' || this.running,
-        away => {
-          if (away) {
-            this.closeSettings(false);
-          }
-        },
-      );
-      // a popover the page closes itself (Apply, Auto-fill) is taken off the overlay manager too, so it no longer answers Escape
-      for (const [flag, layer] of [
-        ['settingsOpen', SETTINGS_LAYER],
-        ['rankHelp', RANK_NOTE_LAYER],
-      ]) {
-        this.$watch(flag, value => {
-          if (!value) {
-            overlays.close(layer);
-          }
-        });
-      }
       // the sticky header's height, for the column names that stick under it (--sh); its exact height, not offsetHeight's
       // whole pixels, or the column names stick a fraction of a pixel off the header's bottom edge
       this.$nextTick(() => {

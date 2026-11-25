@@ -29,6 +29,8 @@ import './ui/elements/set-page/food-menu.ts';
 import './ui/elements/sheets/switch-menu.ts';
 import './ui/elements/set-page/materia-menu.ts';
 import './ui/elements/set-page/piece-picker.ts';
+import './ui/elements/set-page/rank-note.ts';
+import './ui/elements/set-page/settings-popover.ts';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';

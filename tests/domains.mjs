@@ -104,7 +104,7 @@ export const DOMAINS = {
   'gear-browser': {
     title: 'The Gear browser tab and its filter menus',
     src: [
-      'src/ui/components/{gear,filter-menus}.js',
+      'src/ui/components/gear.js',
       // the Slot menu, a Lit element (an island in the Gear browser's template)
       'src/ui/elements/gear-browser/**',
       'src/ui/views/gear.js',

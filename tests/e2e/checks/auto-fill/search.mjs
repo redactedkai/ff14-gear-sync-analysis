@@ -204,7 +204,7 @@ export async function checkFillCancel(pg) {
   await pg.click('#sh-settings');
   await expect(pg.locator('#s-count[data-state="ready"]')).toBeVisible(); // the count has landed
   await pg.keyboard.press('Escape');
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   let closed = 0;
   const watch = w => w.on('close', () => closed++);
   pg.workers().forEach(watch);

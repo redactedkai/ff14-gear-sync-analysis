@@ -348,6 +348,7 @@ export async function checkFillMenus(pg) {
     await openSageSet(pg);
     await pg.click('#sh-settings');
     await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
+    await placedByZag(pg, '#sh-settings-dialog');
     for (const [what, buttonId, menuSel] of [
       ['Gear categories menu', 's-from', '#s-from-menu'],
       ['Expansion menu', 's-exp', '#s-exp-menu'],
@@ -356,6 +357,7 @@ export async function checkFillMenus(pg) {
       const where = `${width} px, ${what}`;
       await pg.click(buttonId === 'sh-rank-help' ? '#sh-settings-dialog .shelp' : `#${buttonId}`);
       await expect(pg.locator(menuSel)).toBeVisible();
+      await placedByZag(pg, menuSel);
       await poll(`${where} to sit inside the window with its corners and text whole and no dialog scrollbar`, async () => {
         const got = await pg.evaluate(probe, [menuSel, buttonId]);
         const [left, top, right, bottom] = got.box;
@@ -389,7 +391,7 @@ export async function checkFillMenus(pg) {
     }
     // with every pop-up closed, the next Escape closes the settings dialog
     await pg.keyboard.press('Escape');
-    await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+    await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   }
   await pg.click('[data-tab=browse]');
 }

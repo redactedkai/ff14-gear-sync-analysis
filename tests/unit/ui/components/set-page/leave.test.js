@@ -126,25 +126,15 @@ test('Escape on the set page: layers of the overlay manager take it first; with 
   overlays.closeAll();
   const { c } = bind(twoToFill());
   c.pages.setSuggestion(c.setId, waitingResult());
-  c.openSettings();
+  // a layer of the manager stands for an open popover (the Auto-fill settings popover registers one when it opens)
+  let popoverOpen = true;
+  overlays.open({ id: 'popover', root: () => null, opener: () => null, close: () => (popoverOpen = false) });
   const first = keyEvent('Escape');
   c.pageKey(first);
   assert.deepEqual([c.suggestion !== null, first.prevented], [true, false], 'a popover is open: the page leaves the key to the manager');
   overlays.pressEscape(first);
-  assert.equal(c.settingsOpen, false);
+  assert.equal(popoverOpen, false);
   const second = keyEvent('Escape');
   c.pageKey(second);
   assert.deepEqual([c.suggestion, second.prevented], [null, true]);
-});
-
-test('Escape with a menu open in the Auto-fill settings: the menu closes first, then the settings; the key never reaches the page', () => {
-  overlays.closeAll();
-  const { c } = bind(twoToFill());
-  c.openSettings();
-  c.toggleRankHelp();
-  assert.deepEqual(overlays.openIds, ['settings', 'rankNote']);
-  overlays.pressEscape({});
-  assert.deepEqual([c.rankHelp, c.settingsOpen], [false, true]);
-  overlays.pressEscape({});
-  assert.deepEqual([c.settingsOpen, overlays.openIds], [false, []]);
 });

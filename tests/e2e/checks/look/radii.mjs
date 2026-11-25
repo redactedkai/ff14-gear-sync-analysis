@@ -174,7 +174,7 @@ export async function checkRadii(pg) {
     await checkRadiiOf(page, 'fillMenu');
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
-    await expect(page.locator('#sh-settings-dialog')).toHaveCount(0);
+    await expect(page.locator('#sh-settings-dialog')).toBeHidden();
 
     // the scrollbar thumbs
     const thumb = await page.evaluate(() => {

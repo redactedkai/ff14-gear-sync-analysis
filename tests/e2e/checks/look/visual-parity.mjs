@@ -1,6 +1,6 @@
 // Visual parity: the look of the Sheets screens.
 
-import { check, expect } from '../../lib/expect.mjs';
+import { check, expect, placedByZag } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { seedSheet } from '../../lib/sheets.mjs';
 
@@ -136,7 +136,10 @@ export async function checkVisualParity(pg) {
   // the Auto-fill settings popover: its frame, the part headings, the close button, the open menus
   await pg.click('#sh-settings');
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
+  await placedByZag(pg, '#sh-settings-dialog');
   await pg.click('#s-exp');
+  await expect(pg.locator('#s-exp-menu')).toBeVisible();
+  await placedByZag(pg, '#s-exp-menu');
   const settings = await lookAt(pg, {
     popLine: ['token', '--pop-line'],
     border: ['css', '#sh-settings-dialog', 'border-top-color'],
@@ -157,7 +160,7 @@ export async function checkVisualParity(pg) {
   if (await pg.locator('#sh-settings-dialog').isVisible()) {
     await pg.keyboard.press('Escape');
   }
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
 
   // a piece menu: its footer is a surface-coloured strip at the normal line height
   await pg.click('[data-pick="2"]');

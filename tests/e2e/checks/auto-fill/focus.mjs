@@ -124,7 +124,7 @@ export async function checkSetPageFocus(pg) {
     return { ok: firstSelect !== '' && got === firstSelect, got };
   });
   await pg.keyboard.press('Escape');
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   await poll('focus on the gear button after closing the Auto-fill settings', async () => {
     const got = await focusedId(pg);
     return { ok: got === 'sh-settings', got };
@@ -200,7 +200,7 @@ export async function checkSetPageFocus(pg) {
 
   // the X and the gear button close it with the focus on the gear button; a click outside closes it and leaves the focus alone
   await pg.click('#sh-settings-dialog [aria-label="Close settings"]');
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   await poll('focus on the gear button after the X', async () => {
     const got = await focusedId(pg);
     return { ok: got === 'sh-settings', got };
@@ -208,12 +208,12 @@ export async function checkSetPageFocus(pg) {
   await pg.click('#sh-settings');
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
   await pg.click('#sh-settings');
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   check((await focusedId(pg)) === 'sh-settings', 'the gear button closes it and keeps the focus');
   await pg.click('#sh-settings');
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
   await pg.click('#sh-set-name');
-  await expect(pg.locator('#sh-settings-dialog')).toHaveCount(0);
+  await expect(pg.locator('#sh-settings-dialog')).toBeHidden();
   check((await focusedId(pg)) !== 'sh-settings', 'a click outside does not pull the focus back to the gear button');
 
   // a draft: the bar has Apply and Discard only (no Auto-fill, no gear, no goal)
@@ -287,6 +287,6 @@ export async function checkSettingsEscape(pg) {
 
   // nothing inside is open: Escape closes the popover and the focus goes to the gear button
   await pg.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeHidden();
   await focusOn('after the popover closed', 'sh-settings');
 }
