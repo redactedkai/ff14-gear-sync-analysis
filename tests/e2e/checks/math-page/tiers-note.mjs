@@ -1,6 +1,6 @@
 // The "?" note of a Substat tiers column: it sits under the pinned math bar when the page scrolls.
 
-import { check, expect, poll } from '../../lib/expect.mjs';
+import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { showMath } from '../../lib/nav.mjs';
 
 /** The pinned parts of the page (the math bar) the note `#t-pop` is drawn over: their names. */
@@ -31,6 +31,7 @@ export async function checkTiersNoteUnderPinnedBar(pg) {
   const button = pg.locator('#t-table [data-help="crit"]');
   await button.click();
   await expect(pg.locator('#t-pop')).toBeVisible();
+  await placedByZag(pg, '#t-pop');
   // scroll until the note's top is 150 px under the window's top: the math bar is pinned by then (flush at the top, about 150 px
   // tall with its controls row), and the note's top is under the bar
   const scrolled = await pg.evaluate(() => {

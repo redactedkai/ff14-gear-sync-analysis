@@ -44,6 +44,19 @@ export async function poll(what, fn) {
   }
 }
 
+/** Wait until Zag has placed the popover whose content matches `selector`. Zag shows a popover a frame before it places it: until
+ * then its positioner has no `--y` and sits above the window (translated up by 100vh), so a box measured right after the popover
+ * turns visible is not where a player sees it. */
+export async function placedByZag(pg, selector) {
+  await poll(`the popover ${selector} to be placed by Zag`, async () => {
+    const offset = await pg.evaluate(sel => {
+      const positioner = document.querySelector(sel)?.closest('[data-part="positioner"]');
+      return positioner ? getComputedStyle(positioner).getPropertyValue('--y') : 'no positioner';
+    }, selector);
+    return { ok: offset !== '' && offset !== 'no positioner', got: offset || 'not placed yet' };
+  });
+}
+
 export function expect(loc) {
   const make = neg => {
     const m = (what, read, test) =>

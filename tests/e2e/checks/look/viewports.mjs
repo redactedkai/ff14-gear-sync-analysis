@@ -2,7 +2,7 @@
 
 import { openViewSet, viewSheets } from './screens.mjs';
 import { shot } from '../../lib/constants.mjs';
-import { check, expect, poll, stepRecord } from '../../lib/expect.mjs';
+import { check, expect, placedByZag, poll, stepRecord } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { focusedId, hasHScroll, runFill, showMath } from '../../lib/nav.mjs';
 import { expectPieceEmpty, openSageSet, seedSheet, seedSheets, sheetNames } from '../../lib/sheets.mjs';
@@ -253,6 +253,7 @@ export async function checkViewports(pg) {
     await alignRowUnderHeader(pg, '#sh-gear tr[data-row="7"]');
     await pg.click('[data-chip="7:2"]');
     await expect(pg.locator('.matpop')).toBeVisible();
+    await placedByZag(pg, '.matpop');
     await checkMenuFits(pg, vp, 'the materia menu', '.matpop', seen);
     await checkWidths(pg, vp, 'the materia menu');
     await pg.screenshot({ path: shot(`viewport-${slug}-stone-menu.png`) });
