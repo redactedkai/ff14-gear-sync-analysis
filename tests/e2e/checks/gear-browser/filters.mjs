@@ -128,9 +128,20 @@ export async function checkExpansionFilter(pg) {
 }
 
 /** A number typed with more digits than the box keeps ("60.7" in Equip level, stored as 61) stays as typed after the box is left
- * and another Gear browser filter changes: only a change of the box's own setting rewrites the box. */
+ * and another Gear browser filter changes: only a change of the box's own setting rewrites the box. The strip's Synced level, which
+ * counts each valid keystroke, keeps the text typed key by key while it has focus: "60.7" (counted as 61) and "1e1" ("1e" is no number
+ * to the browser on the way). */
 export async function checkTypedNumberStaysAfterOtherFilter(pg) {
   await showTab(pg, 'browse');
+  const level = pg.locator('#level');
+  for (const typed of ['60.7', '1e1']) {
+    await level.focus();
+    await pg.keyboard.press('Control+A');
+    await level.pressSequentially(typed);
+    await afterFrames(pg);
+    await expect(level).toHaveValue(typed);
+  }
+  await setNumber(pg, '#level', '50'); // the shared setup
   const box = pg.locator('#b-lvl');
   await box.fill('60.7');
   await pg.waitForFunction(() => window.gsaDebug.app.browse.lvl === 61); // the typed value is committed, rounded

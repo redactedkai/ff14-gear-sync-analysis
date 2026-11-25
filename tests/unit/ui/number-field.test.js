@@ -293,3 +293,35 @@ test('number box: a typed value the setting lowers back to what it was is shown 
     delete globalThis.document;
   }
 });
+
+/* A Lit element draws for its own reasons (the flag of the text typed) before the page has stored what the box committed: that draw
+   must not put the old value back over the text. */
+test('number box: a draw after a commit and before the page stores it keeps the text typed ("60.7" for the 61 on its way)', async () => {
+  const input = { value: '' };
+  globalThis.document = { activeElement: input };
+  try {
+    let stored = 60;
+    let committed;
+    const field = numberField(
+      () => stored,
+      v => {
+        committed = v;
+      },
+      1,
+      100,
+      { live: true },
+    );
+    const run = () => field[':value'].call({ $el: input });
+    input.value = String(run());
+    input.value = '60.7';
+    field['@input']({ target: input, inputType: 'insertText' });
+    assert.equal(committed, 61);
+    assert.equal(run(), '60.7', 'the page still holds 60');
+    stored = committed;
+    assert.equal(run(), '60.7', 'the page now holds 61');
+    await Promise.resolve();
+    assert.equal(run(), '60.7', 'a later run finds the stored value unchanged');
+  } finally {
+    delete globalThis.document;
+  }
+});

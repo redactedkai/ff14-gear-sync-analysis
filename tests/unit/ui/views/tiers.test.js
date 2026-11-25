@@ -14,7 +14,6 @@ import {
   tierEditsKey,
   tierInput,
   tierLevel,
-  tierLevelTyped,
   tierPicked,
   tiersView,
   tierValues,
@@ -239,25 +238,4 @@ test('values typed or clicked are kept until the job or the level changes, and s
   // the cards show them on top of the bases
   const view = tiersView(sage, { ...tierValues(sage, 100), ...both.values }, 100);
   assert.deepEqual([view.cards[0].value, view.cards[1].value], [600, 420]);
-});
-
-test("the Level box: each valid level counts as typed; the job's level cap, or an emptied box left, is the default level again", () => {
-  const beastmaster = app('BST'); // level cap 50
-  // typing: a level in range counts (the cap itself follows the cap: null), one out of range or no number waits
-  assert.deepEqual(tierLevelTyped(beastmaster, '45', 50), { patch: { level: 45 }, shown: null });
-  assert.deepEqual(tierLevelTyped(beastmaster, '50', 45), { patch: { level: null }, shown: null });
-  assert.equal(tierLevelTyped(beastmaster, '60', 45), null);
-  assert.equal(tierLevelTyped(beastmaster, 'abc', 45), null);
-  assert.equal(tierLevelTyped(beastmaster, '', 45), null);
-  assert.equal(tierLevelTyped(beastmaster, '45', 45).patch, null, 'the level in use already: nothing to count');
-  // leaving the box: out of range moves to the nearest end and the box shows it; an empty box shows the level cap and follows it
-  assert.deepEqual(tierLevelTyped(beastmaster, '60', 45, true), { patch: { level: null }, shown: 50 });
-  assert.deepEqual(tierLevelTyped(beastmaster, '0', 45, true), { patch: { level: 1 }, shown: 1 });
-  assert.deepEqual(tierLevelTyped(beastmaster, '', 30, true), { patch: { level: null }, shown: 50 });
-  assert.equal(
-    tierLevelTyped(beastmaster, '60', 50, true).patch,
-    null,
-    'a level out of range at the cap changes nothing, but the box is corrected',
-  );
-  assert.equal(tierLevelTyped(beastmaster, '60', 50, true).shown, 50);
 });

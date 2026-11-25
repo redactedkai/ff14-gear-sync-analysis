@@ -70,25 +70,6 @@ export function tierInput(job, stat, text, level) {
   return result ? result.value : null;
 }
 
-/* What the math bar's Level box does with `text` while `level` (the level the sub-tab uses now) is shown, for `job` (a
-   JobContext): {patch, shown}, or null when the text changes nothing (not a number; a level out of range while typing, since
-   a value on the way, "9" of "90", must not be corrected under the cursor). `final`: the box is left or Enter is pressed.
-   - patch: `{level}` to count, `level` null for the job's level cap itself (the sub-tab then follows it); null when the
-     level is the one in use already;
-   - shown: the number the box then shows (a level out of range corrected to the nearest end, or the level cap for an
-     emptied box), or null to leave the typed text alone. */
-export function tierLevelTyped(job, text, level, final = false) {
-  if (final && text === '') {
-    return { patch: { level: null }, shown: job.maxLevel };
-  }
-  const result = commit(text, { min: 1, max: job.maxLevel, final });
-  if (!result) {
-    return null;
-  }
-  const patch = result.value === level ? null : { level: result.value === job.maxLevel ? null : result.value };
-  return { patch, shown: result.clamped ? result.value : null };
-}
-
 /* The values typed or clicked on Substat tiers, with the settings they were made under: {key (tierEditsKey), values
    ({stat: panel value})}. Values made under other settings no longer apply: going back to the old job or level starts from the
    bases again. */

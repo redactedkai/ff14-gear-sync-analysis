@@ -3,11 +3,14 @@
    - the page gives it the sub-tab's settings from a wrapper's `x-effect`: `job` (Substat tiers' own job id) and `typedLevel` (the
      level typed into the box, or null: the job's level cap); the element reads no store;
    - a level typed sends `tiers-level` (`detail`: `{level}`, null for the level cap); the page stores it and gives it back;
-   - each valid level counts as it is typed, with no wait (owner); the box left or Enter corrects a level out of range to the
-     nearest end, and an emptied box goes back to the job's level cap (views/tiers.js tierLevelTyped). */
+   - the box is the page's number box (number-field.js numberBox, `live`): each valid level counts as it is typed, with no wait (owner),
+     text that still means the stored level stays as typed ("60.7"), the box left or Enter corrects a level out of range to the
+     nearest end, and an emptied box goes back to the job's level cap. */
 import { LitElement, html } from 'lit';
 import { makeJobContext } from '../../../core/job-context.js';
-import { tierLevel, tierLevelTyped } from '../../views/tiers.js';
+import { numberBox } from '../../number-field.js';
+import { tierLevel } from '../../views/tiers.js';
+import { shownNumber } from '../shared/number-box.ts';
 import { TIERS_LEVEL_EVENT } from './tiers-names.ts';
 
 /* The `gsa-tiers-controls` element (registered below): see the file header. */
@@ -19,11 +22,13 @@ export class GsaTiersControls extends LitElement {
 
   declare job: string;
   declare typedLevel: number | null;
+  private box;
 
   constructor() {
     super();
     this.job = '';
     this.typedLevel = null;
+    this.box = this.makeBox();
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -31,24 +36,36 @@ export class GsaTiersControls extends LitElement {
     return this;
   }
 
-  /* The text of the Level box, counted as it is typed or (`final`) when the box is left or Enter is pressed. */
-  private typeLevel(box: HTMLInputElement, final: boolean): void {
+  /* The level shown: the one typed, or the job's level cap. */
+  private shownLevel(): number {
     const job = makeJobContext(this.job);
-    const typed = tierLevelTyped(job, box.value, tierLevel(job, job.maxLevel, this.typedLevel), final);
-    if (!typed) {
-      return;
-    }
-    if (typed.shown !== null) {
-      box.value = String(typed.shown);
-    }
-    if (typed.patch) {
-      this.dispatchEvent(new CustomEvent(TIERS_LEVEL_EVENT, { detail: typed.patch, bubbles: true }));
-    }
+    return tierLevel(job, job.maxLevel, this.typedLevel);
+  }
+
+  /* Tells the page the level to count: null for the job's level cap itself (the sub-tab then follows it). */
+  private sendLevel(level: number | null): void {
+    this.dispatchEvent(new CustomEvent(TIERS_LEVEL_EVENT, { detail: { level }, bubbles: true }));
+  }
+
+  /* The number box (number-field.js) from 1 to the job's level cap; an emptied box left or entered goes back to the level cap. */
+  private makeBox() {
+    return numberBox(
+      () => this.shownLevel(),
+      (level: unknown) => this.sendLevel(level === makeJobContext(this.job).maxLevel ? null : (level as number)),
+      1,
+      () => makeJobContext(this.job).maxLevel,
+      {
+        live: true,
+        onEmpty: (input: HTMLInputElement) => {
+          this.sendLevel(null);
+          input.value = String(makeJobContext(this.job).maxLevel);
+        },
+      },
+    );
   }
 
   protected override render() {
     const job = makeJobContext(this.job);
-    const level = tierLevel(job, job.maxLevel, this.typedLevel);
     return html`
       <label class="mctl wide divided afterjob"><span class="mctl-head">Level <span class="f-range" id="t-level-range">${`1–${job.maxLevel}`}</span></span>
         <input
@@ -58,10 +75,10 @@ export class GsaTiersControls extends LitElement {
           max=${job.maxLevel}
           step="1"
           inputmode="numeric"
-          .value=${String(level)}
+          .value=${shownNumber(this.box)}
           aria-label="Level of the tiers"
-          @input=${(event: Event) => this.typeLevel(event.target as HTMLInputElement, false)}
-          @change=${(event: Event) => this.typeLevel(event.target as HTMLInputElement, true)}>
+          @input=${this.box.onInput}
+          @change=${this.box.onChange}>
       </label>
     `;
   }

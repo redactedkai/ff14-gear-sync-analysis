@@ -66,6 +66,8 @@ export async function checkSetListSort(pg) {
   await expectOrder('best first after the first click', ['High', 'Mid', 'Low']);
   check((await sortOf('main')) === 'descending', `aria-sort after the first click: ${await sortOf('main')}`);
   check((await pg.locator('#sh-sets .draghandle.off').count()) === saved.length, 'a sorted list still has handles that drag');
+  await pg.locator('#sh-sets tbody tr .draghandle').first().focus();
+  await pg.keyboard.press('ArrowDown'); // a sorted list moves no row: the saved order is checked after the third click below
   await pg.click('#sh-sets [data-sort="main"]');
   await expectOrder('worst first after the second click', ['Low', 'Mid', 'High']);
   check((await sortOf('main')) === 'ascending', `aria-sort after the second click: ${await sortOf('main')}`);

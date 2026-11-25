@@ -2,7 +2,7 @@
 
 import { NARROW, shot } from '../../lib/constants.mjs';
 import { check, checkNoBadText, expect, same } from '../../lib/expect.mjs';
-import { hasHScroll, setCap, setJob, setNumber, showMath } from '../../lib/nav.mjs';
+import { afterFrames, hasHScroll, setCap, setJob, setNumber, showMath } from '../../lib/nav.mjs';
 import { setUpShared } from '../../lib/setup.mjs';
 import { pickOption } from '../../lib/select.mjs';
 
@@ -43,6 +43,16 @@ export async function checkTiers(pg) {
   await pg.keyboard.type('90');
   await expect(pg.locator('#t-level')).toHaveValue('90');
   check((await pg.evaluate(() => document.activeElement?.id)) === 't-level', 'the tiers level box lost focus while typing');
+  await pg.keyboard.press('Tab');
+
+  // text typed key by key stays as typed while the box has focus: "60.7" (counted as 61), and "1e1" ("1e" is no number to the browser)
+  for (const typed of ['60.7', '1e1']) {
+    await pg.focus('#t-level');
+    await pg.keyboard.press('Control+A');
+    await pg.locator('#t-level').pressSequentially(typed);
+    await afterFrames(pg);
+    await expect(pg.locator('#t-level')).toHaveValue(typed);
+  }
   await pg.keyboard.press('Tab');
 
   // the sub-tab's own level: Spell Speed's base at level 80 (the shared setup's level is 50 on Stat Allocation and does not

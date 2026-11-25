@@ -56,6 +56,9 @@ export function numberBox(get, set, lo, hi, { live = false, decimals = 0, empty,
   // updated: the setting may end as it was, a typed 500 lowered to the old 135, and the box then shows that, not the typed text)
   let shown = { has: false, value: undefined };
   let justWrote = false;
+  // the value the box last committed: until the page has updated, the stored value is still the old one, and a draw made in between
+  // (the element's own, for the flag of the text typed) shows the typed text for it ("60.7" for the 61 on its way)
+  let written;
   /* commits `raw`; on the final commit (change) an out-of-range value moves to the nearest bound, and `input` shows it */
   const commitText = (raw, input = null) => {
     clearTimeout(timer);
@@ -68,6 +71,7 @@ export function numberBox(get, set, lo, hi, { live = false, decimals = 0, empty,
     }
     if (result.value !== get()) {
       set(result.value);
+      written = result.value;
       justWrote = true;
       queueMicrotask(() => {
         justWrote = false;
@@ -85,7 +89,9 @@ export function numberBox(get, set, lo, hi, { live = false, decimals = 0, empty,
       if (unchanged) {
         return input.value;
       }
-      return input === document.activeElement && roundTo(Number(input.value), decimals) === v ? input.value : v;
+      const typedMeans = roundTo(Number(input.value), decimals);
+      const keepsTyped = typedMeans === v || (justWrote && typedMeans === written);
+      return input === document.activeElement && keepsTyped ? input.value : v;
     },
     onInput(e) {
       const raw = e.target.value;
