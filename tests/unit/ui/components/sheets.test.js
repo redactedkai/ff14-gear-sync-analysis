@@ -3,22 +3,12 @@
    description, Delete), refused names left empty with their error, and the answers to the two island elements' events. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_REAL } from '../../../../src/core/tables.js';
-import { capLoweredText } from '../../../../src/ui/level-cap.js';
 import { sheetsTab } from '../../../../src/ui/components/sheets.js';
 import { FORM_FIELD } from '../../../../src/ui/sheets/ops.js';
 import { EMPTY_NAME_TEXT, JOB_REQUIRED_TEXT } from '../../../../src/ui/sheets/store-shared.js';
 import { pageMagics } from '../../helpers/page-magics.js';
 import { fakeStorage } from '../../helpers/sheet-fixtures.js';
 import { createSheetsFacade } from '../../helpers/stores.js';
-
-/* The note under a cap field after the cap was lowered to `cap` for `level`: the shared builder's own output (its sentence
-   is asserted once, in ui/level-cap.test.js), never empty. */
-function loweredNote(cap, level) {
-  const note = capLoweredText({ from: MAX_REAL + 1, to: cap, level });
-  assert.ok(note.includes(String(cap)), note);
-  return note;
-}
 
 /* The component over a fresh store; Alpine's magics are the shared stand-ins (helpers/page-magics.js: $nextTick runs at
    once, $refs holds the dialog) and $watch keeps its callbacks for the test to call. */
@@ -147,49 +137,43 @@ test('Escape cancels a dialog; nothing opens while an Auto-fill runs', () => {
   assert.equal(c.dialog, null);
 });
 
-test('New sheet: a number typed just before Create does not commit into the closed dialog', t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+test('New sheet: a number entered just before Create does not commit into the closed dialog', () => {
   const { c, sheets } = bind();
   c.openNewSheet();
   c.chooseJob('BLU');
-  for (const value of ['7', '75']) {
-    c.formField('level')['@input']({ target: { value }, inputType: 'insertText' });
-  }
-  c.formField('level')['@change']({ target: { value: '75', classList: { add() {}, remove() {} } } });
-  c.formField('cap')['@input']({ target: { value: '300' }, inputType: 'insertText' });
+  c.setFormLevel(75);
   c.submitDialog();
   assert.equal(c.dialog, null);
-  t.mock.timers.tick(1000); // the pending typed cap would have set a field of the closed dialog
+  c.setFormCap(300); // the field's pause ends after Create: nothing is left to edit
+  c.setFormLevel(20);
   assert.equal(sheets.list().sheets.length, 1);
   assert.equal(sheets.currentSheet.level, 75);
 });
 
-/* A number field's commit as the browser hands it: the change event of a box showing `value`. */
-const change = (field, value) => field['@change']({ target: { value: String(value), classList: { add() {}, remove() {} } } });
-
-test('New sheet and Copy sheet forms: the cap follows the level, the job and the sync switch, with the note', () => {
+test('New sheet and Copy sheet forms: the cap follows the level, the job and the sync switch, and the field is told what was lowered', () => {
   const { c, sheets } = bind();
   c.openNewSheet();
   c.chooseJob('SGE');
   c.setFormSync(true);
-  assert.deepEqual([c.dialog.sync.cap, c.formCapNote], [795, ''], 'level 100 allows every real item level');
-  change(c.formField('level'), 70);
-  assert.deepEqual([c.dialog.sync.cap, c.formCapNote], [405, loweredNote(405, 70)]);
+  assert.deepEqual([c.dialog.sync.cap, c.formCapProps.lowered], [795, null], 'level 100 allows every real item level');
+  c.setFormLevel(70);
+  assert.deepEqual([c.dialog.sync.cap, c.formCapProps.lowered], [405, { from: 795, to: 405, level: 70 }]);
   assert.equal(c.dialogName, 'Sage Lv 70 ilvl 405');
-  change(c.formField('cap'), 380);
-  assert.equal(c.formCapNote, '');
-  change(c.formField('cap'), 600);
-  assert.deepEqual([c.dialog.sync.cap, c.formCapNote], [405, loweredNote(405, 70)]);
+  c.setFormCap(380);
+  assert.equal(c.formCapProps.lowered, null);
+  c.setFormCap(600);
+  assert.deepEqual([c.dialog.sync.cap, c.formCapProps.lowered], [405, { from: 600, to: 405, level: 70 }]);
   c.submitDialog();
   assert.deepEqual(sheets.currentSheet.sync, { on: true, cap: 405 });
 
   // Copy: the form starts from the sheet; a lower level lowers its cap
   c.openCopy(sheets.sheetId);
-  assert.equal(c.formCapNote, '');
-  change(c.formField('level'), 50);
-  assert.deepEqual([c.dialog.sync.cap, c.formCapNote], [135, loweredNote(135, 50)]);
+  assert.equal(c.formCapProps.lowered, null);
+  c.setFormLevel(50);
+  assert.deepEqual([c.dialog.sync.cap, c.formCapProps.lowered], [135, { from: 405, to: 135, level: 50 }]);
   c.setFormSync(false);
-  assert.equal(c.formCapNote, '');
+  assert.equal(c.formCapProps.lowered, null, 'no note while sync is off');
+  assert.equal(c.formCapProps.disabled, true);
   c.submitDialog();
   assert.deepEqual(sheets.list().sheets[0].sync, { on: false, cap: 135 });
 });
@@ -282,7 +266,8 @@ test('the component: its parts define every member the templates use, getters as
     getter: [
       'dialogName',
       'dialogView',
-      'formCapNote',
+      'formCapProps',
+      'formLevelProps',
       'manager',
       'managerProps',
       'notFound',
@@ -301,8 +286,6 @@ test('the component: its parts define every member the templates use, getters as
       'closeDialog',
       'dialogKey',
       'firstFocus',
-      'formCapFlag',
-      'formField',
       'goCrumb',
       'goMissing',
       'init',
@@ -314,6 +297,8 @@ test('the component: its parts define every member the templates use, getters as
       'openEditSheet',
       'openNewSheet',
       'pickSheet',
+      'setFormCap',
+      'setFormLevel',
       'setFormSync',
       'submitDialog',
       'typeName',

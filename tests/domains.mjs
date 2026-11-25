@@ -96,7 +96,7 @@ export const DOMAINS = {
       'src/ui/store/{sheets-actions,sheets-facade}.ts',
       'src/ui/views/{sheet-forms,sheet-manager,sheet-sets,sheet-text}.js',
       'src/ui/{test-data.js,test-sheets.json}',
-      'src/partials/{cap-flag,dialog-error}.html',
+      'src/partials/dialog-error.html',
       'src/styles/sheets.css',
     ],
     tests: ['tests/e2e/checks/sheets/**', 'tests/e2e/lib/{sheets,fixtures}.mjs', 'tests/unit/helpers/sheet-fixtures.js'],
@@ -133,9 +133,10 @@ export const DOMAINS = {
       // what every element uses: the Zag controller and the bridge to the overlay manager
       'src/ui/elements/{app,shared}/**',
       'src/ui/router/**',
-      'src/ui/components/{page,compose,overlay,cap-controls}.js',
+      'src/ui/components/{page,compose,overlay}.js',
       'src/ui/{state,store-key,job-sync-panel,level-cap,number-commit,number-field,overlays,ranks,hq-font}.js',
       'src/ui/{text,view-cache}.ts',
+      'src/ui/views/cap-field.js',
       'src/ui/store/{store,select,watch,app-state,app-actions,app-facade,page-store,autosave}.ts',
     ],
     tests: [

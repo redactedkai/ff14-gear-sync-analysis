@@ -180,9 +180,9 @@ test("sheetSettings: the Job and sync panel's cap cases", () => {
 });
 
 test('ranges: the level cap of the job and the highest real item level, with their range texts', () => {
-  assert.deepEqual(ranges('SGE'), { level: { max: 100, rangeText: '1–100' }, cap: { max: MAX_REAL, rangeText: `1–${MAX_REAL}` } });
-  assert.deepEqual(ranges('BLU').level, { max: 80, rangeText: '1–80' });
-  assert.deepEqual(ranges('BST').level, { max: 50, rangeText: '1–50' });
+  assert.deepEqual(ranges('SGE'), { level: { max: 100 }, cap: { max: MAX_REAL } });
+  assert.deepEqual(ranges('BLU').level, { max: 80 });
+  assert.deepEqual(ranges('BST').level, { max: 50 });
   assert.equal(ranges(null).level.max, 100, 'no job chosen: the default job');
   assert.equal(MAX_REAL, 795);
 });

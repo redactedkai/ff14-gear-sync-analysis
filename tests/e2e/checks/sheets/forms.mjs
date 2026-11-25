@@ -21,8 +21,8 @@ export async function checkSheetForms(pg) {
   });
   await pg.click('#sh-dialog [data-job-id=WHM]');
   await expect(pg.locator('#sh-dlg-name')).toHaveValue('White Mage Lv 100');
-  await expect(pg.locator('#sh-dialog label:has(#sh-dlg-level) .f-range')).toHaveText('1–100');
-  await expect(pg.locator('#sh-dialog label:has(#sh-dlg-cap) .f-range')).toHaveText('1–795');
+  await expect(pg.locator('#sh-dlg-level-range')).toHaveText('1–100');
+  await expect(pg.locator('#sh-dlg-cap-range')).toHaveText('1–795');
   await pg.fill('#sh-dlg-name', '   ');
   await pg.click('#sh-dlg-ok');
   await expect(pg.locator('#sh-dlg-name-err')).toBeVisible();

@@ -84,12 +84,10 @@ export function levelFor(jobId, value, fallback) {
 /* The first item level cap a new sheet's form offers, and the highest a sheet takes: the highest real item level. */
 export const NEW_SHEET_CAP = MAX_REAL;
 
-/* The level and item level cap fields for job `jobId` (null: the default job's range), the one copy of their limits and
-   range texts: {level: {max (the job's level cap), rangeText "1–100"}, cap: {max (the highest real item level),
-   rangeText "1–795"}}. */
+/* The level and item level cap fields for job `jobId` (null: the default job's range), the one copy of their limits:
+   {level: {max (the job's level cap)}, cap: {max (the highest real item level)}}. The fields draw their range texts from them. */
 export function ranges(jobId) {
-  const levelMax = makeJobContext(jobId).maxLevel;
-  return { level: { max: levelMax, rangeText: `1–${levelMax}` }, cap: { max: MAX_REAL, rangeText: `1–${MAX_REAL}` } };
+  return { level: { max: makeJobContext(jobId).maxLevel }, cap: { max: MAX_REAL } };
 }
 
 /* An item level cap as typed: a whole number held to 1..the highest real item level; `fallback` for no number. */

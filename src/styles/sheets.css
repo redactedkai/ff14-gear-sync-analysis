@@ -16,6 +16,8 @@ button.danger:hover {
 /* The sheet manager and a sheet's page are the elements <gsa-sheet-manager> and <gsa-sheet-page> (src/ui/elements/sheets/), drawn in
    light DOM inside a wrapper: neither takes a box, so the screen's own `.sheetsview` is the column's child, as it was before. */
 .sheets-island,
+/* the wrapper of a field element in a dialog's form row (the dialog is still Alpine's): it takes no box */
+.fieldhost,
 gsa-sheet-manager,
 gsa-sheet-page {
   display: contents;
@@ -536,7 +538,7 @@ table.sets .jobcell {
   padding: 10px 16px 12px;
 }
 /* level and item level: each box is as wide as its label line with the longest flag ("Item level" and "1–795 only", about 150 px), so the row fits at 960 px */
-.sheetfields > label.f:nth-child(-n + 2) {
+.sheetfields > .f:nth-child(-n + 2) {
   width: 160px;
 }
 /* the Clan and Party bonus boxes at the row's right end, level with the other fields; below 1100 px or so they wrap to a second line, still at the right */

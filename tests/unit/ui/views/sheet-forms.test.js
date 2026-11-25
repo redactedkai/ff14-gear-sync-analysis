@@ -30,8 +30,8 @@ const form = (patch = {}) => ({
 test('New sheet: the name follows the job, level and sync until typed; the ranges follow the job', () => {
   const none = newSheetFormView(form());
   assert.deepEqual(
-    [none.title, none.name, none.namePlaceholder, none.level.rangeText, none.cap.rangeText, none.buttonText],
-    ['New sheet', '', 'Choose a job for a default name', '1–100', `1–${MAX_REAL}`, 'Create sheet'],
+    [none.title, none.name, none.namePlaceholder, none.level.max, none.cap.max, none.buttonText],
+    ['New sheet', '', 'Choose a job for a default name', 100, MAX_REAL, 'Create sheet'],
   );
   assert.deepEqual([none.nameMax, none.descriptionMax], [NAME_MAX_LENGTH, DESCRIPTION_MAX_LENGTH]);
   const blu = newSheetFormView(form({ job: 'BLU', level: 80, sync: { on: true, cap: 530 } }));
@@ -59,7 +59,7 @@ test('Copy sheet: the jobs of the gear group, its own included; Blue Mage copies
     blu.jobs.map(j => j.id),
     ['BLU'],
   );
-  assert.equal(blu.level.rangeText, '1–80');
+  assert.equal(blu.level.max, 80);
   // melee is three groups: Samurai copies to Monk only
   assert.deepEqual(
     copySheetFormView(sheetOf('SAM', []), { name: 'x', job: 'SAM' }).jobs.map(j => j.id),

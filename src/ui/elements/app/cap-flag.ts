@@ -1,7 +1,6 @@
 /* The end of an item level field's label line, drawn by a Lit element: the range ("1–795"), or in its place a flag while the cap was
-   lowered or holds no cap: an icon and a few words ("1–795 only", "Max 288"). The same markup as src/partials/cap-flag.html, which
-   the Job and sync panel still uses (TODO: both go when the cap field is one element, R38). The icons are Remix's error-warning-line
-   and alert-line. */
+   lowered or holds no cap: an icon and a few words ("1–795 only", "Max 288"). Used by <gsa-cap-field> and <gsa-level-field>. The icons
+   are Remix's error-warning-line and alert-line. */
 import { html, nothing } from 'lit';
 
 /* What level-cap.js capFlag returns: `kind` is 'error', 'lowered' or '' (none), `short` the few words, `full` the whole sentence. */

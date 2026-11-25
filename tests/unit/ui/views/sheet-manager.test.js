@@ -11,7 +11,6 @@ import {
   firstSortDir,
   nextListSort,
   setHeaderView,
-  sheetCapView,
   sheetListView,
   sheetPageView,
   sheetSwitcherView,
@@ -106,10 +105,10 @@ test('the sheet page: settings fields with their ranges, the job fixed, a one-li
   assert.equal(v.description.empty, true);
   assert.ok(v.description.text.length > 0, 'a dim placeholder shows');
   assert.deepEqual(v.job, { id: 'SGE', name: 'Sage' });
-  assert.deepEqual(v.level, { value: 100, max: 100, rangeText: '1–100' });
-  assert.deepEqual(v.sync, { on: true, cap: 123, max: MAX_REAL, rangeText: `1–${MAX_REAL}` });
+  assert.deepEqual(v.level, { value: 100, max: 100 });
+  assert.deepEqual(v.sync, { on: true, cap: 123, max: MAX_REAL });
   // Blue Mage and Beastmaster stop below the game's level cap
-  assert.equal(sheetPageView(sheetOf('BLU', [], { level: 80 })).level.rangeText, '1–80');
+  assert.equal(sheetPageView(sheetOf('BLU', [], { level: 80 })).level.max, 80);
   assert.equal(sheetPageView(sheetOf('BST', [], { level: 50 })).level.max, 50);
   assert.equal(sheetPageView(sheetOf('SGE', [], { description: 'Savage' })).description.text, 'Savage');
 });
@@ -273,20 +272,6 @@ test('the sheet page: the list draws the figures of the mode in the sort in forc
   // the stat points have other columns than the effects: the GCD heading's sort does not carry over
   const points = sheetListView(page, { key: 'gcd', dir: 'asc' }, 'points');
   assert.deepEqual([points.sort, points.orderLocked, points.columns.length], [none, false, page.pointKeys.length]);
-});
-
-test("the sheet page's item level field: a bad text is an error with sync on; a lowering is a note on its own sheet only; an error takes its place", () => {
-  const sync = { on: true, cap: 405, max: MAX_REAL, rangeText: `1–${MAX_REAL}` };
-  const lowered = { from: 500, to: 405, level: 70, sheetId: 's_a' };
-  assert.deepEqual(sheetCapView(sync, false, null, 's_a'), { error: '', note: '', flag: { kind: '', short: '', full: '' } });
-  const note = sheetCapView(sync, false, lowered, 's_a');
-  assert.deepEqual([note.error, note.flag.kind, note.flag.short], ['', 'lowered', 'Max 405']);
-  assert.ok(note.note.includes('405') && note.note.includes('70'), note.note);
-  assert.equal(sheetCapView(sync, false, lowered, 's_b').note, '', 'the note belongs to the sheet it was made on');
-  assert.equal(sheetCapView({ ...sync, on: false }, false, lowered, 's_a').note, '', 'no note while sync is off');
-  const bad = sheetCapView(sync, true, lowered, 's_a');
-  assert.deepEqual([bad.error === '', bad.note, bad.flag.kind], [false, '', 'error']);
-  assert.equal(sheetCapView({ ...sync, on: false }, true, null, 's_a').error, '', 'no error while sync is off');
 });
 
 test('the sheet switcher: a link to the manager, one row per sheet with the open one marked, off while an Auto-fill runs', () => {

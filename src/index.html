@@ -69,51 +69,21 @@
 <div class="tabload" role="status" x-show="$store.app.pendingTab" x-text="loadingText"></div>
 <!-- The Job and sync strip of the Gear browser: one row under the tab bar, always the same (no open and closed form): the Job
      box (the job's icon, name and code) that opens a menu with one line of icons per role, the synced level, the item level and
-     its switch, and Reset. The job is always one (Paladin by default). settings in page.js. -->
+     its switch, and Reset. The job is always one (Paladin by default). The row is the element <gsa-job-strip>
+     (ui/elements/app/job-strip.ts), an island: the wrapper's x-effect gives it the Gear browser's panel (`stripInput` in page.js) and
+     the wrapper takes the edits from its events (a pick in the Job menu, the level, the cap, the switch, Reset). -->
 <section
   class="panel jobstrip"
   aria-label="Job and sync settings"
-  x-data="settings"
   x-show="$store.app.tab === 'browse'"
-  :data-job="$store.app.job || ''">
-  <div
-    class="f boxf jobfield"
-    x-effect="$el.firstElementChild.job = $store.app.job"
-    @job-change="$store.app.setJob($event.detail, 'browse')">
-    <gsa-job-menu x-ignore prefix="job" button-id="job-menu-btn" menu-id="job-menu"></gsa-job-menu>
-  </div>
-  <label class="f boxf"><span>Synced level <span class="f-range" id="level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span>
-    <input
-      type="number"
-      id="level"
-      step="1"
-      inputmode="numeric"
-      x-bind="$num('level', 1, () => $store.app.jobCtx.maxLevel, { live: true })">
-  </label>
-  <div class="f boxf field" :title="capFlag(`1–${$store.app.maxReal}`).full"><label for="cap" class="capline">Synced item level
-      <!-- INCLUDE cap-flag.html id=cap-range range=`1–${$store.app.maxReal}` flag=capFlag(`1–${$store.app.maxReal}`) -->
-    </label>
-    <input
-      type="number"
-      id="cap"
-      x-ref="cap"
-      :disabled="!$store.app.sync"
-      :max="$store.app.maxReal"
-      step="1"
-      inputmode="numeric"
-      x-bind="$num('cap', 1, Infinity, { snap: false })"
-      @input="onCapInput($event.target.value)"
-      :class="{ invalid: !!capError, lowered: !!capLoweredNote }"
-      :aria-invalid="String(!!capError)"
-      aria-describedby="cap-error cap-lowered">
-    <span class="sr-only" id="cap-error" x-show="capError" x-text="capError"></span>
-    <span class="sr-only" id="cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span>
-  </div>
-  <label class="f"><span>IL Sync</span>
-    <span class="toggle"><input type="checkbox" role="switch" class="switch" id="sync" :checked="$store.app.sync" @change="$store.app.editPanel({ sync: $event.target.checked })"><span x-text="$store.app.sync ? 'On' : 'Off'"></span></span>
-  </label>
-  <span class="jobstrip-gap"></span>
-  <div class="f"><span aria-hidden="true">&nbsp;</span><span class="stripctl"><button class="chip" id="reset" type="button" @click="requestReset()">Reset</button></span></div>
+  :data-job="$store.app.job || ''"
+  x-effect="Object.assign($el.firstElementChild, stripInput)"
+  @job-change="$store.app.setJob($event.detail, 'browse')"
+  @level-change="$store.app.editPanel({ level: $event.detail })"
+  @cap-change="$store.app.editPanel({ cap: $event.detail })"
+  @sync-change="$store.app.editPanel({ sync: $event.detail })"
+  @strip-reset="$store.app.resetAll()">
+  <gsa-job-strip x-ignore></gsa-job-strip>
 </section>
 <!-- SHEETS: the sheet manager and a sheet's page (elements), the frame of a set page and the dialogs (components/sheets.js; the store
      $store.sheets is ui/store/sheets-facade.ts). No Job and sync panel on this tab: each sheet holds its own job, level and sync. -->
@@ -227,20 +197,8 @@
         <!-- the fields, the Copy sheet warning and the buttons: on a New sheet the buttons sit at the right of the fields row -->
         <div class="dlgform" :class="dialog.kind">
         <template x-if="dialog.kind === 'new' || dialog.kind === 'copy'"><div class="dlgrow">
-          <label class="f"><span>Level <span class="f-range" x-text="dialogView.level.rangeText"></span></span><input type="number" id="sh-dlg-level" step="1" inputmode="numeric" x-bind="formField('level')"></label>
-          <label class="f" :title="formCapFlag(dialogView.cap.rangeText).full"><span class="capline">Item level
-            <!-- INCLUDE cap-flag.html id=sh-dlg-cap-range range=dialogView.cap.rangeText flag=formCapFlag(dialogView.cap.rangeText) -->
-          </span><input
-            type="number"
-            id="sh-dlg-cap"
-            step="1"
-            inputmode="numeric"
-            :max="dialogView.cap.max"
-            :disabled="!dialog.sync.on"
-            x-bind="formField('cap')"
-            :class="{ lowered: !!formCapNote }"
-            aria-describedby="sh-dlg-cap-lowered">
-            <span class="sr-only" id="sh-dlg-cap-lowered" x-show="formCapNote" x-text="formCapNote" aria-live="polite"></span></label>
+          <div class="fieldhost" x-effect="Object.assign($el.firstElementChild, formLevelProps)" @level-change="setFormLevel($event.detail)"><gsa-level-field x-ignore layout="dialog"></gsa-level-field></div>
+          <div class="fieldhost" x-effect="Object.assign($el.firstElementChild, formCapProps)" @cap-change="setFormCap($event.detail)"><gsa-cap-field x-ignore layout="dialog"></gsa-cap-field></div>
           <label class="f">IL Sync <span class="toggle"><input
             type="checkbox"
             role="switch"

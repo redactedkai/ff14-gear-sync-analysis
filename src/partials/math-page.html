@@ -1,7 +1,7 @@
 <!-- The Math tab: the sticky bar (`<gsa-math-bar>`: the sub-tab links, the "?" help, the Job menu and the controls of the open sub-tab),
      and the three sub-tabs, Stat Allocation (`<gsa-piece-stats>`), GCD Scaling and Substat tiers (`<gsa-gcd-view>`, `<gsa-tiers-view>`).
-     The Sync settings chip is the one part still run by Alpine (`syncExplainer`): it is a child of the bar element, which places it
-     in the controls row. Included once, from index.html's job template. No keys. -->
+     The bar and the three sub-tabs are islands: `syncExplainer` (components/sync-explainer.js) gives each its settings and takes the edits.
+     Included once, from index.html's job template. No keys. -->
 <section
   class="tab"
   id="tab-math"
@@ -9,107 +9,24 @@
   hidden
   :hidden="$store.app.tab !== 'math'"
   x-data="syncExplainer">
-<div class="mathbar" id="m-bar">
+<div
+  class="mathbar"
+  id="m-bar"
+  x-effect="Object.assign($el.firstElementChild, barInput)"
+  @job-change="setMathJob($event.detail)"
+  @math-sub="$store.app.showSub($event.detail)"
+  @piece-edit="$store.app.editPiece($event.detail)"
+  @gcd-edit="$store.app.editGcd($event.detail)"
+  @tiers-level="$store.app.setTiersLevel($event.detail.level)"
+  @level-change="$store.app.editPanel({ level: $event.detail }); $store.app.followLevelSync()"
+  @cap-change="$store.app.editPanel({ cap: $event.detail })"
+  @sync-change="setMathSync($event.detail)">
   <!-- The bar element takes its settings from `barInput` (sync-explainer.js) and sends the edits: a pick in the Job menu (edits the open
-       sub-tab's job: mathJobOwner, setJob), a click on a sub-tab link, a change of the example piece, and the GCD and Substat tiers
-       controls' own events. The controls row is a container for the breakpoints (math-bar.css), in sections (.divided ones have a rule
+       sub-tab's job: mathJobOwner, setJob), a click on a sub-tab link, a change of the example piece, the Level, Synced IL and IL Sync
+       controls of the Sync settings popover, and the GCD and Substat tiers controls' own events. The controls row is a container for the breakpoints (math-bar.css), in sections (.divided ones have a rule
        before them that only shows when the section is not first on its line). Stat Allocation: Job | Piece (Slot, Substats and
        materia) and Sync, with no rule between them | Item level. Substat tiers: Job | Level. GCD Scaling has one section and no rule. -->
-  <gsa-math-bar
-    x-effect="Object.assign($el, barInput)"
-    @job-change="setMathJob($event.detail)"
-    @math-sub="$store.app.showSub($event.detail)"
-    @piece-edit="$store.app.editPiece($event.detail)"
-    @gcd-edit="$store.app.editGcd($event.detail)"
-    @tiers-level="$store.app.setTiersLevel($event.detail.level)">
-  <!-- The Sync chip: the synced level, the synced item level and whether IL Sync is on, in a few words (a hidden copy of its widest
-       texts gives it one width); it opens a popover under the chip with Level, Synced IL and the IL Sync switch, the same store
-       fields as the Gear browser's strip (level, cap, sync). -->
-  <gsa-bar-popover
-    class="mctl syncwrap"
-    id="p-sync-wrap"
-    data-bar-slot="sync"
-    trigger-id="p-sync-chip"
-    content-id="p-sync-pop"
-    focus-in="#p-level"
-    align-bar
-    x-show="$store.app.mathTab === 'piece'"
-    @popover-close="clearTypedErrors()">
-    <span id="p-sync-label"><span x-text="syncText.label"></span><span class="guess" id="p-sync-guess-mark" x-show="syncChip.guess" :title="syncChip.guess" aria-hidden="true" x-text="syncText.guess"></span></span>
-    <span class="sr-only" id="p-sync-guess" x-show="syncChip.guess" x-text="syncChip.guess"></span>
-    <button
-      type="button"
-      class="multi-btn syncchip"
-      :class="{ error: !!levelError }"
-      data-zag-part="trigger"
-      :aria-label="syncChip.name"
-      :aria-describedby="syncChip.guess ? 'p-sync-guess' : null"
-      :title="syncChip.name"><span class="sized">
-        <span id="p-sync-text"><template x-for="(part, k) in syncChip.parts" :key="k"><span :class="part.cls" x-text="part.text"></span></template></span>
-        <template x-for="(parts, n) in syncChipSizers" :key="n"><span class="sizertext" aria-hidden="true"><template x-for="(part, k) in parts" :key="k"><span :class="part.cls" x-text="part.text"></span></template></span></template>
-        <span class="sizertext labelsizer" aria-hidden="true"><span x-text="syncText.label"></span><span class="guess" x-text="syncText.guess"></span></span>
-      </span></button>
-    <div data-zag-part="positioner">
-    <div
-      class="popover syncpop"
-      data-zag-part="content"
-      :aria-label="syncText.label"
-      hidden>
-      <div class="syncpair">
-        <!-- hidden copy of the widest label rows (the flag row, the range row): both boxes take its width, whatever the font -->
-        <span class="mctl sizer" aria-hidden="true">
-          <span class="mctl-head capline">Level <span class="f-flag"><i class="flagicon"></i><span x-text="levelFlagSizer"></span></span></span>
-          <span class="mctl-head capline">Synced IL <span class="f-flag"><i class="flagicon"></i>Max <span x-text="widestItemLevel"></span></span></span>
-          <span class="mctl-head capline">Synced IL <span class="f-flag"><i class="flagicon"></i><span x-text="capFlagSizer"></span></span></span>
-          <span class="mctl-head capline"><span>Synced IL</span> <span class="f-range">1–<span x-text="widestItemLevel"></span></span></span>
-          <span class="mctl-head capline">Level <span class="f-range" x-text="levelText.range(widestLevel)"></span></span>
-        </span>
-        <div class="mctl sync-level" :title="levelFlag(levelText.range($store.app.jobCtx.maxLevel)).full">
-          <label for="p-level" class="mctl-head capline">Level
-            <!-- INCLUDE cap-flag.html id=p-level-range range=levelText.range($store.app.jobCtx.maxLevel) flag=levelFlag(levelText.range($store.app.jobCtx.maxLevel)) -->
-          </label>
-          <input
-            type="number"
-            id="p-level"
-            x-ref="level"
-            step="1"
-            inputmode="numeric"
-            x-bind="levelBind"
-            @input="onLevelInput($event.target.value)"
-            :class="{ invalid: !!levelError }"
-            :aria-invalid="String(!!levelError)"
-            aria-describedby="p-level-error">
-          <span class="sr-only" id="p-level-error" x-show="levelError" x-text="levelError" aria-live="polite"></span>
-        </div>
-        <div class="mctl sync-cap" :title="capTitle(`1–${$store.app.maxReal}`)">
-          <label for="p-cap" class="mctl-head capline"><span>Synced IL</span>
-            <!-- INCLUDE cap-flag.html id=p-cap-range range=`1–${$store.app.maxReal}` flag=capFlag(`1–${$store.app.maxReal}`) -->
-          </label>
-          <input
-            type="number"
-            id="p-cap"
-            x-ref="cap"
-            :disabled="!$store.app.sync"
-            :max="$store.app.maxReal"
-            step="1"
-            inputmode="numeric"
-            x-bind="$num('cap', 1, Infinity, { snap: false })"
-            @input="onCapInput($event.target.value)"
-            :class="{ invalid: !!capError, lowered: !!capLoweredNote }"
-            :aria-invalid="String(!!capError)"
-            aria-describedby="p-cap-error p-cap-lowered p-cap-guess">
-          <span class="sr-only" id="p-cap-error" x-show="capError" x-text="capError"></span>
-          <span class="sr-only" id="p-cap-lowered" x-show="capLoweredNote" x-text="capLoweredNote" aria-live="polite"></span>
-          <span class="sr-only" id="p-cap-guess" x-show="capGuess" x-text="capGuess"></span>
-        </div>
-      </div>
-      <label class="mctl sync-switch"><span>IL Sync</span>
-        <span class="toggle"><input type="checkbox" role="switch" class="switch" id="p-sync" :checked="$store.app.sync" @change="$store.app.editPanel({ sync: $event.target.checked }); onSyncSwitch($event.target.checked)"></span>
-      </label>
-    </div>
-    </div>
-  </gsa-bar-popover>
-  </gsa-math-bar>
+  <gsa-math-bar x-ignore></gsa-math-bar>
 </div>
 
 <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level (views/piece-stats.js) -->

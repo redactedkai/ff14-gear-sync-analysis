@@ -4,10 +4,8 @@
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: sheets and afterDraw (frame.js). */
 import { JOB_ROWS, jobById } from '../../../core/constants.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
-import { flashLowered, numberField } from '../../number-field.js';
 import { shownName, submitDialog } from '../../sheets/dialogs.js';
 import { NEW_SHEET_CAP, copyName, levelFor, ranges, sheetSettings } from '../../sheets/ops.js';
-import { capFlag, capLoweredText } from '../../level-cap.js';
 import { copySheetFormView, deleteQuestionView, editFormView, newSheetFormView } from '../../views/sheet-forms.js';
 
 /* The job picker of the New sheet form: rows by role, each job with its name and icon (the Job and sync panel's). */
@@ -168,25 +166,13 @@ export function dialogPart() {
       this.limitFormCap();
     },
     /* The New sheet or Copy sheet form's cap lowered to what its job and level allow, as the sheet page lowers it
-       (sheets.js sheetSettings), keeping what it lowered for the note (formCapNote); null when nothing was. The store
-       checks the fields again on Create or Copy. */
+       (sheets.js sheetSettings), keeping what it lowered for the cap field's note (a new object each time, so the field flashes);
+       null when nothing was. The store checks the fields again on Create or Copy. */
     limitFormCap() {
       const d = this.dialog;
       const { sync, lowered } = sheetSettings(d.job || null, d, { level: d.level, cap: d.sync.cap });
       d.sync.cap = sync.cap;
       d.capLowered = lowered;
-      if (lowered) {
-        flashLowered(this.$refs.dialog?.querySelector('#sh-dlg-cap'));
-      }
-    },
-    /* Under the form's cap field after it was lowered (level-cap.js capLoweredText); '' while sync is off. */
-    get formCapNote() {
-      const d = this.dialog;
-      return d?.sync?.on ? capLoweredText(d.capLowered) : '';
-    },
-    /* The form's cap field's flag in its label line (level-cap.js capFlag; the form shows no error); `range` is "1–795". */
-    formCapFlag(range) {
-      return capFlag({ error: '', note: this.formCapNote, lowered: this.dialog?.capLowered, range });
     },
     /* The name box of a form, as typed: in the New sheet form it stops following the default name. */
     typeName(text) {
@@ -198,27 +184,44 @@ export function dialogPart() {
     get dialogName() {
       return this.dialog ? shownName(this.dialog) : '';
     },
-    /* A number field of a form: `key` 'level' (held to the chosen job's level cap) or 'cap' (any whole number from 1,
-       lowered by limitFormCap). Either commit lowers the cap to what the level allows. */
-    formField(key) {
-      return numberField(
-        () => (key === 'level' ? this.dialog?.level : this.dialog?.sync.cap),
-        value => {
-          // typed digits commit after a pause: the dialog may have closed (Create pressed) in the meantime
-          if (!this.dialog) {
-            return;
-          }
-          if (key === 'level') {
-            this.dialog.level = value;
-          } else {
-            this.dialog.sync.cap = value;
-          }
-          this.clearDialogError();
-          this.limitFormCap();
-        },
-        1,
-        key === 'level' ? () => ranges(this.dialog?.job || null).level.max : Infinity,
-      );
+    /* What the form's level field shows (`<gsa-level-field>`'s properties): the form's level, held to the chosen job's level cap. */
+    get formLevelProps() {
+      const d = this.dialog;
+      return { value: d?.level ?? null, max: ranges(d?.job || null).level.max };
+    },
+    /* What the form's item level field shows (`<gsa-cap-field>`'s properties): the form's cap, the sync switch and the cap the form
+       lowered (limitFormCap). Any whole number from 1 as typed: limitFormCap lowers it; a number out of range moves to the nearest
+       on leaving the box. */
+    get formCapProps() {
+      const d = this.dialog;
+      return {
+        value: d?.sync.cap ?? null,
+        max: ranges(d?.job || null).cap.max,
+        syncOn: Boolean(d?.sync.on),
+        disabled: !d?.sync.on,
+        lowered: d?.sync.on ? d.capLowered : null,
+        validate: false,
+        snap: true,
+      };
+    },
+    /* A level entered in the form's level field: either commit lowers the cap to what the level allows. The dialog may have closed
+       (Create pressed) while typed digits waited for their pause. */
+    setFormLevel(level) {
+      if (!this.dialog) {
+        return;
+      }
+      this.dialog.level = level;
+      this.clearDialogError();
+      this.limitFormCap();
+    },
+    /* A cap entered in the form's item level field (limitFormCap lowers it). */
+    setFormCap(cap) {
+      if (!this.dialog) {
+        return;
+      }
+      this.dialog.sync.cap = cap;
+      this.clearDialogError();
+      this.limitFormCap();
     },
 
     /* The dialog's main button (sheets/dialogs.js): a refused form stays open with the reason. */

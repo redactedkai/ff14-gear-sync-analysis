@@ -9,6 +9,9 @@ export const SUB_TAB_EVENT = 'math-sub';
    of `{slot, slots, subs, ilvl}` (`slots` or `ilvl` null: back to the slot's usual total, or to the cap). */
 export const PIECE_EDIT_EVENT = 'piece-edit';
 
+/* The `sync-change` event: the IL Sync switch in the Sync settings popover changed. `detail` is the switch's state (a boolean). */
+export const SYNC_CHANGE_EVENT = 'sync-change';
+
 /* The example piece, as the page gives it to the elements: the item level (null: the cap), the slot, the two substats (null for none)
    and the materia slots chosen (null: the slot's usual total). */
 export interface ExamplePiece {
@@ -23,6 +26,13 @@ export interface SyncSettings {
   cap: number | null;
   sync: boolean;
   level: number | null;
+}
+
+/* The panel the Sync settings popover edits (the math tab's own): its stored cap and level (null for none) and the IL Sync switch. */
+export interface SyncPanel {
+  cap: number | null;
+  level: number | null;
+  on: boolean;
 }
 
 /* The GCD Scaling sub-tab's settings, with Stat Allocation's synced level (`syncedLevel`) that the tab follows until a level is typed. */

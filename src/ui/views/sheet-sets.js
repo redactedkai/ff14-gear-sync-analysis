@@ -9,7 +9,6 @@ import { plural } from '../text.ts';
 import { ranges } from '../sheets/ops.js';
 import { settingsLine } from './sheet-text.js';
 import { sheetHref } from '../store/app-state.ts';
-import { CAP_TYPED_BAD_TEXT, capFlag, capLoweredText } from '../level-cap.js';
 
 /* One gear set of a sheet for the list: {id, href (its address), name, description, descriptionLine, originText, figures, points}. descriptionLine
    is the first line of the set's notes, '' without; originText counts the rows Auto-fill keeps and changes ("5
@@ -86,8 +85,8 @@ export function sortSetRows(rows, sort, mode) {
 /* The page of `sheet` (a saved Sheet). Returns:
    - crumbs: [{text, to, href}, {text, here: true}], "Sheets / <sheet>" (`to` names the screen a link opens, `href` is its address);
    - id, name; description {text, empty} ("No description" in muted text when empty);
-   - job {id, name} (fixed once the sheet exists); level {value, max (the job's level cap), rangeText "1–100"};
-     sync {on, cap, max (the highest real item level), rangeText "1–795"};
+   - job {id, name} (fixed once the sheet exists); level {value, max (the job's level cap)};
+     sync {on, cap, max (the highest real item level)};
    - setCount; columns: the list's column headers (the figures' labels, first set's job), pointColumns the same for the stat points, columnKeys and pointKeys their figures' keys (what a heading sorts by), wideColumns (per column: true for a figure with a longer text, the GCD of a job with haste), set rows (setListRow);
    - bonusNote: the note under the table when the sheet sets a clan or a party bonus (set-totals.js bonusNote), '' without;
    - empty: no sets; emptyCard {title, text} is the "No gear sets yet" card with a New set button. */
@@ -181,17 +180,6 @@ export function sheetListView(page, sort, mode) {
     })),
     orderLocked: Boolean(inForce.key),
   };
-}
-
-/* What the sheet page's item level field shows besides its box, for the page's `sync` ({on, cap, max, rangeText}), the field's
-   state `typedBad` (its text is no whole item level) and `lowered` (the cap the page last lowered, {sheetId, from, to, level},
-   or null) and the open sheet's id. Returns {error (CAP_TYPED_BAD_TEXT while sync is on and the text is bad, else ''), note
-   (capLoweredText after a lowering; '' on another sheet, with sync off, or while there is an error, which takes its place), flag
-   (capFlag of both, for the label line)}. */
-export function sheetCapView(sync, typedBad, lowered, sheetId) {
-  const error = typedBad && sync.on ? CAP_TYPED_BAD_TEXT : '';
-  const note = lowered && sync.on && lowered.sheetId === sheetId && !error ? capLoweredText(lowered) : '';
-  return { error, note, flag: capFlag({ error, note, lowered, range: sync.rangeText }) };
 }
 
 /* What the caret menu after the sheet's name shows (<gsa-switch-menu>): `rows` (the manager's rows), `currentId` (the open sheet's

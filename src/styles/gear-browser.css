@@ -1,6 +1,12 @@
 /* ==== the Job and sync strip (Gear browser): one row under the tab bar, a label over each 40 px control.
    The Job, level and item level boxes share one width, the widest "Name (CODE)" of any job (Dark Knight (DRK), Astrologian
    (AST), Pictomancer (PCT)) with its icon and chevron. The columns are 18 px apart so the row fits at 960 px. ==== */
+/* the strip's row is the element <gsa-job-strip> (elements/app/job-strip.ts), which takes no box: its boxes are the section's flex items. The
+   level and item level fields (<gsa-level-field>, <gsa-cap-field>) are boxes of their own: they carry the classes of the field they are
+   in (`f boxf field` here, `mctl` in the math bar), set by the element. */
+gsa-job-strip {
+  display: contents;
+}
 .jobstrip {
   --strip-box: 210px;
   --box-h: calc(16px + 1.5rem); /* the height of the strip's boxes, as the math bar's: 40px at 100% text, growing with the text size */

@@ -149,7 +149,7 @@ label.f,
 .f-left.full {
   color: var(--bad);
 }
-/* an item level field's label line, with a flag in the range's place (cap-flag.html): the flag is as tall as the line, so
+/* an item level field's label line, with a flag in the range's place (cap-flag.ts): the flag is as tall as the line, so
    the icon never makes the field taller */
 .f > span.capline:first-child:has(> .f-range),
 .f > label.capline:first-child:has(> .f-range) {
@@ -175,8 +175,8 @@ label.f,
 .f-flag.lowered {
   color: var(--gold);
 }
-/* the page lowered the cap to what the level allows (settings component, capLowered): a gold border, and a gold flash on
-   each lowering (lowerCap restarts it) */
+/* the page lowered the cap to what the level allows (<gsa-cap-field>'s `lowered`): a gold border, and a gold flash on
+   each lowering (the field restarts it) */
 input.lowered {
   border-color: var(--gold);
 }

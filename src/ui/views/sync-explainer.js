@@ -10,6 +10,7 @@ import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.j
 import { mkItem } from '../../core/items.js';
 import { bestMeld } from '../../core/meld.js';
 import { meldSlotChoices, meldSlotsOf, shownSync } from '../job-sync-panel.js';
+import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
 import { OVERGEAR_BANDS, overgearChartSvg } from '../sync-charts.js';
 
 /* The item level range the slider and both charts cover, relative to the cap (item levels). */
@@ -136,6 +137,17 @@ function meldsLegend(job, meld) {
 /* A number as wide as any number with as many digits as `limit` (8 is the widest digit): the hidden copies of the sync
    fields' label rows are written with it, so the boxes are as wide as the widest label row at the real limits. */
 export const widestNumber = limit => '8'.repeat(String(limit).length);
+
+/* The widest texts of the Sync settings popover's label rows (the flag row, the range row) at the real limits, from which a hidden copy
+   of the rows gives the Level and Synced IL boxes one width in every state: `levelFlag` and `levelRange` (the Level row), `capFlag`
+   ("1–795 only"), `capDigits` (the digits after "Max") and `capRange` (the Synced IL row). */
+export const SYNC_LABEL_ROWS = Object.freeze({
+  levelFlag: rangeOnly(LEVEL_TEXT.range(widestNumber(MAX_LEVEL))),
+  levelRange: LEVEL_TEXT.range(widestNumber(MAX_LEVEL)),
+  capFlag: rangeOnly(rangeText(widestNumber(MAX_REAL))),
+  capDigits: widestNumber(MAX_REAL),
+  capRange: rangeText(widestNumber(MAX_REAL)),
+});
 
 /* The text of the 2nd substat menu's empty choice. */
 export const NO_SUBSTAT_LABEL = 'none';
@@ -268,8 +280,12 @@ function chipParts({ level = '', il, warn = '' }) {
    {parts (the chip's text, chipParts), name (its accessible name and tooltip), guess (the sentence for the gold mark after the label, or '')}.
    `switchOn` is the IL Sync switch (the store's `sync`; syncSettings.sync is also false while it is on with no cap),
    `loweredFrom` the cap the page lowered (the cap box's capLowered.from) or null, `capMissing` IL Sync is on and the box is
-   empty. The item level is gold while the page lowered the typed cap to what the level allows, red with no item level. */
-export function syncChipView(job, sync, slot, { switchOn, loweredFrom = null, capMissing = false }) {
+   empty. The item level is gold while the page lowered the typed cap to what the level allows, red with no item level.
+   @param {any} job
+   @param {any} sync
+   @param {string} slot
+   @param {{ switchOn: boolean, loweredFrom?: number | null, capMissing?: boolean }} options */
+export function syncChipView(job, sync, slot, { switchOn, loweredFrom = /** @type {number | null} */ (null), capMissing = false }) {
   const T = SYNC_CHIP_TEXT;
   const level = sync.level ?? null;
   const levelText = level == null ? '' : T.level(level);

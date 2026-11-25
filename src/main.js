@@ -31,7 +31,10 @@ import './ui/elements/math-page/tiers-view.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/select.ts';
 import './ui/elements/shared/collapsible.ts';
+import './ui/elements/app/cap-field.ts';
 import './ui/elements/app/job-menu.ts';
+import './ui/elements/app/job-strip.ts';
+import './ui/elements/app/level-field.ts';
 import './ui/elements/app/notes.ts';
 import './ui/elements/set-page/food-menu.ts';
 import './ui/elements/sheets/sheet-manager.ts';
@@ -41,7 +44,7 @@ import './ui/elements/set-page/materia-menu.ts';
 import './ui/elements/set-page/piece-picker.ts';
 import './ui/elements/set-page/rank-note.ts';
 import './ui/elements/set-page/settings-popover.ts';
-import { page, settings } from './ui/components/page.js';
+import { page } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { sheetsTab } from './ui/components/sheets.js';
 import { setPage } from './ui/components/set-page.js';
@@ -132,7 +135,6 @@ const solver = workerSolver(startSolverWorker, inProcessSolver);
 // the set page takes the solver from here, so its module loads without a page (its unit test)
 Object.entries({
   page,
-  settings,
   syncExplainer,
   sheetsTab,
   setPage: () => setPage(solver),

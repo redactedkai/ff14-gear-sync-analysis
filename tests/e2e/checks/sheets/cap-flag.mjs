@@ -33,7 +33,7 @@ export async function checkCapFlag(pg) {
   await pg.locator('#sh-list a.sname', { hasText: 'Flag check' }).click();
   await expect(pg.locator('#sh-sets')).toBeVisible();
 
-  const flag = pg.locator('#sh-cap').locator('xpath=ancestor::label[1]').locator('.f-flag');
+  const flag = pg.locator('.sheetfields gsa-cap-field .f-flag');
   const range = pg.locator('#sh-cap-range');
   const row = pg.locator('.sheetfields');
   const rowShape = () =>

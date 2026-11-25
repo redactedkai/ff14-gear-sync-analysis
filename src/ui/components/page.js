@@ -1,11 +1,8 @@
-/* Page root and the job / sync settings panel. Each component reads the job through its own `jobCtx` getter, not
-   through a parent's scope. */
+/* The page root: the footer, the tabs, and what the Job and sync strip (elements/app/job-strip.ts) is given. */
 import { dataSourceLabel } from '../../core/tables.js';
 import { followInPage } from '../router/plain-click.js';
 import { formatRoute } from '../router/routes.js';
 import { loadExampleSheets } from '../test-data.js';
-import { capControls } from './cap-controls.js';
-import { compose } from './compose.js';
 
 /* The loading line of each tab, shown while it opens. */
 const LOADING_TEXT = { sheets: 'Loading Sheets…', browse: 'Loading the Gear browser…', math: 'Loading math analysis…' };
@@ -54,31 +51,19 @@ export function page() {
     get loadingText() {
       return LOADING_TEXT[this.$store.app.pendingTab] ?? '';
     },
-  };
-}
-
-/* What the reset button asks before it resets the open tab's settings (the other tabs keep theirs). */
-const RESET_QUESTION = "Reset this tab's settings to their defaults?";
-
-/* The job and sync strip of the Gear browser: the job menu, the synced level, the cap and the sync switch. How the math works
-   has no strip: its Job menu is in the math bar (sync-explainer.js). */
-export function settings() {
-  return compose(
-    {
-      /* the chosen job's JobContext ($store.app.jobCtx; $store.app.job is its id) */
-      get jobCtx() {
-        return this.$store.app.jobCtx;
-      },
-      init() {
-        this.initCap(); // the cap field's rules (cap-controls.js)
-      },
-      /* the open tab's settings back to their defaults, after the browser's own confirmation dialog */
-      requestReset() {
-        if (window.confirm(RESET_QUESTION)) {
-          this.$store.app.resetAll();
-        }
-      },
+    /* What the Job and sync strip element shows (its properties): the Gear browser's panel and the open tab. */
+    get stripInput() {
+      const app = this.$store.app;
+      const panel = app.panel('browse');
+      return {
+        job: panel.job ?? '',
+        level: panel.level,
+        cap: panel.cap,
+        sync: Boolean(panel.sync),
+        maxLevel: panel.jobCtx.maxLevel,
+        maxReal: app.maxReal,
+        tab: app.tab,
+      };
     },
-    capControls('browse'),
-  );
+  };
 }

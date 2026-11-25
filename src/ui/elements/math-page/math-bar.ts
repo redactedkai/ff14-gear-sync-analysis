@@ -8,25 +8,53 @@
      menu's); the GCD and Substat tiers controls send their own events (`gcd-edit`, `tiers-level`), which pass through; the page
      edits the store and gives the settings back.
    What the controls show comes from `mathBarView` (views/math-bar.js), which also holds the rules for an edit.
-   The Sync settings chip is not drawn here: its popover holds the Level and Synced IL boxes, one piece of the page that is still
-   run by Alpine (the cap field's rules, shared with the Gear browser's strip). Its markup is a child of this element in the page's
-   template (`data-bar-slot="sync"`), and the element places it between the Substats & materia chip and the Gear item level
-   control; it stays Alpine's, so this element carries no `x-ignore`. */
+   The Sync settings chip (between the Substats & materia chip and the Gear item level control) opens a popover with the Level and Synced IL
+   fields (`<gsa-level-field>`, `<gsa-cap-field>`: the same fields as the Gear browser's strip) and the IL Sync switch. The element gets
+   the panel it edits (`syncPanel`: the stored cap and level and the switch; `openTab`, whether the math tab is open, which makes the cap
+   field follow the level; `levelScope`, which ends the text typed in the Level box) and sends what they commit (`level-change`,
+   `cap-change`, and `sync-change`, the switch's state, a boolean); the page edits the store. The chip says the cap the Synced IL field
+   lowered (`lowered-change`) and goes red while the Level box holds text that is no level (`typed-bad-change`). */
 import { LitElement, html, nothing } from 'lit';
+import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { live } from 'lit/directives/live.js';
 import { makeJobContext } from '../../../core/job-context.js';
 import { followInPage } from '../../router/plain-click.js';
 import { formatRoute } from '../../router/routes.js';
-import { IL_BOX_SIZER, IL_CONTROL_TEXT, PIECE_CHIP_SIZERS, PIECE_CHIP_TEXT, SUBSTAT_SIZER } from '../../views/sync-explainer.js';
+import {
+  IL_BOX_SIZER,
+  IL_CONTROL_TEXT,
+  PIECE_CHIP_SIZERS,
+  PIECE_CHIP_TEXT,
+  SUBSTAT_SIZER,
+  SYNC_CHIP_SIZERS,
+  SYNC_CHIP_TEXT,
+  SYNC_LABEL_ROWS,
+  capGuessText,
+  syncChipView,
+} from '../../views/sync-explainer.js';
 import { SLOT_SIZER } from '../../views/piece.js';
 import { MATH_SUB_TABS, ilvlEdit, mathBarView, slotEdit, subsEdit } from '../../views/math-bar.js';
 import './bar-popover.ts';
 import './gcd-controls.ts';
 import './tiers-controls.ts';
+import '../app/cap-field.ts';
+import type { GsaCapField } from '../app/cap-field.ts';
 import '../app/job-menu.ts';
+import '../app/level-field.ts';
+import type { GsaLevelField } from '../app/level-field.ts';
+import type { LoweredCap } from '../app/field-names.ts';
 import '../shared/select.ts';
-import { PIECE_EDIT_EVENT, SUB_TAB_EVENT, type ExamplePiece, type GcdState, type SyncSettings, type TiersState } from './math-bar-names.ts';
+import {
+  PIECE_EDIT_EVENT,
+  SUB_TAB_EVENT,
+  SYNC_CHANGE_EVENT,
+  type ExamplePiece,
+  type GcdState,
+  type SyncPanel,
+  type SyncSettings,
+  type TiersState,
+} from './math-bar-names.ts';
 
 /* The hidden copies that give the Substats & materia chip one width: every text it can show, made once for the page. */
 const PIECE_CHIP_WIDTH_COPIES = PIECE_CHIP_SIZERS.map(text => html`<span class="sizertext" aria-hidden="true">${text}</span>`);
@@ -49,20 +77,31 @@ export class GsaMathBar extends LitElement {
     jobId: { attribute: false },
     pieceJob: { attribute: false },
     sync: { attribute: false },
+    syncPanel: { attribute: false },
+    openTab: { type: String },
+    levelScope: { type: String },
+    maxReal: { type: Number },
     piece: { attribute: false },
     gcd: { attribute: false },
     tiers: { attribute: false },
+    capLowered: { state: true },
+    levelBad: { state: true },
   };
 
   declare tab: string;
   declare jobId: string;
   declare pieceJob: string;
   declare sync: SyncSettings;
+  declare syncPanel: SyncPanel;
+  declare openTab: string;
+  declare levelScope: string;
+  declare maxReal: number;
   declare piece: ExamplePiece;
   declare gcd: GcdState;
   declare tiers: TiersState;
-  // the Sync settings chip's markup (the page's template gives it as a child), drawn between the other controls
-  private syncChip: Element | null = null;
+  // the cap the Synced IL field last lowered (for the chip), and whether the Level box holds text that is no level
+  declare capLowered: LoweredCap | null;
+  declare levelBad: boolean;
 
   constructor() {
     super();
@@ -70,6 +109,12 @@ export class GsaMathBar extends LitElement {
     this.jobId = '';
     this.pieceJob = '';
     this.sync = { cap: null, sync: false, level: null };
+    this.syncPanel = { cap: null, level: null, on: false };
+    this.openTab = '';
+    this.levelScope = '';
+    this.maxReal = 1;
+    this.capLowered = null;
+    this.levelBad = false;
     this.piece = { ilvl: null, slot: 'weapon', subs: [], slots: null };
     this.gcd = { level: null, haste: '', speed: null, syncedLevel: 1 };
     this.tiers = { job: '', level: null };
@@ -78,12 +123,6 @@ export class GsaMathBar extends LitElement {
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
   protected override createRenderRoot(): HTMLElement {
     return this;
-  }
-
-  /* Takes the Sync settings chip out of the page's markup the first time the element connects (before it draws). */
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.syncChip ??= this.querySelector(':scope > [data-bar-slot="sync"]');
   }
 
   private send(name: string, detail: unknown): void {
@@ -228,6 +267,111 @@ export class GsaMathBar extends LitElement {
       </div>`;
   }
 
+  /* The IL Sync switch of the popover: what the page does with it is the page's (`sync-change`); any text left in the item level box
+     is dropped. */
+  private onSyncSwitch(event: Event): void {
+    this.querySelector<GsaCapField>('gsa-cap-field')?.clearTyped();
+    this.send(SYNC_CHANGE_EVENT, (event.target as HTMLInputElement).checked);
+  }
+
+  /* The popover closed by itself: the Level and Synced IL boxes show the stored values again, dropping what they hold that is no level
+     or cap. */
+  private clearTypedErrors(): void {
+    this.querySelector<GsaLevelField>('gsa-level-field')?.clearTyped();
+    this.querySelector<GsaCapField>('gsa-cap-field')?.clearTyped();
+  }
+
+  /* The chip's words as spans, one per part ("Lv 85", "·", "IL 270"). */
+  private chipParts(parts: readonly { text: string; cls: string }[]) {
+    return parts.map(part => html`<span class=${part.cls}>${part.text}</span>`);
+  }
+
+  // The IL Sync switch is a native checkbox with role=switch: its state is `checked`, which a screen reader reads (the page's other
+  // switches are written the same way); the lint rule wants an aria-checked beside it.
+  /* eslint-disable lit-a11y/role-has-required-aria-attrs */
+  /* The Sync settings chip: the synced level, the synced item level and whether IL Sync is on, in a few words (a hidden copy of its
+     widest texts gives it one width); it opens a popover under the chip with the Level and Synced IL fields and the IL Sync switch. */
+  private renderSyncChip(job: ReturnType<typeof makeJobContext>) {
+    const text = SYNC_CHIP_TEXT;
+    const rows = SYNC_LABEL_ROWS;
+    const panel = this.syncPanel;
+    const loweredFrom = this.capLowered && this.capLowered.to === panel.cap ? this.capLowered.from : null;
+    const chip = syncChipView(job, this.sync, this.piece.slot, {
+      switchOn: panel.on,
+      loweredFrom,
+      capMissing: panel.on && panel.cap == null,
+    });
+    const guess = capGuessText(job, this.sync, this.piece.slot);
+    return html`
+      <gsa-bar-popover
+        class="mctl syncwrap"
+        id="p-sync-wrap"
+        trigger-id="p-sync-chip"
+        content-id="p-sync-pop"
+        focus-in="#p-level"
+        align-bar
+        ?hidden=${this.tab !== 'piece'}
+        @popover-close=${this.clearTypedErrors}>
+        <span id="p-sync-label"><span>${text.label}</span><span class="guess" id="p-sync-guess-mark" style=${chip.guess ? '' : 'display: none'} title=${chip.guess} aria-hidden="true">${text.guess}</span></span>
+        <span class="sr-only" id="p-sync-guess" style=${chip.guess ? '' : 'display: none'}>${chip.guess}</span>
+        <button
+          type="button"
+          class=${classMap({ 'multi-btn': true, syncchip: true, error: this.levelBad })}
+          data-zag-part="trigger"
+          aria-label=${chip.name}
+          aria-describedby=${ifDefined(chip.guess ? 'p-sync-guess' : undefined)}
+          title=${chip.name}><span class="sized">
+            <span id="p-sync-text">${this.chipParts(chip.parts)}</span>
+            ${SYNC_CHIP_SIZERS.map(parts => html`<span class="sizertext" aria-hidden="true">${this.chipParts(parts)}</span>`)}
+            <span class="sizertext labelsizer" aria-hidden="true"><span>${text.label}</span><span class="guess">${text.guess}</span></span>
+          </span></button>
+        <div data-zag-part="positioner">
+        <div class="popover syncpop" data-zag-part="content" aria-label=${text.label} hidden>
+          <div class="syncpair">
+            <!-- hidden copy of the widest label rows (the flag row, the range row): both boxes take its width, whatever the font -->
+            <span class="mctl sizer" aria-hidden="true">
+              <span class="mctl-head capline">Level <span class="f-flag"><i class="flagicon"></i><span>${rows.levelFlag}</span></span></span>
+              <span class="mctl-head capline">Synced IL <span class="f-flag"><i class="flagicon"></i>Max <span>${rows.capDigits}</span></span></span>
+              <span class="mctl-head capline">Synced IL <span class="f-flag"><i class="flagicon"></i><span>${rows.capFlag}</span></span></span>
+              <span class="mctl-head capline"><span>Synced IL</span> <span class="f-range">${rows.capRange}</span></span>
+              <span class="mctl-head capline">Level <span class="f-range">${rows.levelRange}</span></span>
+            </span>
+            <gsa-level-field
+              layout="math"
+              live
+              .snap=${false}
+              .validate=${true}
+              .value=${panel.level}
+              .max=${job.maxLevel}
+              .scope=${this.levelScope}
+              @typed-bad-change=${(event: CustomEvent<boolean>) => {
+                this.levelBad = event.detail;
+              }}></gsa-level-field>
+            <gsa-cap-field
+              layout="math"
+              follow
+              .value=${panel.cap}
+              .max=${this.maxReal}
+              .syncOn=${panel.on}
+              .disabled=${!panel.on}
+              .level=${panel.level}
+              .active=${this.openTab === 'math'}
+              .scope=${this.openTab}
+              .guess=${guess}
+              @lowered-change=${(event: CustomEvent<LoweredCap | null>) => {
+                this.capLowered = event.detail;
+              }}></gsa-cap-field>
+          </div>
+          <label class="mctl sync-switch"><span>IL Sync</span>
+            <span class="toggle"><input type="checkbox" role="switch" class="switch" id="p-sync" .checked=${panel.on} @change=${this.onSyncSwitch}></span>
+          </label>
+        </div>
+        </div>
+      </gsa-bar-popover>`;
+  }
+
+  /* eslint-enable lit-a11y/role-has-required-aria-attrs */
+
   /* The Gear item level control: its label on top, the slider with its bounds, the number box and Reset on the controls' line. */
   private renderItemLevel(view: ReturnType<typeof mathBarView>) {
     const [lowest, highest] = view.range;
@@ -283,7 +427,7 @@ export class GsaMathBar extends LitElement {
         </div>
         ${this.renderPieceSection(job, view)}
         <span class="barbreak after-piece" aria-hidden="true" ?hidden=${this.tab !== 'piece'}></span>
-        ${this.syncChip}
+        ${this.renderSyncChip(job)}
         <span class="barbreak after-sync" aria-hidden="true" ?hidden=${this.tab !== 'piece'}></span>
         ${this.renderItemLevel(view)}
         ${this.tab === 'gcd' ? html`<gsa-gcd-controls .level=${gcd.level} .haste=${gcd.haste} .speed=${gcd.speed} .syncedLevel=${gcd.syncedLevel}></gsa-gcd-controls>` : nothing}

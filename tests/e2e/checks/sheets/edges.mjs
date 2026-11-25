@@ -75,7 +75,7 @@ export async function checkSheetEdges(pg) {
     ['WAR', '100'],
   ]) {
     await pg.click(`#sh-dialog [data-job-id=${job}]`);
-    await expect(pg.locator('#sh-dialog label:has(#sh-dlg-level) .f-range')).toHaveText(`1–${top}`);
+    await expect(pg.locator('#sh-dlg-level-range')).toHaveText(`1–${top}`);
     await setNumber(pg, '#sh-dlg-level', '99');
     await expect(pg.locator('#sh-dlg-level')).toHaveValue(Math.min(99, Number(top)).toString());
   }

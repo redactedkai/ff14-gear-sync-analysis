@@ -5,24 +5,23 @@
    - the page gives it properties from a wrapper's `x-effect` (`view`, `figures`, `sheetId`, `clan`, `partyRoles`, `switcher`, `busy`,
      `dialogOpen`) and listens for `sheet-action` (sheet-action.ts) and the switcher's `switch-pick`; the element never reads a store;
    - it draws nothing while `view` is null (another screen is open) and keeps its own state while it is: the list's sort (back to
-     the saved order when the Effects / Stat points switch or the open sheet changes), whether the item level box holds text that is
-     no item level, and the cap the page last lowered (for the note under the box);
-   - the level and item level boxes are number boxes (ui/number-field.js numberBox): typing commits after a pause, a step at once;
-     an edit asks the page and the page answers in the event's `result` (a lowered cap shows its note and flashes the box);
+     the saved order when the Effects / Stat points switch or the open sheet changes) and the cap the page last lowered (for the note
+     under the item level box);
+   - the level and item level boxes are the shared fields `<gsa-level-field>` and `<gsa-cap-field>` (elements/app/): typing commits after
+     a pause, a step at once; an edit asks the page and the page answers in the event's `result` (a lowered cap is given to the item
+     level field, which shows its note and flashes the box);
    - a click anywhere on a gear set's row opens it (open-row.ts); rows are dragged by their handle or moved with Up and Down on it
      (row-reorder.ts), not while the list is sorted. */
 import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
-import { capTextBad } from '../../level-cap.js';
-import { flashLowered, numberBox } from '../../number-field.js';
 import { followInPage } from '../../router/plain-click.js';
 import { bonusOptions } from '../../sheets/bonus-options.js';
-import { nextListSort, sheetCapView, sheetListView } from '../../views/sheet-sets.js';
-import { shownNumber } from '../shared/number-box.ts';
+import { nextListSort, sheetListView } from '../../views/sheet-sets.js';
+import '../app/cap-field.ts';
+import '../app/level-field.ts';
 import type { SwitchItem } from './switch-menu.ts';
-import { type CapFlag, capFlagTemplate } from './cap-flag.ts';
 import { dragHandle } from './drag-handle.ts';
 import { opensRow } from './open-row.ts';
 import { RowReorder } from './row-reorder.ts';
@@ -42,8 +41,8 @@ export interface SheetPageView {
   name: string;
   description: { text: string; empty: boolean };
   job: { id: string; name: string };
-  level: { value: number; max: number; rangeText: string };
-  sync: { on: boolean; cap: number; max: number; rangeText: string };
+  level: { value: number; max: number };
+  sync: { on: boolean; cap: number; max: number };
   title: string;
   bonusNote: string;
   empty: boolean;
@@ -123,7 +122,6 @@ export class GsaSheetPage extends LitElement {
     busy: { type: Boolean },
     dialogOpen: { type: Boolean },
     sort: { state: true },
-    capTypedBad: { state: true },
     capLowered: { state: true },
   };
 
@@ -136,14 +134,10 @@ export class GsaSheetPage extends LitElement {
   declare busy: boolean;
   declare dialogOpen: boolean;
   declare sort: ListSort;
-  declare capTypedBad: boolean;
   declare capLowered: LoweredCap | null;
-  // what the gear sets list and the item level field draw, built when the properties change (views/sheet-sets.js)
+  // what the gear sets list draws, built when the properties change (views/sheet-sets.js)
   private list: SheetListView | null = null;
-  private capView: { error: string; note: string; flag: CapFlag } | null = null;
   readonly reorder: RowReorder;
-  private readonly levelBox;
-  private readonly capBox;
 
   constructor() {
     super();
@@ -156,7 +150,6 @@ export class GsaSheetPage extends LitElement {
     this.busy = false;
     this.dialogOpen = false;
     this.sort = NO_SORT;
-    this.capTypedBad = false;
     this.capLowered = null;
     this.reorder = new RowReorder(this, {
       dragLocked: () => this.busy || this.dialogOpen,
@@ -169,19 +162,6 @@ export class GsaSheetPage extends LitElement {
         this.querySelectorAll<HTMLElement>('.draghandle')[index]?.focus();
       },
     });
-    this.levelBox = numberBox(
-      () => this.view?.level.value,
-      (value: unknown) => this.noteLowered(sendSheetAction(this, { action: 'level', value, result: null }).result),
-      1,
-      () => this.view?.level.max ?? 1,
-    );
-    this.capBox = numberBox(
-      () => this.view?.sync.cap,
-      (value: unknown) => this.noteLowered(sendSheetAction(this, { action: 'cap', value, result: null }).result),
-      1,
-      Infinity,
-      { snap: false },
-    );
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -189,23 +169,14 @@ export class GsaSheetPage extends LitElement {
     return this;
   }
 
-  /* Before each draw: another sheet or the other figures start the list in the saved order (another sheet's cap field also starts
-     with no error), and the list and the cap field's notes are built from what the page gave. */
+  /* Before each draw: another sheet or the other figures start the list in the saved order, and the list is built from what the page
+     gave. */
   protected override willUpdate(changed: PropertyValues<this>): void {
     if (changed.has('figures') || changed.has('sheetId')) {
       this.sort = NO_SORT;
     }
-    if (changed.has('sheetId')) {
-      this.capTypedBad = false;
-    }
     const view = this.view;
-    if (!view) {
-      this.list = null;
-      this.capView = null;
-      return;
-    }
-    this.list = view.empty ? null : sheetListView(view, this.sort, this.figures);
-    this.capView = sheetCapView(view.sync, this.capTypedBad, this.capLowered, view.id);
+    this.list = !view || view.empty ? null : sheetListView(view, this.sort, this.figures);
   }
 
   /* Sends an action that needs no result. */
@@ -213,29 +184,16 @@ export class GsaSheetPage extends LitElement {
     sendSheetAction(this, action);
   }
 
-  /* Keeps what an edit of the open sheet lowered (`result`: the store's {ok, lowered}) for the note, and flashes the cap field; a
-     refused edit (an Auto-fill runs) leaves the note as it was. A lowered cap is put in the field too: typed again over a cap already
-     at the limit (or the up arrow there), the sheet does not change, so the page gives no new value and the field would keep the
-     text typed. */
+  /* Keeps what an edit of the open sheet lowered (`result`: the store's {ok, lowered}) for the item level field, which shows the note
+     and flashes; a refused edit (an Auto-fill runs) leaves the note as it was. Each lowering is a new object, so the field shows
+     it again: typed again over a cap already at the limit (or the up arrow there), the sheet does not change, so the page gives no
+     new value. */
   private noteLowered(result: EditResult | null): void {
     if (!result?.ok) {
       return;
     }
     const lowered = result.lowered;
     this.capLowered = lowered ? { ...lowered, sheetId: this.view?.id ?? null } : null;
-    if (!lowered) {
-      return;
-    }
-    const field = this.querySelector<HTMLInputElement>('#sh-cap');
-    if (field) {
-      field.value = String(lowered.to);
-    }
-    flashLowered(field);
-  }
-
-  /* Text typed in the item level box, at each keystroke: whether it is an error (the sheet keeps its last cap). */
-  private onCapInput(event: Event): void {
-    this.capTypedBad = capTextBad((event.target as HTMLInputElement).value);
   }
 
   /* A heading of the gear sets list clicked: sort by it, flip it, then back to the saved order. */
@@ -287,42 +245,25 @@ export class GsaSheetPage extends LitElement {
   // are written the same way); the lint rule wants an aria-checked beside it.
   /* eslint-disable lit-a11y/role-has-required-aria-attrs */
   /* The settings row: level, item level, IL Sync, and the Clan and Party bonus boxes. */
-  private renderFields(view: SheetPageView, cap: { error: string; note: string; flag: CapFlag }) {
+  private renderFields(view: SheetPageView) {
+    const lowered: LoweredCap | null = this.capLowered?.sheetId === view.id ? this.capLowered : null;
     return html`<div class="sheetfields">
-      <label class="f"><span>Level <span class="f-range" id="sh-level-range">${view.level.rangeText}</span></span><input
-        type="number"
-        id="sh-level"
-        step="1"
-        inputmode="numeric"
-        min="1"
-        max=${view.level.max}
-        ?disabled=${this.busy}
-        .value=${shownNumber(this.levelBox)}
-        @input=${this.levelBox.onInput}
-        @change=${this.levelBox.onChange}
-      /></label>
-      <label class="f" title=${cap.flag.full}><span class="capline">Item level
-        ${capFlagTemplate('sh-cap-range', view.sync.rangeText, cap.flag)}
-      </span><input
-        type="number"
-        id="sh-cap"
-        step="1"
-        inputmode="numeric"
-        min="1"
-        max=${view.sync.max}
-        ?disabled=${this.busy || !view.sync.on}
-        .value=${shownNumber(this.capBox)}
-        class=${classMap({ invalid: Boolean(cap.error), lowered: Boolean(cap.note) })}
-        aria-invalid=${String(Boolean(cap.error))}
-        aria-describedby="sh-cap-error sh-cap-lowered"
-        @input=${(event: InputEvent) => {
-          this.onCapInput(event);
-          this.capBox.onInput(event);
-        }}
-        @change=${this.capBox.onChange}
-      />
-        <span class="sr-only" id="sh-cap-error" style=${cap.error ? '' : 'display: none'}>${cap.error}</span>
-        <span class="sr-only" id="sh-cap-lowered" style=${cap.note ? '' : 'display: none'} aria-live="polite">${cap.note}</span></label>
+      <gsa-level-field
+        layout="sheet"
+        .value=${view.level.value}
+        .max=${view.level.max}
+        .disabled=${this.busy}
+        .scope=${view.id}
+        @level-change=${(event: CustomEvent<number>) => this.noteLowered(sendSheetAction(this, { action: 'level', value: event.detail, result: null }).result)}></gsa-level-field>
+      <gsa-cap-field
+        layout="sheet"
+        .value=${view.sync.cap}
+        .max=${view.sync.max}
+        .syncOn=${view.sync.on}
+        .disabled=${this.busy || !view.sync.on}
+        .lowered=${lowered}
+        .scope=${view.id}
+        @cap-change=${(event: CustomEvent<number | null>) => this.noteLowered(sendSheetAction(this, { action: 'cap', value: event.detail, result: null }).result)}></gsa-cap-field>
       <label class="f">IL Sync <span class="toggle"><input
         type="checkbox"
         role="switch"
@@ -422,8 +363,7 @@ export class GsaSheetPage extends LitElement {
 
   protected override render() {
     const view = this.view;
-    const cap = this.capView;
-    if (!view || !cap) {
+    if (!view) {
       return nothing;
     }
     const newSet = (event: MouseEvent) => this.send({ action: 'new', kind: 'set', opener: event.currentTarget as HTMLElement });
@@ -432,7 +372,7 @@ export class GsaSheetPage extends LitElement {
         ${this.renderSwitcher()}</nav></div>
       <section class="panel sheetpanel" aria-label="Sheet settings">
         ${this.renderBanner(view)}
-        ${this.renderFields(view, cap)}
+        ${this.renderFields(view)}
       </section>
       <div class="listhead"><h2>${view.title}</h2>
         ${view.empty ? nothing : this.renderFigures()}
