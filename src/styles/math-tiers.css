@@ -245,3 +245,12 @@
 .mathbar input.lowered {
   border-color: var(--gold);
 }
+
+/* The "?" note is the element <gsa-stat-note> (src/ui/elements/math-page/stat-note.ts), drawn in light DOM and placed by Zag's
+   positioner under the pressed "?". Its box is the positioner's content, so it is not absolute itself. It scrolls with the
+   page, so it goes under the pinned math bar (2) like the tables it sits in, and over the table's cells (Zag gives the
+   positioner the content's z-index). */
+gsa-stat-note .popover.statpop {
+  position: static;
+  z-index: var(--z-row);
+}

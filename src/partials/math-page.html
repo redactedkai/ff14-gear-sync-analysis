@@ -480,7 +480,7 @@
         :data-help="g.stat"
         :aria-expanded="String(helpFor === g.stat)"
         aria-controls="t-pop"
-        @click="toggleHelp(g.stat, $el)">?</button></div>
+        @click="toggleHelp(g.stat)">?</button></div>
       <input
         type="number"
         min="0"
@@ -502,15 +502,12 @@
       @click="pickRow($event)"></div>
     <div class="lfoot small"><span><b x-text="g.foot.spare"></b> spare</span><span x-show="g.foot.toNext != null"><b x-text="`+${g.foot.toNext}`"></b> to next</span><span x-show="g.foot.toNext == null">last tier</span></div>
   </div></template></div>
+  <!-- the "?" note: a Lit element (an island) hung under the open note's button; it says what the note holds and tells the page
+       when it closed by itself (Escape, a press outside); x-ignore keeps Alpine out of the markup the element draws -->
   <div
-    class="popover statpop"
-    id="t-pop"
-    x-ref="pop"
-    role="dialog"
-    :aria-label="help?.title"
-    x-show="help"
-    :style="`top:${helpAt.top}px;left:${helpAt.left}px`">
-    <template x-if="help"><div><h3 x-text="help.title"></h3><p x-text="help.affects"></p><p x-text="help.size"></p></div></template>
+    x-effect="$el.firstElementChild.note = help; $el.firstElementChild.anchor = helpAnchor"
+    @note-close="helpFor = null">
+    <gsa-stat-note x-ignore></gsa-stat-note>
   </div>
 </div></template>
 </section>

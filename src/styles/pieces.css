@@ -386,11 +386,6 @@ th.n[aria-sort="ascending"] .sortbtn::before {
 .statpop p:last-child {
   margin: 0;
 }
-/* the Substat tiers note scrolls with its button (it is absolute in the panel), so it goes under the pinned math bar (2) like the
-   tables it sits in, and over the table's cells */
-#t-pop {
-  z-index: var(--z-row);
-}
 /* a substat's ? and its note */
 .help.shelp {
   width: 20px;
