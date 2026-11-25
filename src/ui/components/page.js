@@ -29,6 +29,8 @@ export function page() {
     tabHref(tab, mathTab = this.$store.app.mathTab) {
       return formatRoute(tab === 'math' ? { tab, mathTab } : { tab });
     },
+    /* TODO: Safari does not Tab to links by default (a browser setting: Tab highlights each item, off), so the tab links and the math
+       sub-tabs are reached there only with Option+Tab. Roving focus on the tab strip, as the tabs had as buttons, would fix it. */
     /* TODO: Space on a tab link does not open it (a link takes Enter only; the tabs were buttons, which took Space too). A keydown
        handler for Space on the tab links would bring it back. */
     /* A tab link's click (`event`): a plain click opens tab `tab`; a Ctrl, Cmd, Shift or Alt click is left to the browser

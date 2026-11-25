@@ -136,7 +136,7 @@ export async function checkSlotMenu(pg) {
 }
 
 /** The Slot menu with the page's data: its counts have thousands separators (the view's text, not the raw number); every slot it
- * offers, off-hand and weapon included, sets the browser's slot to its own key when picked; opening the Expansion menu or the Gear
+ * offers (the weapon and the armor and accessory slots; the run uses Sage, which has no off-hand, so that row is covered by the stories), sets the browser's slot to its own key when picked; opening the Expansion menu or the Gear
  * categories menu closes it, and one Escape closes it and nothing more. Leaves the browser's filters at their defaults. */
 export async function checkSlotMenuPicksAndLayers(pg) {
   await showTab(pg, 'browse');

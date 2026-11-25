@@ -427,30 +427,50 @@ const SUB_TAB_SCROLLED_PX = 120;
 /* The selector each sub-tab waits for. */
 const SUB_TAB_READY = { piece: '#p-slot', tiers: '#t-level', gcd: '#g-level' };
 
+/* The clicks of the sub-tab check, in order, for the sub-tab that is open when it starts: each is { sub, step } with the step's name
+   ('warm-up' is not checked or measured; 'start' and 'end' measure the layout of Stat Allocation, 'tiers' and 'gcd' the geometry of
+   their own). Every click goes to a sub-tab other than the open one, because clicking the open sub-tab keeps the scroll by design
+   (nothing opens), so it would never start at the top: when Stat Allocation is open, a warm-up click on Substat tiers comes first. */
+export function subTabVisits(openSub) {
+  const visits = [
+    { sub: 'piece', step: 'start' },
+    { sub: 'tiers', step: 'tiers' },
+    { sub: 'gcd', step: 'gcd' },
+    { sub: 'piece', step: 'end' },
+  ];
+  return openSub === visits[0].sub ? [{ sub: 'tiers', step: 'warm-up' }, ...visits] : visits;
+}
+
 /* Goes Stat Allocation, Substat tiers, GCD Scaling and back, and reports what is wrong: a sub-tab opened by a click starts at the
    top of the page (the page was scrolled before the click), the sub-tabs stay put, the Job box is where it was on Substat tiers
    and absent on GCD Scaling (it has no job), and the way back gives the layout it started with. */
 async function subTabsStartAtTop(page) {
   const found = [];
-  const open = async (sub, scrollFirst = true) => {
+  const open = async (sub, checked) => {
     // scrolled a little before the click (a page too short to scroll stays at 0), so that a sub-tab that kept the depth shows
-    if (scrollFirst) await page.evaluate(scrolledPx => window.scrollTo(0, scrolledPx), SUB_TAB_SCROLLED_PX);
+    await page.evaluate(scrolledPx => window.scrollTo(0, scrolledPx), SUB_TAB_SCROLLED_PX);
     await page.click(`[data-sub="${sub}"]`);
     await page.waitForSelector(SUB_TAB_READY[sub], { state: 'visible', timeout: 10000 });
     await settle(page);
     const top = await page.evaluate(() => window.scrollY);
-    if (top !== 0) found.push({ rule: 'tabs-start-at-top', detail: `${sub} opens at ${top} px, not at the top`, where: 'math' });
+    if (checked && top !== 0) found.push({ rule: 'tabs-start-at-top', detail: `${sub} opens at ${top} px, not at the top`, where: 'math' });
   };
   const config = probeConfig(MATH_VIEWS[0]);
-  await open('piece', false);
-  const geometry = { piece: await subTabGeometry(page) };
-  const start = await page.evaluate(measureView, config);
-  for (const sub of ['tiers', 'gcd']) {
-    await open(sub);
-    geometry[sub] = await subTabGeometry(page);
+  const openSub = await page.evaluate(() => document.querySelector('[data-sub][aria-current="page"]')?.dataset.sub ?? null);
+  const geometry = {};
+  let start;
+  let end;
+  for (const { sub, step } of subTabVisits(openSub)) {
+    await open(sub, step !== 'warm-up');
+    if (step === 'start') {
+      geometry.piece = await subTabGeometry(page);
+      start = await page.evaluate(measureView, config);
+    } else if (step === 'tiers' || step === 'gcd') {
+      geometry[step] = await subTabGeometry(page);
+    } else if (step === 'end') {
+      end = await page.evaluate(measureView, config);
+    }
   }
-  await open('piece');
-  const end = await page.evaluate(measureView, config);
   if (JSON.stringify(geometry.piece.job) !== JSON.stringify(geometry.tiers.job)) {
     found.push({
       rule: 'tabs-start-at-top',

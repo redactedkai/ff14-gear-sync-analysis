@@ -1,6 +1,7 @@
 /* Stories of the Zag controller and the overlay bridge, with the test elements of layer-elements.ts: a Zag popover next to,
    inside and around a layer opened by the page's own overlay manager. The rule they guard: one Escape closes one layer. */
 import { test, expect } from '../fixtures.ts';
+import { APP_MENU_LABEL } from './layer-elements.story.js';
 import type { Alone, BesideAppMenu, HoldingAppMenu, InsideAppMenu } from './layer-elements.story.js';
 
 const STORY = (name: string) => `shared/layer-elements/${name}`;
@@ -66,8 +67,8 @@ test.describe('Zag popover through the controller', () => {
 test.describe('one Escape closes one layer when a page layer is open too', () => {
   test('a Zag popover inside a page menu: Escape closes the popover, a second one the menu', async ({ mount, page }) => {
     const component = await mount<typeof InsideAppMenu>(STORY('InsideAppMenu'));
-    const menuButton = component.getByRole('button', { name: 'App menu', exact: true });
-    const menuPanel = component.getByRole('group', { name: 'App menu panel' });
+    const menuButton = component.getByRole('button', { name: APP_MENU_LABEL, exact: true });
+    const menuPanel = component.getByRole('group', { name: `${APP_MENU_LABEL} panel` });
     const trigger = component.getByRole('button', { name: 'Zag in menu', exact: true });
     const popoverContent = component.getByText('Zag in menu content');
     await menuButton.click();
@@ -110,8 +111,8 @@ test.describe('one Escape closes one layer when a page layer is open too', () =>
 
   test('an unrelated page menu and a Zag popover are never open together, and Escape closes the one that is', async ({ mount, page }) => {
     const component = await mount<typeof BesideAppMenu>(STORY('BesideAppMenu'));
-    const menuButton = component.getByRole('button', { name: 'App menu', exact: true });
-    const menuPanel = component.getByRole('group', { name: 'App menu panel' });
+    const menuButton = component.getByRole('button', { name: APP_MENU_LABEL, exact: true });
+    const menuPanel = component.getByRole('group', { name: `${APP_MENU_LABEL} panel` });
     const trigger = component.getByRole('button', { name: 'Popover', exact: true });
     const popoverContent = component.getByText('Popover content');
 
@@ -135,7 +136,7 @@ test.describe('one Escape closes one layer when a page layer is open too', () =>
 
   test('a layer of each kind open together has no axe violations', async ({ mount, axe }) => {
     const component = await mount<typeof InsideAppMenu>(STORY('InsideAppMenu'));
-    await component.getByRole('button', { name: 'App menu', exact: true }).click();
+    await component.getByRole('button', { name: APP_MENU_LABEL, exact: true }).click();
     await component.getByRole('button', { name: 'Zag in menu', exact: true }).click();
     await expect(component.getByText('Zag in menu content')).toBeVisible();
     expect(await axe()).toEqual([]);

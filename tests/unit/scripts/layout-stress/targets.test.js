@@ -1,7 +1,7 @@
 /* The layout stress tool's screens and views (scripts/layout-stress/targets.mjs): each view is complete and refers only to what exists. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SCREENS, defaultScreenIds, measureOf, probeConfig } from '../../../../scripts/layout-stress/targets.mjs';
+import { SCREENS, defaultScreenIds, measureOf, probeConfig, subTabVisits } from '../../../../scripts/layout-stress/targets.mjs';
 
 const FIXTURES = ['standard', 'extreme', 'empty', 'none', 'failing'];
 
@@ -60,5 +60,21 @@ test('what is sent into the page is plain data: no function, and the measure sta
       assert.ok(config.controls.includes('button') && config.labels.length > 0, view.id);
       assert.deepEqual(Object.keys(measureOf(view)).includes('scopes'), true);
     }
+  }
+});
+
+/* The tabs-start-at-top check expects the top after a click, but a click on the sub-tab that is already open keeps the scroll by
+   design (nothing opens). So whichever sub-tab is open when the check starts, no click may go to the open one. */
+test('the sub-tab check never clicks the sub-tab that is already open, and still measures all four steps in order', () => {
+  for (const openSub of ['piece', 'tiers', 'gcd', null]) {
+    let current = openSub;
+    for (const { sub, step } of subTabVisits(openSub)) {
+      assert.notEqual(sub, current, `from ${openSub}: the ${step} step clicks the sub-tab that is open`);
+      current = sub;
+    }
+    const measured = subTabVisits(openSub)
+      .map(visit => visit.step)
+      .filter(step => step !== 'warm-up');
+    assert.deepEqual(measured, ['start', 'tiers', 'gcd', 'end'], `from ${openSub}`);
   }
 });

@@ -76,6 +76,9 @@ function makeZag(host: GsaSlotMenu) {
       onOpenChange: ({ open }) => {
         if (open) host.lightChosenSlotAfterOpening();
       },
+      // TODO: a click by assistive technology on another layer closes this menu with the focus left on <body>: a close by the layer
+      // manager looks the same as a press outside, so the focus cannot be given back without stealing it from the layer that was
+      // clicked. It goes when the manager says which layer closed this one.
       // the focus moved to another control by a script (not by Tab or a press, which have their own ways out): the menu closes and
       // the focus stays where it went
       onFocusOutside: event => {

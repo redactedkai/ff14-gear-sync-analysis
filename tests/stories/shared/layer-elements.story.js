@@ -2,6 +2,9 @@
 import { html } from 'lit';
 import './layer-elements.ts';
 
+/* The accessible name of the page-menu stub's button (its panel is named "<label> panel"); the specs and the Slot menu's stories read it from here. */
+export const APP_MENU_LABEL = 'App menu';
+
 /* A Zag popover and a button outside it. */
 export const Alone = () => html`
   <zag-test-popover label="Popover"></zag-test-popover>
@@ -14,12 +17,12 @@ export const Alone = () => html`
 export const BesideAppMenu = () => html`
   <div style="display: flex; gap: 400px; align-items: flex-start">
     <zag-test-popover label="Popover"></zag-test-popover>
-    <app-menu-stub layer-id="app-menu" label="App menu"></app-menu-stub>
+    <app-menu-stub layer-id="app-menu" label="${APP_MENU_LABEL}"></app-menu-stub>
   </div>
 `;
 
 /* A Zag popover inside a page menu's panel, part of that layer. */
-export const InsideAppMenu = () => html`<app-menu-stub layer-id="app-menu" label="App menu" with-zag></app-menu-stub>`;
+export const InsideAppMenu = () => html`<app-menu-stub layer-id="app-menu" label="${APP_MENU_LABEL}" with-zag></app-menu-stub>`;
 
 /* A page menu inside a Zag popover, part of that layer. */
 export const HoldingAppMenu = () => html`<zag-test-popover label="Popover" inner-menu></zag-test-popover>`;

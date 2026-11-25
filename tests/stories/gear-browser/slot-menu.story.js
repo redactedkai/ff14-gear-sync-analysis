@@ -3,13 +3,16 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/slot-menu.ts';
 import '../shared/layer-elements.ts';
+import { APP_MENU_LABEL } from '../shared/layer-elements.story.js';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { overlays } from '../../../src/ui/overlays.js';
 import { recordEvents } from '../gallery/record.js';
 
 /* The accessible names the stories and their specs share, written once: the search box beside the button and the page menu. */
 export const SEARCH_LABEL = 'Search gear by name';
-export const APP_MENU_LABEL = 'App menu';
+export { APP_MENU_LABEL };
+/* The words of the weapon row, which the keyboard specs look for by name. */
+export const WEAPON_LABEL = 'Weapon';
 
 /* The ids of the layers the page's overlay manager holds open, for a test that checks the element lets go of its layer. */
 globalThis.gsaOpenLayerIds = () => [...overlays.openIds];
@@ -17,7 +20,7 @@ globalThis.gsaOpenLayerIds = () => [...overlays.openIds];
 /* The rows a job with a weapon, an off-hand and two armor slots has under the filters of the story: "Off-hand" has no match. */
 export const CHOICES = [
   { key: ANY_SLOT_KEY, label: ANY_SLOT_LABEL, count: 410, countText: '410' },
-  { key: 'weapon', label: 'Weapon', count: 52, countText: '52' },
+  { key: 'weapon', label: WEAPON_LABEL, count: 52, countText: '52' },
   { key: 'offhand', label: 'Off-hand', count: 0, countText: '0' },
   { key: 'head', label: 'Head', count: 31, countText: '31' },
   { key: 'ring', label: 'Ring', count: 1203, countText: '1,203' },

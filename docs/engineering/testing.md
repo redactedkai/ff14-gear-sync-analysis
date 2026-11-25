@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | 1,412 tests in 197 files, about 30 to 45 s |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | 1,413 tests in 197 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
 | Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 54 tests in 5 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |

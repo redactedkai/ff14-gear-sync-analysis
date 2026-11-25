@@ -6,6 +6,8 @@
    Templates read it as $store.app.<field>. `job` is the chosen job's id ('SGE', or null for none), `jobCtx` its frozen
    JobContext (makeJobContext; derived, not saved). `job`, `cap`, `sync` and `level` are the open tab's Job and sync panel
    (each tab has its own, saved in a group: PANEL_GROUP); the panel's fields edit them, and `panel(tab)` reads any tab's.
+   TODO: remove this file, and app-state.differential.test.ts with it, when Alpine and the old store are removed.
+
    Substat tiers has its own job, `tiers.job` (saved), apart from the panel: `panel('tiers')`. */
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { MAX_REAL } from '../../../src/core/tables.js';

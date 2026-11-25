@@ -201,6 +201,8 @@ export async function checkRoutingAfterReload(pg) {
  * draft raises the browser's beforeunload question (Cancel keeps the page and the draft, Reload drops them); with the flag at 1
  * (the guard is off, the smoke default) no question comes. */
 export async function checkUnloadGuard(pg) {
+  // TODO: this step fails in Firefox at "Reload: the draft is gone": after Cancel, an accepted second question does not reload the
+  // page there, as on a plain page with its own beforeunload listener (WebKit reloads). It goes when Playwright's Firefox does.
   await seedSheet(pg, SET_SHEET);
   await openSageSet(pg);
   const questions = [];

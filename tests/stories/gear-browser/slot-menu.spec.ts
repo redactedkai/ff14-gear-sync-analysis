@@ -3,7 +3,15 @@
    and axe. The touch story does not run in Firefox: Playwright's Firefox fails to close a touch context under parallel workers. */
 import { test, expect } from '../fixtures.ts';
 import type { Page } from 'playwright/test';
-import { APP_MENU_LABEL, CHOICES, SEARCH_LABEL, type BesideAppMenu, type Default, type LowOnPage } from './slot-menu.story.js';
+import {
+  APP_MENU_LABEL,
+  CHOICES,
+  SEARCH_LABEL,
+  WEAPON_LABEL,
+  type BesideAppMenu,
+  type Default,
+  type LowOnPage,
+} from './slot-menu.story.js';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL, slotButtonName } from '../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 
 const STORY = 'gear-browser/slot-menu/Default';
@@ -40,7 +48,7 @@ test.describe('<gsa-slot-menu>', () => {
     await page.keyboard.press('ArrowDown'); // Any slot
     await expect(menu).toBeFocused(); // Zag moves the focus into the list a frame after it opens
     await page.keyboard.press('ArrowDown'); // Weapon
-    await expect(menu.getByRole('menuitemradio', { name: /^Weapon/ })).toHaveAttribute('data-highlighted', '');
+    await expect(menu.getByRole('menuitemradio', { name: startsWith(WEAPON_LABEL) })).toHaveAttribute('data-highlighted', '');
     await page.keyboard.press('ArrowDown'); // Off-hand has no match: Head
     await expect(menu.getByRole('menuitemradio', { name: /^Head/ })).toHaveAttribute('data-highlighted', '');
     await page.keyboard.press('ArrowDown'); // Ring, the last
@@ -232,7 +240,7 @@ test.describe('<gsa-slot-menu>', () => {
       const styleOf = (name: RegExp) => rows.filter({ hasText: name }).evaluate(row => getComputedStyle(row).outlineStyle);
       expect(await styleOf(/^Ring/), 'lit row').not.toBe('none');
       expect(await styleOf(/^Head/), 'chosen row').not.toBe('none');
-      expect(await styleOf(/^Weapon/), 'plain row').toBe('none');
+      expect(await styleOf(startsWith(WEAPON_LABEL)), 'plain row').toBe('none');
     } finally {
       await page.emulateMedia({ forcedColors: 'none' });
     }
