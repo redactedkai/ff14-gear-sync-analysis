@@ -10,7 +10,7 @@
      not cut it. */
 import * as popover from '@zag-js/popover';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
-import { ZagController, type ZagHost } from '../shared/zag-controller.ts';
+import { NESTED_LAYER_LISTENERS, ZagController, type ZagHost } from '../shared/zag-controller.ts';
 
 /* The gap between the button and the open panel, in px. */
 const PANEL_GAP_PX = 4;
@@ -60,6 +60,7 @@ export function createFilterPopover(options: FilterPopoverOptions) {
         placement,
         gutter: PANEL_GAP_PX,
         strategy: parentLayerOf(element) ? ('fixed' as const) : ('absolute' as const),
+        ...(parentLayerOf(element) ? { listeners: NESTED_LAYER_LISTENERS } : {}),
         // the window under the pinned parts of the page: the panel flips and is no taller than the room there
         ...(viewTop ? { boundary: () => windowBelow(viewTop()) } : {}),
       },

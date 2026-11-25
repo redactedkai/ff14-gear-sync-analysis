@@ -27,7 +27,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { closeOnTab, trackLastInput } from './key-focus.ts';
 import { createOverlayBridge } from './overlay-bridge.ts';
 import { SELECT_CHANGE_EVENT, SELECT_LIST_SUFFIX } from './select-names.ts';
-import { ZagController } from './zag-controller.ts';
+import { NESTED_LAYER_LISTENERS, ZagController } from './zag-controller.ts';
 
 /* The gap between the button and the open list, in px. */
 const LIST_GAP_PX = 4;
@@ -105,6 +105,7 @@ function makeZag(host: GsaSelect) {
         gutter: LIST_GAP_PX,
         boundary: () => ({ x: 0, y: 0, width: innerWidth, height: innerHeight }),
         strategy: parentLayerOf(host) === FIXED_LAYER_ID ? ('fixed' as const) : ('absolute' as const),
+        ...(parentLayerOf(host) ? { listeners: NESTED_LAYER_LISTENERS } : {}),
       },
       onValueChange: ({ value }) => {
         host.dispatchEvent(new CustomEvent(SELECT_CHANGE_EVENT, { detail: value[0] ?? '', bubbles: true, composed: true }));

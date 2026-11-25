@@ -16,6 +16,17 @@ import { type Attrs, VanillaMachine, normalizeProps, spreadProps } from '@zag-js
 /* The prefix of every machine id. */
 export const ZAG_ID_PREFIX = 'zg-';
 /* The attribute the controller sets on its element; a part belongs to its nearest ancestor that has it. */
+/* Zag's position listeners for a layer that hangs from another layer (a menu inside the Auto-fill settings popover): besides what Zag
+   follows by itself, the parent layer is moved by a transform when Zag places it, which no observer reports, so a child placed in
+   that frame stays where its anchor was. A frame-by-frame update (only while the child is open) follows the anchor. */
+export const NESTED_LAYER_LISTENERS = {
+  ancestorResize: true,
+  ancestorScroll: true,
+  elementResize: true,
+  layoutShift: true,
+  animationFrame: true,
+};
+
 export const HOST_ATTRIBUTE = 'data-zag-host';
 /* The attribute that names a part in the markup: `data-zag-part="trigger"`. */
 export const PART_ATTRIBUTE = 'data-zag-part';
