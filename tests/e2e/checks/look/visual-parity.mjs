@@ -143,7 +143,7 @@ export async function checkVisualParity(pg) {
     shadow: ['css', '#sh-settings-dialog', 'box-shadow'],
     part: ['css', '#s-gear-h', 'font-size'],
     close: ['css', '#sh-settings-dialog .dlgclose', 'width', 'height', 'top', 'right', 'color'],
-    menu: ['css', '#s-exp-menu', 'position'],
+    menu: ['css', '#sh-settings-dialog gsa-expansion-menu [data-part="positioner"]', 'position'], // Zag's positioner holds the menu
   });
   is(settings.border, settings.popLine, 'the popover border colour');
   check(
