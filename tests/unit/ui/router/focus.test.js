@@ -32,7 +32,12 @@ function rootElement() {
       root.hasStyleAttribute = true;
     },
   };
-  root.getAttribute = name => (name === 'style' && root.hasStyleAttribute ? (minHeight ? `min-height: ${minHeight};` : '') : null);
+  root.getAttribute = name => {
+    if (name !== 'style' || !root.hasStyleAttribute) {
+      return null;
+    }
+    return minHeight ? `min-height: ${minHeight};` : '';
+  };
   root.removeAttribute = name => {
     if (name === 'style') {
       root.hasStyleAttribute = false;

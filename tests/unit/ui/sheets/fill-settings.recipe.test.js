@@ -14,7 +14,18 @@ const SGE = makeJobContext('SGE');
 const SYNC = syncSettings({ cap: 123, sync: true, level: 100 });
 
 /* a value that differs from `v` and has the same kind */
-const other = v => (typeof v === 'boolean' ? !v : Array.isArray(v) ? [...v, 'x'] : typeof v === 'number' ? v + 1 : v === 'x' ? 'y' : 'x');
+const other = v => {
+  if (typeof v === 'boolean') {
+    return !v;
+  }
+  if (Array.isArray(v)) {
+    return [...v, 'x'];
+  }
+  if (typeof v === 'number') {
+    return v + 1;
+  }
+  return v === 'x' ? 'y' : 'x';
+};
 
 test('every Auto-fill setting changes the recipe and the solver request, and no other field comes with it', () => {
   const base = defaultFillSettings(SGE);

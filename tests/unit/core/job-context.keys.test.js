@@ -105,6 +105,10 @@ test("the main stat's modifier is keyed by the main stat, and Vitality's factor 
     const job = makeJobContext(id);
     const caster = main === 'int' || main === 'mind';
     assert.equal(job.vitFactor, caster ? 0.9 : 1, id);
-    assert.equal(job.damageKey, id === 'BLU' ? null : caster ? 'damageMag' : 'damagePhys', id);
+    let expectedDamageKey = caster ? 'damageMag' : 'damagePhys';
+    if (id === 'BLU') {
+      expectedDamageKey = null;
+    }
+    assert.equal(job.damageKey, expectedDamageKey, id);
   }
 });

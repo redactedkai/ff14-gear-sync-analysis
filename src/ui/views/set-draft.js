@@ -102,7 +102,7 @@ export function draftView(sheet, saved, draft) {
   return {
     changes,
     changedRows: changes.rows.map(row => row.index),
-    mealChanged: !!changes.meal,
+    mealChanged: Boolean(changes.meal),
     header: [
       { label: 'Now · before your changes', after: false, figures: nowFigures.map(figure => ({ ...figure, change: null })) },
       {
@@ -126,6 +126,6 @@ export function draftNote(verb, changes) {
   if (!changes.count) {
     return `${verb}: no changes.`;
   }
-  const what = changeText(changes.rows.length, !!changes.meal);
+  const what = changeText(changes.rows.length, Boolean(changes.meal));
   return verb === 'Applied' ? `Applied: ${what} changed.` : `Discarded: ${what} reverted.`;
 }

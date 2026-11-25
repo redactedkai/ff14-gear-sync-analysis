@@ -106,9 +106,9 @@ test("sync: a real piece is capped by its own factors; a piece with no item behi
   const war = makeJobContext('WAR'),
     sge = makeJobContext('SGE');
   const sync = { cap: 123, sync: true };
-  const [coatWar] = browseItems(war, { q: "Field Commander's Coat" }).map(p => poolItemFromRow(war, p));
+  const [coatWar] = browseItems(war, { q: "Field Commander's Coat" }).map(piece => poolItemFromRow(war, piece));
   assert.deepEqual([effStats(war, coatWar, sync).str, effStats(war, coatWar, sync).vit], [43, 45]);
-  const [coatSge] = browseItems(sge, { q: "Field Commander's Coat" }).map(p => poolItemFromRow(sge, p));
+  const [coatSge] = browseItems(sge, { q: "Field Commander's Coat" }).map(piece => poolItemFromRow(sge, piece));
   assert.deepEqual([effStats(sge, coatSge, sync).mind, effStats(sge, coatSge, sync).vit], [43, 45]);
   // the same stats as a hand-made piece (no database row): the job's caps, main 48, Vitality 51 / 45
   assert.deepEqual([capsFor(war, 'body', 123).str, capsFor(war, 'body', 123).vit], [48, 51]);

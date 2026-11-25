@@ -19,7 +19,7 @@ const pieces = [
   ...new Map(
     ITEMS.map(row => [
       `${row[ROW.ilvl]}|${row[ROW.equipLevel]}|${row[ROW.scales] ? 1 : 0}`,
-      [row[ROW.ilvl], row[ROW.equipLevel], !!row[ROW.scales]],
+      [row[ROW.ilvl], row[ROW.equipLevel], Boolean(row[ROW.scales])],
     ]),
   ).values(),
 ];

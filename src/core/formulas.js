@@ -28,9 +28,9 @@ function rnd(x) {
   return Math.floor(x + 0.5 + 1e-9);
 }
 /* Any input (number or typed text) as a whole item level inside the ItemLevel table, 0 to MAX_ILVL. */
-export function clampIlvl(i) {
-  i = Math.round(+i || 0);
-  return clamp(i, 0, MAX_ILVL);
+export function clampIlvl(input) {
+  const ilvl = Math.round(Number(input) || 0);
+  return clamp(ilvl, 0, MAX_ILVL);
 }
 
 /* A stat object with each of the job's stat keys (job.stats) at 0. */
@@ -135,7 +135,7 @@ export function capValue(job, stat, ilvl, type, pct, factor = null) {
    of a point before the last rounding; an off-hand is {offhand: {two, one}, value} (two-handed cap minus one-handed). */
 export function capDerivation(job, stat, ilvl, type, pct, factor = null) {
   if (isOffhand(type, pct)) {
-    const { two, one, value } = offhandParts(share => capValue(job, stat, ilvl, 'weapon', share, factor));
+    const { two, one, value } = offhandParts(slotShare => capValue(job, stat, ilvl, 'weapon', slotShare, factor));
     return { offhand: { two, one }, value };
   }
   const base = IL[stat][clampIlvl(ilvl)];
@@ -213,14 +213,12 @@ function fixedDirectHitShare(raw, item) {
    end (REDUCED_STAT_PIECES). */
 export function predictRaw(il, slotCode, raw, kind, item = {}) {
   // named exceptions first: the Atma weapons carry an older item level's stats, the all-jobs accessories their own factors
-  if (item.name?.endsWith(ATMA_NAME_SUFFIX)) {
-    il = ATMA_STAT_ILVL;
-  }
+  const statIlvl = item.name?.endsWith(ATMA_NAME_SUFFIX) ? ATMA_STAT_ILVL : il;
   const accessoryFactors = Object.hasOwn(ALL_JOBS_ACCESSORY_FACTORS, item.name ?? '') ? ALL_JOBS_ACCESSORY_FACTORS[item.name] : {};
 
   // one stat line at a slot share (per mille), the item's stat factor (MP and the accessory factors are percents, so
   // / 100) and a substat share (percent), rounded after each step (statLine)
-  const line = (key, pct, weight) => statLine(IL[key][il], pct, (accessoryFactors[key] ?? MP[key][kind]) / 100, weight).value;
+  const line = (key, pct, weight) => statLine(IL[key][statIlvl], pct, (accessoryFactors[key] ?? MP[key][kind]) / 100, weight).value;
   // the line on this piece's slot; a shield is the two-handed line minus the one-handed line (isOffhand)
   const isShield = isOffhand(DB_SLOT_TYPE[slotCode], DB_SLOT_PCT[slotCode]);
   const value = (key, weight) =>

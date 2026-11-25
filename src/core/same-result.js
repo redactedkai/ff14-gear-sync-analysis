@@ -107,7 +107,7 @@ export function sameResult(job, picks, cands, ctx, chosen = {}) {
 
   // 1. the player's picks, where they still fit
   for (const [i, gameId] of Object.entries(chosen)) {
-    const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(+i).find(x => x.item.gameId === gameId);
+    const c = picks[i]?.item && !picks[i].pinned && gameId != null && fitting(Number(i)).find(x => x.item.gameId === gameId);
     if (c) {
       shown[i] = asPick(picks[i].type, c);
     }

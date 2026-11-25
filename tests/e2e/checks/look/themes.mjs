@@ -166,7 +166,7 @@ async function inEveryTheme(pg, screenName, seen) {
     check(judged.length >= screen.min, `theme (${where}): only ${judged.length} texts probed, expected at least ${screen.min}`);
     const knownFor = j => KNOWN_LOW_CONTRAST.find(k => k.test.test(j.name) && (!k.scheme || k.scheme === scheme));
     const low = judged.filter(j => !j.ok && !knownFor(j));
-    for (const j of judged.filter(j => !j.ok && knownFor(j))) {
+    for (const j of judged.filter(entry => !entry.ok && knownFor(entry))) {
       const known = knownFor(j);
       seen.add(`${known.id}|${scheme}`);
       stepRecord

@@ -143,7 +143,7 @@ export async function checkSetPageFocus(pg) {
       label: box.getAttribute('aria-label'),
       modal: box.getAttribute('aria-modal'),
       backdrop: document.querySelectorAll('.dlgback').length,
-      goalFirst: !!(goal.compareDocumentPosition(gear) & Node.DOCUMENT_POSITION_FOLLOWING),
+      goalFirst: Boolean(goal.compareDocumentPosition(gear) & Node.DOCUMENT_POSITION_FOLLOWING),
       buttons: [...box.querySelectorAll('button')].map(b => b.getAttribute('aria-label') || b.textContent.trim()),
       expanded: document.querySelector('#sh-settings').getAttribute('aria-expanded'),
     };

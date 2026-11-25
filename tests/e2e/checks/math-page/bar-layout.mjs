@@ -189,7 +189,7 @@ export async function checkMathBarLayouts(pg) {
         rem: parseFloat(getComputedStyle(document.documentElement).fontSize),
       };
     });
-  const setText = zoom => pg.evaluate(zoom => (document.documentElement.style.fontSize = zoom), zoom);
+  const setText = zoom => pg.evaluate(fontSize => (document.documentElement.style.fontSize = fontSize), zoom);
   const same = (...tops) => tops.every(top => Math.abs(top - tops[0]) <= 2);
   const wide = { width: 1280, height: 900 };
   for (const [name, size, zoom] of [
@@ -204,13 +204,14 @@ export async function checkMathBarLayouts(pg) {
     await afterFrames(pg);
     const m = await measure();
     const t = m.tops;
-    const layout = same(t.job, t.piece, t.sync, t.item)
-      ? 'wide'
-      : same(t.job, t.piece, t.sync) && t.item > t.job
-        ? 'middle'
-        : same(t.job, t.piece) && same(t.sync, t.item) && t.sync > t.job
-          ? 'narrow'
-          : 'other';
+    let layout = 'other';
+    if (same(t.job, t.piece, t.sync, t.item)) {
+      layout = 'wide';
+    } else if (same(t.job, t.piece, t.sync) && t.item > t.job) {
+      layout = 'middle';
+    } else if (same(t.job, t.piece) && same(t.sync, t.item) && t.sync > t.job) {
+      layout = 'narrow';
+    }
     check(
       layout === name.split(' ')[0],
       `the controls row at ${size.width} px, text ${zoom}, is the ${layout} layout (${JSON.stringify(t)}), expected ${name.split(' ')[0]}`,
@@ -241,13 +242,13 @@ export async function checkMathBarBoxes(pg) {
   await showMath(pg, 'piece');
   const heights = selectors =>
     pg.evaluate(
-      selectors =>
-        selectors.map(selector => [selector, Math.round(document.querySelector(selector).getBoundingClientRect().height * 10) / 10]),
+      selectorList =>
+        selectorList.map(selector => [selector, Math.round(document.querySelector(selector).getBoundingClientRect().height * 10) / 10]),
       selectors,
     );
   const bar = ['#m-job-btn', '#p-slot', '#p-piece-chip', '#p-sync-chip', '#p-ilvl'];
   for (const zoom of ['100%', '125%']) {
-    await pg.evaluate(zoom => (document.documentElement.style.fontSize = zoom), zoom);
+    await pg.evaluate(fontSize => (document.documentElement.style.fontSize = fontSize), zoom);
     await afterFrames(pg);
     const rem = await pg.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
     const expected = 16 + 1.5 * rem;

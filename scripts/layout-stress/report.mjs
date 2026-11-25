@@ -38,7 +38,12 @@ export function groupFindings(findings) {
     }
     groups.set(key, group);
   }
-  return [...groups.values()].sort((a, b) => (a.severity === b.severity ? a.rule.localeCompare(b.rule) : a.severity === 'fail' ? -1 : 1));
+  return [...groups.values()].sort((a, b) => {
+    if (a.severity === b.severity) {
+      return a.rule.localeCompare(b.rule);
+    }
+    return a.severity === 'fail' ? -1 : 1;
+  });
 }
 
 /* The windows of one screen and setup in one browser, as table rows: {window, covers, fails, warns, rules}. */
@@ -94,9 +99,13 @@ export function renderReport(run) {
     )}. Setups: ${escapeHtml(setups.map(setup => setup.label).join('; '))}. ${windows.length} windows, sweep heights ${heights.join(', ')} px${options.quick ? ' (quick run)' : ''}. ${seconds} s. Dark theme only.</p>`,
   );
   html.push('<h2>What this run did and did not do</h2><ul>');
-  html.push(
-    `<li>The page fonts ${pageFonts === true ? 'loaded (Google Fonts was reachable)' : pageFonts === false ? 'did NOT load (no network): the "page fonts" setup shows the fallback stack' : 'were not asked for'}.</li>`,
-  );
+  let pageFontsText = 'were not asked for';
+  if (pageFonts === true) {
+    pageFontsText = 'loaded (Google Fonts was reachable)';
+  } else if (pageFonts === false) {
+    pageFontsText = 'did NOT load (no network): the "page fonts" setup shows the fallback stack';
+  }
+  html.push(`<li>The page fonts ${pageFontsText}.</li>`);
   html.push(
     `<li>The stress setup is a build with the level limit ${STRESS_LEVEL} and the item level limit ${STRESS_ITEM_LEVEL} (a private copy; the repo's source is untouched), visited in the matrix's windows only.</li>`,
   );
@@ -150,8 +159,14 @@ export function renderReport(run) {
           `<h3>${escapeHtml(browser)}, ${escapeHtml(screen.label)}, ${escapeHtml(setup.label)}</h3><table><tr><th>Window</th><th>Screens it stands for</th><th>Failures</th><th>Warnings</th><th>Rules</th></tr>`,
         );
         for (const row of rows) {
+          let rowClass = 'pass';
+          if (row.fails) {
+            rowClass = 'fail';
+          } else if (row.warns) {
+            rowClass = 'warn';
+          }
           html.push(
-            `<tr class="${row.fails ? 'fail' : row.warns ? 'warn' : 'pass'}"><td>${row.window}</td><td class="n">${escapeHtml(row.covers || 'quick set')}</td><td>${row.fails}</td><td>${row.warns}</td><td>${escapeHtml(row.rules.join(', '))}</td></tr>`,
+            `<tr class="${rowClass}"><td>${row.window}</td><td class="n">${escapeHtml(row.covers || 'quick set')}</td><td>${row.fails}</td><td>${row.warns}</td><td>${escapeHtml(row.rules.join(', '))}</td></tr>`,
           );
         }
         html.push('</table>');

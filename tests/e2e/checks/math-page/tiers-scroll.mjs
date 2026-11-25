@@ -29,7 +29,7 @@ const measureCards = pg =>
         headTop: card.querySelector('.tierhead').getBoundingClientRect().top,
         footTop: card.querySelector('.lfoot').getBoundingClientRect().top,
         namesGap: Math.round(names.getBoundingClientRect().top - areaBox.top),
-        curInside: !!rowBox && rowBox.top >= rowsTop - 1 && rowBox.bottom <= areaBox.bottom + 1,
+        curInside: Boolean(rowBox) && rowBox.top >= rowsTop - 1 && rowBox.bottom <= areaBox.bottom + 1,
         curOffset: rowBox ? rowBox.top + rowBox.height / 2 - (rowsTop + (areaBox.bottom - rowsTop) / 2) : null,
         curText: row?.firstElementChild.textContent,
         rowHeight: rowBox?.height,

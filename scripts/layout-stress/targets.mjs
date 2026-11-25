@@ -586,5 +586,15 @@ export function measureOf(view) {
 /* The page-side config of a view (plain data: no functions). */
 export function probeConfig(view) {
   const { scopes, controls, boxes, clipped, labels, names, pinned, rows, mathBar } = measureOf(view);
-  return { scopes, controls, boxes, clipped, labels, names: names ?? null, pinned: pinned ?? null, rows: rows ?? null, mathBar: !!mathBar };
+  return {
+    scopes,
+    controls,
+    boxes,
+    clipped,
+    labels,
+    names: names ?? null,
+    pinned: pinned ?? null,
+    rows: rows ?? null,
+    mathBar: Boolean(mathBar),
+  };
 }

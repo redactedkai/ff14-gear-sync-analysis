@@ -71,7 +71,7 @@ export function viewPart() {
     },
     /* Every edit is off: an Auto-fill runs (anywhere on the tab) or its result waits. */
     get locked() {
-      return this.$store.sheets.busy || !!this.suggestion;
+      return this.$store.sheets.busy || Boolean(this.suggestion);
     },
     /* The set's Auto-fill settings (fillSettingsOf: its own or the defaults). */
     get fillSettings() {
@@ -177,7 +177,7 @@ export function viewPart() {
       const noPieces = this.searchedCount === 0;
       return {
         text: v.plan.label,
-        disabled: v.plan.disabled || !!this.draft || this.$store.sheets.busy || noPieces,
+        disabled: v.plan.disabled || Boolean(this.draft) || this.$store.sheets.busy || noPieces,
         title: noPieces ? NO_PIECES_TEXT : null,
       };
     },

@@ -97,11 +97,11 @@ async function openPage(browser, url) {
 
 async function runJob(browser, url, job) {
   const { pg, errors } = await openPage(browser, url);
-  const counts = await pg.evaluate(job => OURS.setup(window.store, window.game, job), job);
-  const settings = await pg.evaluate(job => OURS.settings(window.game, job), job);
+  const counts = await pg.evaluate(jobId => OURS.setup(window.store, window.game, jobId), job);
+  const settings = await pg.evaluate(jobId => OURS.settings(window.game, jobId), job);
   const results = [];
   for (const [level, cap] of settings) {
-    results.push(await pg.evaluate(([job, l, c]) => OURS.compare(window.store, job, l, c), [job, level, cap]));
+    results.push(await pg.evaluate(([jobId, l, c]) => OURS.compare(window.store, jobId, l, c), [job, level, cap]));
   }
   await pg.close();
   if (errors.length) {

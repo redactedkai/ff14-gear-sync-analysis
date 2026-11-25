@@ -44,8 +44,8 @@ export function recastMult(gearSpd, level, haste = 0) {
    xivmath.ts; with no haste it is AkhMorning's). The speed multiplier is at least 0 and the result at least 1.50 s
    (GCD_FLOOR_MS: the game client's floor, second-hand; xivgear and AkhMorning have none). */
 export function gcdFor(gearSpd, level, baseMs, haste = 0) {
-  baseMs = baseMs || BASE_GCD_MS;
-  const recastMs = Math.floor((baseMs * speedModifier(gearSpd, level)) / 1000);
+  const baseRecastMs = baseMs || BASE_GCD_MS;
+  const recastMs = Math.floor((baseRecastMs * speedModifier(gearSpd, level)) / 1000);
   // haste in percent, then down to hundredths of a second (ms x (100 - haste) / 100 / 10, floored), no shorter than the
   // floor (GCD_FLOOR_MS / 10 in hundredths); / 100 gives seconds
   return Math.max(GCD_FLOOR_MS / 10, Math.floor((recastMs * (100 - haste)) / 1000)) / 100;
@@ -72,15 +72,17 @@ export function gcdTierAt(gearSpd, level, baseMs, haste = 0) {
 
 /* smallest s in [lo, hi] with pred(s), given pred is false then true; hi must satisfy pred */
 function lowest(lo, hi, pred) {
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2);
+  let low = lo;
+  let high = hi;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
     if (pred(mid)) {
-      hi = mid;
+      high = mid;
     } else {
-      lo = mid + 1;
+      low = mid + 1;
     }
   }
-  return lo;
+  return low;
 }
 
 /* The gear speed (beyond the base) that a Target GCD of `gcd` seconds asks for, 2.5 s base:

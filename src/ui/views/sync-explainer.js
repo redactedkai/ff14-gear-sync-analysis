@@ -283,12 +283,18 @@ export function syncChipView(job, sync, slot, { switchOn, loweredFrom = null, ca
   const lowered = !shown.byLevel && loweredFrom != null && loweredFrom > shown.cap;
   const guess = capGuessText(job, sync, slot);
   const off = !switchOn;
+  let warn = '';
+  if (lowered) {
+    warn = 'lowered';
+  } else if (off) {
+    warn = 'quiet';
+  }
   const name = off ? T.name.off(T.label, level, shown.cap) : T.name.on(T.label, level, shown.cap);
   return {
     parts: chipParts({
       level: levelText,
       il: T.itemLevel(shown.cap),
-      warn: lowered ? 'lowered' : off ? 'quiet' : '',
+      warn,
     }),
     name: guess ? `${name}. ${guess}` : name,
     guess,
@@ -386,13 +392,12 @@ export function explainerView(job, sync, settings, widths = {}) {
   // the materia row: only the stones the piece has in the duty, so none above the cap (a synced piece loses its melds)
   const keptStones = synced ? [] : piece.meld?.stones || [];
   const stoneChips = keptStones.flatMap(s => Array.from({ length: s.n }, () => `+${MATERIA.values[s.grade - 1]}`));
-  const meldNote = synced
-    ? 'None: a synced piece loses its melds.'
-    : !keptStones.length
-      ? slots === 0
-        ? 'None: this piece has no materia slots.'
-        : 'No materia fits this item level.'
-      : `${keptStones.map(s => `${s.n} × Grade ${ROMAN[s.grade - 1]} ${job.label[s.stat]}`).join(', ')}`;
+  let meldNote = keptStones.map(s => `${s.n} × Grade ${ROMAN[s.grade - 1]} ${job.label[s.stat]}`).join(', ');
+  if (synced) {
+    meldNote = 'None: a synced piece loses its melds.';
+  } else if (!keptStones.length) {
+    meldNote = slots === 0 ? 'None: this piece has no materia slots.' : 'No materia fits this item level.';
+  }
 
   // the slots the stones leave empty: a stone that adds nothing stays out, so the substats are at their caps
   const stoneCount = keptStones.reduce((total, s) => total + s.n, 0);
@@ -402,21 +407,28 @@ export function explainerView(job, sync, settings, widths = {}) {
   // the table under the bars: the piece, then the piece at the cap (or the one row when they are the same; the page
   // keeps the second row's space so the panel does not jump as the slider passes the cap)
   // each row's kind: overgeared against melded above the cap, else where the piece is against the cap
-  const rowKind = p => (synced ? (p.il > cap ? 'overgeared' : 'melded') : p.il === cap ? 'at-cap' : 'below-cap');
+  const rowKind = p => {
+    if (synced) {
+      return p.il > cap ? 'overgeared' : 'melded';
+    }
+    return p.il === cap ? 'at-cap' : 'below-cap';
+  };
   const vsRows = (il === cap ? [atCap] : [piece, atCap]).map(p => {
     const parts = p.kept ? meldParts(job, p.meld) : { stones: 'none', afterCap: 'ignored while synced' };
     const kind = rowKind(p);
     return { il: p.il, kind, tag: ROW_KIND_TEXT[kind], materia: parts.stones, materiaNote: parts.afterCap, points: p.points };
   });
   const diff = piece.points - atCap.points;
-  const verdict =
-    il === cap
-      ? ''
-      : !diff
-        ? 'Both have the same.'
-        : synced
-          ? `The ${diff > 0 ? 'overgeared' : 'melded'} ${slotName} (item level ${diff > 0 ? il : cap}) has ${Math.abs(diff)} more.`
-          : `The item level ${diff > 0 ? il : cap} ${slotName} has ${Math.abs(diff)} more.`;
+  let verdict = '';
+  if (il !== cap) {
+    if (!diff) {
+      verdict = 'Both have the same.';
+    } else if (synced) {
+      verdict = `The ${diff > 0 ? 'overgeared' : 'melded'} ${slotName} (item level ${diff > 0 ? il : cap}) has ${Math.abs(diff)} more.`;
+    } else {
+      verdict = `The item level ${diff > 0 ? il : cap} ${slotName} has ${Math.abs(diff)} more.`;
+    }
+  }
 
   // ---------- the curve: the same slot at every item level of the range
   const curve = [];

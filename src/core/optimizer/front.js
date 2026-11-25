@@ -50,7 +50,12 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   }
   const blockable = positionMask([...blockableTypes(posList)], positions);
   // a limited total as entries compare it: capped at the minimum unless the stat has a maximum
-  const capOf = limits.map(l => (l.max == null ? (l.min > 0 ? l.min : 0) : Infinity));
+  const capOf = limits.map(l => {
+    if (l.max != null) {
+      return Infinity;
+    }
+    return l.min > 0 ? l.min : 0;
+  });
   // how entries compare on each limit: a band (speed's, exactK) only between equal totals; a maximum only, less is
   // better; a regain cut not at all (entries past its maximum go, and no loadout meeting the real limits breaks it:
   // regain.js), the rest more is better. A second band is not supported: the caller then searches
@@ -59,7 +64,12 @@ export function frontSearch(slotList, posList, limits, known = -Infinity) {
   if (isBand.lastIndexOf(true) !== exactK) {
     return null;
   }
-  const compare = limits.map((l, k) => (k === exactK || l.cut ? 0 : l.max != null ? -1 : 1));
+  const compare = limits.map((l, k) => {
+    if (k === exactK || l.cut) {
+      return 0;
+    }
+    return l.max != null ? -1 : 1;
+  });
 
   // stages from the last slot back: one per slot, the two ring slots as one; each stage's choices as
   // {score, vals, blocks, slots: [{cand} per position]}

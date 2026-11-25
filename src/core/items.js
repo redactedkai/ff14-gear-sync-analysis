@@ -114,14 +114,14 @@ export function parseRow(r) {
     lvl: r[ROW.equipLevel],
     mask: r[ROW.jobMask],
     st: rowStats(r),
-    unique: !!r[ROW.unique],
-    hq: !!r[ROW.hq], // can be high quality: the stats are the HQ ones
+    unique: Boolean(r[ROW.unique]),
+    hq: Boolean(r[ROW.hq]), // can be high quality: the stats are the HQ ones
     routes: r[ROW.routes], // ways to get it: bit masks over ACTIVITIES (routesAllow)
     kind: r[ROW.kind], // item kind: the column of the stat factor table MP (kindFactors)
     meldSlots: r[ROW.meldSlots], // guaranteed materia slots
-    overmeld: !!r[ROW.overmeld], // overmelding allowed
+    overmeld: Boolean(r[ROW.overmeld]), // overmelding allowed
     gameId: r[ROW.gameId], // the game's item id (Item.csv row), for links to and checks against other tools
-    scales: !!r[ROW.scales], // item level follows the wearer's level (Item.SubStatCategory 2; syncTarget)
+    scales: Boolean(r[ROW.scales]), // item level follows the wearer's level (Item.SubStatCategory 2; syncTarget)
   };
 }
 
@@ -257,9 +257,9 @@ function factsOfRows(rows) {
     slotCode: first[ROW.slotCode],
     kind: first[ROW.kind],
     lvl: first[ROW.equipLevel],
-    scales: !!first[ROW.scales],
+    scales: Boolean(first[ROW.scales]),
     slots: first[ROW.meldSlots],
-    overmeld: !!first[ROW.overmeld],
+    overmeld: Boolean(first[ROW.overmeld]),
     category: first[ROW.category],
     damageDefense: Object.fromEntries(DAMAGE_DEFENSE_KEYS.map(k => [k, first[ROW[k]]])),
   };
@@ -411,7 +411,7 @@ export function activityCounts(routeLists) {
 /* The gear filters as the page's settings hold them, {expOff, min, max, lvl} (the browser's or a recipe's; '' for no
    limit), as browseItems and filterGear take them: {expOff, ilvlMin, ilvlMax, lvlMax}, 0 for no limit. */
 export function gearFilter(f) {
-  return { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 };
+  return { expOff: f.expOff, ilvlMin: Number(f.min) || 0, ilvlMax: Number(f.max) || 0, lvlMax: Number(f.lvl) || 0 };
 }
 
 /* Pool items matching the gear filters {expOff, ilvlMin, ilvlMax, lvlMax}: browseItems' filters, for pool items (the
@@ -459,7 +459,7 @@ export function jobGear(job) {
 export function poolItemFromRow(job, row) {
   return mkItem(row.name, row.type, row.ilvl, dbStats(job, row.st), {
     src: 'game',
-    hq: !!row.hq,
+    hq: Boolean(row.hq),
     copies: copiesOf(row.type, row.unique),
     gameId: row.gameId,
   });

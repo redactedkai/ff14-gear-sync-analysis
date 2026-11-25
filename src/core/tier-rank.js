@@ -23,7 +23,10 @@ import { rankTierOf, tierStart } from './tiers.js';
 /* What a finished stage search `result` proves for a meal's `state` (rankByTier's): {stat, most, minStats, speed}, the
    most gear points of `stat` under the state's minimums and speed band (optimizer/regain.js). */
 function provenMost(state, stat, result) {
-  const speed = !state.gear ? null : state.gear.gearMax != null ? 'band' : 'min';
+  let speed = null;
+  if (state.gear) {
+    speed = state.gear.gearMax != null ? 'band' : 'min';
+  }
   return { stat, most: result.totals[stat] || 0, minStats: Object.keys(state.mins), speed };
 }
 
@@ -47,7 +50,10 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
   // keys: weapon damage first when the job ranks it (rankedKeys): a stage of its own, with no tiers, held at the most
   // reached like main stat, so every later stage's proven maximum holds under it (regain cuts stay exact)
   const { level, haste, hastePct: pct, keys } = goalSettings(job, sync, opts);
-  const gcdMode = opts.gcd != null ? (opts.mode === 'min' ? 'min' : 'exact') : null;
+  let gcdMode = null;
+  if (opts.gcd != null) {
+    gcdMode = opts.mode === 'min' ? 'min' : 'exact';
+  }
   const base = { haste, level, asked: opts.gcd ?? null, mode: gcdMode };
 
   // 1. the Target GCD's band on total speed, if one is set
@@ -84,7 +90,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     nodes = 0;
   const search = (state, target, tiebreak) => {
     const minStats = Object.keys(state.mins);
-    const prepKey = `${target}|${tiebreak.join()}|${minStats.join()}|${gcdMode}|${!!opts.melds}`;
+    const prepKey = `${target}|${tiebreak.join()}|${minStats.join()}|${gcdMode}|${Boolean(opts.melds)}`;
     if (!cache.has(prepKey)) {
       const prepOpts = { target, tiebreak, melds: opts.melds, speed: gcdMode, minStats, versionKeys, versionCache, fixed: opts.fixed };
       cache.set(prepKey, prepare(job, pool, sync, prepOpts));
@@ -93,7 +99,7 @@ export function rankByTier(job, pool, sync, opts, cache = new Map()) {
     const runKey = `${prepKey}|${JSON.stringify(limits)}|${JSON.stringify(state.proven)}`;
     if (!runs.has(runKey)) {
       const r = solve(cache.get(prepKey), { ...limits, seed: state.last?.picks, nodeLimit: opts.nodeLimit, proven: state.proven });
-      truncated ||= !!r.truncated;
+      truncated ||= Boolean(r.truncated);
       nodes += r.nodes || 0;
       runs.set(runKey, r);
     }

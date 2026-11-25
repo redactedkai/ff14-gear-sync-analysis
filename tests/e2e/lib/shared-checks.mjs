@@ -38,17 +38,17 @@ export async function checkSyncCaps(pg, job) {
  * checkCapLineStable. */
 export function capLineShape(pg, { line, cap, level, others }) {
   return pg.evaluate(
-    ({ line, cap, level, others }) => {
+    ({ line: lineSelector, cap: capSelector, level: levelSelector, others: otherSelectors }) => {
       const box = selector => document.querySelector(selector).getBoundingClientRect();
-      const label = document.querySelector(line);
-      const capBox = box(cap);
+      const label = document.querySelector(lineSelector);
+      const capBox = box(capSelector);
       return {
         em: label.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(label).fontSize),
         capTop: capBox.top,
         capHeight: capBox.height,
         capWidth: capBox.width,
-        dy: capBox.top - box(level).top,
-        others: others.map(selector => [box(selector).left, box(selector).top]),
+        dy: capBox.top - box(levelSelector).top,
+        others: otherSelectors.map(selector => [box(selector).left, box(selector).top]),
       };
     },
     { line, cap, level, others },

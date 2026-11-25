@@ -9,7 +9,7 @@ import { openSageSet } from '../../lib/sheets.mjs';
 const FIRST_PAINT_PROBE = () => {
   const frames = [];
   window.__firstPaint = frames;
-  const shown = el => !!el && el.getClientRects().length > 0;
+  const shown = el => Boolean(el) && el.getClientRects().length > 0;
   const record = () => {
     if (document.body) {
       frames.push({

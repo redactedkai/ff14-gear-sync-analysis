@@ -23,9 +23,9 @@ function naiveRows(job, browse) {
   const allowedRoutes =
     ACTIVITIES.filter(activity => !browse.exclude.includes(activity.key)).reduce((mask, activity) => mask | activity.bit, 0) |
     (browse.market ? ACTIVITY_MARKET_BIT : 0);
-  const equipLevelMax = +browse.lvl || 0;
-  const ilvlMin = +browse.min || 0;
-  const ilvlMax = +browse.max || 0;
+  const equipLevelMax = Number(browse.lvl) || 0;
+  const ilvlMin = Number(browse.min) || 0;
+  const ilvlMax = Number(browse.max) || 0;
   const statAt = key => STAT_ORDER.indexOf(key);
   const rows = [];
   for (const row of ITEMS) {
@@ -106,7 +106,12 @@ test('the Gear browser lists the rows, order and slot counts of a naive filter a
     assert.deepEqual(shown.map(id).sort(), want.map(id).sort(), `${label}: rows`);
 
     // the order: by the sort key, then the view's ties; ascending reverses the key (a stat is its synced value)
-    const keyOf = row => (browse.sort === 'lvl' ? row.lvl : browse.sort === 'ilvl' ? row.ilvl : row.eff[browse.sort] || 0);
+    const keyOf = row => {
+      if (browse.sort === 'lvl') {
+        return row.lvl;
+      }
+      return browse.sort === 'ilvl' ? row.ilvl : row.eff[browse.sort] || 0;
+    };
     const direction = browse.dir === 'asc' ? -1 : 1;
     for (let i = 1; i < shown.length; i++) {
       const before = shown[i - 1];

@@ -121,7 +121,7 @@ export function mealMenu(source) {
     },
     /* the Food menu's filters now: its pills, search text and "Best for goal" switch (views mealsPassing) */
     get mealFilters() {
-      return { stats: this.mealStats, query: this.mealQuery, bestOnly: this.mealBestOnly && !!this.mealSourceMenu?.hasBest };
+      return { stats: this.mealStats, query: this.mealQuery, bestOnly: this.mealBestOnly && Boolean(this.mealSourceMenu?.hasBest) };
     },
     /* every meal of the list, in its order */
     get mealItems() {

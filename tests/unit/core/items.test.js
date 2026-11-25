@@ -288,25 +288,25 @@ test('"Gear categories" routes of real items, and filtering a pool by them', () 
   const hand = mkItem('Hand-made', 'head', 700, { sks: 10 });
   pool.push(hand);
   assert.equal(itemRoutes(hand), null);
-  const names = (off, market) => withActivities(pool, off, market).map(i => i.name);
+  const namesShown = (off, market) => withActivities(pool, off, market).map(i => i.name);
 
   // every box and the market board: all but the retired piece; hand-made pieces always pass
-  assert.deepEqual(names([], true), [...Object.keys(cases).filter(n => n !== "Radiant's Helm of Fending"), 'Hand-made']);
+  assert.deepEqual(namesShown([], true), [...Object.keys(cases).filter(n => n !== "Radiant's Helm of Fending"), 'Hand-made']);
   // the defaults leave out Ultimate, Savage (Current) and PvP among others
   const hiddenByDefault = ['Palazzo Diamond Codex', "Dark Horse Champion's Gloves of Scouting", 'Lionsmane Armet'];
   assert.deepEqual(
-    names([...DEFAULT_EXCLUDE], true),
-    names([], true).filter(n => !hiddenByDefault.includes(n)),
+    namesShown([...DEFAULT_EXCLUDE], true),
+    namesShown([], true).filter(n => !hiddenByDefault.includes(n)),
   );
   // a tradeable crafted piece stays while the market board is on, whatever the Crafted box says
-  assert.ok(names(['crafted'], true).includes("Ra'Kaznar Helm of Fending"));
-  assert.ok(!names(['crafted'], false).includes("Ra'Kaznar Helm of Fending"));
+  assert.ok(namesShown(['crafted'], true).includes("Ra'Kaznar Helm of Fending"));
+  assert.ok(!namesShown(['crafted'], false).includes("Ra'Kaznar Helm of Fending"));
   // a piece with two routes stays while either is open
-  assert.ok(names(['hunts'], true).includes('Augmented Bygone Brass Earrings of Casting'));
-  assert.ok(!names(['hunts', 'savage_current'], true).includes('Augmented Bygone Brass Earrings of Casting'));
+  assert.ok(namesShown(['hunts'], true).includes('Augmented Bygone Brass Earrings of Casting'));
+  assert.ok(!namesShown(['hunts', 'savage_current'], true).includes('Augmented Bygone Brass Earrings of Casting'));
   // every box off and no market board: only what is not from the database
   assert.deepEqual(
-    names(
+    namesShown(
       ACTIVITIES.map(a => a.key),
       false,
     ),

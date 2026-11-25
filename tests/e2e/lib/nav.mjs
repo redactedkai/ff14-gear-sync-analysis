@@ -216,11 +216,9 @@ export async function tableRows(pg, selector) {
 /** Type `value` into the number box `sel` and commit it. '#level' and '#cap' mean the open tab's own boxes (the Gear browser's strip,
  * or Stat Allocation's Sync settings popover, opened first). */
 export async function setNumber(pg, sel, value) {
-  if (['#level', '#cap'].includes(sel)) {
-    sel = (await openSync(pg))[sel.slice(1)];
-  }
-  await pg.fill(sel, value);
-  await pg.locator(sel).dispatchEvent('change');
+  const selector = ['#level', '#cap'].includes(sel) ? (await openSync(pg))[sel.slice(1)] : sel;
+  await pg.fill(selector, value);
+  await pg.locator(selector).dispatchEvent('change');
 }
 
 /** Turn item level sync on (the cap field is disabled while it is off) and set the cap. */
@@ -376,7 +374,7 @@ export async function checkFromMenu(pg, pre, outside) {
       const last = rect(links[links.length - 1]);
       const tabs = rect(document.querySelector(tabsSel));
       return {
-        links: links.map(link => link.dataset.action),
+        links: links.map(menuLink => menuLink.dataset.action),
         switchLeft: sw.left - rect(menuEl).left,
         sameLine: Math.abs((first.top + first.bottom) / 2 - (sw.top + sw.bottom) / 2) <= 6,
         linksRightOfSwitch: first.left >= sw.right,

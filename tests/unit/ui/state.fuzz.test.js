@@ -39,7 +39,7 @@ test('restoreState never throws, always returns a state in range and restores it
     }, label);
 
     assert.ok(
-      JOBS.some(job => job.id === state.job),
+      JOBS.some(entry => entry.id === state.job),
       `job ${state.job}: ${label}`,
     );
     const job = makeJobContext(state.job);

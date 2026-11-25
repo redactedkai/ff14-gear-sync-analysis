@@ -36,7 +36,7 @@ export function sheetManagerView(loaded) {
       id: sheet.id,
       name: sheet.name,
       descriptionLine: descriptionLine || 'No description',
-      hasDescription: !!descriptionLine,
+      hasDescription: Boolean(descriptionLine),
       jobId: sheet.job,
       jobName: jobById(sheet.job).name,
       settingsText: syncShort(sheet),

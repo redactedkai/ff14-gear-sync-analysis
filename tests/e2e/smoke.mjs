@@ -152,7 +152,7 @@ export async function main() {
   const records = [];
   try {
     // a pool of workers takes the steps in order; the output below is in step order whichever finishes first
-    const queue = groups.map((_, i) => i).sort((a, b) => Number(!!groups[b].slow) - Number(!!groups[a].slow)); // slow ones first
+    const queue = groups.map((_, i) => i).sort((a, b) => Number(Boolean(groups[b].slow)) - Number(Boolean(groups[a].slow))); // slow ones first
     const worker = async () => {
       for (let i = queue.shift(); i !== undefined; i = queue.shift()) {
         records[i] = await runGroup(browser, groups[i]);

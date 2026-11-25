@@ -14,7 +14,7 @@ export function editableCopy(gearSet) {
   return {
     ...gearSet,
     pieces: gearSet.pieces.map(row => (row.gameId == null ? { slot: row.slot } : { ...row, stones: [...(row.stones ?? [])] })),
-    pinned: { pieces: [...(gearSet.pinned?.pieces ?? [])], meal: !!gearSet.pinned?.meal },
+    pinned: { pieces: [...(gearSet.pinned?.pieces ?? [])], meal: Boolean(gearSet.pinned?.meal) },
   };
 }
 
@@ -26,12 +26,12 @@ export function withPin(gearSet, index, on) {
   } else {
     rows.delete(index);
   }
-  return { ...gearSet, pinned: { meal: !!gearSet.pinned?.meal, pieces: [...rows].sort((a, b) => a - b) } };
+  return { ...gearSet, pinned: { meal: Boolean(gearSet.pinned?.meal), pieces: [...rows].sort((a, b) => a - b) } };
 }
 
 /* `gearSet` with its meal pinned or not; new data. */
 export function withMealPin(gearSet, on) {
-  return { ...gearSet, pinned: { pieces: [...(gearSet.pinned?.pieces ?? [])], meal: !!on } };
+  return { ...gearSet, pinned: { pieces: [...(gearSet.pinned?.pieces ?? [])], meal: Boolean(on) } };
 }
 
 /* Whether the other ring row of `gearSet` already holds the Unique ring `gameId` (a Unique ring is worn once). */
@@ -57,7 +57,7 @@ function coveredByWorn(job, gearSet, index, slot) {
       return false;
     }
     const worn = poolItemById(job, row.gameId);
-    return !!worn && slotInfo(job, worn).blocks.includes(slot);
+    return Boolean(worn) && slotInfo(job, worn).blocks.includes(slot);
   });
 }
 

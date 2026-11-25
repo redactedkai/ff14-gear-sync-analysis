@@ -120,10 +120,10 @@ async function bestMealCase(pg, sheet, several) {
   await expect(pg.locator('#sh-apply')).toHaveCount(0);
   await expect(note).toBeVisible(); // the note is a star mark beside the meal; a screen reader reads it as "best for goal"
   await expect(note.locator('.star')).toHaveCount(1);
-  check(!!(await note.locator('.star').getAttribute('aria-label')), 'the star has a name for a screen reader');
+  check(Boolean(await note.locator('.star').getAttribute('aria-label')), 'the star has a name for a screen reader');
   await expect(note.getByRole('img')).toHaveCount(1);
   await expect(count).toHaveCount(0);
-  await poll('the tie list saved with the set', async () => ({ ok: !!(await savedList()), got: await savedList() }));
+  await poll('the tie list saved with the set', async () => ({ ok: Boolean(await savedList()), got: await savedList() }));
   const tied = (await savedList()).length;
   if (several) {
     check(tied >= 2, `an Auto-fill on Sage level 100 for Critical Hit with sync 123 ties ${tied} meals, expected several`);

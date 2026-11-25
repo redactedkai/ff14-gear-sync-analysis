@@ -9,7 +9,11 @@ export const fmtInt = (n: number): string => INTEGER_FORMAT.format(n);
 
 /* "3 slots", "1 change", "2 matches": a count and its word (a word ending in s or ch takes "es"). */
 export function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? '' : /(s|ch)$/.test(word) ? 'es' : 's'}`;
+  let ending = '';
+  if (count !== 1) {
+    ending = /(s|ch)$/.test(word) ? 'es' : 's';
+  }
+  return `${count} ${word}${ending}`;
 }
 
 /* `one` for a count of 1, else `many`: the hand-written pair of a sentence ("it"/"them", "its slot is"/"their slots are"). */

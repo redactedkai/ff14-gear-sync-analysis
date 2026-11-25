@@ -136,7 +136,7 @@ export function fillPart(solver, page) {
       }
       if (answer.kind === 'badpin') {
         if (answer.droppedRows.length || answer.mealDropped) {
-          pinsAfterFill = { pieces: answer.pinnedRows, meal: !!this.saved.pinned?.meal && !answer.mealDropped };
+          pinsAfterFill = { pieces: answer.pinnedRows, meal: Boolean(this.saved.pinned?.meal) && !answer.mealDropped };
         }
         this.pages.fillEnded(this.setId, id, { line: [...answer.messages, answer.droppedText].filter(Boolean).join(' ') });
         return;

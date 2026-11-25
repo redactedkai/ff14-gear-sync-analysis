@@ -20,12 +20,15 @@ function slotsText(item) {
 function staticFacts(job, item) {
   const lvl = equipLevel(item) ?? 0;
   const subs = job.substats.filter(s => item.stats[s]).map(s => `${job.short[s]} ${item.stats[s]}`);
-  const statLine = subs.length ? subs.join(' · ') : allocatedRelic(job, item) ? 'substats set in game' : 'no substats';
+  let statLine = subs.join(' · ');
+  if (!subs.length) {
+    statLine = allocatedRelic(job, item) ? 'substats set in game' : 'no substats';
+  }
   const category = categoryOf(item);
   return {
     key: item.gameId,
     name: item.name,
-    hq: !!item.hq,
+    hq: Boolean(item.hq),
     ilvl: item.ilvl,
     lvl,
     category,
@@ -61,6 +64,27 @@ function slotFacts(job, gear, slot) {
   return bySlot.get(slot);
 }
 
+/* The note after a piece's name for a Unique piece: '' for one that is not, else whether the other ring row holds it
+   (`taken`). */
+function uniqueTextOf(fact, taken) {
+  if (!fact.unique) {
+    return '';
+  }
+  return taken ? ' Unique, in the other ring' : ' Unique';
+}
+
+/* The line under the picker's list when no piece shows: '' while some do, else why none does (the search matches none,
+   or the job has no piece for the slot). */
+function emptyTextOf(matching, forSlot, query, slotName) {
+  if (matching.length) {
+    return '';
+  }
+  if (forSlot.length && query.trim()) {
+    return `No piece matches "${query.trim()}".`;
+  }
+  return `No ${slotName} piece for this job.`;
+}
+
 /* The set's part of a piece's line in the picker of row `index`: taken (a Unique ring worn in the other ring row), on (the
    row holds it), and what the template shows of them: onClass (the row's class while it is on), uniqueText (the Unique
    note, '' for a piece that is not), so the template decides nothing per row. */
@@ -70,7 +94,7 @@ function setFacts(fact, row, job, gearSet, index) {
     taken,
     on: fact.key === row.gameId,
     onClass: fact.key === row.gameId ? 'on' : '',
-    uniqueText: !fact.unique ? '' : taken ? ' Unique, in the other ring' : ' Unique',
+    uniqueText: uniqueTextOf(fact, taken),
   };
 }
 
@@ -103,11 +127,7 @@ export function piecePickerView(job, gear, gearSet, index, query) {
     canEmpty: row.gameId != null,
     groups: drawn,
     count: matching.length,
-    emptyText: matching.length
-      ? ''
-      : forSlot.length && query.trim()
-        ? `No piece matches "${query.trim()}".`
-        : `No ${slotName} piece for this job.`,
+    emptyText: emptyTextOf(matching, forSlot, query, slotName),
     footText: plural(forSlot.length, 'piece'),
   };
 }

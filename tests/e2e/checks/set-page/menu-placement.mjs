@@ -32,8 +32,8 @@ async function pickFirstPiece(pg, row) {
  * over `menuSel`'s box: the names of the pinned parts the menu is drawn over (the topmost thing at the middle of the part
  * of the menu that lies under that part is the menu's). */
 function pinnedPartsUnderMenu(pg, menuSel) {
-  return pg.evaluate(menuSel => {
-    const menu = document.querySelector(menuSel).getBoundingClientRect();
+  return pg.evaluate(menuSelector => {
+    const menu = document.querySelector(menuSelector).getBoundingClientRect();
     const parts = { 'pinned header': '#sh-set .shead', 'column names': '#sh-gear thead th' };
     const over = [];
     for (const [name, sel] of Object.entries(parts)) {
@@ -46,7 +46,7 @@ function pinnedPartsUnderMenu(pg, menuSel) {
         continue;
       }
       const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2);
-      if (hit?.closest(menuSel)) {
+      if (hit?.closest(menuSelector)) {
         over.push(name);
       }
     }
@@ -58,9 +58,9 @@ function pinnedPartsUnderMenu(pg, menuSel) {
  * covers it and the open menu under it reaches up under the heading; returns the scroll made. */
 function scrollButtonUnderHeading(pg, buttonSel, depth) {
   return pg.evaluate(
-    ([sel, depth]) => {
+    ([selector, scrollDepth]) => {
       const before = scrollY;
-      scrollBy(0, document.querySelector(sel).getBoundingClientRect().top - depth);
+      scrollBy(0, document.querySelector(selector).getBoundingClientRect().top - scrollDepth);
       return scrollY - before;
     },
     [buttonSel, depth],
@@ -101,9 +101,9 @@ export async function checkPieceMenuKeepsButtonInSight(pg) {
   await pg.click(buttonSel);
   await expect(pg.locator('.pick-menu')).toBeVisible();
   await poll('the Weapon button to stay below the column names with the menu under it, inside the window', async () => {
-    const got = await pg.evaluate(buttonSel => {
+    const got = await pg.evaluate(buttonSelector => {
       const round = Math.round;
-      const button = document.querySelector(buttonSel).getBoundingClientRect();
+      const button = document.querySelector(buttonSelector).getBoundingClientRect();
       const menu = document.querySelector('.pick-menu').getBoundingClientRect();
       const names = document.querySelector('#sh-gear thead th').getBoundingClientRect();
       return {

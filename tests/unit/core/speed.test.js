@@ -46,9 +46,9 @@ const AKH = {
 for (const [level, rows] of Object.entries(AKH)) {
   test(`AkhMorning level ${level} GCD tiers (2.5 s base) and DoT scalars`, () => {
     for (const [spd, gcd, mult] of rows) {
-      assert.equal(gcdFor(spd, +level), gcd, `gcd at ${spd}`);
-      assert.ok(gcdFor(spd - 1, +level) > gcd, `${spd - 1} is still on the previous tier`);
-      assert.equal(dotMult(spd, +level), mult, `DoT scalar at ${spd}`);
+      assert.equal(gcdFor(spd, Number(level)), gcd, `gcd at ${spd}`);
+      assert.ok(gcdFor(spd - 1, Number(level)) > gcd, `${spd - 1} is still on the previous tier`);
+      assert.equal(dotMult(spd, Number(level)), mult, `DoT scalar at ${spd}`);
     }
   });
 }

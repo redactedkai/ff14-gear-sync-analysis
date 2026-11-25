@@ -85,7 +85,7 @@ export function numberField(get, set, lo, hi, { live = false, decimals = 0, empt
       if (unchanged) {
         return el.value;
       }
-      return el === document.activeElement && roundTo(+el.value, decimals) === v ? el.value : v;
+      return el === document.activeElement && roundTo(Number(el.value), decimals) === v ? el.value : v;
     },
     '@input'(e) {
       const raw = e.target.value;

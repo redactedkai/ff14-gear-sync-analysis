@@ -75,7 +75,7 @@ const probeSetBoxes = () => {
   const names = document.querySelector('#sh-gear thead th');
   const centerHit = (el, selector) => {
     const r = el.getBoundingClientRect();
-    return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(selector);
+    return Boolean(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(selector));
   };
   const head = document.querySelector('#sh-set .shead');
   return {
@@ -185,7 +185,7 @@ async function tabTo(pg, id, limit = 60) {
       const el = document.activeElement;
       const r = el.getBoundingClientRect();
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return { id: el.id, shown: !!hit && el.contains(hit) };
+      return { id: el.id, shown: Boolean(hit) && el.contains(hit) };
     });
     if (at.id === id) {
       return at.shown ? 'reached' : 'hidden under another element';

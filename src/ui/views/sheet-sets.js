@@ -109,7 +109,7 @@ export function sheetPageView(sheet) {
     pointColumns: rows.length ? rows[0].points.map(point => point.label) : [],
     columnKeys: rows.length ? rows[0].figures.map(figure => figure.key) : [],
     pointKeys: rows.length ? rows[0].points.map(point => point.key) : [],
-    wideColumns: rows.length ? rows[0].figures.map(figure => !!figure.shown) : [],
+    wideColumns: rows.length ? rows[0].figures.map(figure => Boolean(figure.shown)) : [],
     rows,
     bonusNote: bonusNote(sheet),
     empty: rows.length === 0,

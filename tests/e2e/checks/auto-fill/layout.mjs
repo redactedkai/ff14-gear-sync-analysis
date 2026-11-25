@@ -145,12 +145,12 @@ export async function checkGcdLabel(pg) {
         check(/^Target GCD · \d\.\d\d–\d\.\d\d$/.test(got.leftText), `${where}: the left part reads "${got.leftText}"`);
       }
       const wantHaste = labelCase.haste;
-      const hasteOk =
-        wantHaste === null
-          ? got.sideText === null
-          : wantHaste instanceof RegExp
-            ? wantHaste.test(got.sideText ?? '')
-            : got.sideText === wantHaste;
+      let hasteOk = got.sideText === wantHaste;
+      if (wantHaste === null) {
+        hasteOk = got.sideText === null;
+      } else if (wantHaste instanceof RegExp) {
+        hasteOk = wantHaste.test(got.sideText ?? '');
+      }
       check(hasteOk, `${where}: the right part reads ${JSON.stringify(got.sideText)}`);
       if (got.sideText && !labelCase.off) {
         check(got.sideTitle === got.sideText, `${where}: the haste's title is ${JSON.stringify(got.sideTitle)}`);

@@ -187,7 +187,7 @@ test('WAR item level 44-70 (Herklaedi, Flanchards or a plain body, legs and feet
     }
   }
   // both shapes win somewhere, so the brute force above checks their blocked slots
-  assert.ok(covered.has('Herklaedi') && [...covered].some(n => /Flanchard/.test(n)), [...covered].join(', '));
+  assert.ok(covered.has('Herklaedi') && [...covered].some(name => /Flanchard/.test(name)), [...covered].join(', '));
 });
 
 test('below level 50 a full pool keeps the search small: a piece covering later slots is bounded with them', () => {

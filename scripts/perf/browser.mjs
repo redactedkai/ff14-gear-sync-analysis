@@ -69,7 +69,13 @@ const waitMeasure = (pg, name, count) =>
 /** `job`'s sheet as src/ui/sheets/storage.js saves it: level 100, no sync, one empty set per FILL_TARGETS goal. */
 function sheetFor(job) {
   const ctx = makeJobContext(job);
-  const sets = FILL_TARGETS.map(goal => (goal === 'main' ? ctx.mainKey : goal === 'speed' ? ctx.speedKey : goal)).map((target, i) => ({
+  const targetKey = goal => {
+    if (goal === 'main') {
+      return ctx.mainKey;
+    }
+    return goal === 'speed' ? ctx.speedKey : goal;
+  };
+  const sets = FILL_TARGETS.map(targetKey).map((target, i) => ({
     id: `g_${target}`,
     name: `Goal ${target}`,
     description: '',

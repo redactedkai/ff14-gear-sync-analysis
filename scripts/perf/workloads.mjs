@@ -8,8 +8,8 @@ import { browseItems, poolItemFromRow } from '../../src/core/items.js';
 export const JOB_IDS = JOBS.map(j => j.id);
 
 /* The job's full pool: every database piece it can equip (what "add all" gives with no filter). */
-export function fullPool(job) {
-  return browseItems(job, {}).map(r => poolItemFromRow(job, r));
+export function fullPool(jobContext) {
+  return browseItems(jobContext, {}).map(r => poolItemFromRow(jobContext, r));
 }
 
 /* Sync settings {cap, sync, level, label}: off; item level caps at level 100 (incl. the materia gate edges 290, 690);
@@ -39,9 +39,9 @@ export function rng(seed) {
 }
 
 /* O-lite: every single target; every target > tiebreak pair of substats; 12 three-key tuples; 2 with a repeated key. */
-export function objectivesLite(job, seed = 7) {
-  const out = job.stats.map(t => ({ target: t, tiebreak: [] }));
-  const subs = job.substats;
+export function objectivesLite(jobContext, seed = 7) {
+  const out = jobContext.stats.map(t => ({ target: t, tiebreak: [] }));
+  const subs = jobContext.substats;
   subs.forEach(a => {
     subs.forEach(b => {
       if (a !== b) {
@@ -52,8 +52,8 @@ export function objectivesLite(job, seed = 7) {
   const r = rng(seed);
   const pick = list => list[Math.floor(r() * list.length)];
   for (let i = 0; i < 12; i++) {
-    const a = pick(job.stats);
-    const rest = job.stats.filter(s => s !== a);
+    const a = pick(jobContext.stats);
+    const rest = jobContext.stats.filter(s => s !== a);
     const b = pick(rest);
     out.push({ target: a, tiebreak: [b, pick(rest.filter(s => s !== b))] });
   }
@@ -63,10 +63,10 @@ export function objectivesLite(job, seed = 7) {
 }
 
 /* O-full: every target x tiebreak 1 x tiebreak 2 (none included). */
-export function objectivesFull(job) {
-  const opt = [null, ...job.stats];
+export function objectivesFull(jobContext) {
+  const opt = [null, ...jobContext.stats];
   const out = [];
-  job.stats.forEach(t => {
+  jobContext.stats.forEach(t => {
     opt.forEach(a => {
       opt.forEach(b => {
         out.push({ target: t, tiebreak: [a, b].filter(Boolean) });

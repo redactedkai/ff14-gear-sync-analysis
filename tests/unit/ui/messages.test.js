@@ -23,8 +23,8 @@ function bind() {
 test('a note after an action clears itself, and the same note said again stays NOTE_MS from the second time', t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { c, sheets, watchers } = bind();
-  const say = text => {
-    sheets.setNote(text);
+  const say = noteText => {
+    sheets.setNote(noteText);
     watchers['$store.sheets.noteSeq']();
   };
   const text = 'Deleted “X”.';

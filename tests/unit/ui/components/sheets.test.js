@@ -342,7 +342,12 @@ test('a dialog opens with the focus in its first field; nothing runs once the co
 
 test('the component: its six parts define every member the templates use, getters as getters', () => {
   const descriptors = Object.getOwnPropertyDescriptors(sheetsTab());
-  const kind = name => (descriptors[name].get ? 'getter' : typeof descriptors[name].value === 'function' ? 'method' : 'field');
+  const kind = name => {
+    if (descriptors[name].get) {
+      return 'getter';
+    }
+    return typeof descriptors[name].value === 'function' ? 'method' : 'field';
+  };
   const expected = {
     getter: [
       'activeSort',

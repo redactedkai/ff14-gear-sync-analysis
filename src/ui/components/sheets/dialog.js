@@ -134,7 +134,14 @@ export function dialogPart() {
     /* Delete asks first: `what` 'sheet', 'set' or 'unreadable', `id` the thing's id. */
     askDelete(what, id, opener) {
       const store = this.sheets;
-      const target = what === 'sheet' ? store.sheet(id) : what === 'set' ? store.set(id) : store.list().unreadable.find(r => r.id === id);
+      let target;
+      if (what === 'sheet') {
+        target = store.sheet(id);
+      } else if (what === 'set') {
+        target = store.set(id);
+      } else {
+        target = store.list().unreadable.find(r => r.id === id);
+      }
       if (target) {
         this.openDialog({ kind: 'delete', what, id, target }, opener);
       }
@@ -150,7 +157,7 @@ export function dialogPart() {
     },
     /* The form's sync switch: switched on, the cap is lowered to what the level allows. */
     setFormSync(on) {
-      this.dialog.sync.on = !!on;
+      this.dialog.sync.on = Boolean(on);
       this.clearDialogError();
       this.limitFormCap();
     },

@@ -72,7 +72,7 @@ test('one Unique ring fills the first ring slot and leaves the second empty', ()
   const { run, set } = solveOf(app, pool);
   assert.equal(run.status, 'ok');
   assert.deepEqual(
-    set.rows.filter(r => r.label.startsWith('Ring')).map(r => !!r.item),
+    set.rows.filter(r => r.label.startsWith('Ring')).map(r => Boolean(r.item)),
     [true, false],
   );
 });
@@ -146,7 +146,12 @@ test("Gear to search: the browser's filters, on the Auto-fill settings' own valu
     ];
     for (const f of cases) {
       Object.assign(app.recipe, f, { exclude: [...DEFAULT_EXCLUDE] });
-      const rows = browseItems(job, { expOff: f.expOff, ilvlMin: +f.min || 0, ilvlMax: +f.max || 0, lvlMax: +f.lvl || 0 });
+      const rows = browseItems(job, {
+        expOff: f.expOff,
+        ilvlMin: Number(f.min) || 0,
+        ilvlMax: Number(f.max) || 0,
+        lvlMax: Number(f.lvl) || 0,
+      });
       const want = withActivities(
         rows.map(r => poolItemFromRow(job, r)),
         DEFAULT_EXCLUDE,

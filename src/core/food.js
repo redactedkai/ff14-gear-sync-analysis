@@ -132,7 +132,10 @@ function betterRank(a, b) {
 
 /* The meals to try for a `food` option: [null] for none, every choice of the job for 'best', else that one meal. */
 export function mealsFor(job, food) {
-  return food == null ? [null] : food === 'best' ? foodChoices(job) : [food];
+  if (food == null) {
+    return [null];
+  }
+  return food === 'best' ? foodChoices(job) : [food];
 }
 
 /* What `meal` (a foodChoices entry, or null for none) adds to gear totals `totals` at `level`: {bonus, withFood}, the

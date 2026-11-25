@@ -70,7 +70,10 @@ export function bonusNote(sheet) {
 
 /* A whole number with its sign: "+3", "−2" (a true minus sign, as the page writes them), "0". */
 function signed(points) {
-  return points > 0 ? `+${points}` : points < 0 ? `−${-points}` : '0';
+  if (points > 0) {
+    return `+${points}`;
+  }
+  return points < 0 ? `−${-points}` : '0';
 }
 
 /* The Tier row's cells, one per stat in job.stats order: {effect, spare, toNext, text ("3 · +16"; "0 · –" at the last
@@ -124,7 +127,7 @@ export function setTotalsView(context) {
   return {
     total: {
       label: 'Stat Total',
-      hasMeal: !!evaluated.meal,
+      hasMeal: Boolean(evaluated.meal),
       cells: totalCells(job, evaluated.panel),
       withoutMeal: totalCells(job, evaluated.panelGear),
       emptyCount,
@@ -162,7 +165,7 @@ export function setFigures(context) {
     spec: specKey ? tierOf(specKey).effect : null,
     dot: `+${evaluated.gcd.dot.toFixed(1)}%`,
   };
-  const hasted = !!evaluated.gcd.haste;
+  const hasted = Boolean(evaluated.gcd.haste);
   return FIGURES.filter(key => text[key] != null).map(key => ({
     key,
     label: key === 'gcd' && hasted ? HASTE_GCD_LABEL : (FIGURE_LABEL[key] ?? job.short[figureStat(job, key)]),
@@ -188,7 +191,12 @@ export function figureChange(before, after) {
   const number = t => Number.parseFloat(t.replace(/[^0-9.-]/g, ''));
   const decimals = t => (t.replace(/[^0-9.]/g, '').split('.')[1] || '').length;
   const diff = number(after) - number(before);
-  const unit = after.includes('%') ? '%' : /s$/.test(after) ? 's' : '';
+  let unit = '';
+  if (after.includes('%')) {
+    unit = '%';
+  } else if (/s$/.test(after)) {
+    unit = 's';
+  }
   const places = Math.max(decimals(before), decimals(after));
   return { text: `${diff < 0 ? '−' : '+'}${Math.abs(diff).toFixed(places)}${unit}`, up: diff > 0 };
 }

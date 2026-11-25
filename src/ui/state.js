@@ -108,7 +108,7 @@ function clampLevels(s, job, parts = ['browse']) {
    any of 'math' (the piece) and 'browse'; both by default. A job change in one tab's panel passes that tab only, since
    the other tab keeps its own job (the store's setJob). */
 export function resetForJob(s, job, from = null, parts = ['math', 'browse']) {
-  const keeps = k => !!k && !!from && job.stats.includes(k) && from.stats.includes(k);
+  const keeps = k => Boolean(k) && Boolean(from) && job.stats.includes(k) && from.stats.includes(k);
   clampLevels(s, job, parts);
   if (parts.includes('math')) {
     // Piece stats' two substats stay as a pair (the second may be none), else both go back
@@ -143,10 +143,8 @@ const optIntIn = (v, lo, hi, fallback) => {
   if (v === '') {
     return '';
   }
-  if (typeof v === 'string' && v.trim() !== '') {
-    v = Number(v);
-  }
-  return intIn(v, lo, hi, fallback);
+  const number = typeof v === 'string' && v.trim() !== '' ? Number(v) : v;
+  return intIn(number, lo, hi, fallback);
 };
 const bool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
 const str = (v, fallback) => (typeof v === 'string' ? v : fallback);
@@ -171,7 +169,12 @@ function restorePieceSubs(raw, job) {
     return ds;
   }
   const saved = raw.map(key => currentStatKey(job, key));
-  const subs = [0, 1].map(i => (job.substats.includes(saved[i]) ? saved[i] : i === 0 ? ds[0] : null));
+  const subs = [0, 1].map(i => {
+    if (job.substats.includes(saved[i])) {
+      return saved[i];
+    }
+    return i === 0 ? ds[0] : null;
+  });
   if (subs[1] === subs[0]) {
     subs[1] = null;
   }

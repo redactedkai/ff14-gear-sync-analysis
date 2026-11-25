@@ -19,7 +19,12 @@ const BRACELET = 8624; // Ironworks Bracelet of Healing
 const answer = gearSet => ({
   pieces: gearSet.pieces
     .filter(row => sage.activeSlotTypes.includes(row.slot))
-    .map(row => (row.slot === 'wrist' ? piece('wrist', BRACELET) : row.gameId == null ? { slot: row.slot } : { ...row })),
+    .map(row => {
+      if (row.slot === 'wrist') {
+        return piece('wrist', BRACELET);
+      }
+      return row.gameId == null ? { slot: row.slot } : { ...row };
+    }),
   meal: TIED[2],
 });
 

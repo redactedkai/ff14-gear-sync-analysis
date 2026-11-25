@@ -2,7 +2,7 @@
    each cap and the odds of an overmeld slot. Takes plain data and returns plain data; the template only displays it.
    Pure: no Alpine, no store. */
 import { meldInfo, poolItemById } from '../../core/items.js';
-import { ROMAN, meldSlots, overmeldChance, overmeldNumber, slotGrades, usesNqOvermeldRates } from '../../core/meld.js';
+import { ROMAN, materiaFit, meldSlots, overmeldChance, overmeldNumber, slotGrades, usesNqOvermeldRates } from '../../core/meld.js';
 import { meldCaps } from '../../core/piece.js';
 import { rowLabel } from '../sheets/saved-set.js';
 import { lastStone, paddedStones } from '../sheets/set-edits.js';
@@ -12,6 +12,14 @@ const BEST_GRADES = 4;
 /* Grade columns in one band of the all-grades menu (XII to VII, then VI to I). */
 const BAND_COLUMNS = 6;
 const NO_ODDS_TEXT = '–'; // the odds cell of a grade the slot cannot take: it has no odds, which is not a 0% chance
+
+/* The odds cell of grade column `g` of `item` in overmeld slot number `overNo` ('' in a guaranteed slot, which has none). */
+function oddsText(item, g, overNo) {
+  if (!overNo) {
+    return '';
+  }
+  return g.ok ? `${overmeldChance(item, g.grade, overNo)}%` : NO_ODDS_TEXT;
+}
 
 /* The materia menu of materia slot `slot` of row `index` of `gearSet` `all` true for "Show all grades".
    Returns {title ("Head · slot 1 of 2", "Head · overmeld slot 2"), bands: [{key, columns: [{grade, roman, ok, odds ("10%"
@@ -57,7 +65,7 @@ export function materiaMenuView(job, gearSet, index, slot, all) {
         grade: g.grade,
         roman: ROMAN[g.grade - 1],
         ok: g.ok,
-        odds: overNo ? (g.ok ? `${overmeldChance(item, g.grade, overNo)}%` : NO_ODDS_TEXT) : '',
+        odds: oddsText(item, g, overNo),
       })),
       rows: job.substats.map(stat => ({
         stat,
@@ -69,8 +77,8 @@ export function materiaMenuView(job, gearSet, index, slot, all) {
             value: g.value,
             text: `+${g.value}`,
             ok: g.ok,
-            on: !!here && here.stat === stat && here.grade === g.grade,
-            fit: !g.ok ? '' : left <= 0 ? 'none' : left < g.value ? 'part' : '',
+            on: Boolean(here) && here.stat === stat && here.grade === g.grade,
+            fit: g.ok ? materiaFit(left, g.value) : '',
           };
         }),
       })),
@@ -82,8 +90,8 @@ export function materiaMenuView(job, gearSet, index, slot, all) {
     title: `${rowLabel(gearSet, index)} · ${place(slot)}`,
     bands,
     columns: bands.length > 1 ? BAND_COLUMNS : shown.length,
-    hasStone: !!here,
-    canRemove: !!here && slot === last,
+    hasStone: Boolean(here),
+    canRemove: Boolean(here) && slot === last,
     removeNote: here && slot !== last ? `Remove the last stone (${place(last)}) first.` : '',
     allText: all ? 'Best grades only' : 'Show all grades',
     // a slot past the big ones takes no high grade: said under the grades when all of them show

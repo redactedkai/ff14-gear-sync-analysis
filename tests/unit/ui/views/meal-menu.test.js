@@ -245,7 +245,7 @@ test('Food menu: in every reachable state only a search empties the list, and Cl
       assert.ok(mealsPassing(items, { ...f, query: '' }).length > 0, `the pills leave no meal: ${where}`);
       const passing = mealsPassing(items, f).length;
       const reason = mealEmptyReason(items, f);
-      assert.equal(!!reason, passing === 0, `an empty list with no line, or a line over meals: ${where}`);
+      assert.equal(Boolean(reason), passing === 0, `an empty list with no line, or a line over meals: ${where}`);
       if (reason) {
         assert.equal(reason.action, 'query', where);
       }
@@ -303,7 +303,7 @@ function tiedMeals() {
   const app = makeApp('SGE', {});
   Object.assign(app.recipe, { target: 'crit', food: true });
   const food = solveOf(app).run.found.food;
-  return { app, keys: food.tagged.map(meal => meal.key), shown: food.shown };
+  return { app, keys: food.tagged.map(tied => tied.key), shown: food.shown };
 }
 
 test('"best for goal": the saved tie list tags the meal of the set; the menu offers the switch and the list shows only tagged meals while it is on', () => {

@@ -35,7 +35,7 @@ export async function expectSavedFill(pg, sheet, what, test) {
       ([key, id]) => JSON.parse(localStorage.getItem(`${key}:sheet:${id}`))?.sets[0]?.fillSettings ?? null,
       [STORE_KEY, sheet.id],
     );
-    return { ok: !!saved && test(saved), got: saved && { goal: saved.goal, searchCriteria: saved.searchCriteria } };
+    return { ok: Boolean(saved) && test(saved), got: saved && { goal: saved.goal, searchCriteria: saved.searchCriteria } };
   });
 }
 

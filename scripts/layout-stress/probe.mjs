@@ -219,8 +219,8 @@ export function measureView(config) {
       });
     }
     const boxSeen = new Map();
-    for (const selector of config.boxes) {
-      for (const element of root.querySelectorAll(selector)) {
+    for (const boxSelector of config.boxes) {
+      for (const element of root.querySelectorAll(boxSelector)) {
         if (!visible(element) || !isDrawn(element)) {
           continue; // a box has a border or a background of its own
         }

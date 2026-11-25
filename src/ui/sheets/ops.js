@@ -109,7 +109,7 @@ export function sheetSettings(jobId, { level, sync }, fallback = {}) {
   const settings = {
     jobCtx,
     level: levelFor(jobId, level, fallback.level ?? jobCtx.maxLevel),
-    sync: !!sync?.on,
+    sync: Boolean(sync?.on),
     cap: Math.max(1, wholeNumber(sync?.cap, fallback.cap ?? NEW_SHEET_CAP)),
   };
   const lowered = limitCapToLevel(settings);
@@ -150,7 +150,7 @@ export function newSheet(fields, id, at) {
     description: fields.description ?? '',
     job: fields.job,
     level: fields.level,
-    sync: { on: !!fields.sync.on, cap: fields.sync.cap },
+    sync: { on: Boolean(fields.sync.on), cap: fields.sync.cap },
     clan: null,
     partyRoles: 0,
     sets: [],
@@ -235,7 +235,7 @@ export function copySheet(sheet, fields, id, at, setId) {
   const sameSettings =
     fields.job === sheet.job &&
     fields.level === sheet.level &&
-    !!fields.sync?.on === !!sheet.sync.on &&
+    Boolean(fields.sync?.on) === Boolean(sheet.sync.on) &&
     fields.sync?.cap === sheet.sync.cap;
   copy.sets = sheet.sets.map(gearSet => {
     const rows = new Set(cleared.filter(c => c.setId === gearSet.id).map(c => c.index));

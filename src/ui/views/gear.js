@@ -100,9 +100,9 @@ export function browseFiltered(job, b) {
    Lowered by sync: the synced value, bold with the cap bar (sync takes a stat to exactly the piece's cap; both come
    from the cell's `cut` class in src/styles/gear-browser.css), and `was` the value before sync, which the CSS draws as the muted line
    under it (from the cell's data-was attribute); else the value, dimmed when zero, and `was` null (no attribute). */
-export function browseCell(raw, synced, col = '') {
-  raw = raw || 0;
-  synced = synced || 0;
+export function browseCell(rawValue, syncedValue, col = '') {
+  const raw = rawValue || 0;
+  const synced = syncedValue || 0;
   if (synced < raw) {
     return { text: String(synced), cls: 'n cut', col, was: String(raw) };
   }

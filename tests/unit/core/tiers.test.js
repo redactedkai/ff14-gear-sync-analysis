@@ -89,7 +89,7 @@ test('effects equal AkhMorning formulas at every level in their table', () => {
       for (const s of job.substats) {
         const base = s === 'det' || s === 'piety' ? row[0] : row[1]; // Determination and Piety start from MAIN
         for (const gear of [0, 1, 17, 123, 480, 1111, 2400]) {
-          assert.equal(statTier(job, s, gear, +lv).effect, akh[s](base + gear, row), `${job.jobId} ${s} level ${lv}, gear ${gear}`);
+          assert.equal(statTier(job, s, gear, Number(lv)).effect, akh[s](base + gear, row), `${job.jobId} ${s} level ${lv}, gear ${gear}`);
         }
       }
     }

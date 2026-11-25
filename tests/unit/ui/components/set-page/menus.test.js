@@ -5,8 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { menusPart } from '../../../../../src/ui/components/set-page/menus.js';
 
-/* A click on `row` (or on nothing in the list: row null), as the list's @click handler gets it. */
-const clickOn = row => ({ target: { closest: selector => (selector === '.same-item' ? row : null) } });
+/* A click on `clicked` (or on nothing in the list: clicked null), as the list's @click handler gets it. */
+const clickOn = clicked => ({ target: { closest: selector => (selector === '.same-item' ? clicked : null) } });
 /* A row stand-in: its attributes as the page gives them, `disabled` when the button is. */
 const row = ({ gameId, disabled = false }) => ({
   disabled,

@@ -191,7 +191,7 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
   let r = optimize(sge, [a, b, c], NO_SYNC, { target: 'sps', fixed: [fixedCandidate(sge, a, [], NO_SYNC)] });
   assert.equal(r.totals.sps, 19);
   assert.deepEqual(
-    r.picks.map(p => [p.item.name, !!p.pinned]),
+    r.picks.map(p => [p.item.name, Boolean(p.pinned)]),
     [
       ['A', true],
       ['B', false],
@@ -205,7 +205,7 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
   );
   r = optimize(sge, [c], NO_SYNC, { target: 'sps', fixed: [fixedCandidate(sge, c, [], NO_SYNC)] });
   assert.deepEqual(
-    r.picks.map(p => [p.item.name, !!p.pinned]),
+    r.picks.map(p => [p.item.name, Boolean(p.pinned)]),
     [
       ['C', true],
       ['C', false],
@@ -218,7 +218,7 @@ test('a pinned Unique ring is not worn twice; a pinned ring with 2 copies may be
   });
   assert.equal(r.totals.sps, 10);
   assert.deepEqual(
-    r.picks.map(p => !!p.pinned),
+    r.picks.map(p => Boolean(p.pinned)),
     [true, true],
   );
   // a pinned Unique ring and a pool with only it: the free ring slot is empty

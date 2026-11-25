@@ -83,7 +83,7 @@ if (isMainThread) {
   const { gcdFor, hasteFor, speedForGcd } = await import(`${ROOT}src/core/speed.js`);
   const { optimizeGcd } = await import(`${ROOT}src/core/target-gcd.js`);
   const { exhaustive } = await import(`${ROOT}tests/unit/helpers/exhaustive.js`);
-  const score = (r, keys) => (r?.ok ? keys.map(k => r.totals[k] || 0) : null);
+  const score = (r, keys) => (r?.ok ? keys.map(key => r.totals[key] || 0) : null);
   let k = 0;
   parentPort.on('message', task => {
     if (!task) {
@@ -124,7 +124,7 @@ if (isMainThread) {
                 stress: target === job.mainKey,
                 mode,
                 gcd,
-                food: !!food,
+                food: Boolean(food),
                 ok: r.ok,
                 reason: r.reason ?? null,
                 got: r.gcd ?? null,
@@ -132,8 +132,8 @@ if (isMainThread) {
                 meal: r.food?.name ?? null,
                 searches: r.searches ?? 0,
                 nodes: r.nodes ?? 0,
-                truncated: !!r.truncated,
-                ms: +ms.toFixed(1),
+                truncated: Boolean(r.truncated),
+                ms: Number(ms.toFixed(1)),
                 first: rows.filter(x => x.target === target && x.tiebreak === tiebreak.join('+') && x.mode === mode).length === 0,
               };
               // the plain search on the same candidates and band

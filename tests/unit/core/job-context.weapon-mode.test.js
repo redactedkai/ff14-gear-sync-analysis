@@ -39,7 +39,12 @@ test('every job: weaponMode, the Off-hand row and the hand-made weapon share fol
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     const { twoHanded, oneHanded, shield } = counts[id];
-    const mode = shield === 0 ? '2h' : twoHanded === 0 ? '1h+oh' : 'mixed';
+    let mode = 'mixed';
+    if (shield === 0) {
+      mode = '2h';
+    } else if (twoHanded === 0) {
+      mode = '1h+oh';
+    }
     assert.equal(job.weaponMode, mode, id);
     assert.equal(job.activeSlotTypes.includes('offhand'), shield > 0, `${id} Off-hand row`);
     // a job with shields also has one-handed weapons to hold beside them; a job without has no one-handed weapons

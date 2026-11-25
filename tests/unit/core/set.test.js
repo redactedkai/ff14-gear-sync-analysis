@@ -25,10 +25,10 @@ function stonesOf(job, text) {
   return text.split(', ').flatMap(part => {
     const empty = part.match(/^(\d+) slots? empty$/);
     if (empty) {
-      return Array(+empty[1]).fill(null);
+      return Array(Number(empty[1])).fill(null);
     }
     const [, short, roman, n] = part.match(/^(\S+) (\S+?)(?: ×(\d+))?$/);
-    return Array(+(n || 1)).fill({ stat: statOf(short), grade: ROMAN.indexOf(roman) + 1 });
+    return Array(Number(n || 1)).fill({ stat: statOf(short), grade: ROMAN.indexOf(roman) + 1 });
   });
 }
 
@@ -65,7 +65,9 @@ test('evaluateSet shows what the optimizer view showed for 14 real results, numb
       at('row stats'),
     );
     assert.deepEqual(
-      set.rows.map(r => (r.item ? job.stats.map(s => +(c.scored.includes(s) && !!r.stats[s] && r.stats[s] >= r.caps[s])).join('') : null)),
+      set.rows.map(r =>
+        r.item ? job.stats.map(s => Number(c.scored.includes(s) && Boolean(r.stats[s]) && r.stats[s] >= r.caps[s])).join('') : null,
+      ),
       want.atCap,
       at('at cap marks'),
     );

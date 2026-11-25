@@ -149,7 +149,7 @@ test('one ring pinned: the other ring is searched, a Unique pinned ring is no ch
   const rings = run.found.picks.map((p, i) => ({ p, i })).filter(({ p }) => p.type === 'ring');
   assert.equal(rings.length, 2);
   assert.deepEqual(
-    rings.map(({ p }) => !!p.pinned),
+    rings.map(({ p }) => Boolean(p.pinned)),
     [true, false],
   );
   assert.equal(rings[0].p.item.gameId, pinnedRing.gameId);

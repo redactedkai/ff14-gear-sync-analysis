@@ -365,8 +365,8 @@ test('solverRequest: the key and the pins are added only when given', () => {
   const plain = solverRequest('solve', inputs);
   assert.deepEqual(['key' in plain, 'pins' in plain], [false, false]);
   const pins = { pieces: [], meal: null };
-  const keyed = solverRequest('solve', inputs, { key: 'set-a', pins });
-  assert.deepEqual([keyed.key, keyed.pins], ['set-a', pins]);
+  const withKey = solverRequest('solve', inputs, { key: 'set-a', pins });
+  assert.deepEqual([withKey.key, withKey.pins], ['set-a', pins]);
 });
 
 test("worker solver keys: two sets interleaved never get each other's result", async () => {

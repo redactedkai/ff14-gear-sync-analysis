@@ -45,7 +45,8 @@
     "rules": {
       "preset": "recommended",
       "complexity": {
-        "noImportantStyles": "off"
+        "noImportantStyles": "off",
+        "noImplicitCoercions": "error"
       },
       "correctness": {
         "noUnusedVariables": "error"
@@ -53,10 +54,17 @@
       "style": {
         "useTemplate": "off",
         "useBlockStatements": "error",
-        "useConst": "error"
+        "useConst": "error",
+        "noUselessElse": "error",
+        "noNestedTernary": "error",
+        "noParameterAssign": "error",
+        "useImportType": "error"
       },
       "suspicious": {
-        "noVar": "error"
+        "noVar": "error",
+        "noDoubleEquals": "error",
+        "noShadow": "error",
+        "noExplicitAny": "error"
       }
     }
   },

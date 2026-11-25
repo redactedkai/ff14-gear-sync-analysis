@@ -85,7 +85,7 @@ export function solveExact(job, pool, sync, goal, tiebreak, melds) {
   const search = depth => {
     if (depth === types.length) {
       const blocked = new Set(picked.flatMap(choice => choice.blocks));
-      if (picked.some((choice, i) => !!choice.empty !== blocked.has(types[i]))) {
+      if (picked.some((choice, i) => Boolean(choice.empty) !== blocked.has(types[i]))) {
         return;
       }
       const total = picked.reduce((sum, choice) => addLists(sum, choice.vector), zero);

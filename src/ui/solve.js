@@ -63,9 +63,9 @@ export function solveView(job, sync, level, recipe, session, pins = null) {
     }
     if (run.status === 'ok') {
       const bestMeals = run.found.food ? run.found.food.tagged.map(meal => meal.key) : null;
-      return { kind: 'ok', set: run.set, bestMeals, recipe, truncated: !!run.found.truncated };
+      return { kind: 'ok', set: run.set, bestMeals, recipe, truncated: Boolean(run.found.truncated) };
     }
-    return { kind: run.status, truncated: !!run.found?.truncated };
+    return { kind: run.status, truncated: Boolean(run.found?.truncated) };
   } catch (e) {
     return { kind: 'error', message: e?.message || String(e) };
   }

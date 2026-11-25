@@ -146,11 +146,12 @@ export function createAppStore(initial) {
     /* Open tab `t` (a math sub-view opens the math tab on it): the leaving tab's panel is kept in its group, and the
        panel shows the new tab's. The Sheets tab has no panel: going to it keeps the top-level copy as it was, unused. */
     showTab(t) {
+      let opened = t;
       if (MATH_TABS.includes(t)) {
         this.mathTab = t;
-        t = 'math';
+        opened = 'math';
       }
-      const next = TABS.includes(t) ? t : TABS[0];
+      const next = TABS.includes(opened) ? opened : TABS[0];
       if (next === this.tab) {
         return;
       }

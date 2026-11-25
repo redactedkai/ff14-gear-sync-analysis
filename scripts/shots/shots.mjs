@@ -58,8 +58,12 @@ if (readFileSync(pagePath, 'utf8').includes('class="build-badge"')) {
 const errors = [];
 
 /* One shot: a fresh context at `width` in `scheme`, the view's saved state, its steps, then the PNG. */
-async function shoot(browser, { name, view, width, scheme }) {
-  const context = await browser.newContext({ viewport: { width, height: VIEWPORT_HEIGHT }, colorScheme: scheme, reducedMotion: 'reduce' });
+async function shoot(browserInstance, { name, view, width, scheme }) {
+  const context = await browserInstance.newContext({
+    viewport: { width, height: VIEWPORT_HEIGHT },
+    colorScheme: scheme,
+    reducedMotion: 'reduce',
+  });
   if (!webFonts) {
     await context.route(/fonts\.(googleapis|gstatic)\.com/, route => route.abort());
   }

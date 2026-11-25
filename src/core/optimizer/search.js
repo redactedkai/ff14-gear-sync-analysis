@@ -147,7 +147,8 @@ export function suffixBounds(slotList, posList, dims) {
    most at any total so far. Returns null when the limit has neither a minimum above 0 nor a maximum. `scoreFn`
    (default: the candidate's score) is what the tables add up: the search's band-reach tables add another limited stat
    instead, for the most of it the remaining slots can add while speed lands in its band. */
-export function limitTables(slotList, posList, valueFn, min, max, empty = null, scoreFn = cand => cand.score) {
+export function limitTables(slotList, posList, valueFn, min, maxLimit, empty = null, scoreFn = cand => cand.score) {
+  let max = maxLimit; // the maximum, or null for none (dropped below when no loadout can pass it)
   const nSlots = slotList.length;
   const floor = min > 0 ? min : 0;
   const blockable = blockableTypes(posList);
@@ -156,7 +157,7 @@ export function limitTables(slotList, posList, valueFn, min, max, empty = null, 
   // slots a legal loadout can leave empty: a blockable slot, a slot with no candidates, and a ring slot when the ring
   // list cannot fill both (copies of distinct items below 2: a lone Unique ring is worn once). Counting a piece in such a
   // slot would add points a loadout may not have, which a maximum can then wrongly reject
-  const blockedNow = pos => !!empty && empty.has(pos); // blocked by a piece already chosen: only empty
+  const blockedNow = pos => Boolean(empty) && empty.has(pos); // blocked by a piece already chosen: only empty
   const canEmpty = pos => {
     const list = posList[pos];
     if (blockable.has(slotList[pos]) || !list.length) {
@@ -243,11 +244,11 @@ export function limitTables(slotList, posList, valueFn, min, max, empty = null, 
   // prefixMax[pos][x] = the most with at most x more, windowMax[pos][x] = the most with x to x + width more
   const prefixMax = new Array(nSlots + 1),
     windowMax = new Array(nSlots + 1);
-  const storeMaxima = (pos, exact) => {
+  const storeMaxima = (pos, exactScores) => {
     const prefix = new Float64Array(max + 1);
     let best = -Infinity;
     for (let x = 0; x <= max; x++) {
-      prefix[x] = best = exact[x] > best ? exact[x] : best;
+      prefix[x] = best = exactScores[x] > best ? exactScores[x] : best;
     }
     prefixMax[pos] = prefix;
 
@@ -259,14 +260,14 @@ export function limitTables(slotList, posList, valueFn, min, max, empty = null, 
       blockSuffix = new Float64Array(max + 1),
       windowAt = new Float64Array(max + 1);
     for (let x = 0; x <= max; x++) {
-      blockPrefix[x] = x % block === 0 ? exact[x] : Math.max(blockPrefix[x - 1], exact[x]);
+      blockPrefix[x] = x % block === 0 ? exactScores[x] : Math.max(blockPrefix[x - 1], exactScores[x]);
     }
     for (let x = max; x >= 0; x--) {
-      blockSuffix[x] = x === max || (x + 1) % block === 0 ? exact[x] : Math.max(blockSuffix[x + 1], exact[x]);
+      blockSuffix[x] = x === max || (x + 1) % block === 0 ? exactScores[x] : Math.max(blockSuffix[x + 1], exactScores[x]);
     }
     let tail = -Infinity;
     for (let x = max; x >= 0; x--) {
-      tail = exact[x] > tail ? exact[x] : tail;
+      tail = exactScores[x] > tail ? exactScores[x] : tail;
       windowAt[x] = x + width <= max ? Math.max(blockSuffix[x], blockPrefix[x + width]) : tail;
     }
     windowMax[pos] = windowAt;
@@ -338,8 +339,8 @@ export function lagrangeBound(posList, limits, floor = 0, steps = LAGRANGE_STEPS
   const nSlots = posList.length;
   const values = posList.map(list => list.map(cand => terms.map(term => cand.eff[term.stat] || 0)));
 
-  // the dual function at `multipliers` (>= 0, one per term): its value, a subgradient and each slot's most
-  const dual = multipliers => {
+  // the dual function at `multiplierValues` (>= 0, one per term): its value, a subgradient and each slot's most
+  const dual = multiplierValues => {
     let total = 0;
     const grad = terms.map(term => -term.sign * term.rhs);
     const slotAug = new Float64Array(nSlots);
@@ -349,7 +350,7 @@ export function lagrangeBound(posList, limits, floor = 0, steps = LAGRANGE_STEPS
       posList[pos].forEach((cand, index) => {
         let priced = cand.score;
         for (let j = 0; j < terms.length; j++) {
-          priced += multipliers[j] * terms[j].sign * values[pos][index][j];
+          priced += multiplierValues[j] * terms[j].sign * values[pos][index][j];
         }
         if (priced > best) {
           best = priced;
@@ -365,7 +366,7 @@ export function lagrangeBound(posList, limits, floor = 0, steps = LAGRANGE_STEPS
       }
     }
     for (let j = 0; j < terms.length; j++) {
-      total -= multipliers[j] * terms[j].sign * terms[j].rhs;
+      total -= multiplierValues[j] * terms[j].sign * terms[j].rhs;
     }
     return { total, grad, slotAug };
   };
@@ -408,7 +409,8 @@ export function lagrangeBound(posList, limits, floor = 0, steps = LAGRANGE_STEPS
    by more than the total room above the minimum). Dropping pieces lowers the bounds, so it repeats until nothing more
    goes. Exact: every set meeting the minimum keeps all its pieces. The two ring slots share one list and keep sharing
    it. */
-export function dropShortfalls(slotList, posList, dims, limits) {
+export function dropShortfalls(slotList, initialPosList, dims, limits) {
+  let posList = initialPosList; // narrowed each round
   const mins = limits.filter(limit => limit.min > 0);
   const positions = slotPositions(slotList);
   for (let round = 0; round < SHORTFALL_ROUNDS; round++) {
@@ -572,7 +574,7 @@ export function shortListsFirst(slotList, posList) {
   const size = type => posList[slotList.indexOf(type)].length * (type === 'ring' ? 2 : 1);
   const free = types.filter(type => !blockable.has(type)).sort((x, y) => size(x) - size(y));
   const order = [];
-  for (const type of [...free, ...types.filter(type => blockable.has(type))]) {
+  for (const type of [...free, ...types.filter(candidate => blockable.has(candidate))]) {
     order.push(type);
     if (type === 'ring') {
       order.push('ring');
@@ -1020,7 +1022,7 @@ function boundsCut(search, pos, scoreSoFar) {
       return true;
     }
   }
-  return !!search.limitBound && scoreSoFar + limitBoundFor(search, search.blockedMask).at(pos, null) <= search.bestScore;
+  return Boolean(search.limitBound) && scoreSoFar + limitBoundFor(search, search.blockedMask).at(pos, null) <= search.bestScore;
 }
 
 /* True when the Lagrangian bound cuts candidate `cand` at `pos`: a child gives up its slot's most minus its own priced

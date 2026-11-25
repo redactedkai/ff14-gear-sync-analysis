@@ -136,7 +136,12 @@ test('empty rows: "Choose a piece", a game id the data lacks, and a slot another
   // Woolen Cowl is a body piece that covers the head: the empty head row says so
   const cowl = {
     ...sageSet(),
-    pieces: sageSet().pieces.map(p => (p.slot === 'body' ? piece('body', 3193) : p.slot === 'head' ? { slot: 'head' } : p)),
+    pieces: sageSet().pieces.map(p => {
+      if (p.slot === 'body') {
+        return piece('body', 3193);
+      }
+      return p.slot === 'head' ? { slot: 'head' } : p;
+    }),
   };
   const covered = view(sheetOf('SGE', []), cowl);
   const head = covered.rows.find(r => r.slot === 'head');

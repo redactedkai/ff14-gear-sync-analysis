@@ -88,7 +88,7 @@ export const TARGET_GCD_RANGE = Object.freeze([0.5, 2.5]);
 /* The sync settings the core takes, from the store's fields {cap, sync, level} (sync: the item level sync switch):
    {cap, sync, level}, sync true only while the switch is on and a cap is set (itemSyncIlvl in core/piece.js). */
 export function syncSettings({ cap, sync, level }) {
-  return { cap, sync: !!sync && cap != null, level: level ?? null };
+  return { cap, sync: Boolean(sync) && cap != null, level: level ?? null };
 }
 
 /* Level sync can apply: `level` is below the job's level cap (`job` a JobContext; MAX_LEVEL before one exists), so gear

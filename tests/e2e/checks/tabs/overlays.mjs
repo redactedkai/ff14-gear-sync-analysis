@@ -94,11 +94,14 @@ export async function checkHelpIsModal(pg) {
   for (let i = 0; i < 8; i++) {
     await pg.keyboard.press('Tab');
   }
-  check(await pg.evaluate(() => !!document.activeElement?.closest('#m-help-pop')), 'the help: Tab left it for the page behind');
+  check(await pg.evaluate(() => Boolean(document.activeElement?.closest('#m-help-pop'))), 'the help: Tab left it for the page behind');
   for (let i = 0; i < 8; i++) {
     await pg.keyboard.press('Shift+Tab');
   }
-  check(await pg.evaluate(() => !!document.activeElement?.closest('#m-help-pop')), 'the help: Shift+Tab left it for the page behind');
+  check(
+    await pg.evaluate(() => Boolean(document.activeElement?.closest('#m-help-pop'))),
+    'the help: Shift+Tab left it for the page behind',
+  );
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#m-help-pop')).toBeHidden();
   await focusIsOn(pg, 'm-help', 'the help: the focus back on its "?" after Escape');

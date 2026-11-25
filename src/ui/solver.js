@@ -321,7 +321,7 @@ export function workerSolver(createWorker, fallback = inProcessSolver, { timeout
 
   return {
     get blocksPage() {
-      return !!backup;
+      return Boolean(backup);
     },
     cancel: (kind, key) => restart(kind, cancelledError(), key === undefined ? undefined : (key ?? null)),
     request(request) {

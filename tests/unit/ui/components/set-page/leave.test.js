@@ -21,7 +21,7 @@ test('leaving: a draft asks Apply or Discard, Keep stays; a running Auto-fill as
   sheets.closeSet();
   assert.deepEqual([sheets.screen, c.leaveAsk.kind], ['set', 'draft']);
   c.answerLeave('keep');
-  assert.deepEqual([sheets.screen, c.leaveAsk, !!c.draft], ['set', null, true]);
+  assert.deepEqual([sheets.screen, c.leaveAsk, Boolean(c.draft)], ['set', null, true]);
   sheets.openManager();
   c.answerLeave('discard');
   assert.deepEqual([sheets.screen, c.draft], ['sheets', null]);

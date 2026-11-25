@@ -9,7 +9,7 @@ import { seedSheet } from '../../lib/sheets.mjs';
  * from the upper element's bottom edge to the lower one's top edge), ['token', '--name'] (a design token's colour, read
  * through a probe element, so it holds in either theme). A missing element reads "not found". */
 const lookAt = (pg, spec) =>
-  pg.evaluate(spec => {
+  pg.evaluate(lookSpec => {
     const find = selector => document.querySelector(selector);
     const read = ([kind, ...args]) => {
       if (kind === 'token') {
@@ -37,7 +37,7 @@ const lookAt = (pg, spec) =>
         .map(prop => cs.getPropertyValue(prop))
         .join(' ');
     };
-    return Object.fromEntries(Object.entries(spec).map(([name, item]) => [name, read(item)]));
+    return Object.fromEntries(Object.entries(lookSpec).map(([name, item]) => [name, read(item)]));
   }, spec);
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';

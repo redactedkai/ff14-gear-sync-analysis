@@ -102,7 +102,10 @@ test('a hand-made piece can declare its meld slots (the explainer gives its piec
 /* The caps behind the explainer, from the ItemLevel table times the slot share (BaseParam, typed in), rounded half up.
    Piety and Tenacity have their own ItemLevel column, higher at a few item levels than the shared substat column. */
 const expectedCap = (column, ilvl, type, oneHanded) => {
-  const pm = type === 'weapon' ? (oneHanded ? SLOT_PERMILLE.weapon1h : SLOT_PERMILLE.weapon2h) : SLOT_PERMILLE[type];
+  let pm = SLOT_PERMILLE[type];
+  if (type === 'weapon') {
+    pm = oneHanded ? SLOT_PERMILLE.weapon1h : SLOT_PERMILLE.weapon2h;
+  }
   return roundHalfUp((IL[column][ilvl] * pm) / 1000);
 };
 for (const [job, column, oneHanded] of [

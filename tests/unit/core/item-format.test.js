@@ -149,7 +149,10 @@ test('slot shares used by the page are the item-format.json percents (checked ag
   for (const { id } of JOBS) {
     const job = makeJobContext(id);
     for (const t of SLOT_TYPES) {
-      const code = t === 'weapon' ? (job.weaponMode === '2h' ? 0 : 1) : DB_SLOT_TYPE.indexOf(t);
+      let code = DB_SLOT_TYPE.indexOf(t);
+      if (t === 'weapon') {
+        code = job.weaponMode === '2h' ? 0 : 1;
+      }
       assert.equal(job.slotPct[t], ITEM_FORMAT.slots[code].percent, `${id} ${t}`);
     }
   }

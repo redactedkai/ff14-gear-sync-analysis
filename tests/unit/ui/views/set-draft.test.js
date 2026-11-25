@@ -29,7 +29,7 @@ test('no change: nothing differs, Apply is off and the second row says so', () =
   assert.ok(v.header[1].figures.every(f => f.change === null));
   // no delta line to make room for: the After row stays as tall as the Now row
   assert.deepEqual(
-    v.header.map(h => !!h.moved),
+    v.header.map(h => Boolean(h.moved)),
     [false, false],
   );
 });
@@ -64,7 +64,7 @@ test('another piece in a row: the row is listed with both names, and the figures
   // the Now row never carries delta lines and shows the saved set's figures
   assert.ok(v.header[0].figures.every(f => f.change === null));
   assert.deepEqual(
-    v.header.map(h => !!h.moved),
+    v.header.map(h => Boolean(h.moved)),
     [false, true],
     'the After row has delta lines and so needs the taller row',
   );

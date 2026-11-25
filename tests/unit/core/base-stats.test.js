@@ -43,13 +43,13 @@ test('panel base: AkhMorning level table (Determination and Piety from MAIN, the
   ]) {
     const job = makeJobContext(id);
     for (const [lv, [main, sub, div]] of Object.entries(AKH_LEVEL)) {
-      assert.equal(levelParams(+lv).div, div, `level ${lv} DIV`);
+      assert.equal(levelParams(Number(lv)).div, div, `level ${lv} DIV`);
       for (const s of stats) {
         const fromMain = s === 'det' || s === 'piety';
-        assert.equal(statBase(job, s, +lv), fromMain ? main : sub, `${id} ${s} level ${lv}`);
+        assert.equal(statBase(job, s, Number(lv)), fromMain ? main : sub, `${id} ${s} level ${lv}`);
       }
-      assert.equal(statBase(job, job.mainKey, +lv), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
-      assert.equal(statBase(job, 'vit', +lv), Math.floor((main * vitMod) / 100), `${id} Vitality level ${lv}`);
+      assert.equal(statBase(job, job.mainKey, Number(lv)), Math.floor((main * mainMod) / 100), `${id} main stat level ${lv}`);
+      assert.equal(statBase(job, 'vit', Number(lv)), Math.floor((main * vitMod) / 100), `${id} Vitality level ${lv}`);
     }
   }
 });

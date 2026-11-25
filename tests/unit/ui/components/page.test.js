@@ -15,7 +15,7 @@ import { createAppFacade } from '../../helpers/stores.js';
 function panel(saved) {
   const app = createAppFacade(restoreOpen({ tab: 'browse', ...saved }));
   const classes = new Set();
-  const cap = { classList: { add: c => classes.add(c), remove: c => classes.delete(c) }, offsetWidth: 0 };
+  const cap = { classList: { add: name => classes.add(name), remove: name => classes.delete(name) }, offsetWidth: 0 };
   const c = Object.assign(settings(), { $store: { app }, $refs: { cap, jobButton: { focus() {} } }, $nextTick: fn => fn() });
   return { app, c, classes };
 }

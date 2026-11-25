@@ -12,9 +12,10 @@ import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-set
 /* A seeded random number generator returning floats in [0, 1): the same seed gives the same sequence, so a failure
    names a case that can be reproduced. */
 export function rng(seed) {
+  let state = seed;
   return () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed / 2147483648;
+    state = (state * 1103515245 + 12345) % 2147483648;
+    return state / 2147483648;
   };
 }
 

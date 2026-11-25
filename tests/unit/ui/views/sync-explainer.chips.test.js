@@ -30,7 +30,11 @@ const T = SYNC_CHIP_TEXT;
 const sage = makeJobContext('SGE');
 /* The Sync chip for Sage under the panel {cap, sync, level} (the store's fields) and the example piece's slot. */
 function chip(panel, slot = 'head', extra = {}) {
-  return syncChipView(sage, syncSettings(panel), slot, { switchOn: !!panel.sync, capMissing: !!panel.sync && panel.cap == null, ...extra });
+  return syncChipView(sage, syncSettings(panel), slot, {
+    switchOn: Boolean(panel.sync),
+    capMissing: Boolean(panel.sync) && panel.cap == null,
+    ...extra,
+  });
 }
 /* The chip's words as one string and its parts' classes. */
 const words = view => view.parts.map(part => part.text).join(' ');

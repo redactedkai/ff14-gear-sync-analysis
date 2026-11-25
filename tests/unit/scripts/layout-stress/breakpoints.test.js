@@ -4,7 +4,12 @@ import assert from 'node:assert/strict';
 import { findChangePoints } from '../../../../scripts/layout-stress/breakpoints.mjs';
 
 /* A layout that is "stacked" below 1100 px, "side by side" from 1100 px, and has a third state from 1299 px. */
-const layoutAt = width => (width < 1100 ? 'stacked' : width < 1299 ? 'side' : 'wide');
+const layoutAt = width => {
+  if (width < 1100) {
+    return 'stacked';
+  }
+  return width < 1299 ? 'side' : 'wide';
+};
 const run = (extra = {}) => {
   const asked = [];
   return {

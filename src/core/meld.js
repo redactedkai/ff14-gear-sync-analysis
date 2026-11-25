@@ -420,3 +420,12 @@ export function meldText(job, meld) {
   }
   return meld.stones.map(x => `${job.short[x.stat]} ${ROMAN[x.grade - 1]}${x.n > 1 ? ` ×${x.n}` : ''}`).join(', ');
 }
+
+/* How a stone of `value` points fits in `room` points left under a stat's cap: 'none' when no room is left, 'part' when only
+   part of the stone fits, '' when all of it does. */
+export function materiaFit(room, value) {
+  if (room <= 0) {
+    return 'none';
+  }
+  return room < value ? 'part' : '';
+}

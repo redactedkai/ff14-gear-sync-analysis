@@ -115,7 +115,10 @@ export function pieceView(job, sync, piece, ilvl) {
     slotName = SLOT_LABEL[t].toLowerCase();
   const shown = shownSync(job, sync),
     cap = shown?.cap ?? null;
-  const status = !shown ? 'off' : il <= cap ? 'below' : 'above';
+  let status = 'off';
+  if (shown) {
+    status = il <= cap ? 'below' : 'above';
+  }
 
   // each line: the piece's value, and under sync its ceiling; a piece above the cap keeps the lower of the two
   const lines = [
@@ -135,7 +138,7 @@ export function pieceView(job, sync, piece, ilvl) {
     return {
       stat,
       w,
-      sub: !!sub,
+      sub: Boolean(sub),
       label: job.label[stat],
       raw,
       syn,
@@ -171,7 +174,7 @@ export function pieceView(job, sync, piece, ilvl) {
     rows,
     lost: rows.reduce((a, r) => a + r.lost, 0),
     cap,
-    byLevel: !!shown?.byLevel,
+    byLevel: Boolean(shown?.byLevel),
     level: shown?.level ?? null,
     status,
     summary,

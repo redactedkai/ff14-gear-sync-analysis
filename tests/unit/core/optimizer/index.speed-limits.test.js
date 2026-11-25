@@ -89,7 +89,7 @@ test('an impossible speed maximum -> ok:false', () => {
 });
 
 test('nodeLimit: a large pool with a tiny limit reports truncation', () => {
-  const big = browseItems(sge, {}).map(r => poolItemFromRow(sge, r));
+  const big = browseItems(sge, {}).map(row => poolItemFromRow(sge, row));
   assert.ok(big.length > 1000);
   const r = optimize(sge, big, NOSYNC, { target: 'sps', nodeLimit: 5 });
   assert.equal(r.truncated, true);

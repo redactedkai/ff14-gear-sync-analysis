@@ -41,7 +41,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
   }
 
   const meals = mealsFor(job, opts.food);
-  prep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode, fixed: opts.fixed });
+  const searchPrep = prep || prepare(job, pool, sync, { target, tiebreak, melds: opts.melds, speed: mode, fixed: opts.fixed });
   const runs = new Map(); // "gear min,gear max" -> solve result
   const entries = []; // {meal, totals, r, band} per meal with a loadout, for pickMeal
   for (const meal of meals) {
@@ -52,7 +52,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
     const { gearMin, gearMax } = gear;
     const key = `${gearMin},${gearMax}`;
     if (!runs.has(key)) {
-      runs.set(key, solve(prep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
+      runs.set(key, solve(searchPrep, { spdMin: gearMin, spdMax: gearMax, nodeLimit: opts.nodeLimit }));
     }
     const r = runs.get(key);
     if (r.ok) {
@@ -71,7 +71,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
       truncated,
       nodes,
       searches: runs.size,
-      prep,
+      prep: searchPrep,
       fastest: fastestGcd(job, pool, sync, { ...opts, level }),
     };
   }
@@ -86,7 +86,7 @@ export function optimizeGcd(job, pool, sync, opts, prep = null) {
     faster: food.gcd < opts.gcd,
     band: { min: band.min, max: band.max, ...best.entry.band },
     searches: runs.size,
-    prep,
+    prep: searchPrep,
   };
 }
 

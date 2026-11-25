@@ -25,7 +25,12 @@ export function fillSettingsOf(job, gearSet) {
     return base;
   }
   const goal = { ...base.goal, ...own.goal };
-  const ranks = [goal.target, goal.tb, goal.tb2].map((k, i) => (k && job.stats.includes(k) ? k : i === 0 ? job.mainKey : ''));
+  const ranks = [goal.target, goal.tb, goal.tb2].map((k, i) => {
+    if (k && job.stats.includes(k)) {
+      return k;
+    }
+    return i === 0 ? job.mainKey : '';
+  });
   [goal.target, goal.tb, goal.tb2] = uniqueRanks(ranks).map(r => r ?? '');
   const searchCriteria = { ...base.searchCriteria, ...own.searchCriteria };
   if (searchCriteria.lvl !== '' && searchCriteria.lvl > job.maxLevel) {

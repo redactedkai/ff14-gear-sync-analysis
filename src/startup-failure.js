@@ -52,7 +52,13 @@
     .filter(function (word) {
       return word !== '';
     })[0];
-  document.documentElement.setAttribute('data-boot-tab', firstWord === 'gear' ? 'browse' : firstWord === 'math' ? 'math' : 'sheets');
+  var bootTab = 'sheets';
+  if (firstWord === 'gear') {
+    bootTab = 'browse';
+  } else if (firstWord === 'math') {
+    bootTab = 'math';
+  }
+  document.documentElement.setAttribute('data-boot-tab', bootTab);
 
   // The page's saved-data keys (the settings key, and every key that starts with the key and a colon, except the dev flag),
   // or null when the browser does not let the page read its storage. Another page's key that only starts like ours is not
@@ -204,7 +210,7 @@
       removeEventListener('error', onError);
       removeEventListener('unhandledrejection', onError);
       var root = document.querySelector('[x-data]');
-      var built = document.documentElement.hasAttribute('data-started') && !!root && !root.hasAttribute('x-cloak');
+      var built = document.documentElement.hasAttribute('data-started') && Boolean(root) && !root.hasAttribute('x-cloak');
       if (built && !errors.length) {
         release(); // the page started
         return;

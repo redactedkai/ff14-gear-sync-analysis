@@ -36,7 +36,7 @@ export const GEAR_FROM_SECTIONS = Object.freeze(
     return Object.freeze({
       key: title.toLowerCase().replace(/\s+/g, '-'),
       title,
-      byRow: !!order,
+      byRow: Boolean(order),
       rows: Math.ceil(boxes.length / FROM_COLUMN_COUNT),
       boxes: Object.freeze(boxes),
     });
@@ -67,7 +67,13 @@ export function fromTabAfterKey(key, index, count) {
    fromMarketWords). off: the ACTIVITIES keys left out. */
 export function gearFromSummary(off) {
   const on = ACTIVITIES.length - off.length;
-  return !off.length ? 'All' : !on ? 'None' : off.length <= 5 ? `All but ${off.length}` : `${on} of ${ACTIVITIES.length}`;
+  if (!off.length) {
+    return 'All';
+  }
+  if (!on) {
+    return 'None';
+  }
+  return off.length <= 5 ? `All but ${off.length}` : `${on} of ${ACTIVITIES.length}`;
 }
 
 /* The number at the end of a "Gear categories" box's name: `count` pieces with thousands separators ("1,380"), or '' before a
@@ -224,14 +230,20 @@ export function gearFromToggles(part) {
     },
     /* the market board switch */
     marketOn() {
-      return !!access.read(this).market;
+      return Boolean(access.read(this).market);
     },
     setMarket(on) {
-      access.write(this, { market: !!on });
+      access.write(this, { market: Boolean(on) });
     },
     /* "All", "None" or "Default" at the top of the menu */
     setFromAll(which) {
-      access.write(this, { exclude: which === 'all' ? [] : which === 'none' ? ACTIVITIES.map(a => a.key) : [...DEFAULT_EXCLUDE] });
+      let exclude = [...DEFAULT_EXCLUDE];
+      if (which === 'all') {
+        exclude = [];
+      } else if (which === 'none') {
+        exclude = ACTIVITIES.map(a => a.key);
+      }
+      access.write(this, { exclude });
     },
     /* How many pieces a box holds under the current job and filters (the component's `fromCounts`), or null while the numbers are not
        known (before the first count has landed, or after the filters changed and before the new count). `key`: a box's key. */

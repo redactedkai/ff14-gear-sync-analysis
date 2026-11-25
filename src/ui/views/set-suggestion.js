@@ -126,11 +126,10 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
       continue;
     }
     const isTaken = !off.has(change.index);
-    const text = change.meldsOnly
-      ? `melds ${change.beforeStones} → ${change.afterStones}`
-      : isTaken
-        ? `was ${change.before}`
-        : `suggested ${change.after}`;
+    let text = isTaken ? `was ${change.before}` : `suggested ${change.after}`;
+    if (change.meldsOnly) {
+      text = `melds ${change.beforeStones} → ${change.afterStones}`;
+    }
     takes[change.index] = { taken: isTaken, text, ...(change.index === locked ? { locked: true } : {}) };
   }
   const mealTake = diff.meal && { taken: mealTaken, text: mealTaken ? `was ${diff.meal.before}` : `suggested ${diff.meal.after}` };
@@ -162,12 +161,20 @@ export function suggestionView(sheet, saved, suggested, declined = { rows: [], m
     taken,
     header,
     emptyNote: emptySlotNote(job, saved, shown),
-    applyText: !total ? 'Nothing to change' : taken ? `Apply ${plural(taken, 'change')}` : 'Nothing taken',
+    applyText: applyTextOf(total, taken),
     applyDisabled: !taken,
     discardText: 'Discard',
     leaveText: SUGGESTION_LEAVE_TEXT,
     appliedNote: taken ? `Applied: ${changeText(takenRows.length, mealTaken)} changed.` : '',
   };
+}
+
+/* The Apply button's text: `total` changes are suggested, `taken` of them taken. */
+function applyTextOf(total, taken) {
+  if (!total) {
+    return 'Nothing to change';
+  }
+  return taken ? `Apply ${plural(taken, 'change')}` : 'Nothing taken';
 }
 
 /* Figures with no delta line (the Now row, or a single row). */

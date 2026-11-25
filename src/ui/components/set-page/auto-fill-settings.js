@@ -143,6 +143,7 @@ export function settingsPart(solver, page) {
     /* A number box of the dialog: 'lvl', 'min' or 'max' of Gear to search, or 'gcd' (the Target GCD). */
     fillField(key) {
       const criteria = key !== 'gcd';
+      const criteriaMax = key === 'lvl' ? () => this.job.maxLevel : () => this.$store.app.maxReal;
       return numberField(
         () => (criteria ? this.fillSettings.searchCriteria[key] : this.fillSettings.goal.gcd),
         value =>
@@ -154,7 +155,7 @@ export function settingsPart(solver, page) {
             }
           }),
         criteria ? 1 : TARGET_GCD_RANGE[0],
-        criteria ? (key === 'lvl' ? () => this.job.maxLevel : () => this.$store.app.maxReal) : TARGET_GCD_RANGE[1],
+        criteria ? criteriaMax : TARGET_GCD_RANGE[1],
         { empty: '', ...(criteria ? {} : { decimals: 2 }) },
       );
     },

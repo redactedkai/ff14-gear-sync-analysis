@@ -3,7 +3,7 @@
    set-totals.js. Takes plain data (a saved GearSet: docs/engineering/sheets.md, "Saved data", evaluated by
    evaluateInSheet) and returns a plain view object; the template only displays it. Pure: no Alpine, no store. */
 import { allocatedRelic, meldInfo, poolItemById } from '../../core/items.js';
-import { ROMAN, meldSlots } from '../../core/meld.js';
+import { ROMAN, materiaFit, meldSlots } from '../../core/meld.js';
 import { meldCaps } from '../../core/piece.js';
 import { MATERIA } from '../../core/tables.js';
 import { fillPlan } from '../sheets/fill.js';
@@ -56,7 +56,7 @@ function stoneChips(job, row, stones) {
     if (stone && !removedAt.has(index)) {
       const room = Math.max(0, caps[stone.stat] - (row.item.stats[stone.stat] || 0) - (added[stone.stat] || 0));
       const value = MATERIA.values[stone.grade - 1];
-      fit = room <= 0 ? 'none' : room < value ? 'part' : '';
+      fit = materiaFit(room, value);
       added[stone.stat] = (added[stone.stat] || 0) + Math.min(room, value);
     }
     return {
@@ -69,6 +69,14 @@ function stoneChips(job, row, stones) {
       fit,
     };
   });
+}
+
+/* The line a row shows where it has no materia chips: why there are none. */
+function noChipsTextOf(job, row, chips) {
+  if (chips.length) {
+    return '';
+  }
+  return allocatedRelic(job, row.item) ? 'substats set in game; no materia slots' : 'no materia slots';
 }
 
 /* One stat cell of a worn row: {stat, value, text, zero, atCap, beforeCap}. atCap: a substat at the most this piece can
@@ -103,7 +111,7 @@ function rowView(job, index, piece, row, pinned, changed, take) {
       ...common,
       empty: true,
       blockedBy: row.blockedBy,
-      covered: !!row.blockedBy,
+      covered: Boolean(row.blockedBy),
       shieldNote: row.blockedBy && piece.slot === 'offhand' ? SHIELD_NEEDS_ONE_HANDED : null,
       missing,
       emptyText: row.blockedBy ? 'Unavailable' : (missing ?? 'Choose a piece'),
@@ -118,7 +126,7 @@ function rowView(job, index, piece, row, pinned, changed, take) {
     gameId: row.item.gameId ?? null,
     name: row.item.name,
     // the stats are the high-quality ones: the page draws the HQ glyph after the name
-    hq: !!row.item.hq,
+    hq: Boolean(row.item.hq),
     ilvl: row.item.ilvl,
     // the item level the piece is synced to, or null (the column's hover title says it); ilvlText is the number the column
     // shows: the piece's own item level, as in the Gear browser
@@ -127,7 +135,7 @@ function rowView(job, index, piece, row, pinned, changed, take) {
     category: row.category,
     from: row.from,
     chips,
-    noChipsText: chips.length ? '' : allocatedRelic(job, row.item) ? 'substats set in game; no materia slots' : 'no materia slots',
+    noChipsText: noChipsTextOf(job, row, chips),
     cells: job.stats.map(stat => statCell(job, row, stat)),
   };
 }
@@ -203,7 +211,7 @@ export function setRowsView(
     rows,
     consumablesLabel: 'Consumables',
     // the meal is pinned only while the set holds one (fillPlan.pins.meal)
-    food: foodRow(job, gearSet, evaluated, !!plan.pins?.meal, mealChanged, mealTake, bestKeys),
+    food: foodRow(job, gearSet, evaluated, Boolean(plan.pins?.meal), mealChanged, mealTake, bestKeys),
     anyAtCap: rows.some(row => !row.empty && row.cells.some(cell => cell.atCap)),
     capKeyText: 'a stat at this piece’s cap; (412): the total before the cap',
   };

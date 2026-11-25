@@ -30,7 +30,7 @@ test('Apply of a suggestion never saves a two-handed weapon with a shield (Off-h
   // the player takes the weapon and declines the Off-hand change (row 1)
   const { pieces: applied } = appliedFields(saved, suggested, { rows: [1], meal: false }, whm);
   const weapon = applied[0].gameId == null ? null : poolItemById(whm, applied[0].gameId);
-  const coversOffhand = !!weapon && slotInfo(whm, weapon).blocks.includes('offhand');
+  const coversOffhand = Boolean(weapon) && slotInfo(whm, weapon).blocks.includes('offhand');
   assert.ok(
     !(coversOffhand && applied[1].gameId != null),
     `saved ${applied[0].gameId} (two-handed) with a shield ${applied[1].gameId} in the Off-hand`,

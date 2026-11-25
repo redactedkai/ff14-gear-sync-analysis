@@ -45,7 +45,7 @@ function newEntryId() {
 
 /* Whether `state` is the state of an entry the router wrote: {id (text), pos (a whole number)}. */
 function isEntry(state) {
-  return !!state && typeof state.id === 'string' && Number.isInteger(state.pos);
+  return Boolean(state) && typeof state.id === 'string' && Number.isInteger(state.pos);
 }
 
 /* The browser's history as the router needs it, over `win` (the window). `read()`: the address's hash. `state()`: the state
@@ -250,7 +250,11 @@ export function createRouter({
     const route = routeFromStores();
     const sheet = route.sheetId ? sheets.sheet(route.sheetId) : null;
     const set = sheet && route.setId ? sheet.sets.find(gearSet => gearSet.id === route.setId) : null;
-    return titleOf(route, { sheet: sheet?.name ?? null, set: set?.name ?? null, missing: route.tab === 'sheets' && !!sheets.missing });
+    return titleOf(route, {
+      sheet: sheet?.name ?? null,
+      set: set?.name ?? null,
+      missing: route.tab === 'sheets' && Boolean(sheets.missing),
+    });
   }
 
   /* Whether `route` names a sheet or set that is not saved (a "dead" address): the next move away from it replaces it. */

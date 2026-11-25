@@ -203,9 +203,9 @@ export async function prepareContext(context, view) {
   }, NO_MOTION_CSS);
   const records = seedRecords(view.state);
   if (records.length) {
-    await context.addInitScript(records => {
+    await context.addInitScript(seededRecords => {
       if (!sessionStorage.getItem('shots-seeded')) {
-        for (const [key, value] of records) {
+        for (const [key, value] of seededRecords) {
           localStorage.setItem(key, value);
         }
         sessionStorage.setItem('shots-seeded', '1');

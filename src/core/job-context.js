@@ -24,6 +24,15 @@ const cache = new Map();
    carry magic damage; Strength and Dexterity jobs have physical (damageKey). */
 const CASTER_MAIN_KEYS = Object.freeze(['int', 'mind']);
 
+/* The weapon damage key of job `id` with main stat `mainKey`: null for a job whose weapons carry none, else 'damageMag'
+   (caster main stat) or 'damagePhys'. */
+function damageKeyOf(id, mainKey) {
+  if (NO_WEAPON_DAMAGE_JOBS.includes(id)) {
+    return null;
+  }
+  return CASTER_MAIN_KEYS.includes(mainKey) ? 'damageMag' : 'damagePhys';
+}
+
 /** @param {string} jobId e.g. 'SGE'. Unknown ids fall back to DEFAULT_JOB. Results are cached and frozen.
  *  Stat keys are the game's own (constants.js STAT_LABEL). The job's: mainKey (str, dex, int or mind), speedKey (sks or
  *  sps), specKey (piety or ten; null for a job without a special substat); stats = [mainKey, 'vit', 'crit', 'det',
@@ -44,7 +53,12 @@ export function makeJobContext(jobId) {
   const { mainKey, speedKey, specKey } = PROFILES[profileId];
   const substats = [...SHARED_SUBSTATS, speedKey, ...(specKey ? [specKey] : [])];
   const stats = [mainKey, 'vit', ...substats];
-  const weaponMode = ONE_HANDED_JOBS.includes(id) ? '1h+oh' : MIXED_WEAPON_JOBS.includes(id) ? 'mixed' : '2h';
+  let weaponMode = '2h';
+  if (ONE_HANDED_JOBS.includes(id)) {
+    weaponMode = '1h+oh';
+  } else if (MIXED_WEAPON_JOBS.includes(id)) {
+    weaponMode = 'mixed';
+  }
   // a job with a shield uses the Off-hand row; a mixed job's generic weapon (Stat Allocation) is the 1H one beside it
   const hasOffhand = weaponMode !== '2h';
   const ctx = {
@@ -73,7 +87,7 @@ export function makeJobContext(jobId) {
     // the weapon damage the job's damage uses (damage-defense.js): physical for Strength and Dexterity jobs, magic for
     // Intelligence and Mind jobs; null for a job whose weapons carry none (NO_WEAPON_DAMAGE_JOBS), which the optimizer
     // then does not rank
-    damageKey: NO_WEAPON_DAMAGE_JOBS.includes(id) ? null : CASTER_MAIN_KEYS.includes(mainKey) ? 'damageMag' : 'damagePhys',
+    damageKey: damageKeyOf(id, mainKey),
   };
   deepFreeze(ctx);
   cache.set(id, ctx);

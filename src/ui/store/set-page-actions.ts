@@ -145,7 +145,12 @@ export function createSetPageActions(store: AppStore) {
       if (page.suggestion === suggestion) {
         return true;
       }
-      const fill = suggestion ? 'waiting' : page.fill === 'waiting' ? 'idle' : page.fill;
+      let fill = page.fill;
+      if (suggestion) {
+        fill = 'waiting';
+      } else if (page.fill === 'waiting') {
+        fill = 'idle';
+      }
       return replace('setPages/setSuggestion', setId, { suggestion, fill });
     },
 

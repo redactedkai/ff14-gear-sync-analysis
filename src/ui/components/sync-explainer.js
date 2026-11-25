@@ -193,9 +193,9 @@ export function syncExplainer() {
         const panel = this.$store.app.panel('math');
         const loweredFrom = this.capLowered && this.capLowered.to === panel.cap ? this.capLowered.from : null;
         return syncChipView(panel.jobCtx, syncSettings(panel), this.$store.app.piece.slot, {
-          switchOn: !!panel.sync,
+          switchOn: Boolean(panel.sync),
           loweredFrom,
-          capMissing: !!panel.sync && panel.cap == null,
+          capMissing: Boolean(panel.sync) && panel.cap == null,
         });
       },
       /* the Level and Synced IL boxes show the store's values again, dropping what they hold that is no level or cap */

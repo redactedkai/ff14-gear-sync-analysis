@@ -126,13 +126,13 @@ export function resolvePins(job, sync, pins, gear) {
 
 /* Whether `pins` (runRecipe's) keep anything: a piece or a meal. */
 export function hasPins(pins) {
-  return !!(pins?.pieces?.length || pins?.meal);
+  return Boolean(pins?.pieces?.length || pins?.meal);
 }
 
 /* Whether a solve counts a meal: Food is on in the recipe, or a meal is pinned (`pinnedMeal`, resolvePins' meal: a
    pinned meal is the meal even with Food off). */
 function usesFood(recipe, pinnedMeal) {
-  return !!recipe.food || !!pinnedMeal;
+  return Boolean(recipe.food) || Boolean(pinnedMeal);
 }
 
 /* The meal Target GCD and tier ranking search with: none with Food off (`foodOn` false), the player's pick (`picked`, an
@@ -156,7 +156,7 @@ export function gcdRange(job, sync, level, recipe, session, meal = null, pins = 
   const pinnedMeal = pinned.meal ?? meal;
   const food = searchMeal(usesFood(recipe, pinned.meal), pinnedMeal);
   const fastest = fastestGcd(job, recipePool(job, recipe, session.gear(job)), sync, {
-    melds: !!recipe.melds,
+    melds: Boolean(recipe.melds),
     food,
     nodeLimit: NODE_LIMIT,
     level,
@@ -213,12 +213,16 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
       ? { pins: Object.freeze({ pieces: Object.freeze(pins.pieces.map(p => Object.freeze({ ...p }))), meal: pins.meal ?? null }) }
       : {}),
   });
-  const fail = (status, r = null, asked = null) =>
+  const fail = (status, r = null, askedValue = null) =>
     Object.freeze({
       status,
       set: null,
       record,
-      found: { truncated: r?.truncated, gcd: r && asked != null ? gcdFacts(r) : null, badPins: status === 'badpin' ? pinned.problems : [] },
+      found: {
+        truncated: r?.truncated,
+        gcd: r && askedValue != null ? gcdFacts(r) : null,
+        badPins: status === 'badpin' ? pinned.problems : [],
+      },
     });
   if (pinned.problems.length) {
     return fail('badpin');
@@ -235,8 +239,16 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
   const fixed = pinned.fixed;
   const hastePct = hasteFor(job.jobId, level)?.pct ?? 0;
   const asked = askedGcd(job, recipe);
-  const goal = { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2], melds: !!recipe.melds, fixed };
-  const failed = r => fail(r.truncated ? 'infeasible' : asked != null ? 'nogcd' : 'noset', r, asked);
+  const goal = { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2], melds: Boolean(recipe.melds), fixed };
+  const failed = r => {
+    let status = 'noset';
+    if (r.truncated) {
+      status = 'infeasible';
+    } else if (asked != null) {
+      status = 'nogcd';
+    }
+    return fail(status, r, asked);
+  };
 
   // 2. the search. By tier: the tiers of the goal and tiebreaks first, counted with food, so meal and gear are chosen
   // together (rankByTier). Otherwise, with a Target GCD, gear and meal are chosen together (optimizeGcd); without
@@ -288,7 +300,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
     { target: recipe.target, tiebreak: [recipe.tb, recipe.tb2].filter(Boolean) },
     {
       prune: false,
-      melds: !!recipe.melds,
+      melds: Boolean(recipe.melds),
       speed: speedMode || null,
       fixed,
     },
@@ -309,7 +321,7 @@ export function runRecipe(job, sync, level, recipe, session, choices = {}, pins 
     const all = allMeals(job);
     const best = picked ? bestFood(job, foodChoices(job), gearTotals, level, keys) : food;
     const tagged = sameMeals(job, gearTotals, best, all, { level, haste: hastePct, goal: recipe.target }, keys);
-    meals = { searched: food, best, tagged, shown: picked ?? tagged.at(-1), picked: !!picked };
+    meals = { searched: food, best, tagged, shown: picked ?? tagged.at(-1), picked: Boolean(picked) };
   }
 
   return Object.freeze({

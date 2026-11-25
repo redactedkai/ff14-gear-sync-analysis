@@ -113,7 +113,7 @@ export function copySheetFormView(sheet, form) {
     help: copyHelpView(sheet.job),
     ...ranges(chosen.id),
     warning,
-    disabled: !!warning && !form.ack,
+    disabled: Boolean(warning) && !form.ack,
     buttonText: 'Copy sheet',
     ...errorPlaces(form),
   };

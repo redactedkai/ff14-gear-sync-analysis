@@ -22,7 +22,13 @@ export {
 function speedRule(opts) {
   const spdMin = opts.spdMin > 0 ? opts.spdMin : null;
   const spdMax = opts.spdMax != null ? opts.spdMax : null;
-  return { spdMin, spdMax, kind: spdMax != null ? 'exact' : spdMin != null ? 'min' : null };
+  let kind = null;
+  if (spdMax != null) {
+    kind = 'exact';
+  } else if (spdMin != null) {
+    kind = 'min';
+  }
+  return { spdMin, spdMax, kind };
 }
 
 /* The candidate lists for one objective, to search many times with different limits (Target GCD: each GCD, each meal;
@@ -39,11 +45,11 @@ function speedRule(opts) {
    fixed=[]}.
    Returns {slotList, posList, dims, noMeldData, speed, minStats, speedKey (the job's), fixed, fixedBlocked}. */
 export function prepare(job, pool, sync, opts) {
-  opts = opts || {};
-  const target = opts.target || job.mainKey;
-  const tiebreak = (opts.tiebreak || []).filter(Boolean);
-  const asked = [...new Set((opts.minStats || []).filter(Boolean))];
-  const speed = opts.speed || (asked.includes(job.speedKey) ? 'min' : null);
+  const options = opts || {};
+  const target = options.target || job.mainKey;
+  const tiebreak = (options.tiebreak || []).filter(Boolean);
+  const asked = [...new Set((options.minStats || []).filter(Boolean))];
+  const speed = options.speed || (asked.includes(job.speedKey) ? 'min' : null);
   const minStats = asked.filter(s => s !== job.speedKey);
   const cands = buildCandidates(
     job,
@@ -51,13 +57,13 @@ export function prepare(job, pool, sync, opts) {
     sync,
     { target, tiebreak },
     {
-      melds: !!opts.melds,
+      melds: Boolean(options.melds),
       speed,
       minStats,
-      versionKeys: opts.versionKeys || [],
-      versionCache: opts.versionCache,
-      weaponFirst: opts.weaponFirst !== false,
-      fixed: opts.fixed || [],
+      versionKeys: options.versionKeys || [],
+      versionCache: options.versionCache,
+      weaponFirst: options.weaponFirst !== false,
+      fixed: options.fixed || [],
     },
   );
   return { ...cands, speed, minStats, speedKey: job.speedKey };
@@ -171,17 +177,17 @@ const DEFAULT_NODE_LIMIT = 1500000;
    a pinned pick is marked `pinned`, and a seed's are ignored. The result adds `method` ('trial', 'fronts' or
    'search'), `kept` (candidates left after the filters) and `frontSizes` to optimize's. */
 export function solve(prep, opts) {
-  opts = opts || {};
-  const wholeLimits = limitsFor(prep, opts);
-  const nodeLimit = opts.nodeLimit || DEFAULT_NODE_LIMIT;
+  const options = opts || {};
+  const wholeLimits = limitsFor(prep, options);
+  const nodeLimit = options.nodeLimit || DEFAULT_NODE_LIMIT;
   const { slotList, posList, dims, noMeldData, speedKey, fixed = [], fixedBlocked = [] } = prep;
 
   // 1. with pinned pieces, the limits and proven maxima as the search's own slots see them (without the pinned points),
   // and a seed without its pinned picks; with none, everything as given
   const fixedTotals = fixedTotalsOf(fixed, dims);
   const limits = fixed.length ? limitsWithoutFixed(wholeLimits, fixedTotals) : wholeLimits;
-  const proven = fixed.length ? opts.proven?.map(p => ({ ...p, most: p.most - (fixedTotals[p.stat] || 0) })) : opts.proven;
-  const seedPicks = fixed.length ? opts.seed?.filter(p => !p.pinned) : opts.seed;
+  const proven = fixed.length ? options.proven?.map(p => ({ ...p, most: p.most - (fixedTotals[p.stat] || 0) })) : options.proven;
+  const seedPicks = fixed.length ? options.seed?.filter(p => !p.pinned) : options.seed;
   if (!limits) {
     return { ok: false, truncated: false, nodes: 0, noMeldData, method: 'search', kept: 0 };
   }
@@ -196,8 +202,8 @@ export function solve(prep, opts) {
           dims,
           limits,
           nodeLimit,
-          plain: !!opts.plain,
-          lazyTables: opts.lazyTables,
+          plain: Boolean(options.plain),
+          lazyTables: options.lazyTables,
           start,
           proven,
           speedKey,
@@ -249,10 +255,10 @@ export function solve(prep, opts) {
  *          melds are on
  */
 export function optimize(job, pool, sync, opts) {
-  opts = opts || {};
-  const { spdMin, spdMax, kind } = speedRule(opts);
-  const mins = opts.mins || {};
+  const options = opts || {};
+  const { spdMin, spdMax, kind } = speedRule(options);
+  const mins = options.mins || {};
   const minStats = Object.keys(mins).filter(s => mins[s] > 0);
-  const prep = prepare(job, pool, sync, { ...opts, speed: kind, minStats });
-  return solve(prep, { spdMin, spdMax, mins, nodeLimit: opts.nodeLimit });
+  const prep = prepare(job, pool, sync, { ...options, speed: kind, minStats });
+  return solve(prep, { spdMin, spdMax, mins, nodeLimit: options.nodeLimit });
 }

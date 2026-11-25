@@ -23,7 +23,7 @@ const jobsOf = r => JOBS.filter((_, i) => r.mask & (1 << i)).map(j => makeJobCon
 test('level sync item level: ParamGrow.ItemLevelSync at each level cap, and levels 1 to 49 map to themselves', () => {
   const want = { 50: 130, 60: 270, 70: 400, 80: 530, 90: 660, 100: 690 };
   for (const [l, il] of Object.entries(want)) {
-    assert.equal(levelSyncIlvl(+l), il, `level ${l}`);
+    assert.equal(levelSyncIlvl(Number(l)), il, `level ${l}`);
   }
   for (let l = 1; l <= 49; l++) {
     assert.equal(levelSyncIlvl(l), l, `level ${l}`);

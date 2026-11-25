@@ -44,9 +44,9 @@ export async function checkMenuSteps(pg) {
   // Open `buttonSel`; the row counts of `menuSel` at its first frame and when they stop growing; the longest task
   const open = (buttonSel, menuSel) =>
     pg.evaluate(
-      async ([buttonSel, menuSel]) => {
+      async ([buttonSelector, menuSelector]) => {
         const frame = () => new Promise(done => requestAnimationFrame(done));
-        const rows = () => document.querySelectorAll(`${menuSel} .same-item`).length;
+        const rows = () => document.querySelectorAll(`${menuSelector} .same-item`).length;
         let longest = 0;
         const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
@@ -54,8 +54,8 @@ export async function checkMenuSteps(pg) {
           }
         });
         observer.observe({ type: 'longtask' });
-        document.querySelector(buttonSel).click();
-        while (!document.querySelector(menuSel)) {
+        document.querySelector(buttonSelector).click();
+        while (!document.querySelector(menuSelector)) {
           await frame();
         }
         await frame();

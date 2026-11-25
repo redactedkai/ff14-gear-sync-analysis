@@ -124,7 +124,11 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
     } else {
       sheets.unsaved.add(what);
     }
-    sheets.saveMessage = saved.ok ? (sheets.unsaved.size ? sheets.saveMessage : '') : (saved.message ?? '');
+    let message = saved.message ?? '';
+    if (saved.ok) {
+      message = sheets.unsaved.size ? sheets.saveMessage : '';
+    }
+    sheets.saveMessage = message;
   }
 
   /* `sheet` replaced in the list (or put on top when new) and saved, its updatedAt stamped unless `touch` is false. Returns
@@ -389,11 +393,11 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
     /* Whether an Auto-fill runs, so every edit is refused (set by the set page). */
     setBusy(busy: boolean): void {
-      if (store.state.sheets.busy === !!busy) {
+      if (store.state.sheets.busy === Boolean(busy)) {
         return;
       }
       store.update('sheets/setBusy', state => {
-        state.sheets.busy = !!busy;
+        state.sheets.busy = Boolean(busy);
       });
     },
 
@@ -546,7 +550,7 @@ export function createSheetsActions(store: AppStore, options: SheetsActionOption
 
     /* The open sheet's item level sync switched on or off (its cap is kept, and follows the level once on). */
     setSyncOn(on: boolean): SheetResult {
-      return editSettings(sheet => ({ ...sheet, sync: { ...sheet.sync, on: !!on } }));
+      return editSettings(sheet => ({ ...sheet, sync: { ...sheet.sync, on: Boolean(on) } }));
     },
 
     /* The open sheet's item level cap, as typed: a whole number from 1, lowered to what the level allows (editSettings). */
