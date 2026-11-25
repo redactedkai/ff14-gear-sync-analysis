@@ -38,7 +38,7 @@ function makeZag(host: GsaStatNote) {
       ids: { content: STAT_NOTE_ID },
       autoFocus: false,
       portalled: false,
-      finalFocusEl: () => host.anchor,
+      finalFocusEl: () => host.anchor ?? host.returnFocusTo,
       // always below the button, as the note was before; the page's panel keeps it inside the window sideways
       positioning: {
         placement: 'bottom-start' as const,
@@ -76,6 +76,9 @@ export class GsaStatNote extends LitElement {
 
   declare note: StatNoteText | null;
   declare anchor: HTMLElement | null;
+  // the "?" the focus goes back to: `anchor` as the note opened or moved (the page lets go of `anchor` the moment the note closes, before
+  // Zag asks where the focus goes)
+  returnFocusTo: HTMLElement | null = null;
   readonly zag: ReturnType<typeof makeZag>;
   readonly bridge: ReturnType<typeof createOverlayBridge>;
 
@@ -108,6 +111,9 @@ export class GsaStatNote extends LitElement {
   protected override updated(): void {
     const { api, machine } = this.zag;
     if (machine) {
+      if (this.anchor) {
+        this.returnFocusTo = this.anchor;
+      }
       if (this.anchor && !api.open) {
         api.setOpen(true);
       } else if (this.anchor) {
