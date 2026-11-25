@@ -5,16 +5,15 @@ import { check, expect } from '../../lib/expect.mjs';
 import { browserRows, chooseSlot, fillBrowser, setJob, showTab } from '../../lib/nav.mjs';
 import { SHARED_SETUP } from '../../lib/setup.mjs';
 
-/* Installed in the page: window.__rowsMismatch() describes the first way the table's rows differ from the component's
+/* Installed in the page: window.__rowsMismatch() describes the first way the table's rows differ from the Gear browser element's
    `view.shown` (the rows the table should show), or '' when they match. Every row is read the way the template binds it:
    the row's key and class, the slot cell (label, title, the x2 mark), the name cell (title, the name's spans and their
    classes, the HQ mark), the two level cells, and each stat cell (column, text, class, data-was).
    window.__rowsWatch(true) starts a requestAnimationFrame loop that runs it before every frame is drawn; window.__rowsWatch(false)
    stops it and returns {frames, bad: the first mismatch seen in any frame, or ''}. */
 function installRowsCheck() {
-  const component = () => window.gsaDebug.scope('#tab-browse [x-data="gear"]');
   window.__rowsMismatch = () => {
-    const shown = component().view?.shown ?? [];
+    const shown = document.querySelector('gsa-gear-browser').view?.shown ?? [];
     const rows = [...document.querySelectorAll('#gear-table tbody tr[data-key]')];
     if (rows.length !== shown.length) {
       return `${rows.length} rows in the table, ${shown.length} in the view`;

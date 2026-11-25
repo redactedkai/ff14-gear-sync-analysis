@@ -8,8 +8,9 @@ import { DEFAULT_EXCLUDE } from '../../job-sync-panel.js';
 import { fmtInt } from '../../text.ts';
 
 /* The events the elements send, `detail` being the patch for the filter's settings: `categories-change` {exclude} or {market}
-   from the Gear categories menu, `expansion-change` {expOff}. The page's templates listen with `@categories-change` and
-   `@expansion-change`, which cannot import these constants: a unit test asserts the templates use the same names. */
+   from the Gear categories menu, `expansion-change` {expOff}. The Gear browser element listens by these constants; the Auto-fill
+   settings' partials (expansion-menu.html, gear-from-menu.html) cannot import them and write the names out: a unit test asserts
+   the partials use the same names. */
 export const CATEGORIES_CHANGE_EVENT = 'categories-change';
 export const EXPANSION_CHANGE_EVENT = 'expansion-change';
 

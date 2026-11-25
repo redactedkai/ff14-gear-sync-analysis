@@ -127,7 +127,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | scripts/build | the build script and the optimizer's worker bundle (note 10) |
 | startup-failure | the failed-to-start script run against a stand-in page: the settings key and the sheets keys are saved data to reset, the reload guard's dev flag and other pages' keys are not |
 | ui/elements/gear-browser/filter-menu-model | the Expansion and "Gear categories" menus' data: the tabs (Everyday, Side content and Hard content with the real boxes, hints and Hard content's reading order), the button texts, the piece counts and their words, the lists after a tick, All, None and Default, and the partials' event names |
-| ui/components/gear | the Gear browser: its view built once per change and only while its tab is open, sorting, Reset filters, the / key |
+| ui/elements/gear-browser/gear-browser-model | the Gear browser element's rules with no DOM: its view built once per change and only while its tab is open, the page line going back to page 1, sorting, Reset filters, the / key |
 | ui/components/page | the Gear browser strip's job menu, the cap field's error and lowered note, Reset asking first |
 | ui/components/set-page/draft | a set page bound as Alpine binds it: edits by hand kept in a draft until Apply, pins saved at once; the draft is a frozen copy in the store, one entry per page |
 | ui/components/set-page | the set page put together from its parts: no member defined twice |

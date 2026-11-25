@@ -302,11 +302,7 @@ td.defense {
   border-radius: 0 999px 999px 0;
 }
 /* The Slot menu is the element <gsa-slot-menu> (src/ui/elements/gear-browser/slot-menu.ts), drawn in light DOM: it is the bar's
-   first part, a grid whose one cell holds the button and the hidden copy of the rows. Its page wrapper (an Alpine island, which
-   passes it properties) takes no box of its own. */
-.slot-island {
-  display: contents;
-}
+   first part, a grid whose one cell holds the button and the hidden copy of the rows. */
 gsa-slot-menu {
   position: relative;
   flex: none;

@@ -86,6 +86,30 @@ A click in the Gear browser removed the 50 rows and built 50 new ones, because t
 - The clicks that change few rows (a box back on, the sync switch, Reset filters) are about the same.
 - **Wrong frame found and fixed:** a kept row showed the new item's name with the old item's HQ mark and x2 mark for one drawn frame, because Alpine's `x-show` shows and hides in the next animation frame. Both marks are now `:hidden` bindings; a frame recorder over 36 actions then saw no frame that the unkeyed page did not also draw ([architecture.md, section 3](architecture.md#3-the-ui-pattern)).
 
+### 2.3 The Gear browser as one Lit element (run of 2026-11-25)
+
+The Gear browser's screen moved from Alpine bindings to one Lit element (`<gsa-gear-browser>`, rows drawn with `map` by place and inside a `guard` on the view). The same clicks as in 2.2, measured with the same method on the page before and after the change, alternating, in one exclusive job: Chromium 1280 x 900, dark, Black Mage, level 50, item level 135 with sync on, 50 rows, real mouse clicks, 5 fresh runs per click, the longest Event Timing entry of the click, the best of the 5 in ms (the browser rounds to 8 ms). The last row is the Sheets to Gear browser switch (a click on the tab, until the rows are in the page and two frames are drawn). The set-up clicks (opening a menu) are not timed.
+
+| Click | 4x before | 4x after | 1x before | 1x after |
+| --- | --- | --- | --- | --- |
+| Sort by Item | 400 | 224 | 80 | 40 |
+| Sort by item level | 384 | 232 | 72 | 48 |
+| Page button (Next) | 408 | 200 | 72 | 48 |
+| Page button (page 3) | 400 | 184 | 72 | 40 |
+| Slot pick (Weapon) | 376 | 184 | 64 | 40 |
+| Slot pick (Head) | 336 | 184 | 64 | 32 |
+| Slot pick (Any) | 416 | 208 | 72 | 48 |
+| Expansion box off | 408 | 112 | 72 | 24 |
+| Expansion box on again | 368 | 128 | 64 | 24 |
+| Job pick (Sage) | 512 | 232 | 80 | 40 |
+| Job pick (Black Mage) | 488 | 208 | 80 | 40 |
+| Gear categories All | 400 | 200 | 64 | 40 |
+| Sheets to Gear browser, to the rows drawn | 1,172 | 569 | 194 | 111 |
+
+- Every click is faster, about half at 4x. The Expansion box went from about 400 to about 120 ms at 4x (the cause was not isolated).
+- The click's own Event Timing entry for the screen switch is the same (48 and 40 ms at 4x): the screen draws in the tasks after the click.
+- The run's other numbers, `npm run perf` and Auto-fill, are not touched by this change and were not run.
+
 ## 3. Runs of 2026-10-19
 
 The page's searches moved into a Web Worker, and the inlined database was timed at page open.

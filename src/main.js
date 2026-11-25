@@ -17,6 +17,7 @@ import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
 // the Lit elements (each registers itself on import); the page's templates hold them as islands
 import './ui/elements/gear-browser/expansion-menu.ts';
+import './ui/elements/gear-browser/gear-browser.ts';
 import './ui/elements/gear-browser/gear-categories.ts';
 import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/bar-popover.ts';
@@ -40,7 +41,6 @@ import './ui/elements/set-page/rank-note.ts';
 import './ui/elements/set-page/settings-popover.ts';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
-import { gear } from './ui/components/gear.js';
 import { sheetsTab } from './ui/components/sheets.js';
 import { setPage } from './ui/components/set-page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
@@ -132,7 +132,6 @@ Object.entries({
   page,
   settings,
   syncExplainer,
-  gear,
   sheetsTab,
   setPage: () => setPage(solver),
 }).forEach(([name, factory]) => {

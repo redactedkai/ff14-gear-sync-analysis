@@ -169,14 +169,14 @@ test('build includes: a partial can include another, keeping the indentation; a 
   assert.equal(expandIncludes('<!-- INCLUDE d3.html -->', read), '<i></i>');
 });
 
-test('page template: the browser and a set page each hold the Expansion and Gear categories menu elements', async () => {
+test('page template: the Gear browser element and the Auto-fill settings hold the Expansion and Gear categories menu elements', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
   const page = expandIncludes(html);
-  for (const id of ['b', 's']) {
-    for (const element of ['gsa-expansion-menu', 'gsa-gear-categories']) {
-      assert.match(page, new RegExp(`<${element} class="f multi" id-prefix="${id}"`));
-    }
+  // the Gear browser's own menus ('b') are drawn by its element (gear-browser.ts); a set's Auto-fill settings ('s') are in the page
+  assert.match(page, /<gsa-gear-browser class="panel" x-ignore>/);
+  for (const element of ['gsa-expansion-menu', 'gsa-gear-categories']) {
+    assert.match(page, new RegExp(`<${element} class="f multi" id-prefix="s"`));
   }
   // the menus write through the component's own setter, never the store directly
   assert.doesNotMatch(page, /\$store\.app\.\w+\.market = /);
