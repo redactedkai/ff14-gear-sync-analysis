@@ -20,6 +20,8 @@ import './ui/elements/gear-browser/expansion-menu.ts';
 import './ui/elements/gear-browser/gear-categories.ts';
 import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/bar-popover.ts';
+import './ui/elements/math-page/gcd-controls.ts';
+import './ui/elements/math-page/gcd-view.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/select.ts';
@@ -36,7 +38,6 @@ import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';
 import { tierControls, tierTable } from './ui/components/tiers.js';
-import { gcdControls, gcdTab } from './ui/components/gcd.js';
 import { sheetsTab } from './ui/components/sheets.js';
 import { setPage } from './ui/components/set-page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
@@ -130,8 +131,6 @@ Object.entries({
   syncExplainer,
   gear,
   tierTable,
-  gcdTab,
-  gcdControls,
   tierControls,
   sheetsTab,
   setPage: () => setPage(solver),

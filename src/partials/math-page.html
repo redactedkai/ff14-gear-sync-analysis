@@ -1,4 +1,4 @@
-<!-- The Math tab (`syncExplainer` with `gcdTab` and `tierTable` inside it): the sticky bar and the three sub-tabs, Stat
+<!-- The Math tab (`syncExplainer` with `tierTable` inside it, and the GCD elements): the sticky bar and the three sub-tabs, Stat
      Allocation, GCD Scaling and Substat tiers. Included once, from index.html's job template. No keys. -->
 <section
   class="tab"
@@ -268,56 +268,10 @@
     </div>
   </div>
   <!-- GCD: its own level, haste and speed ($store.app.gcd); no job, so no Job box before them -->
-  <template x-if="$store.app.mathTab === 'gcd'"><div style="display:contents" x-data="gcdControls">
-  <label class="mctl wide"><span class="mctl-head">Level <span class="f-range" x-text="`1–${gcdLevels}`"></span></span>
-    <input
-      type="number"
-      id="g-level"
-      min="1"
-      :max="gcdLevels"
-      step="1"
-      inputmode="numeric"
-      :value="level"
-      aria-label="Level of the GCD tab"
-      :class="{ invalid: !!levelError }"
-      :aria-invalid="String(!!levelError)"
-      @input="typeLevel($el)"
-      @change="typeLevel($el, true)">
-  </label>
-  <div class="mctl fit">
-    <label for="g-haste">Haste</label>
-    <span class="sized"><span
-      class="selhost"
-      x-effect="$el.firstElementChild.options = hasteOptions; $el.firstElementChild.value = $store.app.gcd.haste"
-      @change="$store.app.editGcd({ haste: $event.detail })"><gsa-select x-ignore button-id="g-haste" label="Haste"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="hasteSizer"></span></span>
-  </div>
-  <div class="ilctl small">
-    <label for="g-range">Speed (base + gear + food)</label>
-    <span class="bound" x-text="speedRange.base"></span>
-    <input
-      type="range"
-      id="g-range"
-      :min="speedRange.base"
-      :max="speedRange.most"
-      step="1"
-      :value="speed"
-      :style="`--fill: ${speedFill}%`"
-      @input="slide($event.target.value)">
-    <span class="bound" id="g-most" x-text="speedRange.most"></span>
-    <input
-      type="number"
-      id="g-speed"
-      :min="speedRange.base"
-      :max="speedRange.most"
-      step="1"
-      inputmode="numeric"
-      :value="speed"
-      aria-label="Speed (base + gear + food)"
-      @input="typeSpeed($el)"
-      @change="typeSpeed($el, true)">
-    <button type="button" class="chip" id="g-reset" @click="resetSpeed()">Reset</button>
-  </div>
-  </div></template>
+  <template x-if="$store.app.mathTab === 'gcd'"><div
+    style="display:contents"
+    x-effect="const g = $store.app.gcd, el = $el.firstElementChild; el.level = g.level; el.haste = g.haste; el.speed = g.speed; el.syncedLevel = $store.app.panel('math').level"
+    @gcd-edit="$store.app.editGcd($event.detail)"><gsa-gcd-controls x-ignore></gsa-gcd-controls></div></template>
   <!-- TIERS: its own job (the Job box before it) and level ($store.app.tiers) -->
   <template x-if="$store.app.mathTab === 'tiers'"><div style="display:contents" x-data="tierControls">
   <label class="mctl wide divided afterjob"><span class="mctl-head">Level <span class="f-range" id="t-level-range" x-text="`1–${panel.jobCtx.maxLevel}`"></span></span>
@@ -421,22 +375,14 @@
 </section>
 
 <!-- GCD: how speed becomes the GCD at a level, on its own settings (views/gcd.js) -->
-<section class="subtab" id="tab-gcd" hidden :hidden="$store.app.mathTab !== 'gcd'" x-data="gcdTab">
-<div class="gcdgrid">
-  <div class="panel" id="g-facts"><div class="gfacts"><template x-for="f in view.facts" :key="f.label"><div><b x-text="f.value"></b><span x-text="f.label"></span></div></template></div></div>
-  <div class="panel" id="g-curve">
-    <h2>Speed per 0.01 s, by level</h2>
-    <p class="small dim">How much speed it takes to shorten the GCD by 0.01 s at each level. Click a bar to see that level.</p>
-    <div class="chartbox" id="g-chart" x-ref="chart" x-html="view.chartSvg" @click="pickLevel($event)"></div>
-  </div>
-  <div class="panel" id="g-steps">
-    <h2>GCD steps</h2>
-    <table class="compact gsteps" id="g-table">
-      <thead><tr><th class="n">Speed</th><th class="n">GCD</th><th class="n">Reduction</th></tr></thead>
-      <tbody><template x-for="r in view.steps" :key="r.speed"><tr :class="{ cur: r.cur, out: r.out }" @click="pickSpeed(r)"><td class="n" x-text="r.speed"></td><td class="n" x-text="r.gcd"></td><td class="n" x-text="r.cut"></td></tr></template></tbody>
-    </table>
-  </div>
-</div>
+<section
+  class="subtab"
+  id="tab-gcd"
+  hidden
+  :hidden="$store.app.mathTab !== 'gcd'"
+  x-effect="const g = $store.app.gcd, el = $el.firstElementChild; el.level = g.level; el.haste = g.haste; el.speed = g.speed; el.syncedLevel = $store.app.panel('math').level"
+  @gcd-edit="$store.app.editGcd($event.detail)">
+<gsa-gcd-view x-ignore></gsa-gcd-view>
 </section>
 
 <!-- TIERS: every tier of each substat, a card per substat; not about sync, so it shows whatever the sync settings -->

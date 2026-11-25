@@ -1,5 +1,5 @@
 /* ==== How the math works: GCD ==== */
-/* GCD (components/gcd.js): the facts and the chart on the left, the step table on the right across both */
+/* GCD (elements/math-page/gcd-view.ts): the facts and the chart on the left, the step table on the right across both */
 .gcdgrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -65,4 +65,10 @@ svg.chart .hasteline {
 .gsteps tbody tr.out td {
   color: var(--muted);
   opacity: 0.5;
+}
+/* The elements <gsa-gcd-view> and <gsa-gcd-controls> (src/ui/elements/math-page/) take no box of their own: the tab's grid and the bar's
+   controls lay out as if their markup sat in the page */
+gsa-gcd-view,
+gsa-gcd-controls {
+  display: contents;
 }

@@ -116,7 +116,7 @@ export const DOMAINS = {
   'math-page': {
     title: 'How the math works: Piece stats, Substat tiers, GCD',
     src: [
-      'src/ui/components/{sync-explainer,tiers,gcd}.js',
+      'src/ui/components/{sync-explainer,tiers}.js',
       // the "?" note of Substat tiers, a Lit element (an island in the math page's template)
       'src/ui/elements/math-page/**',
       'src/ui/views/{piece,sync-explainer,tiers,gcd}.js',

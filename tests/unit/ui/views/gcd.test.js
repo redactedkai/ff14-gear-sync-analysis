@@ -6,7 +6,18 @@ import { levelParams } from '../../../../src/core/level-params.js';
 import { recastMult } from '../../../../src/core/speed.js';
 import { MAX_LEVEL, MAX_SPEED } from '../../../../src/core/tables.js';
 import { HASTE } from '../../../../src/core/constants.js';
-import { GCD_STEPS_NEAR, HASTE_OPTIONS, gcdLevelInput, gcdView, speedPerStep, speedRange } from '../../../../src/ui/views/gcd.js';
+import {
+  GCD_LEVELS,
+  GCD_STEPS_NEAR,
+  HASTE_OPTIONS,
+  gcdControlsView,
+  gcdLevelInput,
+  gcdLevelTyped,
+  gcdSpeedTyped,
+  gcdView,
+  speedPerStep,
+  speedRange,
+} from '../../../../src/ui/views/gcd.js';
 import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.mjs';
 import { hasNumber } from '../../helpers/common.js';
 
@@ -151,4 +162,35 @@ test("the chart: a bar per level, the tab's level highlighted; a step takes abou
   assert.equal(speedPerStep(50), 9.8);
   assert.match(svg, />level 50: ~10</);
   assert.deepEqual(speedRange(100), { base: 420, most: MAX_SPEED[99] });
+});
+
+test('controls: the level follows the synced level until one is typed; the speed is held to that level range and the thumb fill follows it', () => {
+  const { base, most } = speedRange(50);
+  const atSync = gcdControlsView(null, 50, null);
+  assert.deepEqual([atSync.level, atSync.base, atSync.most, atSync.speed, atSync.fill], [50, base, most, base, 0]);
+  assert.equal(gcdControlsView(null, 50, most + 100).speed, most);
+  assert.equal(gcdControlsView(null, 50, most + 100).fill, 100);
+  assert.equal(gcdControlsView(null, 50, base - 1).speed, base);
+  assert.ok(Math.abs(gcdControlsView(null, 50, Math.round((base + most) / 2)).fill - 50) < 1);
+  // a typed level wins over the synced one, and the range follows it
+  const typed = gcdControlsView(90, 50, null);
+  assert.deepEqual([typed.level, typed.base, typed.most], [90, speedRange(90).base, speedRange(90).most]);
+  assert.equal(gcdControlsView(null, 250, null).level, GCD_LEVELS, 'the synced level is held to the levels the tab covers');
+});
+
+test('Level box, settled: a level out of range is corrected, the synced level itself and an empty box follow the synced level, other text is an error', () => {
+  assert.deepEqual(gcdLevelTyped('70', 50), { error: false, patch: { level: 70 }, shown: 70 });
+  assert.deepEqual(gcdLevelTyped('250', 50), { error: false, patch: { level: GCD_LEVELS }, shown: GCD_LEVELS });
+  assert.deepEqual(gcdLevelTyped('0', 50), { error: false, patch: { level: 1 }, shown: 1 });
+  assert.deepEqual(gcdLevelTyped('50', 50), { error: false, patch: { level: null }, shown: 50 });
+  assert.deepEqual(gcdLevelTyped('', 50), { error: false, patch: { level: null }, shown: 50 });
+  assert.deepEqual(gcdLevelTyped('4.5', 50), { error: true, patch: null, shown: null });
+});
+
+test('speed box, settled: a number is kept as asked and the box shows the speed used; other text changes nothing', () => {
+  const { base, most } = speedRange(50);
+  assert.deepEqual(gcdSpeedTyped(`${most + 50}`, 50, null), { patch: { speed: most + 50 }, shown: most });
+  assert.deepEqual(gcdSpeedTyped('600', 50, null), { patch: { speed: 600 }, shown: 600 });
+  assert.deepEqual(gcdSpeedTyped('fast', 50, 600), { patch: null, shown: 600 });
+  assert.deepEqual(gcdSpeedTyped('', 50, null), { patch: null, shown: base });
 });

@@ -1,6 +1,7 @@
 /* How the math works, GCD: how speed becomes the GCD at a level, on its own settings (a level, a haste and a speed;
    not the job, sync or optimizer). The facts for one speed, the speed one 0.01 s step takes at every level, and the GCD
    steps around the speed. Pure: no Alpine, so Node can test it. */
+import { clamp } from '../../core/clamp.js';
 import { HASTE, jobById } from '../../core/constants.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.js';
 import { levelParams } from '../../core/level-params.js';
@@ -41,6 +42,53 @@ export function gcdLevelInput(text) {
    can have there (MAX_SPEED). */
 export function speedRange(level) {
   return { base: levelParams(level).sub, most: MAX_SPEED[level - 1] };
+}
+
+/* The level the tab uses: the one typed into its box (`typedLevel`, or null for none), else Stat Allocation's synced level
+   (`syncedLevel`; the only thing the tab takes from another sub-tab: a level, no job), held to the levels the tab covers. */
+export function gcdTabLevel(typedLevel, syncedLevel) {
+  return clamp(typedLevel ?? syncedLevel, 1, GCD_LEVELS);
+}
+
+/* The speed used at `level`: the one asked for (`askedSpeed`, or null for the base), held to the level's range. */
+export function heldSpeed(level, askedSpeed) {
+  const { base, most } = speedRange(level);
+  return Math.max(base, Math.min(most, askedSpeed ?? base));
+}
+
+/* What the math bar's GCD controls show, for the typed level (or null), the synced level and the speed asked for (or null):
+   {level (used), base, most (the slider's ends), speed (used), fill (how far along the slider the thumb is, percent: the
+   track is drawn filled up to it)}. */
+export function gcdControlsView(typedLevel, syncedLevel, askedSpeed) {
+  const level = gcdTabLevel(typedLevel, syncedLevel);
+  const { base, most } = speedRange(level);
+  const speed = heldSpeed(level, askedSpeed);
+  return { level, base, most, speed, fill: most > base ? ((speed - base) / (most - base)) * 100 : 0 };
+}
+
+/* What the Level box does with `text`, typed and settled: {error, patch, shown}.
+   - an empty box follows the synced level again: patch {level: null}, shown the level then used;
+   - a whole number is corrected to 1 to GCD_LEVELS and counted (patch {level}; null when it is the synced level itself, so the
+     tab keeps following it), shown as corrected;
+   - other text is no level: `error` is true, nothing changes. */
+export function gcdLevelTyped(text, syncedLevel) {
+  if (text === '') {
+    return { error: false, patch: { level: null }, shown: gcdTabLevel(null, syncedLevel) };
+  }
+  const typed = gcdLevelInput(text);
+  if (!typed) {
+    return { error: true, patch: null, shown: null };
+  }
+  return { error: false, patch: { level: typed.level === syncedLevel ? null : typed.level }, shown: typed.level };
+}
+
+/* What the speed box does with `text`, typed and settled at `level` (the tab's level) with `askedSpeed` already asked (or
+   null): {patch, shown}. A whole number is kept as asked, not held to the range here (the box shows the speed used, which is);
+   other text changes nothing. */
+export function gcdSpeedTyped(text, level, askedSpeed) {
+  const typed = commit(text, { final: true });
+  const asked = typed ? typed.value : askedSpeed;
+  return { patch: typed ? { speed: typed.value } : null, shown: heldSpeed(level, asked) };
 }
 
 /* About how much speed a 0.01 s step takes at `level` with `haste` (percent): the first STEPS_AVERAGED steps' average. */
