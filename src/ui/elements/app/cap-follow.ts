@@ -17,7 +17,8 @@ export interface FollowPlan {
 }
 
 /* The plan for `changed` (the names of the inputs that changed), while the field is `active` (its tab is open: a hidden panel never
-   lowers or flags the open one's cap) and `loweredTo` (the cap the page last lowered it to, or null). The cap the page itself just
+   lowers or flags the open one's cap; one that has just opened checks its cap at once, since a level or job change made within the
+   wait before the tab was left found the field hidden and lowered nothing) and `loweredTo` (the cap the page last lowered it to, or null). The cap the page itself just
    lowered to is no reason to lower again. */
 export function followPlan(changed: ReadonlySet<FollowInput>, active: boolean, loweredTo: number | null, cap: number | null): FollowPlan {
   const plan: FollowPlan = { reset: false, dropTyped: false, lowerNow: false, lowerWhenLevelSettles: false };
@@ -26,6 +27,9 @@ export function followPlan(changed: ReadonlySet<FollowInput>, active: boolean, l
   }
   if (!active) {
     return plan;
+  }
+  if (changed.has('active')) {
+    plan.lowerNow = true;
   }
   if (changed.has('value')) {
     plan.dropTyped = true;

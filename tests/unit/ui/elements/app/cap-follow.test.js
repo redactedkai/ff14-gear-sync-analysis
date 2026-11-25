@@ -26,3 +26,7 @@ test('IL Sync switched is checked at once; a level that changed is checked once 
   assert.deepEqual(plan(['level']), { ...NOTHING, lowerWhenLevelSettles: true });
   assert.deepEqual(plan([]), NOTHING);
 });
+
+test('a tab that opens checks its cap against its level at once: a level or job change made just before the tab was left was not checked', () => {
+  assert.deepEqual(plan(['active']), { ...NOTHING, reset: true, lowerNow: true });
+});

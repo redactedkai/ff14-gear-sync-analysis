@@ -172,6 +172,7 @@ export class GsaCapField extends LitElement {
     if (plan.lowerWhenLevelSettles) {
       clearTimeout(this.levelTimer);
       this.levelTimer = setTimeout(() => {
+        // a field whose tab was left meanwhile lowers nothing (the edit would go to the open tab's panel); it checks when its tab opens
         if (this.active) {
           this.lowerCap();
         }
