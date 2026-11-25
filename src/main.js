@@ -38,6 +38,7 @@ import './ui/elements/app/job-strip.ts';
 import './ui/elements/app/level-field.ts';
 import './ui/elements/app/notes.ts';
 import './ui/elements/set-page/food-menu.ts';
+import './ui/elements/sheets/sheet-dialog.ts';
 import './ui/elements/sheets/sheet-manager.ts';
 import './ui/elements/sheets/sheet-page.ts';
 import './ui/elements/sheets/switch-menu.ts';

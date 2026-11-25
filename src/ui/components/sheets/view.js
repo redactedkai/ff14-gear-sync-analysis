@@ -41,7 +41,7 @@ export function viewPart(setPagePorts = null) {
         view: screen === 'sheets' ? this.manager : null,
         notFound: screen === 'missing' ? this.notFound : null,
         busy: this.sheets.busy,
-        dialogOpen: Boolean(this.dialog),
+        dialogOpen: this.dialogOpen,
       };
     },
     /* The properties of <gsa-sheet-page>: the page's view while its screen is open, else null; the Effects / Stat points choice,
@@ -59,13 +59,13 @@ export function viewPart(setPagePorts = null) {
         partyRoles: sheet?.partyRoles ?? 0,
         switcher: open ? sheetSwitcherView(this.manager.rows, store.sheetId, store.busy) : null,
         busy: store.busy,
-        dialogOpen: Boolean(this.dialog),
+        dialogOpen: this.dialogOpen,
       };
     },
     /* The properties of <gsa-set-page> (the wrapper's x-effect gives them; the wrapper adds the set's id): its ports, its top line
        (setHeader) and whether a dialog of this tab is open (Escape then leaves a waiting Auto-fill result alone). */
     get setPageProps() {
-      return { ports: setPagePorts, header: this.setHeader, dialogOpen: Boolean(this.dialog) };
+      return { ports: setPagePorts, header: this.setHeader, dialogOpen: this.dialogOpen };
     },
     /* The set page's line: breadcrumb and the sheet's settings, read-only (setHeaderView), built once per change of the sheets, or null. */
     get setHeader() {

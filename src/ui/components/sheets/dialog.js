@@ -1,250 +1,69 @@
-/* The Sheets tab's dialogs (New sheet, Copy sheet, "Edit sheet", "Edit gear set", Delete): opening one with the focus
-   remembered, its form fields and number boxes, its main button (sheets/dialogs.js) and its keys. The set page opens
-   Edit gear set and Delete through this part.
-   A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: sheets and afterDraw (frame.js). */
-import { JOB_ROWS, jobById } from '../../../core/constants.js';
-import { JOB_ICONS } from '../../../data/job-icons.js';
-import { shownName, submitDialog } from '../../sheets/dialogs.js';
-import { NEW_SHEET_CAP, copyName, levelFor, ranges, sheetSettings } from '../../sheets/ops.js';
-import { copySheetFormView, deleteQuestionView, editFormView, newSheetFormView } from '../../views/sheet-forms.js';
-
-/* The job picker of the New sheet form: rows by role, each job with its name and icon (the Job and sync panel's). */
-const JOB_PICKER = JOB_ROWS.map(([label, ids]) => ({ label, jobs: ids.map(id => ({ id, name: jobById(id).name, icon: JOB_ICONS[id] })) }));
-
-/* The control of a dialog that takes the focus when it opens (a selector for `<gsa-dialog initial-focus>`): the first box of a form
-   or its main button; a delete question puts it on Cancel, so a stray Enter cancels instead of deleting. */
-const FORM_FIRST_FOCUS = 'input:not([disabled]), textarea, button.primary';
-const QUESTION_FIRST_FOCUS = '#sh-dlg-cancel';
+/* The Sheets tab's dialogs as seen by the tab's template: the bridge between the Alpine-run component and the dialogs model
+   (elements/sheets/sheet-dialogs-model.ts), which holds the open dialog and its logic and runs without a page. The set page and the two
+   sheet elements ask for a dialog through the openers; the wrapper of <gsa-sheet-dialog> gets `dialogProps`, answers the element's
+   `dialog-action` event with `onDialogAction` and its `dialog-closed` event with `afterDialogClosed`.
+   A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: sheets (frame.js). */
+import { SheetDialogs } from '../../elements/sheets/sheet-dialogs-model.ts';
 
 /* Returns the part's members. */
 export function dialogPart() {
-  // the element that had the focus when a dialog opened, focused again when it closes
-  let returnFocus = null;
-  return {
-    jobPicker: JOB_PICKER,
-    jobIcons: JOB_ICONS,
-    // the open dialog: null, or {kind: 'new' | 'copy' | 'edit-sheet' | 'edit-set' | 'delete', ...its fields}
-    dialog: null,
+  // the model lives in the closure, not in the component's state: Alpine would wrap it in reactive proxies
+  let model = null;
+  /* The model of component `page`, made on first use; a change of its state counts in `dialogRev`, which the getters below read, so
+     what shows the dialog is run again. */
+  const dialogs = page => {
+    model ??= new SheetDialogs({
+      sheets: page.sheets,
+      onChange: () => {
+        page.dialogRev++;
+      },
+    });
+    return model;
+  };
 
-    /* What the open dialog shows (views/sheet-forms.js), or null. */
-    get dialogView() {
-      const d = this.dialog;
-      if (!d) {
-        return null;
-      }
-      if (d.kind === 'new') {
-        return newSheetFormView(d);
-      }
-      if (d.kind === 'copy') {
-        return copySheetFormView(this.sheets.sheet(d.id), d);
-      }
-      if (d.kind === 'delete') {
-        return deleteQuestionView(d.what, d.target, d);
-      }
-      return editFormView(d.kind, d);
+  return {
+    // how many times the open dialog's state has changed
+    dialogRev: 0,
+
+    /* Whether a dialog is open (the island elements lock their page while one is). */
+    get dialogOpen() {
+      void this.dialogRev;
+      return dialogs(this).isOpen;
     },
-    /* The selector of the control that takes the focus when a dialog of `kind` opens (firstFocus above). */
-    firstFocus(kind) {
-      return kind === 'delete' ? QUESTION_FIRST_FOCUS : FORM_FIRST_FOCUS;
+    /* The properties of <gsa-sheet-dialog> (the wrapper's x-effect gives them): what the open dialog shows, null while none is open. */
+    get dialogProps() {
+      void this.dialogRev;
+      return { view: dialogs(this).view() };
     },
-    /* Open `dialog` (the page draws a <gsa-dialog> for it, which takes the focus into it) and remember `opener`, the
-       button that asked, to focus again on close (the active element is only the fallback: Safari does not focus a
-       clicked button). */
-    openDialog(dialog, opener = null) {
-      if (this.sheets.busy) {
-        return;
-      }
-      returnFocus = opener ?? globalThis.document?.activeElement ?? null;
-      this.dialog = { error: '', errorField: '', ...dialog };
-    },
-    /* An edit in the open dialog (a name typed, a job picked, a number, the switch, the tick box, the description) clears the
-       reason a refused press left; pressing the main button again may bring it back. */
-    clearDialogError() {
-      if (!this.dialog) {
-        return;
-      }
-      this.dialog.error = '';
-      this.dialog.errorField = '';
-    },
-    /* Close the dialog (the page removes its <gsa-dialog>) and, unless `refocus` is false (a change of page: the router owns the
-       focus then), focus the opener again. Every way out comes here: Cancel, the X, the backdrop, Escape (cancelDialog), a
-       change of page and a successful main button. */
-    closeDialog(refocus = true) {
-      this.dialog = null;
-      const back = returnFocus;
-      returnFocus = null;
-      if (refocus) {
-        this.afterDraw(() => (back?.isConnected ? back.focus() : null));
-      }
-    },
-    /* Escape (the dialog's `dialog-escape` event, wherever the focus is): the "?"
-       panel of Copy sheet closes first, then the dialog. */
-    cancelDialog() {
-      if (this.dialog?.helpOpen) {
-        this.dialog.helpOpen = false;
-      } else {
-        this.closeDialog();
-      }
-    },
-    /* New sheet: no job chosen; the name follows the job, level and sync until one is typed. */
+
+    /* The openers: `opener` is the button that asked, which gets the focus back when the dialog closes. */
     openNewSheet(opener) {
-      this.openDialog(
-        {
-          kind: 'new',
-          name: '',
-          nameTyped: false,
-          description: '',
-          job: '',
-          level: 100,
-          sync: { on: false, cap: NEW_SHEET_CAP },
-          capLowered: null, // what limitFormCap last lowered, for the note under the cap field
-        },
-        opener,
-      );
+      dialogs(this).openNewSheet(opener);
     },
     openCopy(id, opener) {
-      const sheet = this.sheets.sheet(id);
-      if (!sheet) {
-        return;
-      }
-      const names = this.sheets.list().sheets.map(s => s.name);
-      this.openDialog(
-        {
-          kind: 'copy',
-          id,
-          name: copyName(sheet.name, names),
-          job: sheet.job,
-          level: sheet.level,
-          sync: { ...sheet.sync },
-          capLowered: null,
-          ack: false,
-          helpOpen: false, // the "?" panel
-        },
-        opener,
-      );
+      dialogs(this).openCopy(id, opener);
     },
     openEditSheet(id, opener) {
-      const sheet = this.sheets.sheet(id);
-      if (sheet) {
-        this.openDialog({ kind: 'edit-sheet', id, name: sheet.name, description: sheet.description ?? '' }, opener);
-      }
+      dialogs(this).openEditSheet(id, opener);
     },
     openEditSet(id, opener) {
-      const gearSet = this.sheets.set(id);
-      if (gearSet) {
-        this.openDialog({ kind: 'edit-set', id, name: gearSet.name, description: gearSet.description ?? '' }, opener);
-      }
+      dialogs(this).openEditSet(id, opener);
     },
     /* Delete asks first: `what` 'sheet', 'set' or 'unreadable', `id` the thing's id. */
     askDelete(what, id, opener) {
-      const store = this.sheets;
-      let target;
-      if (what === 'sheet') {
-        target = store.sheet(id);
-      } else if (what === 'set') {
-        target = store.set(id);
-      } else {
-        target = store.list().unreadable.find(r => r.id === id);
-      }
-      if (target) {
-        this.openDialog({ kind: 'delete', what, id, target }, opener);
-      }
+      dialogs(this).askDelete(what, id, opener);
     },
-
-    /* A job picked in the New sheet or Copy sheet form: the level is held to its cap, and the cap follows. */
-    chooseJob(id) {
-      const d = this.dialog;
-      d.job = id;
-      this.clearDialogError();
-      d.level = levelFor(id, d.level, ranges(id).level.max);
-      this.limitFormCap();
+    /* Closes the dialog; with `refocus` false (a change of page: the router owns the focus then) the focus stays where it is. */
+    closeDialog(refocus = true) {
+      dialogs(this).close(refocus);
     },
-    /* The form's sync switch: switched on, the cap is lowered to what the level allows. */
-    setFormSync(on) {
-      this.dialog.sync.on = Boolean(on);
-      this.clearDialogError();
-      this.limitFormCap();
+    /* What the dialog element tells (`detail`: its `dialog-action` event's DialogAction). */
+    onDialogAction(detail) {
+      dialogs(this).act(detail);
     },
-    /* The New sheet or Copy sheet form's cap lowered to what its job and level allow, as the sheet page lowers it
-       (sheets.js sheetSettings), keeping what it lowered for the cap field's note (a new object each time, so the field flashes);
-       null when nothing was. The store checks the fields again on Create or Copy. */
-    limitFormCap() {
-      const d = this.dialog;
-      const { sync, lowered } = sheetSettings(d.job || null, d, { level: d.level, cap: d.sync.cap });
-      d.sync.cap = sync.cap;
-      d.capLowered = lowered;
-    },
-    /* The name box of a form, as typed: in the New sheet form it stops following the default name. */
-    typeName(text) {
-      this.dialog.name = text;
-      this.dialog.nameTyped = true;
-      this.clearDialogError();
-    },
-    /* The name box shows: the New sheet form's default name until one is typed. */
-    get dialogName() {
-      return this.dialog ? shownName(this.dialog) : '';
-    },
-    /* What the form's level field shows (`<gsa-level-field>`'s properties): the form's level, held to the chosen job's level cap. */
-    get formLevelProps() {
-      const d = this.dialog;
-      return { value: d?.level ?? null, max: ranges(d?.job || null).level.max };
-    },
-    /* What the form's item level field shows (`<gsa-cap-field>`'s properties): the form's cap, the sync switch and the cap the form
-       lowered (limitFormCap). Any whole number from 1 as typed: limitFormCap lowers it; a number out of range moves to the nearest
-       on leaving the box. */
-    get formCapProps() {
-      const d = this.dialog;
-      return {
-        value: d?.sync.cap ?? null,
-        max: ranges(d?.job || null).cap.max,
-        syncOn: Boolean(d?.sync.on),
-        disabled: !d?.sync.on,
-        lowered: d?.sync.on ? d.capLowered : null,
-        validate: false,
-        snap: true,
-      };
-    },
-    /* A level entered in the form's level field: either commit lowers the cap to what the level allows. The dialog may have closed
-       (Create pressed) while typed digits waited for their pause. */
-    setFormLevel(level) {
-      if (!this.dialog) {
-        return;
-      }
-      this.dialog.level = level;
-      this.clearDialogError();
-      this.limitFormCap();
-    },
-    /* A cap entered in the form's item level field (limitFormCap lowers it). */
-    setFormCap(cap) {
-      if (!this.dialog) {
-        return;
-      }
-      this.dialog.sync.cap = cap;
-      this.clearDialogError();
-      this.limitFormCap();
-    },
-
-    /* The dialog's main button (sheets/dialogs.js): a refused form stays open with the reason. */
-    submitDialog() {
-      const d = this.dialog;
-      if (!d) {
-        return;
-      }
-      const { ok, error, field } = submitDialog(this.sheets, d);
-      if (ok) {
-        this.closeDialog();
-      } else {
-        Object.assign(d, { error, errorField: field });
-      }
-    },
-    /* Keys inside a dialog: Enter in a one-line box presses the main button. Escape is the dialog's `dialog-escape` event
-       (cancelDialog) and Tab is kept inside by the Zag dialog. */
-    dialogKey(event) {
-      if (event.key === 'Enter' && event.target.matches?.('input[type=text], input[type=number]')) {
-        event.preventDefault();
-        event.target.dispatchEvent(new Event('change', { bubbles: true }));
-        this.submitDialog();
-      }
+    /* The element has removed the closed dialog's box: the opener gets the focus back. */
+    afterDialogClosed() {
+      dialogs(this).afterClosed();
     },
   };
 }

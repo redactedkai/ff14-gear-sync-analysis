@@ -13,12 +13,12 @@ button.danger:hover {
   flex-direction: column;
   min-width: 0;
 }
-/* The sheet manager, a sheet's page and a set's page are the elements <gsa-sheet-manager>, <gsa-sheet-page> and <gsa-set-page> (src/ui/elements/),
-   drawn in light DOM inside a wrapper: none takes a box, so the screen's own `.sheetsview` is the column's child, as it was before. */
+/* The sheet manager, a sheet's page, a set's page and the dialogs are the elements <gsa-sheet-manager>, <gsa-sheet-page>, <gsa-set-page> and
+   <gsa-sheet-dialog> (src/ui/elements/), drawn in light DOM inside a wrapper: none takes a box, so the screen's own `.sheetsview` is the
+   column's child, as it was before. */
 .sheets-island,
-/* the wrapper of a field element in a dialog's form row (the dialog is still Alpine's): it takes no box */
-.fieldhost,
 gsa-sheet-manager,
+gsa-sheet-dialog,
 gsa-sheet-page,
 gsa-set-page {
   display: contents;
@@ -772,7 +772,7 @@ table.sets .jobcell {
   color: var(--bad);
   font-size: 0.88rem;
 }
-/* the reason a refused Sheets dialog shows (dialog-error.html): in the label row of the field it is about, at the right of the label, or in the
+/* the reason a refused Sheets dialog shows (<gsa-sheet-dialog>): in the label row of the field it is about, at the right of the label, or in the
    title row for a reason about no field. The label rows are one height whether they hold a message or not, so nothing moves when it comes or goes. */
 .dlg .f-head {
   height: 18px;

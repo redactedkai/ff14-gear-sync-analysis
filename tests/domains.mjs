@@ -90,7 +90,6 @@ export const DOMAINS = {
       'src/ui/store/{sheets-actions,sheets-facade}.ts',
       'src/ui/views/{sheet-forms,sheet-manager,sheet-sets,sheet-text}.js',
       'src/ui/{test-data.js,test-sheets.json}',
-      'src/partials/dialog-error.html',
       'src/styles/sheets.css',
     ],
     tests: ['tests/e2e/checks/sheets/**', 'tests/e2e/lib/{sheets,fixtures}.mjs', 'tests/unit/helpers/sheet-fixtures.js'],

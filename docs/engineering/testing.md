@@ -47,7 +47,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 15 |
-| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 20 | 12 |
+| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 46 | 47 |
@@ -143,7 +143,8 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/elements/set-page/leave-guard | the question before leaving for a draft, a running Auto-fill and a waiting result; the store's `unsettled` for each, and a page left holds nothing |
 | ui/elements/set-page/fill-settings-edit | the Auto-fill settings popover: a change dropping a waiting result, the Gear to search line, the goal menus |
 | ui/components/compose | joining parts into a component (the Sheets tab's): a clash is an error that names the member, getters stay getters |
-| ui/components/sheets | the Sheets tab with a real sheets' store (note 12); the answers to the two elements' events; its members, by kind, against a fixed list |
+| ui/components/sheets | the Sheets tab with a real sheets' store (note 12); the answers to the two elements' events; the dialogs bridge; its members, by kind, against a fixed list |
+| ui/elements/sheets/sheet-dialogs-model | the five dialogs over a real store: a name that follows the job until typed, a refused form keeping what was typed with its reason at the field, Copy and Delete, Escape closing the "?" panel first, a number typed just before Create, the cap lowered with the level, the focus going back to the opener |
 | ui/elements/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
 | ui/elements/sheets/row-reorder | Up and Down on a handle move a row and the focus follows, a drop goes above or below the row under the pointer, nothing moves while the list is locked |
 | ui/elements/math-page/math-inputs | the math screen's inputs and edits: the Job menu's owner per sub-tab, the IL Sync switch and the cap it stores, the settings the bar and Stat Allocation elements are given, and that every edit they read is in the store parts the screen follows |
@@ -266,7 +267,7 @@ Notes on the longer rows:
 9. `core/tier-rank`: the reference tries every gear set and meal, with the stage rule written out. The cases are 20 of three keys and a Target GCD, a stage stopped at its node limit, an infeasible Target GCD, and 360 more random cases in `tests/sweep/`.
 10. `scripts/build`: the DEV badge outside `main`, the page template and its partials, the licence notices (`scripts/build.notices`: the LICENSE texts of Zag, Floating UI and proxy-compare in the script, and a notice for every other bundled package), two builds of one tree giving the same page, the page's 5 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread.
 11. `ui/elements/set-page/food-menu-model`: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to ILVL, a pick.
-12. `ui/components/sheets`: the screens, New sheet's default name, refused names left empty with their reason, Copy and Delete through their dialogs, set notes, Escape, nothing opening while an Auto-fill runs, the answers to the sheet manager's and sheet page's events (a step, a move, an edit of the level).
+12. `ui/components/sheets`: the screens, set notes, the answers to the sheet manager's and sheet page's events (a step, a move, an edit of the level).
 13. `ui/sheets/storage`: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage, and a saved time outside the range of a `Date` (1e300) making the record unreadable instead of breaking the Sheets tab.
 14. `ui/sheets/storage.stat-keys`: the v1 record has position keys (`main`, `spd`, `spec`) per stat profile.
 15. `ui/store/sheets-actions`: making, editing, copying (the White Mage cane cleared after the question), deleting and reordering sheets and gear sets. Also the screen each action leaves open, the level and cap held to their ranges, the edit lock while an Auto-fill runs, a full storage keeping the edit, no storage, unreadable records deleted, and a second store reading back what was saved.

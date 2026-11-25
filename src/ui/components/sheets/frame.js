@@ -1,22 +1,15 @@
-/* The frame of the Sheets tab: start (a dialog left open closing), the screen to draw, and running a step after Alpine has drawn.
-   A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: dialog and closeDialog (dialog.js). */
-
-import { afterDraw } from '../compose.js';
+/* The frame of the Sheets tab: start (a dialog left open closing) and the screen to draw.
+   A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: dialogOpen and closeDialog (dialog.js). */
 
 /* Returns the part's members. */
 export function framePart() {
-  // the component's own element, kept at init: `this.$el` is the element a handler ran on, and a click can remove that
-  // element (a dialog's button), so after one `this.$el` is no longer in the page
-  let tabEl = null;
-
   return {
     init() {
-      tabEl = this.$el;
       // a dialog left open by a change of tab, sheet or gear set would stay in the way (and its page behind inert): it closes
-      // (Back and Forward also close it, through the dialog's own popstate listener); the router owns the focus then
+      // (Back and Forward also close it, through the popstate listener on the dialog's wrapper); the router owns the focus then
       for (const key of ['$store.app.tab', '$store.sheets.sheetId', '$store.sheets.setId']) {
         this.$watch(key, () => {
-          if (this.dialog) {
+          if (this.dialogOpen) {
             this.closeDialog(false);
           }
         });
@@ -50,10 +43,6 @@ export function framePart() {
       } else {
         this.sheets.openManager();
       }
-    },
-    /* Runs `callback` once Alpine has drawn the change just made, unless the component's element is gone by then. */
-    afterDraw(callback) {
-      afterDraw(this, () => tabEl, callback);
     },
   };
 }

@@ -135,10 +135,10 @@ export async function checkDialogErrors(pg) {
   );
 
   // the sheet is gone: no field, so the title row, at the right of the title; nothing is marked
+  // (the dialog element is handed a view with the reason, as its page hands it one built by the dialogs model; the next edit gives it a new one)
   await pg.evaluate(text => {
-    const data = window.gsaDebug.scope('#tab-sheets');
-    data.dialog.error = text;
-    data.dialog.errorField = '';
+    const dialog = document.querySelector('gsa-sheet-dialog');
+    dialog.view = { ...dialog.view, error: text, errors: { name: '', job: '', ack: '', title: text } };
   }, SHEET_GONE_TEXT);
   await expect(pg.locator('#sh-dlg-title-err')).toBeVisible();
   check((await visibleAlerts(pg)) === 1, 'Copy sheet, sheet gone: not one live region shows');
