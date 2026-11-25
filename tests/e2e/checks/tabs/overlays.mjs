@@ -45,6 +45,8 @@ export async function checkOverlayKeys(pg) {
   await pg.focus('#m-job-btn');
   await pg.keyboard.press('ArrowDown');
   await expect(pg.locator('#m-job-menu')).toBeVisible();
+  // Zag moves the focus into the menu a frame after showing it: leave only once it is there
+  await pg.waitForFunction(() => document.querySelector('#m-job-menu')?.contains(document.activeElement));
   await pg.focus('#p-slot');
   await expect(pg.locator('#m-job-menu')).toBeHidden();
 }

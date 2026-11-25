@@ -21,7 +21,7 @@ export function flashLowered(field) {
 /* A bound of numberField: a number, or a function read at each input. */
 const bound = b => (typeof b === 'function' ? b() : b);
 
-/* The behaviour of one number box bound to a setting: the page's one pattern for number boxes (as $num, storeNumberField),
+/** The behaviour of one number box bound to a setting: the page's one pattern for number boxes (as $num, storeNumberField),
    in two shapes. `numberField` (below) puts it in an Alpine x-bind object; a Lit element uses it as it is (the `shownNumber`
    directive of elements/shared/number-box.ts shows `shownValue`, the template gives `onInput` and `onChange`). Returns {onInput,
    onChange, shownValue, justWrote}:
@@ -44,7 +44,12 @@ const bound = b => (typeof b === 'function' ? b() : b);
    - empty: the value an emptied box commits, as it is typed (a filter's '' for no limit); left out, an empty box
      commits nothing.
    - onEmpty(input): called when an empty box is left or entered (change), for a field that then goes back to a value
-     it follows (the tiers' level). */
+     it follows (the tiers' level).
+   @param {() => unknown} get
+   @param {(value: any) => void} set
+   @param {number | (() => number)} lo
+   @param {number | (() => number)} hi
+   @param {{ live?: boolean, decimals?: number, empty?: unknown, onEmpty?: (input: any) => void, snap?: boolean }} [options] */
 export function numberBox(get, set, lo, hi, { live = false, decimals = 0, empty, onEmpty, snap = true } = {}) {
   let timer = null;
   // the stored value the binding last showed (`has`: it has run), and whether the box has just written a value (until the page has
