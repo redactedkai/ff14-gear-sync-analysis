@@ -151,7 +151,9 @@ export function bundledLicenseNotices() {
   return `/*! Licence notices of bundled packages (MIT)\n\n${notices.join('\n\n---\n\n')}\n*/`;
 }
 
-export function esbuildOptions({ minify = true } = {}) {
+/* The options of the page's esbuild build. `minify`: whether to minify; `info`: the branch and commit being built (buildInfo), which
+   decide the marks of a test build (buildMarks), handed to the page's code as the constant `__BUILD_MARKS__`. */
+export function esbuildOptions({ minify = true, info = buildInfo() } = {}) {
   return {
     plugins: [jsonParseData, solverWorker, pageStyles],
     entryPoints: [join(SRC, 'main.js')],
@@ -161,6 +163,7 @@ export function esbuildOptions({ minify = true } = {}) {
     minify,
     legalComments: 'eof', // esbuild's default, named so a later edit does not drop the bundled notices
     footer: { js: bundledLicenseNotices() },
+    define: { __BUILD_MARKS__: JSON.stringify(buildMarks(info)) },
     write: false,
     outdir: join(DIST, 'assets'), // required for the separate CSS output; nothing is written there
     logLevel: 'warning',
@@ -182,23 +185,15 @@ export function buildInfo() {
   return { branch: branch && branch !== 'HEAD' ? branch : null, commit: commit || null };
 }
 
-const escapeHtml = s => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-
-/* What a build on this branch shows (CLAUDE.md, Branches): nothing on main or an unknown branch (the live page looks
-   as it always has); on any other branch a "DEV" badge with the branch and commit in the footer, so a test build is
-   never mistaken for the live one. */
+/* What a build on this branch shows (CLAUDE.md, Branches): null on main or an unknown branch (the live page looks as it always
+   has); on any other branch {label, where}: the "DEV" badge and the branch and commit for the footer, so a test build is never
+   mistaken for the live one. The page's root element draws them (src/ui/build-marks.ts reads them from the constant esbuildOptions
+   defines). */
 export function buildMarks({ branch, commit }) {
   if (!branch || branch === 'main') {
-    return { badge: '', footer: '' };
+    return null;
   }
-  const label = 'DEV';
-  const where = escapeHtml(branch) + (commit ? ` @ ${escapeHtml(commit)}` : '');
-  return {
-    badge:
-      ` <span class="build-badge">${label}</span>` +
-      ' <button type="button" class="build-badge build-button" @click="loadTestData()">test data</button>',
-    footer: `<span class="build-info">${label} build: ${where}</span>`,
-  };
+  return { label: 'DEV', where: branch + (commit ? ` @ ${commit}` : '') };
 }
 
 /* The template with every `<!-- INCLUDE name.html key=value ... -->` line replaced by src/partials/name.html: each
@@ -262,8 +257,8 @@ export function startupScript() {
 }
 
 /* Inline the bundle outputs into the HTML template and write the page to `outFile` (dist/index.html by default).
-   Returns the byte size. `info`: the branch and commit (buildInfo), which decide the test-build marks. */
-export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 'index.html')) {
+   Returns the byte size. */
+export function writePage(outputFiles, outFile = join(DIST, 'index.html')) {
   const pick = ext =>
     outputFiles
       .filter(f => f.path.endsWith(ext))
@@ -281,17 +276,14 @@ export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 
   if (template.includes('<!-- INCLUDE')) {
     throw new Error('src/index.html has an INCLUDE marker the build cannot read');
   }
-  for (const marker of ['<!-- STARTUP -->', '<!-- STYLES -->', '<!-- SCRIPT -->', '<!-- BUILD_BADGE -->', '<!-- BUILD_INFO -->']) {
+  for (const marker of ['<!-- STARTUP -->', '<!-- STYLES -->', '<!-- SCRIPT -->']) {
     if (!template.includes(marker)) {
       throw new Error(`src/index.html is missing the ${marker} marker`);
     }
   }
   // function replacements, so "$&"-style sequences in the bundle are not treated as patterns
-  const marks = buildMarks(info);
   const startup = startupScript();
   const html = template
-    .replace('<!-- BUILD_BADGE -->', () => marks.badge)
-    .replace('<!-- BUILD_INFO -->', () => marks.footer)
     .replace('<!-- STARTUP -->', () => `<script>\n${startup}</script>`)
     .replace('<!-- STYLES -->', () => `<style>\n${css}</style>`)
     .replace('<!-- SCRIPT -->', () => `<script>\n${js}</script>`);
@@ -303,8 +295,8 @@ export function writePage(outputFiles, info = buildInfo(), outFile = join(DIST, 
 /* Build the page as the live one looks (no DEV badge or branch line, as on main) into `outFile`, leaving dist/ alone:
    for the screenshot script, whose shots must not differ between branches. Returns the byte size. */
 export async function buildReleasePage(outFile) {
-  const result = await esbuild.build(esbuildOptions());
-  return writePage(result.outputFiles, { branch: null, commit: buildInfo().commit }, outFile);
+  const result = await esbuild.build(esbuildOptions({ info: { branch: null, commit: buildInfo().commit } }));
+  return writePage(result.outputFiles, outFile);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

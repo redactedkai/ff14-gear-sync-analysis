@@ -1,8 +1,7 @@
 /* The Gear browser screen as a Lit element in light DOM: the title line (the Slot menu and the name search in one bar, the match
    count, Reset filters), the filters (Expansion, equip level, item level range, Gear categories), the page line and the table.
-   It sits in the Alpine-run page as an island (docs/engineering/architecture.md section 3): the page gives it properties from
-   a wrapper's `x-effect` and takes the changes of the filters from `browse-edit` (the store's `editBrowse` action). The element
-   reads no store.
+   The page root (`<gsa-app>`, app-root.ts) gives it its properties and takes the changes of the filters from `browse-edit`
+   (the store's `editBrowse` action). The element reads no store.
    - `panel`: the Job and sync panel of the browser's tab ({job, jobCtx, cap, sync, level}: job-sync-panel.js panelOf);
    - `browse`: the browser's filters and sort (the store's frozen `browse`);
    - `active`: the Gear browser is the open tab. The list is built, and the page drawn, only while it is: hidden, the element keeps

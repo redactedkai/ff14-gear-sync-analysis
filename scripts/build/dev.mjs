@@ -4,7 +4,7 @@
 import * as esbuild from 'esbuild';
 import { watch } from 'node:fs';
 import { join } from 'node:path';
-import { esbuildOptions, writePage, SRC, DIST, PARTIALS } from './build.mjs';
+import { esbuildOptions, writePage, SRC, DIST } from './build.mjs';
 
 const writeOnEnd = {
   name: 'write-page',
@@ -22,9 +22,8 @@ const writeOnEnd = {
 const options = esbuildOptions({ minify: false });
 const ctx = await esbuild.context({ ...options, plugins: [...options.plugins, writeOnEnd] });
 await ctx.watch();
-// esbuild only watches files it imports; the HTML template, its partials and the startup script are read separately
+// esbuild only watches files it imports; the HTML template and the startup script are read separately
 watch(join(SRC, 'index.html'), () => ctx.rebuild().catch(() => {}));
-watch(PARTIALS, () => ctx.rebuild().catch(() => {}));
 watch(join(SRC, 'startup-failure.js'), () => ctx.rebuild().catch(() => {}));
 const { hosts, port } = await ctx.serve({ servedir: DIST, host: '127.0.0.1' });
 console.log(`serving http://${hosts[0]}:${port}/`);

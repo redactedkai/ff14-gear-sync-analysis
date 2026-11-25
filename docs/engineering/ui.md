@@ -298,7 +298,7 @@ The Food row's menu is described in section 2.
   - a running Auto-fill ("Leave and cancel the Auto-fill", "Keep waiting");
   - a waiting result ("Leave and discard the result", "Keep reviewing").
 
-   A tab link that leaves the Sheets tab asks the same question (`components/page.js` `goTab`).
+   A tab link that leaves the Sheets tab asks the same question (`AppRootModel.goTab`, `src/ui/elements/app/app-root-model.ts`).
 - **Keys.** Escape closes the open menu or the ranking help (in the Auto-fill settings the menu takes the key itself and puts the focus back on its button), then the Auto-fill settings, then the question (as Keep), then drops a waiting Auto-fill result. Tab stays inside the question; the Auto-fill settings are not modal.
 
 **Where each action lands:**
@@ -358,7 +358,7 @@ Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-r
 | The page template (frame, the Gear browser's Job and sync strip, Sheets shell and dialogs, footer) | `src/index.html` |
 | The job menu of the strip and of the math bar | `src/ui/elements/app/job-menu.ts` (`<gsa-job-menu>`) and `job-menu-names.ts` |
 | The cap and level controls of the strip and of Stat Allocation's Sync settings (flag, lowering, errors) | `src/ui/elements/app/cap-field.ts`, `level-field.ts`, `cap-follow.ts`, `src/ui/views/cap-field.js`, `src/ui/level-cap.js` |
-| The Math tab, the Gear browser, the sheet manager and sheet page, a set's page | `gear-page.html`; the Math tab is the element `src/ui/elements/math-page/math-screen.ts`; the Sheets tab is the element `src/ui/elements/sheets/sheets-screen.ts`, which draws the sheet manager, sheet page and set page (the elements `sheet-manager.ts`, `sheet-page.ts` and `src/ui/elements/set-page/set-page.ts`) |
+| The Math tab, the Gear browser, the sheet manager and sheet page, a set's page | the page root `src/ui/elements/app/app-root.ts`, which draws the Gear browser element `src/ui/elements/gear-browser/gear-browser.ts`; the Math tab is the element `src/ui/elements/math-page/math-screen.ts`; the Sheets tab is the element `src/ui/elements/sheets/sheets-screen.ts`, which draws the sheet manager, sheet page and set page (the elements `sheet-manager.ts`, `sheet-page.ts` and `src/ui/elements/set-page/set-page.ts`) |
 | What the solver answers for an Auto-fill: the answer, the Gear to search line and the Target GCD label | `src/ui/solve.js` (`solveView`, `gearToSearchView`, `searchCount`) |
 | The Food row's menu | `src/ui/elements/set-page/food-menu.ts` (`<gsa-food-menu>`) and `food-menu-model.ts`, `src/ui/views/meal-menu.js` (`mealMenu`, `mealsPassing`, `mealPillOff`, `mealEmptyReason`, `mealLine`, `sortMeals`, `mealList`, `mealBestKeys`, `mealBestNote`); `src/core/food.js` (`allMeals`) |
 | Pieces and meals with the same result | `src/core/same-result.js` (`sameMeals`), `src/core/tiers.js` (`rankTierOf`), `src/core/items.js` (`searchMatches`) |

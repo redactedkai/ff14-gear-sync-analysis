@@ -160,8 +160,6 @@ See [validation.md, section 1](mechanics/validation.md#1-sources-of-truth).
 
 **Incumbent.** The best complete gear set a search has found so far. Branch and bound compares every partial set against it, and a seed is the first incumbent. See [optimizer.md, section 5](engineering/optimizer.md#5-the-search-depth-first-branch-and-bound).
 
-**Island.** A Lit element that the page's Alpine templates place inside a screen Alpine runs. Its wrapper's `x-effect` sets the element's properties and the wrapper listens for its events; the element carries `x-ignore` and never reads the store. See [architecture.md, section 3](engineering/architecture.md#3-the-ui-pattern).
-
 **Job context.** Everything job-dependent (stat mapping, weapon mode, active slots, the job's Vitality factor), computed once per job into a frozen object that every core function takes as its first argument. See [architecture.md, section 2](engineering/architecture.md#2-the-job-context).
 
 **Job mask.** A number in each database row with one bit per combat job that can wear the piece. See [data-pipeline.md, section 4.3](engineering/data-pipeline.md#43-job-mask).

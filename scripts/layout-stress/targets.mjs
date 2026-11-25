@@ -51,7 +51,8 @@ const TOP = { top: '.pagetop' };
 
 /* Waits for the page to have started and then for `selector`. */
 async function ready(page, selector) {
-  await page.waitForSelector('.wrap:not([x-cloak])', { timeout: 20000 });
+  await page.waitForSelector('html[data-started]', { timeout: 20000 });
+  await page.waitForSelector('#boot', { state: 'detached', timeout: 20000 }); // the startup check has run and shown the page
   await page.waitForSelector(selector, { state: 'visible', timeout: 20000 });
 }
 

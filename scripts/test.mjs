@@ -189,7 +189,7 @@ async function runSmoke(options) {
   const privateFolder = mkdtempSync(join(tmpdir(), 'ff14-smoke-'));
   try {
     const result = await esbuild.build(build.esbuildOptions());
-    build.writePage(result.outputFiles, build.buildInfo(), join(privateFolder, 'index.html'));
+    build.writePage(result.outputFiles, join(privateFolder, 'index.html'));
     const domainArgs = options.domainsGiven ? ['--domain', options.domains.join(',')] : [];
     return run(process.execPath, ['tests/e2e/smoke.mjs', ...domainArgs], {
       SMOKE_PAGE: join(privateFolder, 'index.html'),

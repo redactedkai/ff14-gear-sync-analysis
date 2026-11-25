@@ -1,5 +1,4 @@
-/* Entry point: restore saved state, register the store and components, start Alpine. */
-import Alpine from 'alpinejs';
+/* Entry point: restore saved state, make the store, start the router and give the page's root element its ports. */
 import 'styles:bundle'; // the stylesheet: src/styles/entry.css imports the files in cascade order
 import { restoreState, loadSaved } from './ui/state.js';
 import { unsettled } from './ui/store/app-state.ts';
@@ -12,10 +11,9 @@ import { DEFAULT_ROUTE, parseRoute } from './ui/router/routes.js';
 import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.js';
 import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.js';
 import { installUnloadGuard } from './ui/router/unload-guard.js';
-import { storeNumberField } from './ui/number-field.js';
 import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
-// the Lit elements (each registers itself on import); the page's templates hold them as islands
+// the Lit elements (each registers itself on import): the page's root, which draws the others
 import './ui/elements/gear-browser/expansion-menu.ts';
 import './ui/elements/gear-browser/gear-browser.ts';
 import './ui/elements/gear-browser/gear-categories.ts';
@@ -32,6 +30,7 @@ import './ui/elements/math-page/tiers-view.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/select.ts';
 import './ui/elements/shared/collapsible.ts';
+import './ui/elements/app/app-root.ts';
 import './ui/elements/app/cap-field.ts';
 import './ui/elements/app/job-menu.ts';
 import './ui/elements/app/job-strip.ts';
@@ -48,7 +47,6 @@ import './ui/elements/set-page/piece-picker.ts';
 import './ui/elements/set-page/rank-note.ts';
 import './ui/elements/set-page/set-page.ts';
 import './ui/elements/set-page/settings-popover.ts';
-import { page } from './ui/components/page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
@@ -56,17 +54,13 @@ enableHqFont(document.fonts, document.documentElement);
 
 // the screen the address names opens first (a bare or unknown address is the Sheets list): the tab and math view are not saved
 const openRoute = parseRoute(location.hash) ?? DEFAULT_ROUTE;
-/* The page's one store (ui/store/): the state, its actions and the two facades the templates read. Alpine tracks the revision of each
-   slice (Alpine.reactive), so a template that reads a facade runs again when an action changes the slice it read. The saved sheets
-   are one record each, written on their own edits (not part of the settings that autosave writes). */
-const pageStore = createPageStore({ restored: restoreState(loadSaved(), openRoute), track: revisions => Alpine.reactive(revisions) });
+/* The page's one store (ui/store/): the state, its actions and the two facades the elements read. An element follows the store
+   (a `Select`) and draws again when the parts it is made from change. The saved sheets are one record each, written on their own
+   edits (not part of the settings that autosave writes). */
+const pageStore = createPageStore({ restored: restoreState(loadSaved(), openRoute) });
 const { store } = pageStore;
-Alpine.store('app', sealFacade(pageStore.app));
-Alpine.store('sheets', sealFacade(pageStore.sheets));
-const app = Alpine.store('app');
-const sheets = Alpine.store('sheets');
-// the math screen (a Lit element) follows the store and reads the facade itself
-document.querySelector('gsa-math-screen').ports = { store, app };
+const app = sealFacade(pageStore.app);
+const sheets = sealFacade(pageStore.sheets);
 /* Where the page is scrolled: {y, maxY (the furthest it can scroll now)}. */
 function pageScroll() {
   return { y: scrollY, maxY: document.documentElement.scrollHeight - innerHeight };
@@ -114,12 +108,6 @@ addEventListener(
   { passive: true },
 );
 
-/* x-bind="$num('piece.ilvl', 1, $store.app.maxReal)": number input bound to a store path, in-range values only (a bound
-   that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)); a fourth
-   argument takes numberField's options, e.g. {live: true} to commit each valid value as typed, or {empty: ''} for a
-   filter an emptied box clears (storeNumberField) */
-Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
-
 /* The page's Web Worker for the searches (ui/solver.js workerSolver), made on the solver's first request: a set page
    asks for its Auto-fill settings' Gear to search line as it opens, so the worker starts with the first set page. Started
    from a Blob URL of its bundle (the page is one file, also opened from file://), then handed the data files' texts,
@@ -146,9 +134,9 @@ const setPagePorts = Object.freeze({
   },
 });
 
-Alpine.data('page', page);
-// the Sheets screen (a Lit element) follows the store and reads the facades itself
-document.querySelector('gsa-sheets-screen').ports = { store, app, sheets, setPagePorts };
+// the page's root element (it draws the screens, which follow the store and read the facades themselves)
+const root = document.querySelector('gsa-app');
+root.ports = { store, app, sheets, setPagePorts };
 
 /* Save the settings 150 ms after the last change and when the page is hidden (ui/store/autosave.ts). */
 startAutosave(store);
@@ -156,20 +144,18 @@ startAutosave(store);
 // a reload or a closed tab asks first while a gear set's page holds a draft, a running Auto-fill or a waiting result: the store says
 installUnloadGuard({ target: window, hasUnsettled: () => unsettled(store.state), storage: defaultStorage() });
 
-Alpine.start();
-
-/* The test hook (read-only, in every build): the two facades, the store's state and action log, and `scope(selector)`, the data of the Alpine component on the
-   first element that matches (a component's own fields, such as the Gear browser's `view`). Tests read the page's state
-   here instead of Alpine's private fields. `state` is the store's live state and `log` the names of its last 50 actions. */
+/* The test hook (read-only, in every build): the two facades, the store's state and action log. Tests read the page's state here.
+   `state` is the store's live state and `log` the names of its last 50 actions. */
 const debugHook = {};
 Object.defineProperties(debugHook, {
   app: { get: () => app, enumerable: true },
   sheets: { get: () => sheets, enumerable: true },
   state: { get: () => store.state, enumerable: true },
   log: { get: () => [...store.log], enumerable: true },
-  scope: { value: selector => Alpine.$data(document.querySelector(selector)), enumerable: true },
 });
 Object.defineProperty(window, 'gsaDebug', { value: Object.freeze(debugHook), enumerable: true });
 
-// the start marker the startup check reads (src/startup-failure.js): set only once Alpine.start() has returned
-document.documentElement.dataset.started = '';
+// the start marker the startup check reads (src/startup-failure.js): set once the root element has drawn the page for the first time
+root.updateComplete.then(() => {
+  document.documentElement.dataset.started = '';
+});

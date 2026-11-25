@@ -94,10 +94,9 @@ export const DOMAINS = {
   'gear-browser': {
     title: 'The Gear browser tab and its filter menus',
     src: [
-      // the Gear browser screen and its menus, Lit elements (the screen an island in the Gear browser's template)
+      // the Gear browser screen and its menus, Lit elements (the screen, drawn by the page's root)
       'src/ui/elements/gear-browser/**',
       'src/ui/views/gear.js',
-      'src/partials/gear-page.html',
       'src/styles/gear-browser.css',
     ],
     tests: ['tests/e2e/checks/gear-browser/**', 'tests/e2e/lib/columns.mjs', 'tests/unit/styles/gear-column-tint.test.js'],
@@ -121,7 +120,7 @@ export const DOMAINS = {
       // what every element uses: the Zag controller and the bridge to the overlay manager
       'src/ui/elements/{app,shared}/**',
       'src/ui/router/**',
-      'src/ui/components/page.js',
+      'src/ui/build-marks.ts',
       'src/ui/{state,store-key,job-sync-panel,level-cap,number-commit,number-field,overlays,ranks,hq-font}.js',
       'src/ui/{text,view-cache}.ts',
       'src/ui/views/cap-field.js',

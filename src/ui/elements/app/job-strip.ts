@@ -1,8 +1,7 @@
 /* The Job and sync strip of the Gear browser as a Lit element in light DOM: the Job box (with its menu), the synced level, the synced
-   item level, the IL Sync switch and Reset. The page's frame keeps the strip's section (`.jobstrip`: its box, its `aria-label`, hidden
-   off the Gear browser, `data-job`); this element is the row inside it and takes no box of its own. It is an island in the Alpine-run
-   page (docs/engineering/architecture.md section 3):
-   - the page gives it the Gear browser's panel from a wrapper's `x-effect`: `job` (an id), `level`, `cap`, `sync` (the IL Sync
+   item level, the IL Sync switch and Reset. The page root (`<gsa-app>`, app-root.ts) draws the strip's section (`.jobstrip`: its box, its `aria-label`, hidden
+   off the Gear browser, `data-job`); this element is the row inside it and takes no box of its own:
+   - the root gives it the Gear browser's panel (`stripInput`, app-root-model.ts): `job` (an id), `level`, `cap`, `sync` (the IL Sync
      switch), `maxLevel` (the job's level cap), `maxReal` (the highest real item level) and `tab` (the open tab, for `active`);
    - the fields' events pass through to the page (`level-change`, `cap-change`), and so does the Job menu's (`job-change`); the strip
      sends `sync-change` (the switch, a boolean) and `strip-reset` (after the browser's own confirmation);

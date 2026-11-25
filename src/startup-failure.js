@@ -1,18 +1,17 @@
 /* The "failed to start" message. A classic script (not an ES module), ES5 syntax only, that scripts/build/build.mjs
    (startupScript) minifies and inlines as the first thing in <head>, before the page's <style> and long before the app's
    <script>, so it still runs when the stylesheet or the app's script is broken. It depends on nothing of the page: no app
-   CSS (inline styles with CSS system colors only, so it reads in the light and the dark OS theme), no Alpine, no markup
+   CSS (inline styles with CSS system colors only, so it reads in the light and the dark OS theme), no framework, no markup
    in the template (the message is made with DOM calls). The text must never contain a closing script tag: the build stops
    if the inlined script does.
 
    Failed start = an uncaught error or an unhandled rejection before the check, or, at the check, no start marker
-   (main.js sets data-started on <html> once Alpine.start() has returned) or a page root ([x-data]) that is missing or
-   still has x-cloak (Alpine removes it as it builds the page). The check runs once, one timer turn after
-   DOMContentLoaded: the app's script is a classic inline script at the end of <body>, so it has run to its end
-   (Alpine.start() included) before DOMContentLoaded,
-   and the errors Alpine rethrows with setTimeout(0) were queued before the check's own timer. No clock is involved, so a
-   slow device cannot raise a false alarm. After the check the listeners are removed: a later error is not a startup
-   failure. docs/engineering/architecture.md, "Startup failure". */
+   (main.js sets data-started on <html> once the root element <gsa-app> has drawn the page) or a page root that is missing or
+   empty. The check runs once, one timer turn after DOMContentLoaded: the app's script is a classic inline script at the end of
+   <body>, so it has run to its end before DOMContentLoaded, and the root element and the screen elements it draws (Lit draws in
+   microtasks, which run before any timer) have drawn by then; an error in a draw is an unhandled rejection, queued before the
+   check's own timer. No clock is involved, so a slow device cannot raise a false alarm. After the check the listeners are removed:
+   a later error is not a startup failure. docs/engineering/architecture.md, "Startup failure". */
 (function () {
   // The settings key; the sheets' keys are this plus a colon and more. The build writes the value of
   // src/ui/store-key.js over the marker, so the key is written once.
@@ -209,8 +208,8 @@
     setTimeout(function () {
       removeEventListener('error', onError);
       removeEventListener('unhandledrejection', onError);
-      var root = document.querySelector('[x-data]');
-      var built = document.documentElement.hasAttribute('data-started') && Boolean(root) && !root.hasAttribute('x-cloak');
+      var root = document.querySelector('gsa-app');
+      var built = document.documentElement.hasAttribute('data-started') && Boolean(root) && root.childElementCount > 0;
       if (built && !errors.length) {
         release(); // the page started
         return;

@@ -36,8 +36,8 @@ export interface GearPanel {
 
 /* The `browse-edit` event the element sends for every change of the browser's filters or sort: `detail` is the patch (a part of
    `browse`: {q}, {type}, {lvl}, {sort, dir}, {expOff}, ...), which the page hands to the store's `editBrowse` action. The page's
-   wrapper listens with `@browse-edit`, which cannot import this constant: if it is renamed, change the wrapper in
-   src/partials/gear-page.html to match (every smoke step of the browser's filters fails otherwise). */
+   root listens with `@browse-edit`, which cannot import this constant: if it is renamed, change the listener in
+   src/ui/elements/app/app-root.ts to match (every smoke step of the browser's filters fails otherwise). */
 export const BROWSE_EDIT_EVENT = 'browse-edit';
 
 /* The patch for the browser's filters that a heading click on column `key` makes: the same heading again flips the order, a new

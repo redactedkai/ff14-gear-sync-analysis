@@ -14,17 +14,13 @@
 </head>
 <body>
 <noscript><p style="margin:24px 16px;font:15px/1.5 system-ui,'Segoe UI',sans-serif">Gear Sync Analysis needs JavaScript. Turn JavaScript on for this page and reload.</p></noscript>
-<!-- Number boxes bound to a setting use x-bind="$num(path, lo, hi, options)" (number-field.js numberField), which also sets
-     the box's min and max from lo and hi. The gear filters and the sync cap take any number from 1 up, as typed (hi
-     Infinity): a minimum above every item level is a filter nothing passes, and the page says so; restoreState holds
-     a saved one to the real range. Their :max here, the end of the real range, only stops the arrow keys. The Target
-     GCD takes TARGET_GCD_RANGE (job-sync-panel.js): a higher value moves to 2.50.
-     Drop-down choices are <gsa-select> elements, drawn inside the screen elements (elements/shared/select.ts). -->
-<!-- x-cloak (src/styles/) keeps the page unpainted until Alpine has built it: the script is the last thing in the file, and
-     the browser paints the markup above it while it is still reading it, so without it the Job and sync panel (shown
-     until x-show runs) and the tab bar showed with no tab, and no job, for a moment before every first paint -->
+<!-- The page is the one element <gsa-app> (src/ui/elements/app/app-root.ts), drawn by the app script, which is the last thing in the
+     file. Until it has started, the startup script (startup-failure.js) keeps the element unpainted and shows the boot shell below
+     in its place, so the browser, which paints the markup above the script while it is still reading it, never shows a half-built
+     page: no tab bar with no tab, and no Job and sync strip with no job. Drop-down choices are <gsa-select> elements, drawn inside
+     the screen elements (elements/shared/select.ts). -->
 <!-- The boot shell: what shows from the first paint until the page has started (startup-failure.js shows it, with the saved
-     tab chosen, and removes it at the check; it is hidden without JavaScript). Not part of the page: no Alpine, no data-tab. -->
+     tab chosen, and removes it at the check; it is hidden without JavaScript). Not part of the page: no data-tab. -->
 <div class="boot" id="boot" aria-hidden="true">
   <div class="pagetop">
     <header><h1>Gear Sync Analysis</h1></header>
@@ -36,86 +32,7 @@
   </div>
   <div class="bootload"></div>
 </div>
-<div class="wrap" x-data="page" x-cloak :class="{ 'tab-loading': $store.app.pendingTab }">
-<div class="pagetop">
-<header>
-  <h1>Gear Sync Analysis<!-- BUILD_BADGE --></h1>
-</header>
-
-<!-- the Gear browser has a Job and sync strip (below); How the math works has its Job menu in the math bar; the Sheets tab has
-     neither: a sheet holds its own job, level and sync -->
-<nav class="tabs" aria-label="Sections">
-  <a
-    id="tablink-sheets"
-    data-tab="sheets"
-    :href="tabHref('sheets')"
-    :aria-current="($store.app.pendingTab ?? $store.app.tab) === 'sheets' ? 'page' : null"
-    @click="goTab('sheets', $event)">Sheets</a>
-  <a
-    id="tablink-browse"
-    data-tab="browse"
-    :href="tabHref('browse')"
-    :aria-current="($store.app.pendingTab ?? $store.app.tab) === 'browse' ? 'page' : null"
-    @click="goTab('browse', $event)">Gear browser</a>
-  <a
-    id="tablink-math"
-    data-tab="math"
-    :href="tabHref('math')"
-    class="aside"
-    :aria-current="($store.app.pendingTab ?? $store.app.tab) === 'math' ? 'page' : null"
-    @click="goTab('math', $event)">How the math works</a>
-</nav>
-</div>
-<div class="tabload" role="status" x-show="$store.app.pendingTab" x-text="loadingText"></div>
-<!-- The Job and sync strip of the Gear browser: one row under the tab bar, always the same (no open and closed form): the Job
-     box (the job's icon, name and code) that opens a menu with one line of icons per role, the synced level, the item level and
-     its switch, and Reset. The job is always one (Paladin by default). The row is the element <gsa-job-strip>
-     (ui/elements/app/job-strip.ts), an island: the wrapper's x-effect gives it the Gear browser's panel (`stripInput` in page.js) and
-     the wrapper takes the edits from its events (a pick in the Job menu, the level, the cap, the switch, Reset). -->
-<section
-  class="panel jobstrip"
-  aria-label="Job and sync settings"
-  x-show="$store.app.tab === 'browse'"
-  :data-job="$store.app.job || ''"
-  x-effect="Object.assign($el.firstElementChild, stripInput)"
-  @job-change="$store.app.setJob($event.detail, 'browse')"
-  @level-change="$store.app.editPanel({ level: $event.detail })"
-  @cap-change="$store.app.editPanel({ cap: $event.detail })"
-  @sync-change="$store.app.editPanel({ sync: $event.detail })"
-  @strip-reset="$store.app.resetAll()">
-  <gsa-job-strip x-ignore></gsa-job-strip>
-</section>
-<!-- SHEETS: <gsa-sheets-screen> (ui/elements/sheets/sheets-screen.ts) draws the sheet manager, a sheet's page, a gear set's page and the dialogs; main.js
-     gives it its ports. No Job and sync panel on this tab: each sheet holds its own job, level and sync. The tab's section and its `hidden` stay here. -->
-<section class="tab" id="tab-sheets" aria-labelledby="tablink-sheets" hidden :hidden="$store.app.tab !== 'sheets'">
-  <gsa-sheets-screen x-ignore></gsa-sheets-screen>
-</section>
-
-
-<!-- THE MATH: what sync does to one piece (Piece stats) and to a full set's GCD (GCD), and the substats' tiers (Substat tiers);
-     controls in a sticky bar, each shown on the sub-tabs it applies to -->
-<section class="tab" id="tab-math" aria-labelledby="tablink-math" hidden :hidden="$store.app.tab !== 'math'">
-  <gsa-math-screen x-ignore></gsa-math-screen>
-</section>
-
-<!-- GEAR BROWSER -->
-<!-- INCLUDE gear-page.html -->
-
-<!-- THE NOTES (a <gsa-notes>, ui/elements/app/notes.ts): the note after an action and the message of a failed save, at the window's bottom on every tab. Both
-     are always in the page, empty when there is nothing to say, so a screen reader announces the text when it arrives. The wrapper gives the
-     element the sheets slice's text and clears the note when the element says its time is up. -->
-<div
-  class="notes"
-  x-effect="$el.firstElementChild.note = $store.sheets.note; $el.firstElementChild.noteSeq = $store.sheets.noteSeq; $el.firstElementChild.saveMessage = $store.sheets.saveMessage"
-  @note-expire="$store.sheets.setNote('')">
-  <gsa-notes x-ignore></gsa-notes>
-</div>
-
-<footer>
-  <span><span x-show="dataSource" x-text="dataSource + ' · '"></span>Speed formulas: AkhMorning · Icons: Remix Icon (Apache 2.0) · HQ symbol: Lodestone font via the ewwwin/ffxiv-symbol-fonts mirror · FINAL FANTASY XIV and its job icons © SQUARE ENIX CO., LTD. Unofficial fan tool. Code © 2026 redactedkai, MIT.</span>
-  <!-- BUILD_INFO -->
-</footer>
-</div>
+<gsa-app class="wrap"></gsa-app>
 <!-- SCRIPT -->
 </body>
 </html>

@@ -1,7 +1,7 @@
-/* The page's notes as a Lit element in light DOM, an island in the Alpine-run page (docs/engineering/architecture.md section 3):
+/* The page's notes as a Lit element in light DOM, drawn by the page root (`<gsa-app>`, app-root.ts):
    the note after an action ("Deleted “UwU” sheet.", `#sh-toast`) and the message of a failed save (`#sh-save-error`), shown at
    the window's bottom on every tab, outside the tabs, so a note set while a tab is left is still seen.
-   - the page gives it properties from a wrapper's `x-effect`: `note` (the text, '' for none), `noteSeq` (the count of notes
+   - the root gives it properties: `note` (the text, '' for none), `noteSeq` (the count of notes
      said, which changes even for an identical note) and `saveMessage` ('' when every edit is saved); the element never reads
      a store;
    - both paragraphs are always in the page, empty when there is nothing to say (the CSS shows an empty one as nothing), so a

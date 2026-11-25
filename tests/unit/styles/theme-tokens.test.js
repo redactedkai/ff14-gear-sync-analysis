@@ -1,6 +1,6 @@
 /* The page's colors come only through the CSS tokens (CLAUDE.md, "Page rules"): no literal #hex, rgb(), hsl() or color name
    in a rule of src/styles/*.css (the Sheets rules included), in an inline style or a color attribute of the page's HTML
-   (src/index.html and its partials, the Sheets markup among them), or in a quoted color of the UI scripts; the light and the
+   (src/index.html), or in a quoted color of the UI scripts; the light and the
    dark token lists name the same tokens; and the two dark lists (system setting, forced) are equal. The scan is checked on
    made-up CSS first, so it cannot pass by finding nothing. */
 import { test } from 'node:test';
@@ -40,8 +40,7 @@ test('src/styles/*.css: every color outside the token blocks is a var(--token)',
 });
 
 test('the page HTML paints no literal color: no style attribute or fill/stroke/color attribute with one', () => {
-  const files = [join(new URL('.', SRC).pathname.slice(1), 'index.html'), ...walk(new URL('partials/', SRC).pathname.slice(1))];
-  assert.ok(files.length >= 2);
+  const files = [join(new URL('.', SRC).pathname.slice(1), 'index.html')];
   const found = [];
   for (const file of files) {
     const html = readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');

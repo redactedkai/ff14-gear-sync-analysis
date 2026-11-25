@@ -20,20 +20,22 @@ function variantUrl(name, edit) {
   return pathToFileURL(file).href;
 }
 
-/** A script text, put first in the app's script, that makes the render of `<gsa-sheets-screen>` throw a ReferenceError (no bundle code is edited). */
-const BROKEN_SHEETS_SCREEN = `{
+/** A script text, put first in the app's script, that makes the render of the element `tag` throw a ReferenceError naming `missing`
+ * (no bundle code is edited: customElements.define is patched ahead of the bundle). */
+const brokenRender = (tag, missing) => `{
   const define = customElements.define.bind(customElements);
   customElements.define = (name, constructor, options) => {
-    if (name === 'gsa-sheets-screen') {
+    if (name === ${JSON.stringify(tag)}) {
       const render = constructor.prototype.render;
       constructor.prototype.render = function () {
-        sheetsMissing();
+        ${missing}();
         return render.call(this);
       };
     }
     define(name, constructor, options);
   };
 }`;
+const BROKEN_SHEETS_SCREEN = brokenRender('gsa-sheets-screen', 'sheetsMissing');
 
 /** The copy with a top-level throw first in the app's script: nothing of the app runs. */
 const throwing = html => {
@@ -80,8 +82,9 @@ export async function checkStartupHealthy(pg) {
   check(await pg.locator('[data-tab=sheets]').isVisible(), 'the healthy page is not showing');
 }
 
-/** A throw in the app's script: the message shows (blank page) with the error's text. An Alpine error: the same message, the
- * rest of the page hidden. A file cut inside the style or inside the app's script: the message shows. */
+/** A throw in the app's script: the message shows (blank page) with the error's text. An error while an element draws, in the page's
+ * root or in a screen: the same message, the rest of the page hidden. A file cut inside the style or inside the app's script: the
+ * message shows. */
 export async function checkStartupFailures(pg) {
   const { page, close } = await openPage(pg);
   try {
@@ -100,6 +103,14 @@ export async function checkStartupFailures(pg) {
     check(part.heading.length > 0, 'partly built: no heading');
     check(part.error.includes('sheetsMissing'), `partly built error text: '${part.error}'`);
     check(!(await page.locator('[data-tab=sheets]').isVisible()), 'a partly built page hides the rest of the page');
+
+    // the same when the page's root element itself fails to draw: no start marker, the error's text
+    const rootUrl = variantUrl('root', html => {
+      const at = APP_SCRIPT_START(html);
+      return `${html.slice(0, at)}${brokenRender('gsa-app', 'rootMissing')}${html.slice(at)}`;
+    });
+    const rootFailed = await failedStart(page, rootUrl);
+    check(rootFailed.error.includes('rootMissing'), `root draw error text: '${rootFailed.error}'`);
 
     // the half-built page is never painted before the message hides it: a frame loop (from before the page's own scripts)
     // records any frame where the page's root is showing and the message is not (the boot shell may show: it is not the page)
@@ -137,16 +148,16 @@ export async function checkStartupFailures(pg) {
   }
 }
 
-// the line main.js runs last once the page is built; startup-failure.js reads the attribute it sets
-const STARTED_MARKER = 'document.documentElement.dataset.started="";';
+// the statement main.js runs once the root element has drawn the page, as the minifier writes it; startup-failure.js reads the attribute it sets
+const STARTED_MARKER = 'document.documentElement.dataset.started=""';
 
-/** The copy without the line that marks the page as started: every script runs and throws nothing, but the page never
+/** The copy without the statement that marks the page as started: every script runs and throws nothing, but the page never
  * says it finished. */
 const withoutStartMarker = html => {
   if (!html.includes(STARTED_MARKER)) {
-    throw new Error('the page has no started-marker line to remove');
+    throw new Error('the page has no started-marker statement to remove');
   }
-  return html.replace(STARTED_MARKER, '');
+  return html.replace(STARTED_MARKER, 'void 0');
 };
 
 /** A page whose start marker is missing and that threw no error: the message still shows, saying the page was not built. */
@@ -162,25 +173,30 @@ export async function checkStartupMarkerMissing(pg) {
   }
 }
 
-/** The start marker is set only once Alpine.start() has returned: a listener from before the page's scripts reads it when Alpine
- * begins (`alpine:init`) and when it has built the page (`alpine:initialized`, still inside start()); the marker is absent at both
- * and set once the page has loaded. A marker set before the start would claim a start that has not happened. */
+/** The start marker is set only once the page's root element has drawn: a patch of customElements.define from before the page's scripts
+ * reads the marker as `<gsa-app>` draws (absent), and it is set after the page has loaded. A marker set before the start would claim
+ * a start that has not happened. */
 export async function checkStartupMarkerAfterStart(pg) {
   const { page, close } = await openPage(pg, () => {
-    window.__markerAt = {};
-    for (const name of ['alpine:init', 'alpine:initialized']) {
-      document.addEventListener(name, () => {
-        window.__markerAt[name] = 'started' in document.documentElement.dataset;
-      });
-    }
+    window.__markerAt = [];
+    const define = customElements.define.bind(customElements);
+    customElements.define = (name, elementClass, options) => {
+      if (name === 'gsa-app') {
+        const render = elementClass.prototype.render;
+        elementClass.prototype.render = function () {
+          window.__markerAt.push('started' in document.documentElement.dataset);
+          return render.call(this);
+        };
+      }
+      define(name, elementClass, options);
+    };
   });
   try {
     await page.goto(pathToFileURL(PAGE_PATH).href);
     await expect(page.locator('[data-tab=sheets][aria-current=page]')).toBeVisible();
     const markerAt = await page.evaluate(() => window.__markerAt);
-    check(Object.keys(markerAt).length === 2, `Alpine's start events seen: ${JSON.stringify(markerAt)}`);
-    check(!markerAt['alpine:init'], 'the start marker was already set when Alpine began to start');
-    check(!markerAt['alpine:initialized'], 'the start marker was already set before Alpine.start() returned');
+    check(markerAt.length >= 1, `the root's draws seen: ${JSON.stringify(markerAt)}`);
+    check(!markerAt[0], 'the start marker was already set when the root drew for the first time');
     check(await page.evaluate(() => 'started' in document.documentElement.dataset), 'the started page has no start marker');
   } finally {
     await close();

@@ -26,14 +26,21 @@ test('build: esbuild bundles a .ts module imported by its .ts extension, types s
   assert.doesNotMatch(code, /:\s*(number|string|unknown)\b/, 'no type annotation is left');
 });
 
-/* A build marks itself as a test build everywhere but main (CLAUDE.md, Branches). */
+/* A build marks itself as a test build everywhere but main (CLAUDE.md, Branches); the marks are data the page's root element draws. */
 test('build marks: none on main or an unknown branch; DEV elsewhere, with branch and commit', () => {
-  assert.deepEqual(buildMarks({ branch: 'main', commit: 'abc1234' }), { badge: '', footer: '' });
-  assert.deepEqual(buildMarks({ branch: null, commit: null }), { badge: '', footer: '' });
-  const dev = buildMarks({ branch: 'dev', commit: null });
-  assert.match(dev.badge, />DEV</);
-  assert.match(dev.footer, /DEV build: dev</);
-  assert.match(buildMarks({ branch: 'feature/<x>', commit: 'f' }).footer, /feature\/&#60;x&#62;/); // escaped
+  assert.equal(buildMarks({ branch: 'main', commit: 'abc1234' }), null);
+  assert.equal(buildMarks({ branch: null, commit: null }), null);
+  assert.deepEqual(buildMarks({ branch: 'dev', commit: null }), { label: 'DEV', where: 'dev' });
+  assert.deepEqual(buildMarks({ branch: 'feature/x', commit: 'f' }), { label: 'DEV', where: 'feature/x @ f' });
+});
+
+test('build: a test build carries its marks in the page code, the live build none', async () => {
+  const script = async info => {
+    const result = await esbuild.build(esbuildOptions({ info }));
+    return result.outputFiles.find(file => file.path.endsWith('.js')).text;
+  };
+  assert.match(await script({ branch: 'dev', commit: 'abc1234' }), /dev @ abc1234/);
+  assert.doesNotMatch(await script({ branch: 'main', commit: 'abc1234' }), /abc1234/);
 });
 
 /* Audit 13, finding 1: a render-blocking Google Fonts link held first paint until a stalled request gave up (8 s in a
@@ -55,55 +62,36 @@ test('page template: the Google Fonts stylesheet does not block first paint', as
   }
 });
 
-/* The page painted half-built for a moment on every load (owner's report): the script is the last thing in the file, and
-   the browser paints the markup above it while still reading it, before Alpine runs. An x-show shows its element until
-   Alpine evaluates it, so the Job and sync panel (x-show: only on the Gear browser) showed, empty, with the tab bar and no
-   tab. The page root carries x-cloak (hidden by the stylesheet until Alpine removes it) and holds every element of the
-   body, so no x-show, tab-dependent or not, can show before Alpine. checkFirstPaint (tests/e2e/checks/settings/first-paint.mjs) watches the
-   frames themselves. */
-test('page template: nothing paints before Alpine has built it', async () => {
+/* The page painted half-built for a moment on every load (owner's report): the app script is the last thing in the file, and the
+   browser paints the markup above it while still reading it. The body holds the page as one empty element, <gsa-app class="wrap">,
+   which the startup script keeps unpainted until the check has run (the boot shell shows meanwhile), so nothing of the page
+   can show half-built. checkFirstPaint (tests/e2e/checks/settings/first-paint.mjs) watches the frames themselves. */
+test('page template: the body is the boot shell and one empty page root, nothing else', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = expandIncludes(await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8'));
   const css = readStyles();
-  assert.match(css, /\[x-cloak\]\s*\{\s*display:\s*none\s*!important;?\s*\}/);
   const body = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('<!-- SCRIPT -->'));
   // the <noscript> line (JavaScript off) and the boot shell (#boot: static, hidden by the stylesheet unless the startup script
-  // shows it, with no Alpine and no data-tab) are the only things outside the root: the root stays cloaked without Alpine
+  // shows it, with no data-tab) are the only things beside the root
   const noComments = body
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<noscript>[\s\S]*?<\/noscript>/, '')
     .trim();
-  const shell = noComments.match(/^<div class="boot" id="boot"[\s\S]*?(?=<div class="wrap")/)?.[0] ?? '';
+  const shell = noComments.match(/^<div class="boot" id="boot"[\s\S]*?(?=<gsa-app )/)?.[0] ?? '';
   assert.ok(shell, 'the boot shell comes first');
-  assert.ok(!/x-data|x-show|data-tab|role="tab"/.test(shell), 'the boot shell has no Alpine and no tab links of the page');
+  assert.ok(!/data-tab|role="tab"/.test(shell), 'the boot shell has no tab links of the page');
   assert.match(css, /\.boot\s*\{\s*display:\s*none;?\s*\}/, 'the boot shell is hidden unless the startup script shows it');
-  const withoutShell = noComments.slice(shell.length);
-  const root = withoutShell.match(/^<div class="wrap"[^>]*>/)?.[0];
-  assert.ok(root, 'the body starts with the page root');
-  assert.match(root, /\sx-cloak[\s>]/, 'the page root is cloaked');
-  assert.ok(withoutShell.endsWith('</div>'), 'nothing after the page root');
-  // the root's own closing tag ends the body: every <div> opened in it is closed before the end
-  let depth = 0;
-  for (const tag of withoutShell.matchAll(/<(\/?)div\b/g)) {
-    depth += tag[1] ? -1 : 1;
-    if (depth === 0) {
-      assert.equal(tag.index + '</div>'.length, withoutShell.length, 'the page root closes before the end of the body');
-    }
-  }
-  // the tab-dependent bindings are all inside it (the Gear browser's Job and sync strip among them)
-  assert.ok(body.includes(`x-show="$store.app.tab === 'browse'"`));
+  assert.equal(noComments.slice(shell.length), '<gsa-app class="wrap"></gsa-app>', 'the page root is empty: its element draws the page');
 });
 
 /* The bundled libraries' MIT notices reach the page through esbuild's legalComments: 'eof', which moves the legal
-   comments found in the bundled code to the end of the script. Alpine ships no notice of its own, so none is invented
-   for it; the page credits the project in its footer instead (src/index.html). */
+   comments found in the bundled code to the end of the script (Lit's). */
 test('build keeps the MIT notices found in the bundled code', async () => {
   const { build } = await import('esbuild');
   const result = await build(esbuildOptions());
   const script = result.outputFiles.find(f => f.path.endsWith('.js')).text;
   assert.match(script, /Bundled license information/);
-  assert.match(script, /@vue\/reactivity.*Evan\) You/s);
-  assert.match(script, /@vue\/shared.*Evan\) You/s);
+  assert.match(script, /SPDX-License-Identifier: BSD-3-Clause/);
 });
 
 /* Audit 16, R9 (owner, 2026-10-19): the data files reach the page as JSON.parse of one string each, not as an object
@@ -169,13 +157,10 @@ test('build includes: a partial can include another, keeping the indentation; a 
   assert.equal(expandIncludes('<!-- INCLUDE d3.html -->', read), '<i></i>');
 });
 
-test('page template: the screens are elements (the Gear browser, the Sheets screen), and every include is expanded', async () => {
+test('page template: every include is expanded', async () => {
   const { readFile } = await import('node:fs/promises');
   const html = await readFile(new URL('../../../src/index.html', import.meta.url), 'utf8');
-  const page = expandIncludes(html);
-  assert.match(page, /<gsa-gear-browser class="panel" x-ignore>/);
-  assert.match(page, /<gsa-sheets-screen x-ignore>/);
-  assert.doesNotMatch(page, /\{\{|INCLUDE/);
+  assert.doesNotMatch(expandIncludes(html), /\{\{|INCLUDE/);
 });
 
 /* The page's bytes must not change between builds of the same source: the worker's data module lists its files in the

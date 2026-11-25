@@ -1,6 +1,6 @@
-/* Only the page's entry point (src/main.js) imports Alpine. Audit 07, finding 5: three components imported it when their
+/* Nothing imports Alpine any more: the page's root is a Lit element. Audit 07, finding 5: three components imported it when their
    module loaded, so Node could not load them for a unit test. Every module under src/ui and src/core must stay loadable
-   in Node, so none may import 'alpinejs'; main.js hands the store what it needs. */
+   in Node, so none may import 'alpinejs'. TODO: R42-2 widens this scan to every Alpine attribute and call and removes the package. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -17,7 +17,7 @@ function jsFilesUnder(dir) {
 
 const ALPINE_IMPORT = /from\s+['"]alpinejs['"]|import\s+['"]alpinejs['"]/;
 
-test('no module under src/ui or src/core imports Alpine: only main.js does', () => {
+test('no module under src/ui or src/core, nor main.js, imports Alpine', () => {
   for (const folder of ['../../../src/ui/', '../../../src/core/']) {
     const dir = new URL(folder, import.meta.url);
     const files = jsFilesUnder(dir);
@@ -26,7 +26,7 @@ test('no module under src/ui or src/core imports Alpine: only main.js does', () 
       assert.doesNotMatch(readFileSync(new URL(file, dir), 'utf8'), ALPINE_IMPORT, folder + file);
     }
   }
-  assert.match(readFileSync(new URL('../../../src/main.js', import.meta.url), 'utf8'), /from 'alpinejs'/);
+  assert.doesNotMatch(readFileSync(new URL('../../../src/main.js', import.meta.url), 'utf8'), ALPINE_IMPORT, 'main.js');
 });
 
 /* the scan lists .ts files. A planted .ts file that imports Alpine is listed, and the pattern matches its import. */

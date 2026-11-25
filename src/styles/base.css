@@ -88,6 +88,3 @@ th.n {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
-[x-cloak] {
-  display: none !important;
-}

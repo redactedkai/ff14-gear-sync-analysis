@@ -9,7 +9,7 @@ import { join, relative } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
-/* The files that read the facades: every .js and .html of src/ui (but the store's own folder), the partials, the page and main.js. */
+/* The files that read the facades: every .js and .html of src/ui (but the store's own folder), the page and main.js. */
 function sourceFiles(folder, found = []) {
   for (const name of readdirSync(folder)) {
     const path = join(folder, name);
@@ -24,12 +24,7 @@ function sourceFiles(folder, found = []) {
   return found;
 }
 
-const FILES = [
-  ...sourceFiles(join(ROOT, 'src', 'ui')),
-  ...sourceFiles(join(ROOT, 'src', 'partials')),
-  join(ROOT, 'src', 'index.html'),
-  join(ROOT, 'src', 'main.js'),
-];
+const FILES = [...sourceFiles(join(ROOT, 'src', 'ui')), join(ROOT, 'src', 'index.html'), join(ROOT, 'src', 'main.js')];
 
 /* A name the facades are held under: `$store.app`, `this.app`, `app`, `sheets`, `store` (the sheets part's own). */
 const APP = String.raw`(?:\$store\.app|\bapp)`;

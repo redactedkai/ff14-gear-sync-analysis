@@ -7,8 +7,7 @@ import { commit, roundTo } from './number-commit.js';
 export const TYPING_DEBOUNCE_MS = 300;
 
 /* Flash a cap field the page just lowered (its `lowered` class, src/styles/gear-browser.css): the flash restarts on each lowering, by
-   dropping the class, letting the browser see it gone, and adding it back. Used by the Job and sync panel (page.js
-   lowerCap) and a sheet's page (elements/sheets/sheet-page.ts). `field`: the input, or nothing (no flash). */
+   dropping the class, letting the browser see it gone, and adding it back. Used by the Job and sync panel's cap field and a sheet's page (elements/sheets/sheet-page.ts). `field`: the input, or nothing (no flash). */
 export function flashLowered(field) {
   if (!field?.classList) {
     return;

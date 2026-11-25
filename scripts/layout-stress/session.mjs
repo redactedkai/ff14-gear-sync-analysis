@@ -43,7 +43,8 @@ export async function openPage(browser, { file, width, height, fixture, failWrit
     }
   });
   await page.goto(pathToFileURL(file).href, { timeout: START_TIMEOUT_MS });
-  await page.waitForSelector('.wrap:not([x-cloak])', { timeout: START_TIMEOUT_MS });
+  await page.waitForSelector('html[data-started]', { timeout: START_TIMEOUT_MS });
+  await page.waitForSelector('#boot', { state: 'detached', timeout: START_TIMEOUT_MS }); // the startup check has run and shown the page
   await page.addStyleTag({ content: NO_MOTION + (setup?.css ?? '') });
   if (!setup?.blockFonts && fontsReachable !== false) {
     fontsReachable = await waitForPageFonts(page);
