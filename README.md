@@ -50,7 +50,7 @@ Every npm command, in one place (other pages link here). Times are from the owne
 | `npm run typecheck` | `tsc --noEmit` over the `.ts` files (`tsconfig.json`: strict, erasable syntax only, `.js` files not checked); part of `check` |
 | `npm run lint:py` | Ruff (Python): lint and format check, no file changes |
 | `npm run format`, `npm run format:py` | Rewrite files with Biome, or with Ruff |
-| `npm run test:stories` | Builds the story gallery and runs the component stories (`tests/stories/`) in Chromium, about 8 s; part of `check` |
+| `npm run test:stories` | Builds the story gallery and runs the component stories (`tests/stories/`) in Chromium (time: docs/engineering/testing.md, section 1); part of `check` |
 | `npm run test:stories:all` | The same stories in Chromium, Firefox and WebKit, about 30 s; run by CI and `check:all` |
 | `npm run check` | Lint (with format check), typecheck, build, unit tests, component stories (Chromium), smoke test; no Python; about 1 min. Warns if installed packages differ from the lock (run `npm ci`). Run before calling a change done |
 | `npm run check:all` | `check`, then `test:stories:all`, `lint:py` and `test:py`. Run it when touching `scripts/data/` or after `data:update` |

@@ -199,7 +199,8 @@ test('build: two builds of the same source give the same page', async () => {
 
 /* The page's size is a feature: it is opened from disk and parsed on every load, and the item database is most of it.
    A ceiling catches a careless import (a whole icon set, an unshaken library) that would otherwise ship unnoticed.
-   Raise it deliberately, with a reason. Current output is about 3.07 MB; the ceiling leaves room to grow. */
+   The ceiling is 5 MB because the item database is most of the page and the rest (the app, Lit, Zag) is small next to it,
+   so 5 MB leaves room for new widgets but not for a second large library. Raise it deliberately, with a reason. */
 test('build: the page stays under its size ceiling', async () => {
   const { build } = await import('esbuild');
   const result = await build(esbuildOptions());
