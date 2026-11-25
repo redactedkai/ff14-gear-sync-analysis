@@ -808,6 +808,24 @@ test('Back reads where the screen is scrolled as the browser moves, so a scroll 
   assert.equal(focused.at(-1), 300, 'the sheet page returns to where it was scrolled');
 });
 
+test('Back after a scroll up reads the exact position of the page, not the deeper one its events noted', () => {
+  // unlike a push (which takes the deeper of the two, as the browser may clamp the position when the new screen is swapped in), a
+  // move of the browser is read before the screen is swapped, so nothing was clamped and the page's own position is exact
+  const page = { y: 0, maxY: 900 };
+  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => ({ ...page }) });
+  sheets.openSheet('s_1');
+  clock.fire();
+  page.y = 500;
+  router.noteScroll(500, 900); // scrolled deeper, and the router heard of it
+  page.y = 300; // scrolled up by the wheel, its scroll event not delivered yet
+  history.back();
+  history.deliver();
+  page.y = 0; // the list is placed at the top
+  history.forward();
+  history.deliver();
+  assert.equal(focused.at(-1), 300, 'the sheet page returns to where the page had it, not to the deeper noted position');
+});
+
 test('Back and Forward keep each screen at the position the page had on it, however late the scroll events come', () => {
   const page = { y: 0, maxY: 900 };
   const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => ({ ...page }) });
