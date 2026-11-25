@@ -121,6 +121,11 @@
   height: var(--box-h);
   box-sizing: border-box;
 }
+/* the text of a select's button in a box of fixed height sits where the native select it replaces put it: one pixel higher than a
+   button centres it */
+.mathbar :is(.mctl.menu .sel-btn, .mctl.fit .sel-btn) {
+  padding-bottom: 9px;
+}
 /* the GCD and Substat tiers fields (Level, Haste): the width and look of a field in the Auto-fill settings, the range at the
    label line's right end */
 .mathbar .mctl.wide {

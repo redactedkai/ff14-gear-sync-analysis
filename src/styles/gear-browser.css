@@ -20,8 +20,10 @@
   color: var(--muted);
   font-weight: 500;
 }
+/* the Job box's label is the first child of <gsa-job-menu>, which takes no box (display: contents), so it is a line of the field too */
 .jobstrip .f > span:first-child,
-.jobstrip .f > label {
+.jobstrip .f > label,
+.jobstrip .f > gsa-job-menu > span:first-child {
   height: 18px;
   line-height: 18px;
   white-space: nowrap;
@@ -127,7 +129,9 @@ gsa-job-menu {
 .jobmenu .jobbtn[aria-checked="true"] img {
   box-shadow: none;
 }
-gsa-job-menu[data-keys] .jobbtn[data-highlighted] {
+/* the icon lit by the arrow keys has the focus ring of the page's other controls; one lit by the pointer keeps the dimmer tint (the
+   element records the last input of the page: INPUT_ATTRIBUTE in key-focus.ts) */
+gsa-job-menu:not([data-input="press"], [data-input="move"]) .jobbtn[data-highlighted] {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }

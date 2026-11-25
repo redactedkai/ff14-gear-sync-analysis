@@ -46,6 +46,9 @@ test.describe('<gsa-job-menu>', () => {
     // Escape closes with the focus on the button; a click on an icon picks
     await button.click();
     await expect(menu).toBeVisible();
+    // opened by the mouse after keys: the lit icon has no focus ring (the keys draw one, the pointer does not)
+    await expect(tile('AST')).toHaveAttribute('data-highlighted', '');
+    await expect(tile('AST')).toHaveCSS('outline-style', 'none');
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
     await expect(button).toBeFocused();
@@ -68,5 +71,22 @@ test.describe('<gsa-job-menu>', () => {
     await page.locator('#job-menu-btn').click();
     await expect(page.locator('#job-menu')).toBeVisible();
     expect(await axe()).toEqual([]);
+  });
+});
+
+test.describe('<gsa-job-menu> with touch', () => {
+  test.use({ hasTouch: true });
+
+  // Playwright's Firefox cannot close a touch-enabled context cleanly while other workers run (see slot-menu.spec.ts); the tap
+  // fix concerns WebKit, and Chromium covers the rest.
+  test.skip(({ browserName }) => browserName === 'firefox', 'a touch context cannot be closed reliably in Firefox under parallel workers');
+
+  test('a tap on the button opens the menu and a tap on a job picks it', async ({ mount, page }) => {
+    const component = await mount<typeof Default>(STORY);
+    await page.locator('#job-menu-btn').tap();
+    await expect(page.locator('#job-menu')).toBeVisible();
+    await page.locator('#job-menu [data-job-id="WAR"]').tap();
+    await expect(page.locator('#job-menu')).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('["WAR"]');
   });
 });

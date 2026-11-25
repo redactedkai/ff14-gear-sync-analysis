@@ -59,6 +59,8 @@ export async function checkTwoTabs(pg) {
   };
   const renameSheet = async (page, name, description) => {
     await page.click('#sh-edit');
+    // Zag gives the focus to the name box a frame after the dialog shows; a fill before that would be moved by it
+    await page.waitForFunction(() => document.activeElement?.id === 'sh-dlg-name', null, { timeout: 3000 });
     if (name !== null) {
       await page.fill('#sh-dlg-name', name);
     }

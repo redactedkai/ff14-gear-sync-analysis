@@ -6,8 +6,9 @@
    - the list is plain links (no `role=menu`): the first row goes to the parent screen, one row per sheet or set (the current one
      marked), and a button at the end makes a new one. A plain click on a link is a pick; any other click is left to the browser
      (a new tab);
-   - the current row takes the focus when the list opens; Escape and a press outside close it with the focus back on the caret, and
-     Tab out of the list closes it too;
+   - the current row takes the focus when the list opens; Tab and Shift+Tab walk the rows (as in any list of links), and the list
+     closes when the focus leaves it and its caret (Zag's focus-outside dismissal), the focus staying where the Tab put it;
+     Escape and a press outside close it with the focus back on the caret;
    - the open layer is registered with the page's overlay manager (the bridge), so another layer opening closes it and a change
      of screen closes it. */
 import * as popover from '@zag-js/popover';
@@ -107,8 +108,6 @@ export class GsaSwitchMenu extends LitElement {
       root: () => this.querySelector('[data-zag-part="content"]'),
       opener: () => this.querySelector('[data-zag-part="trigger"]'),
     });
-    // capture phase: before Zag's popover sees a Tab in the list
-    this.addEventListener('keydown', event => this.closeOnTab(event), { capture: true });
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -125,21 +124,6 @@ export class GsaSwitchMenu extends LitElement {
      manager, or dropped from it. */
   protected override updated(): void {
     this.bridge.sync();
-  }
-
-  /* Tab out of the open list closes it and the focus moves on from where it is. The browser's own Tab step may run before the list
-     is hidden (Firefox), so the focus first goes to the end of this element that the Tab leaves by: the caret for Shift+Tab (the
-     control before it comes next), the last row for Tab (the control after the list comes next). */
-  private closeOnTab(event: KeyboardEvent): void {
-    if (event.key !== 'Tab' || !this.zag.api.open) {
-      return;
-    }
-    event.stopPropagation();
-    const exit = event.shiftKey
-      ? this.querySelector<HTMLElement>('[data-zag-part="trigger"]')
-      : [...this.querySelectorAll<HTMLElement>('.setitem:not(:disabled)')].at(-1);
-    exit?.focus({ preventScroll: true });
-    this.zag.closeWithoutFocus();
   }
 
   /* A click on a row: a plain click on a link is a pick (the list closes, the focus goes back to the caret, and the page is

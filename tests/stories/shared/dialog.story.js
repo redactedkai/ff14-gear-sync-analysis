@@ -8,6 +8,9 @@ import { recordEvents } from '../gallery/record.js';
 export const TITLE = 'Story dialog';
 export const BEHIND_LABEL = 'Behind the dialog';
 
+/* The text in the name box when the dialog opens. */
+export const NAME_TEXT = 'Bahamut T13';
+
 /* The dialog, open: its first control is the name box, the one asked to take the focus. */
 export const Default = () => {
   const recordDetail = recordEvents('events');
@@ -19,7 +22,7 @@ export const Default = () => {
       <div class="dlg-positioner" data-zag-part="positioner">
         <div class="dlg" data-zag-part="content">
           <h3 id="story-title">${TITLE}</h3>
-          <input type="text" id="story-name" aria-label="Name" />
+          <input type="text" id="story-name" aria-label="Name" value=${NAME_TEXT} />
           <button type="button" class="primary">Save</button>
           <button type="button" class="dlgclose" data-zag-part="close-trigger" aria-label="Close">x</button>
         </div>

@@ -12,9 +12,11 @@
    `title-id` (the ids of the box and of its title, which the page's tests and styles name), `initial-focus` (a selector for the
    control that takes the focus when it opens; the first one the box holds when it is empty), `alert` (a question that asks for
    an answer: role `alertdialog`). Events: `dialog-close` (the X or a press outside; the page closes it) and `dialog-escape`
-   (Escape; the page decides, since a note inside the box may take the Escape first). The element gives the focus nowhere when
-   it goes: the page puts it back on the control that opened the dialog, which it knows better than the machine does (Safari
-   does not focus a clicked button), and does not when a change of page closes the dialog. */
+   (Escape; the page decides, since a note inside the box may take the Escape first). A text box that takes the focus when the
+   dialog opens has its caret at the end of its text (Zag's focus trap would select the whole text, so that the first key typed
+   replaces a sheet's name). The element gives the focus nowhere when it goes: the page puts it back on the control that opened
+   the dialog, which it knows better than the machine does (Safari does not focus a clicked button), and does not when a change of
+   page closes the dialog. */
 import * as dialog from '@zag-js/dialog';
 import { LitElement } from 'lit';
 import { ZagController } from './zag-controller.ts';
@@ -37,7 +39,11 @@ function makeZag(host: GsaDialog) {
       restoreFocus: false,
       // a question also closes on a press outside the box (Zag's default for an alertdialog is to stay open)
       closeOnInteractOutside: true,
-      initialFocusEl: () => (host.initialFocus ? host.querySelector<HTMLElement>(host.initialFocus) : null),
+      initialFocusEl: () => {
+        const control = host.initialFocus ? host.querySelector<HTMLElement>(host.initialFocus) : null;
+        host.expectFocus(control);
+        return control;
+      },
       onOpenChange: ({ open }) => {
         if (!open) {
           host.dispatchEvent(new CustomEvent(DIALOG_CLOSE_EVENT, { bubbles: true }));
@@ -79,6 +85,31 @@ export class GsaDialog extends LitElement {
     this.initialFocus = '';
     this.alert = false;
     this.zag = makeZag(this);
+    this.addEventListener('focusin', event => this.keepCaretAtEnd(event));
+  }
+
+  // the control that Zag is about to focus as the first one (set by `initialFocusEl`, cleared in the same task)
+  #expectedFocus: HTMLElement | null = null;
+
+  /* Called with the control that the focus trap is about to focus (and select the text of): the next focus of that control is the
+     trap's, and the caret goes to the end of its text once the trap has selected it. A focus of the same control by anything else
+     (a click, a script) is left alone. */
+  expectFocus(control: HTMLElement | null): void {
+    this.#expectedFocus = control;
+    queueMicrotask(() => {
+      this.#expectedFocus = null;
+    });
+  }
+
+  /* The trap selects the text of the box it focuses, in the same task as the focus, so the caret waits for a microtask. */
+  private keepCaretAtEnd(event: FocusEvent): void {
+    const field = event.target;
+    if (field !== this.#expectedFocus) {
+      return;
+    }
+    if ((field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) && field.selectionStart !== null) {
+      queueMicrotask(() => field.setSelectionRange(field.value.length, field.value.length));
+    }
   }
 
   /* Light DOM: the page's markup is the element's own children. */

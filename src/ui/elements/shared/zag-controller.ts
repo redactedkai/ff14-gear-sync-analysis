@@ -77,6 +77,22 @@ function withoutUndefinedStyles(attrs: Attrs): Attrs {
   return { ...attrs, style: Object.fromEntries(Object.entries(style).filter(([, value]) => value != null)) };
 }
 
+/* The trigger attributes of a Zag menu with its `pointerdown` handler kept for the mouse only. Zag cancels every `pointerdown` on a
+   menu trigger, so that the press does not move the focus; WebKit then sends no `click` for a touch tap and the menu would never
+   open by touch. A tap's `click` is what opens it. Every menu element passes its trigger through this. (The vanilla adapter names
+   handlers in lower case: `onpointerdown`.) */
+export function touchFriendlyTrigger(trigger: Record<string, unknown>): Record<string, unknown> {
+  const zagOnPointerDown = trigger.onpointerdown as ((event: PointerEvent) => void) | undefined;
+  return {
+    ...trigger,
+    onpointerdown(event: PointerEvent) {
+      if (event.pointerType === 'mouse') {
+        zagOnPointerDown?.(event);
+      }
+    },
+  };
+}
+
 /* A reactive controller that owns the Zag machine of one element; see the file header. `api` is the machine's api for the
    current state (after a disconnect, its last one), and `machine` is null while the element is disconnected. */
 export class ZagController<Schema extends MachineSchema, Api> implements ZagLifecycle {

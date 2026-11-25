@@ -19,8 +19,9 @@ import * as menu from '@zag-js/menu';
 import { LitElement, html, nothing } from 'lit';
 import { JOBS, JOB_ROWS, jobById } from '../../../core/constants.js';
 import { JOB_ICONS } from '../../../data/job-icons.js';
+import { trackLastInput } from '../shared/key-focus.ts';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
-import { ZagController } from '../shared/zag-controller.ts';
+import { ZagController, touchFriendlyTrigger } from '../shared/zag-controller.ts';
 import { JOB_CHANGE_EVENT, JOB_MENU_NAME } from './job-menu-names.ts';
 
 /* The gap between the button and the open menu, in px. */
@@ -28,9 +29,6 @@ const MENU_GAP_PX = 6;
 /* The size of the icon in the button and in the menu, in px. */
 const BUTTON_ICON_PX = 26;
 const MENU_ICON_PX = 40;
-/* The attribute that says the last move of the highlight came from a key (the CSS draws the focus ring on the lit icon then, and
-   not for a pointer). */
-const KEYS_ATTRIBUTE = 'data-keys';
 /* Every job's "Name (CODE)", one per line: the hidden copy that gives the button the width of the widest job (Dark Knight (DRK),
    Astrologian (AST), Pictomancer (PCT)). */
 const WIDEST_NAME_COPY = JOBS.map(job => `${job.name} (${job.id})`).join('\n');
@@ -98,7 +96,7 @@ function makeZag(host: GsaJobMenu) {
       onEscapeKeyDown: event => host.bridge.guardEscape(event),
     }),
     parts: api => ({
-      trigger: api.getTriggerProps(),
+      trigger: touchFriendlyTrigger(api.getTriggerProps()),
       positioner: api.getPositionerProps(),
       content: api.getContentProps(),
       item: ROLE_ROWS.flatMap(row =>
@@ -143,7 +141,8 @@ export class GsaJobMenu extends LitElement {
     });
     // capture phase: before Zag's menu sees the keys that are ours (Tab, and the arrows by role)
     this.addEventListener('keydown', event => this.onKeyDown(event), { capture: true });
-    this.addEventListener('pointermove', () => this.removeAttribute(KEYS_ATTRIBUTE), { capture: true });
+    // the last input of the page (`data-input`): the CSS draws the focus ring on the lit icon after a key and not after the pointer
+    trackLastInput(this);
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -180,7 +179,6 @@ export class GsaJobMenu extends LitElement {
     if (next) {
       event.preventDefault();
       event.stopPropagation();
-      this.setAttribute(KEYS_ATTRIBUTE, '');
       this.zag.api.setHighlightedValue(next);
     }
   }
@@ -189,7 +187,6 @@ export class GsaJobMenu extends LitElement {
      ArrowDown and nothing for a press). Zag lights its row in a task it queues when the menu opens, so the change waits a
      microtask to come after it. */
   lightChosenJobAfterOpening(): void {
-    this.setAttribute(KEYS_ATTRIBUTE, '');
     queueMicrotask(() => {
       if (this.zag.machine && this.job) {
         this.zag.api.setHighlightedValue(this.job);

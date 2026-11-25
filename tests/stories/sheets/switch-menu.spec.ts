@@ -1,5 +1,5 @@
 /* Stories of <gsa-switch-menu>: a caret that opens a plain list of links (no role=menu), the open set's row takes the focus,
-   Escape and Tab close it with the focus where the keyboard model puts it, a plain click on a row is a pick, and axe. */
+   Escape closes it with the focus on the caret, Tab walks its rows and closes it past either end, a plain click on a row is a pick, and axe. */
 import { test, expect } from '../fixtures.ts';
 import { BUTTON_NAME, MENU_NAME, type Default } from './switch-menu.story.js';
 
@@ -9,7 +9,10 @@ test.describe('<gsa-switch-menu>', () => {
   test('opens on the caret with the open row focused, Escape returns the focus to the caret, and a plain click on a row is a pick', async ({
     mount,
     page,
+    browserName,
   }) => {
+    // WebKit's Tab skips links (Safari's "Press Tab to highlight each item" is off by default): there it walks the buttons only
+    const tabsToLinks = browserName !== 'webkit';
     const component = await mount<typeof Default>(STORY);
     const caret = component.getByRole('button', { name: BUTTON_NAME });
     const list = page.locator('#sh-set-menu');
@@ -33,12 +36,36 @@ test.describe('<gsa-switch-menu>', () => {
     await expect(list).toBeHidden();
     await expect(component.getByTestId('events')).toHaveText('["item:s3"]');
 
-    // Tab out of the open list closes it and goes on to the next control
+    // Tab walks every row of the open list and, past the last one, closes it and goes on to the next control
     await caret.click();
     await expect(list.getByRole('link', { name: 'Dungeons' })).toBeFocused(); // Zag moves the focus in a frame after it opens
     await page.keyboard.press('Tab');
-    await expect(list).toBeHidden();
+    if (tabsToLinks) {
+      await expect(list.getByRole('link', { name: 'Crafting' })).toBeFocused();
+      await page.keyboard.press('Tab');
+    }
+    await expect(list.getByRole('button', { name: '+ New set' })).toBeFocused();
+    await expect(list).toBeVisible();
+    await page.keyboard.press('Tab');
     await expect(component.getByRole('button', { name: 'After' })).toBeFocused();
+    await expect(list).toBeHidden();
+
+    // Shift+Tab walks back up to the first row, then the caret, then out of the list (closing it)
+    await caret.click();
+    await expect(list.getByRole('link', { name: 'Dungeons' })).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    if (tabsToLinks) {
+      await expect(list.getByRole('link', { name: 'Raid' })).toBeFocused();
+      await page.keyboard.press('Shift+Tab');
+      await expect(list.getByRole('link', { name: 'All gear sets (3)' })).toBeFocused();
+      await page.keyboard.press('Shift+Tab');
+    }
+    await expect(caret).toBeFocused();
+    if (tabsToLinks) {
+      await page.keyboard.press('Shift+Tab');
+      await expect(component.getByRole('link', { name: 'Sheets' })).toBeFocused();
+      await expect(list).toBeHidden();
+    }
   });
 
   test('has no axe violations, closed and open', async ({ mount, page, axe }) => {

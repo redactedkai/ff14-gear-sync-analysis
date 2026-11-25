@@ -138,3 +138,17 @@ test('Escape on the set page: layers of the overlay manager take it first; with 
   c.pageKey(second);
   assert.deepEqual([c.suggestion, second.prevented], [null, true]);
 });
+
+test('Escape that a layer already handled (defaultPrevented) does not also answer the Leave question or discard a waiting result', () => {
+  overlays.closeAll();
+  const { c, sheets } = bind(twoToFill());
+  c.pick(HEAD, SAGE_IDS.head);
+  sheets.closeSet();
+  assert.equal(c.leaveAsk.kind, 'draft');
+  const handled = keyEvent('Escape', { defaultPrevented: true });
+  c.pageKey(handled);
+  assert.deepEqual([c.leaveAsk?.kind, handled.prevented], ['draft', false], 'the question is still asked');
+  const fresh = keyEvent('Escape');
+  c.pageKey(fresh);
+  assert.deepEqual([c.leaveAsk, fresh.prevented], [null, true], 'an unhandled Escape answers Keep');
+});

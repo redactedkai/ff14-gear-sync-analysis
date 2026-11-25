@@ -4,10 +4,12 @@
    - `closeOnTab`: a Tab closes the open list and the focus moves on (Z1), where Zag's machines would hold it in the list. */
 
 /* The attribute on the element that says what the last input of the page was: `key` (a key press anywhere on the page), `press`
-   (a mouse or touch press inside the element) or `move` (the pointer moved over the element). The browser decides whether the
+   (a mouse or touch press anywhere on the page) or `move` (the pointer moved over the element). The browser decides whether the
    button shows its focus ring from the input before the focus is given back to it by script, and its answer depends on timing
    and on the engine, so the CSS does not leave it to the browser where the element knows: after `press` the ring is hidden
-   (a press on a row, which Zag cancels, does not count as one for the browser), after `key` it is always drawn. The lit row's
+   (a press on a row, which Zag cancels, does not count as one for the browser; a press outside the element counts too: a click on
+   a chip that opens a popover whose first control is a select puts the focus on that select's button by script, and it must show
+   no ring), after `key` it is always drawn. The lit row's
    ring (for the keys) is hidden while the pointer lights rows (`press`, `move`). */
 export const INPUT_ATTRIBUTE = 'data-input';
 const INPUT_KEY = 'key';
@@ -19,13 +21,13 @@ export interface InputHost extends HTMLElement {
   addController(controller: { hostConnected?(): void; hostDisconnected?(): void }): void;
 }
 
-/* Keeps the `data-input` attribute of `host` current: a key press anywhere on the page sets `key` (a listener on the document
-   while the element is connected), a press inside the element `press`, and a move of the pointer over it `move` (unless a press
+/* Keeps the `data-input` attribute of `host` current: a key press anywhere on the page sets `key`, a mouse or touch press anywhere
+   on the page `press` (both listeners on the document while the element is connected), and a move of the pointer over it `move` (unless a press
    is the last input, which says more; a move event that moved nothing, which the browser sends after the layout changed under
    a resting pointer, is not an input). */
 export function trackLastInput(host: InputHost): void {
   const onDocumentKeyDown = (): void => host.setAttribute(INPUT_ATTRIBUTE, INPUT_KEY);
-  host.addEventListener('pointerdown', () => host.setAttribute(INPUT_ATTRIBUTE, INPUT_PRESS), { capture: true });
+  const onDocumentPointerDown = (): void => host.setAttribute(INPUT_ATTRIBUTE, INPUT_PRESS);
   host.addEventListener(
     'pointermove',
     event => {
@@ -37,8 +39,14 @@ export function trackLastInput(host: InputHost): void {
     { capture: true },
   );
   host.addController({
-    hostConnected: () => document.addEventListener('keydown', onDocumentKeyDown, { capture: true }),
-    hostDisconnected: () => document.removeEventListener('keydown', onDocumentKeyDown, { capture: true }),
+    hostConnected: () => {
+      document.addEventListener('keydown', onDocumentKeyDown, { capture: true });
+      document.addEventListener('pointerdown', onDocumentPointerDown, { capture: true });
+    },
+    hostDisconnected: () => {
+      document.removeEventListener('keydown', onDocumentKeyDown, { capture: true });
+      document.removeEventListener('pointerdown', onDocumentPointerDown, { capture: true });
+    },
   });
 }
 

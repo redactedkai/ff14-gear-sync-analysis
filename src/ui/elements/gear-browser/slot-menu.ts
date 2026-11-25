@@ -13,7 +13,7 @@ import * as menu from '@zag-js/menu';
 import { LitElement, html } from 'lit';
 import { closeOnTab, trackLastInput } from '../shared/key-focus.ts';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
-import { ZagController } from '../shared/zag-controller.ts';
+import { ZagController, touchFriendlyTrigger } from '../shared/zag-controller.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL, SLOT_CHANGE_EVENT, SLOT_MENU_NAME, slotButtonName } from './slot-menu-names.ts';
 
 /* The ids of the button and of the menu: the page's tests and its labels name them. */
@@ -36,21 +36,6 @@ export interface SlotChoice {
 /* Whether a row cannot be picked: a slot with no match, unless it is the chosen one. */
 function isDisabled(choice: SlotChoice, chosenKey: string): boolean {
   return choice.count === 0 && choice.key !== chosenKey;
-}
-
-/* The trigger's attributes with Zag's `pointerdown` handler kept for the mouse only. Zag cancels every `pointerdown` on its
-   trigger, so that the press does not move the focus; WebKit then sends no `click` for a touch tap and the menu would never
-   open by touch. A tap's `click` is what opens it. (The vanilla adapter names handlers in lower case: `onpointerdown`.) */
-function touchFriendly(trigger: Record<string, unknown>): Record<string, unknown> {
-  const zagOnPointerDown = trigger.onpointerdown as ((event: PointerEvent) => void) | undefined;
-  return {
-    ...trigger,
-    onpointerdown(event: PointerEvent) {
-      if (event.pointerType === 'mouse') {
-        zagOnPointerDown?.(event);
-      }
-    },
-  };
 }
 
 /* The Zag menu of `host`: its props, the attributes of each part (the button, the positioner, the menu, the rows) and the
@@ -84,7 +69,7 @@ function makeZag(host: GsaSlotMenu) {
       onEscapeKeyDown: event => host.bridge.guardEscape(event),
     }),
     parts: api => ({
-      trigger: touchFriendly(api.getTriggerProps()),
+      trigger: touchFriendlyTrigger(api.getTriggerProps()),
       positioner: api.getPositionerProps(),
       content: api.getContentProps(),
       item: host.choices.map(choice =>

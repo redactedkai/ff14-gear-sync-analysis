@@ -6,7 +6,8 @@
    Properties:
    - `options`: the choices in order, `{ value, label, group? }` (the page's `[value, label]` lists made into objects); a run of
      options with the same `group` sits under that heading; `value` may be '' (an option that means none);
-   - `value`: the chosen option's value; the element never changes it: a pick sends `change` (`detail`: the value) and the page
+   - `value`: the chosen option's value ('' for the option that means none; Zag is given an internal key for it, see `EMPTY_VALUE_KEY`,
+     and the page never sees it); the element never changes it: a pick sends `change` (`detail`: the value) and the page
      sets `value` (or does not: a refused edit leaves the old choice shown);
    - `buttonId` (attribute `button-id`): the id of the button (the page's `<label for>`, its tests and its focus calls name it); the
      list is `<id>-list`;
@@ -39,6 +40,19 @@ const ZAG_HOST_ATTRIBUTE = 'data-zag-host';
    window. */
 const FIXED_LAYER_ID = 'settings';
 
+/* The value Zag is given for an option whose value is '' (Haste "None", Race/Clan "Select Race/Clan", Tiebreak "none"). Zag builds an
+   option's id from its value and tests the value for truthiness, so with '' the row gets no id suffix and the list's
+   `aria-activedescendant` stays unset while that row is lit. The page, the `change` event and the rows' `data-value` all keep ''. */
+const EMPTY_VALUE_KEY = '__empty__';
+/* The value Zag works with for the page's option value `value`. */
+function toZagValue(value: string): string {
+  return value === '' ? EMPTY_VALUE_KEY : value;
+}
+/* The page's option value for the value Zag reports. */
+function fromZagValue(value: string): string {
+  return value === EMPTY_VALUE_KEY ? '' : value;
+}
+
 /* One option of the list: the value the page works with, the words, and the group it belongs to (none: no heading). */
 export interface SelectOption {
   value: string;
@@ -66,7 +80,7 @@ function parentLayerOf(element: Element): string | null {
 function collectionOf(options: readonly SelectOption[]) {
   return select.collection({
     items: [...options],
-    itemToValue: option => option.value,
+    itemToValue: option => toZagValue(option.value),
     itemToString: option => option.label,
   });
 }
@@ -95,7 +109,7 @@ function makeZag(host: GsaSelect) {
     getProps: () => ({
       ids: { trigger: host.buttonId || undefined, content: host.buttonId ? `${host.buttonId}${SELECT_LIST_SUFFIX}` : undefined },
       collection: host.collection(),
-      value: [host.value],
+      value: [toZagValue(host.value)],
       disabled: host.disabled,
       // below the button, or above it when that side has more room; the list is no taller than the room on its side (the CSS reads
       // Zag's `--available-height`) and scrolls inside. The room is the window's: floating-ui would take the math bar (overflow-x: clip)
@@ -108,7 +122,7 @@ function makeZag(host: GsaSelect) {
         ...(parentLayerOf(host) ? { listeners: NESTED_LAYER_LISTENERS } : {}),
       },
       onValueChange: ({ value }) => {
-        host.dispatchEvent(new CustomEvent(SELECT_CHANGE_EVENT, { detail: value[0] ?? '', bubbles: true, composed: true }));
+        host.dispatchEvent(new CustomEvent(SELECT_CHANGE_EVENT, { detail: fromZagValue(value[0] ?? ''), bubbles: true, composed: true }));
       },
       // the focus moved to another control by a script (not by Tab or a press, which have their own ways out): the list closes and
       // the focus stays where it went
@@ -123,7 +137,7 @@ function makeZag(host: GsaSelect) {
         trigger: api.getTriggerProps(),
         positioner: api.getPositionerProps(),
         content: api.getContentProps(),
-        item: host.options.map(option => api.getItemProps({ item: option })),
+        item: host.options.map(option => ({ ...api.getItemProps({ item: option }), 'data-value': option.value })),
         group: headings.map((_, index) => api.getItemGroupProps({ id: String(index) })),
         'group-label': headings.map((_, index) => api.getItemGroupLabelProps({ htmlFor: String(index) })),
       };

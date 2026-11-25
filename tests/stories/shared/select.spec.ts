@@ -55,6 +55,41 @@ test.describe('<gsa-select>', () => {
     await expect(events).toHaveText('["Wildwood"]');
   });
 
+  test('the option that means none is announced like the others (aria-activedescendant) and is picked as the empty value', async ({
+    mount,
+    page,
+  }) => {
+    const component = await mount<typeof Default>(STORY, { value: 'Midlander' });
+    const button = page.locator(`#${BUTTON_ID}`);
+    const list = page.locator(`#${BUTTON_ID}-list`);
+    const none = list.getByRole('option', { name: NONE_LABEL });
+    await button.focus(); // WebKit does not focus a button on click
+    await page.keyboard.press('ArrowDown');
+    await expect(list.getByRole('option', { name: 'Midlander' })).toHaveAttribute('data-highlighted', '');
+    await page.keyboard.press('Home');
+    await expect(none).toHaveAttribute('data-highlighted', '');
+    const noneId = (await none.getAttribute('id')) ?? '';
+    expect(noneId).not.toBe('');
+    await expect(list).toHaveAttribute('aria-activedescendant', noneId);
+
+    // Enter picks it: the page gets '' (not Zag's internal key)
+    await page.keyboard.press('Enter');
+    await expect(list).toBeHidden();
+    await expect(component.getByTestId('events')).toHaveText('[""]');
+  });
+
+  test('a mouse press outside, after a key press, leaves no focus ring on the button when the page focuses it', async ({ mount, page }) => {
+    await mount<typeof Default>(STORY);
+    const button = page.locator(`#${BUTTON_ID}`);
+    // the page has seen a key; the next input is a press on another control (a chip that opens a popover with this select in it),
+    // and the popover then gives the focus to the select's button by script
+    await page.keyboard.press('Shift');
+    await page.getByRole('button', { name: 'Before' }).click();
+    await button.evaluate(element => element.focus());
+    await expect(button).toBeFocused();
+    await expect(button).toHaveCSS('outline-style', 'none');
+  });
+
   test('a press on an option picks it, a press outside closes the list, and axe finds nothing', async ({ mount, page, axe }) => {
     const component = await mount<typeof Default>(STORY);
     const button = page.locator(`#${BUTTON_ID}`);
