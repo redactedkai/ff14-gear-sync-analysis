@@ -20,11 +20,16 @@ const BUTTON_ID = 'b-slot';
 const MENU_ID = 'b-slots';
 /* The gap between the button and the open menu, in px. */
 const MENU_GAP_PX = 4;
-/* The attribute on the element that says the last input inside it was the pointer (a press or a move). The browser decides
-   whether the button shows its focus ring from the input before the focus is given back to it by script, and a press on a row
-   (which Zag cancels) does not count as one: with this attribute the CSS hides the ring after a press, and the lit row's ring
-   (which is for the keys) while the pointer lights rows. */
+/* The attribute on the element that says what the last input of the page was: `key` (a key press anywhere on the page), `press`
+   (a mouse or touch press inside the element) or `move` (the pointer moved over the element). The browser decides whether the
+   button shows its focus ring from the input before the focus is given back to it by script, and its answer depends on timing
+   and on the engine, so the CSS does not leave it to the browser where the element knows: after `press` the ring is hidden
+   (a press on a row, which Zag cancels, does not count as one for the browser), after `key` it is always drawn. The lit row's
+   ring (for the keys) is hidden while the pointer lights rows (`press`, `move`). */
 const INPUT_ATTRIBUTE = 'data-input';
+const INPUT_KEY = 'key';
+const INPUT_PRESS = 'press';
+const INPUT_MOVE = 'move';
 /* The widest number of matches a slot can show, as text: it sizes the hidden copy of the rows. */
 const WIDEST_COUNT_TEXT = '99,999';
 
@@ -65,9 +70,9 @@ function makeZag(host: GsaSlotMenu) {
     getProps: () => ({
       ids: { trigger: BUTTON_ID, content: MENU_ID },
       'aria-label': SLOT_MENU_NAME,
-      // always below the button, as the page's other menus: the page scrolls to the last row in a short window (a flip above the
-      // button would put the first rows above the top of the page, where nothing scrolls to them)
-      positioning: { placement: 'bottom-start' as const, gutter: MENU_GAP_PX, flip: false },
+      // below the button, or above it when that side has more room; the list is no taller than the room on its side (the CSS reads
+      // Zag's `--available-height`) and scrolls inside
+      positioning: { placement: 'bottom-start' as const, gutter: MENU_GAP_PX },
       onOpenChange: ({ open }) => {
         if (open) host.lightChosenSlotAfterOpening();
       },
@@ -125,7 +130,18 @@ export class GsaSlotMenu extends LitElement {
     // capture phase: before Zag's menu sees a Tab in the list (and a Tab on the button, before the list has the focus)
     this.addEventListener('keydown', event => this.onKeyDown(event), { capture: true });
     // what the last input in this element was: the button shows its focus ring after a key and not after a press (see INPUT_ATTRIBUTE)
-    for (const type of ['pointerdown', 'pointermove']) this.addEventListener(type, () => this.markPointerInput(), { capture: true });
+    this.addEventListener('pointerdown', () => this.setAttribute(INPUT_ATTRIBUTE, INPUT_PRESS), { capture: true });
+    this.addEventListener('pointermove', event => this.markPointerMove(event), { capture: true });
+  }
+
+  /* A key press anywhere on the page: the last input is a key now, wherever the focus is going. */
+  private readonly onDocumentKeyDown = (): void => {
+    this.setAttribute(INPUT_ATTRIBUTE, INPUT_KEY);
+  };
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    document.addEventListener('keydown', this.onDocumentKeyDown, { capture: true });
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -135,6 +151,7 @@ export class GsaSlotMenu extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    document.removeEventListener('keydown', this.onDocumentKeyDown, { capture: true });
     this.bridge.release();
   }
 
@@ -144,32 +161,40 @@ export class GsaSlotMenu extends LitElement {
     this.bridge.sync();
   }
 
-  /* Records that the last input was the pointer (a press or a move over the element). */
-  private markPointerInput(): void {
-    if (this.getAttribute(INPUT_ATTRIBUTE) !== 'pointer') this.setAttribute(INPUT_ATTRIBUTE, 'pointer');
+  /* Records that the pointer moved over the element, unless a press is the last input (it says more). A move event that moved
+     nothing (the browser sends one after the layout changed under a resting pointer) is not an input. */
+  private markPointerMove(event: PointerEvent): void {
+    const moved = event.movementX !== 0 || event.movementY !== 0;
+    if (moved && this.getAttribute(INPUT_ATTRIBUTE) !== INPUT_PRESS) {
+      this.setAttribute(INPUT_ATTRIBUTE, INPUT_MOVE);
+    }
   }
 
-  /* Records that the last input was a key, and handles Tab: it closes the menu and the focus moves on from where it is, as it does
+  /* Handles Tab: it closes the menu and the focus moves on from where it is, as it does
      out of the page's other menus. Zag's menu would stop the Tab (it holds the focus in the menu), so the key is handled before
      Zag sees it. Shift+Tab from the list first puts the focus on the button, so that it goes on to the control before the button
      and not just to the button. Nothing happens to a Tab while the menu is closed. */
   private onKeyDown(event: KeyboardEvent): void {
-    this.removeAttribute(INPUT_ATTRIBUTE);
-    if (event.key !== 'Tab' || !this.zag.api.open) return;
+    if (event.key !== 'Tab' || !this.zag.api.open) {
+      return;
+    }
     event.stopPropagation();
-    if (event.shiftKey) this.querySelector<HTMLElement>('[data-zag-part="trigger"]')?.focus({ preventScroll: true });
+    if (event.shiftKey) {
+      this.querySelector<HTMLElement>('[data-zag-part="trigger"]')?.focus({ preventScroll: true });
+    }
     this.zag.closeWithoutFocus();
   }
 
   /* When a key has opened the menu, Zag lights the first slot (the last for ArrowUp); the chosen slot is lit instead, so that the
-     arrows start from where the choice is. A press that opens it lights nothing, and stays so. The change waits a microtask, for
-     Zag's own light, which it is queued before. */
+     arrows start from where the choice is. A press that opens it lights nothing, and stays so. Zag lights its row in a task it queues
+     when the menu opens, before this callback runs, so the change waits a microtask to come after it. */
   lightChosenSlotAfterOpening(): void {
     queueMicrotask(() => {
       const firstPickable = this.choices.find(choice => !isDisabled(choice, this.value));
       const api = this.zag.machine ? this.zag.api : null;
-      if (api && firstPickable && api.highlightedValue === firstPickable.key && this.value !== firstPickable.key)
+      if (api && firstPickable && api.highlightedValue === firstPickable.key && this.value !== firstPickable.key) {
         api.setHighlightedValue(this.value);
+      }
     });
   }
 

@@ -153,8 +153,8 @@ export async function checkSlotMenuPicksAndLayers(pg) {
   );
   await pg.keyboard.press('Escape');
 
-  // every slot the menu lists sets its own key (a row greyed out for lack of a match cannot be picked, so each job is tried
-  // with the item level range that leaves every slot a match)
+  // every slot the menu lists sets its own key (a row greyed out for lack of a match cannot be picked, so the step runs with
+  // the filters cleared; the job's own slots are the ones listed: Sage has no off-hand, which the stories cover)
   const keys = await pg.evaluate(() => [...document.querySelectorAll('#b-slots [data-slot]')].map(row => row.dataset.slot));
   check(keys.includes('weapon') && keys.length > 5, `the Slot menu lists ${keys.join(', ')}`);
   for (const key of keys) {
@@ -182,28 +182,75 @@ export async function checkSlotMenuPicksAndLayers(pg) {
   check((await focusedId(pg)) === 'b-slot', 'a second Escape moved the focus off the Slot button');
 }
 
-/** In a short window (1280 x 500, 960 x 420) the open Slot menu stays below its button and the page scrolls: each row can be
- * brought into view, and none of them lies above the top of the page. Leaves the window as it was. */
+/** In short windows (1366 x 650, 1280 x 500, 960 x 420) the open Slot menu stays inside the window and every row can be
+ * reached by the keys (End, Home) and the wheel: the lit row lies inside the window and inside the part of the list that shows,
+ * and the page does not scroll sideways. Leaves the window as it was. */
 export async function checkSlotMenuShortWindow(pg) {
   await showTab(pg, 'browse');
   await fillBrowser(pg, '', '', '');
   const normal = pg.viewportSize();
+  // where the rows lie, in window coordinates: the list, and the row named `slot` (its data-slot code)
+  const placeOf = slot =>
+    pg.evaluate(code => {
+      const list = document.querySelector('#b-slots');
+      const row = list.querySelector(`[data-slot="${code}"]`);
+      const listBox = list.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      return { listTop: listBox.top, listBottom: listBox.bottom, rowTop: rowBox.top, rowBottom: rowBox.bottom };
+    }, slot);
+  const isSeen = (place, height) =>
+    place.listTop >= 0 &&
+    place.listBottom <= height + 1 &&
+    place.rowTop >= place.listTop - 1 &&
+    place.rowBottom <= place.listBottom + 1 &&
+    place.rowTop >= 0 &&
+    place.rowBottom <= height + 1;
   for (const [width, height] of [
+    [1366, 650],
     [1280, 500],
     [960, 420],
   ]) {
     await pg.setViewportSize({ width, height });
-    await pg.click('#b-slot');
-    await expect(pg.locator('#b-slots')).toBeVisible();
-    const rowCount = await pg.locator('#b-slots .multi-opt').count();
-    for (let index = 0; index < rowCount; index++) {
-      await pg.locator('#b-slots .multi-opt').nth(index).scrollIntoViewIfNeeded();
-      const box = await pg.locator('#b-slots .multi-opt').nth(index).boundingBox();
-      check(
-        box !== null && box.y >= 0 && box.y + box.height <= height + 1,
-        `at ${width} x ${height} row ${index} of the Slot menu cannot be brought into view: ${JSON.stringify(box)}`,
+    await pg.focus('#b-slot');
+    await pg.keyboard.press('Enter');
+    await pg.waitForFunction(() => document.activeElement?.id === 'b-slots');
+    const keys = await pg.evaluate(() => [...document.querySelectorAll('#b-slots [data-slot]')].map(row => row.dataset.slot));
+    const [first, last] = [keys[0], keys[keys.length - 1]];
+    for (const [key, slot] of [
+      ['End', last],
+      ['Home', first],
+    ]) {
+      await pg.keyboard.press(key);
+      await expect(pg.locator(`#b-slots [data-slot="${slot}"]`)).toHaveAttribute('data-highlighted', '');
+      await pg.waitForFunction(
+        ([code, windowHeight]) => {
+          const list = document.querySelector('#b-slots');
+          const listBox = list.getBoundingClientRect();
+          const rowBox = list.querySelector(`[data-slot="${code}"]`).getBoundingClientRect();
+          return (
+            rowBox.top >= listBox.top - 1 && rowBox.bottom <= listBox.bottom + 1 && listBox.top >= 0 && listBox.bottom <= windowHeight + 1
+          );
+        },
+        [slot, height],
       );
+      check(isSeen(await placeOf(slot), height), `at ${width} x ${height} ${key} lit a row the player cannot see`);
     }
+    // the wheel over the list reaches the last row too
+    const box = await pg.locator('#b-slots').boundingBox();
+    await pg.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height, height - box.y) / 2);
+    for (let notch = 0; notch < 40; notch++) {
+      const atEnd = await pg.locator('#b-slots').evaluate(list => list.scrollTop + list.clientHeight >= list.scrollHeight - 1);
+      if (atEnd) {
+        break;
+      }
+      await pg.mouse.wheel(0, 100);
+      await pg.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+    }
+    check(isSeen(await placeOf(last), height), `at ${width} x ${height} the wheel did not bring the last row into view`);
+    check(
+      await pg.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      `at ${width} x ${height} the page scrolls sideways with the Slot menu open`,
+    );
     await pg.keyboard.press('Escape');
     await expect(pg.locator('#b-slots')).toBeHidden();
   }

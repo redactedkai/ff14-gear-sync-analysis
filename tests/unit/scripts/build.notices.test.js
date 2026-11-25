@@ -16,6 +16,10 @@ const CARRIES_OWN_NOTICE = [
   { bundles: /^alpinejs$/, shows: '@vue/reactivity' },
 ];
 
+/* The holder each group's LICENSE must name, written here and not read from the file the group points at: a group that points
+   at another project's LICENSE (Zag at Floating UI's) must fail. Update it when a group is added to NOTICE_PACKAGES. */
+const LICENSE_HOLDER = { Zag: 'Chakra UI', 'Floating UI': 'Floating UI contributors', 'proxy-compare': 'Daishi Kato' };
+
 /* The npm package name of a path inside node_modules, or null. */
 const packageOf = path => path.match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)?.[1] ?? null;
 
@@ -35,6 +39,10 @@ test('every third-party package the page bundles has its licence notice in the p
       const license = readFileSync(join(ROOT, 'node_modules', group.licenseOf, 'LICENSE'), 'utf8');
       const copyrightLine = license.split('\n').find(line => line.startsWith('Copyright'));
       assert.ok(copyrightLine && output.includes(copyrightLine.trim()), `${name}: the notice "${copyrightLine}" is not in the page script`);
+      assert.ok(
+        copyrightLine.includes(LICENSE_HOLDER[group.name]),
+        `${name}: the LICENSE of ${group.licenseOf} does not name ${LICENSE_HOLDER[group.name]}`,
+      );
       continue;
     }
     const own = CARRIES_OWN_NOTICE.find(each => each.bundles.test(name));
