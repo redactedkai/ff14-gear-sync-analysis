@@ -48,9 +48,8 @@ function declarationsOutsideTokens(css) {
       }
       const selector = text.slice(at, open).trim().replace(/\s+/g, ' ');
       const { body, end } = block(text, open);
-      // the token blocks, and the dialogs' backdrop fallback of each (sheets.css: a ::backdrop does not inherit them in older browsers;
-      // tests/unit/styles/sheets.backdrop-fallback.test.js holds those values equal to the tokens)
-      const isToken = /^:root(\[data-theme="dark"\]|:not\(\[data-theme="light"\]\))?( \.dlg::backdrop)?$|^\.dlg::backdrop$/.test(selector);
+      // the token blocks
+      const isToken = /^:root(\[data-theme="dark"\]|:not\(\[data-theme="light"\]\))?$/.test(selector);
       if (!isToken) {
         walk(body, selector);
       }

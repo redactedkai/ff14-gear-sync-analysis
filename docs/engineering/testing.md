@@ -47,7 +47,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 22 | 15 |
-| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 21 | 12 |
+| `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 19 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 7 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 13 | 15 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 44 | 47 |

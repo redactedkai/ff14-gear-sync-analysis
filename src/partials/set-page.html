@@ -345,23 +345,26 @@
   <template x-if="view.bonusNote"><p class="small dim" id="sh-set-bonus-note" x-text="view.bonusNote"></p></template>
 
 
-  <!-- the question before leaving the page with a draft, a running Auto-fill or an Auto-fill result waiting: a native <dialog> only
-       while it is asked (x-modal, ui/native-dialog.js); Escape, the X and the backdrop all answer Keep -->
-  <template x-if="leaveAsk"><dialog
-    class="dlg"
-    id="sh-leave"
-    x-ref="leave"
-    role="alertdialog"
-    aria-modal="true"
-    aria-labelledby="sh-leave-q"
-    x-modal="answerLeave('keep')"
-    @cancel.prevent="answerLeave('keep')">
+  <!-- the question before leaving the page with a draft, a running Auto-fill or an Auto-fill result waiting: a <gsa-dialog alert>
+       (ui/elements/shared/dialog.ts, a Zag alertdialog) only while it is asked; Escape, the X and a press outside all answer Keep -->
+  <template x-if="leaveAsk"><gsa-dialog
+      alert
+      content-id="sh-leave"
+      title-id="sh-leave-q"
+      initial-focus="#sh-leave-keep"
+      @dialog-close="answerLeave('keep')"
+      @dialog-escape="answerLeave('keep')">
+    <div class="dlg-backdrop" data-zag-part="backdrop"></div>
+    <div class="dlg-positioner" data-zag-part="positioner">
+    <div class="dlg" data-zag-part="content">
       <p class="question" id="sh-leave-q" x-text="leaveQuestion"></p>
-      <template x-if="leaveAsk.kind === 'draft'"><div class="dlgbtns"><button type="button" class="primary" id="sh-leave-apply" @click="answerLeave('apply')">Apply and leave</button><button type="button" id="sh-leave-discard" @click="answerLeave('discard')">Discard and leave</button><button type="button" id="sh-leave-keep" x-ref="leaveKeep" @click="answerLeave('keep')">Keep editing</button></div></template>
-      <template x-if="leaveAsk.kind === 'running'"><div class="dlgbtns"><button type="button" id="sh-leave-go" @click="answerLeave('leave')">Leave and cancel the Auto-fill</button><button type="button" class="primary" id="sh-leave-keep" x-ref="leaveKeep" @click="answerLeave('keep')">Keep waiting</button></div></template>
-      <template x-if="leaveAsk.kind === 'result'"><div class="dlgbtns"><button type="button" id="sh-leave-go" @click="answerLeave('leave')">Leave and discard the result</button><button type="button" class="primary" id="sh-leave-keep" x-ref="leaveKeep" @click="answerLeave('keep')">Keep reviewing</button></div></template>
-      <button type="button" class="dlgclose" aria-label="Close" @click="answerLeave('keep')"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 10.5858L16.9497 5.63604L18.364 7.05025L13.4142 12L18.364 16.9497L16.9497 18.364L12 13.4142L7.05025 18.364L5.63604 16.9497L10.5858 12L5.63604 7.05025L7.05025 5.63604L12 10.5858Z"/></svg></button>
-  </dialog></template>
+      <template x-if="leaveAsk.kind === 'draft'"><div class="dlgbtns"><button type="button" class="primary" id="sh-leave-apply" @click="answerLeave('apply')">Apply and leave</button><button type="button" id="sh-leave-discard" @click="answerLeave('discard')">Discard and leave</button><button type="button" id="sh-leave-keep" @click="answerLeave('keep')">Keep editing</button></div></template>
+      <template x-if="leaveAsk.kind === 'running'"><div class="dlgbtns"><button type="button" id="sh-leave-go" @click="answerLeave('leave')">Leave and cancel the Auto-fill</button><button type="button" class="primary" id="sh-leave-keep" @click="answerLeave('keep')">Keep waiting</button></div></template>
+      <template x-if="leaveAsk.kind === 'result'"><div class="dlgbtns"><button type="button" id="sh-leave-go" @click="answerLeave('leave')">Leave and discard the result</button><button type="button" class="primary" id="sh-leave-keep" @click="answerLeave('keep')">Keep reviewing</button></div></template>
+      <button type="button" class="dlgclose" data-zag-part="close-trigger" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 10.5858L16.9497 5.63604L18.364 7.05025L13.4142 12L18.364 16.9497L16.9497 18.364L12 13.4142L7.05025 18.364L5.63604 16.9497L10.5858 12L5.63604 7.05025L7.05025 5.63604L12 10.5858Z"/></svg></button>
+    </div>
+    </div>
+  </gsa-dialog></template>
 </div>
 </template>
 </div></template>

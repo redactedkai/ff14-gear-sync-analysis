@@ -13,7 +13,6 @@ import { focusScreenHeading, isPlacingScroll } from './ui/router/focus.js';
 import { readScrollPositions, tabStorage, writeScrollPositions } from './ui/router/scroll-storage.js';
 import { installUnloadGuard } from './ui/router/unload-guard.js';
 import { storeNumberField } from './ui/number-field.js';
-import { modalDirective } from './ui/native-dialog.js';
 import { overlays } from './ui/overlays.js';
 import { enableHqFont } from './ui/hq-font.js';
 // the Lit elements (each registers itself on import); the page's templates hold them as islands
@@ -104,7 +103,6 @@ addEventListener(
    that changes while bound is passed as a function: $num('level', 1, () => $store.app.jobCtx.maxLevel)); a fourth
    argument takes numberField's options, e.g. {live: true} to commit each valid value as typed, or {empty: ''} for a
    filter an emptied box clears (storeNumberField) */
-Alpine.directive('modal', modalDirective);
 Alpine.magic('num', () => (path, lo, hi, opts) => storeNumberField(app, path, lo, hi, opts));
 
 /* The page's Web Worker for the searches (ui/solver.js workerSolver), made on the solver's first request: a set page

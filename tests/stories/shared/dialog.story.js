@@ -28,3 +28,16 @@ export const Default = () => {
     <output data-testid="events" hidden></output>
   `;
 };
+
+/* The same box as a question (`alert`): the leave question of the set page and the Sheets Delete question. */
+export const Alert = () => html`
+  <gsa-dialog alert content-id="story-alert" title-id="story-alert-title" initial-focus="#story-keep">
+    <div class="dlg-backdrop" data-zag-part="backdrop"></div>
+    <div class="dlg-positioner" data-zag-part="positioner">
+      <div class="dlg" data-zag-part="content">
+        <p class="question" id="story-alert-title">Leave the page?</p>
+        <button type="button" id="story-keep">Keep</button>
+      </div>
+    </div>
+  </gsa-dialog>
+`;

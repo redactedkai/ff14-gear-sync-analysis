@@ -92,7 +92,6 @@ export const DOMAINS = {
       'src/ui/components/sheets/**',
       // the caret menus that switch sheet or gear set (a Lit element, an island in the sheet and set pages)
       'src/ui/elements/sheets/**',
-      'src/ui/native-dialog.js',
       'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.js',
       'src/ui/store/{sheets-actions,sheets-facade}.ts',
       'src/ui/views/{sheet-forms,sheet-manager,sheet-sets,sheet-text}.js',
@@ -100,12 +99,7 @@ export const DOMAINS = {
       'src/partials/{sheet-pages,cap-flag,dialog-error}.html',
       'src/styles/sheets.css',
     ],
-    tests: [
-      'tests/e2e/checks/sheets/**',
-      'tests/e2e/lib/{sheets,fixtures}.mjs',
-      'tests/unit/helpers/sheet-fixtures.js',
-      'tests/unit/styles/sheets.backdrop-fallback.test.js',
-    ],
+    tests: ['tests/e2e/checks/sheets/**', 'tests/e2e/lib/{sheets,fixtures}.mjs', 'tests/unit/helpers/sheet-fixtures.js'],
   },
   'gear-browser': {
     title: 'The Gear browser tab and its filter menus',

@@ -1,5 +1,5 @@
 /* Leaving a set page: the store's leave guard, the question asked when a draft, a running Auto-fill or a waiting result would be
-   lost, the moves that ask the same (Copy, New set), and the keys of the page (Escape, Tab inside a dialog).
+   lost, the moves that ask the same (Copy, New set), and the key of the page (Escape).
    A part of the setPage component (components/set-page.js composes the parts). */
 import { overlays } from '../../overlays.js';
 import { unsettledKind } from '../../store/app-state.ts';
@@ -26,8 +26,7 @@ export function leavePart(page) {
         return false;
       }
       overlays.closeAll(); // no menu or popover stays open under the question
-      this.leaveAsk = { kind, move };
-      this.afterDraw(() => page.refs.leaveKeep?.focus()); // gone when Escape came first
+      this.leaveAsk = { kind, move }; // the question's <gsa-dialog> puts the focus on Keep when it is drawn
       return true;
     },
     /* The question's text. */
@@ -92,11 +91,11 @@ export function leavePart(page) {
       this.leave(() => this.$store.sheets.newSet());
     },
     /* Escape on the page: the question answers Keep, else, with no menu or popover open (those are layers of the overlay manager,
-       which closes the topmost one on this same key), a waiting Auto-fill result is discarded. The question is a modal <dialog>
-       that also answers Escape as its own cancel event (when the focus is outside it); a key that comes before Alpine has drawn
-       it is answered here. Tab is kept inside by x-modal. */
+       which closes the topmost one on this same key), a waiting Auto-fill result is discarded. The question is a <gsa-dialog>
+       whose own Escape (`dialog-escape`) answers Keep and marks the key as handled (defaultPrevented); a key that comes before
+       Alpine has drawn the question is answered here. Tab is kept inside by the dialog. */
     pageKey(event) {
-      if (event.key !== 'Escape') {
+      if (event.key !== 'Escape' || event.defaultPrevented) {
         return;
       }
       if (this.leaveAsk) {

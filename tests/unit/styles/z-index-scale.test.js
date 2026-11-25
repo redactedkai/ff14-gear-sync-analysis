@@ -52,9 +52,3 @@ test('a menu inside a library positioner is static, so the positioner places it'
     /\[data-part="positioner"\]\s*>\s*:is\(\.popover,\s*\.multi-menu,\s*\.same-menu,\s*\.setmenu,\s*\.matpop,\s*\.setpop\)\s*\{\s*position:\s*static/,
   );
 });
-
-// TODO: R31 (the leave question on Zag) removes the rule and this test: a Zag dialog locks the scroll itself.
-test('the page scroll lock follows an open dialog, not a mounted one', () => {
-  assert.ok(!/html:has\(\.dlg\)/.test(css), 'html:has(.dlg) locks the page for a dialog that is only mounted');
-  assert.match(css, /html:has\(\.dlg\[open\]\)\s*\{\s*overflow:\s*hidden/);
-});

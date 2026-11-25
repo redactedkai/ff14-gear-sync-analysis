@@ -548,10 +548,8 @@ table.sets .jobcell {
   color: var(--muted);
 }
 /* the dialogs: the Sheets dialogs are a <gsa-dialog> (a Zag dialog: it traps Tab, hides and blocks the page behind and locks its
-   scroll); the backdrop and the positioner fill the window at --z-dialog and the box sits in the middle of the positioner.
-   TODO: the leave question is still a native <dialog> opened with showModal() (top layer, its own ::backdrop, `[open]`, which the
-   rules below keep for it); R31 makes it a gsa-dialog and takes those rules out. The browser's own box is reset here: margin
-   auto (with its inset of 0) centres the box, and its width and height limits give way to ours. */
+   scroll), and so is the leave question; the backdrop and the positioner fill the window at --z-dialog and the box sits in the
+   middle of the positioner (margin auto in the positioner's grid). */
 .dlg-backdrop {
   position: fixed;
   inset: 0;
@@ -583,25 +581,11 @@ table.sets .jobcell {
   position: relative;
   outline: none;
 }
-/* a closed <dialog> stays display: none (the browser's rule); only an open one is a flex column */
-.dlg[open],
+/* the open box is a flex column */
 .dlg[data-state="open"] {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-/* the backdrop: --backdrop, which a ::backdrop inherits from :root only in Chrome 122, Firefox 120 and Safari 17.4 and later.
-   The build floor (Chrome 130, Firefox 132, Safari 18.2) has it, so the fallback after the comma is only a guard; it repeats the token's value, for each theme as the tokens pick it (tokens.css). */
-.dlg::backdrop {
-  background: var(--backdrop, rgba(0, 0, 0, 0.45));
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .dlg::backdrop {
-    background: var(--backdrop, rgba(0, 0, 0, 0.55));
-  }
-}
-:root[data-theme="dark"] .dlg::backdrop {
-  background: var(--backdrop, rgba(0, 0, 0, 0.55));
 }
 /* the X at a dialog's top right: the same as Cancel (a question: Keep editing) */
 .dlgclose {
@@ -887,8 +871,4 @@ table.sets .jobcell {
   width: 18px;
   height: 18px;
   margin: 0;
-}
-/* TODO: only the leave question (a native <dialog>) needs this; a Zag dialog locks the scroll itself. R31 takes it out. */
-html:has(.dlg[open]) {
-  overflow: hidden;
 }
