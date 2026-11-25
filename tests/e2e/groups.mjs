@@ -95,6 +95,7 @@ import {
   checkUnloadGuard,
 } from './checks/tabs/routing.mjs';
 import { checkStoresSealed } from './checks/tabs/facades.mjs';
+import { checkBackAfterBackAndForward, checkBackAfterQuickClick, checkBackAfterScriptScroll } from './checks/tabs/routing-quick-clicks.mjs';
 import { walkJob } from './checks/tabs/walk.mjs';
 import { FAILING_WORKER, HOLD_SOLVE, NO_WORKER, SLOW_COUNT } from './lib/init-scripts.mjs';
 
@@ -163,6 +164,9 @@ export const GROUPS = [
   { fresh: true, steps: [step(checkScrollOnBackToMath, 'app')] },
   { fresh: true, steps: [step(checkScrollOnForwardToUnscrolled, 'app')] },
   { fresh: true, steps: [step(checkScrollOnOpenedScreen, 'app')] },
+  { fresh: true, steps: [step(checkBackAfterQuickClick, 'app')] },
+  { fresh: true, steps: [step(checkBackAfterBackAndForward, 'app')] },
+  { fresh: true, steps: [step(checkBackAfterScriptScroll, 'app')] },
   { steps: [step(checkSheets, 'sheets')] },
   { steps: [step(checkSheetForms, 'sheets')] },
   { steps: [step(checkDialogErrors, 'sheets')] },

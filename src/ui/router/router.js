@@ -299,14 +299,9 @@ export function createRouter({
      and Forward place a saved position instead): it is already in the page when this runs, before the next frame is drawn. */
   function pushScreen(hash) {
     flushWrites();
-    const scrolledTo = readScroll();
-    if (scrolledTo) {
-      // the browser may have clamped the position while the new screen was swapped in (a shorter page): the position its scroll
-      // events noted, which is the deeper one then, is where the screen was left
-      const noted = scrollByEntry.get(at.id) ?? 0;
-      rememberScroll(Math.max(scrolledTo.y, noted), scrolledTo.maxY, noted);
-      lastScrollY = scrolledTo.y; // the late scroll event of the screen left reports this position
-    }
+    // the browser may have clamped the position while the new screen was swapped in (a shorter page): the position its scroll
+    // events noted, which is the deeper one then, is where the screen was left
+    keepScrollOfScreenLeft({ clamped: true });
     const entry = { id: newEntryId(), pos: at.pos + 1 };
     port.push(hash, entry);
     at = entry;
@@ -376,6 +371,11 @@ export function createRouter({
      did not make (its query is settings to apply). */
   function onPop({ hash, state }) {
     const from = at;
+    // the page still shows the screen the move leaves (it is swapped after this): where it is scrolled is read now, as a scroll
+    // the page has not yet heard of (a wheel scroll is reported a frame later) has no event to note it
+    if (from.id === shown.id) {
+      keepScrollOfScreenLeft({ clamped: false });
+    }
     const own = isEntry(state);
     let entry = state;
     if (!own) {
@@ -486,6 +486,20 @@ export function createRouter({
     watch(() => formatRoute(routeFromStores()), onStoresChanged);
     setTitle(titleFromStores());
     watch(titleFromStores, setTitle);
+  }
+
+  /* Keep where the page is scrolled now as where the entry it is on was left, read from the page itself, whatever the scroll events
+     have or have not reported yet. `clamped`: the new screen is already in the page (a push), so the browser may have moved the
+     position to its shorter page and the deeper of this and the position the scroll events noted is where the screen was left;
+     false for a move of the browser, which is read before the screen is swapped. */
+  function keepScrollOfScreenLeft({ clamped }) {
+    const scrolledTo = readScroll();
+    if (!scrolledTo) {
+      return;
+    }
+    const noted = scrollByEntry.get(at.id) ?? 0;
+    rememberScroll(clamped ? Math.max(scrolledTo.y, noted) : scrolledTo.y, scrolledTo.maxY, noted);
+    lastScrollY = scrolledTo.y; // the late scroll event of the screen left reports this position
   }
 
   /* Focus the screen of `entry` and put the page where the player left it. */

@@ -768,6 +768,7 @@ test('the scroll events that follow a push, of the screen left and of the page g
   router.noteScroll(67, 281); // the same position as the screen was left at: the screen left's own, late event
   router.noteScroll(42, 42); // clamped up to the end of the page while the screens are swapped
   router.noteScroll(0, 0);
+  Object.assign(scrolled, { y: 0, maxY: 0 }); // the new screen is at the top of a page that cannot scroll
   history.back();
   history.deliver();
   assert.equal(focused.at(-1), 67, 'the screen left keeps the position it had');
@@ -788,6 +789,42 @@ test('a scroll of the player on the new screen after a push is remembered, even 
   history.forward();
   history.deliver();
   assert.equal(focused.at(-1), 100);
+});
+
+test('Back reads where the screen is scrolled as the browser moves, so a scroll its event has not yet reported is not lost', () => {
+  // the page is scrolled by the wheel and the player goes Back before the scroll event of that scroll has come (the page hears of a
+  // wheel scroll a frame later, and later still when it is slow to draw): nothing noted the position, only the page itself knows it
+  const page = { y: 0, maxY: 800 };
+  const { sheets, history, clock, focused } = setup('', undefined, { readScroll: () => ({ ...page }) });
+  sheets.openSheet('s_1');
+  clock.fire(); // the sheet page, drawn at the top
+  page.y = 300; // scrolled by the wheel, no scroll event yet
+  history.back();
+  history.deliver();
+  assert.equal(focused.at(-1), 0, 'the list was left at the top');
+  page.y = 0; // the list is placed at the top
+  history.forward();
+  history.deliver();
+  assert.equal(focused.at(-1), 300, 'the sheet page returns to where it was scrolled');
+});
+
+test('Back and Forward keep each screen at the position the page had on it, however late the scroll events come', () => {
+  const page = { y: 0, maxY: 900 };
+  const { sheets, history, clock, router, focused } = setup('', undefined, { readScroll: () => ({ ...page }) });
+  page.y = 120; // the list, scrolled
+  sheets.openSheet('s_1');
+  clock.fire();
+  page.y = 0; // the sheet page opens at the top
+  router.noteScroll(0, 900);
+  page.y = 450; // the sheet page, scrolled by the wheel
+  history.back();
+  history.deliver();
+  assert.equal(focused.at(-1), 120);
+  page.y = 120;
+  router.noteScroll(450, 900); // the late event of the sheet page's scroll, which the placement of the list ignores
+  history.forward();
+  history.deliver();
+  assert.equal(focused.at(-1), 450);
 });
 
 test('a link names the job, level and item level sync of the tab; what it leaves out is the default, not what the reader had', () => {
