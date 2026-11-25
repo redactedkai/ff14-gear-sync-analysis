@@ -630,3 +630,79 @@ gsa-food-menu [data-part="positioner"] > .same-menu {
   font-size: 0.85rem;
   color: var(--muted);
 }
+/* ==== The list of a select (<gsa-select>, elements/shared/select.ts) ==== */
+/* The element and the wrapper the page puts round it are plain boxes as wide as their column, so the button fills the .sized cell the
+   hidden copy of the texts makes. */
+gsa-select,
+.selhost {
+  display: block;
+  min-width: 0;
+}
+/* The list sits in Zag's positioner, which places it under the button (a gutter in place of the margin) or over it when that side has
+   more room. It is as wide as the button at the least and as wide as its longest row, no taller than the room on its side (Zag's
+   --available-height, a few rows at the least) and scrolls inside. Zag hides a closed list with the hidden attribute, which the flex
+   display would override. */
+.sel-menu {
+  margin-top: 0;
+  min-width: var(--reference-width, 0);
+  max-height: max(var(--available-height, 100vh), 6.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-family: var(--sans);
+}
+.sel-menu[hidden] {
+  display: none;
+}
+.sel-menu:focus {
+  outline: none;
+}
+.sel-opt {
+  user-select: none; /* a drag over the rows picks nothing and selects no text */
+}
+.sel-opt[data-highlighted] {
+  background: var(--surface2);
+}
+.sel-opt[aria-selected="true"] {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+/* a group of rows (the Clan list): its heading is a small muted label with a divider above all but the first, its rows indented under it */
+.sel-group-label {
+  padding: 5px 8px 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sel-group + .sel-group {
+  margin-top: 6px;
+  padding-top: 3px;
+  border-top: 1px solid var(--line);
+}
+.sel-group .sel-opt {
+  padding-left: 22px;
+}
+/* the row lit by the arrow keys: the focus ring of the page's other controls, inset so the list's edge does not clip it. A row lit by
+   the pointer keeps the tint, as the page's other menus do. */
+gsa-select:not([data-input="press"], [data-input="move"]) .sel-opt[data-highlighted] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* the button's focus ring is the keyboard's: after a click or a tap in the element it takes the focus back with no ring, and after a
+   key press (anywhere on the page) it has the ring of the page's other buttons, whatever the browser decided from the input it saw
+   before the focus was given back by script (the element records the last input: key-focus.ts) */
+gsa-select[data-input="press"] .sel-btn:focus-visible {
+  outline: none;
+}
+gsa-select[data-input="key"] .sel-btn:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* forced colours replace the tint and the accent: the chosen row keeps an outline in system colours */
+@media (forced-colors: active) {
+  .sel-opt[aria-selected="true"] {
+    outline: 1px solid CanvasText;
+    outline-offset: -3px;
+  }
+}

@@ -21,6 +21,8 @@ export function partyText(roles) {
      groups: [{race, clans: [clan name, ...]}]  the Clan list under it, a heading per race,
      noClanText: NO_CLAN_TEXT, the first entry of the Clan list,
      parties: [{roles, text}]                   the Party bonus entries, 0 to PARTY_ROLES_MAX unique roles,
+     clanChoices, partyChoices                  the same two lists as the options of a <gsa-select> ({value, label, group?}: the clan's
+                                                name or '' for none, the roles as text),
      clanSizer, partySizer                      every text of a list, one per line: a select is only as wide as the
                                                 option it shows, so the template draws a hidden copy of them beside it
                                                 and the box keeps one width whatever is chosen }. */
@@ -31,6 +33,11 @@ export function bonusOptions() {
     noClanText: NO_CLAN_TEXT,
     groups,
     parties,
+    clanChoices: [
+      { value: '', label: NO_CLAN_TEXT },
+      ...groups.flatMap(group => group.clans.map(clan => ({ value: clan, label: clan, group: group.race }))),
+    ],
+    partyChoices: parties.map(party => ({ value: String(party.roles), label: party.text })),
     clanSizer: [NO_CLAN_TEXT, ...groups.flatMap(group => group.clans)].join('\n'),
     partySizer: parties.map(party => party.text).join('\n'),
   };

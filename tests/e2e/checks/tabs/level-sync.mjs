@@ -3,6 +3,7 @@
 import { NARROW, shot } from '../../lib/constants.mjs';
 import { check, checkNoBadText, expect } from '../../lib/expect.mjs';
 import { browserRows, fillBrowser, hasHScroll, setCap, setJob, setNumber, showMath, showTab } from '../../lib/nav.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 // Level sync: level 100 healer head pieces at item level 780 or more, at synced level 90 (item level sync off), are
 // capped at the item level 660 head values; Mind 248 and the head substat cap 184 come from ItemLevel row 660 x 85 per
@@ -26,7 +27,7 @@ export async function checkLevelSync(pg) {
   await checkNoBadText(pg, 'level sync/browse');
   check(!(await hasHScroll(pg)), `level sync: horizontal page scroll at ${NARROW.width} px (browse)`);
   await showMath(pg, 'piece');
-  await pg.selectOption('#p-slot', 'head');
+  await pickOption(pg, '#p-slot', 'head');
   await setNumber(pg, '#p-ilvl', '780');
   await expect(pg.locator('#p-lead')).toHaveNumber(660);
   const kept = await pg.locator('#p-bars .num b').allInnerTexts();

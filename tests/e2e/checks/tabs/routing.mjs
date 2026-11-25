@@ -6,6 +6,7 @@ import { UNLOAD_GUARD_OFF_KEY } from '../../../../src/ui/router/unload-guard.js'
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { afterFrames, waitSaved } from '../../lib/nav.mjs';
+import { expectSelectValue } from '../../lib/select.mjs';
 import { expectApplyCount, openSageSet, seedSheet, seedSheets } from '../../lib/sheets.mjs';
 
 /** The address (its hash) of the page now. */
@@ -306,7 +307,7 @@ export async function checkAddressSettings(pg) {
   // the math views: GCD Scaling's haste and level, and Stat Allocation's piece
   await typeAddress(pg, '#/math/gcd?haste=SAM&gcdlevel=90');
   await expectHash(pg, '#/math/gcd?gcdlevel=90&haste=SAM', 'GCD Scaling');
-  await expect(pg.locator('#g-haste')).toHaveValue('SAM');
+  await expectSelectValue(pg, '#g-haste', 'SAM');
   await typeAddress(pg, '#/math/tiers?job=WAR&tierlevel=70');
   await expectHash(pg, '#/math/tiers?job=WAR&tierlevel=70', 'Substat tiers');
   await waitSaved(pg, "s => s.tiers.job === 'WAR'");

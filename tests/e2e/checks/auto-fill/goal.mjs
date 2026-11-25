@@ -15,6 +15,7 @@ import { coreGear, coreRecipe } from '../../lib/core.mjs';
 import { check, checkNoBadText, expect, poll, same } from '../../lib/expect.mjs';
 import { runFill, setNumber, ticked, waitReady } from '../../lib/nav.mjs';
 import { openSet, seedSheet, reloadAtSheets } from '../../lib/sheets.mjs';
+import { pickOption, selectOptions } from '../../lib/select.mjs';
 
 /** The checked radio of the Target GCD mode (value exact or min). */
 const MODE_CHECKED = '#sh-settings-dialog input[name="s-gcd-mode"]:checked';
@@ -68,7 +69,7 @@ export async function checkFillGoal(pg) {
   await pg.screenshot({ path: shot('fill-settings.png') });
 
   // 2. Maximize: saved, and the Target GCD range under its label
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await expectSavedFill(pg, DIALOG_SHEET, 'Maximize Critical Hit', f => f.goal.target === 'crit');
   await pg.locator('#s-food').uncheck();
   await expectSavedFill(pg, DIALOG_SHEET, 'Food off', f => f.goal.food === false);
@@ -90,8 +91,8 @@ export async function checkFillGoal(pg) {
 
   // 4. Tiebreak 1: a stat holds one rank (the goal's is not offered again, and a goal set to a tiebreak's stat swaps them);
   // Spare points to tiebreaks is usable once there is a tiebreak, and it changes the answer
-  await expect(pg.locator('#s-tb1 option[value="crit"]')).toHaveCount(0);
-  await pg.selectOption('#s-tb1', 'det');
+  check(!(await selectOptions(pg, '#s-tb1')).some(option => option.value === 'crit'), "Tiebreak 1 offers the goal's own stat");
+  await pickOption(pg, '#s-tb1', 'det');
   await expect(pg.locator('#s-by-tier')).toBeEnabled();
   await expectSavedFill(pg, DIALOG_SHEET, 'Tiebreak 1 Determination', f => f.goal.tb === 'det');
   await checkFilled(pg, 'Determination as Tiebreak 1, spare points on', tier);
@@ -114,11 +115,11 @@ export async function checkFillGoal(pg) {
   });
   await pg.click('#sh-settings-dialog .shelp');
   await expect(pg.locator('#s-rank-pop')).toBeHidden();
-  await pg.selectOption('#s-target', 'det');
+  await pickOption(pg, '#s-target', 'det');
   await expectDialog(pg, { 's-target': 'det', 's-tb1': 'crit' });
   // a pick that moves another rank says so, as the prototype does
   await expect(pg.locator('#s-rank-note')).toContainText('Critical Hit');
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await expectDialog(pg, { 's-target': 'crit', 's-tb1': 'det' });
   await expect(pg.locator('#s-rank-note')).toContainText('Determination');
 
@@ -142,10 +143,10 @@ export async function checkFillGoal(pg) {
   await expect(pg.locator('#s-gcd')).toHaveValue('2.5');
   await expectSavedFill(pg, DIALOG_SHEET, 'GCD held to 2.5', f => Number(f.goal.gcd) === 2.5);
   await setNumber(pg, '#s-gcd', '2.40');
-  await pg.selectOption('#s-target', 'sps');
+  await pickOption(pg, '#s-target', 'sps');
   await expect(pg.locator('#s-gcd')).toBeDisabled();
   await expect(pg.locator('label[for="s-gcd"] .sr-only')).not.toHaveText(onLabel); // off, the label no longer gives the range
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await expect(pg.locator('#s-gcd')).toBeEnabled();
   await setNumber(pg, '#s-gcd', '');
   await expectSavedFill(pg, DIALOG_SHEET, 'any GCD', f => f.goal.gcd === '');
@@ -159,7 +160,7 @@ export async function checkFillGoal(pg) {
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
 
   // 7. the settings kept across a reload, and the goal line with them
-  await pg.selectOption('#s-tb2', 'dh');
+  await pickOption(pg, '#s-tb2', 'dh');
   await pg.locator('#s-by-tier').uncheck();
   await pg.locator('#s-melds').uncheck();
   await setNumber(pg, '#s-gcd', '2.40');

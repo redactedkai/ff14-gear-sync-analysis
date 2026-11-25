@@ -6,6 +6,7 @@ import { SYNC_CHIP_TEXT } from '../../../../src/ui/views/sync-explainer.js';
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { afterFrames, hasHScroll, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';
 import { setUpShared } from '../../lib/setup.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** The window the later steps expect after a step that resized it. */
 const DEFAULT_WINDOW = { width: 1000, height: 900 };
@@ -108,13 +109,13 @@ export async function checkSyncChip(pg) {
   await expect(pg.locator('#p-sync-text')).toHaveText(chipWords(85, 536));
   // the weapon's level sync target is inferred: a gold star over the chip, for the weapon and the off-hand only
   await pg.keyboard.press('Escape');
-  await pg.selectOption('#p-slot', 'weapon');
+  await pickOption(pg, '#p-slot', 'weapon');
   await expect(pg.locator('#p-sync-guess-mark')).toBeVisible();
   check(
     await pg.locator('#p-sync-guess-mark').evaluate(el => el.textContent === '*'),
     'the Sync settings label has no star for the weapon',
   );
-  await pg.selectOption('#p-slot', 'head');
+  await pickOption(pg, '#p-slot', 'head');
   await expect(pg.locator('#p-sync-guess-mark')).toBeHidden();
   // the Gear browser's panel was not touched by any of this (the shared setup)
   await showTab(pg, 'browse', true);

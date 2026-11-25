@@ -7,6 +7,7 @@ import { check, checkNoBadText, expect, poll } from '../../lib/expect.mjs';
 import { runFill, setNumber } from '../../lib/nav.mjs';
 import { checkTotals } from '../../lib/shared-checks.mjs';
 import { expectApplyCount, expectMealEmpty, openSet, seedSheet } from '../../lib/sheets.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** Food in the Auto-fill settings: switched on, Auto-fill picks the meal with the core's numbers (every stat of the Total row,
  * meal included), the Food row names it, and the Take boxes agree with what Apply does: one per changed row and one for
@@ -32,7 +33,7 @@ export async function checkFillFood(pg) {
   await seedSheet(pg, DIALOG_SHEET);
   await openSet(pg, DIALOG_SHEET.name, 'Empty');
   await pg.click('#sh-settings');
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   check(await pg.locator('#s-food').isChecked(), 'Food is on by default');
   await pg.locator('#s-food').uncheck();
   await expectSavedFill(pg, DIALOG_SHEET, 'Food off', f => f.goal.food === false);
@@ -100,7 +101,7 @@ async function bestMealCase(pg, sheet, several) {
   await seedSheet(pg, sheet);
   await openSet(pg, sheet.name, 'Empty');
   await pg.click('#sh-settings');
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await pg.locator('#s-food').check();
   await expectSavedFill(pg, sheet, 'Food on', f => f.goal.food === true);
   const note = pg.locator('#sh-food-row .mealline > .small');

@@ -83,11 +83,13 @@
     <gsa-job-menu x-ignore sized prefix="m-job" button-id="m-job-btn" menu-id="m-job-menu"></gsa-job-menu>
   </div>
   <div class="barsec divided afterjob piecesec" x-show="$store.app.mathTab === 'piece'">
-  <label class="mctl menu" x-ref="slotMenu">Slot
-    <span class="sized"><select id="p-slot" @change="setSlot($event.target.value)">
-      <template x-for="o in slotOptions" :key="o.value"><option :value="o.value" x-text="o.label" :selected="o.slots.includes($store.app.piece.slot)"></option></template>
-    </select><span class="sizertext" aria-hidden="true" x-text="slotSizer"></span></span>
-  </label>
+  <div class="mctl menu">
+    <label for="p-slot">Slot</label>
+    <span class="sized"><span
+      class="selhost"
+      x-effect="$el.firstElementChild.options = slotOptions; $el.firstElementChild.value = slotValue"
+      @change="setSlot($event.detail)"><gsa-select x-ignore button-id="p-slot" label="Slot"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="slotSizer"></span></span>
+  </div>
   <!-- The Piece chip: the 1st and 2nd substat and the Materia slots in one control (a few words); it opens a popover under the bar
        with the three menus (the same store fields as before). The chip is as wide as its longest possible text, hidden in the same
        cell, so no pick or job changes it. -->
@@ -116,21 +118,24 @@
       hidden>
       <div class="mctl">
         <label for="p-s1" x-text="pieceText.first"></label>
-        <span class="sized"><select id="p-s1" @change="setSub(0, $event.target.value)">
-          <template x-for="o in substatOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === $store.app.piece.subs[0]"></option></template>
-        </select><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
+        <span class="sized"><span
+          class="selhost"
+          x-effect="$el.firstElementChild.options = substatOptions; $el.firstElementChild.value = $store.app.piece.subs[0]; $el.firstElementChild.label = pieceText.first"
+          @change="setSub(0, $event.detail)"><gsa-select x-ignore button-id="p-s1"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
       </div>
       <div class="mctl">
         <label for="p-s2" x-text="pieceText.second"></label>
-        <span class="sized"><select id="p-s2" @change="setSub(1, $event.target.value)">
-          <template x-for="o in substat2Options" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === ($store.app.piece.subs[1] || '')"></option></template>
-        </select><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
+        <span class="sized"><span
+          class="selhost"
+          x-effect="$el.firstElementChild.options = substat2Options; $el.firstElementChild.value = $store.app.piece.subs[1] || ''; $el.firstElementChild.label = pieceText.second"
+          @change="setSub(1, $event.detail)"><gsa-select x-ignore button-id="p-s2"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="substatSizer"></span></span>
       </div>
       <div class="mctl">
         <label for="p-slots" x-text="pieceText.slots"></label>
-        <select id="p-slots" @change="$store.app.editPiece({ slots: Number($event.target.value) })">
-          <template x-for="n in slotCounts" :key="n"><option :value="n" x-text="n" :selected="n === slotsShown"></option></template>
-        </select>
+        <span
+          class="selhost"
+          x-effect="$el.firstElementChild.options = slotCounts.map(n => ({ value: String(n), label: String(n) })); $el.firstElementChild.value = String(slotsShown); $el.firstElementChild.label = pieceText.slots"
+          @change="$store.app.editPiece({ slots: Number($event.detail) })"><gsa-select x-ignore button-id="p-slots"></gsa-select></span>
       </div>
     </div>
     </div>
@@ -279,11 +284,13 @@
       @input="typeLevel($el)"
       @change="typeLevel($el, true)">
   </label>
-  <label class="mctl fit">Haste
-    <span class="sized"><select id="g-haste" @change="$store.app.editGcd({ haste: $event.target.value })">
-      <template x-for="o in hasteOptions" :key="o.value"><option :value="o.value" x-text="o.label" :selected="o.value === $store.app.gcd.haste"></option></template>
-    </select><span class="sizertext" aria-hidden="true" x-text="hasteSizer"></span></span>
-  </label>
+  <div class="mctl fit">
+    <label for="g-haste">Haste</label>
+    <span class="sized"><span
+      class="selhost"
+      x-effect="$el.firstElementChild.options = hasteOptions; $el.firstElementChild.value = $store.app.gcd.haste"
+      @change="$store.app.editGcd({ haste: $event.detail })"><gsa-select x-ignore button-id="g-haste" label="Haste"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="hasteSizer"></span></span>
+  </div>
   <div class="ilctl small">
     <label for="g-range">Speed (base + gear + food)</label>
     <span class="bound" x-text="speedRange.base"></span>

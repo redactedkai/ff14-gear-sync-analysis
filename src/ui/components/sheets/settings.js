@@ -95,17 +95,14 @@ export function settingsPart() {
       return this.sheets.currentSheet?.partyRoles ?? 0;
     },
     /* The Clan box changed: `name` is a clan's name, '' for "Select Race/Clan". The sets' totals follow (the sheet's
-       page view is rebuilt from the saved sheet). A refused edit (an Auto-fill runs) puts the box back to the saved clan. */
-    pickClan(name, select) {
-      if (!this.sheets.setClan(name || null).ok) {
-        select.value = this.sheetClan ?? '';
-      }
+       page view is rebuilt from the saved sheet). A refused edit (an Auto-fill runs) changes nothing: the box shows the saved clan
+       (`sheetClan`) still, since the element only shows the value the page gives it. */
+    pickClan(name) {
+      this.sheets.setClan(name || null);
     },
-    /* The Party bonus box changed: `value` is the number of unique roles as text. A refused edit puts the box back. */
-    pickPartyRoles(value, select) {
-      if (!this.sheets.setPartyRoles(value).ok) {
-        select.value = String(this.sheetPartyRoles);
-      }
+    /* The Party bonus box changed: `value` is the number of unique roles as text. A refused edit leaves the box as it was. */
+    pickPartyRoles(value) {
+      this.sheets.setPartyRoles(value);
     },
     /* Keep what an edit of the open sheet lowered (`result`: the store's {ok, lowered}) for the note, and flash the
        cap field; a refused edit (an Auto-fill runs) leaves the note as it was. A lowered cap is put in the field too: typed

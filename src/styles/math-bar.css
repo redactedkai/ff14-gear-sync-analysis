@@ -92,11 +92,11 @@
   color: var(--label);
   white-space: nowrap;
 }
-.mathbar .mctl :is(select, input) {
+.mathbar .mctl :is(.sel-btn, input) {
   color: var(--fg);
 }
 /* what you click or type into has the stronger edge (the menus' own, --pop-line) */
-.mathbar .mctl :is(select, input),
+.mathbar .mctl :is(.sel-btn, input),
 .ilctl input[type="number"],
 .ilctl button,
 .ilrow button,
@@ -109,9 +109,9 @@
 /* every box of the bar is as high as the Job box (--box-h); the popovers' own menus keep theirs */
 .mathbar
 :is(
-  .mctl.menu select,
+  .mctl.menu .sel-btn,
   .mctl.wide input,
-  .mctl.fit select,
+  .mctl.fit .sel-btn,
   .piecechip,
   .syncchip,
   .jobbox,
@@ -127,16 +127,16 @@
   width: 157px;
 }
 /* the Slot menu: as wide as its longest choice of any job ("Head / Hands / Feet"): the hidden copy of all the texts (.sizertext,
-   slotSizer) adds the select's own 9px left padding, 34px right padding (the chevron's room) and 2px of border (plus 1 for
+   slotSizer) adds the button's own 9px left padding, 34px right padding (the chevron's room) and 2px of border (plus 1 for
    rounding), so the width follows the font and no job or pick changes it */
 .mathbar .menu .sizertext {
   padding: 0 37px 0 9px;
 }
-.mathbar .mctl:is(.wide, .menu) :is(input, select) {
+.mathbar .mctl:is(.wide, .menu) :is(input, .sel-btn) {
   width: 100%;
   box-sizing: border-box;
 }
-/* a menu as wide as its longest choice (Haste), never narrower than a field: its select sits in a .sized box (sheets.css), which
+/* a menu as wide as its longest choice (Haste), never narrower than a field: its select sits in a .sized box (pieces.css), which
    takes the width of the hidden list of all the texts, in whatever font the page has */
 .mathbar .fit .sized {
   min-width: 157px;

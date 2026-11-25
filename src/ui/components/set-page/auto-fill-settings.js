@@ -73,11 +73,13 @@ export function settingsPart(solver) {
       return this.fillSettings.goal.target === this.job.speedKey;
     },
     get statOptions() {
-      return this.job.stats.map(s => [s, this.job.label[s]]);
+      return this.job.stats.map(s => ({ value: s, label: this.job.label[s] }));
     },
     tiebreakOptions(i) {
       const g = this.fillSettings.goal;
-      return [['', 'none']].concat(rankChoices([g.target, g.tb, g.tb2], i, this.job.stats).map(s => [s, this.job.label[s]]));
+      return [{ value: '', label: 'none' }].concat(
+        rankChoices([g.target, g.tb, g.tb2], i, this.job.stats).map(s => ({ value: s, label: this.job.label[s] })),
+      );
     },
     /* A number box of the dialog: 'lvl', 'min' or 'max' of Gear to search, or 'gcd' (the Target GCD). */
     fillField(key) {

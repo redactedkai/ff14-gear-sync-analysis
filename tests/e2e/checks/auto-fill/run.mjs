@@ -6,6 +6,7 @@ import { FILL_SHEET } from '../../lib/fixtures.mjs';
 import { afterFrames, runFill } from '../../lib/nav.mjs';
 import { checkTotals } from '../../lib/shared-checks.mjs';
 import { openSet, seedSheet } from '../../lib/sheets.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** A set page's Auto-fill when its worker cannot run (ui/solver.js workerSolver's fallback, main.js): the search runs on the
  * page's thread with the core's numbers and its result can be applied; the Gear to search line and a changed goal are
@@ -29,7 +30,7 @@ export async function checkWorkerFallback(pg) {
   // a settings change searches again: the Gear to search line is answered, and Auto-fill gives the new goal's set
   await pg.click('#sh-settings');
   await expect(pg.locator('#s-count[data-state="ready"]')).toBeVisible(); // the count has landed
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await runFill(pg);
   await checkTotals(pg, 'the fallback Auto-fill for another goal', crit.totals);
   await pg.click('#sh-apply');

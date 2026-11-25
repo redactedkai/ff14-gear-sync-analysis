@@ -128,23 +128,14 @@
         :checked="page.sync.on"
         @change="toggleSync($event.target.checked)"><span x-text="page.sync.on ? 'On' : 'Off'"></span></span></label>
       <div class="sheetbonus">
-        <label class="f"><span>Race / Clan</span><span class="sized"><select
-          id="sh-clan"
-          aria-label="Race and clan"
-          :disabled="$store.sheets.busy"
-          @change="pickClan($event.target.value, $event.target)">
-          <option value="" :selected="!sheetClan" x-text="bonusLists.noClanText"></option>
-          <template x-for="group in bonusLists.groups" :key="group.race"><optgroup :label="group.race">
-            <template x-for="clan in group.clans" :key="clan"><option :value="clan" :selected="clan === sheetClan" x-text="clan"></option></template>
-          </optgroup></template>
-        </select><span class="sizertext" aria-hidden="true" x-text="bonusLists.clanSizer"></span></span></label>
-        <label class="f"><span>Party bonus</span><span class="sized"><select
-          id="sh-party"
-          aria-label="Party bonus"
-          :disabled="$store.sheets.busy"
-          @change="pickPartyRoles($event.target.value, $event.target)">
-          <template x-for="party in bonusLists.parties" :key="party.roles"><option :value="party.roles" :selected="party.roles === sheetPartyRoles" x-text="party.text"></option></template>
-        </select><span class="sizertext" aria-hidden="true" x-text="bonusLists.partySizer"></span></span></label>
+        <div class="f field"><label for="sh-clan">Race / Clan</label><span class="sized"><span
+          class="selhost"
+          x-effect="$el.firstElementChild.options = bonusLists.clanChoices; $el.firstElementChild.value = sheetClan ?? ''; $el.firstElementChild.disabled = $store.sheets.busy"
+          @change="pickClan($event.detail)"><gsa-select x-ignore button-id="sh-clan" label="Race and clan"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="bonusLists.clanSizer"></span></span></div>
+        <div class="f field"><label for="sh-party">Party bonus</label><span class="sized"><span
+          class="selhost"
+          x-effect="$el.firstElementChild.options = bonusLists.partyChoices; $el.firstElementChild.value = String(sheetPartyRoles); $el.firstElementChild.disabled = $store.sheets.busy"
+          @change="pickPartyRoles($event.detail)"><gsa-select x-ignore button-id="sh-party" label="Party bonus"></gsa-select></span><span class="sizertext" aria-hidden="true" x-text="bonusLists.partySizer"></span></span></div>
       </div>
     </div>
   </section>

@@ -4,6 +4,7 @@
 import { allExpansions } from '../checks/gear-browser/filters.mjs';
 import { ACTIVITY_KEYS_BY_SECTION, ACTIVITY_LABEL, ACTIVITY_SECTION, NAV_TIMEOUT, STORE_KEY, TIMEOUT } from './constants.mjs';
 import { check, expect, poll, same } from './expect.mjs';
+import { selectValue } from './select.mjs';
 
 /** A new page of `context` with the smoke test's timeouts: TIMEOUT for any wait, NAV_TIMEOUT for loads and reloads. */
 export async function newPage(context) {
@@ -99,6 +100,9 @@ export async function fieldValue(pg, sel) {
   }
   if (sel === '#level' || sel === '#cap') {
     return await pg.inputValue((await panelFields(pg))[sel.slice(1)]);
+  }
+  if (sel === '#p-slot') {
+    return await selectValue(pg, sel);
   }
   return await pg.inputValue(sel);
 }

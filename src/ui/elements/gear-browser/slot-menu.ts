@@ -11,6 +11,7 @@
      closes it, a change of screen closes it, and one Escape closes one layer. */
 import * as menu from '@zag-js/menu';
 import { LitElement, html } from 'lit';
+import { closeOnTab, trackLastInput } from '../shared/key-focus.ts';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';
 import { ZagController } from '../shared/zag-controller.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL, SLOT_CHANGE_EVENT, SLOT_MENU_NAME, slotButtonName } from './slot-menu-names.ts';
@@ -20,16 +21,6 @@ const BUTTON_ID = 'b-slot';
 const MENU_ID = 'b-slots';
 /* The gap between the button and the open menu, in px. */
 const MENU_GAP_PX = 4;
-/* The attribute on the element that says what the last input of the page was: `key` (a key press anywhere on the page), `press`
-   (a mouse or touch press inside the element) or `move` (the pointer moved over the element). The browser decides whether the
-   button shows its focus ring from the input before the focus is given back to it by script, and its answer depends on timing
-   and on the engine, so the CSS does not leave it to the browser where the element knows: after `press` the ring is hidden
-   (a press on a row, which Zag cancels, does not count as one for the browser), after `key` it is always drawn. The lit row's
-   ring (for the keys) is hidden while the pointer lights rows (`press`, `move`). */
-const INPUT_ATTRIBUTE = 'data-input';
-const INPUT_KEY = 'key';
-const INPUT_PRESS = 'press';
-const INPUT_MOVE = 'move';
 /* The widest number of matches a slot can show, as text: it sizes the hidden copy of the rows. */
 const WIDEST_COUNT_TEXT = '99,999';
 
@@ -134,21 +125,9 @@ export class GsaSlotMenu extends LitElement {
       root: () => this.querySelector('[data-zag-part="content"]'),
       opener: () => this.querySelector('[data-zag-part="trigger"]'),
     });
-    // capture phase: before Zag's menu sees a Tab in the list (and a Tab on the button, before the list has the focus)
-    this.addEventListener('keydown', event => this.onKeyDown(event), { capture: true });
-    // what the last input in this element was: the button shows its focus ring after a key and not after a press (see INPUT_ATTRIBUTE)
-    this.addEventListener('pointerdown', () => this.setAttribute(INPUT_ATTRIBUTE, INPUT_PRESS), { capture: true });
-    this.addEventListener('pointermove', event => this.markPointerMove(event), { capture: true });
-  }
-
-  /* A key press anywhere on the page: the last input is a key now, wherever the focus is going. */
-  private readonly onDocumentKeyDown = (): void => {
-    this.setAttribute(INPUT_ATTRIBUTE, INPUT_KEY);
-  };
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    document.addEventListener('keydown', this.onDocumentKeyDown, { capture: true });
+    // a Tab closes the menu (before Zag's menu sees it); the button's focus ring follows the last input (key-focus.ts)
+    closeOnTab(this, this.zag);
+    trackLastInput(this);
   }
 
   /* Light DOM: draw into the element itself, so the page's CSS reaches the markup. */
@@ -158,7 +137,6 @@ export class GsaSlotMenu extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    document.removeEventListener('keydown', this.onDocumentKeyDown, { capture: true });
     this.bridge.release();
   }
 
@@ -166,30 +144,6 @@ export class GsaSlotMenu extends LitElement {
      manager, or dropped from it. */
   protected override updated(): void {
     this.bridge.sync();
-  }
-
-  /* Records that the pointer moved over the element, unless a press is the last input (it says more). A move event that moved
-     nothing (the browser sends one after the layout changed under a resting pointer) is not an input. */
-  private markPointerMove(event: PointerEvent): void {
-    const moved = event.movementX !== 0 || event.movementY !== 0;
-    if (moved && this.getAttribute(INPUT_ATTRIBUTE) !== INPUT_PRESS) {
-      this.setAttribute(INPUT_ATTRIBUTE, INPUT_MOVE);
-    }
-  }
-
-  /* Handles Tab: it closes the menu and the focus moves on from where it is, as it does
-     out of the page's other menus. Zag's menu would stop the Tab (it holds the focus in the menu), so the key is handled before
-     Zag sees it. Shift+Tab from the list first puts the focus on the button, so that it goes on to the control before the button
-     and not just to the button. Nothing happens to a Tab while the menu is closed. */
-  private onKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Tab' || !this.zag.api.open) {
-      return;
-    }
-    event.stopPropagation();
-    if (event.shiftKey) {
-      this.querySelector<HTMLElement>('[data-zag-part="trigger"]')?.focus({ preventScroll: true });
-    }
-    this.zag.closeWithoutFocus();
   }
 
   /* When a key has opened the menu, Zag lights the first slot (the last for ArrowUp); the chosen slot is lit instead, so that the

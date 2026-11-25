@@ -3,6 +3,7 @@
 import { CAPS_123, CAPS_123_2H_WEAPON, HAS_OFFHAND } from './constants.mjs';
 import { check, expect } from './expect.mjs';
 import { hasHScroll, setNumber, showMath } from './nav.mjs';
+import { pickOption, selectOptions } from './select.mjs';
 
 /** The Total row's cells of the open set page against `totals` (coreRecipe's: the character panel's numbers). */
 export async function checkTotals(pg, what, totals, stats = Object.keys(totals)) {
@@ -16,18 +17,18 @@ export async function checkTotals(pg, what, totals, stats = Object.keys(totals))
  * substat bars end at the known values. A shield job has an Off-hand slot, a two-handed job does not. */
 export async function checkSyncCaps(pg, job) {
   await showMath(pg, 'piece');
-  const slots = await pg.locator('#p-slot option').allInnerTexts();
+  const slots = (await selectOptions(pg, '#p-slot')).map(option => option.label);
   check(HAS_OFFHAND.has(job) === slots.includes('Off-hand'), `${job}: Piece stats slots ${JSON.stringify(slots)}`);
   const caps = HAS_OFFHAND.has(job) ? CAPS_123 : { ...CAPS_123, Weapon: CAPS_123_2H_WEAPON };
   for (const [slot, [sub, main]] of Object.entries(caps)) {
-    await pg.selectOption('#p-slot', { label: slot });
+    await pickOption(pg, '#p-slot', { label: slot });
     await setNumber(pg, '#p-ilvl', '160'); // above the cap, inside the slider's range
     await expect(pg.locator('#p-lead')).toHaveNumber(123);
     const kept = await pg.locator('#p-bars .num b').allInnerTexts(); // main stat, Vitality, 1st and 2nd substat
     check(kept[0] === String(main), `${job}: ${slot} main stat cap '${kept[0]}', expected ${main}`);
     check(kept[2] === String(sub), `${job}: ${slot} substat cap '${kept[2]}', expected ${sub}`);
   }
-  await pg.selectOption('#p-slot', { label: 'Head / Hands / Feet' });
+  await pickOption(pg, '#p-slot', { label: 'Head / Hands / Feet' });
   await pg.click('#p-ilvl-reset');
 }
 

@@ -5,6 +5,7 @@ import { check, expect, poll, same } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { focusedId, runFill } from '../../lib/nav.mjs';
 import { expectApplyCount, openSageSet, seedSheet } from '../../lib/sheets.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** The edit lock while an Auto-fill runs (docs/engineering/sheets.md): on the set page every control that changes the set or its
  * sheet is off (the gear icon, the name's pencil, Copy, Delete, a piece, a pin, the Food row's button, New set in the set
@@ -118,7 +119,7 @@ export async function checkSetPageFocus(pg) {
   // the Auto-fill settings popover: focus goes to its first select, and back to the gear button on close
   await pg.click('#sh-settings');
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
-  const firstSelect = await pg.evaluate(() => document.querySelector('#sh-settings-dialog select')?.id ?? '');
+  const firstSelect = await pg.evaluate(() => document.querySelector('#sh-settings-dialog gsa-select button')?.id ?? '');
   await poll('focus on the first select of the Auto-fill settings', async () => {
     const got = await focusedId(pg);
     return { ok: firstSelect !== '' && got === firstSelect, got };
@@ -181,7 +182,7 @@ export async function checkSetPageFocus(pg) {
   );
 
   // inside the popover is not outside: a select, a number box, the Expansion menu and its boxes keep it open
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await pg.click('#s-count');
   await pg.click('#s-exp');
   await expect(pg.locator('#s-exp-menu')).toBeVisible();
@@ -196,7 +197,7 @@ export async function checkSetPageFocus(pg) {
   await pg.click('#s-from-menu .from-acts [data-action="default"]'); // Default
   await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
   await pg.keyboard.press('Escape');
-  await pg.selectOption('#s-target', 'mind');
+  await pickOption(pg, '#s-target', 'mind');
 
   // the X and the gear button close it with the focus on the gear button; a click outside closes it and leaves the focus alone
   await pg.click('#sh-settings-dialog [aria-label="Close settings"]');

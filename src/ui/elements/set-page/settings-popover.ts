@@ -30,7 +30,7 @@ const CLOSE_LABEL = 'Close settings';
 /* The gap between the bar and the popover, in px. */
 const POPOVER_GAP_PX = 6;
 /* The box the focus goes to when the popover opens. */
-const FIRST_BOX_SELECTOR = 'select';
+const FIRST_BOX_SELECTOR = 'gsa-select button';
 /* The part of the page the popover hangs under. */
 const BAR_SELECTOR = '.tbar';
 

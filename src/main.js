@@ -22,6 +22,7 @@ import './ui/elements/gear-browser/slot-menu.ts';
 import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
+import './ui/elements/shared/select.ts';
 import './ui/elements/shared/collapsible.ts';
 import './ui/elements/app/job-menu.ts';
 import './ui/elements/app/notes.ts';

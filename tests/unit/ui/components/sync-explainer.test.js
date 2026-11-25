@@ -72,11 +72,11 @@ test('Piece stats: the substat menus; a 2nd substat picked as the 1st swaps them
     ['Weapon', 'Head / Hands / Feet', 'Body / Legs', 'Accessories'],
   );
   assert.deepEqual(
-    c.substatOptions.map(o => o[0]),
+    c.substatOptions.map(o => o.value),
     app.jobCtx.substats,
   );
   assert.deepEqual(app.piece.subs, ['crit', 'sps']);
-  assert.ok(!c.substat2Options.some(o => o[0] === 'crit'));
+  assert.ok(!c.substat2Options.some(o => o.value === 'crit'));
   c.setSub(0, 'sps');
   assert.deepEqual(app.piece.subs, ['sps', 'crit']);
 });

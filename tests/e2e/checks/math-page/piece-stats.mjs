@@ -2,6 +2,7 @@
 
 import { check, expect, poll } from '../../lib/expect.mjs';
 import { openPieceMenus, setNumber, showMath, tableRows } from '../../lib/nav.mjs';
+import { expectSelectValue, pickOption, selectOptions } from '../../lib/select.mjs';
 
 /** Opens Piece stats' "Stat budget analysis, step by step" if it is closed. */
 async function openSteps(pg) {
@@ -43,20 +44,20 @@ export async function checkPieceBarSteady(pg) {
     );
   const before = await boxes();
   for (const menu of ['#p-slot', '#p-s1', '#p-s2']) {
-    const values = await pg.locator(`${menu} option`).evaluateAll(options => options.map(option => option.value));
+    const values = (await selectOptions(pg, menu)).map(option => option.value);
     for (const value of values) {
       if (menu !== '#p-slot') {
         await openPieceMenus(pg); // the substat menus are in the chip's popover
       }
-      await pg.selectOption(menu, value);
-      await expect(pg.locator(menu)).toHaveValue(value);
+      await pickOption(pg, menu, value);
+      await expectSelectValue(pg, menu, value);
       await pg.keyboard.press('Escape'); // the popover closes; the chip says the new choice
       await expect(pg.locator('#p-piece-pop')).toBeHidden();
       const after = await boxes();
       check(after === before, `choosing ${value} in ${menu} moved the Stat Allocation bar: ${before} -> ${after}`);
     }
   }
-  await pg.selectOption('#p-slot', { index: 0 });
+  await pickOption(pg, '#p-slot', { index: 0 });
 }
 
 /** The sync help popover dims the whole page with a backdrop. The tab bar and the bar's own Job box are dimmed like the rest
@@ -110,10 +111,10 @@ export async function checkHelpClosesJobMenu(pg) {
 /** SGE, ilvl 130 head, Spell Speed / Piety = the ranked stats of a real item level 130 healer head piece. */
 export async function checkPieceLab(pg) {
   await showMath(pg, 'piece');
-  await pg.selectOption('#p-slot', 'head');
+  await pickOption(pg, '#p-slot', 'head');
   await openPieceMenus(pg);
-  await pg.selectOption('#p-s1', 'sps');
-  await pg.selectOption('#p-s2', 'piety');
+  await pickOption(pg, '#p-s1', 'sps');
+  await pickOption(pg, '#p-s2', 'piety');
   await pg.keyboard.press('Escape');
   await expect(pg.locator('#p-piece-pop')).toBeHidden();
   await setNumber(pg, '#p-ilvl', '130');

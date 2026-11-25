@@ -35,7 +35,7 @@
 .popover:is(.piecepop, .syncpop)[hidden] {
   display: none; /* the two chips' popovers set display: flex, which would show them while closed */
 }
-.piecepop .mctl > select {
+.piecepop .mctl > .selhost {
   width: 0; /* a menu adds nothing to its field's width: it takes the width of the label above or of the widest text */
   min-width: 100%;
 }

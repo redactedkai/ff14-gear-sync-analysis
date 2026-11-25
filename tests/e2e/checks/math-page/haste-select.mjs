@@ -1,8 +1,9 @@
 // How the math works, GCD: the Haste menu's text stays inside its box.
 
 import { NARROW, shot } from '../../lib/constants.mjs';
-import { check, expect } from '../../lib/expect.mjs';
+import { check } from '../../lib/expect.mjs';
 import { showMath } from '../../lib/nav.mjs';
+import { expectSelectValue, pickOption, selectOptions } from '../../lib/select.mjs';
 
 /** The Haste select `#g-haste` as measured now: {text (the chosen option's), textWidth (px, in the select's own font),
  * roomWidth (px of the box left for text: inside the border, the padding and the chevron's reserved space), scrollWidth,
@@ -11,7 +12,7 @@ const measureHaste = pg =>
   pg.evaluate(() => {
     const select = document.querySelector('#g-haste');
     const style = getComputedStyle(select);
-    const text = select.options[select.selectedIndex].text;
+    const text = select.textContent.trim();
     const canvas = document.createElement('canvas').getContext('2d');
     canvas.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const border = parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
@@ -50,7 +51,7 @@ async function inkRightOfHaste(pg, width) {
  * padding and the chevron, and the box has the same width for every option. A select forced narrower than its text clips it at the box: nothing is drawn beside it. */
 export async function checkHasteSelectFits(pg) {
   await showMath(pg, 'gcd');
-  const options = await pg.locator('#g-haste option').evaluateAll(list => list.map(o => ({ value: o.value, text: o.text })));
+  const options = (await selectOptions(pg, '#g-haste')).map(option => ({ value: option.value, text: option.label }));
   check(options.length > 1, 'the Haste menu has no job options');
   for (const o of options) {
     check(!/[%/]/.test(o.text), `the Haste option "${o.text}" shows a percent or a list of them`);
@@ -70,8 +71,8 @@ export async function checkHasteSelectFits(pg) {
           : document.documentElement.style.removeProperty('--sans'),
       font,
     );
-    await pg.selectOption('#g-haste', longest.value);
-    await expect(pg.locator('#g-haste')).toHaveValue(longest.value);
+    await pickOption(pg, '#g-haste', longest.value);
+    await expectSelectValue(pg, '#g-haste', longest.value);
     const fit = await measureHaste(pg);
     check(fit.text === longest.text, `the Haste select shows "${fit.text}", not "${longest.text}" ${where}`);
     check(
@@ -85,11 +86,11 @@ export async function checkHasteSelectFits(pg) {
     // the box is as wide as for the longest text whatever is picked: picking moves nothing
     const widths = new Set();
     for (const o of options) {
-      await pg.selectOption('#g-haste', o.value);
+      await pickOption(pg, '#g-haste', o.value);
       widths.add(Math.round((await pg.locator('#g-haste').boundingBox()).width));
     }
     check(widths.size === 1, `the Haste select's width changes with the pick (${[...widths].join(', ')} px) ${where}`);
-    await pg.selectOption('#g-haste', longest.value);
+    await pickOption(pg, '#g-haste', longest.value);
     if (width === NARROW.width && !font) {
       await pg.screenshot({ path: shot('haste-select.png') });
     }
@@ -97,7 +98,7 @@ export async function checkHasteSelectFits(pg) {
 
   // a box narrower than the text: it is cut at the box, nothing is drawn beside it
   await pg.evaluate(() => {
-    document.querySelector('#g-haste').closest('label').style.width = '120px';
+    document.querySelector('#g-haste').closest('.mctl').style.width = '120px';
     document.querySelector('#g-haste').style.cssText = 'width: 120px; min-width: 0';
   });
   const spilled = await inkRightOfHaste(pg, 60);
@@ -106,8 +107,8 @@ export async function checkHasteSelectFits(pg) {
   // back to the page as it was
   await pg.evaluate(() => {
     document.documentElement.style.removeProperty('--sans');
-    document.querySelector('#g-haste').closest('label').style.width = '';
+    document.querySelector('#g-haste').closest('.mctl').style.width = '';
     document.querySelector('#g-haste').style.cssText = '';
   });
-  await pg.selectOption('#g-haste', '');
+  await pickOption(pg, '#g-haste', '');
 }

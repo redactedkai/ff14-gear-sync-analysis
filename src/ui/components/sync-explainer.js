@@ -140,6 +140,11 @@ export function syncExplainer() {
       get slotOptions() {
         return slotGroups(this.jobCtx);
       },
+      /* the value of the Slot menu's choice: the group the open piece's slot is in */
+      get slotValue() {
+        const slot = this.$store.app.piece.slot;
+        return this.slotOptions.find(option => option.slots.includes(slot))?.value ?? '';
+      },
       /* the Materia slots menu: the totals the chosen slot's pieces have, the one shown, and a change of slot (a choice the
          new slot's pieces do not have goes back to the slot's usual total) */
       get slotCounts() {
@@ -195,12 +200,14 @@ export function syncExplainer() {
       /* every text of the two substat menus, one per line: their width (views SUBSTAT_SIZER) */
       substatSizer: SUBSTAT_SIZER,
       get substatOptions() {
-        return this.jobCtx.substats.map(s => [s, this.jobCtx.label[s]]);
+        return this.jobCtx.substats.map(s => ({ value: s, label: this.jobCtx.label[s] }));
       },
-      /* the 2nd substat's options: none, then every substat but the 1st (ui/ranks.js) */
+      /* the 2nd substat's options: none, then every substat but the 1st (ui/ranks.js); the menus' options are {value, label} */
       get substat2Options() {
         const subs = this.$store.app.piece.subs;
-        return [['', NO_SUBSTAT_LABEL]].concat(rankChoices(subs, 1, this.jobCtx.substats).map(s => [s, this.jobCtx.label[s]]));
+        return [{ value: '', label: NO_SUBSTAT_LABEL }].concat(
+          rankChoices(subs, 1, this.jobCtx.substats).map(s => ({ value: s, label: this.jobCtx.label[s] })),
+        );
       },
       // the chart's container width (px): the chart is drawn at its own width, so its text keeps the page's size
       widths: { piece: 0 },

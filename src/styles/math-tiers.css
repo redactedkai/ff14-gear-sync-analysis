@@ -223,7 +223,7 @@
   width: 0;
   min-width: 100%;
 }
-.mathbar .mctl :is(input, select):disabled {
+.mathbar .mctl :is(input, .sel-btn):disabled {
   opacity: 0.5;
 }
 .mathbar .mctl .toggle {

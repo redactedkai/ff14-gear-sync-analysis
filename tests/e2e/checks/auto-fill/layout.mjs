@@ -3,6 +3,7 @@
 import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { SET_SHEET } from '../../lib/fixtures.mjs';
 import { openSageSet, openSet, seedSheet, seedSheets } from '../../lib/sheets.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 const ALIGN_TOLERANCE_PX = 1;
 // the field and popover heights must not move at all (a pixel is a visible jump)
@@ -129,7 +130,7 @@ export async function checkGcdLabel(pg) {
       await expect(pg.locator('#sh-settings-dialog')).toBeVisible();
       await placedByZag(pg, '#sh-settings-dialog');
       if (labelCase.off) {
-        await pg.selectOption('#s-target', 'sks');
+        await pickOption(pg, '#s-target', 'sks');
       }
       const sentence = pg.locator('label[for="s-gcd"] .sr-only');
       const figures = labelCase.off ? 0 : 2; // the range's two GCD figures, none while the goal is speed

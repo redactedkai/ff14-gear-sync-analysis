@@ -105,9 +105,9 @@
             <div class="part" role="group" aria-labelledby="s-goal-h">
               <h3 id="s-goal-h">Goal</h3>
               <div class="grid">
-                <label class="f">Maximize<select id="s-target" @change="setGoal(0, $event.target.value)"><template x-for="o in statOptions" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === fillSettings.goal.target"></option></template></select></label>
-                <label class="f">Tiebreak 1<select id="s-tb1" @change="setGoal(1, $event.target.value)"><template x-for="o in tiebreakOptions(1)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === fillSettings.goal.tb"></option></template></select></label>
-                <label class="f">Tiebreak 2<select id="s-tb2" @change="setGoal(2, $event.target.value)"><template x-for="o in tiebreakOptions(2)" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="o[0] === fillSettings.goal.tb2"></option></template></select></label>
+                <div class="f field"><label for="s-target">Maximize</label><span class="selhost" x-effect="$el.firstElementChild.options = statOptions; $el.firstElementChild.value = fillSettings.goal.target" @change="setGoal(0, $event.detail)"><gsa-select x-ignore button-id="s-target" label="Maximize"></gsa-select></span></div>
+                <div class="f field"><label for="s-tb1">Tiebreak 1</label><span class="selhost" x-effect="$el.firstElementChild.options = tiebreakOptions(1); $el.firstElementChild.value = fillSettings.goal.tb" @change="setGoal(1, $event.detail)"><gsa-select x-ignore button-id="s-tb1" label="Tiebreak 1"></gsa-select></span></div>
+                <div class="f field"><label for="s-tb2">Tiebreak 2</label><span class="selhost" x-effect="$el.firstElementChild.options = tiebreakOptions(2); $el.firstElementChild.value = fillSettings.goal.tb2" @change="setGoal(2, $event.detail)"><gsa-select x-ignore button-id="s-tb2" label="Tiebreak 2"></gsa-select></span></div>
                 <div class="f field gcd-field"><label for="s-gcd" class="gcd-label"><span class="gcd-left" aria-hidden="true"><span x-text="gcdLabel.name"></span><template x-if="gcdLabel.range"><span> · <span class="gcd-range" x-text="gcdLabel.range"></span></span></template></span><template x-if="gcdLabel.haste || gcdLabel.off"><span class="gcd-side" aria-hidden="true" :title="gcdLabel.haste" x-text="gcdLabel.haste || gcdLabel.off"></span></template><span class="sr-only" x-text="gcdLabel.full"></span></label>
                   <div class="row">
                     <input

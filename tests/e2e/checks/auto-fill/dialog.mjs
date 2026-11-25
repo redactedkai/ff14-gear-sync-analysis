@@ -5,6 +5,7 @@ import { DEFAULT_EXCLUDE } from '../../lib/core-worker.mjs';
 import { check, expect, placedByZag, poll } from '../../lib/expect.mjs';
 import { FILL_SHEET } from '../../lib/fixtures.mjs';
 import { runFill } from '../../lib/nav.mjs';
+import { expectSelectValue } from '../../lib/select.mjs';
 import { checkTotals } from '../../lib/shared-checks.mjs';
 
 export const DIALOG_SYNC = { cap: null, sync: false, level: 100 };
@@ -59,6 +60,8 @@ export async function expectDialog(pg, want) {
     const box = pg.locator(`#${id}`);
     if (typeof value === 'boolean') {
       check((await box.isChecked()) === value, `#${id} is ${!value}, expected ${value}`);
+    } else if (await box.evaluate(element => element.classList.contains('sel-btn'))) {
+      await expectSelectValue(pg, `#${id}`, value);
     } else {
       await expect(box).toHaveValue(value);
     }

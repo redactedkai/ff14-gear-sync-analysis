@@ -4,6 +4,7 @@ import { NARROW } from '../../lib/constants.mjs';
 import { check, expect, poll, same } from '../../lib/expect.mjs';
 import { pieceSheet } from '../../lib/fixtures.mjs';
 import { hasHScroll, waitReady } from '../../lib/nav.mjs';
+import { pickOption, selectOptions, selectValue } from '../../lib/select.mjs';
 import { seedSheet, reloadAtSheets } from '../../lib/sheets.mjs';
 
 // Warrior (a Strength job), one gear set holding the Ironworks head piece (game id 9901), level 100, no item level sync
@@ -44,19 +45,26 @@ export async function checkClanParty(pg) {
   // 1. what is there: the names, the first entries, the groups of the Clan box, the Party bonus entries
   check((await clan.getAttribute('aria-label')) === 'Race and clan', 'the Clan box is named "Race and clan"');
   check((await party.getAttribute('aria-label')) === 'Party bonus', 'the Party bonus box is named "Party bonus"');
-  check((await clan.locator('option').first().innerText()) === 'Select Race/Clan', 'the Clan box starts with "Select Race/Clan"');
-  check((await clan.locator('optgroup').count()) === 8, 'the Clan box has 8 race groups');
-  check((await clan.locator('optgroup option').count()) === 16, 'the Clan box has 16 clans');
+  check((await selectOptions(pg, '#sh-clan'))[0].label === 'Select Race/Clan', 'the Clan box starts with "Select Race/Clan"');
+  check((await pg.locator('#sh-clan-list .sel-group').count()) === 8, 'the Clan box has 8 race groups');
+  check((await pg.locator('#sh-clan-list .sel-group .sel-opt').count()) === 16, 'the Clan box has 16 clans');
+  const partyOptions = await selectOptions(pg, '#sh-party');
   check(
-    same(await party.locator('option').evaluateAll(options => options.map(option => option.value)), ['0', '1', '2', '3', '4', '5']),
+    same(
+      partyOptions.map(option => option.value),
+      ['0', '1', '2', '3', '4', '5'],
+    ),
     'the Party bonus entries are 0 to 5 roles',
   );
-  const partyTexts = await party.locator('option').allInnerTexts();
+  const partyTexts = partyOptions.map(option => option.label);
   check(
     partyTexts.every((text, roles) => text.length > 0 && (roles === 0 || text.includes(`${roles}%`))),
     `each Party bonus entry names its percent: ${partyTexts}`,
   );
-  check((await clan.inputValue()) === '' && (await party.inputValue()) === '0', 'a new sheet has no clan and no party bonus');
+  check(
+    (await selectValue(pg, '#sh-clan')) === '' && (await selectValue(pg, '#sh-party')) === '0',
+    'a new sheet has no clan and no party bonus',
+  );
 
   // 2. the boxes are as tall as the Level box (within 1 px)
   const before = await places();
@@ -72,8 +80,8 @@ export async function checkClanParty(pg) {
   );
 
   // 3. Midlander and 5 unique roles: the main stat is floor((value + 2) x 1.05)
-  await clan.selectOption('Midlander');
-  await party.selectOption('5');
+  await pickOption(pg, '#sh-clan', 'Midlander');
+  await pickOption(pg, '#sh-party', '5');
   const bonused = Math.floor(((base + 2) * 105) / 100);
   await poll('the main stat with the Midlander clan and 5 unique roles', async () => {
     const got = await mainStat();
@@ -91,10 +99,10 @@ export async function checkClanParty(pg) {
   check(same(before, after), `a bonus moved something: ${JSON.stringify(before)} then ${JSON.stringify(after)}`);
   // the widths hold for every entry of each box
   for (const value of ['Highlander', 'Seeker of the Sun', '']) {
-    await clan.selectOption(value);
+    await pickOption(pg, '#sh-clan', value);
     check((await box(clan)).width === before.clanWidth, `the Clan box keeps its width with "${value}"`);
   }
-  await clan.selectOption('Midlander');
+  await pickOption(pg, '#sh-clan', 'Midlander');
   await poll('the main stat back with the Midlander clan', async () => ({ ok: (await mainStat()) === bonused, got: await mainStat() }));
   check(!(await hasHScroll(pg)), 'no sideways scroll at 960 px with a bonus');
 
@@ -102,13 +110,13 @@ export async function checkClanParty(pg) {
   await reloadAtSheets(pg);
   await waitReady(pg);
   await openSheet();
-  check((await clan.inputValue()) === 'Midlander', `the clan after a reload: "${await clan.inputValue()}"`);
-  check((await party.inputValue()) === '5', `the party bonus after a reload: "${await party.inputValue()}"`);
+  check((await selectValue(pg, '#sh-clan')) === 'Midlander', `the clan after a reload: "${await selectValue(pg, '#sh-clan')}"`);
+  check((await selectValue(pg, '#sh-party')) === '5', `the party bonus after a reload: "${await selectValue(pg, '#sh-party')}"`);
   check((await mainStat()) === bonused, `the main stat after a reload: ${await mainStat()}, expected ${bonused}`);
 
   // 6. both back to none: the figure is back and the line is empty again, in the same place
-  await clan.selectOption('');
-  await party.selectOption('0');
+  await pickOption(pg, '#sh-clan', '');
+  await pickOption(pg, '#sh-party', '0');
   await poll('the main stat with no bonus', async () => {
     const got = await mainStat();
     return { ok: got === base, got: `${got}, expected ${base}` };
@@ -120,13 +128,13 @@ export async function checkClanParty(pg) {
   check(same(await places(), before), 'both back to none: everything is where it was');
 
   // 7. a clan alone changes only the clan's points; a party bonus alone changes only the 5%
-  await clan.selectOption('Highlander');
+  await pickOption(pg, '#sh-clan', 'Highlander');
   await poll('the main stat with the Highlander clan', async () => ({ ok: (await mainStat()) === base + 3, got: await mainStat() }));
-  await clan.selectOption('');
-  await party.selectOption('3');
+  await pickOption(pg, '#sh-clan', '');
+  await pickOption(pg, '#sh-party', '3');
   const threePercent = Math.floor((base * 103) / 100);
   await poll('the main stat with 3 unique roles', async () => ({ ok: (await mainStat()) === threePercent, got: await mainStat() }));
-  await party.selectOption('0');
+  await pickOption(pg, '#sh-party', '0');
 
   // 8. the set page's totals follow the sheet, and so does its line under the table: with no bonus there is no line; with a
   // clan and a party bonus it says what the totals count
@@ -139,13 +147,13 @@ export async function checkClanParty(pg) {
   await expect(setNote).toHaveCount(0);
   await pg.click('#sh-set .setcrumb a:nth-of-type(2)');
   await expect(pg.locator('#sh-sets')).toBeVisible();
-  await clan.selectOption('Midlander');
-  await party.selectOption('5');
+  await pickOption(pg, '#sh-clan', 'Midlander');
+  await pickOption(pg, '#sh-party', '5');
   await openFirstSet();
   const counted = (await setNote.innerText()).trim();
   check(/Midlander/.test(counted) && /5%/.test(counted), `the set page's line with a clan and a party bonus: ${counted}`);
   await pg.click('#sh-set .setcrumb a:nth-of-type(2)');
   await expect(pg.locator('#sh-sets')).toBeVisible();
-  await clan.selectOption('');
-  await party.selectOption('0');
+  await pickOption(pg, '#sh-clan', '');
+  await pickOption(pg, '#sh-party', '0');
 }

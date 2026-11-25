@@ -47,15 +47,7 @@ function makeZag(host: GsaBarPopover) {
           host.dispatchEvent(new CustomEvent(POPOVER_CLOSE_EVENT, { bubbles: true, composed: true }));
         }
       },
-      onEscapeKeyDown: event => {
-        // TODO: the first Escape of an open list of a native select (Firefox sends it to the page) only closes the list. It goes
-        // when the popovers' selects are Zag selects (R33).
-        if (event.target instanceof Element && event.target.closest('option')) {
-          event.preventDefault();
-          return;
-        }
-        host.bridge.guardEscape(event);
-      },
+      onEscapeKeyDown: event => host.bridge.guardEscape(event),
     }),
     parts: api => ({
       trigger: api.getTriggerProps(),

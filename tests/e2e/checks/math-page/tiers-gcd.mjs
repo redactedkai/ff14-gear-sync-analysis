@@ -4,6 +4,7 @@ import { NARROW, shot } from '../../lib/constants.mjs';
 import { check, checkNoBadText, expect, same } from '../../lib/expect.mjs';
 import { hasHScroll, setCap, setJob, setNumber, showMath } from '../../lib/nav.mjs';
 import { setUpShared } from '../../lib/setup.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 // How the math works, Substat tiers. Sage at level 100 (SUB 420, MAIN 440): Spell Speed 624 is in AkhMorning's 2.47 s tier, which
 // starts at 613 on the panel (gear speed 193; validation.md section 5).
@@ -133,11 +134,11 @@ export async function checkGcdTab(pg) {
   await pg.locator('#g-chart [data-level="78"]').click();
   await expect(pg.locator('#g-level')).toHaveValue('78');
   // a haste: its levels marked on the chart, its percent among the facts
-  await pg.selectOption('#g-haste', 'SAM');
+  await pickOption(pg, '#g-haste', 'SAM');
   await expect(pg.locator('#g-chart .hasteline')).toHaveCount(2);
   await expect(pg.locator('#g-facts')).toContainText('Fuka');
   await checkNoBadText(pg, 'math:gcd');
-  await pg.selectOption('#g-haste', '');
+  await pickOption(pg, '#g-haste', '');
   await setNumber(pg, '#g-level', '');
   await expect(pg.locator('#g-level')).toHaveValue('50');
 }

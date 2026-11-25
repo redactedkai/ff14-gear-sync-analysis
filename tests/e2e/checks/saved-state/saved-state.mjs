@@ -21,6 +21,7 @@ import {
   waitSaved,
 } from '../../lib/nav.mjs';
 import { SHARED_SETUP } from '../../lib/setup.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** Build a non-default state (job, cap, sync off, level, browser filters, Gear categories boxes and market board switch, Piece
  * stats slot and item level, How the math works open), reload, and every part comes back: the inputs and the open tab.
@@ -41,7 +42,7 @@ export async function checkReloadPersists(pg) {
   // level sync to item level 270: the explainer's item level is held to its range (240 and up). With IL Sync off Stat Allocation
   // holds that item level as its cap (the Gear browser keeps the 130 typed above)
   await showMath(pg, 'piece');
-  await pg.selectOption('#p-slot', 'body');
+  await pickOption(pg, '#p-slot', 'body');
   await setNumber(pg, '#p-ilvl', '300');
 
   const inputs = { '#job': job, '#cap': '270', '#level': '60', '#p-slot': 'body', '#p-ilvl': '300' };

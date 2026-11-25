@@ -141,7 +141,7 @@ export const DOMAINS = {
     ],
     tests: [
       'tests/e2e/checks/{settings,saved-state,startup,tabs}/**',
-      'tests/e2e/lib/{setup,shared-checks}.mjs',
+      'tests/e2e/lib/{setup,shared-checks,select}.mjs',
       'tests/unit/ui/views/level-sync.test.js',
       'tests/unit/startup-failure.test.js',
       'tests/unit/helpers/{fuzz,views}.js',

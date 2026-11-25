@@ -48,7 +48,7 @@ Details: `docs/engineering/architecture.md`.
 - Pin Lit and every `@zag-js/*` package to exact versions and update all `@zag-js/*` together. No React, Vue or similar framework or runtime, as a dependency or a peer, in the page or the tooling.
 - Core code never reads global job state. Pass a **JobContext** (`makeJobContext(jobId)`). **Stat keys** are the game's own stat names: `str`, `dex`, `int`, `mind` (the main stat), `vit`, `crit`, `det`, `dh`, `sks`, `sps` (speed), `piety`, `ten` (the special substat). `job.stats` lists the keys a job has (a job without a special substat has six), `job.substats` the substats, and `job.mainKey`, `job.speedKey` and `job.specKey` (null for none) name its main, speed and special stat; `job.label` and `job.short` name them. Shared code (`src/core`, `src/ui/views`) may name a key in a table or a per-key map (labels, tier effects) but never hard-codes a job-specific key in logic: ask the job (`job.speedKey`, not `'sks'`). A unit test (`tests/unit/core/stat-keys.test.js`) greps for strays.
 - Components build a `view` object; templates only display it. Keep big data (the item database, browse results) out of reactive state. The optimizer reads `Alpine.raw` data: reactive proxies were too slow, and a worker cannot be sent a proxy.
-- Dynamic `<select>`s use `x-for` with `:selected`. Reset to defaults asks first; switching job does not.
+- A drop-down choice is `<gsa-select>` (`elements/shared/select.ts`), never a native `<select>`. Reset to defaults asks first; switching job does not.
 - Use each piece's own slot code, not the job's weapon type (White Mage has one wand and shield).
 
 ## Readability

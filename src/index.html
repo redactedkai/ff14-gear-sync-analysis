@@ -19,8 +19,7 @@
      Infinity): a minimum above every item level is a filter nothing passes, and the page says so; restoreState holds
      a saved one to the real range. Their :max here, the end of the real range, only stops the arrow keys. The Target
      GCD takes TARGET_GCD_RANGE (job-sync-panel.js): a higher value moves to 2.50.
-     Dynamic <select>s render options with x-for and mark the current one with :selected (x-model on a select
-     whose options are created by x-for can miss the initial value). -->
+     Drop-down choices are <gsa-select> islands: a wrapper's x-effect gives them options and value, and its @change takes the pick. -->
 <!-- x-cloak (src/styles/) keeps the page unpainted until Alpine has built it: the script is the last thing in the file, and
      the browser paints the markup above it while it is still reading it, so without it the Job and sync panel (shown
      until x-show runs) and the tab bar showed with no tab, and no job, for a moment before every first paint -->

@@ -19,6 +19,7 @@ import { SLOW_FILL_SHEET } from '../../lib/fixtures.mjs';
 import { checkFromMenu, runFill, setFrom, setNumber, ticked, waitReady } from '../../lib/nav.mjs';
 import { checkTotals } from '../../lib/shared-checks.mjs';
 import { openSet, seedSheet } from '../../lib/sheets.mjs';
+import { pickOption } from '../../lib/select.mjs';
 
 /** An Auto-fill that leaves a slot empty because no piece of it has an equip level within the Auto-fill settings' Gear to search says
  * why under the bar: Sage has no weapon below level 60 (the lowest equip level in the item data), so an Auto-fill up to equip
@@ -61,7 +62,7 @@ export async function checkFillSearch(pg) {
   await seedSheet(pg, DIALOG_SHEET);
   await openSet(pg, DIALOG_SHEET.name, 'Empty');
   await pg.click('#sh-settings');
-  await pg.selectOption('#s-target', 'crit');
+  await pickOption(pg, '#s-target', 'crit');
   await pg.locator('#s-food').uncheck(); // Food is on by default; coreGear and coreFiltered answer for the gear alone
   await expect(pg.locator('#s-count')).toHaveText(line(full));
 
@@ -228,8 +229,8 @@ export async function checkFillCancel(pg) {
 
   // the next Auto-fill, a light one, is answered by the new worker with the core's numbers
   await pg.click('#sh-settings');
-  await pg.selectOption('#s-tb1', '');
-  await pg.selectOption('#s-tb2', '');
+  await pickOption(pg, '#s-tb1', '');
+  await pickOption(pg, '#s-tb2', '');
   await pg.locator('#s-food').uncheck();
   await setNumber(pg, '#s-gcd', '');
   await runFill(pg);

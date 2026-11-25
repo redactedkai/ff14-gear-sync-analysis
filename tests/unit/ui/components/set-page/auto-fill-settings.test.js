@@ -127,7 +127,7 @@ test("the goal menus list the job's stats; picking a stat another rank holds swa
   const { c } = bind(sageSet());
   // Sage's stats as the game names them
   assert.deepEqual(
-    c.statOptions.map(o => o[1]),
+    c.statOptions.map(o => o.label),
     ['Mind', 'Vitality', 'Critical Hit', 'Determination', 'Direct Hit', 'Spell Speed', 'Piety'],
   );
   const goal = () => [c.fillSettings.goal.target, c.fillSettings.goal.tb, c.fillSettings.goal.tb2];
@@ -136,13 +136,13 @@ test("the goal menus list the job's stats; picking a stat another rank holds swa
   c.setGoal(2, 'det');
   assert.deepEqual(goal(), ['mind', 'crit', 'det']);
   // a tiebreak's menu holds a stat once: "none" first, then not the ones above it
-  assert.deepEqual(c.tiebreakOptions(2)[0], ['', 'none']);
-  assert.ok(!c.tiebreakOptions(2).some(o => o[0] === 'crit' || o[0] === 'mind'));
+  assert.deepEqual(c.tiebreakOptions(2)[0], { value: '', label: 'none' });
+  assert.ok(!c.tiebreakOptions(2).some(o => o.value === 'crit' || o.value === 'mind'));
   assert.ok(
-    c.tiebreakOptions(2).some(o => o[0] === 'det'),
+    c.tiebreakOptions(2).some(o => o.value === 'det'),
     'its own pick stays',
   );
-  assert.ok(!c.tiebreakOptions(1).some(o => o[0] === 'mind'));
+  assert.ok(!c.tiebreakOptions(1).some(o => o.value === 'mind'));
 
   // Critical Hit picked to Maximize: Mind (the old Maximize) takes the Tiebreak 1 place Critical Hit leaves
   c.setGoal(0, 'crit');

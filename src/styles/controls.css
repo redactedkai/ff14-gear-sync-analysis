@@ -1,7 +1,7 @@
 /* ==== Controls: inputs, selects, sliders, switches, buttons ==== */
 input[type="number"],
 input[type="text"],
-select,
+.sel-btn,
 .multi-btn {
   font: inherit;
   font-family: var(--mono);
@@ -23,15 +23,15 @@ input[type="number"]::-webkit-outer-spin-button {
   appearance: none;
   margin: 0;
 }
-/* selects draw their own chevron, inset from the right edge like the multi-select's (the native arrow sits against
-   the border); two diagonal strokes in the text colour, so it follows the theme. The chosen text is one line cut at the
-   box: with an ellipsis where the browser draws one (the closed select of its own style, Firefox and Safari), and at
-   least never drawn outside the box (a customizable select, below, clips but shows no ellipsis). The math bar's menu buttons (the Job
-   box and the two chips) draw the same chevron, so every box of the bar has one. */
-select,
+/* the button of a select (<gsa-select>, elements/shared/select.ts) draws a chevron, inset from the right edge like the multi-select's;
+   two diagonal strokes in the text colour, so it follows the theme. The chosen text is one line cut at the box with an ellipsis.
+   The math bar's menu buttons (the Job box and the two chips) draw the same chevron, so every box of the bar has one. */
+.sel-btn,
 .mathbar .multi-btn {
   font-family: var(--sans);
   appearance: none;
+  text-align: left;
+  cursor: pointer;
   padding-right: 34px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -57,70 +57,6 @@ select,
     calc(100% - 18.5px) calc(50% + 1px),
     calc(100% - 14px) calc(50% + 1px);
 }
-/* the open list of a select, drawn like the Gear categories menu: browsers with customizable selects (Chrome and Edge 135+)
-   draw it from these rules; the others keep their own list. The chevron above stays, so the built-in icon and the
-   tick next to the chosen option are hidden. */
-@supports (appearance: base-select) {
-  select,
-  ::picker(select) {
-    appearance: base-select;
-  }
-  select::picker-icon,
-  option::checkmark {
-    display: none;
-  }
-  /* below the select, above it only when the list does not fit (Chrome's default picks the side with more room) */
-  ::picker(select) {
-    position-try-order: normal;
-    position-try-fallbacks: flip-block;
-    margin: 4px 0;
-    padding: 4px;
-    max-height: 340px;
-    background: var(--surface);
-    color: var(--fg);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-  }
-  option {
-    padding: 5px 8px;
-    border-radius: 4px;
-    font-size: 0.92rem;
-    font-weight: 400;
-    cursor: pointer;
-  }
-  option:hover,
-  option:focus-visible {
-    background: var(--surface2);
-    outline: none;
-  }
-  option:checked {
-    background: var(--accent-soft);
-    font-weight: 600;
-  }
-  /* a list in groups (the Clan box): a group's label is a small muted heading with a divider above all but the first,
-     its options indented under it */
-  select optgroup {
-    display: block;
-    padding: 0;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  select optgroup + optgroup {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--line);
-  }
-  select optgroup option {
-    padding-left: 22px;
-    font-size: 0.92rem;
-    letter-spacing: normal;
-    text-transform: none;
-    color: var(--fg);
-  }
-}
 input.invalid {
   border-color: var(--bad);
 }
@@ -133,7 +69,6 @@ button:disabled:hover {
   border-color: var(--line);
 }
 input:focus-visible,
-select:focus-visible,
 button:focus-visible,
 .tabs a:focus-visible,
 .subtabs a:focus-visible {
