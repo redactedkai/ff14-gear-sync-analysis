@@ -118,7 +118,7 @@ test("Food menu: a click on the list reads the clicked row's data-meal; No food 
 
 /* The page's wiring reads the events by name (the template cannot import the constants): if this fails, rename them together. */
 test("the set page's template listens to the Food menu's events by their names", () => {
-  const template = readFileSync(new URL('../../../../../src/partials/set-page.html', import.meta.url), 'utf-8');
+  const template = readFileSync(new URL('../../../../../src/ui/elements/set-page/set-page.ts', import.meta.url), 'utf-8');
   assert.ok(template.includes(`@${FOOD_OPEN_EVENT}=`));
   assert.ok(template.includes(`@${MEAL_PICK_EVENT}=`));
 });

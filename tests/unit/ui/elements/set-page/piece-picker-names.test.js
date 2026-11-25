@@ -32,7 +32,7 @@ test('piece picker click: a disabled row (a Unique ring in the other ring row), 
 
 /* The page's wiring reads the events by name (the template cannot import the constants): if this fails, rename them together. */
 test("the set page's template listens to the piece picker's events by their names", () => {
-  const template = readFileSync(new URL('../../../../../src/partials/set-page.html', import.meta.url), 'utf-8');
+  const template = readFileSync(new URL('../../../../../src/ui/elements/set-page/set-page.ts', import.meta.url), 'utf-8');
   for (const name of [PICKER_SHOWN_EVENT, PICKER_CLOSE_EVENT, PICKER_QUERY_EVENT, PIECE_PICK_EVENT]) {
     assert.ok(template.includes(`@${name}=`), name);
   }

@@ -13,13 +13,14 @@ button.danger:hover {
   flex-direction: column;
   min-width: 0;
 }
-/* The sheet manager and a sheet's page are the elements <gsa-sheet-manager> and <gsa-sheet-page> (src/ui/elements/sheets/), drawn in
-   light DOM inside a wrapper: neither takes a box, so the screen's own `.sheetsview` is the column's child, as it was before. */
+/* The sheet manager, a sheet's page and a set's page are the elements <gsa-sheet-manager>, <gsa-sheet-page> and <gsa-set-page> (src/ui/elements/),
+   drawn in light DOM inside a wrapper: none takes a box, so the screen's own `.sheetsview` is the column's child, as it was before. */
 .sheets-island,
 /* the wrapper of a field element in a dialog's form row (the dialog is still Alpine's): it takes no box */
 .fieldhost,
 gsa-sheet-manager,
-gsa-sheet-page {
+gsa-sheet-page,
+gsa-set-page {
   display: contents;
 }
 /* the Sheets tab sits flush under the tab bar (cancels the page's 18 px gap); each page sets its own top space: the list heading 12 px, the breadcrumb line 10 px, a set page's sticky header 8 px */

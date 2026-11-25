@@ -58,7 +58,7 @@ export const DOMAINS = {
     src: [
       'src/ui/{solve,solver,solver-worker}.js',
       'src/ui/sheets/{fill,fill-settings}.js',
-      'src/ui/components/set-page/{fill,auto-fill-settings}.js',
+      'src/ui/elements/set-page/{fill-run,fill-settings-edit}.js',
       'src/ui/views/set-suggestion.js',
       'scripts/perf/browser.mjs',
     ],
@@ -67,23 +67,17 @@ export const DOMAINS = {
   'set-page': {
     title: "A gear set's page: rows, hand edits, pins, menus, totals",
     src: [
-      'src/ui/components/set-page.js',
-      'src/ui/elements/set-page/**',
-      'src/ui/components/set-page/{draft,frame,leave,menus,page-state,view}.js',
-      // the materia menu, a Lit element (an island in the set page's table)
-      'src/ui/elements/set-page/**',
+      // the set page's element, its session and parts (the Auto-fill's are in auto-fill), and the menus and popovers it holds (Lit elements)
+      'src/ui/elements/set-page/{edits,leave-guard,menus,session}.js',
+      'src/ui/elements/set-page/{food-menu,food-menu-model,materia-menu,piece-picker,piece-picker-names,rank-note,set-page,set-page-types,settings-popover}.ts',
       'src/ui/store/set-page-actions.ts',
       'src/ui/sheets/{saved-set,set-edits}.js',
-      'src/ui/views/{limit-rows,meal-menu,piece-menu,set-draft,set-meal-menu,set-rows,set-totals,stone-menu}.js',
+      'src/ui/views/{limit-rows,meal-menu,piece-menu,set-draft,set-meal-menu,set-page,set-rows,set-totals,stone-menu}.js',
       'src/ui/draw-in-steps.js',
       'src/partials/set-page.html',
       'src/styles/{set-page,pieces,fill-settings}.css',
     ],
-    tests: [
-      'tests/e2e/checks/set-page/**',
-      'tests/unit/helpers/{set-page-bind,page-magics}.js',
-      'tests/unit/ui/components/set-page/no-alpine-raw.test.js',
-    ],
+    tests: ['tests/e2e/checks/set-page/**', 'tests/unit/helpers/{set-page-bind,page-magics}.js'],
   },
   sheets: {
     title: 'The Sheets tab: manager, a sheet page, dialogs, saved sheets',
@@ -200,7 +194,7 @@ export const LONG = [
   'tests/unit/core/recipe.real-gear.test.js',
   'tests/unit/core/recipe.round-trip.test.js',
   'tests/unit/core/target-gcd.exhaustive.test.js',
-  'tests/unit/ui/components/set-page/fill.best-meals.test.js',
+  'tests/unit/ui/elements/set-page/fill-run.best-meals.test.js',
   'tests/unit/ui/sheets/ops.copy-sheet.test.js',
   'tests/unit/ui/sheets/storage.fuzz.test.js',
   'tests/unit/ui/state.fuzz.test.js',

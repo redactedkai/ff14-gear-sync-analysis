@@ -1,13 +1,14 @@
 /* What the Sheets tab's screens are given: the sheet manager, a sheet's page, the sheet switcher after its name and the set page's
-   header line, each built once per change of the sheets (views/sheet-manager.js, sheet-sets.js).
+   header line, each built once per change of the sheets (views/sheet-manager.js, sheet-sets.js), and the properties of the three
+   elements that draw them.
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: sheets (frame.js). */
 import { deepFreeze, viewCache } from '../../view-cache.ts';
 import { sheetManagerView } from '../../views/sheet-manager.js';
 import { notFoundView } from '../../views/sheet-text.js';
 import { setHeaderView, sheetPageView, sheetSwitcherView } from '../../views/sheet-sets.js';
 
-/* Returns the part's members. */
-export function viewPart() {
+/* `setPagePorts`: what a set page's element needs (null where no page is drawn: a unit test). Returns the part's members. */
+export function viewPart(setPagePorts = null) {
   const managerCache = viewCache();
   const pageCache = viewCache();
   const headerCache = viewCache();
@@ -60,6 +61,11 @@ export function viewPart() {
         busy: store.busy,
         dialogOpen: Boolean(this.dialog),
       };
+    },
+    /* The properties of <gsa-set-page> (the wrapper's x-effect gives them; the wrapper adds the set's id): its ports, its top line
+       (setHeader) and whether a dialog of this tab is open (Escape then leaves a waiting Auto-fill result alone). */
+    get setPageProps() {
+      return { ports: setPagePorts, header: this.setHeader, dialogOpen: Boolean(this.dialog) };
     },
     /* The set page's line: breadcrumb and the sheet's settings, read-only (setHeaderView), built once per change of the sheets, or null. */
     get setHeader() {

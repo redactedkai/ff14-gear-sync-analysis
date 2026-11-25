@@ -43,11 +43,11 @@ import './ui/elements/sheets/switch-menu.ts';
 import './ui/elements/set-page/materia-menu.ts';
 import './ui/elements/set-page/piece-picker.ts';
 import './ui/elements/set-page/rank-note.ts';
+import './ui/elements/set-page/set-page.ts';
 import './ui/elements/set-page/settings-popover.ts';
 import { page } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { sheetsTab } from './ui/components/sheets.js';
-import { setPage } from './ui/components/set-page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
 import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';
 
@@ -132,12 +132,22 @@ function startSolverWorker() {
 // searches in the worker, off the page's thread; on the page's thread when the browser will not run the worker
 const solver = workerSolver(startSolverWorker, inProcessSolver);
 
-// the set page takes the solver from here, so its module loads without a page (its unit test)
+/* What a set page (<gsa-set-page>, made by the Sheets tab's template) needs: the store, its Sheets facade, the solver and the highest
+   real item level. Frozen, so Alpine hands it on as it is, never wrapped. The solver comes from here, so the page's module loads without
+   a page (its unit test). */
+const setPagePorts = Object.freeze({
+  store,
+  sheets,
+  solver,
+  get maxReal() {
+    return app.maxReal;
+  },
+});
+
 Object.entries({
   page,
   syncExplainer,
-  sheetsTab,
-  setPage: () => setPage(solver),
+  sheetsTab: () => sheetsTab(setPagePorts),
 }).forEach(([name, factory]) => {
   Alpine.data(name, factory);
 });

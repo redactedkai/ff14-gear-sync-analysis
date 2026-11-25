@@ -39,7 +39,6 @@ gsa-expansion-menu [data-part="positioner"] > .multi-menu {
   gap: 4px;
   min-width: 0;
 }
-.filter-island,
 gsa-gear-sections,
 .from-sections {
   display: contents;
@@ -427,13 +426,10 @@ gsa-gear-sections,
 .meal-menu {
   width: min(560px, 80vw);
 }
-/* The Food menu is the element <gsa-food-menu> (src/ui/elements/set-page/food-menu.ts) in light DOM: its wrapper in the page takes no box
-   of its own; Zag's positioner places the menu under the button (the menu sits in it, not absolute), or over it when that side has more
-   room; the menu is no taller than the room on its side (Zag's --available-height, a few rows at the least) and its list scrolls inside;
-   Zag hides a closed menu with the hidden attribute, which the flex display would override. */
-.food-island {
-  display: contents;
-}
+/* The Food menu is the element <gsa-food-menu> (src/ui/elements/set-page/food-menu.ts) in light DOM: Zag's positioner places the menu
+   under the button (the menu sits in it, not absolute), or over it when that side has more room; the menu is no taller than the room on
+   its side (Zag's --available-height, a few rows at the least) and its list scrolls inside; Zag hides a closed menu with the hidden
+   attribute, which the flex display would override. */
 .search-menu[hidden] {
   display: none;
 }

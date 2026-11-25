@@ -1,7 +1,7 @@
-/* The page's menu placement (src/ui/components/set-page/menus.js): where the window's line for menus is. */
+/* The page's menu placement (src/ui/elements/set-page/menus.js): where the window's line for menus is. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { menusPart } from '../../../../../src/ui/components/set-page/menus.js';
+import { PageMenus } from '../../../../../src/ui/elements/set-page/menus.js';
 
 /* keepMenuInView: the page scrolls to show an opened table menu and keeps its button below the pinned header and the stuck
    column names. Stand-ins for the window (innerHeight, scrollBy) and the page's boxes, in px of the window. */
@@ -32,15 +32,12 @@ function pageWith({ buttonTop, menuHeight }) {
         Math.min(menuHeight, list.style.maxHeight ? 60 + parseFloat(list.style.maxHeight) : menuHeight),
       ),
   };
-  const part = menusPart(value => value);
-  const owner = {
-    $refs: {
-      head: { getBoundingClientRect: () => ({ bottom: HEADER_BOTTOM }) },
-      table: { querySelector: () => ({ getBoundingClientRect: () => ({ bottom: NAMES_BOTTOM }) }) },
-    },
-    menuRoom: part.menuRoom,
-    viewTop: part.viewTop,
+  // the page's own boxes, found by selector as the element's `query` does
+  const boxes = {
+    '.shead': { getBoundingClientRect: () => ({ bottom: HEADER_BOTTOM }) },
+    '.settable thead th': { getBoundingClientRect: () => ({ bottom: NAMES_BOTTOM }) },
   };
+  const menus = new PageMenus({ host: { query: selector => boxes[selector] ?? null }, changed() {} });
   const saved = { innerHeight: globalThis.innerHeight, scrollBy: globalThis.scrollBy };
   globalThis.innerHeight = WINDOW_HEIGHT;
   globalThis.scrollBy = ({ top }) => {
@@ -49,7 +46,7 @@ function pageWith({ buttonTop, menuHeight }) {
   };
   const run = () => {
     try {
-      part.keepMenuInView.call(owner, menu);
+      menus.keepMenuInView(menu);
     } finally {
       Object.assign(globalThis, saved);
     }

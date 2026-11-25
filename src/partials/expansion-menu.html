@@ -1,7 +1,0 @@
-<!-- The Expansion filter's menu, shared by the Gear browser and a set's Auto-fill settings: a Lit element (an island, see
-     ui/elements/gear-browser/expansion-menu.ts). The component gives it the filter's settings by x-effect (`filters`) and takes the new
-     list of switched-off expansions from its event (`setFilters`); x-ignore keeps Alpine out of the markup the element draws.
-     {{id}}: the id prefix ('b' the browser, 's' the Auto-fill settings). -->
-<div class="filter-island" x-effect="$el.firstElementChild.off = [...filters.expOff]" @expansion-change="setFilters({ expOff: $event.detail })">
-  <gsa-expansion-menu class="f multi" id-prefix="{{id}}" x-ignore></gsa-expansion-menu>
-</div>

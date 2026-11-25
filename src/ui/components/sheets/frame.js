@@ -1,8 +1,6 @@
-/* The frame of the Sheets tab: start (a dialog left open closing), the screen to draw, the breadcrumb links of the set page, and
-   running a step after Alpine has drawn.
+/* The frame of the Sheets tab: start (a dialog left open closing), the screen to draw, and running a step after Alpine has drawn.
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: dialog and closeDialog (dialog.js). */
 
-import { followInPage } from '../../router/plain-click.js';
 import { afterDraw } from '../compose.js';
 
 /* Returns the part's members. */
@@ -53,21 +51,7 @@ export function framePart() {
         this.sheets.openManager();
       }
     },
-    /* TODO: after a click on a sheet name, a set name or a breadcrumb the focus ends on the page body, because the link is gone with
-       its screen (as before the refactor). Moving the focus to the new screen's heading, as Back and Forward do, would remove this. */
-    /* A breadcrumb link (`event` its click): 'sheets' the manager, 'sheet' the open sheet's page. Only a plain click moves
-       inside the page; any other click is left to the browser (plain-click.js). */
-    goCrumb(to, event) {
-      followInPage(event, () => {
-        if (to === 'sheets') {
-          this.sheets.openManager();
-        } else {
-          this.sheets.closeSet();
-        }
-      });
-    },
-    /* Runs `callback` once Alpine has drawn the change just made, unless the component's element is gone by then (as the
-       set page's afterDraw). */
+    /* Runs `callback` once Alpine has drawn the change just made, unless the component's element is gone by then. */
     afterDraw(callback) {
       afterDraw(this, () => tabEl, callback);
     },

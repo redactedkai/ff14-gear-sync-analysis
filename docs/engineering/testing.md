@@ -24,7 +24,7 @@ What runs, on what, and how much of it?
 | Unit tests (Node) | core logic, view builders, saved state, real game data | 1,413 tests in 197 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
-| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 93 tests in 23 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
+| Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 97 tests in 24 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
 | Smoke test (browser) | the built page in headless Chromium | one script (`tests/e2e/smoke.mjs`), its steps in groups listed in `tests/e2e/groups.mjs` |
 
 Notes:
@@ -46,7 +46,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 11 | 0 |
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 23 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
-| `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 22 | 15 |
+| `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 15 |
 | `sheets` | the Sheets tab: manager, a sheet's page, dialogs, saved sheets | 20 | 12 |
 | `gear-browser` | the Gear browser tab and its filter menus | 6 | 16 |
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
@@ -129,16 +129,13 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/elements/gear-browser/filter-menu-model | the Expansion and "Gear categories" menus' data: the tabs (Everyday, Side content and Hard content with the real boxes, hints and Hard content's reading order), the button texts, the piece counts and their words, the lists after a tick, All, None and Default, and the partials' event names |
 | ui/elements/gear-browser/gear-browser-model | the Gear browser element's rules with no DOM: its view built once per change and only while its tab is open, the page line going back to page 1, sorting, Reset filters, the / key |
 | ui/components/page | the Gear browser strip's job menu, the cap field's error and lowered note, Reset asking first |
-| ui/components/set-page/draft | a set page bound as Alpine binds it: edits by hand kept in a draft until Apply, pins saved at once; the draft is a frozen copy in the store, one entry per page |
-| ui/components/set-page | the set page put together from its parts: no member defined twice |
-| ui/components/set-page/menus | the piece picker's one click handler: which row was clicked, from the row's data |
-| ui/components/set-page/fill.best-meals | "Best for goal": the tied meals saved with an applied Auto-fill, the Food row and its switch |
-| ui/components/set-page/fill | a set page's Auto-fill: a real search and its suggestion, Take boxes, the edit lock, Cancel, a failing solver, late replies |
-| ui/components/set-page/leave | the question before leaving for a draft, a running Auto-fill and a waiting result; the store's `unsettled` for each, and a page left holds nothing |
-| ui/components/set-page/no-alpine-raw | a search of the set page's sources: no `Alpine.raw`, no Alpine passed in, no assignment to what the store holds |
-| ui/components/set-page/auto-fill-settings | the Auto-fill settings popover: a change dropping a waiting result, the Gear to search line, the goal menus |
-| ui/components/set-page/view | a set page's view built once per change; the Food menu built only when read |
-| ui/components/compose | joining parts into a component: a clash is an error that names the member, getters stay getters |
+| ui/elements/set-page/edits | a set page's session bound to a real sheet store: edits by hand kept in a draft until Apply, pins saved at once; the draft is a frozen copy in the store, one entry per page |
+| ui/elements/set-page/menus | the window's line that the page's menus stay under: the page scrolls to show an opened menu, keeps its button under the pinned header and cuts a menu that does not fit |
+| ui/elements/set-page/fill-run.best-meals | "Best for goal": the tied meals saved with an applied Auto-fill, the Food row and its switch |
+| ui/elements/set-page/fill-run | a set page's Auto-fill: a real search and its suggestion, Take boxes, the edit lock, Cancel, a failing solver, late replies |
+| ui/elements/set-page/leave-guard | the question before leaving for a draft, a running Auto-fill and a waiting result; the store's `unsettled` for each, and a page left holds nothing |
+| ui/elements/set-page/fill-settings-edit | the Auto-fill settings popover: a change dropping a waiting result, the Gear to search line, the goal menus |
+| ui/components/compose | joining parts into a component (the Sheets tab's): a clash is an error that names the member, getters stay getters |
 | ui/components/sheets | the Sheets tab with a real sheets' store (note 12); the answers to the two elements' events; its members, by kind, against a fixed list |
 | ui/elements/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
 | ui/elements/sheets/row-reorder | Up and Down on a handle move a row and the focus follows, a drop goes above or below the row under the pointer, nothing moves while the list is locked |
@@ -222,6 +219,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/views/piece-menu.search | the piece menu's search: every word, any order and case, empty groups dropped |
 | ui/views/piece-menu.limit | the picker drawn in steps: the first rows of the full list, the whole count, the set's part not cached |
 | ui/views/set-draft | a manual draft: changed rows, the Now and After figures, Apply and leave texts |
+| ui/views/set-page | a set page's view built once per change; the Food menu built only when read |
 | ui/views/set-rows | a set's rows: pieces, stones, missing items, pins |
 | ui/views/set-suggestion | an Auto-fill suggestion on real Sage pieces (note 21) |
 | ui/views/set-suggestion.best-meals | what Apply saves of the tied best meals, and what the Food row shows |
@@ -266,7 +264,7 @@ Notes on the longer rows:
 Notes:
 
 - **The long sweep** in `tests/sweep/` is flat, with no folders: `core-tier-rank.gcd-1` to `.gcd-4`, `core-tier-rank.no-gcd` and `core-tier-rank.pinned`. The helpers in `tests/unit/helpers/` are not tests and are named for what they hold.
-- **The components** are unit tested (the files in `tests/unit/ui/components/`): no component imports Alpine, so each test binds one to a plain store. The smoke test checks how they are wired into the page.
+- **The components** are unit tested (the files in `tests/unit/ui/components/`): no component imports Alpine, so each test binds one to a plain store. A set page's logic is a plain session (`src/ui/elements/set-page/session.js`), tested the same way in `tests/unit/ui/elements/set-page/`. The smoke test checks how they are wired into the page.
 - **What each file checks** is in its header comment and test names, and where each expected value comes from is in a comment next to it. They are not repeated here, so they cannot drift apart.
 - **Shared helpers** are in `tests/unit/helpers/`:
   - the brute-force reference and real-gear pools (`exhaustive.js`, section 2.1);
@@ -274,7 +272,7 @@ Notes:
   - the tier ranking reference with its random cases, shared with the long sweep in `tests/sweep/` (`tier-reference.js`);
   - the view tests' store-shaped state with sync at 123 and a set's recipe, their small real-gear pools and an Auto-fill's solve (`views.js`);
   - saved sheets of real items for the Sheets tests (`sheet-fixtures.js`);
-  - a set page's component bound to a real store with solver stand-ins (`set-page-bind.js`);
+  - a set page's session bound to a real store with a stand-in for its element and solver stand-ins (`set-page-bind.js`);
   - pin lists for the pinned search tests (`pins.js`);
   - the stat model's check against real items and the Wiki's item level 475 caps (`model-validation.js`: `bandAccuracy`, `wikiChecks`, `MODEL_MIN_ILVL`, for `core/formulas.model-accuracy` and `core/formulas.stat-factor`);
   - an exact best-item-per-slot solver (`exact-solver.js`, with `lexCompare`) and a damager of saved data for the fuzz tests (`fuzz.js`);

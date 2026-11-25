@@ -1,4 +1,4 @@
-/* A set page's edits by hand (src/ui/components/set-page/draft.js) bound to a real sheet store, as Alpine binds it: the
+/* A set page's edits by hand (src/ui/elements/set-page/edits.js) bound to a real sheet store: the
    manual draft (Apply, Discard) and pins saved at once. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,15 +18,15 @@ const RING_2 = 11;
 const UNIQUE_RING = 49656;
 
 test('a draft: edits by hand stay in memory until Apply, which saves them with their pins; Discard drops them', () => {
-  const { c, sheets, storage } = bind();
-  c.pick(HEAD, SAGE_IDS.head);
-  assert.equal(c.view.mode, 'draft');
-  assert.ok(hasNumber(c.view.apply.text, 1), c.view.apply.text);
+  const { session, sheets, storage, view, fillButton } = bind();
+  session.edits.pick(HEAD, SAGE_IDS.head);
+  assert.equal(view().mode, 'draft');
+  assert.ok(hasNumber(view().apply.text, 1), view().apply.text);
   assert.equal(sheets.currentSet.pieces[HEAD].stones.length, 3, 'the saved set keeps its stones');
-  assert.equal(c.fillButton.disabled, true, 'no Auto-fill in a draft');
-  c.setStone(HEAD, 0, 'det', 4);
-  c.applyDraft();
-  assert.equal(c.draft, null);
+  assert.equal(fillButton().disabled, true, 'no Auto-fill in a draft');
+  session.edits.setStone(HEAD, 0, 'det', 4);
+  session.edits.applyDraft();
+  assert.equal(session.draft, null);
   const appliedNote = sheets.note;
   assert.ok(appliedNote, 'Apply leaves a note');
   assert.deepEqual(sheets.currentSet.pieces[HEAD].stones, [{ stat: 'det', grade: 4 }, null, null, null, null]);
@@ -35,59 +35,59 @@ test('a draft: edits by hand stay in memory until Apply, which saves them with t
   const reloaded = createSheetsFacade({ storage }).sheet('s_1').sets[0];
   assert.deepEqual(reloaded.pieces[HEAD].stones[0], { stat: 'det', grade: 4 });
 
-  c.setMeal(null);
-  c.pick(HANDS, null);
-  c.discardDraft();
-  assert.equal(c.draft, null);
+  session.edits.setMeal(null);
+  session.edits.pick(HANDS, null);
+  session.edits.discardDraft();
+  assert.equal(session.draft, null);
   assert.ok(sheets.note && sheets.note !== appliedNote, 'Discard leaves its own note');
   assert.equal(sheets.currentSet.pieces[HANDS].gameId, SAGE_IDS.hands);
 });
 
 test('Apply on a draft with nothing changed closes it with no note, and keeps the pin the pick made', () => {
-  const { c, sheets } = bind();
-  c.pick(HANDS, SAGE_IDS.hands); // the piece the row already holds
-  assert.equal(c.view.mode, 'draft');
-  assert.equal(c.view.apply.disabled, true, 'the Apply button is off at 0 changes');
+  const { session, sheets, view } = bind();
+  session.edits.pick(HANDS, SAGE_IDS.hands); // the piece the row already holds
+  assert.equal(view().mode, 'draft');
+  assert.equal(view().apply.disabled, true, 'the Apply button is off at 0 changes');
   const noteBefore = sheets.note;
-  c.applyDraft(); // the leave question's Apply and leave reaches it with the button off
-  assert.equal(c.draft, null);
+  session.edits.applyDraft(); // the leave question's Apply and leave reaches it with the button off
+  assert.equal(session.draft, null);
   assert.equal(sheets.note, noteBefore, 'no Applied: no changes. note');
   assert.deepEqual(sheets.currentSet.pinned.pieces, [HANDS], 'the pin of the pick is saved as before');
 });
 
 test('a Unique ring already worn is refused with no note; pins are saved at once and kept in a draft', () => {
   const start = placePiece(SGE, sageSet(), 10, UNIQUE_RING).gearSet;
-  const { c, sheets } = bind(start);
+  const { session, sheets } = bind(start);
   const noteBefore = sheets.note;
-  c.pick(RING_2, UNIQUE_RING);
-  assert.equal(c.draft, null);
+  session.edits.pick(RING_2, UNIQUE_RING);
+  assert.equal(session.draft, null);
   assert.equal(sheets.note, noteBefore, 'the picker never offers it, so there is no toast');
 
-  c.togglePin(FEET);
+  session.edits.togglePin(FEET);
   assert.ok(sheets.currentSet.pinned.pieces.includes(FEET));
-  c.pick(HEAD, SAGE_IDS.head);
-  c.togglePin(FEET);
+  session.edits.pick(HEAD, SAGE_IDS.head);
+  session.edits.togglePin(FEET);
   assert.ok(!sheets.currentSet.pinned.pieces.includes(FEET), 'saved while a draft is open');
-  assert.ok(!c.draft.pinned.pieces.includes(FEET), 'and shown in the draft');
-  c.toggleMealPin();
+  assert.ok(!session.draft.pinned.pieces.includes(FEET), 'and shown in the draft');
+  session.edits.toggleMealPin();
   assert.equal(sheets.currentSet.pinned.meal, true);
 });
 
 test('the draft is in the store: a frozen copy, one entry per page, gone with Apply, Discard and the page', () => {
-  const { c, store, sheets } = bind();
-  assert.deepEqual(Object.keys(store.state.setPages), [c.setId], 'the open page has its entry');
-  c.pick(HEAD, SAGE_IDS.head);
-  const held = store.state.setPages[c.setId].draft;
-  assert.equal(c.draft, held, 'the component reads the store, not a field of its own');
-  assert.equal(sheets.page(c.setId).draft, held);
+  const { session, store, sheets } = bind();
+  assert.deepEqual(Object.keys(store.state.setPages), [session.setId], 'the open page has its entry');
+  session.edits.pick(HEAD, SAGE_IDS.head);
+  const held = store.state.setPages[session.setId].draft;
+  assert.equal(session.draft, held, 'the component reads the store, not a field of its own');
+  assert.equal(sheets.page(session.setId).draft, held);
   assert.ok(Object.isFrozen(held) && Object.isFrozen(held.pieces) && Object.isFrozen(held.pieces[HEAD]), 'frozen all through');
   assert.notEqual(held.pieces[0], sheets.currentSet.pieces[0], 'a copy: the saved set is not frozen with it');
   assert.ok(!Object.isFrozen(sheets.currentSet.pieces));
-  c.togglePin(FEET);
-  assert.notEqual(c.draft, held, 'a pin replaces the draft with a new object');
-  c.discardDraft();
-  assert.equal(store.state.setPages[c.setId].draft, null);
-  c.pick(HEAD, SAGE_IDS.head);
-  c.destroy();
+  session.edits.togglePin(FEET);
+  assert.notEqual(session.draft, held, 'a pin replaces the draft with a new object');
+  session.edits.discardDraft();
+  assert.equal(store.state.setPages[session.setId].draft, null);
+  session.edits.pick(HEAD, SAGE_IDS.head);
+  session.stop();
   assert.deepEqual(store.state.setPages, {}, 'a page left takes its draft with it');
 });

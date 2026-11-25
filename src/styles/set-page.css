@@ -1,4 +1,4 @@
-/* ==== A set page (components/set-page.js): sticky header, gear table, menus, Fill settings ==== */
+/* ==== A set page (elements/set-page/set-page.ts): sticky header, gear table, menus, Fill settings ==== */
 .setpage {
   --sh: 124px;
   display: flex;

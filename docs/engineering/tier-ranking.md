@@ -423,5 +423,5 @@ The remaining time is mostly building the candidate lists (meld versions and dom
 | Shortfall filter, Lagrangian bound, reduced-cost fixing, slot order, trial search, the search | `src/core/optimizer/search.js` (`dropShortfalls`, `improveStart`, `lagrangeBound`, `fixByReducedCost`, `shortListsFirst`, all run by `prepareSearch`; `TRIAL_NODES`, `branchAndBound`) |
 | Regain cuts | `src/core/optimizer/regain.js` (`addRegainCuts`) |
 | Pareto fronts, the staircase dominance | `src/core/optimizer/front.js` (`frontSearch`, `paretoFilter`, `beatenOnStairs`) |
-| The page: switch, Solving… and Cancel | `src/core/recipe.js` (`runRecipe`), `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/solve.js` (`solveView`), `src/ui/components/set-page.js` (`fill`), `src/index.html` (`#s-by-tier`, `#sh-cancel`) |
+| The page: switch, Solving… and Cancel | `src/core/recipe.js` (`runRecipe`), `src/ui/sheets/fill-settings.js` (`fillRecipe`), `src/ui/solve.js` (`solveView`), `src/ui/elements/set-page/fill-run.js` (`fill`), `src/index.html` (`#s-by-tier`, `#sh-cancel`) |
 | Tests | `tests/unit/core/tier-rank.test.js` (reference in `tests/unit/helpers/tier-reference.js`; 360 more cases in `tests/sweep/`, `npm run test:full`), `tests/unit/core/optimizer/index.stat-minimums.test.js`, `tests/unit/core/optimizer/regain.test.js` |

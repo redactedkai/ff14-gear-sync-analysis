@@ -1,12 +1,8 @@
-/* What the Expansion and Gear categories menus work out (src/ui/elements/gear-browser/filter-menu-model.ts) and the page's wiring of
-   their events (src/partials/expansion-menu.html, gear-from-menu.html). */
+/* What the Expansion and Gear categories menus work out (src/ui/elements/gear-browser/filter-menu-model.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { ACTIVITIES, EXPANSIONS } from '../../../../../src/core/constants.js';
 import {
-  CATEGORIES_CHANGE_EVENT,
-  EXPANSION_CHANGE_EVENT,
   GEAR_FROM_SECTIONS,
   excludeAfterAll,
   excludeAfterToggle,
@@ -18,15 +14,6 @@ import {
   tabCountText,
 } from '../../../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { DEFAULT_EXCLUDE } from '../../../../../src/ui/job-sync-panel.js';
-
-const partial = name => readFileSync(new URL(`../../../../../src/partials/${name}`, import.meta.url), 'utf-8');
-
-/* The templates cannot import the event names, so they write them out. If an event is renamed, change the `@<name>=` attribute of
-   the island in the partial to match: the menu would otherwise stop changing the filter. */
-test('the filter partials listen for the menus events under their names and hand the detail to the component', () => {
-  assert.ok(partial('gear-from-menu.html').includes(`@${CATEGORIES_CHANGE_EVENT}="setFilters($event.detail)"`));
-  assert.ok(partial('expansion-menu.html').includes(`@${EXPANSION_CHANGE_EVENT}="setFilters({ expOff: $event.detail })"`));
-});
 
 test('Gear categories button text: All, None, All but N up to five left out, then N of M', () => {
   const keys = ACTIVITIES.map(a => a.key);

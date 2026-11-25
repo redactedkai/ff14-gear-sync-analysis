@@ -1,16 +1,25 @@
-/* Shared by the tests of a set page's component (tests/unit/ui/components/set-page/*.test.js): the component bound to a real
-   sheet store over a stand-in storage, as Alpine binds it, and solver stand-ins (held, refused, late replies). */
+/* Shared by the tests of a set page's logic (tests/unit/ui/elements/set-page/*.test.js): its session (elements/set-page/session.js) bound to
+   a real sheet store over a stand-in storage, with a stand-in for the element it serves, and solver stand-ins (held, refused, late
+   replies). */
 import { saveSheet } from '../../../src/ui/sheets/storage.js';
-import { setPage } from '../../../src/ui/components/set-page.js';
+import { PageSession } from '../../../src/ui/elements/set-page/session.js';
 import { inProcessSolver } from '../../../src/ui/solver.js';
 import { placePiece } from '../../../src/ui/sheets/set-edits.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
+import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.js';
 import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.js';
-import { fakeFrames, pageMagics } from './page-magics.js';
+import { fakeFrames, stubElement } from './page-magics.js';
 import { createStores } from './stores.js';
 
-/* the page's refs (x-ref names in src/partials/set-page.html); the frame callback runs at once in Node */
-const SET_PAGE_REFS = ['head', 'table', 'cancel', 'apply', 'discard', 'fill', 'gear', 'leave', 'leaveKeep'];
+/* The elements of the page the logic reaches by selector, by the name `calls` records them under; the frame callback runs at once in Node */
+const PAGE_ELEMENTS = {
+  '#sh-cancel': 'cancel',
+  '#sh-apply': 'apply',
+  '#sh-discard': 'discard',
+  '#sh-fill': 'fill',
+  '.gearbtn': 'gear',
+  '#sh-set-switch': 'leaveKeep',
+};
 fakeFrames({ immediate: true });
 
 const SGE = makeJobContext('SGE');
@@ -47,21 +56,48 @@ export function heldSolver() {
   };
 }
 
-/* The Sage set `gearSet` saved in a sheet (made with `sheetOptions`: sheetOf's level, sync), its page open, and the
-   component over it. */
+/* The Sage set `gearSet` saved in a sheet (made with `sheetOptions`: sheetOf's level, sync), its page open, and the session over it.
+   Returns {session, host (the element's stand-in: `isConnected` false is a page left), store, sheets, storage, solver, calls (what the page's elements recorded, as [name, method, argument]), view() (the
+   page's view now), mealMenu() (its Food menu), fillButton() (the Auto-fill button)}. */
 export function bind(gearSet = sageSet(), solver = pageThreadSolver(), sheetOptions = {}) {
   const storage = fakeStorage();
   saveSheet(sheetOf('SGE', [gearSet], sheetOptions), storage);
   const { store, sheets } = createStores(undefined, { storage });
   sheets.openSheet('s_1');
   sheets.openSet(gearSet.id);
-  const c = setPage(solver);
-  const magics = pageMagics(SET_PAGE_REFS);
-  // $watch records {getter, callback}; a test runs a callback by hand
-  const watches = [];
-  Object.assign(c, { $store: { sheets }, ...magics, $watch: (getter, callback) => watches.push({ getter, callback }), dialog: null });
-  c.init();
-  return { c, store, sheets, storage, solver, calls: magics.calls, watches };
+  const calls = [];
+  const elements = Object.fromEntries(Object.entries(PAGE_ELEMENTS).map(([selector, name]) => [selector, stubElement(calls, name)]));
+  const host = {
+    isConnected: true,
+    dialogOpen: false,
+    requestUpdate() {},
+    afterDraw: callback => {
+      if (host.isConnected) {
+        callback();
+      }
+    },
+    query: selector => elements[selector] ?? null,
+  };
+  const session = new PageSession({ store, sheets, solver, maxReal: 795 }, gearSet.id, host);
+  session.start();
+  const views = setPageViews();
+  const view = () => views.view(sheets.rev, session.sheet, session.saved, session.draft, session.suggestion);
+  return {
+    session,
+    host,
+    store,
+    sheets,
+    storage,
+    solver,
+    calls,
+    view,
+    mealMenu: () => {
+      view();
+      return views.mealMenu();
+    },
+    fillButton: () => fillButtonView(view(), { draft: session.draft, busy: sheets.busy, searchedCount: session.searchedCount }),
+    noPiecesFlag: () => noPiecesFlag(session.searchedCount),
+  };
 }
 /* The Sage set with the hands and feet rows empty and every other row pinned: an Auto-fill has the empty weapon row (a pin on
    an empty row keeps nothing), the hands, the feet and the meal to fill. */
