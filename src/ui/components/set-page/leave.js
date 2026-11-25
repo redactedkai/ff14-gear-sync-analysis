@@ -49,7 +49,7 @@ export function leavePart(page) {
       }
       this.leaveAsk = null;
       if (choice === 'keep') {
-        return this.afterDraw(() => page.refs.setsButton?.focus());
+        return this.afterDraw(() => page.el?.querySelector('#sh-set-switch')?.focus());
       }
       if (ask.kind === 'draft') {
         if (choice === 'apply') {
@@ -89,7 +89,6 @@ export function leavePart(page) {
       if (this.$store.sheets.busy) {
         return;
       }
-      this.closeOpenMenu(false);
       this.leave(() => this.$store.sheets.newSet());
     },
     /* Escape on the page: the question answers Keep, else, with no menu or popover open (those are layers of the overlay manager,

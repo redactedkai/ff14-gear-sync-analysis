@@ -1,4 +1,4 @@
-/* The open menus of a set page (a piece picker, a materia menu, the Food menu, the set switcher): which one is open, the
+/* The open menus of a set page (a piece picker, a materia menu, the Food menu): which one is open, the
    keys it takes, where it sits in the window, and the views of the picker and the materia menu.
    A part of the setPage component (components/set-page.js composes the parts). */
 import { jobGear } from '../../../core/items.js';
@@ -15,8 +15,8 @@ const MENU_BUTTON_MARGIN_PX = 8;
 /* The lowest a menu that does not fit is made before it scrolls inside (px). */
 const MENU_MIN_PX = 160;
 
-/* The ids of the set page's layers in the overlay manager (overlays.js): the one open menu (a picker, a materia menu, the set
-   switcher), the Auto-fill settings popover and its "Spare points" note. */
+/* The ids of the set page's layers in the overlay manager (overlays.js): the one open menu (a picker, a materia menu, the Food
+   menu), the Auto-fill settings popover and its "Spare points" note. */
 export const SET_MENU_LAYER = 'setMenu';
 export const SETTINGS_LAYER = 'settings';
 export const RANK_NOTE_LAYER = 'rankNote';
@@ -39,7 +39,7 @@ export function menusPart() {
   let lastPicker = null;
   let lastCut = null;
   return {
-    // the open menu: 'pick:<row>', 'meal', 'mat:<row>:<slot>', 'sets', or null; the picker's search text
+    // the open menu: 'pick:<row>', 'meal', 'mat:<row>:<slot>', or null; the picker's search text
     open: null,
     query: '',
     // the materia menu shows every grade
@@ -47,13 +47,47 @@ export function menusPart() {
     // how many pieces the open piece picker draws (it draws a long list in steps: views/limit-rows.js)
     pickRows: Infinity,
 
+    /* ---- the set switcher ---- */
+
+    /* What the caret menu after the set's name (<gsa-switch-menu>, an island) shows: a link to the sheet's page, one link per gear
+       set of the sheet (the open one marked) and "+ New set", off while an Auto-fill runs. */
+    get setSwitcher() {
+      const store = this.$store.sheets;
+      const sets = this.sheet.sets;
+      return {
+        items: sets.map(set => ({
+          id: set.id,
+          name: set.name,
+          href: store.href(store.sheetId, set.id),
+          current: set.id === this.saved.id,
+        })),
+        allLabel: `All gear sets (${sets.length})`,
+        allHref: store.href(store.sheetId),
+        newLabel: '+ New set',
+        newDisabled: store.busy,
+      };
+    },
+    /* A pick in the caret menu (`pick`: {kind, id, opener}, the element's switch-pick event): the sheet's page, another gear set
+       (the store asks first when this one has a draft or an Auto-fill running), or a new set. */
+    pickSet(pick) {
+      if (pick.kind === 'all') {
+        this.$store.sheets.closeSet();
+      } else if (pick.kind === 'item') {
+        if (pick.id !== this.saved.id) {
+          this.$store.sheets.openSet(pick.id);
+        }
+      } else {
+        this.newSet();
+      }
+    },
+
     /* ---- menus ---- */
 
     /* Open or close menu `id` (`box`: the element the menu opens in, whose first button opens it); an opened menu is a layer of
        the overlay manager (Escape, a press outside and Tab out close it, and the focus goes back to its button after Escape) and
        is scrolled into the window, below the pinned header. */
     toggleMenu(id, box) {
-      if (id !== 'sets' && this.locked) {
+      if (this.locked) {
         return;
       }
       this.query = '';
@@ -75,7 +109,7 @@ export function menusPart() {
       }
       this.$nextTick(() =>
         requestAnimationFrame(() => {
-          const menu = box?.querySelector('.same-menu, .matpop, .setmenu');
+          const menu = box?.querySelector('.same-menu, .matpop');
           (menu?.querySelector('input[type=text]') ?? menu?.querySelector('.on, .cur, button:not(:disabled)'))?.focus({
             preventScroll: true,
           });
@@ -95,15 +129,14 @@ export function menusPart() {
     /* Where an open menu sits in the window, as {top, room, anchorTop}: `top` is the window's line the menu must stay under (the
        pinned header and, for a menu in the table, the stuck column names); `anchorTop` the top of the box its button is in
        (the menu hangs under it: .same and .pop in the table), which the page keeps under that line too, so the button stays in
-       sight; and `room` the height left for the menu from there to the window's bottom. A menu in the pinned header
-       (the set switcher) has no button to keep in sight: its own top counts as the anchor and the room starts at `top`. */
+       sight; and `room` the height left for the menu from there to the window's bottom. */
     menuRoom(menu) {
       const head = this.$refs.head;
       let top = head.getBoundingClientRect().bottom;
       let anchorTop = menu.getBoundingClientRect().top;
       let buttonGap = 0; // how far under `top` the page keeps the button: the room of a menu in the table starts there
       const names = this.$refs.table.querySelector('thead th');
-      if (names && !menu.closest('.shead')) {
+      if (names) {
         top = Math.max(top, names.getBoundingClientRect().bottom);
         anchorTop = menu.offsetParent?.getBoundingClientRect().top ?? anchorTop;
         buttonGap = MENU_BUTTON_MARGIN_PX;

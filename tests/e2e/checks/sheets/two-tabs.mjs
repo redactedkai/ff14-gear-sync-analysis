@@ -100,7 +100,7 @@ export async function checkTwoTabs(pg) {
     `two tabs: the second tab's switch menu changed under it, to ${await other.locator('#sh-sheet-menu .setitem').allInnerTexts()}`,
   );
   await other.keyboard.press('Escape');
-  await expect(other.locator('#sh-sheet-menu')).toHaveCount(0);
+  await expect(other.locator('#sh-sheet-menu')).toBeHidden();
   await toManager(other);
   check(same(await names(other), ['Beta', 'Alpha']), `two tabs: the second tab's manager lists ${await names(other)}, not Beta, Alpha`);
 

@@ -348,6 +348,7 @@ test('the component: its six parts define every member the templates use, getter
       'setHeader',
       'sheetClan',
       'sheetPartyRoles',
+      'sheetSwitcher',
       'sheets',
     ],
     method: [
@@ -358,7 +359,6 @@ test('the component: its six parts define every member the templates use, getter
       'chooseJob',
       'clearDialogError',
       'closeDialog',
-      'closeSheetMenu',
       'dialogKey',
       'dragEnd',
       'dragOver',
@@ -385,14 +385,14 @@ test('the component: its six parts define every member the templates use, getter
       'openRow',
       'pickClan',
       'pickPartyRoles',
+      'pickSheet',
       'setFormSync',
       'sortList',
       'submitDialog',
-      'toggleSheetMenu',
       'toggleSync',
       'typeName',
     ],
-    field: ['capLowered', 'capTypedBad', 'dialog', 'dragging', 'dropAt', 'jobIcons', 'jobPicker', 'listSort', 'sheetMenu'],
+    field: ['capLowered', 'capTypedBad', 'dialog', 'dragging', 'dropAt', 'jobIcons', 'jobPicker', 'listSort'],
   };
   const actual = { getter: [], method: [], field: [] };
   for (const name of Object.keys(descriptors).sort()) {

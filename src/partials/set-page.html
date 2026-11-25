@@ -20,34 +20,10 @@
         aria-current="page"
         :title="setHeader.crumbs[2].text"
         x-text="setHeader.crumbs[2].text"></span>
-        <span class="setsw">
-          <button
-            type="button"
-            class="crumbmenubtn"
-            id="sh-set-switch"
-            x-ref="setsButton"
-            aria-controls="sh-set-menu"
-            :aria-expanded="String(open === 'sets')"
-            aria-label="Switch gear set"
-            @click="toggleMenu('sets', $el.parentElement)"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path
-            fill="currentColor"
-            d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"
-          /></svg></button>
-          <template x-if="open === 'sets'"><div class="setmenu" id="sh-set-menu">
-            <button type="button" class="setitem setall" @click="closeOpenMenu(); goCrumb('sheet')"><span x-text="`All gear sets (${sheet.sets.length})`"></span><svg class="setarrow" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path
-              fill="currentColor"
-              d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z"
-            /></svg></button>
-            <template x-for="s in sheet.sets" :key="s.id"><button
-              type="button"
-              class="setitem clipname"
-              :class="{ cur: s.id === saved.id }"
-              :aria-current="s.id === saved.id ? 'true' : null"
-              :title="s.name"
-              @click="closeOpenMenu(); s.id === saved.id || $store.sheets.openSet(s.id)"
-              x-text="s.name"></button></template>
-            <button type="button" class="setitem setnew" :disabled="$store.sheets.busy" @click="newSet()">+ New set</button>
-          </div></template>
+        <!-- the set switcher: a Lit element (an island), given the rows by x-effect and telling the pick by an event; x-ignore
+             keeps Alpine out of the markup the element draws -->
+        <span class="setsw" x-effect="Object.assign($el.firstElementChild, setSwitcher)" @switch-pick="pickSet($event.detail)">
+          <gsa-switch-menu x-ignore button-id="sh-set-switch" menu-id="sh-set-menu" button-label="Switch gear set" menu-label="Gear sets"></gsa-switch-menu>
         </span>
       </nav>
       <span class="sp"></span>

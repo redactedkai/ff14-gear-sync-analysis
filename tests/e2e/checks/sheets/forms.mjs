@@ -77,7 +77,7 @@ export async function checkSheetForms(pg) {
     return { ok: got === 'White Mage Lv 100 (1)', got };
   });
   await pg.keyboard.press('Escape');
-  await expect(pg.locator('#sh-sheet-menu')).toHaveCount(0);
+  await expect(pg.locator('#sh-sheet-menu')).toBeHidden();
 
   // a new set's page: the breadcrumb and the sheet's settings
   await pg.click('#sh-new-set-first');
@@ -85,6 +85,10 @@ export async function checkSheetForms(pg) {
   await expect(pg.locator('#sh-set .crumbhere')).toHaveText('Set 1');
   await expect(pg.locator('#sh-set-settings')).toHaveTextParts(['White Mage', 100]);
   check(!(await hasHScroll(pg)), `Sheets: a new set's page scrolls sideways at ${NARROW.width} px`);
+  // the set switcher's rows are real links: the first goes to the sheet's page
+  await pg.click('#sh-set-switch');
+  await pg.locator('#sh-set-menu .setall').click();
+  await expect(pg.locator('#sh-sheet')).toBeVisible();
   await pg.setViewportSize({ width: 1000, height: 900 });
   await pg.click('[data-tab=browse]');
 }

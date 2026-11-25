@@ -87,6 +87,8 @@ export const DOMAINS = {
     src: [
       'src/ui/components/sheets.js',
       'src/ui/components/sheets/**',
+      // the caret menus that switch sheet or gear set (a Lit element, an island in the sheet and set pages)
+      'src/ui/elements/sheets/**',
       'src/ui/native-dialog.js',
       'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.js',
       'src/ui/store/{sheets-actions,sheets-facade}.ts',

@@ -2,53 +2,47 @@
    sync switch and the cap box, the Clan and Party bonus boxes, applied as typed with no question, and the notes about a lowered cap or text that is no cap.
    A part of the sheetsTab component (components/sheets.js composes the parts). Borrows: sheets and afterDraw (frame.js). */
 import { flashLowered, numberField } from '../../number-field.js';
-import { overlays } from '../../overlays.js';
 import { bonusOptions } from '../../sheets/bonus-options.js';
 import { ranges } from '../../sheets/ops.js';
 import { CAP_TYPED_BAD_TEXT, capFlag, capLoweredText, capTextBad } from '../../level-cap.js';
 
 /* Returns the part's members. */
-/* The sheet switcher's id in the overlay manager (overlays.js). */
-const SHEET_MENU_LAYER = 'sheetMenu';
-
 export function settingsPart() {
   // the entries of the Clan and Party bonus lists (the same for every sheet)
   const bonusLists = bonusOptions();
 
   return {
-    // the sheet page's breadcrumb menu of sheets (the caret after the sheet's name) is open
-    sheetMenu: false,
     // the cap the sheet page last lowered: {sheetId, from, to, level} (ui/store/sheets-actions.ts editSettings), for the note under the
     // field; null once a change leaves the cap as typed
     capLowered: null,
     // the sheet page's cap field holds text that is no whole item level (the sheet keeps its last cap: capTextBad)
     capTypedBad: false,
 
-    /* The sheet page's caret menu: open or close it; opened, it is a layer of the overlay manager (Escape, a press outside and Tab
-       out close it) and the current sheet takes the focus. Off while an Auto-fill runs. */
-    toggleSheetMenu(box) {
-      if (this.sheets.busy) {
-        return;
-      }
-      if (this.sheetMenu) {
-        return this.closeSheetMenu(true);
-      }
-      overlays.open({
-        id: SHEET_MENU_LAYER,
-        root: () => box,
-        opener: () => box?.querySelector('button'),
-        tabOut: true,
-        close: () => {
-          this.sheetMenu = false;
-        },
-      });
-      this.sheetMenu = true;
-      this.afterDraw(() => box?.querySelector('.setitem.cur')?.focus());
+    /* What the sheet page's caret menu (<gsa-switch-menu>, the island after the sheet's name) shows: a link to the manager, one
+       link per saved sheet (the open one marked) and "+ New sheet". Off while an Auto-fill runs. */
+    get sheetSwitcher() {
+      const store = this.sheets;
+      const rows = this.manager.rows;
+      return {
+        items: rows.map(row => ({ id: row.id, name: row.name, href: store.href(row.id), current: row.id === store.sheetId })),
+        allLabel: `All sheets (${rows.length})`,
+        allHref: store.href(),
+        newLabel: '+ New sheet',
+        disabled: store.busy,
+      };
     },
-    /* Close the caret menu (a choice, the caret again); the focus goes back to its caret when `restoreFocus`. */
-    closeSheetMenu(restoreFocus = false) {
-      if (!overlays.close(SHEET_MENU_LAYER, { restoreFocus })) {
-        this.sheetMenu = false;
+    /* A pick in the caret menu (`pick`: {kind, id, opener}, the element's switch-pick event): the manager, another sheet, or a
+       new sheet's dialog. */
+    pickSheet(pick) {
+      if (pick.kind === 'all') {
+        this.sheets.openManager();
+      } else if (pick.kind === 'item') {
+        if (pick.id !== this.sheets.sheetId) {
+          this.sheets.openSheet(pick.id);
+        }
+      } else {
+        this.sheets.openManager();
+        this.openNewSheet(pick.opener);
       }
     },
 

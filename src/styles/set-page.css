@@ -54,6 +54,12 @@
   flex: none;
   margin-left: -2px;
 }
+/* the element <gsa-switch-menu> (src/ui/elements/sheets/switch-menu.ts) is the caret's box: a flex box, so the caret is exactly
+   its own height (an inline box would add a line's height around it and move the pinned header by a fraction of a pixel) */
+gsa-switch-menu {
+  display: flex;
+  align-items: center;
+}
 .crumbmenubtn {
   display: inline-flex;
   align-items: center;
@@ -106,6 +112,14 @@
 }
 .setitem + .setitem {
   margin-top: 2px;
+}
+/* a row that is a link (the switch menu's rows are real links): the menu's own colours, not the breadcrumb's link style */
+.setmenu a.setitem {
+  color: var(--fg);
+  text-decoration: none;
+}
+.setmenu a.setitem.setall {
+  color: var(--accent);
 }
 .setitem:hover:not(:disabled),
 .setitem:focus-visible,

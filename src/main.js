@@ -25,6 +25,7 @@ import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/collapsible.ts';
 import './ui/elements/app/notes.ts';
+import './ui/elements/sheets/switch-menu.ts';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';

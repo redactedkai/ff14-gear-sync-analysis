@@ -70,37 +70,9 @@
 <!-- A SHEET'S PAGE: its settings (level and item level sync applied as typed), then its gear sets -->
 <template x-if="screen === 'sheet' && page"><div class="sheetsview" id="sh-sheet">
   <div class="setline"><nav class="setcrumb" aria-label="Breadcrumb"><a :href="$store.sheets.href()" @click="goCrumb('sheets', $event)">Sheets</a><span class="csep" aria-hidden="true">/</span><span class="crumbhere clipname" aria-current="page" :title="page.name" x-text="page.name"></span>
-    <span class="setsw">
-      <button
-        type="button"
-        class="crumbmenubtn"
-        id="sh-sheet-switch"
-        aria-controls="sh-sheet-menu"
-        :aria-expanded="String(sheetMenu)"
-        aria-label="Switch sheet"
-        :disabled="$store.sheets.busy"
-        @click="toggleSheetMenu($el.parentElement)"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path
-        fill="currentColor"
-        d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"
-      /></svg></button>
-      <template x-if="sheetMenu"><div class="setmenu" id="sh-sheet-menu">
-        <button type="button" class="setitem setall" @click="closeSheetMenu(); goCrumb('sheets')"><span x-text="`All sheets (${manager.rows.length})`"></span><svg class="setarrow" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path
-          fill="currentColor"
-          d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z"
-        /></svg></button>
-        <template x-for="r in manager.rows" :key="r.id"><button
-          type="button"
-          class="setitem clipname"
-          :class="{ cur: r.id === $store.sheets.sheetId }"
-          :aria-current="r.id === $store.sheets.sheetId ? 'true' : null"
-          :title="r.name"
-          @click="closeSheetMenu(); r.id === $store.sheets.sheetId || $store.sheets.openSheet(r.id)"
-          x-text="r.name"></button></template>
-        <button
-          type="button"
-          class="setitem setnew"
-          @click="closeSheetMenu(); goCrumb('sheets'); openNewSheet($el)">+ New sheet</button>
-      </div></template>
+    <!-- the sheet switcher: a Lit element (an island), given the rows by x-effect and telling the pick by an event -->
+    <span class="setsw" x-effect="Object.assign($el.firstElementChild, sheetSwitcher)" @switch-pick="pickSheet($event.detail)">
+      <gsa-switch-menu x-ignore button-id="sh-sheet-switch" menu-id="sh-sheet-menu" button-label="Switch sheet" menu-label="Sheets"></gsa-switch-menu>
     </span></nav></div>
   <section class="panel sheetpanel" aria-label="Sheet settings">
     <div class="sheetbanner"><div class="sheethead">
