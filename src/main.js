@@ -23,6 +23,8 @@ import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/gcd-controls.ts';
 import './ui/elements/math-page/gcd-view.ts';
 import './ui/elements/math-page/stat-note.ts';
+import './ui/elements/math-page/tiers-controls.ts';
+import './ui/elements/math-page/tiers-view.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/select.ts';
 import './ui/elements/shared/collapsible.ts';
@@ -37,7 +39,6 @@ import './ui/elements/set-page/settings-popover.ts';
 import { page, settings } from './ui/components/page.js';
 import { syncExplainer } from './ui/components/sync-explainer.js';
 import { gear } from './ui/components/gear.js';
-import { tierControls, tierTable } from './ui/components/tiers.js';
 import { sheetsTab } from './ui/components/sheets.js';
 import { setPage } from './ui/components/set-page.js';
 import { inProcessSolver, workerSolver } from './ui/solver.js';
@@ -130,8 +131,6 @@ Object.entries({
   settings,
   syncExplainer,
   gear,
-  tierTable,
-  tierControls,
   sheetsTab,
   setPage: () => setPage(solver),
 }).forEach(([name, factory]) => {

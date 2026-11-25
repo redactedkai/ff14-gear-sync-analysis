@@ -70,6 +70,51 @@ export function tierInput(job, stat, text, level) {
   return result ? result.value : null;
 }
 
+/* What the math bar's Level box does with `text` while `level` (the level the sub-tab uses now) is shown, for `job` (a
+   JobContext): {patch, shown}, or null when the text changes nothing (not a number; a level out of range while typing, since
+   a value on the way, "9" of "90", must not be corrected under the cursor). `final`: the box is left or Enter is pressed.
+   - patch: `{level}` to count, `level` null for the job's level cap itself (the sub-tab then follows it); null when the
+     level is the one in use already;
+   - shown: the number the box then shows (a level out of range corrected to the nearest end, or the level cap for an
+     emptied box), or null to leave the typed text alone. */
+export function tierLevelTyped(job, text, level, final = false) {
+  if (final && text === '') {
+    return { patch: { level: null }, shown: job.maxLevel };
+  }
+  const result = commit(text, { min: 1, max: job.maxLevel, final });
+  if (!result) {
+    return null;
+  }
+  const patch = result.value === level ? null : { level: result.value === job.maxLevel ? null : result.value };
+  return { patch, shown: result.clamped ? result.value : null };
+}
+
+/* The values typed or clicked on Substat tiers, with the settings they were made under: {key (tierEditsKey), values
+   ({stat: panel value})}. Values made under other settings no longer apply: going back to the old job or level starts from the
+   bases again. */
+export const NO_TIER_EDITS = Object.freeze({ key: '', values: Object.freeze({}) });
+
+/* The settings the values were made under: the job and the level the sub-tab uses (`job` a JobContext). */
+export function tierEditsKey(job, level) {
+  return JSON.stringify([job.jobId, level]);
+}
+
+/* `kept` (a NO_TIER_EDITS shape) if it was made under `key`, else none. */
+export function tierEditsKept(kept, key) {
+  return kept.key === key ? kept : NO_TIER_EDITS;
+}
+
+/* `kept` with `value` set for `stat` under `key`, dropping values made under other settings. */
+export function tierEdited(kept, key, stat, value) {
+  return { key, values: { ...tierEditsKept(kept, key).values, [stat]: value } };
+}
+
+/* The substat and the value a clicked row sets: a row's `to` ('stat:start', see tiersView) as {stat, value}. */
+export function tierPicked(to) {
+  const [stat, start] = to.split(':');
+  return { stat, value: Number(start) };
+}
+
 /* The ? note of a substat: {title, affects, size}. */
 function helpOf(job, stat, level, haste) {
   const affects = AFFECTS[stat];
@@ -96,7 +141,7 @@ function rangeText(start, next) {
 const escapeHtml = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 /* A card's table without its rows, as HTML: the column names inside an empty row group the page draws the rows in
-   (components/tiers.js). The rows are divs, not table rows, so they can be drawn a window at a time; the roles make
+   (elements/math-page/tier-rows.ts). The rows are divs, not table rows, so they can be drawn a window at a time; the roles make
    them a table for a screen reader. */
 function ladderShell(names) {
   const head = names.map(name => `<span role="columnheader">${escapeHtml(name)}</span>`).join('');

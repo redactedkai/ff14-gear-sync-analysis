@@ -1,5 +1,5 @@
 /* ==== How the math works: Substat tiers ==== */
-/* Tiers: the substats' tier ladders (components/tiers.js), a card per substat in a grid that wraps on a narrow window.
+/* Tiers: the substats' tier ladders (elements/math-page/tiers-view.ts), a card per substat in a grid that wraps on a narrow window.
    A card: its header (name, box, effect lines), a scroll area with every tier of the substat (its column names stay at
    the top), and its footer. Every area is the same height, about the 15 rows the page showed before the rows scrolled. */
 .tiercards {
@@ -65,7 +65,7 @@
   outline-offset: -2px;
 }
 /* the table: divs in a grid, a row each (views/tiers.js). The column names stay stuck at the top of the area. A row has
-   a fixed height, so the page can draw only the rows around the ones in view and pad the rest (tier-window.js). */
+   a fixed height, so the page can draw only the rows around the ones in view and pad the rest (tier-rows.ts and tier-window.js). */
 .ladder {
   /* the first column holds a range up to "3,673–3,680"; the others share the rest and may be narrower than their
      names, which wrap */
@@ -253,4 +253,10 @@
 gsa-stat-note .popover.statpop {
   position: static;
   z-index: var(--z-row);
+}
+/* The elements <gsa-tiers-view> and <gsa-tiers-controls> (src/ui/elements/math-page/) take no box of their own: the tab's cards and the bar's
+   Level box lay out as if their markup sat in the page */
+gsa-tiers-view,
+gsa-tiers-controls {
+  display: contents;
 }

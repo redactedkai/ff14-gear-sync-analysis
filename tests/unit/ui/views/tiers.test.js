@@ -7,7 +7,18 @@ import assert from 'node:assert/strict';
 import { AKH_LEVEL, hasNumber, hasParts } from '../../helpers/common.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { MAX_SPEED } from '../../../../src/core/tables.js';
-import { tierInput, tierLevel, tiersView, tierValues } from '../../../../src/ui/views/tiers.js';
+import {
+  NO_TIER_EDITS,
+  tierEdited,
+  tierEditsKept,
+  tierEditsKey,
+  tierInput,
+  tierLevel,
+  tierLevelTyped,
+  tierPicked,
+  tiersView,
+  tierValues,
+} from '../../../../src/ui/views/tiers.js';
 
 /* The job's context (the views take it, not the store); every test is at level 100 unless it names another. */
 const app = id => makeJobContext(id);
@@ -207,4 +218,46 @@ test("the sub-tab's own level: the synced level until one is typed, held to the 
   assert.equal(tierValues(a, 80).sps, AKH_LEVEL[80][1]);
   assert.equal(tierInput(a, 'crit', '5', 80), 380);
   assert.equal(tiersView(a, {}, 80).level, 80);
+});
+
+test('values typed or clicked are kept until the job or the level changes, and stay dropped when the settings come back', () => {
+  const sage = app('SGE');
+  const key100 = tierEditsKey(sage, 100);
+  // a click on a row ('stat:start') sets that substat only; a later one adds to it
+  const picked = tierPicked('det:420');
+  const clicked = tierEdited(NO_TIER_EDITS, key100, picked.stat, picked.value);
+  assert.deepEqual(picked, { stat: 'det', value: 420 });
+  const both = tierEdited(clicked, key100, 'crit', 600);
+  assert.deepEqual(tierEditsKept(both, key100).values, { det: 420, crit: 600 });
+  // another level or job: none apply, and a value made there replaces them
+  assert.deepEqual(tierEditsKept(both, tierEditsKey(sage, 60)).values, {});
+  assert.deepEqual(tierEditsKept(both, tierEditsKey(app('WHM'), 100)).values, {});
+  assert.deepEqual(tierEdited(both, tierEditsKey(sage, 60), 'det', 300).values, { det: 300 });
+  // the page drops them for good when the settings change (an element keeps what tierEditsKept returns), so the old ones do not come back
+  const dropped = tierEditsKept(both, tierEditsKey(sage, 60));
+  assert.deepEqual(tierEditsKept(dropped, key100).values, {});
+  // the cards show them on top of the bases
+  const view = tiersView(sage, { ...tierValues(sage, 100), ...both.values }, 100);
+  assert.deepEqual([view.cards[0].value, view.cards[1].value], [600, 420]);
+});
+
+test("the Level box: each valid level counts as typed; the job's level cap, or an emptied box left, is the default level again", () => {
+  const beastmaster = app('BST'); // level cap 50
+  // typing: a level in range counts (the cap itself follows the cap: null), one out of range or no number waits
+  assert.deepEqual(tierLevelTyped(beastmaster, '45', 50), { patch: { level: 45 }, shown: null });
+  assert.deepEqual(tierLevelTyped(beastmaster, '50', 45), { patch: { level: null }, shown: null });
+  assert.equal(tierLevelTyped(beastmaster, '60', 45), null);
+  assert.equal(tierLevelTyped(beastmaster, 'abc', 45), null);
+  assert.equal(tierLevelTyped(beastmaster, '', 45), null);
+  assert.equal(tierLevelTyped(beastmaster, '45', 45).patch, null, 'the level in use already: nothing to count');
+  // leaving the box: out of range moves to the nearest end and the box shows it; an empty box shows the level cap and follows it
+  assert.deepEqual(tierLevelTyped(beastmaster, '60', 45, true), { patch: { level: null }, shown: 50 });
+  assert.deepEqual(tierLevelTyped(beastmaster, '0', 45, true), { patch: { level: 1 }, shown: 1 });
+  assert.deepEqual(tierLevelTyped(beastmaster, '', 30, true), { patch: { level: null }, shown: 50 });
+  assert.equal(
+    tierLevelTyped(beastmaster, '60', 50, true).patch,
+    null,
+    'a level out of range at the cap changes nothing, but the box is corrected',
+  );
+  assert.equal(tierLevelTyped(beastmaster, '60', 50, true).shown, 50);
 });

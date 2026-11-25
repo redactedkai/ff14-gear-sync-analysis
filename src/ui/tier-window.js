@@ -2,7 +2,7 @@
    to keep in the page: drawing them all took about 0.3 s more per job or level change at 4x CPU slowdown, and the
    window of rows in view costs about a tenth of it. So a card draws the rows in its scroll area plus OVERSCAN_ROWS above
    and below, and pads the rest with the height they would take (the padding keeps the scroll bar and the scroll
-   position true). Pure: sizes in px, rows by index. Used by components/tiers.js. */
+   position true). Pure: sizes in px, rows by index. Used by elements/math-page/tier-rows.ts. */
 
 /* Rows drawn above and below the ones in view: the list redraws once the view leaves the drawn rows, so the
    scrolling a wheel or key does in a frame stays inside them. */

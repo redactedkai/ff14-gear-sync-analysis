@@ -1,4 +1,4 @@
-<!-- The Math tab (`syncExplainer` with `tierTable` inside it, and the GCD elements): the sticky bar and the three sub-tabs, Stat
+<!-- The Math tab (`syncExplainer`, and the GCD and Substat tiers elements): the sticky bar and the three sub-tabs, Stat
      Allocation, GCD Scaling and Substat tiers. Included once, from index.html's job template. No keys. -->
 <section
   class="tab"
@@ -273,17 +273,10 @@
     x-effect="const g = $store.app.gcd, el = $el.firstElementChild; el.level = g.level; el.haste = g.haste; el.speed = g.speed; el.syncedLevel = $store.app.panel('math').level"
     @gcd-edit="$store.app.editGcd($event.detail)"><gsa-gcd-controls x-ignore></gsa-gcd-controls></div></template>
   <!-- TIERS: its own job (the Job box before it) and level ($store.app.tiers) -->
-  <template x-if="$store.app.mathTab === 'tiers'"><div style="display:contents" x-data="tierControls">
-  <label class="mctl wide divided afterjob"><span class="mctl-head">Level <span class="f-range" id="t-level-range" x-text="`1–${panel.jobCtx.maxLevel}`"></span></span>
-    <input
-      type="number"
-      id="t-level"
-      step="1"
-      inputmode="numeric"
-      x-bind="levelField"
-      aria-label="Level of the tiers">
-  </label>
-  </div></template>
+  <template x-if="$store.app.mathTab === 'tiers'"><div
+    style="display:contents"
+    x-effect="const el = $el.firstElementChild; el.job = $store.app.panel('tiers').job; el.typedLevel = $store.app.tiers.level"
+    @tiers-level="$store.app.setTiersLevel($event.detail.level)"><gsa-tiers-controls x-ignore></gsa-tiers-controls></div></template>
   </div>
 </div>
 
@@ -391,47 +384,8 @@
   id="tab-tiers"
   hidden
   :hidden="$store.app.mathTab !== 'tiers'"
-  x-data="tierTable">
-<template x-if="view"><div id="t-panel" x-ref="panel" style="position:relative">
-  <!-- a card per substat: its header, a scroll area with every tier (drawn by paint(), a window of views/tiers.js rowsHtml) and its footer -->
-  <div class="tiercards" id="t-table"><template x-for="g in view.cards" :key="g.stat"><div class="tiercard" :data-stat="g.stat">
-    <div class="tierhead">
-      <div class="lname"><span x-text="g.label"></span> <button
-        type="button"
-        class="help shelp"
-        :data-help="g.stat"
-        :aria-expanded="String(helpFor === g.stat)"
-        aria-controls="t-pop"
-        @click="toggleHelp(g.stat)">?</button></div>
-      <input
-        type="number"
-        min="0"
-        step="1"
-        inputmode="numeric"
-        :data-n="g.stat"
-        :value="g.value"
-        :aria-label="`${g.label} on the character panel`"
-        @change="type(g.stat, $el)">
-      <div class="leff"><template x-for="(line, k) in g.lines" :key="k"><span class="lline" x-text="line"></span></template><span class="lline lhaste" x-show="g.haste" x-text="g.haste"></span></div>
-    </div>
-    <div
-      class="tierscroll"
-      role="region"
-      tabindex="0"
-      :aria-label="`${g.label} tiers`"
-      x-effect="paint($el, g)"
-      @scroll.passive="scrolled($el)"
-      @click="pickRow($event)"></div>
-    <div class="lfoot small"><span><b x-text="g.foot.spare"></b> spare</span><span x-show="g.foot.toNext != null"><b x-text="`+${g.foot.toNext}`"></b> to next</span><span x-show="g.foot.toNext == null">last tier</span></div>
-  </div></template></div>
-  <!-- the "?" note: a Lit element (an island) hung under the open note's button; it says what the note holds and tells the page
-       when it closed by itself (Escape, a press outside); x-ignore keeps Alpine out of the markup the element draws -->
-  <div
-    x-effect="$el.firstElementChild.note = help; $el.firstElementChild.anchor = helpAnchor"
-    @note-close="helpFor = null">
-    <gsa-stat-note x-ignore></gsa-stat-note>
-  </div>
-</div></template>
+  x-effect="const el = $el.firstElementChild; el.job = $store.app.panel('tiers').job; el.typedLevel = $store.app.tiers.level; el.shown = $store.app.mathTab === 'tiers'">
+<gsa-tiers-view x-ignore></gsa-tiers-view>
 </section>
 
 </section>
