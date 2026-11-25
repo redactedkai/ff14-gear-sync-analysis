@@ -152,7 +152,7 @@
 /* ==== The Job menu, first section of the controls row of Stat Allocation and Substat tiers ==== */
 /* The button is the strip's Job box (the .jobbox rules in gear-browser.css: the job's icon, "Name (CODE)", the chevron), except its
    width: it is one size for every job, because the text sits in a .sized cell with a hidden copy of the widest "Name (CODE)"
-   of all the jobs (JOB_SIZER), in whatever font the page has; and its height, --box-h like every box of the bar. It is the first
+   of all the jobs (WIDEST_NAME_COPY in job-menu.ts), in whatever font the page has; and its height, --box-h like every box of the bar. It is the first
    section of the controls row, so it has no rule before it. */
 .mathbar .jobctl {
   position: relative; /* the menu's containing block */
@@ -174,12 +174,6 @@
   font: 500 0.92rem var(--sans);
   padding: 0;
 }
-/* the menu under the button, its left edge the button's (and the bar's); taller than the room under a short window scrolls */
-.mathbar .jobmenu {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-}
-
 /* the second rule, between Sync settings and the Gear item level group, has the same wider gap as the first (after the Job box) */
 .mathbar .syncwrap {
   margin-right: var(--job-gap-extra);

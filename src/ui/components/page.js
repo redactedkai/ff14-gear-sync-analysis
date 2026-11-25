@@ -6,7 +6,6 @@ import { formatRoute } from '../router/routes.js';
 import { loadExampleSheets } from '../test-data.js';
 import { capControls } from './cap-controls.js';
 import { compose } from './compose.js';
-import { jobMenu } from './job-menu.js';
 
 /* The loading line of each tab, shown while it opens. */
 const LOADING_TEXT = { sheets: 'Loading Sheets…', browse: 'Loading the Gear browser…', math: 'Loading math analysis…' };
@@ -84,7 +83,6 @@ export function settings() {
         }
       },
     },
-    jobMenu(),
     capControls('browse'),
   );
 }

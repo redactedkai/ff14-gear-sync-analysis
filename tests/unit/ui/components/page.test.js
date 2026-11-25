@@ -3,7 +3,6 @@
    defaults asking first. Whether a cap is lowered (limitCapToLevel) is checked in ui/level-cap.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS, JOB_ROWS } from '../../../../src/core/constants.js';
 import { dataSourceLabel, MAX_REAL } from '../../../../src/core/tables.js';
 import { page, settings } from '../../../../src/ui/components/page.js';
 
@@ -16,29 +15,12 @@ function panel(saved) {
   const app = createAppFacade(restoreOpen({ tab: 'browse', ...saved }));
   const classes = new Set();
   const cap = { classList: { add: name => classes.add(name), remove: name => classes.delete(name) }, offsetWidth: 0 };
-  const c = Object.assign(settings(), { $store: { app }, $refs: { cap, jobButton: { focus() {} } }, $nextTick: fn => fn() });
+  const c = Object.assign(settings(), { $store: { app }, $refs: { cap }, $nextTick: fn => fn() });
   return { app, c, classes };
 }
 
 test('page: the footer names the data source', () => {
   assert.equal(page().dataSource, dataSourceLabel());
-});
-
-test('job picker: every job once, in its role row, with its name and icon; a pick switches the job', () => {
-  const { app, c } = panel({});
-  const shown = c.jobRows.flatMap(r => r.jobs);
-  assert.deepEqual(shown.map(j => j.id).sort(), JOBS.map(j => j.id).sort());
-  assert.deepEqual(
-    c.jobRows.map(r => r.label),
-    JOB_ROWS.map(r => r[0]),
-  );
-  for (const j of shown) {
-    assert.equal(j.name, JOBS.find(x => x.id === j.id).name);
-    assert.ok(j.icon, j.id);
-  }
-  c.requestJob('DRG');
-  assert.equal(app.job, 'DRG');
-  assert.equal(c.jobCtx.jobId, 'DRG');
 });
 
 test('cap field: no error while sync is off; while on, a missing cap or text that is no whole item level says so', () => {
@@ -157,35 +139,4 @@ test('goTab: leaving the Sheets tab with something to settle asks first; the ans
   c.goTab('math', { ...plain, ctrlKey: true });
   assert.equal(app.pendingTab, null);
   globalThis.requestAnimationFrame = frames;
-});
-
-test('job menu: closed at the start; a tile switches the job, closes the menu and focuses the Job box', () => {
-  const sage = panel({ job: 'SGE' });
-  sage.c.$nextTick = fn => fn();
-  sage.c.$refs.jobButton = {
-    focus() {
-      sage.focused = 'job box';
-    },
-  };
-  assert.equal(sage.c.jobMenuOpen, false);
-  assert.equal(sage.c.jobIcon, panel({ job: 'SGE' }).c.jobIcon, 'the icon of the chosen job');
-  sage.c.openJobMenu();
-  assert.equal(sage.c.jobMenuOpen, true);
-  sage.c.requestJob('WAR');
-  assert.deepEqual([sage.app.job, sage.c.jobMenuOpen, sage.focused], ['WAR', false, 'job box']);
-  assert.notEqual(sage.c.jobIcon, panel({ job: 'SGE' }).c.jobIcon);
-});
-
-test('job menu: the Job box opens it and closes it again, with the focus on the Job box', () => {
-  const c = panel({ job: 'SGE' });
-  c.c.$nextTick = fn => fn();
-  c.c.$refs.jobButton = {
-    focus() {
-      c.focused = 'job box';
-    },
-  };
-  c.c.toggleJobMenu();
-  assert.deepEqual([c.c.jobMenuOpen, c.focused], [true, undefined]);
-  c.c.toggleJobMenu();
-  assert.deepEqual([c.c.jobMenuOpen, c.focused], [false, 'job box']);
 });

@@ -1,12 +1,10 @@
-/* The math bar's controls in the Stat Allocation component (src/ui/components/sync-explainer.js) and the shared Job menu
-   (components/job-menu.js), bound to a plain store as Alpine binds them: the Job menu edits the open sub-tab's own job, the
+/* The math bar's controls in the Stat Allocation component (src/ui/components/sync-explainer.js), bound to a plain store as Alpine binds them: the Job menu edits the open sub-tab's own job, the
    Level box and the IL Sync switch keep the stored cap at level sync's item level while IL Sync is off, the two chips
    say the current settings. Item levels are the game's ParamGrow.ItemLevelSync: level
    85 gives 536, level 80 gives 530. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { syncExplainer } from '../../../../src/ui/components/sync-explainer.js';
-import { settings } from '../../../../src/ui/components/page.js';
 import { SYNC_CHIP_TEXT, pieceChipView, syncChipView } from '../../../../src/ui/views/sync-explainer.js';
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.js';
 import { overlays } from '../../../../src/ui/overlays.js';
@@ -19,7 +17,7 @@ function bound(saved = {}) {
   const app = createAppFacade(restoreOpen({ tab: 'math', piece: { job: 'SGE', cap: 123, sync: true, level: 85 }, ...saved }));
   const focused = [];
   const refs = {};
-  for (const name of ['jobButton', 'level', 'cap', 'syncChip', 'pieceChip', 'pieceFirst']) {
+  for (const name of ['level', 'cap', 'syncChip', 'pieceChip', 'pieceFirst']) {
     refs[name] = { focus: () => focused.push(name), value: '' };
   }
   const watchers = {};
@@ -35,31 +33,15 @@ function bound(saved = {}) {
   return { app, c, focused, watchers };
 }
 
-test("Job menu: it edits the open sub-tab's own job: Stat Allocation's on its sub-tab, Substat tiers' on its", () => {
+test("Job menu: a pick edits the open sub-tab's own job: Stat Allocation's on its sub-tab, Substat tiers' on its", () => {
   const { app, c } = bound({ tiers: { job: 'WAR' } });
-  assert.equal(c.jobOwner, 'math');
-  assert.equal(c.menuJobId, 'SGE');
-  c.requestJob('BLM');
+  assert.equal(c.mathJob, 'SGE');
+  c.setMathJob('BLM');
   assert.deepEqual([app.job, app.panel('math').job, app.tiers.job], ['BLM', 'BLM', 'WAR']);
   app.showSub('tiers');
-  assert.equal(c.jobOwner, 'tiers');
-  assert.equal(c.menuJobId, 'WAR');
-  assert.equal(c.menuJobCtx.jobId, 'WAR');
-  c.requestJob('NIN');
+  assert.equal(c.mathJob, 'WAR');
+  c.setMathJob('NIN');
   assert.deepEqual([app.tiers.job, app.job], ['NIN', 'BLM'], "Stat Allocation's job is untouched");
-  app.showSub('gcd'); // no Job box there: the owner is the math panel, which nothing reads on that sub-tab
-  assert.equal(c.jobOwner, 'math');
-});
-
-test('Job menu: the Job button opens it with the focus on the chosen job; a tile closes it with the focus on the Job button', () => {
-  const { c, focused } = bound();
-  const tile = { focus: () => focused.push('tile') };
-  c.$refs.jobMenu = { querySelector: selector => (selector === '[aria-checked="true"]' ? tile : null) };
-  c.toggleJobMenu();
-  assert.equal(c.jobMenuOpen, true);
-  assert.deepEqual(focused, ['tile']);
-  c.requestJob('WHM');
-  assert.deepEqual([c.jobMenuOpen, focused.at(-1)], [false, 'jobButton']);
 });
 
 test("Sync chip: it says the store's settings", () => {
@@ -109,15 +91,6 @@ test('Level box: each valid level counts as typed; while IL Sync is off the cap 
   const on = bound({ piece: { job: 'SGE', cap: 123, sync: true, level: 85 } });
   on.c.levelBind['@input']({ target: { value: '80' }, inputType: 'insertText' });
   assert.deepEqual([on.app.level, on.app.cap], [80, 123]);
-});
-
-test("the Gear browser strip has the same Job menu (its own owner), and the bar's and the strip's menus never share a job", () => {
-  const app = createAppFacade(restoreOpen({ tab: 'browse', browse: { job: 'WAR' }, piece: { job: 'SGE' }, tiers: { job: 'WHM' } }));
-  const strip = Object.assign(settings(), { $store: { app }, $refs: { jobButton: { focus() {} } }, $nextTick: fn => fn() });
-  assert.equal(strip.jobOwner, 'browse');
-  assert.equal(strip.menuJobId, 'WAR');
-  strip.requestJob('DRG');
-  assert.deepEqual([app.job, app.panel('math').job, app.tiers.job], ['DRG', 'SGE', 'WHM']);
 });
 
 test('Level box: text that is no level is flagged and not stored; the flag clears with a valid level, a job change, a tab change and closing the popover', () => {

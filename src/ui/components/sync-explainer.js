@@ -26,7 +26,6 @@ import { viewCache } from '../view-cache.ts';
 import { capControls, levelControls } from './cap-controls.js';
 import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';
 import { compose } from './compose.js';
-import { jobMenu } from './job-menu.js';
 
 /* The math tab's component (x-data on the whole tab): Piece stats' views, and the bar's Job menu and Stat Allocation's
    controls (its two chips and the item level slider). */
@@ -238,12 +237,15 @@ export function syncExplainer() {
     },
     capControls('math'),
     levelControls(),
-    // the Job menu: it edits the open sub-tab's own job (Stat Allocation's or Substat tiers')
-    jobMenu({
-      focusOnOpen: true,
-      owner() {
-        return mathJobOwner(this.$store.app.mathTab);
+    {
+      /* the id of the job the open sub-tab edits (Stat Allocation's or Substat tiers'): what the Job menu element shows */
+      get mathJob() {
+        return this.$store.app.panel(mathJobOwner(this.$store.app.mathTab)).job;
       },
-    }),
+      /* a pick in the Job menu: switch that job (job-specific settings reset: resetForJob; nothing else is lost, so no confirmation) */
+      setMathJob(id) {
+        this.$store.app.setJob(id, mathJobOwner(this.$store.app.mathTab));
+      },
+    },
   );
 }

@@ -138,8 +138,7 @@ export const DOMAINS = {
       // what every element uses: the Zag controller and the bridge to the overlay manager
       'src/ui/elements/{app,shared}/**',
       'src/ui/router/**',
-      'src/ui/components/{page,compose,overlay,job-menu,cap-controls}.js',
-      'src/partials/job-menu.html',
+      'src/ui/components/{page,compose,overlay,cap-controls}.js',
       'src/ui/{state,store-key,job-sync-panel,level-cap,number-commit,number-field,overlays,ranks,hq-font}.js',
       'src/ui/{text,view-cache}.ts',
       'src/ui/store/{store,select,watch,app-state,app-actions,app-facade,page-store,autosave}.ts',

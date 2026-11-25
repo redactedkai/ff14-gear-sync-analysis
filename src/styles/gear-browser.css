@@ -81,29 +81,44 @@
 .mathbar .jobcode {
   color: var(--muted);
 }
-/* the job menu under the Job box: a label and a line of 40 px icons for each role; the chosen job is the bright one */
+/* The Job menu is the element <gsa-job-menu> (src/ui/elements/app/job-menu.ts), drawn in light DOM: it takes no box of its own, so
+   its label, button and menu are the children of the field that holds it. Its menu sits in Zag's positioner, which places it
+   under the Job box (a gap in place of a margin), and is no taller than the room under it (Zag's --available-height).
+   A label and a line of 40 px icons for each role; the chosen job is the bright one, the one lit under the pointer or by the
+   keys is lifted, and the keys' one has the ring of the page's other controls. */
+gsa-job-menu {
+  display: contents;
+}
 .jobmenu {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 6px);
   z-index: var(--z-menu);
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: max-content;
+  max-height: max(var(--available-height, 100vh), 10rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
   box-shadow: 0 10px 28px var(--dialog-shadow);
 }
+.jobmenu[hidden] {
+  display: none;
+}
+.jobmenu:focus {
+  outline: none;
+}
 .jobmenu .jobicons {
   flex-wrap: nowrap;
 }
 .jobmenu .jobbtn {
   opacity: 0.6;
+  cursor: pointer;
+  user-select: none; /* a drag over the icons picks nothing and selects no text */
 }
-.jobmenu .jobbtn:hover {
+.jobmenu .jobbtn[data-highlighted] {
   opacity: 0.95;
 }
 .jobmenu .jobbtn[aria-checked="true"] {
@@ -111,6 +126,15 @@
 }
 .jobmenu .jobbtn[aria-checked="true"] img {
   box-shadow: none;
+}
+gsa-job-menu[data-keys] .jobbtn[data-highlighted] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+@media (forced-colors: active) {
+  .jobmenu .jobbtn[data-highlighted] {
+    outline: 2px solid Highlight;
+  }
 }
 /* the Food menu's Sort row: a smaller segmented control */
 .meal-sort .seg label {

@@ -24,6 +24,7 @@ import './ui/elements/math-page/bar-popover.ts';
 import './ui/elements/math-page/stat-note.ts';
 import './ui/elements/shared/dialog.ts';
 import './ui/elements/shared/collapsible.ts';
+import './ui/elements/app/job-menu.ts';
 import './ui/elements/app/notes.ts';
 import './ui/elements/set-page/food-menu.ts';
 import './ui/elements/sheets/switch-menu.ts';

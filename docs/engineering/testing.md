@@ -144,7 +144,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | ui/components/sheets | the Sheets tab with a real sheets' store (note 12); its members, by kind, against a fixed list |
 | ui/components/sheets/open-row | a click on a row opens its sheet or set, except on the row's own controls and after a text selection |
 | ui/components/sync-explainer | Piece stats: its views built once per change, the item level box, the substat menus, the chart's width |
-| ui/components/sync-explainer.bar | the math bar: the Job menu's owner per sub-tab and on the Gear browser strip, the Sync settings and Substats & materia popovers (one open at a time, focus, Escape), the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level |
+| ui/components/sync-explainer.bar | the math bar: the Job menu's owner per sub-tab, the Sync settings and Substats & materia popovers (one open at a time, focus, Escape), the IL Sync switch and the cap it stores, the Level box and its flag for text that is no level |
 | ui/components/tiers | Substat tiers: typed and clicked values and when they drop, the Level box |
 | ui/hq-font | the HQ glyph font and its fallback |
 | ui/no-alpine | only `src/main.js` imports Alpine, so every module of `src/ui` and `src/core` loads in Node |

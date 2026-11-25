@@ -78,22 +78,9 @@
     class="mctl jobctl"
     x-show="$store.app.mathTab !== 'gcd'"
     id="m-job-wrap"
-    x-ref="jobWrap">
-    <span id="m-job-label" x-text="jobMenuText.label"></span>
-    <button
-      type="button"
-      class="multi-btn jobbox"
-      id="m-job-btn"
-      x-ref="jobButton"
-      aria-haspopup="true"
-      aria-controls="m-job-menu"
-      :aria-expanded="String(jobMenuOpen)"
-      aria-labelledby="m-job-label m-job-name m-job-code"
-      @click="toggleJobMenu()"
-      @keydown.arrow-down.prevent="openJobMenu()">
-      <img :src="jobIcon" alt="" width="26" height="26"><span class="jobtext"><span class="sized"><span><span id="m-job-name" x-text="menuJobCtx.jobName"></span> <span class="jobcode" id="m-job-code" x-text="`(${menuJobId})`"></span></span><span class="sizertext" aria-hidden="true" x-text="jobSizer"></span></span></span>
-    </button>
-    <!-- INCLUDE job-menu.html id=m-job-menu label=m-job-label -->
+    x-effect="$el.firstElementChild.job = mathJob"
+    @job-change="setMathJob($event.detail)">
+    <gsa-job-menu x-ignore sized prefix="m-job" button-id="m-job-btn" menu-id="m-job-menu"></gsa-job-menu>
   </div>
   <div class="barsec divided afterjob piecesec" x-show="$store.app.mathTab === 'piece'">
   <label class="mctl menu" x-ref="slotMenu">Slot

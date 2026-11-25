@@ -182,7 +182,7 @@ The Job and sync settings (job, synced level, item level sync and its cap) are o
 
 Its behaviour:
 
-- The job menu lists the jobs one line per role (the role's name, then its job icons); the selected job is at full brightness and the others dimmed. Picking a job closes the menu and switches at once, with no question (`requestJob` in `components/job-menu.js`, the one menu of the strip and of the math bar; its markup is `partials/job-menu.html`). Escape or a click outside closes it, and Escape puts the focus back on the Job box.
+- The job menu lists the jobs one line per role (the role's name, then its job icons); the selected job is at full brightness and the others dimmed. Picking a job closes the menu and switches at once, with no question (the one menu of the strip and of the math bar is the element `<gsa-job-menu>`, a Zag menu with radio items; the page switches the job on its `job-change` event). ArrowDown on the Job box opens it on the chosen job; Up and Down move between the roles, Left and Right inside one; Escape or a click outside closes it, and Escape puts the focus back on the Job box; Tab closes it and the focus moves on.
 - The default job is Paladin; there is no "no job" state, and a saved job id that is not a known job becomes Paladin.
 - A number field's range ("1–100") sits at the right end of its label line, over the box's right edge (`.f-range` in a `.f` label).
 - The Job, level and cap boxes share one width (the widest "Name (CODE)", 210 px), so the strip is one row at 960 px. The item level field has no line under it: a lowered or invalid cap shows as a flag in its label line, in the range's place (the field's flag, below), so the strip keeps its height and no control moves.
@@ -355,7 +355,7 @@ Every `z-index` in `src/styles/` names a `--z-*` token from `tokens.css` (`--z-r
 | Concept | File |
 | --- | --- |
 | The page template (frame, the Gear browser's Job and sync strip, Sheets shell and dialogs, footer) | `src/index.html` |
-| The job menu of the strip and of the math bar | `src/ui/components/job-menu.js`, `src/partials/job-menu.html` |
+| The job menu of the strip and of the math bar | `src/ui/elements/app/job-menu.ts` (`<gsa-job-menu>`) and `job-menu-names.ts` |
 | The cap and level controls of the strip and of Stat Allocation's Sync settings (flag, lowering, errors) | `src/ui/components/cap-controls.js`, `src/ui/level-cap.js` |
 | The Math tab, the Gear browser, the sheet manager and sheet page, a set's page | `src/partials/math-page.html`, `gear-page.html`, `sheet-pages.html`, `set-page.html` |
 | What the solver answers for an Auto-fill: the answer, the Gear to search line and the Target GCD label | `src/ui/solve.js` (`solveView`, `gearToSearchView`, `searchCount`) |

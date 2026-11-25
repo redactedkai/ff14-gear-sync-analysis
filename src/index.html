@@ -77,21 +77,11 @@
   x-data="settings"
   x-show="$store.app.tab === 'browse'"
   :data-job="$store.app.job || ''">
-  <div class="f boxf jobfield" x-ref="jobWrap">
-    <span id="job-label">Job</span>
-    <button
-      type="button"
-      class="multi-btn jobbox"
-      id="job-menu-btn"
-      x-ref="jobButton"
-      aria-haspopup="true"
-      :aria-expanded="String(jobMenuOpen)"
-      aria-labelledby="job-label job-name job-code"
-      @click="toggleJobMenu()"
-      @keydown.arrow-down.prevent="openJobMenu()">
-      <img :src="jobIcon" alt="" width="26" height="26"><span class="jobtext"><span id="job-name" x-text="jobCtx.jobName"></span> <span class="jobcode" id="job-code" x-text="`(${$store.app.job})`"></span></span>
-    </button>
-    <!-- INCLUDE job-menu.html id=job-menu label=job-label -->
+  <div
+    class="f boxf jobfield"
+    x-effect="$el.firstElementChild.job = $store.app.job"
+    @job-change="$store.app.setJob($event.detail, 'browse')">
+    <gsa-job-menu x-ignore prefix="job" button-id="job-menu-btn" menu-id="job-menu"></gsa-job-menu>
   </div>
   <label class="f boxf"><span>Synced level <span class="f-range" id="level-range" x-text="`1–${$store.app.jobCtx.maxLevel}`"></span></span>
     <input
