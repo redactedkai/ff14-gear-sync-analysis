@@ -8,6 +8,12 @@ import { STORE_KEY } from '../../src/ui/store-key.js';
 export const SETTLE_MS = 450;
 // longest wait, in milliseconds, for an Auto-fill to finish before a view's shot is taken
 const FILL_TIMEOUT_MS = 60_000;
+// longest wait, in milliseconds, for the note after an action to clear itself (the page's own clock, NOTE_MS in
+// src/ui/elements/app/note-timer.ts, is 6000) and for the page to stop moving after the scroll to the top
+const NOTE_TIMEOUT_MS = 15_000;
+const LAYOUT_TIMEOUT_MS = 10_000;
+// how many animation frames in a row the page and its open layers must keep their places to count as settled
+const STILL_FRAMES = 3;
 
 /* Saved states the views start from (the shape of src/ui/state.js; restoreState fills in the rest). */
 const SAGE = { job: 'SGE', cap: 123, sync: true, level: 100, tab: 'browse', mathTab: 'piece' };
@@ -135,7 +141,7 @@ export const VIEWS = {
   },
   '09-browse': { state: SAGE, steps: noSteps },
   '10-browse-filtered': {
-    state: { ...SAGE, browse: { q: 'ward', min: 100, max: 400, lvl: 80, expOff: ['ARR'] } },
+    state: { ...SAGE, browse: { q: 'robe', min: 100, max: 400, lvl: 80, expOff: ['ARR'] } },
     steps: noSteps,
   },
   '11-browse-from-menu': {
@@ -281,12 +287,57 @@ export async function prepareContext(context, view) {
   }
 }
 
-/* On a page that has just loaded: waits for the fonts, runs the view's steps, and leaves the pointer off everything, so
-   the page is ready for its shot. */
+/* Waits until the note after an action (the toast of the page, `#sh-toast`) has cleared itself: a timed note in a shot would
+   make the shot depend on timing. Returns a promise; `page` is a Playwright page. */
+async function waitForNoNote(page) {
+  await page.waitForFunction(
+    () => {
+      const note = document.querySelector('#sh-toast');
+      return !note || note.textContent.trim() === '';
+    },
+    null,
+    { timeout: NOTE_TIMEOUT_MS },
+  );
+}
+
+/* Scrolls the window to the top and waits until the page has stopped moving: the scroll is at 0 and, for STILL_FRAMES
+   animation frames in a row, the page's height and every open layer (a Zag popover or menu, an open dialog) keep their
+   places. A full-page shot of a window left scrolled by a click (the click that opens a menu or a steps summary scrolls
+   its target into view) draws the sticky parts (the table header, the sub-tab and controls bar) at the scroll offset, so
+   the page looks torn; and Zag shows a popover a frame before it places it. Returns a promise; `page` is a Playwright
+   page. */
+async function scrollToTopAndSettle(page) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForFunction(
+    stillFrames => {
+      window.__shotLayout = window.__shotLayout ?? { key: '', still: 0 };
+      const state = window.__shotLayout;
+      const layers = document.querySelectorAll('[data-part="positioner"], [popover]:popover-open, dialog[open]');
+      const key = JSON.stringify([
+        window.scrollY,
+        document.documentElement.scrollHeight,
+        ...[...layers].map(layer => {
+          const box = layer.getBoundingClientRect();
+          return [layer.id, box.x, box.y, box.width, box.height];
+        }),
+      ]);
+      state.still = key === state.key ? state.still + 1 : 0;
+      state.key = key;
+      return window.scrollY === 0 && state.still >= stillFrames;
+    },
+    STILL_FRAMES,
+    { polling: 'raf', timeout: LAYOUT_TIMEOUT_MS },
+  );
+}
+
+/* On a page that has just loaded: waits for the fonts, runs the view's steps, waits out any timed note, scrolls to the
+   top, and leaves the pointer off everything, so the page is ready for its shot. */
 export async function openView(page, view) {
   await page.evaluate(() => document.fonts.ready);
   await settle(page);
   await view.steps(page);
+  await waitForNoNote(page);
+  await scrollToTopAndSettle(page);
 
   // the pointer off everything: a result drawn (or scrolled) under the pointer after Auto-fill can leave a table's
   // hovered column set (the table's data-col) with no later mouse event to clear it
