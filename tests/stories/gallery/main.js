@@ -12,7 +12,7 @@ const root = document.getElementById('root');
    error too: Chromium reports it as a page error on its own, Firefox and WebKit may not. The test fixture fails on both. */
 addEventListener('unhandledrejection', event => console.error(`unhandled rejection: ${event.reason?.stack ?? event.reason}`));
 
-/* The story function for an id like 'app/gsa-counter/Default' (file id, then the exported name), or undefined. */
+/* The story function for an id like 'app/job-menu/Default' (file id, then the exported name), or undefined. */
 async function findStory(storyId) {
   const split = storyId.lastIndexOf('/');
   const filePath = storyId.slice(0, split);

@@ -116,7 +116,7 @@ export const DOMAINS = {
     title: 'The page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls',
     src: [
       'src/{main.js,index.html,startup-failure.js}',
-      // the Lit elements, one folder per domain (this one holds the placeholder counter of the stories chain); `shared` holds
+      // the Lit elements, one folder per domain; `shared` holds
       // what every element uses: the Zag controller and the bridge to the overlay manager
       'src/ui/elements/{app,shared}/**',
       'src/ui/router/**',

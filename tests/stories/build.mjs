@@ -26,7 +26,7 @@ function listFiles(folder) {
 }
 
 /* Writes the registry: one lazy import per `*.story.{js,ts}` file, keyed by its path under tests/stories without the
-   extension ('app/gsa-counter'). Returns the number of story files. */
+   extension ('app/job-menu'). Returns the number of story files. */
 function writeRegistry() {
   const storyFiles = listFiles(STORIES_DIR).filter(file => /\.story\.(js|ts)$/.test(file));
   const lines = storyFiles.map(file => {
