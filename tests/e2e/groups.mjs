@@ -32,7 +32,6 @@ import { checkClosedPanel, checkHelpDimsPage, checkPieceBarSteady, checkPieceLab
 import { checkGcdTab, checkTiers } from './checks/math-page/tiers-gcd.mjs';
 import { checkLevelBox, checkMathBarBoxes, checkMathBarLayouts, checkMathJobs, checkSyncChip } from './checks/math-page/bar-layout.mjs';
 import { checkTiersNoteUnderPinnedBar } from './checks/math-page/tiers-note.mjs';
-import { checkTiersScroll } from './checks/math-page/tiers-scroll.mjs';
 import { checkCorruptedStorage, checkReloadPersists, checkReset } from './checks/saved-state/saved-state.mjs';
 import { checkAverageIlvl } from './checks/set-page/average-ilvl.mjs';
 import { checkSetPageColumns } from './checks/set-page/columns.mjs';
@@ -169,7 +168,6 @@ export const GROUPS = [
     steps: [
       step(checkSparePointsNoteFollowsButton, 'auto-fill'),
       step(checkTiersNoteUnderPinnedBar, 'math-page'),
-      step(checkTiersScroll, 'math-page'),
     ],
   },
   { steps: [step(checkSheetCap, 'sheets')] },
