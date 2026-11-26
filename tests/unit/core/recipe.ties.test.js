@@ -3,7 +3,7 @@
    The rule, as it is:
    - What the search ranks (weapon damage, the goal and its tiebreaks) comes out the same in every pool order.
    - Which pieces show is NOT the same in every pool order when several pieces tie on what is ranked: the optimizer keeps
-     the first of equal sets it finds (higher-ranked pieces first, then the order of the pool), and same-result.js keeps
+     the first of equal sets it finds (higher-ranked pieces first, then the order of the pool), and same-result.ts keeps
      "the optimizer's own pick" when two pieces are equally easy (same equip level, same item level). So the pieces, and
      with melds the stones, depend on the order of the pool. That is by design: a fixed tie-break was considered and not
      made (the owner's decision), so this test asserts the rule as it is. It asserts equal pieces nowhere, and it asserts

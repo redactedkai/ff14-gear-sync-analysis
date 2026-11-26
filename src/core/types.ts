@@ -1,7 +1,7 @@
 /* The shared types of src/core: the game's own records as the code reads them. Types only, no runtime code: Node strips
    them, esbuild drops them. Local types (a function's options, a search's state) stay next to the code that uses them.
 
-   Where a type is derived: the stat keys, slot types, profile ids and weapon modes come from the tables in constants.js
+   Where a type is derived: the stat keys, slot types, profile ids and weapon modes come from the tables in constants.ts
    (STAT_LABEL, SLOT_TYPES, PROFILES), so a new key is written once. The item row and the names of its fields come from
    item-format.json, which TypeScript reads only as `string`; ItemRow and RowIndex below are written to match it, and
    tests/unit/core/item-format.test.js checks ROW against both the file and RowIndex. */
@@ -61,7 +61,7 @@ export interface JobContext {
 }
 
 /* A database row of src/data/items.json, one entry per field of `itemRow.fields` in item-format.json, in that order (read
-   it through ROW: row[ROW.ilvl], never row[2]; the fields are explained at ROW in constants.js). `stats` holds the raw
+   it through ROW: row[ROW.ilvl], never row[2]; the fields are explained at ROW in constants.ts). `stats` holds the raw
    stats comma-joined in ITEM_STAT_ORDER (rowStats splits them); `routes` the bit masks over ACTIVITIES. */
 export type ItemRow = readonly [
   name: string,
@@ -179,7 +179,7 @@ export interface StoneGroup {
   readonly n: number;
 }
 
-/* A piece's melds, as bestMeld and applyStones give them (meld.js): the points the stones add per stat after the cap
+/* A piece's melds, as bestMeld and applyStones give them (meld.ts): the points the stones add per stat after the cap
    (`gain`), the stones in slot order (the best grades first), and how many slots stay empty. */
 export interface Meld {
   readonly gain: StatMap;
@@ -187,7 +187,7 @@ export interface Meld {
   readonly free: number;
 }
 
-/* A gear set as plain frozen data (makeSet in set.js; the fields are explained there): one piece per row of the character
+/* A gear set as plain frozen data (makeSet in set.ts; the fields are explained there): one piece per row of the character
    panel, and the meal's key or null. */
 export interface GearSet {
   readonly pieces: readonly SetPiece[];
@@ -212,7 +212,7 @@ export interface Candidate {
   versions?: Candidate[];
   /* true on a pinned piece (fixedCandidate) */
   fixed?: boolean;
-  /* the candidate a regain cut copy stands for (regain.js) */
+  /* the candidate a regain cut copy stands for (regain.ts) */
   original?: Candidate;
 }
 
