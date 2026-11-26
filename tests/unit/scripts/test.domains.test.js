@@ -170,9 +170,9 @@ test('domains guard: a .test.ts file is a unit test, listed once and mirrored to
     assert.deepEqual(ownershipProblems(unitFilesOf(DOMAIN_NAMES, { root }), domainsOfTest), []);
     assert.deepEqual(ownershipProblems(listFiles('tests/unit', root), domainsOfTest), ['tests/unit/ui/stray.test.ts: no domain']);
   });
-  const modules = new Set(['src/ui/text.ts', 'src/ui/views/gcd.js']);
+  const modules = new Set(['src/ui/text.ts', 'src/ui/views/gcd.ts']);
   assert.equal(mirroredModule('tests/unit/ui/text.test.ts', modules), 'src/ui/text.ts');
-  assert.equal(mirroredModule('tests/unit/ui/views/gcd.test.js', modules), 'src/ui/views/gcd.js');
+  assert.equal(mirroredModule('tests/unit/ui/views/gcd.test.js', modules), 'src/ui/views/gcd.ts');
   assert.deepEqual(domainsOfTest('tests/unit/ui/text.test.ts'), ['app']);
   assert.ok(unitFilesOf(['app']).includes('tests/unit/ui/text.test.ts'));
   assert.ok(unitFilesOf(['app']).includes('tests/unit/ui/view-cache.test.ts'));

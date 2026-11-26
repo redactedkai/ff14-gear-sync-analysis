@@ -7,28 +7,46 @@ import { MAX_REAL } from '../../core/tables.ts';
 import { statEffectKinds } from '../../core/tiers.ts';
 import { shownSync } from '../job-sync-panel.ts';
 import { withRank } from '../ranks.ts';
+import type { CapDerivation, OffhandCapDerivation, OffhandLine, StatLine, StatStep } from '../../core/formulas.ts';
+import type { JobContext, SlotType, StatKey } from '../../core/types.ts';
+import type { SyncSettings } from '../job-sync-panel.ts';
+import type { PieceFields } from '../store/app-state.ts';
+
+/* The steps of a stat's derivation (statDerivation): the slot's share, the stat factor and the substat share, or an off-hand's one step. */
+type Steps = StatLine['steps'] | OffhandLine['steps'];
+
+/* The first step of a derivation of a plain piece: the slot's share of the item level's budget. */
+type SlotStep = Extract<StatStep, { kind: 'slot' }>;
+
+/* One choice of the Slot menu: its value (the group's first slot), its label and the slots in the group. */
+export interface SlotGroup {
+  value: SlotType;
+  label: string;
+  slots: SlotType[];
+}
 
 /* The Slot menu's choices for `job` (a JobContext): the job's slots that share a budget share, each group one choice, in
    slot order: [{value (the group's first slot, what the piece's slot is set to), label ("Head / Hands / Feet"; "Accessories" for the four accessories), slots}].
    Slots with the same share get the same stats at every item level, so one choice stands for the group (two-handed:
    Weapon; Head, Hands, Feet; Body, Legs; the four accessories; a job with a shield (weaponMode '1h+oh' or 'mixed') has the one-handed
    Weapon and the Off-hand apart). */
-export function slotGroups(job) {
-  const groups = new Map(); // share (per mille) -> slots
+export function slotGroups(job: JobContext): SlotGroup[] {
+  const groups = new Map<number, SlotType[]>(); // share (per mille) -> slots
   for (const type of job.activeSlotTypes) {
     const share = job.slotPct[type];
     groups.set(share, [...(groups.get(share) ?? []), type]);
   }
   // the four accessories take one short name, so the Slot menu stays narrow
-  const labelOf = slots => (slots.join() === ACCESSORY_SLOTS.join() ? ACCESSORIES_LABEL : slots.map(t => SLOT_LABEL[t]).join(' / '));
+  const labelOf = (slots: SlotType[]) =>
+    slots.join() === ACCESSORY_SLOTS.join() ? ACCESSORIES_LABEL : slots.map(t => SLOT_LABEL[t]).join(' / ');
   return [...groups.values()].map(slots => ({ value: slots[0], label: labelOf(slots), slots }));
 }
 
 /* A slot share in per mille as a percent: one decimal shows it exactly (85 ‰ = 8.5%). */
-const sharePct = perMille => `${perMille / 10}%`;
+const sharePct = (perMille: number) => `${perMille / 10}%`;
 
 /* "base × 8.5% = 26.4 → 26; × 70% = 18.2 → 18": a stat's derivation (statDerivation's steps). */
-function formulaText(steps) {
+function formulaText(steps: Steps): string {
   return steps
     .map(s => {
       if (s.kind === 'offhand') {
@@ -47,7 +65,7 @@ function formulaText(steps) {
 
 /* "363 × 8.5% = 30.8 → 31", or with a stat factor "414 × 90% = 372; × 8.5% = 31.6 → 32": a cap's derivation
    (capDerivation), in the order the cap is computed. */
-function capFormulaText(d) {
+function capFormulaText(d: CapDerivation | OffhandCapDerivation): string {
   if (d.offhand) {
     return `two-handed ${d.offhand.two} − one-handed ${d.offhand.one} = ${d.value}`;
   }
@@ -57,12 +75,12 @@ function capFormulaText(d) {
 
 /* One sentence for where a stat's value on the piece comes from (statDerivation's steps); `main`: the job's main stat
    name, for the Vitality factor. */
-function ownSentence(steps, il, main) {
+function ownSentence(steps: Steps, il: number, main: string): string {
   const first = steps[0];
   if (first.kind === 'offhand') {
     return `The two-handed weapon's ${first.two} minus the one-handed weapon's ${first.one}.`;
   }
-  let text = `${sharePct(first.pct)} of the item level ${il} budget (${first.base})`;
+  let text = `${sharePct((first as SlotStep).pct)} of the item level ${il} budget (${(first as SlotStep).base})`;
   for (const s of steps.slice(1)) {
     if (s.kind === 'factor') {
       text += `, then ${Math.round(s.factor * 100)}% on ${main} gear`;
@@ -76,7 +94,7 @@ function ownSentence(steps, il, main) {
 
 /* One sentence for where a stat's ceiling comes from (capDerivation), worded like
    ownSentence's; `main`: the job's main stat name. */
-function capSentence(d, cap, main) {
+function capSentence(d: CapDerivation | OffhandCapDerivation, cap: number, main: string): string {
   if (d.offhand) {
     return `Most allowed: the two-handed ceiling ${d.offhand.two} minus the one-handed ceiling ${d.offhand.one}.`;
   }
@@ -94,8 +112,8 @@ export const SLOT_SIZER = [...new Set(JOBS.flatMap(job => slotGroups(makeJobCont
 /* The slots of a full set as slices of one budget, in per mille: the job's slots with both rings (they add up to the
    whole budget, 1,000), the slots that share `slot`'s share marked (the Slot menu's group: Head, Hands and Feet).
    [{label, width, on}] */
-function budgetSlices(job, slot) {
-  return [...job.activeSlotTypes, 'ring'].map(t => ({
+function budgetSlices(job: JobContext, slot: SlotType) {
+  return [...job.activeSlotTypes, 'ring' as SlotType].map(t => ({
     label: SLOT_LABEL[t],
     width: job.slotPct[t],
     share: sharePct(job.slotPct[t]),
@@ -108,33 +126,33 @@ function budgetSlices(job, slot) {
    explainer's chosen one, explainerItemLevel; null: the piece's own, else the highest): a summary, the slot slices of
    the budget, and per stat the piece's value and, under sync, the ceiling (the same slot at the synced item level),
    each with a sentence and its arithmetic. */
-export function pieceView(job, sync, piece, ilvl) {
+export function pieceView(job: JobContext, sync: SyncSettings, piece: PieceFields, ilvl: number | null | undefined) {
   const p = piece,
     il = clampIlvl(ilvl ?? p.ilvl ?? MAX_REAL),
-    t = p.slot,
+    t = p.slot as SlotType,
     slotName = SLOT_LABEL[t].toLowerCase();
   const shown = shownSync(job, sync),
     cap = shown?.cap ?? null;
-  let status = 'off';
+  let status: 'off' | 'below' | 'above' = 'off';
   if (shown) {
-    status = il <= cap ? 'below' : 'above';
+    status = il <= (cap as number) ? 'below' : 'above';
   }
 
   // each line: the piece's value, and under sync its ceiling; a piece above the cap keeps the lower of the two
-  const lines = [
+  const lines: { stat: StatKey; w: number; sub?: boolean }[] = [
     { stat: job.mainKey, w: 100 },
     { stat: 'vit', w: 100 },
   ];
   p.subs.forEach((s, i) => {
-    if (s && job.substats.includes(s)) {
-      lines.push({ stat: s, w: SUB_WEIGHTS[i], sub: true });
+    if (s && job.substats.includes(s as StatKey)) {
+      lines.push({ stat: s as StatKey, w: SUB_WEIGHTS[i], sub: true });
     }
   });
   const rows = lines.map(({ stat, w, sub }) => {
     const d = statDerivation(job, stat, il, t, w);
     const c = shown ? capDerivation(job, stat, cap, t) : null;
     const raw = d.value,
-      syn = status === 'above' ? Math.min(raw, c.value) : raw;
+      syn = status === 'above' ? Math.min(raw, (c as { value: number }).value) : raw;
     return {
       stat,
       w,
@@ -146,10 +164,10 @@ export function pieceView(job, sync, piece, ilvl) {
       ownText: ownSentence(d.steps, il, job.label[job.mainKey]),
       ownFormula: formulaText(d.steps),
       cap: c?.value ?? null,
-      capText: c ? capSentence(c, cap, job.label[job.mainKey]) : '',
+      capText: c ? capSentence(c, cap as number, job.label[job.mainKey]) : '',
       capFormula: c ? capFormulaText(c) : '',
       // the number the duty keeps: the piece's own, unless it is above the cap and over its ceiling
-      ownKept: status !== 'above' || raw <= c.value,
+      ownKept: status !== 'above' || raw <= (c as { value: number }).value,
     };
   });
 
@@ -157,8 +175,8 @@ export function pieceView(job, sync, piece, ilvl) {
   const subs = rows.filter(r => r.sub);
   const subRaw = subs.reduce((a, r) => a + r.raw, 0),
     subKept = subs.reduce((a, r) => a + r.syn, 0);
-  const most = subs.reduce((a, r) => (r.lost > (a?.lost ?? 0) ? r : a), null);
-  let summary;
+  const most = subs.reduce<(typeof rows)[number] | null>((a, r) => (r.lost > (a?.lost ?? 0) ? r : a), null);
+  let summary: string;
   if (status === 'off') {
     summary = `No sync applies: these are the ${slotName}'s stats as they are.`;
   } else if (status === 'below') {
@@ -195,13 +213,13 @@ export function pieceView(job, sync, piece, ilvl) {
     // sync cuts the 70% line to the full-share cap, so it ends up level with the first (math.md section 5)
     evenSubs: status === 'above' && rows.some(r => r.w === SUB_WEIGHTS[1] && r.syn === r.cap),
     // the fixed Direct Hit line exists only on older healer gear: the jobs whose special substat (Piety) gives MP
-    healerNote: statEffectKinds(job.specKey).includes('mp'),
+    healerNote: statEffectKinds(job.specKey as StatKey).includes('mp'),
   };
 }
 
 /* Piece stats substat ranks after choosing `value` (or '' for none) at rank `i`: the shared rule of ranked dropdowns
    (ui/ranks.ts withRank), on two ranks. Rank 1 is never empty; rank 2 may be. */
-export function withSub(subs, i, value, substats) {
+export function withSub(subs: readonly (string | null)[], i: number, value: string | null, substats: readonly string[]): (string | null)[] {
   const two = subs.slice(0, 2);
   while (two.length < 2) {
     two.push(null);

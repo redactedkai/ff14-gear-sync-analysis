@@ -4,7 +4,7 @@
    - its parent gives it the tab's settings: `job` (Substat tiers' own job id), `typedLevel` (the level
      typed into the math bar's box, or null: the job's level cap) and `shown` (the sub-tab is open); the element reads no store;
    - the values typed or clicked are the element's own: each substat starts at its base, and a value is kept until the job or
-     the level changes (views/tiers.js tierEdited), not saved;
+     the level changes (views/tiers.ts tierEdited), not saved;
    - a card's rows are a window of the tiers drawn by the `tierRows` directive on its scroll area (tier-rows.ts); a value typed
      brings its row to the middle, a click on a row only moves the highlight;
    - the "?" note is the `gsa-stat-note` element drawn inside this one, hung under the button of the open substat;
@@ -23,28 +23,14 @@ import {
   tierPicked,
   tiersView,
   tierValues,
-} from '../../views/tiers.js';
+} from '../../views/tiers.ts';
 import { viewCache } from '../../view-cache.ts';
 import { STAT_NOTE_ID } from './stat-note-names.ts';
 import './stat-note.ts';
-import { tierRows, type TierRowsSource } from './tier-rows.ts';
+import { tierRows } from './tier-rows.ts';
 
-/* One card of the view (the shape `tiersView` in views/tiers.js builds). */
-interface TierCard extends TierRowsSource {
-  stat: string;
-  label: string;
-  value: number;
-  lines: string[];
-  haste: string;
-  help: { title: string; affects: string; size: string };
-  foot: { spare: string; toNext: string | null };
-}
-
-/* What the tab shows. */
-interface TiersTabView {
-  level: number;
-  cards: TierCard[];
-}
+/* What the tab shows: what `tiersView` (views/tiers.ts) builds; a card is one substat's. */
+type TiersTabView = NonNullable<ReturnType<typeof tiersView>>;
 
 /* The `gsa-tiers-view` element (registered below): see the file header. */
 export class GsaTiersView extends LitElement {
@@ -60,7 +46,7 @@ export class GsaTiersView extends LitElement {
   declare job: string;
   declare typedLevel: number | null;
   declare shown: boolean;
-  // the values typed or clicked, with the settings they were made under (views/tiers.js tierEdited)
+  // the values typed or clicked, with the settings they were made under (views/tiers.ts tierEdited)
   declare edits: { key: string; values: Readonly<Record<string, number>> };
   // how many times a value was typed into each substat's box, {stat: count}: its card brings the tier to the middle of its
   // scroll area at each (a click on a row does not)
@@ -102,7 +88,7 @@ export class GsaTiersView extends LitElement {
     }
   }
 
-  /* The cards (views/tiers.js tiersView) for the settings and the values. */
+  /* The cards (views/tiers.ts tiersView) for the settings and the values. */
   private get view(): TiersTabView {
     const { job, level } = this.settings;
     const key = JSON.stringify([job.jobId, level, this.edits.values]);
@@ -110,7 +96,7 @@ export class GsaTiersView extends LitElement {
   }
 
   /* A value typed into a substat's box (Enter or leaving the box): the box shows the value kept. */
-  private typeValue(stat: string, box: HTMLInputElement): void {
+  private typeValue(stat: StatKey, box: HTMLInputElement): void {
     const { job, level } = this.settings;
     const value = tierInput(job, stat, box.value, level);
     if (value == null) {

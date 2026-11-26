@@ -175,7 +175,7 @@ test('nested objects that are not objects fall back to their defaults', () => {
 });
 
 test('Piece stats fields: a bad item level, slot or substat list falls back; repeats and an old third rank drop', () => {
-  assert.equal(D.piece.ilvl, null); // null: the cap (explainerItemLevel in views/sync-explainer.js)
+  assert.equal(D.piece.ilvl, null); // null: the cap (explainerItemLevel in views/sync-explainer.ts)
   expectFieldDefault('piece.ilvl', 'abc', null);
   expectFieldDefault('piece.ilvl', null, null);
   expectFieldDefault('piece.ilvl', 900, MAX_REAL); // an older save's number is kept, held to the real item levels

@@ -49,6 +49,8 @@ export interface CapParts {
 }
 /* capDerivation of a plain piece: its budget, factor in percent, share in per mille and the cap's parts. */
 export interface CapDerivation extends CapParts {
+  /* only an off-hand's derivation has it (OffhandCapDerivation), so `d.offhand` tells the two apart */
+  offhand?: undefined;
   base: number;
   factorPct: number;
   pct: number;
@@ -121,7 +123,7 @@ export function statLine(base: number, pct: number, factor = 1, weight: number |
 /* An off-hand (shield) is not its own 40-per-mille share: each of its stats is the two-handed weapon's value minus the
    one-handed weapon's, both computed in full (140 - 100 = 40). Inferred from real gear: it reproduces 224 of 226
    off-hands, the plain 40 share 195 (docs/mechanics/math.md, section 3). `pct` is the piece's share, null for the type's own. */
-export function isOffhand(type: SlotType, pct: number | null | undefined): boolean {
+export function isOffhand(type: SlotType, pct?: number | null): boolean {
   return type === 'offhand' && (pct == null || pct === BASE_SLOT_PCT.offhand);
 }
 
@@ -195,7 +197,7 @@ export function capDerivation(
   stat: StatKey,
   ilvl: unknown,
   type: SlotType,
-  pct: number | null | undefined,
+  pct?: number | null,
   factor: number | null | undefined = null,
 ): CapDerivation | OffhandCapDerivation {
   if (isOffhand(type, pct)) {
@@ -225,7 +227,7 @@ export function capsFor(
   job: JobContext,
   type: SlotType,
   capIlvl: unknown,
-  pct: number | null | undefined,
+  pct?: number | null,
   factors: StatMap | null = null,
 ): PerStat<number> {
   return Object.fromEntries(job.stats.map(s => [s, capValue(job, s, capIlvl, type, pct, factors?.[s])])) as PerStat<number>;
@@ -238,7 +240,7 @@ export function syncStats(
   type: SlotType,
   capIlvl: number,
   itemIlvl: number | null | undefined,
-  pct: number | null | undefined,
+  pct?: number | null,
   factors: StatMap | null = null,
 ): StatMap {
   if (itemIlvl != null && itemIlvl <= capIlvl) {

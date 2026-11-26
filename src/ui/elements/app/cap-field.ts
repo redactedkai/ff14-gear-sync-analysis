@@ -21,7 +21,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import { MAX_REAL } from '../../../core/tables.ts';
 import { capTextBad, limitCapToLevel } from '../../level-cap.ts';
 import { TYPING_DEBOUNCE_MS, flashLowered, numberBox } from '../../number-field.js';
-import { capFieldView } from '../../views/cap-field.js';
+import { capFieldView } from '../../views/cap-field.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { type CapFlag, capFlagTemplate } from './cap-flag.ts';
 import { type FollowInput, followPlan } from './cap-follow.ts';

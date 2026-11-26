@@ -21,7 +21,7 @@ import { NOTE_CLOSE_EVENT, STAT_NOTE_ID } from './stat-note-names.ts';
 const NOTE_GAP_PX = 8;
 const NOTE_SHIFT_PX = 20;
 
-/* What the note says (a card's `help` in src/ui/views/tiers.js): its heading and two paragraphs. */
+/* What the note says (a card's `help` in src/ui/views/tiers.ts): its heading and two paragraphs. */
 export interface StatNoteText {
   title: string;
   affects: string;

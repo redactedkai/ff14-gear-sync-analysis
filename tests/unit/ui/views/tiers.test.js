@@ -1,4 +1,4 @@
-/* How the math works, Tiers (src/ui/views/tiers.js): the view object (a card per substat, every tier of it from the base
+/* How the math works, Tiers (src/ui/views/tiers.ts): the view object (a card per substat, every tier of it from the base
    up to the most a box takes, each row a range of panel values), where its values come from, and typed values. Tier
    numbers are checked in core/tiers.test.js; here, the cards' shape and wording. Expected tiers are worked by hand from
    AkhMorning's formulas at level 100 (DIV 2780, SUB 420), as in core/tiers.test.js. */
@@ -17,7 +17,7 @@ import {
   tierPicked,
   tiersView,
   tierValues,
-} from '../../../../src/ui/views/tiers.js';
+} from '../../../../src/ui/views/tiers.ts';
 
 /* The job's context (the views take it, not the store); every test is at level 100 unless it names another. */
 const app = id => makeJobContext(id);

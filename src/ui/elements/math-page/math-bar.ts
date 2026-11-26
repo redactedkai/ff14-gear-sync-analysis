@@ -7,7 +7,7 @@
    - it sends `math-sub` (a plain click on a sub-tab link), `piece-edit` (a change of the example piece) and `job-change` (the Job
      menu's); the GCD and Substat tiers controls send their own events (`gcd-edit`, `tiers-level`), which pass through; the page
      edits the store and gives the settings back.
-   What the controls show comes from `mathBarView` (views/math-bar.js), which also holds the rules for an edit.
+   What the controls show comes from `mathBarView` (views/math-bar.ts), which also holds the rules for an edit.
    The Sync settings chip (between the Substats & materia chip and the Gear item level control) opens a popover with the Level and Synced IL
    fields (`<gsa-level-field>`, `<gsa-cap-field>`: the same fields as the Gear browser's strip) and the IL Sync switch. The element gets
    the panel it edits (`syncPanel`: the stored cap and level and the switch; `openTab`, whether the math tab is open, which makes the cap
@@ -32,13 +32,14 @@ import {
   SYNC_LABEL_ROWS,
   capGuessText,
   syncChipView,
-} from '../../views/sync-explainer.js';
-import { SLOT_SIZER } from '../../views/piece.js';
-import { MATH_SUB_TABS, ilvlEdit, mathBarView, slotEdit, subsEdit } from '../../views/math-bar.js';
+} from '../../views/sync-explainer.ts';
+import { SLOT_SIZER } from '../../views/piece.ts';
+import { MATH_SUB_TABS, ilvlEdit, mathBarView, slotEdit, subsEdit } from '../../views/math-bar.ts';
 import './bar-popover.ts';
 import './gcd-controls.ts';
 import './tiers-controls.ts';
 import '../app/cap-field.ts';
+import type { SlotType } from '../../../core/types.ts';
 import type { GsaCapField } from '../app/cap-field.ts';
 import '../app/job-menu.ts';
 import '../app/level-field.ts';
@@ -129,7 +130,7 @@ export class GsaMathBar extends LitElement {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
   }
 
-  /* A change of the example piece (views/math-bar.js builds the patch); none when the edit changes nothing. */
+  /* A change of the example piece (views/math-bar.ts builds the patch); none when the edit changes nothing. */
   private editPiece(patch: object | null): void {
     if (patch) {
       this.send(PIECE_EDIT_EVENT, patch);
@@ -226,7 +227,7 @@ export class GsaMathBar extends LitElement {
             label="Slot"
             .options=${view.slotOptions}
             .value=${view.slotValue}
-            @change=${(event: CustomEvent<string>) => this.editPiece(slotEdit(this.piece, event.detail))}></gsa-select></span><span class="sizertext" aria-hidden="true">${SLOT_SIZER}</span></span>
+            @change=${(event: CustomEvent<SlotType>) => this.editPiece(slotEdit(this.piece, event.detail))}></gsa-select></span><span class="sizertext" aria-hidden="true">${SLOT_SIZER}</span></span>
         </div>
         <gsa-bar-popover class="mctl piecewrap" id="p-piece-wrap" trigger-id="p-piece-chip" content-id="p-piece-pop" focus-in="#p-s1" align-bar>
           <span id="p-piece-label">${text.label}</span>

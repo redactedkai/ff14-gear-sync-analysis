@@ -67,8 +67,8 @@ export function capFlag({
 }: {
   error: string;
   missing?: boolean;
-  note: string;
-  lowered: Pick<LoweredCap, 'to'> | null;
+  note?: string;
+  lowered?: Pick<LoweredCap, 'to'> | null;
   range: string;
 }): { kind: 'error' | 'lowered' | ''; short: string; full: string } {
   if (error) {
@@ -81,7 +81,7 @@ export function capFlag({
 }
 
 /* A number field's range in its label line, from 1 to `max`: "1–100" for a level, "1–795" for an item level. */
-export function rangeText(max: number): string {
+export function rangeText(max: number | string): string {
   return `1–${max}`;
 }
 
@@ -104,7 +104,7 @@ export const CAP_TYPED_BAD_TEXT = `Enter a whole item level from 1 to ${MAX_REAL
    is the highest level the tab takes). Templates and tests read these. */
 export const LEVEL_TEXT = Object.freeze({
   range: rangeText,
-  typedBad: (max: number) => `Enter a whole level from 1 to ${max}`,
+  typedBad: (max: number | string) => `Enter a whole level from 1 to ${max}`,
 });
 
 /* Text typed in a level field is no level: empty, not a whole number (letters, 12.5), or outside 1 to `max`, the job's level cap

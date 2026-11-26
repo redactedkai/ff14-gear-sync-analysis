@@ -64,7 +64,7 @@
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
-/* the table: divs in a grid, a row each (views/tiers.js). The column names stay stuck at the top of the area. A row has
+/* the table: divs in a grid, a row each (views/tiers.ts). The column names stay stuck at the top of the area. A row has
    a fixed height, so the page can draw only the rows around the ones in view and pad the rest (tier-rows.ts and tier-window.ts). */
 .ladder {
   /* the first column holds a range up to "3,673–3,680"; the others share the rest and may be narrower than their

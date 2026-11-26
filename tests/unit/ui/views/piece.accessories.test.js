@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { ACCESSORY_SLOTS, SLOT_LABEL } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { capsFor } from '../../../../src/core/formulas.ts';
-import { slotGroups } from '../../../../src/ui/views/piece.js';
+import { slotGroups } from '../../../../src/ui/views/piece.ts';
 import { gearOf, explainerViewOf, makeApp, pieceViewOf } from '../../helpers/views.js';
 
 // one job per role: tank, healer, melee, physical ranged, caster

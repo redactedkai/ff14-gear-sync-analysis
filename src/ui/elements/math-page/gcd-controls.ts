@@ -12,7 +12,7 @@ import { LitElement, html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { LEVEL_TEXT } from '../../level-cap.ts';
 import { TYPING_DEBOUNCE_MS } from '../../number-field.js';
-import { GCD_LEVELS, HASTE_OPTIONS, HASTE_SIZER, gcdControlsView, gcdLevelTyped, gcdSpeedTyped } from '../../views/gcd.js';
+import { GCD_LEVELS, HASTE_OPTIONS, HASTE_SIZER, gcdControlsView, gcdLevelTyped, gcdSpeedTyped } from '../../views/gcd.ts';
 import { GCD_EDIT_EVENT, type GcdSettings } from './gcd-names.ts';
 
 /* The `gsa-gcd-controls` element (registered below): see the file header. */
@@ -58,7 +58,7 @@ export class GsaGcdControls extends LitElement {
     this.dispatchEvent(new CustomEvent(GCD_EDIT_EVENT, { detail: patch, bubbles: true }));
   }
 
-  /* What the controls show now (views/gcd.js gcdControlsView). */
+  /* What the controls show now (views/gcd.ts gcdControlsView). */
   private get shown() {
     return gcdControlsView(this.level, this.syncedLevel, this.speed);
   }

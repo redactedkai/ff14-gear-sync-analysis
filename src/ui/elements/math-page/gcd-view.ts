@@ -11,17 +11,13 @@
 import { LitElement, html } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
-import { gcdTabLevel, gcdView } from '../../views/gcd.js';
+import { gcdTabLevel, gcdView } from '../../views/gcd.ts';
 import { viewCache } from '../../view-cache.ts';
 import { ElementWidthController } from '../shared/element-width.ts';
 import { GCD_EDIT_EVENT } from './gcd-names.ts';
 
-/* What the tab shows (the shape `gcdView` in views/gcd.js builds). */
-interface GcdTabView {
-  facts: { value: string; label: string }[];
-  steps: { speed: number; gcd: string; cut: string; cur: boolean; out: boolean }[];
-  chartSvg: string;
-}
+/* What the tab shows: what `gcdView` (views/gcd.ts) builds. */
+type GcdTabView = ReturnType<typeof gcdView>;
 
 /* The `gsa-gcd-view` element (registered below): see the file header. */
 export class GsaGcdView extends LitElement {
@@ -59,7 +55,7 @@ export class GsaGcdView extends LitElement {
     this.querySelector('#g-chart')?.addEventListener('click', event => this.pickLevel(event));
   }
 
-  /* The tab's view (views/gcd.js gcdView) for the settings and the chart's width. */
+  /* The tab's view (views/gcd.ts gcdView) for the settings and the chart's width. */
   private get view(): GcdTabView {
     const level = gcdTabLevel(this.level, this.syncedLevel);
     const width = this.chartWidth.width;

@@ -35,14 +35,14 @@ test('wrapper selection: a unit test goes to the domain of its module; --fast le
 
 test('changed files: git status lines give the new path of a rename, untracked files and deletions', () => {
   const porcelain = [
-    ' M src/ui/views/gcd.js',
+    ' M src/ui/views/gcd.ts',
     '?? tests/e2e/checks/set-page/columns.mjs',
     'R  src/ui/old-name.js -> src/ui/store.js',
     ' D src/styles.css',
     '',
   ].join('\n');
   assert.deepEqual(changedPathsOf(porcelain), [
-    { path: 'src/ui/views/gcd.js', deleted: false },
+    { path: 'src/ui/views/gcd.ts', deleted: false },
     { path: 'tests/e2e/checks/set-page/columns.mjs', deleted: false },
     { path: 'src/ui/store.js', deleted: false },
     { path: 'src/styles.css', deleted: true },
@@ -51,7 +51,7 @@ test('changed files: git status lines give the new path of a rename, untracked f
 
 test('changed files: a source file, a unit test, a smoke check and a build setting each map to their domain', () => {
   const domainsOf = path => domainsOfChange({ path }).domains;
-  assert.deepEqual(domainsOf('src/ui/views/gcd.js'), ['math-page']);
+  assert.deepEqual(domainsOf('src/ui/views/gcd.ts'), ['math-page']);
   assert.deepEqual(domainsOf('src/core/optimizer/index.ts'), ['solver']);
   assert.deepEqual(domainsOf('scripts/data/regen.py'), ['data']);
   assert.deepEqual(domainsOf('tests/unit/ui/views/set-rows.test.js'), ['set-page']);
@@ -72,14 +72,14 @@ test('changed files: documentation maps to nothing without a warning; an unknown
 test('changed files: the picked domains come in registry order, one line per path, and the unowned paths are listed', () => {
   const picked = domainsOfChanges([
     { path: 'tests/unit/ui/views/set-rows.test.js' },
-    { path: 'src/ui/views/gcd.js' },
+    { path: 'src/ui/views/gcd.ts' },
     { path: 'src/core/formulas.ts' },
     { path: 'docs/roadmap.md' },
     { path: 'notes.txt' },
   ]);
   assert.deepEqual(picked.domains, ['model', 'set-page', 'math-page']);
   assert.equal(picked.lines.length, 5);
-  assert.match(picked.lines[1], /^src\/ui\/views\/gcd\.js: .*math-page/);
+  assert.match(picked.lines[1], /^src\/ui\/views\/gcd\.ts: .*math-page/);
   assert.deepEqual(picked.unowned, ['notes.txt']);
 });
 

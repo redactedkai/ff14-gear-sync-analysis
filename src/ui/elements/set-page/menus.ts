@@ -3,7 +3,7 @@
    they hang under and gives them their view. Part of the page's session (session.ts). */
 import { jobGear } from '../../../core/items.ts';
 import { drawInSteps } from '../../draw-in-steps.ts';
-import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.js';
+import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.ts';
 import { piecePickerView } from '../../views/piece-menu.js';
 import { materiaMenuView } from '../../views/stone-menu.js';
 import type { SwitchPick } from '../sheets/switch-menu.ts';
@@ -50,7 +50,7 @@ export class PageMenus {
   matAll: boolean;
   // the Food menu (<gsa-food-menu>) is open: the page builds its meals only then
   foodOpen: boolean;
-  // how many pieces the open piece picker draws (it draws a long list in steps: views/limit-rows.js)
+  // how many pieces the open piece picker draws (it draws a long list in steps: views/limit-rows.ts)
   private pickRows: number;
   // the last whole piece picker view built, with what it was built from, and the last cut of it to pickRows rows (the pieces keep
   // their objects from one cut to the next, so the rows already drawn are not drawn again when more are added)

@@ -32,7 +32,7 @@ const CALIBRATION_REFERENCE_MS = 75;
  * draws its rows with more work than before takes longer by the same factor whatever the machine's speed, so it still fails. */
 const menuLimit = calibrationMs => MENU_LONG_TASK_MS * Math.max(1, calibrationMs / CALIBRATION_REFERENCE_MS);
 
-/** The menus of a set page draw a long list in steps (ui/views/limit-rows.js): on open the menu shows a window of rows and
+/** The menus of a set page draw a long list in steps (ui/views/limit-rows.ts): on open the menu shows a window of rows and
  * the later ones follow, so no task is long at 4x slower CPU; every piece is still there at the end (the footer's count),
  * the search finds the last piece of the list, and the Food menu ends with all its meals. */
 export async function checkMenuSteps(pg) {

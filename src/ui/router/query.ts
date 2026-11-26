@@ -20,7 +20,7 @@ import { DEFAULT_EXCLUDE, meldSlotChoices } from '../job-sync-panel.ts';
 import { DEFAULT_JOB } from '../../core/constants.ts';
 import { defaultBrowse, defaultSubs, restoreBrowseFields, restorePanel, restorePieceFields } from '../state.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
-import { GCD_LEVELS, gcdLevelInput } from '../views/gcd.js';
+import { GCD_LEVELS, gcdLevelInput } from '../views/gcd.ts';
 import type { JobContext, SlotType } from '../../core/types.ts';
 import type { BrowseFields, PieceFields } from '../store/app-state.ts';
 import type { RestoredPanel } from '../state.ts';

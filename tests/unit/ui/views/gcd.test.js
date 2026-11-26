@@ -1,4 +1,4 @@
-/* How the math works, GCD (src/ui/views/gcd.js): the facts for a speed, the step table around it, the level box's
+/* How the math works, GCD (src/ui/views/gcd.ts): the facts for a speed, the step table around it, the level box's
    correction, the Haste menu and the chart; and the stored most-speed table it is held to (src/data/max-speed.json). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +17,7 @@ import {
   gcdView,
   speedPerStep,
   speedRange,
-} from '../../../../src/ui/views/gcd.js';
+} from '../../../../src/ui/views/gcd.ts';
 import { groupMaxSpeed, jobGroups } from '../../../../scripts/data/gen_max_speed.mjs';
 import { hasNumber } from '../../helpers/common.js';
 

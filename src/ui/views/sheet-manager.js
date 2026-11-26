@@ -5,7 +5,7 @@ import { jobById } from '../../core/constants.ts';
 import { patchOnDay } from '../../core/patches.ts';
 import { UNAVAILABLE_MESSAGE } from '../sheets/storage.js';
 import { sheetHref } from '../store/app-state.ts';
-import { localDate, syncShort } from './sheet-text.js';
+import { localDate, syncShort } from './sheet-text.ts';
 
 /* The manager's column names, in the order of a row's cells. */
 const MANAGER_COLUMNS = Object.freeze(['Sheet', 'Job', 'Level / IL', 'Sets', 'Created', 'Changed', 'Patch']);

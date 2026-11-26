@@ -1,4 +1,4 @@
-/* The math bar's two chips (src/ui/views/sync-explainer.js): the Sync chip (synced level, item level, IL Sync) and the
+/* The math bar's two chips (src/ui/views/sync-explainer.ts): the Sync chip (synced level, item level, IL Sync) and the
    Substats & materia chip, their widest texts and the empty-state sentence. The words come from the exported constants (SYNC_CHIP_TEXT,
    PIECE_CHIP_TEXT, OFF_TEXT), never repeated here. Item levels are the game's ParamGrow.ItemLevelSync: level 85 gives 536,
    level 80 gives 530; level 100 has no level sync (its highest real gear is 795, an IL Sync cap there is the user's). */
@@ -19,8 +19,8 @@ import {
   pieceChipView,
   syncChipView,
   widestNumber,
-} from '../../../../src/ui/views/sync-explainer.js';
-import { SLOT_SIZER } from '../../../../src/ui/views/piece.js';
+} from '../../../../src/ui/views/sync-explainer.ts';
+import { SLOT_SIZER } from '../../../../src/ui/views/piece.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { JOBS } from '../../../../src/core/constants.ts';

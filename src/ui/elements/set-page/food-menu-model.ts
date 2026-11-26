@@ -1,7 +1,7 @@
 /* What the Food menu (<gsa-food-menu>) keeps and works out, with no DOM: the search text, the stat pills, the sort, the "Best for goal"
    switch, how many meals are drawn, and the list those make (views/meal-menu.js has the filters and the list). The element and the
    Node tests both import it. The menu's data (`menu`, views/set-meal-menu.js setMealMenuView) is given by the page and is frozen. */
-import { FIRST_ROWS, limitRows } from '../../views/limit-rows.js';
+import { FIRST_ROWS, limitRows } from '../../views/limit-rows.ts';
 import { mealList, mealPillOff, mealsPassing } from '../../views/meal-menu.js';
 
 /* The events the element sends: `food-open` (detail: whether the menu is open now; the page then gives it `menu`, which it builds
@@ -57,7 +57,7 @@ export interface MealListView {
 /* The state of one Food menu. Fields: `query` (search text), `stats` (the stats picked on the pills; a meal must have each, two at
    most since a meal has at most two; none at first), `sortBy` ('ilvl', or a picked stat's key), `bestOnly` (the "Best for goal"
    switch: on at first, then as the player left it; it only counts while some meal is tagged), `rows` (how many meals the open
-   menu draws: it draws a long list in steps, views/limit-rows.js) and `menu` (the data, or null while the menu is closed). */
+   menu draws: it draws a long list in steps, views/limit-rows.ts) and `menu` (the data, or null while the menu is closed). */
 export class FoodMenuModel {
   query = '';
   stats: string[] = [];

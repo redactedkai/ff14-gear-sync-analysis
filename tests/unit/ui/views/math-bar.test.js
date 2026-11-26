@@ -1,4 +1,4 @@
-/* The math bar's Stat Allocation controls (src/ui/views/math-bar.js): what the Slot menu, the substat menus, the Materia slots menu and
+/* The math bar's Stat Allocation controls (src/ui/views/math-bar.ts): what the Slot menu, the substat menus, the Materia slots menu and
    the Gear item level slider show, and the edits they make to the example piece. Sage under item level sync 123 is the example (the
    owner's job); the accessories and the armor give the two kinds of materia slot choices. */
 import { test } from 'node:test';
@@ -7,8 +7,8 @@ import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { MATH_TAB_LABEL } from '../../../../src/ui/router/routes.ts';
 import { MATH_TABS } from '../../../../src/ui/state.ts';
-import { MATH_SUB_TABS, ilvlEdit, ilvlFill, mathBarView, slotEdit, subsEdit } from '../../../../src/ui/views/math-bar.js';
-import { NO_SUBSTAT_LABEL, explainerItemLevel, pieceChipView } from '../../../../src/ui/views/sync-explainer.js';
+import { MATH_SUB_TABS, ilvlEdit, ilvlFill, mathBarView, slotEdit, subsEdit } from '../../../../src/ui/views/math-bar.ts';
+import { NO_SUBSTAT_LABEL, explainerItemLevel, pieceChipView } from '../../../../src/ui/views/sync-explainer.ts';
 
 const sage = makeJobContext('SGE');
 const sync = syncSettings({ cap: 123, sync: true, level: 85 });

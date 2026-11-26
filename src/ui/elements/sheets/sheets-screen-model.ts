@@ -8,7 +8,7 @@ import type { AppState, AppStore } from '../../store/app-state.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import { deepFreeze, viewCache } from '../../view-cache.ts';
 import { sheetManagerView } from '../../views/sheet-manager.js';
-import { notFoundView } from '../../views/sheet-text.js';
+import { notFoundView } from '../../views/sheet-text.ts';
 import { setHeaderView, sheetPageView, sheetSwitcherView } from '../../views/sheet-sets.js';
 import type { SetPagePorts } from '../set-page/session-types.ts';
 import type { SetPageHeader } from '../set-page/set-page.ts';

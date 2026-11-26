@@ -1,9 +1,9 @@
-/* How the math works, Piece stats' step by step (src/ui/views/piece.js): each stat of a piece against its ceiling,
+/* How the math works, Piece stats' step by step (src/ui/views/piece.ts): each stat of a piece against its ceiling,
    with the sentences and arithmetic, the slot share slices and the ranked substats; computed from store-shaped state. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { slotGroups, withSub } from '../../../../src/ui/views/piece.js';
+import { slotGroups, withSub } from '../../../../src/ui/views/piece.ts';
 import { hasNumber, hasParts } from '../../helpers/common.js';
 import { gamePool } from '../../helpers/exhaustive.js';
 import { makeApp, pieceViewOf } from '../../helpers/views.js';

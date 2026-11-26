@@ -1,19 +1,30 @@
 /* Short texts the sheet views share: a sheet's settings in a few words, and dates. Pure: no store. */
 
+import type { Sheet } from '../store/app-state.ts';
+
+/* What the "not found" screen shows (notFoundView below): its title line, its text, its button's text and where the button goes ('sheets':
+   the manager, 'sheet': the sheet's page). */
+export interface NotFoundView {
+  title: string;
+  text: string;
+  buttonText: string;
+  target: 'sheets' | 'sheet';
+}
+
 /* A time in milliseconds since 1970 (UTC, as saved) as a date in a time zone, "2026-11-09" (the manager's Created and
    Changed columns). `timeZone` is an IANA name; without one, the browser's own time zone. */
-export function localDate(ms, timeZone) {
+export function localDate(ms: number, timeZone?: string): string {
   return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(ms);
 }
 
 /* A sheet's level and item level sync in a few words, "Lv 100 / IL 123" ("Lv 100 / IL sync off"); the manager's row.
    `sheet`: a saved Sheet (docs/engineering/sheets.md). */
-export function syncShort(sheet) {
+export function syncShort(sheet: Pick<Sheet, 'level' | 'sync'>): string {
   return `Lv ${sheet.level} / ${sheet.sync.on ? `IL ${sheet.sync.cap}` : 'IL sync off'}`;
 }
 
 /* The read-only line of a set page, "Sage · Level 100 · IL Sync 123" (job given as its name). */
-export function settingsLine(sheet, jobName) {
+export function settingsLine(sheet: Pick<Sheet, 'level' | 'sync'>, jobName: string): string {
   return `${jobName} · Level ${sheet.level} · IL Sync ${sheet.sync.on ? sheet.sync.cap : 'off'}`;
 }
 
@@ -21,7 +32,7 @@ export function settingsLine(sheet, jobName) {
    router/router.ts): the page's title line, its text and the button that goes up. `sheet`: the saved sheet the address
    names, or null when that sheet is not saved (then the sheet is what is missing; else its gear set is). Returns {title,
    text, buttonText, target ('sheets': the manager, 'sheet': the sheet's page)}. */
-export function notFoundView(sheet) {
+export function notFoundView(sheet: Pick<Sheet, 'name'> | null): NotFoundView {
   if (!sheet) {
     return {
       title: 'Sheet not found',

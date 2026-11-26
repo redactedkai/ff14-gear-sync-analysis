@@ -93,12 +93,12 @@ export class GsaMathScreen extends LitElement {
           .tiers=${bar.tiers}></gsa-math-bar>
       </div>
 
-      <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level (views/piece-stats.js) -->
+      <!-- PIECE STATS: one piece before and after sync, and the same slot at every item level (views/piece-stats.ts) -->
       <section class="subtab" id="tab-piece" ?hidden=${mathTab !== 'piece'}>
         <gsa-piece-stats .job=${piece.job} .sync=${piece.sync} .piece=${piece.piece} .switchOn=${piece.switchOn}></gsa-piece-stats>
       </section>
 
-      <!-- GCD: how speed becomes the GCD at a level, on its own settings (views/gcd.js) -->
+      <!-- GCD: how speed becomes the GCD at a level, on its own settings (views/gcd.ts) -->
       <section class="subtab" id="tab-gcd" ?hidden=${mathTab !== 'gcd'} @gcd-edit=${onGcdEdit}>
         <gsa-gcd-view .level=${bar.gcd.level} .haste=${bar.gcd.haste} .speed=${bar.gcd.speed} .syncedLevel=${bar.gcd.syncedLevel}></gsa-gcd-view>
       </section>

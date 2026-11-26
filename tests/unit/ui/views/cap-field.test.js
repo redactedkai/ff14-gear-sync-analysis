@@ -1,10 +1,10 @@
-/* What the item level field and the level field show (src/ui/views/cap-field.js): the one set of rules behind the Gear browser's strip, the
+/* What the item level field and the level field show (src/ui/views/cap-field.ts): the one set of rules behind the Gear browser's strip, the
    Sync settings popover, a sheet's page and the Sheets dialogs. The sentences themselves are asserted in ui/level-cap.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { CAP_MISSING_TEXT, CAP_TYPED_BAD_TEXT, LEVEL_TEXT, capLoweredText, rangeOnly } from '../../../../src/ui/level-cap.ts';
-import { capFieldView, levelFieldView } from '../../../../src/ui/views/cap-field.js';
+import { capFieldView, levelFieldView } from '../../../../src/ui/views/cap-field.ts';
 
 const NO_FLAG = { kind: '', short: '', full: '' };
 const lowered = { from: 500, to: 405, level: 70 };

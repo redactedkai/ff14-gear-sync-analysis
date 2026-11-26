@@ -88,7 +88,7 @@ export interface SyncSettings extends Sync {
 
 /* What shownSync returns: the cap and level to show, and whether the cap is the level's item level (level sync) rather than the cap. */
 export interface ShownSync {
-  cap: number | null;
+  cap: number;
   level: number | null | undefined;
   byLevel: boolean;
 }
@@ -149,7 +149,7 @@ export function shownSync(job: JobContext | null | undefined, sync: Sync): Shown
   const byLevel = levelSyncOn(job, sync.level);
   // sync.sync means a cap is set (syncSettings), and byLevel means a level is set
   if (sync.sync && (!byLevel || (sync.cap as number) <= capCeiling(sync.level as number))) {
-    return { cap: sync.cap, level: sync.level, byLevel: false };
+    return { cap: sync.cap as number, level: sync.level, byLevel: false };
   }
   if (byLevel) {
     return { cap: levelSyncIlvl(sync.level as number), level: sync.level, byLevel: true };

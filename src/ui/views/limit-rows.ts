@@ -10,9 +10,9 @@ export const ROWS_PER_STEP = 40;
 
 /* `groups` ([{label, items: [...]}, ...], other fields kept) cut to their first `limit` items in order; a group left
    with no item is dropped. A group is returned as it is when all its items fit. Returns a new array. */
-export function limitRows(groups, limit) {
+export function limitRows<Group extends { items: readonly unknown[] }>(groups: readonly Group[], limit: number): Group[] {
   let room = limit;
-  const kept = [];
+  const kept: Group[] = [];
   for (const group of groups) {
     if (room <= 0) {
       break;

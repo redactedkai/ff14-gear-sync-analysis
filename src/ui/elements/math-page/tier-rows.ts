@@ -12,7 +12,7 @@ import { Directive, PartType, directive, type ElementPart, type PartInfo } from 
 import { nothing } from 'lit';
 import { rowsInView, rowsToDraw, scrollTopToCenter, viewLeavesDrawn } from '../../tier-window.ts';
 
-/* The parts of a card (src/ui/views/tiers.js tiersView) the rows are drawn from. */
+/* The parts of a card (src/ui/views/tiers.ts tiersView) the rows are drawn from. */
 export interface TierRowsSource {
   // what the rows were made from (job, substat, level, haste): the same key means the same rows
   rowsKey: string;

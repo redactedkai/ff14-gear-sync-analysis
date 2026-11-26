@@ -7,9 +7,9 @@ import { makeSession } from '../../../src/core/session.ts';
 import { evaluateSet } from '../../../src/core/set.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.ts';
 import { gearView } from '../../../src/ui/views/gear.js';
-import { pieceView } from '../../../src/ui/views/piece.js';
+import { pieceView } from '../../../src/ui/views/piece.ts';
 import { searchCount } from '../../../src/ui/solve.js';
-import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.js';
+import { explainerItemLevel, explainerView, meldKeys } from '../../../src/ui/views/sync-explainer.ts';
 import { appState } from './common.js';
 import { gamePool } from './exhaustive.js';
 

@@ -6,14 +6,14 @@
      `meal-pick` (the key of the meal picked, or null for No food); it never reads a store;
    - the menu holds a search box, the stat pills, the "Best for goal" switch (while some meal is tagged), a Sort row (while a pill is on)
      and the list of meals by expansion (food-menu-model.ts has the state; views/meal-menu.js the filters). The list is drawn in steps
-     (a window of rows first, the rest one step per frame while the menu stays open: views/limit-rows.js);
+     (a window of rows first, the rest one step per frame while the menu stays open: views/limit-rows.ts);
    - opened, the search box takes the focus and the list scrolls to the meal the row shows;
    - inside the Auto-fill settings popover the menu is a child layer of it (filter-popover.ts). */
 import { LitElement, html, nothing } from 'lit';
 import { live } from 'lit/directives/live.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { drawInSteps } from '../../draw-in-steps.ts';
-import { ROWS_PER_STEP } from '../../views/limit-rows.js';
+import { ROWS_PER_STEP } from '../../views/limit-rows.ts';
 import { createFilterPopover } from '../gear-browser/filter-popover.ts';
 import {
   FOOD_MENU_NAME,

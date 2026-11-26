@@ -86,7 +86,7 @@ export function defaultState(): SavedState {
     mathTab: 'piece',
     sheetFigures: SHEET_FIGURES[0],
     // How the math works: its own Job and sync panel (job, cap, sync, level), then the piece's item level (null: the
-    // cap; explainerItemLevel in views/sync-explainer.js), slot and two ranked substats
+    // cap; explainerItemLevel in views/sync-explainer.ts), slot and two ranked substats
     piece: { ...defaultPanel(), ilvl: null, slot: 'head', subs: defaultSubs(makeJobContext(DEFAULT_JOB)), slots: null },
     // the Gear browser's own Job and sync panel, then its filters and sort (defaultBrowse)
     browse: { ...defaultPanel(), ...defaultBrowse() },

@@ -7,82 +7,19 @@
    - the chart is drawn at its box's width (an `ElementWidthController`), so its text keeps the page's size; the markup comes from
      `overgearChartSvg` (sync-charts.ts), whose texts are escaped there (`escapeXml`), and is drawn with `unsafeSVG`;
    - the view is built again only when a setting or the chart's width changes (`viewCache`), by `pieceStatsView`
-     (views/piece-stats.js). */
+     (views/piece-stats.ts). */
 import { LitElement, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { makeJobContext } from '../../../core/job-context.ts';
 import { meldSlotsOf } from '../../job-sync-panel.ts';
-import { pieceStatsView } from '../../views/piece-stats.js';
+import { pieceStatsView } from '../../views/piece-stats.ts';
 import { viewCache } from '../../view-cache.ts';
 import { ElementWidthController } from '../shared/element-width.ts';
 import type { ExamplePiece, SyncSettings } from './math-bar-names.ts';
 
-/* What the screen shows (the shape `pieceStatsView` in views/piece-stats.js builds). The explainer's rows are typed by the parts the
-   template reads. */
-interface PieceStatsView {
-  offText: string;
-  explainer: {
-    title: string;
-    lead: string;
-    bars: {
-      label: string;
-      raw: number;
-      total: number;
-      extra: number;
-      melds: number;
-      extraText: string;
-      meldText: string;
-      keep: string;
-      rise: string;
-      riseLeft: string;
-      cut: string;
-      cutLeft: string;
-      meldLeft: string;
-      meldWidth: string;
-      capAt: string;
-    }[];
-    stoneChips: string[];
-    meldNote: string;
-    emptyNote: string;
-    anyMelds: boolean;
-    aboveCapLegend: string;
-    capLegend: string;
-    solo: boolean;
-    vsRows: { il: number; kind: string; tag: string; materia: string; materiaNote: string; points: number }[];
-    verdict: string;
-    curveBands: { label: string; fill: string; opacity: number }[];
-    curveChartSvg: string;
-    curveNote: string;
-  } | null;
-  steps: {
-    summary: string;
-    byLevel: boolean;
-    byLevelText: string;
-    shareText: string;
-    healerNote: boolean;
-    slices: { label: string; share: string; width: number; on: boolean }[];
-    status: string;
-    ruleText: string;
-    ownHead: string;
-    capHead: string;
-    rows: {
-      stat: string;
-      label: string;
-      weightText: string;
-      raw: number;
-      ownKept: boolean;
-      ownText: string;
-      ownFormula: string;
-      cap: number | null;
-      capText: string;
-      capFormula: string;
-      lost: number;
-      lostText: string;
-      syn: number;
-    }[];
-  };
-}
+/* What the screen shows: what `pieceStatsView` (views/piece-stats.ts) builds. */
+type PieceStatsView = ReturnType<typeof pieceStatsView>;
 
 /* The `gsa-piece-stats` element (registered below): see the file header. */
 export class GsaPieceStats extends LitElement {

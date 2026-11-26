@@ -21,7 +21,7 @@ import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
 import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';
 import { applyFill } from '../../../../src/ui/sheets/fill.js';
 import { defaultFillSettings, fillRecipe } from '../../../../src/ui/sheets/fill-settings.js';
-import { localDate } from '../../../../src/ui/views/sheet-text.js';
+import { localDate } from '../../../../src/ui/views/sheet-text.ts';
 import { createSheetsFacade } from '../../helpers/stores.js';
 
 /* A Storage stand-in. `failWith`: an error every setItem throws (a full storage: name 'QuotaExceededError'). */

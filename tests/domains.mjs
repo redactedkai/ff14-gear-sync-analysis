@@ -3,7 +3,7 @@
 // domain's browser checks, and tests/unit/scripts/test.domains.test.js fails when a file has no domain or two.
 //
 // Which domain is a test in?
-//   - A unit test follows its module: tests/unit/ui/views/gcd.test.js mirrors src/ui/views/gcd.js, so it takes that file's
+//   - A unit test follows its module: tests/unit/ui/views/gcd.test.js mirrors src/ui/views/gcd.ts, so it takes that file's
 //     domain (a `.concern` after the module name is dropped: core/formulas.sync-clamp.test.js mirrors core/formulas.ts).
 //     Nothing to register. A test that mirrors no module goes in a domain's `tests` list below.
 //   - A smoke step names its domain in tests/e2e/groups.mjs, by what the step checks (not by the folder of its file).
@@ -79,7 +79,8 @@ export const DOMAINS = {
       'src/ui/elements/set-page/{food-menu,food-menu-model,materia-menu,piece-picker,piece-picker-names,rank-note,set-page,set-page-types,settings-popover}.ts',
       'src/ui/store/set-page-actions.ts',
       'src/ui/sheets/{saved-set,set-edits}.js',
-      'src/ui/views/{limit-rows,meal-menu,piece-menu,set-draft,set-meal-menu,set-page,set-rows,set-totals,stone-menu}.js',
+      'src/ui/views/limit-rows.ts',
+      'src/ui/views/{meal-menu,piece-menu,set-draft,set-meal-menu,set-page,set-rows,set-totals,stone-menu}.js',
       'src/ui/draw-in-steps.ts',
       'src/styles/{set-page,pieces,fill-settings}.css',
     ],
@@ -92,7 +93,8 @@ export const DOMAINS = {
       'src/ui/elements/sheets/**',
       'src/ui/sheets/{bonus-options,dialogs,ops,storage,store-shared}.js',
       'src/ui/store/{sheets-actions,sheets-facade}.ts',
-      'src/ui/views/{sheet-forms,sheet-manager,sheet-sets,sheet-text}.js',
+      'src/ui/views/sheet-text.ts',
+      'src/ui/views/{sheet-forms,sheet-manager,sheet-sets}.js',
       'src/ui/{test-data.js,test-sheets.json}',
       'src/styles/sheets.css',
     ],
@@ -113,7 +115,7 @@ export const DOMAINS = {
     src: [
       // the Lit elements of the math page: the bar, Stat Allocation, the GCD and Substat tiers sub-tabs and bar controls, the "?" note, the bar popovers
       'src/ui/elements/math-page/**',
-      'src/ui/views/{piece,sync-explainer,tiers,gcd,math-bar,piece-stats}.js',
+      'src/ui/views/{piece,sync-explainer,tiers,gcd,math-bar,piece-stats}.ts',
       'src/ui/{sync-charts,tier-window}.ts',
       'src/styles/math-{bar,piece-stats,gcd,tiers,controls}.css',
     ],
@@ -132,7 +134,7 @@ export const DOMAINS = {
       'src/ui/{number-field,overlays}.js',
       'src/ui/{store-key,job-sync-panel,level-cap,number-commit,ranks,hq-font}.ts',
       'src/ui/{text,view-cache}.ts',
-      'src/ui/views/cap-field.js',
+      'src/ui/views/cap-field.ts',
       'src/ui/store/{store,select,watch,app-state,app-actions,app-facade,page-store,autosave}.ts',
     ],
     tests: [
@@ -252,7 +254,7 @@ export function domainsOfSource(file) {
   return domainsListing(file, 'src');
 }
 
-// The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.js gives src/ui/views/gcd.js; a `.concern` is
+// The src/ file a unit test mirrors, or null: tests/unit/ui/views/gcd.test.js gives src/ui/views/gcd.ts; a `.concern` is
 // dropped; `index` is a real file in a folder (core/optimizer/index.pinned gives src/core/optimizer/index.ts).
 export function mirroredModule(testFile, sourceFiles) {
   const parts = testFile.match(/^tests\/unit\/(.+)\/([^/.]+)(?:\.[^/]+)?\.test\.(?:js|ts)$/);

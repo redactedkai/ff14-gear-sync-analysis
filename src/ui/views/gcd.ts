@@ -4,10 +4,12 @@
 import { clamp } from '../../core/clamp.ts';
 import { HASTE, jobById } from '../../core/constants.ts';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor, recastMult } from '../../core/speed.ts';
+import type { GcdTier } from '../../core/speed.ts';
 import { levelParams } from '../../core/level-params.ts';
 import { MAX_SPEED } from '../../core/tables.ts';
 import { commit } from '../number-commit.ts';
 import { speedStepChartSvg } from '../sync-charts.ts';
+import type { SpeedBar } from '../sync-charts.ts';
 
 /* The levels the tab covers: every level of the game, whatever the job (its own setting). */
 export const GCD_LEVELS = MAX_SPEED.length;
@@ -19,8 +21,8 @@ const STEPS_AVERAGED = 10;
 /* The Haste menu text of a job with always-on haste: the job and its source by name ("Samurai, Fuka"), no percent. The
    percents depend on the level, so the tab shows them where the level is known: the haste among the facts, and every
    step of the source on the chart. `jobId`: a HASTE key. */
-function hasteOptionLabel(jobId) {
-  return `${jobById(jobId).name}, ${HASTE[jobId].name}`;
+function hasteOptionLabel(jobId: string): string {
+  return `${(jobById(jobId) as NonNullable<ReturnType<typeof jobById>>).name}, ${HASTE[jobId].name}`;
 }
 
 /* The Haste menu: none, then each job with always-on haste. [{value: job id or '', label}]. */
@@ -33,25 +35,25 @@ export const HASTE_OPTIONS = Object.freeze([
 export const HASTE_SIZER = HASTE_OPTIONS.map(option => option.label).join('\n');
 
 /* `level` held to 1 and GCD_LEVELS: {level}. Null for text that is not a whole number. */
-export function gcdLevelInput(text) {
+export function gcdLevelInput(text: string): { level: number } | null {
   const result = commit(text, { min: 1, max: GCD_LEVELS, exact: true, final: true });
   return result && { level: result.value };
 }
 
 /* The speed range at `level`: {base, most}, total speed (base + gear + food) from the level's base to the most any job
    can have there (MAX_SPEED). */
-export function speedRange(level) {
+export function speedRange(level: number): { base: number; most: number } {
   return { base: levelParams(level).sub, most: MAX_SPEED[level - 1] };
 }
 
 /* The level the tab uses: the one typed into its box (`typedLevel`, or null for none), else Stat Allocation's synced level
    (`syncedLevel`; the only thing the tab takes from another sub-tab: a level, no job), held to the levels the tab covers. */
-export function gcdTabLevel(typedLevel, syncedLevel) {
+export function gcdTabLevel(typedLevel: number | null, syncedLevel: number): number {
   return clamp(typedLevel ?? syncedLevel, 1, GCD_LEVELS);
 }
 
 /* The speed used at `level`: the one asked for (`askedSpeed`, or null for the base), held to the level's range. */
-export function heldSpeed(level, askedSpeed) {
+export function heldSpeed(level: number, askedSpeed: number | null | undefined): number {
   const { base, most } = speedRange(level);
   return Math.max(base, Math.min(most, askedSpeed ?? base));
 }
@@ -59,7 +61,7 @@ export function heldSpeed(level, askedSpeed) {
 /* What the math bar's GCD controls show, for the typed level (or null), the synced level and the speed asked for (or null):
    {level (used), base, most (the slider's ends), speed (used), fill (how far along the slider the thumb is, percent: the
    track is drawn filled up to it)}. */
-export function gcdControlsView(typedLevel, syncedLevel, askedSpeed) {
+export function gcdControlsView(typedLevel: number | null, syncedLevel: number, askedSpeed: number | null) {
   const level = gcdTabLevel(typedLevel, syncedLevel);
   const { base, most } = speedRange(level);
   const speed = heldSpeed(level, askedSpeed);
@@ -71,7 +73,7 @@ export function gcdControlsView(typedLevel, syncedLevel, askedSpeed) {
    - a whole number is corrected to 1 to GCD_LEVELS and counted (patch {level}; null when it is the synced level itself, so the
      tab keeps following it), shown as corrected;
    - other text is no level: `error` is true, nothing changes. */
-export function gcdLevelTyped(text, syncedLevel) {
+export function gcdLevelTyped(text: string, syncedLevel: number) {
   if (text === '') {
     return { error: false, patch: { level: null }, shown: gcdTabLevel(null, syncedLevel) };
   }
@@ -85,14 +87,14 @@ export function gcdLevelTyped(text, syncedLevel) {
 /* What the speed box does with `text`, typed and settled at `level` (the tab's level) with `askedSpeed` already asked (or
    null): {patch, shown}. A whole number is kept as asked, not held to the range here (the box shows the speed used, which is);
    other text changes nothing. */
-export function gcdSpeedTyped(text, level, askedSpeed) {
+export function gcdSpeedTyped(text: string, level: number, askedSpeed: number | null) {
   const typed = commit(text, { final: true });
   const asked = typed ? typed.value : askedSpeed;
   return { patch: typed ? { speed: typed.value } : null, shown: heldSpeed(level, asked) };
 }
 
 /* About how much speed a 0.01 s step takes at `level` with `haste` (percent): the first STEPS_AVERAGED steps' average. */
-export function speedPerStep(level, haste = 0) {
+export function speedPerStep(level: number, haste = 0): number {
   let at = 0;
   for (let k = 0; k < STEPS_AVERAGED; k++) {
     const next = gcdTierAt(at, level, BASE_GCD_MS, haste).next;
@@ -105,24 +107,25 @@ export function speedPerStep(level, haste = 0) {
 }
 
 /* "−15.7%", or "0.0%" for no cut: what a multiplier below 1 takes off. */
-const cutText = mult => (mult >= 1 ? '0.0%' : `−${((1 - mult) * 100).toFixed(1)}%`);
+const cutText = (mult: number): string => (mult >= 1 ? '0.0%' : `−${((1 - mult) * 100).toFixed(1)}%`);
 
 /* The GCD steps around `gear` (speed above the base): ROWS steps, the one `gear` is in kept in the middle unless it is
    near the base or the 1.5 s floor, where the rows stop at the end instead of leaving rows empty.
    [{gear (the step's first gear speed), gcd, cur}]. */
-function stepWindow(level, haste, gear) {
+function stepWindow(level: number, haste: number, gear: number) {
   const ROWS = 2 * GCD_STEPS_NEAR + 1;
-  const tierAt = g => gcdTierAt(g, level, BASE_GCD_MS, haste);
+  const tierAt = (g: number) => gcdTierAt(g, level, BASE_GCD_MS, haste);
   const steps = [tierAt(gear)];
   const lower = () => steps.unshift(tierAt(steps[0].start - 1));
-  const higher = () => steps.push(tierAt(steps.at(-1).next));
+  // a step is only added above while the last one has a next (the loops below check it)
+  const higher = () => steps.push(tierAt((steps.at(-1) as GcdTier).next as number));
   for (let k = 0; k < GCD_STEPS_NEAR && steps[0].start > 0; k++) {
     lower();
   }
-  for (let k = 0; k < GCD_STEPS_NEAR && steps.at(-1).next != null; k++) {
+  for (let k = 0; k < GCD_STEPS_NEAR && (steps.at(-1) as GcdTier).next != null; k++) {
     higher();
   }
-  while (steps.length < ROWS && steps.at(-1).next != null) {
+  while (steps.length < ROWS && (steps.at(-1) as GcdTier).next != null) {
     higher();
   }
   while (steps.length < ROWS && steps[0].start > 0) {
@@ -138,7 +141,7 @@ function stepWindow(level, haste, gear) {
      DoT/HoT/auto-attack multiplier, and the haste when one is picked;
    - steps: [{speed, gcd, cut, cur, out}] (out: more than any job can have at this level);
    - chartSvg: the speed per step at every level, the haste's levels marked. */
-export function gcdView(level, hasteJob, speed, width) {
+export function gcdView(level: number, hasteJob: string, speed: number | null, width?: number) {
   const { base, most } = speedRange(level);
   const used = Math.max(base, Math.min(most, speed ?? base));
   const gear = used - base;
@@ -155,7 +158,7 @@ export function gcdView(level, hasteJob, speed, width) {
     { value: (60 / gcd).toFixed(1), label: `GCDs / min (${(60 / atBase).toFixed(1)} at base)` },
     step.next == null
       ? { value: '–', label: 'the fastest GCD' }
-      : { value: `+${step.next - gear}`, label: `more to reach ${step.nextGcd.toFixed(2)}s` },
+      : { value: `+${step.next - gear}`, label: `more to reach ${(step.nextGcd as number).toFixed(2)}s` },
     { value: cutText(recastMult(gear, level, pct)), label: `cast and recast times${pct ? `, with ${pct}% haste` : ''}` },
     { value: `${tick > 1 ? '+' : ''}${((tick - 1) * 100).toFixed(1)}%`, label: 'DoT, HoT and auto-attacks' },
   ];
@@ -175,7 +178,7 @@ export function gcdView(level, hasteJob, speed, width) {
   }));
 
   // 3. the speed per step at every level, with the haste each level has
-  const bars = [];
+  const bars: SpeedBar[] = [];
   for (let lv = 1; lv <= GCD_LEVELS; lv++) {
     bars.push({ level: lv, speed: speedPerStep(lv, hasteJob ? (hasteFor(hasteJob, lv)?.pct ?? 0) : 0) });
   }

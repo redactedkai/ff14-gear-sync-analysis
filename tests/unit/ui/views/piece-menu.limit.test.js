@@ -1,4 +1,4 @@
-/* The piece menu drawn in steps (src/ui/views/limit-rows.js, piecePickerView's `limit`): the first rows are the first of
+/* The piece menu drawn in steps (src/ui/views/limit-rows.ts, piecePickerView's `limit`): the first rows are the first of
    the full list, nothing is dropped or reordered, the count and footer say the whole list, and the cached lines of a
    slot do not carry the set (a Unique ring taken by the other ring row, the piece shown) from one call to the next.
    Real Sage rings and heads; the expected lists come from independent filters over the item data. */
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { JOBS } from '../../../../src/core/constants.ts';
 import { categoryOf, jobGear } from '../../../../src/core/items.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { FIRST_ROWS, limitRows } from '../../../../src/ui/views/limit-rows.js';
+import { FIRST_ROWS, limitRows } from '../../../../src/ui/views/limit-rows.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 

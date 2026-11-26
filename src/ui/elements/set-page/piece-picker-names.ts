@@ -35,7 +35,7 @@ export interface PickerPiece {
   levels: string;
 }
 
-/* The picker the page gives (views/piece-menu.js piecePickerView, cut to the rows drawn so far by views/limit-rows.js): `groups` (the
+/* The picker the page gives (views/piece-menu.js piecePickerView, cut to the rows drawn so far by views/limit-rows.ts): `groups` (the
    pieces by expansion), `placeholder` (the search box's, naming the slot), `canEmpty` (the row holds a piece, so "Empty" is offered),
    `emptyText` (why no piece shows, or ''), `footText` ("412 pieces"). */
 export interface PiecePicker {

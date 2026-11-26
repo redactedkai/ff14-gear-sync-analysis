@@ -1,13 +1,13 @@
-/* Stat Allocation as one view (src/ui/views/piece-stats.js): what the <gsa-piece-stats> element shows for Sage under item level
+/* Stat Allocation as one view (src/ui/views/piece-stats.ts): what the <gsa-piece-stats> element shows for Sage under item level
    sync 123 (the owner's case) and under level sync, and the empty state. What each number is lives in sync-explainer.test.js and
    piece.test.js; this checks the parts the element adds: the chart's width, the sentences, and the flags of the template. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.ts';
-import { OFF_TEXT, explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.js';
-import { pieceView } from '../../../../src/ui/views/piece.js';
-import { KEEP_LINE, pieceStatsView } from '../../../../src/ui/views/piece-stats.js';
+import { OFF_TEXT, explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.ts';
+import { pieceView } from '../../../../src/ui/views/piece.ts';
+import { KEEP_LINE, pieceStatsView } from '../../../../src/ui/views/piece-stats.ts';
 
 const sage = makeJobContext('SGE');
 const piece = { ilvl: null, slot: 'head', subs: ['crit', 'sps'], slots: null };

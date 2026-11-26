@@ -48,7 +48,7 @@ export interface ManagerView {
   unreadable: readonly { id: string; key: string; text: string }[];
 }
 
-/* The "not found" screen (views/sheet-text.js notFoundView). */
+/* The "not found" screen (views/sheet-text.ts notFoundView). */
 export interface NotFoundView {
   title: string;
   text: string;

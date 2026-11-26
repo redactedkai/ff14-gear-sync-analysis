@@ -17,7 +17,7 @@ import {
   sortSetRows,
 } from '../../../../src/ui/views/sheet-sets.js';
 import { plural } from '../../../../src/ui/text.ts';
-import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.js';
+import { localDate, settingsLine, syncShort } from '../../../../src/ui/views/sheet-text.ts';
 import { sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';
 
 const loaded = (sheets, extra = {}) => ({ available: true, sheets, unreadable: [], indexProblem: null, ...extra });

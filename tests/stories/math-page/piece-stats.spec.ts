@@ -2,7 +2,7 @@
    and abutting each other, the hatched cut, the materia outline, the marked slice, the clamp colour), the closed "step by step" panel
    taking no room beyond its summary, the two panels side by side from 1300 px and stacked below, the chart drawn at its box, the
    sentence in place of the panels while no sync applies, and axe. */
-import { OFF_TEXT } from '../../../src/ui/views/sync-explainer.js';
+import { OFF_TEXT } from '../../../src/ui/views/sync-explainer.ts';
 import { expect, test } from '../fixtures.ts';
 import { styleOf, tokenColor } from '../look.ts';
 import { type Default, NO_SYNC } from './piece-stats.story.js';

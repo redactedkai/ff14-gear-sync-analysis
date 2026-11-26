@@ -7,7 +7,7 @@ import { fillPlan } from '../sheets/fill.js';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from './set-totals.js';
 import { plural } from '../text.ts';
 import { ranges } from '../sheets/ops.js';
-import { settingsLine } from './sheet-text.js';
+import { settingsLine } from './sheet-text.ts';
 import { sheetHref } from '../store/app-state.ts';
 
 /* One gear set of a sheet for the list: {id, href (its address), name, description, descriptionLine, originText, figures, points}. descriptionLine

@@ -15,7 +15,7 @@ import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { levelTextBad } from '../../level-cap.ts';
 import { numberBox } from '../../number-field.js';
-import { levelFieldView } from '../../views/cap-field.js';
+import { levelFieldView } from '../../views/cap-field.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { capFlagTemplate } from './cap-flag.ts';
 import { LEVEL_CHANGE_EVENT, TYPED_BAD_EVENT } from './field-names.ts';

@@ -18,7 +18,7 @@ import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import { DEFAULT_EXCLUDE } from '../../../../src/ui/job-sync-panel.ts';
 import { defaultBrowse, defaultSubs } from '../../../../src/ui/state.ts';
-import { GCD_LEVELS } from '../../../../src/ui/views/gcd.js';
+import { GCD_LEVELS } from '../../../../src/ui/views/gcd.ts';
 
 const SGE = makeJobContext('SGE');
 const PLD = makeJobContext('PLD');

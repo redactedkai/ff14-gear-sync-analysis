@@ -61,13 +61,13 @@ test('remapStatKey: the same position on the other job; stats with no position, 
 
 /* Shared code (src/core, src/ui/views) writes no job-specific stat in logic. The game's names appear only where they
    are table keys or names: constants.ts (labels, profiles), base-stats.ts (the substats based on the main stat), job-context.ts (what the main stat means
-   for Vitality and weapon damage), core/tiers.ts (each stat's effects) and views/tiers.js (what each substat does). */
+   for Vitality and weapon damage), core/tiers.ts (each stat's effects) and views/tiers.ts (what each substat does). */
 const ALLOWED = new Set([
   'src/core/base-stats.ts',
   'src/core/constants.ts',
   'src/core/job-context.ts',
   'src/core/tiers.ts',
-  'src/ui/views/tiers.js',
+  'src/ui/views/tiers.ts',
 ]);
 const GAME_KEYS = 'sks|sps|piety|ten|str|dex|int|mind';
 /* A key as a quoted literal ('mind'), an object key (mind:) or a property (.mind) */

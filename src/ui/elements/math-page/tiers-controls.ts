@@ -9,7 +9,7 @@
 import { LitElement, html } from 'lit';
 import { makeJobContext } from '../../../core/job-context.ts';
 import { numberBox } from '../../number-field.js';
-import { tierLevel } from '../../views/tiers.js';
+import { tierLevel } from '../../views/tiers.ts';
 import { shownNumber } from '../shared/number-box.ts';
 import { TIERS_LEVEL_EVENT } from './tiers-names.ts';
 

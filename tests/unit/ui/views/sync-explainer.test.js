@@ -1,4 +1,4 @@
-/* How the math works, Piece stats (src/ui/views/sync-explainer.js): one piece against the same at the cap with its
+/* How the math works, Piece stats (src/ui/views/sync-explainer.ts): one piece against the same at the cap with its
    melds, the item level range, melds into the chosen substats, and the caps behind them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { meldInfo, mkItem } from '../../../../src/core/items.ts';
 import { gcdFor } from '../../../../src/core/speed.ts';
 import { meldSlotChoices, meldSlotsOf } from '../../../../src/ui/job-sync-panel.ts';
 import { makeJobContext } from '../../../../src/core/job-context.ts';
-import { explainerOffText } from '../../../../src/ui/views/sync-explainer.js';
+import { explainerOffText } from '../../../../src/ui/views/sync-explainer.ts';
 import { SLOT_PERMILLE, appState, hasNumber, hasParts, labelled, roundHalfUp } from '../../helpers/common.js';
 import { explainerItemLevelOf, explainerViewOf, meldKeysOf } from '../../helpers/views.js';
 

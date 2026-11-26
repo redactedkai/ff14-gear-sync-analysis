@@ -123,6 +123,6 @@ How it works: `docs/engineering/optimizer.md` (start at its overview) and `tier-
 
 ## Tests and docs
 
-- Details: `docs/engineering/testing.md`. Unit tests go in `tests/unit/`, in the folder of the module's path under `src/` (`src/ui/views/gcd.js` → `tests/unit/ui/views/gcd.test.js`; a concern after a dot: `tests/unit/core/formulas.sync-clamp.test.js`), generator tests in `tests/data/test_<generator>.py`, UI regressions as a step in `tests/e2e/checks/<screen>/`, listed in `tests/e2e/groups.mjs`. Use real items and published numbers as expected values.
+- Details: `docs/engineering/testing.md`. Unit tests go in `tests/unit/`, in the folder of the module's path under `src/` (`src/ui/views/gcd.ts` → `tests/unit/ui/views/gcd.test.js`; a concern after a dot: `tests/unit/core/formulas.sync-clamp.test.js`), generator tests in `tests/data/test_<generator>.py`, UI regressions as a step in `tests/e2e/checks/<screen>/`, listed in `tests/e2e/groups.mjs`. Use real items and published numbers as expected values.
 - A test's domain is its module's (`tests/domains.mjs`): a unit test needs no entry unless it mirrors no module (then add it to a domain's `tests` list); a smoke step names its domain in `groups.mjs`, by what it checks; a new `src/` or `scripts/` file must match a domain's `src` list. A unit test fails on a file with no domain. A unit test file whose tests take over 5 s goes on `LONG`.
 - Docs follow `docs/diagrams/STYLE.md`. If a change alters a documented number or rule, update the doc.
