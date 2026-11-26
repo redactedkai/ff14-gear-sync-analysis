@@ -1,4 +1,10 @@
-// Corner radii of the Sheets surfaces (docs/engineering/ui.md, "Corner radii").
+// Corner radii of the Sheets surfaces (docs/engineering/ui.md, "Corner radii"): the three surfaces no screenshot baseline shows.
+//
+// The radii of the manager, the sheet page, the set page and its menus, the dialogs and the Auto-fill settings are the baselines'
+// now (tests/visual, dark, 1440 and 960 px: 02-sheets-manager, 03-sheet-page, 04-set-page, 06-set-food-menu, 07-set-pick-menu,
+// 12-browse-exp-menu, 27-sheets-new-dialog, 29-sheets-delete-question, 31-set-settings-popover, 33-set-materia-menu). What is left
+// here is what no view draws: the breadcrumb menu (the baselines draw none open), the scrollbar thumbs (a full-page shot draws no
+// scrollbar) and the stuck column-name row (the shots draw sticky parts in place, so its arc is never stuck).
 
 import { PAGE } from '../../lib/constants.mjs';
 import { check, expect, sleep } from '../../lib/expect.mjs';
@@ -8,74 +14,14 @@ import { seedSheets } from '../../lib/sheets.mjs';
 
 const FOUR = '4px 4px 4px 4px'; // the one radius: fields, buttons, panels, tables, menus, dialogs
 
-const SQUARE = '0px 0px 0px 0px';
 /* surface, selector (first match), computed corners (top-left, top-right, bottom-right, bottom-left). The values are
    B17's (docs/scratchpad/sheet-flow/proto-b17-settings), measured in a browser; docs/engineering/ui.md lists them. */
 
 const RADII = {
-  manager: [
-    ['Sheets manager: New sheet button', '#sh-new', FOUR],
-    ['Sheets manager: table box', '#tab-sheets .tablewrap', FOUR],
-    ['Sheets manager: row link button', '#sh-list .linkbtn', FOUR],
-  ],
-  newSheetDialog: [
-    ['Dialog box', '#sh-dialog', FOUR],
-    ['Dialog: text field', '#sh-dlg-name', FOUR],
-    ['Dialog: number field', '#sh-dlg-level', FOUR],
-    ['Dialog: primary button', '#sh-dlg-ok', FOUR],
-    ['Dialog: switch track', '#sh-dlg-sync', '12px 12px 12px 12px'],
-  ],
-  deleteDialog: [
-    ['Question box', '#sh-dialog', FOUR],
-    ['Question: danger button', '#sh-dlg-ok', FOUR],
-  ],
-  sheetPage: [
-    ['Sheet page: settings panel', 'section.panel[aria-label="Sheet settings"]', FOUR],
-    ['Sheet page: number field', '#sh-level', FOUR],
-    ['Sheet page: switch track', '#sh-sync', '12px 12px 12px 12px'],
-    ['Sheet page: sets table box', '.tablewrap:has(#sh-sets)', FOUR],
-    ['Sheet page: breadcrumb caret', '#sh-sheet-switch', FOUR],
-  ],
   sheetMenu: [
     ['Breadcrumb menu box', '#sh-sheet-menu', FOUR],
     ['Breadcrumb menu row', '#sh-sheet-menu .setitem', FOUR],
   ],
-  setPage: [
-    ['Set page: Auto-fill button', '#sh-fill', FOUR],
-    ['Set page: Auto-fill settings gear', '#sh-settings', FOUR],
-    ['Set page: Copy button', '#sh-set-copy', FOUR],
-    ['Set page: stat block', '#sh-figures', FOUR],
-    ['Set page: gear table box', '#tab-sheets .tablewrap.settable', FOUR],
-    ['Gear table: header first cell', '#sh-gear thead th:first-child', '4px 0px 0px 0px'],
-    ['Gear table: header middle cell', '#sh-gear thead th:nth-child(3)', SQUARE],
-    ['Gear table: header last cell', '#sh-gear thead th:last-child', '0px 4px 0px 0px'],
-    ['Gear table: body (bottom corners)', '#sh-gear tbody', '0px 0px 4px 4px'],
-    ['Gear table: last row first cell', '#sh-defense td:first-child', '0px 0px 0px 4px'],
-    ['Gear table: last row last cell', '#sh-defense td:last-child', '0px 0px 4px 0px'],
-    ['Piece button', '#sh-gear .same-btn', FOUR],
-    ['Stone chip', '#sh-gear .mchip', FOUR],
-    ['Origin pill', '#sh-gear .pill', '999px 999px 999px 999px'],
-  ],
-  pieceMenu: [
-    ['Piece menu box', '.pick-menu', FOUR],
-    ['Piece menu: search box', '.pick-menu input[type="text"]', FOUR],
-    ['Piece menu: row', '.pick-menu .same-item', FOUR],
-  ],
-  foodMenu: [
-    ['Food menu box', '#sh-meal-menu', FOUR],
-    ['Food menu: search box', '#sh-meal-menu input[type="text"]', FOUR],
-    ['Food menu: stat pill button', '#sh-meal-menu .meal-pill', '999px 999px 999px 999px'],
-  ],
-  stoneMenu: [['Stone menu box', '.matpop', FOUR]],
-  fillSettings: [
-    ['Auto-fill settings dialog box', '#sh-settings-dialog', FOUR],
-    ['Auto-fill settings: select', '#s-target', FOUR],
-    ['Auto-fill settings: number field', '#s-lvl', FOUR],
-    ['Auto-fill settings: menu button', '#s-exp', FOUR],
-    ['Auto-fill settings: segmented control', '#sh-settings-dialog .seg', FOUR],
-    ['Auto-fill settings: ? button', '#sh-settings-dialog .shelp', '50% 50% 50% 50%'],
-  ],
-  fillMenu: [['Auto-fill settings: menu box', '#s-exp-menu', FOUR]],
 };
 
 /** The four computed corner radii of the first element matching `selector`, as "tl tr br bl". */
@@ -130,19 +76,8 @@ export async function checkRadii(pg) {
     await seedSheets(page, [SET_SHEET, { ...FILL_SHEET, id: 's_b', name: 'Second sheet' }]);
     await page.click('[data-tab=sheets]');
     await expect(page.locator('#sh-list')).toBeVisible();
-    await checkRadiiOf(page, 'manager');
-    await page.click('#sh-new');
-    await expect(page.locator('#sh-dialog')).toBeVisible();
-    await checkRadiiOf(page, 'newSheetDialog');
-    await page.click('#sh-dialog .dlgbtns > button:last-child'); // Cancel, the last button of the form (the Delete question's has an id)
-    await page.locator('#sh-list tr', { hasText: 'Second sheet' }).locator('[data-action="delete"]').click();
-    await expect(page.locator('#sh-dialog')).toBeVisible();
-    await checkRadiiOf(page, 'deleteDialog');
-    await page.click('#sh-dlg-cancel');
-
     await page.locator('#sh-list a.sname', { hasText: SET_SHEET.name }).click();
     await expect(page.locator('#sh-sheet')).toBeVisible();
-    await checkRadiiOf(page, 'sheetPage');
     await page.click('#sh-sheet-switch');
     await expect(page.locator('#sh-sheet-menu')).toBeVisible();
     await checkRadiiOf(page, 'sheetMenu');
@@ -150,32 +85,6 @@ export async function checkRadii(pg) {
     await page.mouse.click(5, 5);
     await page.locator('#sh-sets a.sname', { hasText: 'Mine' }).click();
     await expect(page.locator('#sh-gear')).toBeVisible();
-    await checkRadiiOf(page, 'setPage');
-
-    // the menus and dialogs of the set page
-    await page.click('#sh-gear tbody tr:nth-child(3) .same-btn');
-    await expect(page.locator('.pick-menu')).toBeVisible();
-    await page.locator('.pick-menu input[type="text"]').focus();
-    await checkRadiiOf(page, 'pieceMenu');
-    await page.keyboard.press('Escape');
-    await page.click('#sh-meal-btn');
-    await expect(page.locator('#sh-meal-menu')).toBeVisible();
-    await checkRadiiOf(page, 'foodMenu');
-    await page.keyboard.press('Escape');
-    await page.locator('#sh-gear .mchip').first().click();
-    await expect(page.locator('.matpop')).toBeVisible();
-    await checkRadiiOf(page, 'stoneMenu');
-    await page.keyboard.press('Escape');
-    await page.click('#sh-settings');
-    await expect(page.locator('#sh-settings-dialog')).toBeVisible();
-    await checkRadiiOf(page, 'fillSettings');
-    await page.click('#s-exp');
-    await expect(page.locator('#s-exp-menu')).toBeVisible();
-    await checkRadiiOf(page, 'fillMenu');
-    await page.keyboard.press('Escape');
-    await page.keyboard.press('Escape');
-    await expect(page.locator('#sh-settings-dialog')).toBeHidden();
-
     // the scrollbar thumbs
     const thumb = await page.evaluate(() => {
       // every style rule, also those inside a cascade layer block (the page's rules are all in one)
