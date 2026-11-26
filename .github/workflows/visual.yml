@@ -77,9 +77,21 @@ jobs:
       - run: npm run test:visual -- --update
       # a second run on the same commit must find no difference, or the new baselines are not worth committing
       - run: npm run test:visual
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      # the new baselines are uploaded even when the second run finds a difference, so that the pair can be looked at; do not
+      # commit them then
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: visual-baselines
           path: tests/visual/__screenshots__/
           retention-days: 14
           if-no-files-found: error
+      # the second run's actual, expected and diff images and its report
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-second-run-diff
+          path: |
+            tests/visual/test-results/
+            tests/visual/test-results-report/
+          retention-days: 14
