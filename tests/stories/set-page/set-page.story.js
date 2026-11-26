@@ -35,3 +35,30 @@ export const Default = () => {
   const ports = { store, sheets, solver, maxReal: 795 };
   return html`<gsa-set-page .ports=${ports} .setId=${'g_1'} .header=${setHeaderView(sheets.currentSheet, sheets.currentSet)}></gsa-set-page>`;
 };
+
+/* The set page with a solver that fails the Auto-fill (the counts still answer, so the button is on). `failure` is what the
+   solver does when asked to solve: 'rejects' (the request itself fails with `message`), 'error' (it answers with an error of
+   `message`), or 'infeasible' (it answers that it stopped at its step limit). */
+export const FILL_ERROR_MESSAGE = 'the search ran out of memory';
+
+export const FillFails = ({ failure = 'rejects' } = {}) => {
+  const failing = {
+    ...solver,
+    request: async request => {
+      if (request.kind !== 'solve') {
+        return solver.request(request);
+      }
+      if (failure === 'rejects') {
+        throw new Error(FILL_ERROR_MESSAGE);
+      }
+      return { result: failure === 'error' ? { kind: 'error', message: FILL_ERROR_MESSAGE } : { kind: 'infeasible' }, ms: 1 };
+    },
+  };
+  const storage = fakeStorage();
+  saveSheet(sheetOf('SGE', [sageSet()]), storage);
+  const { store, sheets } = createPageStore({ restored: restoreState(null), storage });
+  sheets.openSheet('s_1');
+  sheets.openSet('g_1');
+  const ports = { store, sheets, solver: failing, maxReal: 795 };
+  return html`<gsa-set-page .ports=${ports} .setId=${'g_1'} .header=${setHeaderView(sheets.currentSheet, sheets.currentSet)}></gsa-set-page>`;
+};
