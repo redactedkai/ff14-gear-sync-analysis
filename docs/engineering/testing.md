@@ -21,7 +21,7 @@ What runs, on what, and how much of it?
 
 | Layer | Runs on | Count |
 | --- | --- | --- |
-| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,380 tests in 194 files, about 30 to 45 s |
+| Unit tests (Node) | core logic, view builders, saved state, real game data | about 1,380 tests in 195 files, about 30 to 45 s |
 | Long sweep (Node) | tier ranking against its reference on 360 random cases (`tests/sweep/`) | 6 tests in 6 files, about 22 s on their own |
 | Generator tests (Python) | the data generators, on small test files | 128 tests in 10 files |
 | Component stories (browser) | each Lit element alone, in a gallery page opened from `file://` (`tests/stories/`) | 139 tests in 37 files, in Chromium (about 12 s of test time) and also in Firefox and WebKit (about 30 s for the three) |
@@ -52,7 +52,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | `math-page` | How the math works: Piece stats, Substat tiers, GCD | 12 | 15 |
 | `app` | the page frame: tabs, Job and sync strip, Job menu, saved settings, startup, shared controls | 43 | 47 |
 | `look` | shared CSS: tokens, themes, layout at the five windows, radii | 3 | 8 |
-| `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 21 | 0 |
+| `tooling` | the build, the test runners, the layout stress tool and the repo's code rules | 22 | 0 |
 
 Notes:
 
@@ -210,6 +210,7 @@ Which file tests what? One line per file; the file itself says the rest.
 | smoke-helpers/visual | the smoke test's (`tests/e2e/lib/visual.mjs`) contrast arithmetic and token reader against the WCAG's published values (21:1, #767676 and #777777 on white), large text, translucent layers |
 | scripts/test | the test wrapper: its options, the unit files a domain selects, and which domains a changed path points to (`--changed`) |
 | scripts/build.notices | the licence notices: every third-party package the page bundles has its notice in the page script, and the LICENSE each group is copied from names that group's own holder (Chakra UI, Floating UI contributors, Daishi Kato) |
+| scripts/build.worker | the worker bundle run in Node against the page thread's solver on a series of requests (a tie, pins, melds with tier ranking, a Target GCD with and without tier ranking, three more jobs, the Gear to search line): equal replies whole, so the pieces, stones and meal match |
 | scripts/lint-lit | the ESLint config for the Lit elements reports a class field that shadows a property and an `<img>` without `alt` on fixture files |
 | scripts/styles | `readStyles` and `expandStyles`: the cascade order, an import replaced by its file, `entry.css` importing every file once |
 | scripts/visual | the screenshot baseline wrapper: runs only in the pinned image, skips with a message elsewhere or without baselines, and the image tag matches the workflow and the lock file |
@@ -262,7 +263,7 @@ Notes on the longer rows:
 7. `core/set`: 14 real optimizer results recorded from the page before it used `evaluateSet`, number for number; the optimizer's own totals; custom pieces, removed stones, a game id no row has.
 8. `core/stat-keys`: `currentStatKey` reads old position keys as a job's own, and `remapStatKey` moves a key to another job by position. The guard is that `src/core` and `src/ui/views` hard-code no job-specific stat key outside the allow-listed tables.
 9. `core/tier-rank`: the reference tries every gear set and meal, with the stage rule written out. The cases are 20 of three keys and a Target GCD, a stage stopped at its node limit, an infeasible Target GCD, and 360 more random cases in `tests/sweep/`.
-10. `scripts/build`: the DEV marks outside `main` (data, handed to the page as a constant), the page template (the boot shell and one empty `<gsa-app>`), the licence notices (`bundledLicenseNotices` in `scripts/build/build.mjs`, tested in `tests/unit/scripts/build.notices.test.js`: the LICENSE texts of Zag, Floating UI and proxy-compare in the script, and a notice for every other bundled package), two builds of one tree giving the same page, the page's 5 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread.
+10. `scripts/build`: the DEV marks outside `main` (data, handed to the page as a constant), the page template (the boot shell and one empty `<gsa-app>`), the licence notices (`bundledLicenseNotices` in `scripts/build/build.mjs`, tested in `tests/unit/scripts/build.notices.test.js`: the LICENSE texts of Zag, Floating UI and proxy-compare in the script, and a notice for every other bundled package), two builds of one tree giving the same page, the page's 5 MB ceiling, the data as `JSON.parse`, the startup-failure script first in `<head>` before the `<style>` with no closing script tag, ES5 only, no literal colour, and its key taken from `STORE_KEY`. The optimizer's worker bundle is run in Node: it loads from the posted data texts (the item database in the script once) and answers like the page thread (one request in `build.test.js`, a series in `build.worker.test.js`).
 11. `ui/elements/set-page/food-menu-model`: no pill at first, the pinned meals, pills kept across results while they list a meal, the sort and its fallback to ILVL, a pick.
 12. `ui/elements/sheets/sheets-screen-model`: the screens, set notes, the answers to the sheet manager's and sheet page's events (a step, a move, an edit of the level).
 13. `ui/sheets/storage`: round trip, order, new sheet on top, a save touching only its own record, unreadable records listed with a cause and left alone, delete, a full storage (the edit stays), missing or throwing storage, and a saved time outside the range of a `Date` (1e300) making the record unreadable instead of breaking the Sheets tab.
