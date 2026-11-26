@@ -1,21 +1,21 @@
 /* Every table keyed by character level reaches the level cap (MAX_LEVEL, the highest equip level in the item database).
    A data update that raises the cap (level 110, say) then fails here, naming the table to extend, instead of giving
-   undefined and NaN on the page. LEVEL_MAIN, EXPANSIONS and HASTE are written by hand (src/core/constants.js, src/core/base-stats.js); PG and
+   undefined and NaN on the page. LEVEL_MAIN, EXPANSIONS and HASTE are written by hand (src/core/constants.ts, src/core/base-stats.ts); PG and
    MAX_SPEED are generated (scripts/data/gen_item_level.py, gen_max_speed.mjs). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LEVEL_MAIN } from '../../../src/core/base-stats.js';
-import { EXPANSIONS, HASTE, JOB_LEVEL_CAPS } from '../../../src/core/constants.js';
-import { levelParams } from '../../../src/core/level-params.js';
+import { LEVEL_MAIN } from '../../../src/core/base-stats.ts';
+import { EXPANSIONS, HASTE, JOB_LEVEL_CAPS } from '../../../src/core/constants.ts';
+import { levelParams } from '../../../src/core/level-params.ts';
 import { hasteFor } from '../../../src/core/speed.js';
-import { MAX_LEVEL, MAX_SPEED, PG } from '../../../src/core/tables.js';
+import { MAX_LEVEL, MAX_SPEED, PG } from '../../../src/core/tables.ts';
 
 test('the level cap is read from the items', () => {
   assert.ok(Number.isInteger(MAX_LEVEL) && MAX_LEVEL >= 100, `MAX_LEVEL ${MAX_LEVEL}`);
 });
 
 test('LEVEL_MAIN has a main stat base for every level up to MAX_LEVEL', () => {
-  assert.ok(LEVEL_MAIN.length >= MAX_LEVEL, `LEVEL_MAIN ends at level ${LEVEL_MAIN.length}: add the new levels in constants.js`);
+  assert.ok(LEVEL_MAIN.length >= MAX_LEVEL, `LEVEL_MAIN ends at level ${LEVEL_MAIN.length}: add the new levels in constants.ts`);
   for (let level = 1; level <= MAX_LEVEL; level++) {
     assert.ok(LEVEL_MAIN[level - 1] > 0, `level ${level}`);
   }
@@ -23,7 +23,7 @@ test('LEVEL_MAIN has a main stat base for every level up to MAX_LEVEL', () => {
 
 test('the last of EXPANSIONS reaches MAX_LEVEL', () => {
   const { short, levelCap } = EXPANSIONS.at(-1);
-  assert.ok(levelCap >= MAX_LEVEL, `${short} caps at ${levelCap}: add the new expansion to EXPANSIONS in constants.js`);
+  assert.ok(levelCap >= MAX_LEVEL, `${short} caps at ${levelCap}: add the new expansion to EXPANSIONS in constants.ts`);
   for (const [a, b] of EXPANSIONS.slice(1).map((e, i) => [EXPANSIONS[i], e])) {
     assert.ok(a.levelCap < b.levelCap, `${a.short} before ${b.short}`);
   }

@@ -5,11 +5,11 @@
    2H value minus 1H value) are left out of the two monotone checks, since their cap does fall at some item levels. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DB_SLOT_PCT, DB_SLOT_TYPE, JOBS, ROW } from '../../../src/core/constants.js';
+import { DB_SLOT_PCT, DB_SLOT_TYPE, JOBS, ROW } from '../../../src/core/constants.ts';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { effStats } from '../../../src/core/piece.js';
-import { IL, ITEMS, MAX_ILVL, MP } from '../../../src/core/tables.js';
+import { IL, ITEMS, MAX_ILVL, MP } from '../../../src/core/tables.ts';
 import { roundHalfUp } from '../helpers/common.js';
 
 /* The cap of `stat` at cap item level `cap`: floor(floor(budget x factor / 100) x slot share / 100) / 10, rounded; an

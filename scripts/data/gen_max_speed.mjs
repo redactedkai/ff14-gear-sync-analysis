@@ -24,14 +24,14 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { JOBS } from '../../src/core/constants.js';
-import { statBase } from '../../src/core/base-stats.js';
+import { JOBS } from '../../src/core/constants.ts';
+import { statBase } from '../../src/core/base-stats.ts';
 import { allMeals, foodBonus } from '../../src/core/food.js';
 import { browseItems, equipLevel, poolItemFromRow } from '../../src/core/items.js';
 import { makeJobContext } from '../../src/core/job-context.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { capCeiling } from '../../src/core/sync-target.js';
-import { MAX_LEVEL } from '../../src/core/tables.js';
+import { MAX_LEVEL } from '../../src/core/tables.ts';
 import ITEM_FORMAT from '../../src/core/item-format.json' with { type: 'json' };
 
 /* the cap case starts here (see above) */

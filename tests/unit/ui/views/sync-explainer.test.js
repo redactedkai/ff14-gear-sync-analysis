@@ -2,7 +2,7 @@
    melds, the item level range, melds into the chosen substats, and the caps behind them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { IL, MAX_REAL } from '../../../../src/core/tables.js';
+import { IL, MAX_REAL } from '../../../../src/core/tables.ts';
 import { capsFor } from '../../../../src/core/formulas.js';
 import { meldInfo, mkItem } from '../../../../src/core/items.js';
 import { gcdFor } from '../../../../src/core/speed.js';

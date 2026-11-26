@@ -3,7 +3,7 @@
    on a reduced pool with melds on (stat vectors from the test helper's meld enumerator). Fixed seeds. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS, SLOT_TYPES } from '../../../../src/core/constants.js';
+import { JOBS, SLOT_TYPES } from '../../../../src/core/constants.ts';
 import { jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { optimize } from '../../../../src/core/optimizer/index.js';

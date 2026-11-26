@@ -3,8 +3,8 @@
    test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ITEMS, IL, MP } from '../../../src/core/tables.js';
-import { ALL_JOBS_ACCESSORY_FACTORS, JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } from '../../../src/core/constants.js';
+import { ITEMS, IL, MP } from '../../../src/core/tables.ts';
+import { ALL_JOBS_ACCESSORY_FACTORS, JOBS, ITEM_STAT_ORDER, RAW_MAIN_IDX, ROW } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { predictRaw, syncStats, capsFor, jobFactor } from '../../../src/core/formulas.js';
 import { kindFactors, browseItems, poolItemFromRow, rowStats } from '../../../src/core/items.js';

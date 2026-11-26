@@ -6,7 +6,7 @@ import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, withF
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { mkItem } from '../../../src/core/items.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
-import { FOODS } from '../../../src/core/tables.js';
+import { FOODS } from '../../../src/core/tables.ts';
 import { rngInt } from '../helpers/common.js';
 
 const SGE = makeJobContext('SGE');

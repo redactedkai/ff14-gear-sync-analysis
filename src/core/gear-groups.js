@@ -2,14 +2,14 @@
    from the item data: jobs that can wear 80 percent or more of the same head, body, hands, legs and feet pieces, with
    the same level cap), and the pieces a job cannot wear. A set's pieces are as set.js keeps them. */
 import GEAR_GROUPS_FILE from '../data/gear-groups.json' with { type: 'json' };
-import { JOB_ROWS, ROW } from './constants.js';
+import { JOB_ROWS, ROW } from './constants.ts';
 import { itemById } from './items.js';
 
 /* GEAR_GROUPS: [[job id, ...], ...], every job in exactly one group. */
 export const GEAR_GROUPS = Object.freeze(GEAR_GROUPS_FILE.groups.map(group => Object.freeze([...group])));
 
 /* The role name of the gear group of `jobId` ("Healers"), for the Copy sheet note: the job picker's row label
-   (constants.js JOB_ROWS) when every job of the group is in that one row, else null (a group that spans rows, or a job
+   (constants.ts JOB_ROWS) when every job of the group is in that one row, else null (a group that spans rows, or a job
    alone in its group, Blue Mage and Beastmaster, takes no name). */
 export function gearGroupName(jobId) {
   const group = GEAR_GROUPS.find(g => g.includes(jobId));

@@ -3,7 +3,7 @@
    recording stand-in for the revisions tells which revisions a getter reads. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_REAL } from '../../../../src/core/tables.js';
+import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { createPageStore } from '../../../../src/ui/store/page-store.ts';
 import type { RestoredState } from '../../../../src/ui/store/app-state.ts';
 import { restoreOpen } from '../../helpers/common.js';

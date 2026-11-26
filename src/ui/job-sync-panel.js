@@ -1,10 +1,10 @@
 /* The page's settings as the core and the views take them: plain values read from the store's fields, so a view never
    needs the store itself (a sheet hands in its own). Pure: no import of another UI module, so state.js,
    level-cap.js, the views and the elements can all use it without an import going back up. */
-import { ACTIVITIES } from '../core/constants.js';
+import { ACTIVITIES } from '../core/constants.ts';
 import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
 import { makeJobContext } from '../core/job-context.js';
-import { MAX_LEVEL } from '../core/tables.js';
+import { MAX_LEVEL } from '../core/tables.ts';
 
 /* Stat Allocation's example piece: its total number of materia slots follows its slot. The totals real pieces have, by
    kind of slot (item database, pieces at item level 200 and up; no piece has 4 in all: the 16 pieces with 4 guaranteed

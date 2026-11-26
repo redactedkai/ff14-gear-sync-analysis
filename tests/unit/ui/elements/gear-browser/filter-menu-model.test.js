@@ -1,7 +1,7 @@
 /* What the Expansion and Gear categories menus work out (src/ui/elements/gear-browser/filter-menu-model.ts). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITIES, EXPANSIONS } from '../../../../../src/core/constants.js';
+import { ACTIVITIES, EXPANSIONS } from '../../../../../src/core/constants.ts';
 import {
   GEAR_FROM_SECTIONS,
   excludeAfterAll,

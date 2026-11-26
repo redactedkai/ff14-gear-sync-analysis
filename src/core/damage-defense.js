@@ -7,11 +7,11 @@
    kinds 4 and 6 (the owner's recordings), by xivgear's in-instance values for kind 2 (item level 663 chests at 660:
    842 → 837 and 481 → 478 Defense) and assumed for the rest; weapon damage under sync is a guess (the tools clamp it
    the same way; no in-game measurement was found). */
-import { DB_SLOT_TYPE } from './constants.js';
+import { DB_SLOT_TYPE } from './constants.ts';
 import { capFromBudget, clampIlvl } from './formulas.js';
 import { damageDefenseFacts } from './items.js';
-import { levelParams } from './level-params.js';
-import { IL, MP, SHARES } from './tables.js';
+import { levelParams } from './level-params.ts';
+import { IL, MP, SHARES } from './tables.ts';
 
 /* The weapon damage key on candidates and totals (optimizer): one of the job's weapon damage, on the weapon only. */
 export const WD_KEY = 'wd';

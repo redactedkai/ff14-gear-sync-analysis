@@ -8,8 +8,8 @@
    the level's item level instead (item level 663, equip level 94, level 90: cap 662 gives 662, cap 663 gives 660). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ROW } from '../../../src/core/constants.js';
-import { ITEMS, MAX_ILVL } from '../../../src/core/tables.js';
+import { ROW } from '../../../src/core/constants.ts';
+import { ITEMS, MAX_ILVL } from '../../../src/core/tables.ts';
 import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.js';
 
 const MAX_LEVEL = 100;

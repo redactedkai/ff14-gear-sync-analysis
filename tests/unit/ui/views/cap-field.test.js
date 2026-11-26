@@ -2,7 +2,7 @@
    Sync settings popover, a sheet's page and the Sheets dialogs. The sentences themselves are asserted in ui/level-cap.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_REAL } from '../../../../src/core/tables.js';
+import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { CAP_MISSING_TEXT, CAP_TYPED_BAD_TEXT, LEVEL_TEXT, capLoweredText, rangeOnly } from '../../../../src/ui/level-cap.js';
 import { capFieldView, levelFieldView } from '../../../../src/ui/views/cap-field.js';
 

@@ -1,10 +1,11 @@
 /* A character's base stats at a level (statBase): the points a stat starts from before gear, as the character panel counts
    them. Food, the tier tables and the set totals all start from them. */
-import { clampLevel, levelParams } from './level-params.js';
+import { clampLevel, levelParams } from './level-params.ts';
+import type { JobContext, StatKey } from './types.ts';
 
 /* The substats whose character base is the level's main stat base, not the speed base (statBase below): the ones the
    game scales from the main stat. */
-const MAIN_BASED_SUBSTATS = Object.freeze(['det', 'piety']);
+const MAIN_BASED_SUBSTATS: readonly StatKey[] = Object.freeze(['det', 'piety']);
 
 /* The character's base main stat at each level 1..100 (index = level - 1), the base that Determination and Piety start
    from (Critical Hit, Direct Hit, speed and Tenacity start from ParamGrow BaseSpeed). Not in the game files (no sheet
@@ -23,7 +24,7 @@ export const LEVEL_MAIN = Object.freeze([
    and Vitality the level's main stat base (LEVEL_MAIN) x the job's modifier (ClassJob; floor, as AkhMorning and xivgear
    do), without the clan's bonus (-3 to +3: a saved sheet's clan is added on top by clan-bonus.js); the level's main stat base for
    Determination and Piety; ParamGrow BaseSpeed for the other substats. */
-export function statBase(job, stat, level) {
+export function statBase(job: JobContext, stat: StatKey, level: number): number {
   const lv = clampLevel(level);
   // the main stat and Vitality: the job's share of the main stat base
   if (stat === job.mainKey || stat === 'vit') {

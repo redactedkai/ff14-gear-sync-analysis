@@ -2,7 +2,7 @@
    the tab links, the loading line, the Gear browser's panel, the test data button, and which store parts the root follows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_REAL } from '../../../../../src/core/tables.js';
+import { MAX_REAL } from '../../../../../src/core/tables.ts';
 import { AppRootModel, appRootSelection } from '../../../../../src/ui/elements/app/app-root-model.ts';
 import { shallowEq } from '../../../../../src/ui/store/select.ts';
 import { restoreOpen } from '../../../helpers/common.js';

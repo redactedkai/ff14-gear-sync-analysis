@@ -167,10 +167,10 @@ test('build: the solver worker loads from the posted data texts and answers like
   const { join } = await import('node:path');
   const result = await build({
     stdin: {
-      // the page's data modules imported too, as core/tables.js does: the worker's texts must be the same strings
+      // the page's data modules imported too, as core/tables.ts does: the worker's texts must be the same strings
       contents: [
         "import { WORKER_DATA, WORKER_SOURCE } from 'solver-worker:bundle';",
-        "import { ITEMS } from './core/tables.js';",
+        "import { ITEMS } from './core/tables.ts';",
         'globalThis.__worker = { WORKER_DATA, WORKER_SOURCE, items: ITEMS.length };',
       ].join('\n'),
       resolveDir: SRC,

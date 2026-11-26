@@ -1,7 +1,7 @@
 /* Test helper: checks the stat model against external truth (real items, the Wiki's item level 475 caps). Used only by
    the unit tests; nothing in src/ imports it. */
-import { RAW_SUBSTAT_IDX, ROW } from '../../../src/core/constants.js';
-import { IL, ITEMS } from '../../../src/core/tables.js';
+import { RAW_SUBSTAT_IDX, ROW } from '../../../src/core/constants.ts';
+import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { offhandParts, predictRaw, statLine } from '../../../src/core/formulas.js';
 import { rowStats } from '../../../src/core/items.js';
 

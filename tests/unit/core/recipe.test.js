@@ -2,7 +2,7 @@
    picks by gameId, and that a warm session gives what a fresh one does without solving again what it already holds. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITIES } from '../../../src/core/constants.js';
+import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { allMeals } from '../../../src/core/food.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { gearFromCounts, recipePool, runRecipe } from '../../../src/core/recipe.js';

@@ -4,7 +4,7 @@
    - speedStepChartSvg (GCD): the speed one 0.01 s GCD step takes at each level, with a haste's levels.
    Each is drawn at its container's width (`width`, px), so its text stays at the page's size. Every text passed in (a
    slot or stat name) goes through escapeXml, so a name can never add markup; the rest is numbers. */
-import { clamp } from '../core/clamp.js';
+import { clamp } from '../core/clamp.ts';
 
 const DEFAULT_WIDTH = 760;
 const MIN_WIDTH = 420;

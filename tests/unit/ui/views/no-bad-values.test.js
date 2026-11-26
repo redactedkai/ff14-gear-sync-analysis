@@ -3,7 +3,7 @@
    undefined, "[object" or "null" in any number or text, the chart SVGs included. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { HASTE, JOBS } from '../../../../src/core/constants.js';
+import { HASTE, JOBS } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { gcdView } from '../../../../src/ui/views/gcd.js';

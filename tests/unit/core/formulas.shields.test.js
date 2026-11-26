@@ -4,11 +4,11 @@
    game data does not hold is the synced stat of a shield; the caps follow the same rule and are not checked here. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ROW } from '../../../src/core/constants.js';
+import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw } from '../../../src/core/formulas.js';
 import { rowStats } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { ITEMS } from '../../../src/core/tables.js';
+import { ITEMS } from '../../../src/core/tables.ts';
 import { rowItem } from '../helpers/model-validation.js';
 
 const SLOT_1H = 1,

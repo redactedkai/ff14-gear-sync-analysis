@@ -3,7 +3,7 @@
    chart are the same for the four slots, for one job per role, so a change to one slot's share fails here. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACCESSORY_SLOTS, SLOT_LABEL } from '../../../../src/core/constants.js';
+import { ACCESSORY_SLOTS, SLOT_LABEL } from '../../../../src/core/constants.ts';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { capsFor } from '../../../../src/core/formulas.js';
 import { slotGroups } from '../../../../src/ui/views/piece.js';

@@ -7,7 +7,7 @@ import { allocatedRelic, allowedActivities, browseItems, poolItemFromRow, routes
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
-import { statBase } from '../../../src/core/base-stats.js';
+import { statBase } from '../../../src/core/base-stats.ts';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
 import { evaluateSet, makeSet } from '../../../src/core/set.js';

@@ -5,10 +5,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import ITEM_FORMAT from '../../../src/core/item-format.json' with { type: 'json' };
 import { GEAR_GROUPS, gearGroupName, piecesJobCannotWear } from '../../../src/core/gear-groups.js';
-import { JOB_LEVEL_CAPS } from '../../../src/core/constants.js';
+import { JOB_LEVEL_CAPS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { itemRow } from '../helpers/common.js';
-import { ROW } from '../../../src/core/constants.js';
+import { ROW } from '../../../src/core/constants.ts';
 
 test('the groups are the nine measured ones and hold every job once', () => {
   assert.deepEqual(

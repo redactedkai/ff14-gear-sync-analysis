@@ -1,12 +1,12 @@
-/* Which jobs have shields, and which weapon mode follows (src/core/constants.js ONE_HANDED_JOBS, MIXED_WEAPON_JOBS;
+/* Which jobs have shields, and which weapon mode follows (src/core/constants.ts ONE_HANDED_JOBS, MIXED_WEAPON_JOBS;
    makeJobContext's weaponMode, activeSlotTypes). The expected sets are derived from the item database (job mask and slot
    code: 0 two-handed weapon, 1 one-handed weapon, 2 shield), so a data update that gives another job a shield fails here
    instead of hiding its shield. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS, MIXED_WEAPON_JOBS, ONE_HANDED_JOBS, ROW } from '../../../src/core/constants.js';
+import { JOBS, MIXED_WEAPON_JOBS, ONE_HANDED_JOBS, ROW } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { ITEMS } from '../../../src/core/tables.js';
+import { ITEMS } from '../../../src/core/tables.ts';
 
 const SLOT_2H = 0,
   SLOT_1H = 1,

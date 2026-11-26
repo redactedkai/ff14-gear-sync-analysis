@@ -3,7 +3,7 @@
    so a change to candidates.js that the replica misses fails loudly instead of timing the wrong code.
    node scripts/perf/split.mjs [--job SGE] [--sync "cap 660"] [--target <the job's speed key> --tb crit,det] [--melds] [--repeats 20] */
 import { performance } from 'node:perf_hooks';
-import { SLOT_TYPES } from '../../src/core/constants.js';
+import { SLOT_TYPES } from '../../src/core/constants.ts';
 import { WD_KEY, weaponDamage } from '../../src/core/damage-defense.js';
 import { slotInfo } from '../../src/core/items.js';
 import { bestMeld } from '../../src/core/meld.js';

@@ -97,7 +97,7 @@ test('GCD equals AkhMorning speed table at level 100, every speed and recast', (
 /* Haste (Target GCD). Expected no-speed GCDs from the tiers in xivgear's curated BiS set names (static-bis-sets 337c9c0,
    the ultimate sheets; target-gcd research): NIN and VPR 2.12 (15%), SAM 2.17 (Fuka 13%), MNK 2.00 (20%) at levels
    90 and 100, MNK 2.12 at level 70 (15%, UCoB/UWU sets 2.09-2.12). Levels from the official job guides (HASTE in
-   constants.js). */
+   constants.ts). */
 test('hasted GCD with no gear speed matches the published tiers', () => {
   const noSpeed = (job, level) => gcdFor(0, level, 2500, hasteFor(job, level)?.pct ?? 0);
   for (const level of [90, 100]) {

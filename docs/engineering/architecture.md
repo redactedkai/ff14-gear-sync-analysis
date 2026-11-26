@@ -60,8 +60,8 @@ The tool computes all of this **once per job** into a *job context*: a small, fr
 
 What a job context contains:
 
-- **Stat keys for this job.** A stat key is the game's own name for a stat: `str`, `dex`, `int`, `mind` (the main stat), `vit`, `crit`, `det`, `dh`, `sks`, `sps` (speed), `piety`, `ten` (the special substat). The context lists the keys the job has (`stats`: the main stat, Vitality, then the substats; six or seven keys, with no placeholder for a missing special substat). It also names three of them for code that needs "the job's own": `mainKey` (Mind for a healer, Strength for a tank), `speedKey` (Spell Speed or Skill Speed) and `specKey` (Piety, Tenacity or null). Display names (`label`, `short`) come from one table by key, `STAT_LABEL` and `STAT_SHORT` in `src/core/constants.js`.
-- **Weapon mode and slots.** Two-handed weapon (`'2h'`), one-handed weapon plus off-hand (`'1h+oh'`: Paladin, Beastmaster) or either (`'mixed'`: White Mage, Black Mage), from the lists `ONE_HANDED_JOBS` and `MIXED_WEAPON_JOBS` in `constants.js`; a unit test derives both from the item data. A job with a shield has the Off-hand among its active slots, which fixes the slots of Piece stats and the slot filter; the weapon's [slot share](../glossary.md) a hand-made weapon takes is 140 per mille for '2h' and 100 for the other two (Piece stats offers the one-handed Weapon and the Off-hand for a mixed job). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
+- **Stat keys for this job.** A stat key is the game's own name for a stat: `str`, `dex`, `int`, `mind` (the main stat), `vit`, `crit`, `det`, `dh`, `sks`, `sps` (speed), `piety`, `ten` (the special substat). The context lists the keys the job has (`stats`: the main stat, Vitality, then the substats; six or seven keys, with no placeholder for a missing special substat). It also names three of them for code that needs "the job's own": `mainKey` (Mind for a healer, Strength for a tank), `speedKey` (Spell Speed or Skill Speed) and `specKey` (Piety, Tenacity or null). Display names (`label`, `short`) come from one table by key, `STAT_LABEL` and `STAT_SHORT` in `src/core/constants.ts`.
+- **Weapon mode and slots.** Two-handed weapon (`'2h'`), one-handed weapon plus off-hand (`'1h+oh'`: Paladin, Beastmaster) or either (`'mixed'`: White Mage, Black Mage), from the lists `ONE_HANDED_JOBS` and `MIXED_WEAPON_JOBS` in `constants.ts`; a unit test derives both from the item data. A job with a shield has the Off-hand among its active slots, which fixes the slots of Piece stats and the slot filter; the weapon's [slot share](../glossary.md) a hand-made weapon takes is 140 per mille for '2h' and 100 for the other two (Piece stats offers the one-handed Weapon and the Off-hand for a mixed job). Real pieces carry their own slot code, so a White Mage wand and shield, or a cloak that covers the head, use their own share and blocked slots in the browser and the optimizer.
 - **Vitality factor.** 0.9 for Intelligence and Mind jobs, 1 otherwise. This is the factor the job's own gear carries. It is used only where no real item is involved (How the math works). A real piece uses its own stat factors, read from the game files for its kind ([math.md, section 4](../mechanics/math.md#the-stat-factor-of-an-item)).
 - **Level cap.** 100, or the limited job's own: Blue Mage 80, Beastmaster 50 (a constant from the Lodestone patch notes, the same as xivgear's `JOB_DATA`; the game files hold no cap as a number, but each job's own gear stops at that equip level, [math.md, section 1](../mechanics/math.md#1-terms)). The synced level and the equip level filter stop there, and gear above it is left out of the gear list and the search.
 - **Position in the item database's job mask**, used to filter gear the job can equip ([data-pipeline.md, section 4](data-pipeline.md#4-item-database-generation)).
@@ -518,19 +518,19 @@ Notes:
 | --- | --- |
 | Generated data (never edit by hand) | `src/data/item-level.json`, `src/data/items.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/gear-groups.json`, `src/data/max-speed.json`, `src/data/summary.json` |
 | Data generators (`regen.py` runs them in order; the last, in Node, writes `max-speed.json`) | `scripts/data/gen_item_level.py`, `gen_items.py`, `gen_gear_groups.py`, `gen_food.py`, `gen_job_icons.py`, `gen_max_speed.mjs` |
-| Tables and limits derived from the data | `src/core/tables.js` |
-| Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.js`, `src/core/item-format.json` |
+| Tables and limits derived from the data | `src/core/tables.ts` |
+| Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.ts`, `src/core/item-format.json` |
 | Job context | `src/core/job-context.js` (`makeJobContext`, its `mainKey`, `speedKey`, `specKey`, `activeSlotTypes`, `vitFactor` and `maxLevel`) |
-| A character's base stat at a level | `src/core/base-stats.js` (`statBase`, `LEVEL_MAIN`) |
-| Stat labels; level caps | `src/core/constants.js` (`STAT_LABEL`, `STAT_SHORT`; `JOB_LEVEL_CAPS`) |
-| Saved position keys | `src/core/stat-keys.js` (`currentStatKey`, `remapStatKey`) |
+| A character's base stat at a level | `src/core/base-stats.ts` (`statBase`, `LEVEL_MAIN`) |
+| Stat labels; level caps | `src/core/constants.ts` (`STAT_LABEL`, `STAT_SHORT`; `JOB_LEVEL_CAPS`) |
+| Saved position keys | `src/core/stat-keys.ts` (`currentStatKey`, `remapStatKey`) |
 | Raw row to stat keys, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
 | Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.js` (`GEAR_GROUPS`, `gearGroupName`, `piecesJobCannotWear`) |
 | Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
 | A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.js` (`statLine`, `offhandParts`) |
-| Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.js` (`levelParams`, `clampLevel`) |
+| Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.ts` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.js` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
 | Other core modules | `src/core/formulas.js`, `gear-groups.js`, `sync-target.js`, `speed.js`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.js`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.js`, `optimizer/` |
 | Entry point: restore, make the store and register its two facades and the elements, start the router, autosave | `src/main.js` |

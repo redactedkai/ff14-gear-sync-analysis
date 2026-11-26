@@ -3,10 +3,10 @@
    of Fending is item 24850. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ROW } from '../../../src/core/constants.js';
+import { ROW } from '../../../src/core/constants.ts';
 import { itemById, mkItem, parseRow, poolItemById, poolItemFromRow, poolKey } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { ITEMS } from '../../../src/core/tables.js';
+import { ITEMS } from '../../../src/core/tables.ts';
 import { itemRow, piece } from '../helpers/common.js';
 
 const war = makeJobContext('WAR');

@@ -4,11 +4,26 @@
    The generated-data format (job bit order, raw stat order, slot codes) comes from item-format.json, which the
    Python generators read too. */
 import ITEM_FORMAT from './item-format.json' with { type: 'json' };
+import type { RowIndex } from './types.ts';
 
 /* The substats every job has; the speed stat and the special substat follow in a job's own list. */
-export const SHARED_SUBSTATS = Object.freeze(['crit', 'det', 'dh']);
+export const SHARED_SUBSTATS = Object.freeze(['crit', 'det', 'dh'] as const);
 
-export const SLOT_TYPES = Object.freeze(['weapon', 'offhand', 'head', 'body', 'hands', 'legs', 'feet', 'ear', 'neck', 'wrist', 'ring']);
+export const SLOT_TYPES = Object.freeze([
+  'weapon',
+  'offhand',
+  'head',
+  'body',
+  'hands',
+  'legs',
+  'feet',
+  'ear',
+  'neck',
+  'wrist',
+  'ring',
+] as const);
+/* A slot type: one of SLOT_TYPES (the `type` of item-format.json's `slots`). */
+export type SlotType = (typeof SLOT_TYPES)[number];
 export const SLOT_LABEL = Object.freeze({
   weapon: 'Weapon',
   offhand: 'Off-hand',
@@ -24,19 +39,20 @@ export const SLOT_LABEL = Object.freeze({
 });
 /* The four accessory slots, which share one budget share (item-format.json: 67 per mille each); a menu that groups
    them calls the group ACCESSORIES_LABEL. */
-export const ACCESSORY_SLOTS = Object.freeze(['ear', 'neck', 'wrist', 'ring']);
+export const ACCESSORY_SLOTS = Object.freeze(['ear', 'neck', 'wrist', 'ring'] as const);
 export const ACCESSORIES_LABEL = 'Accessories';
 
 /* Slot share of the ItemLevel budget, in thousandths: `percent` per slot in item-format.json, which
    gen_item_level.py checks against the BaseParam sheet. The weapon value depends on the weapon mode
    (WEAPON_PCT); BASE_SLOT_PCT.weapon is the two-handed value. Multi-slot codes (`blocks`, e.g. a cloak) have their own
    share and do not set the type's. */
-const weaponSlotPct = twoHanded => ITEM_FORMAT.slots.find(s => s.type === 'weapon' && s.twoHanded === twoHanded).percent;
+const weaponSlotPct = (twoHanded: boolean): number =>
+  (ITEM_FORMAT.slots.find(s => s.type === 'weapon' && s.twoHanded === twoHanded) as { percent: number }).percent;
 export const WEAPON_PCT = Object.freeze({ '2h': weaponSlotPct(true), '1h+oh': weaponSlotPct(false) });
 export const BASE_SLOT_PCT = Object.freeze({
   weapon: WEAPON_PCT['2h'],
   ...Object.fromEntries(ITEM_FORMAT.slots.filter(s => s.type !== 'weapon' && !s.blocks).map(s => [s.type, s.percent])),
-});
+} as Record<SlotType, number>);
 
 /* Substat shares by rank on a piece, in percent. Empirical pattern, not stored in the game files (docs/mechanics/math.md section 4; evidence in docs/mechanics/validation.md). */
 export const SUB_WEIGHTS = Object.freeze([100, 70]);
@@ -56,7 +72,7 @@ export const ATMA_STAT_ILVL = 90;
    with Main Attribute. Their stats were edited by hand patch by patch (datamining history), so their main stat and
    Vitality follow no one factor; this is the factor each one carries (the file's is 90 for both), by name (owner's
    decision). Stored stats only: synced, the game applies the file's factor (xivgear's in-game values). */
-export const ALL_JOBS_ACCESSORY_FACTORS = Object.freeze({
+export const ALL_JOBS_ACCESSORY_FACTORS: Readonly<Record<string, { mainAttr: number; vit: number }>> = Object.freeze({
   "Neophyte's Ring": { mainAttr: 100, vit: 90 },
   'Aetheryte Earring': { mainAttr: 100, vit: 90 },
   'Bozjan Earring': { mainAttr: 100, vit: 100 },
@@ -109,6 +125,8 @@ export const STAT_LABEL = Object.freeze({
   piety: 'Piety',
   ten: 'Tenacity',
 });
+/* A stat key of a job (the keys of STAT_LABEL: every one this file and a JobContext name). */
+export type StatKey = keyof typeof STAT_LABEL;
 export const STAT_SHORT = Object.freeze({
   str: 'STR',
   dex: 'DEX',
@@ -124,6 +142,14 @@ export const STAT_SHORT = Object.freeze({
   ten: 'TNC',
 });
 
+/* The weapon damage and defense keys of an item row (`damageDefense` in item-format.json; DAMAGE_DEFENSE_KEYS lists them). */
+export type DamageDefenseKey = 'damagePhys' | 'damageMag' | 'defensePhys' | 'defenseMag';
+/* The weapon damage key of a job's weapons (a DamageDefenseKey that is damage, not defense). */
+export type DamageKey = 'damagePhys' | 'damageMag';
+/* A key of the raw stats of an item row, as `stats` of item-format.json lists them: the stat keys, the game's generic Main
+   Attribute (`mainAttr`) and Secondary Attribute (`secAttr`). */
+export type RawStatKey = StatKey | 'mainAttr' | 'secAttr';
+
 /* Role profiles: which game stat is each position of a job's stat list. mainKey: Strength, Dexterity, Intelligence or
    Mind; speedKey: Skill Speed or Spell Speed; specKey: Piety or Tenacity, null for a job without a special substat. */
 export const PROFILES = Object.freeze({
@@ -134,8 +160,19 @@ export const PROFILES = Object.freeze({
   caster: Object.freeze({ label: 'Caster (Intelligence)', mainKey: 'int', speedKey: 'sps', specKey: null }),
 });
 
+/* A main stat key: the Strength, Dexterity, Intelligence or Mind a job's mainKey is. */
+export type MainStatKey = (typeof PROFILES)[ProfileId]['mainKey'];
+/* A speed stat key (Skill Speed or Spell Speed) and a special substat key (Piety or Tenacity): what a profile's speedKey
+   and specKey hold. */
+export type SpeedKey = (typeof PROFILES)[ProfileId]['speedKey'];
+export type SpecKey = NonNullable<(typeof PROFILES)[ProfileId]['specKey']>;
+/* A role profile's id: a key of PROFILES. */
+export type ProfileId = keyof typeof PROFILES;
+/* A job's weapon mode: '2h', '1h+oh' or 'mixed' (makeJobContext). */
+export type WeaponMode = '2h' | '1h+oh' | 'mixed';
+
 /* Name and role profile per job id. */
-const JOB_INFO = {
+const JOB_INFO: Record<string, readonly [string, ProfileId]> = {
   PLD: ['Paladin', 'tank'],
   WAR: ['Warrior', 'tank'],
   DRK: ['Dark Knight', 'tank'],
@@ -172,7 +209,7 @@ export const JOBS = Object.freeze(
   }),
 );
 /* The job of id `id` (a JOBS entry), or undefined for an unknown id. */
-export const jobById = id => JOBS.find(j => j.id === id);
+export const jobById = (id: string) => JOBS.find(j => j.id === id);
 /* The job a fresh page starts with (Paladin, the first of JOBS) and the fallback for an unknown id in makeJobContext. */
 export const DEFAULT_JOB = JOBS[0].id;
 /* The jobs with a shield, by weapon mode (makeJobContext's weaponMode). Both lists come from the item database (job mask
@@ -192,8 +229,13 @@ export const NO_WEAPON_DAMAGE_JOBS = Object.freeze(['BLU']);
    https://na.finalfantasyxiv.com/lodestone/topics/detail/2a6c65f39b5b16b58bd4f0d9b1edaa8c0b7ec4f3), Beastmaster "begins at
    level 1 with a maximum level of 50" (Patch 7.56 Notes,
    https://na.finalfantasyxiv.com/lodestone/topics/detail/a8a526ad64db45c8ca8d1c7fdcce8a5eedaa18bc). Every other job caps
-   at the highest equip level in the item database (MAX_LEVEL in tables.js, 100). */
-export const JOB_LEVEL_CAPS = Object.freeze({ ...ITEM_FORMAT.jobLevelCaps });
+   at the highest equip level in the item database (MAX_LEVEL in tables.ts, 100). */
+export const JOB_LEVEL_CAPS: Readonly<Record<string, number>> = Object.freeze({ ...ITEM_FORMAT.jobLevelCaps });
+/* A job's always-on haste: its name and its steps ({level, pct, source}), in level order (HASTE). */
+export interface HasteTrait {
+  readonly name: string;
+  readonly steps: readonly { readonly level: number; readonly pct: number; readonly source: string }[];
+}
 /* Haste that is up all fight in practice, counted in the Target GCD (owner's decision; short buffs such as
    Presence of Mind, Ley Lines, Army's Paeon and Inspiration are not): job -> {name, steps: [{level (the level it starts
    at), pct (percent), source (the trait or action that gives it)}]}, steps in level order. Percents, levels and names from the official job guides
@@ -201,7 +243,7 @@ export const JOB_LEVEL_CAPS = Object.freeze({ ...ITEM_FORMAT.jobLevelCaps });
    starting level is real (a Samurai, from 50, synced to Sastasha's 18): the step's own level decides. Samurai's 10%
    below 78 is second-hand (Game8, xivgear): the guide gives only today's 13% and the trait that raises it. xivgear
    applies Ninja's and Viper's at every level. */
-export const HASTE = Object.freeze({
+export const HASTE: Readonly<Record<string, HasteTrait>> = Object.freeze({
   MNK: Object.freeze({
     name: 'Greased Lightning',
     steps: Object.freeze([
@@ -240,12 +282,12 @@ export const EXPANSIONS = Object.freeze([
 
 /* The job picker's rows, in the game's own role grouping and order. This is not the stat profile: Ninja and Viper are
    melee here but use the Dexterity profile with the ranged jobs. */
-export const JOB_ROWS = Object.freeze([
-  Object.freeze(['Tanks', Object.freeze(['PLD', 'WAR', 'DRK', 'GNB'])]),
-  Object.freeze(['Healers', Object.freeze(['WHM', 'SCH', 'AST', 'SGE'])]),
-  Object.freeze(['Melee', Object.freeze(['MNK', 'DRG', 'NIN', 'SAM', 'RPR', 'VPR', 'BST'])]),
-  Object.freeze(['Physical ranged', Object.freeze(['BRD', 'MCH', 'DNC'])]),
-  Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])]),
+export const JOB_ROWS: readonly (readonly [string, readonly string[]])[] = Object.freeze([
+  Object.freeze(['Tanks', Object.freeze(['PLD', 'WAR', 'DRK', 'GNB'])] as const),
+  Object.freeze(['Healers', Object.freeze(['WHM', 'SCH', 'AST', 'SGE'])] as const),
+  Object.freeze(['Melee', Object.freeze(['MNK', 'DRG', 'NIN', 'SAM', 'RPR', 'VPR', 'BST'])] as const),
+  Object.freeze(['Physical ranged', Object.freeze(['BRD', 'MCH', 'DNC'])] as const),
+  Object.freeze(['Magical ranged', Object.freeze(['BLM', 'SMN', 'RDM', 'PCT', 'BLU'])] as const),
 ]);
 
 /* Field positions in an item database row (src/data/items.json; written by scripts/data/gen_items.py), by name from
@@ -258,19 +300,21 @@ export const JOB_ROWS = Object.freeze([
    - unique: 1 when only one can be worn (rings); hq: 1 when it can be high quality (the stats are then the HQ ones)
    - routes: the ways to get the piece, a list of bit masks over ACTIVITIES (bit ACTIVITY_MARKET_BIT: the market board);
      any one route whose every bit is allowed lists it (routesAllow in items.js). Empty: it can no longer be obtained
-   - kind: the item's stat factor kind, a column of the stat factor table MP in tables.js (kindFactors in items.js)
+   - kind: the item's stat factor kind, a column of the stat factor table MP in tables.ts (kindFactors in items.js)
    - meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed (`materia` in item-format.json)
    - rarity: Item.Rarity (1 white, 2 green, 3 blue, 4 purple, 7 pink); gameId: the game's item id (Item.csv row)
    - scales: 1 when its item level follows the wearer's level (Item.SubStatCategory 2; syncTarget) */
-export const ROW = Object.freeze(Object.fromEntries(ITEM_FORMAT.itemRow.fields.map((field, position) => [field, position])));
+export const ROW = Object.freeze(
+  Object.fromEntries(ITEM_FORMAT.itemRow.fields.map((field, position) => [field, position])),
+) as unknown as RowIndex;
 /* The weapon damage and defense keys of a row (`damageDefense` in item-format.json): damagePhys, damageMag,
    defensePhys, defenseMag. */
-export const DAMAGE_DEFENSE_KEYS = Object.freeze(ITEM_FORMAT.damageDefense.entries.map(e => e.key));
+export const DAMAGE_DEFENSE_KEYS = Object.freeze(ITEM_FORMAT.damageDefense.entries.map(e => e.key)) as readonly DamageDefenseKey[];
 /* The gear categories, in the order of a row's category field: {key, label} (where a piece comes from: Crafted,
    Dungeon, Raid, ...; gear_categories.py). */
 export const GEAR_CATEGORIES = Object.freeze(ITEM_FORMAT.category.list.map(c => Object.freeze({ key: c.key, label: c.label })));
-export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key));
-export const RAW_MAIN_IDX = Object.freeze(['str', 'dex', 'int', 'mind'].map(k => ITEM_STAT_ORDER.indexOf(k)));
+export const ITEM_STAT_ORDER = Object.freeze(ITEM_FORMAT.stats.map(s => s.key)) as readonly RawStatKey[];
+export const RAW_MAIN_IDX = Object.freeze((['str', 'dex', 'int', 'mind'] as const).map(k => ITEM_STAT_ORDER.indexOf(k)));
 export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 /* Mind's position in a row's raw stats: the old healer gear whose only main stat is Mind carries a fixed Direct Hit line
    (formulas.js fixedDirectHitShare). */
@@ -283,10 +327,12 @@ export const RAW_SUBSTAT_IDX = Object.freeze(
   ITEM_STAT_ORDER.map((_, i) => i).filter(i => !RAW_MAIN_IDX.includes(i) && i !== RAW_VIT_IDX && i !== RAW_MAIN_ATTR_IDX),
 );
 /* slot code -> pool slot type; codes 0 = two-handed, 1 = one-handed weapon, 12 = body that also covers the head */
-export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type));
+export const DB_SLOT_TYPE = Object.freeze(ITEM_FORMAT.slots.map(s => s.type)) as readonly SlotType[];
 export const DB_SLOT_PCT = Object.freeze(ITEM_FORMAT.slots.map(s => s.percent));
 /* slot code -> the slot types a piece in it leaves empty: the off-hand for a two-handed weapon, the head for a cloak */
-export const DB_SLOT_BLOCKS = Object.freeze(ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])));
+export const DB_SLOT_BLOCKS = Object.freeze(
+  ITEM_FORMAT.slots.map(s => Object.freeze(s.twoHanded ? ['offhand'] : s.blocks || [])),
+) as readonly (readonly SlotType[])[];
 /* The slot code of a two-handed weapon (`twoHanded` in item-format.json). */
 export const TWO_HANDED_SLOT_CODE = ITEM_FORMAT.slots.findIndex(s => s.type === 'weapon' && s.twoHanded);
 /* The boxes of the "Gear categories" filter, by what a player does to get a piece (scripts/data/gear_activities.py):

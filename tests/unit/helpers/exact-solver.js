@@ -3,7 +3,7 @@
    the rules (optimizer.md, section 2), not from the search. It shares the sync model (effStats, weaponDamage) with the code
    under test, so it does not check that; with melds it takes each item's stat vectors from the meld enumerator
    `meldVectors` (exhaustive.js). Used by core/optimizer/index.exact-solver.test.js. */
-import { SLOT_TYPES } from '../../../src/core/constants.js';
+import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { slotInfo } from '../../../src/core/items.js';
 import { weaponDamage } from '../../../src/core/damage-defense.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';

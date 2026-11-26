@@ -19,7 +19,7 @@ import { guard } from 'lit/directives/guard.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { live } from 'lit/directives/live.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { MAX_REAL } from '../../../core/tables.js';
+import { MAX_REAL } from '../../../core/tables.ts';
 import { TYPING_DEBOUNCE_MS, numberBox } from '../../number-field.js';
 import { shownNumber } from '../shared/number-box.ts';
 import { SEARCH_MAX_LENGTH } from '../../state.js';

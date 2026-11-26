@@ -1,8 +1,8 @@
 /* Which item level a piece is synced to: the duty's item level cap, the item level its level allows, or none.
    See docs/mechanics/math.md, section 5 ("Which pieces are synced"). How a stat is capped at that item level is formulas.js. */
-import { ROW } from './constants.js';
-import { levelParams } from './level-params.js';
-import { ITEMS } from './tables.js';
+import { ROW } from './constants.ts';
+import { levelParams } from './level-params.ts';
+import { ITEMS } from './tables.ts';
 
 /* The item level a piece is synced to by level sync at character level `level`: ParamGrow.ItemLevelSync (levels 1 to
    49 map to their own number, 50 to 130, 60 to 270, 70 to 400, 80 to 530, 90 to 660, 100 to 690). The game file has one

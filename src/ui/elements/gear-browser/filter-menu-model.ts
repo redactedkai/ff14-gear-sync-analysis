@@ -2,8 +2,8 @@
    from the data, with no DOM: the tabs and their boxes, the closed button's text, the words for a box's number, and the new
    list of left-out boxes after a click. The elements and the Node tests both import it. The page keeps the filter's settings:
    `exclude` is the list of ACTIVITIES keys left out (in ACTIVITIES order), `expOff` the EXPANSIONS short names switched off. */
-import { ACTIVITIES, EXPANSIONS } from '../../../core/constants.js';
-import { CURRENT_TOMES, MAX_LEVEL } from '../../../core/tables.js';
+import { ACTIVITIES, EXPANSIONS } from '../../../core/constants.ts';
+import { CURRENT_TOMES, MAX_LEVEL } from '../../../core/tables.ts';
 import { DEFAULT_EXCLUDE } from '../../job-sync-panel.js';
 import { fmtInt } from '../../text.ts';
 

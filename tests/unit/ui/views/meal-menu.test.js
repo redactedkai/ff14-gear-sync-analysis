@@ -2,7 +2,7 @@
    gear, the pills, search, stat line and sort, and the empty list's advice. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS } from '../../../../src/core/constants.js';
+import { JOBS } from '../../../../src/core/constants.ts';
 import { allMeals } from '../../../../src/core/food.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import {

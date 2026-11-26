@@ -43,7 +43,7 @@ Every file of `src/`, `scripts/` and `tests/` belongs to one **domain**, a part 
 | Domain | Covers | Unit files | Smoke steps |
 | --- | --- | ---: | ---: |
 | `model` | the game's number rules: item stats, sync, speed, tiers, food, materia | 22 | 0 |
-| `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 11 | 0 |
+| `data` | the game data and job facts, and the pipeline that generates them (with the Python tests) | 12 | 0 |
 | `solver` | the search for the best gear set, in the core (with the long sweep) | 25 | 0 |
 | `auto-fill` | Auto-fill on the page: settings, run, cancel, worker, suggestion | 12 | 17 |
 | `set-page` | a gear set's page: rows, hand edits, pins, menus, totals | 20 | 17 |

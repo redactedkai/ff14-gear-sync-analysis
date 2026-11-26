@@ -15,8 +15,8 @@ import {
   ROW,
   GEAR_CATEGORIES,
   DAMAGE_DEFENSE_KEYS,
-} from '../../../src/core/constants.js';
-import { IL, PG, ITEMS, MP, MATERIA, SHARES, MAX_ILVL } from '../../../src/core/tables.js';
+} from '../../../src/core/constants.ts';
+import { IL, PG, ITEMS, MP, MATERIA, SHARES, MAX_ILVL } from '../../../src/core/tables.ts';
 import { JOB_ICONS } from '../../../src/data/job-icons.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 

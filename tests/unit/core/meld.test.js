@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../../src/core/items.js';
-import { MATERIA } from '../../../src/core/tables.js';
+import { MATERIA } from '../../../src/core/tables.ts';
 import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../../src/core/meld.js';
 import { meldCaps } from '../../../src/core/piece.js';
 import { optimize } from '../../../src/core/optimizer/index.js';

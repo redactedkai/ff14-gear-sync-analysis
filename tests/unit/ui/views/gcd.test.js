@@ -2,10 +2,10 @@
    correction, the Haste menu and the chart; and the stored most-speed table it is held to (src/data/max-speed.json). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { levelParams } from '../../../../src/core/level-params.js';
+import { levelParams } from '../../../../src/core/level-params.ts';
 import { recastMult } from '../../../../src/core/speed.js';
-import { MAX_LEVEL, MAX_SPEED } from '../../../../src/core/tables.js';
-import { HASTE } from '../../../../src/core/constants.js';
+import { MAX_LEVEL, MAX_SPEED } from '../../../../src/core/tables.ts';
+import { HASTE } from '../../../../src/core/constants.ts';
 import {
   GCD_LEVELS,
   GCD_STEPS_NEAR,

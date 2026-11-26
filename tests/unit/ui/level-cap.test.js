@@ -10,7 +10,7 @@ import {
   capLoweredText,
   limitCapToLevel,
 } from '../../../src/ui/level-cap.js';
-import { MAX_REAL } from '../../../src/core/tables.js';
+import { MAX_REAL } from '../../../src/core/tables.ts';
 
 /* The cap follows the synced level (owner's decision, 2026-10-18): a cap above the best gear made for the level
    (capCeiling) is lowered to it, never raised, and only while item level sync is on and level sync can apply. */

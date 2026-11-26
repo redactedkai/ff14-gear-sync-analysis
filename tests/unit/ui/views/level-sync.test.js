@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../../src/core/job-context.js';
-import { MAX_REAL } from '../../../../src/core/tables.js';
+import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { shownSync, syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { appState } from '../../helpers/common.js';
 import { exhaustive, gamePool } from '../../helpers/exhaustive.js';

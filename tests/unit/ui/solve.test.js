@@ -2,7 +2,7 @@
    as an answer instead of a throw, and the Gear to search line. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITIES } from '../../../src/core/constants.js';
+import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { mkItem } from '../../../src/core/items.js';
 import { makeSession } from '../../../src/core/session.js';
 import { gearToSearchView, searchCount, solveView } from '../../../src/ui/solve.js';

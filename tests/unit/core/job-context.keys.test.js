@@ -3,7 +3,7 @@
    job are written out here from the game (docs/mechanics/math.md section 1), not read from PROFILES. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS, STAT_LABEL, STAT_SHORT } from '../../../src/core/constants.js';
+import { JOBS, STAT_LABEL, STAT_SHORT } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 
 /* job id: [main stat, speed stat, special substat or null] */

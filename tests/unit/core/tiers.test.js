@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { JOBS } from '../../../src/core/constants.js';
+import { JOBS } from '../../../src/core/constants.ts';
 import { statEffectKinds, statTier, tierLadder, tierSizes } from '../../../src/core/tiers.js';
 import { AKH_LEVEL } from '../helpers/common.js';
 

@@ -3,7 +3,7 @@
    objects it hands out are frozen copies, made again only after their part changed, so nothing outside an action can change the
    state through them. Each method calls an action. Nothing here can be assigned to: every write is a call (`editPanel`,
    `editBrowse`, ...), so the store counts it, the page draws it and the settings are saved. What the state holds: app-state.ts. */
-import { MAX_REAL } from '../../core/tables.js';
+import { MAX_REAL } from '../../core/tables.ts';
 import { deepFreeze } from '../view-cache.ts';
 import { PANEL_KEYS, jobCtxOf, panelOf, persisted, routeOf } from './app-state.ts';
 import type { AppActions } from './app-actions.ts';

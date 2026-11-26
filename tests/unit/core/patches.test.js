@@ -1,10 +1,10 @@
-/* The patch table (src/core/patches.js, generated from the patch list of xivapi/ffxiv-datamining-patches) and the lookup
+/* The patch table (src/core/patches.ts, generated from the patch list of xivapi/ffxiv-datamining-patches) and the lookup
    of the patch a game data date belongs to. Expected values are the patches' published release days (7.5 on 2026-04-29,
    7.56 on 2026-09-08, 7.57 on 2026-10-13; the patch list and the Wiki agree to the day). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DATA_SOURCE } from '../../../src/core/tables.js';
-import { PATCHES, PATCHES_SOURCE, patchOnDay } from '../../../src/core/patches.js';
+import { DATA_SOURCE } from '../../../src/core/tables.ts';
+import { PATCHES, PATCHES_SOURCE, patchOnDay } from '../../../src/core/patches.ts';
 
 test('the patch table names the patch list repository and a full commit, and is in date order with each version once', () => {
   assert.equal(PATCHES_SOURCE.repo, 'xivapi/ffxiv-datamining-patches');

@@ -4,7 +4,7 @@
    gearNeeded is the least gear that reaches a total with the meal, by a linear scan. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS } from '../../../src/core/constants.js';
+import { JOBS } from '../../../src/core/constants.ts';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, withFood } from '../../../src/core/food.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { rng } from '../helpers/common.js';

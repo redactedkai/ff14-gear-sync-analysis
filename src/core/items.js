@@ -17,9 +17,9 @@ import {
   ROW,
   GEAR_CATEGORIES,
   DAMAGE_DEFENSE_KEYS,
-} from './constants.js';
-import { levelParams } from './level-params.js';
-import { ITEMS, MP } from './tables.js';
+} from './constants.ts';
+import { levelParams } from './level-params.ts';
+import { ITEMS, MP } from './tables.ts';
 import { buildPiece } from './formulas.js';
 
 let nextId = 1;

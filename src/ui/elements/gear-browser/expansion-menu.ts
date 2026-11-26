@@ -4,7 +4,7 @@
    the element sends `expansion-change` with the new list of switched-off expansions as `detail`. It reads no store. */
 import { LitElement, html } from 'lit';
 import { live } from 'lit/directives/live.js';
-import { EXPANSIONS } from '../../../core/constants.js';
+import { EXPANSIONS } from '../../../core/constants.ts';
 import { EXPANSION_CHANGE_EVENT, EXPANSION_LABEL, expOffAfterToggle, expansionSummary } from './filter-menu-model.ts';
 import { createFilterPopover } from './filter-popover.ts';
 

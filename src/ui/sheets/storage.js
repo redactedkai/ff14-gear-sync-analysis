@@ -24,10 +24,10 @@
      clan; a field of the wrong type is damaged (sheetProblem), a name that is merely unknown is not.
 
    Pure of the DOM: no document. */
-import { SLOT_TYPES, jobById } from '../../core/constants.js';
+import { SLOT_TYPES, jobById } from '../../core/constants.ts';
 import { PARTY_ROLES_MAX, isClan } from '../../core/clan-bonus.js';
 import { makeJobContext } from '../../core/job-context.js';
-import { currentStatKey } from '../../core/stat-keys.js';
+import { currentStatKey } from '../../core/stat-keys.ts';
 import { STORE_KEY } from '../store-key.js';
 
 /* The index's key, and the prefix of a sheet record's key (the sheet's id follows it). */

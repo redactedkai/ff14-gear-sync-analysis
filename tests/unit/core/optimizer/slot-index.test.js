@@ -2,7 +2,7 @@
    cloak in its pool gets: blockable slots last, rings twice. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SLOT_TYPES } from '../../../../src/core/constants.js';
+import { SLOT_TYPES } from '../../../../src/core/constants.ts';
 import { blockableTypes, positionMask, slotPositions, typeMask } from '../../../../src/core/optimizer/slot-index.js';
 
 const SLOT_LIST = ['weapon', 'body', 'hands', 'ring', 'ring', 'head'];

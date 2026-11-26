@@ -2,7 +2,7 @@
    run it: the tab links (their address, a click on one), the loading line, what the Job and sync strip and the Gear browser are
    given, the notes, and the footer's data line. `appRootSelection` says which parts of the store the root draws from: it draws again
    when one changes. */
-import { dataSourceLabel } from '../../../core/tables.js';
+import { dataSourceLabel } from '../../../core/tables.ts';
 import { followInPage } from '../../router/plain-click.js';
 import { formatRoute } from '../../router/routes.js';
 import type { AppFacade } from '../../store/app-facade.ts';

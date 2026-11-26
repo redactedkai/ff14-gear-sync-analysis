@@ -20,34 +20,34 @@ export const STRESS_ITEM_LEVEL = 8888;
    exact text `from` in `file` (a path from the repository root) becomes `to`; with `all` every copy of it does. A patch
    whose text is not found throws, so a change to the source that moves a limit is noticed instead of silently testing the
    real limits. What they do together:
-   - MAX_LEVEL (tables.js) is 888 and MAX_REAL is 8888, so a job's level cap, the level and item level boxes, their ranges
+   - MAX_LEVEL (tables.ts) is 888 and MAX_REAL is 8888, so a job's level cap, the level and item level boxes, their ranges
      ("1-888", "1-8888"), the cap field's limits, the chips and every size the page derives from the limits take the widest digits;
-   - the tables keyed by level (PG, MAX_SPEED, the main stat base in base-stats.js) get rows up to level 888 that repeat the
+   - the tables keyed by level (PG, MAX_SPEED, the main stat base in base-stats.ts) get rows up to level 888 that repeat the
      last real row, so no number turns into NaN and the page keeps working;
    - MAX_ILVL (the ItemLevel table's last row, 920) is left as it is: an item level above it reads the last row. */
 export const STRESS_PATCHES = Object.freeze([
   {
-    file: 'src/core/tables.js',
+    file: 'src/core/tables.ts',
     from: 'export const PG = ITEM_LEVEL_FILE.PG;',
     to: `export const PG = [...ITEM_LEVEL_FILE.PG, ...Array.from({ length: ${STRESS_LEVEL} - ITEM_LEVEL_FILE.PG.length }, () => ITEM_LEVEL_FILE.PG.at(-1))];`,
   },
   {
-    file: 'src/core/tables.js',
+    file: 'src/core/tables.ts',
     from: 'export const MAX_SPEED = Object.freeze([...MAX_SPEED_FILE.total]);',
     to: `export const MAX_SPEED = Object.freeze([...MAX_SPEED_FILE.total, ...Array.from({ length: ${STRESS_LEVEL} - MAX_SPEED_FILE.total.length }, () => MAX_SPEED_FILE.total.at(-1))]);`,
   },
   {
-    file: 'src/core/tables.js',
+    file: 'src/core/tables.ts',
     from: 'export const MAX_REAL = ITEMS.reduce((m, r) => Math.max(m, r[ROW.ilvl]), 0);',
     to: `export const MAX_REAL = ${STRESS_ITEM_LEVEL};`,
   },
   {
-    file: 'src/core/tables.js',
+    file: 'src/core/tables.ts',
     from: 'export const MAX_LEVEL = ITEMS.reduce((m, r) => Math.max(m, r[ROW.equipLevel]), 0);',
     to: `export const MAX_LEVEL = ${STRESS_LEVEL};`,
   },
   {
-    file: 'src/core/base-stats.js',
+    file: 'src/core/base-stats.ts',
     from: 'LEVEL_MAIN[lv - 1]',
     to: 'LEVEL_MAIN[Math.min(lv, LEVEL_MAIN.length) - 1]',
     all: true,

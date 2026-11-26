@@ -18,8 +18,8 @@ import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { STORE_KEY } from '../../../src/ui/store-key.js';
 import { browseFiltered } from '../../../src/ui/views/gear.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { DEFAULT_JOB, JOBS } from '../../../src/core/constants.js';
-import { MAX_REAL } from '../../../src/core/tables.js';
+import { DEFAULT_JOB, JOBS } from '../../../src/core/constants.ts';
+import { MAX_REAL } from '../../../src/core/tables.ts';
 import { capCeiling } from '../../../src/core/sync-target.js';
 
 const D = defaultState();

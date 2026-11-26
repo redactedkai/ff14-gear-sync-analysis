@@ -5,7 +5,7 @@
 import { allocatedRelic, meldInfo, poolItemById } from '../../core/items.js';
 import { ROMAN, materiaFit, meldSlots } from '../../core/meld.js';
 import { meldCaps } from '../../core/piece.js';
-import { MATERIA } from '../../core/tables.js';
+import { MATERIA } from '../../core/tables.ts';
 import { fillPlan } from '../sheets/fill.js';
 import { SHIELD_NEEDS_ONE_HANDED } from '../sheets/set-edits.js';
 import { mealBestNote } from './meal-menu.js';

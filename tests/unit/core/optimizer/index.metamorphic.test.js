@@ -4,7 +4,7 @@
    the same pieces and so reach the same totals. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS } from '../../../../src/core/constants.js';
+import { JOBS } from '../../../../src/core/constants.ts';
 import { GEAR_GROUPS } from '../../../../src/core/gear-groups.js';
 import { jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';

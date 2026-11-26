@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { capsFor, syncStats } from '../../../src/core/formulas.js';
 import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
-import { IL } from '../../../src/core/tables.js';
+import { IL } from '../../../src/core/tables.ts';
 import { SLOT_PERMILLE } from '../helpers/common.js';
 
 const sge = makeJobContext('SGE');

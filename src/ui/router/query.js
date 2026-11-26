@@ -14,12 +14,12 @@
    value that is not valid falls back to the default too, checked by the same functions that check a saved setting
    (state.js restoreBrowseFields and restorePieceFields). A name the view does not have is ignored. Writing is the other
    way: only the settings that differ from the defaults, in the order above, as text. */
-import { clamp } from '../../core/clamp.js';
-import { ACTIVITIES, EXPANSIONS, HASTE } from '../../core/constants.js';
+import { clamp } from '../../core/clamp.ts';
+import { ACTIVITIES, EXPANSIONS, HASTE } from '../../core/constants.ts';
 import { DEFAULT_EXCLUDE, meldSlotChoices } from '../job-sync-panel.js';
-import { DEFAULT_JOB } from '../../core/constants.js';
+import { DEFAULT_JOB } from '../../core/constants.ts';
 import { defaultBrowse, defaultSubs, restoreBrowseFields, restorePanel, restorePieceFields } from '../state.js';
-import { MAX_SPEED } from '../../core/tables.js';
+import { MAX_SPEED } from '../../core/tables.ts';
 import { GCD_LEVELS, gcdLevelInput } from '../views/gcd.js';
 
 /* The most speed any job has at any level: a link's speed is held to it (the tab holds it to the level's range). */

@@ -14,7 +14,7 @@
      versions every meld version of the piece, this one among them (itemVersions only): a regain cut (regain.js) may
              swap a ring for any of them, including those pruning dropped
      fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
-import { SLOT_TYPES } from '../constants.js';
+import { SLOT_TYPES } from '../constants.ts';
 import { WD_KEY, weaponDamage } from '../damage-defense.js';
 import { meldInfo, slotInfo } from '../items.js';
 import { applyStones, bestMeld, meldVersions } from '../meld.js';

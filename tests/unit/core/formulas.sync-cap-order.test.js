@@ -14,8 +14,8 @@ import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { capValue, capsFor, pieceValue, syncStats } from '../../../src/core/formulas.js';
 import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../../src/core/items.js';
-import { ITEM_STAT_ORDER, ROW } from '../../../src/core/constants.js';
-import { IL, ITEMS, MAX_REAL } from '../../../src/core/tables.js';
+import { ITEM_STAT_ORDER, ROW } from '../../../src/core/constants.ts';
+import { IL, ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
 import { itemRow } from '../helpers/common.js';
 
 /* A database piece as the job sees it, synced to `cap` at its own slot share and item kind. */

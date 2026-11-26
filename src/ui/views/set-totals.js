@@ -19,7 +19,7 @@ import { isUsed } from '../sheets/saved-set.js';
    Hit's second effect, the DoT/HoT bonus of the speed). */
 const FIGURES = ['main', 'gcd', 'crit', 'critDmg', 'det', 'dh', 'spec', 'dot'];
 const FIGURE_LABEL = { gcd: 'GCD', critDmg: 'Crit dmg', dot: 'DoT' };
-/* The GCD figure's label for a job with an always-on haste (HASTE in core/constants.js): its text is the hasted GCD, and
+/* The GCD figure's label for a job with an always-on haste (HASTE in core/constants.ts): its text is the hasted GCD, and
    `shown` adds the GCD without the haste in front of it. */
 const HASTE_GCD_LABEL = 'GCD (with Haste)';
 /* The job's stat behind a figure id: the stat key for a stat figure, null for a derived one or a job without it. */

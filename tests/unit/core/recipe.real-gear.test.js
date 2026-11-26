@@ -4,8 +4,8 @@
    store-shaped state (helpers/views.js). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITIES, JOBS } from '../../../src/core/constants.js';
-import { statBase } from '../../../src/core/base-stats.js';
+import { ACTIVITIES, JOBS } from '../../../src/core/constants.ts';
+import { statBase } from '../../../src/core/base-stats.ts';
 import { allMeals, bestFood, foodChoices } from '../../../src/core/food.js';
 import { allocatedRelic, browseItems, itemRoutes, mkItem, poolItemFromRow, poolKey, withActivities } from '../../../src/core/items.js';
 import { makeJobContext } from '../../../src/core/job-context.js';

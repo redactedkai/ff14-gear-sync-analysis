@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DATA_SOURCE, dataSourceLabel } from '../../../src/core/tables.js';
+import { DATA_SOURCE, dataSourceLabel } from '../../../src/core/tables.ts';
 
 test('DATA_SOURCE names the datamining repo, a full commit sha and an ISO date', () => {
   assert.equal(DATA_SOURCE.repo, 'xivapi/ffxiv-datamining');

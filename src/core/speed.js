@@ -1,6 +1,6 @@
 /* Speed stat -> GCD and DoT/HoT tick scaling (AkhMorning's formulas), using ParamGrow level data. */
-import { HASTE, GCD_FLOOR_MS } from './constants.js';
-import { levelParams } from './level-params.js';
+import { HASTE, GCD_FLOOR_MS } from './constants.ts';
+import { levelParams } from './level-params.ts';
 
 /* The recast of a weaponskill or spell before speed: 2.5 s, in ms (the GCD every speed formula here starts from). */
 export const BASE_GCD_MS = 2500;
@@ -10,7 +10,7 @@ const SPEED_SEARCH_LIMIT = 100000;
    LevelModifier (div) points of speed above the base. */
 const SPEED_STEP = 130;
 
-/* The haste a job counts in its Target GCD at `level` (HASTE in constants.js): {name, pct}, or null for none. */
+/* The haste a job counts in its Target GCD at `level` (HASTE in constants.ts): {name, pct}, or null for none. */
 export function hasteFor(jobId, level) {
   const haste = HASTE[jobId];
   if (!haste) {

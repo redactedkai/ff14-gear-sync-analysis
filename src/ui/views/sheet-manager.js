@@ -1,8 +1,8 @@
 /* The sheet manager (the Sheets tab's first level): every saved sheet as a row, the unreadable records, and the empty
    state. Takes what sheets/storage.js loadSheets returns and builds a plain view object; the template only displays it.
    Pure: no store. Rules: docs/engineering/sheets.md ("Saved data", "Reading and writing"). */
-import { jobById } from '../../core/constants.js';
-import { patchOnDay } from '../../core/patches.js';
+import { jobById } from '../../core/constants.ts';
+import { patchOnDay } from '../../core/patches.ts';
 import { UNAVAILABLE_MESSAGE } from '../sheets/storage.js';
 import { sheetHref } from '../store/app-state.ts';
 import { localDate, syncShort } from './sheet-text.js';

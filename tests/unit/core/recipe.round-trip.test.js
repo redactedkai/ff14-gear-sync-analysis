@@ -4,7 +4,7 @@
    Totals are evaluateSet's (the character panel's numbers). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS } from '../../../src/core/constants.js';
+import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';

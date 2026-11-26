@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { MATERIA } from '../../../src/core/tables.js';
+import { MATERIA } from '../../../src/core/tables.ts';
 import { overmeldChance, overmeldNumber, usesNqOvermeldRates } from '../../../src/core/meld.js';
 import { piece } from '../helpers/common.js';
 

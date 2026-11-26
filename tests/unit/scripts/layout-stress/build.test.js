@@ -21,8 +21,8 @@ test('every stress patch applies to the repository source as it is now (a moved 
 });
 
 test('the stress build sets the level limit to 888 and the item level limit to 8888', () => {
-  const tables = readFileSync(join(REPO_ROOT, 'src/core/tables.js'), 'utf8');
-  const patched = STRESS_PATCHES.filter(patch => patch.file === 'src/core/tables.js').reduce(applyPatch, tables);
+  const tables = readFileSync(join(REPO_ROOT, 'src/core/tables.ts'), 'utf8');
+  const patched = STRESS_PATCHES.filter(patch => patch.file === 'src/core/tables.ts').reduce(applyPatch, tables);
   assert.match(patched, /export const MAX_LEVEL = 888;/);
   assert.match(patched, /export const MAX_REAL = 8888;/);
   assert.equal(STRESS_LEVEL, 888);

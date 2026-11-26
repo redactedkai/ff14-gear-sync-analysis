@@ -2,7 +2,7 @@
    name, and when two rows hold the same thing. A gear set is the saved shape (docs/engineering/sheets.md, "Saved
    data"): `pieces` 12 rows in SLOT_TYPES order with 'ring' twice, each {slot, gameId, stones} or {slot} when empty.
    Pure: no store. */
-import { SLOT_LABEL } from '../../core/constants.js';
+import { SLOT_LABEL } from '../../core/constants.ts';
 
 /* Whether `job` (a JobContext) uses a row of slot `row.slot`: a row the job does not use (the off-hand of a two-handed
    job) keeps its piece in the saved set but is not shown, counted, filled or compared. */

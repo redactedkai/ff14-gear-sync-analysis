@@ -4,7 +4,7 @@
    Real Sage rings and heads; the expected lists come from independent filters over the item data. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS } from '../../../../src/core/constants.js';
+import { JOBS } from '../../../../src/core/constants.ts';
 import { categoryOf, jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
 import { FIRST_ROWS, limitRows } from '../../../../src/ui/views/limit-rows.js';

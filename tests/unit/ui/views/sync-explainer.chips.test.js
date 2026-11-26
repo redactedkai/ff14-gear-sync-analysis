@@ -23,8 +23,8 @@ import {
 import { SLOT_SIZER } from '../../../../src/ui/views/piece.js';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
-import { JOBS } from '../../../../src/core/constants.js';
-import { MAX_LEVEL, MAX_REAL } from '../../../../src/core/tables.js';
+import { JOBS } from '../../../../src/core/constants.ts';
+import { MAX_LEVEL, MAX_REAL } from '../../../../src/core/tables.ts';
 
 const T = SYNC_CHIP_TEXT;
 const sage = makeJobContext('SGE');

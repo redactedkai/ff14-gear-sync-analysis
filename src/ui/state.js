@@ -1,10 +1,10 @@
 /* The page's saved state: defaults, per-job resets, and repair of whatever localStorage hands back.
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
-import { clamp } from '../core/clamp.js';
-import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.js';
+import { clamp } from '../core/clamp.ts';
+import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.ts';
 import { makeJobContext } from '../core/job-context.js';
-import { currentStatKey } from '../core/stat-keys.js';
-import { MAX_REAL } from '../core/tables.js';
+import { currentStatKey } from '../core/stat-keys.ts';
+import { MAX_REAL } from '../core/tables.ts';
 import { ANY_SLOT_KEY } from './elements/gear-browser/slot-menu-names.ts';
 import { DEFAULT_EXCLUDE, PANEL_GROUP, holdLevelSyncCap, meldSlotChoices } from './job-sync-panel.js';
 import { limitCapToLevel } from './level-cap.js';

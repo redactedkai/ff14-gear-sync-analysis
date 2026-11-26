@@ -18,9 +18,9 @@
    `meld` ({slots, overmeld}; meldInfo), uses the job's slot share and stat factors, and gets the item level table's
    weapon damage and defense (syncedValue in damage-defense.js). An editable custom piece will have to carry the rest
    itself (architecture.md, section 7). */
-import { SLOT_LABEL } from './constants.js';
+import { SLOT_LABEL } from './constants.ts';
 import { mitigationPct, setDefense } from './damage-defense.js';
-import { statBase } from './base-stats.js';
+import { statBase } from './base-stats.ts';
 import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.js';
 import { allMeals, foodBonus, withFood } from './food.js';
 import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.js';

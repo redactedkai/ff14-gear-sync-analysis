@@ -22,8 +22,8 @@ import { makeJobContext } from '../../../src/core/job-context.js';
 import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { levelSyncIlvl } from '../../../src/core/sync-target.js';
-import { ITEMS } from '../../../src/core/tables.js';
-import { ROW } from '../../../src/core/constants.js';
+import { ITEMS } from '../../../src/core/tables.ts';
+import { ROW } from '../../../src/core/constants.ts';
 
 const THEIR_KEY = {
   str: 'strength',

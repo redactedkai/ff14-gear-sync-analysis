@@ -1,7 +1,7 @@
-/* The shared clamp (src/core/clamp.js): inside the range, at and past each end, NaN, and a whole-number use. */
+/* The shared clamp (src/core/clamp.ts): inside the range, at and past each end, NaN, and a whole-number use. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { clamp } from '../../../src/core/clamp.js';
+import { clamp } from '../../../src/core/clamp.ts';
 
 test('clamp keeps a value inside the range and holds one outside to the nearer end', () => {
   assert.equal(clamp(50, 1, 100), 50);

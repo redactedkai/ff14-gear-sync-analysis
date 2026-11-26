@@ -35,10 +35,10 @@ One record per sheet: two browser tabs never overwrite each other's sheets, and 
 | `job` | one of the combat jobs; fixed once the sheet exists (Copy sheet makes one for another job) |
 | `level` | the synced level, 1 to the job's level cap |
 | `sync` | item level sync: `{ on, cap }` (note 1) |
-| `clan` | a clan's name ("Midlander", from `CLANS` in `src/core/tables.js`) or null for none (note 2) |
+| `clan` | a clan's name ("Midlander", from `CLANS` in `src/core/tables.ts`) or null for none (note 2) |
 | `partyRoles` | the unique roles in the party, a whole number 0 to 5: 1% each of every attribute; the page shows it on the main stat and Vitality (note 2) |
 | `sets` | the gear sets, in the player's order |
-| `gameData` | `{ commit, date }` of the game data the sheet was made with; a hint, it changes no number. The manager's Patch column shows the patch of that date (`patchOnDay` in `src/core/patches.js`), worked out when the list is drawn, so a sheet saved before the table existed gets one too |
+| `gameData` | `{ commit, date }` of the game data the sheet was made with; a hint, it changes no number. The manager's Patch column shows the patch of that date (`patchOnDay` in `src/core/patches.ts`), worked out when the list is drawn, so a sheet saved before the table existed gets one too |
 | `createdAt`, `updatedAt` | ms since 1970 (UTC); the manager shows them as dates in the browser's time zone |
 
 1. `sync`: the cap is a number even while sync is off, 1 to the highest real item level, and no higher than the level allows while sync is on (below).
@@ -77,7 +77,7 @@ Never saved: totals, tiers, defense and the GCD (always `evaluateSet` with the s
 `src/ui/sheets/storage.js` reads and writes the records; `src/ui/store/sheets-actions.ts` holds the actions over them and `src/ui/store/sheets-facade.ts` is the sheets facade, which hands out the sheets as plain data and has a `rev` that counts the changes. `src/ui/sheets/dialogs.js` is what the main button of the open dialog does, as plain code. `submitDialog` sends the dialog's fields to the store call of its kind (new, copy, edit sheet, edit set, delete). A refused form gets its error text and the field the text is about (`FORM_FIELD` in `ops.js`; none for a reason about the sheet), and is left as it is: a blank name stays blank (`shownName` is the name the box shows). Where the reason shows is in [ui.md, Dialogs](ui.md).
 
 - Every record is checked field by field when it is read (`setProblem`, `rowProblem`). A record this build cannot read (not JSON, a newer `v`, an unknown job, a damaged row, pin, meal, time or Auto-fill settings) is skipped and listed in the sheet manager under "Could not be read". The list gives the cause and a Delete button that asks first. It is never deleted or rewritten on its own.
-- A record names its stats by the game's own keys (`mind`, `sps`, `ten`, ...): the Auto-fill settings' `target`, `tb` and `tb2` and each stone's `stat`. A record written before that named them by position (`main`, `spd`, `spec`). The reader turns such a key into the sheet's job's key at that position (`withCurrentStatKeys`, `src/core/stat-keys.js` `currentStatKey`), so one record may hold either kind, and `v` stays 1. The record is rewritten with the game's keys at the sheet's next save.
+- A record names its stats by the game's own keys (`mind`, `sps`, `ten`, ...): the Auto-fill settings' `target`, `tb` and `tb2` and each stone's `stat`. A record written before that named them by position (`main`, `spd`, `spec`). The reader turns such a key into the sheet's job's key at that position (`withCurrentStatKeys`, `src/core/stat-keys.ts` `currentStatKey`), so one record may hold either kind, and `v` stays 1. The record is rewritten with the game's keys at the sheet's next save.
 - A sheet record not in the index is listed after the indexed ones.
 - A write that fails (a full storage) keeps the change on the page, marks it unsaved and says so; the order of the sheets is marked unsaved the same way.
 - A tab reads fresh records each time it opens the manager or a sheet. Two browser tabs: the last write of a sheet wins; there is no live sync.

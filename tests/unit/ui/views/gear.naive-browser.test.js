@@ -3,10 +3,10 @@
    Slot menu counting the rows under the other filters. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, JOBS, ROW } from '../../../../src/core/constants.js';
+import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, JOBS, ROW } from '../../../../src/core/constants.ts';
 import { dbStats, expansionOf, rowStats } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
-import { ITEMS } from '../../../../src/core/tables.js';
+import { ITEMS } from '../../../../src/core/tables.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { defaultBrowse } from '../../../../src/ui/state.js';
 import { gearView } from '../../../../src/ui/views/gear.js';

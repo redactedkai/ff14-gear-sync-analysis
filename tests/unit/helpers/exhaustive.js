@@ -1,12 +1,12 @@
 /* Shared test helpers: an exhaustive reference for the optimizer, and real-gear pools from the item database.
    The reference tries every legal loadout, so it is independent of the optimizer's pruning and scoring. */
-import { SLOT_TYPES } from '../../../src/core/constants.js';
+import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { capsFor } from '../../../src/core/formulas.js';
 import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { weaponDamage } from '../../../src/core/damage-defense.js';
-import { statBase } from '../../../src/core/base-stats.js';
-import { MATERIA } from '../../../src/core/tables.js';
+import { statBase } from '../../../src/core/base-stats.ts';
+import { MATERIA } from '../../../src/core/tables.ts';
 
 /* Pool items for every database row this job can equip that matches the browse filter
    {q, type, ilvlMin, ilvlMax, lvlMax}, optionally narrowed by keep(row). */

@@ -26,9 +26,9 @@ export function readTestSheets(root = REPO_ROOT) {
   return JSON.parse(readFileSync(join(root, 'src', 'ui', 'test-sheets.json'), 'utf8'));
 }
 
-/* The ids of the 23 combat jobs, from the page's own table (src/core/constants.js JOBS). */
+/* The ids of the 23 combat jobs, from the page's own table (src/core/constants.ts JOBS). */
 export async function readJobIds(root = REPO_ROOT) {
-  const { JOBS } = await import(new URL(`file:///${join(root, 'src', 'core', 'constants.js').replaceAll('\\', '/')}`));
+  const { JOBS } = await import(new URL(`file:///${join(root, 'src', 'core', 'constants.ts').replaceAll('\\', '/')}`));
   return JOBS.map(job => job.id);
 }
 

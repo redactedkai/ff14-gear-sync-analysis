@@ -3,7 +3,7 @@
    and the button's title, gold with no slash while market board gear is searched and the delete button's red with the slash while
    it is left out, the count is not clipped and the glyph is 16 to 18 px at 960 and 1280 px wide; axe. The opened menu is
    gear-categories.spec's. */
-import { ACTIVITIES } from '../../../src/core/constants.js';
+import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { gearFromSummary, marketWords } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import { styleOf, tokenColor } from '../look.ts';

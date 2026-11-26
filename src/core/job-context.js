@@ -15,8 +15,8 @@ import {
   SHARED_SUBSTATS,
   STAT_LABEL,
   STAT_SHORT,
-} from './constants.js';
-import { JOB_MODS, MAX_LEVEL } from './tables.js';
+} from './constants.ts';
+import { JOB_MODS, MAX_LEVEL } from './tables.ts';
 
 const cache = new Map();
 
@@ -34,7 +34,7 @@ function damageKeyOf(id, mainKey) {
 }
 
 /** @param {string} jobId e.g. 'SGE'. Unknown ids fall back to DEFAULT_JOB. Results are cached and frozen.
- *  Stat keys are the game's own (constants.js STAT_LABEL). The job's: mainKey (str, dex, int or mind), speedKey (sks or
+ *  Stat keys are the game's own (constants.ts STAT_LABEL). The job's: mainKey (str, dex, int or mind), speedKey (sks or
  *  sps), specKey (piety or ten; null for a job without a special substat); stats = [mainKey, 'vit', 'crit', 'det',
  *  'dh', speedKey, specKey?], substats = the stats after the first two.
  *  weaponMode: '2h' (no shield; no Off-hand row), '1h+oh' (1H weapon and shield only: ONE_HANDED_JOBS) or 'mixed' (2H
@@ -78,7 +78,7 @@ export function makeJobContext(jobId) {
     slotPct: { ...BASE_SLOT_PCT, weapon: WEAPON_PCT[hasOffhand ? '1h+oh' : '2h'] },
     activeSlotTypes: SLOT_TYPES.filter(t => t !== 'offhand' || hasOffhand),
     /* the job's modifiers of its main stat and Vitality, in percent (ClassJob), by stat key: its base is the level's
-       main stat base x the modifier (base-stats.js statBase) */
+       main stat base x the modifier (base-stats.ts statBase) */
     attributeMods: Object.freeze({ [mainKey]: JOB_MODS[id][mainKey], vit: JOB_MODS[id].vit }),
     /* Vitality for Int/Mind jobs is the Vit budget x 0.9 (rounded again) */
     vitFactor: CASTER_MAIN_KEYS.includes(mainKey) ? 0.9 : 1,

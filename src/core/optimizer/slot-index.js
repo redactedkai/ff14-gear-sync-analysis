@@ -2,7 +2,7 @@
    A loadout's slots are numbered by their position in its slotList (buildCandidates: the slots that have items, 'ring'
    twice, blockable slots last). A candidate's `blocks` lists the slot types it leaves empty (a two-handed weapon the
    off-hand, a cloak the head); as a bit mask, bit p stands for position p. */
-import { SLOT_TYPES } from '../constants.js';
+import { SLOT_TYPES } from '../constants.ts';
 
 /* Each slot type's position in `slotList`: Map {slot type: position}. A ring, listed twice, maps to its second
    position; a blockable slot is never a ring, so it appears once. */

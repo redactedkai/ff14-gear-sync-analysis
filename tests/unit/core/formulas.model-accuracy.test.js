@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MODEL_MIN_ILVL, bandAccuracy, rowItem, wikiChecks } from '../helpers/model-validation.js';
-import { ITEMS } from '../../../src/core/tables.js';
+import { ITEMS } from '../../../src/core/tables.ts';
 import {
   DB_SLOT_TYPE,
   ALL_JOBS_ACCESSORY_FACTORS,
@@ -13,7 +13,7 @@ import {
   RAW_SUBSTAT_IDX,
   REDUCED_STAT_PIECES,
   ROW,
-} from '../../../src/core/constants.js';
+} from '../../../src/core/constants.ts';
 import { predictRaw } from '../../../src/core/formulas.js';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { rowStats } from '../../../src/core/items.js';

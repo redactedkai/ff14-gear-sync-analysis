@@ -102,7 +102,7 @@ export const solverWorker = {
       // page's bytes would otherwise differ for the same source (checked 2026-11-03, four hashes in five builds).
       names.sort();
       const imports = names.map(
-        // with the same import attribute as core/tables.js, or esbuild bundles the file a second time
+        // with the same import attribute as core/tables.ts, or esbuild bundles the file a second time
         (name, i) => `import { text as text${i} } from ${JSON.stringify(join(SRC, 'data', name))} with { type: 'json' };`,
       );
       const data = names.map((name, i) => `${JSON.stringify(name)}: text${i}`).join(', ');

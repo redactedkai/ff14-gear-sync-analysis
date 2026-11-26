@@ -3,12 +3,12 @@
    that give its effect. Values are character panel numbers: each starts at the substat's base (tierValues), and the
    user types or clicks others. The tiers follow the job and the sub-tab's own level (the synced level until the user
    types another); item level sync does not change them. The view object is built here; the template only shows it. */
-import { clamp } from '../../core/clamp.js';
+import { clamp } from '../../core/clamp.ts';
 import { rowIndexAt, tierLadder, tierSizes, statEffectKinds } from '../../core/tiers.js';
 import { hasteFor } from '../../core/speed.js';
-import { statBase } from '../../core/base-stats.js';
-import { levelParams } from '../../core/level-params.js';
-import { MAX_SPEED } from '../../core/tables.js';
+import { statBase } from '../../core/base-stats.ts';
+import { levelParams } from '../../core/level-params.ts';
+import { MAX_SPEED } from '../../core/tables.ts';
 import { fmtInt } from '../text.ts';
 import { commit } from '../number-commit.js';
 import { deepFreeze } from '../view-cache.ts';

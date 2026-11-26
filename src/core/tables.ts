@@ -3,33 +3,41 @@ import ITEM_LEVEL_FILE from '../data/item-level.json' with { type: 'json' };
 import ITEMS_FILE from '../data/items.json' with { type: 'json' };
 import FOOD_FILE from '../data/food.json' with { type: 'json' };
 import MAX_SPEED_FILE from '../data/max-speed.json' with { type: 'json' };
-import { ROW } from './constants.js';
+import { ROW } from './constants.ts';
+import type { DamageDefenseKey, FoodRow, ItemRow, MainStatKey, RawStatKey } from './types.ts';
 
+/* The commit a generated table comes from. */
+export interface DataSource {
+  readonly repo: string;
+  readonly commit: string;
+  readonly date: string;
+}
 /* {repo, commit, date} of the xivapi/ffxiv-datamining commit the tables were generated from, or null when unknown. */
-export const DATA_SOURCE = ITEM_LEVEL_FILE.source ?? null;
+export const DATA_SOURCE: DataSource | null = ITEM_LEVEL_FILE.source ?? null;
 /* IL: per-stat budget by item level (ItemLevel sheet). PG: [BaseSpeed, LevelModifier, ItemLevelSync] per level from 1 to
    the level cap (the highest ParamGrow row with an ItemLevelSync). */
-export const IL = ITEM_LEVEL_FILE.IL;
+export const IL: Readonly<Record<RawStatKey | DamageDefenseKey, readonly number[]>> = ITEM_LEVEL_FILE.IL;
 export const PG = ITEM_LEVEL_FILE.PG;
 /* MP: the per-item stat factor table (BaseParam MeldParam), {raw stat key: [percent per item kind]}. An item row's kind
    field (row[ROW.kind], its BaseParamModifier) picks the kind: on that item a stat's full-share value is multiplied by the percent. */
-export const MP = ITEM_LEVEL_FILE.MP;
+export const MP: Readonly<Record<RawStatKey | DamageDefenseKey, readonly number[]>> = ITEM_LEVEL_FILE.MP;
 /* SHARES: slot shares in thousandths per slot code for weapon damage and defense, {key: [share]} (BaseParam; the stats'
    shares are the slot percents of item-format.json, these differ: weapon damage only on weapons, defense only on armor). */
-export const SHARES = ITEM_LEVEL_FILE.SHARES;
+export const SHARES: Readonly<Record<DamageDefenseKey, readonly number[]>> = ITEM_LEVEL_FILE.SHARES;
 /* JOB_MODS: each job's attribute modifiers in percent, {job: {str, dex, int, mind, vit}} (ClassJob; job-context.js). */
-export const JOB_MODS = ITEM_LEVEL_FILE.JOBS;
+export const JOB_MODS: Readonly<Record<string, Readonly<Record<MainStatKey | 'vit', number>>>> = ITEM_LEVEL_FILE.JOBS;
 /* CLANS: the 16 clans in the game's order, [{race, clan, str, dex, int, mind, vit}]: the points a clan adds to a character's
    attributes (Tribe and Race sheets), flat at every level (clan-bonus.js). */
 export const CLANS = ITEM_LEVEL_FILE.CLANS;
-/* ITEMS: the real-gear database rows (format in constants.js). */
-export const ITEMS = ITEMS_FILE.items;
+/* ITEMS: the real-gear database rows (format in constants.ts). */
+/* (The one cast: the JSON file's rows read as arrays of strings, numbers and lists; ItemRow is their real shape.) */
+export const ITEMS = ITEMS_FILE.items as unknown as readonly ItemRow[];
 /* CURRENT_TOMES: the short names of the two current tomestones (e.g. ['Mathematics', 'Mnemonics']), for the
    "Tomestones (Current)" box's hint. */
 export const CURRENT_TOMES = Object.freeze([...(ITEMS_FILE.currentTomes ?? [])]);
 /* FOODS: the meals that raise combat substats, [name, ilvl, [[raw stat key, HQ percent, HQ max], ...], [Vitality HQ
    percent, HQ max] or null] (food.js). */
-export const FOODS = FOOD_FILE.foods;
+export const FOODS = FOOD_FILE.foods as unknown as readonly FoodRow[];
 /* MAX_SPEED: the most total speed (base + gear + food) any job can have at each level, [level 1, ..., MAX_LEVEL]: the
    top of How the math works, GCD's speed slider (scripts/data/gen_max_speed.mjs: the best gear with melds, at any sync,
    and the best HQ meal). */
@@ -49,7 +57,7 @@ export const MATERIA = Object.freeze({
 });
 
 /* Short footer text naming the game-data source, or '' when unknown. */
-export function dataSourceLabel(src = DATA_SOURCE) {
+export function dataSourceLabel(src: Partial<DataSource> | null = DATA_SOURCE): string {
   if (!src?.commit) {
     return '';
   }

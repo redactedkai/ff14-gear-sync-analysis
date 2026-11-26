@@ -2,7 +2,7 @@
    picking a stat a later rank holds swaps the two. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS } from '../../../src/core/constants.js';
+import { JOBS } from '../../../src/core/constants.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
 import { rankChoices, rankSwapNote, uniqueRanks, withRank } from '../../../src/ui/ranks.js';
 

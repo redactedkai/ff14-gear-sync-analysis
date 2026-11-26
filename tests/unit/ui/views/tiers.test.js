@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AKH_LEVEL, hasNumber, hasParts } from '../../helpers/common.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';
-import { MAX_SPEED } from '../../../../src/core/tables.js';
+import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import {
   NO_TIER_EDITS,
   tierEdited,

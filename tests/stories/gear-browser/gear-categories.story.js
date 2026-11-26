@@ -3,7 +3,7 @@
 import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/expansion-menu.ts';
 import '../../../src/ui/elements/gear-browser/gear-categories.ts';
-import { ACTIVITIES } from '../../../src/core/constants.js';
+import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { recordEvents } from '../gallery/record.js';
 
 /* The boxes left out by default (the page's defaults: `on: false` in item-format.json), written out so the story does not read them

@@ -7,8 +7,8 @@
    A meal's effect never falls with more gear points and gear + food rises with every gear point, so ranking gear sets by
    gear totals gives the same order as ranking them with food: the optimizer needs no change, and the best food for a goal
    can be picked after the search (bestFood). */
-import { statBase } from './base-stats.js';
-import { FOODS } from './tables.js';
+import { statBase } from './base-stats.ts';
+import { FOODS } from './tables.ts';
 
 /* The stat key of a raw food stat (the game's own) if the job has it, or null when the job has no such stat (Spell Speed food for a
    Skill Speed job, Tenacity food for a job without Tenacity). */

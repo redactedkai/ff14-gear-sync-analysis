@@ -1,11 +1,11 @@
-/* Base stats (src/core/base-stats.js): the level's main stat base and ParamGrow BaseSpeed that a character starts from,
+/* Base stats (src/core/base-stats.ts): the level's main stat base and ParamGrow BaseSpeed that a character starts from,
    checked against xivgear's and AkhMorning's level tables. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LEVEL_MAIN, statBase } from '../../../src/core/base-stats.js';
+import { LEVEL_MAIN, statBase } from '../../../src/core/base-stats.ts';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { levelParams } from '../../../src/core/level-params.js';
-import { PG } from '../../../src/core/tables.js';
+import { levelParams } from '../../../src/core/level-params.ts';
+import { PG } from '../../../src/core/tables.ts';
 import { AKH_LEVEL } from '../helpers/common.js';
 
 const SGE = makeJobContext('SGE');

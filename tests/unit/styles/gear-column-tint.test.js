@@ -2,7 +2,7 @@
    column, one selector per key, so a stat the game adds without a selector here would not be tinted. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ITEM_STAT_ORDER } from '../../../src/core/constants.js';
+import { ITEM_STAT_ORDER } from '../../../src/core/constants.ts';
 import { readStyles } from '../../../scripts/build/styles.mjs';
 
 // the columns the table shows: the stats a piece has (not the main or secondary attribute totals, which are not cells)

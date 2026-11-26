@@ -3,8 +3,8 @@
    A "generic piece" here is a piece built from the budget table (buildPiece): the main stat, Vitality and the two
    chosen substats at their 100% / 70% shares, with 2 meld slots (meldInfo). Its melds are the optimizer's best stones
    (bestMeld) in those two substats, so the explainer and an Auto-fill meld alike. */
-import { MATERIA, MAX_LEVEL, MAX_REAL } from '../../core/tables.js';
-import { JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.js';
+import { MATERIA, MAX_LEVEL, MAX_REAL } from '../../core/tables.ts';
+import { JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.ts';
 import { makeJobContext } from '../../core/job-context.js';
 import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.js';
 import { mkItem } from '../../core/items.js';

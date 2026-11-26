@@ -3,7 +3,7 @@
 import { meldInfo, slotInfo } from '../../../src/core/items.js';
 import { fixedCandidate } from '../../../src/core/optimizer/index.js';
 import { itemSyncIlvl } from '../../../src/core/piece.js';
-import { MATERIA } from '../../../src/core/tables.js';
+import { MATERIA } from '../../../src/core/tables.ts';
 import { pinnedVector } from './exhaustive.js';
 
 /* The pins of one case, for both sides: `fixed` for the optimizer (fixedCandidate), `oracle` for the reference

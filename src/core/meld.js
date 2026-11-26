@@ -16,7 +16,7 @@
    - Each substat on a piece is capped at the piece's own cap (capsFor at its own item level, slot share and stat
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
-import { MATERIA } from './tables.js';
+import { MATERIA } from './tables.ts';
 import { meldInfo } from './items.js';
 import { effStats, keepsMelds, meldCaps } from './piece.js';
 

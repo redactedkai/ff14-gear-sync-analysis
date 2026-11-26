@@ -563,7 +563,7 @@ They cap these values under sync ([math.md, section 4](../mechanics/math.md#weap
 
 **Job modifiers.** For each of the 23 combat jobs, its `ClassJob` modifiers of Strength, Dexterity, Intelligence, Mind and Vitality, in percent (`jobModifiers` in the shared format definition): the character's base main stat and Vitality are the level's base times these ([math.md, section 6](../mechanics/math.md#totals-as-on-the-character-panel)). A job with no row, or a modifier that is not a positive whole number, stops the generator.
 
-**Not from the game files.** `LEVEL_MAIN` is the main stat base at each level, 1 to 100 (in `src/core/base-stats.js`; food is a percentage of the whole stat). It is carried by hand from AkhMorning's Level Modifiers table (**inferred**: no sheet holds it; it equals xivgear's at levels 50, 60, ..., 100).
+**Not from the game files.** `LEVEL_MAIN` is the main stat base at each level, 1 to 100 (in `src/core/base-stats.ts`; food is a percentage of the whole stat). It is carried by hand from AkhMorning's Level Modifiers table (**inferred**: no sheet holds it; it equals xivgear's at levels 50, 60, ..., 100).
 
 The generators do not touch it, so a patch that raises the level cap needs its new levels added by hand. The level table test fails until they are.
 
@@ -603,13 +603,13 @@ The table depends on code as well as data: a change to the optimizer, sync or fo
 
 The generator stops (SchemaError) when an entry lacks an id, a version, an English name or a date, when a version is not like "7.56" or "2.1b", when the English name does not begin "Patch <version>" (the list's `Version` agrees with its name in all 107 entries today; the old XIVAPI list did not), when the ids do not rise, when a date goes back, or when a version has two dates.
 
-`patchOnDay(day)` in `src/core/patches.js` gives the version of the newest patch released on or before `day` ("7.56" for 2026-09-30, after 7.56 of 2026-09-08 and before 7.57 of 2026-10-13), and nothing for a day before the first patch or for text that is no date. This is a **guess in one respect**: a data commit made before a patch's release day (a pre-release extraction) would name the patch before it. The datamining commit a sheet is stamped with is also not always the commit that changed the data (section 6: `d9582a6`, "TC 7.25", changed no English file), so the patch is the one in force on that day, not the one that last changed an item. A unit test requires the patch list to be at least as new as the game data, so a data update that skipped the patch list is noticed.
+`patchOnDay(day)` in `src/core/patches.ts` gives the version of the newest patch released on or before `day` ("7.56" for 2026-09-30, after 7.56 of 2026-09-08 and before 7.57 of 2026-10-13), and nothing for a day before the first patch or for text that is no date. This is a **guess in one respect**: a data commit made before a patch's release day (a pre-release extraction) would name the patch before it. The datamining commit a sheet is stamped with is also not always the commit that changed the data (section 6: `d9582a6`, "TC 7.25", changed no English file), so the patch is the one in force on that day, not the one that last changed an item. A unit test requires the patch list to be at least as new as the game data, so a data update that skipped the patch list is noticed.
 
 ### Gear groups
 
 *Which jobs can a sheet be copied between?* `scripts/data/gen_gear_groups.py` answers it from the item database (`src/data/items.json`, not the CSVs, so `regen.py` runs it right after `gen_items.py`) and writes `src/data/gear-groups.json`: `groups`, a list of job lists, one group per line, every job in exactly one.
 
-The rule is in `gearGroups` in `src/core/item-format.json`. Over the head, body, hands, legs and feet pieces, two jobs are linked when 80% or more of the pieces either can wear are pieces both can (shared over either, by each row's job mask, section 4.3). A group is jobs linked to each other that also have the same level cap (`jobLevelCaps`, which `JOB_LEVEL_CAPS` in `src/core/constants.js` reads).
+The rule is in `gearGroups` in `src/core/item-format.json`. Over the head, body, hands, legs and feet pieces, two jobs are linked when 80% or more of the pieces either can wear are pieces both can (shared over either, by each row's job mask, section 4.3). A group is jobs linked to each other that also have the same level cap (`jobLevelCaps`, which `JOB_LEVEL_CAPS` in `src/core/constants.ts` reads).
 
 Blue Mage (cap 80) and Beastmaster (cap 50) each stand alone, though their gear overlaps the casters' and Monk and Samurai's by 94% to 99%. In the current data: tanks, healers, Monk and Samurai, Dragoon and Reaper, Ninja and Viper, physical ranged, casters, Blue Mage, Beastmaster. Linked pairs share at least 89% and every other pair at most 19%.
 
@@ -757,7 +757,7 @@ A hand-kept id that changed means a patch reused it: find the item by its expect
 **When a patch changes the format.**
 
 - If a patch adds a job or a stat, follow the checklist below; the format test fails until the shared format definition and the page's tables agree.
-- If a patch raises the level cap, the level data, the item database's level cap and the most-speed table follow the data by themselves. The hand-kept tables do not, and the level table test fails, naming each one, until they reach the new cap: the main stat base per level (`LEVEL_MAIN`, in `src/core/base-stats.js`), the expansion list (`EXPANSIONS`, add the new expansion) and the haste steps (`HASTE`, any new trait level).
+- If a patch raises the level cap, the level data, the item database's level cap and the most-speed table follow the data by themselves. The hand-kept tables do not, and the level table test fails, naming each one, until they reach the new cap: the main stat base per level (`LEVEL_MAIN`, in `src/core/base-stats.ts`), the expansion list (`EXPANSIONS`, add the new expansion) and the haste steps (`HASTE`, any new trait level).
 - If a patch renames a column the generators read, or changes a slot share in `BaseParam`, the regeneration stops with an error naming it (section 1). Update the shared format definition (and, for a slot share, check the math) rather than working around it.
 
 ### Adding a job or a stat
@@ -769,7 +769,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | File | What changes |
 | --- | --- |
 | `core/item-format.json` | append the job to `jobs` (note 1) |
-| `core/constants.js` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); the lists in note 2 |
+| `core/constants.ts` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); the lists in note 2 |
 | `core/job-context.js` | nothing for a job like the others; `maxLevel` covers limited jobs (Beastmaster) and any other |
 | `ui/` (state, store, views, `index.html`) | nothing for a job like the others; Beastmaster made the level inputs, restore and the optimizer pool follow `maxLevel` |
 | `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
@@ -788,7 +788,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | File | What changes |
 | --- | --- |
 | `core/item-format.json` | append to `stats` (key, `ItemLevel` column, `BaseParam` id); see the note below |
-| `core/constants.js` | the role profiles (`PROFILES`: each role's `mainKey`, `speedKey`, `specKey`) if jobs use it; names and short names by stat key for the page (`STAT_LABEL`, `STAT_SHORT`) |
+| `core/constants.ts` | the role profiles (`PROFILES`: each role's `mainKey`, `speedKey`, `specKey`) if jobs use it; names and short names by stat key for the page (`STAT_LABEL`, `STAT_SHORT`) |
 | `tests/data/fixtures/BaseParam.csv`, `ItemLevel.csv` | the stat's real `BaseParam` row; its `ItemLevel` column |
 | `tests/data/common.py`, `tests/data/test_gen_item_level.py` | `STAT_ORDER` and the item level column map |
 | data | `regen.py`: every row gains a value in its stats string, and the slot shares of the new row are checked against the format file |
@@ -910,7 +910,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | --- | --- |
 | Fetch (sparse clones, `--commit`, `--patches-commit`, job icons) | `scripts/data/fetch.py` |
 | Shared format definition | `src/core/item-format.json` |
-| Item row field positions | `itemRow.fields` in `src/core/item-format.json` (each section's `rowField` agrees); `ROW` in `src/core/constants.js` |
+| Item row field positions | `itemRow.fields` in `src/core/item-format.json` (each section's `rowField` agrees); `ROW` in `src/core/constants.ts` |
 | Format loading, CSV reading, the column, yes/no and slot share checks, the stat factor table, the row field names | `scripts/data/item_format.py` (`read_csv`, `check_bools`, `check_slot_percents`, `stat_factors`, `row_fields`) |
 | Item database generator; materia table and decoy rows; selection rules and their funnel line | `scripts/data/gen_items.py` (`materia_table`, `select`, `DROP_RULES`, `drop_report`) |
 | A piece's own gear category (subcategory codes, Savage currencies; the list of categories) | `scripts/data/gear_categories.py` (`CATEGORIES`) |
@@ -930,9 +930,9 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Counts, CSV blob ids, drift since the last run, the changelog line | `scripts/data/summary.py` (`summarize`, `drift`, `csv_blobs`), `src/data/summary.json`, `docs/data-changelog.md` |
 | Step lines, or a progress bar when the optional `tqdm` package is installed | `scripts/data/progress.py` |
 | Generated data (never edit by hand) | `src/data/items.json`, `src/data/item-level.json`, `src/data/food.json`, `src/data/job-icons.js`, `src/data/gear-groups.json`, `src/data/max-speed.json`, `src/data/patches.json`, `src/data/summary.json` (not part of the page) |
-| Tables, materia table, highest real item level, footer text | `src/core/tables.js` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
-| The patch table and the patch of a data date | `src/core/patches.js` (`PATCHES`, `PATCHES_SOURCE`, `patchOnDay`) |
-| Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.js` |
+| Tables, materia table, highest real item level, footer text | `src/core/tables.ts` (`MATERIA`, `MAX_REAL`, `MAX_ILVL`, `dataSourceLabel`) |
+| The patch table and the patch of a data date | `src/core/patches.ts` (`PATCHES`, `PATCHES_SOURCE`, `patchOnDay`) |
+| Page's job, stat and slot tables; slot shares read from the format file | `src/core/constants.ts` |
 | Page bundle | `scripts/build/build.mjs` (`npm run build`) |
 | Generator tests and test CSVs | `tests/data/test_*.py`, `tests/data/common.py`, `tests/data/fixtures/` (food: `fixtures/food/`; run by `npm run test:py`) |
 | Format, level table and provenance tests | `tests/unit/core/item-format.test.js`, `tests/unit/core/constants.level-tables.test.js`, `tests/unit/core/tables.provenance.test.js` |

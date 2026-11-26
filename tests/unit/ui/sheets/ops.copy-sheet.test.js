@@ -5,7 +5,7 @@
    first job gives the goal and stones it started with when nothing was cleared. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JOBS, ROW } from '../../../../src/core/constants.js';
+import { JOBS, ROW } from '../../../../src/core/constants.ts';
 import { GEAR_GROUPS } from '../../../../src/core/gear-groups.js';
 import { itemById, jobGear } from '../../../../src/core/items.js';
 import { makeJobContext } from '../../../../src/core/job-context.js';

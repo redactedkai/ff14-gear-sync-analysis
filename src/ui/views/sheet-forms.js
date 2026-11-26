@@ -2,7 +2,7 @@
    and the box that accepts clearing them), "Edit sheet" and "Edit gear set", and the Delete questions.
    `SheetDialogs` (elements/sheets/sheet-dialogs-model.ts) keeps each form's fields; these builders turn them into what the dialog shows. Pure: no store.
    Rules: docs/engineering/sheets.md ("Names", "Copy sheet", "Where an action lands"). */
-import { SLOT_LABEL, jobById } from '../../core/constants.js';
+import { SLOT_LABEL, jobById } from '../../core/constants.ts';
 import { GEAR_GROUPS, gearGroupName } from '../../core/gear-groups.js';
 import { oneOrMany, plural } from '../text.ts';
 import { DESCRIPTION_MAX_LENGTH, FORM_FIELD, NAME_MAX_LENGTH, defaultSheetName, piecesToClear, ranges } from '../sheets/ops.js';

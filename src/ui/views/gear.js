@@ -14,13 +14,13 @@ import {
   routesAllow,
   slotLabel,
 } from '../../core/items.js';
-import { clamp } from '../../core/clamp.js';
+import { clamp } from '../../core/clamp.ts';
 import { syncStats } from '../../core/formulas.js';
 import { syncTarget } from '../../core/sync-target.js';
 import { fmtInt } from '../text.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../elements/gear-browser/slot-menu-names.ts';
 import { defaultBrowse } from '../state.js';
-import { SLOT_LABEL } from '../../core/constants.js';
+import { SLOT_LABEL } from '../../core/constants.ts';
 
 /* The rows on one page of the table. The time of a sort or a page turn is mostly the time to draw the rows (about 1.3 ms
    a row), so a page is 50 rather than 100. */

@@ -6,8 +6,8 @@
    The character's base value of each stat cancels out of these formulas, so the tier depends on the gear points alone.
    Food is not counted: it would move every total. Main stats and Vitality have no tiers here. */
 import { BASE_GCD_MS, gcdFor, gcdTierAt } from './speed.js';
-import { levelParams } from './level-params.js';
-import { statBase } from './base-stats.js';
+import { levelParams } from './level-params.ts';
+import { statBase } from './base-stats.ts';
 
 /* Tenacity's other effect, damage taken, steps every 200 (xivmath `tenacityIncomingDmg`). Tier ranking uses it: players
    stack Tenacity for mitigation (owner). The optimizer's Tier row shows the damage step (112). */

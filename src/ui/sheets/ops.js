@@ -3,12 +3,12 @@
    of a list. The shapes and the rules are docs/engineering/sheets.md.
    Every function returns new data and changes nothing it is handed. Ids and times come in from the caller (the sheet
    store), so the tests can fix them. Pure: no storage, no document. */
-import { clamp } from '../../core/clamp.js';
-import { jobById } from '../../core/constants.js';
+import { clamp } from '../../core/clamp.ts';
+import { jobById } from '../../core/constants.ts';
 import { piecesJobCannotWear } from '../../core/gear-groups.js';
 import { makeJobContext } from '../../core/job-context.js';
-import { remapStatKey } from '../../core/stat-keys.js';
-import { DATA_SOURCE, MAX_REAL } from '../../core/tables.js';
+import { remapStatKey } from '../../core/stat-keys.ts';
+import { DATA_SOURCE, MAX_REAL } from '../../core/tables.ts';
 import { clone } from '../text.ts';
 import { limitCapToLevel } from '../level-cap.js';
 import { SET_ROW_SLOTS, SHEET_VERSION } from './storage.js';

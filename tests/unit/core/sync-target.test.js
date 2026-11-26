@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeJobContext } from '../../../src/core/job-context.js';
-import { IL, ITEMS } from '../../../src/core/tables.js';
-import { JOBS } from '../../../src/core/constants.js';
+import { IL, ITEMS } from '../../../src/core/tables.ts';
+import { JOBS } from '../../../src/core/constants.ts';
 import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.js';
 import { capsFor } from '../../../src/core/formulas.js';
 import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../../src/core/items.js';

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { defaultState, restoreState } from '../../../src/ui/state.js';
-import { DEFAULT_JOB } from '../../../src/core/constants.js';
+import { DEFAULT_JOB } from '../../../src/core/constants.ts';
 import { restoreOpen } from '../helpers/common.js';
 
 test('the default state has Substat tiers on the default job', () => {

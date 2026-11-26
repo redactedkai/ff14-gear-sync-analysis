@@ -15,7 +15,7 @@
 import { LitElement, type PropertyValues, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { live } from 'lit/directives/live.js';
-import { JOB_ROWS, jobById } from '../../../core/constants.js';
+import { JOB_ROWS, jobById } from '../../../core/constants.ts';
 import { JOB_ICONS } from '../../../data/job-icons.js';
 import { ERROR_ICON } from '../app/cap-flag.ts';
 import '../app/cap-field.ts';

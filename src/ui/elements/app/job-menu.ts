@@ -4,7 +4,7 @@
    - its parent gives it the job as `job` (an id: 'SGE') and listens for `job-change`, whose `detail` is
      the id picked; the page then switches the job (a switch resets the settings of the old job) and sets `job` again;
    - it draws the label, the button (the job's icon, name and code) and the menu: one row of 40 px icons for each role, the
-     rows and icons are the app's job constants (core/constants.js), not read from the store;
+     rows and icons are the app's job constants (core/constants.ts), not read from the store;
    - `sized` (math bar): a hidden copy of the longest "Name (CODE)" shares the button's cell, so the button keeps one width for
      every job;
    - `prefix`, `button-id` and `menu-id` give the ids the page's labels and tests use: `<prefix>-label`, `<prefix>-name`,
@@ -17,7 +17,7 @@
      closes one layer. */
 import * as menu from '@zag-js/menu';
 import { LitElement, html, nothing } from 'lit';
-import { JOBS, JOB_ROWS, jobById } from '../../../core/constants.js';
+import { JOBS, JOB_ROWS, jobById } from '../../../core/constants.ts';
 import { JOB_ICONS } from '../../../data/job-icons.js';
 import { trackLastInput } from '../shared/key-focus.ts';
 import { createOverlayBridge } from '../shared/overlay-bridge.ts';

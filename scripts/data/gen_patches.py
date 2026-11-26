@@ -12,7 +12,7 @@ formatVersion = `formatVersion` of src/core/item-format.json (in every generated
 PATCHES = every patch of the list, oldest first: its version as the game names it ("7.56", "2.1b") and the day it was
      released, "YYYY-MM-DD" in UTC, from the list's Unix `ReleaseDate`. The list holds Patch 2.0 twice (ids 0 and 2, same
      date): the first is kept. Patches released on one day keep the list's order (2.1 and 2.1b), so the last one of a
-     day is the newest. `patchAt` in src/core/patches.js reads it.
+     day is the newest. `patchAt` in src/core/patches.ts reads it.
 
 Checks (a SchemaError stops the generator with exit status 1): the list is not empty; each entry has an id, a version
 like "7.56" or "2.1b", an English name that begins "Patch <that version>" and a release date; the ids rise; the release

@@ -10,7 +10,7 @@
      Ultimates too (xivgear has no sync condition; the owner confirms it is added at the end, like a meal).
    Order (xivgear's): the party bonus multiplies base + clan + gear, then the meal's points are added; a meal's bonus is
    worked out from the value before the party bonus. */
-import { CLANS } from './tables.js';
+import { CLANS } from './tables.ts';
 
 /* The most unique roles a party can have (tank, healer, melee, physical ranged, magic ranged): 5 roles = 5%. */
 export const PARTY_ROLES_MAX = 5;

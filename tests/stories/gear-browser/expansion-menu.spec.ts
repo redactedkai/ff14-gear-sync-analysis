@@ -2,7 +2,7 @@
    left on the button; Tab goes into the boxes in the order of the expansions; Space ticks or unticks the box in focus and the list
    the menu sends and the button's text follow; Shift+Tab from the first box goes back to the button with the panel open; Escape
    closes it with the focus on the button; Tab out of the last box closes it and moves on; a press outside closes it; axe. */
-import { EXPANSIONS } from '../../../src/core/constants.js';
+import { EXPANSIONS } from '../../../src/core/constants.ts';
 import { EXPANSION_LABEL, expansionSummary } from '../../../src/ui/elements/gear-browser/filter-menu-model.ts';
 import { expect, test } from '../fixtures.ts';
 import type { Default } from './expansion-menu.story.js';

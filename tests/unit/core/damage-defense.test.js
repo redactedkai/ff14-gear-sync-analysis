@@ -9,7 +9,7 @@ import { optimize } from '../../../src/core/optimizer/index.js';
 import { itemSyncIlvl } from '../../../src/core/piece.js';
 import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.js';
 import { resultOf } from '../../../src/core/same-result.js';
-import { IL } from '../../../src/core/tables.js';
+import { IL } from '../../../src/core/tables.ts';
 import { gamePool } from '../helpers/exhaustive.js';
 import { piece } from '../helpers/common.js';
 

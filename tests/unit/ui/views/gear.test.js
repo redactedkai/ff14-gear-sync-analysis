@@ -2,7 +2,7 @@
    sorting, the name search and Reset filters; computed from store-shaped state. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITIES } from '../../../../src/core/constants.js';
+import { ACTIVITIES } from '../../../../src/core/constants.ts';
 import { browseItems } from '../../../../src/core/items.js';
 import { ANY_SLOT_LABEL } from '../../../../src/ui/elements/gear-browser/slot-menu-names.ts';
 import { PAGE_SIZE, PAGE_SLOTS, browseFiltered, browseCell, markWords, pageList, slotCellText } from '../../../../src/ui/views/gear.js';

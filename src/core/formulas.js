@@ -1,6 +1,6 @@
 /* Stat formulas: how item level becomes the stats on a piece, and what item level sync clamps.
    See docs/mechanics/math.md (sections 4 and 5) for each rule and docs/mechanics/validation.md for the evidence. */
-import { clamp } from './clamp.js';
+import { clamp } from './clamp.ts';
 import {
   SUB_WEIGHTS,
   MIND_DIRECT_HIT_SHARE,
@@ -20,8 +20,8 @@ import {
   DB_SLOT_TYPE,
   WEAPON_PCT,
   BASE_SLOT_PCT,
-} from './constants.js';
-import { IL, MP, MAX_ILVL } from './tables.js';
+} from './constants.ts';
+import { IL, MP, MAX_ILVL } from './tables.ts';
 
 /* Round half up. The epsilon keeps values like 22.4999999 (float noise from x.5 products) from rounding down. */
 function rnd(x) {
