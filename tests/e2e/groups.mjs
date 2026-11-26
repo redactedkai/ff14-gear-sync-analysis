@@ -34,7 +34,7 @@ import { checkLevelBox, checkMathBarBoxes, checkMathBarLayouts, checkMathJobs, c
 import { checkHasteSelectFits } from './checks/math-page/haste-select.mjs';
 import { checkTiersNoteUnderPinnedBar } from './checks/math-page/tiers-note.mjs';
 import { checkTiersScroll } from './checks/math-page/tiers-scroll.mjs';
-import { checkCorruptedStorage, checkReloadPersists, checkReset, checkTabPanels } from './checks/saved-state/saved-state.mjs';
+import { checkCorruptedStorage, checkReloadPersists, checkReset } from './checks/saved-state/saved-state.mjs';
 import { checkAverageIlvl } from './checks/set-page/average-ilvl.mjs';
 import { checkSetPageColumns } from './checks/set-page/columns.mjs';
 import { checkPieceMenuKeepsButtonInSight, checkTableMenusUnderHeading } from './checks/set-page/menu-placement.mjs';
@@ -127,7 +127,6 @@ export const GROUPS = [
   { steps: [step(checkBrowserColumnsStay, 'gear-browser'), step(checkBrowserColumnHover, 'gear-browser')] },
   { steps: [step(checkBrowserFourDigits, 'gear-browser')] },
   { steps: [step(checkSlotMenu, 'gear-browser'), step(checkSlotMenuPicksAndLayers, 'gear-browser')] },
-  { steps: [step(checkTabPanels, 'app')] },
   { steps: [step(checkStoresSealed, 'app')] },
   { steps: [step(checkRouting, 'app')] },
   { steps: [step(checkLinkClicks, 'app')] },

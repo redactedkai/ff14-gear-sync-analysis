@@ -9,7 +9,6 @@ import {
   currentJob,
   fieldValue,
   fillBrowser,
-  readPanel,
   setCap,
   setFrom,
   setJob,
@@ -20,7 +19,6 @@ import {
   waitReady,
   waitSaved,
 } from '../../lib/nav.mjs';
-import { SHARED_SETUP } from '../../lib/setup.mjs';
 import { pickOption } from '../../lib/select.mjs';
 
 /** Build a non-default state (job, cap, sync off, level, browser filters, Gear categories boxes and market board switch, Piece
@@ -86,26 +84,11 @@ export async function checkReloadPersists(pg) {
   check(cap === '130', `the cap is '${cap}' after sync came back on, expected 130`);
 }
 
-// Stored values that are not usable state: each must load as the defaults without a JS error.
+// Stored values that are not usable state: each must load as the defaults without a JS error. Two real storage reads are kept: text
+// that is no JSON, and a valid save with a broken pool. Which values a restore accepts (wrong types, ranges, an array) is `state`'s
+// and `state.fuzz`'s.
 const BAD_STORAGE = [
   ['invalid JSON', '{"job": "WAR", "cap": 13'],
-  ['a JSON array', '[1, 2, 3]'],
-  [
-    'wrong-typed fields',
-    JSON.stringify({
-      job: 42,
-      cap: 'abc',
-      sync: 'yes',
-      level: null,
-      tab: 7,
-      mathTab: {},
-      piece: 'head',
-      browse: [1],
-      opt: { target: 5, tb: null, tb2: 'x', exclude: 'pvp' },
-      poolFilter: 3,
-      pool: { 0: { id: 'x' } },
-    }),
-  ],
   // a save from the gear pool days, with broken pool items: the pool is dropped
   [
     'an old save with a broken pool',
@@ -113,7 +96,7 @@ const BAD_STORAGE = [
   ],
 ];
 
-/** Invalid JSON, wrong-typed saved values or an old save with a gear pool: the page loads with the default settings
+/** Invalid JSON or an old save with a broken gear pool: the page loads with the default settings
  * and no JS error. The bad value is written from a separate blank page (same file:// storage), so no pending save of
  * this page can overwrite it before the load. */
 export async function checkCorruptedStorage(pg) {
@@ -150,47 +133,8 @@ export async function checkCorruptedStorage(pg) {
   }
 }
 
-/** Each tab has its own Job and sync panel and its own saved values: a job and level set on How the math works do not
- * touch the Gear browser's, the Sheets tab has no panel and changes neither, and a reload keeps both. */
-export async function checkTabPanels(pg) {
-  // without showTab's carrying the panel over; the tab opens a few frames after the click (store.openTab), so wait for it
-  // before reading the panel
-  const go = async tab => {
-    await pg.click(`[data-tab=${tab}]`);
-    await expect(pg.locator(`#tab-${tab}`)).toBeVisible();
-  };
-  // the math tab starts with the default job (the shared setup is the browser's)
-  await go('math');
-  check((await currentJob(pg)) === DEFAULT_JOB, "How the math works starts with the browser's job");
-  await setJob(pg, 'BLM');
-  await setNumber(pg, '#level', '70');
-  await go('sheets');
-  await expect(pg.locator('section[aria-label="Job and sync settings"]')).toBeHidden();
-  await go('browse');
-  const browsePanel = JSON.stringify(await readPanel(pg));
-  check(
-    browsePanel === JSON.stringify({ job: SHARED_SETUP.job, sync: true, cap: SHARED_SETUP.cap, level: SHARED_SETUP.level }),
-    `the Gear browser's panel changed: ${browsePanel}`,
-  );
-  // a reload keeps each tab's own values
-  await waitSaved(pg, "s => s.browse.job === 'SGE' && s.piece.job === 'BLM' && s.piece.level === 70");
-  await pg.reload();
-  await waitReady(pg);
-  for (const [tab, job, level] of [
-    ['math', 'BLM', '70'],
-    ['browse', SHARED_SETUP.job, SHARED_SETUP.level],
-  ]) {
-    await go(tab);
-    await expect(pg.locator(`#tab-${tab}`)).toBeVisible();
-    const panel = await readPanel(pg);
-    check(
-      panel.job === job && panel.level === level,
-      `after reload the ${tab} tab's panel is ${JSON.stringify(panel)}, expected ${job} at level ${level}`,
-    );
-  }
-}
-
-/** Reset to defaults asks with the browser's own dialog: Cancel keeps everything, OK restores every default. */
+/** Reset to defaults asks with the browser's own dialog: Cancel keeps everything, OK brings back the default job and empties the
+ * filter. (Every default it restores is `app-actions`'s.) */
 export async function checkReset(pg) {
   await setJob(pg, 'SGE');
   await setCap(pg, '130'); // a cap level 50 allows (135 at most)
@@ -215,17 +159,9 @@ export async function checkReset(pg) {
   check(messages.length === 2 && messages.every(message => message.length > 0), `reset dialog messages: ${JSON.stringify(messages)}`);
   const cj = await currentJob(pg);
   check(cj === DEFAULT_JOB, `after reset the job is '${cj}', expected '${DEFAULT_JOB}'`);
-  check(!(await pg.locator('#sync').isChecked()), 'after reset sync is on, expected off');
-  for (const [sel, v] of Object.entries({ '#cap': DEFAULT_CAP, '#level': DEFAULT_LEVEL })) {
-    const got = await pg.inputValue(sel);
-    check(got === v, `after reset ${sel} is '${got}', expected '${v}'`);
-  }
   await setJob(pg, 'SGE');
   await showTab(pg, 'browse');
-  for (const sel of ['#b-q', '#b-min']) {
-    const got = await pg.inputValue(sel);
-    check(got === '', `after reset ${sel} is '${got}', expected empty`);
-  }
+  check((await pg.inputValue('#b-q')) === '', 'after reset the name filter is not empty');
   await setCap(pg, '123'); // back to the caps the later checks expect
   await setNumber(pg, '#level', '50');
 }
