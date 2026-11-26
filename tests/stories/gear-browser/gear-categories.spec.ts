@@ -4,7 +4,8 @@
    of the menu (texts, counts, All / None / Default) in Chromium. */
 import { test, expect } from '../fixtures.ts';
 import type { Default } from './gear-categories.story.js';
-import { expectForcedColoursLook, expectLookApart, partShows, tapOutside } from '../look.ts';
+import { layerArmed, layerPlaced } from '../layers.ts';
+import { expectForcedColoursLook, expectLookApart, partShows, settled, tapOutside } from '../look.ts';
 
 const STORY = 'gear-browser/gear-categories/Default';
 const MENU = '#b-from-menu';
@@ -48,6 +49,7 @@ test.describe('<gsa-gear-categories>', () => {
     await button.press('ArrowDown');
     await expect(page.locator(MENU)).toBeVisible();
     await expect(page.locator(`#${TAB_IDS[2]}`)).toHaveAttribute('aria-selected', 'true');
+    await layerArmed(page); // Zag watches for the focus leaving the menu a frame after the opening: not before
 
     // from the last control of the menu (Default) a Tab leaves it: the menu closes and the focus is on the next control
     await page.locator('[data-action="default"]').focus();
@@ -62,6 +64,7 @@ test.describe('<gsa-gear-categories>', () => {
     expect(await axe(), 'closed').toEqual([]);
     await page.locator('#b-from').click();
     await expect(page.locator(MENU)).toBeVisible();
+    await layerPlaced(page.locator(MENU));
     const fit = await page.locator(MENU).evaluate(menu => {
       const box = menu.getBoundingClientRect();
       return {
@@ -142,6 +145,7 @@ test.describe('<gsa-gear-categories> in forced colours', () => {
     const placeOn = await knobPlace();
     await marketSwitch.click();
     await expect(marketSwitch).not.toBeChecked();
+    await settled(marketSwitch); // the knob slides and the track fades: read them once they have arrived
     expect(await partShows(marketSwitch, '::before'), 'the knob shows against the track when off').toBe(true);
     expect(await trackFill(), 'the track has the same fill on and off').not.toBe(fillOn);
     expect(await knobPlace(), 'the knob is in the same place on and off').not.toBe(placeOn);
