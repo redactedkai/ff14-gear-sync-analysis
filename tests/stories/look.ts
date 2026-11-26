@@ -43,12 +43,18 @@ export async function paintOf(locator: Locator): Promise<string> {
   );
 }
 
-/* Whether a part drawn over an element (its `::before` or `::after`: a tick, a knob) shows against the element's own fill: the part
-   exists (it has content) and its fill is another colour than the element's. In forced colours both are system colours. */
+/* Whether a part drawn over an element (its `::before` or `::after`: a tick, a knob) shows against what is behind it: the part
+   exists (it has content) and its fill is another colour than the element's own fill, or, when the element has none (Firefox
+   makes an element's fill see-through and paints the canvas colour behind it), than the first fill behind it up the tree. In
+   forced colours these are system colours. */
 export async function partShows(locator: Locator, pseudo: '::before' | '::after'): Promise<boolean> {
   return locator.evaluate((element, name) => {
     const part = getComputedStyle(element, name);
-    return part.content !== 'none' && part.backgroundColor !== getComputedStyle(element).backgroundColor;
+    let behind: Element | null = element;
+    while (behind && /^rgba\(.*, 0\)$|^transparent$/.test(getComputedStyle(behind).backgroundColor)) {
+      behind = behind.parentElement;
+    }
+    return part.content !== 'none' && part.backgroundColor !== (behind ? getComputedStyle(behind).backgroundColor : 'transparent');
   }, pseudo);
 }
 
