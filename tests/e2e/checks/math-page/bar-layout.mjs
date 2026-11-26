@@ -1,10 +1,11 @@
 // How the math works: the bar. Each of Stat Allocation and Substat tiers has its own Job box (GCD Scaling none), the Sync settings chip
-// and its popover, the three layouts of the controls row with their dividers, one height for every box, and sub-tabs that stay put.
+// and its popover, and one height for the boxes of Substat tiers and the Gear browser strip. The controls row's three layouts with their
+// dividers, Stat Allocation's box heights and the sub-tabs that stay put are `tests/stories/math-page/math-bar.spec.ts`'s.
 
 import { LEVEL_TEXT, rangeOnly } from '../../../../src/ui/level-cap.ts';
 import { SYNC_CHIP_TEXT } from '../../../../src/ui/views/sync-explainer.ts';
 import { check, expect, poll } from '../../lib/expect.mjs';
-import { afterFrames, hasHScroll, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';
+import { afterFrames, setJob, setNumber, showMath, showTab, waitReady, waitSaved } from '../../lib/nav.mjs';
 import { setUpShared } from '../../lib/setup.mjs';
 import { pickOption } from '../../lib/select.mjs';
 
@@ -151,79 +152,9 @@ export async function checkLevelBox(pg) {
   await setUpShared(pg);
 }
 
-/** The controls row's three layouts, each made on purpose by the bar's own width (rem, so text size counts): wide, one row (Job,
- * Piece, Sync, Item level group); middle, the Item level group on a second row; narrow, Job and Piece on the first row and Sync with the
- * Item level group on the second. A rule is drawn before a divided section only where it does not start a line, with the wider gap (24
- * px) after the Job box and after Sync settings; nothing scrolls sideways. */
-export async function checkMathBarLayouts(pg) {
-  await showMath(pg, 'piece');
-  const measure = () =>
-    pg.evaluate(() => {
-      const box = selector => document.querySelector(selector).getBoundingClientRect();
-      const row = box('.barrow');
-      const parts = { job: '#m-job-wrap', piece: '.piecesec', sync: '#p-sync-wrap', item: '#p-ilgroup' };
-      const boxes = Object.fromEntries(Object.entries(parts).map(([name, selector]) => [name, box(selector)]));
-      // a rule is drawn at its section's left edge less half the gap: it shows when that is inside the row
-      const rules = [...document.querySelectorAll('.barrow .divided')].filter(
-        el => el.offsetParent && el.getBoundingClientRect().left > row.left + 1,
-      );
-      return {
-        tops: Object.fromEntries(Object.entries(boxes).map(([name, b]) => [name, Math.round(b.top)])),
-        gapAfterJob: boxes.piece.left - boxes.job.right,
-        gapAfterSync: boxes.item.left - boxes.sync.right,
-        rules: rules.length,
-        rowWidth: row.width,
-        rem: parseFloat(getComputedStyle(document.documentElement).fontSize),
-      };
-    });
-  const setText = zoom => pg.evaluate(fontSize => (document.documentElement.style.fontSize = fontSize), zoom);
-  const same = (...tops) => tops.every(top => Math.abs(top - tops[0]) <= 2);
-  const wide = { width: 1280, height: 900 };
-  for (const [name, size, zoom] of [
-    ['wide', wide, '100%'],
-    ['middle', { width: 1100, height: 900 }, '100%'],
-    ['middle at the floor', { width: 960, height: 900 }, '100%'],
-    ['narrow', { width: 960, height: 900 }, '150%'],
-  ]) {
-    await pg.setViewportSize(size);
-    await setText(zoom);
-    await afterFrames(pg);
-    await afterFrames(pg);
-    const m = await measure();
-    const t = m.tops;
-    let layout = 'other';
-    if (same(t.job, t.piece, t.sync, t.item)) {
-      layout = 'wide';
-    } else if (same(t.job, t.piece, t.sync) && t.item > t.job) {
-      layout = 'middle';
-    } else if (same(t.job, t.piece) && same(t.sync, t.item) && t.sync > t.job) {
-      layout = 'narrow';
-    }
-    check(
-      layout === name.split(' ')[0],
-      `the controls row at ${size.width} px, text ${zoom}, is the ${layout} layout (${JSON.stringify(t)}), expected ${name.split(' ')[0]}`,
-    );
-    check(
-      m.gapAfterJob >= 23.5 && m.gapAfterJob <= 24.5,
-      `the gap after the Job box is ${m.gapAfterJob} px at ${size.width} px, text ${zoom}, expected 24`,
-    );
-    if (layout !== 'middle') {
-      check(
-        m.gapAfterSync >= 23.5 && m.gapAfterSync <= 24.5,
-        `the gap after Sync settings is ${m.gapAfterSync} px at ${size.width} px, text ${zoom}, expected 24`,
-      );
-    }
-    // the rules: before Piece (after the Job box) and before the Item level group, when neither starts a line
-    const want = { wide: 2, middle: 1, narrow: 2 }[layout];
-    check(m.rules === want, `${m.rules} rules show at ${size.width} px, text ${zoom} (${layout}), expected ${want}`);
-    check(!(await hasHScroll(pg)), `sideways scroll at ${size.width} px, text ${zoom}`);
-  }
-  await setText('');
-  await pg.setViewportSize(DEFAULT_WINDOW);
-}
-
-/** Every box of the bar is as high as the Job box, at normal and larger text, and so are the Gear browser strip's boxes (a box is
- * 16 px and 1.5 rem tall); the sub-tabs keep their places whichever sub-tab is open. */
+/** On the real page, the Job box of Substat tiers and its Level box, and the Gear browser strip's Job, Level and Item level boxes, are as
+ * high as the Job box of Stat Allocation: 16 px and 1.5 rem, at normal and larger text. (Stat Allocation's own boxes, the three layouts
+ * of the controls row with their rules and gaps, and the sub-tabs keeping their places are `math-bar.spec.ts`'s.) */
 export async function checkMathBarBoxes(pg) {
   await pg.setViewportSize({ width: 1280, height: 900 });
   await showMath(pg, 'piece');
@@ -233,15 +164,11 @@ export async function checkMathBarBoxes(pg) {
         selectorList.map(selector => [selector, Math.round(document.querySelector(selector).getBoundingClientRect().height * 10) / 10]),
       selectors,
     );
-  const bar = ['#m-job-btn', '#p-slot', '#p-piece-chip', '#p-sync-chip', '#p-ilvl'];
   for (const zoom of ['100%', '125%']) {
     await pg.evaluate(fontSize => (document.documentElement.style.fontSize = fontSize), zoom);
     await afterFrames(pg);
     const rem = await pg.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
     const expected = 16 + 1.5 * rem;
-    for (const [selector, height] of await heights(bar)) {
-      check(Math.abs(height - expected) <= 0.6, `${selector} is ${height} px tall at text ${zoom}, expected ${expected}`);
-    }
     await pg.click('[data-sub=tiers]');
     await expect(pg.locator('#t-level')).toBeVisible();
     for (const [selector, height] of await heights(['#m-job-btn', '#t-level'])) {
@@ -259,18 +186,6 @@ export async function checkMathBarBoxes(pg) {
     await showMath(pg, 'piece');
   }
   await pg.evaluate(() => (document.documentElement.style.fontSize = ''));
-  // the sub-tabs do not move when another sub-tab is chosen
-  const lefts = () =>
-    pg.evaluate(() =>
-      [...document.querySelectorAll('.subtabs a')].map(button => Math.round(button.getBoundingClientRect().left * 10) / 10),
-    );
-  const before = await lefts();
-  for (const sub of ['gcd', 'tiers', 'piece']) {
-    await pg.click(`[data-sub=${sub}]`);
-    await expect(pg.locator(`#tab-${sub}`)).toBeVisible();
-    const after = await lefts();
-    check(JSON.stringify(after) === JSON.stringify(before), `the sub-tabs moved when ${sub} opened: ${before} -> ${after}`);
-  }
   await pg.setViewportSize(DEFAULT_WINDOW);
   await setUpShared(pg);
 }

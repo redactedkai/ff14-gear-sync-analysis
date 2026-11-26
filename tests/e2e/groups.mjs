@@ -30,7 +30,7 @@ import { checkBreakpoints, checkViewports } from './checks/look/viewports.mjs';
 import { checkVisualParity } from './checks/look/visual-parity.mjs';
 import { checkHelpDimsPage, checkPieceLab } from './checks/math-page/piece-stats.mjs';
 import { checkGcdTab, checkTiers } from './checks/math-page/tiers-gcd.mjs';
-import { checkLevelBox, checkMathBarBoxes, checkMathBarLayouts, checkMathJobs, checkSyncChip } from './checks/math-page/bar-layout.mjs';
+import { checkLevelBox, checkMathBarBoxes, checkMathJobs, checkSyncChip } from './checks/math-page/bar-layout.mjs';
 import { checkTiersNoteUnderPinnedBar } from './checks/math-page/tiers-note.mjs';
 import { checkCorruptedStorage, checkReloadPersists, checkReset } from './checks/saved-state/saved-state.mjs';
 import { checkAverageIlvl } from './checks/set-page/average-ilvl.mjs';
@@ -114,7 +114,6 @@ export const GROUPS = [
       step(checkMathJobs, 'math-page'),
       step(checkSyncChip, 'math-page'),
       step(checkLevelBox, 'math-page'),
-      step(checkMathBarLayouts, 'math-page'),
       step(checkMathBarBoxes, 'math-page'),
     ],
   },
