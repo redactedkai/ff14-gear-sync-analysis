@@ -53,6 +53,16 @@ jobs:
       - run: npm run test:stories:all
       # the long random sweep of tier ranking against its reference (tests/sweep/), kept out of npm test for speed
       - run: node --test "tests/sweep/*.test.js"
+      # the stories' traces, screenshots and error notes, and the smoke test's output, to see what failed on this runner
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: check-failure-output
+          path: |
+            tests/stories/out/
+            tests/e2e/out/
+          retention-days: 7
+          if-no-files-found: ignore
       - if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - if: github.ref == 'refs/heads/main'
