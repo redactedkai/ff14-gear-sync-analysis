@@ -31,7 +31,7 @@ export type PerStat<T> = Readonly<Record<StatKey, T>>;
 /* The dimensions the optimizer tracks per candidate: the stat keys, and weapon damage under 'wd' (WD_KEY in damage-defense.ts). */
 export type DimKey = StatKey | 'wd';
 
-/* An immutable description of everything that depends on the selected job (makeJobContext in job-context.js; the fields
+/* An immutable description of everything that depends on the selected job (makeJobContext in job-context.ts; the fields
    are explained there). Core functions take it as their first argument. */
 export interface JobContext {
   readonly jobId: string;
@@ -119,7 +119,7 @@ export type FoodRow = readonly [
   vitality: readonly [pct: number, max: number] | null,
 ];
 
-/* A pool item: a piece the optimizer searches or a set holds (mkItem in items.js; the fields are explained there). Frozen:
+/* A pool item: a piece the optimizer searches or a set holds (mkItem in items.ts; the fields are explained there). Frozen:
    nothing may change one after it is made. A database piece (src 'game') also has its gameId and hq; a hand-made one may
    carry its own `meld`. */
 export interface PoolItem {
@@ -139,7 +139,7 @@ export interface PoolItem {
   readonly meld?: MeldInfo;
 }
 
-/* The materia slots of a pool item: the guaranteed slots, and whether overmelding is allowed (meldInfo in items.js). */
+/* The materia slots of a pool item: the guaranteed slots, and whether overmelding is allowed (meldInfo in items.ts). */
 export interface MeldInfo {
   readonly slots: number;
   readonly overmeld: boolean;

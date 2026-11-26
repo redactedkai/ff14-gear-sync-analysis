@@ -2,9 +2,9 @@
    the caps derived from the raw ItemLevel rows; plus the Wiki's item level 475 caps for Paladin's weapon and shield. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capsFor, syncStats } from '../../../src/core/formulas.ts';
-import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
+import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
 import { IL } from '../../../src/core/tables.ts';
 import { SLOT_PERMILLE } from '../helpers/common.js';
 

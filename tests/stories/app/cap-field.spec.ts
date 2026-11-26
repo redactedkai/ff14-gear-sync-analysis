@@ -5,7 +5,7 @@ import { expect, test } from '../fixtures.ts';
 import type { Default } from './cap-field.story.js';
 
 const STORY = 'app/cap-field/Default';
-// the highest item level the best gear made for level 40 has (capCeiling in core/sync-target.js): what a cap at level 40 is lowered to
+// the highest item level the best gear made for level 40 has (capCeiling in core/sync-target.ts): what a cap at level 40 is lowered to
 const CAP_AT_LEVEL_40 = 43;
 
 test.describe('<gsa-cap-field>', () => {

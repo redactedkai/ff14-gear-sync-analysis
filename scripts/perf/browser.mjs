@@ -25,7 +25,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
-import { makeJobContext } from '../../src/core/job-context.js';
+import { makeJobContext } from '../../src/core/job-context.ts';
 import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.js';
 import { SET_ROW_SLOTS } from '../../src/ui/sheets/storage.js';
 import { STORE_KEY } from '../../src/ui/store-key.js';

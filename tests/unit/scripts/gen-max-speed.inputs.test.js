@@ -6,7 +6,7 @@ import { inputFiles, isCoreInput } from '../../../scripts/data/gen_max_speed.mjs
 import { listFiles } from '../../domains.mjs';
 
 test('max-speed inputs: JavaScript, TypeScript and JSON files under src/core count, other files do not', () => {
-  for (const path of ['src/core/sync-target.js', 'src/core/item-format.json', 'src/core/future-module.ts']) {
+  for (const path of ['src/core/sync-target.ts', 'src/core/item-format.json', 'src/core/future-module.ts']) {
     assert.ok(isCoreInput(path), path);
   }
   for (const path of ['src/core/README.md', 'src/core/notes.txt', 'src/core/types.d.ts.map']) {

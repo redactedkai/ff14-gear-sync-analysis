@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
-import { jobGear } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { jobGear } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { runRecipe } from '../../../../src/core/recipe.js';
 import { makeSession } from '../../../../src/core/session.js';
 import { makeSolverHandler, solverRequest } from '../../../../src/ui/solver.js';

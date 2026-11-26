@@ -3,7 +3,7 @@
    also appended to the `edits` output. */
 import { html } from 'lit';
 import '../../../src/ui/elements/gear-browser/gear-browser.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { defaultBrowse } from '../../../src/ui/state.js';
 import { recordEvents } from '../gallery/record.js';
 

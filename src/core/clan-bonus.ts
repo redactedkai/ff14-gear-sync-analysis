@@ -11,15 +11,16 @@
    Order (xivgear's): the party bonus multiplies base + clan + gear, then the meal's points are added; a meal's bonus is
    worked out from the value before the party bonus. */
 import { CLANS } from './tables.ts';
+import type { JobContext, StatKey } from './types.ts';
 
 /* The most unique roles a party can have (tank, healer, melee, physical ranged, magic ranged): 5 roles = 5%. */
 export const PARTY_ROLES_MAX = 5;
 
-const CLAN_BY_NAME = new Map(CLANS.map(clan => [clan.clan, clan]));
+const CLAN_BY_NAME = new Map<string, Record<string, string | number>>(CLANS.map(clan => [clan.clan, clan]));
 
 /* The clans grouped by race, in the game's order, for a menu: [{race, clans: [clan name, ...]}] (8 races of 2 clans). */
-export function clanGroups() {
-  const groups = [];
+export function clanGroups(): { race: string; clans: string[] }[] {
+  const groups: { race: string; clans: string[] }[] = [];
   for (const { race, clan } of CLANS) {
     const last = groups.at(-1);
     if (last?.race === race) {
@@ -32,31 +33,31 @@ export function clanGroups() {
 }
 
 /* Whether `name` is the name of a clan ("Midlander"). */
-export function isClan(name) {
-  return CLAN_BY_NAME.has(name);
+export function isClan(name: unknown): boolean {
+  return CLAN_BY_NAME.has(name as string);
 }
 
 /* What clan `clanName` adds to the stat `statKey` (a stat key: str, dex, int, mind, vit), in points. 0 for no clan (null,
    '' or an unknown name) and for a stat no clan changes (a substat, Piety). */
-export function clanOffset(clanName, statKey) {
-  const points = CLAN_BY_NAME.get(clanName)?.[statKey];
+export function clanOffset(clanName: string | null | undefined, statKey: StatKey): number {
+  const points = CLAN_BY_NAME.get(clanName as string)?.[statKey];
   return typeof points === 'number' ? points : 0;
 }
 
 /* `value` as a number of unique party roles: a whole number from 0 to PARTY_ROLES_MAX (anything else is 0). */
-export function partyRoles(value) {
+export function partyRoles(value: unknown): number {
   const roles = Math.trunc(Number(value));
   return Number.isFinite(roles) ? Math.min(PARTY_ROLES_MAX, Math.max(0, roles)) : 0;
 }
 
 /* `points` with the party bonus of `roles` unique roles: floor(points x (1 + 0.01 x roles)), in whole-number arithmetic
    (1311 x 1.05 is 1376.55 on paper; a float product could land either side of a whole number at other values). */
-export function withPartyBonus(points, roles) {
+export function withPartyBonus(points: number, roles: unknown): number {
   return Math.floor((points * (100 + partyRoles(roles))) / 100);
 }
 
 /* The stat keys of `job` that the clan and the party bonus change: its main stat and Vitality. */
-export function bonusStats(job) {
+export function bonusStats(job: JobContext): StatKey[] {
   return [job.mainKey, 'vit'];
 }
 
@@ -65,7 +66,11 @@ export function bonusStats(job) {
    roles, 0 for no party bonus)}. The main stat and Vitality are floor((base + clan + gear) x party) + meal; every other
    stat is base + gear + meal. `meal` must be the meal's bonus on base + clan + gear (food.ts foodBonus), not on the
    party-boosted value. */
-export function characterStat(job, stat, { base, gear, meal = 0, clan = null, roles = 0 }) {
+export function characterStat(
+  job: JobContext,
+  stat: StatKey,
+  { base, gear, meal = 0, clan = null, roles = 0 }: { base: number; gear: number; meal?: number; clan?: string | null; roles?: unknown },
+): number {
   if (!bonusStats(job).includes(stat)) {
     return base + gear + meal;
   }

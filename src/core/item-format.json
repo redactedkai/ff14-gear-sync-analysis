@@ -230,7 +230,7 @@
     "rowField": 13
   },
   "levelScaled": {
-    "_comment": "Item rows carry 1 at `rowField` when the item's `itemColumn` (Item.csv) is `value`, else 0: gear whose item level and stats follow the wearer's level (the game's description reads \"IL and attributes synced to current job level.\"; level 89 and 99 boost gear, gift earrings and rings). Below the level its item level is for, such a piece is synced to that level's item level whatever its equip level (sync-target.js). gen_items.py stops on a value outside `known`.",
+    "_comment": "Item rows carry 1 at `rowField` when the item's `itemColumn` (Item.csv) is `value`, else 0: gear whose item level and stats follow the wearer's level (the game's description reads \"IL and attributes synced to current job level.\"; level 89 and 99 boost gear, gift earrings and rings). Below the level its item level is for, such a piece is synced to that level's item level whatever its equip level (sync-target.ts). gen_items.py stops on a value outside `known`.",
     "itemColumn": "SubStatCategory",
     "value": 2,
     "known": [0, 1, 2],

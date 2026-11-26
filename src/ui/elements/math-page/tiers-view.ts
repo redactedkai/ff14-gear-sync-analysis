@@ -11,7 +11,8 @@
    - the view is built again only when the job, the level or a value changes (`viewCache`). */
 import { LitElement, html, nothing, type PropertyValues } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import { makeJobContext } from '../../../core/job-context.js';
+import { makeJobContext } from '../../../core/job-context.ts';
+import type { StatKey } from '../../../core/types.ts';
 import {
   NO_TIER_EDITS,
   tierEdited,
@@ -95,7 +96,7 @@ export class GsaTiersView extends LitElement {
   protected override willUpdate(_changed: PropertyValues): void {
     const { job, level } = this.settings;
     this.edits = tierEditsKept(this.edits, tierEditsKey(job, level));
-    if (this.helpFor && !job.substats.includes(this.helpFor)) {
+    if (this.helpFor && !job.substats.includes(this.helpFor as StatKey)) {
       this.helpFor = '';
       this.helpButton = null;
     }

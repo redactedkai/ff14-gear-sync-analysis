@@ -1,6 +1,6 @@
 /* Pins for the optimizer's tests: random pieces to pin, with stones, in the two forms the code under test and its
    reference take (`fixed`: fixedCandidate; `oracle`: pinnedVector in exhaustive.js, written independently). */
-import { meldInfo, slotInfo } from '../../../src/core/items.js';
+import { meldInfo, slotInfo } from '../../../src/core/items.ts';
 import { fixedCandidate } from '../../../src/core/optimizer/index.js';
 import { itemSyncIlvl } from '../../../src/core/piece.js';
 import { MATERIA } from '../../../src/core/tables.ts';

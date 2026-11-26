@@ -1,8 +1,8 @@
-/* Item queries (src/core/items.js): gear filtering per job, picked by properties, never by name; database rows to pool
+/* Item queries (src/core/items.ts): gear filtering per job, picked by properties, never by name; database rows to pool
    items; copies, HQ, "Gear categories" routes, expansions and meld slots of real pieces; the materia table. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import {
   browseItems,
   poolItemFromRow,
@@ -15,7 +15,7 @@ import {
   meldInfo,
   rowStats,
   poolKey,
-} from '../../../src/core/items.js';
+} from '../../../src/core/items.ts';
 import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, EXPANSIONS, ROW } from '../../../src/core/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { ITEMS, MATERIA } from '../../../src/core/tables.ts';
@@ -403,7 +403,7 @@ test('materia table: values, item level gates and the grades limited to the firs
   assert.deepEqual(MATERIA.high, [6, 8, 10, 12]); // VI, VIII, X, XII
 });
 
-/* Audit 01, finding 25: a pool item's database facts come from the first row with its pool key (rowFacts in items.js),
+/* Audit 01, finding 25: a pool item's database facts come from the first row with its pool key (rowFacts in items.ts),
    only the routes are joined, so rows sharing a key must agree on everything else. */
 test('database rows that share a pool key agree on every fact but their routes', () => {
   const FACTS = [

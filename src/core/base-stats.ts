@@ -22,7 +22,7 @@ export const LEVEL_MAIN = Object.freeze([
 
 /* The base a stat key starts from at character level `level`, as the character panel counts it: for the main stat
    and Vitality the level's main stat base (LEVEL_MAIN) x the job's modifier (ClassJob; floor, as AkhMorning and xivgear
-   do), without the clan's bonus (-3 to +3: a saved sheet's clan is added on top by clan-bonus.js); the level's main stat base for
+   do), without the clan's bonus (-3 to +3: a saved sheet's clan is added on top by clan-bonus.ts); the level's main stat base for
    Determination and Piety; ParamGrow BaseSpeed for the other substats. */
 export function statBase(job: JobContext, stat: StatKey, level: number): number {
   const lv = clampLevel(level);

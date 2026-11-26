@@ -3,8 +3,8 @@
    test. The brute-force reference and real-gear pools are in exhaustive.js. */
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.ts';
-import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
 import { restoreState } from '../../../src/ui/state.js';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';

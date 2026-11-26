@@ -4,8 +4,8 @@
    (docs/engineering/sheets.md, "Drafts and suggestions"): the suggestion is held in memory as the pieces and meal fill.js
    applyFill gives, plus the rows the player declined. Takes plain data (a saved Sheet and GearSet: sheets.md, "Saved
    data") and returns plain view objects. Pure: no store. */
-import { makeJobContext } from '../../core/job-context.js';
-import { equipLevel, jobGear, poolItemById, slotInfo } from '../../core/items.js';
+import { makeJobContext } from '../../core/job-context.ts';
+import { equipLevel, jobGear, poolItemById, slotInfo } from '../../core/items.ts';
 import { applyFill, badPinMessages, dropBadPins, fillPlan, unpinnedText } from '../sheets/fill.js';
 import { changeText, draftChanges } from './set-draft.js';
 import { evaluateInSheet, figuresAgainst, setFigures } from './set-totals.js';
@@ -83,7 +83,8 @@ export function takenSet(saved, suggested, declined = { rows: [], meal: false },
 /** The fields Apply saves for a suggestion taken as `declined` says ({rows, meal}, as for takenSet): {pieces, meal,
    bestMeals}. The set is as Auto-fill made it only when nothing is declined, so only then does it keep the tied best meals
    (suggested.bestMeals, null with Food off) that tag its meal "best for goal"; otherwise bestMeals is null.
-   @param {{ rows: readonly number[], meal: boolean }} [declined] */
+   @param {{ rows: readonly number[], meal: boolean }} [declined]
+   @param {import('../../core/types.ts').JobContext | null} [job] */
 export function appliedFields(saved, suggested, declined = { rows: [], meal: false }, job = null) {
   const { pieces, meal } = takenSet(saved, suggested, declined, job);
   const asFillMadeIt = !declined.rows.length && !declined.meal;

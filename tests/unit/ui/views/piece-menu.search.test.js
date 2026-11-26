@@ -7,8 +7,8 @@
    18967 Imperial Jade Ring of Healing (Crafted, 290). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { categoryOf, jobGear } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { categoryOf, jobGear } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 

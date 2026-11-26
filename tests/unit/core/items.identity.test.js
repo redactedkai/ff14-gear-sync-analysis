@@ -1,11 +1,11 @@
-/* Item identity (src/core/items.js): a kept piece refers to a database row by its gameId (itemById, poolItemById); the
+/* Item identity (src/core/items.ts): a kept piece refers to a database row by its gameId (itemById, poolItemById); the
    pool key only groups the same piece from several sources. The ids are the game's own (Item.csv rows): Kirin's Osode
    of Fending is item 24850. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.ts';
-import { itemById, mkItem, parseRow, poolItemById, poolItemFromRow, poolKey } from '../../../src/core/items.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { itemById, mkItem, parseRow, poolItemById, poolItemFromRow, poolKey } from '../../../src/core/items.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 import { itemRow, piece } from '../helpers/common.js';
 

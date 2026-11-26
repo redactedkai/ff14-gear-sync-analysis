@@ -4,7 +4,7 @@
    settings themselves, and the Food default the owner chose (off). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { solverRequest } from '../../../../src/ui/solver.js';
 import { defaultFillSettings, fillRecipe, fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';

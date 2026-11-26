@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
-import { poolItemById } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { poolItemById } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { pieceName, rankBadges, setRowsView } from '../../../../src/ui/views/set-rows.js';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';
 import { SAGE_IDS, piece, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';

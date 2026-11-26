@@ -5,11 +5,11 @@
    it changes the answer; one past that most checks that nothing is found. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize, prepare, seedStart, solve } from '../../../../src/core/optimizer/index.js';
 import { branchAndBound, dropShortfalls, improveStart } from '../../../../src/core/optimizer/search.js';
 import { frontSearch } from '../../../../src/core/optimizer/front.js';
-import { slotInfo } from '../../../../src/core/items.js';
+import { slotInfo } from '../../../../src/core/items.ts';
 import { pruneForLimits } from '../../../../src/core/optimizer/candidates.js';
 import { gcdTierAt } from '../../../../src/core/speed.ts';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';

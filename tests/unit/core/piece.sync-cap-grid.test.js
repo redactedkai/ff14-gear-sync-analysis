@@ -6,8 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DB_SLOT_PCT, DB_SLOT_TYPE, JOBS, ROW } from '../../../src/core/constants.ts';
-import { browseItems, poolItemFromRow } from '../../../src/core/items.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { browseItems, poolItemFromRow } from '../../../src/core/items.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { effStats } from '../../../src/core/piece.js';
 import { IL, ITEMS, MAX_ILVL, MP } from '../../../src/core/tables.ts';
 import { roundHalfUp } from '../helpers/common.js';

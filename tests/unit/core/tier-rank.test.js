@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { foodChoices } from '../../../src/core/food.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { rankByTier } from '../../../src/core/tier-rank.js';
 import { rankTierOf, tierStart } from '../../../src/core/tiers.ts';

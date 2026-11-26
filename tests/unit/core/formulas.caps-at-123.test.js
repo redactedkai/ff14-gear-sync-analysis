@@ -12,9 +12,9 @@
    Expected values come from the game data (ItemLevel rows, real items) and BaseParam, never from capsFor. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capsFor } from '../../../src/core/formulas.ts';
-import { genericItems, rowStats } from '../../../src/core/items.js';
+import { genericItems, rowStats } from '../../../src/core/items.ts';
 import { ROW } from '../../../src/core/constants.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { gcdFor } from '../../../src/core/speed.ts';

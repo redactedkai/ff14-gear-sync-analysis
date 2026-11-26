@@ -7,7 +7,7 @@
    warm: the median of N more calls. */
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
-import { withActivities } from '../../src/core/items.js';
+import { withActivities } from '../../src/core/items.ts';
 import { meldCacheStats } from '../../src/core/meld.js';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { NODE_LIMIT } from '../../src/core/recipe.js';

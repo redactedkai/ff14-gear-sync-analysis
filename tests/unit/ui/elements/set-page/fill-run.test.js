@@ -18,7 +18,7 @@ import { bind, heldSolver, lateSolver, refusingSolver, tick, twoToFill } from '.
 import { hasNumber } from '../../../helpers/common.js';
 import { sageSet } from '../../../helpers/sheet-fixtures.js';
 import { MEAL_ROW_LABEL } from '../../../../../src/ui/sheets/saved-set.js';
-import { makeJobContext } from '../../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../../src/core/job-context.ts';
 import { defaultFillSettings } from '../../../../../src/ui/sheets/fill-settings.js';
 
 const HEAD = 2;

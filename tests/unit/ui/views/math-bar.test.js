@@ -3,7 +3,7 @@
    owner's job); the accessories and the armor give the two kinds of materia slot choices. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { MATH_TAB_LABEL } from '../../../../src/ui/router/routes.js';
 import { MATH_TABS } from '../../../../src/ui/state.js';

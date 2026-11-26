@@ -613,7 +613,7 @@ The rule is in `gearGroups` in `src/core/item-format.json`. Over the head, body,
 
 Blue Mage (cap 80) and Beastmaster (cap 50) each stand alone, though their gear overlaps the casters' and Monk and Samurai's by 94% to 99%. In the current data: tanks, healers, Monk and Samurai, Dragoon and Reaper, Ninja and Viper, physical ranged, casters, Blue Mage, Beastmaster. Linked pairs share at least 89% and every other pair at most 19%.
 
-The generator stops (SchemaError) when the data is not that clean: a pair sharing 50% or more (`unlinkedPercentMax`) without being linked, a group that is not linked pairwise, or a job that can wear none of those pieces. `src/core/gear-groups.ts` reads the file (`GEAR_GROUPS`, `gearGroupName`) and lists the pieces of a set that a job cannot wear by the job mask (`piecesJobCannotWear`; `wearable` in `items.js` checks the equip level only).
+The generator stops (SchemaError) when the data is not that clean: a pair sharing 50% or more (`unlinkedPercentMax`) without being linked, a group that is not linked pairwise, or a job that can wear none of those pieces. `src/core/gear-groups.ts` reads the file (`GEAR_GROUPS`, `gearGroupName`) and lists the pieces of a set that a job cannot wear by the job mask (`piecesJobCannotWear`; `wearable` in `items.ts` checks the equip level only).
 
 ## 6. Provenance
 
@@ -770,7 +770,7 @@ Derived from the commit that added Beastmaster (`c31ff55`, patch 7.56) and its f
 | --- | --- |
 | `core/item-format.json` | append the job to `jobs` (note 1) |
 | `core/constants.ts` | its name and role profile in `JOB_INFO`; its row in `JOB_ROWS` (the picker's order); the lists in note 2 |
-| `core/job-context.js` | nothing for a job like the others; `maxLevel` covers limited jobs (Beastmaster) and any other |
+| `core/job-context.ts` | nothing for a job like the others; `maxLevel` covers limited jobs (Beastmaster) and any other |
 | `ui/` (state, store, views, `index.html`) | nothing for a job like the others; Beastmaster made the level inputs, restore and the optimizer pool follow `maxLevel` |
 | `scripts/validate/gearing/run.mjs`, `scripts/validate/xivgear/run.py` | nothing: both read the job list from `item-format.json` |
 | `tests/data/fixtures/ClassJob.csv`, `ClassJobCategory.csv` | the job's real rows and column |
@@ -918,7 +918,7 @@ The claims on this page that rest on evidence outside the code, collected from t
 | Routes for the Gear categories filter | `scripts/data/gear_activities.py` |
 | Crafted and ultimate flags | `scripts/data/gear_sources.py` |
 | Meld fields of an Item row | `scripts/data/item_format.py` (`meld_fields`), `materia` in `src/core/item-format.json` |
-| Meld fields of a pool item | `src/core/items.js` (`parseRow`, `meldInfo`) |
+| Meld fields of a pool item | `src/core/items.ts` (`parseRow`, `meldInfo`) |
 | Item level table, level data and stat factor table generator | `scripts/data/gen_item_level.py` |
 | Food table generator; which meals, `food` in the format file | `scripts/data/gen_food.py`, `src/core/item-format.json` |
 | Job icon generator | `scripts/data/gen_job_icons.py` |

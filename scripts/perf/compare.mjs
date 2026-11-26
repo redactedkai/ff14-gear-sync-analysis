@@ -25,7 +25,7 @@ if (sha(`${base}/src/data/items.json`) !== sha('src/data/items.json')) {
 const imp = p => import(pathToFileURL(resolve(base, 'src', p)).href);
 const B = {
   optimize: (await imp('core/optimizer/index.js')).optimize,
-  ctx: (await imp('core/job-context.js')).makeJobContext,
+  ctx: (await imp('core/job-context.ts')).makeJobContext,
 };
 const nodesMayDiffer = flag('nodes-may-differ');
 const jobIds = flag('quick') ? ['SGE', 'WAR', 'PLD', 'BLM'] : JOB_IDS;

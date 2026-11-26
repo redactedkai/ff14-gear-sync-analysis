@@ -4,15 +4,27 @@ import { ROW } from './constants.ts';
 import { levelParams } from './level-params.ts';
 import { ITEMS } from './tables.ts';
 
+/* What syncTarget reads of a piece and its settings: the piece's item level, its equip level (null for a piece not from the
+   database), whether it scales with the wearer's level, item level sync on, the item level cap (null for none) and the synced
+   character level (null for none). */
+export interface SyncTargetInput {
+  itemLevel: number;
+  equipLevel: number | null | undefined;
+  scales: boolean;
+  syncOn: boolean;
+  cap: number | null | undefined;
+  syncedLevel: number | null | undefined;
+}
+
 /* The item level a piece is synced to by level sync at character level `level`: ParamGrow.ItemLevelSync (levels 1 to
    49 map to their own number, 50 to 130, 60 to 270, 70 to 400, 80 to 530, 90 to 660, 100 to 690). The game file has one
    column for every slot. That weapons use it too is inferred; a player's report supports it at level 90 (level 100
    weapons synced to item level 660 in P12S, xivgear issue #317). */
-export function levelSyncIlvl(level) {
+export function levelSyncIlvl(level: number): number {
   return levelParams(level).sync;
 }
 
-let ceilings = null; // per equip level: the highest item level of the non-scaling gear made for it (filled on first use)
+let ceilings: number[] | null = null; // per equip level: the highest item level of the non-scaling gear made for it (filled on first use)
 
 /* The highest item level an item level cap syncs gear made for a higher level to, at synced level `level`: the highest
    item level of gear made for that level (equip level `level`), or the level's own item level where that is higher.
@@ -26,7 +38,7 @@ let ceilings = null; // per equip level: the highest item level of the non-scali
    changes no real duty; what a higher cap does is untested. Holding gear to it keeps every setting to what a duty can
    do: at level 50 with cap 400 a level 70 piece is synced to 135, where the cap alone gave it item level 400 stats
    (owner's decision; it replaces an error for such caps). */
-export function capCeiling(level) {
+export function capCeiling(level: number): number {
   if (!ceilings) {
     ceilings = [];
     for (const row of ITEMS) {
@@ -53,7 +65,7 @@ export function capCeiling(level) {
    to the item level cap where that is lower. That the target is ParamGrow's item level at every level is inferred: it
    gives the Wiki's artifact armor item levels (548 at level 89, 678 at 99); ffxiv-gearing does the same at levels 50
    to 90 (docs/mechanics/validation.md section 9). */
-export function syncTarget({ itemLevel, equipLevel, scales, syncOn, cap, syncedLevel }) {
+export function syncTarget({ itemLevel, equipLevel, scales, syncOn, cap, syncedLevel }: SyncTargetInput): number | null {
   const overCap = syncOn && cap != null && itemLevel > cap;
   // gear that scales with the wearer follows the synced level whatever its equip level; the cap can only lower it more
   if (scales && syncedLevel != null) {

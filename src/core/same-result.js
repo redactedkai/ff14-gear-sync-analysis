@@ -15,7 +15,7 @@
    made against the pieces the other rows show at that moment, never against the optimizer's set alone. */
 import { WD_KEY } from './damage-defense.ts';
 import { foodBonus, withFood } from './food.ts';
-import { equipLevel, slotInfo } from './items.js';
+import { equipLevel, slotInfo } from './items.ts';
 import { vectorDims } from './optimizer/index.js';
 import { rankTierOf } from './tiers.ts';
 

@@ -1,7 +1,7 @@
 /* The actions that change the settings, the screen, the math tab's unsaved settings and the open gear set pages. Each is one
    `store.update('<slice>/<name>', ...)` (store.ts).
    What each slice holds: app-state.ts. */
-import { makeJobContext } from '../../core/job-context.js';
+import { makeJobContext } from '../../core/job-context.ts';
 import { holdLevelSyncCap } from '../job-sync-panel.js';
 import { MATH_TABS, TABS, resetForJob, restoreState } from '../state.js';
 import { PANEL_KEYS, PANEL_TABS, panelFields, settingsOf } from './app-state.ts';
@@ -13,7 +13,7 @@ export interface AppActionOptions {
   frame?: (callback: () => void) => void;
 }
 
-/* A frozen JobContext (job-context.js makeJobContext). */
+/* A frozen JobContext (job-context.ts makeJobContext). */
 type JobContext = ReturnType<typeof makeJobContext>;
 
 /* Whether `tab` is one with a Job and sync panel (the Sheets tab has none). */

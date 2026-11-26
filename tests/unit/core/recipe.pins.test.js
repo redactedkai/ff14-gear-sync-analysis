@@ -4,9 +4,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../src/core/food.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { gcdRange, resolvePins, runRecipe } from '../../../src/core/recipe.js';
-import { jobGear } from '../../../src/core/items.js';
+import { jobGear } from '../../../src/core/items.ts';
 import { makeSession } from '../../../src/core/session.js';
 import { evaluateSet } from '../../../src/core/set.js';
 import { appState, piece } from '../helpers/common.js';

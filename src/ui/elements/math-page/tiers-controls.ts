@@ -7,7 +7,7 @@
      text that still means the stored level stays as typed ("60.7"), the box left or Enter corrects a level out of range to the
      nearest end, and an emptied box goes back to the job's level cap. */
 import { LitElement, html } from 'lit';
-import { makeJobContext } from '../../../core/job-context.js';
+import { makeJobContext } from '../../../core/job-context.ts';
 import { numberBox } from '../../number-field.js';
 import { tierLevel } from '../../views/tiers.js';
 import { shownNumber } from '../shared/number-box.ts';

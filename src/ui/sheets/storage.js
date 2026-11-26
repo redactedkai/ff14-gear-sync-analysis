@@ -25,8 +25,8 @@
 
    Pure of the DOM: no document. */
 import { SLOT_TYPES, jobById } from '../../core/constants.ts';
-import { PARTY_ROLES_MAX, isClan } from '../../core/clan-bonus.js';
-import { makeJobContext } from '../../core/job-context.js';
+import { PARTY_ROLES_MAX, isClan } from '../../core/clan-bonus.ts';
+import { makeJobContext } from '../../core/job-context.ts';
 import { currentStatKey } from '../../core/stat-keys.ts';
 import { STORE_KEY } from '../store-key.js';
 

@@ -3,7 +3,7 @@
    from the code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { materiaMenuView } from '../../../../src/ui/views/stone-menu.js';
 import { placePiece } from '../../../../src/ui/sheets/set-edits.js';
 import { hasNumber, hasParts, piece } from '../../helpers/common.js';

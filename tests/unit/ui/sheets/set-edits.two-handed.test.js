@@ -3,8 +3,8 @@
    Wave Wand (one-handed) and Buckler, Dreadwyrm Cane (two-handed, slot code that blocks the Off-hand). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
-import { poolItemById } from '../../../../src/core/items.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { poolItemById } from '../../../../src/core/items.ts';
 import { draftView } from '../../../../src/ui/views/set-draft.js';
 import { editableCopy, placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.js';
 import { hasParts } from '../../helpers/common.js';

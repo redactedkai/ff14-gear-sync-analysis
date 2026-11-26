@@ -1,7 +1,7 @@
 /* What a set page draws, built from the saved set, its manual draft and the Auto-fill result waiting: the view of the whole page
    (the stat block, the table, the totals, the Auto-fill and Apply buttons), the Auto-fill button, the chip for an empty pool and the
    goal line. Pure builders: no DOM, no store; the page's element (elements/set-page/set-page.ts) calls them once per change. */
-import { makeJobContext } from '../../core/job-context.js';
+import { makeJobContext } from '../../core/job-context.ts';
 import { fillPlan } from '../sheets/fill.js';
 import { fillSettingsOf, goalText } from '../sheets/fill-settings.js';
 import { holdsPiece } from '../sheets/saved-set.js';

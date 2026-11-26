@@ -711,20 +711,20 @@ The status of each claim about the stat model (item stats, stat factors, substat
 | Budget table, level data and stat factor table (generated) | `src/data/item-level.json` |
 | Highest row, highest real item level | `src/core/tables.ts` |
 | Slot shares, substat shares, role profiles, the Direct Hit line, Atma and all-jobs accessory rules | `src/core/constants.ts` |
-| Per-job stat mapping, the job's Vitality factor, weapon mode, level cap (`maxLevel`) | `src/core/job-context.js` |
+| Per-job stat mapping, the job's Vitality factor, weapon mode, level cap (`maxLevel`) | `src/core/job-context.ts` |
 | Level caps of the limited jobs, with their sources | `src/core/constants.ts` (`JOB_LEVEL_CAPS`) |
-| Gear above the job's level cap left out | `src/core/items.js` (`browseItems`, `wearable`) |
-| An item's stat factors (from its kind) | `src/core/items.js` |
+| Gear above the job's level cap left out | `src/core/items.ts` (`browseItems`, `wearable`) |
+| An item's stat factors (from its kind) | `src/core/items.ts` |
 | Rounding, slot budget, piece stats (`buildPiece`), caps (`capValue`, `capsFor`), sync clamp, step-by-step derivation, real-piece prediction (`predictRaw`) | `src/core/formulas.ts` |
-| Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.js`; for pool items `itemSyncIlvl` in `src/core/piece.js` |
-| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.js` (`capCeiling`, used by `syncTarget`); `src/ui/level-cap.js` (`limitCapToLevel`, called by the item level field, `src/ui/elements/app/cap-field.ts`); `src/ui/job-sync-panel.js` (`shownSync` for How the math works) |
+| Which item level a piece is synced to (item level and level sync) | `src/core/sync-target.ts`; for pool items `itemSyncIlvl` in `src/core/piece.js` |
+| The ceiling $\text{top}(L)$ on gear made for a higher level, and the cap lowered to it | `src/core/sync-target.ts` (`capCeiling`, used by `syncTarget`); `src/ui/level-cap.js` (`limitCapToLevel`, called by the item level field, `src/ui/elements/app/cap-field.ts`); `src/ui/job-sync-panel.js` (`shownSync` for How the math works) |
 | The cap shown on How the math works; level sync off at the job's cap | `src/ui/job-sync-panel.js` (`shownSync`, `levelSyncOn`) |
 | GCD, tick multiplier, GCD tiers, haste, speed for a target GCD | `src/core/speed.ts` (`gcdFor`, `hasteFor`, `speedForGcd`); haste table `HASTE` in `src/core/constants.ts` |
 | The 1.50 s GCD floor | `src/core/constants.ts` (`GCD_FLOOR_MS`) |
 | Target GCD: meals and gear together | `src/core/target-gcd.js` (`optimizeGcd`) |
 | Food: bonus, choices per job, best meal for a goal, gear needed for a total | `src/core/food.ts`; meals in `src/data/food.json` |
 | A character's base stat at a level (`statBase`), main stat base `LEVEL_MAIN` | `src/core/base-stats.ts` |
-| Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.ts`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.js` |
+| Weapon damage and defense: synced values, a gear set's defense, mitigation | `src/core/damage-defense.ts`; budgets, factors and shares (`SHARES`) in `src/data/item-level.json`; the job's weapon damage `damageKey` in `src/core/job-context.ts` |
 | Accuracy against real items, Wiki 475 check | `tests/unit/helpers/model-validation.js` |
 | Slot share check against `BaseParam.csv` | `scripts/data/item_format.py` (`check_slot_percents`) |
 | Tests for the above | `tests/unit/core/formulas.test.js`, `core/formulas.sync-clamp.test.js`, `core/formulas.sync-cap-order.test.js`, `core/sync-target.test.js`, `core/speed.test.js`, `core/formulas.model-accuracy.test.js`, `core/formulas.stat-factor.test.js` |

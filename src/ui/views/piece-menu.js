@@ -1,7 +1,7 @@
 /* The piece picker of a set page's gear table (the "Choose a piece" menu of a row): a search menu, as the Food menu is.
    Takes plain data and returns plain data; the template only displays it. Pure: no store. */
 import { EXPANSIONS, SLOT_LABEL } from '../../core/constants.ts';
-import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.js';
+import { allocatedRelic, categoryOf, equipLevel, expansionOf, meldInfo, searchMatches } from '../../core/items.ts';
 import { meldSlots } from '../../core/meld.js';
 import { plural } from '../text.ts';
 import { uniqueTaken } from '../sheets/set-edits.js';
@@ -98,7 +98,7 @@ function setFacts(fact, row, job, gearSet, index) {
   };
 }
 
-/* The piece picker of row `index` of `gearSet` (a search menu, as the Food menu is): every piece of `gear` (the job's wearable pieces: items.js jobGear) for the row's slot, by
+/* The piece picker of row `index` of `gearSet` (a search menu, as the Food menu is): every piece of `gear` (the job's wearable pieces: items.ts jobGear) for the row's slot, by
    expansion newest first, each newest first, after the search `query` (name or gear category). Returns {placeholder
    ("Search head pieces"), canEmpty (the row holds a piece: the "Empty this slot" button in the search row), groups [{label, items: [{key
    (gameId), name, hq, category, unique, taken (a Unique ring in the other ring row), line ("CRT 306 · DET 214 · 2

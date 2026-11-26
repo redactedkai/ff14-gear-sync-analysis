@@ -3,7 +3,7 @@
    reaches is checked in core/sync-target.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
 import { shownSync, syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { appState } from '../../helpers/common.js';

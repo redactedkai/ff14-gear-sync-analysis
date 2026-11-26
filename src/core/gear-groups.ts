@@ -3,7 +3,7 @@
    the same level cap), and the pieces a job cannot wear. A set's pieces are as set.js keeps them. */
 import GEAR_GROUPS_FILE from '../data/gear-groups.json' with { type: 'json' };
 import { JOB_ROWS, ROW } from './constants.ts';
-import { itemById } from './items.js';
+import { itemById } from './items.ts';
 import type { JobContext, SetPiece, SlotType } from './types.ts';
 
 /* GEAR_GROUPS: [[job id, ...], ...], every job in exactly one group. */
@@ -23,7 +23,7 @@ export function gearGroupName(jobId: string): string | null {
 
 /* The pieces of `pieces` (a set's pieces, set.js) that `job` (a JobContext) cannot wear, by the job mask of the piece's
    database row: [{index (in `pieces`), slot, gameId, name (the database row's)}], in order. The mask only: the equip level is not checked
-   (`wearable` in items.js does that), since a level-synced piece stays wearable. Pieces not from the database (custom,
+   (`wearable` in items.ts does that), since a level-synced piece stays wearable. Pieces not from the database (custom,
    empty slots, or a game id no row has any more) are never listed. */
 export function piecesJobCannotWear(
   job: JobContext,

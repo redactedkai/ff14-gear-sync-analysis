@@ -3,8 +3,8 @@
    Fending, item level 300 body: substat cap 110, Console Games Wiki), worked by hand, not from the code under test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { browseItems, meldInfo, mkItem, poolItemFromRow } from '../../../src/core/items.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
 import { bestMeld, meldSlots, meldText, meldVersions, slotGrades, stoneValues } from '../../../src/core/meld.js';
 import { meldCaps } from '../../../src/core/piece.js';

@@ -2,8 +2,8 @@
    without changing what the result does, and which one it shows. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { equipLevel, mkItem } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { equipLevel, mkItem } from '../../../src/core/items.ts';
 import { resultOf, sameOutcome, sameResult } from '../../../src/core/same-result.js';
 import { dotMult, gcdFor } from '../../../src/core/speed.ts';
 import { rankTierOf, statTier } from '../../../src/core/tiers.ts';

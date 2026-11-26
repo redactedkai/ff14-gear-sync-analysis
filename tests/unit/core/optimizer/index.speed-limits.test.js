@@ -2,8 +2,8 @@
    infeasible limits, the node limit and an empty pool. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
-import { browseItems, poolItemFromRow } from '../../../../src/core/items.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { browseItems, poolItemFromRow } from '../../../../src/core/items.ts';
 import { optimize } from '../../../../src/core/optimizer/index.js';
 import { exhaustive, gamePool, loadoutCount } from '../../helpers/exhaustive.js';
 

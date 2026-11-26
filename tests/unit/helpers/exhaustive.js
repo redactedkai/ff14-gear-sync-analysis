@@ -2,7 +2,7 @@
    The reference tries every legal loadout, so it is independent of the optimizer's pruning and scoring. */
 import { SLOT_TYPES } from '../../../src/core/constants.ts';
 import { capsFor } from '../../../src/core/formulas.ts';
-import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.js';
+import { browseItems, meldInfo, poolItemFromRow, slotInfo } from '../../../src/core/items.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { weaponDamage } from '../../../src/core/damage-defense.ts';
 import { statBase } from '../../../src/core/base-stats.ts';

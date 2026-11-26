@@ -17,10 +17,10 @@ import { limitCapToLevel } from '../../../src/ui/level-cap.js';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { STORE_KEY } from '../../../src/ui/store-key.js';
 import { browseFiltered } from '../../../src/ui/views/gear.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { DEFAULT_JOB, JOBS } from '../../../src/core/constants.ts';
 import { MAX_REAL } from '../../../src/core/tables.ts';
-import { capCeiling } from '../../../src/core/sync-target.js';
+import { capCeiling } from '../../../src/core/sync-target.ts';
 
 const D = defaultState();
 const clone = o => JSON.parse(JSON.stringify(o));

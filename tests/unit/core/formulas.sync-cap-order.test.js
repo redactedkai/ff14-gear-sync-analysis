@@ -11,9 +11,9 @@
    Budgets and real pieces come from the game data, never from the code under test. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { capValue, capsFor, pieceValue, syncStats } from '../../../src/core/formulas.ts';
-import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../../src/core/items.js';
+import { browseItems, kindFactors, poolItemFromRow, rowStats } from '../../../src/core/items.ts';
 import { ITEM_STAT_ORDER, ROW } from '../../../src/core/constants.ts';
 import { IL, ITEMS, MAX_REAL } from '../../../src/core/tables.ts';
 import { itemRow } from '../helpers/common.js';

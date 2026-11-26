@@ -2,8 +2,8 @@
    needs the store itself (a sheet hands in its own). Pure: no import of another UI module, so state.js,
    level-cap.js, the views and the elements can all use it without an import going back up. */
 import { ACTIVITIES } from '../core/constants.ts';
-import { capCeiling, levelSyncIlvl } from '../core/sync-target.js';
-import { makeJobContext } from '../core/job-context.js';
+import { capCeiling, levelSyncIlvl } from '../core/sync-target.ts';
+import { makeJobContext } from '../core/job-context.ts';
 import { MAX_LEVEL } from '../core/tables.ts';
 
 /* Stat Allocation's example piece: its total number of materia slots follows its slot. The totals real pieces have, by
@@ -92,7 +92,7 @@ export function syncSettings({ cap, sync, level }) {
 }
 
 /* Level sync can apply: `level` is below the job's level cap (`job` a JobContext; MAX_LEVEL before one exists), so gear
-   the job can wear with a higher equip level is synced to the level's item level (core/sync-target.js). Independent of
+   the job can wear with a higher equip level is synced to the level's item level (core/sync-target.ts). Independent of
    the item level sync switch. */
 function levelSyncOn(job, level) {
   return level != null && level < (job?.maxLevel ?? MAX_LEVEL);

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as esbuild from 'esbuild';
 import { esbuildOptions, SRC } from '../../../scripts/build/build.mjs';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
 import { defaultFillSettings, fillRecipe } from '../../../src/ui/sheets/fill-settings.js';
 import { inProcessSolver, solverRequest } from '../../../src/ui/solver.js';

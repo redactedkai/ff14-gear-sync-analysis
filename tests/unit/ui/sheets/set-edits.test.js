@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
-import { jobGear } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { jobGear } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { placePiece, withMeal, withPin, withStone, withoutStone } from '../../../../src/ui/sheets/set-edits.js';
 import { rowLabel } from '../../../../src/ui/sheets/saved-set.js';
 import { hasParts } from '../../helpers/common.js';

@@ -24,10 +24,10 @@ export const MP: Readonly<Record<RawStatKey | DamageDefenseKey, readonly number[
 /* SHARES: slot shares in thousandths per slot code for weapon damage and defense, {key: [share]} (BaseParam; the stats'
    shares are the slot percents of item-format.json, these differ: weapon damage only on weapons, defense only on armor). */
 export const SHARES: Readonly<Record<DamageDefenseKey, readonly number[]>> = ITEM_LEVEL_FILE.SHARES;
-/* JOB_MODS: each job's attribute modifiers in percent, {job: {str, dex, int, mind, vit}} (ClassJob; job-context.js). */
+/* JOB_MODS: each job's attribute modifiers in percent, {job: {str, dex, int, mind, vit}} (ClassJob; job-context.ts). */
 export const JOB_MODS: Readonly<Record<string, Readonly<Record<MainStatKey | 'vit', number>>>> = ITEM_LEVEL_FILE.JOBS;
 /* CLANS: the 16 clans in the game's order, [{race, clan, str, dex, int, mind, vit}]: the points a clan adds to a character's
-   attributes (Tribe and Race sheets), flat at every level (clan-bonus.js). */
+   attributes (Tribe and Race sheets), flat at every level (clan-bonus.ts). */
 export const CLANS = ITEM_LEVEL_FILE.CLANS;
 /* ITEMS: the real-gear database rows (format in constants.ts). */
 /* (The one cast: the JSON file's rows read as arrays of strings, numbers and lists; ItemRow is their real shape.) */

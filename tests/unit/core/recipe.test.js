@@ -4,11 +4,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES } from '../../../src/core/constants.ts';
 import { allMeals } from '../../../src/core/food.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { gearFromCounts, recipePool, runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';
-import { itemRoutes } from '../../../src/core/items.js';
+import { itemRoutes } from '../../../src/core/items.ts';
 import { appState } from '../helpers/common.js';
 
 const sge = makeJobContext('SGE');

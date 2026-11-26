@@ -1,14 +1,14 @@
-/* Level sync: which item level a piece is synced to (src/core/sync-target.js) and how the optimizer applies it (the
+/* Level sync: which item level a piece is synced to (src/core/sync-target.ts) and how the optimizer applies it (the
    views under level sync are in ui/views/level-sync.test.js). Expected values come from the game's ParamGrow sheet, the ItemLevel
    rows and real items. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { IL, ITEMS } from '../../../src/core/tables.ts';
 import { JOBS } from '../../../src/core/constants.ts';
-import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.js';
+import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.ts';
 import { capsFor } from '../../../src/core/formulas.ts';
-import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../../src/core/items.js';
+import { browseItems, dbStats, kindFactors, parseRow, poolItemFromRow } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { exhaustive, gamePool, loadoutCount } from '../helpers/exhaustive.js';

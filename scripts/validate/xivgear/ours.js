@@ -9,7 +9,7 @@
         equip level (their data API's maxIlvlPerLvl), which counts shields: Paladin gets 405 / 535 / 665 at levels
         70 / 80 / 90; the game file ParamGrow.ItemLevelSync gives 400 / 530 / 660, used instead
      X2 gear whose item level scales with the character (Item.SubStatCategory 2): they have no rule for it (synced by
-        equip level, or by the cap alone); our rule is used instead (sync-target.js)
+        equip level, or by the cap alone); our rule is used instead (sync-target.ts)
    Every remaining difference is tagged with the known cause it matches:
      X3 a piece synced to exactly its own item level (equip level above the synced level, item level equal to the
         level's): they apply the caps (1 lower where the stat factor is below 100%), we leave it as it is
@@ -18,10 +18,10 @@
      X1 / X2: as above, left after the correction (should not happen)
      target: the two tools sync the piece to different item levels, no known cause
      unexplained: none of the above */
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
-import { levelSyncIlvl } from '../../../src/core/sync-target.js';
+import { levelSyncIlvl } from '../../../src/core/sync-target.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 import { ROW } from '../../../src/core/constants.ts';
 

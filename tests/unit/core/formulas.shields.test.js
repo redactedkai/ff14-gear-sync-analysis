@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw } from '../../../src/core/formulas.ts';
-import { rowStats } from '../../../src/core/items.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { rowStats } from '../../../src/core/items.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 import { rowItem } from '../helpers/model-validation.js';
 

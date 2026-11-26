@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sheetPageView } from '../../../../src/ui/views/sheet-sets.js';
 import { bonusNote, evaluateInSheet, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.js';
 import { rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';

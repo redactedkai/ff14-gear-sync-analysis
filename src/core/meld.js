@@ -17,7 +17,7 @@
      factors); the overflow is lost, and a meld never lowers a stat that is already above the cap.
    - Only combat substats can be melded, never the main stat or Vitality. Every meld succeeds (owner's decision). */
 import { MATERIA } from './tables.ts';
-import { meldInfo } from './items.js';
+import { meldInfo } from './items.ts';
 import { effStats, keepsMelds, meldCaps } from './piece.js';
 
 /* The materia grades 1 to 12 as Roman numerals, for the chips and the melds text. */

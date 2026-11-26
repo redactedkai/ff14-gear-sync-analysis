@@ -1,12 +1,12 @@
 /* The math tab's cap while its IL Sync is off (src/ui/job-sync-panel.js levelSyncCap, holdLevelSyncCap), the job each math
    sub-tab owns (mathJobOwner) and the Substat tiers panel (panelOf). Expected numbers are the game's ParamGrow.ItemLevelSync
-   (core/sync-target.js): level 50 gives item level 130, 60 gives 270, 70 gives 400, 80 gives 530, 90 gives 660, 100 gives 690;
+   (core/sync-target.ts): level 50 gives item level 130, 60 gives 270, 70 gives 400, 80 gives 530, 90 gives 660, 100 gives 690;
    levels 1 to 49 give their own number; level 85 gives 536. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { holdLevelSyncCap, levelSyncCap, mathJobOwner, panelOf } from '../../../src/ui/job-sync-panel.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { restoreOpen } from '../helpers/common.js';
 import { createAppFacade } from '../helpers/stores.js';
 

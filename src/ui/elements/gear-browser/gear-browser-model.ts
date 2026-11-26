@@ -2,7 +2,7 @@
    change, and only while its tab is open), the page picked on the page line, what a heading click sorts by, whether Reset
    filters shows, and what the "/" key does. The element and the Node tests both import it. The element is given the tab's Job
    and sync panel (`panel`) and the browser's filters and sort (`browse`) by the page; this reads no store. */
-import type { makeJobContext } from '../../../core/job-context.js';
+import type { makeJobContext } from '../../../core/job-context.ts';
 import { defaultBrowse } from '../../state.js';
 import { syncSettings } from '../../job-sync-panel.js';
 import { browseFiltered, gearView } from '../../views/gear.js';

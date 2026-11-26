@@ -298,8 +298,8 @@ Each element gets the job through its own properties (a Job menu's `job`, a `pan
   - *Draws only when the list changes:* the rows are inside a `guard` on the view, so the pointer moving over the table (which changes `data-hot`) draws nothing in the rows; while the tab is hidden the element does not draw at all (`shouldUpdate`).
   - *Measured:* [perf-log.md, section 2.3](perf-log.md#23-the-gear-browser-as-one-lit-element-run-of-2026-11-25) (the clicks and the switch from Sheets, before and after the element).
   - *Rows by place:* the rows are drawn with `map` over `view.shown`, never `repeat`, so a row is the place on the page and not the item. A sort, a page, a slot, a filter or a job change keeps the 50 rows and only rebinds them, instead of removing 50 and building 50: about 30% less time for a click in the table at 4× CPU throttle ([perf-log.md](perf-log.md), section 2.2). The cost is that a kept row shows its old item until every binding has run, so every part of a row must come from the same item in one draw: the two marks (HQ, x2) are `hidden` bindings of the row's own template (`.hqg[hidden]` in `pieces.css` beats the font rule's `display`), not a deferred show. Nothing in a row may follow the place instead of the item: the smoke step `checkBrowserRowsMatchView` compares every row with `view.shown` before each drawn frame. The page line's buttons and the headings are the exception: they are `repeat`ed by key, so the focus stays on the page button pressed when the numbers move.
-- The database facts of a piece (`rowFacts` in `items.js`) are looked up through an index of rows by pool key, built on first use, and each key's facts are built when first asked for. The page's thread builds the index when it shows its first game piece (an Auto-fill's first result). Building every key's facts there blocked it for about 25 ms (150 ms at 4× CPU throttle).
-- The job's gear an Auto-fill searches is built once per job, frozen, and kept in the solver session, which lives in the page's Web Worker ([section 9](#9-the-optimizers-worker)), never in the store. Frozen means the list and each pool item with its stats (`mkItem` in `items.js`), so the worker and the page's thread hold the same frozen objects, and `deepFreeze` stops at them.
+- The database facts of a piece (`rowFacts` in `items.ts`) are looked up through an index of rows by pool key, built on first use, and each key's facts are built when first asked for. The page's thread builds the index when it shows its first game piece (an Auto-fill's first result). Building every key's facts there blocked it for about 25 ms (150 ms at 4× CPU throttle).
+- The job's gear an Auto-fill searches is built once per job, frozen, and kept in the solver session, which lives in the page's Web Worker ([section 9](#9-the-optimizers-worker)), never in the store. Frozen means the list and each pool item with its stats (`mkItem` in `items.ts`), so the worker and the page's thread hold the same frozen objects, and `deepFreeze` stops at them.
 - The set page's draft and suggestion are frozen objects in the store; the worker is sent plain copies built for the request.
 
 ### Heavy work: debounced, only when visible, or on request
@@ -457,7 +457,7 @@ Tests are described in [testing.md](testing.md). After a game patch, the data is
 
 The solve (`runRecipe`, [section 8](#8-recipes-and-the-solver-session)) builds the gear set from the result's rows (`setFromPicks`). The set page puts that set on its rows and calls `evaluateInSheet` on it (`views/set-totals.js`), adding only what belongs to the page: the goal's marks, the piece picker, the materia and Food menus, and the text.
 
-**Custom pieces** have a place in the model, but no editor yet. A custom piece is a pool item the gear set carries itself. The database facts the core reads through `rowFacts` in `items.js` (equip level, meld slots, slot code, item kind, gear category, its own weapon damage and defense) are null for it today. So it is never level-synced, takes stones only if it carries its own `meld` field (`{slots, overmeld}`, as the math tab's generic pieces do), uses the job's slot share and stat factors, and gets the item level table's weapon damage and defense. A custom piece the player can edit will need those fields on the item itself, or chosen defaults:
+**Custom pieces** have a place in the model, but no editor yet. A custom piece is a pool item the gear set carries itself. The database facts the core reads through `rowFacts` in `items.ts` (equip level, meld slots, slot code, item kind, gear category, its own weapon damage and defense) are null for it today. So it is never level-synced, takes stones only if it carries its own `meld` field (`{slots, overmeld}`, as the math tab's generic pieces do), uses the job's slot share and stat factors, and gets the item level table's weapon damage and defense. A custom piece the player can edit will need those fields on the item itself, or chosen defaults:
 
 - an equip level, for level sync;
 - meld slots and overmelding, for its stones;
@@ -520,19 +520,19 @@ Notes:
 | Data generators (`regen.py` runs them in order; the last, in Node, writes `max-speed.json`) | `scripts/data/gen_item_level.py`, `gen_items.py`, `gen_gear_groups.py`, `gen_food.py`, `gen_job_icons.py`, `gen_max_speed.mjs` |
 | Tables and limits derived from the data | `src/core/tables.ts` |
 | Jobs, role profiles, slots, slot shares, raw stat order | `src/core/constants.ts`, `src/core/item-format.json` |
-| Job context | `src/core/job-context.js` (`makeJobContext`, its `mainKey`, `speedKey`, `specKey`, `activeSlotTypes`, `vitFactor` and `maxLevel`) |
+| Job context | `src/core/job-context.ts` (`makeJobContext`, its `mainKey`, `speedKey`, `specKey`, `activeSlotTypes`, `vitFactor` and `maxLevel`) |
 | A character's base stat at a level | `src/core/base-stats.ts` (`statBase`, `LEVEL_MAIN`) |
 | Stat labels; level caps | `src/core/constants.ts` (`STAT_LABEL`, `STAT_SHORT`; `JOB_LEVEL_CAPS`) |
 | Saved position keys | `src/core/stat-keys.ts` (`currentStatKey`, `remapStatKey`) |
-| Raw row to stat keys, item filters, pool item ids | `src/core/items.js` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
+| Raw row to stat keys, item filters, pool item ids | `src/core/items.ts` (`dbStats`, `browseItems`, `gearFilter`, `filterGear`, `poolItemFromRow`) |
 | Gear groups (which jobs share gear) and the pieces a job cannot wear, by job mask | `src/core/gear-groups.ts` (`GEAR_GROUPS`, `gearGroupName`, `piecesJobCannotWear`) |
-| Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.js` (`itemById`, `poolItemById`; `poolKey`) |
+| Piece identity: a database piece by its game id; the same piece from several sources | `src/core/items.ts` (`itemById`, `poolItemById`; `poolKey`) |
 | A piece under sync | `src/core/piece.js` (`itemSyncIlvl`, `effStats`, `itemCaps`, `meldCaps`, `keepsMelds`) |
 | A gear set and what it adds up to; a given list of stones on a piece | `src/core/set.js` (`makeSet`, `setFromPicks`, `evaluateSet`); `src/core/meld.js` (`applyStones`) |
 | Item stat rounding steps and the off-hand rule, written once | `src/core/formulas.ts` (`statLine`, `offhandParts`) |
 | Per-level game data (ParamGrow: base speed, level divisor, level sync item level) | `src/core/level-params.ts` (`levelParams`, `clampLevel`) |
 | Meal choice (totals with food, then food points, then the first) | `src/core/food.ts` (`pickMeal`, `mealTotals`, `bestFood`); Target GCD and tier ranking share their defaults through `goalSettings` in `src/core/target-gcd.js` |
-| Other core modules | `src/core/formulas.ts`, `gear-groups.ts`, `sync-target.js`, `speed.ts`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.ts`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.ts`, `optimizer/` |
+| Other core modules | `src/core/formulas.ts`, `gear-groups.ts`, `sync-target.ts`, `speed.ts`, `tiers.js`, `meld.js`, `piece.js`, `set.js`, `recipe.js`, `session.js`, `food.ts`, `target-gcd.js`, `tier-rank.js`, `same-result.js`, `damage-defense.ts`, `optimizer/` |
 | Entry point: restore, make the store and register its two facades and the elements, start the router, autosave | `src/main.js` |
 | Addresses: the hash of each screen and the settings in its query (`query.js`: `readQuery`, `writeQuery`), the page title, the router that keeps the address and the two stores in step, the focus after Back | `src/ui/router/routes.js` (`parseRoute`, `formatRoute`, `titleOf`), `router.js` (`createRouter`, `windowPort`), `focus.js` (`focusScreenHeading`), `plain-click.js` (`plainClick`, `followInPage`), `scroll-storage.js` (`readScrollPositions`, `writeScrollPositions`), `unload-guard.js` (`installUnloadGuard`, `UNLOAD_GUARD_OFF_KEY`) |
 | Saved state: defaults, job reset, restore and repair, storage key | `src/ui/state.js` (`defaultState`, `defaultBrowse`: the browser's defaults, `resetForJob`, `clampLevels`, `splitPanelSettings`, `restoreState`, `restoreBrowseFields` and `restorePieceFields` (the checks a saved setting and an address's setting share), `STORE_KEY`, `SEARCH_MAX_LENGTH`) |
@@ -553,7 +553,7 @@ Notes:
 | Charts | `src/ui/sync-charts.js` (SVG for `unsafeSVG` in the Stat Allocation and GCD Scaling elements; every name passed in goes through `escapeXml`) |
 | Gear browser rows a page, page numbers shown | `src/ui/views/gear.js` (`PAGE_SIZE`, `PAGE_SLOTS`) |
 | A recipe and its solve; the pool it searches; the page's node limit | `src/core/recipe.js` (`runRecipe`, `recipePool`, `gearFromCounts`, `askedGcd`, `gcdRange`, `NODE_LIMIT`) |
-| The solver session; the job's gear it keeps | `src/core/session.js` (`makeSession`, `SESSION_SIZE`); `src/core/items.js` (`jobGear`) |
+| The solver session; the job's gear it keeps | `src/core/session.js` (`makeSession`, `SESSION_SIZE`); `src/core/items.ts` (`jobGear`) |
 | What the solver answers for an Auto-fill: the Gear to search line, the solve | `src/ui/solve.js` (`gearToSearchView`, `searchCount`, `solveView`, which takes the Auto-fill's pins and answers `badpin` with plain messages) |
 | The Food menu's list: meals passing the filters, their lines, sort | `src/ui/views/meal-menu.js` (`mealMenu`, `mealList`, `mealsPassing`, `sortMeals`) |
 | Which rows of a saved set hold a piece, row labels | `src/ui/sheets/saved-set.js` (`usedRows`, `holdsPiece`, `rowLabel`, `sameRow`) |

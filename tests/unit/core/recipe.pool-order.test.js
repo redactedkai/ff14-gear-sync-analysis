@@ -10,8 +10,8 @@
    shows it on three real cases. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { jobGear } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { jobGear } from '../../../src/core/items.ts';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
 import { syncSettings } from '../../../src/ui/job-sync-panel.js';

@@ -1,6 +1,6 @@
 /* The two boxes of a sheet page's settings row, Clan and Party bonus: the entries of their lists as data for the
-   template (the clans come from core/clan-bonus.js, the one list of them). Pure: no document. */
-import { PARTY_ROLES_MAX, clanGroups } from '../../core/clan-bonus.js';
+   template (the clans come from core/clan-bonus.ts, the one list of them). Pure: no document. */
+import { PARTY_ROLES_MAX, clanGroups } from '../../core/clan-bonus.ts';
 
 /* The first entry of the Clan list, which means no clan. */
 export const NO_CLAN_TEXT = 'Select Race/Clan';

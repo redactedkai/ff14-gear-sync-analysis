@@ -137,7 +137,7 @@ export function offhandParts(valueAt: (share: number) => number): { two: number;
 /* A stat at a given substat share (`weight`, percent; 100 or null means the full slot budget), rounded after each step
    (statLine). `pct`: the piece's own slot share (per mille) when it differs from the job's share for the slot type (a
    one-handed weapon on a two-handed job, a cloak covering the head); null for the job's. `factor`: the piece's own stat
-   factor (a fraction; a real item's, see kindFactors in items.js); null for the job's (jobFactor). */
+   factor (a fraction; a real item's, see kindFactors in items.ts); null for the job's (jobFactor). */
 export function pieceValue(
   job: JobContext,
   stat: StatKey,
@@ -220,7 +220,7 @@ export function capFromBudget(base: number, factorPct: number, share: number): C
 
 /* Per-stat ceiling under sync: each stat's capValue for the piece's slot and kind at the cap item level. `pct`: the
    piece's own slot share, if not the job's share for the type. `factors`: the piece's own stat factors
-   ({stat key: factor}, kindFactors in items.js) for a real item; null for the job's (jobFactor). */
+   ({stat key: factor}, kindFactors in items.ts) for a real item; null for the job's (jobFactor). */
 export function capsFor(
   job: JobContext,
   type: SlotType,

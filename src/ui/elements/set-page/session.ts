@@ -15,7 +15,7 @@
    null), afterDraw(callback) (runs `callback` once the page has drawn the change just made, unless the page is gone by then),
    requestUpdate() (the page draws again: called after a change of what the parts keep, as the open menu), dialogOpen (a dialog of the
    Sheets tab is open)}. Both are typed in session-types.ts. */
-import { makeJobContext } from '../../../core/job-context.js';
+import { makeJobContext } from '../../../core/job-context.ts';
 import type { Sheet, Suggestion } from '../../store/app-state.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 import type { SetPageActions } from '../../store/set-page-actions.ts';

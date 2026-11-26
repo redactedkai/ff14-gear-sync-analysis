@@ -2,7 +2,7 @@
    hold the same thing (sameRow), which the draft's change count and an Auto-fill suggestion's both go by. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { holdsPiece, isUsed, rowLabel, sameRow, usedRows } from '../../../../src/ui/sheets/saved-set.js';
 import { draftChanges } from '../../../../src/ui/views/set-draft.js';
 import { suggestionView } from '../../../../src/ui/views/set-suggestion.js';

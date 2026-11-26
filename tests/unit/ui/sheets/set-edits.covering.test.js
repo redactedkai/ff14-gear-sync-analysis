@@ -3,8 +3,8 @@
    Sage's Vermilion Cloak of Healing (body, covers the head) and the fixture head (SAGE_IDS.head). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
-import { poolItemById, slotInfo } from '../../../../src/core/items.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
+import { poolItemById, slotInfo } from '../../../../src/core/items.ts';
 import { evaluateSet, makeSet } from '../../../../src/core/set.js';
 import { placePiece, removedNote } from '../../../../src/ui/sheets/set-edits.js';
 import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.js';

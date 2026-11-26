@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { copySheet } from '../../../../src/ui/sheets/ops.js';
 import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 const AT = 1762800000000;

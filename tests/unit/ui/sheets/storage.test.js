@@ -3,7 +3,7 @@
    docs/engineering/sheets.md describes. The broken records are the ways a record can fail. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { evaluateSet, makeSet } from '../../../../src/core/set.js';
 import {
   QUOTA_MESSAGE,

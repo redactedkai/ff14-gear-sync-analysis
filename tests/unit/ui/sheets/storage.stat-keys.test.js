@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSheet } from '../../../../src/ui/sheets/storage.js';
 import { fillSettingsOf } from '../../../../src/ui/sheets/fill-settings.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { sageSet, sheetOf } from '../../helpers/sheet-fixtures.js';
 
 /* One job per profile, with the game's own main, speed and special stat written out (the game's names, not read from the

@@ -4,7 +4,7 @@
    floor(140 g / div) per mille, Tenacity floor(112 g / div), Piety floor(150 g / div) MP per tick. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { JOBS } from '../../../src/core/constants.ts';
 import { statEffectKinds, statTier, tierLadder, tierSizes } from '../../../src/core/tiers.ts';
 import { AKH_LEVEL } from '../helpers/common.js';

@@ -1,6 +1,6 @@
 /* The cap follows the level: the rule that lowers a Job and sync panel's or a sheet's cap to what its level allows, and the
    texts of the cap field's notes. Pure: no storage. */
-import { capCeiling } from '../core/sync-target.js';
+import { capCeiling } from '../core/sync-target.ts';
 import { MAX_REAL } from '../core/tables.ts';
 import { syncSettings } from './job-sync-panel.js';
 

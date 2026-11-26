@@ -9,7 +9,7 @@
    the same way; no in-game measurement was found). */
 import { DB_SLOT_TYPE } from './constants.ts';
 import { capFromBudget, clampIlvl } from './formulas.ts';
-import { damageDefenseFacts } from './items.js';
+import { damageDefenseFacts } from './items.ts';
 import { levelParams } from './level-params.ts';
 import { IL, MP, SHARES } from './tables.ts';
 import type { DamageDefenseKey, JobContext, PoolItem } from './types.ts';

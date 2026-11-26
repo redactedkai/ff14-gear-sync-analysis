@@ -15,8 +15,8 @@ import {
   ROW,
 } from '../../../src/core/constants.ts';
 import { predictRaw } from '../../../src/core/formulas.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { rowStats } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { rowStats } from '../../../src/core/items.ts';
 import { itemRow } from '../helpers/common.js';
 
 test('formula reproduces the Wiki sync caps at item level 475', () => {

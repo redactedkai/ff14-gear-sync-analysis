@@ -1,4 +1,4 @@
-/* The clan and party bonus (src/core/clan-bonus.js). Expected values are published numbers: the clan offsets are the Wiki's
+/* The clan and party bonus (src/core/clan-bonus.ts). Expected values are published numbers: the clan offsets are the Wiki's
    Starting Attributes page (a base of 20 plus the offset: Midlander 22 Strength, Keeper of the Moon 23 Mind), and the party
    case is a real xivgear sheet (level 70, item level sync 375, no clan, 5 unique roles): the 1311 Strength of the set shows as 1376. */
 import { test } from 'node:test';
@@ -12,8 +12,8 @@ import {
   isClan,
   partyRoles,
   withPartyBonus,
-} from '../../../src/core/clan-bonus.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+} from '../../../src/core/clan-bonus.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 
 test('the 16 clans come in 8 races of 2, in the game order', () => {
   const groups = clanGroups();

@@ -2,7 +2,7 @@
    The shape is what gets saved under STORE_KEY; restoreState repairs an older shape field by field. */
 import { clamp } from '../core/clamp.ts';
 import { DEFAULT_JOB, ACTIVITIES, EXPANSIONS, jobById } from '../core/constants.ts';
-import { makeJobContext } from '../core/job-context.js';
+import { makeJobContext } from '../core/job-context.ts';
 import { currentStatKey } from '../core/stat-keys.ts';
 import { MAX_REAL } from '../core/tables.ts';
 import { ANY_SLOT_KEY } from './elements/gear-browser/slot-menu-names.ts';
@@ -28,6 +28,7 @@ function defaultPanel() {
    market: tradeable pieces listed whatever their source (the market board switch, on by default). lvl: the "Equip
    level" filter, the job's level cap (DEFAULT_LEVEL with no job). sort: the table heading it is sorted by ('name',
    'lvl', 'ilvl' or a stat); dir: 'desc' (high first) or 'asc'. */
+/** @param {import('../core/types.ts').JobContext | null} [job] */
 export function defaultBrowse(job = null) {
   return {
     q: '',

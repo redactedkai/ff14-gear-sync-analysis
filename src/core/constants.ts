@@ -1,6 +1,6 @@
 /* Static game and project constants. Nothing here changes at runtime.
    Stat keys are the game's own stat names: str, dex, int, mind, vit, crit, det, dh, sks, sps, piety, ten (the keys of
-   item-format.json's `stats`). A JobContext (job-context.js) says which of them a job has: mainKey, speedKey, specKey.
+   item-format.json's `stats`). A JobContext (job-context.ts) says which of them a job has: mainKey, speedKey, specKey.
    The generated-data format (job bit order, raw stat order, slot codes) comes from item-format.json, which the
    Python generators read too. */
 import ITEM_FORMAT from './item-format.json' with { type: 'json' };
@@ -110,7 +110,7 @@ export const REDUCED_STAT_PIECES = Object.freeze({
 });
 
 /* Names of every stat key, in full and short (the short names as xivgear writes them). One table by key: a job's
-   labels are the entries of its own keys (job-context.js). */
+   labels are the entries of its own keys (job-context.ts). */
 export const STAT_LABEL = Object.freeze({
   str: 'Strength',
   dex: 'Dexterity',
@@ -270,7 +270,7 @@ export const HASTE: Readonly<Record<string, HasteTrait>> = Object.freeze({
    cap above every real duty's at a low level does (docs/mechanics/math.md section 6). */
 export const GCD_FLOOR_MS = 1500;
 /* Expansions in order: {short (name), name (in full), levelCap}. The item level boundary after each one is the game's
-   own sync item level at its level cap (ParamGrow), see expansionBounds in items.js. */
+   own sync item level at its level cap (ParamGrow), see expansionBounds in items.ts. */
 export const EXPANSIONS = Object.freeze([
   Object.freeze({ short: 'ARR', name: 'A Realm Reborn', levelCap: 50 }),
   Object.freeze({ short: 'HW', name: 'Heavensward', levelCap: 60 }),
@@ -292,15 +292,15 @@ export const JOB_ROWS: readonly (readonly [string, readonly string[]])[] = Objec
 
 /* Field positions in an item database row (src/data/items.json; written by scripts/data/gen_items.py), by name from
    `itemRow.fields` in item-format.json (field i is fields[i]; each section's `rowField` agrees). Read a row as
-   row[ROW.ilvl], never row[2]; parseRow in items.js turns a whole row into an object.
+   row[ROW.ilvl], never row[2]; parseRow in items.ts turns a whole row into an object.
    - slotCode: index into `slots` of item-format.json (DB_SLOT_TYPE, DB_SLOT_PCT, DB_SLOT_BLOCKS)
    - equipLevel: the character level needed to wear it
    - jobMask: bit i set when JOBS[i] can wear it
-   - stats: comma-joined raw stats in ITEM_STAT_ORDER (rowStats in items.js splits them)
+   - stats: comma-joined raw stats in ITEM_STAT_ORDER (rowStats in items.ts splits them)
    - unique: 1 when only one can be worn (rings); hq: 1 when it can be high quality (the stats are then the HQ ones)
    - routes: the ways to get the piece, a list of bit masks over ACTIVITIES (bit ACTIVITY_MARKET_BIT: the market board);
-     any one route whose every bit is allowed lists it (routesAllow in items.js). Empty: it can no longer be obtained
-   - kind: the item's stat factor kind, a column of the stat factor table MP in tables.ts (kindFactors in items.js)
+     any one route whose every bit is allowed lists it (routesAllow in items.ts). Empty: it can no longer be obtained
+   - kind: the item's stat factor kind, a column of the stat factor table MP in tables.ts (kindFactors in items.ts)
    - meldSlots: guaranteed materia slots, 0 to 5; overmeld: 1 when overmelding is allowed (`materia` in item-format.json)
    - rarity: Item.Rarity (1 white, 2 green, 3 blue, 4 purple, 7 pink); gameId: the game's item id (Item.csv row)
    - scales: 1 when its item level follows the wearer's level (Item.SubStatCategory 2; syncTarget) */
@@ -319,7 +319,7 @@ export const RAW_VIT_IDX = ITEM_STAT_ORDER.indexOf('vit');
 /* Mind's position in a row's raw stats: the old healer gear whose only main stat is Mind carries a fixed Direct Hit line
    (formulas.ts fixedDirectHitShare). */
 export const RAW_MIND_IDX = ITEM_STAT_ORDER.indexOf('mind');
-/* The game's generic "Main Attribute" (pre-order earrings): the wearer's main stat (see items.js dbStats, which also
+/* The game's generic "Main Attribute" (pre-order earrings): the wearer's main stat (see items.ts dbStats, which also
    maps the generic "Secondary Attribute"). */
 export const RAW_MAIN_ATTR_IDX = ITEM_STAT_ORDER.indexOf('mainAttr');
 /* Indices into a row's raw stat array (ITEM_STAT_ORDER), not stat keys. Substats: every stat but the main stats, Vitality and Main Attribute (Secondary Attribute ranks as a substat). */

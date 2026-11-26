@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS, MIXED_WEAPON_JOBS, ONE_HANDED_JOBS, ROW } from '../../../src/core/constants.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { ITEMS } from '../../../src/core/tables.ts';
 
 const SLOT_2H = 0,

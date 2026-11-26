@@ -6,7 +6,7 @@
 import { clamp } from '../../core/clamp.ts';
 import { jobById } from '../../core/constants.ts';
 import { piecesJobCannotWear } from '../../core/gear-groups.ts';
-import { makeJobContext } from '../../core/job-context.js';
+import { makeJobContext } from '../../core/job-context.ts';
 import { remapStatKey } from '../../core/stat-keys.ts';
 import { DATA_SOURCE, MAX_REAL } from '../../core/tables.ts';
 import { clone } from '../text.ts';

@@ -4,7 +4,7 @@
    exhaustive reference (helpers/exhaustive.js), which shares no code with the cuts. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize, prepare, solve } from '../../../../src/core/optimizer/index.js';
 import { addRegainCuts } from '../../../../src/core/optimizer/regain.js';
 import { exhaustive, smallPool } from '../../helpers/exhaustive.js';

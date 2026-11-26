@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { evaluateInSheet, figureChange, figuresAgainst, setFigures, setTotalsView } from '../../../../src/ui/views/set-totals.js';
 import { hasNumber } from '../../helpers/common.js';
 import { piece, rawGear, sageSet, sheetOf, warSet } from '../../helpers/sheet-fixtures.js';

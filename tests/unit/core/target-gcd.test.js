@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { foodBonus, foodChoices } from '../../../src/core/food.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { mkItem } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { mkItem } from '../../../src/core/items.ts';
 import { prepare, solve } from '../../../src/core/optimizer/index.js';
 import { gcdFor } from '../../../src/core/speed.ts';
 import { optimizeGcd } from '../../../src/core/target-gcd.js';

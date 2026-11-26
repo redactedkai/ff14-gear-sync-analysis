@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { rankChoices, rankSwapNote, uniqueRanks, withRank } from '../../../src/ui/ranks.js';
 
 const healer = makeJobContext('WHM').stats; // mind, vit, crit, det, dh, sps, piety

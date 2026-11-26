@@ -16,7 +16,7 @@
      fixed   true on a pinned piece (fixedCandidate): worn as it is, in a slot the search does not fill */
 import { SLOT_TYPES } from '../constants.ts';
 import { WD_KEY, weaponDamage } from '../damage-defense.ts';
-import { meldInfo, slotInfo } from '../items.js';
+import { meldInfo, slotInfo } from '../items.ts';
 import { applyStones, bestMeld, meldVersions } from '../meld.js';
 import { effStats, itemSyncIlvl, keepsMelds } from '../piece.js';
 import { FREE_RING, blockableTypes, typeMask } from './slot-index.js';

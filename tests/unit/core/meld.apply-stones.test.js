@@ -6,8 +6,8 @@
    guaranteed slot and overmelding: 2 big and 3 small slots; Critical Hit 142 of its 203 cap). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { browseItems, mkItem, poolItemFromRow } from '../../../src/core/items.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { browseItems, mkItem, poolItemFromRow } from '../../../src/core/items.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { applyStones, bestMeld, meldStones, meldText, meldVersions } from '../../../src/core/meld.js';
 import { effStats } from '../../../src/core/piece.js';
 import { piece, rngInt } from '../helpers/common.js';

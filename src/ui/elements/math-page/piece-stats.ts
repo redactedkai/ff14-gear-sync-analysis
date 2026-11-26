@@ -11,7 +11,7 @@
 import { LitElement, html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
-import { makeJobContext } from '../../../core/job-context.js';
+import { makeJobContext } from '../../../core/job-context.ts';
 import { meldSlotsOf } from '../../job-sync-panel.js';
 import { pieceStatsView } from '../../views/piece-stats.js';
 import { viewCache } from '../../view-cache.ts';

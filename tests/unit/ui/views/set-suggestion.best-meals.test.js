@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { setRowsView } from '../../../../src/ui/views/set-rows.js';
 import { appliedFields, suggestionOf } from '../../../../src/ui/views/set-suggestion.js';
 import { evaluateInSheet } from '../../../../src/ui/views/set-totals.js';

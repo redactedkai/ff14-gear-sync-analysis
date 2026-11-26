@@ -2,7 +2,7 @@
    with the sentences and arithmetic, the slot share slices and the ranked substats; computed from store-shaped state. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { slotGroups, withSub } from '../../../../src/ui/views/piece.js';
 import { hasNumber, hasParts } from '../../helpers/common.js';
 import { gamePool } from '../../helpers/exhaustive.js';

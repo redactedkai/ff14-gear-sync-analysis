@@ -5,8 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../../src/core/constants.ts';
-import { categoryOf, jobGear } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { categoryOf, jobGear } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { FIRST_ROWS, limitRows } from '../../../../src/ui/views/limit-rows.js';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
 import { sageSet } from '../../helpers/sheet-fixtures.js';

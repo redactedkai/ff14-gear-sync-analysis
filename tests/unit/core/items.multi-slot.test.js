@@ -2,8 +2,8 @@
    White Mage's wand and shield): slot shares, what each blocks, and the optimizer against the brute force on them. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { browseItems, kindFactors, poolItemById, rowStats, slotInfo, slotLabel } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { browseItems, kindFactors, poolItemById, rowStats, slotInfo, slotLabel } from '../../../src/core/items.ts';
 import { evaluateSet } from '../../../src/core/set.js';
 import { ROW } from '../../../src/core/constants.ts';
 import { predictRaw, syncStats } from '../../../src/core/formulas.ts';

@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals } from '../../../../src/core/food.ts';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { defaultFillSettings } from '../../../../src/ui/sheets/fill-settings.js';
 import { unpinnedText } from '../../../../src/ui/sheets/fill.js';
 import { MEAL_ROW_LABEL } from '../../../../src/ui/sheets/saved-set.js';

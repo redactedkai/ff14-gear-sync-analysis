@@ -7,7 +7,7 @@
      expOff, exclude, market, min, max, lvl
                        the filters under Gear to search: expansions switched off, "Gear categories" boxes left out
                        (ACTIVITIES keys), the market board switch, the item level range and the equip level ('' for no
-                       limit; gearFilter in items.js)
+                       limit; gearFilter in items.ts)
      melds             give pieces their best materia melds
      food              add the meal for the goal (a picked meal in its place, runRecipe's `choices`)
      gcd, gcdMode      the Target GCD in seconds ('' for any; askedGcd), 'exact' or 'min' (that or faster)
@@ -18,7 +18,7 @@
    Pins are no part of a recipe either: they are the set's own pieces and meal that a solve must keep (runRecipe's
    `pins`; pinProblems). A set's pinned rows are pins, the other rows are what the solve fills. */
 import { allMeals, bestFood, foodChoices } from './food.ts';
-import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.js';
+import { activityCounts, allocatedRelic, filterGear, gearFilter, itemRoutes, poolItemById, wearable, withActivities } from './items.ts';
 import { buildCandidates, fixedCandidate, optimize, pinProblem } from './optimizer/index.js';
 import { realSlotType } from './optimizer/slot-index.js';
 import { itemSyncIlvl } from './piece.js';
@@ -42,7 +42,7 @@ function filtered(recipe, gear) {
 
 /* The pool a recipe searches, from `gear` (a session's gear for `job`): the pieces that pass its filters, minus any
    piece above the job's level cap (jobGear has none; this guards gear passed in) and the relics whose substats the
-   player allocates (allocatedRelic in items.js). */
+   player allocates (allocatedRelic in items.ts). */
 export function recipePool(job, recipe, gear) {
   return filtered(recipe, gear).filter(i => wearable(job, i) && !allocatedRelic(job, i));
 }

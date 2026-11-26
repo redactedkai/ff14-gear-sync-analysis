@@ -3,7 +3,7 @@
    piece.test.js; this checks the parts the element adds: the chart's width, the sentences, and the flags of the template. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { OFF_TEXT, explainerItemLevel, explainerView } from '../../../../src/ui/views/sync-explainer.js';
 import { pieceView } from '../../../../src/ui/views/piece.js';

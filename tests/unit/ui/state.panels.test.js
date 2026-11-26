@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreOpen } from '../helpers/common.js';
-import { capCeiling } from '../../../src/core/sync-target.js';
+import { capCeiling } from '../../../src/core/sync-target.ts';
 
 /* [job, cap, sync, level] of the open tab's panel (no group) or of a tab's group */
 const panelOf = (s, group) => {

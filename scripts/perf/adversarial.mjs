@@ -8,7 +8,7 @@
    Exits 1 when a part 1 run is truncated; part 2 is meant to truncate.
    node scripts/perf/adversarial.mjs [--pools 2000] [--climb 400] [--seed 1] */
 import { performance } from 'node:perf_hooks';
-import { mkItem } from '../../src/core/items.js';
+import { mkItem } from '../../src/core/items.ts';
 import { optimize } from '../../src/core/optimizer/index.js';
 import { NODE_LIMIT } from '../../src/core/recipe.js';
 import { numberOption } from './args.mjs';

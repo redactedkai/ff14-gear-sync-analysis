@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals, foodBonus } from '../../../src/core/food.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { evaluateSet, makeSet } from '../../../src/core/set.js';
 import { rawGear, sageSet, warSet } from '../helpers/sheet-fixtures.js';
 

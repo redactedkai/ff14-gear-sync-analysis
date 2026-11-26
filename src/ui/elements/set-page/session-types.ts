@@ -1,11 +1,11 @@
 /* The shapes the set page's session and its five parts share (session.ts, menus.ts, edits.ts, fill-run.ts, fill-settings-edit.ts,
    leave-guard.ts): what the element gives the session (`ports`, `host`), the solver as the page asks it, the job, and the Auto-fill
    settings. The views the page draws are in set-page-types.ts; the store's state in ui/store/app-state.ts. */
-import type { makeJobContext } from '../../../core/job-context.js';
+import type { makeJobContext } from '../../../core/job-context.ts';
 import type { AppStore, GearSet, Suggestion } from '../../store/app-state.ts';
 import type { SheetsFacade } from '../../store/sheets-facade.ts';
 
-/* The job's names, stats and keys (core/job-context.js makeJobContext). */
+/* The job's names, stats and keys (core/job-context.ts makeJobContext). */
 export type JobContext = ReturnType<typeof makeJobContext>;
 
 /* A request to the solver (ui/solver.js solverRequest): `kind` 'solve' (an Auto-fill) or 'gearToSearch' (the count line); the job's

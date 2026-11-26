@@ -2,7 +2,7 @@
    a pill is on, a Sort row (elements/set-page/food-menu.ts is its element). Pure view builders over plain data: no store, so Node can test them. */
 import { EXPANSIONS } from '../../core/constants.ts';
 import { allMeals, foodBonus, foodLabel } from '../../core/food.ts';
-import { expansionOf, searchMatches } from '../../core/items.js';
+import { expansionOf, searchMatches } from '../../core/items.ts';
 
 /* The Food row's menu on gear with the totals `gearTotals` (a stat map: core/set.js evaluateSet's `gear`), `shown` the
    meal the row shows (an allMeals entry, or null), `bestKeys` the keys of the meals tagged "best for goal" ([] for a set

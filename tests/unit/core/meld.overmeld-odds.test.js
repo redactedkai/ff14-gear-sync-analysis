@@ -6,7 +6,7 @@
    HQ) and "Axe of the Fury" (item level 205, 2 slots + overmeld, cannot be HQ). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { MATERIA } from '../../../src/core/tables.ts';
 import { overmeldChance, overmeldNumber, usesNqOvermeldRates } from '../../../src/core/meld.js';
 import { piece } from '../helpers/common.js';

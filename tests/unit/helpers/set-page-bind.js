@@ -5,7 +5,7 @@ import { saveSheet } from '../../../src/ui/sheets/storage.js';
 import { PageSession } from '../../../src/ui/elements/set-page/session.ts';
 import { inProcessSolver } from '../../../src/ui/solver.js';
 import { placePiece } from '../../../src/ui/sheets/set-edits.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { fillButtonView, noPiecesFlag, setPageViews } from '../../../src/ui/views/set-page.js';
 import { fakeStorage, sageSet, sheetOf } from './sheet-fixtures.js';
 import { fakeFrames, stubElement } from './frames.js';

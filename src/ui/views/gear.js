@@ -13,10 +13,10 @@ import {
   poolKey,
   routesAllow,
   slotLabel,
-} from '../../core/items.js';
+} from '../../core/items.ts';
 import { clamp } from '../../core/clamp.ts';
 import { syncStats } from '../../core/formulas.ts';
-import { syncTarget } from '../../core/sync-target.js';
+import { syncTarget } from '../../core/sync-target.ts';
 import { fmtInt } from '../text.ts';
 import { ANY_SLOT_KEY, ANY_SLOT_LABEL } from '../elements/gear-browser/slot-menu-names.ts';
 import { defaultBrowse } from '../state.js';

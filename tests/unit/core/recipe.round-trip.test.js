@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS } from '../../../src/core/constants.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { runRecipe } from '../../../src/core/recipe.js';
 import { makeSession } from '../../../src/core/session.js';
 import { evaluateSet } from '../../../src/core/set.js';

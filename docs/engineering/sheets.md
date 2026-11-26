@@ -97,7 +97,7 @@ The Gear browser and How the math works each keep their own Job and sync panel a
 
 ## A sheet's clan and party bonus
 
-The settings row of the sheet page has two more boxes, "Race / Clan" and "Party bonus", at its right end. They are saved with the sheet and change the totals of all its gear sets (the main stat and Vitality: `core/clan-bonus.js`; the totals are `views/set-totals.js`). They are display only: Auto-fill and the optimizer never read them, so a change leaves each set's `bestMeals` as it is (a change of level or sync drops them).
+The settings row of the sheet page has two more boxes, "Race / Clan" and "Party bonus", at its right end. They are saved with the sheet and change the totals of all its gear sets (the main stat and Vitality: `core/clan-bonus.ts`; the totals are `views/set-totals.js`). They are display only: Auto-fill and the optimizer never read them, so a change leaves each set's `bestMeals` as it is (a change of level or sync drops them).
 
 - `store.setClan(name)` and `store.setPartyRoles(value)` (both through `editBonus`) save the open sheet like any setting: refused while an Auto-fill runs (`LOCKED_TEXT`), nothing written when the value is the one held, a failed save keeps the edit in memory. A clan that is not a clan's name is no clan; party roles are held to a whole number 0 to 5.
 - Copy sheet copies both, whatever job the copy is for: they belong to the player, not the job.

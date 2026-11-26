@@ -133,7 +133,7 @@ export function foodLabel(job: JobContext, food: FoodLines): string {
 /* What `food` adds to gear totals `totals` ({stat key: gear points}) at `level`: {stat: {bonus, capped}}, capped when
    the percentage reaches the meal's maximum; its substats, and Vitality when the meal has some (food.vit). `extraBase`
    ({stat key: points}, optional, none by default) is what the character has on top of its base at the level: the clan's
-   offset for Vitality (clan-bonus.js clanOffset). A meal's bonus counts it, but never the party bonus. */
+   offset for Vitality (clan-bonus.ts clanOffset). A meal's bonus counts it, but never the party bonus. */
 export function foodBonus(job: JobContext, food: FoodLines, totals: Totals, level: number, extraBase: StatMap = {}): FoodBonus {
   const out: FoodBonus = {};
   for (const s of foodLines(food)) {

@@ -195,8 +195,8 @@ export function seedArgument(fixture, failWrites = false) {
    database through its job context (read only). Used to fill the longest set. */
 export async function longestPieces(root = REPO_ROOT) {
   const url = file => new URL(`file:///${join(root, file).replaceAll('\\', '/')}`);
-  const { jobGear } = await import(url('src/core/items.js'));
-  const { makeJobContext } = await import(url('src/core/job-context.js'));
+  const { jobGear } = await import(url('src/core/items.ts'));
+  const { makeJobContext } = await import(url('src/core/job-context.ts'));
   const longest = {};
   for (const item of jobGear(makeJobContext('SGE'))) {
     if (!longest[item.type] || item.name.length > longest[item.type].name.length) {

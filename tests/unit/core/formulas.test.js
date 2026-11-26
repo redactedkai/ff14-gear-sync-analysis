@@ -2,7 +2,7 @@
    checked from the raw ItemLevel rows in core/formulas.caps-at-123.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { buildPiece } from '../../../src/core/formulas.ts';
 
 test('item level 130 healer hood from the formula (its fixed Direct Hit 6 is a real-item line, not a rank)', () => {

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LEVEL_MAIN, statBase } from '../../../src/core/base-stats.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { levelParams } from '../../../src/core/level-params.ts';
 import { PG } from '../../../src/core/tables.ts';
 import { AKH_LEVEL } from '../helpers/common.js';

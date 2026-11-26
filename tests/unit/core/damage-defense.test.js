@@ -3,8 +3,8 @@
    in-instance sync tests (defense). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { mkItem } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { mkItem } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { itemSyncIlvl } from '../../../src/core/piece.js';
 import { mitigationPct, setDefense, syncedValue, weaponDamage } from '../../../src/core/damage-defense.ts';

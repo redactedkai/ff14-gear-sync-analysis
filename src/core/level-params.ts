@@ -1,6 +1,6 @@
 /* Per-level game data: the ParamGrow sheet (generated into tables.ts PG). One row per character level from 1 to the
    level cap; its columns feed speed (speed.ts), substat tiers (tiers.js), base stats (base-stats.ts), level sync
-   (sync-target.js), defense mitigation (damage-defense.ts) and the expansion bounds (items.js). */
+   (sync-target.ts), defense mitigation (damage-defense.ts) and the expansion bounds (items.ts). */
 import { clamp } from './clamp.ts';
 import { MAX_LEVEL, PG } from './tables.ts';
 
@@ -16,7 +16,7 @@ export function clampLevel(level: number): number {
 /* ParamGrow at character `level` (clampLevel): {sub, div, sync}.
    - sub: BaseSpeed, the character's own Critical Hit, Direct Hit, speed and Tenacity at this level;
    - div: LevelModifier, the divisor of every substat formula (2780 at level 100);
-   - sync: ItemLevelSync, the item level gear is synced to at this level (level sync, sync-target.js). */
+   - sync: ItemLevelSync, the item level gear is synced to at this level (level sync, sync-target.ts). */
 export function levelParams(level: number): { sub: number; div: number; sync: number } {
   const row = PG[clampLevel(level) - 1];
   return { sub: row[PG_COLUMN.baseSpeed], div: row[PG_COLUMN.levelModifier], sync: row[PG_COLUMN.itemLevelSync] };

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { placePiece } from '../../../../../src/ui/sheets/set-edits.js';
-import { makeJobContext } from '../../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../../src/core/job-context.ts';
 import { bind } from '../../../helpers/set-page-bind.js';
 import { hasNumber } from '../../../helpers/common.js';
 import { SAGE_IDS, sageSet } from '../../../helpers/sheet-fixtures.js';

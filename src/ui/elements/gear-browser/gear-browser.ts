@@ -296,7 +296,7 @@ export class GsaGearBrowser extends LitElement {
         key === 'name' ? undefined : key,
       )} aria-sort=${sortState(browse, key)}><button type="button" class="sortbtn" data-sort=${key} @click=${() => this.sortBy(key)}>${label}</button></th>`;
     return html`<thead><tr><th class="c-slot">Slot</th>${heading('name', 'Item')}${heading('lvl', 'Lv', 'n')}${heading('ilvl', 'ilvl', 'n')}${repeat(
-      panel.jobCtx.stats as string[],
+      panel.jobCtx.stats,
       stat => stat,
       stat => heading(stat, panel.jobCtx.short[stat], 'n'),
     )}</tr></thead>`;

@@ -1,7 +1,7 @@
 /* The edits a player makes by hand on a set page (a piece, a stone, the meal, a pin), as pure functions: each takes a saved
    GearSet and returns new plain data, never changing its argument. The menus that offer these edits are piece-menu.js,
    stone-menu.js and set-meal-menu.js. Pure: no store. */
-import { poolItemById, slotInfo } from '../../core/items.js';
+import { poolItemById, slotInfo } from '../../core/items.ts';
 import { meldSlots } from '../../core/meld.js';
 import { isUsed, rowLabel } from './saved-set.js';
 

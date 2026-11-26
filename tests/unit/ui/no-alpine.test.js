@@ -63,7 +63,7 @@ test('the scan finds Alpine code in a planted file and passes a clean one', () =
     // a clean Lit element and page: Lit's own `@click=`, `.prop=` and `?attr=` syntax in a .ts file are fine
     writeFileSync(join(base, 'ui', 'clean.ts'), `export const t = html\`<button @click=\${go} .value=\${v} ?hidden=\${h}>x</button>\`;\n`);
     writeFileSync(join(base, 'index.html'), '<body>\n  <gsa-app class="wrap"></gsa-app>\n</body>\n');
-    writeFileSync(join(base, 'data', 'items.js'), 'x-text $store\n'); // generated data is left out
+    writeFileSync(join(base, 'data', 'items.ts'), 'x-text $store\n'); // generated data is left out
     assert.deepEqual(alpineUses(base), []);
 
     const planted = [

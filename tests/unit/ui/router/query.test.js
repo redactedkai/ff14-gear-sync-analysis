@@ -3,7 +3,7 @@
    80) are the jobs. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import {
   PANEL_NAMES,
   QUERY_NAMES,
@@ -14,7 +14,7 @@ import {
   writePanelQuery,
   writeQuery,
 } from '../../../../src/ui/router/query.js';
-import { capCeiling } from '../../../../src/core/sync-target.js';
+import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { MAX_SPEED } from '../../../../src/core/tables.ts';
 import { DEFAULT_EXCLUDE } from '../../../../src/ui/job-sync-panel.js';
 import { defaultBrowse, defaultSubs } from '../../../../src/ui/state.js';

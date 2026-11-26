@@ -13,7 +13,7 @@
 
    Pure module: no DOM and no Worker, so Node can test it. The page's worker is made in main.js (a Blob URL of the
    worker bundle, scripts/build/build.mjs solverWorker); its entry is ui/solver-worker.js. */
-import { makeJobContext } from '../core/job-context.js';
+import { makeJobContext } from '../core/job-context.ts';
 import { makeSession } from '../core/session.js';
 import { gearToSearchView, solveView } from './solve.js';
 

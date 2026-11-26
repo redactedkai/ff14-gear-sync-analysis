@@ -21,8 +21,8 @@
 
    An action that is refused or would change nothing returns before `update`: no revision, so no render and no save. The sheets are
    plain data an action replaces, never edits in place. */
-import { isClan, partyRoles } from '../../core/clan-bonus.js';
-import { makeJobContext } from '../../core/job-context.js';
+import { isClan, partyRoles } from '../../core/clan-bonus.ts';
+import { makeJobContext } from '../../core/job-context.ts';
 import {
   cleanDescription,
   FORM_FIELD,

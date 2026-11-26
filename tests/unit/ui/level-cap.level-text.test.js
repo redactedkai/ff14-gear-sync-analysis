@@ -2,7 +2,7 @@
    The caps are real jobs': Paladin 100, Blue Mage 80, Beastmaster 50. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { LEVEL_TEXT, capFlag, levelTextBad, rangeOnly, rangeText } from '../../../src/ui/level-cap.js';
 
 const maxLevelOf = jobId => makeJobContext(jobId).maxLevel;

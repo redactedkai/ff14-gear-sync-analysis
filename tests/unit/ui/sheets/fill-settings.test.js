@@ -2,7 +2,7 @@
    recipe and the goal line they make. Expected values come from the items' published facts, not from the code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { defaultFillSettings, fillRecipe, fillSettingsOf, goalText } from '../../../../src/ui/sheets/fill-settings.js';
 import { sageSet } from '../../helpers/sheet-fixtures.js';
 

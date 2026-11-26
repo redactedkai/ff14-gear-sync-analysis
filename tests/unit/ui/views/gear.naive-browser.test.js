@@ -4,8 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTIVITIES, ACTIVITY_MARKET_BIT, DB_SLOT_TYPE, JOBS, ROW } from '../../../../src/core/constants.ts';
-import { dbStats, expansionOf, rowStats } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { dbStats, expansionOf, rowStats } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { ITEMS } from '../../../../src/core/tables.ts';
 import { syncSettings } from '../../../../src/ui/job-sync-panel.js';
 import { defaultBrowse } from '../../../../src/ui/state.js';

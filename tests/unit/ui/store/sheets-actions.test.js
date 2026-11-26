@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_REAL } from '../../../../src/core/tables.ts';
-import { capCeiling } from '../../../../src/core/sync-target.js';
+import { capCeiling } from '../../../../src/core/sync-target.ts';
 import { QUOTA_MESSAGE, saveSheet, sheetKey } from '../../../../src/ui/sheets/storage.js';
 import {
   ACK_REQUIRED_TEXT,

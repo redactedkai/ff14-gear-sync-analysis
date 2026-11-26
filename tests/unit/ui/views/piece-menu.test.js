@@ -2,8 +2,8 @@
    empty text. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { jobGear } from '../../../../src/core/items.js';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { jobGear } from '../../../../src/core/items.ts';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { piecePickerView } from '../../../../src/ui/views/piece-menu.js';
 import { SAGE_IDS, sageSet } from '../../helpers/sheet-fixtures.js';
 

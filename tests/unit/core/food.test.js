@@ -3,8 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { allMeals, bestFood, foodBonus, foodChoices, gearNeeded, mealRank, withFood } from '../../../src/core/food.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { mkItem } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { mkItem } from '../../../src/core/items.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { FOODS } from '../../../src/core/tables.ts';
 import { rngInt } from '../helpers/common.js';

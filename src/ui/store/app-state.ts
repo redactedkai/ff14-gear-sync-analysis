@@ -29,7 +29,7 @@
      change (made when it is written, not at each change) and at 'pagehide', and writes once at the start to repair an older shape.
    - Behaviours kept on purpose, odd as they are: opening a tab that is already open still applies a math sub-tab; a job change
      on the Sheets tab, which has no panel, does nothing; `openTab` counts requests so only the newest shows. */
-import { makeJobContext } from '../../core/job-context.js';
+import { makeJobContext } from '../../core/job-context.ts';
 import { DEFAULT_ROUTE, formatRoute } from '../router/routes.js';
 import { Store } from './store.ts';
 

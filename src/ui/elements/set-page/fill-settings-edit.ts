@@ -4,12 +4,13 @@
    label) and the id of the count on its way are in the store (`session.pageState.gearToSearch`, `countId`; `pages` changes them). */
 import { numberBox } from '../../number-field.js';
 import { clone, messageOf } from '../../text.ts';
-import { gearFilter } from '../../../core/items.js';
+import { gearFilter } from '../../../core/items.ts';
 import { rankChoices, rankSwapNote, withRank } from '../../ranks.js';
 import { TARGET_GCD_RANGE } from '../../job-sync-panel.js';
 import { isCancelled, solverRequest } from '../../solver.js';
 import { fillRecipe } from '../../sheets/fill-settings.js';
 import { evaluateInSheet } from '../../views/set-totals.js';
+import type { StatKey } from '../../../core/types.ts';
 import type { GearToSearchAnswer } from '../../store/set-page-actions.ts';
 import type { PageSession } from './session.ts';
 import type { FillGoal, FillSearchCriteria, FillSettings, SelectOption } from './session-types.ts';
@@ -112,7 +113,7 @@ export class PageFillSettings {
       const goal = settings.goal;
       const before = [goal.target, goal.tb, goal.tb2];
       const after = withRank(before, rank, value, job.stats);
-      note = rankSwapNote(before, rank, value, after, (stat: string) => job.label[stat]);
+      note = rankSwapNote(before, rank, value, after, (stat: StatKey) => job.label[stat]);
       [goal.target, goal.tb, goal.tb2] = after.map((stat: string | null) => stat ?? '');
     });
     this.rankNote = note;
@@ -128,7 +129,7 @@ export class PageFillSettings {
      options at every draw. */
   get statOptions(): SelectOption[] {
     const { job } = this.session;
-    return this.kept('target', job.stats.join(), () => job.stats.map((stat: string) => ({ value: stat, label: job.label[stat] })));
+    return this.kept('target', job.stats.join(), () => job.stats.map((stat: StatKey) => ({ value: stat, label: job.label[stat] })));
   }
 
   /* The options of the Tiebreak `rank` (1 or 2) select: none and the stats no other rank holds. */
@@ -138,7 +139,7 @@ export class PageFillSettings {
     const stats = rankChoices([goal.target, goal.tb, goal.tb2], rank, job.stats);
     return this.kept(`tiebreak${rank}`, stats.join(), () => [
       { value: '', label: 'none' },
-      ...stats.map((stat: string) => ({ value: stat, label: job.label[stat] })),
+      ...stats.map((stat: StatKey) => ({ value: stat, label: job.label[stat] })),
     ]);
   }
 

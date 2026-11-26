@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, wr
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { currentStatKey, remapStatKey } from '../../../src/core/stat-keys.ts';
 
 const sge = makeJobContext('SGE');
@@ -60,12 +60,12 @@ test('remapStatKey: the same position on the other job; stats with no position, 
 });
 
 /* Shared code (src/core, src/ui/views) writes no job-specific stat in logic. The game's names appear only where they
-   are table keys or names: constants.ts (labels, profiles), base-stats.ts (the substats based on the main stat), job-context.js (what the main stat means
+   are table keys or names: constants.ts (labels, profiles), base-stats.ts (the substats based on the main stat), job-context.ts (what the main stat means
    for Vitality and weapon damage), core/tiers.ts (each stat's effects) and views/tiers.js (what each substat does). */
 const ALLOWED = new Set([
   'src/core/base-stats.ts',
   'src/core/constants.ts',
-  'src/core/job-context.js',
+  'src/core/job-context.ts',
   'src/core/tiers.ts',
   'src/ui/views/tiers.js',
 ]);

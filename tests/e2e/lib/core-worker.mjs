@@ -3,8 +3,8 @@ loadout in tests/unit). Run in a worker thread by lib/core.mjs: each call takes 
 would otherwise stall every page the smoke test is driving. */
 
 import { isMainThread, parentPort } from 'node:worker_threads';
-import { allocatedRelic, allowedActivities, browseItems, poolItemFromRow, routesAllow, withActivities } from '../../../src/core/items.js';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { allocatedRelic, allowedActivities, browseItems, poolItemFromRow, routesAllow, withActivities } from '../../../src/core/items.ts';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 import { optimize } from '../../../src/core/optimizer/index.js';
 import { DEFAULT_EXCLUDE } from '../../../src/ui/job-sync-panel.js';
 import { statBase } from '../../../src/core/base-stats.ts';

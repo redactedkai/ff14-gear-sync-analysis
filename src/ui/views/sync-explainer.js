@@ -5,9 +5,9 @@
    (bestMeld) in those two substats, so the explainer and an Auto-fill meld alike. */
 import { MATERIA, MAX_LEVEL, MAX_REAL } from '../../core/tables.ts';
 import { JOBS, SLOT_LABEL, SUB_WEIGHTS } from '../../core/constants.ts';
-import { makeJobContext } from '../../core/job-context.js';
+import { makeJobContext } from '../../core/job-context.ts';
 import { buildPiece, capsFor, clampIlvl, syncStats } from '../../core/formulas.ts';
-import { mkItem } from '../../core/items.js';
+import { mkItem } from '../../core/items.ts';
 import { bestMeld } from '../../core/meld.js';
 import { meldSlotChoices, meldSlotsOf, shownSync } from '../job-sync-panel.js';
 import { LEVEL_TEXT, rangeOnly, rangeText } from '../level-cap.js';

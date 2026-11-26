@@ -2,8 +2,8 @@
    Every pool is built fresh from the item database, so a new pool means new item objects (cold caches keyed by item). */
 import { ACTIVITIES, JOBS } from '../../src/core/constants.ts';
 import { DEFAULT_EXCLUDE } from '../../src/ui/job-sync-panel.js';
-import { makeJobContext } from '../../src/core/job-context.js';
-import { browseItems, poolItemFromRow } from '../../src/core/items.js';
+import { makeJobContext } from '../../src/core/job-context.ts';
+import { browseItems, poolItemFromRow } from '../../src/core/items.ts';
 
 export const JOB_IDS = JOBS.map(j => j.id);
 

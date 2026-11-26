@@ -1,10 +1,10 @@
-/* The job's stat keys (src/core/job-context.js): the keys are the game's own stats, and a JobContext says which of them
+/* The job's stat keys (src/core/job-context.ts): the keys are the game's own stats, and a JobContext says which of them
    the job has: mainKey, speedKey, specKey (null for none), stats and substats in that order. The expected keys for every
    job are written out here from the game (docs/mechanics/math.md section 1), not read from PROFILES. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JOBS, STAT_LABEL, STAT_SHORT } from '../../../src/core/constants.ts';
-import { makeJobContext } from '../../../src/core/job-context.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
 
 /* job id: [main stat, speed stat, special substat or null] */
 const EXPECTED = {

@@ -2,7 +2,7 @@
    and the speed band for a target GCD. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { expansionBounds } from '../../../src/core/items.js';
+import { expansionBounds } from '../../../src/core/items.ts';
 import { dotMult, gcdFor, gcdTierAt, gcdTiers, hasteFor, speedForGcd } from '../../../src/core/speed.ts';
 import { rngInt } from '../helpers/common.js';
 

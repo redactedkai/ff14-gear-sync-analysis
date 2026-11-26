@@ -8,7 +8,7 @@
 
    Gear comes from one source for the whole session (`gear`, by default every piece the job can wear): a test with its
    own pool makes its own session. */
-import { jobGear } from './items.js';
+import { jobGear } from './items.ts';
 
 /* How many jobs' gear the session keeps (least recently used dropped first). */
 export const SESSION_SIZE = 4;

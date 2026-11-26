@@ -3,7 +3,7 @@
    hand-made ring cases in core/optimizer/index.exhaustive.test.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeJobContext } from '../../../../src/core/job-context.js';
+import { makeJobContext } from '../../../../src/core/job-context.ts';
 import { optimize } from '../../../../src/core/optimizer/index.js';
 import { pruneDominated, makeScorer } from '../../../../src/core/optimizer/candidates.js';
 import { suffixBounds } from '../../../../src/core/optimizer/search.js';

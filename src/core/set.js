@@ -14,16 +14,16 @@
      meal    the meal's key (an allMeals key, HQ), or null for none.
    Job, level and sync are not part of a set: evaluateSet takes them, as a sheet holds them for all its sets.
    Custom pieces: the database's facts (equip level, meld slots, slot code, item kind, gear category) come from rowFacts
-   in items.js, which has none for a custom piece. So one is never level-synced, takes stones only if it carries its own
+   in items.ts, which has none for a custom piece. So one is never level-synced, takes stones only if it carries its own
    `meld` ({slots, overmeld}; meldInfo), uses the job's slot share and stat factors, and gets the item level table's
    weapon damage and defense (syncedValue in damage-defense.ts). An editable custom piece will have to carry the rest
    itself (architecture.md, section 7). */
 import { SLOT_LABEL } from './constants.ts';
 import { mitigationPct, setDefense } from './damage-defense.ts';
 import { statBase } from './base-stats.ts';
-import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.js';
+import { bonusStats, characterStat, clanOffset, isClan, partyRoles } from './clan-bonus.ts';
 import { allMeals, foodBonus, withFood } from './food.ts';
-import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.js';
+import { categoryOf, equipLevel, expansionOf, poolItemById, slotInfo, slotLabel } from './items.ts';
 import { applyStones, meldStones, meldText } from './meld.js';
 import { itemCaps, itemSyncIlvl } from './piece.js';
 import { BASE_GCD_MS, dotMult, gcdFor, gcdTierAt, hasteFor } from './speed.ts';
@@ -76,7 +76,7 @@ function pieceItem(job, piece) {
      capped}}, foodBonus; {} without a meal, worked out on the base + the clan's offset + the gear); withFood: the totals
      with it (the gear's without one); base: the character's own points (statBase, without the clan's bonus); lost:
      points of the stones past the pieces' caps; melded: how many pieces have melds.
-   - panel: the character panel's number of every stat, with the meal (clan-bonus.js characterStat): base + gear + meal,
+   - panel: the character panel's number of every stat, with the meal (clan-bonus.ts characterStat): base + gear + meal,
      and for the main stat and Vitality floor((base + clan + gear) x party bonus) + meal. panelGear: the same without the
      meal. With no bonuses they are base + withFood and base + gear. bonuses: {clan (a clan name or null), partyRoles
      (0 to 5)} as counted. The searches and Auto-fill never pass bonuses (they rank on gear points).
@@ -110,7 +110,7 @@ export function evaluateSet(job, set, sync, level, bonuses = {}) {
   const totals = withFood(gear, bonus);
   const base = Object.fromEntries(job.stats.map(s => [s, statBase(job, s, level)]));
 
-  // the character panel's numbers, one rule for every reader (clan-bonus.js): without and with the meal
+  // the character panel's numbers, one rule for every reader (clan-bonus.ts): without and with the meal
   const panelOf = withMeal =>
     Object.fromEntries(
       job.stats.map(s => [

@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ROW } from '../../../src/core/constants.ts';
 import { ITEMS, MAX_ILVL } from '../../../src/core/tables.ts';
-import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.js';
+import { capCeiling, levelSyncIlvl, syncTarget } from '../../../src/core/sync-target.ts';
 
 const MAX_LEVEL = 100;
 

@@ -4,9 +4,9 @@
    plain view object; the template only displays it. Pure: no store.
    The numbers are the character panel's (docs/mechanics/math.md): every stat is the gear's points plus the character's own
    base (statBase), with the meal's bonus when the set has one, and the main stat and Vitality with the clan and the party
-   bonus when the sheet sets them. They all come from evaluateSet's `panel` and `panelGear` (one rule, core/clan-bonus.js). */
-import { bonusStats, clanOffset, isClan, partyRoles } from '../../core/clan-bonus.js';
-import { makeJobContext } from '../../core/job-context.js';
+   bonus when the sheet sets them. They all come from evaluateSet's `panel` and `panelGear` (one rule, core/clan-bonus.ts). */
+import { bonusStats, clanOffset, isClan, partyRoles } from '../../core/clan-bonus.ts';
+import { makeJobContext } from '../../core/job-context.ts';
 import { averageItemLevel, evaluateSet, makeSet } from '../../core/set.js';
 import { tierLadder } from '../../core/tiers.ts';
 import { plural } from '../text.ts';
@@ -51,7 +51,7 @@ export function evaluateInSheet(sheet, gearSet) {
    or '' when the sheet sets neither. "STR and VIT count the Midlander clan's bonus and the 5% party bonus, rounded down."
    The stats are the job's main stat and Vitality (short names). The clan part names the
    clan's offset ("the Sea Wolf clan's +3") when it is the same for both stats and otherwise says "bonus"; "rounded
-   down" appears only with a party bonus (clan-bonus.js withPartyBonus). */
+   down" appears only with a party bonus (clan-bonus.ts withPartyBonus). */
 export function bonusNote(sheet) {
   const clan = isClan(sheet.clan) ? sheet.clan : null;
   const roles = partyRoles(sheet.partyRoles);

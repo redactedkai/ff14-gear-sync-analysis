@@ -1,7 +1,7 @@
 /* The materia menu of a set page's gear table (the menu a stone chip opens): the grades by stat, with the room left under
    each cap and the odds of an overmeld slot. Takes plain data and returns plain data; the template only displays it.
    Pure: no store. */
-import { meldInfo, poolItemById } from '../../core/items.js';
+import { meldInfo, poolItemById } from '../../core/items.ts';
 import { ROMAN, materiaFit, meldSlots, overmeldChance, overmeldNumber, slotGrades, usesNqOvermeldRates } from '../../core/meld.js';
 import { meldCaps } from '../../core/piece.js';
 import { rowLabel } from '../sheets/saved-set.js';

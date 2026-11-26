@@ -1,7 +1,7 @@
 /* The open menus of a set page (a piece picker, a materia menu, the Food menu): which one is open, where it sits in the window, and the
    views of the picker and the materia menu. The picker, the materia menu and the Food menu are Lit elements; the page names the button
    they hang under and gives them their view. Part of the page's session (session.ts). */
-import { jobGear } from '../../../core/items.js';
+import { jobGear } from '../../../core/items.ts';
 import { drawInSteps } from '../../draw-in-steps.js';
 import { FIRST_ROWS, limitRows, ROWS_PER_STEP } from '../../views/limit-rows.js';
 import { piecePickerView } from '../../views/piece-menu.js';
@@ -23,7 +23,7 @@ const MENU_MIN_PX = 160;
 const HEADER_SELECTOR = '.shead';
 const TABLE_SELECTOR = '.settable';
 
-/* The job's wearable pieces (items.js jobGear) for the piece picker, built once per job and kept out of the store
+/* The job's wearable pieces (items.ts jobGear) for the piece picker, built once per job and kept out of the store
    (big data: CLAUDE.md). */
 const gearByJob = new Map<string, ReturnType<typeof jobGear>>();
 function gearOf(job: JobContext) {

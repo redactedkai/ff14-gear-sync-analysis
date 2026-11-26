@@ -14,8 +14,8 @@
         comparing: theirBonus, counted in `bonus`, not as a difference)
      target: the two tools sync the piece to different item levels (D5, level 100 -> 790 vs 690, is one case)
      unexplained: none of the above */
-import { makeJobContext } from '../../../src/core/job-context.js';
-import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.js';
+import { makeJobContext } from '../../../src/core/job-context.ts';
+import { kindFactors, parseRow, poolItemFromRow, wearable } from '../../../src/core/items.ts';
 import { effStats, itemSyncIlvl } from '../../../src/core/piece.js';
 import { DB_SLOT_PCT, DB_SLOT_TYPE, ROW } from '../../../src/core/constants.ts';
 import { capValue } from '../../../src/core/formulas.ts';
